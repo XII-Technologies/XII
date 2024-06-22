@@ -62,7 +62,7 @@ protected:
     xiiUInt64          m_uiLastUsed = 0;
   };
 
-  xiiEventSubscriptionID m_GALDeviceEventSubscriptionID   = 0;
+  xiiEventSubscriptionID m_GALDeviceEventSubscriptionID;
   xiiUInt64              m_uiMemoryThresholdForGC         = 256 * 1024 * 1024;
   xiiUInt64              m_uiCurrentlyAllocatedMemory     = 0;
   xiiUInt16              m_uiNumAllocationsThresholdForGC = 128;

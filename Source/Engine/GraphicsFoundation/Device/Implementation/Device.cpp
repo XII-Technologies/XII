@@ -1225,9 +1225,8 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
 
   XII_VERIFY_TEXTURE_VIEW(description.m_ViewType > xiiGALTextureViewType::Undefined && description.m_ViewType < xiiGALTextureViewType::ENUM_COUNT, "The texture view type is invalid.");
   XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < textureDescription.m_uiMipLevels, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, textureDescription.m_uiMipLevels);
-  XII_VERIFY_TEXTURE_VIEW((description.m_uiMostDetailedMip + description.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "The most detailed mip ({0}) and the number of mip levels in the view ({1}) is out of range. The texture has only {2} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount, textureDescription.m_uiMipLevels);
+  XII_VERIFY_TEXTURE_VIEW((description.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS) || ((description.m_uiMostDetailedMip + description.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels), "The most detailed mip ({0}) and the number of mip levels in the view ({1}) is out of range. The texture has only {2} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount, textureDescription.m_uiMipLevels);
 
-  /// \todo GraphicsFoundation: Implement default texture view format deduction.
   if (description.m_Format == xiiGALTextureFormat::Unknown)
   {
     description.m_Format = xiiGALGraphicsUtilities::GetDefaultTextureViewFormat(textureDescription.m_Format, description.m_ViewType, textureDescription.m_BindFlags);
@@ -1236,7 +1235,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   if (textureDescription.IsArray())
   {
     XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice < textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) is out of range. The texture has only ({1}) slice (s)", description.m_uiFirstArrayOrDepthSlice, textureDescription.m_uiArraySizeOrDepth);
-    XII_VERIFY_TEXTURE_VIEW((description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount) <= textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) and the number of array slice (s) ({1}) are out of range. The texture has only ({2}) slice (s)", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, textureDescription.m_uiArraySizeOrDepth);
+    XII_VERIFY_TEXTURE_VIEW((description.m_uiArrayOrDepthSlicesCount == XII_GAL_REMAINING_ARRAY_SLICES) || ((description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount) <= textureDescription.m_uiArraySizeOrDepth), "The first array slice ({0}) and the number of array slice (s) ({1}) are out of range. The texture has only ({2}) slice (s)", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, textureDescription.m_uiArraySizeOrDepth);
   }
   else if (!textureDescription.Is3D())
   {
@@ -1339,19 +1338,19 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
     case xiiGALResourceDimension::TextureCube:
     {
       XII_VERIFY_TEXTURE_VIEW(description.m_ViewType == xiiGALTextureViewType::ShaderResource, "Unexpected view type, a Shader Resource view is expected.");
-      XII_VERIFY_TEXTURE_VIEW(description.m_uiArrayOrDepthSlicesCount == 6U || description.m_uiArrayOrDepthSlicesCount == 0U, "Texture Cube Shader Resource view is expected to have 6 array slices. {0} are provided.", description.m_uiArrayOrDepthSlicesCount);
+      XII_VERIFY_TEXTURE_VIEW((description.m_uiArrayOrDepthSlicesCount == 6U) || (description.m_uiArrayOrDepthSlicesCount == 0U) || (description.m_uiArrayOrDepthSlicesCount == XII_GAL_REMAINING_ARRAY_SLICES), "Texture Cube Shader Resource view is expected to have 6 array slices. {0} are provided.", description.m_uiArrayOrDepthSlicesCount);
     }
     break;
     case xiiGALResourceDimension::TextureCubeArray:
     {
       XII_VERIFY_TEXTURE_VIEW(description.m_ViewType == xiiGALTextureViewType::ShaderResource, "Unexpected view type, a Shader Resource view is expected.");
-      XII_VERIFY_TEXTURE_VIEW((description.m_uiArrayOrDepthSlicesCount % 6U) == 0U, "The number of slices in Texture Cube Array Shader Resource view is expected to be a multiple of 6. {0} are provided.", description.m_uiArrayOrDepthSlicesCount);
+      XII_VERIFY_TEXTURE_VIEW((description.m_uiArrayOrDepthSlicesCount == XII_GAL_REMAINING_ARRAY_SLICES) || ((description.m_uiArrayOrDepthSlicesCount % 6U) == 0U), "The number of slices in Texture Cube Array Shader Resource view is expected to be a multiple of 6. {0} are provided.", description.m_uiArrayOrDepthSlicesCount);
     }
     break;
     case xiiGALResourceDimension::Texture1D:
     case xiiGALResourceDimension::Texture2D:
     {
-      XII_VERIFY_TEXTURE_VIEW(description.m_uiArrayOrDepthSlicesCount <= 1U, "The number of slices in the view ({0}) must be 1 (or 0) for non-array Texture 1D/2D views.", description.m_uiArrayOrDepthSlicesCount);
+      XII_VERIFY_TEXTURE_VIEW((description.m_uiArrayOrDepthSlicesCount == XII_GAL_REMAINING_ARRAY_SLICES) || (description.m_uiArrayOrDepthSlicesCount <= 1U), "The number of slices in the view ({0}) must be 1 (or 0) for non-array Texture 1D/2D views.", description.m_uiArrayOrDepthSlicesCount);
     }
     break;
     case xiiGALResourceDimension::Texture1DArray:
@@ -1389,7 +1388,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
     XII_VERIFY_TEXTURE_VIEW(false, "Non-identity texture component swizzle is only supported for Shader Resource views.");
   }
 
-  if (description.m_uiMipLevelCount == 0U)
+  if (description.m_uiMipLevelCount == 0U || description.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS)
   {
     if (description.m_ViewType == xiiGALTextureViewType::ShaderResource)
       description.m_uiMipLevelCount = textureDescription.m_uiMipLevels - description.m_uiMostDetailedMip;
@@ -1397,7 +1396,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
       description.m_uiMipLevelCount = 1U;
   }
 
-  if (description.m_uiArrayOrDepthSlicesCount == 0)
+  if (description.m_uiArrayOrDepthSlicesCount == 0 || description.m_uiArrayOrDepthSlicesCount == XII_GAL_REMAINING_ARRAY_SLICES)
   {
     if (textureDescription.IsArray())
     {

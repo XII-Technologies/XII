@@ -29,20 +29,7 @@ public:
   virtual xiiUInt64 WaitForIdle() = 0;
 
   /// \brief This begins a command list for recording commmands.
-  XII_NODISCARD virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName = {}) = 0;
-
-  /// \brief Submits a command list for execution. If bReset is true, the command list is reset after submission.
-  virtual xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset = true);
-
-  // Deactivate Doxygen document generation for the following block. (API abstraction only)
-  /// \cond
-
-  // These functions need to be implemented by a graphics API abstraction.
-
-protected:
-  virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) = 0;
-
-  /// \endcond
+  XII_NODISCARD virtual xiiGALCommandList* BeginCommandList() = 0;
 
 protected:
   friend class xiiGALDevice;

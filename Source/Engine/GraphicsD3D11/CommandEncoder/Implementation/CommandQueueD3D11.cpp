@@ -89,7 +89,7 @@ xiiUInt64 xiiGALCommandQueueD3D11::WaitForIdle()
   return uiLastSignaledFenceValue;
 }
 
-xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList(xiiStringView sScopeName)
+xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 {
   // Try to find a command list that has been reset.
   // TODO: We want to store resetted command lists at the front of the queue.
@@ -101,7 +101,7 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList(xiiStringView sScop
 
     if (pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Reset)
     {
-      pCommandList->Begin(sScopeName);
+      pCommandList->Begin();
 
       return pCommandList;
     }
@@ -118,7 +118,7 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList(xiiStringView sScop
   sb.SetFormat("Command List {}", m_CommandLists.GetCount());
   pCommandListD3D11->SetDebugName(sb);
 
-  pCommandListD3D11->Begin(sScopeName);
+  pCommandListD3D11->Begin();
 
   return pCommandListD3D11;
 }
@@ -158,7 +158,7 @@ void xiiGALCommandQueueD3D11::ReleaseSwapChainCommanListReferences()
   m_SwapChainCommandListReferences.Clear();
 }
 
-xiiUInt64 xiiGALCommandQueueD3D11::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueD3D11::Submit(xiiGALCommandList* pCommandList, bool bReset)
 {
   XII_LOCK(m_QueueMutex);
 

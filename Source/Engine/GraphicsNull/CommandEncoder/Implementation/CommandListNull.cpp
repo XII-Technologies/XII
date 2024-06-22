@@ -1,10 +1,11 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
 #include <GraphicsNull/CommandEncoder/CommandListNull.h>
+#include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 
-xiiGALCommandListNull::xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceNull, creationDescription)
+xiiGALCommandListNull::xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, xiiGALCommandQueueNull* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceNull, pCommandQueue, creationDescription)
 {
 }
 
@@ -20,6 +21,11 @@ void xiiGALCommandListNull::EndPlatform()
 
 void xiiGALCommandListNull::ResetPlatform()
 {
+}
+
+xiiUInt64 xiiGALCommandListNull::SubmitPlatform(bool bReset)
+{
+  return static_cast<xiiGALCommandQueueNull*>(m_pCommandQueue)->Submit(this, bReset);
 }
 
 void xiiGALCommandListNull::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)

@@ -22,6 +22,8 @@ protected:
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
 
+  virtual xiiUInt64 SubmitPlatform(bool bReset) override final;
+
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;

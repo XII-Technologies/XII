@@ -181,7 +181,7 @@ public:
       renderingSetup.m_bClearDepth             = true;
       renderingSetup.m_bClearStencil           = true;
 
-      xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+      xiiRenderContext::GetDefaultInstance()->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
 
       auto& gc = xiiRenderContext::GetDefaultInstance()->WriteGlobalConstants();
       xiiMemoryUtils::ZeroFill(&gc, 1);

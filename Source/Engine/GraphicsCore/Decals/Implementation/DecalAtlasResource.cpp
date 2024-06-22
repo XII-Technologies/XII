@@ -15,9 +15,9 @@
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DecalAtlasResource)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-  "Foundation",
-  "Core",
-  "TextureResource"
+    "Foundation",
+    "Core",
+    "TextureResource"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP

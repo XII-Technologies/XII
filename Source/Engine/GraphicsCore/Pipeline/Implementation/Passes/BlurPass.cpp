@@ -77,7 +77,7 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
     renderingSetup.m_ClearColor              = xiiColor(1.0f, 0.0f, 0.0f);
 
     // Bind render target and viewport
-    auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName(), renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     // Setup input view and sampler
     xiiGALTextureViewCreationDescription rvcd;

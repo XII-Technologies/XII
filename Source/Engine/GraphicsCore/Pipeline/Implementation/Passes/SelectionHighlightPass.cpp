@@ -93,7 +93,7 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
     renderingSetup.m_bClearDepth   = true;
     renderingSetup.m_bClearStencil = true;
 
-    auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_DEPTH_ONLY");
 
@@ -109,7 +109,7 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
     xiiGALRenderingSetup renderingSetup;
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pColorOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
-    auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSelectionHighlightConstants", m_hConstantBuffer);

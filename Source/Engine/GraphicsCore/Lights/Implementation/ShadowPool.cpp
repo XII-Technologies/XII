@@ -981,7 +981,9 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
   xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
 
-  auto pCommandList = pGALCommandQueue->BeginCommandList("Shadow Atlas");
+  auto pCommandList = pGALCommandQueue->BeginCommandList();
+
+  pCommandList->BeginDebugGroup("Shadow Atlas");
 
   pCommandList->ClearDepthStencilView(pDevice->GetTexture(s_pData->m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
 
@@ -993,7 +995,9 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
     pCommandList->UpdateBufferExtended(s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr());
   }
-  pGALCommandQueue->Submit(pCommandList);
+  pCommandList->EndDebugGroup();
+  pCommandList->Submit();
+
   pGALCommandQueue->WaitForIdle();
 }
 

@@ -134,7 +134,6 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     xiiTempHashedString sDownscale            = "BLOOM_PASS_MODE_DOWNSCALE";
     xiiTempHashedString sDownscaleFast        = "BLOOM_PASS_MODE_DOWNSCALE_FAST";
 
-    renderViewContext.m_pRenderContext->GetCommandList()->BeginDebugGroup("Downscale");
 
     for (xiiUInt32 i = 0; i < uiNumBlurPasses; ++i)
     {
@@ -155,7 +154,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(hOutput)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), {}, renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Downscale", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiColor tintColor = (i == uiNumBlurPasses - 1) ? xiiColor(m_OuterTintColor) : xiiColor::White;
       UpdateConstantBuffer(xiiVec2(1.0f).CompDiv(targetSize), tintColor);
@@ -167,8 +166,6 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       bFastDownscale = xiiMath::IsEven((xiiInt32)targetSize.x) && xiiMath::IsEven((xiiInt32)targetSize.y);
     }
-
-    renderViewContext.m_pRenderContext->GetCommandList()->EndDebugGroup();
   }
 
   // Upscale passes
@@ -177,8 +174,6 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     const float fMidPass    = (uiNumBlurPasses - 1.0f) / 2.0f;
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLOOM_PASS_MODE", "BLOOM_PASS_MODE_UPSCALE");
-
-    renderViewContext.m_pRenderContext->GetCommandList()->BeginDebugGroup("Upscale");
 
     for (xiiUInt32 i = uiNumBlurPasses - 1; i-- > 0;)
     {
@@ -207,7 +202,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(hOutput)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), {}, renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Upscale", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiColor tintColor;
       float    fPass = (float)i;
@@ -228,8 +223,6 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       renderViewContext.m_pRenderContext->EndRendering();
     }
-
-    renderViewContext.m_pRenderContext->GetCommandList()->EndDebugGroup();
   }
 
   // Return temp targets
@@ -265,7 +258,7 @@ void xiiBloomPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext
   renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
   renderingSetup.m_ClearColor              = xiiColor::Black;
 
-  auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, "Clear");
+  auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "Clear");
 }
 
 xiiResult xiiBloomPass::Serialize(xiiStreamWriter& inout_stream) const

@@ -113,7 +113,9 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       xiiGALDevice*       pGALDevice       = xiiGALDevice::GetDefaultDevice();
       xiiGALCommandQueue* pGALCommandQueue = pGALDevice->GetDefaultCommandQueue();
 
-      xiiGALCommandList* pGALCommandList = pGALCommandQueue->BeginCommandList("BakingDebugViewUpdate");
+      xiiGALCommandList* pGALCommandList = pGALCommandQueue->BeginCommandList();
+
+      pGALCommandList->BeginDebugGroup("BakingDebugViewUpdate");
 
       xiiBoundingBoxU32 destBox;
       destBox.m_vMin.SetZero();
@@ -124,8 +126,9 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
       pGALCommandList->UpdateTextureExtended(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+      pGALCommandList->EndDebugGroup();
+      pGALCommandList->Submit();
 
-      pGALCommandQueue->Submit(pGALCommandList);
       pGALCommandQueue->WaitForIdle();
     }
   }

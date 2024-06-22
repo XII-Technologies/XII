@@ -8,7 +8,7 @@ xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, co
   xiiGALCommandQueue(pDeviceNull, creationDescription)
 {
   xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListNull, pDeviceNull, commandListDescription);
+  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListNull, pDeviceNull, this, commandListDescription);
 }
 
 xiiGALCommandQueueNull::~xiiGALCommandQueueNull()
@@ -26,13 +26,17 @@ xiiResult xiiGALCommandQueueNull::DeInitPlatform()
   return XII_SUCCESS;
 }
 
-xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList(xiiStringView sScopeName)
+xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList()
 {
   return m_pDefaultCommandList.Borrow();
 }
 
-xiiUInt64 xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueNull::Submit(xiiGALCommandList* pCommandList, bool bReset)
 {
+  if (bReset && pCommandList)
+  {
+    pCommandList->Reset();
+  }
   return 0U;
 }
 

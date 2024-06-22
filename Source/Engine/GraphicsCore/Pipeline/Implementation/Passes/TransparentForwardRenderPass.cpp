@@ -49,23 +49,21 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  renderViewContext.m_pRenderContext->GetGraphicsCommandList()->BeginDebugGroup(GetName());
+  {
+    SetupResources(renderViewContext, inputs, outputs);
+    SetupPermutationVars(renderViewContext);
+    SetupLighting(renderViewContext);
 
-  SetupResources(renderViewContext, inputs, outputs);
-  SetupPermutationVars(renderViewContext);
+    UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
 
-  UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
+    xiiGALTextureViewHandle colorResourceViewHandle = pDevice->GetTexture(hSceneColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+    renderViewContext.m_pRenderContext->BindTexture2D("SceneColor", colorResourceViewHandle);
+    renderViewContext.m_pRenderContext->BindSampler("SceneColorSampler", m_hSceneColorSampler);
 
-  xiiGALTextureViewHandle colorResourceViewHandle = pDevice->GetTexture(hSceneColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-  renderViewContext.m_pRenderContext->BindTexture2D("SceneColor", colorResourceViewHandle);
-  renderViewContext.m_pRenderContext->BindSampler("SceneColorSampler", m_hSceneColorSampler);
+    RenderObjects(renderViewContext);
 
-  RenderObjects(renderViewContext);
-
-  renderViewContext.m_pRenderContext->GetGraphicsCommandList()->EndDebugGroup();
-
-  renderViewContext.m_pRenderContext->EndRendering();
-
+    renderViewContext.m_pRenderContext->EndRendering();
+  }
   xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(hSceneColor);
 }
 

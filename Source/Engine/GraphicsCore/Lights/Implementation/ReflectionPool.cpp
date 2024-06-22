@@ -308,7 +308,8 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   xiiHybridArray<xiiGALTextureHandle, 4> atlasToClear;
 
   {
-    auto pGALCommandList = pGALCommandQueue->BeginCommandList("Sky Irradiance Texture Update");
+    auto pGALCommandList = pGALCommandQueue->BeginCommandList();
+    pGALCommandList->BeginDebugGroup("Sky Irradiance Texture Update");
     for (xiiUInt32 i = 0; i < skyIrradianceStorage.GetCount(); ++i)
     {
       if ((uiWorldHasSkyLight & XII_BIT(i)) == 0 && (uiSkyIrradianceChanged & XII_BIT(i)) != 0)
@@ -330,12 +331,16 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
         }
       }
     }
-    pGALCommandQueue->Submit(pGALCommandList);
+    pGALCommandList->EndDebugGroup();
+    pGALCommandList->Submit();
+
     pGALCommandQueue->WaitForIdle();
   }
 
   {
-    auto pGALCommandList = pGALCommandQueue->BeginCommandList("ClearSkySpecular");
+    auto pGALCommandList = pGALCommandQueue->BeginCommandList();
+
+    pGALCommandList->BeginDebugGroup("ClearSkySpecular");
 
     // Clear specular sky reflection to black.
     const xiiUInt32 uiNumMipMaps = GetMipLevels();
@@ -358,7 +363,9 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
         }
       }
     }
-    pGALCommandQueue->Submit(pGALCommandList);
+    pGALCommandList->EndDebugGroup();
+    pGALCommandList->Submit();
+
     pGALCommandQueue->WaitForIdle();
   }
 }

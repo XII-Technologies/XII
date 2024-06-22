@@ -131,10 +131,10 @@ void xiiWindowOutputTargetGAL::Present(bool bEnableVSync)
 xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   auto pCommandQueue = pDevice->GetDefaultCommandQueue();
+  auto          pGALCommandList = pCommandQueue->BeginCommandList();
 
-  auto pGALCommandList = pCommandQueue->BeginCommandList("CaptureImage");
+  pGALCommandList->BeginDebugGroup("CaptureImage");
 
   const xiiGALSwapChain* pSwapChain  = pDevice->GetSwapChain(m_hSwapChain);
   xiiGALTextureHandle    hBackbuffer = pSwapChain ? pSwapChain->GetBackBufferTexture() : xiiGALTextureHandle();
@@ -143,7 +143,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   // Since we are reading data from the backbuffer, we need to ensure that the copy command has completed before mapping the staging texture for reading.
   // This is mainly a D3D11 deferred context limitation, we will need to update/branch this code path on modern api's like D3D12 and Vulkan.
-  pCommandQueue->Submit(pGALCommandList, false);
+  pGALCommandList->Submit(false);
   pCommandQueue->WaitForIdle();
 
   pGALCommandList->Begin();
@@ -200,7 +200,9 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   pGALCommandList->UnmapTextureSubresource(m_hBackbufferStagingTexture, sourceSubResource).IgnoreResult();
 
-  pCommandQueue->Submit(pGALCommandList);
+  pGALCommandList->EndDebugGroup();
+  pGALCommandList->Submit();
+
   pCommandQueue->WaitForIdle();
 
   xiiImageHeader header;

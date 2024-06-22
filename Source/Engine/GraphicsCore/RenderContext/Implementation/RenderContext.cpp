@@ -120,10 +120,10 @@ xiiRenderContext::xiiRenderContext()
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Retrive a command list that we record all commands in the render context with.
-  m_pCommandQueue = pDevice->GetDefaultCommandQueue();
-  m_pCommandList  = m_pCommandQueue->BeginCommandList();
+  xiiGALCommandQueue* pCommandQueue = pDevice->GetDefaultCommandQueue();
+  m_pPersistentCommandList          = pCommandQueue->BeginCommandList();
   // No commands to record, so we end the command list immediately.
-  m_pCommandList->End();
+  m_pPersistentCommandList->End();
 
   ResetContextState();
 }
@@ -169,8 +169,16 @@ xiiRenderContext::Statistics xiiRenderContext::GetAndResetStatistics()
   return ret;
 }
 
-xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
+void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
 {
+  XII_ASSERT_DEV(m_bIsRendering == false && m_bIsCompute == false, "Already in a scope.");
+  XII_ASSERT_DEV(m_pCommandList == nullptr, "Already in a scope.");
+
+  m_CurrentRenderingSetup = renderingSetup;
+  m_bIsRendering          = true;
+  m_bClearSubmitted       = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
+  m_bStereoRendering      = bStereoSupport;
+
   xiiGALDevice*           pDevice = xiiGALDevice::GetDefaultDevice();
   xiiGALTextureViewHandle hRTV;
   {
@@ -184,7 +192,7 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& 
     }
   }
 
-  xiiUInt32 uiSampleCount = 1;
+  xiiUInt32 uiSampleCount = xiiGALMSAASampleCount::OneSample;
   {
     if (const xiiGALTextureView* pRTV = xiiGALDevice::GetDefaultDevice()->GetTextureView(hRTV))
     {
@@ -201,19 +209,27 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& 
     }
   }
 
-  m_CurrentRenderingSetup = renderingSetup;
-
-  auto& gc          = WriteGlobalConstants();
-  gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-  gc.NumMsaaSamples = uiSampleCount;
-
-  if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
   {
-    m_pCommandList->Begin(sName);
+    auto& gc          = WriteGlobalConstants();
+    gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
+    gc.NumMsaaSamples = uiSampleCount;
   }
-  else
+
+  m_pCommandList = (m_pScopedCommandList != nullptr) ? m_pScopedCommandList : m_pPersistentCommandList;
   {
-    // Push marker
+    if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
+    {
+      m_pCommandList->Begin();
+    }
+
+    if (!sName.IsEmpty())
+    {
+      m_pCommandList->BeginDebugGroup(sName);
+
+      m_bHasScopedCommandListLabel = (m_pCommandList == m_pScopedCommandList) && (m_pScopedCommandList != nullptr);
+
+      ++m_uiActiveScopeCount;
+    }
   }
 
   GetRenderPassAndFramebuffer(renderingSetup, m_hCurrentRenderPass, m_hCurrentFramebuffer);
@@ -232,12 +248,6 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& 
   auto        scissorRect            = xiiRectU32(framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
 
   m_pCommandList->SetScissorRects(xiiMakeArrayPtr(&scissorRect, 1U));
-
-  m_bClearSubmitted  = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
-  m_bCompute         = false;
-  m_bStereoRendering = bStereoSupport;
-
-  return m_pCommandList;
 }
 
 void xiiRenderContext::EndRendering()
@@ -251,17 +261,35 @@ void xiiRenderContext::EndRendering()
 
   EndRenderPass();
 
-  m_pCommandQueue->Submit(GetGraphicsCommandList(), false);
-  m_pCommandQueue->WaitForIdle();
+  if (m_uiActiveScopeCount > 0)
+  {
+    if (m_bHasScopedCommandListLabel)
+    {
+      m_pScopedCommandList->EndDebugGroup();
 
+      m_bHasScopedCommandListLabel = false;
+    }
+    else
+    {
+      m_pPersistentCommandList->EndDebugGroup();
+    }
+
+    --m_uiActiveScopeCount;
+  }
   if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
   {
     m_pCommandList->End();
   }
+  m_pCommandList->Submit(false);
+  m_pCommandList->GetCommandQueue()->WaitForIdle();
 
+  m_pCommandList        = nullptr;
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
   m_hCurrentRenderPass  = xiiGALRenderPassHandle();
   m_bStereoRendering    = false;
+  m_bIsRendering        = false;
+
+  XII_ASSERT_DEBUG(!m_bHasScopedCommandListLabel, "");
 
   // TODO: The render context needs to reset its state after every encoding block if we want to record to separate command buffers.
   // Although this is currently not possible since a lot of high level code binds stuff only once per frame on the render context.
@@ -269,31 +297,58 @@ void xiiRenderContext::EndRendering()
   // ResetContextState();
 }
 
-xiiGALCommandList* xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
+void xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
 {
-  if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
-  {
-    m_pCommandList->Begin(sName);
-  }
-  else
-  {
-    // Push marker
-  }
+  XII_ASSERT_DEV(m_bIsRendering == false && m_bIsCompute == false, "Already in a scope.");
+  XII_ASSERT_DEV(m_pCommandList == nullptr, "Already in a scope.");
 
-  m_bCompute = true;
+  m_bIsCompute   = true;
+  m_pCommandList = (m_pScopedCommandList != nullptr) ? m_pScopedCommandList : m_pPersistentCommandList;
+  {
+    if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
+    {
+      m_pCommandList->Begin();
+    }
 
-  return m_pCommandList;
+    if (!sName.IsEmpty())
+    {
+      m_pCommandList->BeginDebugGroup(sName);
+
+      m_bHasScopedCommandListLabel = (m_pCommandList == m_pScopedCommandList) && (m_pScopedCommandList != nullptr);
+
+      ++m_uiActiveScopeCount;
+    }
+  }
 }
 
 void xiiRenderContext::EndCompute()
 {
-  m_pCommandQueue->Submit(GetComputeCommandList(), false);
-  m_pCommandQueue->WaitForIdle();
+  if (m_uiActiveScopeCount > 0)
+  {
+    if (m_bHasScopedCommandListLabel)
+    {
+      m_pScopedCommandList->EndDebugGroup();
 
+      m_bHasScopedCommandListLabel = false;
+    }
+    else
+    {
+      m_pPersistentCommandList->EndDebugGroup();
+    }
+
+    --m_uiActiveScopeCount;
+  }
   if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
   {
     m_pCommandList->End();
   }
+  m_pCommandList->Submit(false);
+  m_pCommandList->GetCommandQueue()->WaitForIdle();
+
+  m_pCommandList = nullptr;
+  m_bIsCompute   = false;
+
+  XII_ASSERT_DEBUG(!m_bHasScopedCommandListLabel, "");
 
   // TODO: See EndRendering
   // ResetContextState();
@@ -318,7 +373,6 @@ void xiiRenderContext::SetShaderPermutationVariable(const xiiHashedString& sName
     SetShaderPermutationVariableInternal(sName, sValue);
   }
 }
-
 
 void xiiRenderContext::BindMaterial(const xiiMaterialResourceHandle& hMaterial)
 {
@@ -662,7 +716,7 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
   uiPrimitiveCount = xiiMath::Min(uiPrimitiveCount, m_uiMeshBufferPrimitiveCount - uiFirstPrimitive);
   XII_ASSERT_DEV(uiPrimitiveCount > 0, "Invalid primitive range: number of primitives can't be zero.");
 
-  auto pCommandList = GetGraphicsCommandList();
+  auto pCommandList = GetCommandList();
 
   xiiGALPipelineState* pPipelineState = xiiGALDevice::GetDefaultDevice()->GetPipelineState(m_hCurrentPipelineState);
 
@@ -711,7 +765,7 @@ xiiResult xiiRenderContext::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 ui
     return XII_FAILURE;
   }
 
-  return GetComputeCommandList()->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
+  return GetCommandList()->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 }
 
 xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
@@ -764,12 +818,12 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     xiiLogBlock applyBindingsBlock("Applying Shader Bindings", pShaderPermutation != nullptr ? pShaderPermutation->GetResourceDescription().GetData() : "");
 
-    if ((bForce || bRebuildInputLayout) && !m_bCompute)
+    if ((bForce || bRebuildInputLayout) && m_bIsRendering)
     {
       if (m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)].IsInvalidated())
         return XII_FAILURE;
 
-      auto pCommandList = GetGraphicsCommandList();
+      auto pCommandList = GetCommandList();
 
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged))
       {
@@ -802,7 +856,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       // Set render state from shader.
       // Create pipeline state that is valid for this scope.
       xiiGALPipelineStateCreationDescription pipelineDescription;
-      pipelineDescription.m_PipelineType               = m_bCompute ? xiiGALPipelineType::Compute : xiiGALPipelineType::Graphics;
+      pipelineDescription.m_PipelineType               = m_bIsCompute ? xiiGALPipelineType::Compute : xiiGALPipelineType::Graphics;
       pipelineDescription.m_hPipelineResourceSignature = (pShaderPermutation != nullptr) ? pShaderPermutation->GetPipelineResourceSignature() : xiiGALPipelineResourceSignatureHandle();
 
       if (pipelineDescription.IsAnyGraphicsPipeline())
@@ -820,7 +874,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
         pipelineDescription.m_ComputePipeline.hComputeShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
       }
 
-      if (!m_bCompute && (pShaderPermutation != nullptr))
+      if (!m_bIsCompute && (pShaderPermutation != nullptr))
       {
         auto& graphicsPipeline = pipelineDescription.m_GraphicsPipeline;
 
@@ -902,7 +956,14 @@ void xiiRenderContext::ResetContextState()
   m_hCurrentFramebuffer   = xiiGALFramebufferHandle();
   m_hCurrentRenderPass    = xiiGALRenderPassHandle();
 
-  m_pCommandList->Reset();
+  if (m_pScopedCommandList != nullptr)
+  {
+    m_pScopedCommandList->Reset();
+  }
+  if (m_pPersistentCommandList != nullptr)
+  {
+    m_pPersistentCommandList->Reset();
+  }
 
   m_hActiveShader.Invalidate();
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hActiveGALShaders); ++i)
@@ -1365,7 +1426,7 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
 
 void xiiRenderContext::BeginRenderPass()
 {
-  XII_ASSERT_DEV(!m_bCompute, "Cannot begin render pass while compute pipeline is active!");
+  XII_ASSERT_DEV(!m_bIsCompute && m_bIsRendering, "Cannot begin render pass while compute pipeline is active!");
 
   const bool     bHasDepthAttachment    = !m_CurrentRenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
   const xiiUInt8 uiColorAttachmentCount = m_CurrentRenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
@@ -1401,7 +1462,7 @@ void xiiRenderContext::BeginRenderPass()
       colorClearValue.m_ClearColor               = m_CurrentRenderingSetup.m_ClearColor;
     }
 
-    GetGraphicsCommandList()->BeginRenderPass(beginRenderPassDescription);
+    GetCommandList()->BeginRenderPass(beginRenderPassDescription);
 
     m_bRenderPassActive = true;
     m_bClearSubmitted   = true;
@@ -1412,7 +1473,7 @@ void xiiRenderContext::EndRenderPass()
 {
   if (m_bRenderPassActive)
   {
-    GetGraphicsCommandList()->EndRenderPass();
+    GetCommandList()->EndRenderPass();
 
     m_bRenderPassActive = false;
   }
