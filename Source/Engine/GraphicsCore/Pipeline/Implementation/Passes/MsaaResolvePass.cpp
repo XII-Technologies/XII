@@ -36,7 +36,7 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_uiSampleCount == xiiGALMSAASampleCount::OneSample)
+    if (pInput->m_uiSampleCount == (xiiUInt32)xiiGALMSAASampleCount::OneSample)
     {
       xiiLog::Error("Input is not a valid msaa target");
       return false;

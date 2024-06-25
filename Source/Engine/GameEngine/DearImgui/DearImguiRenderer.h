@@ -48,7 +48,7 @@ class XII_GAMEENGINE_DLL xiiImguiExtractor : public xiiExtractor
   XII_ADD_DYNAMIC_REFLECTION(xiiImguiExtractor, xiiExtractor);
 
 public:
-  xiiImguiExtractor(const char* szName = "ImguiExtractor");
+  xiiImguiExtractor(xiiStringView sName = "ImguiExtractor");
 
   virtual void      Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;

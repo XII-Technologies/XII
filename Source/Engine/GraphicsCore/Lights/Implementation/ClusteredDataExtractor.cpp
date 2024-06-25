@@ -160,8 +160,8 @@ xiiClusteredDataCPU::~xiiClusteredDataCPU() = default;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClusteredDataExtractor, 1, xiiRTTIDefaultAllocator<xiiClusteredDataExtractor>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiClusteredDataExtractor::xiiClusteredDataExtractor(const char* szName) :
-  xiiExtractor(szName)
+xiiClusteredDataExtractor::xiiClusteredDataExtractor(xiiStringView sName) :
+  xiiExtractor(sName)
 {
   m_DependsOn.PushBack(xiiMakeHashedString("xiiVisibleObjectsExtractor"));
 
@@ -409,7 +409,6 @@ xiiResult xiiClusteredDataExtractor::Serialize(xiiStreamWriter& inout_stream) co
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
   return XII_SUCCESS;
 }
-
 
 xiiResult xiiClusteredDataExtractor::Deserialize(xiiStreamReader& inout_stream)
 {

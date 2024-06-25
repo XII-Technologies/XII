@@ -318,8 +318,7 @@ void xiiCameraComponent::UpdateRenderTargetCamera()
   else
     m_RenderTargetCamera.SetCameraMode(GetCameraMode(), m_fOrthoDimension, m_fNearPlane, m_fFarPlane);
 
-  m_RenderTargetCamera.LookAt(
-    GetOwner()->GetGlobalPosition(), GetOwner()->GetGlobalPosition() + GetOwner()->GetGlobalDirForwards(), GetOwner()->GetGlobalDirUp());
+  m_RenderTargetCamera.LookAt(GetOwner()->GetGlobalPosition(), GetOwner()->GetGlobalPosition() + GetOwner()->GetGlobalDirForwards(), GetOwner()->GetGlobalDirUp());
 }
 
 void xiiCameraComponent::ShowStats(xiiView* pView)

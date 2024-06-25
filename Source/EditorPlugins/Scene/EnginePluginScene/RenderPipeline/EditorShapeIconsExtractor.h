@@ -10,7 +10,7 @@ class xiiEditorShapeIconsExtractor : public xiiExtractor
   XII_ADD_DYNAMIC_REFLECTION(xiiEditorShapeIconsExtractor, xiiExtractor);
 
 public:
-  xiiEditorShapeIconsExtractor(const char* szName = "EditorShapeIconsExtractor");
+  xiiEditorShapeIconsExtractor(xiiStringView sName = "EditorShapeIconsExtractor");
   ~xiiEditorShapeIconsExtractor();
 
   virtual void      Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;

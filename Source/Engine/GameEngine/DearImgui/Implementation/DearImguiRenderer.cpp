@@ -26,8 +26,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImguiRenderer, 1, xiiRTTIDefaultAllocator<xi
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiImguiExtractor::xiiImguiExtractor(const char* szName) :
-  xiiExtractor(szName)
+xiiImguiExtractor::xiiImguiExtractor(xiiStringView sName) :
+  xiiExtractor(sName)
 {
   m_DependsOn.PushBack(xiiMakeHashedString("xiiVisibleObjectsExtractor"));
 }

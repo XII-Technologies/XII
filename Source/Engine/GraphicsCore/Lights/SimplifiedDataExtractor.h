@@ -21,7 +21,7 @@ class XII_GRAPHICSCORE_DLL xiiSimplifiedDataExtractor : public xiiExtractor
   XII_ADD_DYNAMIC_REFLECTION(xiiSimplifiedDataExtractor, xiiExtractor);
 
 public:
-  xiiSimplifiedDataExtractor(const char* szName = "SimplifiedDataExtractor");
+  xiiSimplifiedDataExtractor(xiiStringView sName = "SimplifiedDataExtractor");
   ~xiiSimplifiedDataExtractor();
 
   virtual void      PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;

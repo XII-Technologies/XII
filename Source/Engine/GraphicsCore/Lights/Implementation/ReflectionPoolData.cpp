@@ -224,7 +224,6 @@ void xiiReflectionPool::Data::PreExtraction()
     data.m_mapping.PreExtraction();
   }
 
-
   // Schedule new dynamic updates
   {
     xiiHybridArray<xiiReflectionProbeRef, 4> updatesFinished;
