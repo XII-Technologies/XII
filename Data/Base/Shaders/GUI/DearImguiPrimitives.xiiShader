@@ -12,6 +12,7 @@ DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 ScissorEnable = true
 DepthEnable = false
 DepthWriteEnable = false
+CullMode = CullMode_None
 
 [VERTEXSHADER]
 
