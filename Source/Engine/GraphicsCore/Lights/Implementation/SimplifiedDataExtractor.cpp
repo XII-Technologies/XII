@@ -18,8 +18,8 @@ xiiSimplifiedDataCPU::~xiiSimplifiedDataCPU() = default;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimplifiedDataExtractor, 1, xiiRTTIDefaultAllocator<xiiSimplifiedDataExtractor>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiSimplifiedDataExtractor::xiiSimplifiedDataExtractor(const char* szName) :
-  xiiExtractor(szName)
+xiiSimplifiedDataExtractor::xiiSimplifiedDataExtractor(xiiStringView sName) :
+  xiiExtractor(sName)
 {
   m_DependsOn.PushBack(xiiMakeHashedString("xiiVisibleObjectsExtractor"));
 }

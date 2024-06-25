@@ -44,7 +44,7 @@ xiiTempHashedString xiiViewRenderMode::GetPermutationValue(Enum renderMode)
     return "RENDER_PASS_EDITOR";
   }
 
-  return "";
+  return {};
 }
 
 // static

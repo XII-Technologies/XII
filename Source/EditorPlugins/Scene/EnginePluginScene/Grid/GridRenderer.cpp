@@ -24,8 +24,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGridRenderer, 1, xiiRTTIDefaultAllocator<xii
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiEditorGridExtractor::xiiEditorGridExtractor(const char* szName) :
-  xiiExtractor(szName)
+xiiEditorGridExtractor::xiiEditorGridExtractor(xiiStringView sName) :
+  xiiExtractor(sName)
 {
   m_pSceneContext = nullptr;
 }

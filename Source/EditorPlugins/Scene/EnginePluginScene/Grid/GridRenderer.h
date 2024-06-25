@@ -30,7 +30,7 @@ class xiiEditorGridExtractor : public xiiExtractor
   XII_ADD_DYNAMIC_REFLECTION(xiiEditorGridExtractor, xiiExtractor);
 
 public:
-  xiiEditorGridExtractor(const char* szName = "EditorGridExtractor");
+  xiiEditorGridExtractor(xiiStringView sName = "EditorGridExtractor");
 
   virtual void      Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;

@@ -45,7 +45,7 @@ class XII_GRAPHICSCORE_DLL xiiClusteredDataExtractor : public xiiExtractor
   XII_ADD_DYNAMIC_REFLECTION(xiiClusteredDataExtractor, xiiExtractor);
 
 public:
-  xiiClusteredDataExtractor(const char* szName = "ClusteredDataExtractor");
+  xiiClusteredDataExtractor(xiiStringView sName = "ClusteredDataExtractor");
   ~xiiClusteredDataExtractor();
 
   virtual void      PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;

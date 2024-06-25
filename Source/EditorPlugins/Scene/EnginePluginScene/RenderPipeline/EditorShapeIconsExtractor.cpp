@@ -20,8 +20,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorShapeIconsExtractor, 1, xiiRTTIDefault
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiEditorShapeIconsExtractor::xiiEditorShapeIconsExtractor(const char* szName) :
-  xiiExtractor(szName)
+xiiEditorShapeIconsExtractor::xiiEditorShapeIconsExtractor(xiiStringView sName) :
+  xiiExtractor(sName)
 {
   m_fSize          = 1.0f;
   m_fMaxScreenSize = 64.0f;
@@ -188,21 +188,20 @@ void xiiEditorShapeIconsExtractor::FillShapeIconInfo()
 
   xiiStringBuilder sPath;
 
-  xiiRTTI::ForEachDerivedType<xiiComponent>(
-    [&](const xiiRTTI* pRtti) {
-      sPath.Set("Editor/ShapeIcons/", pRtti->GetTypeName(), ".dds");
+  xiiRTTI::ForEachDerivedType<xiiComponent>([&](const xiiRTTI* pRtti) {
+    sPath.Set("Editor/ShapeIcons/", pRtti->GetTypeName(), ".dds");
 
-      if (xiiFileSystem::ExistsFile(sPath))
+    if (xiiFileSystem::ExistsFile(sPath))
+    {
+      auto& shapeIconInfo                 = m_ShapeIconInfos[pRtti];
+      shapeIconInfo.m_hTexture            = xiiResourceManager::LoadResource<xiiTexture2DResource>(sPath);
+      shapeIconInfo.m_pColorProperty      = FindColorProperty(pRtti);
+      shapeIconInfo.m_pColorGammaProperty = FindColorGammaProperty(pRtti);
+
+      if (auto pCatAttribute = pRtti->GetAttributeByType<xiiCategoryAttribute>())
       {
-        auto& shapeIconInfo                 = m_ShapeIconInfos[pRtti];
-        shapeIconInfo.m_hTexture            = xiiResourceManager::LoadResource<xiiTexture2DResource>(sPath);
-        shapeIconInfo.m_pColorProperty      = FindColorProperty(pRtti);
-        shapeIconInfo.m_pColorGammaProperty = FindColorGammaProperty(pRtti);
-
-        if (auto pCatAttribute = pRtti->GetAttributeByType<xiiCategoryAttribute>())
-        {
-          shapeIconInfo.m_FallbackColor = xiiColorScheme::GetCategoryColor(pCatAttribute->GetCategory(), xiiColorScheme::CategoryColorUsage::ViewportIcon);
-        }
+        shapeIconInfo.m_FallbackColor = xiiColorScheme::GetCategoryColor(pCatAttribute->GetCategory(), xiiColorScheme::CategoryColorUsage::ViewportIcon);
       }
-    });
+    }
+  });
 }
