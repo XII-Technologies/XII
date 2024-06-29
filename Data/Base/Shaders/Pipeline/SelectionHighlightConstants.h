@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../Common/Platforms.h"
 #include "../Common/ConstantBufferMacros.h"
+
+#include "../Common/Platforms.h"
 
 CONSTANT_BUFFER(xiiSelectionHighlightConstants, 3)
 {
   COLOR4F(HighlightColor);
   FLOAT1(OverlayOpacity);
 };
-

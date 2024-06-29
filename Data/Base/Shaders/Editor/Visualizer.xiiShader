@@ -27,13 +27,13 @@ RenderDataCategory = SimpleOpaque
 
 VS_OUT main(VS_IN Input)
 {
-	float4 worldSpacePos = mul(ObjectToWorldMatrix, float4(Input.Position, 1.0f));
+  float4 worldSpacePos = mul(ObjectToWorldMatrix, float4(Input.Position, 1.0f));
 
-	VS_OUT RetVal;
-	RetVal.Position = mul(GetWorldToScreenMatrix(), worldSpacePos);
-	RetVal.Color0 = GizmoColor;
+  VS_OUT RetVal;
+  RetVal.Position = mul(GetWorldToScreenMatrix(), worldSpacePos);
+  RetVal.Color0 = GizmoColor;
 
-	return RetVal;
+  return RetVal;
 }
 
 [PIXELSHADER]
@@ -46,7 +46,7 @@ VS_OUT main(VS_IN Input)
 float4 main(PS_IN Input) : SV_Target
 {
 #if (RENDER_PASS == RENDER_PASS_PICKING) || (RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
-	discard;
+  discard;
 #endif
 
   return Input.Color0;

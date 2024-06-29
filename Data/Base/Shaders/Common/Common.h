@@ -68,12 +68,12 @@ float GetLuminance(float3 color)
 
 float3 SrgbToLinear(float3 color)
 {
-  return select((color < 0.04045), (color / 12.92), pow(abs(color / 1.0549999999999999 + 0.052132699999999997), 2.3999999999999999));
+  return select(color < 0.04045, (color / 12.92), pow(color / 1.055 + 0.0521327, 2.4));
 }
 
 float3 LinearToSrgb(float3 color)
 {
-  return select((color < 0.0031308), (color * 12.92), (1.0549999999999999 * pow(color, 1. / 2.3999999999999999) - 0.055));
+  return select(color < 0.0031308, (color * 12.92), (1.055 * pow(color, 1.0 / 2.4) - 0.055));
 }
 
 float3 CubeMapDirection(float3 inDirection)
@@ -131,7 +131,7 @@ float3 Colorize(float3 baseColor, float3 color, float mask)
   return baseColor * lerp(1, 2 * color, mask);
 }
 
-// https://iquilxiiles.org/articles/smin/
+// https://iquilezles.org/articles/smin/
 float SmoothMin(float a, float b, float k = 0.1)
 {
   float h = max(k - abs(a - b), 0.0) / k;

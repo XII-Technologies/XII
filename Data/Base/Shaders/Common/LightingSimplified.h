@@ -1,16 +1,18 @@
 #pragma once
 
 #if SHADING_QUALITY != SHADING_QUALITY_SIMPLIFIED
-#error "Functions in LightDataSimplified.h are only for SIMPLIFIED shading quality. Include LightData.h instead."
+#  error "Functions in LightDataSimplified.h are only for SIMPLIFIED shading quality. Include LightData.h instead."
 #endif
 
-#include <Shaders/Common/GlobalConstants.h>
-#include <Shaders/Common/LightDataSimplified.h>
+// clang-format off
 #include <Shaders/Common/AmbientCubeBasis.h>
 #include <Shaders/Common/BRDF.h>
+#include <Shaders/Common/GlobalConstants.h>
+#include <Shaders/Common/LightDataSimplified.h>
+// clang-format on
 
 TextureCubeArray ReflectionSpecularTexture;
-Texture2D SkyIrradianceTexture;
+Texture2D        SkyIrradianceTexture;
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -41,8 +43,6 @@ float3 SampleSceneColor(float2 screenPosition)
 
 AccumulatedLight CalculateLightingSimplified(xiiMaterialData matData)
 {
-  float3 viewVector = normalize(GetCameraPosition() - matData.worldPosition);
-
   AccumulatedLight totalLight = InitializeLight(0.0f, 0.0f);
 
   float occlusion = matData.occlusion;

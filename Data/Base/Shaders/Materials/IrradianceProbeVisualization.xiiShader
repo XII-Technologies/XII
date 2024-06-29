@@ -45,10 +45,10 @@ float3 GetNormal()
 float3 GetDiffuseColor()
 {
   float3 normal = normalize(G.Input.Normal);
-  
+
   uint compressedSkyVisibility = asuint(GetInstanceData().Color.r);
   float skyVisibility = EvaluateCompressedSkyVisibility(compressedSkyVisibility, normal);
-  
+
   return SrgbToLinear(skyVisibility);
 }
 

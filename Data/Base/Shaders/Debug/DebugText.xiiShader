@@ -27,48 +27,54 @@ DepthWriteEnable = false
 
 struct GlyphData
 {
-	float2 topLeftCorner;
-	uint color;
-	uint glyphIndexAndSize;
+  float2 topLeftCorner;
+  uint color;
+  uint glyphIndexAndSize;
 };
 
 StructuredBuffer<GlyphData> glyphData;
 
 VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 {
-	float2 vertexPositions[6] =
-	{
-		float2(0.0, 0.0),
-		float2(1.0, 1.0),
-		float2(0.0, 1.0),
-		float2(0.0, 0.0),
-		float2(1.0, 0.0),
-		float2(1.0, 1.0),
-	};
+  float2 vertexPositions[6] =
+  {
+    float2(0.0, 0.0),
+    float2(1.0, 1.0),
+    float2(0.0, 1.0),
+    float2(0.0, 0.0),
+    float2(1.0, 0.0),
+    float2(1.0, 1.0),
+  };
 
-	uint index = VertexID / 6;
-	uint vertexIndex = VertexID % 6;
+  uint index = VertexID / 6;
+  uint vertexIndex = VertexID % 6;
 
-	GlyphData data = glyphData[index];
+  GlyphData data = glyphData[index];
 
-	float glyphIndex = float(data.glyphIndexAndSize & 0xFFFF);
-	float size = float((data.glyphIndexAndSize >> 16) & 0xFFFF);
+  float glyphIndex = float(data.glyphIndexAndSize & 0xFFFF);
+  float size = float((data.glyphIndexAndSize >> 16) & 0xFFFF);
 
-	float2 vertexPosition = vertexPositions[vertexIndex];
-	float2 positionInPixel = (vertexPosition * size + data.topLeftCorner);
-	float2 screenPosition = (positionInPixel * ViewportSize.zw) * float2(2.0, -2.0) + float2(-1.0, 1.0);
+  float2 vertexPosition = vertexPositions[vertexIndex];
+  float2 positionInPixel = (vertexPosition * size + data.topLeftCorner);
+  float2 screenPosition = (positionInPixel * ViewportSize.zw) * float2(2.0, -2.0) + float2(-1.0, 1.0);
 
-	float2 invAtlasSize = 1.0 / float2(16.0, 8.0);
-	float texCoordX = fmod( glyphIndex, 16.0 );
-	float texCoordY = floor( glyphIndex * invAtlasSize.x );
+  float2 invAtlasSize = 1.0 / float2(16.0, 8.0);
+  float texCoordX = fmod( glyphIndex, 16.0 );
+  float texCoordY = floor( glyphIndex * invAtlasSize.x );
 
-	VS_OUT RetVal;
-	RetVal.Position = float4(screenPosition, 0.0, 1.0);
-	RetVal.TexCoord0 = (float2(texCoordX, texCoordY) + vertexPosition) * invAtlasSize;
-	RetVal.Color0 = RGBA8ToFloat4(data.color);
-	RetVal.InstanceID = InstanceID;
-
-	return RetVal;
+  VS_OUT RetVal;
+  RetVal.Position = float4(screenPosition, 0.0, 1.0);
+  RetVal.TexCoord0 = (float2(texCoordX, texCoordY) + vertexPosition) * invAtlasSize;
+  RetVal.Color0 = RGBA8ToFloat4(data.color);
+  RetVal.InstanceID = InstanceID;
+#if defined(CAMERA_MODE)
+#  if CAMERA_MODE == CAMERA_MODE_STEREO
+#    if VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX == TRUE
+    RetVal.RenderTargetArrayIndex = InstanceID % 2;
+#    endif
+#  endif
+#endif
+  return RetVal;
 }
 
 [GEOMETRYSHADER]
@@ -90,5 +96,9 @@ SamplerState FontTexture_AutoSampler;
 
 float4 main(PS_IN Input) : SV_Target
 {
-	return FontTexture.Sample(FontTexture_AutoSampler, Input.TexCoord0.xy) * Input.Color0;
+  float glyph = FontTexture.Sample(FontTexture_AutoSampler, Input.TexCoord0.xy).r;
+  float c = saturate(glyph * 2.0 - 1.0); // 0.5 - 1 is color content
+  float a = saturate(glyph * 2.0); // 0 - 0.5 is alpha content
+
+  return float4(c, c, c, a) * Input.Color0;
 }

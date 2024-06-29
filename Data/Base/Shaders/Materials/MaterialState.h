@@ -45,34 +45,34 @@ ComparisonDepthFunction = ComparisonFunction_LessEqual
   #if BLEND_MODE == BLEND_MODE_TRANSPARENT
     BlendEnable0 = true
     BlendOperation0 = BlendOperation_Add
-    SourceBlend0 = BlendFactor_SourceAlpha
     DestinationBlend0 = BlendFactor_InverseSourceAlpha
+    SourceBlend0 = BlendFactor_SourceAlpha
     DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 
   #elif BLEND_MODE == BLEND_MODE_ADDITIVE
     BlendEnable0 = true
     BlendOperation0 = BlendOperation_Add
-    SourceBlend0 = BlendFactor_SourceAlpha
     DestinationBlend0 = BlendFactor_One
-    SourceBlendAlpha0 = BlendFactor_Zero
+    SourceBlend0 = BlendFactor_SourceAlpha
     DestinationBlendAlpha0 = BlendFactor_One
+    SourceBlendAlpha0 = BlendFactor_Zero
 
   #elif BLEND_MODE == BLEND_MODE_MODULATE
     BlendEnable0 = true
     BlendOperation0 = BlendOperation_Add
-    SourceBlend0 = BlendFactor_Zero
     DestinationBlend0 = BlendFactor_SourceColor
-    SourceBlendAlpha0 = BlendFactor_Zero
+    SourceBlend0 = BlendFactor_Zero
     DestinationBlendAlpha0 = BlendFactor_One
+    SourceBlendAlpha0 = BlendFactor_Zero
   #endif
 
 #endif
 
-#if (RENDER_PASS == RENDER_PASS_EDITOR 				    /* disable blending for all editor debug render modes*/\
-	|| RENDER_PASS == RENDER_PASS_PICKING 			    /* for transparent objects to be pickable*/\
-	|| RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME /* for transparent objects to be pickable*/\
-	|| RENDER_PASS == RENDER_PASS_DEPTH_ONLY 		    /* for transparent objects to have a selection outline */\
-	)
+#if (RENDER_PASS == RENDER_PASS_EDITOR            /* disable blending for all editor debug render modes*/\
+  || RENDER_PASS == RENDER_PASS_PICKING           /* for transparent objects to be pickable*/\
+  || RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME /* for transparent objects to be pickable*/\
+  || RENDER_PASS == RENDER_PASS_DEPTH_ONLY        /* for transparent objects to have a selection outline */\
+  )
 
   BlendEnable0 = false
   DepthWriteEnable = true

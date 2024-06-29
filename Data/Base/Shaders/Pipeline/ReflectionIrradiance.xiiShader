@@ -37,22 +37,22 @@ void main(uint DispatchId : SV_DispatchThreadID)
 {
   uint totalNumSamples = NUM_THREADS * NUM_SAMPLES_PER_THREAD;
   float weight = (4.0f * PI) / totalNumSamples;
-  
+
   AmbientCubeFloat3 localAC = (AmbientCubeFloat3)0;
-  
+
   for (uint sampleIndex = 0; sampleIndex < NUM_SAMPLES_PER_THREAD; ++sampleIndex)
   {
     float3 dir = FibonacciSphere(DispatchId * NUM_SAMPLES_PER_THREAD + sampleIndex, totalNumSamples);
-    
-    float3 inputColor = InputCubemap.SampleLevel(LinearSampler, CubeMapDirection(dir), LodLevel).rgb;    
-    
+
+    float3 inputColor = InputCubemap.SampleLevel(LinearSampler, CubeMapDirection(dir), LodLevel).rgb;
+
     AddSampleToAmbientCube(localAC, inputColor, dir, weight);
-  }  
-  
+  }
+
   SharedACs[DispatchId] = localAC;
-  
+
   GroupMemoryBarrierWithGroupSync();
-  
+
   if (DispatchId == 0)
   {
     // TODO: proper parallel reduction
@@ -60,14 +60,14 @@ void main(uint DispatchId : SV_DispatchThreadID)
     {
       AddAmbientCube(localAC, SharedACs[threadIndex]);
     }
-    
+
     // Apply intensity, saturation and write out
     for (uint i = 0; i < AMBIENT_CUBE_NUM_DIRS; ++i)
     {
       float3 color = localAC.m_Values[i];
       float luminance = GetLuminance(color);
       color = lerp(luminance, color, Saturation) * Intensity;
-      
+
       IrradianceOutput[uint2(i, OutputIndex)] = float4(color, 1);
     }
   }

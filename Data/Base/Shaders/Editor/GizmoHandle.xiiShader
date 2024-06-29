@@ -7,7 +7,7 @@ RENDER_PASS
 GIZMO_CONSTANT_SIZE
 PREPARE_DEPTH
 CAMERA_MODE
-VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
+VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX = TRUE
 GIZMO_FACE_CAMERA
 
 [RENDERSTATE]
@@ -19,21 +19,23 @@ GIZMO_FACE_CAMERA
 #endif
 
 #if PREPARE_DEPTH == TRUE
-	DepthEnable = true
-	DepthWriteEnable = true
-	ComparisonDepthFunction = ComparisonFunction_Greater
+  DepthEnable = true
+  DepthWriteEnable = true
+  ComparisonDepthFunction = ComparisonFunction_Greater
+
 #else
-	DepthEnable = true
-	DepthWriteEnable = true
-	ComparisonDepthFunction = ComparisonFunction_LessEqual
+  DepthEnable = true
+  DepthWriteEnable = true
+  ComparisonDepthFunction = ComparisonFunction_LessEqual
+
 #endif
 
 #if !PREPARE_DEPTH && RENDER_PASS == RENDER_PASS_FORWARD
-	BlendEnable0 = true
-	BlendOperation0 = BlendOperation_Add
-	DestinationBlend0 = BlendFactor_InverseSourceAlpha
-	SourceBlend0 = BlendFactor_SourceAlpha
-	DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
+  BlendEnable0 = true
+  BlendOperation0 = BlendOperation_Add
+  DestinationBlend0 = BlendFactor_InverseSourceAlpha
+  SourceBlend0 = BlendFactor_SourceAlpha
+  DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 #endif
 
 [MATERIALCONFIG]
@@ -51,45 +53,45 @@ RenderDataCategory = SimpleForeground
 
 VS_OUT main(VS_IN Input)
 {
-	float3 centerPosition = mul(ObjectToWorldMatrix, float4(0, 0, 0, 1)).xyz;
+  float3 centerPosition = mul(ObjectToWorldMatrix, float4(0, 0, 0, 1)).xyz;
 
-	#if GIZMO_CONSTANT_SIZE == 1
-		#if CAMERA_MODE == CAMERA_MODE_ORTHO
-			// TODO: not sure how to compensate for constant size
-			float scale = 1.0f;
-		#else
-			float scale = length(centerPosition - GetCameraPosition()) * GizmoScale;
+  #if GIZMO_CONSTANT_SIZE == 1
+    #if CAMERA_MODE == CAMERA_MODE_ORTHO
+      // TODO: not sure how to compensate for constant size
+      float scale = 1.0f;
+    #else
+      float scale = length(centerPosition - GetCameraPosition()) * GizmoScale;
 
-		#endif
-	#else
-		float scale = 1.0f;
-	#endif
+    #endif
+  #else
+    float scale = 1.0f;
+  #endif
 
-	float expand = 0.0;
+  float expand = 0.0;
 #if (RENDER_PASS == RENDER_PASS_PICKING) || (RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
-	expand = 0.04;
+  expand = 0.04;
 #endif
 
-	float3 inpos = Input.Position.xyz + (Input.Normal.xyz * 2 - 1) * expand;
+  float3 inpos = Input.Position.xyz + (Input.Normal.xyz * 2 - 1) * expand;
 
-	#if GIZMO_FACE_CAMERA == 1
-		float3 localCamPos = mul(WorldToObjectMatrix, float4(GetCameraPosition().xyz, 1)).xyz;
-		if (localCamPos.x < 0)
-			inpos.x = -inpos.x;
-		if (localCamPos.y < 0)
-			inpos.y = -inpos.y;
-		if (localCamPos.z < 0)
-			inpos.z = -inpos.z;
-	#endif
+  #if GIZMO_FACE_CAMERA == 1
+    float3 localCamPos = mul(WorldToObjectMatrix, float4(GetCameraPosition().xyz, 1)).xyz;
+    if (localCamPos.x < 0)
+      inpos.x = -inpos.x;
+    if (localCamPos.y < 0)
+      inpos.y = -inpos.y;
+    if (localCamPos.z < 0)
+      inpos.z = -inpos.z;
+  #endif
 
-	float4 worldSpacePos = mul(ObjectToWorldMatrix, float4(inpos * scale, 1.0f));
+  float4 worldSpacePos = mul(ObjectToWorldMatrix, float4(inpos * scale, 1.0f));
 
-	VS_OUT RetVal;
-	RetVal.Position = mul(GetWorldToScreenMatrix(), worldSpacePos);
-	RetVal.Color0 = GizmoColor;
-	RetVal.Normal = float3(0, 1, 0);
+  VS_OUT RetVal;
+  RetVal.Position = mul(GetWorldToScreenMatrix(), worldSpacePos);
+  RetVal.Color0 = GizmoColor;
+  RetVal.Normal = float3(0, 1, 0);
 
-	return RetVal;
+  return RetVal;
 }
 
 [PIXELSHADER]
@@ -104,14 +106,14 @@ VS_OUT main(VS_IN Input)
 float4 main(PS_IN Input) : SV_Target
 {
 #if PREPARE_DEPTH == 1
-	return float4(0, 0, 0, 1);
+  return float4(0, 0, 0, 1);
 #else
 
-	#if (RENDER_PASS == RENDER_PASS_PICKING) || (RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
-		return RGBA8ToFloat4(GameObjectID);
-	#else
-		return Input.Color0;
-	#endif
+  #if (RENDER_PASS == RENDER_PASS_PICKING) || (RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
+    return RGBA8ToFloat4(GameObjectID);
+  #else
+    return Input.Color0;
+  #endif
 
 #endif
 }

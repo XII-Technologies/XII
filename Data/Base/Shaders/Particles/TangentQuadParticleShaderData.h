@@ -21,7 +21,6 @@ StructuredBuffer<xiiTangentQuadParticleShaderData> particleTangentQuadData;
 
 #else // C++
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiTangentQuadParticleShaderData) == 48);
+static_assert(sizeof(xiiTangentQuadParticleShaderData) == 48);
 
 #endif
-

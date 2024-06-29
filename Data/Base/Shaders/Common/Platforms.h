@@ -2,7 +2,10 @@
 
 #include "StandardMacros.h"
 
-#define PLATFORM_SHADER XII_OFF
+#ifndef PLATFORM_SHADER
+#  define PLATFORM_SHADER XII_OFF
+#endif
+
 #define PLATFORM_VULKAN XII_OFF
 #define PLATFORM_D3D12  XII_OFF
 #define PLATFORM_D3D11  XII_OFF
@@ -15,6 +18,12 @@
 
 #  undef PLATFORM_D3D11
 #  define PLATFORM_D3D11 XII_ON
+
+// D3D11 does not support push constants, so we just emulate them via a normal constant buffer.
+
+#  define BEGIN_PUSH_CONSTANTS(Name)        cbuffer Name
+#  define END_PUSH_CONSTANTS(Name)          ;
+#  define GET_PUSH_CONSTANT(Name, Constant) Constant
 
 float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
@@ -51,7 +60,7 @@ float4 select(bool4 condition, float4 yes, float4 no)
 }
 #endif
 
-#if defined(D3D_SM51) || defined(D3D_SM60) || defined(D3D_SM61) || defined(D3D_SM61) || defined(D3D_SM63) || defined(D3D_SM64) || defined(D3D_SM65) || defined(D3D_SM66)
+#if defined(D3D_SM51) || defined(D3D_SM60) || defined(D3D_SM61) || defined(D3D_SM61) || defined(D3D_SM63) || defined(D3D_SM64) || defined(D3D_SM65) || defined(D3D_SM66) || defined(D3D_SM67)
 
 #  undef PLATFORM_SHADER
 #  define PLATFORM_SHADER XII_ON
@@ -83,7 +92,7 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 }
 #endif
 
-#if defined(VK_SM60) || defined(VK_SM61) || defined(VK_SM62) || defined(VK_SM63) || defined(VK_SM64) || defined(VK_SM65) || defined(VK_SM66)
+#if defined(VK_SM60) || defined(VK_SM61) || defined(VK_SM62) || defined(VK_SM63) || defined(VK_SM64) || defined(VK_SM65) || defined(VK_SM66) || defined(VK_SM67)
 
 #  undef PLATFORM_SHADER
 #  define PLATFORM_SHADER XII_ON
@@ -91,10 +100,10 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 #  undef PLATFORM_VULKAN
 #  define PLATFORM_VULKAN XII_ON
 
-#  define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT XII_CONCAT(Name, _PushConstants)
+#  define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT XII_PP_CONCAT(Name, _PushConstants)
 #  define END_PUSH_CONSTANTS(Name) \
     ;                              \
-    [[vk::push_constant]] XII_CONCAT(Name, _PushConstants) Name;
+    [[vk::push_constant]] XII_PP_CONCAT(Name, _PushConstants) Name;
 #  define GET_PUSH_CONSTANT(Name, Constant) Name.Constant
 
 // GetRenderTargetSamplePosition does not have an equivalent function in Vulkan so these values are hard-coded.

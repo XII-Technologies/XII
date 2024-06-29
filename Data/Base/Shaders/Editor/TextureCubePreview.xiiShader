@@ -31,7 +31,7 @@ VS_OUT main(VS_IN Input)
 
 CONSTANT_BUFFER(xiiMaterialConstants, 1)
 {
-	INT1(ShowChannelMode);
+  INT1(ShowChannelMode);
   FLOAT1(LodLevel);
   BOOL1(IsLinear);
 };
@@ -48,7 +48,7 @@ float4 SampleTexture(PS_IN Input)
 {
   float3 normal = normalize(Input.Normal);
   float3 viewDir = normalize(Input.WorldPosition - GetCameraPosition());
-  
+
   // I find this simple lookup way more useful than the reflected, distorted thing below
   // especially with alpha cut-outs, the reflected thing is completely unusable
   float3 dir = CubeMapDirection(normal);
