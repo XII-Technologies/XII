@@ -21,8 +21,9 @@ jobs:
       - name: Checkout Doxygen css
         uses: actions/checkout@v4
         with:
-          repository: jothepro/doxygen-awesome-css.git
+          repository: jothepro/doxygen-awesome-css
           path: Documentation/ThirdParty
+          fetch-depth: 1
 
       - name: Run Doxygen
         run: |
