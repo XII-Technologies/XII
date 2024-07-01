@@ -18,6 +18,12 @@ jobs:
           sudo apt-get install -y graphviz
           sudo apt-get install -y doxygen
 
+      - name: Checkout Doxygen css
+        uses: actions/checkout@v4
+        with:
+          repository: jothepro/doxygen-awesome-css.git
+          path: Documentation/ThirdParty
+
       - name: Run Doxygen
         run: |
           mkdir Output
