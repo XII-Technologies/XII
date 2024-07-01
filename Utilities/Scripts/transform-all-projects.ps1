@@ -5,9 +5,9 @@ Write-Host "Using $appPath"
 
 # Transform all assets
 Get-ChildItem -Path $PSScriptRoot\..\..\. -Filter xiiProject -Recurse -File | ForEach-Object {
-    $projectDir = $_.Directory.FullName
-    
-    Write-Host "Transforming: -project $projectDir -transform PC"
+  $projectDir = $_.Directory.FullName
 
-    & $appPath -project $projectDir -transform PC | Out-Null
+  Write-Host "Transforming: -project $projectDir -transform PC"
+
+  & $appPath -project $projectDir -transform PC | Out-Null
 }

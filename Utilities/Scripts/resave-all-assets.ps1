@@ -5,9 +5,9 @@ $appPath = Find-EditorProcessor
 
 # Re-save all assets
 Get-ChildItem -Path $PSScriptRoot\..\..\. -Filter xiiProject -Recurse -File | ForEach-Object {
-    $projectDir = $_.Directory.FullName
-    
-    "Re-saving assets in project $projectDir"
+  $projectDir = $_.Directory.FullName
 
-    & $appPath -project $projectDir -resave | Out-Null
+  "Re-saving assets in project $projectDir"
+
+  & $appPath -project $projectDir -resave | Out-Null
 }

@@ -5,10 +5,10 @@ on:
     - cron: '0 6 * * *' # run at 12 AM UTC [6 PM Mountain Time (Previous Day)]
 
 env:
-    FULL_BINARIES_ARTIFACT: false # Create full binaries artifact
-    RELEASE_ARTIFACT: true # Create release artifact
-    TRANSFORM_PROJECTS: false # Transform projects
-    COMPILE_SHADERS: false # Compile Shaders
+  FULL_BINARIES_ARTIFACT: false # Create full binaries artifact
+  RELEASE_ARTIFACT: true        # Create release artifact
+  TRANSFORM_PROJECTS: true      # Transform projects
+  COMPILE_SHADERS: true         # Compile Shaders
 
 jobs:
   build:
@@ -32,7 +32,7 @@ jobs:
         run: echo "SDK Version is ${{ steps.sdk-version.outputs.content }}"
 
       - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@v2
 
       - name: Run CMake
         run: |
@@ -43,26 +43,24 @@ jobs:
 
       - name: Artifact - Full Binaries
         if: env.FULL_BINARIES_ARTIFACT == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: full-binaries
           path: repo\Output\Bin\WinVs2022Dev64
-          retention-days: 3
+          retention-days: 1
 
       - name: Remove Unwanted Files
         run: |
           Get-ChildItem * -Include *.pdb -Recurse | Remove-Item
+          Get-ChildItem repo\Data\Samples\* -Include Build -Recurse | Remove-Item -Recurse -Force
 
           rm -r -fo repo\Data\Platform
           rm -r -fo repo\Data\UnitTests
 
-        #rm -r -fo repo\Output\lib
-        #rm -r -fo repo\Data\Tools\Precompiled
-
       - name: Compile Shaders
         if: env.COMPILE_SHADERS == 'true'
         run: |
-          repo\Output\Bin\WinVs2019Dev64\ShaderCompilerTool.exe -project repo\Data\Base -shader "Shaders" -IgnoreErrors
+          repo\Output\Bin\WinVs2022Dev64\xiiShaderCompilerTool.exe -project repo\Data\Base -shader "Shaders" -platform D3D_SM50 -IgnoreErrors
 
       - name: Transform All Projects
         if: env.TRANSFORM_PROJECTS == 'true'
@@ -75,6 +73,8 @@ jobs:
           mkdir _package\Output
           mkdir _package\Data
           mkdir _package\Source
+          copy repo\version.txt _package
+          copy repo\xiiCMakeConfig.cmake _package
           xcopy repo\Output _package\Output /s
           xcopy repo\Data _package\Data /s
           xcopy repo\Source _package\Source /s
@@ -85,8 +85,8 @@ jobs:
 
       - name: Artifact - Release Package
         if: env.RELEASE_ARTIFACT == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: XII.Release.${{ steps.sdk-version.outputs.content }}
           path: XII.Release.${{ steps.sdk-version.outputs.content }}.zip
-          retention-days: 7
+          retention-days: 1
