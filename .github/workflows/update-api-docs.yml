@@ -16,7 +16,13 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y graphviz
-          sudo apt-get install -y doxygen
+          mkdir Documentation/ThirdParty/
+          wget https://github.com/doxygen/doxygen/releases/download/Release_1_11_0/doxygen-1.11.0.linux.bin.tar.gz -P Documentation/ThirdParty/
+          cd Documentation/ThirdParty
+          tar -xzf doxygen-1.11.0.linux.bin.tar.gz
+          cd doxygen-1.11.0
+          sudo make install
+          cd ../../../
 
       - name: Checkout Doxygen css
         uses: actions/checkout@v4
