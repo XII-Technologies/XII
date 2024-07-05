@@ -31,7 +31,7 @@ float3x3 TransformToRotation(Transform t)
 }
 
 #  define CONSTANT_BUFFER(Name, Slot)             cbuffer Name : register(b##Slot)
-#  define CONSTANT_BUFFER_SPACE(Name, Slot, Set)  cbuffer Name : register(b##Slot, space##Set)
+#  define CONSTANT_BUFFER2(Name, Slot, Set)       cbuffer Name : register(b##Slot, space##Set)
 #  define STRUCTURED_BUFFER(Name, Type)           StructuredBuffer<Type> Name
 #  define FLOAT1(Name)                            float Name
 #  define FLOAT2(Name)                            float2 Name
@@ -52,14 +52,14 @@ float3x3 TransformToRotation(Transform t)
 #  define COLOR4UB(Name)                          uint Name
 #  define BOOL1(Name)                             bool Name
 #  define PACKEDHALF2(Name1, Name2, CombinedName) uint CombinedName
-#  define PACKEDCOLOR4H(Name)  \
-    uint XII_CONCAT(Name, RG); \
-    uint XII_CONCAT(Name, GB)
+#  define PACKEDCOLOR4H(Name)     \
+    uint XII_PP_CONCAT(Name, RG); \
+    uint XII_PP_CONCAT(Name, GB)
 
 #  define UNPACKHALF2(Name1, Name2, CombinedName) \
     float Name1 = f16tof32(CombinedName);         \
     float Name2 = f16tof32(CombinedName >> 16)
-#  define UNPACKCOLOR4H(Name) RGBA16FToFloat4(XII_CONCAT(Name, RG), XII_CONCAT(Name, GB))
+#  define UNPACKCOLOR4H(Name) RGBA16FToFloat4(XII_PP_CONCAT(Name, RG), XII_PP_CONCAT(Name, GB))
 
 #else
 
@@ -68,9 +68,9 @@ float3x3 TransformToRotation(Transform t)
 #  include <Foundation/Basics/Platform/Common.h>
 #  include <GraphicsFoundation/Shader/Types.h>
 
-#  define XII_SHADER_STRUCT                      alignas(16)
-#  define CONSTANT_BUFFER(Name, Slot)            struct alignas(16) Name
-#  define CONSTANT_BUFFER_SPACE(Name, Slot, Set) struct alignas(16) Name
+#  define XII_SHADER_STRUCT                 alignas(16)
+#  define CONSTANT_BUFFER(Name, Slot)       struct alignas(16) Name
+#  define CONSTANT_BUFFER2(Name, Slot, Set) struct alignas(16) Name
 #  define STRUCTURED_BUFFER(Name, Type)
 #  define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT Name
 #  define END_PUSH_CONSTANTS(Name)   ;

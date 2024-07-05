@@ -57,7 +57,7 @@ PS_OUT main(PS_IN Input)
 #  endif
 #endif
 
-  xiiMaterialData matData = FillMaterialData();
+  xiiMaterialData matData      = FillMaterialData();
   uint            gameObjectId = GetInstanceData().GameObjectID;
 
 #if SHADING_MODE == SHADING_MODE_LIT
@@ -69,9 +69,9 @@ PS_OUT main(PS_IN Input)
   float3 litColor = light.diffuseLight + light.specularLight;
   litColor += matData.emissiveColor;
 
-  #if RENDER_PASS == RENDER_PASS_FORWARD
+#if RENDER_PASS == RENDER_PASS_FORWARD
 
-    Output.Color = float4(litColor, matData.opacity);
+  Output.Color = float4(litColor, matData.opacity);
 
 #elif RENDER_PASS == RENDER_PASS_EDITOR
   Output.Color           = float4(litColor, matData.opacity);
@@ -86,5 +86,5 @@ PS_OUT main(PS_IN Input)
 #  error "RENDER_PASS uses undefined value."
 #endif
 
-    return Output;
+  return Output;
 }

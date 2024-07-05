@@ -45,7 +45,7 @@ struct VS_IN
 
 #if defined(USE_SKINNING)
   float4 BoneWeights : BONEWEIGHTS0;
-  uint4 BoneIndices : BONEINDICES0;
+  uint4  BoneIndices : BONEINDICES0;
 #endif
 
   uint InstanceID : SV_InstanceID;
@@ -91,4 +91,4 @@ struct VS_IN
 #  undef STAGE_TEMPLATE
 #endif
 
-//typedef VS_OUT PS_IN;
+// typedef VS_OUT PS_IN;

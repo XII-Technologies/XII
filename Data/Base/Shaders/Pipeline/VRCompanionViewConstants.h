@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../Common/Platforms.h"
 #include "../Common/ConstantBufferMacros.h"
+
+#include "../Common/Platforms.h"
 
 CONSTANT_BUFFER(xiiVRCompanionViewConstants, 2)
 {

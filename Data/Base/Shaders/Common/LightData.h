@@ -1,12 +1,13 @@
 #pragma once
 
+// clang-format off
+
 #if SHADING_QUALITY != SHADING_QUALITY_NORMAL
 #  error "Functions in LightData.h are only for NORMAL shading quality. Todo: Split up file"
 #endif
 
-#include "Platforms.h"
-
 #include "ConstantBufferMacros.h"
+#include "Platforms.h"
 
 #define LIGHT_TYPE_POINT 0
 #define LIGHT_TYPE_SPOT  1
@@ -25,14 +26,13 @@ struct XII_SHADER_STRUCT xiiPerLightData
   UINT1(spotParams);           // scale and offset as 16 bit floats
   UINT1(projectorAtlasOffset); // xy as 16 bit floats
   UINT1(projectorAtlasScale);  // xy as 16 bit floats
-
-  UINT1(reserved);
+  FLOAT1(specularMultiplier);
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
 StructuredBuffer<xiiPerLightData> perLightDataBuffer;
 #else
-XII_CHECK_AT_COMPILETIME(sizeof(xiiPerLightData) == 48);
+static_assert(sizeof(xiiPerLightData) == 48);
 #endif
 
 struct XII_SHADER_STRUCT xiiPointShadowData
@@ -50,10 +50,10 @@ struct XII_SHADER_STRUCT xiiSpotShadowData
 
 struct XII_SHADER_STRUCT xiiDirShadowData
 {
-  FLOAT4(shadowParams); // x = slope bias, y = constant bias, z = penumbra size in texel, w = num cascades
+  FLOAT4(shadowParams); // x = slope bias, y = constant bias, z = penumbra size in texel, w = last cascade index
   MAT4(worldToLightMatrix);
   FLOAT4(shadowParams2); // x = cascade border threshold, y = xy dither multiplier, z = z dither multiplier, w = penumbra size increment
-  FLOAT4(fadeOutParams); // x = xy fadeout scale, y = xy fadeout offset, z = z fadeout scale, w = z fadeout offset
+  FLOAT4(fadeOutParams); // x = xy fadeout scale offset (fp16), y = z fadeout scale offset (fp16), z = distance fadeout scale, w = distance fadeout offset
   FLOAT4(cascadeScaleOffset)
   [6]; // interleaved, maxNumCascades - 1 since first cascade has identity scale and offset
   FLOAT4(atlasScaleOffset)
@@ -104,7 +104,7 @@ struct XII_SHADER_STRUCT xiiPerDecalData
 #if XII_ENABLED(PLATFORM_SHADER)
 StructuredBuffer<xiiPerDecalData> perDecalDataBuffer;
 #else // C++
-XII_CHECK_AT_COMPILETIME(sizeof(xiiPerDecalData) == 96);
+static_assert(sizeof(xiiPerDecalData) == 96);
 #endif
 
 #define REFLECTION_PROBE_IS_SPHERE        (1 << 31)
@@ -130,7 +130,7 @@ struct XII_SHADER_STRUCT xiiPerReflectionProbeData
 #if XII_ENABLED(PLATFORM_SHADER)
 StructuredBuffer<xiiPerReflectionProbeData> perPerReflectionProbeDataBuffer;
 #else // C++
-XII_CHECK_AT_COMPILETIME(sizeof(xiiPerReflectionProbeData) == 160);
+static_assert(sizeof(xiiPerReflectionProbeData) == 160);
 #endif
 
 CONSTANT_BUFFER(xiiClusteredDataConstants, 3)
@@ -179,3 +179,5 @@ struct xiiPerClusterData
 StructuredBuffer<xiiPerClusterData> perClusterDataBuffer;
 StructuredBuffer<uint>              clusterItemBuffer;
 #endif
+
+// clang-format on

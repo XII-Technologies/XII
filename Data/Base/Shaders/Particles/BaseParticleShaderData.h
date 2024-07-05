@@ -6,7 +6,7 @@ struct XII_SHADER_STRUCT xiiBaseParticleShaderData
 {
   PACKEDCOLOR4H(Color);
   PACKEDHALF2(Life, Size, LifeAndSize); // Life: 1 to 0
-  UINT1(Variation); // only lower 8 bit
+  UINT1(Variation);                     // only lower 8 bit
 };
 
 // this is only defined during shader compilation
@@ -16,7 +16,6 @@ StructuredBuffer<xiiBaseParticleShaderData> particleBaseData;
 
 #else // C++
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiBaseParticleShaderData) == 16);
+static_assert(sizeof(xiiBaseParticleShaderData) == 16);
 
 #endif
-

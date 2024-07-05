@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Platforms.h"
-
 #include "ConstantBufferMacros.h"
+#include "Platforms.h"
 
 struct XII_SHADER_STRUCT xiiPerInstanceData
 {
@@ -29,7 +28,7 @@ Buffer<uint> perInstanceVertexColors;
 
 XII_DEFINE_AS_POD_TYPE(xiiPerInstanceData);
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiPerInstanceData) == 128);
+static_assert(sizeof(xiiPerInstanceData) == 128);
 #endif
 
 CONSTANT_BUFFER(xiiObjectConstants, 2)

@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload Patch File
         if: ${{ steps.lint_files.outputs.push == 'true' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ClangTidyPatch
           path: ${{github.workspace}}/clangTidy.patch

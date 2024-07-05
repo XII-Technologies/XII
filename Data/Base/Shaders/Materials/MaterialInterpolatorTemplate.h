@@ -50,7 +50,7 @@ struct STAGE_TEMPLATE
 
 #if defined(PIXEL_SHADER) && defined(TWO_SIDED)
 #  if TWO_SIDED == TRUE
-#    ifdef VULKAN
+#    ifdef PLATFORM_VULKAN
   // uint type is not supported by DXC/SPIR-V for SV_IsFrontFace
   bool FrontFace : SV_IsFrontFace;
 #    else

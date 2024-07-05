@@ -31,7 +31,7 @@ VS_OUT main(VS_IN Input)
 
 CONSTANT_BUFFER(xiiMaterialConstants, 1)
 {
-	INT1(ShowChannelMode);
+  INT1(ShowChannelMode);
   FLOAT1(LodLevel);
   BOOL1(IsLinear);
 };

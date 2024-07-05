@@ -41,7 +41,7 @@ jobs:
         run: echo "SDK Version is ${{ steps.sdk-version.outputs.content }}"
 
       - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@v2
 
       - name: Run CMake
         run: |
@@ -52,7 +52,7 @@ jobs:
 
       - name: Artifact - Full Binaries
         if: github.event.inputs.full-binaries-artifact == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: full-binaries
           path: repo\Output\Bin\WinVs2022Dev64
@@ -61,7 +61,7 @@ jobs:
       - name: Compile Shaders
         if: github.event.inputs.compile-shaders == 'true'
         run: |
-          repo\Output\Bin\WinVs2022Dev64\ShaderCompilerTool.exe -project repo\Data\Base -shader "Shaders" -IgnoreErrors
+          repo\Output\Bin\WinVs2022Dev64\ShaderCompilerTool.exe -project repo\Data\Base -shader "Shaders" -platform D3D_SM50 -IgnoreErrors
 
       - name: Transform All Projects
         if: github.event.inputs.transform-projects == 'true'
@@ -93,7 +93,7 @@ jobs:
 
       - name: Artifact - Release Package
         if: github.event.inputs.release-artifact == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: XII-Engine.Release.${{ steps.sdk-version.outputs.content }}
           path: XII-Engine.Release.${{ steps.sdk-version.outputs.content }}.zip

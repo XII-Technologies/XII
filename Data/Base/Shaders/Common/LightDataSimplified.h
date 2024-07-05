@@ -4,9 +4,9 @@
 #  error "Functions in LightDataSimplified.h are only for SIMPLIFIED shading quality. Include LightData.h instead."
 #endif
 
-#include "Platforms.h"
-
 #include "ConstantBufferMacros.h"
+
+#include "Platforms.h"
 
 CONSTANT_BUFFER(xiiSimplifiedDataConstants, 3)
 {

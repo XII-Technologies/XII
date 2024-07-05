@@ -26,8 +26,8 @@ DepthWriteEnable = true
 
 struct BoxData
 {
-	Transform transform;
-	float4 color;
+  Transform transform;
+  float4 color;
 };
 
 StructuredBuffer<BoxData> boxData;
@@ -81,4 +81,3 @@ float4 main(PS_IN Input) : SV_Target
 {
   return Input.Color0;
 }
-
