@@ -12,7 +12,7 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListVulkan();
 
@@ -20,6 +20,8 @@ protected:
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
+
+  virtual xiiUInt64 SubmitPlatform(bool bReset) override final;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
@@ -76,6 +78,8 @@ protected:
   virtual void FlushPlatform() override final;
 
   virtual void InvalidateStatePlatform() override final;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 };
 
 #include <GraphicsVulkan/CommandEncoder/Implementation/CommandListVulkan_inl.h>

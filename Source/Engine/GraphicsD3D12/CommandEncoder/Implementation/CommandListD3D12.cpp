@@ -1,10 +1,11 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
+#include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 
-xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D12, creationDescription)
+xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALCommandQueueD3D12* pCommandQueueD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceD3D12, pCommandQueueD3D12, creationDescription)
 {
 }
 
@@ -20,6 +21,11 @@ void xiiGALCommandListD3D12::EndPlatform()
 
 void xiiGALCommandListD3D12::ResetPlatform()
 {
+}
+
+xiiUInt64 xiiGALCommandListD3D12::SubmitPlatform(bool bReset)
+{
+  return xiiUInt64();
 }
 
 void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -200,6 +206,10 @@ void xiiGALCommandListD3D12::FlushPlatform()
 }
 
 void xiiGALCommandListD3D12::InvalidateStatePlatform()
+{
+}
+
+void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName)
 {
 }
 

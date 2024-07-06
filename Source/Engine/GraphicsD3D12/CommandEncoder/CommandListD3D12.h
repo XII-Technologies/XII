@@ -12,7 +12,7 @@ protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALCommandQueueD3D12* pCommandQueueD3D12, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListD3D12();
 
@@ -20,6 +20,8 @@ protected:
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
+
+  virtual xiiUInt64 SubmitPlatform(bool bReset) override final;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
@@ -76,6 +78,8 @@ protected:
   virtual void FlushPlatform() override final;
 
   virtual void InvalidateStatePlatform() override final;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 };
 
 #include <GraphicsD3D12/CommandEncoder/Implementation/CommandListD3D12_inl.h>
