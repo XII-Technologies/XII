@@ -8,7 +8,7 @@ env:
   FULL_BINARIES_ARTIFACT: false # Create full binaries artifact
   RELEASE_ARTIFACT: true        # Create release artifact
   TRANSFORM_PROJECTS: true      # Transform projects
-  COMPILE_SHADERS: true         # Compile Shaders
+  COMPILE_SHADERS: false        # Compile Shaders
 
 jobs:
   build:
