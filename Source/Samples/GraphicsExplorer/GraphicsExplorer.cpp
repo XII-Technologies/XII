@@ -1,8 +1,6 @@
 #include <Foundation/Application/Application.h>
 #include <Foundation/Types/UniquePtr.h>
 
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
-
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
@@ -164,8 +162,12 @@ public:
         clearValue1.m_DepthStencil.m_fDepth    = 1.0f;
         clearValue1.m_DepthStencil.m_uiStencil = 0U;
 
-        auto& clearValue2        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        clearValue2.m_ClearColor = xiiColor::Blue;
+        float fGlobalTime          = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+        auto& clearValue2          = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+        clearValue2.m_ClearColor.r = tanf(fGlobalTime);
+        clearValue2.m_ClearColor.g = sinf(fGlobalTime);
+        clearValue2.m_ClearColor.b = cosf(fGlobalTime);
+        clearValue2.m_ClearColor.r = 1.0f;
 
         pCommandList->BeginRenderPass(beginRenderPass);
         pCommandList->EndRenderPass();
