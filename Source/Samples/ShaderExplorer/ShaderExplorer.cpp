@@ -166,9 +166,8 @@ public:
     // Perform rendering
     {
       // Before starting to render in a frame call this function
+      m_pDevice->EnqueueFrameSwapChain(m_hSwapChain);
       m_pDevice->BeginFrame();
-
-      m_pDevice->BeginPipeline("ShaderExplorer", m_hSwapChain);
 
       // Must always retrieve the current swapchain render target
       const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
@@ -199,8 +198,6 @@ public:
       xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
       xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
       xiiRenderContext::GetDefaultInstance()->EndRendering();
-
-      m_pDevice->EndPipeline(m_hSwapChain);
 
       m_pDevice->EndFrame();
 

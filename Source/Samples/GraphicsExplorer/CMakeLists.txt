@@ -15,3 +15,7 @@ add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                            ${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Data/Samples/GraphicsExplorer/ ${CMAKE_CURRENT_BINARY_DIR}/package/Assets/Data/Samples/GraphicsExplorer/)
 
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+  Core
+)

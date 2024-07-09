@@ -19,8 +19,10 @@ function(xii_add_renderers TARGET_NAME)
     message(FATAL_ERROR "xii_add_renderers: Invalid arguments '${ARG_UNPARSED_ARGUMENTS}'")
   endif()
 
+  target_link_libraries(${TARGET_NAME} PRIVATE GraphicsFoundation)
+
   if(NOT ARG_EXCLUDE_NULL)
-    add_dependencies(${TARGET_NAME} GraphicsFoundation GraphicsNull)
+    add_dependencies(${TARGET_NAME} GraphicsNull)
   endif()
 
   if(XII_BUILD_D3D11 AND NOT ARG_EXCLUDE_D3D11)
