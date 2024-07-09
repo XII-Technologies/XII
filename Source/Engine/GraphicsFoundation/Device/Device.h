@@ -24,12 +24,13 @@ public:
   xiiResult Shutdown();
 
 
-  /// \brief Begins a pipeline scope.
-  void BeginPipeline(xiiStringView sName, xiiGALSwapChainHandle hSwapChain);
-
-  /// \brief Ends a pipeline scope.
-  void EndPipeline(xiiGALSwapChainHandle hSwapChain);
-
+  /// \brief Adds a swapchain to be used for the next frame.
+  ///
+  /// This must be called before or during xiiGALDeviceEvent::BeforeBeginFrame event (xiiGALDevice::BeginFrame), and repeated every frame the swap chain is to be used.
+  /// This approach gurantees that all swapchains of a frame, acquire and present at the same time, which improves frame pacing.
+  ///
+  /// \param hSwapChain - The swapchain to be used this frame. The device will acquire an image from the swapchain during xiiGALDevice::BeginFrame and present it when calling xiiGALDevice::EndFrame.
+  void EnqueueFrameSwapChain(xiiGALSwapChainHandle hSwapChain);
 
   /// \brief Begins a render frame.
   void BeginFrame(const xiiUInt64 uiRenderFrame = 0U);
@@ -503,11 +504,8 @@ protected:
 
   virtual xiiResult CreateCommandQueuesPlatform() = 0;
 
-  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) = 0;
-  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                        = 0;
-
-  virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame = 0U) = 0;
-  virtual void EndFramePlatform()                                     = 0;
+  virtual void BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame = 0U) = 0;
+  virtual void EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)                                       = 0;
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) = 0;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)                          = 0;
@@ -583,8 +581,8 @@ private:
   static xiiGALDevice* s_pDefaultDevice;
 
 private:
-  bool m_bBeginFrameCalled    = false;
-  bool m_bBeginPipelineCalled = false;
+  bool                                 m_bBeginFrameCalled    = false;
+  xiiHybridArray<xiiGALSwapChain*, 8U> m_FrameSwapChains;
 };
 
 #include <GraphicsFoundation/Device/Implementation/Device_inl.h>

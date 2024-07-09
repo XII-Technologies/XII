@@ -83,28 +83,21 @@ xiiResult xiiGALDeviceNull::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceNull::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
+void xiiGALDeviceNull::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
-  if (pSwapChain)
+  for (auto pSwapChain : swapchains)
   {
     pSwapChain->AcquireNextRenderTarget();
   }
 }
 
-void xiiGALDeviceNull::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
+void xiiGALDeviceNull::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
 {
-  if (pSwapChain)
+  for (auto pSwapChain : swapchains)
   {
     pSwapChain->Present();
   }
-}
 
-void xiiGALDeviceNull::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
-{
-}
-
-void xiiGALDeviceNull::EndFramePlatform()
-{
   ++m_uiFrameNumber;
 }
 

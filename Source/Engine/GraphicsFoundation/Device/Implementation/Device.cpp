@@ -213,28 +213,18 @@ xiiResult xiiGALDevice::Shutdown()
   return ShutdownPlatform();
 }
 
-void xiiGALDevice::BeginPipeline(xiiStringView sName, xiiGALSwapChainHandle hSwapChain)
+void xiiGALDevice::EnqueueFrameSwapChain(xiiGALSwapChainHandle hSwapChain)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  XII_ASSERT_DEV(!m_bBeginFrameCalled, "EnqueueFrameSwapChain must be called before or during xiiGALDeviceEvent::BeforeBeginFrame");
 
-  XII_ASSERT_DEV(!m_bBeginPipelineCalled, "Nested Pipelines are not allowed: You must call xiiGALDevice::EndPipeline before you can call xiiGALDevice::BeginPipeline again.");
-  m_bBeginPipelineCalled = true;
-
-  xiiGALSwapChain* pSwapChain = nullptr;
-  m_SwapChains.TryGetValue(hSwapChain, pSwapChain);
-  BeginPipelinePlatform(sName, pSwapChain);
-}
-
-void xiiGALDevice::EndPipeline(xiiGALSwapChainHandle hSwapChain)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  XII_ASSERT_DEV(m_bBeginPipelineCalled, "You must have called xiiGALDevice::BeginPipeline before you can call xiiGALDevice::EndPipeline.");
-  m_bBeginPipelineCalled = false;
-
-  xiiGALSwapChain* pSwapChain = nullptr;
-  m_SwapChains.TryGetValue(hSwapChain, pSwapChain);
-  EndPipelinePlatform(pSwapChain);
+  if (xiiGALSwapChain* pSwapChain = GetSwapChain(hSwapChain))
+  {
+    m_FrameSwapChains.PushBack(pSwapChain);
+  }
+  else
+  {
+    XII_REPORT_FAILURE("The swap chain is invalid.");
+  }
 }
 
 void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
@@ -252,9 +242,10 @@ void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
     XII_GAL_DEVICE_LOCK_AND_CHECK();
 
     XII_ASSERT_DEV(!m_bBeginFrameCalled, "You must call xiiGALDevice::EndFrame before you can call xiiGALDevice::BeginFrame again");
+
     m_bBeginFrameCalled = true;
 
-    BeginFramePlatform(uiRenderFrame);
+    BeginFramePlatform(m_FrameSwapChains, uiRenderFrame);
   }
 
   {
@@ -281,7 +272,9 @@ void xiiGALDevice::EndFrame()
 
     FlushDestroyedObjects();
 
-    EndFramePlatform();
+    EndFramePlatform(m_FrameSwapChains);
+
+    m_FrameSwapChains.Clear();
 
     m_bBeginFrameCalled = false;
   }

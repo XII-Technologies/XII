@@ -84,29 +84,20 @@ xiiResult xiiGALDeviceVulkan::CreateCommandQueuesPlatform()
   return XII_FAILURE;
 }
 
-void xiiGALDeviceVulkan::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
+void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
-  if (pSwapChain)
+  for (auto pSwapChain : swapchains)
   {
     pSwapChain->AcquireNextRenderTarget();
   }
 }
 
-void xiiGALDeviceVulkan::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
+void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
 {
-  if (pSwapChain)
+  for (auto pSwapChain : swapchains)
   {
     pSwapChain->Present();
   }
-}
-
-void xiiGALDeviceVulkan::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
-{
-}
-
-void xiiGALDeviceVulkan::EndFramePlatform()
-{
-  // Call FinishFrame() to release references to Swapchain resources
 }
 
 xiiGALSwapChain* xiiGALDeviceVulkan::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)

@@ -65,11 +65,8 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
-  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override final;
-  virtual void EndFramePlatform() override final;
+  virtual void BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame) override final;
+  virtual void EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains) override final;
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
