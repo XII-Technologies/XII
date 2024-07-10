@@ -20,9 +20,9 @@ protected:
 
   virtual ~xiiGALShaderD3D12();
 
-  virtual xiiResult InitPlatform();
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform();
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
 
