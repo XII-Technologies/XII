@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE D3D12_BLEND xiiD3D12TypeConversions::GetBlendFactor(xiiEnum<xiiGALBlendFactor> e)
+XII_ALWAYS_INLINE D3D12_BLEND xiiD3D12TypeConversions::GetBlendFactor(xiiGALBlendFactor::Enum e)
 {
   switch (e)
   {
@@ -44,7 +44,7 @@ XII_ALWAYS_INLINE D3D12_BLEND xiiD3D12TypeConversions::GetBlendFactor(xiiEnum<xi
   return D3D12_BLEND::D3D12_BLEND_ZERO;
 }
 
-XII_ALWAYS_INLINE D3D12_BLEND_OP xiiD3D12TypeConversions::GetBlendOp(xiiEnum<xiiGALBlendOperation> e)
+XII_ALWAYS_INLINE D3D12_BLEND_OP xiiD3D12TypeConversions::GetBlendOp(xiiGALBlendOperation::Enum e)
 {
   switch (e)
   {
@@ -65,7 +65,7 @@ XII_ALWAYS_INLINE D3D12_BLEND_OP xiiD3D12TypeConversions::GetBlendOp(xiiEnum<xii
   return D3D12_BLEND_OP::D3D12_BLEND_OP_ADD;
 }
 
-XII_ALWAYS_INLINE D3D12_COMPARISON_FUNC xiiD3D12TypeConversions::GetComparisonFunc(xiiEnum<xiiGALComparisonFunction> e)
+XII_ALWAYS_INLINE D3D12_COMPARISON_FUNC xiiD3D12TypeConversions::GetComparisonFunc(xiiGALComparisonFunction::Enum e)
 {
   switch (e)
   {
@@ -92,7 +92,7 @@ XII_ALWAYS_INLINE D3D12_COMPARISON_FUNC xiiD3D12TypeConversions::GetComparisonFu
   return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NEVER;
 }
 
-XII_ALWAYS_INLINE D3D12_STENCIL_OP xiiD3D12TypeConversions::GetStencilOp(xiiEnum<xiiGALStencilOperation> e)
+XII_ALWAYS_INLINE D3D12_STENCIL_OP xiiD3D12TypeConversions::GetStencilOp(xiiGALStencilOperation::Enum e)
 {
   switch (e)
   {
@@ -119,7 +119,7 @@ XII_ALWAYS_INLINE D3D12_STENCIL_OP xiiD3D12TypeConversions::GetStencilOp(xiiEnum
   return D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP;
 }
 
-XII_ALWAYS_INLINE D3D12_FILL_MODE xiiD3D12TypeConversions::GetFillMode(xiiEnum<xiiGALFillMode> e)
+XII_ALWAYS_INLINE D3D12_FILL_MODE xiiD3D12TypeConversions::GetFillMode(xiiGALFillMode::Enum e)
 {
   switch (e)
   {
@@ -134,7 +134,7 @@ XII_ALWAYS_INLINE D3D12_FILL_MODE xiiD3D12TypeConversions::GetFillMode(xiiEnum<x
   return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
 }
 
-XII_ALWAYS_INLINE D3D12_CULL_MODE xiiD3D12TypeConversions::GetCullMode(xiiEnum<xiiGALCullMode> e)
+XII_ALWAYS_INLINE D3D12_CULL_MODE xiiD3D12TypeConversions::GetCullMode(xiiGALCullMode::Enum e)
 {
   switch (e)
   {
@@ -169,7 +169,7 @@ XII_ALWAYS_INLINE xiiUInt8 xiiD3D12TypeConversions::GetColorWriteMask(xiiBitflag
   return uiColorMask;
 }
 
-XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiEnum<xiiGALTextureFormat> e)
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiGALTextureFormat::Enum e)
 {
   switch (e)
   {
@@ -379,7 +379,7 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiEnum<xiiGALT
   return DXGI_FORMAT_UNKNOWN;
 }
 
-XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiD3D12TypeConversions::GetGALFormat(DXGI_FORMAT e)
+XII_ALWAYS_INLINE xiiGALTextureFormat::Enum xiiD3D12TypeConversions::GetGALFormat(DXGI_FORMAT e)
 {
   switch (e)
   {
@@ -589,7 +589,7 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiD3D12TypeConversions::GetGALFo
   return xiiGALTextureFormat::Unknown;
 }
 
-XII_ALWAYS_INLINE DXGI_MODE_SCALING xiiD3D12TypeConversions::GetScalingMode(xiiEnum<xiiGALScalingMode> e)
+XII_ALWAYS_INLINE DXGI_MODE_SCALING xiiD3D12TypeConversions::GetScalingMode(xiiGALScalingMode::Enum e)
 {
   switch (e)
   {
@@ -605,7 +605,7 @@ XII_ALWAYS_INLINE DXGI_MODE_SCALING xiiD3D12TypeConversions::GetScalingMode(xiiE
   return DXGI_MODE_SCALING_UNSPECIFIED;
 }
 
-XII_ALWAYS_INLINE xiiEnum<xiiGALScalingMode> xiiD3D12TypeConversions::GetGALScalingMode(DXGI_MODE_SCALING e)
+XII_ALWAYS_INLINE xiiGALScalingMode::Enum xiiD3D12TypeConversions::GetGALScalingMode(DXGI_MODE_SCALING e)
 {
   switch (e)
   {
@@ -616,10 +616,10 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALScalingMode> xiiD3D12TypeConversions::GetGALScal
     case DXGI_MODE_SCALING_STRETCHED:
       return xiiGALScalingMode::Stretched;
   }
-  return xiiEnum<xiiGALScalingMode>();
+  return xiiGALScalingMode::Enum();
 }
 
-XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER xiiD3D12TypeConversions::GetScanLineOrder(xiiEnum<xiiGALScanLineOrder> e)
+XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER xiiD3D12TypeConversions::GetScanLineOrder(xiiGALScanLineOrder::Enum e)
 {
   switch (e)
   {
@@ -637,7 +637,7 @@ XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER xiiD3D12TypeConversions::GetScanLineO
   return DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 }
 
-XII_ALWAYS_INLINE xiiEnum<xiiGALScanLineOrder> xiiD3D12TypeConversions::GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e)
+XII_ALWAYS_INLINE xiiGALScanLineOrder::Enum xiiD3D12TypeConversions::GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e)
 {
   switch (e)
   {
@@ -650,10 +650,10 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALScanLineOrder> xiiD3D12TypeConversions::GetGALSc
     case DXGI_MODE_SCANLINE_ORDER_LOWER_FIELD_FIRST:
       return xiiGALScanLineOrder::LowerFieldFirst;
   }
-  return xiiEnum<xiiGALScanLineOrder>();
+  return xiiGALScanLineOrder::Enum();
 }
 
-XII_ALWAYS_INLINE D3D12_FILTER xiiD3D12TypeConversions::GetFilter(xiiEnum<xiiGALFilterType> minFilter, xiiEnum<xiiGALFilterType> magFilter, xiiEnum<xiiGALFilterType> mipFilter)
+XII_ALWAYS_INLINE D3D12_FILTER xiiD3D12TypeConversions::GetFilter(xiiGALFilterType::Enum minFilter, xiiGALFilterType::Enum magFilter, xiiGALFilterType::Enum mipFilter)
 {
   switch (minFilter)
   {
@@ -856,7 +856,7 @@ XII_ALWAYS_INLINE D3D12_FILTER xiiD3D12TypeConversions::GetFilter(xiiEnum<xiiGAL
   return D3D12_FILTER_MIN_MAG_MIP_POINT;
 }
 
-XII_ALWAYS_INLINE D3D12_TEXTURE_ADDRESS_MODE xiiD3D12TypeConversions::GetTextureAddressMode(xiiEnum<xiiGALTextureAddressMode> e)
+XII_ALWAYS_INLINE D3D12_TEXTURE_ADDRESS_MODE xiiD3D12TypeConversions::GetTextureAddressMode(xiiGALTextureAddressMode::Enum e)
 {
   switch (e)
   {
@@ -876,7 +876,7 @@ XII_ALWAYS_INLINE D3D12_TEXTURE_ADDRESS_MODE xiiD3D12TypeConversions::GetTexture
   return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 }
 
-XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xiiEnum<xiiGALQueryType> e)
+XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xiiGALQueryType::Enum e)
 {
   switch (e)
   {

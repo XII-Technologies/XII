@@ -3,6 +3,8 @@
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
@@ -29,29 +31,29 @@ public:
     return static_cast<typename T::MaskType>(value);
   }
 
-  static D3D12_BLEND    GetBlendFactor(xiiEnum<xiiGALBlendFactor> e);
-  static D3D12_BLEND_OP GetBlendOp(xiiEnum<xiiGALBlendOperation> e);
+  static D3D12_BLEND    GetBlendFactor(xiiGALBlendFactor::Enum e);
+  static D3D12_BLEND_OP GetBlendOp(xiiGALBlendOperation::Enum e);
 
-  static D3D12_COMPARISON_FUNC GetComparisonFunc(xiiEnum<xiiGALComparisonFunction> e);
-  static D3D12_STENCIL_OP      GetStencilOp(xiiEnum<xiiGALStencilOperation> e);
+  static D3D12_COMPARISON_FUNC GetComparisonFunc(xiiGALComparisonFunction::Enum e);
+  static D3D12_STENCIL_OP      GetStencilOp(xiiGALStencilOperation::Enum e);
 
-  static D3D12_FILL_MODE GetFillMode(xiiEnum<xiiGALFillMode> e);
-  static D3D12_CULL_MODE GetCullMode(xiiEnum<xiiGALCullMode> e);
+  static D3D12_FILL_MODE GetFillMode(xiiGALFillMode::Enum e);
+  static D3D12_CULL_MODE GetCullMode(xiiGALCullMode::Enum e);
 
   static xiiUInt8 GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
 
-  static DXGI_FORMAT                  GetFormat(xiiEnum<xiiGALTextureFormat> e);
-  static xiiEnum<xiiGALTextureFormat> GetGALFormat(DXGI_FORMAT e);
+  static DXGI_FORMAT                  GetFormat(xiiGALTextureFormat::Enum e);
+  static xiiGALTextureFormat::Enum GetGALFormat(DXGI_FORMAT e);
 
-  static DXGI_MODE_SCALING            GetScalingMode(xiiEnum<xiiGALScalingMode> e);
-  static xiiEnum<xiiGALScalingMode>   GetGALScalingMode(DXGI_MODE_SCALING e);
-  static DXGI_MODE_SCANLINE_ORDER     GetScanLineOrder(xiiEnum<xiiGALScanLineOrder> e);
-  static xiiEnum<xiiGALScanLineOrder> GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e);
+  static DXGI_MODE_SCALING            GetScalingMode(xiiGALScalingMode::Enum e);
+  static xiiGALScalingMode::Enum   GetGALScalingMode(DXGI_MODE_SCALING e);
+  static DXGI_MODE_SCANLINE_ORDER     GetScanLineOrder(xiiGALScanLineOrder::Enum e);
+  static xiiGALScanLineOrder::Enum GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e);
 
-  static D3D12_FILTER               GetFilter(xiiEnum<xiiGALFilterType> minFilter, xiiEnum<xiiGALFilterType> magFilter, xiiEnum<xiiGALFilterType> mipFilter);
-  static D3D12_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiEnum<xiiGALTextureAddressMode> e);
+  static D3D12_FILTER               GetFilter(xiiGALFilterType::Enum minFilter, xiiGALFilterType::Enum magFilter, xiiGALFilterType::Enum mipFilter);
+  static D3D12_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiGALTextureAddressMode::Enum e);
 
-  static D3D12_QUERY_HEAP_TYPE GetQueryType(xiiEnum<xiiGALQueryType> e);
+  static D3D12_QUERY_HEAP_TYPE GetQueryType(xiiGALQueryType::Enum e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>
