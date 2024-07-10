@@ -17,15 +17,11 @@ xiiGALRenderPassD3D12::~xiiGALRenderPassD3D12() = default;
 
 xiiResult xiiGALRenderPassD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
-
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALRenderPassD3D12::DeInitPlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
-
   return XII_SUCCESS;
 }
 
