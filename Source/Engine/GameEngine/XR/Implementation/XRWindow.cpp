@@ -103,7 +103,7 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
   xiiRenderContext* m_pRenderContext = xiiRenderContext::GetDefaultInstance();
 
   {
-    pDevice->BeginPipeline("VR CompanionView", m_pCompanionWindowOutputTarget->m_hSwapChain);
+    pDevice->EnqueueFrameSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
 
     const xiiGALSwapChain* pSwapChain             = xiiGALDevice::GetDefaultDevice()->GetSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
     xiiGALTextureHandle    hCompanionRenderTarget = pSwapChain->GetBackBufferTexture();
@@ -128,8 +128,6 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
     m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
     m_pRenderContext->EndRendering();
-
-    pDevice->EndPipeline(m_pCompanionWindowOutputTarget->m_hSwapChain);
     m_pRenderContext->ResetContextState();
   }
 }
