@@ -894,7 +894,7 @@ XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xi
   return D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
 }
 
-XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xiiEnum<xiiGALValueType> e, xiiUInt32 uiComponentCount, bool bIsNormalized)
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xiiGALValueType::Enum e, xiiUInt32 uiComponentCount, bool bIsNormalized)
 {
   switch (e)
   {
@@ -1111,7 +1111,7 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xii
   return DXGI_FORMAT_UNKNOWN;
 }
 
-XII_ALWAYS_INLINE D3D_PRIMITIVE_TOPOLOGY xiiD3D12TypeConversions::GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e)
+XII_ALWAYS_INLINE D3D_PRIMITIVE_TOPOLOGY xiiD3D12TypeConversions::GetPrimitiveTopology(xiiGALPrimitiveTopology::Enum e)
 {
   switch (e)
   {
@@ -1202,4 +1202,18 @@ XII_ALWAYS_INLINE D3D_PRIMITIVE_TOPOLOGY xiiD3D12TypeConversions::GetPrimitiveTo
   }
 
   return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE D3D12_INPUT_CLASSIFICATION xiiD3D12TypeConversions::GetElementFrequency(xiiGALInputElementFrequency::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALInputElementFrequency::PerVertex:
+      return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+    case xiiGALInputElementFrequency::PerInstance:
+      return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
 }

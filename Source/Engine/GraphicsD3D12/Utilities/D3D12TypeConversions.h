@@ -55,9 +55,11 @@ public:
 
   static D3D12_QUERY_HEAP_TYPE GetQueryType(xiiGALQueryType::Enum e);
 
-  static DXGI_FORMAT GetDXGIFormatFromType(xiiEnum<xiiGALValueType> e, xiiUInt32 uiComponentCount, bool bIsNormalized);
+  static DXGI_FORMAT GetDXGIFormatFromType(xiiGALValueType::Enum e, xiiUInt32 uiComponentCount, bool bIsNormalized);
 
-  static D3D_PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
+  static D3D_PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiGALPrimitiveTopology::Enum e);
+
+  static D3D12_INPUT_CLASSIFICATION GetElementFrequency(xiiGALInputElementFrequency::Enum e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>
