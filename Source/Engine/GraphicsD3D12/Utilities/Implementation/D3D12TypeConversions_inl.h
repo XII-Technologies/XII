@@ -852,7 +852,7 @@ XII_ALWAYS_INLINE D3D12_FILTER xiiD3D12TypeConversions::GetFilter(xiiGALFilterTy
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  XII_ASSERT_DEV(false, "Unsupported filter combination");
+  XII_REPORT_FAILURE("Unsupported filter combination");
   return D3D12_FILTER_MIN_MAG_MIP_POINT;
 }
 
