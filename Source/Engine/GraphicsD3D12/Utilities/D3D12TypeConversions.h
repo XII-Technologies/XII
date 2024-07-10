@@ -42,18 +42,22 @@ public:
 
   static xiiUInt8 GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
 
-  static DXGI_FORMAT                  GetFormat(xiiGALTextureFormat::Enum e);
+  static DXGI_FORMAT               GetFormat(xiiGALTextureFormat::Enum e);
   static xiiGALTextureFormat::Enum GetGALFormat(DXGI_FORMAT e);
 
-  static DXGI_MODE_SCALING            GetScalingMode(xiiGALScalingMode::Enum e);
+  static DXGI_MODE_SCALING         GetScalingMode(xiiGALScalingMode::Enum e);
   static xiiGALScalingMode::Enum   GetGALScalingMode(DXGI_MODE_SCALING e);
-  static DXGI_MODE_SCANLINE_ORDER     GetScanLineOrder(xiiGALScanLineOrder::Enum e);
+  static DXGI_MODE_SCANLINE_ORDER  GetScanLineOrder(xiiGALScanLineOrder::Enum e);
   static xiiGALScanLineOrder::Enum GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e);
 
   static D3D12_FILTER               GetFilter(xiiGALFilterType::Enum minFilter, xiiGALFilterType::Enum magFilter, xiiGALFilterType::Enum mipFilter);
   static D3D12_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiGALTextureAddressMode::Enum e);
 
   static D3D12_QUERY_HEAP_TYPE GetQueryType(xiiGALQueryType::Enum e);
+
+  static DXGI_FORMAT GetDXGIFormatFromType(xiiEnum<xiiGALValueType> e, xiiUInt32 uiComponentCount, bool bIsNormalized);
+
+  static D3D_PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>
