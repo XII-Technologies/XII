@@ -80,6 +80,31 @@ protected:
   virtual void InvalidateStatePlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
+private:
+  static constexpr xiiUInt32 s_uiCommandAllocatorDesiredCount = 2U;
+
+  struct FenceData
+  {
+    ID3D12Fence* m_pD3D12Fence         = nullptr;
+    xiiUInt64    m_uiCurrentFenceValue = 0U;
+    xiiUInt64    m_uiNextFenceValue    = 1U;
+  };
+
+  struct StateCache
+  {
+    ID3D12RootSignature* m_pD3D12GraphicsRootSignature = nullptr;
+    ID3D12RootSignature* m_pD3D12ComputeRootSignature  = nullptr;
+    ID3D12PipelineState* m_pD3D12PipelineState         = nullptr;
+  };
+
+  ID3D12CommandQueue*                                                       m_pD3D12CommandQueue;
+  ID3D12GraphicsCommandList*                                                m_pD3D12CommandList;
+  xiiUInt32                                                                 m_uiCurrentAllocatorIndex;
+  xiiHybridArray<ID3D12CommandAllocator*, s_uiCommandAllocatorDesiredCount> m_D3D12CommandAllocators;
+  xiiHybridArray<FenceData, s_uiCommandAllocatorDesiredCount>               m_D3D12CommandAllocatorFenceData;
+
+  StateCache m_StateCache;
 };
 
 #include <GraphicsD3D12/CommandEncoder/Implementation/CommandListD3D12_inl.h>

@@ -1217,3 +1217,8 @@ XII_ALWAYS_INLINE D3D12_INPUT_CLASSIFICATION xiiD3D12TypeConversions::GetElement
   }
   return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
 }
+
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevelCount)
+{
+  return uiMipSlice + (uiArraySlice * uiMipLevelCount);
+}
