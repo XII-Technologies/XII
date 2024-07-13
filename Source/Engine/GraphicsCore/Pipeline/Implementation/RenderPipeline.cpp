@@ -1184,8 +1184,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  pDevice->EnqueueFrameSwapChain(renderViewContext.m_pViewData->m_hSwapChain);
-
   if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(renderViewContext.m_pViewData->m_hSwapChain))
   {
     xiiGALRenderTargets renderTargets;

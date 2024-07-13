@@ -81,18 +81,29 @@ xiiWindowOutputTargetXR::~xiiWindowOutputTargetXR()
   m_hCompanionConstantBuffer.Invalidate();
 }
 
-void xiiWindowOutputTargetXR::Present(bool bEnableVSync)
+void xiiWindowOutputTargetXR::PresentImage(bool bEnableVSync)
 {
   // Swapchain present is handled by the rendering of the view automatically and RenderCompanionView is called by the xiiXRInterface now.
 }
 
-void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
+void xiiWindowOutputTargetXR::CompanionViewBeginFrame(bool bThrottleCompanionView)
 {
   xiiTime currentTime = xiiTime::Now();
   if (bThrottleCompanionView && currentTime < (m_LastPresent + xiiTime::MakeFromMilliseconds(16)))
     return;
 
   m_LastPresent = currentTime;
+
+  xiiGALDevice::GetDefaultDevice()->EnqueueFrameSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
+  m_bRender = true;
+}
+
+void xiiWindowOutputTargetXR::CompanionViewEndFrame()
+{
+  if (!m_bRender)
+    return;
+
+  m_bRender = false;
 
   XII_PROFILE_SCOPE("RenderCompanionView");
   xiiGALTextureHandle m_hColorRT = m_pXrInterface->GetCurrentTexture();
@@ -103,8 +114,6 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
   xiiRenderContext* m_pRenderContext = xiiRenderContext::GetDefaultInstance();
 
   {
-    pDevice->EnqueueFrameSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
-
     const xiiGALSwapChain* pSwapChain             = xiiGALDevice::GetDefaultDevice()->GetSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
     xiiGALTextureHandle    hCompanionRenderTarget = pSwapChain->GetBackBufferTexture();
     const xiiGALTexture*   tex                    = pDevice->GetTexture(hCompanionRenderTarget);
@@ -136,6 +145,10 @@ xiiResult xiiWindowOutputTargetXR::CaptureImage(xiiImage& out_image)
 {
   if (m_pCompanionWindowOutputTarget)
   {
+    // If we are capturing an image, we need to update the companion view first.
+    // If not, CompanionViewEndFrame will be called by the XR implementation.
+    CompanionViewEndFrame();
+
     return m_pCompanionWindowOutputTarget->CaptureImage(out_image);
   }
   return XII_FAILURE;

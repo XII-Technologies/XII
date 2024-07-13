@@ -343,7 +343,7 @@ void xiiGALDeviceD3D12::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapcha
 
 void xiiGALDeviceD3D12::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
 {
-  
+
   ++m_uiFrameCounter;
 }
 

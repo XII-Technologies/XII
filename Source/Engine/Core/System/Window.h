@@ -74,6 +74,10 @@ public:
   /// If bOnlyProperFullscreenMode, the caller accepts borderless windows that cover the entire screen as "fullscreen".
   virtual bool IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const = 0;
 
+  /// \brief Whether the window can potentially be seen by the user.
+  /// Windows that are minimized or hidden are not visible.
+  virtual bool IsVisible() const = 0;
+
   virtual void ProcessWindowMessages() = 0;
 
   virtual void AddReference()    = 0;
@@ -198,6 +202,8 @@ public:
     return xiiWindowMode::IsFullscreen(m_CreationDescription.m_WindowMode);
   }
 
+  virtual bool IsVisible() const override { return m_bVisible; }
+
   virtual void AddReference() override { m_iReferenceCount.Increment(); }
   virtual void RemoveReference() override { m_iReferenceCount.Decrement(); }
 
@@ -251,6 +257,9 @@ public:
   /// \brief Called when the window gets focus or loses focus.
   virtual void OnFocus(bool bHasFocus) {}
 
+  /// \brief Called when the window gets focus or loses focus.
+  virtual void OnVisibleChange(bool bVisible) { m_bVisible = bVisible; }
+
   /// \brief Called when the close button of the window is clicked. Does nothing by default.
   virtual void OnClickClose() {}
 
@@ -297,6 +306,7 @@ private:
 
 private:
   bool m_bInitialized = false;
+  bool m_bVisible     = true;
 
   xiiUniquePtr<xiiStandardInputDevice> m_pInputDevice;
 

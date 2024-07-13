@@ -16,6 +16,7 @@ class XII_CORE_DLL xiiWindowOutputTargetBase
 {
 public:
   virtual ~xiiWindowOutputTargetBase()                = default;
-  virtual void      Present(bool bEnableVSync)        = 0;
+  virtual void      AcquireImage()                    = 0;
+  virtual void      PresentImage(bool bEnableVSync)   = 0;
   virtual xiiResult CaptureImage(xiiImage& out_image) = 0;
 };

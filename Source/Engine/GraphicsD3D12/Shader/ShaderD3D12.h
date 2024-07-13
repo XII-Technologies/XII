@@ -25,7 +25,6 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
-
   D3D12_SHADER_BYTECODE m_ShaderByteCodeD3D12;
 };
 

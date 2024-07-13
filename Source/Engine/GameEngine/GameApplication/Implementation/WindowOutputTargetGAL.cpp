@@ -112,8 +112,11 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
   }
 }
 
-void xiiWindowOutputTargetGAL::Present(bool bEnableVSync)
+void xiiWindowOutputTargetGAL::AcquireImage()
 {
+  // For now, the actual acquire call is done during ezGALDevice::BeginFrame by calling ezGALDevice::EnqueueFrameSwapChain before the render loop.
+  // This call is only used to recreate the swapchain at a safe location.
+
   // Only re-create the swapchain if somebody is listening to changes.
   if (m_OnSwapChainChanged.IsValid())
   {
@@ -128,10 +131,15 @@ void xiiWindowOutputTargetGAL::Present(bool bEnableVSync)
   }
 }
 
+void xiiWindowOutputTargetGAL::PresentImage(bool bEnableVSync)
+{
+  // For now, the actual present call is done during xiiGALDevice::EndFrame by calling xiiGALDevice::EnqueueFrameSwapChain before the render loop.
+}
+
 xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-  auto pCommandQueue = pDevice->GetDefaultCommandQueue();
+  xiiGALDevice* pDevice         = xiiGALDevice::GetDefaultDevice();
+  auto          pCommandQueue   = pDevice->GetDefaultCommandQueue();
   auto          pGALCommandList = pCommandQueue->BeginCommandList();
 
   pGALCommandList->BeginDebugGroup("CaptureImage");

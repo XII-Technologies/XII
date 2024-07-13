@@ -26,7 +26,6 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
-
   xiiDynamicArray<D3D12_INPUT_ELEMENT_DESC> m_InputLayoutElements;
 };
 

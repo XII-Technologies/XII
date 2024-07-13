@@ -581,7 +581,7 @@ private:
   static xiiGALDevice* s_pDefaultDevice;
 
 private:
-  bool                                 m_bBeginFrameCalled    = false;
+  bool                                 m_bBeginFrameCalled = false;
   xiiHybridArray<xiiGALSwapChain*, 8U> m_FrameSwapChains;
 };
 

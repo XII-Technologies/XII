@@ -60,82 +60,82 @@ void xiiPickingRenderPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPip
 void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
   // Render result
-    const xiiRectFloat& viewPortRect = renderViewContext.m_pViewData->m_ViewPortRect;
-    m_uiWindowWidth                  = (xiiUInt32)viewPortRect.width;
-    m_uiWindowHeight                 = (xiiUInt32)viewPortRect.height;
+  const xiiRectFloat& viewPortRect = renderViewContext.m_pViewData->m_ViewPortRect;
+  m_uiWindowWidth                  = (xiiUInt32)viewPortRect.width;
+  m_uiWindowHeight                 = (xiiUInt32)viewPortRect.height;
 
-    const xiiGALTexture* pDepthTexture = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hPickingDepthRT);
-    XII_ASSERT_DEV(m_uiWindowWidth == pDepthTexture->GetDescription().m_Size.width, "");
-    XII_ASSERT_DEV(m_uiWindowHeight == pDepthTexture->GetDescription().m_Size.height, "");
+  const xiiGALTexture* pDepthTexture = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hPickingDepthRT);
+  XII_ASSERT_DEV(m_uiWindowWidth == pDepthTexture->GetDescription().m_Size.width, "");
+  XII_ASSERT_DEV(m_uiWindowHeight == pDepthTexture->GetDescription().m_Size.height, "");
 
-    xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup       = m_RenderTargetSetup;
-    renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-    renderingSetup.m_bClearDepth             = true;
-    renderingSetup.m_bClearStencil           = true;
+  xiiGALRenderingSetup renderingSetup;
+  renderingSetup.m_RenderTargetSetup       = m_RenderTargetSetup;
+  renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
+  renderingSetup.m_bClearDepth             = true;
+  renderingSetup.m_bClearStencil           = true;
 
-    auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName());
+  auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName());
 
-    xiiViewRenderMode::Enum viewRenderMode = renderViewContext.m_pViewData->m_ViewRenderMode;
-    if (viewRenderMode == xiiViewRenderMode::WireframeColor || viewRenderMode == xiiViewRenderMode::WireframeMonochrome)
-      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING_WIREFRAME");
-    else
-      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING");
+  xiiViewRenderMode::Enum viewRenderMode = renderViewContext.m_pViewData->m_ViewRenderMode;
+  if (viewRenderMode == xiiViewRenderMode::WireframeColor || viewRenderMode == xiiViewRenderMode::WireframeMonochrome)
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING_WIREFRAME");
+  else
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING");
 
-    // Setup clustered data
-    auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
-    pClusteredData->BindResources(renderViewContext.m_pRenderContext);
+  // Setup clustered data
+  auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
+  pClusteredData->BindResources(renderViewContext.m_pRenderContext);
 
-    // copy selection to set for faster checks
-    m_SelectionSet.Clear();
+  // copy selection to set for faster checks
+  m_SelectionSet.Clear();
 
-    auto            batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Selection);
-    const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
-    for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
+  auto            batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Selection);
+  const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
+  for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
+  {
+    const xiiRenderDataBatch& batch = batchList.GetBatch(i);
+    for (auto it = batch.GetIterator<xiiRenderData>(); it.IsValid(); ++it)
     {
-      const xiiRenderDataBatch& batch = batchList.GetBatch(i);
-      for (auto it = batch.GetIterator<xiiRenderData>(); it.IsValid(); ++it)
-      {
-        m_SelectionSet.Insert(it->m_hOwner);
-      }
+      m_SelectionSet.Insert(it->m_hOwner);
     }
+  }
 
-    // filter out all selected objects
-    xiiRenderDataBatch::Filter filter([&](const xiiRenderData* pRenderData) { return m_SelectionSet.Contains(pRenderData->m_hOwner); });
+  // filter out all selected objects
+  xiiRenderDataBatch::Filter filter([&](const xiiRenderData* pRenderData) { return m_SelectionSet.Contains(pRenderData->m_hOwner); });
 
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque, filter);
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked, filter);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque, filter);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked, filter);
 
-    if (m_bPickTransparent)
-    {
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitTransparent, filter);
-
-      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
-
-      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
-    }
-
-    if (m_bPickSelected)
-    {
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Selection);
-    }
-
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
-
-    if (m_bPickTransparent)
-    {
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleTransparent, filter);
-    }
+  if (m_bPickTransparent)
+  {
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitTransparent, filter);
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+  }
 
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
+  if (m_bPickSelected)
+  {
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Selection);
+  }
+
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
+
+  if (m_bPickTransparent)
+  {
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleTransparent, filter);
+  }
+
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
 
   // download the picking information from the GPU
   if (m_uiWindowWidth != 0 && m_uiWindowHeight != 0)
