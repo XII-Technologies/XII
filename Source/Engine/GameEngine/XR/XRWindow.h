@@ -20,6 +20,7 @@ public:
 
   virtual xiiWindowHandle GetNativeWindowHandle() const override;
 
+  virtual bool IsVisible() const override { return true; }
   virtual bool IsFullscreenWindow(bool bOnlyProperFullscreenMode) const override;
 
   virtual void ProcessWindowMessages() override;
@@ -43,8 +44,10 @@ public:
   xiiWindowOutputTargetXR(xiiXRInterface* pVrInterface, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutputTarget);
   ~xiiWindowOutputTargetXR();
 
-  virtual void      Present(bool bEnableVSync) override;
-  void              RenderCompanionView(bool bThrottleCompanionView = true);
+  virtual void      AcquireImage() override {}
+  virtual void      PresentImage(bool bEnableVSync) override;
+  void              CompanionViewBeginFrame(bool bThrottleCompanionView = true);
+  void              CompanionViewEndFrame();
   virtual xiiResult CaptureImage(xiiImage& out_image) override;
 
   /// \brief Returns the companion window output target if present.
@@ -56,6 +59,7 @@ private:
   xiiUniquePtr<xiiWindowOutputTargetGAL> m_pCompanionWindowOutputTarget;
   xiiConstantBufferStorageHandle         m_hCompanionConstantBuffer;
   xiiShaderResourceHandle                m_hCompanionShader;
+  bool                                   m_bRender = false;
 };
 
 /// \brief XR actor plugin window base implementation. Optionally wraps a companion window and output target.

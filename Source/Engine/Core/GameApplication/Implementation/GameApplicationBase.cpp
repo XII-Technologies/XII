@@ -403,14 +403,15 @@ void xiiGameApplicationBase::RunOneFrame()
 
   Run_InputUpdate();
 
+  Run_AcquireImage();
+
   Run_WorldUpdateAndRender();
 
   if (!s_bUpdatePluginsExecuted)
   {
     Run_UpdatePlugins();
 
-    XII_ASSERT_DEV(s_bUpdatePluginsExecuted, "xiiGameApplicationBase::Run_UpdatePlugins has been overridden, but it does not broadcast the "
-                                             "global event 'GameApp_UpdatePlugins' anymore.");
+    XII_ASSERT_DEV(s_bUpdatePluginsExecuted, "xiiGameApplicationBase::Run_UpdatePlugins has been overridden, but it does not broadcast the global event 'GameApp_UpdatePlugins' anymore.");
   }
 
   {
@@ -425,20 +426,23 @@ void xiiGameApplicationBase::RunOneFrame()
 
   {
     XII_PROFILE_SCOPE("BeforePresent");
+
     xiiGameApplicationExecutionEvent e;
     e.m_Type = xiiGameApplicationExecutionEvent::Type::BeforePresent;
     m_ExecutionEvents.Broadcast(e);
   }
 
   {
-    XII_PROFILE_SCOPE("Run_Present");
-    Run_Present();
+    XII_PROFILE_SCOPE("Run_PresentImage");
+
+    Run_PresentImage();
   }
   xiiClock::GetGlobalClock()->Update();
   UpdateFrameTime();
 
   {
     XII_PROFILE_SCOPE("AfterPresent");
+
     xiiGameApplicationExecutionEvent e;
     e.m_Type = xiiGameApplicationExecutionEvent::Type::AfterPresent;
     m_ExecutionEvents.Broadcast(e);
@@ -446,6 +450,7 @@ void xiiGameApplicationBase::RunOneFrame()
 
   {
     XII_PROFILE_SCOPE("Run_FinishFrame");
+
     Run_FinishFrame();
   }
 }
@@ -485,6 +490,10 @@ void xiiGameApplicationBase::Run_BeforeWorldUpdate()
   }
 }
 
+void xiiGameApplicationBase::Run_AcquireImage()
+{
+}
+
 void xiiGameApplicationBase::Run_AfterWorldUpdate()
 {
   XII_PROFILE_SCOPE("GameApplication.AfterWorldUpdate");
@@ -520,7 +529,9 @@ void xiiGameApplicationBase::Run_UpdatePlugins()
   }
 }
 
-void xiiGameApplicationBase::Run_Present() {}
+void xiiGameApplicationBase::Run_PresentImage()
+{
+}
 
 void xiiGameApplicationBase::Run_FinishFrame()
 {

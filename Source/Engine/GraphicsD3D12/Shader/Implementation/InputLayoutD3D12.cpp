@@ -25,19 +25,18 @@ xiiGALInputLayoutD3D12::~xiiGALInputLayoutD3D12() = default;
 
 xiiResult xiiGALInputLayoutD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
+  xiiGALDeviceD3D12* pDeviceD3D12       = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
+  xiiGALShaderD3D12* pVertexShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pDeviceD3D12->GetShader(m_Description.m_hVertexShader));
 
-  xiiGALShaderD3D12* pShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pDeviceD3D12->GetShader(m_Description.m_hVertexShader));
-
-  if (pShaderD3D12 == nullptr || !pShaderD3D12->GetDescription().HasValidByteCode() || pShaderD3D12->GetDescription().m_ShaderType != xiiGALShaderType::Vertex)
+  if (pVertexShaderD3D12 == nullptr || !pVertexShaderD3D12->GetDescription().HasValidByteCode() || pVertexShaderD3D12->GetDescription().m_ShaderType != xiiGALShaderType::Vertex)
   {
     xiiLog::Error("Shader is invalid, or does not have Vertex shader bytecode.");
     return XII_FAILURE;
   }
 
-  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderD3D12->GetVertexInputLayout());
+  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pVertexShaderD3D12->GetVertexInputLayout());
 
-  auto FindLocation = [&](xiiEnum<xiiGALInputLayoutSemantic> sematic, xiiEnum<xiiGALTextureFormat> format) -> xiiUInt32 {
+  auto FindLocation = [&](xiiGALInputLayoutSemantic::Enum sematic, xiiGALTextureFormat::Enum format) -> xiiUInt32 {
     for (xiiUInt32 i = 0; i < vertexInputLayouts.GetCount(); ++i)
     {
       if (vertexInputLayouts[i].m_Semantic == sematic)
@@ -54,8 +53,25 @@ xiiResult xiiGALInputLayoutD3D12::InitPlatform()
     return xiiInvalidIndex;
   };
 
-  const xiiUInt32 uiLayoutCount = m_Description.m_LayoutElements.GetCount();
+  m_InputLayoutElements.SetCountUninitialized(m_Description.m_LayoutElements.GetCount());
 
+  for (xiiUInt32 uiLayoutIndex = 0; uiLayoutIndex < m_Description.m_LayoutElements.GetCount(); ++uiLayoutIndex)
+  {
+    const auto&     inputLayout = m_Description.m_LayoutElements[uiLayoutIndex];
+    const xiiUInt32 uiLocation  = FindLocation(inputLayout.m_Semantic, inputLayout.m_Format);
+
+    if (uiLocation == xiiInvalidIndex)
+      continue;
+
+    D3D12_INPUT_ELEMENT_DESC& layoutElement = m_InputLayoutElements[uiLayoutIndex];
+    layoutElement.SemanticName              = GALSemanticToD3D[inputLayout.m_Semantic];
+    layoutElement.SemanticIndex             = uiLocation;
+    layoutElement.Format                    = xiiD3D12TypeConversions::GetFormat(inputLayout.m_Format);
+    layoutElement.InputSlot                 = inputLayout.m_uiBufferSlot;
+    layoutElement.AlignedByteOffset         = inputLayout.m_uiRelativeOffset;
+    layoutElement.InputSlotClass            = xiiD3D12TypeConversions::GetElementFrequency(inputLayout.m_Frequency);
+    layoutElement.InstanceDataStepRate      = (inputLayout.m_Frequency == xiiGALInputElementFrequency::PerVertex) ? 0U : inputLayout.m_uiInstanceDataStepRate;
+  }
 
   if (!vertexInputLayouts.IsEmpty())
   {
@@ -68,6 +84,8 @@ xiiResult xiiGALInputLayoutD3D12::InitPlatform()
 
 xiiResult xiiGALInputLayoutD3D12::DeInitPlatform()
 {
+  m_InputLayoutElements.Clear();
+
   return XII_SUCCESS;
 }
 

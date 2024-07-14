@@ -993,7 +993,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
 
   enum Enum : StorageType
   {
-    Unknown       = 0u,                    ///< Queue type is unknown.
+    Unknown       = 0U,                    ///< Queue type is unknown.
     Transfer      = XII_BIT(0),            ///< Command queue that only supports memory transfer operations.
     Compute       = XII_BIT(1) | Transfer, ///< Command queue that supports compute, ray tracing and transfer commands.
     Graphics      = XII_BIT(2) | Compute,  ///< Command queue that supports graphics, compute, ray tracing and transfer commands.

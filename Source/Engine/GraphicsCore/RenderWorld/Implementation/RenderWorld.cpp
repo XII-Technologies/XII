@@ -595,11 +595,31 @@ void xiiRenderWorld::BeginFrame()
   }
 
   RebuildPipelines();
+
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
+  // On most platforms it doesn't matter that much how early this happens.
+  // But on HoloLens this executes something that needs to be done at the right time,
+  // for the reprojection to work properly.
+  const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
+
+  auto& filteredRenderPipelines = s_FilteredRenderPipelines[GetDataIndexForRendering()];
+  for (auto& pRenderPipeline : filteredRenderPipelines)
+  {
+    xiiGALSwapChainHandle hSwapChain = pRenderPipeline->GetRenderData().GetViewData().m_hSwapChain;
+    if (!hSwapChain.IsInvalidated())
+    {
+      pDevice->EnqueueFrameSwapChain(hSwapChain);
+    }
+  }
+  pDevice->BeginFrame(uiRenderFrame);
 }
 
 void xiiRenderWorld::EndFrame()
 {
   XII_PROFILE_SCOPE("EndFrame");
+
+  xiiGALDevice::GetDefaultDevice()->EndFrame();
 
   ++s_uiFrameCounter;
 

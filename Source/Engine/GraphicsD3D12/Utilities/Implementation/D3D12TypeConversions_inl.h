@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE D3D12_BLEND xiiD3D12TypeConversions::GetBlendFactor(xiiEnum<xiiGALBlendFactor> e)
+XII_ALWAYS_INLINE D3D12_BLEND xiiD3D12TypeConversions::GetBlendFactor(xiiGALBlendFactor::Enum e)
 {
   switch (e)
   {
@@ -44,7 +44,7 @@ XII_ALWAYS_INLINE D3D12_BLEND xiiD3D12TypeConversions::GetBlendFactor(xiiEnum<xi
   return D3D12_BLEND::D3D12_BLEND_ZERO;
 }
 
-XII_ALWAYS_INLINE D3D12_BLEND_OP xiiD3D12TypeConversions::GetBlendOp(xiiEnum<xiiGALBlendOperation> e)
+XII_ALWAYS_INLINE D3D12_BLEND_OP xiiD3D12TypeConversions::GetBlendOp(xiiGALBlendOperation::Enum e)
 {
   switch (e)
   {
@@ -65,7 +65,7 @@ XII_ALWAYS_INLINE D3D12_BLEND_OP xiiD3D12TypeConversions::GetBlendOp(xiiEnum<xii
   return D3D12_BLEND_OP::D3D12_BLEND_OP_ADD;
 }
 
-XII_ALWAYS_INLINE D3D12_COMPARISON_FUNC xiiD3D12TypeConversions::GetComparisonFunc(xiiEnum<xiiGALComparisonFunction> e)
+XII_ALWAYS_INLINE D3D12_COMPARISON_FUNC xiiD3D12TypeConversions::GetComparisonFunc(xiiGALComparisonFunction::Enum e)
 {
   switch (e)
   {
@@ -92,7 +92,7 @@ XII_ALWAYS_INLINE D3D12_COMPARISON_FUNC xiiD3D12TypeConversions::GetComparisonFu
   return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NEVER;
 }
 
-XII_ALWAYS_INLINE D3D12_STENCIL_OP xiiD3D12TypeConversions::GetStencilOp(xiiEnum<xiiGALStencilOperation> e)
+XII_ALWAYS_INLINE D3D12_STENCIL_OP xiiD3D12TypeConversions::GetStencilOp(xiiGALStencilOperation::Enum e)
 {
   switch (e)
   {
@@ -119,7 +119,7 @@ XII_ALWAYS_INLINE D3D12_STENCIL_OP xiiD3D12TypeConversions::GetStencilOp(xiiEnum
   return D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP;
 }
 
-XII_ALWAYS_INLINE D3D12_FILL_MODE xiiD3D12TypeConversions::GetFillMode(xiiEnum<xiiGALFillMode> e)
+XII_ALWAYS_INLINE D3D12_FILL_MODE xiiD3D12TypeConversions::GetFillMode(xiiGALFillMode::Enum e)
 {
   switch (e)
   {
@@ -134,7 +134,7 @@ XII_ALWAYS_INLINE D3D12_FILL_MODE xiiD3D12TypeConversions::GetFillMode(xiiEnum<x
   return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
 }
 
-XII_ALWAYS_INLINE D3D12_CULL_MODE xiiD3D12TypeConversions::GetCullMode(xiiEnum<xiiGALCullMode> e)
+XII_ALWAYS_INLINE D3D12_CULL_MODE xiiD3D12TypeConversions::GetCullMode(xiiGALCullMode::Enum e)
 {
   switch (e)
   {
@@ -169,7 +169,7 @@ XII_ALWAYS_INLINE xiiUInt8 xiiD3D12TypeConversions::GetColorWriteMask(xiiBitflag
   return uiColorMask;
 }
 
-XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiEnum<xiiGALTextureFormat> e)
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiGALTextureFormat::Enum e)
 {
   switch (e)
   {
@@ -379,7 +379,7 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiEnum<xiiGALT
   return DXGI_FORMAT_UNKNOWN;
 }
 
-XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiD3D12TypeConversions::GetGALFormat(DXGI_FORMAT e)
+XII_ALWAYS_INLINE xiiGALTextureFormat::Enum xiiD3D12TypeConversions::GetGALFormat(DXGI_FORMAT e)
 {
   switch (e)
   {
@@ -589,7 +589,7 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiD3D12TypeConversions::GetGALFo
   return xiiGALTextureFormat::Unknown;
 }
 
-XII_ALWAYS_INLINE DXGI_MODE_SCALING xiiD3D12TypeConversions::GetScalingMode(xiiEnum<xiiGALScalingMode> e)
+XII_ALWAYS_INLINE DXGI_MODE_SCALING xiiD3D12TypeConversions::GetScalingMode(xiiGALScalingMode::Enum e)
 {
   switch (e)
   {
@@ -605,7 +605,7 @@ XII_ALWAYS_INLINE DXGI_MODE_SCALING xiiD3D12TypeConversions::GetScalingMode(xiiE
   return DXGI_MODE_SCALING_UNSPECIFIED;
 }
 
-XII_ALWAYS_INLINE xiiEnum<xiiGALScalingMode> xiiD3D12TypeConversions::GetGALScalingMode(DXGI_MODE_SCALING e)
+XII_ALWAYS_INLINE xiiGALScalingMode::Enum xiiD3D12TypeConversions::GetGALScalingMode(DXGI_MODE_SCALING e)
 {
   switch (e)
   {
@@ -616,10 +616,10 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALScalingMode> xiiD3D12TypeConversions::GetGALScal
     case DXGI_MODE_SCALING_STRETCHED:
       return xiiGALScalingMode::Stretched;
   }
-  return xiiEnum<xiiGALScalingMode>();
+  return xiiGALScalingMode::Enum();
 }
 
-XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER xiiD3D12TypeConversions::GetScanLineOrder(xiiEnum<xiiGALScanLineOrder> e)
+XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER xiiD3D12TypeConversions::GetScanLineOrder(xiiGALScanLineOrder::Enum e)
 {
   switch (e)
   {
@@ -637,7 +637,7 @@ XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER xiiD3D12TypeConversions::GetScanLineO
   return DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 }
 
-XII_ALWAYS_INLINE xiiEnum<xiiGALScanLineOrder> xiiD3D12TypeConversions::GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e)
+XII_ALWAYS_INLINE xiiGALScanLineOrder::Enum xiiD3D12TypeConversions::GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e)
 {
   switch (e)
   {
@@ -650,10 +650,10 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALScanLineOrder> xiiD3D12TypeConversions::GetGALSc
     case DXGI_MODE_SCANLINE_ORDER_LOWER_FIELD_FIRST:
       return xiiGALScanLineOrder::LowerFieldFirst;
   }
-  return xiiEnum<xiiGALScanLineOrder>();
+  return xiiGALScanLineOrder::Enum();
 }
 
-XII_ALWAYS_INLINE D3D12_FILTER xiiD3D12TypeConversions::GetFilter(xiiEnum<xiiGALFilterType> minFilter, xiiEnum<xiiGALFilterType> magFilter, xiiEnum<xiiGALFilterType> mipFilter)
+XII_ALWAYS_INLINE D3D12_FILTER xiiD3D12TypeConversions::GetFilter(xiiGALFilterType::Enum minFilter, xiiGALFilterType::Enum magFilter, xiiGALFilterType::Enum mipFilter)
 {
   switch (minFilter)
   {
@@ -852,11 +852,11 @@ XII_ALWAYS_INLINE D3D12_FILTER xiiD3D12TypeConversions::GetFilter(xiiEnum<xiiGAL
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  XII_ASSERT_DEV(false, "Unsupported filter combination");
+  XII_REPORT_FAILURE("Unsupported filter combination");
   return D3D12_FILTER_MIN_MAG_MIP_POINT;
 }
 
-XII_ALWAYS_INLINE D3D12_TEXTURE_ADDRESS_MODE xiiD3D12TypeConversions::GetTextureAddressMode(xiiEnum<xiiGALTextureAddressMode> e)
+XII_ALWAYS_INLINE D3D12_TEXTURE_ADDRESS_MODE xiiD3D12TypeConversions::GetTextureAddressMode(xiiGALTextureAddressMode::Enum e)
 {
   switch (e)
   {
@@ -876,7 +876,7 @@ XII_ALWAYS_INLINE D3D12_TEXTURE_ADDRESS_MODE xiiD3D12TypeConversions::GetTexture
   return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 }
 
-XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xiiEnum<xiiGALQueryType> e)
+XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xiiGALQueryType::Enum e)
 {
   switch (e)
   {
@@ -892,4 +892,333 @@ XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xi
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+}
+
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xiiGALValueType::Enum e, xiiUInt32 uiComponentCount, bool bIsNormalized)
+{
+  switch (e)
+  {
+    case xiiGALValueType::Int8:
+    {
+      if (bIsNormalized)
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R8_SNORM;
+          case 2:
+            return DXGI_FORMAT_R8G8_SNORM;
+          case 4:
+            return DXGI_FORMAT_R8G8B8A8_SNORM;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+      else
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R8_SINT;
+          case 2:
+            return DXGI_FORMAT_R8G8_SINT;
+          case 4:
+            return DXGI_FORMAT_R8G8B8A8_SINT;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    break;
+    case xiiGALValueType::Int16:
+    {
+      if (bIsNormalized)
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R16_SNORM;
+          case 2:
+            return DXGI_FORMAT_R16G16_SNORM;
+          case 4:
+            return DXGI_FORMAT_R16G16B16A16_SNORM;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+      else
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R16_SINT;
+          case 2:
+            return DXGI_FORMAT_R16G16_SINT;
+          case 4:
+            return DXGI_FORMAT_R16G16B16A16_SINT;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    break;
+    case xiiGALValueType::Int32:
+    {
+      XII_ASSERT_DEV(bIsNormalized, "32-bit signed normalized formats are unsupported. Use xiiGALTextureFormat::R32Float instead.");
+
+      switch (uiComponentCount)
+      {
+        case 1:
+          return DXGI_FORMAT_R32_SINT;
+        case 2:
+          return DXGI_FORMAT_R32G32_SINT;
+        case 3:
+          return DXGI_FORMAT_R32G32B32_SINT;
+        case 4:
+          return DXGI_FORMAT_R32G32B32A32_SINT;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    break;
+    case xiiGALValueType::UInt8:
+    {
+      if (bIsNormalized)
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R8_UNORM;
+          case 2:
+            return DXGI_FORMAT_R8G8_UNORM;
+          case 4:
+            return DXGI_FORMAT_R8G8B8A8_UNORM;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+      else
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R8_UINT;
+          case 2:
+            return DXGI_FORMAT_R8G8_UINT;
+          case 4:
+            return DXGI_FORMAT_R8G8B8A8_UINT;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    break;
+    case xiiGALValueType::UInt16:
+    {
+      if (bIsNormalized)
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R16_UNORM;
+          case 2:
+            return DXGI_FORMAT_R16G16_UNORM;
+          case 4:
+            return DXGI_FORMAT_R16G16B16A16_UNORM;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+      else
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R16_UINT;
+          case 2:
+            return DXGI_FORMAT_R16G16_UINT;
+          case 4:
+            return DXGI_FORMAT_R16G16B16A16_UINT;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    break;
+    case xiiGALValueType::UInt32:
+    {
+      XII_ASSERT_DEV(bIsNormalized, "32-bit unsigned normalized formats are unsupported. Use xiiGALTextureFormat::R32Float instead.");
+
+      switch (uiComponentCount)
+      {
+        case 1:
+          return DXGI_FORMAT_R32_UINT;
+        case 2:
+          return DXGI_FORMAT_R32G32_UINT;
+        case 3:
+          return DXGI_FORMAT_R32G32B32_UINT;
+        case 4:
+          return DXGI_FORMAT_R32G32B32A32_UINT;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    break;
+    case xiiGALValueType::Float16:
+    {
+      XII_ASSERT_DEV(!bIsNormalized, "Floating point formats can not be normalized.");
+
+      switch (uiComponentCount)
+      {
+        case 1:
+          return DXGI_FORMAT_R16_FLOAT;
+        case 2:
+          return DXGI_FORMAT_R16G16_FLOAT;
+        case 4:
+          return DXGI_FORMAT_R16G16B16A16_FLOAT;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    break;
+    case xiiGALValueType::Float32:
+    {
+      XII_ASSERT_DEV(!bIsNormalized, "Floating point formats can not be normalized.");
+
+      switch (uiComponentCount)
+      {
+        case 1:
+          return DXGI_FORMAT_R32_FLOAT;
+        case 2:
+          return DXGI_FORMAT_R32G32_FLOAT;
+        case 3:
+          return DXGI_FORMAT_R32G32B32_FLOAT;
+        case 4:
+          return DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    break;
+    case xiiGALValueType::Float64:
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return DXGI_FORMAT_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE D3D_PRIMITIVE_TOPOLOGY xiiD3D12TypeConversions::GetPrimitiveTopology(xiiGALPrimitiveTopology::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALPrimitiveTopology::PointList:
+      return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case xiiGALPrimitiveTopology::LineList:
+      return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case xiiGALPrimitiveTopology::TriangleList:
+      return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case xiiGALPrimitiveTopology::TriangleStrip:
+      return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    case xiiGALPrimitiveTopology::LineStrip:
+      return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    case xiiGALPrimitiveTopology::TriangleListAdjacent:
+      return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ;
+    case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+      return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ;
+    case xiiGALPrimitiveTopology::LineListAdjacent:
+      return D3D_PRIMITIVE_TOPOLOGY_LINELIST_ADJ;
+    case xiiGALPrimitiveTopology::LineStripAdjacent:
+      return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ;
+    case xiiGALPrimitiveTopology::ControlPointPatchList1:
+      return D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList2:
+      return D3D_PRIMITIVE_TOPOLOGY_2_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList3:
+      return D3D_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList4:
+      return D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList5:
+      return D3D_PRIMITIVE_TOPOLOGY_5_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList6:
+      return D3D_PRIMITIVE_TOPOLOGY_6_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList7:
+      return D3D_PRIMITIVE_TOPOLOGY_7_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList8:
+      return D3D_PRIMITIVE_TOPOLOGY_8_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList9:
+      return D3D_PRIMITIVE_TOPOLOGY_9_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList10:
+      return D3D_PRIMITIVE_TOPOLOGY_10_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList11:
+      return D3D_PRIMITIVE_TOPOLOGY_11_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList12:
+      return D3D_PRIMITIVE_TOPOLOGY_12_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList13:
+      return D3D_PRIMITIVE_TOPOLOGY_13_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList14:
+      return D3D_PRIMITIVE_TOPOLOGY_14_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList15:
+      return D3D_PRIMITIVE_TOPOLOGY_15_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList16:
+      return D3D_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList17:
+      return D3D_PRIMITIVE_TOPOLOGY_17_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList18:
+      return D3D_PRIMITIVE_TOPOLOGY_18_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList19:
+      return D3D_PRIMITIVE_TOPOLOGY_19_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList20:
+      return D3D_PRIMITIVE_TOPOLOGY_20_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList21:
+      return D3D_PRIMITIVE_TOPOLOGY_21_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList22:
+      return D3D_PRIMITIVE_TOPOLOGY_22_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList23:
+      return D3D_PRIMITIVE_TOPOLOGY_23_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList24:
+      return D3D_PRIMITIVE_TOPOLOGY_24_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList25:
+      return D3D_PRIMITIVE_TOPOLOGY_25_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList26:
+      return D3D_PRIMITIVE_TOPOLOGY_26_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList27:
+      return D3D_PRIMITIVE_TOPOLOGY_27_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList28:
+      return D3D_PRIMITIVE_TOPOLOGY_28_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList29:
+      return D3D_PRIMITIVE_TOPOLOGY_29_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList30:
+      return D3D_PRIMITIVE_TOPOLOGY_30_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList31:
+      return D3D_PRIMITIVE_TOPOLOGY_31_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList32:
+      return D3D_PRIMITIVE_TOPOLOGY_32_CONTROL_POINT_PATCHLIST;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE D3D12_INPUT_CLASSIFICATION xiiD3D12TypeConversions::GetElementFrequency(xiiGALInputElementFrequency::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALInputElementFrequency::PerVertex:
+      return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+    case xiiGALInputElementFrequency::PerInstance:
+      return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevelCount)
+{
+  return uiMipSlice + (uiArraySlice * uiMipLevelCount);
 }

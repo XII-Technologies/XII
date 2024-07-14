@@ -11,7 +11,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALShaderD3D12::xiiGALShaderD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALShaderCreationDescription& creationDescription) :
-  xiiGALShader(pDeviceD3D12, creationDescription)
+  xiiGALShader(pDeviceD3D12, creationDescription), m_ShaderByteCodeD3D12{.pShaderBytecode = creationDescription.m_ByteCode->GetByteCode(), .BytecodeLength = creationDescription.m_ByteCode->GetSize()}
 {
 }
 
@@ -19,17 +19,11 @@ xiiGALShaderD3D12::~xiiGALShaderD3D12() = default;
 
 xiiResult xiiGALShaderD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
-
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALShaderD3D12::DeInitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
   return XII_SUCCESS;
 }
 

@@ -30,7 +30,9 @@ static LRESULT CALLBACK xiiWindowsMessageFuncTrampoline(HWND hWnd, UINT msg, WPA
       case WM_SIZE:
       {
         xiiSizeU32 size(LOWORD(lparam), HIWORD(lparam));
-        pWindow->OnResize(size);
+        pWindow->OnVisibleChange(wparam != SIZE_MINIMIZED);
+        if (size.width > 0 && size.height > 0)
+          pWindow->OnResize(size);
       }
       break;
 

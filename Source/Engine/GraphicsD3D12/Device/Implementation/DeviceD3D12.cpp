@@ -337,29 +337,12 @@ xiiResult xiiGALDeviceD3D12::CreateCommandQueuesPlatform()
   return XII_FAILURE;
 }
 
-void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
-{
-  if (pSwapChain)
-  {
-    pSwapChain->AcquireNextRenderTarget();
-  }
-}
-
-void xiiGALDeviceD3D12::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
-{
-  if (pSwapChain)
-  {
-    pSwapChain->Present();
-  }
-}
-
-void xiiGALDeviceD3D12::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
+void xiiGALDeviceD3D12::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
 }
 
-void xiiGALDeviceD3D12::EndFramePlatform()
+void xiiGALDeviceD3D12::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
 {
-  // Call FinishFrame() to release references to Swapchain resources
 
   ++m_uiFrameCounter;
 }

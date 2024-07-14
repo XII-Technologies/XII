@@ -8,7 +8,7 @@ xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVu
   xiiGALCommandQueue(pDeviceVulkan, creationDescription)
 {
   xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListVulkan, pDeviceVulkan, commandListDescription);
+  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListVulkan, pDeviceVulkan, this, commandListDescription);
 }
 
 xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
@@ -30,7 +30,7 @@ void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
 }
 
-xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList(xiiStringView sScopeName)
+xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 {
   return m_pDefaultCommandList.Borrow();
 }
@@ -39,7 +39,7 @@ void xiiGALCommandQueueVulkan::UnbindTextureFromFramebuffer(xiiGALTextureVulkan*
 {
 }
 
-xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueVulkan::Submit(xiiGALCommandList* pCommandList, bool bReset)
 {
   return 0U;
 }

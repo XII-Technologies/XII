@@ -371,28 +371,21 @@ void xiiGALDeviceD3D11::SetDebugNamePlatform(xiiStringView sName)
   }
 }
 
-void xiiGALDeviceD3D11::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
+void xiiGALDeviceD3D11::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
-  if (pSwapChain)
+  for (auto pSwapChain : swapchains)
   {
     pSwapChain->AcquireNextRenderTarget();
   }
 }
 
-void xiiGALDeviceD3D11::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
+void xiiGALDeviceD3D11::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
 {
-  if (pSwapChain)
+  for (auto pSwapChain : swapchains)
   {
     pSwapChain->Present();
   }
-}
 
-void xiiGALDeviceD3D11::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
-{
-}
-
-void xiiGALDeviceD3D11::EndFramePlatform()
-{
   FreeTemporaryResources(m_uiFrameCounter);
 
   ++m_uiFrameCounter;

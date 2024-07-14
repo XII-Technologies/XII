@@ -1184,8 +1184,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  pDevice->BeginPipeline(m_sName, renderViewContext.m_pViewData->m_hSwapChain);
-
   if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(renderViewContext.m_pViewData->m_hSwapChain))
   {
     xiiGALRenderTargets renderTargets;
@@ -1271,8 +1269,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   }
   XII_ASSERT_DEV(uiCurrentFirstUsageIdx == m_TextureUsageIdxSortedByFirstUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
   XII_ASSERT_DEV(uiCurrentLastUsageIdx == m_TextureUsageIdxSortedByLastUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
-
-  pDevice->EndPipeline(renderViewContext.m_pViewData->m_hSwapChain);
 
   renderEvent.m_Type = xiiRenderWorldRenderEvent::Type::AfterPipelineExecution;
   {

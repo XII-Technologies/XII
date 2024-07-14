@@ -53,11 +53,8 @@ protected:
 
   virtual xiiResult CreateCommandQueuesPlatform() override final;
 
-  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
-  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override final;
-  virtual void EndFramePlatform() override final;
+  virtual void BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame) override final;
+  virtual void EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains) override final;
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
@@ -141,10 +138,6 @@ private:
 
   xiiUInt64 m_uiFrameCounter = 0U;
 
-  // 0 : Graphics Queue
-  // 1 : Compute Queue
-  // 2 : Transfer Queue
-  // 3 : Sparse Queue
   xiiUniquePtr<xiiGALCommandQueueD3D12> m_CommandQueues[4];
 };
 

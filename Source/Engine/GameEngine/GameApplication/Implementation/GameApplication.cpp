@@ -107,14 +107,6 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
 
   xiiRenderWorld::BeginFrame();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  // On most platforms it doesn't matter that much how early this happens.
-  // But on HoloLens this executes something that needs to be done at the right time,
-  // for the reprojection to work properly.
-  const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
-  pDevice->BeginFrame(uiRenderFrame);
-
   xiiTaskGroupID updateTaskID;
   if (xiiRenderWorld::GetUseMultithreadedRendering())
   {
@@ -133,7 +125,31 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
   }
 }
 
-void xiiGameApplication::Run_Present()
+void xiiGameApplication::Run_AcquireImage()
+{
+  xiiHybridArray<xiiActor*, 8> allActors;
+  xiiActorManager::GetSingleton()->GetAllActors(allActors);
+
+  for (xiiActor* pActor : allActors)
+  {
+    XII_PROFILE_SCOPE(pActor->GetName());
+
+    xiiActorPluginWindow* pWindowPlugin = pActor->GetPlugin<xiiActorPluginWindow>();
+
+    if (pWindowPlugin == nullptr)
+      continue;
+
+    // Ignore actors without an output target
+    if (auto pOutput = pWindowPlugin->GetOutputTarget())
+    {
+      XII_PROFILE_SCOPE("AcquireImage");
+
+      pOutput->AcquireImage();
+    }
+  }
+}
+
+void xiiGameApplication::Run_PresentImage()
 {
   xiiHybridArray<xiiActor*, 8> allActors;
   xiiActorManager::GetSingleton()->GetAllActors(allActors);
@@ -168,14 +184,14 @@ void xiiGameApplication::Run_Present()
       }
 
       XII_PROFILE_SCOPE("Present");
-      pOutput->Present(cvar_AppVSync);
+
+      pOutput->PresentImage(cvar_AppVSync);
     }
   }
 }
 
 void xiiGameApplication::Run_FinishFrame()
 {
-  xiiGALDevice::GetDefaultDevice()->EndFrame();
   xiiRenderWorld::EndFrame();
 
   SUPER::Run_FinishFrame();

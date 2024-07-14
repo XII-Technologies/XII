@@ -58,27 +58,6 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
       // The swapchain may have a different size than the window advertised, e.g. if the window has been resized further in the meantime.
       xiiSizeU32 currentSize = pSwapchain->GetCurrentSize();
       m_OnSwapChainChanged(m_hSwapChain, currentSize);
-
-      if (m_Size != currentSize)
-      {
-        if (!m_hBackbufferStagingTexture.IsInvalidated())
-        {
-          pDevice->DestroyTexture(m_hBackbufferStagingTexture);
-          m_hBackbufferStagingTexture.Invalidate();
-        }
-
-        const auto&                      backbufferDesc = pDevice->GetTexture(pSwapchain->GetBackBufferTexture())->GetDescription();
-        xiiGALTextureCreationDescription swapChainStagingTextureDescription;
-        swapChainStagingTextureDescription.m_Type           = xiiGALResourceDimension::Texture2D;
-        swapChainStagingTextureDescription.m_Size           = backbufferDesc.m_Size;
-        swapChainStagingTextureDescription.m_Format         = backbufferDesc.m_Format;
-        swapChainStagingTextureDescription.m_Usage          = xiiGALResourceUsage::Staging;
-        swapChainStagingTextureDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
-
-        m_hBackbufferStagingTexture = pDevice->CreateTexture(swapChainStagingTextureDescription);
-
-        pDevice->GetTexture(m_hBackbufferStagingTexture)->SetDebugName("Image Capture Staging Texture");
-      }
     }
   }
   else
@@ -90,30 +69,15 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
       m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
 
       pSwapChain->SetPresentMode(m_PresentMode);
-
-      if (!m_hBackbufferStagingTexture.IsInvalidated())
-      {
-        pDevice->DestroyTexture(m_hBackbufferStagingTexture);
-        m_hBackbufferStagingTexture.Invalidate();
-      }
-
-      const auto&                      backbufferDesc = pDevice->GetTexture(pSwapChain->GetBackBufferTexture())->GetDescription();
-      xiiGALTextureCreationDescription swapChainStagingTextureDescription;
-      swapChainStagingTextureDescription.m_Type           = xiiGALResourceDimension::Texture2D;
-      swapChainStagingTextureDescription.m_Size           = backbufferDesc.m_Size;
-      swapChainStagingTextureDescription.m_Format         = backbufferDesc.m_Format;
-      swapChainStagingTextureDescription.m_Usage          = xiiGALResourceUsage::Staging;
-      swapChainStagingTextureDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
-
-      m_hBackbufferStagingTexture = pDevice->CreateTexture(swapChainStagingTextureDescription);
-
-      pDevice->GetTexture(m_hBackbufferStagingTexture)->SetDebugName("Image Capture Staging Texture");
     }
   }
 }
 
-void xiiWindowOutputTargetGAL::Present(bool bEnableVSync)
+void xiiWindowOutputTargetGAL::AcquireImage()
 {
+  // For now, the actual acquire call is done during xiiGALDevice::BeginFrame by calling xiiGALDevice::EnqueueFrameSwapChain before the render loop.
+  // This call is only used to recreate the swapchain at a safe location.
+
   // Only re-create the swapchain if somebody is listening to changes.
   if (m_OnSwapChainChanged.IsValid())
   {
@@ -128,16 +92,57 @@ void xiiWindowOutputTargetGAL::Present(bool bEnableVSync)
   }
 }
 
+void xiiWindowOutputTargetGAL::PresentImage(bool bEnableVSync)
+{
+  // For now, the actual present call is done during xiiGALDevice::EndFrame by calling xiiGALDevice::EnqueueFrameSwapChain before the render loop.
+}
+
 xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-  auto pCommandQueue = pDevice->GetDefaultCommandQueue();
-  auto          pGALCommandList = pCommandQueue->BeginCommandList();
+  xiiGALDevice*          pDevice        = xiiGALDevice::GetDefaultDevice();
+  const xiiGALSwapChain* pSwapChain     = pDevice->GetSwapChain(m_hSwapChain);
+  const auto&            backbufferDesc = pDevice->GetTexture(pSwapChain->GetBackBufferTexture())->GetDescription();
+
+  // Create/Re-create staging texture to match the resolution and format of the backbuffer.
+  {
+    bool bRecreateStagingTexture = true;
+    if (xiiGALTexture* pExistingStagingTexture = pDevice->GetTexture(m_hBackbufferStagingTexture))
+    {
+      const auto& stagingTextureDescription = pExistingStagingTexture->GetDescription();
+
+      if (stagingTextureDescription.m_Size == backbufferDesc.m_Size && stagingTextureDescription.m_Format == backbufferDesc.m_Format)
+      {
+        bRecreateStagingTexture = false;
+      }
+    }
+
+    if (bRecreateStagingTexture)
+    {
+      if (!m_hBackbufferStagingTexture.IsInvalidated())
+      {
+        pDevice->DestroyTexture(m_hBackbufferStagingTexture);
+        m_hBackbufferStagingTexture.Invalidate();
+      }
+
+      xiiGALTextureCreationDescription swapChainStagingTextureDescription;
+      swapChainStagingTextureDescription.m_Type           = xiiGALResourceDimension::Texture2D;
+      swapChainStagingTextureDescription.m_Size           = backbufferDesc.m_Size;
+      swapChainStagingTextureDescription.m_Format         = backbufferDesc.m_Format;
+      swapChainStagingTextureDescription.m_Usage          = xiiGALResourceUsage::Staging;
+      swapChainStagingTextureDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+
+      m_hBackbufferStagingTexture = pDevice->CreateTexture(swapChainStagingTextureDescription);
+
+      pDevice->GetTexture(m_hBackbufferStagingTexture)->SetDebugName("Image Capture Staging Texture");
+    }
+  }
+
+  auto pCommandQueue   = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
+  auto pGALCommandList = pCommandQueue->BeginCommandList();
 
   pGALCommandList->BeginDebugGroup("CaptureImage");
 
-  const xiiGALSwapChain* pSwapChain  = pDevice->GetSwapChain(m_hSwapChain);
-  xiiGALTextureHandle    hBackbuffer = pSwapChain ? pSwapChain->GetBackBufferTexture() : xiiGALTextureHandle();
+  xiiGALTextureHandle hBackbuffer = pSwapChain->GetBackBufferTexture();
 
   pGALCommandList->CopyTexture(hBackbuffer, m_hBackbufferStagingTexture);
 

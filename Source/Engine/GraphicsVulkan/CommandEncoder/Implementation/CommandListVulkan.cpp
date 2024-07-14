@@ -1,10 +1,11 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 
-xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceVulkan, creationDescription)
+xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription)
 {
 }
 
@@ -20,6 +21,11 @@ void xiiGALCommandListVulkan::EndPlatform()
 
 void xiiGALCommandListVulkan::ResetPlatform()
 {
+}
+
+xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform(bool bReset)
+{
+  return xiiUInt64();
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -200,6 +206,10 @@ void xiiGALCommandListVulkan::FlushPlatform()
 }
 
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
+{
+}
+
+void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
 }
 

@@ -20,7 +20,8 @@ public:
 
   void CreateSwapchain(const xiiGALSwapChainCreationDescription& desc);
 
-  virtual void      Present(bool bEnableVSync) override;
+  virtual void      PresentImage(bool bEnableVSync) override;
+  virtual void      AcquireImage() override;
   virtual xiiResult CaptureImage(xiiImage& out_image) override;
 
   OnSwapChainChanged                 m_OnSwapChainChanged;

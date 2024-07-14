@@ -20,14 +20,14 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
-  virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName) override final;
+  virtual xiiGALCommandList* BeginCommandList() override final;
 
   void UnbindTextureFromFramebuffer(xiiGALTextureD3D12* pTextureD3D12);
 
   ID3D12CommandQueue* GetD3D12CommandQueue() const;
 
 protected:
-  virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
+  xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
 
 protected:
   friend class xiiGALDeviceD3D12;

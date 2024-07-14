@@ -91,14 +91,15 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
     // Update window size
     xiiActorPluginWindow* pWindowPlugin = m_pEditorWndActor->GetPlugin<xiiActorPluginWindow>();
 
-    const xiiSizeU32 wndSize = pWindowPlugin->GetWindow()->GetClientAreaSize();
+    auto*            pWindow = static_cast<xiiEditorProcessViewWindow*>(pWindowPlugin->GetWindow());
+    const xiiSizeU32 wndSize = pWindow->GetClientAreaSize();
 
-    XII_ASSERT_DEV(pWindowPlugin->GetWindow()->GetNativeWindowHandle() == hWnd, "Editor view handle must never change. View needs to be destroyed and recreated.");
+    XII_ASSERT_DEV(pWindow->GetNativeWindowHandle() == hWnd, "Editor view handle must never change. View needs to be destroyed and recreated.");
 
     if (wndSize.width == uiWidth && wndSize.height == uiHeight)
       return;
 
-    if (static_cast<xiiEditorProcessViewWindow*>(pWindowPlugin->GetWindow())->UpdateWindow(hWnd, uiWidth, uiHeight).Failed())
+    if (pWindow->UpdateWindow(hWnd, uiWidth, uiHeight).Failed())
     {
       xiiLog::Error("Failed to update Editor Process View Window");
     }
