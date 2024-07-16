@@ -221,10 +221,6 @@ void xiiGALDevice::EnqueueFrameSwapChain(xiiGALSwapChainHandle hSwapChain)
   {
     m_FrameSwapChains.PushBack(pSwapChain);
   }
-  else
-  {
-    XII_REPORT_FAILURE("The swap chain is invalid.");
-  }
 }
 
 void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
