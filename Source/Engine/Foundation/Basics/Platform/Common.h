@@ -34,25 +34,6 @@ XII_WARNING_POP()
 #  define XII_NODISCARD
 #endif
 
-#ifndef __INTELLISENSE__
-
-// Macros to do compile-time checks, such as to ensure sizes of types
-// XII_CHECK_AT_COMPILETIME(exp) : only checks exp
-// XII_CHECK_AT_COMPILETIME_MSG(exp, msg) : checks exp and displays msg
-#  define XII_CHECK_AT_COMPILETIME(exp) static_assert(exp, XII_STRINGIZE(exp) " is false.");
-
-#  define XII_CHECK_AT_COMPILETIME_MSG(exp, msg) static_assert(exp, XII_STRINGIZE(exp) " is false. Message: " msg);
-
-#else
-
-// IntelliSense often isn't smart enough to evaluate these conditions correctly
-
-#  define XII_CHECK_AT_COMPILETIME(exp)
-
-#  define XII_CHECK_AT_COMPILETIME_MSG(exp, msg)
-
-#endif
-
 /// \brief Disallow the copy constructor and the assignment operator for this type.
 #define XII_DISALLOW_COPY_AND_ASSIGN(type) \
   type(const type&) = delete;              \
@@ -82,7 +63,7 @@ XII_WARNING_POP()
 ///
 /// Does this by stringifying the available defines, concatenating them into one long word, which is a known #define that evaluates to 0 or 1
 #define XII_CHECK_WINDOWS_INCLUDE(XII_WINH_INCLUDED, WINH_INCLUDED)                                          \
-  XII_CHECK_AT_COMPILETIME_MSG(XII_CONCAT(XII_WINCHECK_, XII_CONCAT(XII_WINH_INCLUDED, WINH_INCLUDED)) == 1, \
+  static_assert(XII_CONCAT(XII_WINCHECK_, XII_CONCAT(XII_WINH_INCLUDED, WINH_INCLUDED)) == 1, \
                                "Windows.h has been included but not through XII. #include <Foundation/Basics/Platform/Win/IncludeWindows.h> instead of Windows.h");
 
 

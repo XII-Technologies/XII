@@ -20,7 +20,7 @@ namespace xiiInternal
   template <typename T, bool isString>
   XII_ALWAYS_INLINE xiiUInt32 HashHelperImpl<T, isString>::Hash(const T& value)
   {
-    XII_CHECK_AT_COMPILETIME_MSG(isString, "xiiHashHelper is not implemented for the given type.");
+    static_assert(isString, "xiiHashHelper is not implemented for the given type.");
     return 0;
   }
 } // namespace xiiInternal

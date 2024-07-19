@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 
-// XII_CHECK_AT_COMPILETIME(sizeof(xiiRenderPipelineNodePin) == 4);
+// static_assert(sizeof(xiiRenderPipelineNodePin) == 4);
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineNode, 1, xiiRTTINoAllocator)
@@ -36,7 +36,7 @@ void xiiRenderPipelineNode::InitializePins()
 
   const xiiRTTI* pType = GetDynamicRTTI();
 
-  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  xiiHybridArray<const xiiAbstractProperty*, 32U> properties;
   pType->GetAllProperties(properties);
 
   for (auto pProp : properties)
@@ -97,7 +97,6 @@ const xiiRenderPipelineNodePin* xiiRenderPipelineNode::GetPinByName(xiiHashedStr
   {
     return pin;
   }
-
   return nullptr;
 }
 

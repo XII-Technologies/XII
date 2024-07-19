@@ -82,7 +82,7 @@ struct xiiReflectionProbeRef
   xiiUInt32            m_uiWorldIndex = 0;
   xiiReflectionProbeId m_Id;
 };
-XII_CHECK_AT_COMPILETIME(sizeof(xiiReflectionProbeRef) == 8);
+static_assert(sizeof(xiiReflectionProbeRef) == 8);
 
 template <>
 struct xiiHashHelper<xiiReflectionProbeRef>

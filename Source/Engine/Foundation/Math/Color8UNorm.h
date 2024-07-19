@@ -45,7 +45,7 @@ public:
   }
 };
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiColorBaseUB) == 4);
+static_assert(sizeof(xiiColorBaseUB) == 4);
 
 /// \brief A 8bit per channel unsigned normalized (values interpreted as 0-1) color storage format that represents colors in linear space.
 ///
@@ -74,7 +74,7 @@ public:
   xiiColor ToLinearFloat() const; // [tested]
 };
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiColorLinearUB) == 4);
+static_assert(sizeof(xiiColorLinearUB) == 4);
 
 /// \brief A 8bit per channel unsigned normalized (values interpreted as 0-1) color storage format that represents colors in gamma space.
 ///
@@ -103,6 +103,6 @@ public:
   xiiColor ToLinearFloat() const;
 };
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiColorGammaUB) == 4);
+static_assert(sizeof(xiiColorGammaUB) == 4);
 
 #include <Foundation/Math/Implementation/Color8UNorm_inl.h>

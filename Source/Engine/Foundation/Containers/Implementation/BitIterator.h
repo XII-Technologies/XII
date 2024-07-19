@@ -29,7 +29,7 @@ struct xiiBitIterator
 {
   using iterator_category = std::forward_iterator_tag;
   using value_type        = DataType;
-  XII_CHECK_AT_COMPILETIME(sizeof(DataType) <= 8);
+  static_assert(sizeof(DataType) <= 8);
 
   // Invalid iterator (end)
   XII_ALWAYS_INLINE xiiBitIterator() = default;

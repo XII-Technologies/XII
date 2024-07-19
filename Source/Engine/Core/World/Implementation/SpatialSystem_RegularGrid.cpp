@@ -596,7 +596,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiSpatialSystem_RegularGrid::xiiSpatialSystem_RegularGrid(xiiUInt32 uiCellSize /*= 128*/) :
   m_AlignedAllocator("Spatial System Aligned", xiiFoundation::GetAlignedAllocator()), m_Grids(&m_Allocator), m_DataTable(&m_Allocator), m_vCellSize(uiCellSize), m_vOverlapSize(uiCellSize / 4.0f), m_fInvCellSize(1.0f / uiCellSize)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(Data) == 8);
+  static_assert(sizeof(Data) == 8);
 
   m_Grids.SetCount(MAX_NUM_GRIDS);
 

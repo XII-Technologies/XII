@@ -83,5 +83,5 @@ class xiiVariantTypeInfoT : public xiiVariantTypeInfo
 /// Limitations: Currently only member variables are supported on custom types, no arrays, set, maps etc. For best performance, any custom type smaller than 16 bytes should be POD so it can be inlined into the xiiVariant.
 /// \sa XII_DECLARE_CUSTOM_VARIANT_TYPE, xiiVariantTypeRegistry, xiiVariant
 #define XII_DEFINE_CUSTOM_VARIANT_TYPE(TYPE)                                                                                                                                          \
-  XII_CHECK_AT_COMPILETIME_MSG(xiiVariantTypeDeduction<TYPE>::value == xiiVariantType::TypedObject, "XII_DECLARE_CUSTOM_VARIANT_TYPE needs to be added to the header defining TYPE"); \
+  static_assert(xiiVariantTypeDeduction<TYPE>::value == xiiVariantType::TypedObject, "XII_DECLARE_CUSTOM_VARIANT_TYPE needs to be added to the header defining TYPE"); \
   xiiVariantTypeInfoT<TYPE> g_xiiVariantTypeInfoT_##TYPE;

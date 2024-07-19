@@ -18,7 +18,7 @@ template <typename T, xiiUInt32 C>
 template <xiiUInt32 OtherCapacity>
 xiiStaticArray<T, C>::xiiStaticArray(const xiiStaticArray<T, OtherCapacity>& rhs)
 {
-  XII_CHECK_AT_COMPILETIME(OtherCapacity <= C);
+  static_assert(OtherCapacity <= C);
 
   XII_ASSERT_DEBUG(this->m_pElements == nullptr, "static arrays should not use m_pElements");
   this->m_uiCapacity = C;

@@ -5,9 +5,9 @@
 #include <Foundation/Types/VariantTypeRegistry.h>
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
-XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 40);
+static_assert(sizeof(xiiVariant) == 40);
 #else
-XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 40); // TODO: Resolve
+static_assert(sizeof(xiiVariant) == 40); // TODO: Resolve
 #endif
 
 /// constructors
@@ -123,8 +123,8 @@ XII_ALWAYS_INLINE void xiiVariant::InitShared(const T& value)
 {
   using StorageType = typename TypeDeduction<T>::StorageType;
 
-  XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) > sizeof(Data)) || TypeDeduction<T>::forceSharing, "value of this type should be stored inplace");
-  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value != Type::Invalid, "value of this type cannot be stored in a Variant");
+  static_assert((sizeof(StorageType) > sizeof(Data)) || TypeDeduction<T>::forceSharing, "value of this type should be stored inplace");
+  static_assert(TypeDeduction<T>::value != Type::Invalid, "value of this type cannot be stored in a Variant");
   const xiiRTTI* pType = xiiGetStaticRTTI<T>();
 
   m_Data.shared = XII_DEFAULT_NEW(TypedSharedData<StorageType>, value, pType);
@@ -139,7 +139,7 @@ struct ComputeHashFunc
   template <typename T>
   XII_FORCE_INLINE xiiUInt64 operator()(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
   {
-    XII_CHECK_AT_COMPILETIME_MSG(sizeof(typename xiiVariant::TypeDeduction<T>::StorageType) <= sizeof(float) * 4 && !xiiVariant::TypeDeduction<T>::forceSharing, "This type requires special handling! Add a specialization below.");
+    static_assert(sizeof(typename xiiVariant::TypeDeduction<T>::StorageType) <= sizeof(float) * 4 && !xiiVariant::TypeDeduction<T>::forceSharing, "This type requires special handling! Add a specialization below.");
     return xiiHashingUtils::xxHash64(pData, sizeof(T), uiSeed);
   }
 };

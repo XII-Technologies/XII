@@ -9,7 +9,7 @@ template <typename T, xiiUInt32 Capacity>
 class xiiStaticRingBuffer
 {
 public:
-  XII_CHECK_AT_COMPILETIME_MSG(Capacity > 1, "ORLY?");
+  static_assert(Capacity > 1, "ORLY?");
 
   /// \brief Constructs an empty ring-buffer.
   xiiStaticRingBuffer(); // [tested]

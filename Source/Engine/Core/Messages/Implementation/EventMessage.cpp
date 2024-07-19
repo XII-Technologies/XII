@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEventMessage, 1, xiiRTTIDefaultAllocator<xii
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiEventMessageSender<xiiEventMessage>) == 16);
+static_assert(sizeof(xiiEventMessageSender<xiiEventMessage>) == 16);
 
 namespace xiiInternal
 {

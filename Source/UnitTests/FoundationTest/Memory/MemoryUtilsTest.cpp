@@ -20,7 +20,7 @@ public:
 };
 xiiHybridArray<void*, 10> xiiConstructTest::s_dtorList;
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiConstructTest) == 4);
+static_assert(sizeof(xiiConstructTest) == 4);
 
 
 struct PODTest

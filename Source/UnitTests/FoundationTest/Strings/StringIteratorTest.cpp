@@ -10,9 +10,9 @@ void TestConstruction(const STRING& value, const char* szStart, const char* szEn
   xiiStringUtf8 sUtf8(L"A単語F");
   XII_TEST_BOOL(value.IsEqual(sUtf8.GetData()));
   const bool bEqualForwardItTypes = xiiConversionTest<typename STRING::iterator, typename STRING::const_iterator>::sameType == 1;
-  XII_CHECK_AT_COMPILETIME_MSG(bEqualForwardItTypes, "As the string iterator is read-only, both const and non-const versions should be the same type.");
+  static_assert(bEqualForwardItTypes, "As the string iterator is read-only, both const and non-const versions should be the same type.");
   const bool bEqualReverseItTypes = xiiConversionTest<typename STRING::reverse_iterator, typename STRING::const_reverse_iterator>::sameType == 1;
-  XII_CHECK_AT_COMPILETIME_MSG(bEqualReverseItTypes, "As the reverse string iterator is read-only, both const and non-const versions should be the same type.");
+  static_assert(bEqualReverseItTypes, "As the reverse string iterator is read-only, both const and non-const versions should be the same type.");
 
   typename STRING::iterator itInvalid;
   XII_TEST_BOOL(!itInvalid.IsValid());

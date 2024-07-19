@@ -43,7 +43,7 @@ template <typename T, xiiBlockStorageType::Enum StorageType>
 xiiComponentManager<T, StorageType>::xiiComponentManager(xiiWorld* pWorld) :
   xiiComponentManagerBase(pWorld), m_ComponentStorage(GetBlockAllocator(), GetAllocator())
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponent, ComponentType), "Not a valid component type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiComponent, ComponentType), "Not a valid component type");
 }
 
 template <typename T, xiiBlockStorageType::Enum StorageType>

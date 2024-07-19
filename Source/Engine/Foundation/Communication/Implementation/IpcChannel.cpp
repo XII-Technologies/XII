@@ -12,9 +12,9 @@
 #  include <Foundation/Communication/Implementation/Linux/PipeChannel_linux.h>
 #endif
 
-XII_CHECK_AT_COMPILETIME((xiiInt32)xiiIpcChannel::ConnectionState::Disconnected == (xiiInt32)xiiIpcChannelEvent::Disconnected);
-XII_CHECK_AT_COMPILETIME((xiiInt32)xiiIpcChannel::ConnectionState::Connecting == (xiiInt32)xiiIpcChannelEvent::Connecting);
-XII_CHECK_AT_COMPILETIME((xiiInt32)xiiIpcChannel::ConnectionState::Connected == (xiiInt32)xiiIpcChannelEvent::Connected);
+static_assert((xiiInt32)xiiIpcChannel::ConnectionState::Disconnected == (xiiInt32)xiiIpcChannelEvent::Disconnected);
+static_assert((xiiInt32)xiiIpcChannel::ConnectionState::Connecting == (xiiInt32)xiiIpcChannelEvent::Connecting);
+static_assert((xiiInt32)xiiIpcChannel::ConnectionState::Connected == (xiiInt32)xiiIpcChannelEvent::Connected);
 
 xiiIpcChannel::xiiIpcChannel(xiiStringView sAddress, Mode::Enum mode) :
   m_sAddress(sAddress), m_Mode(mode), m_pOwner(xiiMessageLoop::GetSingleton())

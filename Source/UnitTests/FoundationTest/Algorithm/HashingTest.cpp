@@ -329,7 +329,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, HashableStruct)
   SimpleStruct NonAutomaticInst;
   xiiMemoryUtils::ZeroFill(&NonAutomaticInst, 1);
 
-  XII_CHECK_AT_COMPILETIME(sizeof(AutomaticInst) == sizeof(NonAutomaticInst));
+  static_assert(sizeof(AutomaticInst) == sizeof(NonAutomaticInst));
 
   XII_TEST_INT(xiiMemoryUtils::Compare<xiiUInt8>((xiiUInt8*)&AutomaticInst, (xiiUInt8*)&NonAutomaticInst, sizeof(AutomaticInst)), 0);
 

@@ -60,26 +60,26 @@ namespace
     };
   };
 
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALSwapChainHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALCommandQueueHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALBottomLevelASHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALBufferHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALBufferViewHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALFenceHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALFramebufferHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALQueryHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALRenderPassHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALSamplerHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALTextureHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALTextureViewHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALTopLevelASHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALInputLayoutHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALShaderHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALBlendStateHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALDepthStencilStateHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALRasterizerStateHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALPipelineResourceSignatureHandle) == sizeof(xiiUInt32));
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALPipelineStateHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALSwapChainHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALCommandQueueHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALBottomLevelASHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALBufferHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALBufferViewHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALFenceHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALFramebufferHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALQueryHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALRenderPassHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALSamplerHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALTextureHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALTextureViewHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALTopLevelASHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALInputLayoutHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALShaderHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALBlendStateHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALDepthStencilStateHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALRasterizerStateHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALPipelineResourceSignatureHandle) == sizeof(xiiUInt32));
+  static_assert(sizeof(xiiGALPipelineStateHandle) == sizeof(xiiUInt32));
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)

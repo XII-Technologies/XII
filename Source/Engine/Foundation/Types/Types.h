@@ -19,19 +19,19 @@ using xiiReal = float;
 #endif
 
 // Do some compile-time checks on the types
-XII_CHECK_AT_COMPILETIME(sizeof(bool) == 1);
-XII_CHECK_AT_COMPILETIME(sizeof(char) == 1);
-XII_CHECK_AT_COMPILETIME(sizeof(float) == 4);
-XII_CHECK_AT_COMPILETIME(sizeof(double) == 8);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiInt8) == 1);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiInt16) == 2);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiInt32) == 4);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiInt64) == 8); // Must be defined in the specific compiler header
-XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt8) == 1);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt16) == 2);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == 4);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt64) == 8); // Must be defined in the specific compiler header
-XII_CHECK_AT_COMPILETIME(sizeof(long long int) == 8);
+static_assert(sizeof(bool) == 1);
+static_assert(sizeof(char) == 1);
+static_assert(sizeof(float) == 4);
+static_assert(sizeof(double) == 8);
+static_assert(sizeof(xiiInt8) == 1);
+static_assert(sizeof(xiiInt16) == 2);
+static_assert(sizeof(xiiInt32) == 4);
+static_assert(sizeof(xiiInt64) == 8); // Must be defined in the specific compiler header
+static_assert(sizeof(xiiUInt8) == 1);
+static_assert(sizeof(xiiUInt16) == 2);
+static_assert(sizeof(xiiUInt32) == 4);
+static_assert(sizeof(xiiUInt64) == 8); // Must be defined in the specific compiler header
+static_assert(sizeof(long long int) == 8);
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
 #  define XII_ALIGNMENT_MINIMUM 8
@@ -41,8 +41,8 @@ XII_CHECK_AT_COMPILETIME(sizeof(long long int) == 8);
 #  error "Unknown pointer size."
 #endif
 
-XII_CHECK_AT_COMPILETIME(sizeof(void*) == XII_ALIGNMENT_MINIMUM);
-XII_CHECK_AT_COMPILETIME(alignof(void*) == XII_ALIGNMENT_MINIMUM);
+static_assert(sizeof(void*) == XII_ALIGNMENT_MINIMUM);
+static_assert(alignof(void*) == XII_ALIGNMENT_MINIMUM);
 
 /// \brief Enum values for success and failure. To be used by functions as return values mostly, instead of bool.
 enum xiiResultEnum

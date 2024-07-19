@@ -46,7 +46,7 @@ template <xiiUInt32 BlockSize>
 xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiAllocatorTrackingMode mode) :
   m_TrackingMode(mode), m_SuperBlocks(pParent), m_FreeBlocks(pParent)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(BlockSize >= 4096, "Block size must be 4096 or bigger");
+  static_assert(BlockSize >= 4096, "Block size must be 4096 or bigger");
 
   m_Id       = xiiMemoryTracker::RegisterAllocator(sName, mode, xiiPageAllocator::GetId());
   m_ThreadID = xiiThreadUtils::GetCurrentThreadID();
@@ -81,7 +81,7 @@ XII_FORCE_INLINE xiiDataBlock<T, BlockSize> xiiLargeBlockAllocator<BlockSize>::A
     };
   };
 
-  XII_CHECK_AT_COMPILETIME_MSG(Helper::BLOCK_CAPACITY >= 1, "Type is too big for block allocation. Consider using regular heap allocation instead or increase the block size.");
+  static_assert(Helper::BLOCK_CAPACITY >= 1, "Type is too big for block allocation. Consider using regular heap allocation instead or increase the block size.");
 
   xiiDataBlock<T, BlockSize> block(static_cast<T*>(Allocate(XII_ALIGNMENT_OF(T))), 0);
   return block;

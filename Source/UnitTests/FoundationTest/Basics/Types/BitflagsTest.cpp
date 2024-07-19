@@ -35,7 +35,7 @@ namespace
 } // namespace
 
 XII_DEFINE_AS_POD_TYPE(AutoFlags::Enum);
-XII_CHECK_AT_COMPILETIME(sizeof(xiiBitflags<AutoFlags>) == 4);
+static_assert(sizeof(xiiBitflags<AutoFlags>) == 4);
 
 XII_CREATE_SIMPLE_TEST(Basics, Bitflags)
 {

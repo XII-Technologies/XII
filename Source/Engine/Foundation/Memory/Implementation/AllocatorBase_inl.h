@@ -120,7 +120,7 @@ namespace xiiInternal
   template <typename T>
   XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsClass)
   {
-    XII_CHECK_AT_COMPILETIME_MSG(!std::is_trivial<T>::value, "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.");
+    static_assert(!std::is_trivial<T>::value, "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.");
 
     T* pNewMem = CreateRawBuffer<T>(pAllocator, uiNewCount);
     xiiMemoryUtils::RelocateConstruct(pNewMem, pPtr, uiCurrentCount);

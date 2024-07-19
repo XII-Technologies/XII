@@ -12,7 +12,7 @@
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 
 #include <Shaders/Materials/LensFlareData.h>
-XII_CHECK_AT_COMPILETIME(sizeof(xiiPerLensFlareData) == 48);
+static_assert(sizeof(xiiPerLensFlareData) == 48);
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLensFlareRenderer, 1, xiiRTTIDefaultAllocator<xiiLensFlareRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;

@@ -188,18 +188,18 @@ void xiiOpenDdlWriter::OutputPrimitiveTypeNameShortest(xiiOpenDdlPrimitiveType t
 
 xiiOpenDdlWriter::xiiOpenDdlWriter()
 {
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesBool == (xiiInt32)xiiOpenDdlPrimitiveType::Bool);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesInt8 == (xiiInt32)xiiOpenDdlPrimitiveType::Int8);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesInt16 == (xiiInt32)xiiOpenDdlPrimitiveType::Int16);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesInt32 == (xiiInt32)xiiOpenDdlPrimitiveType::Int32);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesInt64 == (xiiInt32)xiiOpenDdlPrimitiveType::Int64);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesUInt8 == (xiiInt32)xiiOpenDdlPrimitiveType::UInt8);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesUInt16 == (xiiInt32)xiiOpenDdlPrimitiveType::UInt16);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesUInt32 == (xiiInt32)xiiOpenDdlPrimitiveType::UInt32);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesUInt64 == (xiiInt32)xiiOpenDdlPrimitiveType::UInt64);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesFloat == (xiiInt32)xiiOpenDdlPrimitiveType::Float);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesDouble == (xiiInt32)xiiOpenDdlPrimitiveType::Double);
-  XII_CHECK_AT_COMPILETIME((xiiInt32)xiiOpenDdlWriter::State::PrimitivesString == (xiiInt32)xiiOpenDdlPrimitiveType::String);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesBool == (xiiInt32)xiiOpenDdlPrimitiveType::Bool);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesInt8 == (xiiInt32)xiiOpenDdlPrimitiveType::Int8);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesInt16 == (xiiInt32)xiiOpenDdlPrimitiveType::Int16);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesInt32 == (xiiInt32)xiiOpenDdlPrimitiveType::Int32);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesInt64 == (xiiInt32)xiiOpenDdlPrimitiveType::Int64);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesUInt8 == (xiiInt32)xiiOpenDdlPrimitiveType::UInt8);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesUInt16 == (xiiInt32)xiiOpenDdlPrimitiveType::UInt16);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesUInt32 == (xiiInt32)xiiOpenDdlPrimitiveType::UInt32);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesUInt64 == (xiiInt32)xiiOpenDdlPrimitiveType::UInt64);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesFloat == (xiiInt32)xiiOpenDdlPrimitiveType::Float);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesDouble == (xiiInt32)xiiOpenDdlPrimitiveType::Double);
+  static_assert((xiiInt32)xiiOpenDdlWriter::State::PrimitivesString == (xiiInt32)xiiOpenDdlPrimitiveType::String);
 
   m_StateStack.ExpandAndGetRef().m_State = State::Invalid;
   m_StateStack.ExpandAndGetRef().m_State = State::Empty;

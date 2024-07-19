@@ -43,7 +43,7 @@
 // Include this last, it will ensure the previous includes have setup everything correctly
 #include <Foundation/Basics/Platform/CheckDefinitions.h>
 
-// Include common definitions and macros (e.g. XII_CHECK_AT_COMPILETIME)
+// Include common definitions and macros (e.g. static_assert)
 #include <Foundation/Basics/Platform/Common.h>
 
 // Include magic preprocessor macros

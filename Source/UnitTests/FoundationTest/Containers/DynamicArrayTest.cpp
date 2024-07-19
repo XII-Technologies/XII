@@ -60,9 +60,9 @@ namespace DynamicArrayTestDetail
 } // namespace DynamicArrayTestDetail
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
-XII_CHECK_AT_COMPILETIME(sizeof(xiiDynamicArray<xiiInt32>) == 24);
+static_assert(sizeof(xiiDynamicArray<xiiInt32>) == 24);
 #else
-XII_CHECK_AT_COMPILETIME(sizeof(xiiDynamicArray<xiiInt32>) == 16);
+static_assert(sizeof(xiiDynamicArray<xiiInt32>) == 16);
 #endif
 
 XII_CREATE_SIMPLE_TEST_GROUP(Containers);

@@ -102,8 +102,8 @@ namespace
   static xiiMutex                                           s_ThreadInfosMutex;
 
 #  if XII_ENABLED(XII_PLATFORM_64BIT)
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiProfilingSystem::CPUScope) == 72);
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiProfilingSystem::GPUScope) == 64);
+  static_assert(sizeof(xiiProfilingSystem::CPUScope) == 72);
+  static_assert(sizeof(xiiProfilingSystem::GPUScope) == 64);
 #  endif
 
   static thread_local CpuScopesBufferBase*        s_CpuScopes = nullptr;

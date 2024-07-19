@@ -7,15 +7,15 @@
 #  include <Duktape/duktape.h>
 #  include <Foundation/IO/FileSystem/FileReader.h>
 
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::None == DUK_TYPE_MASK_NONE);
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::Undefined == DUK_TYPE_MASK_UNDEFINED);
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::Null == DUK_TYPE_MASK_NULL);
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::Bool == DUK_TYPE_MASK_BOOLEAN);
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::Number == DUK_TYPE_MASK_NUMBER);
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::String == DUK_TYPE_MASK_STRING);
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::Object == DUK_TYPE_MASK_OBJECT);
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::Buffer == DUK_TYPE_MASK_BUFFER);
-XII_CHECK_AT_COMPILETIME(xiiDuktapeTypeMask::Pointer == DUK_TYPE_MASK_POINTER);
+static_assert(xiiDuktapeTypeMask::None == DUK_TYPE_MASK_NONE);
+static_assert(xiiDuktapeTypeMask::Undefined == DUK_TYPE_MASK_UNDEFINED);
+static_assert(xiiDuktapeTypeMask::Null == DUK_TYPE_MASK_NULL);
+static_assert(xiiDuktapeTypeMask::Bool == DUK_TYPE_MASK_BOOLEAN);
+static_assert(xiiDuktapeTypeMask::Number == DUK_TYPE_MASK_NUMBER);
+static_assert(xiiDuktapeTypeMask::String == DUK_TYPE_MASK_STRING);
+static_assert(xiiDuktapeTypeMask::Object == DUK_TYPE_MASK_OBJECT);
+static_assert(xiiDuktapeTypeMask::Buffer == DUK_TYPE_MASK_BUFFER);
+static_assert(xiiDuktapeTypeMask::Pointer == DUK_TYPE_MASK_POINTER);
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
 

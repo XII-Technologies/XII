@@ -78,7 +78,7 @@ xiiRenderData::Category xiiRenderData::RegisterCategory(xiiStringView sCategoryN
 
   auto& data            = s_CategoryData.ExpandAndGetRef();
   data.m_sName          = sCategoryNameHash;
-  data.m_sortingKeyFunc = sortingKeyFunc;
+  data.m_SortingKeyFunc = sortingKeyFunc;
 
   return newCategory;
 }

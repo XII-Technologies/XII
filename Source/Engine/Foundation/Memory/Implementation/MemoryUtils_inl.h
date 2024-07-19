@@ -1,6 +1,6 @@
 
 #define XII_CHECK_CLASS(T)                                 \
-  XII_CHECK_AT_COMPILETIME_MSG(!std::is_trivial<T>::value, \
+  static_assert(!std::is_trivial<T>::value, \
                                "Trivial POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.")
 
 template <xiiConstructionMode mode, typename T>

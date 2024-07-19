@@ -22,7 +22,7 @@ public:
 
     bool operator==(const Category& other) const;
 
-    xiiUInt16 m_uiValue = 0xFFFF;
+    xiiUInt16 m_uiValue = 0xFFFFU;
   };
 
   struct Caching
@@ -73,7 +73,7 @@ private:
   struct CategoryData
   {
     xiiHashedString m_sName;
-    SortingKeyFunc  m_sortingKeyFunc;
+    SortingKeyFunc  m_SortingKeyFunc;
 
     xiiHashTable<const xiiRTTI*, xiiUInt32> m_TypeToRendererIndex;
   };

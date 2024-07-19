@@ -59,7 +59,7 @@ namespace
     xiiColorLinearUB m_color;
   };
 
-  XII_CHECK_AT_COMPILETIME(sizeof(Vertex) == 16);
+  static_assert(sizeof(Vertex) == 16);
 
   struct alignas(16) TexVertex
   {
@@ -69,7 +69,7 @@ namespace
     float            padding[2];
   };
 
-  XII_CHECK_AT_COMPILETIME(sizeof(TexVertex) == 32);
+  static_assert(sizeof(TexVertex) == 32);
 
   struct alignas(16) BoxData
   {
@@ -77,7 +77,7 @@ namespace
     xiiColor           m_color;
   };
 
-  XII_CHECK_AT_COMPILETIME(sizeof(BoxData) == 64);
+  static_assert(sizeof(BoxData) == 64);
 
   struct alignas(16) GlyphData
   {
@@ -87,7 +87,7 @@ namespace
     xiiUInt16        m_sizeInPixel;
   };
 
-  XII_CHECK_AT_COMPILETIME(sizeof(GlyphData) == 16);
+  static_assert(sizeof(GlyphData) == 16);
 
   struct TextLineData2D
   {

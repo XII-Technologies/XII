@@ -56,14 +56,14 @@ namespace xiiInternal
     m_Objects.Insert(nullptr);
 
 #if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-    XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject::TransformationData) == 240);
+    static_assert(sizeof(xiiGameObject::TransformationData) == 240);
 #else
-    XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject::TransformationData) == 192);
+    static_assert(sizeof(xiiGameObject::TransformationData) == 192);
 #endif
 
-    XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject) == 128);
-    XII_CHECK_AT_COMPILETIME(sizeof(QueuedMsgMetaData) == 16);
-    XII_CHECK_AT_COMPILETIME(XII_COMPONENT_TYPE_INDEX_BITS <= sizeof(xiiWorldModuleTypeId) * 8);
+    static_assert(sizeof(xiiGameObject) == 128);
+    static_assert(sizeof(QueuedMsgMetaData) == 16);
+    static_assert(XII_COMPONENT_TYPE_INDEX_BITS <= sizeof(xiiWorldModuleTypeId) * 8);
 
     auto pDefaultInitBatch        = XII_NEW(&m_Allocator, InitBatch, &m_Allocator, "Default", true);
     pDefaultInitBatch->m_bIsReady = true;

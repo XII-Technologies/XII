@@ -14,7 +14,7 @@ static const char* GALSemanticToD3D[] = {"POSITION", "NORMAL", "TANGENT", "COLOR
                                          "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
                                          "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
 
-XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToD3D) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D array size does not match input layout semantic count.");
+static_assert(XII_ARRAY_SIZE(GALSemanticToD3D) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D array size does not match input layout semantic count.");
 
 xiiGALInputLayoutD3D12::xiiGALInputLayoutD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALInputLayoutCreationDescription& creationDescription) :
   xiiGALInputLayout(pDeviceD3D12, creationDescription)
