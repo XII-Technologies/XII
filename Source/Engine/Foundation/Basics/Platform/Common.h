@@ -46,9 +46,9 @@ XII_WARNING_POP()
 /// \brief Checks whether Windows.h has been included directly instead of through 'IncludeWindows.h'
 ///
 /// Does this by stringifying the available defines, concatenating them into one long word, which is a known #define that evaluates to 0 or 1
-#define XII_CHECK_WINDOWS_INCLUDE(XII_WINH_INCLUDED, WINH_INCLUDED)                                          \
+#define XII_CHECK_WINDOWS_INCLUDE(XII_WINH_INCLUDED, WINH_INCLUDED)                                 \
   static_assert(XII_PP_CONCAT(XII_WINCHECK_, XII_PP_CONCAT(XII_WINH_INCLUDED, WINH_INCLUDED)) == 1, \
-                               "Windows.h has been included but not through XII. #include <Foundation/Basics/Platform/Win/IncludeWindows.h> instead of Windows.h");
+                "Windows.h has been included but not through XII. #include <Foundation/Basics/Platform/Win/IncludeWindows.h> instead of Windows.h");
 
 #if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
 
@@ -103,7 +103,7 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
     xiiReferenceFunction_##UniqueName()
 
 /// \brief This must occur exactly once in each static library, such that all XII_STATICLINK_FILE macros can reference it.
-#  define XII_STATICLINK_LIBRARY(LibraryName)                                                          \
+#  define XII_STATICLINK_LIBRARY(LibraryName)                                                             \
     xiiPluginRegister xiiPluginRegister_##LibraryName(XII_PP_STRINGIFY(XII_PP_CONCAT(xii, LibraryName))); \
     extern "C" void   xiiReferenceFunction_##LibraryName(bool bReturn = true)
 

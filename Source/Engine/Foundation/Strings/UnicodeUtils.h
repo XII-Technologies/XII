@@ -1,9 +1,10 @@
 #pragma once
 
-#include <Foundation/Basics.h>
+#ifndef XII_INCLUDING_BASICS_H
+#  error "UnicodeUtils.h must not be included directly, but instead include Foundation/Basics.h."
+#endif
+
 #include <Foundation/ThirdParty/utf8/utf8.h>
-
-
 
 /// \brief Helper functions to work with Unicode.
 class XII_FOUNDATION_DLL xiiUnicodeUtils

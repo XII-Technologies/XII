@@ -27,38 +27,38 @@ namespace
 #define DEFINE_OP_REGISTER(name) \
   const xiiExpression::Register* name = context.m_pRegisters + xiiExpressionByteCode::GetRegisterIndex(pByteCode) * context.m_uiNumSimd4Instances;
 
-#define DEFINE_CONSTANT(name)                                                                           \
+#define DEFINE_CONSTANT(name)                                                                              \
   const xiiUInt32                XII_PP_CONCAT(name, Raw) = *pByteCode;                                    \
-  const xiiExpression::Register  tmp                   = xiiExpressionByteCode::GetConstant(pByteCode); \
-  const xiiExpression::Register* name                  = &tmp;
+  const xiiExpression::Register  tmp                      = xiiExpressionByteCode::GetConstant(pByteCode); \
+  const xiiExpression::Register* name                     = &tmp;
 
 #define UNARY_OP_INNER_LOOP(code) \
   code;                           \
   ++r;                            \
   ++a;
 
-#define DEFINE_UNARY_OP(name, code)                                                     \
+#define DEFINE_UNARY_OP(name, code)                                                        \
   void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)  \
-  {                                                                                     \
-    DEFINE_TARGET_REGISTER();                                                           \
-    DEFINE_OP_REGISTER(a);                                                              \
-    while (r != re)                                                                     \
-    {                                                                                   \
-      UNARY_OP_INNER_LOOP(code)                                                         \
-    }                                                                                   \
-  }                                                                                     \
-                                                                                        \
+  {                                                                                        \
+    DEFINE_TARGET_REGISTER();                                                              \
+    DEFINE_OP_REGISTER(a);                                                                 \
+    while (r != re)                                                                        \
+    {                                                                                      \
+      UNARY_OP_INNER_LOOP(code)                                                            \
+    }                                                                                      \
+  }                                                                                        \
+                                                                                           \
   void XII_PP_CONCAT(name, _16)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
-  {                                                                                     \
-    DEFINE_TARGET_REGISTER();                                                           \
-    DEFINE_OP_REGISTER(a);                                                              \
-    while (r != re)                                                                     \
-    {                                                                                   \
-      UNARY_OP_INNER_LOOP(code)                                                         \
-      UNARY_OP_INNER_LOOP(code)                                                         \
-      UNARY_OP_INNER_LOOP(code)                                                         \
-      UNARY_OP_INNER_LOOP(code)                                                         \
-    }                                                                                   \
+  {                                                                                        \
+    DEFINE_TARGET_REGISTER();                                                              \
+    DEFINE_OP_REGISTER(a);                                                                 \
+    while (r != re)                                                                        \
+    {                                                                                      \
+      UNARY_OP_INNER_LOOP(code)                                                            \
+      UNARY_OP_INNER_LOOP(code)                                                            \
+      UNARY_OP_INNER_LOOP(code)                                                            \
+      UNARY_OP_INNER_LOOP(code)                                                            \
+    }                                                                                      \
   }
 
 #define BINARY_OP_INNER_LOOP(code)        \
@@ -72,7 +72,7 @@ namespace
 
 #define DEFINE_BINARY_OP(name, code)                                                                                 \
   template <bool RightIsConstant>                                                                                    \
-  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)                               \
+  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)                            \
   {                                                                                                                  \
     DEFINE_TARGET_REGISTER();                                                                                        \
     DEFINE_OP_REGISTER(a);                                                                                           \
@@ -104,17 +104,17 @@ namespace
   ++b;                              \
   ++c;
 
-#define DEFINE_TERNARY_OP(name, code)                                                  \
+#define DEFINE_TERNARY_OP(name, code)                                                     \
   void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
-  {                                                                                    \
-    DEFINE_TARGET_REGISTER();                                                          \
-    DEFINE_OP_REGISTER(a);                                                             \
-    DEFINE_OP_REGISTER(b);                                                             \
-    DEFINE_OP_REGISTER(c);                                                             \
-    while (r != re)                                                                    \
-    {                                                                                  \
-      TERNARY_OP_INNER_LOOP(code)                                                      \
-    }                                                                                  \
+  {                                                                                       \
+    DEFINE_TARGET_REGISTER();                                                             \
+    DEFINE_OP_REGISTER(a);                                                                \
+    DEFINE_OP_REGISTER(b);                                                                \
+    DEFINE_OP_REGISTER(c);                                                                \
+    while (r != re)                                                                       \
+    {                                                                                     \
+      TERNARY_OP_INNER_LOOP(code)                                                         \
+    }                                                                                     \
   }
 
   DEFINE_UNARY_OP(AbsF, r->f = a->f.Abs());

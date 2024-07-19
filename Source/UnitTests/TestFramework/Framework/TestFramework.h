@@ -401,7 +401,7 @@ XII_TEST_DLL bool xiiTestResult(xiiResult condition, const char* szErrorText, co
 //////////////////////////////////////////////////////////////////////////
 
 /// \brief Tests for a xiiStatus condition, outputs xiiStatus message on failure
-#define XII_TEST_STATUS(condition)                  \
+#define XII_TEST_STATUS(condition)                     \
   auto XII_PP_CONCAT(l_, XII_SOURCE_LINE) = condition; \
   xiiTestResult(XII_PP_CONCAT(l_, XII_SOURCE_LINE).m_Result, "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, XII_PP_CONCAT(l_, XII_SOURCE_LINE).m_sMessage)
 
@@ -513,8 +513,8 @@ XII_TEST_DLL bool xiiTestVector(xiiVec4d v1, xiiVec4d v2, double fEps, const cha
 #define XII_TEST_VEC4(i1, i2, epsilon) XII_TEST_VEC4_MSG(i1, i2, epsilon, "")
 
 /// \brief Tests two xiiVec4's for equality. On failure both actual and expected values are output, also a custom message is printed.
-#define XII_TEST_VEC4_MSG(r1, r2, epsilon, msg, ...)                                                                                                        \
-  xiiTestVector(xiiVec4d(ToFloat((r1).x), ToFloat((r1).y), ToFloat((r1).z), ToFloat((r1).w)),                                                               \
+#define XII_TEST_VEC4_MSG(r1, r2, epsilon, msg, ...)                                                                                                              \
+  xiiTestVector(xiiVec4d(ToFloat((r1).x), ToFloat((r1).y), ToFloat((r1).z), ToFloat((r1).w)),                                                                     \
                 xiiVec4d(ToFloat((r2).x), ToFloat((r2).y), ToFloat((r2).z), ToFloat((r2).w)), ToFloat(epsilon), XII_PP_STRINGIFY(r1) " == " XII_PP_STRINGIFY(r2), \
                 XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 

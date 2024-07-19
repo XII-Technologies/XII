@@ -215,13 +215,13 @@
 
 #define XII_IF_0(x)
 #define XII_IF_1(x) x
-#define XII_IF(cond, x)                  \
+#define XII_IF(cond, x)                     \
   XII_PP_CONCAT(XII_IF_, XII_TO_BOOL(cond)) \
   (x)
 
 #define XII_IF_ELSE_0(x, y) y
 #define XII_IF_ELSE_1(x, y) x
-#define XII_IF_ELSE(cond, x, y)               \
+#define XII_IF_ELSE(cond, x, y)                  \
   XII_PP_CONCAT(XII_IF_ELSE_, XII_TO_BOOL(cond)) \
   (x, y)
 
@@ -245,7 +245,7 @@
 #define XII_LIST_9(x)  XII_LIST_8(x), XII_PP_CONCAT(x, 8)
 #define XII_LIST_10(x) XII_LIST_9(x), XII_PP_CONCAT(x, 9)
 
-#define XII_LIST(x, count)     \
+#define XII_LIST(x, count)        \
   XII_PP_CONCAT(XII_LIST_, count) \
   (x)
 
@@ -253,7 +253,7 @@
 
 #define XII_PAIR_LIST_0(x, y)
 #define XII_PAIR_LIST_1(x, y) \
-  XII_PP_CONCAT(x, 0)            \
+  XII_PP_CONCAT(x, 0)         \
   XII_PP_CONCAT(y, 0)
 #define XII_PAIR_LIST_2(x, y)  XII_PAIR_LIST_1(x, y), XII_PP_CONCAT(x, 1) XII_PP_CONCAT(y, 1)
 #define XII_PAIR_LIST_3(x, y)  XII_PAIR_LIST_2(x, y), XII_PP_CONCAT(x, 2) XII_PP_CONCAT(y, 2)
@@ -265,6 +265,6 @@
 #define XII_PAIR_LIST_9(x, y)  XII_PAIR_LIST_8(x, y), XII_PP_CONCAT(x, 8) XII_PP_CONCAT(y, 8)
 #define XII_PAIR_LIST_10(x, y) XII_PAIR_LIST_9(x, y), XII_PP_CONCAT(x, 9) XII_PP_CONCAT(y, 9)
 
-#define XII_PAIR_LIST(x, y, count)  \
+#define XII_PAIR_LIST(x, y, count)     \
   XII_PP_CONCAT(XII_PAIR_LIST_, count) \
   (x, y)

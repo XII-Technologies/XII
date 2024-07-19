@@ -1,5 +1,11 @@
 #pragma once
 
+#ifndef XII_INCLUDING_BASICS_H
+#  error "StringView.h must not be included directly, but instead include Foundation/Basics.h."
+#endif
+
+#include <Foundation/Strings/StringUtils.h>
+
 #include <Foundation/Strings/Implementation/StringIterator.h>
 
 #include <type_traits>
@@ -24,7 +30,7 @@ class xiiStringBuilder;
 /// That means that a xiiStringView is only valid as long as its source data is not modified. Once you make any kind
 /// of modification to the source data, you should not continue using the xiiStringView to that data anymore,
 /// as it might now point into invalid memory.
-struct XII_FOUNDATION_DLL xiiStringView : public xiiThisIsAString
+class XII_FOUNDATION_DLL xiiStringView : public xiiThisIsAString
 {
 public:
   XII_DECLARE_POD_TYPE();

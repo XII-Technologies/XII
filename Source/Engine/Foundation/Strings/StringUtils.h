@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Foundation/ThirdParty/utf8/utf8.h>
+#ifndef XII_INCLUDING_BASICS_H
+#  error "StringUtils.h must not be included directly, but instead include Foundation/Basics.h."
+#endif
 
-#include <Foundation/Basics.h>
 #include <Foundation/Strings/UnicodeUtils.h>
-#include <Foundation/Threading/AtomicInteger.h>
 
 /// \brief Helper functions to work with UTF-8 strings (which include pure ASCII strings)
 class XII_FOUNDATION_DLL xiiStringUtils

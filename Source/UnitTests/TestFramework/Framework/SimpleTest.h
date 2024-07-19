@@ -58,9 +58,9 @@ private:
 
 #define XII_CREATE_SIMPLE_TEST_GROUP(GroupName) xiiSimpleTestGroup XII_PP_CONCAT(g_SimpleTestGroup__, GroupName)(XII_PP_STRINGIFY(GroupName));
 
-#define XII_CREATE_SIMPLE_TEST(GroupName, TestName)                                                                         \
-  extern xiiSimpleTestGroup   XII_PP_CONCAT(g_SimpleTestGroup__, GroupName);                                                   \
-  static void                 xiiSimpleTestFunction__##GroupName##_##TestName();                                            \
-  xiiRegisterSimpleTestHelper xiiRegisterSimpleTest__##GroupName##TestName(                                                 \
+#define XII_CREATE_SIMPLE_TEST(GroupName, TestName)                                                                               \
+  extern xiiSimpleTestGroup   XII_PP_CONCAT(g_SimpleTestGroup__, GroupName);                                                      \
+  static void                 xiiSimpleTestFunction__##GroupName##_##TestName();                                                  \
+  xiiRegisterSimpleTestHelper xiiRegisterSimpleTest__##GroupName##TestName(                                                       \
     &XII_PP_CONCAT(g_SimpleTestGroup__, GroupName), XII_PP_STRINGIFY(TestName), xiiSimpleTestFunction__##GroupName##_##TestName); \
   static void xiiSimpleTestFunction__##GroupName##_##TestName()

@@ -8,40 +8,40 @@
 using ExecResult            = xiiVisualScriptGraphDescription::ExecResult;
 using ExecuteFunctionGetter = xiiVisualScriptGraphDescription::ExecuteFunction (*)(xiiVisualScriptDataType::Enum dataType);
 
-#define MAKE_EXEC_FUNC_GETTER(funcName)                                                                                  \
+#define MAKE_EXEC_FUNC_GETTER(funcName)                                                                                     \
   xiiVisualScriptGraphDescription::ExecuteFunction XII_PP_CONCAT(funcName, _Getter)(xiiVisualScriptDataType::Enum dataType) \
-  {                                                                                                                      \
-    static xiiVisualScriptGraphDescription::ExecuteFunction functionTable[] = {                                          \
-      nullptr, /* Invalid*/                                                                                              \
-      &funcName<bool>,                                                                                                   \
-      &funcName<xiiUInt8>,                                                                                               \
-      &funcName<xiiInt32>,                                                                                               \
-      &funcName<xiiInt64>,                                                                                               \
-      &funcName<float>,                                                                                                  \
-      &funcName<double>,                                                                                                 \
-      &funcName<xiiColor>,                                                                                               \
-      &funcName<xiiVec3>,                                                                                                \
-      &funcName<xiiQuat>,                                                                                                \
-      &funcName<xiiTransform>,                                                                                           \
-      &funcName<xiiTime>,                                                                                                \
-      &funcName<xiiAngle>,                                                                                               \
-      &funcName<xiiString>,                                                                                              \
-      &funcName<xiiHashedString>,                                                                                        \
-      &funcName<xiiGameObjectHandle>,                                                                                    \
-      &funcName<xiiComponentHandle>,                                                                                     \
-      &funcName<xiiTypedPointer>,                                                                                        \
-      &funcName<xiiVariant>,                                                                                             \
-      &funcName<xiiVariantArray>,                                                                                        \
-      &funcName<xiiVariantDictionary>,                                                                                   \
-      &funcName<xiiScriptCoroutineHandle>,                                                                               \
-    };                                                                                                                   \
-                                                                                                                         \
-    static_assert(XII_ARRAY_SIZE(functionTable) == xiiVisualScriptDataType::Count);                                      \
-    if (dataType >= 0 && dataType < XII_ARRAY_SIZE(functionTable))                                                       \
-      return functionTable[dataType];                                                                                    \
-                                                                                                                         \
-    xiiLog::Error("Invalid data type for deducted type {}. Script needs re-transform.", dataType);                       \
-    return nullptr;                                                                                                      \
+  {                                                                                                                         \
+    static xiiVisualScriptGraphDescription::ExecuteFunction functionTable[] = {                                             \
+      nullptr, /* Invalid*/                                                                                                 \
+      &funcName<bool>,                                                                                                      \
+      &funcName<xiiUInt8>,                                                                                                  \
+      &funcName<xiiInt32>,                                                                                                  \
+      &funcName<xiiInt64>,                                                                                                  \
+      &funcName<float>,                                                                                                     \
+      &funcName<double>,                                                                                                    \
+      &funcName<xiiColor>,                                                                                                  \
+      &funcName<xiiVec3>,                                                                                                   \
+      &funcName<xiiQuat>,                                                                                                   \
+      &funcName<xiiTransform>,                                                                                              \
+      &funcName<xiiTime>,                                                                                                   \
+      &funcName<xiiAngle>,                                                                                                  \
+      &funcName<xiiString>,                                                                                                 \
+      &funcName<xiiHashedString>,                                                                                           \
+      &funcName<xiiGameObjectHandle>,                                                                                       \
+      &funcName<xiiComponentHandle>,                                                                                        \
+      &funcName<xiiTypedPointer>,                                                                                           \
+      &funcName<xiiVariant>,                                                                                                \
+      &funcName<xiiVariantArray>,                                                                                           \
+      &funcName<xiiVariantDictionary>,                                                                                      \
+      &funcName<xiiScriptCoroutineHandle>,                                                                                  \
+    };                                                                                                                      \
+                                                                                                                            \
+    static_assert(XII_ARRAY_SIZE(functionTable) == xiiVisualScriptDataType::Count);                                         \
+    if (dataType >= 0 && dataType < XII_ARRAY_SIZE(functionTable))                                                          \
+      return functionTable[dataType];                                                                                       \
+                                                                                                                            \
+    xiiLog::Error("Invalid data type for deducted type {}. Script needs re-transform.", dataType);                          \
+    return nullptr;                                                                                                         \
   }
 
 template <typename T>
@@ -905,11 +905,11 @@ namespace
     return ExecResult::RunNext(0);
   }
 
-#define MAKE_TONUMBER_EXEC_FUNC(NumberType, Name)                                                                                                                 \
-  template <typename T>                                                                                                                                           \
+#define MAKE_TONUMBER_EXEC_FUNC(NumberType, Name)                                                                                                                    \
+  template <typename T>                                                                                                                                              \
   static ExecResult XII_PP_CONCAT(NodeFunction_Builtin_To, Name)(xiiVisualScriptExecutionContext & inout_context, const xiiVisualScriptGraphDescription::Node& node) \
-  {                                                                                                                                                               \
-    return NodeFunction_Builtin_ToNumber<NumberType, T>(inout_context, node, #Name);                                                                              \
+  {                                                                                                                                                                  \
+    return NodeFunction_Builtin_ToNumber<NumberType, T>(inout_context, node, #Name);                                                                                 \
   }
 
   MAKE_TONUMBER_EXEC_FUNC(xiiUInt8, Byte);

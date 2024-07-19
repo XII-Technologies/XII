@@ -1,6 +1,8 @@
 #pragma once
 
-#include <Foundation/Strings/StringUtils.h>
+#ifndef XII_INCLUDING_BASICS_H
+#  error "StringIterator.h must not be included directly, but instead include Foundation/Basics.h."
+#endif
 
 /// \brief STL forward iterator used by all string classes. Iterates over unicode characters.
 ///  The iterator starts at the first character of the string and ends at the address beyond the last character of the string.

@@ -101,27 +101,27 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiResult result)
   } while (false)
 
 /// \brief Like XII_SUCCEED_OR_RETURN, but with error logging.
-#define XII_SUCCEED_OR_RETURN_LOG(code)                                     \
-  do                                                                        \
-  {                                                                         \
-    auto s = (code);                                                        \
-    if (xiiToResult(s).Failed())                                            \
-    {                                                                       \
+#define XII_SUCCEED_OR_RETURN_LOG(code)                                        \
+  do                                                                           \
+  {                                                                            \
+    auto s = (code);                                                           \
+    if (xiiToResult(s).Failed())                                               \
+    {                                                                          \
       xiiLog::Error("Call '{0}' failed with: {1}", XII_PP_STRINGIFY(code), s); \
-      return s;                                                             \
-    }                                                                       \
+      return s;                                                                \
+    }                                                                          \
   } while (false)
 
 /// \brief Like XII_SUCCEED_OR_RETURN, but with custom error logging.
-#define XII_SUCCEED_OR_RETURN_CUSTOM_LOG(code, log)                           \
-  do                                                                          \
-  {                                                                           \
-    auto s = (code);                                                          \
-    if (xiiToResult(s).Failed())                                              \
-    {                                                                         \
+#define XII_SUCCEED_OR_RETURN_CUSTOM_LOG(code, log)                              \
+  do                                                                             \
+  {                                                                              \
+    auto s = (code);                                                             \
+    if (xiiToResult(s).Failed())                                                 \
+    {                                                                            \
       xiiLog::Error("Call '{0}' failed with: {1}", XII_PP_STRINGIFY(code), log); \
-      return s;                                                               \
-    }                                                                         \
+      return s;                                                                  \
+    }                                                                            \
   } while (false)
 
 //////////////////////////////////////////////////////////////////////////

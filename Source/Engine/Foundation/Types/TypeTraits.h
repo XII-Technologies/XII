@@ -1,8 +1,10 @@
 #pragma once
 
-/// \file
+#ifndef XII_INCLUDING_BASICS_H
+#  error "TypeTraits.h must not be included directly, but instead include Foundation/Basics.h."
+#endif
 
-#include <Foundation/Basics.h>
+/// \file
 
 /// Type traits
 template <xiiInt32 v>
@@ -152,11 +154,11 @@ struct xiiGetStrongestTypeClass : public xiiTraitInt<(T1::value == 0 || T2::valu
 // \brief embed this into a class to automatically detect which type class it belongs to
 // This macro is only guaranteed to work for classes / structs which don't have any constructor / destructor / assignment operator!
 // As arguments you have to list the types of all the members of the class / struct.
-#  define XII_DETECT_TYPE_CLASS(...)                                                                                                    \
-    xiiCompileTimeTrueType operator%(                                                                                                   \
+#  define XII_DETECT_TYPE_CLASS(...)                                                                                                       \
+    xiiCompileTimeTrueType operator%(                                                                                                      \
       const xiiTraitInt<XII_CALL_MACRO(XII_PP_CONCAT(XII_DETECT_TYPE_CLASS_, XII_VA_NUM_ARGS(__VA_ARGS__)), (__VA_ARGS__))::value>&) const \
-    {                                                                                                                                   \
-      return {};                                                                                                                        \
+    {                                                                                                                                      \
+      return {};                                                                                                                           \
     }
 #endif
 

@@ -765,21 +765,21 @@ XII_CREATE_SIMPLE_TEST(Utility, ConversionUtils)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetColorByName and GetColorName")
   {
-#define Check(name)                                                                         \
-  {                                                                                         \
-    bool           valid = false;                                                           \
+#define Check(name)                                                                            \
+  {                                                                                            \
+    bool           valid = false;                                                              \
     const xiiColor c     = xiiConversionUtils::GetColorByName(XII_PP_STRINGIFY(name), &valid); \
-    XII_TEST_BOOL(valid);                                                                   \
-    xiiString sName = xiiConversionUtils::GetColorName(c);                                  \
+    XII_TEST_BOOL(valid);                                                                      \
+    xiiString sName = xiiConversionUtils::GetColorName(c);                                     \
     XII_TEST_STRING(sName, XII_PP_STRINGIFY(name));                                            \
   }
 
-#define Check2(name, otherName)                                                             \
-  {                                                                                         \
-    bool           valid = false;                                                           \
+#define Check2(name, otherName)                                                                \
+  {                                                                                            \
+    bool           valid = false;                                                              \
     const xiiColor c     = xiiConversionUtils::GetColorByName(XII_PP_STRINGIFY(name), &valid); \
-    XII_TEST_BOOL(valid);                                                                   \
-    xiiString sName = xiiConversionUtils::GetColorName(c);                                  \
+    XII_TEST_BOOL(valid);                                                                      \
+    xiiString sName = xiiConversionUtils::GetColorName(c);                                     \
     XII_TEST_STRING(sName, XII_PP_STRINGIFY(otherName));                                       \
   }
 

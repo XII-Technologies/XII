@@ -12,7 +12,7 @@
 #define XII_LOG_BLOCK xiiLogBlock XII_PP_CONCAT(_logblock_, XII_SOURCE_LINE)
 
 /// \brief Use this helper macro to easily mute all logging in a scope.
-#define XII_LOG_BLOCK_MUTE()                                     \
+#define XII_LOG_BLOCK_MUTE()                                        \
   xiiMuteLog        XII_PP_CONCAT(_logmuteblock_, XII_SOURCE_LINE); \
   xiiLogSystemScope XII_PP_CONCAT(_logscope_, XII_SOURCE_LINE)(&XII_PP_CONCAT(_logmuteblock_, XII_SOURCE_LINE))
 

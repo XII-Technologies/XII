@@ -7,7 +7,7 @@ class xiiReflectedClass;
 class xiiVariant;
 struct xiiTime;
 class xiiUuid;
-struct xiiStringView;
+class xiiStringView;
 struct xiiTypedObject;
 struct xiiTypedPointer;
 

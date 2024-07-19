@@ -978,7 +978,7 @@ namespace xiiConversionUtils
     return result;
   }
 
-#define Check(name)                                   \
+#define Check(name)                                      \
   if (sColorName.IsEqual_NoCase(XII_PP_STRINGIFY(name))) \
   return xiiColor::name
 
