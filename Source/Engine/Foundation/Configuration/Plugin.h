@@ -141,7 +141,7 @@ private:
 ///
 /// That instructs the xiiPlugin system to make sure that Plugin1 gets loaded and initialized before Plugin2 is initialized.
 #define XII_PLUGIN_DEPENDENCY(PluginName) \
-  xiiPlugin::Init XII_CONCAT(XII_CONCAT(plugin_dep_, PluginName), XII_SOURCE_LINE)(XII_PP_STRINGIFY(PluginName))
+  xiiPlugin::Init XII_PP_CONCAT(XII_PP_CONCAT(plugin_dep_, PluginName), XII_SOURCE_LINE)(XII_PP_STRINGIFY(PluginName))
 
 /// \brief Creates a function that is executed when the plugin gets loaded.
 ///

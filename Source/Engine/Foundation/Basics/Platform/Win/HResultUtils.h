@@ -27,7 +27,7 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiMinWindows::HRESULT result)
     xiiMinWindows::HRESULT s = (code);                                                          \
     if (s < 0)                                                                                  \
     {                                                                                           \
-      xiiLog::Error("Call '{0}' failed with: {1}", XII_STRINGIZE(code), xiiHRESULTtoString(s)); \
+      xiiLog::Error("Call '{0}' failed with: {1}", XII_PP_STRINGIFY(code), xiiHRESULTtoString(s)); \
       return XII_FAILURE;                                                                       \
     }                                                                                           \
   } while (false)
@@ -38,7 +38,7 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiMinWindows::HRESULT result)
     xiiMinWindows::HRESULT s = (code);                                                          \
     if (s < 0)                                                                                  \
     {                                                                                           \
-      xiiLog::Error("Call '{0}' failed with: {1}", XII_STRINGIZE(code), xiiHRESULTtoString(s)); \
+      xiiLog::Error("Call '{0}' failed with: {1}", XII_PP_STRINGIFY(code), xiiHRESULTtoString(s)); \
     }                                                                                           \
   } while (false)
 
@@ -50,7 +50,7 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiMinWindows::HRESULT result)
     xiiMinWindows::HRESULT s = (code);                                                          \
     if (s < 0)                                                                                  \
     {                                                                                           \
-      xiiLog::Error("Call '{0}' failed with: {1}", XII_STRINGIZE(code), xiiHRESULTtoString(s)); \
+      xiiLog::Error("Call '{0}' failed with: {1}", XII_PP_STRINGIFY(code), xiiHRESULTtoString(s)); \
       return ret;                                                                               \
     }                                                                                           \
   } while (false)
@@ -59,5 +59,5 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiMinWindows::HRESULT result)
   do                                                                                                   \
   {                                                                                                    \
     xiiMinWindows::HRESULT s = (code);                                                                 \
-    XII_ASSERT_DEV(s >= 0, "Call '{0}' failed with: {1}", XII_STRINGIZE(code), xiiHRESULTtoString(s)); \
+    XII_ASSERT_DEV(s >= 0, "Call '{0}' failed with: {1}", XII_PP_STRINGIFY(code), xiiHRESULTtoString(s)); \
   } while (false)

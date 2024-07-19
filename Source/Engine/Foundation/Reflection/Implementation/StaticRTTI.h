@@ -246,7 +246,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///
 /// \param Function
 ///   The function to be executed, must match the C++ function name.
-#define XII_FUNCTION_PROPERTY(Function) (new xiiFunctionProperty<decltype(&OwnType::Function)>(XII_STRINGIZE(Function), &OwnType::Function))
+#define XII_FUNCTION_PROPERTY(Function) (new xiiFunctionProperty<decltype(&OwnType::Function)>(XII_PP_STRINGIFY(Function), &OwnType::Function))
 
 /// \brief Within a XII_BEGIN_FUNCTIONS / XII_END_FUNCTIONS; block, this adds a member or static function property stored inside the RTTI
 /// data. Use this version if you need to change the name of the function or need to cast the function to one of its overload versions.
@@ -543,7 +543,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 
 // [internal] Helper macro
-#define XII_ENUM_VALUE_TO_CONSTANT_PROPERTY(name) XII_CONSTANT_PROPERTY(XII_STRINGIZE(name), (Storage)name),
+#define XII_ENUM_VALUE_TO_CONSTANT_PROPERTY(name) XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(name), (Storage)name),
 
 /// \brief Within a XII_BEGIN_STATIC_REFLECTED_ENUM / XII_END_STATIC_REFLECTED_ENUM block, this converts a
 /// list of enum values into constant RTTI properties.
@@ -551,7 +551,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 /// \brief Within a XII_BEGIN_STATIC_REFLECTED_ENUM / XII_END_STATIC_REFLECTED_ENUM block, this converts a
 /// an enum value into a constant RTTI property.
-#define XII_ENUM_CONSTANT(Value) XII_CONSTANT_PROPERTY(XII_STRINGIZE(Value), (Storage)Value)
+#define XII_ENUM_CONSTANT(Value) XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Value), (Storage)Value)
 
 /// \brief Within a XII_BEGIN_STATIC_REFLECTED_BITFLAGS / XII_END_STATIC_REFLECTED_BITFLAGS block, this converts a
 /// list of bitflags into constant RTTI properties.
@@ -559,7 +559,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 /// \brief Within a XII_BEGIN_STATIC_REFLECTED_BITFLAGS / XII_END_STATIC_REFLECTED_BITFLAGS block, this converts a
 /// an bitflags into a constant RTTI property.
-#define XII_BITFLAGS_CONSTANT(Value) XII_CONSTANT_PROPERTY(XII_STRINGIZE(Value), (Storage)Value)
+#define XII_BITFLAGS_CONSTANT(Value) XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Value), (Storage)Value)
 
 
 
@@ -574,7 +574,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   using Storage = Type::StorageType;                                               \
   XII_BEGIN_PROPERTIES                                                             \
   {                                                                                \
-    XII_CONSTANT_PROPERTY(XII_STRINGIZE(Type::Default), (Storage)Type::Default),
+    XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Type::Default), (Storage)Type::Default),
 
 #define XII_END_STATIC_REFLECTED_ENUM \
   }                                   \
@@ -595,7 +595,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   using Storage = Type::StorageType;                                                   \
   XII_BEGIN_PROPERTIES                                                                 \
   {                                                                                    \
-    XII_CONSTANT_PROPERTY(XII_STRINGIZE(Type::Default), (Storage)Type::Default),
+    XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Type::Default), (Storage)Type::Default),
 
 #define XII_END_STATIC_REFLECTED_BITFLAGS \
   }                                       \

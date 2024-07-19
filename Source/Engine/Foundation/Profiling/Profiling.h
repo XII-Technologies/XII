@@ -175,14 +175,14 @@ public:
 /// \sa xiiProfilingScope
 /// \sa XII_PROFILE_LIST_SCOPE
 #  define XII_PROFILE_SCOPE(szScopeName) \
-    xiiProfilingScope XII_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, xiiTime::MakeZero());
+    xiiProfilingScope XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, xiiTime::MakeZero());
 
 /// \brief Same as XII_PROFILE_SCOPE but if the scope takes longer than 'Timeout', the xiiProfilingSystem's timeout callback is executed.
 ///
 /// This can be used to log an error or save a callstack, etc. when a scope exceeds an expected amount of time.
 ///
 /// \sa xiiProfilingSystem::SetScopeTimeoutCallback()
-#  define XII_PROFILE_SCOPE_WITH_TIMEOUT(szScopeName, Timeout) xiiProfilingScope XII_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, Timeout)
+#  define XII_PROFILE_SCOPE_WITH_TIMEOUT(szScopeName, Timeout) xiiProfilingScope XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, Timeout)
 
 /// \brief Profiles the current scope using the given name as the overall list scope name and the section name for the first section in the list.
 ///
@@ -196,7 +196,7 @@ public:
 /// \sa xiiProfilingListScope
 /// \sa XII_PROFILE_LIST_NEXT_SECTION
 #  define XII_PROFILE_LIST_SCOPE(szListName, szFirstSectionName) \
-    xiiProfilingListScope XII_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szListName, szFirstSectionName, XII_SOURCE_FUNCTION)
+    xiiProfilingListScope XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szListName, szFirstSectionName, XII_SOURCE_FUNCTION)
 
 /// \brief Starts a new section in a XII_PROFILE_LIST_SCOPE
 ///

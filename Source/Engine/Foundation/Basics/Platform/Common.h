@@ -63,7 +63,7 @@ XII_WARNING_POP()
 ///
 /// Does this by stringifying the available defines, concatenating them into one long word, which is a known #define that evaluates to 0 or 1
 #define XII_CHECK_WINDOWS_INCLUDE(XII_WINH_INCLUDED, WINH_INCLUDED)                                          \
-  static_assert(XII_CONCAT(XII_WINCHECK_, XII_CONCAT(XII_WINH_INCLUDED, WINH_INCLUDED)) == 1, \
+  static_assert(XII_PP_CONCAT(XII_WINCHECK_, XII_PP_CONCAT(XII_WINH_INCLUDED, WINH_INCLUDED)) == 1, \
                                "Windows.h has been included but not through XII. #include <Foundation/Basics/Platform/Win/IncludeWindows.h> instead of Windows.h");
 
 
@@ -132,7 +132,7 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
 
 /// \brief This must occur exactly once in each static library, such that all XII_STATICLINK_FILE macros can reference it.
 #  define XII_STATICLINK_LIBRARY(LibraryName)                                                          \
-    xiiPluginRegister xiiPluginRegister_##LibraryName(XII_PP_STRINGIFY(XII_CONCAT(xii, LibraryName))); \
+    xiiPluginRegister xiiPluginRegister_##LibraryName(XII_PP_STRINGIFY(XII_PP_CONCAT(xii, LibraryName))); \
     extern "C" void   xiiReferenceFunction_##LibraryName(bool bReturn = true)
 
 #endif

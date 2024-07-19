@@ -110,7 +110,7 @@ private:
 
 #define XII_ENUM_VALUE_TO_STRING(name) \
   case name:                           \
-    return XII_STRINGIZE(name);
+    return XII_PP_STRINGIFY(name);
 
 /// \brief Helper macro to generate a 'ToString' function for enum values.
 ///

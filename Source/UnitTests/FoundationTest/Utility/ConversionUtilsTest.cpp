@@ -768,19 +768,19 @@ XII_CREATE_SIMPLE_TEST(Utility, ConversionUtils)
 #define Check(name)                                                                         \
   {                                                                                         \
     bool           valid = false;                                                           \
-    const xiiColor c     = xiiConversionUtils::GetColorByName(XII_STRINGIZE(name), &valid); \
+    const xiiColor c     = xiiConversionUtils::GetColorByName(XII_PP_STRINGIFY(name), &valid); \
     XII_TEST_BOOL(valid);                                                                   \
     xiiString sName = xiiConversionUtils::GetColorName(c);                                  \
-    XII_TEST_STRING(sName, XII_STRINGIZE(name));                                            \
+    XII_TEST_STRING(sName, XII_PP_STRINGIFY(name));                                            \
   }
 
 #define Check2(name, otherName)                                                             \
   {                                                                                         \
     bool           valid = false;                                                           \
-    const xiiColor c     = xiiConversionUtils::GetColorByName(XII_STRINGIZE(name), &valid); \
+    const xiiColor c     = xiiConversionUtils::GetColorByName(XII_PP_STRINGIFY(name), &valid); \
     XII_TEST_BOOL(valid);                                                                   \
     xiiString sName = xiiConversionUtils::GetColorName(c);                                  \
-    XII_TEST_STRING(sName, XII_STRINGIZE(otherName));                                       \
+    XII_TEST_STRING(sName, XII_PP_STRINGIFY(otherName));                                       \
   }
 
     Check(AliceBlue);

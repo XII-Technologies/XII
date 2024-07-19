@@ -72,7 +72,7 @@
 
 /// Variadic macro "dispatching" the arguments to the correct macro.
 /// The number of arguments is found by using XII_VA_NUM_ARGS(__VA_ARGS__)
-#define XII_EXPAND_ARGS(op, ...) XII_CALL_MACRO(XII_CONCAT(XII_EXPAND_ARGS_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
+#define XII_EXPAND_ARGS(op, ...) XII_CALL_MACRO(XII_PP_CONCAT(XII_EXPAND_ARGS_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -91,7 +91,7 @@
 
 /// Variadic macro "dispatching" the arguments to the correct macro.
 /// The number of arguments is found by using XII_VA_NUM_ARGS(__VA_ARGS__)
-#define XII_EXPAND_ARGS_COMMA(...) XII_CALL_MACRO(XII_CONCAT(XII_EXPAND_ARGS_COMMA_, XII_VA_NUM_ARGS(__VA_ARGS__)), (__VA_ARGS__))
+#define XII_EXPAND_ARGS_COMMA(...) XII_CALL_MACRO(XII_PP_CONCAT(XII_EXPAND_ARGS_COMMA_, XII_VA_NUM_ARGS(__VA_ARGS__)), (__VA_ARGS__))
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -150,7 +150,7 @@
 #define XII_EXPAND_ARGS_WITH_INDEX_32(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31) \
   op(a0, 0) op(a1, 1) op(a2, 2) op(a3, 3) op(a4, 4) op(a5, 5) op(a6, 6) op(a7, 7) op(a8, 9) op(a9, 9) op(a10, 10) op(a11, 11) op(a12, 12) op(a13, 13) op(a14, 14) op(a15, 15) op(a16, 16) op(a17, 17) op(a18, 18) op(a19, 19) op(a20, 20) op(a21, 21) op(a22, 22) op(a23, 23) op(a24, 24) op(a25, 25) op(a26, 26) op(a27, 27) op(a28, 28) op(a29, 29) op(a30, 30) op(a31, 31)
 
-#define XII_EXPAND_ARGS_WITH_INDEX(op, ...) XII_CALL_MACRO(XII_CONCAT(XII_EXPAND_ARGS_WITH_INDEX_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
+#define XII_EXPAND_ARGS_WITH_INDEX(op, ...) XII_CALL_MACRO(XII_PP_CONCAT(XII_EXPAND_ARGS_WITH_INDEX_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -172,7 +172,7 @@
 #define XII_EXPAND_ARGS_PAIR_20(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) \
   op(a0, a1) op(a2, a3) op(a4, a5) op(a6, a7) op(a8, a9) op(a10, a11) op(a12, a13) op(a14, a15) op(a16, a17) op(a18, a19)
 
-#define XII_EXPAND_ARGS_PAIR(op, ...) XII_CALL_MACRO(XII_CONCAT(XII_EXPAND_ARGS_PAIR_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
+#define XII_EXPAND_ARGS_PAIR(op, ...) XII_CALL_MACRO(XII_PP_CONCAT(XII_EXPAND_ARGS_PAIR_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -194,7 +194,7 @@
 #define XII_EXPAND_ARGS_PAIR_COMMA_20(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) \
   op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19)
 
-#define XII_EXPAND_ARGS_PAIR_COMMA(op, ...) XII_CALL_MACRO(XII_CONCAT(XII_EXPAND_ARGS_PAIR_COMMA_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
+#define XII_EXPAND_ARGS_PAIR_COMMA(op, ...) XII_CALL_MACRO(XII_PP_CONCAT(XII_EXPAND_ARGS_PAIR_COMMA_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -209,62 +209,62 @@
 #define XII_TO_BOOL_8 1
 #define XII_TO_BOOL_9 1
 
-#define XII_TO_BOOL(x) XII_CONCAT(XII_TO_BOOL_, x)
+#define XII_TO_BOOL(x) XII_PP_CONCAT(XII_TO_BOOL_, x)
 
 //////////////////////////////////////////////////////////////////////////
 
 #define XII_IF_0(x)
 #define XII_IF_1(x) x
 #define XII_IF(cond, x)                  \
-  XII_CONCAT(XII_IF_, XII_TO_BOOL(cond)) \
+  XII_PP_CONCAT(XII_IF_, XII_TO_BOOL(cond)) \
   (x)
 
 #define XII_IF_ELSE_0(x, y) y
 #define XII_IF_ELSE_1(x, y) x
 #define XII_IF_ELSE(cond, x, y)               \
-  XII_CONCAT(XII_IF_ELSE_, XII_TO_BOOL(cond)) \
+  XII_PP_CONCAT(XII_IF_ELSE_, XII_TO_BOOL(cond)) \
   (x, y)
 
 //////////////////////////////////////////////////////////////////////////
 
 #define XII_COMMA_MARK_0
 #define XII_COMMA_MARK_1   ,
-#define XII_COMMA_IF(cond) XII_CONCAT(XII_COMMA_MARK_, XII_TO_BOOL(cond))
+#define XII_COMMA_IF(cond) XII_PP_CONCAT(XII_COMMA_MARK_, XII_TO_BOOL(cond))
 
 //////////////////////////////////////////////////////////////////////////
 
 #define XII_LIST_0(x)
-#define XII_LIST_1(x)  XII_CONCAT(x, 0)
-#define XII_LIST_2(x)  XII_LIST_1(x), XII_CONCAT(x, 1)
-#define XII_LIST_3(x)  XII_LIST_2(x), XII_CONCAT(x, 2)
-#define XII_LIST_4(x)  XII_LIST_3(x), XII_CONCAT(x, 3)
-#define XII_LIST_5(x)  XII_LIST_4(x), XII_CONCAT(x, 4)
-#define XII_LIST_6(x)  XII_LIST_5(x), XII_CONCAT(x, 5)
-#define XII_LIST_7(x)  XII_LIST_6(x), XII_CONCAT(x, 6)
-#define XII_LIST_8(x)  XII_LIST_7(x), XII_CONCAT(x, 7)
-#define XII_LIST_9(x)  XII_LIST_8(x), XII_CONCAT(x, 8)
-#define XII_LIST_10(x) XII_LIST_9(x), XII_CONCAT(x, 9)
+#define XII_LIST_1(x)  XII_PP_CONCAT(x, 0)
+#define XII_LIST_2(x)  XII_LIST_1(x), XII_PP_CONCAT(x, 1)
+#define XII_LIST_3(x)  XII_LIST_2(x), XII_PP_CONCAT(x, 2)
+#define XII_LIST_4(x)  XII_LIST_3(x), XII_PP_CONCAT(x, 3)
+#define XII_LIST_5(x)  XII_LIST_4(x), XII_PP_CONCAT(x, 4)
+#define XII_LIST_6(x)  XII_LIST_5(x), XII_PP_CONCAT(x, 5)
+#define XII_LIST_7(x)  XII_LIST_6(x), XII_PP_CONCAT(x, 6)
+#define XII_LIST_8(x)  XII_LIST_7(x), XII_PP_CONCAT(x, 7)
+#define XII_LIST_9(x)  XII_LIST_8(x), XII_PP_CONCAT(x, 8)
+#define XII_LIST_10(x) XII_LIST_9(x), XII_PP_CONCAT(x, 9)
 
 #define XII_LIST(x, count)     \
-  XII_CONCAT(XII_LIST_, count) \
+  XII_PP_CONCAT(XII_LIST_, count) \
   (x)
 
 //////////////////////////////////////////////////////////////////////////
 
 #define XII_PAIR_LIST_0(x, y)
 #define XII_PAIR_LIST_1(x, y) \
-  XII_CONCAT(x, 0)            \
-  XII_CONCAT(y, 0)
-#define XII_PAIR_LIST_2(x, y)  XII_PAIR_LIST_1(x, y), XII_CONCAT(x, 1) XII_CONCAT(y, 1)
-#define XII_PAIR_LIST_3(x, y)  XII_PAIR_LIST_2(x, y), XII_CONCAT(x, 2) XII_CONCAT(y, 2)
-#define XII_PAIR_LIST_4(x, y)  XII_PAIR_LIST_3(x, y), XII_CONCAT(x, 3) XII_CONCAT(y, 3)
-#define XII_PAIR_LIST_5(x, y)  XII_PAIR_LIST_4(x, y), XII_CONCAT(x, 4) XII_CONCAT(y, 4)
-#define XII_PAIR_LIST_6(x, y)  XII_PAIR_LIST_5(x, y), XII_CONCAT(x, 5) XII_CONCAT(y, 5)
-#define XII_PAIR_LIST_7(x, y)  XII_PAIR_LIST_6(x, y), XII_CONCAT(x, 6) XII_CONCAT(y, 6)
-#define XII_PAIR_LIST_8(x, y)  XII_PAIR_LIST_7(x, y), XII_CONCAT(x, 7) XII_CONCAT(y, 7)
-#define XII_PAIR_LIST_9(x, y)  XII_PAIR_LIST_8(x, y), XII_CONCAT(x, 8) XII_CONCAT(y, 8)
-#define XII_PAIR_LIST_10(x, y) XII_PAIR_LIST_9(x, y), XII_CONCAT(x, 9) XII_CONCAT(y, 9)
+  XII_PP_CONCAT(x, 0)            \
+  XII_PP_CONCAT(y, 0)
+#define XII_PAIR_LIST_2(x, y)  XII_PAIR_LIST_1(x, y), XII_PP_CONCAT(x, 1) XII_PP_CONCAT(y, 1)
+#define XII_PAIR_LIST_3(x, y)  XII_PAIR_LIST_2(x, y), XII_PP_CONCAT(x, 2) XII_PP_CONCAT(y, 2)
+#define XII_PAIR_LIST_4(x, y)  XII_PAIR_LIST_3(x, y), XII_PP_CONCAT(x, 3) XII_PP_CONCAT(y, 3)
+#define XII_PAIR_LIST_5(x, y)  XII_PAIR_LIST_4(x, y), XII_PP_CONCAT(x, 4) XII_PP_CONCAT(y, 4)
+#define XII_PAIR_LIST_6(x, y)  XII_PAIR_LIST_5(x, y), XII_PP_CONCAT(x, 5) XII_PP_CONCAT(y, 5)
+#define XII_PAIR_LIST_7(x, y)  XII_PAIR_LIST_6(x, y), XII_PP_CONCAT(x, 6) XII_PP_CONCAT(y, 6)
+#define XII_PAIR_LIST_8(x, y)  XII_PAIR_LIST_7(x, y), XII_PP_CONCAT(x, 7) XII_PP_CONCAT(y, 7)
+#define XII_PAIR_LIST_9(x, y)  XII_PAIR_LIST_8(x, y), XII_PP_CONCAT(x, 8) XII_PP_CONCAT(y, 8)
+#define XII_PAIR_LIST_10(x, y) XII_PAIR_LIST_9(x, y), XII_PP_CONCAT(x, 9) XII_PP_CONCAT(y, 9)
 
 #define XII_PAIR_LIST(x, y, count)  \
-  XII_CONCAT(XII_PAIR_LIST_, count) \
+  XII_PP_CONCAT(XII_PAIR_LIST_, count) \
   (x, y)

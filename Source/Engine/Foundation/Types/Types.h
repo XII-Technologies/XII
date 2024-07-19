@@ -107,7 +107,7 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiResult result)
     auto s = (code);                                                        \
     if (xiiToResult(s).Failed())                                            \
     {                                                                       \
-      xiiLog::Error("Call '{0}' failed with: {1}", XII_STRINGIZE(code), s); \
+      xiiLog::Error("Call '{0}' failed with: {1}", XII_PP_STRINGIFY(code), s); \
       return s;                                                             \
     }                                                                       \
   } while (false)
@@ -119,7 +119,7 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiResult result)
     auto s = (code);                                                          \
     if (xiiToResult(s).Failed())                                              \
     {                                                                         \
-      xiiLog::Error("Call '{0}' failed with: {1}", XII_STRINGIZE(code), log); \
+      xiiLog::Error("Call '{0}' failed with: {1}", XII_PP_STRINGIFY(code), log); \
       return s;                                                               \
     }                                                                         \
   } while (false)

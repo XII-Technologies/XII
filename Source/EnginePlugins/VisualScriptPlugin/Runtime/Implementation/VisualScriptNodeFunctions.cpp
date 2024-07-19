@@ -9,7 +9,7 @@ using ExecResult            = xiiVisualScriptGraphDescription::ExecResult;
 using ExecuteFunctionGetter = xiiVisualScriptGraphDescription::ExecuteFunction (*)(xiiVisualScriptDataType::Enum dataType);
 
 #define MAKE_EXEC_FUNC_GETTER(funcName)                                                                                  \
-  xiiVisualScriptGraphDescription::ExecuteFunction XII_CONCAT(funcName, _Getter)(xiiVisualScriptDataType::Enum dataType) \
+  xiiVisualScriptGraphDescription::ExecuteFunction XII_PP_CONCAT(funcName, _Getter)(xiiVisualScriptDataType::Enum dataType) \
   {                                                                                                                      \
     static xiiVisualScriptGraphDescription::ExecuteFunction functionTable[] = {                                          \
       nullptr, /* Invalid*/                                                                                              \
@@ -907,7 +907,7 @@ namespace
 
 #define MAKE_TONUMBER_EXEC_FUNC(NumberType, Name)                                                                                                                 \
   template <typename T>                                                                                                                                           \
-  static ExecResult XII_CONCAT(NodeFunction_Builtin_To, Name)(xiiVisualScriptExecutionContext & inout_context, const xiiVisualScriptGraphDescription::Node& node) \
+  static ExecResult XII_PP_CONCAT(NodeFunction_Builtin_To, Name)(xiiVisualScriptExecutionContext & inout_context, const xiiVisualScriptGraphDescription::Node& node) \
   {                                                                                                                                                               \
     return NodeFunction_Builtin_ToNumber<NumberType, T>(inout_context, node, #Name);                                                                              \
   }

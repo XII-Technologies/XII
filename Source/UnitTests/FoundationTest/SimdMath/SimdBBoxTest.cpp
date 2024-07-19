@@ -9,7 +9,7 @@
   do                                                                                                                                                               \
   {                                                                                                                                                                \
     auto _xiiDiff = B - A;                                                                                                                                         \
-    xiiTestBool((A).IsEqual((B), EPSILON).AllSet<NUM_COMPONENTS>(), "Test failed: " XII_STRINGIZE(A) ".IsEqual(" XII_STRINGIZE(B) ", " XII_STRINGIZE(EPSILON) ")", \
+    xiiTestBool((A).IsEqual((B), EPSILON).AllSet<NUM_COMPONENTS>(), "Test failed: " XII_PP_STRINGIFY(A) ".IsEqual(" XII_PP_STRINGIFY(B) ", " XII_PP_STRINGIFY(EPSILON) ")", \
                 XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION,                                                                                             \
                 "Difference %lf %lf %lf %lf", _xiiDiff.x(), _xiiDiff.y(), _xiiDiff.z(), _xiiDiff.w());                                                             \
   } while (false)

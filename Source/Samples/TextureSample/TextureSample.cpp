@@ -159,7 +159,7 @@ public:
 
         xiiMat4 Proj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
 
-        xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_STRINGIZE(xiiTextureSampleConstants), m_hSampleConstants);
+        xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_PP_STRINGIFY(xiiTextureSampleConstants), m_hSampleConstants);
         xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
 
         xiiMat4 mTransform = xiiMat4::MakeIdentity();

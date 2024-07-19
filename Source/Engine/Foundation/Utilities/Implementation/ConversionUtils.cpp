@@ -979,7 +979,7 @@ namespace xiiConversionUtils
   }
 
 #define Check(name)                                   \
-  if (sColorName.IsEqual_NoCase(XII_STRINGIZE(name))) \
+  if (sColorName.IsEqual_NoCase(XII_PP_STRINGIFY(name))) \
   return xiiColor::name
 
   xiiColor GetColorByName(xiiStringView sColorName, bool* out_pValidColorName)

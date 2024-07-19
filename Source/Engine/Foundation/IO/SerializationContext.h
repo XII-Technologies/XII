@@ -33,13 +33,13 @@ protected:                                      \
 
 /// \brief Implements the necessary functions to access a serialization context through GetContext.
 #define XII_IMPLEMENT_SERIALIZATION_CONTEXT(type)                                                                                      \
-  thread_local type* XII_CONCAT(s_pActiveContext, type);                                                                               \
+  thread_local type* XII_PP_CONCAT(s_pActiveContext, type);                                                                               \
   type*              type::GetContext()                                                                                                \
   {                                                                                                                                    \
-    return XII_CONCAT(s_pActiveContext, type);                                                                                         \
+    return XII_PP_CONCAT(s_pActiveContext, type);                                                                                         \
   }                                                                                                                                    \
   void type::SetContext(xiiSerializationContext* pContext)                                                                             \
   {                                                                                                                                    \
-    XII_ASSERT_DEV(pContext == nullptr || XII_CONCAT(s_pActiveContext, type) == nullptr, "Only one context can be active at a time."); \
-    XII_CONCAT(s_pActiveContext, type) = static_cast<type*>(pContext);                                                                 \
+    XII_ASSERT_DEV(pContext == nullptr || XII_PP_CONCAT(s_pActiveContext, type) == nullptr, "Only one context can be active at a time."); \
+    XII_PP_CONCAT(s_pActiveContext, type) = static_cast<type*>(pContext);                                                                 \
   }

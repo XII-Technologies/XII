@@ -681,8 +681,8 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView
   // redirect requested type to override type, if available
   pRtti = FindResourceTypeOverride(pRtti, sResourceID);
 
-  XII_ASSERT_DEBUG(pRtti != nullptr, "There is no RTTI information available for the given resource type '{0}'", XII_STRINGIZE(ResourceType));
-  XII_ASSERT_DEBUG(pRtti->GetAllocator() != nullptr && pRtti->GetAllocator()->CanAllocate(), "There is no RTTI allocator available for the given resource type '{0}'", XII_STRINGIZE(ResourceType));
+  XII_ASSERT_DEBUG(pRtti != nullptr, "There is no RTTI information available for the given resource type '{0}'", XII_PP_STRINGIFY(ResourceType));
+  XII_ASSERT_DEBUG(pRtti->GetAllocator() != nullptr && pRtti->GetAllocator()->CanAllocate(), "There is no RTTI allocator available for the given resource type '{0}'", XII_PP_STRINGIFY(ResourceType));
 
   xiiResource*        pResource = nullptr;
   xiiTempHashedString sHashedResourceID(sResourceID);

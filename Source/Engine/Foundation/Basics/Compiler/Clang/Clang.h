@@ -51,7 +51,7 @@
 
 #  define XII_WARNING_PUSH()            _Pragma("clang diagnostic push")
 #  define XII_WARNING_POP()             _Pragma("clang diagnostic pop")
-#  define XII_WARNING_DISABLE_CLANG(_x) _Pragma(XII_STRINGIZE(clang diagnostic ignored _x))
+#  define XII_WARNING_DISABLE_CLANG(_x) _Pragma(XII_PP_STRINGIFY(clang diagnostic ignored _x))
 
 #else
 

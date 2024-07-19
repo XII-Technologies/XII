@@ -28,7 +28,7 @@ namespace
   const xiiExpression::Register* name = context.m_pRegisters + xiiExpressionByteCode::GetRegisterIndex(pByteCode) * context.m_uiNumSimd4Instances;
 
 #define DEFINE_CONSTANT(name)                                                                           \
-  const xiiUInt32                XII_CONCAT(name, Raw) = *pByteCode;                                    \
+  const xiiUInt32                XII_PP_CONCAT(name, Raw) = *pByteCode;                                    \
   const xiiExpression::Register  tmp                   = xiiExpressionByteCode::GetConstant(pByteCode); \
   const xiiExpression::Register* name                  = &tmp;
 
@@ -38,7 +38,7 @@ namespace
   ++a;
 
 #define DEFINE_UNARY_OP(name, code)                                                     \
-  void XII_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)  \
+  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)  \
   {                                                                                     \
     DEFINE_TARGET_REGISTER();                                                           \
     DEFINE_OP_REGISTER(a);                                                              \
@@ -48,7 +48,7 @@ namespace
     }                                                                                   \
   }                                                                                     \
                                                                                         \
-  void XII_CONCAT(name, _16)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
+  void XII_PP_CONCAT(name, _16)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
   {                                                                                     \
     DEFINE_TARGET_REGISTER();                                                           \
     DEFINE_OP_REGISTER(a);                                                              \
@@ -72,7 +72,7 @@ namespace
 
 #define DEFINE_BINARY_OP(name, code)                                                                                 \
   template <bool RightIsConstant>                                                                                    \
-  void XII_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)                               \
+  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)                               \
   {                                                                                                                  \
     DEFINE_TARGET_REGISTER();                                                                                        \
     DEFINE_OP_REGISTER(a);                                                                                           \
@@ -105,7 +105,7 @@ namespace
   ++c;
 
 #define DEFINE_TERNARY_OP(name, code)                                                  \
-  void XII_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
+  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
   {                                                                                    \
     DEFINE_TARGET_REGISTER();                                                          \
     DEFINE_OP_REGISTER(a);                                                             \

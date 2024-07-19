@@ -154,7 +154,7 @@ struct xiiGetStrongestTypeClass : public xiiTraitInt<(T1::value == 0 || T2::valu
 // As arguments you have to list the types of all the members of the class / struct.
 #  define XII_DETECT_TYPE_CLASS(...)                                                                                                    \
     xiiCompileTimeTrueType operator%(                                                                                                   \
-      const xiiTraitInt<XII_CALL_MACRO(XII_CONCAT(XII_DETECT_TYPE_CLASS_, XII_VA_NUM_ARGS(__VA_ARGS__)), (__VA_ARGS__))::value>&) const \
+      const xiiTraitInt<XII_CALL_MACRO(XII_PP_CONCAT(XII_DETECT_TYPE_CLASS_, XII_VA_NUM_ARGS(__VA_ARGS__)), (__VA_ARGS__))::value>&) const \
     {                                                                                                                                   \
       return {};                                                                                                                        \
     }
