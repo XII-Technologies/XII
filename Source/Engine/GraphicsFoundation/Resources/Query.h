@@ -77,7 +77,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALQuery : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALQueryCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALQueryCreationDescription& GetDescription() const;
 
   /// \brief This retrieves the query data.
   ///
@@ -88,10 +88,10 @@ public:
   /// \return True if the query data is available, false otherwise.
   ///
   /// \note  In Direct3D11 backend timestamp queries will only be available after FinishFrame is called for the frame in which they were collected. If AutoInvalidate is set to true, and the data have been retrieved, an application must not call GetData() until it begins and ends the query again.
-  XII_NODISCARD virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) = 0;
+  [[nodiscard]] virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) = 0;
 
   /// \brief This invalidates the query and releases the associated resources.
-  XII_NODISCARD virtual void Invalidate() = 0;
+  [[nodiscard]] virtual void Invalidate() = 0;
 
 protected:
   friend class xiiGALDevice;

@@ -68,10 +68,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALCommandListCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALCommandListCreationDescription& GetDescription() const;
 
   /// \brief This returns the command queue for this object.
-  XII_NODISCARD xiiGALCommandQueue* GetCommandQueue() const;
+  [[nodiscard]] xiiGALCommandQueue* GetCommandQueue() const;
 
 public:
   /// \brief Begins the command list for recording commands. This method should be called before any command is issued.

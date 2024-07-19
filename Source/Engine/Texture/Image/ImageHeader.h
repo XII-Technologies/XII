@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Foundation/Basics/Assert.h>
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Math/Math.h>
 

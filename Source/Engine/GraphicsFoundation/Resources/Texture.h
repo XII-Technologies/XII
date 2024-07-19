@@ -138,7 +138,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALTexture : public xiiGALResource
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALTextureCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALTextureCreationDescription& GetDescription() const;
 
   /// \brief This returns the handle of the default view.
   ///
@@ -147,10 +147,10 @@ public:
   /// \return The handle to the buffer view.
   ///
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
-  XII_NODISCARD xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
+  [[nodiscard]] xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
   /// \brief This returns the sparse texture properties.
-  XII_NODISCARD virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
+  [[nodiscard]] virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
 
 protected:
   friend class xiiGALDevice;

@@ -3,7 +3,6 @@
 #include <TestFramework/Framework/TestFramework.h>
 
 #include <Foundation/Basics.h>
-#include <Foundation/Basics/Assert.h>
 #include <Foundation/Types/TypeTraits.h>
 #include <Foundation/Types/Types.h>
 

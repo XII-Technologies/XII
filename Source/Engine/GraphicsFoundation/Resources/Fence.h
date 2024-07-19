@@ -41,12 +41,12 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALFence : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALFenceCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALFenceCreationDescription& GetDescription() const;
 
   /// \brief This returns the last completed value signaled by the GPU.
   ///
   /// \remarks In Direct3D11 backend, this method is not thread-safe (even if the fence object is protected by a mutex) and must only be called by the same thread that signals the fence via an enqueue.
-  XII_NODISCARD virtual xiiUInt64 GetCompletedValue() = 0;
+  [[nodiscard]] virtual xiiUInt64 GetCompletedValue() = 0;
 
   /// \brief This sets the fence to the specified value.
   ///

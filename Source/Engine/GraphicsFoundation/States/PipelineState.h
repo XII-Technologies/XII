@@ -225,7 +225,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineState : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALPipelineStateCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALPipelineStateCreationDescription& GetDescription() const;
 
   /// \brief This is used to set the constant (uniform) buffer for a shader resource.
   ///

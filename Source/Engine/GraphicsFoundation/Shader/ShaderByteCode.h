@@ -169,16 +169,16 @@ public:
   xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& pByteCode);
 
   /// \brief This returns a raw pointer to the shader bytecode.
-  XII_NODISCARD const void* GetByteCode() const;
+  [[nodiscard]] const void* GetByteCode() const;
 
   /// \brief This returns the size of the shader bytecode.
-  XII_NODISCARD xiiUInt32 GetSize() const;
+  [[nodiscard]] xiiUInt32 GetSize() const;
 
   /// \brief This returns true if the shader bytecode is not empty, else returns false.
-  XII_NODISCARD bool IsValid() const;
+  [[nodiscard]] bool IsValid() const;
 
   /// \brief This retrieves the shader resource description of the resource with the given name.
-  XII_NODISCARD const xiiGALShaderResourceDescription* GetDescription(const xiiTempHashedString& sName) const;
+  [[nodiscard]] const xiiGALShaderResourceDescription* GetDescription(const xiiTempHashedString& sName) const;
 
 public:
   void CopyFrom(const xiiArrayPtr<const xiiUInt8>& pByteCode);

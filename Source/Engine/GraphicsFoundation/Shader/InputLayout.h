@@ -116,7 +116,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayout : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALInputLayoutCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALInputLayoutCreationDescription& GetDescription() const;
 
 protected:
   friend class xiiGALDevice;

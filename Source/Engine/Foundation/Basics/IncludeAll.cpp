@@ -9,7 +9,6 @@
 #include <Foundation/Algorithm/Sorting.h>
 
 #include <Foundation/Basics.h>
-#include <Foundation/Basics/Assert.h>
 #include <Foundation/Types/Bitflags.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/Id.h>

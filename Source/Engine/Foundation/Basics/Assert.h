@@ -1,8 +1,10 @@
 #pragma once
 
-/// \file
+#ifndef XII_INCLUDING_BASICS_H
+#  error "Assert.h must not be included directly, but instead include Foundation/Basics.h."
+#endif
 
-#include <Foundation/Basics.h>
+/// \file
 
 /// ***** Assert Usage Guidelines *****
 ///
@@ -26,6 +28,8 @@
 /// Please be aware that XII_ASSERT_RELEASE works like the other asserts, i.e. once it is deactivated, the code in the condition
 /// is not executed anymore.
 ///
+
+class xiiFormatString;
 
 /// \brief Assert handler callback. Should return true to trigger a break point or false if the assert should be ignored
 using xiiAssertHandler = bool (*)(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg);

@@ -1,13 +1,18 @@
 #pragma once
 
+#define XII_INCLUDING_BASICS_H
+
+// Basic pre-processor definitions.
 #include <Foundation/Basics/PreprocessorUtils.h>
 
+// Set all feature definitions to XII_OFF.
 #include <Foundation/Basics/AllDefinesOff.h>
 
+// General OS and Hardware detection.
 #include <Foundation/Basics/Platform/DetectArchitecture.h>
-
 #include <Foundation/Basics/Platform/DetectPlatform.h>
 
+// Build override definitions.
 #include <Foundation/UserConfig.h>
 
 // Configure the DLL Import/Export Define
@@ -26,7 +31,7 @@
 
 #include <Foundation/FoundationInternal.h>
 
-// include the different headers for the supported platforms
+// include the different headers for the supported platforms.
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Basics/Platform/Win/Platform_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
@@ -37,29 +42,25 @@
 #  error "Undefined platform!"
 #endif
 
+// Include headers for the supported compilers.
+#include <Foundation/Basics/Compiler/Clang.h>
+#include <Foundation/Basics/Compiler/GCC.h>
+#include <Foundation/Basics/Compiler/MSVC.h>
+
 // Here all the different features that each platform supports are declared.
 #include <Foundation/Basics/Platform/PlatformFeatures.h>
 
-// Include this last, it will ensure the previous includes have setup everything correctly
+// Include this last, it will ensure the previous includes have setup everything correctly.
 #include <Foundation/Basics/Platform/CheckDefinitions.h>
 
-// Include common definitions and macros (e.g. static_assert)
+// Include common definitions and macros (e.g. static_assert).
 #include <Foundation/Basics/Platform/Common.h>
 
-// Include magic preprocessor macros
+// Include magic preprocessor macros.
 #include <Foundation/Basics/Platform/BlackMagic.h>
 
-// Now declare all fundamental types
+// Now declare all fundamental types.
 #include <Foundation/Types/Types.h>
-
-#ifdef BUILDSYSTEM_BUILDING_FOUNDATION_LIB
-#  if BUILDSYSTEM_COMPILE_ENGINE_AS_DLL && XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
-#    error "The Buildsystem is configured to build the Engine as a shared library, but XII_COMPILE_ENGINE_AS_DLL is not defined in UserConfig.h"
-#  endif
-#  if !BUILDSYSTEM_COMPILE_ENGINE_AS_DLL && XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
-#    error "The Buildsystem is configured to build the Engine as a static library, but XII_COMPILE_ENGINE_AS_DLL is defined in UserConfig.h"
-#  endif
-#endif
 
 // Finally include the rest of basics
 #include <Foundation/Basics/Assert.h>
@@ -108,3 +109,5 @@ private:
 
   static bool s_bIsInitialized;
 };
+
+#undef XII_INCLUDING_BASICS_H

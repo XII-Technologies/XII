@@ -9,7 +9,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALObject : public xiiReflectedClass, public
 
 public:
   /// \brief Returns the debug name of this resource.
-  XII_NODISCARD xiiStringView GetDebugName() const;
+  [[nodiscard]] xiiStringView GetDebugName() const;
 
   /// \brief Sets the debug name for this resource.
   void SetDebugName(xiiStringView sDebugName);

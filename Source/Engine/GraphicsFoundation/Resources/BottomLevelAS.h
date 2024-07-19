@@ -90,7 +90,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALResource
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALBottomLevelASCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALBottomLevelASCreationDescription& GetDescription() const;
 
   /// \brief This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
@@ -99,7 +99,7 @@ public:
   /// \return The geometry the index or xiiInvalidIndex if the geometry does not exist.
   ///
   /// \note Access to the BLAS must be externally synchronized.
-  XII_NODISCARD virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const = 0;
+  [[nodiscard]] virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const = 0;
 
   /// \brief This returns the geometry index that can be used in a shader binding table.
   ///
@@ -108,19 +108,19 @@ public:
   /// \return The geometry index or xiiInvalidIndex if the geometry does not exist.
   ///
   /// \note Access to the BLAS must be externally synchronized.
-  XII_NODISCARD virtual xiiUInt32 GetGeometryIndex(xiiStringView sName) const = 0;
+  [[nodiscard]] virtual xiiUInt32 GetGeometryIndex(xiiStringView sName) const = 0;
 
   /// \brief This returns the geometry count that was used to build the acceleration structure.
   ///
   /// \return The number of geometries that was used to build the acceleration structure.
   ///
   /// \note Access to the BLAS must be externally synchronized.
-  XII_NODISCARD virtual xiiUInt32 GetActualGeometryCount() const = 0;
+  [[nodiscard]] virtual xiiUInt32 GetActualGeometryCount() const = 0;
 
   /// \brief This returns the scratch buffer information for the current acceleration structure.
   ///
   /// \return The scratch buffer size description, see xiiGALScratchBufferSizeDescription.
-  XII_NODISCARD virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
+  [[nodiscard]] virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
 
 protected:
   friend class xiiGALDevice;

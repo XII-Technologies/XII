@@ -2359,7 +2359,7 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
     if (!(expression)) { return xiiGALPipelineResourceSignatureHandle(); } \
   } while (false)
 
-XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description)
+[[nodiscard]] xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
@@ -2512,7 +2512,7 @@ void xiiGALDevice::DestroyPipelineResourceSignature(xiiGALPipelineResourceSignat
     if (!(expression)) { return xiiGALPipelineStateHandle(); } \
   } while (false)
 
-XII_NODISCARD xiiGALPipelineStateHandle xiiGALDevice::CreatePipelineState(const xiiGALPipelineStateCreationDescription& description)
+[[nodiscard]] xiiGALPipelineStateHandle xiiGALDevice::CreatePipelineState(const xiiGALPipelineStateCreationDescription& description)
 {
   /// \todo GraphicsFoundation: Verify pipeline state description.
 

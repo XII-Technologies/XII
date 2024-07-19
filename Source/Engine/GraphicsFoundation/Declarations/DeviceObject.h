@@ -13,7 +13,7 @@ public:
   /// \brief Returns the xiiGALDevice that created this resource.
   ///
   /// \note This does **not** increase the ref count on the device.
-  XII_NODISCARD xiiGALDevice* GetDevice() const;
+  [[nodiscard]] xiiGALDevice* GetDevice() const;
 
 protected:
   friend class xiiGALDevice;

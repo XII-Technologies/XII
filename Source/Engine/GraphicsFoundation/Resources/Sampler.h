@@ -70,7 +70,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALSampler : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALSamplerCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALSamplerCreationDescription& GetDescription() const;
 
 protected:
   friend class xiiGALDevice;

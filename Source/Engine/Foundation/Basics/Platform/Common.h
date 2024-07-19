@@ -23,17 +23,6 @@ XII_WARNING_POP()
 #include <type_traits>
 #include <utility>
 
-#ifndef __has_cpp_attribute
-#  define __has_cpp_attribute(name) 0
-#endif
-
-// [[nodiscard]] helper
-#if __has_cpp_attribute(nodiscard)
-#  define XII_NODISCARD [[nodiscard]]
-#else
-#  define XII_NODISCARD
-#endif
-
 /// \brief Disallow the copy constructor and the assignment operator for this type.
 #define XII_DISALLOW_COPY_AND_ASSIGN(type) \
   type(const type&) = delete;              \
@@ -46,11 +35,6 @@ XII_WARNING_POP()
 /// \brief Macro helper to check alignment
 #  define XII_CHECK_ALIGNMENT(ptr, alignment)
 #endif
-
-#define XII_CHECK_ALIGNMENT_16(ptr)  XII_CHECK_ALIGNMENT(ptr, 16)
-#define XII_CHECK_ALIGNMENT_32(ptr)  XII_CHECK_ALIGNMENT(ptr, 32)
-#define XII_CHECK_ALIGNMENT_64(ptr)  XII_CHECK_ALIGNMENT(ptr, 64)
-#define XII_CHECK_ALIGNMENT_128(ptr) XII_CHECK_ALIGNMENT(ptr, 128)
 
 #define XII_WINCHECK_1          1 // XII_INCLUDED_WINDOWS_H defined to 1, _WINDOWS_ defined (stringyfied to nothing)
 #define XII_WINCHECK_1_WINDOWS_ 1 // XII_INCLUDED_WINDOWS_H defined to 1, _WINDOWS_ undefined (stringyfied to "_WINDOWS_")
@@ -65,18 +49,6 @@ XII_WARNING_POP()
 #define XII_CHECK_WINDOWS_INCLUDE(XII_WINH_INCLUDED, WINH_INCLUDED)                                          \
   static_assert(XII_PP_CONCAT(XII_WINCHECK_, XII_PP_CONCAT(XII_WINH_INCLUDED, WINH_INCLUDED)) == 1, \
                                "Windows.h has been included but not through XII. #include <Foundation/Basics/Platform/Win/IncludeWindows.h> instead of Windows.h");
-
-
-/// \brief Define some macros to work with the MSVC analysis warning
-/// Note that the StaticAnalysis.h in Basics/Compiler/MSVC will define the MSVC specific versions.
-#define XII_MSVC_ANALYSIS_WARNING_PUSH
-#define XII_MSVC_ANALYSIS_WARNING_POP
-#define XII_MSVC_ANALYSIS_WARNING_DISABLE(warningNumber)
-#define XII_MSVC_ANALYSIS_ASSUME(expression)
-
-#if defined(_MSC_VER)
-#  include <Foundation/Basics/Compiler/MSVC/StaticAnalysis.h>
-#endif
 
 #if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
 
@@ -151,15 +123,3 @@ template <class T>
 void XII_IGNORE_UNUSED(const T&)
 {
 }
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  define XII_DECL_EXPORT        __declspec(dllexport)
-#  define XII_DECL_IMPORT        __declspec(dllimport)
-#  define XII_DECL_EXPORT_FRIEND __declspec(dllexport)
-#  define XII_DECL_IMPORT_FRIEND __declspec(dllimport)
-#else
-#  define XII_DECL_EXPORT [[gnu::visibility("default")]]
-#  define XII_DECL_IMPORT [[gnu::visibility("default")]]
-#  define XII_DECL_EXPORT_FRIEND
-#  define XII_DECL_IMPORT_FRIEND
-#endif
