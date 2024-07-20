@@ -444,7 +444,7 @@ void xiiGALCommandListD3D11::EndQueryPlatform(xiiGALQuery* pQuery)
 
 void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
-  XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
+  XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
 
   auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
@@ -465,7 +465,7 @@ void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
 
 void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
 {
-  XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
+  XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
 
   xiiGALDeviceD3D11* pDeviceD3D11            = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   auto               pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
