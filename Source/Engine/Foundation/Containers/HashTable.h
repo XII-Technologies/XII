@@ -19,6 +19,8 @@ struct xiiHashTableBaseConstIterator
 
   XII_DECLARE_POD_TYPE();
 
+  xiiHashTableBaseConstIterator() = default;
+
   /// \brief Checks whether this iterator points to a valid element.
   bool IsValid() const; // [tested]
 

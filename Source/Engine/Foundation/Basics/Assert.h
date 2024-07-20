@@ -125,7 +125,7 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 
 
 // Occurrences of XII_ASSERT_DEV are compiled out in non-development builds
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) || XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 
 /// \brief Macro to raise an error, if a condition is not met.
 ///
