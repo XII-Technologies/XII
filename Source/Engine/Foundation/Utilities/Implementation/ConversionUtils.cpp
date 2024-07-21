@@ -6,7 +6,6 @@
 
 namespace xiiConversionUtils
 {
-
   static bool IsWhitespace(xiiUInt32 c)
   {
     return (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f' || c == '\a');
@@ -982,6 +981,46 @@ namespace xiiConversionUtils
   if (sColorName.IsEqual_NoCase(XII_PP_STRINGIFY(name))) \
   return xiiColor::name
 
+  xiiResult ConvertHexStringToColor(xiiStringView sText, xiiColorGammaUB& ref_color)
+  {
+    ref_color = xiiColorGammaUB(0, 0, 0);
+
+    auto twoCharsToByte = [](xiiStringView& text, xiiUInt8& out_uiByte) -> xiiResult {
+      if (text.IsEmpty())
+        return XII_SUCCESS;
+
+      xiiInt8 uiFirstCharacter  = 0;
+      xiiInt8 uiSecondCharacter = 0;
+
+      uiFirstCharacter = HexCharacterToIntValue(text.GetCharacter());
+      text.ChopAwayFirstCharacterUtf8();
+
+      if (!text.IsEmpty())
+      {
+        uiSecondCharacter = HexCharacterToIntValue(text.GetCharacter());
+        text.ChopAwayFirstCharacterUtf8();
+      }
+
+      if (uiFirstCharacter < 0 || uiSecondCharacter < 0)
+      {
+        return XII_FAILURE;
+      }
+
+      out_uiByte = (static_cast<xiiUInt8>(uiFirstCharacter) << 4) | static_cast<xiiUInt8>(uiSecondCharacter);
+      return XII_SUCCESS;
+    };
+
+    sText.Trim();             // remove whitespace around the text
+    sText.TrimWordStart("#"); // remove optional hash at the beginning
+
+    XII_SUCCEED_OR_RETURN(twoCharsToByte(sText, ref_color.r));
+    XII_SUCCEED_OR_RETURN(twoCharsToByte(sText, ref_color.g));
+    XII_SUCCEED_OR_RETURN(twoCharsToByte(sText, ref_color.b));
+    XII_SUCCEED_OR_RETURN(twoCharsToByte(sText, ref_color.a));
+
+    return XII_SUCCESS;
+  }
+
   xiiColor GetColorByName(xiiStringView sColorName, bool* out_pValidColorName)
   {
     if (out_pValidColorName)
@@ -990,45 +1029,11 @@ namespace xiiConversionUtils
     if (sColorName.IsEmpty())
       return xiiColor::Black; // considered not to be a valid color name
 
-    const xiiUInt32 uiLen = sColorName.GetElementCount();
-
-    auto twoCharsToByte = [](const char* szColorChars, xiiUInt8& out_uiByte) -> xiiResult {
-      xiiInt8 firstChar  = HexCharacterToIntValue(szColorChars[0]);
-      xiiInt8 secondChar = HexCharacterToIntValue(szColorChars[1]);
-      if (firstChar < 0 || secondChar < 0)
-      {
-        return XII_FAILURE;
-      }
-      out_uiByte = (static_cast<xiiUInt8>(firstChar) << 4) | static_cast<xiiUInt8>(secondChar);
-      return XII_SUCCESS;
-    };
-
     if (sColorName.StartsWith("#"))
     {
-      if (uiLen == 7 || uiLen == 9) // #RRGGBB or #RRGGBBAA
-      {
-        xiiUInt8 cv[4] = {0, 0, 0, 255};
-
-        const char* szColorName = sColorName.GetStartPointer();
-
-        if (twoCharsToByte(szColorName + 1, cv[0]).Failed())
-          return xiiColor::Black;
-        if (twoCharsToByte(szColorName + 3, cv[1]).Failed())
-          return xiiColor::Black;
-        if (twoCharsToByte(szColorName + 5, cv[2]).Failed())
-          return xiiColor::Black;
-
-        if (uiLen == 9)
-        {
-          if (twoCharsToByte(szColorName + 7, cv[3]).Failed())
-            return xiiColor::Black;
-        }
-
-        if (out_pValidColorName)
-          *out_pValidColorName = true;
-
-        return xiiColorGammaUB(cv[0], cv[1], cv[2], cv[3]);
-      }
+      xiiColorGammaUB res;
+      if (ConvertHexStringToColor(sColorName, res).Succeeded())
+        return res;
 
       // else RebeccaPurple !
     }
