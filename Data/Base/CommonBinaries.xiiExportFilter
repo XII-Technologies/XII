@@ -33,6 +33,6 @@
 /zstd.dll
 /zlib.dll
 /Duktape.dll
-/stb_image.dll
+/stb.dll
 /enet.dll
 #endif

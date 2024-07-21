@@ -374,7 +374,7 @@ extern "C" {
 #undef STBIDEF
 #ifdef BUILDSYSTEM_COMPILE_ENGINE_AS_DLL
 #  ifdef _WIN32
-#    ifdef BUILDSYSTEM_BUILDING_STB_IMAGE_LIB
+#    ifdef BUILDSYSTEM_BUILDING_STB_LIB
 #      define STBIDEF __declspec(dllexport)
 #    else
 #      define STBIDEF __declspec(dllimport)
@@ -6826,8 +6826,12 @@ static void *stbi__load_gif_main(stbi__context *s, int **delays, int *x, int *y,
                }
 
                if (delays) {
-                  *delays = (int*) STBI_REALLOC_SIZED( *delays, delays_size, sizeof(int) * layers );
-                  delays_size = layers * sizeof(int);
+                  int* d = (int*) STBI_REALLOC_SIZED( *delays, delays_size, sizeof(int) * layers );
+                  if(d != NULL)
+                  {
+                    *delays = d;
+                    delays_size = layers * sizeof(int);
+                  }
                }
             } else {
                out = (stbi_uc*)stbi__malloc( layers * stride );
