@@ -1,0 +1,11 @@
+# Asset Types
+
+# Component Types
+
+xiiCameraShakeComponent;Camera Shake;;https://xiiengine.net/pages/docs/effects/camera-shake/camera-shake-component.html
+xiiCameraShakeVolumeSphereComponent;Camera Shake Sphere Volume;;https://xiiengine.net/pages/docs/effects/camera-shake/camera-shake-volume-components.html
+
+# UI
+
+
+# Enums

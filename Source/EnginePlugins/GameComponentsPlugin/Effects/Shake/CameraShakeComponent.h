@@ -1,5 +1,7 @@
 #pragma once
 
+#include <GameComponentsPlugin/GameComponentsDLL.h>
+
 #include <Core/World/ComponentManager.h>
 
 using xiiCameraShakeComponentManager = xiiComponentManagerSimple<class xiiCameraShakeComponent, xiiComponentUpdateType::WhenSimulating>;
@@ -34,7 +36,7 @@ public:
   xiiAngle m_MinShake; // [ property ]
 
   /// \brief How much shake to apply at shake strength 1.
-  xiiAngle m_MaxShake; // [ property ]
+  xiiAngle m_MaxShake = xiiAngle::MakeFromDegree(5); // [ property ]
 
 public:
   xiiCameraShakeComponent();
