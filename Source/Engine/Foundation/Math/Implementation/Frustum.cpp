@@ -9,6 +9,16 @@
 xiiFrustum::xiiFrustum()  = default;
 xiiFrustum::~xiiFrustum() = default;
 
+xiiFrustum xiiFrustum::MakeInvalid()
+{
+  xiiFrustum frustum;
+  for (xiiUInt32 i = 0; i < PLANE_COUNT; ++i)
+  {
+    frustum.m_Planes[i] = xiiPlane::MakeInvalid();
+  }
+  return frustum;
+}
+
 const xiiPlane& xiiFrustum::GetPlane(xiiUInt8 uiPlane) const
 {
   XII_ASSERT_DEBUG(uiPlane < PLANE_COUNT, "Invalid plane index.");

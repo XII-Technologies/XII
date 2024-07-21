@@ -88,12 +88,15 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
 /// The macros create functions that reference each other, which means the linker is forced to look at all files in the library.
 /// This in turn will drag all global variables into the visibility of the linker, and since it mustn't optimize them away,
 /// they then end up in the final application, where they will do what they are meant for.
-#  define XII_STATICLINK_FILE(LibraryName, UniqueName)              \
-#    define XII_STATICLINK_FILE(LibraryName, UniqueName) extern "C" \
-    {                                                               \
-      void xiiReferenceFunction_##UniqueName(bool bReturn) {}       \
-      void xiiReferenceFunction_##LibraryName(bool bReturn);        \
-    }                                                               \
+#  define XII_STATICLINK_FILE(LibraryName, UniqueName)       \
+    extern "C"                                              \
+    {                                                       \
+      void xiiReferenceFunction_##UniqueName(bool bReturn)   \
+      {                                                     \
+        (void)bReturn;                                      \
+      }                                                     \
+      void xiiReferenceFunction_##LibraryName(bool bReturn); \
+    }                                                       \
     static xiiStaticLinkHelper StaticLinkHelper_##UniqueName(xiiReferenceFunction_##LibraryName);
 
 /// \brief Used by the tool 'StaticLinkUtil' to generate the block after XII_STATICLINK_LIBRARY, to create references to all
@@ -111,12 +114,25 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
 
 namespace xiiInternal
 {
+  template <typename T>
+  constexpr bool AlwaysFalse = false;
+
+  template <typename T>
+  struct ArraySizeHelper
+  {
+    static_assert(AlwaysFalse<T>, "Cannot take compile time array size of given type.");
+  };
+
   template <typename T, size_t N>
-  char (*ArraySizeHelper(T (&)[N]))[N];
-}
+  struct ArraySizeHelper<T[N]>
+  {
+    static constexpr size_t value = N;
+  };
+
+} // namespace xiiInternal
 
 /// \brief Macro to determine the size of a static array
-#define XII_ARRAY_SIZE(a) (sizeof(*xiiInternal::ArraySizeHelper(a)) + 0)
+#define XII_ARRAY_SIZE(a) (xiiInternal::ArraySizeHelper<decltype(a)>::value)
 
 /// \brief Template helper which allows to suppress "Unused variable" warnings (e.g. result used in platform specific block, ..)
 template <class T>

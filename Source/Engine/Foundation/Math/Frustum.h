@@ -61,6 +61,9 @@ public:
   xiiFrustum();
   ~xiiFrustum();
 
+  /// \brief Returns an invalid frustum with all planes set to zero.
+  [[nodiscard]] static xiiFrustum MakeInvalid();
+
   /// \brief Sets the frustum manually by specifying the planes directly.
   ///
   /// \note Make sure to pass in the planes in the order of the PlaneType enum, otherwise xiiFrustum may not always work as expected.

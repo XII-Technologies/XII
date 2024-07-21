@@ -76,14 +76,14 @@ public:
   XII_ALWAYS_INLINE constexpr std::strong_ordering operator<=>(const SelfType& rhs) const { return m_Value <=> rhs.m_Value; }
 
   /// \brief Comparison operator.
-  XII_ALWAYS_INLINE constexpr bool operator==(typename Derived::Enum value) const { return m_Value == value; }
+  XII_ALWAYS_INLINE constexpr bool operator==(typename Derived::Enum value) const { return m_Value == (StorageType)value; }
 
   /// \brief Comparison operator.
-  XII_ALWAYS_INLINE constexpr std::strong_ordering operator<=>(typename Derived::Enum value) const { return m_Value <=> value; }
+  XII_ALWAYS_INLINE constexpr std::strong_ordering operator<=>(typename Derived::Enum value) const { return m_Value <=> (StorageType)value; }
 
   /// brief Bitwise operators
-  XII_ALWAYS_INLINE SelfType operator|(const SelfType& rhs) const { return static_cast<typename Derived::Enum>(m_Value | rhs.m_Value); } // [tested]
-  XII_ALWAYS_INLINE SelfType operator&(const SelfType& rhs) const { return static_cast<typename Derived::Enum>(m_Value & rhs.m_Value); } // [tested]
+  XII_ALWAYS_INLINE SelfType operator|(const SelfType& rhs) const { return static_cast<typename Derived::Enum>(m_Value | (StorageType)rhs.m_Value); } // [tested]
+  XII_ALWAYS_INLINE SelfType operator&(const SelfType& rhs) const { return static_cast<typename Derived::Enum>(m_Value & (StorageType)rhs.m_Value); } // [tested]
 
   /// \brief Implicit conversion to enum type.
   XII_ALWAYS_INLINE constexpr operator typename Derived::Enum() const // [tested]
