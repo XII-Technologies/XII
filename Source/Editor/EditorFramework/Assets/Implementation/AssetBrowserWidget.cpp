@@ -473,6 +473,25 @@ void xiiQtAssetBrowserWidget::keyPressEvent(QKeyEvent* e)
   }
 }
 
+void xiiQtAssetBrowserWidget::mousePressEvent(QMouseEvent* e)
+{
+  if (e->button() == Qt::MouseButton::BackButton)
+  {
+    e->accept();
+
+    xiiStringBuilder sPath = m_pFilter->GetPathFilter();
+    if (sPath.IsEmpty())
+      return;
+
+    sPath.PathParentDirectory();
+    sPath.Trim("/");
+
+    m_pFilter->SetPathFilter(sPath);
+
+    return;
+  }
+  QWidget::mousePressEvent(e);
+}
 
 void xiiQtAssetBrowserWidget::DeleteSelection()
 {
