@@ -1,10 +1,14 @@
 #pragma once
 
-#include <Foundation/Basics.h>
-#include <Foundation/Strings/Implementation/FormatStringArgs.h>
+#ifndef XII_INCLUDING_BASICS_H
+#  error "FormatString.h must not be included directly, but instead include Foundation/Basics.h."
+#endif
 
 class xiiStringBuilder;
-struct xiiStringView;
+
+#include <Foundation/Strings/StringView.h>
+
+#include <Foundation/Strings/Implementation/FormatStringArgs.h>
 
 /// \brief Implements formating of strings with placeholders and formatting options.
 ///

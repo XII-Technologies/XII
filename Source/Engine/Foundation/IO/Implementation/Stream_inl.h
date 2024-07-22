@@ -5,7 +5,7 @@
 template <typename T>
 xiiResult xiiStreamReader::ReadWordValue(T* pWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt16));
+  static_assert(sizeof(T) == sizeof(xiiUInt16));
 
   xiiUInt16 uiTemp;
 
@@ -19,7 +19,7 @@ xiiResult xiiStreamReader::ReadWordValue(T* pWordValue)
 template <typename T>
 xiiResult xiiStreamReader::ReadDWordValue(T* pDWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt32));
+  static_assert(sizeof(T) == sizeof(xiiUInt32));
 
   xiiUInt32 uiTemp;
 
@@ -33,7 +33,7 @@ xiiResult xiiStreamReader::ReadDWordValue(T* pDWordValue)
 template <typename T>
 xiiResult xiiStreamReader::ReadQWordValue(T* pQWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt64));
+  static_assert(sizeof(T) == sizeof(xiiUInt64));
 
   xiiUInt64 uiTemp;
 
@@ -49,7 +49,7 @@ xiiResult xiiStreamReader::ReadQWordValue(T* pQWordValue)
 template <typename T>
 xiiResult xiiStreamWriter::WriteWordValue(const T* pWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt16));
+  static_assert(sizeof(T) == sizeof(xiiUInt16));
 
   xiiUInt16 uiTemp = *reinterpret_cast<const xiiUInt16*>(pWordValue);
   uiTemp           = xiiEndianHelper::Switch(uiTemp);
@@ -60,7 +60,7 @@ xiiResult xiiStreamWriter::WriteWordValue(const T* pWordValue)
 template <typename T>
 xiiResult xiiStreamWriter::WriteDWordValue(const T* pDWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt32));
+  static_assert(sizeof(T) == sizeof(xiiUInt32));
 
   xiiUInt32 uiTemp = *reinterpret_cast<const xiiUInt32*>(pDWordValue);
   uiTemp           = xiiEndianHelper::Switch(uiTemp);
@@ -71,7 +71,7 @@ xiiResult xiiStreamWriter::WriteDWordValue(const T* pDWordValue)
 template <typename T>
 xiiResult xiiStreamWriter::WriteQWordValue(const T* pQWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt64));
+  static_assert(sizeof(T) == sizeof(xiiUInt64));
 
   xiiUInt64 uiTemp = *reinterpret_cast<const xiiUInt64*>(pQWordValue);
   uiTemp           = xiiEndianHelper::Switch(uiTemp);
@@ -84,7 +84,7 @@ xiiResult xiiStreamWriter::WriteQWordValue(const T* pQWordValue)
 template <typename T>
 xiiResult xiiStreamReader::ReadWordValue(T* pWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt16));
+  static_assert(sizeof(T) == sizeof(xiiUInt16));
 
   if (ReadBytes(reinterpret_cast<xiiUInt8*>(pWordValue), sizeof(T)) != sizeof(T))
     return XII_FAILURE;
@@ -95,7 +95,7 @@ xiiResult xiiStreamReader::ReadWordValue(T* pWordValue)
 template <typename T>
 xiiResult xiiStreamReader::ReadDWordValue(T* pDWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt32));
+  static_assert(sizeof(T) == sizeof(xiiUInt32));
 
   if (ReadBytes(reinterpret_cast<xiiUInt8*>(pDWordValue), sizeof(T)) != sizeof(T))
     return XII_FAILURE;
@@ -106,7 +106,7 @@ xiiResult xiiStreamReader::ReadDWordValue(T* pDWordValue)
 template <typename T>
 xiiResult xiiStreamReader::ReadQWordValue(T* pQWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt64));
+  static_assert(sizeof(T) == sizeof(xiiUInt64));
 
   if (ReadBytes(reinterpret_cast<xiiUInt8*>(pQWordValue), sizeof(T)) != sizeof(T))
     return XII_FAILURE;
@@ -117,7 +117,7 @@ xiiResult xiiStreamReader::ReadQWordValue(T* pQWordValue)
 template <typename T>
 xiiResult xiiStreamWriter::WriteWordValue(const T* pWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt16));
+  static_assert(sizeof(T) == sizeof(xiiUInt16));
 
   return WriteBytes(reinterpret_cast<const xiiUInt8*>(pWordValue), sizeof(T));
 }
@@ -125,7 +125,7 @@ xiiResult xiiStreamWriter::WriteWordValue(const T* pWordValue)
 template <typename T>
 xiiResult xiiStreamWriter::WriteDWordValue(const T* pDWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt32));
+  static_assert(sizeof(T) == sizeof(xiiUInt32));
 
   return WriteBytes(reinterpret_cast<const xiiUInt8*>(pDWordValue), sizeof(T));
 }
@@ -133,7 +133,7 @@ xiiResult xiiStreamWriter::WriteDWordValue(const T* pDWordValue)
 template <typename T>
 xiiResult xiiStreamWriter::WriteQWordValue(const T* pQWordValue)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt64));
+  static_assert(sizeof(T) == sizeof(xiiUInt64));
 
   return WriteBytes(reinterpret_cast<const xiiUInt8*>(pQWordValue), sizeof(T));
 }

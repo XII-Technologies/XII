@@ -1,5 +1,14 @@
 #pragma once
 
+#ifdef BUILDSYSTEM_BUILDING_FOUNDATION_LIB
+#  if BUILDSYSTEM_COMPILE_ENGINE_AS_DLL && XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
+#    error "The Build System is configured to build the Engine as a shared library, but XII_COMPILE_ENGINE_AS_DLL is not defined in UserConfig.h"
+#  endif
+#  if !BUILDSYSTEM_COMPILE_ENGINE_AS_DLL && XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
+#    error "The Build System is configured to build the Engine as a static library, but XII_COMPILE_ENGINE_AS_DLL is defined in UserConfig.h"
+#  endif
+#endif
+
 #ifndef NULL
 #  error "NULL is not defined."
 #endif
@@ -17,7 +26,7 @@
 #endif
 
 #if XII_IS_NOT_EXCLUSIVE(XII_PLATFORM_32BIT, XII_PLATFORM_64BIT)
-#  error "Platform is not defined as 32 Bit or 64 Bit"
+#  error "Platform is not defined as 32 Bit or 64 Bit."
 #endif
 
 #ifndef XII_DEBUG_BREAK

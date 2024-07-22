@@ -31,7 +31,8 @@
 /Lua.dll
 /ozz.dll
 /zstd.dll
+/zlib.dll
 /Duktape.dll
-/stb_image.dll
+/stb.dll
 /enet.dll
 #endif

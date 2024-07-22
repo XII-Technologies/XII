@@ -39,11 +39,8 @@ protected:
   bool m_bInitializedModuleSupport = false;
 
 private:
-#  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  // Careful! We always need AllocationStats, because DukRealloc calls AllocatedSize, which only works with these stats.
   xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::AllocationStats> m_Allocator;
-#  else
-  xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::DoNotTrack> m_Allocator;
-#  endif
 };
 
 #endif // BUILDSYSTEM_ENABLE_DUKTAPE_SUPPORT

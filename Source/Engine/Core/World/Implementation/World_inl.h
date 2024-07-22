@@ -112,7 +112,7 @@ XII_FORCE_INLINE void xiiWorld::Traverse(VisitorFunc visitorFunc, TraversalMetho
 template <typename ModuleType>
 XII_ALWAYS_INLINE ModuleType* xiiWorld::GetOrCreateModule()
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiWorldModule, ModuleType), "Not a valid module type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiWorldModule, ModuleType), "Not a valid module type");
 
   return xiiStaticCast<ModuleType*>(GetOrCreateModule(xiiGetStaticRTTI<ModuleType>()));
 }
@@ -120,7 +120,7 @@ XII_ALWAYS_INLINE ModuleType* xiiWorld::GetOrCreateModule()
 template <typename ModuleType>
 XII_ALWAYS_INLINE void xiiWorld::DeleteModule()
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiWorldModule, ModuleType), "Not a valid module type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiWorldModule, ModuleType), "Not a valid module type");
 
   DeleteModule(xiiGetStaticRTTI<ModuleType>());
 }
@@ -128,7 +128,7 @@ XII_ALWAYS_INLINE void xiiWorld::DeleteModule()
 template <typename ModuleType>
 XII_ALWAYS_INLINE ModuleType* xiiWorld::GetModule()
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiWorldModule, ModuleType), "Not a valid module type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiWorldModule, ModuleType), "Not a valid module type");
 
   return xiiStaticCast<ModuleType*>(GetModule(xiiGetStaticRTTI<ModuleType>()));
 }
@@ -136,7 +136,7 @@ XII_ALWAYS_INLINE ModuleType* xiiWorld::GetModule()
 template <typename ModuleType>
 XII_ALWAYS_INLINE const ModuleType* xiiWorld::GetModule() const
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiWorldModule, ModuleType), "Not a valid module type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiWorldModule, ModuleType), "Not a valid module type");
 
   return xiiStaticCast<const ModuleType*>(GetModule(xiiGetStaticRTTI<ModuleType>()));
 }
@@ -150,7 +150,7 @@ XII_ALWAYS_INLINE const ModuleType* xiiWorld::GetModuleReadOnly() const
 template <typename ManagerType>
 ManagerType* xiiWorld::GetOrCreateComponentManager()
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponentManagerBase, ManagerType), "Not a valid component manager type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiComponentManagerBase, ManagerType), "Not a valid component manager type");
 
   CheckForWriteAccess();
 
@@ -180,7 +180,7 @@ XII_ALWAYS_INLINE xiiComponentManagerBase* xiiWorld::GetOrCreateManagerForCompon
 template <typename ManagerType>
 void xiiWorld::DeleteComponentManager()
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponentManagerBase, ManagerType), "Not a valid component manager type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiComponentManagerBase, ManagerType), "Not a valid component manager type");
 
   CheckForWriteAccess();
 
@@ -201,7 +201,7 @@ void xiiWorld::DeleteComponentManager()
 template <typename ManagerType>
 XII_FORCE_INLINE ManagerType* xiiWorld::GetComponentManager()
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponentManagerBase, ManagerType), "Not a valid component manager type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiComponentManagerBase, ManagerType), "Not a valid component manager type");
 
   CheckForWriteAccess();
 
@@ -217,7 +217,7 @@ XII_FORCE_INLINE ManagerType* xiiWorld::GetComponentManager()
 template <typename ManagerType>
 XII_FORCE_INLINE const ManagerType* xiiWorld::GetComponentManager() const
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponentManagerBase, ManagerType), "Not a valid component manager type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiComponentManagerBase, ManagerType), "Not a valid component manager type");
 
   CheckForReadAccess();
 
@@ -264,7 +264,7 @@ template <typename ComponentType>
 inline bool xiiWorld::TryGetComponent(const xiiComponentHandle& hComponent, ComponentType*& out_pComponent)
 {
   CheckForWriteAccess();
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponent, ComponentType), "Not a valid component type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiComponent, ComponentType), "Not a valid component type");
 
   const xiiWorldModuleTypeId uiTypeId = hComponent.m_InternalId.m_TypeId;
 
@@ -286,7 +286,7 @@ template <typename ComponentType>
 inline bool xiiWorld::TryGetComponent(const xiiComponentHandle& hComponent, const ComponentType*& out_pComponent) const
 {
   CheckForReadAccess();
-  XII_CHECK_AT_COMPILETIME_MSG(XII_IS_DERIVED_FROM_STATIC(xiiComponent, ComponentType), "Not a valid component type");
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiComponent, ComponentType), "Not a valid component type");
 
   const xiiWorldModuleTypeId uiTypeId = hComponent.m_InternalId.m_TypeId;
 

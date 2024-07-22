@@ -83,9 +83,9 @@ private Q_SLOTS:
   void OnImportAsAboutToShow();
   void OnImportAsClicked();
 
-
 private:
   virtual void keyPressEvent(QKeyEvent* e) override;
+  virtual void mousePressEvent(QMouseEvent* e) override;
 
 private:
   void AssetCuratorEventHandler(const xiiAssetCuratorEvent& e);

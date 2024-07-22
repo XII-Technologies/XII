@@ -82,6 +82,6 @@ class xiiVariantTypeInfoT : public xiiVariantTypeInfo
 /// Macros should be placed in any cpp. Note that once a custom type is defined, it is considered a value type and will be passed by value. It must be linked into every editor and engine dll to allow serialization. Thus it should only be used for common types in base libraries.
 /// Limitations: Currently only member variables are supported on custom types, no arrays, set, maps etc. For best performance, any custom type smaller than 16 bytes should be POD so it can be inlined into the xiiVariant.
 /// \sa XII_DECLARE_CUSTOM_VARIANT_TYPE, xiiVariantTypeRegistry, xiiVariant
-#define XII_DEFINE_CUSTOM_VARIANT_TYPE(TYPE)                                                                                                                                          \
-  XII_CHECK_AT_COMPILETIME_MSG(xiiVariantTypeDeduction<TYPE>::value == xiiVariantType::TypedObject, "XII_DECLARE_CUSTOM_VARIANT_TYPE needs to be added to the header defining TYPE"); \
+#define XII_DEFINE_CUSTOM_VARIANT_TYPE(TYPE)                                                                                                                           \
+  static_assert(xiiVariantTypeDeduction<TYPE>::value == xiiVariantType::TypedObject, "XII_DECLARE_CUSTOM_VARIANT_TYPE needs to be added to the header defining TYPE"); \
   xiiVariantTypeInfoT<TYPE> g_xiiVariantTypeInfoT_##TYPE;

@@ -134,5 +134,6 @@ private:
 
 using xiiAtomicInteger32 = xiiAtomicInteger<xiiInt32>; // [tested]
 using xiiAtomicInteger64 = xiiAtomicInteger<xiiInt64>; // [tested]
+
 static_assert(sizeof(xiiAtomicInteger32) == sizeof(xiiInt32));
 static_assert(sizeof(xiiAtomicInteger64) == sizeof(xiiInt64));

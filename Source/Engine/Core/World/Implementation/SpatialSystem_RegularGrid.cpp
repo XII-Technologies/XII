@@ -231,8 +231,38 @@ struct CellKeyHashHelper
 {
   XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiUInt64 value)
   {
-    // return xiiUInt32(value * 2654435761U);
-    return xiiHashHelper<xiiUInt64>::Hash(value);
+    // Manually unrolled MurmurHash32
+    const xiiUInt32 m = xiiInternal::MURMUR_M;
+    const xiiUInt32 r = xiiInternal::MURMUR_R;
+
+    xiiUInt32 h = 8;
+    {
+      xiiUInt32 k = xiiUInt32(value);
+
+      k *= m;
+      k ^= k >> r;
+      k *= m;
+
+      h *= m;
+      h ^= k;
+    }
+
+    {
+      xiiUInt32 k = xiiUInt32(value >> 32);
+
+      k *= m;
+      k ^= k >> r;
+      k *= m;
+
+      h *= m;
+      h ^= k;
+    }
+
+    h ^= h >> 13;
+    h *= m;
+    h ^= h >> 15;
+
+    return h;
   }
 
   XII_ALWAYS_INLINE static bool Equal(xiiUInt64 a, xiiUInt64 b) { return a == b; }
@@ -360,30 +390,47 @@ struct xiiSpatialSystem_RegularGrid::Grid
     const xiiInt32     iDiffZ         = diff.z();
     const xiiInt32     iNumIterations = iDiffX * iDiffY * iDiffZ;
 
-    for (xiiInt32 i = 0; i < iNumIterations; ++i)
+    // The hash grid approach below is about 10 times slower than simply iterating over all cells
+    // and doing an AABB overlap test
+    const xiiUInt64 uiHashGridCost = xiiUInt64(iNumIterations) * 10;
+    if (uiHashGridCost > m_Cells.GetCount())
     {
-      xiiInt32 index = i;
-      xiiInt32 z     = i / (iDiffX * iDiffY);
-      index -= z * iDiffX * iDiffY;
-      xiiInt32 y = index / iDiffX;
-      xiiInt32 x = index - (y * iDiffX);
-
-      x += iMinX;
-      y += iMinY;
-      z += iMinZ;
-
-      xiiUInt64 cellKey   = GetCellKey(x, y, z);
-      xiiUInt32 cellIndex = 0;
-      if (m_CellKeyToCellIndex.TryGetValue(cellKey, cellIndex))
+      for (auto& pCell : m_Cells)
       {
-        const Cell& constCell = *m_Cells[cellIndex];
-        if (func(constCell) == xiiVisitorExecution::Stop)
+        if (box.Overlaps(pCell->m_Bounds.GetBox()) == false)
+          continue;
+
+        if (func(*pCell) == xiiVisitorExecution::Stop)
           return;
       }
     }
+    else
+    {
+      for (xiiInt32 i = 0; i < iNumIterations; ++i)
+      {
+        xiiInt32 index = i;
+        xiiInt32 z     = i / (iDiffX * iDiffY);
+        index -= z * iDiffX * iDiffY;
+        xiiInt32 y = index / iDiffX;
+        xiiInt32 x = index - (y * iDiffX);
 
-    const Cell& overflowCell = *m_Cells[m_uiOverflowCellIndex];
-    func(overflowCell);
+        x += iMinX;
+        y += iMinY;
+        z += iMinZ;
+
+        xiiUInt64 cellKey   = GetCellKey(x, y, z);
+        xiiUInt32 cellIndex = 0;
+        if (m_CellKeyToCellIndex.TryGetValue(cellKey, cellIndex))
+        {
+          const Cell& constCell = *m_Cells[cellIndex];
+          if (func(constCell) == xiiVisitorExecution::Stop)
+            return;
+        }
+      }
+
+      const Cell& overflowCell = *m_Cells[m_uiOverflowCellIndex];
+      func(overflowCell);
+    }
   }
 
   xiiSpatialSystem_RegularGrid&       m_System;
@@ -596,7 +643,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiSpatialSystem_RegularGrid::xiiSpatialSystem_RegularGrid(xiiUInt32 uiCellSize /*= 128*/) :
   m_AlignedAllocator("Spatial System Aligned", xiiFoundation::GetAlignedAllocator()), m_Grids(&m_Allocator), m_DataTable(&m_Allocator), m_vCellSize(uiCellSize), m_vOverlapSize(uiCellSize / 4.0f), m_fInvCellSize(1.0f / uiCellSize)
 {
-  XII_CHECK_AT_COMPILETIME(sizeof(Data) == 8);
+  static_assert(sizeof(Data) == 8);
 
   m_Grids.SetCount(MAX_NUM_GRIDS);
 

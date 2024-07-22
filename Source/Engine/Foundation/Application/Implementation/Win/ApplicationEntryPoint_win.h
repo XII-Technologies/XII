@@ -135,20 +135,20 @@ namespace xiiApplicationDetails
 ///
 /// Just use the macro in a cpp file of your application and supply your app class (must be derived from xiiApplication).
 /// The additional (optional) parameters are passed to the constructor of your app class.
-#define XII_APPLICATION_ENTRY_POINT(AppClass, ...)                                                                                     \
-  /* Enables that on machines with multiple GPUs the NVIDIA / AMD GPU is preferred */                                                  \
-  extern "C"                                                                                                                           \
-  {                                                                                                                                    \
-    _declspec(dllexport) xiiMinWindows::DWORD NvOptimusEnablement                  = 0x00000001;                                       \
-    _declspec(dllexport) xiiMinWindows::DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;                                       \
-  }                                                                                                                                    \
-  XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                                                           \
-  int XII_WINDOWS_CALLBACK WinMain(_In_     XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_HINSTANCE, _WINDOWS_)) hInstance,     \
-                                   _In_opt_ XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_HINSTANCE, _WINDOWS_)) hPrevInstance, \
-                                   _In_     XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_LPSTR, _WINDOWS_)) lpCmdLine,         \
-                                   _In_ int nCmdShow)                                                                                  \
-  {                                                                                                                                    \
-    return xiiApplicationDetails::ApplicationEntry<AppClass>(__VA_ARGS__);                                                             \
+#define XII_APPLICATION_ENTRY_POINT(AppClass, ...)                                                                                           \
+  /* Enables that on machines with multiple GPUs the NVIDIA / AMD GPU is preferred */                                                        \
+  extern "C"                                                                                                                                 \
+  {                                                                                                                                          \
+    _declspec(dllexport) xiiMinWindows::DWORD NvOptimusEnablement                  = 0x00000001;                                             \
+    _declspec(dllexport) xiiMinWindows::DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;                                             \
+  }                                                                                                                                          \
+  XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                                                                 \
+  int XII_WINDOWS_CALLBACK WinMain(_In_     XII_PP_CONCAT(_XII_, XII_PP_CONCAT(APPLICATION_ENTRY_POINT_HINSTANCE, _WINDOWS_)) hInstance,     \
+                                   _In_opt_ XII_PP_CONCAT(_XII_, XII_PP_CONCAT(APPLICATION_ENTRY_POINT_HINSTANCE, _WINDOWS_)) hPrevInstance, \
+                                   _In_     XII_PP_CONCAT(_XII_, XII_PP_CONCAT(APPLICATION_ENTRY_POINT_LPSTR, _WINDOWS_)) lpCmdLine,         \
+                                   _In_ int nCmdShow)                                                                                        \
+  {                                                                                                                                          \
+    return xiiApplicationDetails::ApplicationEntry<AppClass>(__VA_ARGS__);                                                                   \
   }
 
 #ifdef UndefSAL

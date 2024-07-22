@@ -4,7 +4,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <combaseapi.h>
 #include <rpc.h>
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt64) * 2 == sizeof(UUID));
+static_assert(sizeof(xiiUInt64) * 2 == sizeof(UUID));
 
 xiiUuid xiiUuid::MakeUuid()
 {

@@ -12,7 +12,7 @@ namespace xiiMemoryPolicies
   {
   public:
     xiiAlignedAllocation(xiiAllocatorBase* pParent) :
-      m_allocator(pParent)
+      m_Allocator(pParent)
     {
     }
 
@@ -23,7 +23,7 @@ namespace xiiMemoryPolicies
       const xiiUInt32 uiPadding     = (xiiUInt32)(uiAlign - 1 + MetadataSize);
       const size_t    uiAlignedSize = uiSize + uiPadding;
 
-      xiiUInt8* pMemory = (xiiUInt8*)m_allocator.Allocate(uiAlignedSize, XII_ALIGNMENT_MINIMUM);
+      xiiUInt8* pMemory = (xiiUInt8*)m_Allocator.Allocate(uiAlignedSize, XII_ALIGNMENT_MINIMUM);
 
       xiiUInt8* pAlignedMemory = xiiMemoryUtils::AlignBackwards(pMemory + uiPadding, uiAlign);
 
@@ -37,7 +37,7 @@ namespace xiiMemoryPolicies
     {
       const xiiUInt32 uiOffset = UnpackOffset(GetMetadata(pPtr));
       xiiUInt8*       pMemory  = static_cast<xiiUInt8*>(pPtr) - uiOffset;
-      m_allocator.Deallocate(pMemory);
+      m_Allocator.Deallocate(pMemory);
     }
 
     size_t AllocatedSize(const void* pPtr)
@@ -48,17 +48,17 @@ namespace xiiMemoryPolicies
       const xiiUInt32 uiPadding  = uiAlign - 1 + MetadataSize;
 
       const xiiUInt8* pMemory = static_cast<const xiiUInt8*>(pPtr) - uiOffset;
-      return m_allocator.AllocatedSize(pMemory) - uiPadding;
+      return m_Allocator.AllocatedSize(pMemory) - uiPadding;
     }
 
     size_t UsedMemorySize(const void* pPtr)
     {
       const xiiUInt32 uiOffset = UnpackOffset(GetMetadata(pPtr));
       const xiiUInt8* pMemory  = static_cast<const xiiUInt8*>(pPtr) - uiOffset;
-      return m_allocator.UsedMemorySize(pMemory);
+      return m_Allocator.UsedMemorySize(pMemory);
     }
 
-    XII_ALWAYS_INLINE xiiAllocatorBase* GetParent() const { return m_allocator.GetParent(); }
+    XII_ALWAYS_INLINE xiiAllocatorBase* GetParent() const { return m_Allocator.GetParent(); }
 
   private:
     enum
@@ -85,6 +85,6 @@ namespace xiiMemoryPolicies
 
     XII_ALWAYS_INLINE xiiUInt32 UnpackAlignment(xiiUInt32 uiMetadata) { return 1 << (uiMetadata >> 24); }
 
-    T m_allocator;
+    T m_Allocator;
   };
 } // namespace xiiMemoryPolicies

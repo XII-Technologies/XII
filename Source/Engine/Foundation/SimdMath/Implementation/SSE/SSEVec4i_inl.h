@@ -1,5 +1,9 @@
 #pragma once
 
+#if XII_ENABLED(XII_COMPILER_MSVC)
+#  include <intrin.h>
+#endif
+
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i()
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);

@@ -14,8 +14,8 @@ public:
     xiiAbstractMapProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
-    XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
-                                 "Pointer to standard types are not supported.");
+    static_assert(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
+                  "Pointer to standard types are not supported.");
   }
 
   virtual const xiiRTTI* GetSpecificType() const override { return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferencePointerType>(); }

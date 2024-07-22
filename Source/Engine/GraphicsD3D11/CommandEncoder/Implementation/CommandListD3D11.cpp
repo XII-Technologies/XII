@@ -138,7 +138,7 @@ void xiiGALCommandListD3D11::SetBlendFactorPlatform(const xiiColor& blendFactor)
 
 void xiiGALCommandListD3D11::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_GAL_MAX_VIEWPORT_COUNT >= D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "The XII_GAL_MAX_VIEWPORT_COUNT must be greater than (or equal to) D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE.");
+  static_assert(XII_GAL_MAX_VIEWPORT_COUNT >= D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "The XII_GAL_MAX_VIEWPORT_COUNT must be greater than (or equal to) D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE.");
 
   XII_ASSERT_DEV(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
 
@@ -161,7 +161,7 @@ void xiiGALCommandListD3D11::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pV
 
 void xiiGALCommandListD3D11::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(XII_GAL_MAX_VIEWPORT_COUNT >= D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "The XII_GAL_MAX_VIEWPORT_COUNT must be greater than (or equal to) D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE.");
+  static_assert(XII_GAL_MAX_VIEWPORT_COUNT >= D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "The XII_GAL_MAX_VIEWPORT_COUNT must be greater than (or equal to) D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE.");
 
   XII_ASSERT_DEV(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
 
@@ -444,7 +444,7 @@ void xiiGALCommandListD3D11::EndQueryPlatform(xiiGALQuery* pQuery)
 
 void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
-  XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
+  XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
 
   auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
@@ -465,7 +465,7 @@ void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
 
 void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
 {
-  XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
+  XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
 
   xiiGALDeviceD3D11* pDeviceD3D11            = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   auto               pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);

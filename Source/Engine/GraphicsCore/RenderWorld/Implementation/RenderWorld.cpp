@@ -114,7 +114,7 @@ namespace xiiInternal
   };
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
-  XII_CHECK_AT_COMPILETIME(sizeof(RenderDataCacheEntry) == 16);
+  static_assert(sizeof(RenderDataCacheEntry) == 16);
 #endif
 } // namespace xiiInternal
 

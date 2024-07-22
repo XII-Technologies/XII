@@ -76,7 +76,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerState : public xiiGALDeviceObje
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALRasterizerStateCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALRasterizerStateCreationDescription& GetDescription() const;
 
 protected:
   friend class xiiGALDevice;

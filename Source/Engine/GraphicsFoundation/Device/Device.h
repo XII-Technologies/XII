@@ -44,7 +44,7 @@ public:
   /// \param description - The swap chain description. See xiiGALSwapChainCreationDescription.
   ///
   /// \return The handle to the created swap chain object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALSwapChainHandle CreateSwapChain(const xiiGALSwapChainCreationDescription& description);
+  [[nodiscard]] xiiGALSwapChainHandle CreateSwapChain(const xiiGALSwapChainCreationDescription& description);
 
   /// \brief This destroys the swap chain with the given handle.
   void DestroySwapChain(xiiGALSwapChainHandle hSwapChain);
@@ -55,7 +55,7 @@ public:
   /// \param description - The command queue description. See xiiGALCommandQueueCreationDescription.
   ///
   /// \return The handle to the created command queue object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALCommandQueueHandle CreateCommandQueue(const xiiGALCommandQueueCreationDescription& description);
+  [[nodiscard]] xiiGALCommandQueueHandle CreateCommandQueue(const xiiGALCommandQueueCreationDescription& description);
 
   /// \brief This destroys the command queue with the given handle.
   void DestroyCommandQueue(xiiGALCommandQueueHandle hCommandQueue);
@@ -66,7 +66,7 @@ public:
   /// \param description - The blend state description. See xiiGALBlendStateCreationDescription.
   ///
   /// \return The handle to the created blend state object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALBlendStateHandle CreateBlendState(const xiiGALBlendStateCreationDescription& description);
+  [[nodiscard]] xiiGALBlendStateHandle CreateBlendState(const xiiGALBlendStateCreationDescription& description);
 
   /// \brief This destroys the blend state with the given handle.
   void DestroyBlendState(xiiGALBlendStateHandle hBlendState);
@@ -77,7 +77,7 @@ public:
   /// \param description - The depth stencil state description. See xiiGALDepthStencilStateCreationDescription.
   ///
   /// \return The handle to the created depth stencil state object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALDepthStencilStateHandle CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description);
+  [[nodiscard]] xiiGALDepthStencilStateHandle CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description);
 
   /// \brief This destroys the depth stencil state with the given handle.
   void DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState);
@@ -88,7 +88,7 @@ public:
   /// \param description - The rasterizer state description. See xiiGALRasterizerStateCreationDescription.
   ///
   /// \return The handle to the created rasterizer state object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALRasterizerStateHandle CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description);
+  [[nodiscard]] xiiGALRasterizerStateHandle CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description);
 
   /// \brief This destroys the rasterizer state with the given handle.
   void DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterizerState);
@@ -99,7 +99,7 @@ public:
   /// \param description - The shader description. See xiiGALShaderCreationDescription.
   ///
   /// \return The handle to the created shader object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALShaderHandle CreateShader(const xiiGALShaderCreationDescription& description);
+  [[nodiscard]] xiiGALShaderHandle CreateShader(const xiiGALShaderCreationDescription& description);
 
   /// \brief This destroys the shader with the given handle.
   void DestroyShader(xiiGALShaderHandle hShader);
@@ -115,7 +115,7 @@ public:
   ///
   /// \remarks Size of a uniform buffer (xiiGALBindFlags) must be multiple of 16.\n
   /// Stride of a formatted buffer will be computed automatically from the format if the m_uiElementByteStride member of buffer description is set to default value (0).
-  XII_NODISCARD xiiGALBufferHandle CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr);
+  [[nodiscard]] xiiGALBufferHandle CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr);
 
   /// \brief This destroys the buffer with the given handle.
   void DestroyBuffer(xiiGALBufferHandle hBuffer);
@@ -130,7 +130,7 @@ public:
   /// \remarks To create a view addressing the entire buffer, set only xiiGALBufferViewCreationDescription::m_ViewType member of the ViewDesc structure and leave all other members in their default values.
   ///          The buffer view will contain strong reference to the buffer, so the buffer will not be destroyed until all views are released.
   ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
-  XII_NODISCARD xiiGALBufferViewHandle CreateBufferView(xiiGALBufferViewCreationDescription& description);
+  [[nodiscard]] xiiGALBufferViewHandle CreateBufferView(xiiGALBufferViewCreationDescription& description);
 
   /// \brief This destroys the buffer view with the given handle.
   void DestroyBufferView(xiiGALBufferViewHandle hBufferView);
@@ -150,7 +150,7 @@ public:
   ///
   /// For example, for a 15 x 6 x 2 2D texture array, the following array of sub-resources should be provided: \n 15x6, 7x3, 3x1, 1x1, 15x6, 7x3, 3x1, 1x1.\n
   /// For a 15 x 6 x 4 3D texture, the following array of sub-resources should be provided:\n 15x6x4, 7x3x2, 3x1x1, 1x1x1
-  XII_NODISCARD xiiGALTextureHandle CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr);
+  [[nodiscard]] xiiGALTextureHandle CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr);
 
   /// \brief This destroys the texture with the given handle.
   void DestroyTexture(xiiGALTextureHandle hTexture);
@@ -171,7 +171,7 @@ public:
   ///          For non-array textures, the only allowed values for the number of slices are 0 and 1.\n
   ///          Texture view will contain strong reference to the texture, so the texture will not be destroyed until all views are released.\n
   ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
-  XII_NODISCARD xiiGALTextureViewHandle CreateTextureView(xiiGALTextureViewCreationDescription& description);
+  [[nodiscard]] xiiGALTextureViewHandle CreateTextureView(xiiGALTextureViewCreationDescription& description);
 
   /// \brief This destroys the texture view with the given handle.
   void DestroyTextureView(xiiGALTextureViewHandle hTextureView);
@@ -184,7 +184,7 @@ public:
   /// \return The handle to the created sampler object. The function calls AddRef(), so that the new object will have one reference.
   ///
   /// \remark If an application attempts to create a sampler interface with the same attributes as an existing interface, the same interface will be returned.
-  XII_NODISCARD xiiGALSamplerHandle CreateSampler(const xiiGALSamplerCreationDescription& description);
+  [[nodiscard]] xiiGALSamplerHandle CreateSampler(const xiiGALSamplerCreationDescription& description);
 
   /// \brief This destroys the sampler with the given handle.
   void DestroySampler(xiiGALSamplerHandle hSampler);
@@ -195,7 +195,7 @@ public:
   /// \param description - The input layout description. See xiiGALInputLayoutCreationDescription.
   ///
   /// \return The handle to the created input layout object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALInputLayoutHandle CreateInputLayout(const xiiGALInputLayoutCreationDescription& description);
+  [[nodiscard]] xiiGALInputLayoutHandle CreateInputLayout(const xiiGALInputLayoutCreationDescription& description);
 
   /// \brief This destroys the input layout with the given handle.
   void DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout);
@@ -206,7 +206,7 @@ public:
   /// \param description - The query description. See xiiGALQueryCreationDescription.
   ///
   /// \return The handle to the created query object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALQueryHandle CreateQuery(const xiiGALQueryCreationDescription& description);
+  [[nodiscard]] xiiGALQueryHandle CreateQuery(const xiiGALQueryCreationDescription& description);
 
   /// \brief This destroys the sampler with the given handle.
   void DestroyQuery(xiiGALQueryHandle hQuery);
@@ -217,7 +217,7 @@ public:
   /// \param description - The fence description. See xiiGALFenceCreationDescription.
   ///
   /// \return The handle to the created fence object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALFenceHandle CreateFence(const xiiGALFenceCreationDescription& description);
+  [[nodiscard]] xiiGALFenceHandle CreateFence(const xiiGALFenceCreationDescription& description);
 
   /// \brief This destroys the fence with the given handle.
   void DestroyFence(xiiGALFenceHandle hFence);
@@ -228,7 +228,7 @@ public:
   /// \param description - The render pass description. See xiiGALRenderPassCreationDescription.
   ///
   /// \return The handle to the created render pass object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALRenderPassHandle CreateRenderPass(const xiiGALRenderPassCreationDescription& description);
+  [[nodiscard]] xiiGALRenderPassHandle CreateRenderPass(const xiiGALRenderPassCreationDescription& description);
 
   /// \brief This destroys the render pass with the given handle.
   void DestroyRenderPass(xiiGALRenderPassHandle hRenderPass);
@@ -239,7 +239,7 @@ public:
   /// \param description - The frame buffer description. See xiiGALFramebufferCreationDescription.
   ///
   /// \return The handle to the created frame buffer object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALFramebufferHandle CreateFramebuffer(const xiiGALFramebufferCreationDescription& description);
+  [[nodiscard]] xiiGALFramebufferHandle CreateFramebuffer(const xiiGALFramebufferCreationDescription& description);
 
   /// \brief This destroys the frame buffer with the given handle.
   void DestroyFramebuffer(xiiGALFramebufferHandle hFramebuffer);
@@ -250,7 +250,7 @@ public:
   /// \param description - The bottom-level acceleration structure description. See xiiGALBottomLevelASCreationDescription.
   ///
   /// \return The handle to the created bottom-level acceleration structure object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALBottomLevelASHandle CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description);
+  [[nodiscard]] xiiGALBottomLevelASHandle CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description);
 
   /// \brief This destroys the bottom-level acceleration structure with the given handle.
   void DestroyBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS);
@@ -261,7 +261,7 @@ public:
   /// \param description - The top-level acceleration structure description. See xiiGALTopLevelASCreationDescription.
   ///
   /// \return The handle to the created top-level acceleration structure object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALTopLevelASHandle CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description);
+  [[nodiscard]] xiiGALTopLevelASHandle CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description);
 
   /// \brief This destroys the top-level acceleration structure with the given handle.
   void DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS);
@@ -272,7 +272,7 @@ public:
   /// \param description - The pipeline resource signature description. See xiiGALPipelineResourceSignatureCreationDescription.
   ///
   /// \return The handle to the created pipeline resource signature object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALPipelineResourceSignatureHandle CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description);
+  [[nodiscard]] xiiGALPipelineResourceSignatureHandle CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description);
 
   /// \brief This destroys the pipeline resource signature with the given handle.
   void DestroyPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature);
@@ -283,7 +283,7 @@ public:
   /// \param description - The pipeline state description. See xiiGALPipelineStateCreationDescription.
   ///
   /// \return The handle to the created pipeline state object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALPipelineStateHandle CreatePipelineState(const xiiGALPipelineStateCreationDescription& description);
+  [[nodiscard]] xiiGALPipelineStateHandle CreatePipelineState(const xiiGALPipelineStateCreationDescription& description);
 
   /// \brief This destroys the pipeline state with the given handle.
   void DestroyPipelineState(xiiGALPipelineStateHandle hPipelineState);
@@ -302,97 +302,97 @@ public:
   static xiiEvent<const xiiGALDeviceEvent&> s_Events;
 
   /// \brief Returns the creation description for this device.
-  XII_NODISCARD const xiiGALDeviceCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALDeviceCreationDescription& GetDescription() const;
 
   /// \brief Retrieves a pointer to the compute queue if available, null otherwise.
   ///
   /// \param queueType - The queue type that has the required feature.
   ///
   /// \note The default graphics queue is guaranteed to exist, for a successful device initialization.
-  XII_NODISCARD virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType = xiiGALCommandQueueType::Graphics) const = 0;
+  [[nodiscard]] virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType = xiiGALCommandQueueType::Graphics) const = 0;
 
   /// \brief Retrieves a pointer to the swap chain object with the given handle.
-  XII_NODISCARD xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
+  [[nodiscard]] xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
 
   /// \brief Retrieves a pointer to the command queue object with the given handle.
-  XII_NODISCARD xiiGALCommandQueue* GetCommandQueue(xiiGALCommandQueueHandle hCommandQueue) const;
+  [[nodiscard]] xiiGALCommandQueue* GetCommandQueue(xiiGALCommandQueueHandle hCommandQueue) const;
 
   /// \brief Retrieves a pointer to the blend state object with the given handle.
-  XII_NODISCARD xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
+  [[nodiscard]] xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
 
   /// \brief Retrieves a pointer to the depth stencil state object with the given handle.
-  XII_NODISCARD xiiGALDepthStencilState* GetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState) const;
+  [[nodiscard]] xiiGALDepthStencilState* GetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState) const;
 
   /// \brief Retrieves a pointer to the rasterizer state object with the given handle.
-  XII_NODISCARD xiiGALRasterizerState* GetRasterizerState(xiiGALRasterizerStateHandle hRasterizerState) const;
+  [[nodiscard]] xiiGALRasterizerState* GetRasterizerState(xiiGALRasterizerStateHandle hRasterizerState) const;
 
   /// \brief Retrieves a pointer to the shader object with the given handle.
-  XII_NODISCARD xiiGALShader* GetShader(xiiGALShaderHandle hShader) const;
+  [[nodiscard]] xiiGALShader* GetShader(xiiGALShaderHandle hShader) const;
 
   /// \brief Retrieves a pointer to the buffer object with the given handle.
-  XII_NODISCARD xiiGALBuffer* GetBuffer(xiiGALBufferHandle hBuffer) const;
+  [[nodiscard]] xiiGALBuffer* GetBuffer(xiiGALBufferHandle hBuffer) const;
 
   /// \brief Retrieves a pointer to the texture object with the given handle.
-  XII_NODISCARD xiiGALTexture* GetTexture(xiiGALTextureHandle hTexture) const;
+  [[nodiscard]] xiiGALTexture* GetTexture(xiiGALTextureHandle hTexture) const;
 
   /// \brief Retrieves a pointer to the buffer view object with the given handle.
-  XII_NODISCARD xiiGALBufferView* GetBufferView(xiiGALBufferViewHandle hBufferView) const;
+  [[nodiscard]] xiiGALBufferView* GetBufferView(xiiGALBufferViewHandle hBufferView) const;
 
   /// \brief Retrieves a pointer to the texture view object with the given handle.
-  XII_NODISCARD xiiGALTextureView* GetTextureView(xiiGALTextureViewHandle hTextureView) const;
+  [[nodiscard]] xiiGALTextureView* GetTextureView(xiiGALTextureViewHandle hTextureView) const;
 
   /// \brief Retrieves a pointer to the sampler object with the given handle.
-  XII_NODISCARD xiiGALSampler* GetSampler(xiiGALSamplerHandle hSampler) const;
+  [[nodiscard]] xiiGALSampler* GetSampler(xiiGALSamplerHandle hSampler) const;
 
   /// \brief Retrieves a pointer to the input layout object with the given handle.
-  XII_NODISCARD xiiGALInputLayout* GetInputLayout(xiiGALInputLayoutHandle hInputLayout) const;
+  [[nodiscard]] xiiGALInputLayout* GetInputLayout(xiiGALInputLayoutHandle hInputLayout) const;
 
   /// \brief Retrieves a pointer to the query object with the given handle.
-  XII_NODISCARD xiiGALQuery* GetQuery(xiiGALQueryHandle hQuery) const;
+  [[nodiscard]] xiiGALQuery* GetQuery(xiiGALQueryHandle hQuery) const;
 
   /// \brief Retrieves a pointer to the fence object with the given handle.
-  XII_NODISCARD xiiGALFence* GetFence(xiiGALFenceHandle hFence) const;
+  [[nodiscard]] xiiGALFence* GetFence(xiiGALFenceHandle hFence) const;
 
   /// \brief Retrieves a pointer to the render pass object with the given handle.
-  XII_NODISCARD xiiGALRenderPass* GetRenderPass(xiiGALRenderPassHandle hRenderPass) const;
+  [[nodiscard]] xiiGALRenderPass* GetRenderPass(xiiGALRenderPassHandle hRenderPass) const;
 
   /// \brief Retrieves a pointer to the framebuffer object with the given handle.
-  XII_NODISCARD xiiGALFramebuffer* GetFramebuffer(xiiGALFramebufferHandle hFramebuffer) const;
+  [[nodiscard]] xiiGALFramebuffer* GetFramebuffer(xiiGALFramebufferHandle hFramebuffer) const;
 
   /// \brief Retrieves a pointer to the bottom-level acceleration structure object with the given handle.
-  XII_NODISCARD xiiGALBottomLevelAS* GetBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS) const;
+  [[nodiscard]] xiiGALBottomLevelAS* GetBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS) const;
 
   /// \brief Retrieves a pointer to the top-level acceleration structure object with the given handle.
-  XII_NODISCARD xiiGALTopLevelAS* GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const;
+  [[nodiscard]] xiiGALTopLevelAS* GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const;
 
   /// \brief Retrieves a pointer to the pipeline resource signature object with the given handle.
-  XII_NODISCARD xiiGALPipelineResourceSignature* GetPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature) const;
+  [[nodiscard]] xiiGALPipelineResourceSignature* GetPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature) const;
 
   /// \brief Retrieves a pointer to the pipeline state object with the given handle.
-  XII_NODISCARD xiiGALPipelineState* GetPipelineState(xiiGALPipelineStateHandle hPipelineState) const;
+  [[nodiscard]] xiiGALPipelineState* GetPipelineState(xiiGALPipelineStateHandle hPipelineState) const;
 
   /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
-  XII_NODISCARD const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
+  [[nodiscard]] const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
 
   /// \brief This retrieves the device feature states. See xiiGALDeviceFeatures.
-  XII_NODISCARD const xiiGALDeviceFeatures& GetFeatures() const;
+  [[nodiscard]] const xiiGALDeviceFeatures& GetFeatures() const;
 
   /// \brief This retrieves the device graphics API type. See xiiGALGraphicsDeviceType.
-  XII_NODISCARD xiiEnum<xiiGALGraphicsDeviceType> GetGraphicsDeviceType() const;
+  [[nodiscard]] xiiEnum<xiiGALGraphicsDeviceType> GetGraphicsDeviceType() const;
 
   /// \brief This returns critical section lock.
-  XII_NODISCARD xiiMutex& GetMutex() const;
+  [[nodiscard]] xiiMutex& GetMutex() const;
 
   /// \brief Sets a default graphics device.
   ///
   /// \remarks This does not increase the reference count on the device.
-  XII_NODISCARD static void SetDefaultDevice(xiiGALDevice* pDefaultDevice);
+  [[nodiscard]] static void SetDefaultDevice(xiiGALDevice* pDefaultDevice);
 
   /// \brief Retrieves the default device. This will be nullptr if none is set.
-  XII_NODISCARD static xiiGALDevice* GetDefaultDevice();
+  [[nodiscard]] static xiiGALDevice* GetDefaultDevice();
 
   /// \brief This returns true if there is a set default device.
-  XII_NODISCARD static bool HasDefaultDevice();
+  [[nodiscard]] static bool HasDefaultDevice();
 
   /// \brief Returns the calculated memory consumption for texture.
   virtual xiiUInt64 GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& description) const;

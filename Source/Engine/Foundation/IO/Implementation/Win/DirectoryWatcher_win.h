@@ -62,6 +62,7 @@ xiiDirectoryWatcher::xiiDirectoryWatcher() :
 xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBitflags<Watch> whatToWatch)
 {
   XII_ASSERT_DEV(m_sDirectoryPath.IsEmpty(), "Directory already open, call CloseDirectory first!");
+
   xiiStringBuilder sPath(sAbsolutePath);
   sPath.MakeCleanPath();
   sPath.Trim("/");
@@ -80,8 +81,8 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
     m_pImpl->m_filter |= FILE_NOTIFY_CHANGE_DIR_NAME;
   }
 
-  m_pImpl->m_directoryHandle = CreateFileW(xiiDosDevicePath(sPath), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                                           nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr);
+  m_pImpl->m_directoryHandle = CreateFileW(xiiDosDevicePath(sPath), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr);
+
   if (m_pImpl->m_directoryHandle == INVALID_HANDLE_VALUE)
   {
     return XII_FAILURE;
@@ -125,6 +126,8 @@ void xiiDirectoryWatcherImpl::DoRead()
   BOOL success        = ReadDirectoryChangesExW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr, ReadDirectoryNotifyExtendedInformation);
 
   XII_ASSERT_DEV(success, "ReadDirectoryChangesW failed.");
+
+  XII_IGNORE_UNUSED(success);
 }
 
 void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTime waitUpTo)

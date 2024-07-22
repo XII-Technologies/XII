@@ -35,10 +35,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResourceView
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALBufferViewCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALBufferViewCreationDescription& GetDescription() const;
 
   /// \brief Returns the buffer of which the buffer view is created with.
-  XII_NODISCARD xiiGALBuffer* GetBuffer() const;
+  [[nodiscard]] xiiGALBuffer* GetBuffer() const;
 
 protected:
   friend class xiiGALDevice;

@@ -12,7 +12,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALSwapChainCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALSwapChainCreationDescription& GetDescription() const;
 
   /// \brief Acquires the next render target for presenting.
   virtual void AcquireNextRenderTarget() = 0;
@@ -43,11 +43,11 @@ public:
 
   void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode);
 
-  XII_NODISCARD xiiGALTextureHandle GetBackBufferTexture() const;
+  [[nodiscard]] xiiGALTextureHandle GetBackBufferTexture() const;
 
-  XII_NODISCARD xiiSizeU32 GetCurrentSize() const;
+  [[nodiscard]] xiiSizeU32 GetCurrentSize() const;
 
-  XII_NODISCARD xiiEnum<xiiGALPresentMode> GetPresentMode() const;
+  [[nodiscard]] xiiEnum<xiiGALPresentMode> GetPresentMode() const;
 
 protected:
   friend class xiiGALDevice;

@@ -183,18 +183,18 @@ public:
   virtual void SetBufferOffset(xiiUInt32 uiOffset, xiiUInt32 uiArrayIndex = 0U) = 0;
 
   /// \brief This returns the shader resource variable type.
-  XII_NODISCARD virtual xiiEnum<xiiGALShaderResourceVariableType> GetType() const = 0;
+  [[nodiscard]] virtual xiiEnum<xiiGALShaderResourceVariableType> GetType() const = 0;
 
   /// \brief This returns shader resource description.
   virtual void GetResourceDescription(xiiGALShaderResourceDescription& resourceDeccription) = 0;
 
   /// \brief This returns the variable index that can be used to access the variable.
-  XII_NODISCARD virtual xiiUInt32 GetIndex() const = 0;
+  [[nodiscard]] virtual xiiUInt32 GetIndex() const = 0;
 
   /// \brief This returns a pointer to the resource that is bound to this variable.
   ///
   /// \brief uiArrayIndex The resource array index that can be used to access the variable. This must be 0 for non-array variables.
-  XII_NODISCARD virtual xiiArrayPtr<xiiGALResource*> Get(xiiUInt32 uiIndex = 0U) const = 0;
+  [[nodiscard]] virtual xiiArrayPtr<xiiGALResource*> Get(xiiUInt32 uiIndex = 0U) const = 0;
 
 protected:
   friend class xiiGALDevice;

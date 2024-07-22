@@ -285,9 +285,9 @@ xiiStringView xiiStringBase<Derived>::GetFileName() const
 }
 
 template <typename Derived>
-xiiStringView xiiStringBase<Derived>::GetFileExtension() const
+xiiStringView xiiStringBase<Derived>::GetFileExtension(bool bFullExtension) const
 {
-  return GetView().GetFileExtension();
+  return GetView().GetFileExtension(bFullExtension);
 }
 
 template <typename Derived>

@@ -31,7 +31,7 @@ public:
   template <typename TYPE>
   static TYPE* QueryPreferences(const xiiDocument* pDocument = nullptr)
   {
-    XII_CHECK_AT_COMPILETIME_MSG((std::is_base_of<xiiPreferences, TYPE>::value == true), "All preferences objects must be derived from xiiPreferences");
+    static_assert((std::is_base_of<xiiPreferences, TYPE>::value == true), "All preferences objects must be derived from xiiPreferences");
     return static_cast<TYPE*>(QueryPreferences(xiiGetStaticRTTI<TYPE>(), pDocument));
   }
 

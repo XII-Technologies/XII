@@ -23,36 +23,6 @@ XII_WARNING_POP()
 #include <type_traits>
 #include <utility>
 
-#ifndef __has_cpp_attribute
-#  define __has_cpp_attribute(name) 0
-#endif
-
-// [[nodiscard]] helper
-#if __has_cpp_attribute(nodiscard)
-#  define XII_NODISCARD [[nodiscard]]
-#else
-#  define XII_NODISCARD
-#endif
-
-#ifndef __INTELLISENSE__
-
-// Macros to do compile-time checks, such as to ensure sizes of types
-// XII_CHECK_AT_COMPILETIME(exp) : only checks exp
-// XII_CHECK_AT_COMPILETIME_MSG(exp, msg) : checks exp and displays msg
-#  define XII_CHECK_AT_COMPILETIME(exp) static_assert(exp, XII_STRINGIZE(exp) " is false.");
-
-#  define XII_CHECK_AT_COMPILETIME_MSG(exp, msg) static_assert(exp, XII_STRINGIZE(exp) " is false. Message: " msg);
-
-#else
-
-// IntelliSense often isn't smart enough to evaluate these conditions correctly
-
-#  define XII_CHECK_AT_COMPILETIME(exp)
-
-#  define XII_CHECK_AT_COMPILETIME_MSG(exp, msg)
-
-#endif
-
 /// \brief Disallow the copy constructor and the assignment operator for this type.
 #define XII_DISALLOW_COPY_AND_ASSIGN(type) \
   type(const type&) = delete;              \
@@ -66,11 +36,6 @@ XII_WARNING_POP()
 #  define XII_CHECK_ALIGNMENT(ptr, alignment)
 #endif
 
-#define XII_CHECK_ALIGNMENT_16(ptr)  XII_CHECK_ALIGNMENT(ptr, 16)
-#define XII_CHECK_ALIGNMENT_32(ptr)  XII_CHECK_ALIGNMENT(ptr, 32)
-#define XII_CHECK_ALIGNMENT_64(ptr)  XII_CHECK_ALIGNMENT(ptr, 64)
-#define XII_CHECK_ALIGNMENT_128(ptr) XII_CHECK_ALIGNMENT(ptr, 128)
-
 #define XII_WINCHECK_1          1 // XII_INCLUDED_WINDOWS_H defined to 1, _WINDOWS_ defined (stringyfied to nothing)
 #define XII_WINCHECK_1_WINDOWS_ 1 // XII_INCLUDED_WINDOWS_H defined to 1, _WINDOWS_ undefined (stringyfied to "_WINDOWS_")
 #define XII_WINCHECK_XII_INCLUDED_WINDOWS_H \
@@ -81,21 +46,9 @@ XII_WARNING_POP()
 /// \brief Checks whether Windows.h has been included directly instead of through 'IncludeWindows.h'
 ///
 /// Does this by stringifying the available defines, concatenating them into one long word, which is a known #define that evaluates to 0 or 1
-#define XII_CHECK_WINDOWS_INCLUDE(XII_WINH_INCLUDED, WINH_INCLUDED)                                          \
-  XII_CHECK_AT_COMPILETIME_MSG(XII_CONCAT(XII_WINCHECK_, XII_CONCAT(XII_WINH_INCLUDED, WINH_INCLUDED)) == 1, \
-                               "Windows.h has been included but not through XII. #include <Foundation/Basics/Platform/Win/IncludeWindows.h> instead of Windows.h");
-
-
-/// \brief Define some macros to work with the MSVC analysis warning
-/// Note that the StaticAnalysis.h in Basics/Compiler/MSVC will define the MSVC specific versions.
-#define XII_MSVC_ANALYSIS_WARNING_PUSH
-#define XII_MSVC_ANALYSIS_WARNING_POP
-#define XII_MSVC_ANALYSIS_WARNING_DISABLE(warningNumber)
-#define XII_MSVC_ANALYSIS_ASSUME(expression)
-
-#if defined(_MSC_VER)
-#  include <Foundation/Basics/Compiler/MSVC/StaticAnalysis.h>
-#endif
+#define XII_CHECK_WINDOWS_INCLUDE(XII_WINH_INCLUDED, WINH_INCLUDED)                                 \
+  static_assert(XII_PP_CONCAT(XII_WINCHECK_, XII_PP_CONCAT(XII_WINH_INCLUDED, WINH_INCLUDED)) == 1, \
+                "Windows.h has been included but not through XII. #include <Foundation/Basics/Platform/Win/IncludeWindows.h> instead of Windows.h");
 
 #if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
 
@@ -135,12 +88,15 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
 /// The macros create functions that reference each other, which means the linker is forced to look at all files in the library.
 /// This in turn will drag all global variables into the visibility of the linker, and since it mustn't optimize them away,
 /// they then end up in the final application, where they will do what they are meant for.
-#  define XII_STATICLINK_FILE(LibraryName, UniqueName)              \
-#    define XII_STATICLINK_FILE(LibraryName, UniqueName) extern "C" \
-    {                                                               \
-      void xiiReferenceFunction_##UniqueName(bool bReturn) {}       \
-      void xiiReferenceFunction_##LibraryName(bool bReturn);        \
-    }                                                               \
+#  define XII_STATICLINK_FILE(LibraryName, UniqueName)       \
+    extern "C"                                              \
+    {                                                       \
+      void xiiReferenceFunction_##UniqueName(bool bReturn)   \
+      {                                                     \
+        (void)bReturn;                                      \
+      }                                                     \
+      void xiiReferenceFunction_##LibraryName(bool bReturn); \
+    }                                                       \
     static xiiStaticLinkHelper StaticLinkHelper_##UniqueName(xiiReferenceFunction_##LibraryName);
 
 /// \brief Used by the tool 'StaticLinkUtil' to generate the block after XII_STATICLINK_LIBRARY, to create references to all
@@ -150,35 +106,36 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
     xiiReferenceFunction_##UniqueName()
 
 /// \brief This must occur exactly once in each static library, such that all XII_STATICLINK_FILE macros can reference it.
-#  define XII_STATICLINK_LIBRARY(LibraryName)                                                          \
-    xiiPluginRegister xiiPluginRegister_##LibraryName(XII_PP_STRINGIFY(XII_CONCAT(xii, LibraryName))); \
+#  define XII_STATICLINK_LIBRARY(LibraryName)                                                             \
+    xiiPluginRegister xiiPluginRegister_##LibraryName(XII_PP_STRINGIFY(XII_PP_CONCAT(xii, LibraryName))); \
     extern "C" void   xiiReferenceFunction_##LibraryName(bool bReturn = true)
 
 #endif
 
 namespace xiiInternal
 {
+  template <typename T>
+  constexpr bool AlwaysFalse = false;
+
+  template <typename T>
+  struct ArraySizeHelper
+  {
+    static_assert(AlwaysFalse<T>, "Cannot take compile time array size of given type.");
+  };
+
   template <typename T, size_t N>
-  char (*ArraySizeHelper(T (&)[N]))[N];
-}
+  struct ArraySizeHelper<T[N]>
+  {
+    static constexpr size_t value = N;
+  };
+
+} // namespace xiiInternal
 
 /// \brief Macro to determine the size of a static array
-#define XII_ARRAY_SIZE(a) (sizeof(*xiiInternal::ArraySizeHelper(a)) + 0)
+#define XII_ARRAY_SIZE(a) (xiiInternal::ArraySizeHelper<decltype(a)>::value)
 
 /// \brief Template helper which allows to suppress "Unused variable" warnings (e.g. result used in platform specific block, ..)
 template <class T>
 void XII_IGNORE_UNUSED(const T&)
 {
 }
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  define XII_DECL_EXPORT        __declspec(dllexport)
-#  define XII_DECL_IMPORT        __declspec(dllimport)
-#  define XII_DECL_EXPORT_FRIEND __declspec(dllexport)
-#  define XII_DECL_IMPORT_FRIEND __declspec(dllimport)
-#else
-#  define XII_DECL_EXPORT [[gnu::visibility("default")]]
-#  define XII_DECL_IMPORT [[gnu::visibility("default")]]
-#  define XII_DECL_EXPORT_FRIEND
-#  define XII_DECL_IMPORT_FRIEND
-#endif

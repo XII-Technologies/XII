@@ -11,10 +11,10 @@ static const char* GALSemanticToD3D11[] = {"POSITION", "NORMAL", "TANGENT", "COL
                                            "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
                                            "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
 
-XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D11 array size does not match input layout semantic count.");
+static_assert(XII_ARRAY_SIZE(GALSemanticToD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D11 array size does not match input layout semantic count.");
 
 static UINT GALSemanticToIndexD3D11[] = {0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 1, 0, 1};
-XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToIndexD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToIndexD3D11 array size does not match vertex attribute semantic count.");
+static_assert(XII_ARRAY_SIZE(GALSemanticToIndexD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToIndexD3D11 array size does not match vertex attribute semantic count.");
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutD3D11, 1, xiiRTTINoAllocator)

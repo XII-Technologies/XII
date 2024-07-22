@@ -326,6 +326,7 @@ function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
     "${ROOT_DIR}/*.cmake"
     "${ROOT_DIR}/*.natvis"
     "${ROOT_DIR}/*.txt"
+    "${ROOT_DIR}/*.xiiPluginBundle"
     "${ROOT_DIR}/*.ddl"
     "${ROOT_DIR}/*.xiiPermVar"
     "${ROOT_DIR}/*.xiiShader"

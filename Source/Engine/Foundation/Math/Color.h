@@ -422,6 +422,6 @@ bool operator==(const xiiColor& c1, const xiiColor& c2); // [tested]
 /// \brief Strict weak ordering. Useful for sorting colors into a map.
 bool operator<(const xiiColor& c1, const xiiColor& c2); // [tested]
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiColor) == 16);
+static_assert(sizeof(xiiColor) == 16);
 
 #include <Foundation/Math/Implementation/Color_inl.h>

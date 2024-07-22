@@ -23,8 +23,8 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuatd)
 
     // Make sure the class didn't accidentally change in size.
 #if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX
-    XII_CHECK_AT_COMPILETIME(sizeof(xiiSimdQuatd) == 32);
-    XII_CHECK_AT_COMPILETIME(XII_ALIGNMENT_OF(xiiSimdQuatd) == 32);
+    static_assert(sizeof(xiiSimdQuatd) == 32);
+    static_assert(XII_ALIGNMENT_OF(xiiSimdQuatd) == 32);
 #endif
   }
 

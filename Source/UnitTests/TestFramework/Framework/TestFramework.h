@@ -374,7 +374,7 @@ XII_TEST_DLL bool xiiTestBool(bool bCondition, const char* szErrorText, const ch
 
 /// \brief Tests for a boolean condition, outputs a custom message on failure.
 #define XII_TEST_BOOL_MSG(condition, msg, ...) \
-  xiiTestBool(condition, "Test failed: " XII_STRINGIZE(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestBool(condition, "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -385,7 +385,7 @@ XII_TEST_DLL bool xiiTestResult(xiiResult condition, const char* szErrorText, co
 
 /// \brief Tests for a boolean condition, outputs a custom message on failure.
 #define XII_TEST_RESULT_MSG(condition, msg, ...) \
-  xiiTestResult(condition, "Test failed: " XII_STRINGIZE(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestResult(condition, "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -396,14 +396,14 @@ XII_TEST_DLL bool xiiTestResult(xiiResult condition, const char* szErrorText, co
 
 /// \brief Tests for a boolean condition, outputs a custom message on failure.
 #define XII_TEST_RESULT_MSG(condition, msg, ...) \
-  xiiTestResult(condition, "Test failed: " XII_STRINGIZE(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestResult(condition, "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
 /// \brief Tests for a xiiStatus condition, outputs xiiStatus message on failure
-#define XII_TEST_STATUS(condition)                  \
-  auto XII_CONCAT(l_, XII_SOURCE_LINE) = condition; \
-  xiiTestResult(XII_CONCAT(l_, XII_SOURCE_LINE).m_Result, "Test failed: " XII_STRINGIZE(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, XII_CONCAT(l_, XII_SOURCE_LINE).m_sMessage)
+#define XII_TEST_STATUS(condition)                     \
+  auto XII_PP_CONCAT(l_, XII_SOURCE_LINE) = condition; \
+  xiiTestResult(XII_PP_CONCAT(l_, XII_SOURCE_LINE).m_Result, "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, XII_PP_CONCAT(l_, XII_SOURCE_LINE).m_sMessage)
 
 inline double ToFloat(int f)
 {
@@ -428,7 +428,7 @@ XII_TEST_DLL bool xiiTestDouble(double f1, double f2, double fEps, const char* s
 /// \brief Tests two floats for equality, within a given epsilon. On failure both actual and expected values are output, also a custom
 /// message is printed.
 #define XII_TEST_FLOAT_MSG(f1, f2, epsilon, msg, ...) \
-  xiiTestDouble(ToFloat(f1), ToFloat(f2), ToFloat(epsilon), XII_STRINGIZE(f1), XII_STRINGIZE(f2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestDouble(ToFloat(f1), ToFloat(f2), ToFloat(epsilon), XII_PP_STRINGIFY(f1), XII_PP_STRINGIFY(f2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -439,7 +439,7 @@ XII_TEST_DLL bool xiiTestDouble(double f1, double f2, double fEps, const char* s
 /// \brief Tests two doubles for equality, within a given epsilon. On failure both actual and expected values are output, also a custom
 /// message is printed.
 #define XII_TEST_DOUBLE_MSG(f1, f2, epsilon, msg, ...) \
-  xiiTestDouble(ToFloat(f1), ToFloat(f2), ToFloat(epsilon), XII_STRINGIZE(f1), XII_STRINGIZE(f2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestDouble(ToFloat(f1), ToFloat(f2), ToFloat(epsilon), XII_PP_STRINGIFY(f1), XII_PP_STRINGIFY(f2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -450,7 +450,7 @@ XII_TEST_DLL bool xiiTestInt(xiiInt64 i1, xiiInt64 i2, const char* szI1, const c
 
 /// \brief Tests two ints for equality. On failure both actual and expected values are output, also a custom message is printed.
 #define XII_TEST_INT_MSG(i1, i2, msg, ...) \
-  xiiTestInt(i1, i2, XII_STRINGIZE(i1), XII_STRINGIZE(i2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestInt(i1, i2, XII_PP_STRINGIFY(i1), XII_PP_STRINGIFY(i2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -461,7 +461,7 @@ XII_TEST_DLL bool xiiTestString(xiiStringView s1, xiiStringView s2, const char* 
 
 /// \brief Tests two strings for equality. On failure both actual and expected values are output, also a custom message is printed.
 #define XII_TEST_STRING_MSG(s1, s2, msg, ...) \
-  xiiTestString(static_cast<xiiStringView>(s1), static_cast<xiiStringView>(s2), XII_STRINGIZE(s1), XII_STRINGIZE(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestString(static_cast<xiiStringView>(s1), static_cast<xiiStringView>(s2), XII_PP_STRINGIFY(s1), XII_PP_STRINGIFY(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -472,7 +472,7 @@ XII_TEST_DLL bool xiiTestWString(std::wstring s1, std::wstring s2, const char* s
 
 /// \brief Tests two strings for equality. On failure both actual and expected values are output, also a custom message is printed.
 #define XII_TEST_WSTRING_MSG(s1, s2, msg, ...) \
-  xiiTestWString(static_cast<const wchar_t*>(s1), static_cast<const wchar_t*>(s2), XII_STRINGIZE(s1), XII_STRINGIZE(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+  xiiTestWString(static_cast<const wchar_t*>(s1), static_cast<const wchar_t*>(s2), XII_PP_STRINGIFY(s1), XII_PP_STRINGIFY(s2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -495,7 +495,7 @@ XII_TEST_DLL bool xiiTestVector(xiiVec4d v1, xiiVec4d v2, double fEps, const cha
 /// \brief Tests two xiiVec2's for equality. On failure both actual and expected values are output, also a custom message is printed.
 #define XII_TEST_VEC2_MSG(r1, r2, epsilon, msg, ...)                                                                                  \
   xiiTestVector(xiiVec4d(ToFloat((r1).x), ToFloat((r1).y), 0, 0), xiiVec4d(ToFloat((r2).x), ToFloat((r2).y), 0, 0), ToFloat(epsilon), \
-                XII_STRINGIZE(r1) " == " XII_STRINGIZE(r2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+                XII_PP_STRINGIFY(r1) " == " XII_PP_STRINGIFY(r2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -505,7 +505,7 @@ XII_TEST_DLL bool xiiTestVector(xiiVec4d v1, xiiVec4d v2, double fEps, const cha
 /// \brief Tests two xiiVec3's for equality. On failure both actual and expected values are output, also a custom message is printed.
 #define XII_TEST_VEC3_MSG(r1, r2, epsilon, msg, ...)                                                                                            \
   xiiTestVector(xiiVec4d(ToFloat((r1).x), ToFloat((r1).y), ToFloat((r1).z), 0), xiiVec4d(ToFloat((r2).x), ToFloat((r2).y), ToFloat((r2).z), 0), \
-                ToFloat(epsilon), XII_STRINGIZE(r1) " == " XII_STRINGIZE(r2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
+                ToFloat(epsilon), XII_PP_STRINGIFY(r1) " == " XII_PP_STRINGIFY(r2), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -513,9 +513,9 @@ XII_TEST_DLL bool xiiTestVector(xiiVec4d v1, xiiVec4d v2, double fEps, const cha
 #define XII_TEST_VEC4(i1, i2, epsilon) XII_TEST_VEC4_MSG(i1, i2, epsilon, "")
 
 /// \brief Tests two xiiVec4's for equality. On failure both actual and expected values are output, also a custom message is printed.
-#define XII_TEST_VEC4_MSG(r1, r2, epsilon, msg, ...)                                                                                                        \
-  xiiTestVector(xiiVec4d(ToFloat((r1).x), ToFloat((r1).y), ToFloat((r1).z), ToFloat((r1).w)),                                                               \
-                xiiVec4d(ToFloat((r2).x), ToFloat((r2).y), ToFloat((r2).z), ToFloat((r2).w)), ToFloat(epsilon), XII_STRINGIZE(r1) " == " XII_STRINGIZE(r2), \
+#define XII_TEST_VEC4_MSG(r1, r2, epsilon, msg, ...)                                                                                                              \
+  xiiTestVector(xiiVec4d(ToFloat((r1).x), ToFloat((r1).y), ToFloat((r1).z), ToFloat((r1).w)),                                                                     \
+                xiiVec4d(ToFloat((r2).x), ToFloat((r2).y), ToFloat((r2).z), ToFloat((r2).w)), ToFloat(epsilon), XII_PP_STRINGIFY(r1) " == " XII_PP_STRINGIFY(r2), \
                 XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, msg, ##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////

@@ -24,8 +24,8 @@ public:
     xiiAbstractMemberProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
-    XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
-                                 "Pointer to standard types are not supported.");
+    static_assert(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
+                  "Pointer to standard types are not supported.");
   }
 
   /// \brief Returns the actual type of the property. You can then compare that with known types, eg. compare it to xiiGetStaticRTTI<int>()

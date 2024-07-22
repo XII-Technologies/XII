@@ -94,7 +94,7 @@ const char* szControllerName[] = {
   "controller7_",
 };
 
-XII_CHECK_AT_COMPILETIME(XII_ARRAY_SIZE(szControllerName) >= xiiInputDeviceXBox360::MaxControllers);
+static_assert(XII_ARRAY_SIZE(szControllerName) >= xiiInputDeviceXBox360::MaxControllers);
 
 void xiiInputDeviceXBox360::SetValue(xiiInt32 iController, const char* szButton, float fValue)
 {

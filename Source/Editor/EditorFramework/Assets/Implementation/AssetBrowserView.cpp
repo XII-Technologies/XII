@@ -87,6 +87,37 @@ void xiiQtAssetBrowserView::wheelEvent(QWheelEvent* pEvent)
   QListView::wheelEvent(pEvent);
 }
 
+void xiiQtAssetBrowserView::mousePressEvent(QMouseEvent* pEvent)
+{
+  if (pEvent->button() == Qt::MouseButton::BackButton)
+  {
+    pEvent->ignore();
+
+    return;
+  }
+  QListView::mousePressEvent(pEvent);
+}
+
+void xiiQtAssetBrowserView::mouseDoubleClickEvent(QMouseEvent* pEvent)
+{
+  if (pEvent->button() == Qt::MouseButton::BackButton)
+  {
+    pEvent->ignore();
+
+    return;
+  }
+  QListView::mouseDoubleClickEvent(pEvent);
+}
+
+void xiiQtAssetBrowserView::mouseMoveEvent(QMouseEvent* pEvent)
+{
+  // Only allow dragging with left mouse button.
+  if (state() == DraggingState && !pEvent->buttons().testFlag(Qt::MouseButton::LeftButton))
+    return;
+
+  QListView::mouseMoveEvent(pEvent);
+}
+
 xiiQtIconViewDelegate::xiiQtIconViewDelegate(xiiQtAssetBrowserView* pParent) :
   xiiQtItemDelegate(pParent)
 {

@@ -19,9 +19,5 @@
 #  undef max
 #endif
 
-#include <Foundation/Basics/Compiler/Clang/Clang.h>
-#include <Foundation/Basics/Compiler/GCC/GCC.h>
-#include <Foundation/Basics/Compiler/MSVC/MSVC.h>
-
 #undef XII_PLATFORM_LITTLE_ENDIAN
 #define XII_PLATFORM_LITTLE_ENDIAN XII_ON

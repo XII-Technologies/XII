@@ -41,6 +41,12 @@ xiiRectTemplate<Type> xiiRectTemplate<Type>::MakeInvalid()
 }
 
 template <typename Type>
+xiiRectTemplate<Type> xiiRectTemplate<Type>::MakeZero()
+{
+  return xiiRectTemplate<Type>(0, 0, 0, 0);
+}
+
+template <typename Type>
 xiiRectTemplate<Type> xiiRectTemplate<Type>::MakeIntersection(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1)
 {
   /// \test This is new

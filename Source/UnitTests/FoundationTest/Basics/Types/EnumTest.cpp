@@ -35,8 +35,8 @@ struct xiiTestEnum2Base
 using xiiTestEnum2 = xiiEnum<xiiTestEnum2Base>;
 
 // Test if the type actually has the requested size
-XII_CHECK_AT_COMPILETIME(sizeof(xiiTestEnum) == sizeof(xiiUInt8));
-XII_CHECK_AT_COMPILETIME(sizeof(xiiTestEnum2) == sizeof(xiiUInt16));
+static_assert(sizeof(xiiTestEnum) == sizeof(xiiUInt8));
+static_assert(sizeof(xiiTestEnum2) == sizeof(xiiUInt16));
 
 XII_CREATE_SIMPLE_TEST_GROUP(Basics);
 

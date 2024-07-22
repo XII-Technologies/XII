@@ -63,7 +63,7 @@ private:
   template <xiiInt32 N>
   typename std::enable_if<sizeof...(ARGS) != N>::type ReplaceString(char tmp[MaxNumParameters][TempStringLength], xiiStringView* pViews) const
   {
-    XII_CHECK_AT_COMPILETIME_MSG(N < MaxNumParameters, "Maximum number of format arguments reached");
+    static_assert(N < MaxNumParameters, "Maximum number of format arguments reached");
 
     // using a free function allows to overload with various different argument types
     pViews[N] = BuildString(tmp[N], TempStringLength - 1, std::get<N>(m_Arguments));

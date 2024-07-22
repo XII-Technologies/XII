@@ -263,7 +263,6 @@ xiiVariant xiiView::GetRenderPassReadBackProperty(xiiStringView sPassName, xiiSt
   return xiiVariant();
 }
 
-
 bool xiiView::IsRenderPassReadBackPropertyExisting(xiiStringView sPassName, xiiStringView sPropertyName) const
 {
   xiiStringBuilder sKey(sPassName, "::", sPropertyName);
@@ -377,7 +376,6 @@ void xiiView::SetProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView s
   prop.m_bIsDirty     = true;
   prop.m_CurrentValue = value;
 }
-
 
 void xiiView::SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {

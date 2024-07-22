@@ -51,10 +51,10 @@ namespace
     XII_DETECT_TYPE_CLASS(int, float, AggregatePod, MemRelocateable, ClassType);
   };
 
-  XII_CHECK_AT_COMPILETIME(xiiGetTypeClass<AggregatePod>::value == xiiTypeIsPod::value);
-  XII_CHECK_AT_COMPILETIME(xiiGetTypeClass<AggregatePod2>::value == xiiTypeIsPod::value);
-  XII_CHECK_AT_COMPILETIME(xiiGetTypeClass<MemRelocateable>::value == xiiTypeIsMemRelocatable::value);
-  XII_CHECK_AT_COMPILETIME(xiiGetTypeClass<AggregateMemRelocateable>::value == xiiTypeIsMemRelocatable::value);
-  XII_CHECK_AT_COMPILETIME(xiiGetTypeClass<ClassType>::value == xiiTypeIsClass::value);
-  XII_CHECK_AT_COMPILETIME(xiiGetTypeClass<AggregateClass>::value == xiiTypeIsClass::value);
+  static_assert(xiiGetTypeClass<AggregatePod>::value == xiiTypeIsPod::value);
+  static_assert(xiiGetTypeClass<AggregatePod2>::value == xiiTypeIsPod::value);
+  static_assert(xiiGetTypeClass<MemRelocateable>::value == xiiTypeIsMemRelocatable::value);
+  static_assert(xiiGetTypeClass<AggregateMemRelocateable>::value == xiiTypeIsMemRelocatable::value);
+  static_assert(xiiGetTypeClass<ClassType>::value == xiiTypeIsClass::value);
+  static_assert(xiiGetTypeClass<AggregateClass>::value == xiiTypeIsClass::value);
 } // namespace

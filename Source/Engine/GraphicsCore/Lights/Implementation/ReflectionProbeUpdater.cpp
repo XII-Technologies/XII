@@ -38,7 +38,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
   }
 
   xiiStringBuilder sName;
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapProxies); ++i)
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapFaceRenderTargets); ++i)
   {
     xiiGALTextureViewCreationDescription viewDesc;
     viewDesc.m_hTexture                  = m_hCubemap;
@@ -49,22 +49,22 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     viewDesc.m_uiMipLevelCount           = 1;
     viewDesc.m_uiMostDetailedMip         = 0;
 
-    m_hCubemapProxies[i] = pDevice->CreateTextureView(viewDesc);
+    m_hCubemapFaceRenderTargets[i] = pDevice->CreateTextureView(viewDesc);
 
-    XII_ASSERT_DEV(!m_hCubemapProxies[i].IsInvalidated(), "");
+    XII_ASSERT_DEV(!m_hCubemapFaceRenderTargets[i].IsInvalidated(), "");
 
     sName.SetFormat("Reflection Cubemap View {}", i);
-    pDevice->GetTextureView(m_hCubemapProxies[i])->SetDebugName(sName);
+    pDevice->GetTextureView(m_hCubemapFaceRenderTargets[i])->SetDebugName(sName);
   }
 }
 
 xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
 {
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapProxies); ++i)
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapFaceRenderTargets); ++i)
   {
-    if (!m_hCubemapProxies[i].IsInvalidated())
+    if (!m_hCubemapFaceRenderTargets[i].IsInvalidated())
     {
-      xiiGALDevice::GetDefaultDevice()->DestroyTextureView(m_hCubemapProxies[i]);
+      xiiGALDevice::GetDefaultDevice()->DestroyTextureView(m_hCubemapFaceRenderTargets[i]);
     }
   }
 
@@ -434,7 +434,7 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     }
     else
     {
-      renderTargets.m_hRTs[0] = updateInfo.m_hCubemapProxies[uiFaceIndex];
+      renderTargets.m_hRTs[0] = updateInfo.m_hCubemapFaceRenderTargets[uiFaceIndex];
     }
     pView->SetRenderTargets(renderTargets);
 

@@ -127,7 +127,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPass : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALRenderPassCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALRenderPassCreationDescription& GetDescription() const;
 
 protected:
   friend class xiiGALDevice;

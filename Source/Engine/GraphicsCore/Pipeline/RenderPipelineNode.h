@@ -14,9 +14,9 @@ struct xiiRenderPipelineNodePin
   {
     using StorageType = xiiUInt8;
 
-    enum Enum
+    enum Enum : StorageType
     {
-      Unknown,
+      Unknown = 0U,
       Input,
       Output,
       PassThrough,
@@ -26,8 +26,8 @@ struct xiiRenderPipelineNodePin
   };
 
   xiiEnum<Type>          m_Type;
-  xiiUInt8               m_uiInputIndex  = 0xFF;
-  xiiUInt8               m_uiOutputIndex = 0xFF;
+  xiiUInt8               m_uiInputIndex  = 0xFFU;
+  xiiUInt8               m_uiOutputIndex = 0xFFU;
   xiiRenderPipelineNode* m_pParent       = nullptr;
 };
 
@@ -35,21 +35,30 @@ struct xiiRenderPipelineNodeInputPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputPin() { m_Type = Type::Input; }
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputPin()
+  {
+    m_Type = Type::Input;
+  }
 };
 
 struct xiiRenderPipelineNodeOutputPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputPin() { m_Type = Type::Output; }
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputPin()
+  {
+    m_Type = Type::Output;
+  }
 };
 
 struct xiiRenderPipelineNodePassThrougPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThrougPin() { m_Type = Type::PassThrough; }
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThrougPin()
+  {
+    m_Type = Type::PassThrough;
+  }
 };
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineNode : public xiiReflectedClass
@@ -61,9 +70,10 @@ public:
 
   void InitializePins();
 
-  xiiHashedString                                          GetPinName(const xiiRenderPipelineNodePin* pPin) const;
-  const xiiRenderPipelineNodePin*                          GetPinByName(xiiStringView sName) const;
-  const xiiRenderPipelineNodePin*                          GetPinByName(xiiHashedString sName) const;
+  xiiHashedString                 GetPinName(const xiiRenderPipelineNodePin* pPin) const;
+  const xiiRenderPipelineNodePin* GetPinByName(xiiStringView sName) const;
+  const xiiRenderPipelineNodePin* GetPinByName(xiiHashedString sName) const;
+
   const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetInputPins() const { return m_InputPins; }
   const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetOutputPins() const { return m_OutputPins; }
 

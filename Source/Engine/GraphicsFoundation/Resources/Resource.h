@@ -18,7 +18,7 @@ public:
   virtual void SetResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags);
 
   /// \brief This returns the buffer state.
-  XII_NODISCARD virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const;
+  [[nodiscard]] virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const;
 
 protected:
   friend class xiiGALDevice;

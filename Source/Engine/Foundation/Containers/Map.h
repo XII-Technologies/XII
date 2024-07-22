@@ -407,32 +407,38 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator begin(xiiMapBase<Key
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator begin(const xiiMapBase<KeyType, ValueType, Comparer>& container)
+typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator begin(const xiiMapBase<KeyType, ValueType, Comparer>& ref_container)
 {
-  return container.GetIterator();
+  return ref_container.GetIterator();
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator cbegin(const xiiMapBase<KeyType, ValueType, Comparer>& container)
+typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator cbegin(const xiiMapBase<KeyType, ValueType, Comparer>& ref_container)
 {
-  return container.GetIterator();
+  return ref_container.GetIterator();
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
 typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator end(xiiMapBase<KeyType, ValueType, Comparer>& ref_container)
 {
+  XII_IGNORE_UNUSED(ref_container);
+
   return typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator();
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator end(const xiiMapBase<KeyType, ValueType, Comparer>& container)
+typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator end(const xiiMapBase<KeyType, ValueType, Comparer>& ref_container)
 {
+  XII_IGNORE_UNUSED(ref_container);
+
   return typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator();
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator cend(const xiiMapBase<KeyType, ValueType, Comparer>& container)
+typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator cend(const xiiMapBase<KeyType, ValueType, Comparer>& ref_container)
 {
+  XII_IGNORE_UNUSED(ref_container);
+
   return typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator();
 }
 

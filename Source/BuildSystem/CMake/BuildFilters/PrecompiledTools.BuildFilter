@@ -22,7 +22,7 @@ set_property(GLOBAL PROPERTY XII_BUILD_FILTER_PrecompiledTools
   ShaderCompilerTool
   HeaderTool
   HeaderCheck
-  stb_image
+  stb
   TexConv
   ozz
   zstd

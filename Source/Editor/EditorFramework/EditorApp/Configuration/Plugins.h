@@ -54,7 +54,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiPluginBundle
 /// \brief Contains multiple xiiPluginBundle's.
 struct XII_EDITORFRAMEWORK_DLL xiiPluginBundleSet
 {
-  xiiMap<xiiString, xiiPluginBundle> m_Plugins;
+  xiiMap<xiiString, xiiPluginBundle, xiiCompareString_NoCase> m_Plugins;
 
   /// \brief Writes the state of all bundles to a DDL file.
   void WriteStateToDDL(xiiOpenDdlWriter& ref_ddl) const;

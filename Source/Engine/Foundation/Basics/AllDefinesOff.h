@@ -9,13 +9,13 @@
 #define XII_OFF !
 
 /// \brief Used in conjunction with XII_ON and XII_OFF for safe checks. Use #if XII_ENABLED(x) or #if XII_DISABLED(x) in conditional compilation.
-#define XII_ENABLED(x) (1 XII_CONCAT(x, =) 1)
+#define XII_ENABLED(x) (1 XII_PP_CONCAT(x, =) 1)
 
 /// \brief Used in conjunction with XII_ON and XII_OFF for safe checks. Use #if XII_ENABLED(x) or #if XII_DISABLED(x) in conditional compilation.
-#define XII_DISABLED(x) (1 XII_CONCAT(x, =) 2)
+#define XII_DISABLED(x) (1 XII_PP_CONCAT(x, =) 2)
 
 /// \brief Checks whether x AND y are both defined as XII_ON or XII_OFF. Usually used to check whether configurations overlap, to issue an error.
-#define XII_IS_NOT_EXCLUSIVE(x, y) ((1 XII_CONCAT(x, =) 1) == (1 XII_CONCAT(y, =) 1))
+#define XII_IS_NOT_EXCLUSIVE(x, y) ((1 XII_PP_CONCAT(x, =) 1) == (1 XII_PP_CONCAT(y, =) 1))
 
 
 

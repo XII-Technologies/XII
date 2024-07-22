@@ -45,7 +45,7 @@ xiiDequeBase<T, Construct>::xiiDequeBase(xiiAllocatorBase* pAllocator)
 template <typename T, bool Construct>
 xiiDequeBase<T, Construct>::xiiDequeBase(const xiiDequeBase<T, Construct>& rhs, xiiAllocatorBase* pAllocator)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   Constructor(pAllocator);
 
@@ -55,7 +55,7 @@ xiiDequeBase<T, Construct>::xiiDequeBase(const xiiDequeBase<T, Construct>& rhs, 
 template <typename T, bool Construct>
 xiiDequeBase<T, Construct>::xiiDequeBase(xiiDequeBase<T, Construct>&& rhs, xiiAllocatorBase* pAllocator)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   Constructor(pAllocator);
 
@@ -71,7 +71,7 @@ xiiDequeBase<T, Construct>::~xiiDequeBase()
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::operator=(const xiiDequeBase<T, Construct>& rhs)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   Clear();                // does not deallocate anything
   RESERVE(rhs.m_uiCount); // allocates data, if required
@@ -85,7 +85,7 @@ void xiiDequeBase<T, Construct>::operator=(const xiiDequeBase<T, Construct>& rhs
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::operator=(xiiDequeBase<T, Construct>&& rhs)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   if (m_pAllocator != rhs.m_pAllocator)
     operator=(static_cast<xiiDequeBase<T, Construct>&>(rhs));
@@ -511,7 +511,7 @@ inline void xiiDequeBase<T, Construct>::PushBack()
 template <typename T, bool Construct>
 inline void xiiDequeBase<T, Construct>::PushBack(const T& element)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   RESERVE(m_uiCount + 1);
   ++m_uiCount;
@@ -522,7 +522,7 @@ inline void xiiDequeBase<T, Construct>::PushBack(const T& element)
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::PushBack(T&& element)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   RESERVE(m_uiCount + 1);
   ++m_uiCount;
@@ -550,7 +550,7 @@ inline void xiiDequeBase<T, Construct>::PopBack(xiiUInt32 uiElements)
 template <typename T, bool Construct>
 inline void xiiDequeBase<T, Construct>::PushFront(const T& element)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   RESERVE(m_uiCount + 1);
   ++m_uiCount;
@@ -562,7 +562,7 @@ inline void xiiDequeBase<T, Construct>::PushFront(const T& element)
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::PushFront(T&& element)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   RESERVE(m_uiCount + 1);
   ++m_uiCount;
@@ -674,7 +674,7 @@ xiiUInt32 xiiDequeBase<T, Construct>::LastIndexOf(const T& value, xiiUInt32 uiSt
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::RemoveAtAndSwap(xiiUInt32 uiIndex)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   XII_ASSERT_DEV(uiIndex < m_uiCount, "Cannot remove element {0}, the deque only contains {1} elements.", uiIndex, m_uiCount);
 
@@ -902,7 +902,7 @@ void xiiDequeBase<T, Construct>::DeallocateAll()
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::RemoveAtAndCopy(xiiUInt32 uiIndex)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   XII_ASSERT_DEV(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to remove element at index {1}.", m_uiCount, uiIndex);
 
@@ -917,7 +917,7 @@ void xiiDequeBase<T, Construct>::RemoveAtAndCopy(xiiUInt32 uiIndex)
 template <typename T, bool Construct>
 bool xiiDequeBase<T, Construct>::RemoveAndCopy(const T& value)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   xiiUInt32 uiIndex = IndexOf(value);
 
@@ -931,7 +931,7 @@ bool xiiDequeBase<T, Construct>::RemoveAndCopy(const T& value)
 template <typename T, bool Construct>
 bool xiiDequeBase<T, Construct>::RemoveAndSwap(const T& value)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   xiiUInt32 uiIndex = IndexOf(value);
 
@@ -945,7 +945,7 @@ bool xiiDequeBase<T, Construct>::RemoveAndSwap(const T& value)
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::InsertAt(xiiUInt32 uiIndex, const T& value)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
+  static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   // Index 0 inserts before the first element, Index m_uiCount inserts after the last element.
   XII_ASSERT_DEV(uiIndex <= m_uiCount, "The deque has {0} elements. Cannot insert an element at index {1}.", m_uiCount, uiIndex);

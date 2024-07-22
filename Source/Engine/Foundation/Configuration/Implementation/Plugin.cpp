@@ -212,6 +212,8 @@ static xiiResult UnloadPluginInternal(xiiStringView sPluginFile)
   return XII_SUCCESS;
 }
 
+#if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
+
 static xiiResult LoadPluginInternal(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags)
 {
   xiiUInt8 uiFileNumber = 0;
@@ -300,6 +302,8 @@ Success:
   return XII_SUCCESS;
 }
 
+#endif
+
 bool xiiPlugin::ExistsPluginFile(xiiStringView sPluginFile)
 {
   xiiStringBuilder sOriginalFile, sCopiedFile;
@@ -324,7 +328,7 @@ xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPlugin
 #if XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
   // #TODO XII_COMPILE_ENGINE_AS_DLL and being able to load plugins are not necessarily the same thing.
   return XII_FAILURE;
-#endif
+#else
 
   if (flags.IsSet(xiiPluginLoadFlags::PluginIsOptional))
   {
@@ -351,6 +355,7 @@ xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPlugin
   }
 
   return res;
+#endif
 }
 
 void xiiPlugin::UnloadAllPlugins()

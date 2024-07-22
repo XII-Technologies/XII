@@ -28,7 +28,7 @@ protected:
 #  if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)
 
 /// \brief Profiles the current scope using the given name and also inserts a marker with the given GALContext.
-#    define XII_PROFILE_AND_MARKER(GALContext, szName) xiiProfilingScopeAndMarker XII_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(GALContext, szName)
+#    define XII_PROFILE_AND_MARKER(GALContext, szName) xiiProfilingScopeAndMarker XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(GALContext, szName)
 
 #  else
 

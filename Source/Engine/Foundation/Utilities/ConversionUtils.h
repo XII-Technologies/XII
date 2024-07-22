@@ -328,6 +328,13 @@ namespace xiiConversionUtils
     return out_sResult;
   }
 
+  /// \brief Parses a string in the form "#RRGGBBAA" as a (gamma space) color.
+  ///
+  /// The # at the start is optional.
+  /// If fewer characters are given, e.g. only "RRGGBB" or "RRGG" or even just "R" or "RRG", the remaining values are default initialized
+  /// with black (alpha = FF).
+  XII_FOUNDATION_DLL xiiResult ConvertHexStringToColor(xiiStringView sText, xiiColorGammaUB& ref_color);
+
   /// \brief Returns the color with the given name.
   ///
   /// Allowed are all predefined color names (case-insensitive), as well as Hex-Values in the form '#RRGGBB' and '#RRGGBBAA'

@@ -22,4 +22,4 @@ private:
 };
 
 /// \brief Shortcut for xiiLock<Type> l(lock)
-#define XII_LOCK(lock) xiiLock<decltype(lock)> XII_CONCAT(l_, XII_SOURCE_LINE)(lock)
+#define XII_LOCK(lock) xiiLock<decltype(lock)> XII_PP_CONCAT(l_, XII_SOURCE_LINE)(lock)

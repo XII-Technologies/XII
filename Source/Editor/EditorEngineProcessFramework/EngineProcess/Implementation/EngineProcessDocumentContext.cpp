@@ -557,7 +557,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 {
   XII_ASSERT_DEV(!xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode(), "Wrong mode for thumbnail creation");
   XII_ASSERT_DEV(m_pThumbnailViewContext == nullptr, "Thumbnail rendering already in progress.");
-  XII_CHECK_AT_COMPILETIME_MSG((ThumbnailSuperscaleFactor & (ThumbnailSuperscaleFactor - 1)) == 0, "ThumbnailSuperscaleFactor must be power of 2.");
+  static_assert((ThumbnailSuperscaleFactor & (ThumbnailSuperscaleFactor - 1)) == 0, "ThumbnailSuperscaleFactor must be power of 2.");
   m_uiThumbnailConvergenceFrames = 0;
   m_uiThumbnailWidth             = pMsg->m_uiWidth * ThumbnailSuperscaleFactor;
   m_uiThumbnailHeight            = pMsg->m_uiHeight * ThumbnailSuperscaleFactor;

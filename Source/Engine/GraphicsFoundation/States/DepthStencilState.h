@@ -76,7 +76,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilState : public xiiGALDeviceOb
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALDepthStencilStateCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALDepthStencilStateCreationDescription& GetDescription() const;
 
 protected:
   friend class xiiGALDevice;

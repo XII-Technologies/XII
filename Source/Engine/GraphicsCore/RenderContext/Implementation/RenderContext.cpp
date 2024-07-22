@@ -1838,7 +1838,7 @@ bool xiiRenderContext::GetAllowAsyncShaderLoading()
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Resource Cache Hash
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALTextureViewHandle));
+static_assert(sizeof(xiiUInt32) == sizeof(xiiGALTextureViewHandle));
 namespace
 {
   XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiGALTextureViewHandle& value)

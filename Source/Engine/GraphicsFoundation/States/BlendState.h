@@ -180,7 +180,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBlendState : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALBlendStateCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALBlendStateCreationDescription& GetDescription() const;
 
 protected:
   friend class xiiGALDevice;

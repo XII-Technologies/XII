@@ -118,6 +118,6 @@ xiiArrayPtr<const T> xiiMakeArrayPtr(const xiiDynamicArray<T, AllocatorWrapper>&
 template <typename T, typename AllocatorWrapper>
 xiiArrayPtr<T> xiiMakeArrayPtr(xiiDynamicArray<T, AllocatorWrapper>& ref_dynArray);
 
-XII_CHECK_AT_COMPILETIME_MSG(xiiGetTypeClass<xiiDynamicArray<xiiInt32>>::value == 2, "dynamic array is not memory relocatable");
+static_assert(xiiGetTypeClass<xiiDynamicArray<xiiInt32>>::value == 2, "dynamic array is not memory relocatable");
 
 #include <Foundation/Containers/Implementation/DynamicArray_inl.h>

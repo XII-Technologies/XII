@@ -65,7 +65,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelAS : public xiiGALResource
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALTopLevelASCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALTopLevelASCreationDescription& GetDescription() const;
 
   /// \brief This returns the instance description that can be used in the shader binding table.
   ///
@@ -74,19 +74,19 @@ public:
   /// \return The top level acceleration structure instance description, see xiiGALTopLevelASInstanceDescription. If the instance does not exist, then the contribution to hit group index and instance index are set to xiiInvalidIndex.
   ///
   /// \note Access to the top level acceleration structure must be externally synchronized.
-  XII_NODISCARD virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const = 0;
+  [[nodiscard]] virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const = 0;
 
   /// \brief This returns the top level acceleration structure state after the last build or update operation.
   ///
   /// \return The top level acceleration structure build description, see xiiGALTopLevelASBuildDescription.
   ///
   /// \note Access to the top level acceleration structure must be externally synchronized.
-  XII_NODISCARD virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const = 0;
+  [[nodiscard]] virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const = 0;
 
   /// \brief This returns the scratch buffer information for the current acceleration structure.
   ///
   /// \return The scratch buffer size description, see xiiGALScratchBufferSizeDescription.
-  XII_NODISCARD virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
+  [[nodiscard]] virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
 
 protected:
   friend class xiiGALDevice;

@@ -1,4 +1,3 @@
-
 #pragma once
 
 #ifdef __clang__
@@ -51,7 +50,12 @@
 
 #  define XII_WARNING_PUSH()            _Pragma("clang diagnostic push")
 #  define XII_WARNING_POP()             _Pragma("clang diagnostic pop")
-#  define XII_WARNING_DISABLE_CLANG(_x) _Pragma(XII_STRINGIZE(clang diagnostic ignored _x))
+#  define XII_WARNING_DISABLE_CLANG(_x) _Pragma(XII_PP_STRINGIFY(clang diagnostic ignored _x))
+
+#  define XII_DECL_EXPORT [[gnu::visibility("default")]]
+#  define XII_DECL_IMPORT [[gnu::visibility("default")]]
+#  define XII_DECL_EXPORT_FRIEND
+#  define XII_DECL_IMPORT_FRIEND
 
 #else
 

@@ -25,7 +25,7 @@ public:
   /// \param uiVertexCount  - The number of vertices in the buffer.
   /// \param pInitialData   - The initial data in bytes, that the buffer should contain after creation.
   /// \param bDataIsMutable - Specifies whether the buffer should be considered immutable in its usage.
-  static XII_NODISCARD XII_ALWAYS_INLINE xiiGALBufferHandle CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false)
+  static [[nodiscard]] XII_ALWAYS_INLINE xiiGALBufferHandle CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false)
   {
     XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -52,7 +52,7 @@ public:
   /// \param uiIndexCount   - The number of indices in the buffer.
   /// \param pInitialData   - The initial data in bytes, that the buffer should contain after creation.
   /// \param bDataIsMutable - Specifies whether the buffer should be considered immutable in its usage.
-  static XII_NODISCARD XII_ALWAYS_INLINE xiiGALBufferHandle CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false)
+  static [[nodiscard]] XII_ALWAYS_INLINE xiiGALBufferHandle CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false)
   {
     XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -84,7 +84,7 @@ public:
   ///
   /// \param  pDevice     - The device associated with the buffer.
   /// \param uiBufferSize - The size of the buffer in bytes.
-  static XII_NODISCARD XII_ALWAYS_INLINE xiiGALBufferHandle CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
+  static [[nodiscard]] XII_ALWAYS_INLINE xiiGALBufferHandle CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
   {
     XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -103,7 +103,7 @@ public:
   /// \param size          - The size (width and height) of the render target.
   /// \param format        - The render target format. See xiiGALTextureFormat for details.
   /// \param uiSampleCount - The number of samples in the render target. The default is xiiGALMSAASampleCount::OneSample.
-  static XII_NODISCARD XII_ALWAYS_INLINE xiiGALTextureCreationDescription CreateRenderTargetDescription(xiiSizeU32 size, xiiGALTextureFormat::Enum format, xiiUInt32 uiSampleCount = xiiGALMSAASampleCount::OneSample)
+  static [[nodiscard]] XII_ALWAYS_INLINE xiiGALTextureCreationDescription CreateRenderTargetDescription(xiiSizeU32 size, xiiGALTextureFormat::Enum format, xiiUInt32 uiSampleCount = xiiGALMSAASampleCount::OneSample)
   {
     return xiiGALTextureCreationDescription{
       .m_Type               = xiiGALResourceDimension::Texture2D,

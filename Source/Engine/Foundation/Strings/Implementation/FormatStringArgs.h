@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Foundation/Basics.h>
-#include <Foundation/Strings/StringView.h>
+#ifndef XII_INCLUDING_BASICS_H
+#  error "FormatStringArgs.h must not be included directly, but instead include Foundation/Basics.h."
+#endif
 
 class xiiStringBuilder;
 class xiiVariant;

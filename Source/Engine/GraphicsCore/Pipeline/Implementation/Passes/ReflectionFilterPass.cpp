@@ -111,6 +111,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
         {
           xiiGALTextureViewCreationDescription desc;
           desc.m_ViewType                  = xiiGALTextureViewType::UnorderedAccess;
+          desc.m_ResourceDimension         = xiiGALResourceDimension::Texture2DArray;
           desc.m_hTexture                  = pFilteredSpecularOutput->m_TextureHandle;
           desc.m_uiMostDetailedMip         = uiMipMapIndex;
           desc.m_uiFirstArrayOrDepthSlice  = m_uiSpecularOutputIndex * 6;

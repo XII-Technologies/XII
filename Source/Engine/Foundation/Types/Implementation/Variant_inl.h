@@ -232,7 +232,7 @@ template <typename T>
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const T* value)
 {
   constexpr bool bla = !std::is_same<T, void>::value;
-  XII_CHECK_AT_COMPILETIME(bla);
+  static_assert(bla);
   InitTypedPointer(const_cast<T*>(value), xiiGetStaticRTTI<T>());
 }
 
@@ -507,9 +507,9 @@ T xiiVariant::ConvertTo(xiiResult* out_pConversionStatus /* = nullptr*/) const
 template <typename T>
 XII_FORCE_INLINE void xiiVariant::InitInplace(const T& value)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value != Type::Invalid, "The value of this type cannot be stored in a Variant.");
-  XII_CHECK_AT_COMPILETIME_MSG(xiiGetTypeClass<T>::value <= xiiTypeIsMemRelocatable::value, "In-place data must be POD or memory relocatable.");
-  XII_CHECK_AT_COMPILETIME_MSG(sizeof(T) <= sizeof(m_Data), "The value of this type is too large to be stored inline in a Variant.");
+  static_assert(TypeDeduction<T>::value != Type::Invalid, "The value of this type cannot be stored in a Variant.");
+  static_assert(xiiGetTypeClass<T>::value <= xiiTypeIsMemRelocatable::value, "In-place data must be POD or memory relocatable.");
+  static_assert(sizeof(T) <= sizeof(m_Data), "The value of this type is too large to be stored inline in a Variant.");
 
   xiiMemoryUtils::CopyConstruct(reinterpret_cast<T*>(&m_Data), value, 1);
 
@@ -522,8 +522,8 @@ XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<0>
 {
   using StorageType = typename TypeDeduction<T>::StorageType;
 
-  XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) > sizeof(InlinedStruct::DataSize)) || TypeDeduction<T>::forceSharing, "The value should be in-place instead.");
-  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "The value of this type cannot be stored in a Variant.");
+  static_assert((sizeof(StorageType) > sizeof(InlinedStruct::DataSize)) || TypeDeduction<T>::forceSharing, "The value should be in-place instead.");
+  static_assert(TypeDeduction<T>::value == Type::TypedObject, "The value of this type cannot be stored in a Variant.");
 
   const xiiRTTI* pType = xiiGetStaticRTTI<T>();
   m_Data.shared        = XII_DEFAULT_NEW(TypedSharedData<StorageType>, value, pType);
@@ -536,9 +536,9 @@ XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<1>
 {
   using StorageType = typename TypeDeduction<T>::StorageType;
 
-  XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) <= InlinedStruct::DataSize) && !TypeDeduction<T>::forceSharing, "The value cannot be stored in-place.");
-  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "The value of this type cannot be stored in a Variant.");
-  XII_CHECK_AT_COMPILETIME_MSG(xiiIsPodType<T>::value, "In-place data needs to be POD.");
+  static_assert((sizeof(StorageType) <= InlinedStruct::DataSize) && !TypeDeduction<T>::forceSharing, "The value cannot be stored in-place.");
+  static_assert(TypeDeduction<T>::value == Type::TypedObject, "The value of this type cannot be stored in a Variant.");
+  static_assert(xiiIsPodType<T>::value, "In-place data needs to be POD.");
 
   xiiMemoryUtils::CopyConstruct(reinterpret_cast<T*>(&m_Data), value, 1);
 
@@ -590,7 +590,7 @@ const T& xiiVariant::Cast() const
 {
   const bool validType = xiiConversionTest<T, typename TypeDeduction<T>::StorageType>::sameType;
 
-  XII_CHECK_AT_COMPILETIME_MSG(validType, "Invalid Cast, can only cast to storage type");
+  static_assert(validType, "Invalid Cast, can only cast to storage type");
 
   return m_bIsShared ? *static_cast<const T*>(m_Data.shared->m_Ptr) : *reinterpret_cast<const T*>(&m_Data);
 }

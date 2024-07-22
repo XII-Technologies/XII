@@ -115,8 +115,6 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
 
   constexpr xiiUInt32 uiMaxNumWorkerThreads = 12u;
 
-  xiiUInt8 buf[1024 * 32];
-
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
   xiiUInt32 uiWorkerThreadCount;
   if (uiMaxBytes > xiiMath::MaxValue<xiiUInt32>())
@@ -162,9 +160,12 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
   inout_tocEntry.m_CompressionMode = compression;
 
   xiiUInt64 uiRead = 0;
+  xiiDynamicArray<xiiUInt8> buffer;
+  buffer.SetCountUninitialized(1024 * 32);
+
   while (true)
   {
-    uiRead = file.ReadBytes(buf, XII_ARRAY_SIZE(buf));
+    uiRead = file.ReadBytes(buffer.GetData(), buffer.GetCount());
 
     if (uiRead == 0)
       break;
@@ -177,7 +178,7 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
         return XII_FAILURE;
     }
 
-    XII_SUCCEED_OR_RETURN(pWriter->WriteBytes(buf, uiRead));
+    XII_SUCCEED_OR_RETURN(pWriter->WriteBytes(buffer.GetData(), uiRead));
   }
 
 

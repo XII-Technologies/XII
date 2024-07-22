@@ -223,6 +223,15 @@ void eqQtAssetBrowserFolderView::dragMoveEvent(QDragMoveEvent* e)
   }
 }
 
+void eqQtAssetBrowserFolderView::mouseMoveEvent(QMouseEvent* e)
+{
+  // Only allow dragging with left mouse button.
+  if (state() == DraggingState && !e->buttons().testFlag(Qt::MouseButton::LeftButton))
+    return;
+
+  QTreeWidget::mouseMoveEvent(e);
+}
+
 xiiStatus eqQtAssetBrowserFolderView::canDrop(QDropEvent* e, xiiDynamicArray<xiiString>& out_files, xiiString& out_sTargetFolder)
 {
   if (!e->mimeData()->hasFormat("application/xiiEditor.files"))
@@ -412,8 +421,26 @@ void eqQtAssetBrowserFolderView::OnFlushFileSystemEvents()
   m_QueuedFolderEvents.Clear();
 }
 
+void eqQtAssetBrowserFolderView::mouseDoubleClickEvent(QMouseEvent* e)
+{
+  if (e->button() == Qt::MouseButton::BackButton)
+  {
+    e->ignore();
+
+    return;
+  }
+  QTreeWidget::mouseDoubleClickEvent(e);
+}
+
 void eqQtAssetBrowserFolderView::mousePressEvent(QMouseEvent* e)
 {
+  if (e->button() == Qt::MouseButton::BackButton)
+  {
+    e->ignore();
+
+    return;
+  }
+
   QModelIndex inx = indexAt(e->pos());
   if (!inx.isValid())
     return;
@@ -446,12 +473,13 @@ void eqQtAssetBrowserFolderView::OnPathFilterChanged()
       return;
 
     m_bTreeSelectionChangeInProgress = true;
+
     clearSelection();
     SelectPathFilter(topLevelItem(0), sPath);
+
     m_bTreeSelectionChangeInProgress = false;
   }
 }
-
 
 void eqQtAssetBrowserFolderView::TreeOpenExplorer()
 {
@@ -467,6 +495,9 @@ bool eqQtAssetBrowserFolderView::SelectPathFilter(QTreeWidgetItem* pParent, cons
   if (pParent->data(0, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString() == sPath)
   {
     pParent->setSelected(true);
+
+    setCurrentIndex(indexFromItem(pParent));
+
     return true;
   }
 
@@ -475,6 +506,7 @@ bool eqQtAssetBrowserFolderView::SelectPathFilter(QTreeWidgetItem* pParent, cons
     if (SelectPathFilter(pParent->child(i), sPath))
     {
       pParent->setExpanded(true);
+
       return true;
     }
   }

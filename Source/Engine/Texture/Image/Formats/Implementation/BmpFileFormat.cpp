@@ -72,11 +72,11 @@ struct xiiBmpFileInfoHeaderV4
   xiiUInt32       m_gammaBlue  = 0;
 };
 
-XII_CHECK_AT_COMPILETIME(sizeof(xiiCIEXYZTRIPLE) == 3 * 3 * 4);
+static_assert(sizeof(xiiCIEXYZTRIPLE) == 3 * 3 * 4);
 
 // just to be on the safe side
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-XII_CHECK_AT_COMPILETIME(sizeof(xiiCIEXYZTRIPLE) == sizeof(CIEXYZTRIPLE));
+static_assert(sizeof(xiiCIEXYZTRIPLE) == sizeof(CIEXYZTRIPLE));
 #endif
 
 struct xiiBmpFileInfoHeaderV5

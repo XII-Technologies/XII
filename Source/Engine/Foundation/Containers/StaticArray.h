@@ -62,7 +62,7 @@ private:
   friend class xiiArrayBase<T, xiiStaticArray<T, Capacity>>;
 };
 
-// TODO XII_CHECK_AT_COMPILETIME_MSG with a ',' in the expression does not work
-// XII_CHECK_AT_COMPILETIME_MSG(xiiGetTypeClass< xiiStaticArray<xiiInt32, 4> >::value == 2, "static array is not memory relocatable");
+// TODO static_assert with a ',' in the expression does not work
+// static_assert(xiiGetTypeClass< xiiStaticArray<xiiInt32, 4> >::value == 2, "static array is not memory relocatable");
 
 #include <Foundation/Containers/Implementation/StaticArray_inl.h>

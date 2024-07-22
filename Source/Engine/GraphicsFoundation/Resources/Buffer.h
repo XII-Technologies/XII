@@ -94,7 +94,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBuffer : public xiiGALResource
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALBufferCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALBufferCreationDescription& GetDescription() const;
 
   /// \brief This returns the handle of the default view.
   ///
@@ -105,14 +105,14 @@ public:
   /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
   ///
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
-  XII_NODISCARD xiiGALBufferViewHandle GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType);
+  [[nodiscard]] xiiGALBufferViewHandle GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType);
 
   /// \brief This returns the buffer memory properties.
   ///
   /// The memory properties are only relevant for persistently mapped buffers.
   /// In particular, if the memory is not coherent, an application must call xiiGALBuffer::FlushMappedRange() to make writes by the CPU available to the GPU, and
   /// call xiiGALBuffer::InvalidateMappedRange() to make writes by the GPU visible to the CPU.
-  XII_NODISCARD virtual xiiGALMemoryProperties GetMemoryProperties() const = 0;
+  [[nodiscard]] virtual xiiGALMemoryProperties GetMemoryProperties() const = 0;
 
   /// \brief This flushes the specified range of non-coherent memory from the host cache to make it available to the GPU.
   ///
@@ -137,7 +137,7 @@ public:
   virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) = 0;
 
   /// \brief This returns the sparse buffer memory properties.
-  XII_NODISCARD virtual xiiGALSparseBufferProperties GetSparseProperties() const = 0;
+  [[nodiscard]] virtual xiiGALSparseBufferProperties GetSparseProperties() const = 0;
 
 protected:
   friend class xiiGALDevice;

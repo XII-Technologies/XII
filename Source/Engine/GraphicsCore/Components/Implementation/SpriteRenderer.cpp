@@ -12,7 +12,7 @@
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 
 #include <Shaders/Materials/SpriteData.h>
-XII_CHECK_AT_COMPILETIME(sizeof(xiiPerSpriteData) == 48);
+static_assert(sizeof(xiiPerSpriteData) == 48);
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSpriteRenderer, 1, xiiRTTIDefaultAllocator<xiiSpriteRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;

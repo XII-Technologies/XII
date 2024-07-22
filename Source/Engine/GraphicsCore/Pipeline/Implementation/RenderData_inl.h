@@ -46,7 +46,7 @@ XII_FORCE_INLINE xiiHashedString xiiRenderData::GetCategoryName(Category categor
 
 XII_FORCE_INLINE xiiUInt64 xiiRenderData::GetCategorySortingKey(Category category, const xiiCamera& camera) const
 {
-  return s_CategoryData[category.m_uiValue].m_sortingKeyFunc(this, camera);
+  return s_CategoryData[category.m_uiValue].m_SortingKeyFunc(this, camera);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ XII_FORCE_INLINE xiiUInt64 xiiRenderData::GetCategorySortingKey(Category categor
 template <typename T>
 static T* xiiCreateRenderDataForThisFrame(const xiiGameObject* pOwner)
 {
-  XII_CHECK_AT_COMPILETIME(XII_IS_DERIVED_FROM_STATIC(xiiRenderData, T));
+  static_assert(XII_IS_DERIVED_FROM_STATIC(xiiRenderData, T));
 
   T* pRenderData = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), T);
 

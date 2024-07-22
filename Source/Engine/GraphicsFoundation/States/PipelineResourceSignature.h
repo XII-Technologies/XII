@@ -91,10 +91,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceSignature : public xiiGAL
 
 public:
   /// \brief This returns the creation description for this object.
-  XII_NODISCARD const xiiGALPipelineResourceSignatureCreationDescription& GetDescription() const;
+  [[nodiscard]] const xiiGALPipelineResourceSignatureCreationDescription& GetDescription() const;
 
   /// \brief Returns true if this pipeline resource signature is compatible with the given pipeline resource signature.
-  virtual XII_NODISCARD bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const = 0;
+  virtual [[nodiscard]] bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const = 0;
 
 protected:
   friend class xiiGALDevice;
