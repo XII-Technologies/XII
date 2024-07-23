@@ -22,7 +22,7 @@ xiiResult xiiTexConv::BeforeCoreSystemsStartup()
 
 void xiiTexConv::AfterCoreSystemsStartup()
 {
-  xiiFileSystem::AddDataDirectory("", "App", ":", xiiFileSystem::AllowWrites).IgnoreResult();
+  xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
   xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);

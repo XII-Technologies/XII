@@ -590,11 +590,11 @@ void xiiEngineProcessGameApplication::Init_FileSystem_ConfigureDataDirs()
   xiiFileSystem::CreateDirectoryStructure(sAppDir).IgnoreResult();
   xiiFileSystem::CreateDirectoryStructure(sUserData).IgnoreResult();
 
-  xiiFileSystem::AddDataDirectory("", "EngineProcess", ":", xiiFileSystem::AllowWrites).IgnoreResult();                   // for absolute paths
-  xiiFileSystem::AddDataDirectory(">appdir/", "EngineProcess", "bin", xiiFileSystem::ReadOnly).IgnoreResult();            // writing to the binary directory
-  xiiFileSystem::AddDataDirectory(">appdir/", "EngineProcess", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult(); // for shader files
-  xiiFileSystem::AddDataDirectory(sAppDir.GetData(), "EngineProcess", "app").IgnoreResult();                              // app specific data
-  xiiFileSystem::AddDataDirectory(sUserData, "EngineProcess", "appdata", xiiFileSystem::AllowWrites).IgnoreResult();      // for writing app user data
+  xiiFileSystem::AddDataDirectory("", "EngineProcess", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();                   // for absolute paths
+  xiiFileSystem::AddDataDirectory(">appdir/", "EngineProcess", "bin", xiiDataDirUsage::ReadOnly).IgnoreResult();            // writing to the binary directory
+  xiiFileSystem::AddDataDirectory(">appdir/", "EngineProcess", "shadercache", xiiDataDirUsage::AllowWrites).IgnoreResult(); // for shader files
+  xiiFileSystem::AddDataDirectory(sAppDir.GetData(), "EngineProcess", "app").IgnoreResult();                                // app specific data
+  xiiFileSystem::AddDataDirectory(sUserData, "EngineProcess", "appdata", xiiDataDirUsage::AllowWrites).IgnoreResult();      // for writing app user data
 
   m_CustomFileSystemConfig.Apply();
 

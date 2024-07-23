@@ -159,7 +159,7 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
 
   inout_tocEntry.m_CompressionMode = compression;
 
-  xiiUInt64 uiRead = 0;
+  xiiUInt64                 uiRead = 0;
   xiiDynamicArray<xiiUInt8> buffer;
   buffer.SetCountUninitialized(1024 * 32);
 

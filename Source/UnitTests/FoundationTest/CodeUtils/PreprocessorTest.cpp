@@ -95,7 +95,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
   xiiStringBuilder sWriteDir = xiiTestFramework::GetInstance()->GetAbsOutputPath();
 
   XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sReadDir, "PreprocessorTest") == XII_SUCCESS);
-  XII_TEST_BOOL_MSG(xiiFileSystem::AddDataDirectory(sWriteDir, "PreprocessorTest", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS, "Failed to mount data dir '%s'", sWriteDir.GetData());
+  XII_TEST_BOOL_MSG(xiiFileSystem::AddDataDirectory(sWriteDir, "PreprocessorTest", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS, "Failed to mount data dir '%s'", sWriteDir.GetData());
 
   xiiTokenizedFileCache SharedCache;
 

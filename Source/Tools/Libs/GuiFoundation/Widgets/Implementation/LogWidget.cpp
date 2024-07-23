@@ -74,7 +74,7 @@ bool xiiQtLogWidget::eventFilter(QObject* pObject, QEvent* pEvent)
         QModelIndexList selection = ListViewLog->selectionModel()->selectedRows(0);
         std::sort(selection.begin(), selection.end());
 
-        QStringList     sTemp;
+        QStringList sTemp;
         sTemp.reserve(selection.count());
         for (const QModelIndex& index : selection)
         {

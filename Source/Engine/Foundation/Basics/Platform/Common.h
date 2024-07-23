@@ -89,14 +89,14 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
 /// This in turn will drag all global variables into the visibility of the linker, and since it mustn't optimize them away,
 /// they then end up in the final application, where they will do what they are meant for.
 #  define XII_STATICLINK_FILE(LibraryName, UniqueName)       \
-    extern "C"                                              \
-    {                                                       \
+    extern "C"                                               \
+    {                                                        \
       void xiiReferenceFunction_##UniqueName(bool bReturn)   \
-      {                                                     \
-        (void)bReturn;                                      \
-      }                                                     \
+      {                                                      \
+        (void)bReturn;                                       \
+      }                                                      \
       void xiiReferenceFunction_##LibraryName(bool bReturn); \
-    }                                                       \
+    }                                                        \
     static xiiStaticLinkHelper StaticLinkHelper_##UniqueName(xiiReferenceFunction_##LibraryName);
 
 /// \brief Used by the tool 'StaticLinkUtil' to generate the block after XII_STATICLINK_LIBRARY, to create references to all

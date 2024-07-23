@@ -21,7 +21,7 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
   XII_TEST_BOOL(xiiOSFile::CreateDirectoryStructure(sWriteDir) == XII_SUCCESS);
 
   XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sReadDir, "ImageTest") == XII_SUCCESS);
-  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sWriteDir, "ImageTest", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sWriteDir, "ImageTest", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "BMP - Good")
   {

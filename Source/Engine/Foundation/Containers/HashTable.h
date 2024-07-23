@@ -107,6 +107,17 @@ private:
   explicit xiiHashTableBaseIterator(const xiiHashTableBase<KeyType, ValueType, Hasher>& hashTable);
 
 public:
+  struct Pointer
+  {
+    std::pair<const KeyType&, ValueType&>        value;
+    const std::pair<const KeyType&, ValueType&>* operator->() const { return &value; }
+  };
+
+  XII_ALWAYS_INLINE Pointer operator->() const
+  {
+    return Pointer{.value = {xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>::Key(), Value()}};
+  }
+
   // These functions are used to return the values for structured bindings.
   // The number and type of type of each slot are defined in the inl file.
   template <std::size_t Index>
@@ -235,7 +246,7 @@ public:
   ValueType& operator[](const KeyType& key); // [tested]
 
   /// \brief Returns the value stored at the given key. If none exists, one is created. \a bExisted indicates whether an element needed to be created.
-  ValueType& FindOrAdd(const KeyType& key, bool* out_pExisted); // [tested]
+  ValueType& FindOrAdd(const KeyType& key, bool* out_pExisted = nullptr); // [tested]
 
   /// \brief Returns if an entry with given key exists in the table.
   template <typename CompatibleKeyType>

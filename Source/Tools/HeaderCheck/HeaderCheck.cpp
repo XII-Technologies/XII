@@ -183,7 +183,7 @@ public:
       xiiLog::Error("This tool requires at leas one command-line argument: An absolute path to the top-level folder of a library.");
 
     // Add the empty data directory to access files via absolute paths
-    xiiFileSystem::AddDataDirectory("", "App", ":", xiiFileSystem::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
     // pass the absolute path to the directory that should be scanned as the first parameter to this application
     xiiStringBuilder sSearchDir;

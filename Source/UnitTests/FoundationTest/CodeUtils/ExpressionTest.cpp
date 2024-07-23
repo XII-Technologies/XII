@@ -473,7 +473,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
   s_uiNumByteCodeComparisons = 0;
 
   xiiStringBuilder outputPath = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(outputPath.GetData(), "test", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(outputPath.GetData(), "test", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
   s_pParser   = XII_DEFAULT_NEW(xiiExpressionParser);
   s_pCompiler = XII_DEFAULT_NEW(xiiExpressionCompiler);

@@ -112,7 +112,7 @@ bool xiiTestFrameworkResult::WriteJsonToFile(const char* szFileName) const
     if (xiiPathUtils::IsAbsolutePath(szFileName))
     {
       // Make sure we can access raw absolute file paths
-      if (xiiFileSystem::AddDataDirectory("", "jsonoutput", ":", xiiFileSystem::AllowWrites).Failed())
+      if (xiiFileSystem::AddDataDirectory("", "jsonoutput", ":", xiiDataDirUsage::AllowWrites).Failed())
         return false;
 
       jsonFilename = szFileName;
@@ -120,7 +120,7 @@ bool xiiTestFrameworkResult::WriteJsonToFile(const char* szFileName) const
     else
     {
       // If this is a relative path, we use the xiitest/ data directory to make sure that this works properly with the fileserver.
-      if (xiiFileSystem::AddDataDirectory(">xiitest/", "jsonoutput", ":", xiiFileSystem::AllowWrites).Failed())
+      if (xiiFileSystem::AddDataDirectory(">xiitest/", "jsonoutput", ":", xiiDataDirUsage::AllowWrites).Failed())
         return false;
 
       jsonFilename = ":";

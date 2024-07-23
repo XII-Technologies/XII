@@ -1078,4 +1078,24 @@ void xiiStringUtils::OutputFormattedFloat(char* szOutputBuffer, xiiUInt32 uiBuff
   OutputFloat(szOutputBuffer, uiBufferSize, ref_uiWritePos, value, uiWidth, xiiMath::Max<int>(-1, iPrecision), bPadZeros ? sprintfFlags::PadZeros : 0, false, bScientific, bRemoveTrailingZeroes);
 }
 
+xiiUInt32 xiiStringUtils::CalculateLineNumber(const char* szString, const char* szOffset, const char* pStringEnd /*= xiiUnicodeUtils::GetMaxStringEnd<char>()*/)
+{
+  xiiUInt32 uiLine = 0;
+
+  while ((szString < pStringEnd) && (*szString != '\0'))
+  {
+    if (szString == szOffset)
+      return uiLine + 1;
+
+    if (*szString == '\n')
+    {
+      ++uiLine;
+    }
+
+    ++szString;
+  }
+
+  return uiLine;
+}
+
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_snprintf);

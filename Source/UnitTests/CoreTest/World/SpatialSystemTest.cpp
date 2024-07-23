@@ -284,7 +284,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
   if (false)
   {
     xiiStringBuilder outputPath = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(outputPath.GetData(), "test", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(outputPath.GetData(), "test", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
     xiiProfilingUtils::SaveProfilingCapture(":output/profiling.json").IgnoreResult();
   }

@@ -1,9 +1,4 @@
 
-xiiUuid::xiiUuid() :
-  m_uiHigh(0), m_uiLow(0)
-{
-}
-
 bool xiiUuid::operator==(const xiiUuid& other) const
 {
   return m_uiHigh == other.m_uiHigh && m_uiLow == other.m_uiLow;

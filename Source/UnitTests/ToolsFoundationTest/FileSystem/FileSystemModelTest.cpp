@@ -280,8 +280,8 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     XII_TEST_RESULT(xiiFileSystem::CreateDirectoryStructure(sOutputFolderResolved));
 
     // for absolute paths
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites) == XII_SUCCESS);
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder, "Clear", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "", ":", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder, "Clear", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
     xiiFileSystemModel::GetSingleton()->Initialize(fsConfig, {}, {});
 

@@ -13,7 +13,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
   xiiStringBuilder sWriteDir = xiiTestFramework::GetInstance()->GetAbsOutputPath();
 
   XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sReadDir, "SimdNoise") == XII_SUCCESS);
-  XII_TEST_BOOL_MSG(xiiFileSystem::AddDataDirectory(sWriteDir, "SimdNoise", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS,
+  XII_TEST_BOOL_MSG(xiiFileSystem::AddDataDirectory(sWriteDir, "SimdNoise", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS,
                     "Failed to mount data dir '%s'", sWriteDir.GetData());
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Perlin")

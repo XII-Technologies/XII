@@ -21,7 +21,7 @@ XII_CREATE_SIMPLE_TEST(IO, Archive)
   xiiOSFile::DeleteFolder(sOutputFolder).IgnoreResult();
   xiiOSFile::CreateDirectoryStructure(sOutputFolder).IgnoreResult();
 
-  if (!XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder, "Clear", "output", xiiFileSystem::AllowWrites).Succeeded()))
+  if (!XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder, "Clear", "output", xiiDataDirUsage::AllowWrites).Succeeded()))
     return;
 
   const char* szTestData     = "TestData";
@@ -123,7 +123,7 @@ XII_CREATE_SIMPLE_TEST(IO, Archive)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Mount as Data Dir")
   {
-    if (!XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sArchiveFile, "Clear", "archive", xiiFileSystem::ReadOnly) == XII_SUCCESS))
+    if (!XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sArchiveFile, "Clear", "archive", xiiDataDirUsage::ReadOnly) == XII_SUCCESS))
       return;
 
     xiiStringBuilder sFileSrc;
@@ -149,7 +149,7 @@ XII_CREATE_SIMPLE_TEST(IO, Archive)
     }
 
     // mount a second time
-    if (!XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sArchiveFile, "Clear", "archive2", xiiFileSystem::ReadOnly) == XII_SUCCESS))
+    if (!XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sArchiveFile, "Clear", "archive2", xiiDataDirUsage::ReadOnly) == XII_SUCCESS))
       return;
   }
 

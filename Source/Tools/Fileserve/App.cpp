@@ -15,7 +15,7 @@ void xiiFileserverApp::AfterCoreSystemsStartup()
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
   // Add the empty data directory to access files via absolute paths
-  xiiFileSystem::AddDataDirectory("", "App", ":", xiiFileSystem::AllowWrites).IgnoreResult();
+  xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
   XII_DEFAULT_NEW(xiiFileserver);
 

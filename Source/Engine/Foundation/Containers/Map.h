@@ -138,6 +138,17 @@ private:
   }
 
 public:
+  struct Pointer
+  {
+    std::pair<const KeyType&, ValueType&>        value;
+    const std::pair<const KeyType&, ValueType&>* operator->() const { return &value; }
+  };
+
+  XII_ALWAYS_INLINE Pointer operator->() const
+  {
+    return Pointer{.value = {xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Key(), Value()}};
+  }
+
   // These functions are used to return the values for structured bindings.
   // The number and type of type of each slot are defined in the inl file.
 

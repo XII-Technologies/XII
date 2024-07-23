@@ -286,7 +286,7 @@ XII_CREATE_SIMPLE_TEST(Math, Random)
 static void SaveToImage(xiiDynamicArray<xiiUInt32>& ref_values, xiiUInt32 uiMaxValue, const char* szFile)
 {
 #ifdef USE_XIIIMAGE
-  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", xiiFileSystem::AllowWrites, "Clear") == XII_SUCCESS);
+  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", xiiDataDirUsage::AllowWrites, "Clear") == XII_SUCCESS);
 
   xiiImage img;
   img.SetWidth(Values.GetCount());
