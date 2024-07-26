@@ -337,7 +337,7 @@ void xiiGameApplicationBase::BeforeHighLevelSystemsShutdown()
 
 void xiiGameApplicationBase::BeforeCoreSystemsShutdown()
 {
-  // Shut down all actors and APIs that may have been in use
+  // Shut down all actors and APIs that may have been in use.
   if (xiiActorManager::GetSingleton() != nullptr)
   {
     xiiActorManager::GetSingleton()->Shutdown();
@@ -355,7 +355,7 @@ void xiiGameApplicationBase::BeforeCoreSystemsShutdown()
 
   Deinit_UnloadPlugins();
 
-  // Shut down telemetry if it was set up
+  // Shut down telemetry if it was set up.
   {
     xiiTelemetry::CloseConnection();
   }
@@ -369,6 +369,11 @@ static bool s_bUpdatePluginsExecuted = false;
 
 XII_ON_GLOBAL_EVENT(GameApp_UpdatePlugins)
 {
+  XII_IGNORE_UNUSED(param0);
+  XII_IGNORE_UNUSED(param1);
+  XII_IGNORE_UNUSED(param2);
+  XII_IGNORE_UNUSED(param3);
+
   s_bUpdatePluginsExecuted = true;
 }
 
@@ -415,7 +420,7 @@ void xiiGameApplicationBase::RunOneFrame()
   }
 
   {
-    // For plugins that need to hook into this without a link dependency on this lib
+    // For plugins that need to hook into this without a link dependency on this lib.
     XII_PROFILE_SCOPE("GameApp_EndAppTick");
     XII_BROADCAST_EVENT(GameApp_EndAppTick);
 
@@ -474,6 +479,10 @@ bool xiiGameApplicationBase::Run_ProcessApplicationInput()
   return true;
 }
 
+void xiiGameApplicationBase::Run_AcquireImage()
+{
+}
+
 void xiiGameApplicationBase::Run_BeforeWorldUpdate()
 {
   XII_PROFILE_SCOPE("GameApplication.BeforeWorldUpdate");
@@ -488,10 +497,6 @@ void xiiGameApplicationBase::Run_BeforeWorldUpdate()
     e.m_Type = xiiGameApplicationExecutionEvent::Type::BeforeWorldUpdates;
     m_ExecutionEvents.Broadcast(e);
   }
-}
-
-void xiiGameApplicationBase::Run_AcquireImage()
-{
 }
 
 void xiiGameApplicationBase::Run_AfterWorldUpdate()
@@ -519,7 +524,7 @@ void xiiGameApplicationBase::Run_UpdatePlugins()
     m_ExecutionEvents.Broadcast(e);
   }
 
-  // For plugins that need to hook into this without a link dependency on this lib
+  // For plugins that need to hook into this without a link dependency on this lib.
   XII_BROADCAST_EVENT(GameApp_UpdatePlugins);
 
   {
@@ -541,10 +546,10 @@ void xiiGameApplicationBase::Run_FinishFrame()
   xiiFrameAllocator::Swap();
   xiiProfilingSystem::StartNewFrame();
 
-  // If many messages have been logged, make sure they get written to disk
+  // If many messages have been logged, ensure they get written to disk.
   xiiLog::Flush(100, xiiTime::MakeFromSeconds(10));
 
-  // Reset this state
+  // Reset this state.
   m_bTakeScreenshot = false;
 }
 

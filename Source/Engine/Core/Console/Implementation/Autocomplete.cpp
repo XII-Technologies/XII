@@ -89,8 +89,8 @@ const xiiString xiiQuakeConsole::GetValueAsString(xiiCVar* pCVar)
 
     case xiiCVarType::Double:
     {
-      xiiCVarDouble* pFloat = static_cast<xiiCVarDouble*>(pCVar);
-      s.SetFormat("{0}", xiiArgF(pFloat->GetValue(), 8));
+      xiiCVarDouble* pDouble = static_cast<xiiCVarDouble*>(pCVar);
+      s.SetFormat("{0}", xiiArgF(pDouble->GetValue(), 8));
     }
     break;
 
@@ -105,7 +105,7 @@ xiiString xiiQuakeConsole::GetFullInfoAsString(xiiCVar* pCVar)
 {
   xiiStringBuilder s = GetValueAsString(pCVar);
 
-  const bool bAnyFlags = pCVar->GetFlags().IsAnySet(xiiCVarFlags::RequiresRestart | xiiCVarFlags::Save);
+  const bool bAnyFlags = pCVar->GetFlags().IsAnySet(xiiCVarFlags::Save | xiiCVarFlags::ShowRequiresRestartMsg);
 
   if (bAnyFlags)
     s.Append(" [ ");
@@ -113,7 +113,7 @@ xiiString xiiQuakeConsole::GetFullInfoAsString(xiiCVar* pCVar)
   if (pCVar->GetFlags().IsAnySet(xiiCVarFlags::Save))
     s.Append("SAVE ");
 
-  if (pCVar->GetFlags().IsAnySet(xiiCVarFlags::RequiresRestart))
+  if (pCVar->GetFlags().IsAnySet(xiiCVarFlags::ShowRequiresRestartMsg))
     s.Append("RESTART ");
 
   if (bAnyFlags)
@@ -199,6 +199,5 @@ void xiiCommandInterpreter::AutoComplete(xiiCommandInterpreterState& inout_state
     inout_state.m_sInput.Append(FindCommonString(AutoCompleteOptions).GetData());
   }
 }
-
 
 XII_STATICLINK_FILE(Core, Core_Console_Implementation_Autocomplete);

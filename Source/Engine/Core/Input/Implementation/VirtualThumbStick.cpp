@@ -252,7 +252,7 @@ void xiiVirtualThumbStick::UpdateInputSlotValues()
     vDir.y *= -1;
 
     const float fLength = xiiMath::Min(vDir.GetLength(), m_fRadius) / m_fRadius;
-    vDir.Normalize();
+    vDir.NormalizeIfNotZero(xiiVec2::MakeZero()).IgnoreResult();
 
     m_InputSlotValues[m_sOutputLeft]  = xiiMath::Max(0.0f, -vDir.x) * fLength;
     m_InputSlotValues[m_sOutputRight] = xiiMath::Max(0.0f, vDir.x) * fLength;

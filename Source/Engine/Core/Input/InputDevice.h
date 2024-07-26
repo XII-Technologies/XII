@@ -125,7 +125,7 @@ protected:
 
   /// \brief This function is called once after xiiInputManager::Update with the same time delta value.
   /// It allows to update hardware state, such as the vibration of gamepad motors.
-  virtual void UpdateHardwareState(xiiTime tTimeDifference) {}
+  virtual void UpdateHardwareState(xiiTime tTimeDifference) { XII_IGNORE_UNUSED(tTimeDifference); }
 
 private:
   /// \brief Calls InitializeDevice() when the device is not yet initialized.

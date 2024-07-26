@@ -20,6 +20,8 @@ public:
   {
     XII_ASSERT_DEV(uiParam < GetNumParameters(), "Invalid Parameter Index {0}", uiParam);
 
+    XII_IGNORE_UNUSED(uiParam);
+
 #if (ARG_COUNT > 0)
 
     switch (uiParam)
@@ -55,6 +57,8 @@ public:
 
   virtual xiiResult Call(xiiArrayPtr<xiiVariant> params) override
   {
+    XII_IGNORE_UNUSED(params);
+
     xiiResult r = XII_FAILURE;
     XII_IGNORE_UNUSED(r);
 

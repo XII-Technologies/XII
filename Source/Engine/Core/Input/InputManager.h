@@ -233,13 +233,13 @@ public:
   static xiiStringView ConvertScanCodeToEngineName(xiiUInt8 uiScanCode, bool bIsExtendedKey);
 
   /// \brief Helper for retrieving the input slot string for touch point with a given index.
-  static xiiStringView GetInputSlotTouchPoint(unsigned int uiIndex);
+  static xiiStringView GetInputSlotTouchPoint(xiiUInt32 uiIndex);
 
   /// \brief Helper for retrieving the input slot string for touch point x position with a given index.
-  static xiiStringView GetInputSlotTouchPointPositionX(unsigned int uiIndex);
+  static xiiStringView GetInputSlotTouchPointPositionX(xiiUInt32 uiIndex);
 
   /// \brief Helper for retrieving the input slot string for touch point y position with a given index.
-  static xiiStringView GetInputSlotTouchPointPositionY(unsigned int uiIndex);
+  static xiiStringView GetInputSlotTouchPointPositionY(xiiUInt32 uiIndex);
 
   /// \brief The data that is broadcast when certain events occur.
   struct InputEventData
@@ -280,11 +280,12 @@ private:
   {
     xiiInputSlot();
 
-    xiiString                      m_sDisplayName; ///< The display name. Use this to present input slots in UIs.
-    float                          m_fValue;       ///< The current value.
-    xiiKeyState::Enum              m_State;        ///< The current state.
-    float                          m_fDeadZone;    ///< The dead zone. Unless the value exceeds this, it reports a zero value.
-    xiiBitflags<xiiInputSlotFlags> m_SlotFlags;    ///< Describes the capabilities of the slot.
+    xiiString                      m_sDisplayName;     ///< The display name. Use this to present input slots in UIs.
+    float                          m_fValue;           ///< The current value.
+    float                          m_fValueOld = 0.0f; ///< The previous value. Needed so that GetInputSlotState can be called during input update phase.
+    xiiKeyState::Enum              m_State;            ///< The current state.
+    float                          m_fDeadZone;        ///< The dead zone. Unless the value exceeds this, it reports a zero value.
+    xiiBitflags<xiiInputSlotFlags> m_SlotFlags;        ///< Describes the capabilities of the slot.
   };
 
   /// \brief The data that is stored for each action.

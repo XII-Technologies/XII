@@ -14,12 +14,13 @@
 #include <Foundation/IO/OpenDdlReader.h>
 #include <Foundation/Logging/ConsoleWriter.h>
 #include <Foundation/Logging/VisualStudioWriter.h>
+#include <Foundation/Platform/PlatformDescription.h>
 #include <Foundation/Types/TagRegistry.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 
 xiiCommandLineOptionBool   opt_DisableConsoleOutput("app", "-disableConsoleOutput", "Disables logging to the standard console window.", false);
 xiiCommandLineOptionInt    opt_TelemetryPort("app", "-TelemetryPort", "The network port over which telemetry is sent.", xiiTelemetry::s_uiPort);
-xiiCommandLineOptionString opt_Profile("app", "-profile", "The platform profile to use.", "PC");
+xiiCommandLineOptionString opt_Profile("app", "-profile", "The platform profile to use.", "Default");
 
 xiiString xiiGameApplicationBase::GetBaseDataDirectoryPath() const
 {
@@ -51,7 +52,24 @@ void xiiGameApplicationBase::ExecuteInitFunctions()
 
 void xiiGameApplicationBase::Init_PlatformProfile_SetPreferred()
 {
-  m_PlatformProfile.m_sName = opt_Profile.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+  if (opt_Profile.IsOptionSpecified())
+  {
+    m_PlatformProfile.SetConfigName(opt_Profile.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
+  }
+  else
+  {
+    m_PlatformProfile.SetConfigName(xiiPlatformDescription::GetThisPlatformDesc().GetName());
+
+    const xiiStringBuilder sRuntimeProfileFile(":project/RuntimeConfigs/", m_PlatformProfile.GetConfigName(), ".xiiProfile");
+
+    if (!xiiFileSystem::ExistsFile(sRuntimeProfileFile))
+    {
+      xiiLog::Info("Platform profile '{}' doesn't exist, switching to 'Default'", m_PlatformProfile.GetConfigName());
+
+      m_PlatformProfile.SetConfigName("Default");
+    }
+  }
+
   m_PlatformProfile.AddMissingConfigs();
 }
 
@@ -102,10 +120,10 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
 
   const xiiStringBuilder sUserDataPath(">user/", GetApplicationName());
 
-  xiiFileSystem::CreateDirectoryStructure(sUserDataPath).IgnoreResult();
+  xiiFileSystem::CreateDirectoryStructure(sUserDataPath).AssertSuccess();
 
   xiiString writableBinRoot = ">appdir/";
-  xiiString shaderCacheRoot = ">appdir/";
+  xiiString shaderCacheRoot = ">sdk/Output/";
 
 #if XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
   // On platforms where this is disabled, one can usually only write to the user directory
@@ -113,24 +131,25 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
   writableBinRoot = sUserDataPath;
   shaderCacheRoot = sUserDataPath;
 #endif
+  xiiFileSystem::CreateDirectoryStructure(shaderCacheRoot).AssertSuccess();
 
   // for absolute paths, read-only
-  xiiFileSystem::AddDataDirectory("", "GameApplicationBase", ":", xiiFileSystem::ReadOnly).IgnoreResult();
+  xiiFileSystem::AddDataDirectory("", "GameApplicationBase", ":", xiiDataDirUsage::ReadOnly).AssertSuccess();
 
   // ":bin/" : writing to the binary directory
-  xiiFileSystem::AddDataDirectory(writableBinRoot, "GameApplicationBase", "bin", xiiFileSystem::AllowWrites).IgnoreResult();
+  xiiFileSystem::AddDataDirectory(writableBinRoot, "GameApplicationBase", "bin", xiiDataDirUsage::AllowWrites).AssertSuccess();
 
   // ":shadercache/" for reading and writing shader files
-  xiiFileSystem::AddDataDirectory(shaderCacheRoot, "GameApplicationBase", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult();
+  xiiFileSystem::AddDataDirectory(shaderCacheRoot, "GameApplicationBase", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
 
   // ":appdata/" for reading and writing app user data
-  xiiFileSystem::AddDataDirectory(sUserDataPath, "GameApplicationBase", "appdata", xiiFileSystem::AllowWrites).IgnoreResult();
+  xiiFileSystem::AddDataDirectory(sUserDataPath, "GameApplicationBase", "appdata", xiiDataDirUsage::AllowWrites).AssertSuccess();
 
   // ":base/" for reading the core engine files
-  xiiFileSystem::AddDataDirectory(GetBaseDataDirectoryPath(), "GameApplicationBase", "base", xiiFileSystem::DataDirUsage::ReadOnly).IgnoreResult();
+  xiiFileSystem::AddDataDirectory(GetBaseDataDirectoryPath(), "GameApplicationBase", "base", xiiDataDirUsage::ReadOnly).IgnoreResult();
 
   // ":project/" for reading the project specific files
-  xiiFileSystem::AddDataDirectory(GetProjectDataDirectoryPath(), "GameApplicationBase", "project", xiiFileSystem::DataDirUsage::ReadOnly).IgnoreResult();
+  xiiFileSystem::AddDataDirectory(GetProjectDataDirectoryPath(), "GameApplicationBase", "project", xiiDataDirUsage::ReadOnly).IgnoreResult();
 
   // ":plugins/" for plugin specific data (optional, if it exists)
   {
@@ -138,7 +157,7 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
     xiiFileSystem::ResolveSpecialDirectory(">sdk/Data/Plugins", dir).IgnoreResult();
     if (xiiOSFile::ExistsDirectory(dir))
     {
-      xiiFileSystem::AddDataDirectory(">sdk/Data/Plugins", "GameApplicationBase", "plugins", xiiFileSystem::DataDirUsage::ReadOnly).IgnoreResult();
+      xiiFileSystem::AddDataDirectory(">sdk/Data/Plugins", "GameApplicationBase", "plugins", xiiDataDirUsage::ReadOnly).IgnoreResult();
     }
   }
 
@@ -176,8 +195,9 @@ void xiiGameApplicationBase::Init_LoadProjectPlugins()
 
 void xiiGameApplicationBase::Init_PlatformProfile_LoadForRuntime()
 {
-  const xiiStringBuilder sRuntimeProfileFile(":project/RuntimeConfigs/", m_PlatformProfile.m_sName, ".xiiProfile");
+  const xiiStringBuilder sRuntimeProfileFile(":project/RuntimeConfigs/", m_PlatformProfile.GetConfigName(), ".xiiProfile");
   m_PlatformProfile.AddMissingConfigs();
+
   m_PlatformProfile.LoadForRuntime(sRuntimeProfileFile).IgnoreResult();
 }
 
@@ -256,7 +276,5 @@ void xiiGameApplicationBase::Deinit_ShutdownLogging()
   xiiGlobalLog::RemoveLogWriter(m_LogToVsID);
 #endif
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_GameApplication_Implementation_GameApplicationBaseInit);

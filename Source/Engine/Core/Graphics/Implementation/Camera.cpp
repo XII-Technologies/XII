@@ -14,6 +14,8 @@ public:
 
   virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const override
   {
+    XII_IGNORE_UNUSED(vGlobalPosition);
+
     out_coordinateSystem.m_vForwardDir = xiiBasisAxis::GetBasisVector(m_ForwardAxis);
     out_coordinateSystem.m_vRightDir   = xiiBasisAxis::GetBasisVector(m_RightAxis);
     out_coordinateSystem.m_vUpDir      = xiiBasisAxis::GetBasisVector(m_UpAxis);
@@ -255,7 +257,7 @@ void xiiCamera::LookAt(const xiiVec3& vCameraPos0, const xiiVec3& vTargetPos0, c
   m_mViewMatrix[1]     = m_mViewMatrix[0];
   m_vCameraPosition[1] = m_vCameraPosition[0] = vCameraPos;
 
-  CameraOrientationChanged(true, true);
+  CameraOrientationChanged();
 }
 
 void xiiCamera::SetViewMatrix(const xiiMat4& mLookAtMatrix, xiiCameraEye eye)
@@ -265,7 +267,8 @@ void xiiCamera::SetViewMatrix(const xiiMat4& mLookAtMatrix, xiiCameraEye eye)
   m_mViewMatrix[iEyeIdx] = mLookAtMatrix;
 
   xiiVec3 decFwd, decRight, decUp;
-  xiiGraphicsUtils::DecomposeViewMatrix(m_vCameraPosition[iEyeIdx], decFwd, decRight, decUp, m_mViewMatrix[static_cast<int>(eye)], xiiHandedness::LeftHanded);
+  xiiGraphicsUtils::DecomposeViewMatrix(
+    m_vCameraPosition[iEyeIdx], decFwd, decRight, decUp, m_mViewMatrix[static_cast<int>(eye)], xiiHandedness::LeftHanded);
 
   if (m_Mode != xiiCameraMode::Stereo)
   {
@@ -273,7 +276,7 @@ void xiiCamera::SetViewMatrix(const xiiMat4& mLookAtMatrix, xiiCameraEye eye)
     m_vCameraPosition[1 - iEyeIdx] = m_vCameraPosition[iEyeIdx];
   }
 
-  CameraOrientationChanged(true, true);
+  CameraOrientationChanged();
 }
 
 void xiiCamera::GetProjectionMatrix(float fAspectRatioWidthDivHeight, xiiMat4& out_mProjectionMatrix, xiiCameraEye eye, xiiClipSpaceDepthRange::Enum depthRange) const
@@ -335,7 +338,7 @@ void xiiCamera::MoveLocally(float fForward, float fRight, float fUp)
 
   m_vCameraPosition[0] = m_vCameraPosition[1] = decPos;
 
-  CameraOrientationChanged(true, false);
+  CameraOrientationChanged();
 }
 
 void xiiCamera::MoveGlobally(float fForward, float fRight, float fUp)
@@ -352,11 +355,14 @@ void xiiCamera::MoveGlobally(float fForward, float fRight, float fUp)
 
   m_mViewMatrix[1].SetTranslationVector(m_mViewMatrix[0].GetTranslationVector());
 
-  CameraOrientationChanged(true, false);
+  CameraOrientationChanged();
 }
 
 void xiiCamera::ClampRotationAngles(bool bLocalSpace, xiiAngle& forwardAxis, xiiAngle& rightAxis, xiiAngle& upAxis)
 {
+  XII_IGNORE_UNUSED(forwardAxis);
+  XII_IGNORE_UNUSED(upAxis);
+
   if (bLocalSpace)
   {
     if (rightAxis.GetRadian() != 0.0f)
@@ -384,8 +390,7 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
 
   if (forwardAxis.GetRadian() != 0.0f)
   {
-    xiiMat3 m;
-    m = xiiMat3::MakeAxisRotation(vDirForwards, forwardAxis);
+    xiiMat3 m = xiiMat3::MakeAxisRotation(vDirForwards, forwardAxis);
 
     vDirUp    = m * vDirUp;
     vDirRight = m * vDirRight;
@@ -393,8 +398,7 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
 
   if (rightAxis.GetRadian() != 0.0f)
   {
-    xiiMat3 m;
-    m = xiiMat3::MakeAxisRotation(vDirRight, rightAxis);
+    xiiMat3 m = xiiMat3::MakeAxisRotation(vDirRight, rightAxis);
 
     vDirUp       = m * vDirUp;
     vDirForwards = m * vDirForwards;
@@ -402,8 +406,7 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
 
   if (axis.GetRadian() != 0.0f)
   {
-    xiiMat3 m;
-    m = xiiMat3::MakeAxisRotation(vDirUp, axis);
+    xiiMat3 m = xiiMat3::MakeAxisRotation(vDirUp, axis);
 
     vDirRight    = m * vDirRight;
     vDirForwards = m * vDirForwards;
@@ -415,7 +418,7 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
   m_mViewMatrix[0] = xiiGraphicsUtils::CreateLookAtViewMatrix(vPos, vPos + vDirForwards, vDirUp, xiiHandedness::LeftHanded);
   m_mViewMatrix[1] = m_mViewMatrix[0];
 
-  CameraOrientationChanged(false, true);
+  CameraOrientationChanged();
 }
 
 void xiiCamera::RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle axis)
@@ -458,7 +461,7 @@ void xiiCamera::RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngl
   m_mViewMatrix[0] = xiiGraphicsUtils::CreateLookAtViewMatrix(vPos, vPos + vDirForwards, vDirUp, xiiHandedness::LeftHanded);
   m_mViewMatrix[1] = m_mViewMatrix[0];
 
-  CameraOrientationChanged(false, true);
+  CameraOrientationChanged();
 }
 
 

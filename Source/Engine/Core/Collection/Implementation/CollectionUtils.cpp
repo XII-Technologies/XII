@@ -40,6 +40,12 @@ void xiiCollectionUtils::AddFiles(xiiCollectionResourceDescriptor& ref_collectio
   }
 
 #else
+  XII_IGNORE_UNUSED(ref_collection);
+  XII_IGNORE_UNUSED(sAssetTypeNameView);
+  XII_IGNORE_UNUSED(sAbsPathToFolder);
+  XII_IGNORE_UNUSED(sFileExtension);
+  XII_IGNORE_UNUSED(sStripPrefix);
+  XII_IGNORE_UNUSED(sPrependPrefix);
   XII_ASSERT_NOT_IMPLEMENTED;
 #endif
 }

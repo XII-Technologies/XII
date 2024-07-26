@@ -3,7 +3,7 @@
 #include <Core/CoreDLL.h>
 #include <Foundation/Basics.h>
 
-class xiiSoundInterface
+class XII_CORE_DLL xiiSoundInterface
 {
 public:
   /// \brief Can be called before startup to load the configs from a different file.
@@ -66,5 +66,5 @@ public:
   ///
   /// Also by default a pitch of 1 is always used. If the game speed is not 1 (xiiWorld clock), a custom pitch would need to be provided,
   /// if the sound should play at the same speed.
-  XII_CORE_DLL static xiiResult PlaySound(xiiStringView sResourceID, const xiiTransform& globalPosition, float fPitch = 1.0f, float fVolume = 1.0f, bool bBlockIfNotLoaded = true);
+  static xiiResult PlaySound(xiiStringView sResourceID, const xiiTransform& globalPosition, float fPitch = 1.0f, float fVolume = 1.0f, bool bBlockIfNotLoaded = true);
 };

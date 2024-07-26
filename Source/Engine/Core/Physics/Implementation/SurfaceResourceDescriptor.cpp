@@ -5,7 +5,7 @@
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSurfaceInteractionAlignment, 2)
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSurfaceInteractionAlignment, 1)
   XII_ENUM_CONSTANTS(xiiSurfaceInteractionAlignment::SurfaceNormal, xiiSurfaceInteractionAlignment::IncidentDirection, xiiSurfaceInteractionAlignment::ReflectedDirection)
   XII_ENUM_CONSTANTS(xiiSurfaceInteractionAlignment::ReverseSurfaceNormal, xiiSurfaceInteractionAlignment::ReverseIncidentDirection, xiiSurfaceInteractionAlignment::ReverseReflectedDirection)
 XII_END_STATIC_REFLECTED_ENUM;
@@ -26,7 +26,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSurfaceInteraction, xiiNoBase, 1, xiiRTTIDefa
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResourceDescriptor, 2, xiiRTTIDefaultAllocator<xiiSurfaceResourceDescriptor>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResourceDescriptor, 1, xiiRTTIDefaultAllocator<xiiSurfaceResourceDescriptor>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -86,7 +86,7 @@ void xiiSurfaceInteraction::SetParameter(xiiStringView sKey, const xiiVariant& v
 
 void xiiSurfaceInteraction::RemoveParameter(xiiStringView sKey)
 {
-  m_Parameters.RemoveAndCopy(sKey);
+  m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey));
 }
 
 bool xiiSurfaceInteraction::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
@@ -103,27 +103,18 @@ bool xiiSurfaceInteraction::GetParameter(xiiStringView sKey, xiiVariant& out_val
 void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   xiiUInt8 uiVersion = 0;
-
   ref_stream >> uiVersion;
-  XII_ASSERT_DEV(uiVersion <= 7, "Invalid version {0} for surface resource", uiVersion);
+
+  XII_IGNORE_UNUSED(uiVersion);
 
   ref_stream >> m_fPhysicsRestitution;
   ref_stream >> m_fPhysicsFrictionStatic;
   ref_stream >> m_fPhysicsFrictionDynamic;
   ref_stream >> m_hBaseSurface;
+  ref_stream >> m_sOnCollideInteraction;
+  ref_stream >> m_sSlideInteractionPrefab;
+  ref_stream >> m_sRollInteractionPrefab;
 
-  if (uiVersion >= 4)
-  {
-    ref_stream >> m_sOnCollideInteraction;
-  }
-
-  if (uiVersion >= 7)
-  {
-    ref_stream >> m_sSlideInteractionPrefab;
-    ref_stream >> m_sRollInteractionPrefab;
-  }
-
-  if (uiVersion > 2)
   {
     xiiUInt32 count = 0;
     ref_stream >> count;
@@ -140,18 +131,9 @@ void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& ref_stream)
       ref_stream >> ia.m_hPrefab;
       ref_stream >> ia.m_Alignment;
       ref_stream >> ia.m_Deviation;
+      ref_stream >> ia.m_fImpulseThreshold;
+      ref_stream >> ia.m_fImpulseScale;
 
-      if (uiVersion >= 4)
-      {
-        ref_stream >> ia.m_fImpulseThreshold;
-      }
-
-      if (uiVersion >= 5)
-      {
-        ref_stream >> ia.m_fImpulseScale;
-      }
-
-      if (uiVersion >= 6)
       {
         xiiUInt8 uiNumParams;
         ref_stream >> uiNumParams;
@@ -176,18 +158,14 @@ void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& ref_stream)
 
 void xiiSurfaceResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
-  const xiiUInt8 uiVersion = 7;
-
+  const xiiUInt8 uiVersion = GetStaticRTTI()->GetTypeVersion();
   ref_stream << uiVersion;
+
   ref_stream << m_fPhysicsRestitution;
   ref_stream << m_fPhysicsFrictionStatic;
   ref_stream << m_fPhysicsFrictionDynamic;
   ref_stream << m_hBaseSurface;
-
-  // version 4
   ref_stream << m_sOnCollideInteraction;
-
-  // version 7
   ref_stream << m_sSlideInteractionPrefab;
   ref_stream << m_sRollInteractionPrefab;
 
@@ -198,14 +176,9 @@ void xiiSurfaceResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
     ref_stream << ia.m_hPrefab;
     ref_stream << ia.m_Alignment;
     ref_stream << ia.m_Deviation;
-
-    // version 4
     ref_stream << ia.m_fImpulseThreshold;
-
-    // version 5
     ref_stream << ia.m_fImpulseScale;
 
-    // version 6
     const xiiUInt8 uiNumParams = static_cast<xiiUInt8>(ia.m_Parameters.GetCount());
     ref_stream << uiNumParams;
     for (xiiUInt32 i = 0; i < uiNumParams; ++i)
@@ -231,7 +204,7 @@ void xiiSurfaceResourceDescriptor::SetBaseSurfaceFile(xiiStringView sFile)
 xiiStringView xiiSurfaceResourceDescriptor::GetBaseSurfaceFile() const
 {
   if (!m_hBaseSurface.IsValid())
-    return "";
+    return {};
 
   return m_hBaseSurface.GetResourceID();
 }
@@ -282,6 +255,9 @@ public:
 
   virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
   {
+    XII_IGNORE_UNUSED(ref_context);
+    XII_IGNORE_UNUSED(pGraph);
+
     pNode->RenameProperty("Base Surface", "BaseSurface");
     pNode->RenameProperty("Static Friction", "StaticFriction");
     pNode->RenameProperty("Dynamic Friction", "DynamicFriction");
@@ -289,6 +265,5 @@ public:
 };
 
 xiiSurfaceResourceDescriptorPatch_1_2 g_xiiSurfaceResourceDescriptorPatch_1_2;
-
 
 XII_STATICLINK_FILE(Core, Core_Physics_Implementation_SurfaceResourceDescriptor);

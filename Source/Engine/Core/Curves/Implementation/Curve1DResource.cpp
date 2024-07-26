@@ -27,6 +27,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiCurve1DResource, xiiCurve1DResourceDescript
 
 xiiResourceLoadDesc xiiCurve1DResource::UnloadData(Unload WhatToUnload)
 {
+  XII_IGNORE_UNUSED(WhatToUnload);
+
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
@@ -39,7 +41,7 @@ xiiResourceLoadDesc xiiCurve1DResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiCurve1DResource::UpdateContent(xiiStreamReader* Stream)
 {
-  XII_LOG_BLOCK("xiiCurve1DResource::UpdateContent", GetResourceDescription().GetData());
+  XII_LOG_BLOCK("xiiCurve1DResource::UpdateContent", GetResourceIdOrDescription());
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;

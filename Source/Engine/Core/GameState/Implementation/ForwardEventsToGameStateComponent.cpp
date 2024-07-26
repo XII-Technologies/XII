@@ -1,6 +1,6 @@
 #include <Core/GameApplication/GameApplicationBase.h>
+#include <Core/GameState/ForwardEventsToGameStateComponent.h>
 #include <Core/GameState/GameStateBase.h>
-#include <Core/GameState/GameStateEvents.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiForwardEventsToGameStateComponent, 1 /* version */, xiiComponentMode::Static)
@@ -19,8 +19,8 @@ xiiForwardEventsToGameStateComponent::~xiiForwardEventsToGameStateComponent() = 
 
 bool xiiForwardEventsToGameStateComponent::HandlesMessage(const xiiMessage& msg) const
 {
-  // Check whether there is any active game state
-  // If so, test whether it would handle this type of message
+  // check whether there is any active game state
+  // if so, test whether it would handle this type of message
   if (xiiGameStateBase* pGameState = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameState())
   {
     return pGameState->GetDynamicRTTI()->CanHandleMessage(msg.GetId());
@@ -31,7 +31,9 @@ bool xiiForwardEventsToGameStateComponent::HandlesMessage(const xiiMessage& msg)
 
 bool xiiForwardEventsToGameStateComponent::OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg)
 {
-  // If we have an active game state, forward the message to it
+  XII_IGNORE_UNUSED(bWasPostedMsg);
+
+  // if we have an active game state, forward the message to it
   if (xiiGameStateBase* pGameState = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameState())
   {
     return pGameState->GetDynamicRTTI()->DispatchMessage(pGameState, msg);
@@ -42,7 +44,9 @@ bool xiiForwardEventsToGameStateComponent::OnUnhandledMessage(xiiMessage& msg, b
 
 bool xiiForwardEventsToGameStateComponent::OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) const
 {
-  // If we have an active game state, forward the message to it
+  XII_IGNORE_UNUSED(bWasPostedMsg);
+
+  // if we have an active game state, forward the message to it
   if (const xiiGameStateBase* pGameState = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameState())
   {
     return pGameState->GetDynamicRTTI()->DispatchMessage(pGameState, msg);
@@ -59,4 +63,4 @@ void xiiForwardEventsToGameStateComponent::Initialize()
 }
 
 
-XII_STATICLINK_FILE(Core, Core_GameState_Implementation_GameStateEvents);
+XII_STATICLINK_FILE(Core, Core_GameState_Implementation_ForwardEventsToGameStateComponent);

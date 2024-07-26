@@ -25,9 +25,9 @@ namespace xiiInternal
 {
   struct XII_CORE_DLL EventMessageSenderHelper
   {
-    static bool SendEventMessage(xiiMessage& ref_msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& ref_cachedReceivers);
-    static bool SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& ref_cachedReceivers);
-    static void PostEventMessage(const xiiMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& ref_cachedReceivers, xiiTime delay, xiiObjectMsgQueueType::Enum queueType);
+    static bool SendEventMessage(xiiMessage& ref_msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_cachedReceivers);
+    static bool SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_cachedReceivers);
+    static void PostEventMessage(const xiiMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_cachedReceivers, xiiTime delay, xiiObjectMsgQueueType::Enum queueType);
   };
 } // namespace xiiInternal
 
@@ -38,22 +38,22 @@ template <typename EventMessageType>
 class xiiEventMessageSender : public xiiMessageSenderBase<EventMessageType>
 {
 public:
-  XII_ALWAYS_INLINE bool SendEventMessage(EventMessageType& ref_msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject)
+  XII_ALWAYS_INLINE bool SendEventMessage(EventMessageType& inout_msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject)
   {
     if constexpr (XII_IS_DERIVED_FROM_STATIC(xiiEventMessage, EventMessageType))
     {
-      ref_msg.FillFromSenderComponent(pSenderComponent);
+      inout_msg.FillFromSenderComponent(pSenderComponent);
     }
-    return xiiInternal::EventMessageSenderHelper::SendEventMessage(ref_msg, pSenderComponent, pSearchObject, m_CachedReceivers);
+    return xiiInternal::EventMessageSenderHelper::SendEventMessage(inout_msg, pSenderComponent, pSearchObject, m_CachedReceivers);
   }
 
-  XII_ALWAYS_INLINE bool SendEventMessage(EventMessageType& ref_msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject) const
+  XII_ALWAYS_INLINE bool SendEventMessage(EventMessageType& inout_msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject) const
   {
     if constexpr (XII_IS_DERIVED_FROM_STATIC(xiiEventMessage, EventMessageType))
     {
-      ref_msg.FillFromSenderComponent(pSenderComponent);
+      inout_msg.FillFromSenderComponent(pSenderComponent);
     }
-    return xiiInternal::EventMessageSenderHelper::SendEventMessage(ref_msg, pSenderComponent, pSearchObject, m_CachedReceivers);
+    return xiiInternal::EventMessageSenderHelper::SendEventMessage(inout_msg, pSenderComponent, pSearchObject, m_CachedReceivers);
   }
 
   XII_ALWAYS_INLINE void PostEventMessage(EventMessageType& ref_msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiTime delay, xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame)

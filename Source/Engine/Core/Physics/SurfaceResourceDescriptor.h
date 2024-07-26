@@ -75,7 +75,6 @@ public:
   void          SetRollReactionPrefabFile(xiiStringView sFile);
   xiiStringView GetRollReactionPrefabFile() const;
 
-
   xiiSurfaceResourceHandle m_hBaseSurface;
   float                    m_fPhysicsRestitution;
   float                    m_fPhysicsFrictionStatic;
