@@ -94,3 +94,5 @@ xiiScriptCoroutine::Result xiiScriptCoroutine_TweenProperty::Update(xiiTime delt
 
   return Result::Completed();
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_ScriptClasses_Implementation_ScriptCoroutine_TweenProperty);

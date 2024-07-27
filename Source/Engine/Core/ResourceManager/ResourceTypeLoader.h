@@ -48,7 +48,11 @@ public:
   ///
   /// Call xiiResource::GetLoadedFileModificationTime() to query the file modification time that was returned
   /// through xiiResourceLoadData::m_LoadedFileModificationDate.
-  virtual bool IsResourceOutdated(const xiiResource* pResource) const { return false; }
+  virtual bool IsResourceOutdated(const xiiResource* pResource) const
+  {
+    XII_IGNORE_UNUSED(pResource);
+    return false;
+  }
 };
 
 /// \brief A default implementation of xiiResourceTypeLoader for standard file loading.

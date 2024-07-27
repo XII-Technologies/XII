@@ -51,13 +51,13 @@ void xiiScriptWorldModule::RemoveUpdateFunctionToSchedule(const xiiAbstractFunct
   m_Scheduler.RemoveWork(context);
 }
 
-xiiScriptCoroutineHandle xiiScriptWorldModule::CreateCoroutine(const xiiRTTI* pCoroutineType, xiiStringView sName, xiiScriptInstance& ref_instance, xiiScriptCoroutineCreationMode::Enum creationMode, xiiScriptCoroutine*& out_pCoroutine)
+xiiScriptCoroutineHandle xiiScriptWorldModule::CreateCoroutine(const xiiRTTI* pCoroutineType, xiiStringView sName, xiiScriptInstance& inout_instance, xiiScriptCoroutineCreationMode::Enum creationMode, xiiScriptCoroutine*& out_pCoroutine)
 {
   if (creationMode != xiiScriptCoroutineCreationMode::AllowOverlap)
   {
     xiiScriptCoroutine* pOverlappingCoroutine = nullptr;
 
-    auto& runningCoroutines = m_InstanceToScriptCoroutines[&ref_instance];
+    auto& runningCoroutines = m_InstanceToScriptCoroutines[&inout_instance];
     for (auto& hCoroutine : runningCoroutines)
     {
       xiiUniquePtr<xiiScriptCoroutine>* pCoroutine = nullptr;
@@ -89,9 +89,9 @@ xiiScriptCoroutineHandle xiiScriptWorldModule::CreateCoroutine(const xiiRTTI* pC
   auto pCoroutine = pCoroutineType->GetAllocator()->Allocate<xiiScriptCoroutine>(xiiScriptAllocator::GetAllocator());
 
   xiiScriptCoroutineId id = m_RunningScriptCoroutines.Insert(pCoroutine);
-  pCoroutine->Initialize(id, sName, ref_instance, *this);
+  pCoroutine->Initialize(id, sName, inout_instance, *this);
 
-  m_InstanceToScriptCoroutines[&ref_instance].PushBack(xiiScriptCoroutineHandle(id));
+  m_InstanceToScriptCoroutines[&inout_instance].PushBack(xiiScriptCoroutineHandle(id));
 
   out_pCoroutine = pCoroutine;
   return xiiScriptCoroutineHandle(id);
@@ -102,7 +102,7 @@ void xiiScriptWorldModule::StartCoroutine(xiiScriptCoroutineHandle hCoroutine, x
   xiiUniquePtr<xiiScriptCoroutine>* pCoroutine = nullptr;
   if (m_RunningScriptCoroutines.TryGetValue(hCoroutine.GetInternalID(), pCoroutine))
   {
-    (*pCoroutine)->Start(arguments);
+    (*pCoroutine)->StartWithVarArgs(arguments);
     (*pCoroutine)->UpdateAndSchedule();
   }
 }
@@ -157,6 +157,8 @@ bool xiiScriptWorldModule::IsCoroutineFinished(xiiScriptCoroutineHandle hCorouti
 
 void xiiScriptWorldModule::CallUpdateFunctions(const xiiWorldModule::UpdateContext& context)
 {
+  XII_IGNORE_UNUSED(context);
+
   xiiWorld* pWorld = GetWorld();
 
   xiiTime deltaTime;
@@ -197,3 +199,5 @@ void xiiScriptWorldModule::CallUpdateFunctions(const xiiWorldModule::UpdateConte
   }
   m_DeadScriptCoroutines.Clear();
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_Implementation_ScriptWorldModule);

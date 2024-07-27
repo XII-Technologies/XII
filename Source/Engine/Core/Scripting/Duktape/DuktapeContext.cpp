@@ -9,7 +9,6 @@
 
 xiiDuktapeContext::xiiDuktapeContext(xiiStringView sWrapperName) :
   xiiDuktapeHelper(nullptr), m_Allocator(sWrapperName, xiiFoundation::GetDefaultAllocator())
-
 {
   InitializeContext();
 }
@@ -55,14 +54,19 @@ void xiiDuktapeContext::DestroyContext()
   m_pContext = nullptr;
 
   const auto stats = m_Allocator.GetStats();
+  XII_IGNORE_UNUSED(stats);
+
   XII_ASSERT_DEBUG(stats.m_uiAllocationSize == 0, "Duktape did not free all data");
   XII_ASSERT_DEBUG(stats.m_uiNumAllocations == stats.m_uiNumDeallocations, "Duktape did not free all data");
 }
 
 void xiiDuktapeContext::FatalErrorHandler(void* pUserData, const char* szMsg)
 {
+  XII_IGNORE_UNUSED(pUserData);
+
   // unfortunately it is not possible to do a stack trace here
   xiiLog::Error("DukTape: {}", szMsg);
+
   XII_ASSERT_ALWAYS(false, "Duktape fatal error {}", szMsg);
 }
 
@@ -110,6 +114,5 @@ void xiiDuktapeContext::DukFree(void* pUserData, void* pPointer)
 }
 
 #endif
-
 
 XII_STATICLINK_FILE(Core, Core_Scripting_Duktape_DuktapeContext);

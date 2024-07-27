@@ -24,6 +24,9 @@ XII_CORE_DLL void MigrateResourceRefCount(xiiResource* pResource, const void* pO
 #else
 XII_ALWAYS_INLINE void MigrateResourceRefCount(xiiResource* pResource, const void* pOldOwner, const void* pNewOwner)
 {
+  XII_IGNORE_UNUSED(pResource);
+  XII_IGNORE_UNUSED(pOldOwner);
+  XII_IGNORE_UNUSED(pNewOwner);
 }
 #endif
 

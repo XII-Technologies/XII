@@ -8,7 +8,6 @@
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/TaskSystem.h>
 
-
 xiiTaskGroupID xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::Enum priority, xiiOnTaskGroupFinishedCallback callback)
 {
   XII_LOCK(s_TaskSystemMutex);

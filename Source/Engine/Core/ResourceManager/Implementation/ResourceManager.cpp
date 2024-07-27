@@ -381,7 +381,7 @@ bool xiiResourceManager::IsResourceTypeAcquireDuringUpdateContentAllowed(const x
 
 xiiResult xiiResourceManager::DeallocateResource(xiiResource* pResource)
 {
-  //XII_ASSERT_DEBUG(pResource->m_iLockCount == 0, "Resource '{0}' has a refcount of zero, but is still in an acquired state.", pResource->GetResourceID());
+  // XII_ASSERT_DEBUG(pResource->m_iLockCount == 0, "Resource '{0}' has a refcount of zero, but is still in an acquired state.", pResource->GetResourceID());
 
   if (RemoveFromLoadingQueue(pResource).Failed())
   {
@@ -414,6 +414,11 @@ xiiResult xiiResourceManager::DeallocateResource(xiiResource* pResource)
 // Used by Fileserve, to trigger this event, even though Fileserve should not have a link dependency on Core
 XII_ON_GLOBAL_EVENT(xiiResourceManager_ReloadAllResources)
 {
+  XII_IGNORE_UNUSED(param0);
+  XII_IGNORE_UNUSED(param1);
+  XII_IGNORE_UNUSED(param2);
+  XII_IGNORE_UNUSED(param3);
+
   xiiResourceManager::ReloadAllResources(false);
 }
 void xiiResourceManager::ResetAllResources()
@@ -682,6 +687,13 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView
   pRtti = FindResourceTypeOverride(pRtti, sResourceID);
 
   XII_ASSERT_DEBUG(pRtti != nullptr, "There is no RTTI information available for the given resource type '{0}'", XII_PP_STRINGIFY(ResourceType));
+
+  if (pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
+  {
+    // this can happen for assets that use a resource type override (such as scripts) shortly after they have been created
+    return nullptr;
+  }
+
   XII_ASSERT_DEBUG(pRtti->GetAllocator() != nullptr && pRtti->GetAllocator()->CanAllocate(), "There is no RTTI allocator available for the given resource type '{0}'", XII_PP_STRINGIFY(ResourceType));
 
   xiiResource*        pResource = nullptr;

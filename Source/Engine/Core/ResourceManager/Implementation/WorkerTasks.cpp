@@ -100,7 +100,7 @@ void xiiResourceManagerWorkerDataLoad::Execute()
 
     // restart the next loading task (this one is about to finish)
     xiiResourceManager::s_pState->m_bAllowLaunchDataLoadTask = true;
-    xiiResourceManager::RunWorkerTask(nullptr);
+    xiiResourceManager::RunWorkerTask();
 
     pCustomLoader.Clear();
   }
@@ -156,6 +156,5 @@ void xiiResourceManagerWorkerUpdateContent::Execute()
   m_pLoader         = nullptr;
   m_pResourceToLoad = nullptr;
 }
-
 
 XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_WorkerTasks);

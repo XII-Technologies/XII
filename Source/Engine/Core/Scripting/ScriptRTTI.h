@@ -71,7 +71,9 @@ public:
   xiiReflectedClass& GetOwner() { return m_Owner; }
   xiiWorld*          GetWorld() { return m_pWorld; }
 
-  virtual void ApplyParameters(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters) = 0;
+  virtual void       SetInstanceVariables(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters);
+  virtual void       SetInstanceVariable(const xiiHashedString& sName, const xiiVariant& value) = 0;
+  virtual xiiVariant GetInstanceVariable(const xiiHashedString& sName)                          = 0;
 
 private:
   xiiReflectedClass& m_Owner;

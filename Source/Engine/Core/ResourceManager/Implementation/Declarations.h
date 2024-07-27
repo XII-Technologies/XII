@@ -66,7 +66,7 @@ struct xiiResourceFlags
     PreventFileReload       = XII_BIT(7), ///< Once this flag is set, no reloading from file is done, until the flag is manually removed. Automatically set when a custom loader is used. To restore a file to the disk state, this flag must be removed and then the resource can be reloaded.
     HasLowResData           = XII_BIT(8), ///< Whether low resolution data was set on a resource once before.
     IsCreatedResource       = XII_BIT(9), ///< When this is set, the resource was created and not loaded from file.
-    Default                 = 0,
+    Default                 = 0U,
   };
 
   struct Bits

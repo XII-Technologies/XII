@@ -28,8 +28,8 @@ public:
   xiiScriptComponent();
   ~xiiScriptComponent();
 
-  bool SendEventMessage(xiiMessage& ref_msg);
-  void PostEventMessage(xiiMessage& ref_msg, xiiTime delay);
+  void       SetScriptVariable(const xiiHashedString& sName, const xiiVariant& value); // [ scriptable ]
+  xiiVariant GetScriptVariable(const xiiHashedString& sName) const;                    // [ scriptable ]
 
   void                                SetScriptClass(const xiiScriptClassResourceHandle& hScript);
   const xiiScriptClassResourceHandle& GetScriptClass() const { return m_hScriptClass; }
@@ -59,16 +59,6 @@ private:
   void                               CallScriptFunction(xiiUInt32 uiFunctionIndex);
 
   void ReloadScript();
-
-  xiiEventMessageSender<xiiMessage>& FindSender(xiiMessage& ref_msg);
-
-  struct EventSender
-  {
-    const xiiRTTI*                    m_pMsgType = nullptr;
-    xiiEventMessageSender<xiiMessage> m_Sender;
-  };
-
-  xiiHybridArray<EventSender, 2> m_EventSenders;
 
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;
 

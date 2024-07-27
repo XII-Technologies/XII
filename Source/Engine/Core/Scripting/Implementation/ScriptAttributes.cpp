@@ -39,3 +39,5 @@ xiiScriptBaseClassFunctionAttribute::xiiScriptBaseClassFunctionAttribute(xiiUInt
   m_uiIndex(uiIndex)
 {
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_Implementation_ScriptAttributes);

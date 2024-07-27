@@ -70,3 +70,5 @@ void xiiScriptClassResource::DeleteAllScriptCoroutineTypes()
 {
   m_CoroutineTypes.Clear();
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_Implementation_ScriptClassResource);

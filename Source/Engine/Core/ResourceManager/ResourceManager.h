@@ -173,10 +173,8 @@ public:
   ///
   /// \param hResource The resource to acquire
   /// \param mode The desired way to acquire the resource. See xiiResourceAcquireMode for details.
-  /// \param hLoadingFallback A custom fallback resource that should be returned if hResource is not yet available. Allows to use domain
-  /// specific knowledge to get a better fallback.
-  /// \param Priority Allows to adjust the priority of the resource. This will affect how fast
-  /// the resource is loaded, in case it is not yet available.
+  /// \param hLoadingFallback A custom fallback resource that should be returned if hResource is not yet available. Allows to use domain specific knowledge to get a better fallback.
+  /// \param Priority Allows to adjust the priority of the resource. This will affect how fast the resource is loaded, in case it is not yet available.
   /// \param out_AcquireResult Returns how successful the acquisition was. See xiiResourceAcquireResult for details.
   template <typename ResourceType>
   static ResourceType* BeginAcquireResource(const xiiTypedResourceHandle<ResourceType>& hResource, xiiResourceAcquireMode mode, const xiiTypedResourceHandle<ResourceType>& hLoadingFallback = xiiTypedResourceHandle<ResourceType>(), xiiResourceAcquireResult* out_pAcquireResult = nullptr);
@@ -194,7 +192,7 @@ public:
 
   /// \brief Forces the resource manager to treat xiiResourceAcquireMode::AllowLoadingFallback as xiiResourceAcquireMode::BlockTillLoaded on
   /// BeginAcquireResource.
-  static void ForceNoFallbackAcquisition(xiiUInt32 uiNumFrames = 0xFFFFFFFF);
+  static void ForceNoFallbackAcquisition(xiiUInt32 uiNumFrames = 0xFFFFFFFFU);
 
   /// \brief If the returned number is greater 0 the resource manager treats xiiResourceAcquireMode::AllowLoadingFallback as
   /// xiiResourceAcquireMode::BlockTillLoaded on BeginAcquireResource.
@@ -467,7 +465,7 @@ private:
   template <typename ResourceType>
   static ResourceType* GetResource(xiiStringView sResourceID, bool bIsReloadable);
   static xiiResource*  GetResource(const xiiRTTI* pRtti, xiiStringView sResourceID, bool bIsReloadable);
-  static void          RunWorkerTask(xiiResource* pResource);
+  static void          RunWorkerTask();
   static void          UpdateLoadingDeadlines();
   static void          ReverseBubbleSortStep(xiiDeque<LoadingInfo>& data);
   static bool          ReloadResource(xiiResource* pResource, bool bForce);

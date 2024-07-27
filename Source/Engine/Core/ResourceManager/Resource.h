@@ -57,6 +57,11 @@ public:
   /// ID.
   const xiiString& GetResourceDescription() const { return m_sResourceDescription; }
 
+  /// \brief The returns the resource description, if available, otherwise the resource ID.
+  ///
+  /// This is mainly for logging, where you want the more user friendly description, but the ID, if no description is available.
+  const xiiString& GetResourceIdOrDescription() const { return m_sResourceDescription.IsEmpty() ? m_sUniqueID : m_sResourceDescription; }
+
   /// \brief Returns the current state in which this resource is in.
   XII_ALWAYS_INLINE xiiResourceState GetLoadingState() const { return m_LoadingState; }
 
