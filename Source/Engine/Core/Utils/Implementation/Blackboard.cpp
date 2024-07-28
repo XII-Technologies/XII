@@ -8,8 +8,7 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiBlackboardEntryFlags, 1)
-  XII_BITFLAGS_CONSTANTS(xiiBlackboardEntryFlags::Save, xiiBlackboardEntryFlags::OnChangeEvent,
-    xiiBlackboardEntryFlags::UserFlag0, xiiBlackboardEntryFlags::UserFlag1, xiiBlackboardEntryFlags::UserFlag2, xiiBlackboardEntryFlags::UserFlag3, xiiBlackboardEntryFlags::UserFlag4, xiiBlackboardEntryFlags::UserFlag5, xiiBlackboardEntryFlags::UserFlag6, xiiBlackboardEntryFlags::UserFlag7)
+  XII_BITFLAGS_CONSTANTS(xiiBlackboardEntryFlags::Save, xiiBlackboardEntryFlags::OnChangeEvent, xiiBlackboardEntryFlags::UserFlag0, xiiBlackboardEntryFlags::UserFlag1, xiiBlackboardEntryFlags::UserFlag2, xiiBlackboardEntryFlags::UserFlag3, xiiBlackboardEntryFlags::UserFlag4, xiiBlackboardEntryFlags::UserFlag5, xiiBlackboardEntryFlags::UserFlag6, xiiBlackboardEntryFlags::UserFlag7)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 // clang-format on
 
@@ -130,10 +129,14 @@ void xiiBlackboard::ImplSetEntryValue(const xiiHashedString& sName, Entry& entry
       e.m_OldValue = entry.m_Value;
       e.m_pEntry   = &entry;
 
+      entry.m_Value = value;
+
       m_EntryEvents.Broadcast(e, 1); // limited recursion is allowed
     }
-
-    entry.m_Value = value;
+    else
+    {
+      entry.m_Value = value;
+    }
   }
 }
 

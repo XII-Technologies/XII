@@ -170,7 +170,7 @@ public:
   const xiiHashTable<xiiHashedString, Entry>& GetAllEntries() const { return m_Entries; }
 
   /// \brief Allows you to register to the OnEntryEvent. This is broadcast whenever an entry is modified that has the flag xiiBlackboardEntryFlags::OnChangeEvent.
-  const xiiEvent<EntryEvent>& OnEntryEvent() const { return m_EntryEvents; }
+  const xiiEvent<const EntryEvent&>& OnEntryEvent() const { return m_EntryEvents; }
 
   /// \brief This counter is increased every time an entry is added or removed (but not when it is modified).
   ///
@@ -202,7 +202,7 @@ private:
 
   bool                                 m_bIsGlobal = false;
   xiiHashedString                      m_sName;
-  xiiEvent<EntryEvent>                 m_EntryEvents;
+  xiiEvent<const EntryEvent&>          m_EntryEvents;
   xiiUInt32                            m_uiBlackboardChangeCounter      = 0;
   xiiUInt32                            m_uiBlackboardEntryChangeCounter = 0;
   xiiHashTable<xiiHashedString, Entry> m_Entries;
