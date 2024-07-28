@@ -1,14 +1,13 @@
 #include <Foundation/FoundationPCH.h>
 
-#include <Foundation/System/PlatformFeatures.h>
 #include <Foundation/System/Screen.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <Foundation/System/Implementation/Win/Screen_win32.inl>
+#  include <Foundation/Platform/Implementation/Windows/Screen_win32.inl>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <Foundation/System/Implementation/uwp/Screen_uwp.inl>
+#  include <Foundation/Platform/Implementation/uwp/Screen_uwp.inl>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/System/Implementation/Android/Screen_android.inl>
+#  include <Foundation/Platform/Implementation/Android/Screen_android.inl>
 #else
 
 xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Screens)
