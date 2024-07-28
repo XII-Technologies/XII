@@ -5,7 +5,6 @@
 #include <Foundation/Math/Size.h>
 #include <Foundation/Math/Vec2.h>
 #include <Foundation/Strings/String.h>
-#include <Foundation/System/PlatformFeatures.h>
 #include <Foundation/Types/UniquePtr.h>
 
 class xiiOpenDdlWriter;
@@ -38,11 +37,7 @@ using xiiWindowInternalHandle = xiiWindowHandle;
 
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
 
-extern "C"
-{
-  using ANativeWindow = struct ANativeWindow;
-}
-
+struct ANativeWindow;
 using xiiWindowHandle         = ANativeWindow*;
 using xiiWindowInternalHandle = xiiWindowHandle;
 #  define INVALID_WINDOW_HANDLE_VALUE nullptr
@@ -144,7 +139,7 @@ struct XII_CORE_DLL xiiWindowCreationDesc
   xiiVec2I32 m_Position = xiiVec2I32(0x80000000, 0x80000000); // Magic number on windows that positions the window at a 'good default position'
 
   /// The pixel resolution of the window.
-  xiiSizeU32 m_Resolution = xiiSizeU32(1280u, 720u);
+  xiiSizeU32 m_Resolution = xiiSizeU32(1280U, 720U);
 
   /// The number of the window. This is mostly used for setting up the input system, which then reports
   /// different mouse positions for each window.
@@ -252,10 +247,14 @@ public:
   virtual void OnResize(const xiiSizeU32& newWindowSize);
 
   /// \brief Called when the window position is changed. Not possible on all OSes.
-  virtual void OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY) {}
+  virtual void OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY)
+  {
+    XII_IGNORE_UNUSED(iNewPosX);
+    XII_IGNORE_UNUSED(iNewPosY);
+  }
 
   /// \brief Called when the window gets focus or loses focus.
-  virtual void OnFocus(bool bHasFocus) {}
+  virtual void OnFocus(bool bHasFocus) { XII_IGNORE_UNUSED(bHasFocus); }
 
   /// \brief Called when the window gets focus or loses focus.
   virtual void OnVisibleChange(bool bVisible) { m_bVisible = bVisible; }
@@ -288,21 +287,16 @@ public:
   /// \brief Returns the input device that is attached to this window and typically provides mouse / keyboard input.
   xiiStandardInputDevice* GetInputDevice() const { return m_pInputDevice.Borrow(); }
 
-  /// \brief Returns a number that can be used as a window number in xiiWindowCreationDesc
+  /// \brief Returns a number that can be used as a window number in xiiWindowCreationDesc.
   ///
-  /// This number just increments when a xiiWindow is created. It starts at zero.
+  /// This number just increments whenever a xiiWindow is created. It starts at zero.
   static xiiUInt8 GetNextUnusedWindowNumber();
 
 protected:
   /// Description at creation time. xiiWindow will not update this in any method other than Initialize.
+  /// 
   /// \remarks That means that messages like Resize will also have no effect on this variable.
   xiiWindowCreationDesc m_CreationDescription;
-
-private:
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  static void     CommandCallback(android_app* pAndroidApp, xiiInt32 iCommand);
-  static xiiInt32 InputEventCallback(android_app* pAndroidApp, AInputEvent* pInputEvent);
-#endif
 
 private:
   bool m_bInitialized = false;
@@ -312,7 +306,7 @@ private:
 
   mutable xiiWindowInternalHandle m_hWindowHandle = xiiWindowInternalHandle();
 
-  /// Increased when a xiiWindow is created, to be able to get a free window index easily
+  /// This is incremented whenever a xiiWindow is created, to retrieve a free window index easily.
   static xiiUInt8    s_uiNextUnusedWindowNumber;
   xiiAtomicInteger32 m_iReferenceCount = 0;
 };

@@ -13,8 +13,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStandardInputDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiStandardInputDevice::xiiStandardInputDevice(ICoreWindow* coreWindow) :
-  m_coreWindow(coreWindow)
+xiiStandardInputDevice::xiiStandardInputDevice(ICoreWindow* pCoreWindow) :
+  m_pCoreWindow(pCoreWindow)
 {
   // TODO
   m_ClipCursorMode = xiiMouseCursorClipMode::NoClip;
@@ -23,18 +23,18 @@ xiiStandardInputDevice::xiiStandardInputDevice(ICoreWindow* coreWindow) :
 
 xiiStandardInputDevice::~xiiStandardInputDevice()
 {
-  if (m_coreWindow)
+  if (m_pCoreWindow)
   {
-    m_coreWindow->remove_KeyDown(m_eventRegistration_keyDown);
-    m_coreWindow->remove_KeyUp(m_eventRegistration_keyUp);
-    m_coreWindow->remove_CharacterReceived(m_eventRegistration_characterReceived);
-    m_coreWindow->remove_PointerMoved(m_eventRegistration_pointerMoved);
-    m_coreWindow->remove_PointerEntered(m_eventRegistration_pointerEntered);
-    m_coreWindow->remove_PointerExited(m_eventRegistration_pointerExited);
-    m_coreWindow->remove_PointerCaptureLost(m_eventRegistration_pointerCaptureLost);
-    m_coreWindow->remove_PointerPressed(m_eventRegistration_pointerPressed);
-    m_coreWindow->remove_PointerReleased(m_eventRegistration_pointerReleased);
-    m_coreWindow->remove_PointerWheelChanged(m_eventRegistration_pointerWheelChanged);
+    m_pCoreWindow->remove_KeyDown(m_eventRegistration_keyDown);
+    m_pCoreWindow->remove_KeyUp(m_eventRegistration_keyUp);
+    m_pCoreWindow->remove_CharacterReceived(m_eventRegistration_characterReceived);
+    m_pCoreWindow->remove_PointerMoved(m_eventRegistration_pointerMoved);
+    m_pCoreWindow->remove_PointerEntered(m_eventRegistration_pointerEntered);
+    m_pCoreWindow->remove_PointerExited(m_eventRegistration_pointerExited);
+    m_pCoreWindow->remove_PointerCaptureLost(m_eventRegistration_pointerCaptureLost);
+    m_pCoreWindow->remove_PointerPressed(m_eventRegistration_pointerPressed);
+    m_pCoreWindow->remove_PointerReleased(m_eventRegistration_pointerReleased);
+    m_pCoreWindow->remove_PointerWheelChanged(m_eventRegistration_pointerWheelChanged);
   }
 
   if (m_mouseDevice)
@@ -50,27 +50,27 @@ void xiiStandardInputDevice::InitializeDevice()
   using PointerHander            = __FITypedEventHandler_2_Windows__CUI__CCore__CCoreWindow_Windows__CUI__CCore__CPointerEventArgs;
 
   // Keyboard
-  m_coreWindow->add_KeyDown(Callback<KeyHandler>(this, &xiiStandardInputDevice::OnKeyEvent).Get(), &m_eventRegistration_keyDown);
-  m_coreWindow->add_KeyUp(Callback<KeyHandler>(this, &xiiStandardInputDevice::OnKeyEvent).Get(), &m_eventRegistration_keyUp);
-  m_coreWindow->add_CharacterReceived(Callback<CharacterReceivedHandler>(this, &xiiStandardInputDevice::OnCharacterReceived).Get(), &m_eventRegistration_characterReceived);
+  m_pCoreWindow->add_KeyDown(Callback<KeyHandler>(this, &xiiStandardInputDevice::OnKeyEvent).Get(), &m_eventRegistration_keyDown);
+  m_pCoreWindow->add_KeyUp(Callback<KeyHandler>(this, &xiiStandardInputDevice::OnKeyEvent).Get(), &m_eventRegistration_keyUp);
+  m_pCoreWindow->add_CharacterReceived(Callback<CharacterReceivedHandler>(this, &xiiStandardInputDevice::OnCharacterReceived).Get(), &m_eventRegistration_characterReceived);
 
   // Pointer
   // Note that a pointer may be mouse, pen/stylus or touch!
   // We bundle move/press/enter all in a single callback to update all pointer state - all these cases have in common that pen/touch is
   // pressed now.
-  m_coreWindow->add_PointerMoved(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerMoved);
-  m_coreWindow->add_PointerEntered(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerEntered);
-  m_coreWindow->add_PointerPressed(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerPressed);
+  m_pCoreWindow->add_PointerMoved(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerMoved);
+  m_pCoreWindow->add_PointerEntered(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerEntered);
+  m_pCoreWindow->add_PointerPressed(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerMovePressEnter).Get(), &m_eventRegistration_pointerPressed);
   // Changes in the pointer wheel:
-  m_coreWindow->add_PointerWheelChanged(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerWheelChange).Get(), &m_eventRegistration_pointerWheelChanged);
+  m_pCoreWindow->add_PointerWheelChanged(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerWheelChange).Get(), &m_eventRegistration_pointerWheelChanged);
   // Exit for touch or stylus means that we no longer have a press.
   // However, we presserve mouse button presses.
-  m_coreWindow->add_PointerExited(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerReleasedOrExited).Get(), &m_eventRegistration_pointerExited);
-  m_coreWindow->add_PointerReleased(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerReleasedOrExited).Get(), &m_eventRegistration_pointerReleased);
+  m_pCoreWindow->add_PointerExited(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerReleasedOrExited).Get(), &m_eventRegistration_pointerExited);
+  m_pCoreWindow->add_PointerReleased(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerReleasedOrExited).Get(), &m_eventRegistration_pointerReleased);
   // Capture loss.
   // From documentation "Occurs when a pointer moves to another app. This event is raised after PointerExited and is the final event
   // received by the app for this pointer." If this happens we want to release all mouse buttons as well.
-  m_coreWindow->add_PointerCaptureLost(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerCaptureLost).Get(), &m_eventRegistration_pointerCaptureLost);
+  m_pCoreWindow->add_PointerCaptureLost(Callback<PointerHander>(this, &xiiStandardInputDevice::OnPointerCaptureLost).Get(), &m_eventRegistration_pointerCaptureLost);
 
   // Mouse
   // The only thing that we get from the MouseDevice class is mouse moved which gives us unfiltered relative mouse position.
@@ -92,18 +92,20 @@ void xiiStandardInputDevice::InitializeDevice()
   }
 }
 
-HRESULT xiiStandardInputDevice::OnKeyEvent(ICoreWindow* coreWindow, IKeyEventArgs* args)
+HRESULT xiiStandardInputDevice::OnKeyEvent(ICoreWindow* pCoreWindow, IKeyEventArgs* args)
 {
+  XII_IGNORE_UNUSED(pCoreWindow);
+
   // Closely related to the RawInput implementation in Win32/InputDevice_win32.inl
 
   CorePhysicalKeyStatus keyStatus;
   XII_SUCCEED_OR_RETURN(args->get_KeyStatus(&keyStatus));
 
-  static bool bWasStupidLeftShift = false;
+  static bool bWasLeftShift = false;
 
   if (keyStatus.ScanCode == 42 && keyStatus.IsExtendedKey) // 42 has to be special I guess
   {
-    bWasStupidLeftShift = true;
+    bWasLeftShift = true;
     return S_OK;
   }
 
@@ -127,18 +129,20 @@ HRESULT xiiStandardInputDevice::OnKeyEvent(ICoreWindow* coreWindow, IKeyEventArg
   // we ignore the first stupid shift key entirely and then modify the following Numpad* key
   // Note that the 'stupid shift' is sent along with several other keys as well (e.g. left/right/up/down arrows)
   // in these cases we can ignore them entirely, as the following key will have an unambiguous key code
-  if ((sInputSlotName == xiiInputSlot_KeyNumpadStar) && bWasStupidLeftShift)
+  if ((sInputSlotName == xiiInputSlot_KeyNumpadStar) && bWasLeftShift)
     sInputSlotName = xiiInputSlot_KeyPrint;
 
-  bWasStupidLeftShift = false;
+  bWasLeftShift = false;
 
   m_InputSlotValues[sInputSlotName] = keyStatus.IsKeyReleased ? 0.0f : 1.0f;
 
   return S_OK;
 }
 
-HRESULT xiiStandardInputDevice::OnCharacterReceived(ICoreWindow* coreWindow, ICharacterReceivedEventArgs* args)
+HRESULT xiiStandardInputDevice::OnCharacterReceived(ICoreWindow* pCoreWindow, ICharacterReceivedEventArgs* args)
 {
+  XII_IGNORE_UNUSED(pCoreWindow);
+
   UINT32 keyCode = 0;
   XII_SUCCEED_OR_RETURN(args->get_KeyCode(&keyCode));
   m_uiLastCharacter = keyCode;
@@ -146,8 +150,10 @@ HRESULT xiiStandardInputDevice::OnCharacterReceived(ICoreWindow* coreWindow, ICh
   return S_OK;
 }
 
-HRESULT xiiStandardInputDevice::OnPointerMovePressEnter(ICoreWindow* coreWindow, IPointerEventArgs* args)
+HRESULT xiiStandardInputDevice::OnPointerMovePressEnter(ICoreWindow* pCoreWindow, IPointerEventArgs* args)
 {
+  XII_IGNORE_UNUSED(pCoreWindow);
+
   using namespace ABI::Windows::Devices::Input;
 
   ComPtr<ABI::Windows::UI::Input::IPointerPoint> pointerPoint;
@@ -163,7 +169,7 @@ HRESULT xiiStandardInputDevice::OnPointerMovePressEnter(ICoreWindow* coreWindow,
   ABI::Windows::Foundation::Point pointerPosition;
   XII_SUCCEED_OR_RETURN(pointerPoint->get_Position(&pointerPosition));
   ABI::Windows::Foundation::Rect windowRectangle;
-  XII_SUCCEED_OR_RETURN(coreWindow->get_Bounds(&windowRectangle)); // Bounds are in DIP as well!
+  XII_SUCCEED_OR_RETURN(pCoreWindow->get_Bounds(&windowRectangle)); // Bounds are in DIP as well!
 
   float relativePosX = static_cast<float>(pointerPosition.X) / windowRectangle.Width;
   float relativePosY = static_cast<float>(pointerPosition.Y) / windowRectangle.Height;
@@ -198,8 +204,10 @@ HRESULT xiiStandardInputDevice::OnPointerMovePressEnter(ICoreWindow* coreWindow,
   return S_OK;
 }
 
-HRESULT xiiStandardInputDevice::OnPointerWheelChange(ICoreWindow* coreWindow, IPointerEventArgs* args)
+HRESULT xiiStandardInputDevice::OnPointerWheelChange(ICoreWindow* pCoreWindow, IPointerEventArgs* args)
 {
+  XII_IGNORE_UNUSED(pCoreWindow);
+
   using namespace ABI::Windows::Devices::Input;
 
   ComPtr<ABI::Windows::UI::Input::IPointerPoint> pointerPoint;
@@ -233,8 +241,10 @@ HRESULT xiiStandardInputDevice::OnPointerWheelChange(ICoreWindow* coreWindow, IP
   return S_OK;
 }
 
-HRESULT xiiStandardInputDevice::OnPointerReleasedOrExited(ICoreWindow* coreWindow, IPointerEventArgs* args)
+HRESULT xiiStandardInputDevice::OnPointerReleasedOrExited(ICoreWindow* pCoreWindow, IPointerEventArgs* args)
 {
+  XII_IGNORE_UNUSED(pCoreWindow);
+
   using namespace ABI::Windows::Devices::Input;
 
   ComPtr<ABI::Windows::UI::Input::IPointerPoint> pointerPoint;
@@ -264,8 +274,10 @@ HRESULT xiiStandardInputDevice::OnPointerReleasedOrExited(ICoreWindow* coreWindo
   return S_OK;
 }
 
-HRESULT xiiStandardInputDevice::OnPointerCaptureLost(ICoreWindow* coreWindow, IPointerEventArgs* args)
+HRESULT xiiStandardInputDevice::OnPointerCaptureLost(ICoreWindow* pCoreWindow, IPointerEventArgs* args)
 {
+  XII_IGNORE_UNUSED(pCoreWindow);
+
   using namespace ABI::Windows::Devices::Input;
 
   ComPtr<ABI::Windows::UI::Input::IPointerPoint> pointerPoint;
@@ -299,6 +311,8 @@ HRESULT xiiStandardInputDevice::OnPointerCaptureLost(ICoreWindow* coreWindow, IP
 
 HRESULT xiiStandardInputDevice::OnMouseMoved(ABI::Windows::Devices::Input::IMouseDevice* mouseDevice, ABI::Windows::Devices::Input::IMouseEventArgs* args)
 {
+  XII_IGNORE_UNUSED(mouseDevice);
+
   ABI::Windows::Devices::Input::MouseDelta mouseDelta;
   XII_SUCCEED_OR_RETURN(args->get_MouseDelta(&mouseDelta));
 
@@ -483,45 +497,45 @@ void xiiStandardInputDevice::RegisterInputSlots()
 
 
   // Not yet supported
-  RegisterInputSlot(xiiInputSlot_TouchPoint0, "Touchpoint 1", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionX, "Touchpoint 1 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionY, "Touchpoint 1 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint0, "Touchpoint 0", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionX, "Touchpoint 0 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionY, "Touchpoint 0 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint1, "Touchpoint 2", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionX, "Touchpoint 2 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionY, "Touchpoint 2 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint1, "Touchpoint 1", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionX, "Touchpoint 1 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionY, "Touchpoint 1 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint2, "Touchpoint 3", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionX, "Touchpoint 3 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionY, "Touchpoint 3 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint2, "Touchpoint 2", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionX, "Touchpoint 2 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionY, "Touchpoint 2 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint3, "Touchpoint 4", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionX, "Touchpoint 4 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionY, "Touchpoint 4 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint3, "Touchpoint 3", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionX, "Touchpoint 3 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionY, "Touchpoint 3 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint4, "Touchpoint 5", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionX, "Touchpoint 5 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionY, "Touchpoint 5 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint4, "Touchpoint 4", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionX, "Touchpoint 4 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionY, "Touchpoint 4 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint5, "Touchpoint 6", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionX, "Touchpoint 6 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionY, "Touchpoint 6 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint5, "Touchpoint 5", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionX, "Touchpoint 5 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionY, "Touchpoint 5 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint6, "Touchpoint 7", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionX, "Touchpoint 7 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionY, "Touchpoint 7 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint6, "Touchpoint 6", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionX, "Touchpoint 6 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionY, "Touchpoint 6 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint7, "Touchpoint 8", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionX, "Touchpoint 8 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionY, "Touchpoint 8 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint7, "Touchpoint 7", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionX, "Touchpoint 7 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionY, "Touchpoint 7 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint8, "Touchpoint 9", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionX, "Touchpoint 9 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionY, "Touchpoint 9 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint8, "Touchpoint 8", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionX, "Touchpoint 8 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionY, "Touchpoint 8 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint9, "Touchpoint 10", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionX, "Touchpoint 10 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionY, "Touchpoint 10 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint9, "Touchpoint 9", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionX, "Touchpoint 9 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionY, "Touchpoint 9 Position Y", xiiInputSlotFlags::IsTouchPosition);
 }
 
 void xiiStandardInputDevice::ResetInputSlotValues()
@@ -539,7 +553,10 @@ void xiiStandardInputDevice::ResetInputSlotValues()
 
 void SetClipRect(bool bClip, HWND hWnd)
 {
-  // NOT IMPLEMENTED. TODO
+  // TODO
+  XII_IGNORE_UNUSED(bClip);
+  XII_IGNORE_UNUSED(hWnd);
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mode)
@@ -548,9 +565,9 @@ void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mod
     return;
 
   if (mode != xiiMouseCursorClipMode::NoClip)
-    m_coreWindow->SetPointerCapture();
+    m_pCoreWindow->SetPointerCapture();
   else
-    m_coreWindow->ReleasePointerCapture();
+    m_pCoreWindow->ReleasePointerCapture();
 
   m_ClipCursorMode = mode;
 }
@@ -564,15 +581,15 @@ void xiiStandardInputDevice::SetShowMouseCursor(bool bShow)
   if (!bShow)
   {
     // Save cursor to reinstantiate it.
-    m_coreWindow->get_PointerCursor(&m_cursorBeforeHide);
-    m_coreWindow->put_PointerCursor(nullptr);
+    m_pCoreWindow->get_PointerCursor(&m_cursorBeforeHide);
+    m_pCoreWindow->put_PointerCursor(nullptr);
   }
 
   // Show
   else
   {
     XII_ASSERT_DEV(m_cursorBeforeHide, "There should be a ICoreCursor backup that can be put back.");
-    m_coreWindow->put_PointerCursor(m_cursorBeforeHide.Get());
+    m_pCoreWindow->put_PointerCursor(m_cursorBeforeHide.Get());
   }
 
   m_bShowCursor = bShow;

@@ -11,6 +11,7 @@ public:
   ~xiiStandardInputDevice();
 
   virtual void                         SetShowMouseCursor(bool bShow) override;
+  virtual bool                         GetShowMouseCursor() const override;
   virtual void                         SetClipMouseCursor(xiiMouseCursorClipMode::Enum mode) override;
   virtual xiiMouseCursorClipMode::Enum GetClipMouseCursor() const override;
 

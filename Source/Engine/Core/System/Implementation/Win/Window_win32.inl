@@ -195,7 +195,7 @@ xiiResult xiiWindow::Initialize()
   GetClientRect(windowHandle, &r);
 
   // Force size change to the desired size if CreateWindowExW 'fixed' the size to fit into your current monitor.
-  if (m_CreationDescription.m_WindowMode == xiiWindowMode::WindowFixedResolution && (m_CreationDescription.m_Resolution.width != r.right - r.left || m_CreationDescription.m_Resolution.height != r.bottom - r.top))
+  if (m_CreationDescription.m_WindowMode == xiiWindowMode::WindowFixedResolution && (m_CreationDescription.m_Resolution.width != xiiUInt32(r.right - r.left) || m_CreationDescription.m_Resolution.height != xiiUInt32(r.bottom - r.top)))
   {
     ::SetWindowPos(windowHandle, HWND_NOTOPMOST, 0, 0, iWidth, iHeight, SWP_NOSENDCHANGING | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER);
     GetClientRect(windowHandle, &r);

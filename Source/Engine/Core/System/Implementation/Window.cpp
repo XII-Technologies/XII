@@ -224,7 +224,12 @@ xiiWindow::~xiiWindow()
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 void xiiWindow::OnWindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam)
-{}
+{
+  XII_IGNORE_UNUSED(hWnd);
+  XII_IGNORE_UNUSED(msg);
+  XII_IGNORE_UNUSED(wparam);
+  XII_IGNORE_UNUSED(lparam);
+}
 #endif
 
 xiiUInt8 xiiWindow::GetNextUnusedWindowNumber()
