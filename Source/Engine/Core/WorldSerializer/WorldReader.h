@@ -25,7 +25,7 @@ struct xiiPrefabInstantiationOptions
 
   enum class RandomSeedMode
   {
-    DeterministicFromParent, ///< xiiWorld::CreateObject() will either derive a deterministic value from the parent object, or assign a random value if no parent exists.
+    DeterministicFromParent, ///< xiiWorld::CreateObject() will either derive a deterministic value from the parent object, or assign a random value, if no parent exists.
     CompletelyRandom,        ///< xiiWorld::CreateObject() will assign a random value to this object.
     FixedFromSerialization,  ///< Keep deserialized random seed value.
     CustomRootValue,         ///< Use the given seed root value to assign a deterministic (but different) value to each game object.
@@ -130,6 +130,9 @@ public:
   /// given component type was written. The version number is given through the XII_BEGIN_COMPONENT_TYPE
   /// macro. Whenever the serialization of a component changes, that number should be increased.
   xiiUInt32 GetComponentTypeVersion(const xiiRTTI* pRtti) const;
+
+  /// \brief Returns whether world contains a component of given type.
+  bool HasComponentOfType(const xiiRTTI* pRtti) const;
 
   /// \brief Clears all data.
   void ClearAndCompact();
