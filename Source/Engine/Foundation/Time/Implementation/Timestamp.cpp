@@ -253,13 +253,13 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgDateTime&
 
 // Include inline file.
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Time/Implementation/Win/Timestamp_win.h>
+#  include <Foundation/Platform/Implementation/Windows/Timestamp_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
-#  include <Foundation/Time/Implementation/OSX/Timestamp_osx.h>
+#  include <Foundation/Platform/Implementation/OSX/Timestamp_osx.h>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Time/Implementation/Android/Timestamp_android.h>
+#  include <Foundation/Platform/Implementation/Android/Timestamp_android.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/Time/Implementation/Posix/Timestamp_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/Timestamp_posix.h>
 #else
 #  error "Time functions are not implemented on current platform"
 #endif

@@ -13,6 +13,9 @@ xiiStaticArray<xiiWorld*, xiiWorld::GetMaxNumWorlds()> xiiWorld::s_Worlds;
 
 static xiiGameObjectHandle DefaultGameObjectReferenceResolver(const void* pData, xiiComponentHandle hThis, xiiStringView sProperty)
 {
+  XII_IGNORE_UNUSED(hThis);
+  XII_IGNORE_UNUSED(sProperty);
+
   const char* szRef = reinterpret_cast<const char*>(pData);
 
   if (xiiStringUtils::IsNullOrEmpty(szRef))
@@ -316,6 +319,7 @@ xiiComponentInitBatchHandle xiiWorld::CreateComponentInitBatch(xiiStringView sBa
 void xiiWorld::DeleteComponentInitBatch(const xiiComponentInitBatchHandle& hBatch)
 {
   auto& pInitBatch = m_Data.m_InitBatches[hBatch.GetInternalID()];
+  XII_IGNORE_UNUSED(pInitBatch);
   XII_ASSERT_DEV(pInitBatch->m_ComponentsToInitialize.IsEmpty() && pInitBatch->m_ComponentsToStartSimulation.IsEmpty(), "Init batch has not been completely processed");
   m_Data.m_InitBatches.Remove(hBatch.GetInternalID());
 }
@@ -329,6 +333,7 @@ void xiiWorld::BeginAddingComponentsToInitBatch(const xiiComponentInitBatchHandl
 void xiiWorld::EndAddingComponentsToInitBatch(const xiiComponentInitBatchHandle& hBatch)
 {
   XII_ASSERT_DEV(m_Data.m_InitBatches[hBatch.GetInternalID()] == m_Data.m_pCurrentInitBatch, "Init batch with id {} is currently not active", hBatch.GetInternalID().m_Data);
+  XII_IGNORE_UNUSED(hBatch);
   m_Data.m_pCurrentInitBatch = m_Data.m_pDefaultInitBatch;
 }
 
@@ -366,6 +371,7 @@ void xiiWorld::CancelComponentInitBatch(const xiiComponentInitBatchHandle& hBatc
   pInitBatch->m_ComponentsToInitialize.Clear();
   pInitBatch->m_ComponentsToStartSimulation.Clear();
 }
+
 void xiiWorld::PostMessage(const xiiGameObjectHandle& receiverObject, const xiiMessage& msg, xiiObjectMsgQueueType::Enum queueType, xiiTime delay, bool bRecursive) const
 {
   // This method is allowed to be called from multiple threads.

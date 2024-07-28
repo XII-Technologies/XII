@@ -167,7 +167,11 @@ void xiiScriptComponent::SetScriptClassFile(xiiStringView sFile)
 
 xiiStringView xiiScriptComponent::GetScriptClassFile() const
 {
-  return m_hScriptClass.IsValid() ? m_hScriptClass.GetResourceID().GetData() : {};
+  if (m_hScriptClass.IsValid())
+  {
+    return m_hScriptClass.GetResourceID();
+  }
+  return {};
 }
 
 void xiiScriptComponent::SetUpdateInterval(xiiTime interval)

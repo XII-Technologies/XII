@@ -123,5 +123,5 @@ private:
   void RemoveCachedGrid(xiiUInt32 uiCandidateIndex);
   void RemoveAllCachedGrids();
 
-  void UpdateCacheCandidate(const xiiTagSet& includeTags, const xiiTagSet& excludeTags, xiiSpatialData::Category category, float filteredRatio) const;
+  void UpdateCacheCandidate(const xiiTagSet* pIncludeTags, const xiiTagSet* pExcludeTags, xiiSpatialData::Category category, float filteredRatio) const;
 };

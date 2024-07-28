@@ -65,8 +65,7 @@ void xiiWorldModuleConfig::Load()
 
   const xiiOpenDdlReaderElement* pTree = reader.GetRootElement();
 
-  for (const xiiOpenDdlReaderElement* pInterfaceImpl = pTree->GetFirstChild(); pInterfaceImpl != nullptr;
-       pInterfaceImpl                                = pInterfaceImpl->GetSibling())
+  for (const xiiOpenDdlReaderElement* pInterfaceImpl = pTree->GetFirstChild(); pInterfaceImpl != nullptr; pInterfaceImpl = pInterfaceImpl->GetSibling())
   {
     if (!pInterfaceImpl->IsCustomType("InterfaceImpl"))
       continue;
@@ -114,6 +113,5 @@ void xiiWorldModuleConfig::RemoveInterfaceImplementation(xiiStringView sInterfac
     }
   }
 }
-
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_WorldModuleConfig);

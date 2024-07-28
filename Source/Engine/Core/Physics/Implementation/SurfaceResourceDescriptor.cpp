@@ -158,7 +158,7 @@ void xiiSurfaceResourceDescriptor::Load(xiiStreamReader& ref_stream)
 
 void xiiSurfaceResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
-  const xiiUInt8 uiVersion = GetStaticRTTI()->GetTypeVersion();
+  const xiiUInt8 uiVersion = 1;
   ref_stream << uiVersion;
 
   ref_stream << m_fPhysicsRestitution;

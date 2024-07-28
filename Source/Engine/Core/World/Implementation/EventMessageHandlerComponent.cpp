@@ -38,7 +38,7 @@ namespace
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiEventMessageHandlerComponent, 3)
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiEventMessageHandlerComponent, 1)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -58,10 +58,7 @@ void xiiEventMessageHandlerComponent::SerializeComponent(xiiWorldWriter& ref_str
   SUPER::SerializeComponent(ref_stream);
   auto& s = ref_stream.GetStream();
 
-  // version 2
   s << m_bIsGlobalEventHandler;
-
-  // version 3
   s << m_bPassThroughUnhandledEvents;
 }
 
@@ -71,7 +68,6 @@ void xiiEventMessageHandlerComponent::DeserializeComponent(xiiWorldReader& ref_s
   const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = ref_stream.GetStream();
 
-  if (uiVersion >= 2)
   {
     bool bGlobalEH;
     s >> bGlobalEH;
@@ -79,10 +75,7 @@ void xiiEventMessageHandlerComponent::DeserializeComponent(xiiWorldReader& ref_s
     SetGlobalEventHandlerMode(bGlobalEH);
   }
 
-  if (uiVersion >= 3)
-  {
-    s >> m_bPassThroughUnhandledEvents;
-  }
+  s >> m_bPassThroughUnhandledEvents;
 }
 
 void xiiEventMessageHandlerComponent::Deinitialize()
@@ -139,7 +132,6 @@ xiiArrayPtr<xiiComponentHandle> xiiEventMessageHandlerComponent::GetAllGlobalEve
 
   return xiiArrayPtr<xiiComponentHandle>();
 }
-
 
 void xiiEventMessageHandlerComponent::ClearGlobalEventHandlersForWorld(const xiiWorld* pWorld)
 {

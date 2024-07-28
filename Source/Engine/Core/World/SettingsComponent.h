@@ -9,8 +9,6 @@
 ///
 /// Components of this type should be managed by a xiiSettingsComponentManager, which makes it easy to query for the one instance
 /// in the world.
-///
-///
 class XII_CORE_DLL xiiSettingsComponent : public xiiComponent
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSettingsComponent, xiiComponent);
