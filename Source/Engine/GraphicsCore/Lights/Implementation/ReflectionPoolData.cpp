@@ -319,7 +319,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
   if (!m_hDebugSphere.IsValid())
   {
     xiiGeometry geom;
-    geom.AddSphere(s_fDebugSphereRadius, 32, 16);
+    geom.AddStackedSphere(s_fDebugSphereRadius, 32, 16);
 
     const char*                 szBufferResourceName = "ReflectionProbeDebugSphereBuffer";
     xiiMeshBufferResourceHandle hMeshBuffer          = xiiResourceManager::GetExistingResource<xiiMeshBufferResource>(szBufferResourceName);

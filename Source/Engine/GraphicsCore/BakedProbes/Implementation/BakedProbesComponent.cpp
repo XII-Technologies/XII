@@ -139,7 +139,7 @@ void xiiBakedProbesComponentManager::CreateDebugResources()
   if (!m_hDebugSphere.IsValid())
   {
     xiiGeometry geom;
-    geom.AddSphere(0.3f, 32, 16);
+    geom.AddStackedSphere(0.3f, 32, 16);
 
     const char*                 szBufferResourceName = "IrradianceProbeDebugSphereBuffer";
     xiiMeshBufferResourceHandle hMeshBuffer          = xiiResourceManager::GetExistingResource<xiiMeshBufferResource>(szBufferResourceName);

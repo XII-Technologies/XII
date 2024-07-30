@@ -45,7 +45,7 @@ void xiiSkyBoxComponent::Initialize()
   if (!hMeshBuffer.IsValid())
   {
     xiiGeometry geom;
-    geom.AddRectXY(xiiVec2(2.0f));
+    geom.AddRect(xiiVec2(2.0f));
 
     xiiMeshBufferResourceDescriptor desc;
     desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
