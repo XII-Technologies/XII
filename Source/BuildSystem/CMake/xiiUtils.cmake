@@ -618,6 +618,26 @@ function(xii_set_build_types)
 endfunction()
 
 # #####################################
+# ## xii_create_link(<source> <destination-folder> <destination-name>)
+# #####################################
+function(xii_create_link SOURCE DEST_FOLDER DEST_NAME)
+  if(NOT EXISTS "${DEST_FOLDER}")
+    file(MAKE_DIRECTORY ${DEST_FOLDER})
+  endif()
+
+  # We re-create the link every time because it could become a dead link when shared between workspaces.
+  if(EXISTS "${DEST_FOLDER}/${DEST_NAME}")
+    file(REMOVE ${DEST_FOLDER}/${DEST_NAME})
+  endif()
+
+  file(CREATE_LINK ${SOURCE} ${DEST_FOLDER}/${DEST_NAME} RESULT OUT_RESULT SYMBOLIC)
+
+  if (NOT ${OUT_RESULT} EQUAL 0)
+    message(FATAL_ERROR "Failed to run: file(CREATE_LINK ${SOURCE} ${DEST_FOLDER}/${DEST_NAME} RESULT OUT_RESULT SYMBOLIC) \nRe-run with admin rights:\n${OUT_RESULT}")
+  endif ()
+endfunction()
+
+# #####################################
 # ## xii_download_and_extract(<url-to-download> <dest-folder-path> <dest-filename-without-extension>)
 # #####################################
 function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
