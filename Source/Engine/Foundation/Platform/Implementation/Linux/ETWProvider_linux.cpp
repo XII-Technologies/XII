@@ -1,6 +1,6 @@
 #include <Foundation/FoundationPCH.h>
 
-#include <Foundation/Logging/Implementation/Linux/ETWProvider_linux.h>
+#include <Foundation/Platform/Implementation/Linux/ETWProvider_linux.h>
 
 #if XII_ENABLED(XII_PLATFORM_LINUX) && defined(BUILDSYSTEM_ENABLE_TRACELOGGING_LTTNG_SUPPORT)
 

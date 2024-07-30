@@ -69,11 +69,11 @@ xiiUInt32 RunThread(xiiThread* pThread)
 
 // Include inline file
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Threading/Implementation/Win/Thread_win.h>
+#  include <Foundation/Platform/Implementation/Windows/Thread_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Threading/Implementation/Posix/Thread_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/Thread_posix.h>
 #else
-#  error "Runnable thread entry functions are not implemented on current platform"
+#  error "Runnable thread entry functions are not implemented on current platform."
 #endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_Thread);

@@ -3,8 +3,8 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 
 #  include <Foundation/Communication/Implementation/MessageLoop.h>
-#  include <Foundation/Communication/Implementation/Win/MessageLoop_win.h>
-#  include <Foundation/Communication/Implementation/Win/PipeChannel_win.h>
+#  include <Foundation/Platform/Implementation/Windows/MessageLoop_win.h>
+#  include <Foundation/Platform/Implementation/Windows/PipeChannel_win.h>
 #  include <Foundation/Communication/RemoteMessage.h>
 #  include <Foundation/Logging/Log.h>
 #  include <Foundation/Serialization/ReflectionSerializer.h>
@@ -49,13 +49,11 @@ bool xiiPipeChannel_win::CreatePipe(xiiStringView sAddress)
     attributes.lpSecurityDescriptor = NULL;
     attributes.bInheritHandle       = FALSE;
 
-    m_hPipeHandle = CreateNamedPipeW(xiiStringWChar(sPipename).GetData(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
-                                     PIPE_TYPE_BYTE | PIPE_READMODE_BYTE, 1, BUFFER_SIZE, BUFFER_SIZE, 5000, &attributes);
+    m_hPipeHandle = CreateNamedPipeW(xiiStringWChar(sPipename).GetData(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE, 1, BUFFER_SIZE, BUFFER_SIZE, 5000, &attributes);
   }
   else
   {
-    m_hPipeHandle = CreateFileW(xiiStringWChar(sPipename).GetData(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
-                                SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION | FILE_FLAG_OVERLAPPED, NULL);
+    m_hPipeHandle = CreateFileW(xiiStringWChar(sPipename).GetData(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION | FILE_FLAG_OVERLAPPED, NULL);
   }
 
   if (m_hPipeHandle == INVALID_HANDLE_VALUE)

@@ -1,6 +1,6 @@
 #include <Foundation/FoundationPCH.h>
 
-#include <Foundation/Logging/Implementation/Win/ETWProvider_win.h>
+#include <Foundation/Platform/Implementation/Windows/ETWProvider_win.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 

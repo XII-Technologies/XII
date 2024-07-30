@@ -3,9 +3,9 @@
 #if XII_ENABLED(XII_SUPPORTS_PROCESSES)
 // Include inline file
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#    include <Foundation/System/Implementation/Win/ProcessGroup_win.h>
+#    include <Foundation/Platform/Implementation/Windows/ProcessGroup_win.h>
 #  else
-#    include <Foundation/System/Implementation/other/ProcessGroup_other.h>
+#    include <Foundation/Platform/Implementation/NoImpl/ProcessGroup_NoImpl.h>
 #  endif
 
 const xiiHybridArray<xiiProcess, 8>& xiiProcessGroup::GetProcesses() const

@@ -7,11 +7,11 @@ xiiSystemInformation xiiSystemInformation::s_SystemInformation;
 
 // Include inline file
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/System/Implementation/Win/SystemInformation_win.h>
+#  include <Foundation/Platform/Implementation/Windows/SystemInformation_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
-#  include <Foundation/System/Implementation/OSX/SystemInformation_OSX.h>
+#  include <Foundation/Platform/Implementation/OSX/SystemInformation_OSX.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/System/Implementation/Posix/SystemInformation_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/SystemInformation_posix.h>
 #else
 #  error "System configuration functions are not implemented on current platform"
 #endif

@@ -18,13 +18,13 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 // Include inline file
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Time/Implementation/Win/Time_win.h>
+#  include <Foundation/Platform/Implementation/Windows/Time_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
-#  include <Foundation/Time/Implementation/OSX/Time_osx.h>
+#  include <Foundation/Platform/Implementation/OSX/Time_osx.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Time/Implementation/Posix/Time_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/Time_posix.h>
 #else
-#  error "Time functions are not implemented on current platform"
+#  error "Time functions are not implemented on current platform."
 #endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Time_Implementation_Time);

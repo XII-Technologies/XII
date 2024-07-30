@@ -65,11 +65,11 @@ xiiResult xiiEnvironmentVariableUtils::UnsetVariable(xiiStringView sName)
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <Foundation/System/Implementation/Win/EnvironmentVariableUtils_win.h>
+#  include <Foundation/Platform/Implementation/Windows/EnvironmentVariableUtils_win.h>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <Foundation/System/Implementation/Win/EnvironmentVariableUtils_win_uwp.h>
+#  include <Foundation/Platform/Implementation/UWP/EnvironmentVariableUtils_win_uwp.h>
 #else
-#  include <Foundation/System/Implementation/Posix/EnvironmentVariableUtils_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/EnvironmentVariableUtils_posix.h>
 #endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_EnvironmentVariableUtils);

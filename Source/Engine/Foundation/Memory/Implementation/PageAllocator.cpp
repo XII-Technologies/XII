@@ -22,9 +22,9 @@ xiiAllocatorId xiiPageAllocator::GetId()
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Memory/Implementation/Win/PageAllocator_win.h>
+#  include <Foundation/Platform/Implementation/Windows/PageAllocator_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Memory/Implementation/Posix/PageAllocator_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/PageAllocator_posix.h>
 #else
 #  error "xiiPageAllocator is not implemented on current platform"
 #endif
