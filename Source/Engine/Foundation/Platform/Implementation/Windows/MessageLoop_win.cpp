@@ -2,9 +2,9 @@
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 
+#  include <Foundation/Communication/IpcChannel.h>
 #  include <Foundation/Platform/Implementation/Windows/MessageLoop_win.h>
 #  include <Foundation/Platform/Implementation/Windows/PipeChannel_win.h>
-#  include <Foundation/Communication/IpcChannel.h>
 
 xiiMessageLoop_win::xiiMessageLoop_win()
 {

@@ -999,8 +999,8 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
   xiiSpatialSystem::QueryParams queryParams;
   queryParams.m_uiCategoryBitmask = xiiDefaultSpatialDataCategories::RenderStatic.GetBitmask() | xiiDefaultSpatialDataCategories::RenderDynamic.GetBitmask();
-  queryParams.m_IncludeTags       = view.m_IncludeTags;
-  queryParams.m_ExcludeTags       = view.m_ExcludeTags;
+  queryParams.m_pIncludeTags      = &view.m_IncludeTags;
+  queryParams.m_pExcludeTags      = &view.m_ExcludeTags;
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   queryParams.m_pStats = bRecordStats ? &stats : nullptr;
 #endif
@@ -1362,8 +1362,8 @@ xiiRasterizerView* xiiRenderPipeline::PrepareOcclusionCulling(const xiiFrustum& 
 
     xiiSpatialSystem::QueryParams queryParams;
     queryParams.m_uiCategoryBitmask = xiiDefaultSpatialDataCategories::OcclusionStatic.GetBitmask() | xiiDefaultSpatialDataCategories::OcclusionDynamic.GetBitmask();
-    queryParams.m_IncludeTags       = view.m_IncludeTags;
-    queryParams.m_ExcludeTags       = view.m_ExcludeTags;
+    queryParams.m_pIncludeTags      = &view.m_IncludeTags;
+    queryParams.m_pExcludeTags      = &view.m_ExcludeTags;
 
     m_VisibleObjects.Clear();
     view.GetWorld()->GetSpatialSystem()->FindVisibleObjects(frustum, queryParams, m_VisibleObjects, {}, xiiVisibilityState::Indirect);

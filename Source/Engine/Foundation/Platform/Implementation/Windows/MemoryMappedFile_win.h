@@ -1,6 +1,6 @@
-#include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>
 #include <Foundation/IO/MemoryMappedFile.h>
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>
 #include <Foundation/Strings/PathUtils.h>
 #include <Foundation/Strings/StringConversion.h>
 

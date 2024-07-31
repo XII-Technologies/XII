@@ -7,8 +7,8 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/IO/DirectoryWatcher.h>
 #include <Foundation/IO/Implementation/FileSystemMirror.h>
-#include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>
 
 // Comment in to get verbose output on the function of the directory watcher
 // #define DEBUG_FILE_WATCHER

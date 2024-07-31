@@ -3,10 +3,10 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 
 #  include <Foundation/Communication/Implementation/MessageLoop.h>
-#  include <Foundation/Platform/Implementation/Windows/MessageLoop_win.h>
-#  include <Foundation/Platform/Implementation/Windows/PipeChannel_win.h>
 #  include <Foundation/Communication/RemoteMessage.h>
 #  include <Foundation/Logging/Log.h>
+#  include <Foundation/Platform/Implementation/Windows/MessageLoop_win.h>
+#  include <Foundation/Platform/Implementation/Windows/PipeChannel_win.h>
 #  include <Foundation/Serialization/ReflectionSerializer.h>
 
 xiiPipeChannel_win::State::State(xiiPipeChannel_win* pChannel) :

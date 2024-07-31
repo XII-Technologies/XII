@@ -294,7 +294,7 @@ public:
 
 protected:
   /// Description at creation time. xiiWindow will not update this in any method other than Initialize.
-  /// 
+  ///
   /// \remarks That means that messages like Resize will also have no effect on this variable.
   xiiWindowCreationDesc m_CreationDescription;
 

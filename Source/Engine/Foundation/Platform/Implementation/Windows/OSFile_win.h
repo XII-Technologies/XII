@@ -3,8 +3,8 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>
 #include <Foundation/Strings/StringConversion.h>
 #include <Foundation/Threading/ThreadUtils.h>
 
