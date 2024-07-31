@@ -44,7 +44,7 @@ xiiCommandLineOptionString opt_Renderer("app", "-renderer", "The renderer implem
 
 void xiiGameApplication::Init_ConfigureAssetManagement()
 {
-  const xiiStringBuilder sAssetRedirFile("AssetCache/", m_PlatformProfile.m_sName, ".xiiAidlt");
+  const xiiStringBuilder sAssetRedirFile("AssetCache/", m_PlatformProfile.GetConfigName(), ".xiiAidlt");
 
   // which redirection table to search
   xiiDataDirectory::FolderType::s_sRedirectionFile = sAssetRedirFile;

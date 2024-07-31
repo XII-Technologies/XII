@@ -283,11 +283,22 @@ void xiiGALDevice::EndFrame()
   }
 }
 
+#define XII_VERIFY_SWAP_CHAIN(expression, ...)             \
+  do                                                       \
+  {                                                        \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);             \
+    if (!(expression)) { return xiiGALSwapChainHandle(); } \
+  } while (false)
+
 xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  /// \todo GraphicsFoundation: Add swap chain description validation.
+  XII_VERIFY_SWAP_CHAIN(description.m_pWindow != nullptr, "The swap chain window handle is invalid.");
+  XII_VERIFY_SWAP_CHAIN(description.m_Resolution.HasNonZeroArea(), "The swap chain resolution must have a non-zero area.");
+  XII_VERIFY_SWAP_CHAIN(description.m_ColorBufferFormat != xiiGALTextureFormat::Unknown, "The swap chain color buffer format is invalid.");
+  XII_VERIFY_SWAP_CHAIN(!description.m_Usage.IsNoFlagSet(), "The swap chain usage is not set.");
+  XII_VERIFY_SWAP_CHAIN(description.m_fDefaultDepthValue > 0.0f, "The swap chain usage is not set.");
 
   xiiGALSwapChain* pSwapChain = CreateSwapChainPlatform(description);
 
@@ -316,6 +327,8 @@ void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
     xiiLog::Warning("DestroySwapChain called on invalid handle (double free?).");
   }
 }
+
+#undef XII_VERIFY_SWAP_CHAIN
 
 xiiGALCommandQueueHandle xiiGALDevice::CreateCommandQueue(const xiiGALCommandQueueCreationDescription& description)
 {
