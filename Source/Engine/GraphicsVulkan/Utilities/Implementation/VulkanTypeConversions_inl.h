@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiEnum<xiiGALBlendOperation> e)
+XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiGALBlendOperation::Enum e)
 {
   switch (e)
   {
@@ -16,11 +16,10 @@ XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiEnum<xiiGA
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return vk::BlendOp::eAdd;
 }
 
-XII_ALWAYS_INLINE vk::BlendFactor xiiVulkanTypeConversions::GetBlendFactor(xiiEnum<xiiGALBlendFactor> e)
+XII_ALWAYS_INLINE vk::BlendFactor xiiVulkanTypeConversions::GetBlendFactor(xiiGALBlendFactor::Enum e)
 {
   switch (e)
   {
@@ -61,11 +60,10 @@ XII_ALWAYS_INLINE vk::BlendFactor xiiVulkanTypeConversions::GetBlendFactor(xiiEn
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return vk::BlendFactor::eZero;
 }
 
-XII_ALWAYS_INLINE vk::LogicOp xiiVulkanTypeConversions::GetLogicOp(xiiEnum<xiiGALLogicOperation> e)
+XII_ALWAYS_INLINE vk::LogicOp xiiVulkanTypeConversions::GetLogicOp(xiiGALLogicOperation::Enum e)
 {
   switch (e)
   {
@@ -104,11 +102,10 @@ XII_ALWAYS_INLINE vk::LogicOp xiiVulkanTypeConversions::GetLogicOp(xiiEnum<xiiGA
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return vk::LogicOp::eClear;
 }
 
-XII_ALWAYS_INLINE vk::CompareOp xiiVulkanTypeConversions::GetCompareOp(xiiEnum<xiiGALComparisonFunction> e)
+XII_ALWAYS_INLINE vk::CompareOp xiiVulkanTypeConversions::GetCompareOp(xiiGALComparisonFunction::Enum e)
 {
   switch (e)
   {
@@ -131,11 +128,10 @@ XII_ALWAYS_INLINE vk::CompareOp xiiVulkanTypeConversions::GetCompareOp(xiiEnum<x
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return vk::CompareOp::eNever;
 }
 
-XII_ALWAYS_INLINE vk::StencilOp xiiVulkanTypeConversions::GetStencilOp(xiiEnum<xiiGALStencilOperation> e)
+XII_ALWAYS_INLINE vk::StencilOp xiiVulkanTypeConversions::GetStencilOp(xiiGALStencilOperation::Enum e)
 {
   switch (e)
   {
@@ -158,11 +154,10 @@ XII_ALWAYS_INLINE vk::StencilOp xiiVulkanTypeConversions::GetStencilOp(xiiEnum<x
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return vk::StencilOp::eKeep;
 }
 
-XII_ALWAYS_INLINE vk::PolygonMode xiiVulkanTypeConversions::GetPolygonMode(xiiEnum<xiiGALFillMode> e)
+XII_ALWAYS_INLINE vk::PolygonMode xiiVulkanTypeConversions::GetPolygonMode(xiiGALFillMode::Enum e)
 {
   switch (e)
   {
@@ -173,11 +168,10 @@ XII_ALWAYS_INLINE vk::PolygonMode xiiVulkanTypeConversions::GetPolygonMode(xiiEn
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return vk::PolygonMode::eFill;
 }
 
-XII_ALWAYS_INLINE vk::CullModeFlagBits xiiVulkanTypeConversions::GetCullMode(xiiEnum<xiiGALCullMode> e)
+XII_ALWAYS_INLINE vk::CullModeFlagBits xiiVulkanTypeConversions::GetCullMode(xiiGALCullMode::Enum e)
 {
   switch (e)
   {
@@ -190,7 +184,6 @@ XII_ALWAYS_INLINE vk::CullModeFlagBits xiiVulkanTypeConversions::GetCullMode(xii
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return vk::CullModeFlagBits::eNone;
 }
 
@@ -211,4 +204,221 @@ XII_ALWAYS_INLINE vk::ColorComponentFlags xiiVulkanTypeConversions::GetColorWrit
     colorMask |= vk::ColorComponentFlagBits::eA;
 
   return colorMask;
+}
+
+XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALTextureFormat::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALTextureFormat::Unknown:
+      return vk::Format::eUndefined;
+
+    case xiiGALTextureFormat::RGBA32Typeless:
+    case xiiGALTextureFormat::RGBA32Float:
+      return vk::Format::eR32G32B32A32Sfloat;
+    case xiiGALTextureFormat::RGBA32UInt:
+      return vk::Format::eR32G32B32A32Uint;
+    case xiiGALTextureFormat::RGBA32SInt:
+      return vk::Format::eR32G32B32A32Sint;
+
+    case xiiGALTextureFormat::RGB32Typeless:
+    case xiiGALTextureFormat::RGB32Float:
+      return vk::Format::eR32G32B32Sfloat;
+    case xiiGALTextureFormat::RGB32UInt:
+      return vk::Format::eR32G32B32Uint;
+    case xiiGALTextureFormat::RGB32SInt:
+      return vk::Format::eR32G32B32Sint;
+
+    case xiiGALTextureFormat::RGBA16Typeless:
+    case xiiGALTextureFormat::RGBA16Float:
+      return vk::Format::eR16G16B16A16Sfloat;
+    case xiiGALTextureFormat::RGBA16UNormalized:
+      return vk::Format::eR16G16B16A16Unorm;
+    case xiiGALTextureFormat::RGBA16UInt:
+      return vk::Format::eR16G16B16A16Uint;
+    case xiiGALTextureFormat::RGBA16SNormalized:
+      return vk::Format::eR16G16B16A16Snorm;
+    case xiiGALTextureFormat::RGBA16SInt:
+      return vk::Format::eR16G16B16A16Sint;
+
+    case xiiGALTextureFormat::RG32Typeless:
+    case xiiGALTextureFormat::RG32Float:
+      return vk::Format::eR32G32Sfloat;
+    case xiiGALTextureFormat::RG32UInt:
+      return vk::Format::eR32G32Uint;
+    case xiiGALTextureFormat::RG32SInt:
+      return vk::Format::eR32G32Sint;
+
+    case xiiGALTextureFormat::R32G8X24Typeless:
+    case xiiGALTextureFormat::D32FloatS8X24UInt:
+    case xiiGALTextureFormat::R32FloatX8X24Typeless:
+      return vk::Format::eD32SfloatS8Uint;
+
+    case xiiGALTextureFormat::X32TypelessG8X24UInt:
+      return vk::Format::eUndefined;
+
+    case xiiGALTextureFormat::RGB10A2Typeless:
+    case xiiGALTextureFormat::RGB10A2UNormalized:
+      return vk::Format::eA2R10G10B10UnormPack32;
+    case xiiGALTextureFormat::RGB10A2UInt:
+      return vk::Format::eA2R10G10B10UintPack32;
+    case xiiGALTextureFormat::RG11B10Float:
+      return vk::Format::eB10G11R11UfloatPack32;
+
+    case xiiGALTextureFormat::RGBA8Typeless:
+    case xiiGALTextureFormat::RGBA8UNormalized:
+      return vk::Format::eR8G8B8A8Unorm;
+    case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
+      return vk::Format::eR8G8B8A8Srgb;
+    case xiiGALTextureFormat::RGBA8UInt:
+      return vk::Format::eR8G8B8A8Uint;
+    case xiiGALTextureFormat::RGBA8SNormalized:
+      return vk::Format::eR8G8B8A8Snorm;
+    case xiiGALTextureFormat::RGBA8SInt:
+      return vk::Format::eR8G8B8A8Sint;
+
+    case xiiGALTextureFormat::RG16Typeless:
+    case xiiGALTextureFormat::RG16Float:
+      return vk::Format::eR16G16Sfloat;
+    case xiiGALTextureFormat::RG16UNormalized:
+      return vk::Format::eR16G16Unorm;
+    case xiiGALTextureFormat::RG16UInt:
+      return vk::Format::eR16G16Uint;
+    case xiiGALTextureFormat::RG16SNormalized:
+      return vk::Format::eR16G16Snorm;
+    case xiiGALTextureFormat::RG16SInt:
+      return vk::Format::eR16G16Sint;
+
+    case xiiGALTextureFormat::R32Typeless:
+      return vk::Format::eR32Sfloat;
+    case xiiGALTextureFormat::D32Float:
+      return vk::Format::eD32Sfloat;
+    case xiiGALTextureFormat::R32Float:
+      return vk::Format::eR32Sfloat;
+    case xiiGALTextureFormat::R32UInt:
+      return vk::Format::eR32Uint;
+    case xiiGALTextureFormat::R32SInt:
+      return vk::Format::eR32Sint;
+
+    case xiiGALTextureFormat::R24G8Typeless:
+    case xiiGALTextureFormat::D24UNormalizedS8UInt:
+    case xiiGALTextureFormat::R24UNormalizedX8Typeless:
+      return vk::Format::eD24UnormS8Uint;
+
+    case xiiGALTextureFormat::X24TypelessG8UInt:
+      return vk::Format::eUndefined;
+
+    case xiiGALTextureFormat::RG8Typeless:
+    case xiiGALTextureFormat::RG8UNormalized:
+      return vk::Format::eR8G8Unorm;
+    case xiiGALTextureFormat::RG8UInt:
+      return vk::Format::eR8G8Uint;
+    case xiiGALTextureFormat::RG8SNormalized:
+      return vk::Format::eR8G8Snorm;
+    case xiiGALTextureFormat::RG8SInt:
+      return vk::Format::eR8G8Sint;
+
+    case xiiGALTextureFormat::R16Typeless:
+    case xiiGALTextureFormat::R16Float:
+      return vk::Format::eR16Sfloat;
+    case xiiGALTextureFormat::D16UNormalized:
+      return vk::Format::eD16Unorm;
+    case xiiGALTextureFormat::R16UNormalized:
+      return vk::Format::eR16Unorm;
+    case xiiGALTextureFormat::R16UInt:
+      return vk::Format::eR16Uint;
+    case xiiGALTextureFormat::R16SNormalized:
+      return vk::Format::eR16Snorm;
+    case xiiGALTextureFormat::R16SInt:
+      return vk::Format::eR16Sint;
+
+    case xiiGALTextureFormat::R8Typeless:
+    case xiiGALTextureFormat::R8UNormalized:
+      return vk::Format::eR8Unorm;
+    case xiiGALTextureFormat::R8UInt:
+      return vk::Format::eR8Uint;
+    case xiiGALTextureFormat::R8SNormalized:
+      return vk::Format::eR8Snorm;
+    case xiiGALTextureFormat::R8SInt:
+      return vk::Format::eR8Sint;
+    case xiiGALTextureFormat::A8UNormalized:
+      // If we use vk::Format::eR8Unorm, to get the same behaviour as xiiGALTextureFormat::A8UNormalized, we have to
+      // Swizzle the components appropriately using the image view create info structure.
+      return vk::Format::eA8UnormKHR;
+
+    case xiiGALTextureFormat::R1UNormalized:
+      return vk::Format::eUndefined;
+
+    case xiiGALTextureFormat::RGB9E5SharedExponent:
+      return vk::Format::eE5B9G9R9UfloatPack32;
+
+    case xiiGALTextureFormat::RG8BG8UNormalized:
+    case xiiGALTextureFormat::GR8GB8UNormalized:
+      return vk::Format::eUndefined;
+
+    case xiiGALTextureFormat::BC1Typeless:
+    case xiiGALTextureFormat::BC1UNormalized:
+      return vk::Format::eBc1RgbUnormBlock;
+    case xiiGALTextureFormat::BC1UNormalizedSRGB:
+      return vk::Format::eBc1RgbSrgbBlock;
+
+    case xiiGALTextureFormat::BC2Typeless:
+    case xiiGALTextureFormat::BC2UNormalized:
+      return vk::Format::eBc2UnormBlock;
+    case xiiGALTextureFormat::BC2UNormalizedSRGB:
+      return vk::Format::eBc2SrgbBlock;
+
+    case xiiGALTextureFormat::BC3Typeless:
+    case xiiGALTextureFormat::BC3UNormalized:
+      return vk::Format::eBc3UnormBlock;
+    case xiiGALTextureFormat::BC3UNormalizedSRGB:
+      return vk::Format::eBc3SrgbBlock;
+
+    case xiiGALTextureFormat::BC4Typeless:
+    case xiiGALTextureFormat::BC4UNormalized:
+      return vk::Format::eBc4UnormBlock;
+    case xiiGALTextureFormat::BC4SNormalized:
+      return vk::Format::eBc4SnormBlock;
+
+    case xiiGALTextureFormat::BC5Typeless:
+    case xiiGALTextureFormat::BC5UNormalized:
+      return vk::Format::eBc5UnormBlock;
+    case xiiGALTextureFormat::BC5SNormalized:
+      return vk::Format::eBc5SnormBlock;
+
+    case xiiGALTextureFormat::B5G6R5UNormalized:
+      return vk::Format::eB5G6R5UnormPack16;
+    case xiiGALTextureFormat::B5G5R5A1UNormalized:
+      return vk::Format::eB5G5R5A1UnormPack16;
+    case xiiGALTextureFormat::BGRA8UNormalized:
+    case xiiGALTextureFormat::BGRX8UNormalized:
+      return vk::Format::eB8G8R8A8Unorm;
+
+    case xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized:
+      return vk::Format::eUndefined;
+
+    case xiiGALTextureFormat::BGRA8Typeless:
+      return vk::Format::eB8G8R8A8Unorm;
+    case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
+      return vk::Format::eB8G8R8A8Srgb;
+    case xiiGALTextureFormat::BGRX8Typeless:
+      return vk::Format::eB8G8R8A8Unorm;
+    case xiiGALTextureFormat::BGRX8UNormalizedSRGB:
+      return vk::Format::eB8G8R8A8Srgb;
+
+    case xiiGALTextureFormat::BC6HTypeless:
+    case xiiGALTextureFormat::BC6HUF16:
+      return vk::Format::eBc6HUfloatBlock;
+    case xiiGALTextureFormat::BC6HSF16:
+      return vk::Format::eBc6HSfloatBlock;
+
+    case xiiGALTextureFormat::BC7Typeless:
+    case xiiGALTextureFormat::BC7UNormalized:
+      return vk::Format::eBc7UnormBlock;
+    case xiiGALTextureFormat::BC7UNormalizedSRGB:
+      return vk::Format::eBc7SrgbBlock;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::Format::eUndefined;
 }

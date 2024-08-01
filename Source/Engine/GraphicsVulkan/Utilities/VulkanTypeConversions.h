@@ -32,17 +32,19 @@ public:
     return static_cast<typename T::MaskType>(value);
   }
 
-  static vk::BlendOp     GetBlendOp(xiiEnum<xiiGALBlendOperation> e);
-  static vk::BlendFactor GetBlendFactor(xiiEnum<xiiGALBlendFactor> e);
-  static vk::LogicOp     GetLogicOp(xiiEnum<xiiGALLogicOperation> e);
+  static vk::BlendOp     GetBlendOp(xiiGALBlendOperation::Enum e);
+  static vk::BlendFactor GetBlendFactor(xiiGALBlendFactor::Enum e);
+  static vk::LogicOp     GetLogicOp(xiiGALLogicOperation::Enum e);
 
-  static vk::CompareOp GetCompareOp(xiiEnum<xiiGALComparisonFunction> e);
-  static vk::StencilOp GetStencilOp(xiiEnum<xiiGALStencilOperation> e);
+  static vk::CompareOp GetCompareOp(xiiGALComparisonFunction::Enum e);
+  static vk::StencilOp GetStencilOp(xiiGALStencilOperation::Enum e);
 
-  static vk::PolygonMode      GetPolygonMode(xiiEnum<xiiGALFillMode> e);
-  static vk::CullModeFlagBits GetCullMode(xiiEnum<xiiGALCullMode> e);
+  static vk::PolygonMode      GetPolygonMode(xiiGALFillMode::Enum e);
+  static vk::CullModeFlagBits GetCullMode(xiiGALCullMode::Enum e);
 
   static vk::ColorComponentFlags GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
+
+  static vk::Format GetFormat(xiiGALTextureFormat::Enum e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
