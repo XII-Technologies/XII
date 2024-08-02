@@ -56,7 +56,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 namespace
 {
-  VKAPI_ATTR vk::Bool32 VKAPI_CALL xiiVulkanDebugMessageCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT messageType, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+  VKAPI_ATTR vk::Bool32 VKAPI_CALL xiiVulkanDebugMessengerCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT messageType, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
   {
     switch (messageSeverity)
     {
@@ -107,7 +107,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData()));
 
-    XII_ASSERT_DEV(m_Layers.GetCount() == uiLayerCount, "Expected ({0}) layer count does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
+    XII_VERIFY(m_Layers.GetCount() == uiLayerCount, "Expected ({0}) layer count does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
   }
 
   {
@@ -193,11 +193,86 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   // Request instance layers.
   xiiHybridArray<const char*, 6U> instanceLayers;
   {
-    // Unified validation layer used on Desktop and Mobile platforms.
-    if (IsLayerAvailable(m_Layers, "VK_LAYER_KHRONOS_validation"))
+    // Validation instance layers.
+    if (m_Description.m_ValidationLevel > xiiGALDeviceValidationLevel::Disabled)
     {
-      instanceLayers.PushBack("VK_LAYER_KHRONOS_validation");
+      if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+      {
+        // Prefer VK_EXT_debug_utils.
+        m_DebugMode = DebugMode::Utils;
+      }
+      else if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+      {
+        // If debug utils are unavailable (e.g. on Android), use VK_EXT_debug_report.
+        m_DebugMode = DebugMode::Report;
+      }
+
+      const char* validationLayerNames[] = {
+        "VK_LAYER_KHRONOS_validation", // Unified validation layer used on Desktop and Mobile platforms.
+      };
+
+      for (const char* szValidationLayerName : validationLayerNames)
+      {
+        xiiUInt32 uiLayerVersion = 0xFFFFFFFFU;
+        if (!IsLayerAvailable(m_Layers, szValidationLayerName, &uiLayerVersion))
+        {
+          xiiLog::Error("Instance layer ({0}) is not available.", szValidationLayerName);
+          continue;
+        }
+
+        // Beta extensions may vary and result in a crash.
+        // New enums are not supported and may cause validation error.
+        if (uiLayerVersion < VK_HEADER_VERSION_COMPLETE)
+        {
+          xiiLog::Warning("Layer '{}' version ({}.{}.{}) is less than the header version ({}.{}.{}).", szValidationLayerName, VK_API_VERSION_MAJOR(uiLayerVersion), VK_API_VERSION_MINOR(uiLayerVersion), VK_API_VERSION_PATCH(uiLayerVersion),
+                          VK_API_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE), VK_API_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE), VK_API_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE));
+        }
+
+        instanceLayers.PushBack(szValidationLayerName);
+
+        if (m_DebugMode != DebugMode::Utils)
+        {
+          // On Android, VK_EXT_debug_utils extension may not be supported by the loader,
+          // but supported by the layer.
+
+          xiiDynamicArray<vk::ExtensionProperties> layerExtensions;
+          if (EnumerateInstanceExtensions(szValidationLayerName, layerExtensions))
+          {
+            if (IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+            {
+              m_DebugMode = DebugMode::Utils;
+            }
+
+            if (m_DebugMode == DebugMode::Disabled && IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+            {
+              m_DebugMode = DebugMode::Report;
+            }
+          }
+          else
+          {
+            xiiLog::Error("Failed to enumerate extensions for {} layer.", szValidationLayerName);
+          }
+        }
+      }
+
+      if (m_DebugMode == DebugMode::Utils)
+      {
+        instanceExtensions.PushBack(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+      }
+      else if (m_DebugMode == DebugMode::Report)
+      {
+        instanceExtensions.PushBack(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+      }
+      else
+      {
+        xiiLog::Error("Neither {} nor {} extension is available. Debug tools (validation layer message logging, performance markers, etc.) will be disabled.", VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+
+        m_DebugMode                     = DebugMode::Disabled;
+        m_Description.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
+      }
     }
+
+    m_EnabledExtensions.PushBackRange(instanceLayers.GetArrayPtr());
   }
 
   // Create Vulkan Instance.
@@ -232,6 +307,23 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     XII_SUCCEED_OR_RETURN_FAILURE(m_Instance, "Failed to create Vulkan instance.");
   }
+
+  // If requested, we enable the default validation layers for debugging purposes.
+  if (m_DebugMode == DebugMode::Utils)
+  {
+    constexpr vk::DebugUtilsMessageSeverityFlagsEXT messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+    constexpr vk::DebugUtilsMessageTypeFlagsEXT     messageType     = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
+
+    vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {};
+    debugMessengerCreateInfo.sType                                = vk::StructureType::eDebugUtilsMessengerCreateInfoEXT;
+    debugMessengerCreateInfo.pNext                                = nullptr;
+    debugMessengerCreateInfo.flags                                = {};
+    debugMessengerCreateInfo.messageSeverity                      = messageSeverity;
+    debugMessengerCreateInfo.messageType                          = messageType;
+    debugMessengerCreateInfo.pfnUserCallback                      = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
+    debugMessengerCreateInfo.pUserData                            = nullptr;
+  }
+
   return XII_FAILURE;
 }
 
@@ -705,12 +797,37 @@ void xiiGALDeviceVulkan::CreateCommandQueues()
 {
 }
 
-bool xiiGALDeviceVulkan::IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName)
+bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions)
+{
+  xiiUInt32 uiExtensionCount = 0U;
+
+  if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, nullptr) != vk::Result::eSuccess)
+    return false;
+
+  extensions.SetCount(uiExtensionCount);
+
+  if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, extensions.GetData()) != vk::Result::eSuccess)
+  {
+    extensions.Clear();
+
+    return false;
+  }
+
+  XII_VERIFY(extensions.GetCount() == uiExtensionCount, "The number of extensions written by vk::enumerateInstanceExtensionProperties is not consistent with the count returned in the first call. This is likely a Vulkan loader bug.");
+
+  return true;
+}
+
+bool xiiGALDeviceVulkan::IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion /*= nullptr*/)
 {
   for (const auto& layer : pLayers)
   {
     if (strcmp(szLayerName, layer.layerName) == 0U)
     {
+      if (pVersion != nullptr)
+      {
+        *pVersion = layer.specVersion;
+      }
       return true;
     }
   }
@@ -722,6 +839,18 @@ bool xiiGALDeviceVulkan::IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionPro
   for (const auto& extension : pExtensions)
   {
     if (strcmp(szExtensionName, extension.extensionName) == 0U)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool xiiGALDeviceVulkan::IsExtensionEnabled(const char* szExtensionName)
+{
+  for (const auto* szEnabledExtension : m_EnabledExtensions)
+  {
+    if (strcmp(szExtensionName, szEnabledExtension) == 0)
     {
       return true;
     }

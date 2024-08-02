@@ -102,10 +102,19 @@ protected:
   void CreateCommandQueues();
 
 private:
-  bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName);
+  bool EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions);
+  bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr);
   bool IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName);
+  bool IsExtensionEnabled(const char* szExtensionName);
 
 private:
+  enum class DebugMode
+  {
+    Disabled,
+    Utils,
+    Report,
+  };
+
   static constexpr xiiUInt32 s_uiVulkanVersion = VK_API_VERSION_1_1;
 
   vk::Instance m_Instance;
@@ -113,13 +122,15 @@ private:
   // Vulkan Instance Objects.
   xiiDynamicArray<vk::LayerProperties>     m_Layers;
   xiiDynamicArray<vk::ExtensionProperties> m_Extensions;
-  xiiDynamicArray<xiiStringView>           m_EnabledExtensions;
+  xiiDynamicArray<const char*>             m_EnabledExtensions;
   xiiDynamicArray<vk::PhysicalDevice>      m_PhysicalDevices;
 
   // Vulkan Device Objects.
   vk::PhysicalDevice           m_PhysicalDevice;
   vk::PhysicalDeviceProperties m_PhysicalDeviceProperties;
   vk::Device                   m_Device;
+
+  DebugMode m_DebugMode = DebugMode::Disabled;
 
   // 0 : Graphics Queue
   // 1 : Compute Queue
