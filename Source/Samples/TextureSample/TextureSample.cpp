@@ -241,13 +241,13 @@ public:
       xiiDataDirectory::FolderType::s_sRedirectionPrefix = "AssetCache/PC/";
     }
 
-    xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites).IgnoreResult();
-    xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiFileSystem::AllowWrites).IgnoreResult();                              // writing to the binary directory
-    xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult();                 // for shader files
-    xiiFileSystem::AddDataDirectory(">user/XII/Projects/TextureSample", "AppData", "appdata", xiiFileSystem::AllowWrites).IgnoreResult(); // app user data
+    xiiFileSystem::AddDataDirectory("", "", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiDataDirUsage::AllowWrites).IgnoreResult();                              // writing to the binary directory
+    xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).IgnoreResult();                 // for shader files
+    xiiFileSystem::AddDataDirectory(">user/XII/Projects/TextureSample", "AppData", "appdata", xiiDataDirUsage::AllowWrites).IgnoreResult(); // app user data
 
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
-    xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiFileSystem::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
