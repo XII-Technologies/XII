@@ -13,6 +13,26 @@
 #  define XII_GRAPHICSVULKAN_DLL
 #endif
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#endif
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  define VK_USE_PLATFORM_WIN32_KHR
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+#  define VK_USE_PLATFORM_XCB_KHR
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+#  define VK_USE_PLATFORM_ANDROID_KHR
+#endif
+
+#include <vulkan/vulkan.hpp>
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <vulkan/vulkan_win32.h>
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+#  include <vulkan/vulkan_android.h>
+#endif
+
 #define XII_GAL_VULKAN_RELEASE(pObject) \
   do                                    \
   {                                     \
@@ -24,6 +44,59 @@
   } while (0)
 
 #define VK_BOOL(expression) (expression) ? VK_TRUE : VK_FALSE
+
+#define VK_ASSERT_DEBUG(code)                                                                                                                                                                                                         \
+  do                                                                                                                                                                                                                                  \
+  {                                                                                                                                                                                                                                   \
+    auto s = (code);                                                                                                                                                                                                                  \
+    XII_ASSERT_DEBUG(static_cast<vk::Result>(s) == vk::Result::eSuccess, "Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+  } while (false)
+
+#define VK_ASSERT_DEV(code)                                                                                                                                                                                                         \
+  do                                                                                                                                                                                                                                \
+  {                                                                                                                                                                                                                                 \
+    auto s = (code);                                                                                                                                                                                                                \
+    XII_ASSERT_DEV(static_cast<vk::Result>(s) == vk::Result::eSuccess, "Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+  } while (false)
+
+#define VK_LOG_ERROR(code)                                                                                                                                                       \
+  do                                                                                                                                                                             \
+  {                                                                                                                                                                              \
+    auto s = (code);                                                                                                                                                             \
+    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
+    {                                                                                                                                                                            \
+      xiiLog::Error("Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+    }                                                                                                                                                                            \
+  } while (false)
+
+#define VK_SUCCEED_OR_RETURN_LOG(code)                                                                                                                                           \
+  do                                                                                                                                                                             \
+  {                                                                                                                                                                              \
+    auto s = (code);                                                                                                                                                             \
+    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
+    {                                                                                                                                                                            \
+      xiiLog::Error("Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+      return s;                                                                                                                                                                  \
+    }                                                                                                                                                                            \
+  } while (false)
+
+#define VK_SUCCEED_OR_RETURN_XII_FAILURE(code)                                                                                                                                   \
+  do                                                                                                                                                                             \
+  {                                                                                                                                                                              \
+    auto s = (code);                                                                                                                                                             \
+    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
+    {                                                                                                                                                                            \
+      xiiLog::Error("Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+      return XII_FAILURE;                                                                                                                                                        \
+    }                                                                                                                                                                            \
+  } while (false)
+
+#define XII_SUCCEED_OR_RETURN_FAILURE(expression, ...) \
+  do                                                   \
+  {                                                    \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);         \
+    if (!(expression)) { return XII_FAILURE; }         \
+  } while (false)
 
 ////////// Forward Declarations //////////
 
@@ -51,3 +124,5 @@ class xiiGALRasterizerStateVulkan;
 class xiiGALPipelineStateVulkan;
 class xiiGALPipelineResourceSignatureVulkan;
 class xiiGALShaderResourceVariableVulkan;
+
+XII_DEFINE_AS_POD_TYPE(vk::Format);

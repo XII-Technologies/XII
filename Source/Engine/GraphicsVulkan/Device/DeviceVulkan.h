@@ -101,9 +101,26 @@ protected:
 
   void CreateCommandQueues();
 
-  void FillFormatLookupTable();
+private:
+  bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName);
+  bool IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName);
 
 private:
+  static constexpr xiiUInt32 s_uiVulkanVersion = VK_API_VERSION_1_1;
+
+  vk::Instance m_Instance;
+
+  // Vulkan Instance Objects.
+  xiiDynamicArray<vk::LayerProperties>     m_Layers;
+  xiiDynamicArray<vk::ExtensionProperties> m_Extensions;
+  xiiDynamicArray<xiiStringView>           m_EnabledExtensions;
+  xiiDynamicArray<vk::PhysicalDevice>      m_PhysicalDevices;
+
+  // Vulkan Device Objects.
+  vk::PhysicalDevice           m_PhysicalDevice;
+  vk::PhysicalDeviceProperties m_PhysicalDeviceProperties;
+  vk::Device                   m_Device;
+
   // 0 : Graphics Queue
   // 1 : Compute Queue
   // 2 : Transfer Queue

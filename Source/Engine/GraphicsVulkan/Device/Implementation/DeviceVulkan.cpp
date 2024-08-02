@@ -1,5 +1,9 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#endif
+
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
@@ -50,6 +54,40 @@ ON_CORESYSTEMS_SHUTDOWN
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
+namespace
+{
+  VKAPI_ATTR vk::Bool32 VKAPI_CALL xiiVulkanDebugMessageCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT messageType, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+  {
+    switch (messageSeverity)
+    {
+      case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
+      {
+        xiiLog::Debug("Vulkan: {}.", pCallbackData->pMessage);
+      }
+      break;
+      case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
+      {
+        xiiLog::Info("Vulkan: {}.", pCallbackData->pMessage);
+      }
+      break;
+      case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
+      {
+        xiiLog::Warning("Vulkan: {}.", pCallbackData->pMessage);
+      }
+      break;
+      case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
+      {
+        xiiLog::Error("Vulkan: {}.", pCallbackData->pMessage);
+      }
+      break;
+      default:
+        break;
+    }
+    // The application should always return VK_FALSE. The VK_TRUE value is reserved for use in layer development.
+    return VK_FALSE;
+  }
+} // namespace
+
 xiiGALDeviceVulkan::xiiGALDeviceVulkan(const xiiGALDeviceCreationDescription& description) :
   xiiGALDevice(description)
 {
@@ -59,7 +97,141 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan() = default;
 
 xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
+  // Enumerate available layers.
+  {
+    xiiUInt32 uiLayerCount = 0U;
 
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr));
+
+    m_Layers.SetCount(uiLayerCount);
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData()));
+
+    XII_ASSERT_DEV(m_Layers.GetCount() == uiLayerCount, "Expected ({0}) layer count does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
+  }
+
+  {
+    XII_LOG_BLOCK("Available Vulkan Instance Layers");
+
+    for (const auto& layer : m_Layers)
+    {
+      xiiLog::Info("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
+    }
+  }
+
+  // Enumerate available instance extensions.
+  {
+    XII_LOG_BLOCK("Supported Vulkan Instance Extensions");
+
+    std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties(nullptr);
+
+    m_Extensions.Reserve(static_cast<xiiUInt32>(extensions.size()));
+
+    for (const auto& extension : extensions)
+    {
+      m_Extensions.PushBack(extension);
+
+      xiiLog::Info("{} {}.{}.{}", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
+    }
+  }
+
+#if XII_ENABLED(XII_PLATFORM_OSX)
+  // From the 1.3.216 Vulkan SDK and later, the Vulkan Loader is strictly enforcing the new VK_KHR_PORTABILITY_subset extension.
+  constexpr bool bUsePortabilityEnumeration = true;
+#else
+  constexpr bool bUsePortabilityEnumeration = false;
+#endif
+
+  // Request instance extensions.
+  xiiHybridArray<const char*, 6U> instanceExtensions;
+  {
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_SURFACE_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_SURFACE_EXTENSION_NAME);
+
+      // Enable surface extensions depending on build configuration.
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+      instanceExtensions.PushBack(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#endif
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
+      instanceExtensions.PushBack(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
+#endif
+#if defined(VK_USE_PLATFORM_WAYLAND_KHR)
+      instanceExtensions.PushBack(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+#endif
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
+      instanceExtensions.PushBack(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+#endif
+#if defined(VK_USE_PLATFORM_XCB_KHR)
+      instanceExtensions.PushBack(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+#endif
+#if defined(VK_USE_PLATFORM_IOS_MVK)
+      instanceExtensions.PushBack(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
+#endif
+#if defined(VK_USE_PLATFORM_MACOS_MVK)
+      instanceExtensions.PushBack(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
+#endif
+    }
+
+    if (bUsePortabilityEnumeration)
+    {
+      instanceExtensions.PushBack(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    }
+
+    // This extension added to core in 1.1, but current version is 1.0
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    }
+
+    for (const auto* szExtensionName : instanceExtensions)
+    {
+      XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(m_Extensions, szExtensionName), "Required extension () is not available.", szExtensionName);
+    }
+  }
+
+  // Request instance layers.
+  xiiHybridArray<const char*, 6U> instanceLayers;
+  {
+    // Unified validation layer used on Desktop and Mobile platforms.
+    if (IsLayerAvailable(m_Layers, "VK_LAYER_KHRONOS_validation"))
+    {
+      instanceLayers.PushBack("VK_LAYER_KHRONOS_validation");
+    }
+  }
+
+  // Create Vulkan Instance.
+  {
+    vk::ApplicationInfo applicationInformation = {};
+    applicationInformation.sType               = vk::StructureType::eApplicationInfo;
+    applicationInformation.apiVersion          = s_uiVulkanVersion;
+    applicationInformation.applicationVersion  = VK_MAKE_VERSION(BUILDSYSTEM_SDKVERSION_MAJOR, BUILDSYSTEM_SDKVERSION_MINOR, BUILDSYSTEM_SDKVERSION_PATCH);
+    applicationInformation.engineVersion       = VK_MAKE_VERSION(BUILDSYSTEM_SDKVERSION_MAJOR, BUILDSYSTEM_SDKVERSION_MINOR, BUILDSYSTEM_SDKVERSION_PATCH);
+    applicationInformation.pApplicationName    = "XII";
+    applicationInformation.pEngineName         = "XII";
+    applicationInformation.pNext               = nullptr;
+
+    vk::InstanceCreateInfo instanceCreateInformation  = {};
+    instanceCreateInformation.sType                   = vk::StructureType::eInstanceCreateInfo;
+    instanceCreateInformation.pNext                   = nullptr;
+    instanceCreateInformation.pApplicationInfo        = &applicationInformation;
+    instanceCreateInformation.enabledExtensionCount   = instanceExtensions.GetCount();
+    instanceCreateInformation.ppEnabledExtensionNames = instanceExtensions.GetData();
+    instanceCreateInformation.enabledLayerCount       = instanceLayers.GetCount();
+    instanceCreateInformation.ppEnabledLayerNames     = instanceLayers.GetData();
+    instanceCreateInformation.flags                   = {};
+
+    if (bUsePortabilityEnumeration)
+    {
+      // The instance will enumerate available Vulkan Portability-compliant physical devices and groups in addition to the Vulkan physical devices and groups that
+      // are enumerated by default.
+      instanceCreateInformation.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+    }
+
+    m_Instance = vk::createInstance(instanceCreateInformation);
+
+    XII_SUCCEED_OR_RETURN_FAILURE(m_Instance, "Failed to create Vulkan instance.");
+  }
   return XII_FAILURE;
 }
 
@@ -531,6 +703,30 @@ void xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
 void xiiGALDeviceVulkan::CreateCommandQueues()
 {
+}
+
+bool xiiGALDeviceVulkan::IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName)
+{
+  for (const auto& layer : pLayers)
+  {
+    if (strcmp(szLayerName, layer.layerName) == 0U)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool xiiGALDeviceVulkan::IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName)
+{
+  for (const auto& extension : pExtensions)
+  {
+    if (strcmp(szExtensionName, extension.extensionName) == 0U)
+    {
+      return true;
+    }
+  }
+  return false;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Device_Implementation_DeviceVulkan);
