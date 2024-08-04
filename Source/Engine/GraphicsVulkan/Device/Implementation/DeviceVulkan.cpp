@@ -410,6 +410,16 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
   // Enumerate physical devices.
   {
+    xiiUInt32 uiPhysicalDeviceCount = 0U;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, nullptr));
+
+    XII_ASSERT_ALWAYS(uiPhysicalDeviceCount != 0U, "No physical devices are found on the system.");
+
+    m_PhysicalDevices.SetCount(uiPhysicalDeviceCount);
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, m_PhysicalDevices.GetData()));
+
+    XII_VERIFY(m_PhysicalDevices.GetCount() == uiPhysicalDeviceCount, "Expected physical device count ({0}) does not match the retrieved physical device count ({1}).", uiPhysicalDeviceCount, m_PhysicalDevices.GetCount());
   }
 
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
