@@ -31,6 +31,19 @@
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 
+// Debug Utilities.
+PFN_vkCreateDebugUtilsMessengerEXT  CreateDebugUtilsMessengerEXT  = nullptr;
+PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessengerEXT = nullptr;
+PFN_vkSetDebugUtilsObjectNameEXT    SetDebugUtilsObjectNameEXT    = nullptr;
+PFN_vkSetDebugUtilsObjectTagEXT     SetDebugUtilsObjectTagEXT     = nullptr;
+PFN_vkQueueBeginDebugUtilsLabelEXT  QueueBeginDebugUtilsLabelEXT  = nullptr;
+PFN_vkQueueEndDebugUtilsLabelEXT    QueueEndDebugUtilsLabelEXT    = nullptr;
+PFN_vkQueueInsertDebugUtilsLabelEXT QueueInsertDebugUtilsLabelEXT = nullptr;
+
+// Debug Report.
+PFN_vkCreateDebugReportCallbackEXT  CreateDebugReportCallbackEXT  = nullptr;
+PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallbackEXT = nullptr;
+
 xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceVulkan, description);
@@ -85,6 +98,27 @@ namespace
     }
     // The application should always return VK_FALSE. The VK_TRUE value is reserved for use in layer development.
     return VK_FALSE;
+  }
+
+  VKAPI_ATTR xiiUInt32 VKAPI_CALL xiiVulkanDebugReportCallback(vk::DebugReportFlagsEXT reportFlags, vk::DebugReportObjectTypeEXT objectType, xiiUInt64 uiObject, size_t uiLocation, xiiInt32 iMessageCode, const char* szLayerPrefix, const char* szMessage, void* pUserData)
+  {
+    if (reportFlags & vk::DebugReportFlagBitsEXT::eError)
+    {
+      xiiLog::Error("Vulkan: {}", szMessage);
+    }
+    else if (reportFlags & (vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning))
+    {
+      xiiLog::Warning("Vulkan: {}", szMessage);
+    }
+    else if (reportFlags & vk::DebugReportFlagBitsEXT::eDebug)
+    {
+      xiiLog::Debug("Vulkan: {}", szMessage);
+    }
+    else
+    {
+      xiiLog::Info("Vulkan: {}", szMessage);
+    }
+    return 0U;
   }
 } // namespace
 
@@ -311,18 +345,75 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   // If requested, we enable the default validation layers for debugging purposes.
   if (m_DebugMode == DebugMode::Utils)
   {
-    constexpr vk::DebugUtilsMessageSeverityFlagsEXT messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
-    constexpr vk::DebugUtilsMessageTypeFlagsEXT     messageType     = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
+    CreateDebugUtilsMessengerEXT  = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT"));
+    DestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT"));
 
-    vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {};
-    debugMessengerCreateInfo.sType                                = vk::StructureType::eDebugUtilsMessengerCreateInfoEXT;
-    debugMessengerCreateInfo.pNext                                = nullptr;
-    debugMessengerCreateInfo.flags                                = {};
-    debugMessengerCreateInfo.messageSeverity                      = messageSeverity;
-    debugMessengerCreateInfo.messageType                          = messageType;
-    debugMessengerCreateInfo.pfnUserCallback                      = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
-    debugMessengerCreateInfo.pUserData                            = nullptr;
+    XII_ASSERT_DEV(CreateDebugUtilsMessengerEXT != nullptr && DestroyDebugUtilsMessengerEXT != nullptr, "Failed to load DebugUtilsMessenger extension functions.");
+
+    constexpr VkDebugUtilsMessageSeverityFlagsEXT messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    constexpr VkDebugUtilsMessageTypeFlagsEXT     messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+
+    VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {};
+    debugMessengerCreateInfo.sType                              = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debugMessengerCreateInfo.pNext                              = nullptr;
+    debugMessengerCreateInfo.flags                              = 0U;
+    debugMessengerCreateInfo.messageSeverity                    = messageSeverity;
+    debugMessengerCreateInfo.messageType                        = messageType;
+    debugMessengerCreateInfo.pfnUserCallback                    = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
+    debugMessengerCreateInfo.pUserData                          = nullptr;
+
+    if (CreateDebugUtilsMessengerEXT != nullptr && DestroyDebugUtilsMessengerEXT != nullptr)
+    {
+      VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(CreateDebugUtilsMessengerEXT(m_Instance, &debugMessengerCreateInfo, nullptr, &debugMessenger));
+
+      m_DebugMessenger = debugMessenger;
+
+      // Load function pointers.
+      SetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(m_Instance, "vkSetDebugUtilsObjectNameEXT"));
+      XII_VERIFY(SetDebugUtilsObjectNameEXT != nullptr, "Failed to load function pointer");
+      SetDebugUtilsObjectTagEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectTagEXT>(vkGetInstanceProcAddr(m_Instance, "vkSetDebugUtilsObjectTagEXT"));
+      XII_VERIFY(SetDebugUtilsObjectTagEXT != nullptr, "Failed to load function pointer");
+
+      QueueBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueBeginDebugUtilsLabelEXT"));
+      XII_VERIFY(QueueBeginDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+      QueueEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueEndDebugUtilsLabelEXT"));
+      XII_VERIFY(QueueEndDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+      QueueInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueInsertDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueInsertDebugUtilsLabelEXT"));
+      XII_VERIFY(QueueInsertDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+    }
   }
+  else if (m_DebugMode == DebugMode::Report)
+  {
+    CreateDebugReportCallbackEXT  = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(m_Instance, "vkCreateDebugReportCallbackEXT"));
+    DestroyDebugReportCallbackEXT = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugReportCallbackEXT"));
+
+    XII_ASSERT_DEV(CreateDebugReportCallbackEXT != nullptr && DestroyDebugReportCallbackEXT != nullptr, "Failed to load DebugReportCallback extension functions.");
+
+    constexpr VkDebugReportFlagBitsEXT reportFlags = static_cast<VkDebugReportFlagBitsEXT>(VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT);
+
+    VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
+    debugReportCallbackCreateInfo.sType                              = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+    debugReportCallbackCreateInfo.pNext                              = nullptr;
+    debugReportCallbackCreateInfo.flags                              = reportFlags;
+    debugReportCallbackCreateInfo.pfnCallback                        = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(xiiVulkanDebugReportCallback);
+    debugReportCallbackCreateInfo.pUserData                          = nullptr;
+
+    if (CreateDebugReportCallbackEXT != nullptr && DestroyDebugReportCallbackEXT != nullptr)
+    {
+      VkDebugReportCallbackEXT debugCallback = VK_NULL_HANDLE;
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(CreateDebugReportCallbackEXT(m_Instance, &debugReportCallbackCreateInfo, nullptr, &debugCallback));
+
+      m_DebugCallback = debugCallback;
+    }
+  }
+
+  // Enumerate physical devices.
+  {
+  }
+
+  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
+  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
   return XII_FAILURE;
 }

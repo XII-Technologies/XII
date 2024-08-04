@@ -130,7 +130,10 @@ private:
   vk::PhysicalDeviceProperties m_PhysicalDeviceProperties;
   vk::Device                   m_Device;
 
-  DebugMode m_DebugMode = DebugMode::Disabled;
+  // Vulkan Debug Resources.
+  DebugMode                  m_DebugMode = DebugMode::Disabled;
+  vk::DebugUtilsMessengerEXT m_DebugMessenger;
+  vk::DebugReportCallbackEXT m_DebugCallback;
 
   // 0 : Graphics Queue
   // 1 : Compute Queue
