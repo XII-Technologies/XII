@@ -141,7 +141,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData()));
 
-    XII_VERIFY(m_Layers.GetCount() == uiLayerCount, "Expected ({0}) layer count does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
+    XII_VERIFY(m_Layers.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
   }
 
   {
