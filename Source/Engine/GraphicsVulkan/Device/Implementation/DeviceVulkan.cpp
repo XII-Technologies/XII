@@ -441,6 +441,21 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
 {
   ReportLiveGPUObjects();
 
+  if (m_DebugMode != DebugMode::Disabled)
+  {
+    if (m_DebugMessenger != VK_NULL_HANDLE)
+    {
+      DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+    }
+
+    if (m_DebugCallback != VK_NULL_HANDLE)
+    {
+      DestroyDebugReportCallbackEXT(m_Instance, m_DebugCallback, nullptr);
+    }
+  }
+
+  m_Instance.destroy();
+
   return XII_SUCCESS;
 }
 
