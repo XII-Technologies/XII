@@ -102,6 +102,8 @@ protected:
   void CreateCommandQueues();
 
 private:
+  vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
+
   bool EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions);
   bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr);
   bool IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName);

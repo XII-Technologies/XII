@@ -141,7 +141,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData()));
 
-    XII_VERIFY(m_Layers.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
+    XII_ASSERT_DEV(m_Layers.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
   }
 
   {
@@ -371,16 +371,16 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
       // Load function pointers.
       SetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(m_Instance, "vkSetDebugUtilsObjectNameEXT"));
-      XII_VERIFY(SetDebugUtilsObjectNameEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(SetDebugUtilsObjectNameEXT != nullptr, "Failed to load function pointer");
       SetDebugUtilsObjectTagEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectTagEXT>(vkGetInstanceProcAddr(m_Instance, "vkSetDebugUtilsObjectTagEXT"));
-      XII_VERIFY(SetDebugUtilsObjectTagEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(SetDebugUtilsObjectTagEXT != nullptr, "Failed to load function pointer");
 
       QueueBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueBeginDebugUtilsLabelEXT"));
-      XII_VERIFY(QueueBeginDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(QueueBeginDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
       QueueEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueEndDebugUtilsLabelEXT"));
-      XII_VERIFY(QueueEndDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(QueueEndDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
       QueueInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueInsertDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueInsertDebugUtilsLabelEXT"));
-      XII_VERIFY(QueueInsertDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(QueueInsertDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
     }
   }
   else if (m_DebugMode == DebugMode::Report)
@@ -419,7 +419,27 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, m_PhysicalDevices.GetData()));
 
-    XII_VERIFY(m_PhysicalDevices.GetCount() == uiPhysicalDeviceCount, "Expected physical device count ({0}) does not match the retrieved physical device count ({1}).", uiPhysicalDeviceCount, m_PhysicalDevices.GetCount());
+    XII_ASSERT_DEV(m_PhysicalDevices.GetCount() == uiPhysicalDeviceCount, "Expected physical device count ({0}) does not match the retrieved physical device count ({1}).", uiPhysicalDeviceCount, m_PhysicalDevices.GetCount());
+  }
+
+  // Select physical device.
+  {
+    m_PhysicalDevice = SelectPhysicalDevice(m_Description.m_uiAdapterID);
+
+    if (m_PhysicalDevice != VK_NULL_HANDLE)
+    {
+      const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties();
+
+      xiiLog::Info("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
+                   VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
+                   VK_API_VERSION_MAJOR(deviceProperties.driverVersion), VK_API_VERSION_MINOR(deviceProperties.driverVersion), VK_API_VERSION_PATCH(deviceProperties.driverVersion));
+    }
+    else
+    {
+      xiiLog::Error("Failed to find suitable Vulkan physical device.");
+
+      return XII_FAILURE;
+    }
   }
 
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
@@ -913,6 +933,61 @@ void xiiGALDeviceVulkan::CreateCommandQueues()
 {
 }
 
+vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
+{
+  const auto IsGraphicsAndComputeQueueSupported = [](const vk::PhysicalDevice& physicalDevice) -> bool {
+    xiiUInt32 uiQueueFamilyCount = 0U;
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr);
+
+    XII_ASSERT_DEV(uiQueueFamilyCount > 0, "");
+
+    xiiHybridArray<vk::QueueFamilyProperties, 2U> queueFamilyProperties;
+    queueFamilyProperties.SetCount(uiQueueFamilyCount);
+
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData());
+    XII_ASSERT_DEV(queueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
+
+    // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
+    // must support both graphics and compute operations.
+    for (const vk::QueueFamilyProperties& properties : queueFamilyProperties)
+    {
+      if ((properties.queueFlags & vk::QueueFlagBits::eGraphics) && (properties.queueFlags & vk::QueueFlagBits::eCompute))
+      {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  vk::PhysicalDevice selectedPhysicalDevice = VK_NULL_HANDLE;
+
+  if (uiAdapterID < m_PhysicalDevices.GetCount() && IsGraphicsAndComputeQueueSupported(m_PhysicalDevices[uiAdapterID]))
+  {
+    selectedPhysicalDevice = m_PhysicalDevices[uiAdapterID];
+  }
+
+  // Device Selection Criteria:
+  // - Exposes a queue family that supports both compute and graphics operations.
+  // - Prefer discrete GPU.
+  if (selectedPhysicalDevice == VK_NULL_HANDLE)
+  {
+    for (const vk::PhysicalDevice& physicalDevice : m_PhysicalDevices)
+    {
+      const vk::PhysicalDeviceProperties& deviceProperties = physicalDevice.getProperties();
+
+      if (IsGraphicsAndComputeQueueSupported(physicalDevice))
+      {
+        selectedPhysicalDevice = physicalDevice;
+
+        if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+          break;
+      }
+    }
+  }
+
+  return selectedPhysicalDevice;
+}
+
 bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions)
 {
   xiiUInt32 uiExtensionCount = 0U;
@@ -929,7 +1004,7 @@ bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xi
     return false;
   }
 
-  XII_VERIFY(extensions.GetCount() == uiExtensionCount, "The number of extensions written by vk::enumerateInstanceExtensionProperties is not consistent with the count returned in the first call. This is likely a Vulkan loader bug.");
+  XII_ASSERT_DEV(extensions.GetCount() == uiExtensionCount, "The number of extensions written by vk::enumerateInstanceExtensionProperties is not consistent with the count returned in the first call. This is likely a Vulkan loader bug.");
 
   return true;
 }
