@@ -131,6 +131,8 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan() = default;
 
 xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
+  XII_LOG_BLOCK("xiiGALDeviceVulkan::InitializePlatform");
+
   // Enumerate available layers.
   {
     xiiUInt32 uiLayerCount = 0U;
