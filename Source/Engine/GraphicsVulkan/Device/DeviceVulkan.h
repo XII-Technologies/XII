@@ -102,7 +102,8 @@ protected:
   void CreateCommandQueues();
 
 private:
-  vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
+  vk::PhysicalDevice                     SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
+  xiiGALGraphicsDeviceAdapterDescription GetPhysicalDeviceGraphicsAdapterDescription(const vk::PhysicalDevice& physicalDevice);
 
   bool EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions);
   bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr);
@@ -128,9 +129,13 @@ private:
   xiiDynamicArray<vk::PhysicalDevice>      m_PhysicalDevices;
 
   // Vulkan Device Objects.
-  vk::PhysicalDevice           m_PhysicalDevice;
-  vk::PhysicalDeviceProperties m_PhysicalDeviceProperties;
-  vk::Device                   m_Device;
+  vk::Device                                 m_Device;
+  vk::PhysicalDevice                         m_PhysicalDevice;
+  vk::PhysicalDeviceProperties               m_PhysicalDeviceProperties;
+  vk::PhysicalDeviceFeatures                 m_PhysicalDeviceFeatures;
+  vk::PhysicalDeviceMemoryProperties         m_PhysicalDeviceMemoryProperties;
+  xiiDynamicArray<vk::QueueFamilyProperties> m_PhysicalDeviceQueueFamilyProperties;
+  xiiDynamicArray<vk::ExtensionProperties>   m_PhysicalDeviceSupportedExtensions;
 
   // Vulkan Debug Resources.
   DebugMode                  m_DebugMode = DebugMode::Disabled;

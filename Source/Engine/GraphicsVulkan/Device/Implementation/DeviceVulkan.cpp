@@ -428,6 +428,45 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     m_PhysicalDevice = SelectPhysicalDevice(m_Description.m_uiAdapterID);
 
+    m_PhysicalDeviceProperties       = m_PhysicalDevice.getProperties();
+    m_PhysicalDeviceFeatures         = m_PhysicalDevice.getFeatures();
+    m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties();
+
+    xiiUInt32 uiQueueFamilyCount = 0U;
+    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr);
+
+    XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "");
+
+    m_PhysicalDeviceQueueFamilyProperties.SetCount(uiQueueFamilyCount);
+    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, m_PhysicalDeviceQueueFamilyProperties.GetData());
+
+    XII_ASSERT_DEV(m_PhysicalDeviceQueueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
+
+    // Get list of supported extensions.
+    xiiUInt32 uiExtensionCount = 0U;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, nullptr));
+
+    if (uiExtensionCount > 0U)
+    {
+      m_PhysicalDeviceSupportedExtensions.SetCount(uiExtensionCount);
+
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, m_PhysicalDeviceSupportedExtensions.GetData()));
+
+      XII_ASSERT_DEV(m_PhysicalDeviceSupportedExtensions.GetCount() == uiExtensionCount, "");
+
+      {
+        xiiStringBuilder sb;
+        sb.SetFormat("Device '{}' Supported Extensions", m_PhysicalDeviceProperties.deviceName);
+
+        XII_LOG_BLOCK(sb);
+
+        for (const auto& extensionProperty : m_PhysicalDeviceSupportedExtensions)
+        {
+          xiiLog::Info("{} {}.{}.{}", extensionProperty.extensionName, VK_API_VERSION_MAJOR(extensionProperty.specVersion), VK_API_VERSION_MINOR(extensionProperty.specVersion), VK_API_VERSION_PATCH(extensionProperty.specVersion));
+        }
+      }
+    }
+
     if (m_PhysicalDevice != VK_NULL_HANDLE)
     {
       const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties();
@@ -929,10 +968,33 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
 void xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 {
+  XII_LOG_BLOCK("xiiGALDeviceVulkan::FillCapabilitiesPlatform");
+
+  vk::PhysicalDeviceMemoryProperties memoryProperties = m_PhysicalDevice.getMemoryProperties();
+  vk::PhysicalDeviceFeatures         features         = m_PhysicalDevice.getFeatures();
+
+  // Enable device features if they are supported and throw an error if not supported, but required user.
 }
 
 void xiiGALDeviceVulkan::CreateCommandQueues()
 {
+  xiiHybridArray<const char*, 4U> deviceExtensions;
+
+  if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
+  {
+    deviceExtensions.PushBack(VK_KHR_SURFACE_EXTENSION_NAME);
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_MAINTENANCE1_EXTENSION_NAME))
+  {
+    // To allow negative viewport height.
+
+    deviceExtensions.PushBack(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+  }
+  else
+  {
+    xiiLog::Error("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+  }
 }
 
 vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
@@ -988,6 +1050,13 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
   }
 
   return selectedPhysicalDevice;
+}
+
+xiiGALGraphicsDeviceAdapterDescription xiiGALDeviceVulkan::GetPhysicalDeviceGraphicsAdapterDescription(const vk::PhysicalDevice& physicalDevice)
+{
+  xiiGALGraphicsDeviceAdapterDescription deviceAdapterDescription;
+
+  return xiiGALGraphicsDeviceAdapterDescription();
 }
 
 bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions)
