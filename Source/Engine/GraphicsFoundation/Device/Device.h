@@ -569,7 +569,7 @@ protected:
 
   virtual void WaitIdlePlatform() = 0;
 
-  virtual void FillCapabilitiesPlatform() = 0;
+  virtual xiiResult FillCapabilitiesPlatform() = 0;
 
   /// \endcond
 

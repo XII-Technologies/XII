@@ -904,7 +904,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveFeature
     Basic           = XII_BIT(0), ///<
     Vote            = XII_BIT(1), ///<
     Arithmetic      = XII_BIT(2), ///<
-    BallOut         = XII_BIT(3), ///<
+    Ballot          = XII_BIT(3), ///<
     Shuffle         = XII_BIT(4), ///<
     ShuffleRelative = XII_BIT(5), ///<
     Clustered       = XII_BIT(6), ///<
@@ -918,7 +918,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveFeature
     StorageType Basic : 1;
     StorageType Vote : 1;
     StorageType Arithmetic : 1;
-    StorageType BallOut : 1;
+    StorageType Ballot : 1;
     StorageType Shuffle : 1;
     StorageType ShuffleRelative : 1;
     StorageType Clustered : 1;
@@ -1112,7 +1112,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAxis
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateAxis);
 
 /// \brief This describes the shading rate for both the horizontal and vertical axes.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRate
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateFlags
 {
   using StorageType = xiiUInt8;
 
@@ -1145,9 +1145,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRate
   };
 };
 
-XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRate);
+XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRateFlags);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRate);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateFlags);
 
 /// \brief This describes the sample count.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount

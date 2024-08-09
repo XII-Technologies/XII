@@ -103,7 +103,7 @@ XII_ALWAYS_INLINE constexpr bool xiiGALTextureProperties::operator==(const xiiGA
 
 XII_ALWAYS_INLINE constexpr bool xiiGALSamplerProperties::operator==(const xiiGALSamplerProperties& rhs) const
 {
-  return m_bBorderSamplingModeSupported == rhs.m_bBorderSamplingModeSupported && m_bAnisotropicFilteringSupported == rhs.m_bAnisotropicFilteringSupported && m_bLODBiasSupported == rhs.m_bLODBiasSupported;
+  return m_bBorderSamplingModeSupported == rhs.m_bBorderSamplingModeSupported && m_uiMaxAnisotropy == rhs.m_uiMaxAnisotropy && m_bLODBiasSupported == rhs.m_bLODBiasSupported;
 }
 
 XII_ALWAYS_INLINE constexpr bool xiiGALWaveOperationProperties::operator==(const xiiGALWaveOperationProperties& rhs) const

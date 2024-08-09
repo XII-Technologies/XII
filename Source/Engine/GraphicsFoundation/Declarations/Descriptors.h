@@ -165,9 +165,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerProperties : public xiiHashableSt
 {
   XII_DECLARE_POD_TYPE();
 
-  bool m_bBorderSamplingModeSupported   = false; ///< Indicates if device supports border texture addressing mode.
-  bool m_bAnisotropicFilteringSupported = false; ///< Indicates if device supports anisotropic filtering.
-  bool m_bLODBiasSupported              = false; ///< Indicates if device supports MIP load bias.
+  bool     m_bBorderSamplingModeSupported = false; ///< Indicates if device supports border texture addressing mode.
+  xiiUInt8 m_uiMaxAnisotropy              = 1U;    ///< Maximum anisotropy level supported by the device. If anisotropic filtering is not supported by the device, this value is 1.
+  bool     m_bLODBiasSupported            = false; ///< Indicates if device supports MIP load bias.
+
 
   /// \brief Equality comparison operator.
   constexpr bool operator==(const xiiGALSamplerProperties& rhs) const;
@@ -312,8 +313,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiBitflags<xiiGALShadingRate> m_ShadingRate = xiiGALShadingRate::_1X1; ///< The supported shading rate.
-  xiiBitflags<xiiGALSampleCount> m_SampleBits  = xiiGALSampleCount::None; ///< The combination of supported sample counts.
+  xiiBitflags<xiiGALShadingRateFlags> m_ShadingRate = xiiGALShadingRateFlags::_1X1; ///< The supported shading rate.
+  xiiBitflags<xiiGALSampleCount>      m_SampleBits  = xiiGALSampleCount::None;      ///< The combination of supported sample counts.
 
   /// \brief Equality comparison operator.
   constexpr bool operator==(const xiiGALShadingRateMode& rhs) const;
