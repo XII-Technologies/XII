@@ -46,6 +46,9 @@ PFN_vkQueueInsertDebugUtilsLabelEXT QueueInsertDebugUtilsLabelEXT = nullptr;
 PFN_vkCreateDebugReportCallbackEXT  CreateDebugReportCallbackEXT  = nullptr;
 PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallbackEXT = nullptr;
 
+// Shading Rates
+PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR GetPhysicalDeviceFragmentShadingRatesKHR = nullptr;
+
 xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceVulkan, description);
@@ -972,10 +975,282 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::FillCapabilitiesPlatform");
 
-  vk::PhysicalDeviceMemoryProperties memoryProperties = m_PhysicalDevice.getMemoryProperties();
-  vk::PhysicalDeviceFeatures         features         = m_PhysicalDevice.getFeatures();
+  // Graphics Adapter Properties
+  {
+    m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Vulkan;
 
-  // Enable device features if they are supported and throw an error if not supported, but required user.
+    m_AdapterDescription.m_sAdapterName = m_PhysicalDeviceProperties.deviceName;
+
+    switch (m_PhysicalDeviceProperties.deviceType)
+    {
+      case vk::PhysicalDeviceType::eIntegratedGpu:
+        m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
+        break;
+
+      case vk::PhysicalDeviceType::eDiscreteGpu:
+        m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Discrete;
+        break;
+
+      case vk::PhysicalDeviceType::eCpu:
+        m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Software;
+        break;
+
+      default:
+        m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Unknown;
+        break;
+    }
+
+    m_AdapterDescription.m_Vendor             = xiiGALGraphicsUtilities::GetVendorFromID(m_PhysicalDeviceProperties.vendorID);
+    m_AdapterDescription.m_uiVendorID         = m_PhysicalDeviceProperties.vendorID;
+    m_AdapterDescription.m_uiDeviceID         = m_PhysicalDeviceProperties.deviceID;
+    m_AdapterDescription.m_uiVideoOutputCount = 0U;
+  }
+
+  // Buffer Properties
+  {
+    m_AdapterDescription.m_BufferProperties.m_uiConstantBufferAlignment         = static_cast<xiiUInt32>(m_PhysicalDeviceProperties.limits.minUniformBufferOffsetAlignment);
+    m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment = static_cast<xiiUInt32>(m_PhysicalDeviceProperties.limits.minStorageBufferOffsetAlignment);
+
+    static_assert(sizeof(m_AdapterDescription.m_BufferProperties) == 8, "There may be uninitialized buffer properties.");
+  }
+
+  // Texture Properties
+  {
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture1DDimension     = m_PhysicalDeviceProperties.limits.maxImageDimension1D;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture1DArraySlices   = m_PhysicalDeviceProperties.limits.maxImageArrayLayers;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture2DDimension     = m_PhysicalDeviceProperties.limits.maxImageDimension2D;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture2DArraySlices   = m_PhysicalDeviceProperties.limits.maxImageArrayLayers;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture3DDimension     = m_PhysicalDeviceProperties.limits.maxImageDimension3D;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTextureCubeDimension   = m_PhysicalDeviceProperties.limits.maxImageDimensionCube;
+    m_AdapterDescription.m_TextureProperties.m_bTexture2DMSSupported       = true;
+    m_AdapterDescription.m_TextureProperties.m_bTexture2DMSArraySupported  = true;
+    m_AdapterDescription.m_TextureProperties.m_bTextureViewSupported       = true;
+    m_AdapterDescription.m_TextureProperties.m_bCubeMapArraysSupported     = m_PhysicalDeviceFeatures.imageCubeArray == VK_TRUE;
+    m_AdapterDescription.m_TextureProperties.m_bTextureView2DOn3DSupported = m_PhysicalDeviceExtensionFeatures.m_bHasPortabilitySubset ? m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset.imageView2DOn3DImage == VK_TRUE : true;
+
+    static_assert(sizeof(m_AdapterDescription.m_TextureProperties) == 32, "There may be uninitialized texture properties.");
+  }
+
+  // Sampler Properties
+  {
+    m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported = true;
+    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy              = static_cast<xiiUInt8>(m_PhysicalDeviceProperties.limits.maxSamplerAnisotropy);
+    m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported            = true;
+
+    static_assert(sizeof(m_AdapterDescription.m_SamplerProperties) == 3, "There may be uninitialized sampler properties.");
+  }
+
+  // Ray Tracing Properties
+  if (m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Disabled)
+  {
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth        = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayRecursionDepth;
+    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize    = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupHandleSize;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride    = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxShaderGroupStride;
+    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupBaseAlignment;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads         = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayDispatchInvocationCount;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS      = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxInstanceCount);
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS     = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxPrimitiveCount);
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS     = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxGeometryCount);
+    m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment    = 1U;
+    m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
+    m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = 16; // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = 8;  // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.minAccelerationStructureScratchOffsetAlignment;
+    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
+
+    if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline)
+      m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::StandaloneShaders;
+
+    if (m_PhysicalDeviceExtensionFeatures.m_RayQuery.rayQuery)
+      m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::InlineRayTracing;
+
+    if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipelineTraceRaysIndirect)
+      m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::IndirectRayTracing;
+
+    static_assert(sizeof(m_AdapterDescription.m_RayTracingProperties) == 60, "There may be uninitialized ray tracing properties.");
+  }
+
+  // Wave Operation Properties
+  {
+    vk::ShaderStageFlags supportedStages = m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & (vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eCompute);
+
+    if (m_PhysicalDeviceFeatures.geometryShader != VK_FALSE)
+      supportedStages |= m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & vk::ShaderStageFlagBits::eGeometry;
+
+    if (m_PhysicalDeviceFeatures.tessellationShader != VK_FALSE)
+      supportedStages |= m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & (vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation);
+
+    if (m_PhysicalDeviceExtensionFeatures.m_MeshShader.meshShader != VK_FALSE && m_PhysicalDeviceExtensionFeatures.m_MeshShader.taskShader != VK_FALSE)
+      supportedStages |= m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & (vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eMeshEXT);
+
+    if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline != VK_FALSE)
+    {
+      constexpr auto allRayTracingFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR | vk::ShaderStageFlagBits::eIntersectionKHR | vk::ShaderStageFlagBits::eCallableKHR;
+
+      supportedStages |= m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & allRayTracingFlags;
+    }
+
+    m_AdapterDescription.m_WaveOperationProperties.m_uiMinSize             = m_PhysicalDeviceExtensionProperties.m_Subgroup.subgroupSize;
+    m_AdapterDescription.m_WaveOperationProperties.m_uiMaxSize             = m_PhysicalDeviceExtensionProperties.m_Subgroup.subgroupSize;
+    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages = xiiVulkanTypeConversions::GetGALShaderStageFlags(supportedStages);
+    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Unknown;
+
+    if (m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedOperations & vk::SubgroupFeatureFlagBits::eBasic)
+      m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Basic;
+    if (m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedOperations & vk::SubgroupFeatureFlagBits::eVote)
+      m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Vote;
+    if (m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedOperations & vk::SubgroupFeatureFlagBits::eArithmetic)
+      m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Arithmetic;
+    if (m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedOperations & vk::SubgroupFeatureFlagBits::eBallot)
+      m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Ballot;
+    if (m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedOperations & vk::SubgroupFeatureFlagBits::eShuffle)
+      m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Shuffle;
+    if (m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedOperations & vk::SubgroupFeatureFlagBits::eShuffleRelative)
+      m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::ShuffleRelative;
+    if (m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedOperations & vk::SubgroupFeatureFlagBits::eClustered)
+      m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Clustered;
+    if (m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedOperations & vk::SubgroupFeatureFlagBits::eQuad)
+      m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Quad;
+
+    static_assert(sizeof(m_AdapterDescription.m_WaveOperationProperties) == 16, "There may be uninitialized wave operation properties.");
+  }
+
+  // Mesh Shader Properties
+  {
+    m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountX     = m_PhysicalDeviceExtensionProperties.m_MeshShader.maxMeshWorkGroupCount[0];
+    m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountY     = m_PhysicalDeviceExtensionProperties.m_MeshShader.maxMeshWorkGroupCount[1];
+    m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountZ     = m_PhysicalDeviceExtensionProperties.m_MeshShader.maxMeshWorkGroupCount[2];
+    m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupTotalCount = m_PhysicalDeviceExtensionProperties.m_MeshShader.maxMeshWorkGroupTotalCount;
+
+    static_assert(sizeof(m_AdapterDescription.m_MeshShaderProperties) == 16, "There may be uninitialized mesh shader properties.");
+  }
+
+  // Compute Shader Properties
+  {
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiSharedMemorySize          = m_PhysicalDeviceProperties.limits.maxComputeSharedMemorySize;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupInvocations = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupInvocations;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeX       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[0];
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeY       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[1];
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeZ       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[2];
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountX      = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupCount[0];
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountY      = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupCount[1];
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountZ      = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupCount[2];
+
+    static_assert(sizeof(m_AdapterDescription.m_ComputeShaderProperties) == 32, "There may be uninitialized compute shader properties.");
+  }
+
+  // Shading Rate Properties
+  if (m_AdapterDescription.m_Features.m_VariableRateShading != xiiGALDeviceFeatureState::Disabled)
+  {
+    // VK_KHR_fragment_shading_rate
+    if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate != VK_FALSE || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.primitiveFragmentShadingRate != VK_FALSE || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != VK_FALSE)
+    {
+      auto& shadingRateCapabilityFlags = m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags;
+      auto  SetShadingRateCapability   = [&shadingRateCapabilityFlags](VkBool32 vkFlag, xiiGALShadingRateCapabilityFlags::Enum capabilityFlag) {
+        if (vkFlag != VK_FALSE)
+        {
+          shadingRateCapabilityFlags |= capabilityFlag;
+        }
+      };
+
+      SetShadingRateCapability(m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate, xiiGALShadingRateCapabilityFlags::PerDraw);
+      SetShadingRateCapability(m_PhysicalDeviceExtensionFeatures.m_ShadingRate.primitiveFragmentShadingRate, xiiGALShadingRateCapabilityFlags::PerPrimitive);
+      SetShadingRateCapability(m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate, xiiGALShadingRateCapabilityFlags::TextureBased);
+      SetShadingRateCapability(m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateWithSampleMask, xiiGALShadingRateCapabilityFlags::SampleMask);
+      SetShadingRateCapability(m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateWithShaderSampleMask, xiiGALShadingRateCapabilityFlags::ShaderSampleMask);
+      SetShadingRateCapability(m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateWithShaderDepthStencilWrites, xiiGALShadingRateCapabilityFlags::ShaderDepthStencilWrite);
+      SetShadingRateCapability(m_PhysicalDeviceExtensionProperties.m_ShadingRate.primitiveFragmentShadingRateWithMultipleViewports, xiiGALShadingRateCapabilityFlags::PerPrimitiveWithMultipleViewports);
+      SetShadingRateCapability(m_PhysicalDeviceExtensionProperties.m_ShadingRate.layeredShadingRateAttachments, xiiGALShadingRateCapabilityFlags::TextureArray);
+
+      if (shadingRateCapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureBased))
+        shadingRateCapabilityFlags |= xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget;
+
+      // Always enabled in Vulkan.
+      shadingRateCapabilityFlags |= xiiGALShadingRateCapabilityFlags::ShadingRateShaderInput;
+
+      m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags = xiiGALShadingRateCombiner::PassThrough | xiiGALShadingRateCombiner::CombinerOverride;
+
+      if (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateNonTrivialCombinerOps != VK_FALSE)
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombiner::CombinerMin | xiiGALShadingRateCombiner::CombinerMax;
+        m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateStrictMultiplyCombiner != VK_FALSE) ? xiiGALShadingRateCombiner::CombinerMul : xiiGALShadingRateCombiner::CombinerSum;
+      }
+
+      if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != VK_FALSE)
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_Format             = xiiGALShadingRateFormat::Palette;
+        m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize.width  = m_PhysicalDeviceExtensionProperties.m_ShadingRate.minFragmentShadingRateAttachmentTexelSize.width;
+        m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize.height = m_PhysicalDeviceExtensionProperties.m_ShadingRate.minFragmentShadingRateAttachmentTexelSize.height;
+        m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize.width  = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateAttachmentTexelSize.width;
+        m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize.height = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateAttachmentTexelSize.height;
+      }
+
+      std::vector<VkPhysicalDeviceFragmentShadingRateKHR> shadingRates;
+      {
+        GetPhysicalDeviceFragmentShadingRatesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR>(vkGetInstanceProcAddr(m_Instance, "vkGetPhysicalDeviceFragmentShadingRatesKHR"));
+        XII_ASSERT_DEV(GetPhysicalDeviceFragmentShadingRatesKHR, "Failed to load vkGetPhysicalDeviceFragmentShadingRatesKHR extension functions.");
+
+        xiiUInt32 uiShadingRateCount = 0U;
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(GetPhysicalDeviceFragmentShadingRatesKHR(m_PhysicalDevice, &uiShadingRateCount, nullptr));
+
+        shadingRates.resize(uiShadingRateCount);
+
+        for (auto& rate : shadingRates)
+          rate.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR;
+
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(GetPhysicalDeviceFragmentShadingRatesKHR(m_PhysicalDevice, &uiShadingRateCount, shadingRates.data()));
+      }
+
+      constexpr VkSampleCountFlags VK_SAMPLE_COUNT_ALL = ((xiiUInt32)vk::SampleCountFlagBits::e64 << 1) - 1;
+
+      const xiiUInt32 uiShadingRateCount = static_cast<xiiUInt8>(xiiMath::Min(shadingRates.size(), size_t{XII_GAL_MAX_SHADING_RATE}));
+      for (xiiUInt32 i = 0; i < uiShadingRateCount; ++i)
+      {
+        const auto& srcShadingRate = shadingRates[i];
+        auto&       dstShadingRate = m_AdapterDescription.m_ShadingRateProperties.m_Modes.ExpandAndGetRef();
+
+        // maxFragmentShadingRateRasterizationSamples - contains only maximum bit
+        // sampleCounts - contains all supported bits
+        XII_ASSERT_DEV((srcShadingRate.fragmentSize.width == 1 && srcShadingRate.fragmentSize.height == 1) || (xiiUInt32{srcShadingRate.sampleCounts} <= ((static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateRasterizationSamples) << 1) - 1)), "");
+
+        switch (srcShadingRate.sampleCounts)
+        {
+          case VK_SAMPLE_COUNT_1_BIT:
+            dstShadingRate.m_SampleBits = xiiGALSampleCount::OneSample;
+            break;
+          case VK_SAMPLE_COUNT_2_BIT:
+            dstShadingRate.m_SampleBits = xiiGALSampleCount::TwoSamples;
+            break;
+          case VK_SAMPLE_COUNT_4_BIT:
+            dstShadingRate.m_SampleBits = xiiGALSampleCount::FourSamples;
+            break;
+          case VK_SAMPLE_COUNT_8_BIT:
+            dstShadingRate.m_SampleBits = xiiGALSampleCount::EightSamples;
+            break;
+          case VK_SAMPLE_COUNT_16_BIT:
+            dstShadingRate.m_SampleBits = xiiGALSampleCount::SixteenSamples;
+            break;
+          case VK_SAMPLE_COUNT_32_BIT:
+            dstShadingRate.m_SampleBits = xiiGALSampleCount::ThirtyTwoSamples;
+            break;
+          case VK_SAMPLE_COUNT_64_BIT:
+            dstShadingRate.m_SampleBits = xiiGALSampleCount::SixtyFourSamples;
+            break;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+
+        dstShadingRate.m_ShadingRate = xiiVulkanTypeConversions::FragmentSizeToShadingRate(vk::Extent2D{srcShadingRate.fragmentSize});
+      }
+    }
+    // VK_EXT_fragment_density_map
+    else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != VK_FALSE)
+    {
+      /// \todo Implement here.
+    }
+  }
+  return XII_FAILURE;
 }
 
 void xiiGALDeviceVulkan::CreateCommandQueues()

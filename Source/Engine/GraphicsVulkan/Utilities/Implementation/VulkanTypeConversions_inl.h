@@ -422,3 +422,23 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALTextureFo
   }
   return vk::Format::eUndefined;
 }
+
+XII_ALWAYS_INLINE vk::ShaderStageFlags xiiVulkanTypeConversions::GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e)
+{
+  return vk::ShaderStageFlags();
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALShaderType> xiiVulkanTypeConversions::GetGALShaderStageFlags(vk::ShaderStageFlags e)
+{
+  return xiiBitflags<xiiGALShaderType>();
+}
+
+XII_ALWAYS_INLINE vk::Extent2D xiiVulkanTypeConversions::ShadingRateToFragmentSize(xiiBitflags<xiiGALShadingRateFlags> e)
+{
+  return vk::Extent2D();
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALShadingRateFlags> xiiVulkanTypeConversions::FragmentSizeToShadingRate(vk::Extent2D e)
+{
+  return xiiBitflags<xiiGALShadingRateFlags>();
+}

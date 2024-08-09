@@ -36,6 +36,12 @@ public:
   static vk::ColorComponentFlags GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
 
   static vk::Format GetFormat(xiiGALTextureFormat::Enum e);
+
+  static vk::ShaderStageFlags          GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e);
+  static xiiBitflags<xiiGALShaderType> GetGALShaderStageFlags(vk::ShaderStageFlags e);
+
+  static vk::Extent2D                        ShadingRateToFragmentSize(xiiBitflags<xiiGALShadingRateFlags> e);
+  static xiiBitflags<xiiGALShadingRateFlags> FragmentSizeToShadingRate(vk::Extent2D e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
