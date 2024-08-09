@@ -7,6 +7,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
@@ -30,6 +31,7 @@
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
+#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 
 // Debug Utilities.
 PFN_vkCreateDebugUtilsMessengerEXT  CreateDebugUtilsMessengerEXT  = nullptr;
@@ -315,7 +317,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     vk::ApplicationInfo applicationInformation = {};
     applicationInformation.sType               = vk::StructureType::eApplicationInfo;
-    applicationInformation.apiVersion          = s_uiVulkanVersion;
+    applicationInformation.apiVersion          = VK_API_VERSION_1_1;
     applicationInformation.applicationVersion  = VK_MAKE_VERSION(BUILDSYSTEM_SDKVERSION_MAJOR, BUILDSYSTEM_SDKVERSION_MINOR, BUILDSYSTEM_SDKVERSION_PATCH);
     applicationInformation.engineVersion       = VK_MAKE_VERSION(BUILDSYSTEM_SDKVERSION_MAJOR, BUILDSYSTEM_SDKVERSION_MINOR, BUILDSYSTEM_SDKVERSION_PATCH);
     applicationInformation.pApplicationName    = "XII";
@@ -966,7 +968,7 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
   FlushPendingObjects();
 }
 
-void xiiGALDeviceVulkan::FillCapabilitiesPlatform()
+xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::FillCapabilitiesPlatform");
 

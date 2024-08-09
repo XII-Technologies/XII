@@ -17,6 +17,7 @@
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #endif
 
+#define VK_ENABLE_BETA_EXTENSIONS
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  define VK_USE_PLATFORM_WIN32_KHR
 #elif XII_ENABLED(XII_PLATFORM_LINUX)

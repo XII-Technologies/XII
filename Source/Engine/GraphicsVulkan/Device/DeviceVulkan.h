@@ -97,7 +97,7 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
-  virtual void FillCapabilitiesPlatform() override final;
+  virtual xiiResult FillCapabilitiesPlatform() override final;
 
   void CreateCommandQueues();
 
@@ -118,7 +118,53 @@ private:
     Report,
   };
 
-  static constexpr xiiUInt32 s_uiVulkanVersion = VK_API_VERSION_1_1;
+  struct ExtensionFeatures
+  {
+    vk::PhysicalDeviceMeshShaderFeaturesEXT             m_MeshShader;
+    vk::PhysicalDevice16BitStorageFeaturesKHR           m_Storage16Bit;
+    vk::PhysicalDevice8BitStorageFeaturesKHR            m_Storage8Bit;
+    vk::PhysicalDeviceShaderFloat16Int8FeaturesKHR      m_ShaderFloat16Int8;
+    vk::PhysicalDeviceAccelerationStructureFeaturesKHR  m_AccelerationStructure;
+    vk::PhysicalDeviceRayTracingPipelineFeaturesKHR     m_RayTracingPipeline;
+    vk::PhysicalDeviceRayQueryFeaturesKHR               m_RayQuery;
+    vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR    m_BufferDeviceAddress;
+    vk::PhysicalDeviceDescriptorIndexingFeaturesEXT     m_DescriptorIndexing;
+    vk::PhysicalDevicePortabilitySubsetFeaturesKHR      m_PortabilitySubset;
+    vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT m_VertexAttributeDivisor;
+    vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR      m_TimelineSemaphore;
+    vk::PhysicalDeviceHostQueryResetFeatures            m_HostQueryReset;
+    vk::PhysicalDeviceFragmentShadingRateFeaturesKHR    m_ShadingRate;
+    vk::PhysicalDeviceFragmentDensityMapFeaturesEXT     m_FragmentDensityMap;  // Only for desktop devices
+    vk::PhysicalDeviceFragmentDensityMap2FeaturesEXT    m_FragmentDensityMap2; // Only for mobile devices
+    vk::PhysicalDeviceMultiviewFeaturesKHR              m_Multiview;           // Required for RenderPass2
+    vk::PhysicalDeviceMultiDrawFeaturesEXT              m_MultiDraw;
+    vk::PhysicalDeviceShaderDrawParametersFeatures      m_ShaderDrawParameters;
+
+    bool m_bSpirv14              = false; // Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension
+    bool m_bSpirv15              = false; // DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5
+    bool m_bSubgroupOps          = false; // Requires Vulkan 1.1
+    bool m_bHasPortabilitySubset = false;
+    bool m_bRenderPass2          = false;
+    bool m_bDrawIndirectCount    = false;
+  };
+
+  struct ExtensionProperties
+  {
+    vk::PhysicalDeviceMeshShaderPropertiesEXT             m_MeshShader;
+    vk::PhysicalDeviceAccelerationStructurePropertiesKHR  m_AccelerationStructure;
+    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR     m_RayTracingPipeline;
+    vk::PhysicalDeviceDescriptorIndexingPropertiesEXT     m_DescriptorIndexing;
+    vk::PhysicalDevicePortabilitySubsetPropertiesKHR      m_PortabilitySubset;
+    vk::PhysicalDeviceSubgroupProperties                  m_Subgroup;
+    vk::PhysicalDeviceVertexAttributeDivisorPropertiesEXT m_VertexAttributeDivisor;
+    vk::PhysicalDeviceTimelineSemaphorePropertiesKHR      m_TimelineSemaphore;
+    vk::PhysicalDeviceFragmentShadingRatePropertiesKHR    m_ShadingRate;
+    vk::PhysicalDeviceFragmentDensityMapPropertiesEXT     m_FragmentDensityMap;
+    vk::PhysicalDeviceMultiviewPropertiesKHR              m_Multiview;
+    vk::PhysicalDeviceMaintenance3Properties              m_Maintenance3;
+    vk::PhysicalDeviceFragmentDensityMap2PropertiesEXT    m_FragmentDensityMap2;
+    vk::PhysicalDeviceMultiDrawPropertiesEXT              m_MultiDraw;
+  };
 
   vk::Instance m_Instance;
 
@@ -136,6 +182,8 @@ private:
   vk::PhysicalDeviceMemoryProperties         m_PhysicalDeviceMemoryProperties;
   xiiDynamicArray<vk::QueueFamilyProperties> m_PhysicalDeviceQueueFamilyProperties;
   xiiDynamicArray<vk::ExtensionProperties>   m_PhysicalDeviceSupportedExtensions;
+  ExtensionFeatures                          m_PhysicalDeviceExtensionFeatures;
+  ExtensionProperties                        m_PhysicalDeviceExtensionProperties;
 
   // Vulkan Debug Resources.
   DebugMode                  m_DebugMode = DebugMode::Disabled;
