@@ -1169,12 +1169,12 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       // Always enabled in Vulkan.
       shadingRateCapabilityFlags |= xiiGALShadingRateCapabilityFlags::ShadingRateShaderInput;
 
-      m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags = xiiGALShadingRateCombiner::PassThrough | xiiGALShadingRateCombiner::CombinerOverride;
+      m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags = xiiGALShadingRateCombinerFlags::PassThrough | xiiGALShadingRateCombinerFlags::CombinerOverride;
 
       if (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateNonTrivialCombinerOps != VK_FALSE)
       {
-        m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombiner::CombinerMin | xiiGALShadingRateCombiner::CombinerMax;
-        m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateStrictMultiplyCombiner != VK_FALSE) ? xiiGALShadingRateCombiner::CombinerMul : xiiGALShadingRateCombiner::CombinerSum;
+        m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombinerFlags::CombinerMin | xiiGALShadingRateCombinerFlags::CombinerMax;
+        m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateStrictMultiplyCombiner != VK_FALSE) ? xiiGALShadingRateCombinerFlags::CombinerMul : xiiGALShadingRateCombinerFlags::CombinerSum;
       }
 
       if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != VK_FALSE)
@@ -1247,8 +1247,134 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     // VK_EXT_fragment_density_map
     else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != VK_FALSE)
     {
-      /// \todo Implement here.
+      m_AdapterDescription.m_ShadingRateProperties.m_Format          = xiiGALShadingRateFormat::RG8UNormalized;
+      m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags   = xiiGALShadingRateCombinerFlags::PassThrough | xiiGALShadingRateCombinerFlags::CombinerOverride;
+      m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags = xiiGALShadingRateCapabilityFlags::TextureBased | xiiGALShadingRateCapabilityFlags::SameTextureForWholeRenderPass | xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget;
+
+      if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMapDynamic != VK_FALSE)
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnGPU;
+      }
+      else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2.fragmentDensityMapDeferred != VK_FALSE)
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnSubmit;
+      }
+      else
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnSetRenderTarget;
+      }
+
+      if (m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.fragmentDensityInvocations != VK_FALSE)
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::AdditionalInvocations;
+      }
+      if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMapNonSubsampledImages != VK_FALSE)
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget;
+      }
+
+      // This is zero if VK_EXT_fragment_density_map2 is not supported.
+      m_AdapterDescription.m_ShadingRateProperties.m_uiMaxSubSampledArraySlices = m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap2.maxSubsampledArrayLayers;
+
+      m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize.width  = m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.minFragmentDensityTexelSize.width;
+      m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize.height = m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.minFragmentDensityTexelSize.height;
+      m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize.width  = m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.maxFragmentDensityTexelSize.width;
+      m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize.height = m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.maxFragmentDensityTexelSize.height;
+
+      xiiGALShadingRateMode shadingMode{.m_ShadingRate = xiiGALShadingRateFlags::_1X1, .m_SampleBits = xiiGALSampleCount::AllSamples};
+
+      m_AdapterDescription.m_ShadingRateProperties.m_Modes.PushBack(shadingMode);
     }
+
+    // Retrieve supported bind flags.
+    if (m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureBased))
+    {
+      vk::Format          vkShadingRateTextureFormat = vk::Format::eUndefined;
+      vk::ImageUsageFlags vkShadingRateTextureUsage  = (vk::ImageUsageFlagBits)0U;
+
+      if (m_AdapterDescription.m_ShadingRateProperties.m_Format == xiiGALShadingRateFormat::RG8UNormalized)
+      {
+        vkShadingRateTextureFormat = vk::Format::eR8G8Unorm;
+        vkShadingRateTextureUsage  = vk::ImageUsageFlagBits::eFragmentDensityMapEXT;
+      }
+      else
+      {
+        vkShadingRateTextureFormat = vk::Format::eR8Uint;
+        vkShadingRateTextureUsage  = vk::ImageUsageFlagBits::eFragmentShadingRateAttachmentKHR;
+      }
+
+      auto TestImageUsage = [&](vk::ImageUsageFlags usageFlags) -> bool {
+        vk::ImageFormatProperties imageFormatProperties = {};
+
+        vk::Result result = m_PhysicalDevice.getImageFormatProperties(vkShadingRateTextureFormat, vk::ImageType::e2D, vk::ImageTiling::eOptimal, vkShadingRateTextureUsage | usageFlags, {}, &imageFormatProperties);
+
+        return result == vk::Result::eSuccess;
+      };
+
+      vk::FormatProperties formatProperties = {};
+      m_PhysicalDevice.getFormatProperties(vkShadingRateTextureFormat, &formatProperties);
+      XII_ASSERT_DEV(formatProperties.optimalTilingFeatures & (vk::FormatFeatureFlagBits::eFragmentShadingRateAttachmentKHR | vk::FormatFeatureFlagBits::eFragmentDensityMapEXT), "");
+
+      m_AdapterDescription.m_ShadingRateProperties.m_BindFlags = xiiGALBindFlags::ShadingRate;
+      if ((formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage) && TestImageUsage(vk::ImageUsageFlagBits::eSampled))
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_BindFlags |= xiiGALBindFlags::ShaderResource;
+      }
+      if ((formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage) && TestImageUsage(vk::ImageUsageFlagBits::eStorage))
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_BindFlags |= xiiGALBindFlags::UnorderedAccess;
+      }
+      if ((formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eColorAttachment) && TestImageUsage(vk::ImageUsageFlagBits::eColorAttachment))
+      {
+        m_AdapterDescription.m_ShadingRateProperties.m_BindFlags |= xiiGALBindFlags::RenderTarget;
+      }
+    }
+
+    static_assert(sizeof(m_AdapterDescription.m_ShadingRateProperties) == 80, "There may be uninitialized shading rate properties.");
+  }
+
+  // Draw Command Properties
+  {
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue        = m_PhysicalDeviceProperties.limits.maxDrawIndexedIndexValue;
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxDrawIndirectCount = m_PhysicalDeviceProperties.limits.maxDrawIndirectCount;
+    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags        = xiiGALDrawCommandCapabilityFlags::DrawIndirect | xiiGALDrawCommandCapabilityFlags::BaseVertex;
+
+    if (m_PhysicalDeviceFeatures.multiDrawIndirect != VK_FALSE || m_PhysicalDeviceExtensionFeatures.m_bDrawIndirectCount)
+    {
+      m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect;
+    }
+    if (m_PhysicalDeviceFeatures.drawIndirectFirstInstance != VK_FALSE)
+    {
+      m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::DrawIndirectFirstInstance;
+    }
+    if (m_PhysicalDeviceExtensionFeatures.m_bDrawIndirectCount)
+    {
+      m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer;
+    }
+
+    static_assert(sizeof(m_AdapterDescription.m_DrawCommandProperties) == 12, "There may be uninitialized draw command properties.");
+  }
+
+  // Sparse Memory Properties
+  {
+    XII_ASSERT_DEV(m_PhysicalDeviceFeatures.sparseBinding && (m_PhysicalDeviceFeatures.sparseResidencyBuffer || m_PhysicalDeviceFeatures.sparseResidencyImage2D), "");
+
+    m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = m_PhysicalDeviceProperties.limits.sparseAddressSpaceSize;
+    m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = m_PhysicalDeviceProperties.limits.sparseAddressSpaceSize; // Currently no way to query.
+    m_AdapterDescription.m_SparseResourceProperties.m_uiStandardBlockSize = 64U << 10U;                                               // Documentation: "All currently defined standard sparse image block shapes are 64 KB in size."
+
+    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags       = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing;
+    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags = xiiGALSparseResourceCapabilityFlags::NonResidentSafe | xiiGALSparseResourceCapabilityFlags::MixedResourceTypeSupport;
+
+    auto& sparseResourceCapabilityFlags = m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags;
+    auto  SetResourceCapabilityFlag     = [&sparseResourceCapabilityFlags](vk::Bool32 feature, xiiGALSparseResourceCapabilityFlags::Enum flag) -> void {
+      if (feature != VK_FALSE)
+      {
+        sparseResourceCapabilityFlags |= flag;
+      }
+    };
+
+    /// \todo Implement here.
   }
   return XII_FAILURE;
 }
@@ -1265,7 +1391,6 @@ void xiiGALDeviceVulkan::CreateCommandQueues()
   if (IsExtensionAvailable(m_Extensions, VK_KHR_MAINTENANCE1_EXTENSION_NAME))
   {
     // To allow negative viewport height.
-
     deviceExtensions.PushBack(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
   }
   else
