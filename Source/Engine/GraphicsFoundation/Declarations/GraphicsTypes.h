@@ -1041,7 +1041,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueuePriority
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueuePriority);
 
 /// \brief This describes how shading rates coming from the different sources (base rate, primitive rate and VRS image rate) are combined.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCombiner
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCombinerFlags
 {
   using StorageType = xiiUInt8;
 
@@ -1068,9 +1068,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCombiner
   };
 };
 
-XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRateCombiner);
+XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRateCombinerFlags);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCombiner);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCombinerFlags);
 
 /// \brief This describes the shading rate texture format supported by the device.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateFormat

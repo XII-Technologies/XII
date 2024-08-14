@@ -323,15 +323,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
 /// \brief This describes the shading rate properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashableStruct<xiiGALShadingRateProperties>
 {
-  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Modes;                                                                ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
-  xiiBitflags<xiiGALShadingRateCapabilityFlags>                   m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;  ///< Shading rate capability flags.
-  xiiBitflags<xiiGALShadingRateCombiner>                          m_CombinerFlags              = xiiGALShadingRateCombiner::PassThrough;  ///< Combination of all supported shading rate combiners.
-  xiiEnum<xiiGALShadingRateFormat>                                m_Format                     = xiiGALShadingRateFormat::Unknown;        ///< Indicates which shading rate texture format is used by this device.
-  xiiEnum<xiiGALShadingRateTextureAccess>                         m_TextureAccess              = xiiGALShadingRateTextureAccess::Unknown; ///< Shading rate texture access type.
-  xiiBitflags<xiiGALBindFlags>                                    m_BindFlags                  = xiiGALBindFlags::None;                   ///< Indicates which bind flags are allowed for shading rate texture.
-  xiiSizeU32                                                      m_MinTileSize                = xiiSizeU32(0U, 0U);                      ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
-  xiiSizeU32                                                      m_MaxTileSize                = xiiSizeU32(0U, 0U);                      ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
-  xiiUInt32                                                       m_uiMaxSubSampledArraySlices = 0U;                                      ///< Maximum size of the texture array created with texture subsampled flag.
+  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Modes;                                                                    ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiBitflags<xiiGALShadingRateCapabilityFlags>                   m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;      ///< Shading rate capability flags.
+  xiiBitflags<xiiGALShadingRateCombinerFlags>                     m_CombinerFlags              = xiiGALShadingRateCombinerFlags::PassThrough; ///< Combination of all supported shading rate combiners.
+  xiiEnum<xiiGALShadingRateFormat>                                m_Format                     = xiiGALShadingRateFormat::Unknown;            ///< Indicates which shading rate texture format is used by this device.
+  xiiEnum<xiiGALShadingRateTextureAccess>                         m_TextureAccess              = xiiGALShadingRateTextureAccess::Unknown;     ///< Shading rate texture access type.
+  xiiBitflags<xiiGALBindFlags>                                    m_BindFlags                  = xiiGALBindFlags::None;                       ///< Indicates which bind flags are allowed for shading rate texture.
+  xiiSizeU32                                                      m_MinTileSize                = xiiSizeU32(0U, 0U);                          ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
+  xiiSizeU32                                                      m_MaxTileSize                = xiiSizeU32(0U, 0U);                          ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
+  xiiUInt32                                                       m_uiMaxSubSampledArraySlices = 0U;                                          ///< Maximum size of the texture array created with texture subsampled flag.
 
   /// \brief Equality comparison operator.
   bool operator==(const xiiGALShadingRateProperties& rhs) const;

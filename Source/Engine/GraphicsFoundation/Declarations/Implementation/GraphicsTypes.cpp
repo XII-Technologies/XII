@@ -522,13 +522,13 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCommandQueuePriority, 1)
   XII_ENUM_CONSTANT(xiiGALCommandQueuePriority::RealTime),
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateCombiner, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::PassThrough),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerOverride),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerMin),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerMax),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerSum),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerMul),
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateCombinerFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::PassThrough),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerOverride),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerMin),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerMax),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerSum),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerMul),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShadingRateFormat, 1)
