@@ -192,7 +192,7 @@ XII_ALWAYS_INLINE vk::ColorComponentFlags xiiVulkanTypeConversions::GetColorWrit
   if (e.IsNoFlagSet())
     return vk::ColorComponentFlagBits{};
 
-  vk::ColorComponentFlags colorMask;
+  vk::ColorComponentFlags colorMask = {};
 
   if (e.IsSet(xiiGALColorMask::Red))
     colorMask |= vk::ColorComponentFlagBits::eR;
@@ -425,20 +425,135 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALTextureFo
 
 XII_ALWAYS_INLINE vk::ShaderStageFlags xiiVulkanTypeConversions::GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e)
 {
-  return vk::ShaderStageFlags();
+  if (e == xiiGALShaderType::AllGraphics)
+  {
+    return vk::ShaderStageFlagBits::eAllGraphics;
+  }
+  else if (e == xiiGALShaderType::All)
+  {
+    return vk::ShaderStageFlagBits::eAll;
+  }
+
+  vk::ShaderStageFlags shaderStage = {};
+
+  if (e.IsSet(xiiGALShaderType::Vertex))
+    shaderStage |= vk::ShaderStageFlagBits::eVertex;
+  if (e.IsSet(xiiGALShaderType::Pixel))
+    shaderStage |= vk::ShaderStageFlagBits::eFragment;
+  if (e.IsSet(xiiGALShaderType::Geometry))
+    shaderStage |= vk::ShaderStageFlagBits::eGeometry;
+  if (e.IsSet(xiiGALShaderType::Hull))
+    shaderStage |= vk::ShaderStageFlagBits::eTessellationControl;
+  if (e.IsSet(xiiGALShaderType::Domain))
+    shaderStage |= vk::ShaderStageFlagBits::eTessellationEvaluation;
+  if (e.IsSet(xiiGALShaderType::Compute))
+    shaderStage |= vk::ShaderStageFlagBits::eCompute;
+  if (e.IsSet(xiiGALShaderType::Amplification))
+    shaderStage |= vk::ShaderStageFlagBits::eTaskEXT;
+  if (e.IsSet(xiiGALShaderType::Mesh))
+    shaderStage |= vk::ShaderStageFlagBits::eMeshEXT;
+  if (e.IsSet(xiiGALShaderType::RayGeneration))
+    shaderStage |= vk::ShaderStageFlagBits::eRaygenKHR;
+  if (e.IsSet(xiiGALShaderType::RayMiss))
+    shaderStage |= vk::ShaderStageFlagBits::eMissKHR;
+  if (e.IsSet(xiiGALShaderType::RayClosestHit))
+    shaderStage |= vk::ShaderStageFlagBits::eClosestHitKHR;
+  if (e.IsSet(xiiGALShaderType::RayAnyHit))
+    shaderStage |= vk::ShaderStageFlagBits::eAnyHitKHR;
+  if (e.IsSet(xiiGALShaderType::RayIntersection))
+    shaderStage |= vk::ShaderStageFlagBits::eIntersectionKHR;
+  if (e.IsSet(xiiGALShaderType::Callable))
+    shaderStage |= vk::ShaderStageFlagBits::eCallableKHR;
+
+  return shaderStage;
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALShaderType> xiiVulkanTypeConversions::GetGALShaderStageFlags(vk::ShaderStageFlags e)
 {
-  return xiiBitflags<xiiGALShaderType>();
+  if (e == vk::ShaderStageFlagBits::eAllGraphics)
+  {
+    return xiiGALShaderType::AllGraphics;
+  }
+  else if (e == vk::ShaderStageFlagBits::eAll)
+  {
+    return xiiGALShaderType::All;
+  }
+
+  xiiBitflags<xiiGALShaderType> shaderType;
+
+  if (e & vk::ShaderStageFlagBits::eVertex)
+    shaderType |= xiiGALShaderType::Vertex;
+  if (e & vk::ShaderStageFlagBits::eTessellationControl)
+    shaderType |= xiiGALShaderType::Hull;
+  if (e & vk::ShaderStageFlagBits::eTessellationEvaluation)
+    shaderType |= xiiGALShaderType::Domain;
+  if (e & vk::ShaderStageFlagBits::eGeometry)
+    shaderType |= xiiGALShaderType::Geometry;
+  if (e & vk::ShaderStageFlagBits::eFragment)
+    shaderType |= xiiGALShaderType::Pixel;
+  if (e & vk::ShaderStageFlagBits::eCompute)
+    shaderType |= xiiGALShaderType::Compute;
+  if (e & vk::ShaderStageFlagBits::eRaygenKHR)
+    shaderType |= xiiGALShaderType::RayGeneration;
+  if (e & vk::ShaderStageFlagBits::eAnyHitKHR)
+    shaderType |= xiiGALShaderType::RayAnyHit;
+  if (e & vk::ShaderStageFlagBits::eClosestHitKHR)
+    shaderType |= xiiGALShaderType::RayClosestHit;
+  if (e & vk::ShaderStageFlagBits::eMissKHR)
+    shaderType |= xiiGALShaderType::RayMiss;
+  if (e & vk::ShaderStageFlagBits::eIntersectionKHR)
+    shaderType |= xiiGALShaderType::RayIntersection;
+  if (e & vk::ShaderStageFlagBits::eCallableKHR)
+    shaderType |= xiiGALShaderType::Callable;
+  if (e & vk::ShaderStageFlagBits::eTaskEXT)
+    shaderType |= xiiGALShaderType::Amplification;
+  if (e & vk::ShaderStageFlagBits::eMeshEXT)
+    shaderType |= xiiGALShaderType::Mesh;
+
+  return shaderType;
 }
 
 XII_ALWAYS_INLINE vk::Extent2D xiiVulkanTypeConversions::ShadingRateToFragmentSize(xiiBitflags<xiiGALShadingRateFlags> e)
 {
-  return vk::Extent2D();
+  vk::Extent2D extent = {};
+  extent.width        = XII_BIT((e.GetValue() >> XII_GAL_SHADING_RATE_X_SHIFT) & 0x3);
+  extent.height       = XII_BIT(e.GetValue() & 0x3);
+
+  XII_ASSERT_DEV(extent.width > 0U && extent.height > 0U, "");
+  XII_ASSERT_DEV(extent.width <= XII_BIT(xiiGALShadingRateAxis::X4) && extent.height <= XII_BIT(xiiGALShadingRateAxis::X4), "");
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(extent.width) && xiiMath::IsPowerOf2(extent.height), "");
+
+  return extent;
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALShadingRateFlags> xiiVulkanTypeConversions::FragmentSizeToShadingRate(vk::Extent2D e)
 {
-  return xiiBitflags<xiiGALShadingRateFlags>();
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(e.width) && xiiMath::IsPowerOf2(e.height), "");
+
+  xiiUInt32 x = xiiMath::FirstBitHigh(e.width);
+  xiiUInt32 y = xiiMath::FirstBitHigh(e.height);
+
+  XII_ASSERT_DEV(XII_BIT(x) == e.width, "");
+  XII_ASSERT_DEV(XII_BIT(y) == e.height, "");
+
+  return static_cast<xiiGALShadingRateFlags::Enum>((x << XII_GAL_SHADING_RATE_X_SHIFT) | y);
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALCommandQueueType> xiiVulkanTypeConversions::GetGALCommandQueueType(vk::QueueFlags e)
+{
+  xiiBitflags<xiiGALCommandQueueType> queueType;
+
+  if (e & vk::QueueFlagBits::eSparseBinding)
+    queueType |= xiiGALCommandQueueType::SparseBinding;
+
+  if (e & vk::QueueFlagBits::eGraphics)
+    return queueType | xiiGALCommandQueueType::Graphics;
+
+  if (e & vk::QueueFlagBits::eCompute)
+    return queueType | xiiGALCommandQueueType::Compute;
+
+  if (e & vk::QueueFlagBits::eTransfer)
+    return queueType | xiiGALCommandQueueType::Transfer;
+
+  return xiiGALCommandQueueType::Unknown;
 }
