@@ -222,18 +222,9 @@ XII_ALWAYS_INLINE constexpr bool xiiGALSparseResourceProperties::operator==(cons
     m_BindFlags == rhs.m_BindFlags;
 }
 
-XII_ALWAYS_INLINE bool xiiGALCommandQueueProperties::operator==(const xiiGALCommandQueueProperties& rhs) const
+XII_ALWAYS_INLINE constexpr bool xiiGALCommandQueueProperties::operator==(const xiiGALCommandQueueProperties& rhs) const
 {
-  if (m_TextureCopyGranularity.GetCount() != rhs.m_TextureCopyGranularity.GetCount())
-    return false;
-
-  for (xiiUInt32 i = 0; i < m_TextureCopyGranularity.GetCount(); ++i)
-  {
-    if (m_TextureCopyGranularity[i] != rhs.m_TextureCopyGranularity[i])
-      return false;
-  }
-
-  return m_Type == rhs.m_Type && m_uiMaxDeviceContexts == rhs.m_uiMaxDeviceContexts;
+  return m_Type == rhs.m_Type && m_uiMaxDeviceContexts == rhs.m_uiMaxDeviceContexts && m_TextureCopyGranularity[0] == rhs.m_TextureCopyGranularity[0] && m_TextureCopyGranularity[1] == rhs.m_TextureCopyGranularity[1] && m_TextureCopyGranularity[2] == rhs.m_TextureCopyGranularity[2];
 }
 
 XII_ALWAYS_INLINE bool xiiGALGraphicsDeviceAdapterDescription::operator==(const xiiGALGraphicsDeviceAdapterDescription& rhs) const
