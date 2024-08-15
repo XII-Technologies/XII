@@ -320,9 +320,11 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
   // Create Vulkan Instance.
   {
+    m_uiVulkanVersion = VK_API_VERSION_1_1;
+
     vk::ApplicationInfo applicationInformation = {};
     applicationInformation.sType               = vk::StructureType::eApplicationInfo;
-    applicationInformation.apiVersion          = VK_API_VERSION_1_1;
+    applicationInformation.apiVersion          = m_uiVulkanVersion;
     applicationInformation.applicationVersion  = VK_MAKE_VERSION(BUILDSYSTEM_SDKVERSION_MAJOR, BUILDSYSTEM_SDKVERSION_MINOR, BUILDSYSTEM_SDKVERSION_PATCH);
     applicationInformation.engineVersion       = VK_MAKE_VERSION(BUILDSYSTEM_SDKVERSION_MAJOR, BUILDSYSTEM_SDKVERSION_MINOR, BUILDSYSTEM_SDKVERSION_PATCH);
     applicationInformation.pApplicationName    = "XII";
@@ -348,7 +350,13 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     m_Instance = vk::createInstance(instanceCreateInformation);
 
-    XII_SUCCEED_OR_RETURN_FAILURE(m_Instance, "Failed to create Vulkan instance.");
+    m_InstanceDispatchLoader.init(m_Instance, vkGetInstanceProcAddr);
+
+    if (m_Instance == VK_NULL_HANDLE)
+    {
+      xiiLog::Error("Failed to create Vulkan instance.");
+      return XII_FAILURE;
+    }
   }
 
   // If requested, we enable the default validation layers for debugging purposes.
@@ -380,16 +388,16 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
       // Load function pointers.
       SetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(m_Instance, "vkSetDebugUtilsObjectNameEXT"));
-      XII_ASSERT_DEV(SetDebugUtilsObjectNameEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(SetDebugUtilsObjectNameEXT != nullptr, "Failed to load vkSetDebugUtilsObjectNameEXT function pointer");
       SetDebugUtilsObjectTagEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectTagEXT>(vkGetInstanceProcAddr(m_Instance, "vkSetDebugUtilsObjectTagEXT"));
-      XII_ASSERT_DEV(SetDebugUtilsObjectTagEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(SetDebugUtilsObjectTagEXT != nullptr, "Failed to load vkSetDebugUtilsObjectTagEXT function pointer");
 
       QueueBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueBeginDebugUtilsLabelEXT"));
-      XII_ASSERT_DEV(QueueBeginDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(QueueBeginDebugUtilsLabelEXT != nullptr, "Failed to load vkQueueBeginDebugUtilsLabelEXT function pointer");
       QueueEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueEndDebugUtilsLabelEXT"));
-      XII_ASSERT_DEV(QueueEndDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(QueueEndDebugUtilsLabelEXT != nullptr, "Failed to load vkQueueEndDebugUtilsLabelEXT function pointer");
       QueueInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueInsertDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueInsertDebugUtilsLabelEXT"));
-      XII_ASSERT_DEV(QueueInsertDebugUtilsLabelEXT != nullptr, "Failed to load function pointer");
+      XII_ASSERT_DEV(QueueInsertDebugUtilsLabelEXT != nullptr, "Failed to load vkQueueInsertDebugUtilsLabelEXT function pointer");
     }
   }
   else if (m_DebugMode == DebugMode::Report)
@@ -488,6 +496,8 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
       return XII_FAILURE;
     }
+
+    XII_SUCCEED_OR_RETURN(InitializePhysicalDeviceProperties());
   }
 
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
@@ -1562,11 +1572,220 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
   return selectedPhysicalDevice;
 }
 
-xiiGALGraphicsDeviceAdapterDescription xiiGALDeviceVulkan::GetPhysicalDeviceGraphicsAdapterDescription(const vk::PhysicalDevice& physicalDevice)
+xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
 {
-  xiiGALGraphicsDeviceAdapterDescription deviceAdapterDescription;
+  XII_ASSERT_DEV(m_PhysicalDevice != VK_NULL_HANDLE, "");
 
-  return xiiGALGraphicsDeviceAdapterDescription();
+  if (m_PhysicalDevice == VK_NULL_HANDLE)
+    return XII_FAILURE;
+
+  if (!IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+    return XII_SUCCESS;
+
+  vk::PhysicalDeviceFeatures2 features2    = {};
+  void**                      pNextFeature = &features2.pNext;
+
+  vk::PhysicalDeviceProperties2 properties2   = {};
+  void**                        pNextProperty = &properties2.pNext;
+
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_ShaderFloat16Int8;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_ShaderFloat16Int8.pNext;
+  }
+
+  // VK_KHR_16bit_storage and VK_KHR_8bit_storage extensions require VK_KHR_storage_buffer_storage_class extension.
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME))
+  {
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_16BIT_STORAGE_EXTENSION_NAME))
+    {
+      *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_Storage16Bit;
+      pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_Storage16Bit.pNext;
+    }
+
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_8BIT_STORAGE_EXTENSION_NAME))
+    {
+      *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_Storage8Bit;
+      pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_Storage8Bit.pNext;
+    }
+  }
+
+  // Get mesh shader features and properties.
+  if (IsExtensionAvailable(m_Extensions, VK_EXT_MESH_SHADER_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_MeshShader;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_MeshShader.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_MeshShader;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_MeshShader.pNext;
+  }
+
+  // Get acceleration structure features and properties.
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_AccelerationStructure;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_AccelerationStructure.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_AccelerationStructure;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.pNext;
+  }
+
+  // Get ray tracing pipeline features and properties.
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.pNext;
+  }
+
+  // Get inline ray tracing features.
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_RAY_QUERY_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_RayQuery;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_RayQuery.pNext;
+  }
+
+  // Additional extension that is required for ray tracing.
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress.pNext;
+  }
+
+  // Additional extension that is required for ray tracing.
+  if (IsExtensionAvailable(m_Extensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_DescriptorIndexing;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_DescriptorIndexing.pNext;
+  }
+
+  // Additional extension that is required for ray tracing shader.
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_SPIRV_1_4_EXTENSION_NAME))
+    m_PhysicalDeviceExtensionFeatures.m_bSpirv14 = true;
+
+  // Some features require SPIRV 1.4 or 1.5 which was added to the Vulkan 1.2 core.
+  if (m_uiVulkanVersion >= VK_API_VERSION_1_2)
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bSpirv14 = true;
+    m_PhysicalDeviceExtensionFeatures.m_bSpirv15 = true;
+  }
+
+  // Extension required for MoltenVk
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset.pNext;
+
+    m_PhysicalDeviceExtensionFeatures.m_bHasPortabilitySubset = true;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_PortabilitySubset;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_PortabilitySubset.pNext;
+  }
+
+  // Subgroup feature requires Vulkan 1.1 core.
+  if (m_uiVulkanVersion >= VK_API_VERSION_1_1)
+  {
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_Subgroup;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_Subgroup.pNext;
+
+    m_PhysicalDeviceExtensionFeatures.m_bSubgroupOps = true;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_VertexAttributeDivisor;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_VertexAttributeDivisor.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_VertexAttributeDivisor;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_VertexAttributeDivisor.pNext;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_TimelineSemaphore;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_TimelineSemaphore.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_TimelineSemaphore;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_TimelineSemaphore.pNext;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_MULTIVIEW_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_Multiview;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_Multiview.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_Multiview;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_Multiview.pNext;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bRenderPass2 = true;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_ShadingRate;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_ShadingRate;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_ShadingRate.pNext;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.pNext;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_HostQueryReset;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_HostQueryReset.pNext;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bDrawIndirectCount = true;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME))
+  {
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_Maintenance3;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_Maintenance3.pNext;
+  }
+
+  if (IsExtensionAvailable(m_Extensions, VK_EXT_MULTI_DRAW_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_MultiDraw;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_MultiDraw.pNext;
+
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_ShaderDrawParameters;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_ShaderDrawParameters.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_MultiDraw;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_MultiDraw.pNext;
+  }
+
+  // Ensure that last pNext is null
+  *pNextFeature  = nullptr;
+  *pNextProperty = nullptr;
+
+  auto GetPhysicalDevice2FeaturesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceFeatures2KHR>(m_Instance.getProcAddr("vkGetPhysicalDeviceFeatures2KHR", m_InstanceDispatchLoader));
+  XII_ASSERT_DEV(GetPhysicalDevice2FeaturesKHR != nullptr, "Failed to load vkGetPhysicalDeviceFeatures2KHR function pointer.");
+
+  auto GetPhysicalDevice2PropertiesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(m_Instance.getProcAddr("vkGetPhysicalDeviceProperties2KHR", m_InstanceDispatchLoader));
+  XII_ASSERT_DEV(GetPhysicalDevice2PropertiesKHR != nullptr, "Failed to load vkGetPhysicalDeviceProperties2KHR function pointer.");
+
+  return XII_SUCCESS;
 }
 
 bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions)

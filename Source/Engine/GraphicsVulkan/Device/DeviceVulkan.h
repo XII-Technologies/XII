@@ -102,8 +102,8 @@ protected:
   void CreateCommandQueues();
 
 private:
-  vk::PhysicalDevice                     SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
-  xiiGALGraphicsDeviceAdapterDescription GetPhysicalDeviceGraphicsAdapterDescription(const vk::PhysicalDevice& physicalDevice);
+  vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
+  xiiResult          InitializePhysicalDeviceProperties();
 
   bool EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions);
   bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr);
@@ -166,7 +166,9 @@ private:
     vk::PhysicalDeviceMultiDrawPropertiesEXT              m_MultiDraw;
   };
 
-  vk::Instance m_Instance;
+  vk::Instance              m_Instance;
+  xiiUInt32                 m_uiVulkanVersion;
+  vk::DispatchLoaderDynamic m_InstanceDispatchLoader;
 
   // Vulkan Instance Objects.
   xiiDynamicArray<vk::LayerProperties>     m_Layers;
