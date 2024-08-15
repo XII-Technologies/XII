@@ -33,6 +33,8 @@
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 
+#include <bitset>
+
 // Debug Utilities.
 PFN_vkCreateDebugUtilsMessengerEXT  CreateDebugUtilsMessengerEXT  = nullptr;
 PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessengerEXT = nullptr;
@@ -1367,15 +1369,121 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags = xiiGALSparseResourceCapabilityFlags::NonResidentSafe | xiiGALSparseResourceCapabilityFlags::MixedResourceTypeSupport;
 
     auto& sparseResourceCapabilityFlags = m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags;
-    auto  SetResourceCapabilityFlag     = [&sparseResourceCapabilityFlags](vk::Bool32 feature, xiiGALSparseResourceCapabilityFlags::Enum flag) -> void {
+    auto  SetResourceCapabilityFlag     = [&sparseResourceCapabilityFlags](vk::Bool32 feature, xiiBitflags<xiiGALSparseResourceCapabilityFlags> flag) -> void {
       if (feature != VK_FALSE)
       {
         sparseResourceCapabilityFlags |= flag;
       }
     };
 
-    /// \todo Implement here.
+    SetResourceCapabilityFlag(m_PhysicalDeviceProperties.sparseProperties.residencyStandard2DBlockShape, xiiGALSparseResourceCapabilityFlags::Standard2DTileShape);
+    SetResourceCapabilityFlag(m_PhysicalDeviceProperties.sparseProperties.residencyStandard2DMultisampleBlockShape, xiiGALSparseResourceCapabilityFlags::Standard2DMSTileShape);
+    SetResourceCapabilityFlag(m_PhysicalDeviceProperties.sparseProperties.residencyStandard3DBlockShape, xiiGALSparseResourceCapabilityFlags::Standard3DTileShape);
+    SetResourceCapabilityFlag(m_PhysicalDeviceProperties.sparseProperties.residencyAlignedMipSize, xiiGALSparseResourceCapabilityFlags::AlignedMipSize);
+    SetResourceCapabilityFlag(m_PhysicalDeviceProperties.sparseProperties.residencyNonResidentStrict, xiiGALSparseResourceCapabilityFlags::NonResidentStrict);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.shaderResourceResidency, xiiGALSparseResourceCapabilityFlags::ShaderResourceResidency);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.sparseResidencyBuffer, xiiGALSparseResourceCapabilityFlags::Buffer);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.sparseResidencyImage2D, xiiGALSparseResourceCapabilityFlags::Texture2D | xiiGALSparseResourceCapabilityFlags::Texture2DArrayMipTail);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.sparseResidencyImage3D, xiiGALSparseResourceCapabilityFlags::Texture3D);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.sparseResidency2Samples, xiiGALSparseResourceCapabilityFlags::Texture2Samples);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.sparseResidency4Samples, xiiGALSparseResourceCapabilityFlags::Texture4Samples);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.sparseResidency8Samples, xiiGALSparseResourceCapabilityFlags::Texture8Samples);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.sparseResidency16Samples, xiiGALSparseResourceCapabilityFlags::Texture16Samples);
+    SetResourceCapabilityFlag(m_PhysicalDeviceFeatures.sparseResidencyAliased, xiiGALSparseResourceCapabilityFlags::Aliased);
+
+    static_assert(sizeof(m_AdapterDescription.m_SparseResourceProperties) == 32, "There may be uninitialized sparse resource properties.");
   }
+
+  // Memory Properties
+  {
+    m_AdapterDescription.m_MemoryProperties.m_uiLocalMemory         = 0U;
+    m_AdapterDescription.m_MemoryProperties.m_uiHostVisibleMemory   = 0U;
+    m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory       = 0U;
+    m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation = m_PhysicalDeviceExtensionProperties.m_Maintenance3.maxMemoryAllocationSize;
+
+    std::bitset<VK_MAX_MEMORY_HEAPS> deviceLocalHeap;
+    std::bitset<VK_MAX_MEMORY_HEAPS> hostVisibleHeap;
+    std::bitset<VK_MAX_MEMORY_HEAPS> unifiedHeap;
+
+    for (xiiUInt32 uiType = 0U; uiType < m_PhysicalDeviceMemoryProperties.memoryTypeCount; ++uiType)
+    {
+      constexpr vk::MemoryPropertyFlags unifiedMemoryFlags = vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible;
+
+      const vk::MemoryType& memoryTypeInformation = m_PhysicalDeviceMemoryProperties.memoryTypes[uiType];
+
+      if (memoryTypeInformation.propertyFlags & vk::MemoryPropertyFlagBits::eLazilyAllocated)
+      {
+        m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil | xiiGALBindFlags::InputAttachment;
+      }
+      else if ((memoryTypeInformation.propertyFlags & unifiedMemoryFlags) == unifiedMemoryFlags)
+      {
+        unifiedHeap[memoryTypeInformation.heapIndex] = true;
+
+        if (memoryTypeInformation.propertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent)
+        {
+          m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags |= xiiGALCPUAccessFlag::Write;
+        }
+        if (memoryTypeInformation.propertyFlags & vk::MemoryPropertyFlagBits::eHostCached)
+        {
+          m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags |= xiiGALCPUAccessFlag::Read;
+        }
+      }
+      else if (memoryTypeInformation.propertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal)
+      {
+        deviceLocalHeap[memoryTypeInformation.heapIndex] = true;
+      }
+      else if (memoryTypeInformation.propertyFlags & vk::MemoryPropertyFlagBits::eHostVisible)
+      {
+        hostVisibleHeap[memoryTypeInformation.heapIndex] = true;
+      }
+
+      // In Metal, input attachment with memoryless texture must be used as an imageblock, which is not supported in SPIRV to MSL translator.
+#if XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_IOS)
+      if (m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags.IsAnyFlagSet())
+      {
+        m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil;
+      }
+#endif
+    }
+
+    for (xiiUInt32 uiHeapIndex = 0U; uiHeapIndex < m_PhysicalDeviceMemoryProperties.memoryHeapCount; ++uiHeapIndex)
+    {
+      const vk::MemoryHeap& heapInformation = m_PhysicalDeviceMemoryProperties.memoryHeaps[uiHeapIndex];
+
+      if (unifiedHeap[uiHeapIndex])
+      {
+        m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory += static_cast<xiiUInt64>(heapInformation.size);
+      }
+      else if (deviceLocalHeap[uiHeapIndex])
+      {
+        m_AdapterDescription.m_MemoryProperties.m_uiLocalMemory += static_cast<xiiUInt64>(heapInformation.size);
+      }
+      else if (hostVisibleHeap[uiHeapIndex])
+      {
+        m_AdapterDescription.m_MemoryProperties.m_uiHostVisibleMemory += static_cast<xiiUInt64>(heapInformation.size);
+      }
+    }
+
+    static_assert(sizeof(m_AdapterDescription.m_MemoryProperties) == 40, "There may be uninitialized memory properties.");
+  }
+
+  // Queue Information
+  {
+    const xiiUInt32 uiMaxAdapterQueues = xiiMath::Min(XII_GAL_MAX_ADAPTER_QUEUE_COUNT, m_PhysicalDeviceQueueFamilyProperties.GetCount());
+
+    for (xiiUInt32 uiQueueIndex = 0U; uiQueueIndex < uiMaxAdapterQueues; ++uiQueueIndex)
+    {
+      const vk::QueueFamilyProperties& sourceQueue      = m_PhysicalDeviceQueueFamilyProperties[uiQueueIndex];
+      xiiGALCommandQueueProperties&    destinationQueue = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+
+      destinationQueue.m_Type                      = xiiVulkanTypeConversions::GetGALCommandQueueType(sourceQueue.queueFlags);
+      destinationQueue.m_uiMaxDeviceContexts       = sourceQueue.queueCount;
+      destinationQueue.m_TextureCopyGranularity[0] = sourceQueue.minImageTransferGranularity.width;
+      destinationQueue.m_TextureCopyGranularity[1] = sourceQueue.minImageTransferGranularity.height;
+      destinationQueue.m_TextureCopyGranularity[2] = sourceQueue.minImageTransferGranularity.depth;
+    }
+  }
+
   return XII_FAILURE;
 }
 
