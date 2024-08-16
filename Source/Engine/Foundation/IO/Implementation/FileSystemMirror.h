@@ -27,29 +27,31 @@ public:
   xiiFileSystemMirror();
   ~xiiFileSystemMirror();
 
-  // \brief Adds the directory, and all files in it recursively.
+  /// \brief Adds the directory, and all files in it recursively.
   xiiResult AddDirectory(xiiStringView sPath, bool* out_pDirectoryExistsAlready = nullptr);
 
-  // \brief Adds a file. Creates directories if they do not exist.
+  /// \brief Adds a file. Creates directories if they do not exist.
   xiiResult AddFile(xiiStringView sPath, const T& value, bool* out_pFileExistsAlready, T* out_pOldValue);
 
-  // \brief Removes a file.
+  /// \brief Removes a file.
   xiiResult RemoveFile(xiiStringView sPath);
 
-  // \brief Removes a directory. Deletes any files & directories inside.
+  /// \brief Removes a directory. Deletes any files & directories inside.
   xiiResult RemoveDirectory(xiiStringView sPath);
 
-  // \brief Moves a directory. Any files & folders inside are moved with it.
+  /// \brief Moves a directory. Any files & folders inside are moved with it.
   xiiResult MoveDirectory(xiiStringView sFromPath, xiiStringView sToPath);
 
   using EnumerateFunc = xiiDelegate<void(const xiiStringBuilder& path, Type type)>;
 
-  // \brief Enumerates the files & directories under the given path
+  /// \brief Enumerates the files & directories under the given path
   xiiResult Enumerate(xiiStringView sPath, EnumerateFunc callbackFunc);
+
+  /// \brief On success, out_Type will contains the type of the object (file or folder).
+  xiiResult GetType(xiiStringView sPath, Type& out_type);
 
 private:
   DirEntry* FindDirectory(xiiStringBuilder& path);
-  DirEntry* AddDirectoryImpl(DirEntry* startDir, xiiStringBuilder& path);
 
 private:
   DirEntry  m_TopLevelDir;
@@ -398,6 +400,33 @@ xiiResult xiiFileSystemMirror<T>::Enumerate(xiiStringView sPath, EnumerateFunc c
   }
 
   return XII_SUCCESS;
+}
+
+template <typename T>
+xiiResult xiiFileSystemMirror<T>::GetType(xiiStringView sPath, Type& out_type)
+{
+  xiiStringBuilder sPathBuilder = sPath;
+  DirEntry*        dir          = FindDirectory(sPathBuilder);
+  if (dir == nullptr)
+  {
+    return XII_FAILURE; // file not under top level directory
+  }
+
+  auto it = dir->m_files.Find(sPathBuilder);
+  if (it.IsValid())
+  {
+    out_type = xiiFileSystemMirror::Type::File;
+    return XII_SUCCESS;
+  }
+
+  auto itDir = dir->m_subDirectories.Find(sPathBuilder);
+  if (itDir.IsValid())
+  {
+    out_type = xiiFileSystemMirror::Type::Directory;
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
 }
 
 template <typename T>
