@@ -109,7 +109,7 @@ public:
 
   /// \brief Returns a normalized version of this vector, leaves the vector itself unchanged.
   XII_DECLARE_IF_FLOAT_TYPE
-  const xiiVec3Template<Type> GetNormalized() const; // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> GetNormalized() const; // [tested]
 
   /// \brief Normalizes this vector.
   XII_DECLARE_IF_FLOAT_TYPE
@@ -182,28 +182,28 @@ public:
   xiiAngle GetAngleBetween(const xiiVec3Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the Dot-product of the two vectors (commutative, order does not matter)
-  Type Dot(const xiiVec3Template<Type>& rhs) const; // [tested]
+  [[nodiscard]] Type Dot(const xiiVec3Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the Cross-product of the two vectors (NOT commutative, order DOES matter)
-  const xiiVec3Template<Type> CrossRH(const xiiVec3Template<Type>& rhs) const; // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> CrossRH(const xiiVec3Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the component-wise minimum of *this and rhs
-  const xiiVec3Template<Type> CompMin(const xiiVec3Template<Type>& rhs) const; // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> CompMin(const xiiVec3Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the component-wise maximum of *this and rhs
-  const xiiVec3Template<Type> CompMax(const xiiVec3Template<Type>& rhs) const; // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> CompMax(const xiiVec3Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the component-wise clamped value of *this between low and high.
-  const xiiVec3Template<Type> CompClamp(const xiiVec3Template<Type>& vLow, const xiiVec3Template<Type>& vHigh) const; // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> CompClamp(const xiiVec3Template<Type>& vLow, const xiiVec3Template<Type>& vHigh) const; // [tested]
 
   /// \brief Returns the component-wise multiplication of *this and rhs
-  const xiiVec3Template<Type> CompMul(const xiiVec3Template<Type>& rhs) const; // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> CompMul(const xiiVec3Template<Type>& rhs) const; // [tested]
 
   /// \brief Returns the component-wise division of *this and rhs
-  const xiiVec3Template<Type> CompDiv(const xiiVec3Template<Type>& rhs) const; // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> CompDiv(const xiiVec3Template<Type>& rhs) const; // [tested]
 
   /// brief Returns the component-wise absolute of *this.
-  const xiiVec3Template<Type> Abs() const; // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> Abs() const; // [tested]
 
 
   // *** Other common operations ***
