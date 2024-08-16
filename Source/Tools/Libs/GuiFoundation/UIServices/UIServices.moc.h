@@ -103,6 +103,9 @@ public:
   /// \brief Opens the given file or folder in the Explorer
   static void OpenInExplorer(xiiStringView sPath, bool bIsFile);
 
+  /// \brief Shows the "Open With" dialog
+  static void OpenWith(xiiStringView sPath);
+
   /// \brief Attempts to launch Visual Studio Code with the given command line
   static xiiStatus OpenInVsCode(const QStringList& arguments);
 
