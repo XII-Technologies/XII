@@ -441,12 +441,21 @@ namespace
     xiiTime      m_Timeout;
   };
 
+  struct PersistentLineData
+  {
+    xiiHybridArray<xiiDebugRenderer::Line, 32> m_Lines;
+    xiiColor                                   m_Color;
+    xiiTransform                               m_Transform;
+    xiiTime                                    m_Timeout;
+  };
+
   struct PersistentPerContextData
   {
     xiiTime                        m_Now;
     xiiDeque<PersistentCrossData>  m_Crosses;
     xiiDeque<PersistentSphereData> m_Spheres;
     xiiDeque<PersistentBoxData>    m_Boxes;
+    xiiDeque<PersistentLineData>    m_Lines;
   };
 
   static xiiHashTable<xiiDebugRendererContext, PersistentPerContextData> s_PersistentPerContextData;
@@ -1062,6 +1071,18 @@ void xiiDebugRenderer::AddPersistentLineBox(const xiiDebugRendererContext& conte
   item.m_Timeout   = data.m_Now + duration;
 }
 
+void xiiDebugRenderer::AddPersistentLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform, xiiTime duration)
+{
+  XII_LOCK(s_Mutex);
+
+  auto& data       = s_PersistentPerContextData[context];
+  auto& item       = data.m_Lines.ExpandAndGetRef();
+  item.m_Transform = transform;
+  item.m_Color     = color;
+  item.m_Lines     = lines;
+  item.m_Timeout   = data.m_Now + duration;
+}
+
 void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/, xiiVec3 vRotationAxis /*= xiiVec3::MakeAxisZ()*/)
 {
   xiiHybridArray<Triangle, 64> tris;
@@ -1402,6 +1423,27 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
         else
         {
           xiiDebugRenderer::DrawLineBox(context, xiiBoundingBox::MakeFromMinMax(-item.m_vHalfSize, item.m_vHalfSize), item.m_Color, item.m_Transform);
+
+          ++i;
+        }
+      }
+    }
+
+    // persistent lines
+    {
+      xiiUInt32 uiNumItems = data.m_Lines.GetCount();
+      for (xiiUInt32 i = 0; i < uiNumItems;)
+      {
+        const auto& item = data.m_Lines[i];
+
+        if (data.m_Now > item.m_Timeout)
+        {
+          data.m_Lines.RemoveAtAndSwap(i);
+          --uiNumItems;
+        }
+        else
+        {
+          xiiDebugRenderer::DrawLines(context, item.m_Lines.GetArrayPtr(), item.m_Color, item.m_Transform);
 
           ++i;
         }

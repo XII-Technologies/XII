@@ -196,6 +196,9 @@ public:
   /// \brief Renders a wireframe box at the given location for as many frames until \a duration has passed.
   static void AddPersistentLineBox(const xiiDebugRendererContext& context, const xiiVec3& vHalfSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
 
+  /// \brief Renders lines at the given location for as many frames until \a duration has passed.
+  static void AddPersistentLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
+
   /// \brief Renders a solid 2D cone in a plane with a given angle.
   ///
   /// The rotation goes around the given \a rotationAxis.
