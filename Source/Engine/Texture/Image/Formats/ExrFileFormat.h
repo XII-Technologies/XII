@@ -2,7 +2,7 @@
 
 #include <Texture/Image/Formats/ImageFileFormat.h>
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
+#ifdef BUILDSYSTEM_ENABLE_TINYEXR_SUPPORT
 
 /// EXR file format support using TinyEXR.
 class XII_TEXTURE_DLL xiiExrFileFormat : public xiiImageFileFormat
