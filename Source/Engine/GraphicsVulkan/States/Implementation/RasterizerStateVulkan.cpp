@@ -23,7 +23,7 @@ xiiResult xiiGALRasterizerStateVulkan::InitPlatform()
   m_RasterizerState.flags = {};
 
   m_RasterizerState.depthClampEnable        = VK_BOOL(m_Description.m_bDepthClipEnable);
-  m_RasterizerState.rasterizerDiscardEnable = VK_FALSE;
+  m_RasterizerState.rasterizerDiscardEnable = vk::False;
   m_RasterizerState.polygonMode             = xiiVulkanTypeConversions::GetPolygonMode(m_Description.m_FillMode);
   m_RasterizerState.cullMode                = xiiVulkanTypeConversions::GetCullMode(m_Description.m_CullMode);
   m_RasterizerState.frontFace               = m_Description.m_bFrontCounterClockwise ? vk::FrontFace::eCounterClockwise : vk::FrontFace::eClockwise;

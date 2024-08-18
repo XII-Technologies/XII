@@ -87,8 +87,8 @@ namespace
       default:
         break;
     }
-    // The application should always return VK_FALSE. The VK_TRUE value is reserved for use in layer development.
-    return VK_FALSE;
+    // The application should always return vk::False. The vk::True value is reserved for use in layer development.
+    return vk::False;
   }
 
   VKAPI_ATTR xiiUInt32 VKAPI_CALL xiiVulkanDebugReportCallback(vk::DebugReportFlagsEXT reportFlags, vk::DebugReportObjectTypeEXT objectType, xiiUInt64 uiObject, size_t uiLocation, xiiInt32 iMessageCode, const char* szLayerPrefix, const char* szMessage, void* pUserData)
@@ -300,8 +300,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         m_Description.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
       }
     }
-
-    m_EnabledExtensions.PushBackRange(instanceLayers.GetArrayPtr());
   }
 
   // Create Vulkan Instance.
@@ -334,13 +332,15 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     m_Instance = vk::createInstance(instanceCreateInformation, nullptr, m_InstanceDispatchLoader);
 
-    m_InstanceDispatchLoader.init(m_Instance);
-
     if (m_Instance == VK_NULL_HANDLE)
     {
       xiiLog::Error("Failed to create Vulkan instance.");
       return XII_FAILURE;
     }
+
+    m_InstanceDispatchLoader.init(m_Instance);
+
+    m_EnabledExtensions = instanceExtensions;
   }
 
   // If requested, we enable the default validation layers for debugging purposes.
@@ -364,10 +364,10 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     constexpr vk::DebugReportFlagsEXT reportFlags = vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eError;
 
     vk::DebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
-    debugReportCallbackCreateInfo.pNext                              = nullptr;
-    debugReportCallbackCreateInfo.flags                              = reportFlags;
-    debugReportCallbackCreateInfo.pfnCallback                        = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(xiiVulkanDebugReportCallback);
-    debugReportCallbackCreateInfo.pUserData                          = nullptr;
+    debugReportCallbackCreateInfo.pNext                                = nullptr;
+    debugReportCallbackCreateInfo.flags                                = reportFlags;
+    debugReportCallbackCreateInfo.pfnCallback                          = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(xiiVulkanDebugReportCallback);
+    debugReportCallbackCreateInfo.pUserData                            = nullptr;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugReportCallbackEXT(&debugReportCallbackCreateInfo, nullptr, &m_DebugCallback, m_InstanceDispatchLoader));
   }
@@ -984,8 +984,8 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     m_AdapterDescription.m_TextureProperties.m_bTexture2DMSSupported       = true;
     m_AdapterDescription.m_TextureProperties.m_bTexture2DMSArraySupported  = true;
     m_AdapterDescription.m_TextureProperties.m_bTextureViewSupported       = true;
-    m_AdapterDescription.m_TextureProperties.m_bCubeMapArraysSupported     = m_PhysicalDeviceFeatures.imageCubeArray == VK_TRUE;
-    m_AdapterDescription.m_TextureProperties.m_bTextureView2DOn3DSupported = m_PhysicalDeviceExtensionFeatures.m_bHasPortabilitySubset ? m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset.imageView2DOn3DImage == VK_TRUE : true;
+    m_AdapterDescription.m_TextureProperties.m_bCubeMapArraysSupported     = m_PhysicalDeviceFeatures.imageCubeArray == vk::True;
+    m_AdapterDescription.m_TextureProperties.m_bTextureView2DOn3DSupported = m_PhysicalDeviceExtensionFeatures.m_bHasPortabilitySubset ? m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset.imageView2DOn3DImage == vk::True : true;
 
     static_assert(sizeof(m_AdapterDescription.m_TextureProperties) == 32, "There may be uninitialized texture properties.");
   }
@@ -1034,16 +1034,16 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
   {
     vk::ShaderStageFlags supportedStages = m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & (vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eCompute);
 
-    if (m_PhysicalDeviceFeatures.geometryShader != VK_FALSE)
+    if (m_PhysicalDeviceFeatures.geometryShader != vk::False)
       supportedStages |= m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & vk::ShaderStageFlagBits::eGeometry;
 
-    if (m_PhysicalDeviceFeatures.tessellationShader != VK_FALSE)
+    if (m_PhysicalDeviceFeatures.tessellationShader != vk::False)
       supportedStages |= m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & (vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation);
 
-    if (m_PhysicalDeviceExtensionFeatures.m_MeshShader.meshShader != VK_FALSE && m_PhysicalDeviceExtensionFeatures.m_MeshShader.taskShader != VK_FALSE)
+    if (m_PhysicalDeviceExtensionFeatures.m_MeshShader.meshShader != vk::False && m_PhysicalDeviceExtensionFeatures.m_MeshShader.taskShader != vk::False)
       supportedStages |= m_PhysicalDeviceExtensionProperties.m_Subgroup.supportedStages & (vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eMeshEXT);
 
-    if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline != VK_FALSE)
+    if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False)
     {
       constexpr auto allRayTracingFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR | vk::ShaderStageFlagBits::eIntersectionKHR | vk::ShaderStageFlagBits::eCallableKHR;
 
@@ -1103,11 +1103,11 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
   if (m_AdapterDescription.m_Features.m_VariableRateShading != xiiGALDeviceFeatureState::Disabled)
   {
     // VK_KHR_fragment_shading_rate
-    if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate != VK_FALSE || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.primitiveFragmentShadingRate != VK_FALSE || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != VK_FALSE)
+    if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.primitiveFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
     {
       auto& shadingRateCapabilityFlags = m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags;
       auto  SetShadingRateCapability   = [&shadingRateCapabilityFlags](VkBool32 vkFlag, xiiGALShadingRateCapabilityFlags::Enum capabilityFlag) {
-        if (vkFlag != VK_FALSE)
+        if (vkFlag != vk::False)
         {
           shadingRateCapabilityFlags |= capabilityFlag;
         }
@@ -1130,13 +1130,13 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
       m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags = xiiGALShadingRateCombinerFlags::PassThrough | xiiGALShadingRateCombinerFlags::CombinerOverride;
 
-      if (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateNonTrivialCombinerOps != VK_FALSE)
+      if (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateNonTrivialCombinerOps != vk::False)
       {
         m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombinerFlags::CombinerMin | xiiGALShadingRateCombinerFlags::CombinerMax;
-        m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateStrictMultiplyCombiner != VK_FALSE) ? xiiGALShadingRateCombinerFlags::CombinerMul : xiiGALShadingRateCombinerFlags::CombinerSum;
+        m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags |= (m_PhysicalDeviceExtensionProperties.m_ShadingRate.fragmentShadingRateStrictMultiplyCombiner != vk::False) ? xiiGALShadingRateCombinerFlags::CombinerMul : xiiGALShadingRateCombinerFlags::CombinerSum;
       }
 
-      if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != VK_FALSE)
+      if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
       {
         m_AdapterDescription.m_ShadingRateProperties.m_Format             = xiiGALShadingRateFormat::Palette;
         m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize.width  = m_PhysicalDeviceExtensionProperties.m_ShadingRate.minFragmentShadingRateAttachmentTexelSize.width;
@@ -1165,17 +1165,17 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         // sampleCounts - contains all supported bits
         XII_ASSERT_DEV((srcShadingRate.fragmentSize.width == 1 && srcShadingRate.fragmentSize.height == 1) || (xiiUInt32{srcShadingRate.sampleCounts} <= ((static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateRasterizationSamples) << 1) - 1)), "");
 
-        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e1  )
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e1)
           dstShadingRate.m_SampleBits |= xiiGALSampleCount::OneSample;
-        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e2  )
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e2)
           dstShadingRate.m_SampleBits |= xiiGALSampleCount::TwoSamples;
-        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e4  )
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e4)
           dstShadingRate.m_SampleBits |= xiiGALSampleCount::FourSamples;
-        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e8  )
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e8)
           dstShadingRate.m_SampleBits |= xiiGALSampleCount::EightSamples;
-        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e16 )
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e16)
           dstShadingRate.m_SampleBits |= xiiGALSampleCount::SixteenSamples;
-        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e32 )
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e32)
           dstShadingRate.m_SampleBits |= xiiGALSampleCount::ThirtyTwoSamples;
         if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e64)
           dstShadingRate.m_SampleBits |= xiiGALSampleCount::SixtyFourSamples;
@@ -1184,17 +1184,17 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       }
     }
     // VK_EXT_fragment_density_map
-    else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != VK_FALSE)
+    else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != vk::False)
     {
       m_AdapterDescription.m_ShadingRateProperties.m_Format          = xiiGALShadingRateFormat::RG8UNormalized;
       m_AdapterDescription.m_ShadingRateProperties.m_CombinerFlags   = xiiGALShadingRateCombinerFlags::PassThrough | xiiGALShadingRateCombinerFlags::CombinerOverride;
       m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags = xiiGALShadingRateCapabilityFlags::TextureBased | xiiGALShadingRateCapabilityFlags::SameTextureForWholeRenderPass | xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget;
 
-      if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMapDynamic != VK_FALSE)
+      if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMapDynamic != vk::False)
       {
         m_AdapterDescription.m_ShadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnGPU;
       }
-      else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2.fragmentDensityMapDeferred != VK_FALSE)
+      else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2.fragmentDensityMapDeferred != vk::False)
       {
         m_AdapterDescription.m_ShadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnSubmit;
       }
@@ -1203,11 +1203,11 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         m_AdapterDescription.m_ShadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnSetRenderTarget;
       }
 
-      if (m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.fragmentDensityInvocations != VK_FALSE)
+      if (m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.fragmentDensityInvocations != vk::False)
       {
         m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::AdditionalInvocations;
       }
-      if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMapNonSubsampledImages != VK_FALSE)
+      if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMapNonSubsampledImages != vk::False)
       {
         m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget;
       }
@@ -1278,11 +1278,11 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     m_AdapterDescription.m_DrawCommandProperties.m_uiMaxDrawIndirectCount = m_PhysicalDeviceProperties.limits.maxDrawIndirectCount;
     m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags        = xiiGALDrawCommandCapabilityFlags::DrawIndirect | xiiGALDrawCommandCapabilityFlags::BaseVertex;
 
-    if (m_PhysicalDeviceFeatures.multiDrawIndirect != VK_FALSE || m_PhysicalDeviceExtensionFeatures.m_bDrawIndirectCount)
+    if (m_PhysicalDeviceFeatures.multiDrawIndirect != vk::False || m_PhysicalDeviceExtensionFeatures.m_bDrawIndirectCount)
     {
       m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect;
     }
-    if (m_PhysicalDeviceFeatures.drawIndirectFirstInstance != VK_FALSE)
+    if (m_PhysicalDeviceFeatures.drawIndirectFirstInstance != vk::False)
     {
       m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::DrawIndirectFirstInstance;
     }
@@ -1307,7 +1307,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
     auto& sparseResourceCapabilityFlags = m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags;
     auto  SetResourceCapabilityFlag     = [&sparseResourceCapabilityFlags](vk::Bool32 feature, xiiBitflags<xiiGALSparseResourceCapabilityFlags> flag) -> void {
-      if (feature != VK_FALSE)
+      if (feature != vk::False)
       {
         sparseResourceCapabilityFlags |= flag;
       }
@@ -1421,7 +1421,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     }
   }
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 void xiiGALDeviceVulkan::CreateCommandQueues()
@@ -1706,11 +1706,45 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   *pNextFeature  = nullptr;
   *pNextProperty = nullptr;
 
-  auto GetPhysicalDevice2FeaturesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceFeatures2KHR>(m_Instance.getProcAddr("vkGetPhysicalDeviceFeatures2KHR", m_InstanceDispatchLoader));
-  XII_ASSERT_DEV(GetPhysicalDevice2FeaturesKHR != nullptr, "Failed to load vkGetPhysicalDeviceFeatures2KHR function pointer.");
+  // Initialize device extension features by current physical device feaetures.
+  // Some flags may not be supported by the hardware.
+  m_PhysicalDevice.getFeatures2KHR(&features2, m_InstanceDispatchLoader);
+  m_PhysicalDevice.getProperties2KHR(&properties2, m_InstanceDispatchLoader);
 
-  auto GetPhysicalDevice2PropertiesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(m_Instance.getProcAddr("vkGetPhysicalDeviceProperties2KHR", m_InstanceDispatchLoader));
-  XII_ASSERT_DEV(GetPhysicalDevice2PropertiesKHR != nullptr, "Failed to load vkGetPhysicalDeviceProperties2KHR function pointer.");
+  // Check shading rate texture formats.
+  {
+    if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
+    {
+      // For D3D12 compatibility, shading rate texture must support xiiGALTextureFormat::R8UInt format.
+      vk::FormatProperties formatProperties = {};
+      m_PhysicalDevice.getFormatProperties(vk::Format::eR8Uint, &formatProperties, m_InstanceDispatchLoader);
+
+      // Disable feature if image format is not supported.
+      if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eFragmentShadingRateAttachmentKHR))
+      {
+        m_PhysicalDeviceExtensionFeatures.m_ShadingRate   = vk::PhysicalDeviceFragmentShadingRateFeaturesKHR{};
+        m_PhysicalDeviceExtensionProperties.m_ShadingRate = vk::PhysicalDeviceFragmentShadingRatePropertiesKHR{};
+      }
+    }
+
+    if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != vk::False)
+    {
+      vk::FormatProperties formatProperties = {};
+      m_PhysicalDevice.getFormatProperties(vk::Format::eR8G8Unorm, &formatProperties, m_InstanceDispatchLoader);
+
+      // Disable feature if image format is not supported.
+      if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eFragmentDensityMapEXT))
+      {
+        m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap   = vk::PhysicalDeviceFragmentDensityMapFeaturesEXT{};
+        m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap = vk::PhysicalDeviceFragmentDensityMapPropertiesEXT{};
+
+        m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2   = vk::PhysicalDeviceFragmentDensityMap2FeaturesEXT{};
+        m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap2 = vk::PhysicalDeviceFragmentDensityMap2PropertiesEXT{};
+      }
+    }
+  }
+
+  int i = 0;
 
   return XII_SUCCESS;
 }

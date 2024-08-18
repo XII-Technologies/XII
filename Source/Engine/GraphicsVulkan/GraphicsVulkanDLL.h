@@ -44,7 +44,7 @@
     }                                   \
   } while (0)
 
-#define VK_BOOL(expression) (expression) ? VK_TRUE : VK_FALSE
+#define VK_BOOL(expression) (expression) ? vk::True : vk::False
 
 #define VK_ASSERT_DEBUG(code)                                                                                                                                                                                                         \
   do                                                                                                                                                                                                                                  \
