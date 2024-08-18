@@ -152,14 +152,17 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     XII_LOG_BLOCK("Supported Vulkan Instance Extensions");
 
-    std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties(nullptr, m_InstanceDispatchLoader);
+    xiiUInt32 uiExtensionCount = 0U;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, nullptr, m_InstanceDispatchLoader));
 
-    m_Extensions.Reserve(static_cast<xiiUInt32>(extensions.size()));
+    m_Extensions.SetCount(uiExtensionCount);
 
-    for (const auto& extension : extensions)
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, m_Extensions.GetData(), m_InstanceDispatchLoader));
+
+    XII_ASSERT_DEV(m_Extensions.GetCount() == uiExtensionCount, "Expected extension count ({0}) does not match the retrieved extension count ({1}).", uiExtensionCount, m_Extensions.GetCount());
+
+    for (const auto& extension : m_Extensions)
     {
-      m_Extensions.PushBack(extension);
-
       xiiLog::Info("{} {}.{}.{}", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
     }
   }
@@ -1515,22 +1518,22 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   vk::PhysicalDeviceProperties2 properties2   = {};
   void**                        pNextProperty = &properties2.pNext;
 
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_ShaderFloat16Int8;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_ShaderFloat16Int8.pNext;
   }
 
   // VK_KHR_16bit_storage and VK_KHR_8bit_storage extensions require VK_KHR_storage_buffer_storage_class extension.
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME))
   {
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_16BIT_STORAGE_EXTENSION_NAME))
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_16BIT_STORAGE_EXTENSION_NAME))
     {
       *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_Storage16Bit;
       pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_Storage16Bit.pNext;
     }
 
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_8BIT_STORAGE_EXTENSION_NAME))
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_8BIT_STORAGE_EXTENSION_NAME))
     {
       *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_Storage8Bit;
       pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_Storage8Bit.pNext;
@@ -1538,7 +1541,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 
   // Get mesh shader features and properties.
-  if (IsExtensionAvailable(m_Extensions, VK_EXT_MESH_SHADER_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_MESH_SHADER_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_MeshShader;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_MeshShader.pNext;
@@ -1548,7 +1551,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 
   // Get acceleration structure features and properties.
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_AccelerationStructure;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_AccelerationStructure.pNext;
@@ -1558,7 +1561,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 
   // Get ray tracing pipeline features and properties.
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.pNext;
@@ -1568,21 +1571,21 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 
   // Get inline ray tracing features.
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_RAY_QUERY_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_RAY_QUERY_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_RayQuery;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_RayQuery.pNext;
   }
 
   // Additional extension that is required for ray tracing.
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress.pNext;
   }
 
   // Additional extension that is required for ray tracing.
-  if (IsExtensionAvailable(m_Extensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing.pNext;
@@ -1592,8 +1595,10 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 
   // Additional extension that is required for ray tracing shader.
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_SPIRV_1_4_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_SPIRV_1_4_EXTENSION_NAME))
+  {
     m_PhysicalDeviceExtensionFeatures.m_bSpirv14 = true;
+  }
 
   // Some features require SPIRV 1.4 or 1.5 which was added to the Vulkan 1.2 core.
   if (m_uiVulkanVersion >= VK_API_VERSION_1_2)
@@ -1603,7 +1608,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 
   // Extension required for MoltenVk
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset.pNext;
@@ -1623,7 +1628,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     m_PhysicalDeviceExtensionFeatures.m_bSubgroupOps = true;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_VertexAttributeDivisor;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_VertexAttributeDivisor.pNext;
@@ -1632,7 +1637,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_VertexAttributeDivisor.pNext;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_TimelineSemaphore;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_TimelineSemaphore.pNext;
@@ -1641,7 +1646,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_TimelineSemaphore.pNext;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_MULTIVIEW_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MULTIVIEW_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_Multiview;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_Multiview.pNext;
@@ -1650,12 +1655,12 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_Multiview.pNext;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME))
   {
     m_PhysicalDeviceExtensionFeatures.m_bRenderPass2 = true;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_ShadingRate;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pNext;
@@ -1664,7 +1669,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_ShadingRate.pNext;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.pNext;
@@ -1673,24 +1678,24 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.pNext;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_HostQueryReset;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_HostQueryReset.pNext;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME))
   {
     m_PhysicalDeviceExtensionFeatures.m_bDrawIndirectCount = true;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME))
   {
     *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_Maintenance3;
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_Maintenance3.pNext;
   }
 
-  if (IsExtensionAvailable(m_Extensions, VK_EXT_MULTI_DRAW_EXTENSION_NAME))
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_MULTI_DRAW_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_MultiDraw;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_MultiDraw.pNext;
@@ -1743,8 +1748,6 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
       }
     }
   }
-
-  int i = 0;
 
   return XII_SUCCESS;
 }
