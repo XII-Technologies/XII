@@ -167,7 +167,7 @@ private:
   };
 
   vk::Instance              m_Instance;
-  xiiUInt32                 m_uiVulkanVersion;
+  xiiUInt32                 m_uiVulkanVersion = VK_API_VERSION_1_1;
   vk::DispatchLoaderDynamic m_InstanceDispatchLoader;
 
   // Vulkan Instance Objects.

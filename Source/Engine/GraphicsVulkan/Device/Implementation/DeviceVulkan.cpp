@@ -35,22 +35,6 @@
 
 #include <bitset>
 
-// Debug Utilities.
-PFN_vkCreateDebugUtilsMessengerEXT  CreateDebugUtilsMessengerEXT  = nullptr;
-PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessengerEXT = nullptr;
-PFN_vkSetDebugUtilsObjectNameEXT    SetDebugUtilsObjectNameEXT    = nullptr;
-PFN_vkSetDebugUtilsObjectTagEXT     SetDebugUtilsObjectTagEXT     = nullptr;
-PFN_vkQueueBeginDebugUtilsLabelEXT  QueueBeginDebugUtilsLabelEXT  = nullptr;
-PFN_vkQueueEndDebugUtilsLabelEXT    QueueEndDebugUtilsLabelEXT    = nullptr;
-PFN_vkQueueInsertDebugUtilsLabelEXT QueueInsertDebugUtilsLabelEXT = nullptr;
-
-// Debug Report.
-PFN_vkCreateDebugReportCallbackEXT  CreateDebugReportCallbackEXT  = nullptr;
-PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallbackEXT = nullptr;
-
-// Shading Rates
-PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR GetPhysicalDeviceFragmentShadingRatesKHR = nullptr;
-
 xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceVulkan, description);
@@ -140,15 +124,17 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::InitializePlatform");
 
+  m_InstanceDispatchLoader.init(vkGetInstanceProcAddr);
+
   // Enumerate available layers.
   {
     xiiUInt32 uiLayerCount = 0U;
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr, m_InstanceDispatchLoader));
 
     m_Layers.SetCount(uiLayerCount);
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData()));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData(), m_InstanceDispatchLoader));
 
     XII_ASSERT_DEV(m_Layers.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
   }
@@ -166,7 +152,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     XII_LOG_BLOCK("Supported Vulkan Instance Extensions");
 
-    std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties(nullptr);
+    std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties(nullptr, m_InstanceDispatchLoader);
 
     m_Extensions.Reserve(static_cast<xiiUInt32>(extensions.size()));
 
@@ -320,8 +306,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
   // Create Vulkan Instance.
   {
-    m_uiVulkanVersion = VK_API_VERSION_1_1;
-
     vk::ApplicationInfo applicationInformation = {};
     applicationInformation.sType               = vk::StructureType::eApplicationInfo;
     applicationInformation.apiVersion          = m_uiVulkanVersion;
@@ -348,9 +332,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       instanceCreateInformation.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
     }
 
-    m_Instance = vk::createInstance(instanceCreateInformation);
+    m_Instance = vk::createInstance(instanceCreateInformation, nullptr, m_InstanceDispatchLoader);
 
-    m_InstanceDispatchLoader.init(m_Instance, vkGetInstanceProcAddr);
+    m_InstanceDispatchLoader.init(m_Instance);
 
     if (m_Instance == VK_NULL_HANDLE)
     {
@@ -362,67 +346,30 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   // If requested, we enable the default validation layers for debugging purposes.
   if (m_DebugMode == DebugMode::Utils)
   {
-    CreateDebugUtilsMessengerEXT  = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT"));
-    DestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT"));
+    constexpr vk::DebugUtilsMessageSeverityFlagsEXT messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
+    constexpr vk::DebugUtilsMessageTypeFlagsEXT     messageType     = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 
-    XII_ASSERT_DEV(CreateDebugUtilsMessengerEXT != nullptr && DestroyDebugUtilsMessengerEXT != nullptr, "Failed to load DebugUtilsMessenger extension functions.");
+    vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {};
+    debugMessengerCreateInfo.pNext                                = nullptr;
+    debugMessengerCreateInfo.flags                                = {};
+    debugMessengerCreateInfo.messageSeverity                      = messageSeverity;
+    debugMessengerCreateInfo.messageType                          = messageType;
+    debugMessengerCreateInfo.pfnUserCallback                      = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
+    debugMessengerCreateInfo.pUserData                            = nullptr;
 
-    constexpr VkDebugUtilsMessageSeverityFlagsEXT messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    constexpr VkDebugUtilsMessageTypeFlagsEXT     messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-
-    VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {};
-    debugMessengerCreateInfo.sType                              = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    debugMessengerCreateInfo.pNext                              = nullptr;
-    debugMessengerCreateInfo.flags                              = 0U;
-    debugMessengerCreateInfo.messageSeverity                    = messageSeverity;
-    debugMessengerCreateInfo.messageType                        = messageType;
-    debugMessengerCreateInfo.pfnUserCallback                    = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
-    debugMessengerCreateInfo.pUserData                          = nullptr;
-
-    if (CreateDebugUtilsMessengerEXT != nullptr && DestroyDebugUtilsMessengerEXT != nullptr)
-    {
-      VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(CreateDebugUtilsMessengerEXT(m_Instance, &debugMessengerCreateInfo, nullptr, &debugMessenger));
-
-      m_DebugMessenger = debugMessenger;
-
-      // Load function pointers.
-      SetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(m_Instance, "vkSetDebugUtilsObjectNameEXT"));
-      XII_ASSERT_DEV(SetDebugUtilsObjectNameEXT != nullptr, "Failed to load vkSetDebugUtilsObjectNameEXT function pointer");
-      SetDebugUtilsObjectTagEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectTagEXT>(vkGetInstanceProcAddr(m_Instance, "vkSetDebugUtilsObjectTagEXT"));
-      XII_ASSERT_DEV(SetDebugUtilsObjectTagEXT != nullptr, "Failed to load vkSetDebugUtilsObjectTagEXT function pointer");
-
-      QueueBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueBeginDebugUtilsLabelEXT"));
-      XII_ASSERT_DEV(QueueBeginDebugUtilsLabelEXT != nullptr, "Failed to load vkQueueBeginDebugUtilsLabelEXT function pointer");
-      QueueEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueEndDebugUtilsLabelEXT"));
-      XII_ASSERT_DEV(QueueEndDebugUtilsLabelEXT != nullptr, "Failed to load vkQueueEndDebugUtilsLabelEXT function pointer");
-      QueueInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueInsertDebugUtilsLabelEXT>(vkGetInstanceProcAddr(m_Instance, "vkQueueInsertDebugUtilsLabelEXT"));
-      XII_ASSERT_DEV(QueueInsertDebugUtilsLabelEXT != nullptr, "Failed to load vkQueueInsertDebugUtilsLabelEXT function pointer");
-    }
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugUtilsMessengerEXT(&debugMessengerCreateInfo, nullptr, &m_DebugMessenger, m_InstanceDispatchLoader));
   }
   else if (m_DebugMode == DebugMode::Report)
   {
-    CreateDebugReportCallbackEXT  = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(m_Instance, "vkCreateDebugReportCallbackEXT"));
-    DestroyDebugReportCallbackEXT = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugReportCallbackEXT"));
+    constexpr vk::DebugReportFlagsEXT reportFlags = vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eError;
 
-    XII_ASSERT_DEV(CreateDebugReportCallbackEXT != nullptr && DestroyDebugReportCallbackEXT != nullptr, "Failed to load DebugReportCallback extension functions.");
-
-    constexpr VkDebugReportFlagBitsEXT reportFlags = static_cast<VkDebugReportFlagBitsEXT>(VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT);
-
-    VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
-    debugReportCallbackCreateInfo.sType                              = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+    vk::DebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
     debugReportCallbackCreateInfo.pNext                              = nullptr;
     debugReportCallbackCreateInfo.flags                              = reportFlags;
     debugReportCallbackCreateInfo.pfnCallback                        = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(xiiVulkanDebugReportCallback);
     debugReportCallbackCreateInfo.pUserData                          = nullptr;
 
-    if (CreateDebugReportCallbackEXT != nullptr && DestroyDebugReportCallbackEXT != nullptr)
-    {
-      VkDebugReportCallbackEXT debugCallback = VK_NULL_HANDLE;
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(CreateDebugReportCallbackEXT(m_Instance, &debugReportCallbackCreateInfo, nullptr, &debugCallback));
-
-      m_DebugCallback = debugCallback;
-    }
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugReportCallbackEXT(&debugReportCallbackCreateInfo, nullptr, &m_DebugCallback, m_InstanceDispatchLoader));
   }
 
   // Enumerate physical devices.
@@ -523,12 +470,12 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
   {
     if (m_DebugMessenger != VK_NULL_HANDLE)
     {
-      DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+      m_Instance.destroyDebugUtilsMessengerEXT(m_DebugMessenger, nullptr, m_InstanceDispatchLoader);
     }
 
     if (m_DebugCallback != VK_NULL_HANDLE)
     {
-      DestroyDebugReportCallbackEXT(m_Instance, m_DebugCallback, nullptr);
+      m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
     }
   }
 
@@ -1198,25 +1145,17 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize.height = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateAttachmentTexelSize.height;
       }
 
-      std::vector<VkPhysicalDeviceFragmentShadingRateKHR> shadingRates;
+      xiiDynamicArray<vk::PhysicalDeviceFragmentShadingRateKHR> shadingRates;
       {
-        GetPhysicalDeviceFragmentShadingRatesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR>(vkGetInstanceProcAddr(m_Instance, "vkGetPhysicalDeviceFragmentShadingRatesKHR"));
-        XII_ASSERT_DEV(GetPhysicalDeviceFragmentShadingRatesKHR, "Failed to load vkGetPhysicalDeviceFragmentShadingRatesKHR extension functions.");
-
         xiiUInt32 uiShadingRateCount = 0U;
-        VK_SUCCEED_OR_RETURN_XII_FAILURE(GetPhysicalDeviceFragmentShadingRatesKHR(m_PhysicalDevice, &uiShadingRateCount, nullptr));
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, nullptr, m_InstanceDispatchLoader));
 
-        shadingRates.resize(uiShadingRateCount);
+        shadingRates.SetCount(uiShadingRateCount);
 
-        for (auto& rate : shadingRates)
-          rate.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR;
-
-        VK_SUCCEED_OR_RETURN_XII_FAILURE(GetPhysicalDeviceFragmentShadingRatesKHR(m_PhysicalDevice, &uiShadingRateCount, shadingRates.data()));
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, shadingRates.GetData(), m_InstanceDispatchLoader));
       }
 
-      constexpr VkSampleCountFlags VK_SAMPLE_COUNT_ALL = ((xiiUInt32)vk::SampleCountFlagBits::e64 << 1) - 1;
-
-      const xiiUInt32 uiShadingRateCount = static_cast<xiiUInt8>(xiiMath::Min(shadingRates.size(), size_t{XII_GAL_MAX_SHADING_RATE}));
+      const xiiUInt32 uiShadingRateCount = static_cast<xiiUInt8>(xiiMath::Min(shadingRates.GetCount(), XII_GAL_MAX_SHADING_RATE));
       for (xiiUInt32 i = 0; i < uiShadingRateCount; ++i)
       {
         const auto& srcShadingRate = shadingRates[i];
@@ -1226,34 +1165,22 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         // sampleCounts - contains all supported bits
         XII_ASSERT_DEV((srcShadingRate.fragmentSize.width == 1 && srcShadingRate.fragmentSize.height == 1) || (xiiUInt32{srcShadingRate.sampleCounts} <= ((static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateRasterizationSamples) << 1) - 1)), "");
 
-        switch (srcShadingRate.sampleCounts)
-        {
-          case VK_SAMPLE_COUNT_1_BIT:
-            dstShadingRate.m_SampleBits = xiiGALSampleCount::OneSample;
-            break;
-          case VK_SAMPLE_COUNT_2_BIT:
-            dstShadingRate.m_SampleBits = xiiGALSampleCount::TwoSamples;
-            break;
-          case VK_SAMPLE_COUNT_4_BIT:
-            dstShadingRate.m_SampleBits = xiiGALSampleCount::FourSamples;
-            break;
-          case VK_SAMPLE_COUNT_8_BIT:
-            dstShadingRate.m_SampleBits = xiiGALSampleCount::EightSamples;
-            break;
-          case VK_SAMPLE_COUNT_16_BIT:
-            dstShadingRate.m_SampleBits = xiiGALSampleCount::SixteenSamples;
-            break;
-          case VK_SAMPLE_COUNT_32_BIT:
-            dstShadingRate.m_SampleBits = xiiGALSampleCount::ThirtyTwoSamples;
-            break;
-          case VK_SAMPLE_COUNT_64_BIT:
-            dstShadingRate.m_SampleBits = xiiGALSampleCount::SixtyFourSamples;
-            break;
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e1  )
+          dstShadingRate.m_SampleBits |= xiiGALSampleCount::OneSample;
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e2  )
+          dstShadingRate.m_SampleBits |= xiiGALSampleCount::TwoSamples;
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e4  )
+          dstShadingRate.m_SampleBits |= xiiGALSampleCount::FourSamples;
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e8  )
+          dstShadingRate.m_SampleBits |= xiiGALSampleCount::EightSamples;
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e16 )
+          dstShadingRate.m_SampleBits |= xiiGALSampleCount::SixteenSamples;
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e32 )
+          dstShadingRate.m_SampleBits |= xiiGALSampleCount::ThirtyTwoSamples;
+        if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e64)
+          dstShadingRate.m_SampleBits |= xiiGALSampleCount::SixtyFourSamples;
 
-            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-        }
-
-        dstShadingRate.m_ShadingRate = xiiVulkanTypeConversions::FragmentSizeToShadingRate(vk::Extent2D{srcShadingRate.fragmentSize});
+        dstShadingRate.m_ShadingRate = xiiVulkanTypeConversions::FragmentSizeToShadingRate(srcShadingRate.fragmentSize);
       }
     }
     // VK_EXT_fragment_density_map
