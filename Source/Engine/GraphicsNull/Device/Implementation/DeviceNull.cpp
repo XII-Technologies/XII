@@ -535,7 +535,7 @@ xiiResult xiiGALDeviceNull::CreateCommandQueuesPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceNull::FillCapabilitiesPlatform()
+xiiResult xiiGALDeviceNull::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Null;
 
@@ -578,7 +578,7 @@ void xiiGALDeviceNull::FillCapabilitiesPlatform()
 
   m_AdapterDescription.m_WaveOperationProperties.m_uiMinSize             = 32;
   m_AdapterDescription.m_WaveOperationProperties.m_uiMaxSize             = 32;
-  m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Basic | xiiGALWaveFeature::Vote | xiiGALWaveFeature::Arithmetic | xiiGALWaveFeature::BallOut | xiiGALWaveFeature::Quad;
+  m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Basic | xiiGALWaveFeature::Vote | xiiGALWaveFeature::Arithmetic | xiiGALWaveFeature::Ballot | xiiGALWaveFeature::Quad;
   m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages = xiiGALShaderType::Pixel | xiiGALShaderType::Compute | xiiGALShaderType::Amplification | xiiGALShaderType::Mesh;
 
   // Buffer properties
@@ -602,9 +602,9 @@ void xiiGALDeviceNull::FillCapabilitiesPlatform()
 
   // Sampler properties
 
-  m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported   = true;
-  m_AdapterDescription.m_SamplerProperties.m_bAnisotropicFilteringSupported = true;
-  m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported              = true;
+  m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported = true;
+  m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy              = 1U;
+  m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported            = true;
 
   // Mesh shader properties
 
@@ -661,6 +661,8 @@ void xiiGALDeviceNull::FillCapabilitiesPlatform()
   // Command queue properties
 
   // Null graphics device does not handle command queues yet.
+
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Device_Implementation_DeviceNull);

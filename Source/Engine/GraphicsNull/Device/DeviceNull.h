@@ -99,7 +99,7 @@ protected:
 
   virtual xiiResult CreateCommandQueuesPlatform() override final;
 
-  virtual void FillCapabilitiesPlatform() override final;
+  virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
   xiiUInt64 m_uiFrameNumber = 0U;
