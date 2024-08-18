@@ -1245,7 +1245,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       auto TestImageUsage = [&](vk::ImageUsageFlags usageFlags) -> bool {
         vk::ImageFormatProperties imageFormatProperties = {};
 
-        vk::Result result = m_PhysicalDevice.getImageFormatProperties(vkShadingRateTextureFormat, vk::ImageType::e2D, vk::ImageTiling::eOptimal, vkShadingRateTextureUsage | usageFlags, {}, &imageFormatProperties);
+        vk::Result result = m_PhysicalDevice.getImageFormatProperties(vkShadingRateTextureFormat, vk::ImageType::e2D, vk::ImageTiling::eOptimal, vkShadingRateTextureUsage | usageFlags, {}, &imageFormatProperties, m_InstanceDispatchLoader);
 
         return result == vk::Result::eSuccess;
       };
@@ -1719,12 +1719,12 @@ bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xi
 {
   xiiUInt32 uiExtensionCount = 0U;
 
-  if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, nullptr) != vk::Result::eSuccess)
+  if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, nullptr, m_InstanceDispatchLoader) != vk::Result::eSuccess)
     return false;
 
   extensions.SetCount(uiExtensionCount);
 
-  if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, extensions.GetData()) != vk::Result::eSuccess)
+  if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, extensions.GetData(), m_InstanceDispatchLoader) != vk::Result::eSuccess)
   {
     extensions.Clear();
 
