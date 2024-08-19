@@ -28,6 +28,7 @@ public:
   // These functions are implemented by a graphics API implementation.
 protected:
   virtual xiiResult InitializePlatform() override final;
+  virtual xiiResult PostInitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
 
   virtual xiiResult CreateCommandQueuesPlatform() override final;
@@ -100,15 +101,6 @@ protected:
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
   void CreateCommandQueues();
-
-private:
-  vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
-  xiiResult          InitializePhysicalDeviceProperties();
-
-  bool EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions);
-  bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr);
-  bool IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName);
-  bool IsExtensionEnabled(const char* szExtensionName);
 
 private:
   enum class DebugMode
@@ -197,6 +189,17 @@ private:
   // 2 : Transfer Queue
   // 3 : Sparse Queue
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_CommandQueues[4];
+
+private:
+  vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
+  xiiResult          InitializePhysicalDeviceProperties();
+
+  bool EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions);
+  bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr);
+  bool IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName);
+  bool IsExtensionEnabled(const char* szExtensionName);
+
+  xiiGALDeviceFeatures ConvertVulkanFeaturesToDeviceFeatures(xiiUInt32 uiVulkanVersion, const vk::PhysicalDeviceFeatures& vkFeatures, const vk::PhysicalDeviceProperties& vkDeviceProperties, const ExtensionFeatures& extensionFeatures, const ExtensionProperties& extensionProperties, xiiGALDeviceFeatureState::Enum optionalState = xiiGALDeviceFeatureState::Enabled);
 };
 
 #include <GraphicsVulkan/Device/Implementation/DeviceVulkan_inl.h>

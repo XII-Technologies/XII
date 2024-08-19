@@ -456,6 +456,29 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   return XII_FAILURE;
 }
 
+xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
+{
+  xiiDynamicArray<const char*> deviceExtensions;
+
+  if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
+  {
+    deviceExtensions.PushBack(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  }
+
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE1_EXTENSION_NAME))
+  {
+    deviceExtensions.PushBack(VK_KHR_MAINTENANCE1_EXTENSION_NAME); // To allow negative viewport height.
+  }
+  else
+  {
+    xiiLog::Warning("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
+  }
+
+  // Enable device features if they are supported and throw an error if not supported but are required by the user.
+
+  return XII_FAILURE;
+}
+
 void xiiGALDeviceVulkan::ReportLiveGPUObjects()
 {
 }
@@ -1811,6 +1834,62 @@ bool xiiGALDeviceVulkan::IsExtensionEnabled(const char* szExtensionName)
     }
   }
   return false;
+}
+
+xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(xiiUInt32 uiVulkanVersion, const vk::PhysicalDeviceFeatures& vkFeatures, const vk::PhysicalDeviceProperties& vkDeviceProperties, const ExtensionFeatures& extensionFeatures, const ExtensionProperties& extensionProperties, xiiGALDeviceFeatureState::Enum optionalState)
+{
+  XII_ASSERT_DEV(optionalState != xiiGALDeviceFeatureState::Disabled, "");
+
+  xiiGALDeviceFeatures deviceFeatures;
+
+#define INITIALIZE_DEVICE_FEATURE(featureName, bIsFeatureSupported) deviceFeatures.m_##featureName = (bIsFeatureSupported) ? optionalState : xiiGALDeviceFeatureState::Disabled
+
+  // The following features are always enabled.
+  deviceFeatures.m_SeparablePrograms             = xiiGALDeviceFeatureState::Enabled;
+  deviceFeatures.m_ShaderResourceQueries         = xiiGALDeviceFeatureState::Enabled;
+  deviceFeatures.m_MultithreadedResourceCreation = xiiGALDeviceFeatureState::Enabled;
+  deviceFeatures.m_ComputeShaders                = xiiGALDeviceFeatureState::Enabled;
+  deviceFeatures.m_BindlessResources             = xiiGALDeviceFeatureState::Enabled;
+  deviceFeatures.m_BinaryOcclusionQueries        = xiiGALDeviceFeatureState::Enabled;
+  deviceFeatures.m_SubpassFramebufferFetch       = xiiGALDeviceFeatureState::Enabled;
+  deviceFeatures.m_TextureComponentSwizzle       = xiiGALDeviceFeatureState::Enabled;
+
+  // Timestamps are nnot a feature and cannot be disabled. They are either supported by the device, or not supported by the device.
+  deviceFeatures.m_TimestampQueries = vkDeviceProperties.limits.timestampComputeAndGraphics ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
+  deviceFeatures.m_DurationQueries  = vkDeviceProperties.limits.timestampComputeAndGraphics ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
+
+  INITIALIZE_DEVICE_FEATURE(GeometryShaders, vkFeatures.geometryShader);
+  INITIALIZE_DEVICE_FEATURE(Tessellation, vkFeatures.tessellationShader);
+  INITIALIZE_DEVICE_FEATURE(PipelineStatisticsQueries, vkFeatures.pipelineStatisticsQuery);
+  INITIALIZE_DEVICE_FEATURE(OcclusionQueries, vkFeatures.occlusionQueryPrecise);
+  INITIALIZE_DEVICE_FEATURE(WireframeFill, vkFeatures.fillModeNonSolid);
+  INITIALIZE_DEVICE_FEATURE(DepthBiasClamp, vkFeatures.depthBiasClamp);
+  INITIALIZE_DEVICE_FEATURE(DepthClamp, vkFeatures.depthClamp);
+  INITIALIZE_DEVICE_FEATURE(IndependentBlend, vkFeatures.independentBlend);
+  INITIALIZE_DEVICE_FEATURE(DualSourceBlend, vkFeatures.dualSrcBlend);
+  INITIALIZE_DEVICE_FEATURE(MultiViewport, vkFeatures.multiViewport);
+  INITIALIZE_DEVICE_FEATURE(TextureCompressionBC, vkFeatures.textureCompressionBC);
+  INITIALIZE_DEVICE_FEATURE(VertexPipelineUAVWritesAndAtomics, vkFeatures.vertexPipelineStoresAndAtomics);
+  INITIALIZE_DEVICE_FEATURE(PixelUAVWritesAndAtomics, vkFeatures.fragmentStoresAndAtomics);
+  INITIALIZE_DEVICE_FEATURE(TextureUAVExtendedFormats, vkFeatures.shaderStorageImageExtendedFormats);
+  INITIALIZE_DEVICE_FEATURE(SparseResources, vkFeatures.sparseBinding && (vkFeatures.sparseResidencyBuffer || vkFeatures.sparseResidencyImage2D)); // Requires support for resident resources.
+
+  INITIALIZE_DEVICE_FEATURE(MeshShaders, extensionFeatures.m_MeshShader.taskShader != vk::False && extensionFeatures.m_MeshShader.meshShader != vk::False);
+
+  INITIALIZE_DEVICE_FEATURE(ShaderFloat16, extensionFeatures.m_ShaderFloat16Int8.shaderFloat16 != vk::False);
+  INITIALIZE_DEVICE_FEATURE(ShaderInt8, extensionFeatures.m_ShaderFloat16Int8.shaderInt8 != vk::False);
+
+  INITIALIZE_DEVICE_FEATURE(ResourceBuffer16BitAccess, extensionFeatures.m_Storage16Bit.storageBuffer16BitAccess != vk::False && vkFeatures.shaderInt16 != vk::False);
+  INITIALIZE_DEVICE_FEATURE(UniformBuffer16BitAccess, extensionFeatures.m_Storage16Bit.uniformAndStorageBuffer16BitAccess != vk::False && vkFeatures.shaderInt16 != vk::False);
+  INITIALIZE_DEVICE_FEATURE(ShaderInputOutput16, extensionFeatures.m_Storage16Bit.storageInputOutput16 != vk::False && vkFeatures.shaderInt16 != vk::False);
+
+  INITIALIZE_DEVICE_FEATURE(ResourceBuffer8BitAccess, extensionFeatures.m_Storage8Bit.storageBuffer8BitAccess != vk::False);
+  INITIALIZE_DEVICE_FEATURE(UniformBuffer8BitAccess, extensionFeatures.m_Storage8Bit.uniformAndStorageBuffer8BitAccess != vk::False);
+
+  INITIALIZE_DEVICE_FEATURE(ShaderResourceRuntimeArray, extensionFeatures.m_DescriptorIndexing.runtimeDescriptorArray != vk::False);
+  INITIALIZE_DEVICE_FEATURE(RayTracing, uiVulkanVersion >= VK_API_VERSION_1_1 && extensionFeatures.m_AccelerationStructure.accelerationStructure != vk::False && (extensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False || extensionFeatures.m_RayQuery.rayQuery != vk::False));
+
+  return deviceFeatures;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Device_Implementation_DeviceVulkan);
