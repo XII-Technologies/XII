@@ -20,6 +20,9 @@ public:
   /// \brief Initialize device.
   xiiResult Initialize();
 
+  /// \brief Initialization after device capabilities are known.
+  xiiResult PostInitialize();
+
   /// \brief Shutdown device.
   xiiResult Shutdown();
 
@@ -499,8 +502,9 @@ protected:
 protected:
   friend class xiiMemoryUtils;
 
-  virtual xiiResult InitializePlatform() = 0;
-  virtual xiiResult ShutdownPlatform()   = 0;
+  virtual xiiResult InitializePlatform()     = 0;
+  virtual xiiResult PostInitializePlatform() = 0;
+  virtual xiiResult ShutdownPlatform()       = 0;
 
   virtual xiiResult CreateCommandQueuesPlatform() = 0;
 

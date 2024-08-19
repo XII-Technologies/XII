@@ -165,6 +165,9 @@ xiiResult xiiGALDevice::Initialize()
   // Fill the device capabilities
   XII_SUCCEED_OR_RETURN(FillCapabilitiesPlatform());
 
+  // Initialize device after platform capabilities have been filled.
+  XII_SUCCEED_OR_RETURN(PostInitializePlatform());
+
   // Create command queues.
   XII_SUCCEED_OR_RETURN(CreateCommandQueuesPlatform());
 
@@ -188,6 +191,11 @@ xiiResult xiiGALDevice::Initialize()
   }
 
   return XII_SUCCESS;
+}
+
+xiiResult xiiGALDevice::PostInitialize()
+{
+  return PostInitializePlatform();
 }
 
 xiiResult xiiGALDevice::Shutdown()
