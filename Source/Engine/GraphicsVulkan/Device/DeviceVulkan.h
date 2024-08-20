@@ -100,8 +100,6 @@ protected:
 
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
-  void CreateCommandQueues();
-
 private:
   enum class DebugMode
   {
@@ -195,12 +193,14 @@ private:
   xiiResult          InitializePhysicalDeviceProperties();
 
   bool EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions);
-  bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr);
-  bool IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName);
-  bool IsExtensionEnabled(const char* szExtensionName);
+  bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr) const;
+  bool IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName) const;
+  bool IsExtensionEnabled(const char* szExtensionName) const;
 
   xiiGALDeviceFeatures ConvertVulkanFeaturesToDeviceFeatures(xiiUInt32 uiVulkanVersion, const vk::PhysicalDeviceFeatures& vkFeatures, const vk::PhysicalDeviceProperties& vkDeviceProperties, const ExtensionFeatures& extensionFeatures, const ExtensionProperties& extensionProperties, xiiGALDeviceFeatureState::Enum optionalState = xiiGALDeviceFeatureState::Enabled);
   xiiGALDeviceFeatures GetEnabledDeviceFeatures(const xiiGALDeviceFeatures& supportedDeviceFeatures, const xiiGALDeviceFeatures& requestedDeviceFeatures);
+
+  xiiUInt32 FindQueueFamily(vk::QueueFlags queueFlags) const;
 };
 
 #include <GraphicsVulkan/Device/Implementation/DeviceVulkan_inl.h>

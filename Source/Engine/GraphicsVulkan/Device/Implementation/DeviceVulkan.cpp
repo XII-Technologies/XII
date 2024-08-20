@@ -453,7 +453,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
@@ -474,17 +474,66 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Warning("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
   }
 
-  xiiDynamicArray<vk::DeviceQueueGlobalPriorityCreateInfoEXT>                       queueGlobalPriority;
-  xiiDynamicArray<vk::DeviceQueueCreateInfo>                                        queueDescriptions;
-  xiiDynamicArray<float>                                                            queuePriorities;
-  xiiHybridArray<xiiUInt8, XII_GAL_MAX_ADAPTER_QUEUE_COUNT>                         queueIDToQueueDescription;
-  xiiHybridArray<xiiGALCommandQueuePriority::Enum, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> queueIDToQueuePriority;
+  xiiDynamicArray<vk::DeviceQueueGlobalPriorityCreateInfoEXT>                          queueGlobalPriority;
+  xiiDynamicArray<vk::DeviceQueueCreateInfo>                                           queueDescriptions;
+  xiiDynamicArray<float>                                                               queuePriorities;
+  xiiHybridArray<xiiUInt8, XII_GAL_MAX_ADAPTER_QUEUE_COUNT>                            queueIDToQueueDescription;
+  xiiHybridArray<xiiEnum<xiiGALCommandQueuePriority>, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> queueIDToQueuePriority;
 
   for (xiiUInt32 i = 0; i < XII_GAL_MAX_ADAPTER_QUEUE_COUNT; ++i)
   {
     queueIDToQueuePriority.PushBack(xiiGALCommandQueuePriority::Unknown);
     queueIDToQueueDescription.PushBack(XII_GAL_DEFAULT_QUEUE_ID);
   }
+
+  // Setup device queues.
+  {
+    bool bSetupDedicatedQueues = false;
+
+    if (bSetupDedicatedQueues)
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+    else
+    {
+      queueDescriptions.SetCount(1);
+      queuePriorities.SetCount(1);
+
+      vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.PeekBack();
+      queuePriorities[0]                          = 1.0f; // Ask for the highest priority for the queue. (range is [0, 1])
+      queueIDToQueueDescription[0]                = 0U;
+
+      // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
+      // must support both graphics and compute operations.
+
+      queueDescription.flags            = {}; // Reserved for future use.
+      queueDescription.queueFamilyIndex = FindQueueFamily(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
+      queueDescription.queueCount       = 1U;
+      queueDescription.pQueuePriorities = queuePriorities.GetData();
+
+      if (queueDescription.queueFamilyIndex == xiiInvalidIndex)
+      {
+        xiiLog::Error("Failed to locate a valid Vulkan queue family index for {}.", vk::to_string(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute));
+        return XII_FAILURE;
+      }
+    }
+  }
+
+  // https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#extended-functionality-device-layer-deprecation
+  vk::DeviceCreateInfo deviceCreationDescription = {};
+  deviceCreationDescription.flags                = {};
+  deviceCreationDescription.enabledLayerCount    = 0U;      // Deprecated and ignored.
+  deviceCreationDescription.ppEnabledLayerNames  = nullptr; // Deprecated and ignored.
+  deviceCreationDescription.queueCreateInfoCount = queueDescriptions.GetCount();
+  deviceCreationDescription.pQueueCreateInfos    = queueDescriptions.GetData();
+
+  vk::PhysicalDeviceFeatures vkEnabledFeatures = {};
+  deviceCreationDescription.pEnabledFeatures   = &vkEnabledFeatures;
+
+#define ENABLE_VULKAN_FEATURE(vkFeature, state) vkEnabledFeatures.vkFeature = (state == xiiGALDeviceFeatureState::Enabled ? vk::True : vk::False)
+
+  xiiGALDeviceFeatureState::Enum imageCubeArrayFeature   = xiiGALDeviceFeatureState::Optional;
+  xiiGALDeviceFeatureState::Enum samplerAnisoropyFeature = xiiGALDeviceFeatureState::Optional;
 
   return XII_FAILURE;
 }
@@ -1464,26 +1513,6 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::CreateCommandQueues()
-{
-  xiiHybridArray<const char*, 4U> deviceExtensions;
-
-  if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
-  {
-    deviceExtensions.PushBack(VK_KHR_SURFACE_EXTENSION_NAME);
-  }
-
-  if (IsExtensionAvailable(m_Extensions, VK_KHR_MAINTENANCE1_EXTENSION_NAME))
-  {
-    // To allow negative viewport height.
-    deviceExtensions.PushBack(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
-  }
-  else
-  {
-    xiiLog::Error("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
-  }
-}
-
 vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
 {
   const auto IsGraphicsAndComputeQueueSupported = [](const vk::PhysicalDevice& physicalDevice) -> bool {
@@ -1810,7 +1839,7 @@ bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xi
   return true;
 }
 
-bool xiiGALDeviceVulkan::IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion /*= nullptr*/)
+bool xiiGALDeviceVulkan::IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion /*= nullptr*/) const
 {
   for (const auto& layer : pLayers)
   {
@@ -1826,7 +1855,7 @@ bool xiiGALDeviceVulkan::IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties>
   return false;
 }
 
-bool xiiGALDeviceVulkan::IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName)
+bool xiiGALDeviceVulkan::IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName) const
 {
   for (const auto& extension : pExtensions)
   {
@@ -1838,7 +1867,7 @@ bool xiiGALDeviceVulkan::IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionPro
   return false;
 }
 
-bool xiiGALDeviceVulkan::IsExtensionEnabled(const char* szExtensionName)
+bool xiiGALDeviceVulkan::IsExtensionEnabled(const char* szExtensionName) const
 {
   for (const auto* szEnabledExtension : m_EnabledExtensions)
   {
@@ -2025,6 +2054,66 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
   static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
 
   return deviceFeatures;
+}
+
+xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags) const
+{
+  // All commands that are allowed on a queue that supports transfer operations are also allowed on a queue that supports either graphics or compute operations.
+  // Thus, if the capabilities of a queue family include vk::QueueFlagBits::eGraphics or vk::QueueFlagBits::eCompute, then reporting the vk::QueueFlagBits::Transfer
+  // capability separately for that queue family is optional (4.1).
+
+  vk::QueueFlags queueFlagsOption = queueFlags;
+  if (queueFlags & (vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute))
+  {
+    queueFlags &= ~vk::QueueFlagBits::eTransfer;
+    queueFlagsOption = queueFlags | vk::QueueFlagBits::eTransfer;
+  }
+
+  xiiUInt32 uiQueueFamilyIndex = xiiInvalidIndex;
+
+  for (xiiUInt32 i = 0; i < m_PhysicalDeviceQueueFamilyProperties.GetCount(); ++i)
+  {
+    // First try to find a queue, for which the flags match exactly. (i.e. dedicated compute or transfer queue)
+    const vk::QueueFamilyProperties& properties = m_PhysicalDeviceQueueFamilyProperties[i];
+
+    if (properties.queueFlags == queueFlags || properties.queueFlags == queueFlagsOption)
+    {
+      uiQueueFamilyIndex = i;
+      break;
+    }
+  }
+
+  if (uiQueueFamilyIndex == xiiInvalidIndex)
+  {
+    for (xiiUInt32 i = 0; i < m_PhysicalDeviceQueueFamilyProperties.GetCount(); ++i)
+    {
+      // Try to find a queue for which all requested flags are set.
+      const vk::QueueFamilyProperties& properties = m_PhysicalDeviceQueueFamilyProperties[i];
+
+      // Check only queueFlags as vk::QueueFlagBits::eTransfer is optional for graphics and/or compute queues.
+      if ((properties.queueFlags & queueFlags) == queueFlags)
+      {
+        uiQueueFamilyIndex = i;
+        break;
+      }
+    }
+  }
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  if (uiQueueFamilyIndex != xiiInvalidIndex)
+  {
+    if (queueFlags & (vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute))
+    {
+      const vk::QueueFamilyProperties& properties = m_PhysicalDeviceQueueFamilyProperties[uiQueueFamilyIndex];
+
+      // Queues supporting graphics and/or compute operations must report (1,1,1) // in minImageTransferGranularity, meaning that there are no additional restrictions
+      // on the granularity of image transfer operations for these queues (4.1).
+      XII_ASSERT_DEV(properties.minImageTransferGranularity.width == 1 && properties.minImageTransferGranularity.height == 1 && properties.minImageTransferGranularity.depth == 1, "");
+    }
+  }
+#endif
+
+  return uiQueueFamilyIndex;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Device_Implementation_DeviceVulkan);
