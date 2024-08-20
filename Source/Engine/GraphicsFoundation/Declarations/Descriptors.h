@@ -48,7 +48,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_ResourceBuffer8BitAccess          = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports reading and writing 8-bit types from buffers bound as shader resource or unordered access views.
   xiiEnum<xiiGALDeviceFeatureState> m_UniformBuffer8BitAccess           = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports reading 8-bit types from uniform buffers.
   xiiEnum<xiiGALDeviceFeatureState> m_ShaderResourceRuntimeArray        = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports runtime-sized shader arrays (eg. arrays without a specific size).This feature is always enabled in DirectX12 backend and can optionally be enabled in Vulkan backend. Run-time sized shader arrays are not available in other backends.
-  xiiEnum<xiiGALDeviceFeatureState> m_WaveOp                            = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports wave ops or (DirectX 12) or subgroups (Vulkan).
+  xiiEnum<xiiGALDeviceFeatureState> m_WaveOperation                     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports wave operations or (DirectX 12) or subgroups (Vulkan).
   xiiEnum<xiiGALDeviceFeatureState> m_InstanceDataStepRate              = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports instance data step rates other than 1.
   xiiEnum<xiiGALDeviceFeatureState> m_NativeFence                       = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports fence with Uint64 counter. Native fence can wait on GPU for a signal from CPU, can be enqueued for wait operation for any value. If not natively supported by the device, the fence is emulated where possible.
   xiiEnum<xiiGALDeviceFeatureState> m_TileShaders                       = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports tile shaders.
@@ -57,6 +57,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_SparseResources                   = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports sparse (aka. tiled or partially resident) resources.
   xiiEnum<xiiGALDeviceFeatureState> m_SubpassFramebufferFetch           = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports framebuffer fetch for input attachments.
   xiiEnum<xiiGALDeviceFeatureState> m_TextureComponentSwizzle           = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports texture component swizzle.
+  xiiEnum<xiiGALDeviceFeatureState> m_NativeMultiDraw                   = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports a dedicated command that can be used to issue multiple draw calls with a single command (e.g. vkCmdDrawMultiExt).
+  xiiEnum<xiiGALDeviceFeatureState> m_AsynchronousShaderCompilation     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports asynchronous shader compilation.
 
   /// \brief Equality comparison operator.
   constexpr bool operator==(const xiiGALDeviceFeatures& rhs) const;

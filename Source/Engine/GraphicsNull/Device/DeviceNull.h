@@ -30,6 +30,7 @@ public:
   // These functions are implemented by a graphics API implementation.
 protected:
   virtual xiiResult InitializePlatform() override final;
+  virtual xiiResult PostInitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
 
   virtual void BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame) override final;

@@ -33,7 +33,7 @@ XII_ALWAYS_INLINE constexpr bool xiiGALDeviceFeatures::operator==(const xiiGALDe
     m_ResourceBuffer8BitAccess == rhs.m_ResourceBuffer8BitAccess &&
     m_UniformBuffer8BitAccess == rhs.m_UniformBuffer8BitAccess &&
     m_ShaderResourceRuntimeArray == rhs.m_ShaderResourceRuntimeArray &&
-    m_WaveOp == rhs.m_WaveOp &&
+    m_WaveOperation == rhs.m_WaveOperation &&
     m_InstanceDataStepRate == rhs.m_InstanceDataStepRate &&
     m_NativeFence == rhs.m_NativeFence &&
     m_TileShaders == rhs.m_TileShaders &&
@@ -41,7 +41,9 @@ XII_ALWAYS_INLINE constexpr bool xiiGALDeviceFeatures::operator==(const xiiGALDe
     m_VariableRateShading == rhs.m_VariableRateShading &&
     m_SparseResources == rhs.m_SparseResources &&
     m_SubpassFramebufferFetch == rhs.m_SubpassFramebufferFetch &&
-    m_TextureComponentSwizzle == rhs.m_TextureComponentSwizzle;
+    m_TextureComponentSwizzle == rhs.m_TextureComponentSwizzle &&
+    m_NativeMultiDraw == rhs.m_NativeMultiDraw &&
+    m_AsynchronousShaderCompilation == rhs.m_AsynchronousShaderCompilation;
 }
 
 XII_ALWAYS_INLINE constexpr bool xiiGALDepthStencilClearValue::operator==(const xiiGALDepthStencilClearValue& rhs) const

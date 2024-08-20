@@ -67,6 +67,11 @@ xiiResult xiiGALDeviceNull::InitializePlatform()
   return XII_SUCCESS;
 }
 
+xiiResult xiiGALDeviceNull::PostInitializePlatform()
+{
+  return XII_SUCCESS;
+}
+
 void xiiGALDeviceNull::ReportLiveGPUObjects()
 {
 }
