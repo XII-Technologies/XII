@@ -474,7 +474,17 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Warning("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
   }
 
-  // Enable device features if they are supported and throw an error if not supported but are required by the user.
+  xiiDynamicArray<vk::DeviceQueueGlobalPriorityCreateInfoEXT>                       queueGlobalPriority;
+  xiiDynamicArray<vk::DeviceQueueCreateInfo>                                        queueDescriptions;
+  xiiDynamicArray<float>                                                            queuePriorities;
+  xiiHybridArray<xiiUInt8, XII_GAL_MAX_ADAPTER_QUEUE_COUNT>                         queueIDToQueueDescription;
+  xiiHybridArray<xiiGALCommandQueuePriority::Enum, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> queueIDToQueuePriority;
+
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_ADAPTER_QUEUE_COUNT; ++i)
+  {
+    queueIDToQueuePriority.PushBack(xiiGALCommandQueuePriority::Unknown);
+    queueIDToQueueDescription.PushBack(XII_GAL_DEFAULT_QUEUE_ID);
+  }
 
   return XII_FAILURE;
 }
