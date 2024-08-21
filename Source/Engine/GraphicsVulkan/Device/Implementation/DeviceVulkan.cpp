@@ -333,13 +333,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       instanceCreateInformation.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
     }
 
-    m_Instance = vk::createInstance(instanceCreateInformation, nullptr, m_InstanceDispatchLoader);
-
-    if (m_Instance == VK_NULL_HANDLE)
-    {
-      xiiLog::Error("Failed to create Vulkan instance.");
-      return XII_FAILURE;
-    }
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::createInstance(&instanceCreateInformation, nullptr, &m_Instance, m_InstanceDispatchLoader));
 
     m_InstanceDispatchLoader.init(m_Instance);
 
@@ -927,6 +921,21 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   deviceCreationDescription.ppEnabledExtensionNames = deviceExtensions.IsEmpty() ? nullptr : deviceExtensions.GetData();
   deviceCreationDescription.enabledExtensionCount   = deviceExtensions.GetCount();
+
+  // Create Logical Device
+  {
+    m_LogicalDeviceFeatures          = vkEnabledFeatures;
+    m_LogicalDeviceExtensionFeatures = enabledExtensionFeatures;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.createDevice(&deviceCreationDescription, nullptr, &m_LogicalDevice, m_InstanceDispatchLoader));
+
+    m_InstanceDispatchLoader.init(m_LogicalDevice);
+  }
+
+  {
+    vk::PipelineStageFlags graphicsStages = vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexInput | vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests | vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eAllGraphics;
+    vk::PipelineStageFlags computeStages = vk::PipelineStageFlagBits::eDrawIndirect | vk::PipelineStageFlagBits::eComputeShader;
+  }
 
   return XII_FAILURE;
 }

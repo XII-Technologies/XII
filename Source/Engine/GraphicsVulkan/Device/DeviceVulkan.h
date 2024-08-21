@@ -177,6 +177,13 @@ private:
   ExtensionFeatures                          m_PhysicalDeviceExtensionFeatures;
   ExtensionProperties                        m_PhysicalDeviceExtensionProperties;
 
+  // Vulkan Logical Device Objects.
+  vk::Device                              m_LogicalDevice;
+  vk::PhysicalDeviceFeatures              m_LogicalDeviceFeatures;
+  ExtensionFeatures                       m_LogicalDeviceExtensionFeatures;
+  xiiDynamicArray<vk::PipelineStageFlags> m_LogicalDeviceSupportedStagesMask;
+  xiiDynamicArray<vk::AccessFlags>        m_LogicalDeviceSupportedAccessMask;
+
   // Vulkan Debug Resources.
   DebugMode                  m_DebugMode = DebugMode::Disabled;
   vk::DebugUtilsMessengerEXT m_DebugMessenger;
