@@ -458,6 +458,8 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
 xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 {
+  XII_LOG_BLOCK("xiiGALDeviceVulkan::PostInitializePlatform");
+
   xiiDynamicArray<const char*> deviceExtensions;
 
   if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
@@ -513,7 +515,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       if (queueDescription.queueFamilyIndex == xiiInvalidIndex)
       {
-        xiiLog::Error("Failed to locate a valid Vulkan queue family index for {}.", vk::to_string(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute));
+        xiiLog::Error("Failed to locate a valid Vulkan queue family index for {}.", vk::to_string(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute).data());
         return XII_FAILURE;
       }
     }
@@ -532,8 +534,399 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
 #define ENABLE_VULKAN_FEATURE(vkFeature, state) vkEnabledFeatures.vkFeature = (state == xiiGALDeviceFeatureState::Enabled ? vk::True : vk::False)
 
-  xiiGALDeviceFeatureState::Enum imageCubeArrayFeature   = xiiGALDeviceFeatureState::Optional;
-  xiiGALDeviceFeatureState::Enum samplerAnisoropyFeature = xiiGALDeviceFeatureState::Optional;
+  xiiGALDeviceFeatureState::Enum imageCubeArrayFeature    = xiiGALDeviceFeatureState::Optional;
+  xiiGALDeviceFeatureState::Enum samplerAnisotropyFeature = xiiGALDeviceFeatureState::Optional;
+
+  // clang-format off
+  ENABLE_VULKAN_FEATURE(geometryShader,                    m_AdapterDescription.m_Features.m_GeometryShaders);
+  ENABLE_VULKAN_FEATURE(tessellationShader,                m_AdapterDescription.m_Features.m_Tessellation);
+  ENABLE_VULKAN_FEATURE(pipelineStatisticsQuery,           m_AdapterDescription.m_Features.m_PipelineStatisticsQueries);
+  ENABLE_VULKAN_FEATURE(occlusionQueryPrecise,             m_AdapterDescription.m_Features.m_OcclusionQueries);
+  ENABLE_VULKAN_FEATURE(imageCubeArray,                    imageCubeArrayFeature);
+  ENABLE_VULKAN_FEATURE(fillModeNonSolid,                  m_AdapterDescription.m_Features.m_WireframeFill);
+  ENABLE_VULKAN_FEATURE(samplerAnisotropy,                 samplerAnisotropyFeature);
+  ENABLE_VULKAN_FEATURE(depthBiasClamp,                    m_AdapterDescription.m_Features.m_DepthBiasClamp);
+  ENABLE_VULKAN_FEATURE(depthClamp,                        m_AdapterDescription.m_Features.m_DepthClamp);
+  ENABLE_VULKAN_FEATURE(independentBlend,                  m_AdapterDescription.m_Features.m_IndependentBlend);
+  ENABLE_VULKAN_FEATURE(dualSrcBlend,                      m_AdapterDescription.m_Features.m_DualSourceBlend);
+  ENABLE_VULKAN_FEATURE(multiViewport,                     m_AdapterDescription.m_Features.m_MultiViewport);
+  ENABLE_VULKAN_FEATURE(textureCompressionBC,              m_AdapterDescription.m_Features.m_TextureCompressionBC);
+  ENABLE_VULKAN_FEATURE(vertexPipelineStoresAndAtomics,    m_AdapterDescription.m_Features.m_VertexPipelineUAVWritesAndAtomics);
+  ENABLE_VULKAN_FEATURE(fragmentStoresAndAtomics,          m_AdapterDescription.m_Features.m_PixelUAVWritesAndAtomics);
+  ENABLE_VULKAN_FEATURE(shaderStorageImageExtendedFormats, m_AdapterDescription.m_Features.m_TextureUAVExtendedFormats);
+  // clang-format on
+
+#undef ENABLE_VULKAN_FEATURE
+
+  // Enable features (if they are supported) that are not covered by DeviceFeatures but required for some operations.
+  vkEnabledFeatures.imageCubeArray                          = m_PhysicalDeviceFeatures.imageCubeArray;
+  vkEnabledFeatures.samplerAnisotropy                       = m_PhysicalDeviceFeatures.samplerAnisotropy;
+  vkEnabledFeatures.fullDrawIndexUint32                     = m_PhysicalDeviceFeatures.fullDrawIndexUint32;
+  vkEnabledFeatures.drawIndirectFirstInstance               = m_PhysicalDeviceFeatures.drawIndirectFirstInstance;
+  vkEnabledFeatures.shaderStorageImageWriteWithoutFormat    = m_PhysicalDeviceFeatures.shaderStorageImageWriteWithoutFormat;
+  vkEnabledFeatures.shaderUniformBufferArrayDynamicIndexing = m_PhysicalDeviceFeatures.shaderUniformBufferArrayDynamicIndexing;
+  vkEnabledFeatures.shaderSampledImageArrayDynamicIndexing  = m_PhysicalDeviceFeatures.shaderSampledImageArrayDynamicIndexing;
+  vkEnabledFeatures.shaderStorageBufferArrayDynamicIndexing = m_PhysicalDeviceFeatures.shaderStorageBufferArrayDynamicIndexing;
+  vkEnabledFeatures.shaderStorageImageArrayDynamicIndexing  = m_PhysicalDeviceFeatures.shaderStorageImageArrayDynamicIndexing;
+  vkEnabledFeatures.shaderImageGatherExtended               = m_PhysicalDeviceFeatures.shaderImageGatherExtended;
+
+  if (m_AdapterDescription.m_Features.m_SparseResources != xiiGALDeviceFeatureState::Disabled)
+  {
+    vkEnabledFeatures.sparseBinding            = vk::True;
+    vkEnabledFeatures.sparseResidency16Samples = m_PhysicalDeviceFeatures.sparseResidency16Samples;
+    vkEnabledFeatures.sparseResidency2Samples  = m_PhysicalDeviceFeatures.sparseResidency2Samples;
+    vkEnabledFeatures.sparseResidency4Samples  = m_PhysicalDeviceFeatures.sparseResidency4Samples;
+    vkEnabledFeatures.sparseResidency8Samples  = m_PhysicalDeviceFeatures.sparseResidency8Samples;
+    vkEnabledFeatures.sparseResidencyAliased   = m_PhysicalDeviceFeatures.sparseResidencyAliased;
+    vkEnabledFeatures.sparseResidencyBuffer    = m_PhysicalDeviceFeatures.sparseResidencyBuffer;
+    vkEnabledFeatures.sparseResidencyImage2D   = m_PhysicalDeviceFeatures.sparseResidencyImage2D;
+    vkEnabledFeatures.sparseResidencyImage3D   = m_PhysicalDeviceFeatures.sparseResidencyImage3D;
+    vkEnabledFeatures.shaderResourceResidency  = m_PhysicalDeviceFeatures.shaderResourceResidency;
+  }
+
+  ExtensionFeatures enabledExtensionFeatures = {};
+
+  // To enable some device extensions you must enable instance extension VK_KHR_get_physical_device_properties2
+  // and add feature description to DeviceCreateInfo.pNext.
+  const bool bSupportsDeviceFeatures2 = IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  if (bSupportsDeviceFeatures2)
+  {
+    void** pNextExtension = const_cast<void**>(&deviceCreationDescription.pNext);
+
+    // Mesh shader
+    if (m_AdapterDescription.m_Features.m_MeshShaders != xiiGALDeviceFeatureState::Disabled)
+    {
+      enabledExtensionFeatures.m_MeshShader = m_PhysicalDeviceExtensionFeatures.m_MeshShader;
+
+      XII_ASSERT_DEV(enabledExtensionFeatures.m_MeshShader.taskShader != vk::False && enabledExtensionFeatures.m_MeshShader.meshShader != vk::False, "");
+
+      const auto* szMeshShaderExtensionName = VK_EXT_MESH_SHADER_EXTENSION_NAME;
+
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, szMeshShaderExtensionName), "{} extension must be supported as it has already been checked by VulkanPhysicalDevice and both taskShader and meshShader features are TRUE.", szMeshShaderExtensionName);
+
+      deviceExtensions.PushBack(szMeshShaderExtensionName);
+
+      *pNextExtension = &enabledExtensionFeatures.m_MeshShader;
+      pNextExtension  = &enabledExtensionFeatures.m_MeshShader.pNext;
+    }
+
+    if (m_AdapterDescription.m_Features.m_ShaderFloat16 != xiiGALDeviceFeatureState::Disabled || m_AdapterDescription.m_Features.m_ShaderInt8 != xiiGALDeviceFeatureState::Disabled)
+    {
+      enabledExtensionFeatures.m_ShaderFloat16Int8 = m_PhysicalDeviceExtensionFeatures.m_ShaderFloat16Int8;
+
+      XII_ASSERT_DEV(enabledExtensionFeatures.m_ShaderFloat16Int8.shaderFloat16 != vk::False || enabledExtensionFeatures.m_ShaderFloat16Int8.shaderInt8 != vk::False, "");
+
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME), "VK_KHR_shader_float16_int8 extension must be supported as it has already been checked by VulkanPhysicalDevice and at least one of shaderFloat16 or shaderInt8 features is TRUE");
+
+      deviceExtensions.PushBack(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+
+      if (m_AdapterDescription.m_Features.m_ShaderFloat16 == xiiGALDeviceFeatureState::Disabled)
+        enabledExtensionFeatures.m_ShaderFloat16Int8.shaderFloat16 = vk::False;
+      if (m_AdapterDescription.m_Features.m_ShaderInt8 == xiiGALDeviceFeatureState::Disabled)
+        enabledExtensionFeatures.m_ShaderFloat16Int8.shaderInt8 = vk::False;
+
+      *pNextExtension = &enabledExtensionFeatures.m_ShaderFloat16Int8;
+      pNextExtension  = &enabledExtensionFeatures.m_ShaderFloat16Int8.pNext;
+    }
+
+    bool bStorageBufferStorageClassExtensionRequired = false;
+
+    if (m_AdapterDescription.m_Features.m_ResourceBuffer16BitAccess != xiiGALDeviceFeatureState::Disabled || m_AdapterDescription.m_Features.m_UniformBuffer16BitAccess != xiiGALDeviceFeatureState::Disabled || m_AdapterDescription.m_Features.m_ShaderInputOutput16 != xiiGALDeviceFeatureState::Disabled)
+    {
+      enabledExtensionFeatures.m_Storage16Bit = m_PhysicalDeviceExtensionFeatures.m_Storage16Bit;
+
+      XII_ASSERT_DEV(m_AdapterDescription.m_Features.m_ResourceBuffer16BitAccess == xiiGALDeviceFeatureState::Disabled || enabledExtensionFeatures.m_Storage16Bit.storageBuffer16BitAccess != vk::False, "");
+      XII_ASSERT_DEV(m_AdapterDescription.m_Features.m_UniformBuffer16BitAccess == xiiGALDeviceFeatureState::Disabled || enabledExtensionFeatures.m_Storage16Bit.uniformAndStorageBuffer16BitAccess != vk::False, "");
+      XII_ASSERT_DEV(m_AdapterDescription.m_Features.m_ShaderInputOutput16 == xiiGALDeviceFeatureState::Disabled || enabledExtensionFeatures.m_Storage16Bit.storageInputOutput16 != vk::False, "");
+
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_16BIT_STORAGE_EXTENSION_NAME), "VK_KHR_16bit_storage must be supported as it has already been checked by VulkanPhysicalDevice and at least one of storageBuffer16BitAccess, uniformAndStorageBuffer16BitAccess, or storagePushConstant16 features is TRUE");
+
+      deviceExtensions.PushBack(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
+
+      // VK_KHR_16bit_storage extension requires VK_KHR_storage_buffer_storage_class extension.
+      // All required extensions for each extension in the vk::DeviceCreateInfo::ppEnabledExtensionNames list must also be present in that list.
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME), "VK_KHR_storage_buffer_storage_class must be supported as it has already been checked by VulkanPhysicalDevice and at least one of storageBuffer16BitAccess, uniformAndStorageBuffer16BitAccess, or storagePushConstant16 features is TRUE");
+
+      bStorageBufferStorageClassExtensionRequired = true;
+
+      vkEnabledFeatures.shaderInt16 = vk::True;
+
+      if (m_AdapterDescription.m_Features.m_ResourceBuffer16BitAccess == xiiGALDeviceFeatureState::Disabled)
+        enabledExtensionFeatures.m_Storage16Bit.storageBuffer16BitAccess = vk::False;
+
+      if (m_AdapterDescription.m_Features.m_UniformBuffer16BitAccess == xiiGALDeviceFeatureState::Disabled)
+        enabledExtensionFeatures.m_Storage16Bit.uniformAndStorageBuffer16BitAccess = vk::False;
+
+      if (m_AdapterDescription.m_Features.m_ShaderInputOutput16 == xiiGALDeviceFeatureState::Disabled)
+        enabledExtensionFeatures.m_Storage16Bit.storageInputOutput16 = vk::False;
+
+      *pNextExtension = &enabledExtensionFeatures.m_Storage16Bit;
+      pNextExtension  = &enabledExtensionFeatures.m_Storage16Bit.pNext;
+    }
+
+    if (m_AdapterDescription.m_Features.m_ResourceBuffer8BitAccess != xiiGALDeviceFeatureState::Disabled || m_AdapterDescription.m_Features.m_UniformBuffer8BitAccess != xiiGALDeviceFeatureState::Disabled)
+    {
+      enabledExtensionFeatures.m_Storage8Bit = m_PhysicalDeviceExtensionFeatures.m_Storage8Bit;
+
+      XII_ASSERT_DEV(m_AdapterDescription.m_Features.m_ResourceBuffer8BitAccess == xiiGALDeviceFeatureState::Disabled || enabledExtensionFeatures.m_Storage8Bit.storageBuffer8BitAccess != vk::False, "");
+      XII_ASSERT_DEV(m_AdapterDescription.m_Features.m_UniformBuffer8BitAccess == xiiGALDeviceFeatureState::Disabled || enabledExtensionFeatures.m_Storage8Bit.uniformAndStorageBuffer8BitAccess != vk::False, "");
+
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_8BIT_STORAGE_EXTENSION_NAME), "VK_KHR_8bit_storage must be supported as it has already been checked by VulkanPhysicalDevice and at least one of storageBuffer8BitAccess or uniformAndStorageBuffer8BitAccess features is TRUE");
+
+      deviceExtensions.PushBack(VK_KHR_8BIT_STORAGE_EXTENSION_NAME);
+
+      // VK_KHR_8bit_storage extension requires VK_KHR_storage_buffer_storage_class extension.
+      // All required extensions for each extension in the vk::DeviceCreateInfo::ppEnabledExtensionNames list must also be present in that list.
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME), "VK_KHR_storage_buffer_storage_class must be supported as it has already been checked by VulkanPhysicalDevice and at least one of storageBuffer8BitAccess or uniformAndStorageBuffer8BitAccess features is TRUE");
+
+      bStorageBufferStorageClassExtensionRequired = true;
+
+      if (m_AdapterDescription.m_Features.m_ResourceBuffer8BitAccess == xiiGALDeviceFeatureState::Disabled)
+        enabledExtensionFeatures.m_Storage8Bit.storageBuffer8BitAccess = vk::False;
+
+      if (m_AdapterDescription.m_Features.m_UniformBuffer8BitAccess == xiiGALDeviceFeatureState::Disabled)
+        enabledExtensionFeatures.m_Storage8Bit.uniformAndStorageBuffer8BitAccess = vk::False;
+
+      *pNextExtension = &enabledExtensionFeatures.m_Storage8Bit;
+      pNextExtension  = &enabledExtensionFeatures.m_Storage8Bit.pNext;
+    }
+
+    if (bStorageBufferStorageClassExtensionRequired)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME), "VK_KHR_storage_buffer_storage_class extension must be supported");
+
+      deviceExtensions.PushBack(VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME);
+    }
+
+    if (m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray != xiiGALDeviceFeatureState::Disabled || m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_KHR_maintenance3 extension must be supported");
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_EXT_descriptor_indexing extension must be supported");
+
+      deviceExtensions.PushBack(VK_KHR_MAINTENANCE3_EXTENSION_NAME); // Required for VK_EXT_descriptor_indexing
+      deviceExtensions.PushBack(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+
+      enabledExtensionFeatures.m_DescriptorIndexing = m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing;
+
+      XII_ASSERT_DEV(enabledExtensionFeatures.m_DescriptorIndexing.runtimeDescriptorArray != vk::False, "");
+
+      *pNextExtension = &enabledExtensionFeatures.m_DescriptorIndexing;
+      pNextExtension  = &enabledExtensionFeatures.m_DescriptorIndexing.pNext;
+    }
+
+    // Ray tracing
+    if (m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Disabled)
+    {
+      // This extensions added to Vulkan 1.2 core
+      if (!m_PhysicalDeviceExtensionFeatures.m_bSpirv15)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME), "VK_KHR_shader_float_controls extension must be supported");
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_SPIRV_1_4_EXTENSION_NAME), "VK_KHR_spirv_1_4 extension must be supported");
+
+        deviceExtensions.PushBack(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME); // Required for VK_KHR_spirv_1_4
+        deviceExtensions.PushBack(VK_KHR_SPIRV_1_4_EXTENSION_NAME);             // Required for VK_KHR_ray_tracing_pipeline or VK_KHR_ray_query
+
+        enabledExtensionFeatures.m_bSpirv14 = m_PhysicalDeviceExtensionFeatures.m_bSpirv14;
+
+        XII_ASSERT_DEV(m_PhysicalDeviceExtensionFeatures.m_bSpirv14, "");
+      }
+
+      // SPIRV 1.5 is in Vulkan 1.2 core
+      enabledExtensionFeatures.m_bSpirv15 = m_PhysicalDeviceExtensionFeatures.m_bSpirv15;
+
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME), "VK_KHR_buffer_device_address extension must be supported");
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME), "VK_KHR_deferred_host_operations extension must be supported");
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME), "VK_KHR_acceleration_structure extension must be supported");
+
+      deviceExtensions.PushBack(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);    // Required for VK_KHR_acceleration_structure
+      deviceExtensions.PushBack(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME); // Required for VK_KHR_acceleration_structure
+      deviceExtensions.PushBack(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);   // Required for ray tracing
+
+      enabledExtensionFeatures.m_AccelerationStructure = m_PhysicalDeviceExtensionFeatures.m_AccelerationStructure;
+      enabledExtensionFeatures.m_BufferDeviceAddress   = m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress;
+
+      // Disable unused features
+      enabledExtensionFeatures.m_AccelerationStructure.accelerationStructureCaptureReplay                    = false;
+      enabledExtensionFeatures.m_AccelerationStructure.accelerationStructureHostCommands                     = false;
+      enabledExtensionFeatures.m_AccelerationStructure.descriptorBindingAccelerationStructureUpdateAfterBind = false;
+      enabledExtensionFeatures.m_AccelerationStructure.accelerationStructureIndirectBuild                    = false;
+
+      *pNextExtension = &enabledExtensionFeatures.m_AccelerationStructure;
+      pNextExtension  = &enabledExtensionFeatures.m_AccelerationStructure.pNext;
+      *pNextExtension = &enabledExtensionFeatures.m_BufferDeviceAddress;
+      pNextExtension  = &enabledExtensionFeatures.m_BufferDeviceAddress.pNext;
+
+      // Ray tracing shader.
+      if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME) && m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline == vk::True)
+      {
+        deviceExtensions.PushBack(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+
+        enabledExtensionFeatures.m_RayTracingPipeline = m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline;
+
+        // Disable unused features
+        enabledExtensionFeatures.m_RayTracingPipeline.rayTracingPipelineShaderGroupHandleCaptureReplay      = false;
+        enabledExtensionFeatures.m_RayTracingPipeline.rayTracingPipelineShaderGroupHandleCaptureReplayMixed = false;
+
+        *pNextExtension = &enabledExtensionFeatures.m_RayTracingPipeline;
+        pNextExtension  = &enabledExtensionFeatures.m_RayTracingPipeline.pNext;
+      }
+
+      // Inline ray tracing from any shader.
+      if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_RAY_QUERY_EXTENSION_NAME) && m_PhysicalDeviceExtensionFeatures.m_RayQuery.rayQuery == vk::True)
+      {
+        deviceExtensions.PushBack(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+
+        enabledExtensionFeatures.m_RayQuery = m_PhysicalDeviceExtensionFeatures.m_RayQuery;
+
+        *pNextExtension = &enabledExtensionFeatures.m_RayQuery;
+        pNextExtension  = &enabledExtensionFeatures.m_RayQuery.pNext;
+      }
+    }
+
+    if (m_PhysicalDeviceExtensionFeatures.m_bHasPortabilitySubset)
+    {
+      enabledExtensionFeatures.m_bHasPortabilitySubset = m_PhysicalDeviceExtensionFeatures.m_bHasPortabilitySubset;
+      enabledExtensionFeatures.m_PortabilitySubset     = m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset;
+
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME), "VK_KHR_portability_subset extension must be supported");
+
+      deviceExtensions.PushBack(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+
+      *pNextExtension = &enabledExtensionFeatures.m_PortabilitySubset;
+      pNextExtension  = &enabledExtensionFeatures.m_PortabilitySubset.pNext;
+    }
+
+    if (m_AdapterDescription.m_Features.m_WaveOperation != xiiGALDeviceFeatureState::Disabled)
+    {
+      enabledExtensionFeatures.m_bSubgroupOps = true;
+    }
+
+    if (m_AdapterDescription.m_Features.m_InstanceDataStepRate != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME);
+
+      enabledExtensionFeatures.m_VertexAttributeDivisor = m_PhysicalDeviceExtensionFeatures.m_VertexAttributeDivisor;
+
+      *pNextExtension = &enabledExtensionFeatures.m_VertexAttributeDivisor;
+      pNextExtension  = &enabledExtensionFeatures.m_VertexAttributeDivisor.pNext;
+    }
+
+    if (m_AdapterDescription.m_Features.m_NativeFence != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+
+      enabledExtensionFeatures.m_TimelineSemaphore = m_PhysicalDeviceExtensionFeatures.m_TimelineSemaphore;
+
+      *pNextExtension = &enabledExtensionFeatures.m_TimelineSemaphore;
+      pNextExtension  = &enabledExtensionFeatures.m_TimelineSemaphore.pNext;
+    }
+
+    if (m_AdapterDescription.m_Features.m_TransferQueueTimestampQueries != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+
+      enabledExtensionFeatures.m_HostQueryReset = m_PhysicalDeviceExtensionFeatures.m_HostQueryReset;
+
+      *pNextExtension = &enabledExtensionFeatures.m_HostQueryReset;
+      pNextExtension  = &enabledExtensionFeatures.m_HostQueryReset.pNext;
+    }
+
+    if (m_AdapterDescription.m_Features.m_VariableRateShading != xiiGALDeviceFeatureState::Disabled)
+    {
+      if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.primitiveFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE2_EXTENSION_NAME), "");
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MULTIVIEW_EXTENSION_NAME), "");
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME), "");
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME), "");
+
+        deviceExtensions.PushBack(VK_KHR_MAINTENANCE2_EXTENSION_NAME);        // Required for RenderPass2
+        deviceExtensions.PushBack(VK_KHR_MULTIVIEW_EXTENSION_NAME);           // Required for RenderPass2
+        deviceExtensions.PushBack(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME); // Required for ShadingRate
+        deviceExtensions.PushBack(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
+
+        enabledExtensionFeatures.m_Multiview    = m_PhysicalDeviceExtensionFeatures.m_Multiview;
+        enabledExtensionFeatures.m_bRenderPass2 = m_PhysicalDeviceExtensionFeatures.m_bRenderPass2;
+        enabledExtensionFeatures.m_ShadingRate  = m_PhysicalDeviceExtensionFeatures.m_ShadingRate;
+
+        *pNextExtension = &enabledExtensionFeatures.m_Multiview;
+        pNextExtension  = &enabledExtensionFeatures.m_Multiview.pNext;
+
+        *pNextExtension = &enabledExtensionFeatures.m_ShadingRate;
+        pNextExtension  = &enabledExtensionFeatures.m_ShadingRate.pNext;
+      }
+      else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != vk::False)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME), "");
+
+        deviceExtensions.PushBack(VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME);
+
+        enabledExtensionFeatures.m_FragmentDensityMap = m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap;
+
+        *pNextExtension = &enabledExtensionFeatures.m_FragmentDensityMap;
+        pNextExtension  = &enabledExtensionFeatures.m_FragmentDensityMap.pNext;
+
+        if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2.fragmentDensityMapDeferred != vk::False)
+        {
+          XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME), "");
+
+          deviceExtensions.PushBack(VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME);
+
+          enabledExtensionFeatures.m_FragmentDensityMap2 = m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2;
+
+          *pNextExtension = &enabledExtensionFeatures.m_FragmentDensityMap2;
+          pNextExtension  = &enabledExtensionFeatures.m_FragmentDensityMap2.pNext;
+        }
+      }
+      else
+      {
+        XII_REPORT_FAILURE("One of vulkan features: fragment shading rate or fragment density map must be enabled");
+      }
+    }
+
+    {
+      vkEnabledFeatures.multiDrawIndirect = m_PhysicalDeviceFeatures.multiDrawIndirect;
+
+      if (m_PhysicalDeviceExtensionFeatures.m_bDrawIndirectCount)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME), "");
+
+        deviceExtensions.PushBack(VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME);
+      }
+    }
+
+    if (m_AdapterDescription.m_Features.m_NativeMultiDraw != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_MULTI_DRAW_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+
+      enabledExtensionFeatures.m_MultiDraw = m_PhysicalDeviceExtensionFeatures.m_MultiDraw;
+
+      *pNextExtension = &enabledExtensionFeatures.m_MultiDraw;
+      pNextExtension  = &enabledExtensionFeatures.m_MultiDraw.pNext;
+
+      enabledExtensionFeatures.m_ShaderDrawParameters = m_PhysicalDeviceExtensionFeatures.m_ShaderDrawParameters;
+
+      *pNextExtension = &enabledExtensionFeatures.m_ShaderDrawParameters;
+      pNextExtension  = &enabledExtensionFeatures.m_ShaderDrawParameters.pNext;
+    }
+  }
+  else
+  {
+    xiiLog::Error("Can not enable extended device features when VK_KHR_get_physical_device_properties2 extension is not supported by device");
+  }
+
+  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+
+  deviceCreationDescription.ppEnabledExtensionNames = deviceExtensions.IsEmpty() ? nullptr : deviceExtensions.GetData();
+  deviceCreationDescription.enabledExtensionCount   = deviceExtensions.GetCount();
 
   return XII_FAILURE;
 }
