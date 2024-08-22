@@ -307,6 +307,20 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
   // Create Vulkan Instance.
   {
+    // Find instance maximum available version.
+    {
+      xiiUInt32 uiMaxAPIVersion = 0U;
+      if (m_InstanceDispatchLoader.vkEnumerateInstanceVersion != nullptr && vk::enumerateInstanceVersion(&uiMaxAPIVersion, m_InstanceDispatchLoader) == vk::Result::eSuccess)
+      {
+        m_uiVulkanVersion = uiMaxAPIVersion;
+      }
+      else
+      {
+        // Only Vulkan 1.0 is supported.
+        m_uiVulkanVersion = VK_API_VERSION_1_0;
+      }
+    }
+
     vk::ApplicationInfo applicationInformation = {};
     applicationInformation.sType               = vk::StructureType::eApplicationInfo;
     applicationInformation.apiVersion          = m_uiVulkanVersion;
