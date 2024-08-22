@@ -372,13 +372,13 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   // Enumerate physical devices.
   {
     xiiUInt32 uiPhysicalDeviceCount = 0U;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, nullptr));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, nullptr, m_InstanceDispatchLoader));
 
     XII_ASSERT_ALWAYS(uiPhysicalDeviceCount != 0U, "No physical devices are found on the system.");
 
     m_PhysicalDevices.SetCount(uiPhysicalDeviceCount);
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, m_PhysicalDevices.GetData()));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, m_PhysicalDevices.GetData(), m_InstanceDispatchLoader));
 
     XII_ASSERT_DEV(m_PhysicalDevices.GetCount() == uiPhysicalDeviceCount, "Expected physical device count ({0}) does not match the retrieved physical device count ({1}).", uiPhysicalDeviceCount, m_PhysicalDevices.GetCount());
   }
@@ -409,7 +409,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     {
       m_PhysicalDeviceSupportedExtensions.SetCount(uiExtensionCount);
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, m_PhysicalDeviceSupportedExtensions.GetData()));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, m_PhysicalDeviceSupportedExtensions.GetData(), m_InstanceDispatchLoader));
 
       XII_ASSERT_DEV(m_PhysicalDeviceSupportedExtensions.GetCount() == uiExtensionCount, "");
 
@@ -934,7 +934,67 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   {
     vk::PipelineStageFlags graphicsStages = vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexInput | vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests | vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eAllGraphics;
-    vk::PipelineStageFlags computeStages = vk::PipelineStageFlagBits::eDrawIndirect | vk::PipelineStageFlagBits::eComputeShader;
+    vk::PipelineStageFlags computeStages  = vk::PipelineStageFlagBits::eDrawIndirect | vk::PipelineStageFlagBits::eComputeShader;
+
+    vk::AccessFlags graphicsAccessFlags = vk::AccessFlagBits::eIndexRead | vk::AccessFlagBits::eVertexAttributeRead | vk::AccessFlagBits::eInputAttachmentRead | vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+    vk::AccessFlags computeAccessFlags  = vk::AccessFlagBits::eIndirectCommandRead | vk::AccessFlagBits::eUniformRead | vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
+    vk::AccessFlags transferAccessFlags = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite | vk::AccessFlagBits::eHostRead | vk::AccessFlagBits::eHostWrite;
+
+    if (m_LogicalDeviceFeatures.geometryShader)
+    {
+      graphicsStages |= vk::PipelineStageFlagBits::eGeometryShader;
+    }
+    if (m_LogicalDeviceFeatures.tessellationShader)
+    {
+      graphicsStages |= vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader;
+    }
+    if (m_LogicalDeviceExtensionFeatures.m_MeshShader.meshShader != vk::False && m_LogicalDeviceExtensionFeatures.m_MeshShader.taskShader != vk::False)
+    {
+      graphicsStages |= vk::PipelineStageFlagBits::eTaskShaderEXT | vk::PipelineStageFlagBits::eMeshShaderEXT;
+    }
+    if (m_LogicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False)
+    {
+      computeStages |= vk::PipelineStageFlagBits::eRayTracingShaderKHR | vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
+      computeAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR;
+    }
+    if (m_LogicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
+    {
+      graphicsStages |= vk::PipelineStageFlagBits::eFragmentShadingRateAttachmentKHR;
+      graphicsAccessFlags |= vk::AccessFlagBits::eFragmentShadingRateAttachmentReadKHR;
+    }
+    if (m_LogicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != vk::False)
+    {
+      graphicsStages |= vk::PipelineStageFlagBits::eFragmentDensityProcessEXT;
+      graphicsAccessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT;
+    }
+
+    const xiiUInt32 uiQueueCount = m_PhysicalDeviceQueueFamilyProperties.GetCount();
+
+    m_LogicalDeviceSupportedStagesFlags.SetCount(uiQueueCount, vk::PipelineStageFlagBits{0});
+    m_LogicalDeviceSupportedAccessFlags.SetCount(uiQueueCount, vk::AccessFlags{0});
+
+    for (xiiUInt32 i = 0; i < uiQueueCount; ++i)
+    {
+      const vk::QueueFamilyProperties& queueFamily = m_PhysicalDeviceQueueFamilyProperties[i];
+      vk::PipelineStageFlags&          stageFlags  = m_LogicalDeviceSupportedStagesFlags[i];
+      vk::AccessFlags&                 accessFlags = m_LogicalDeviceSupportedAccessFlags[i];
+
+      if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics)
+      {
+        stageFlags |= graphicsStages | computeStages | VulkanUtilities::VK_PIPELINE_STAGE_ALL_TRANSFER;
+        accessFlags |= graphicsAccessFlags | computeAccessFlags | transferAccessFlags;
+      }
+      else if (queueFamily.queueFlags & vk::QueueFlagBits::eCompute)
+      {
+        stageFlags |= computeStages | VulkanUtilities::VK_PIPELINE_STAGE_ALL_TRANSFER;
+        accessFlags |= computeAccessFlags | transferAccessFlags;
+      }
+      else if (queueFamily.queueFlags & vk::QueueFlagBits::eTransfer)
+      {
+        stageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_TRANSFER;
+        accessFlags |= transferAccessFlags;
+      }
+    }
   }
 
   return XII_FAILURE;

@@ -127,3 +127,25 @@ class xiiGALPipelineResourceSignatureVulkan;
 class xiiGALShaderResourceVariableVulkan;
 
 XII_DEFINE_AS_POD_TYPE(vk::Format);
+
+namespace VulkanUtilities
+{
+  constexpr vk::PipelineStageFlags VK_PIPELINE_STAGE_ALL_SHADERS =
+    vk::PipelineStageFlagBits::eVertexShader |
+    vk::PipelineStageFlagBits::eTessellationControlShader |
+    vk::PipelineStageFlagBits::eTessellationEvaluationShader |
+    vk::PipelineStageFlagBits::eGeometryShader |
+    vk::PipelineStageFlagBits::eFragmentShader |
+    vk::PipelineStageFlagBits::eComputeShader |
+    vk::PipelineStageFlagBits::eRayTracingShaderKHR |
+    vk::PipelineStageFlagBits::eTaskShaderEXT |
+    vk::PipelineStageFlagBits::eMeshShaderEXT;
+
+  constexpr vk::PipelineStageFlags VK_PIPELINE_STAGE_ALL_TRANSFER =
+    vk::PipelineStageFlagBits::eTopOfPipe |
+    vk::PipelineStageFlagBits::eTransfer |
+    vk::PipelineStageFlagBits::eBottomOfPipe |
+    vk::PipelineStageFlagBits::eHost |
+    vk::PipelineStageFlagBits::eAllCommands;
+
+} // namespace VulkanUtilities

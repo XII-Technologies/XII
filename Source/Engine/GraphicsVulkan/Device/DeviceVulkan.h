@@ -181,8 +181,8 @@ private:
   vk::Device                              m_LogicalDevice;
   vk::PhysicalDeviceFeatures              m_LogicalDeviceFeatures;
   ExtensionFeatures                       m_LogicalDeviceExtensionFeatures;
-  xiiDynamicArray<vk::PipelineStageFlags> m_LogicalDeviceSupportedStagesMask;
-  xiiDynamicArray<vk::AccessFlags>        m_LogicalDeviceSupportedAccessMask;
+  xiiDynamicArray<vk::PipelineStageFlags> m_LogicalDeviceSupportedStagesFlags;
+  xiiDynamicArray<vk::AccessFlags>        m_LogicalDeviceSupportedAccessFlags;
 
   // Vulkan Debug Resources.
   DebugMode                  m_DebugMode = DebugMode::Disabled;
