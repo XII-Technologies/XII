@@ -13,51 +13,20 @@
 #  define XII_GRAPHICSVULKAN_DLL
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
-#endif
-
-#define VK_ENABLE_BETA_EXTENSIONS
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  define VK_USE_PLATFORM_WIN32_KHR
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-#  define VK_USE_PLATFORM_XCB_KHR
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  define VK_USE_PLATFORM_ANDROID_KHR
-#endif
-
-#include <vulkan/vulkan.hpp>
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <vulkan/vulkan_win32.h>
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <vulkan/vulkan_android.h>
-#endif
-
-#define XII_GAL_VULKAN_RELEASE(pObject) \
-  do                                    \
-  {                                     \
-    if ((pObject) != nullptr)           \
-    {                                   \
-      (pObject)->Release();             \
-      (pObject) = nullptr;              \
-    }                                   \
-  } while (0)
-
 #define VK_BOOL(expression) (expression) ? vk::True : vk::False
 
 #define VK_ASSERT_DEBUG(code)                                                                                                                                                                                                         \
   do                                                                                                                                                                                                                                  \
   {                                                                                                                                                                                                                                   \
     auto s = (code);                                                                                                                                                                                                                  \
-    XII_ASSERT_DEBUG(static_cast<vk::Result>(s) == vk::Result::eSuccess, "Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+    XII_ASSERT_DEBUG(static_cast<vk::Result>(s) == vk::Result::eSuccess, "Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
   } while (false)
 
 #define VK_ASSERT_DEV(code)                                                                                                                                                                                                         \
   do                                                                                                                                                                                                                                \
   {                                                                                                                                                                                                                                 \
     auto s = (code);                                                                                                                                                                                                                \
-    XII_ASSERT_DEV(static_cast<vk::Result>(s) == vk::Result::eSuccess, "Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+    XII_ASSERT_DEV(static_cast<vk::Result>(s) == vk::Result::eSuccess, "Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
   } while (false)
 
 #define VK_LOG_ERROR(code)                                                                                                                                                       \
@@ -66,7 +35,7 @@
     auto s = (code);                                                                                                                                                             \
     if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
     {                                                                                                                                                                            \
-      xiiLog::Error("Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+      xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
     }                                                                                                                                                                            \
   } while (false)
 
@@ -76,7 +45,7 @@
     auto s = (code);                                                                                                                                                             \
     if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
     {                                                                                                                                                                            \
-      xiiLog::Error("Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+      xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
       return s;                                                                                                                                                                  \
     }                                                                                                                                                                            \
   } while (false)
@@ -87,7 +56,7 @@
     auto s = (code);                                                                                                                                                             \
     if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
     {                                                                                                                                                                            \
-      xiiLog::Error("Vukan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+      xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
       return XII_FAILURE;                                                                                                                                                        \
     }                                                                                                                                                                            \
   } while (false)
@@ -125,27 +94,3 @@ class xiiGALRasterizerStateVulkan;
 class xiiGALPipelineStateVulkan;
 class xiiGALPipelineResourceSignatureVulkan;
 class xiiGALShaderResourceVariableVulkan;
-
-XII_DEFINE_AS_POD_TYPE(vk::Format);
-
-namespace VulkanUtilities
-{
-  constexpr vk::PipelineStageFlags VK_PIPELINE_STAGE_ALL_SHADERS =
-    vk::PipelineStageFlagBits::eVertexShader |
-    vk::PipelineStageFlagBits::eTessellationControlShader |
-    vk::PipelineStageFlagBits::eTessellationEvaluationShader |
-    vk::PipelineStageFlagBits::eGeometryShader |
-    vk::PipelineStageFlagBits::eFragmentShader |
-    vk::PipelineStageFlagBits::eComputeShader |
-    vk::PipelineStageFlagBits::eRayTracingShaderKHR |
-    vk::PipelineStageFlagBits::eTaskShaderEXT |
-    vk::PipelineStageFlagBits::eMeshShaderEXT;
-
-  constexpr vk::PipelineStageFlags VK_PIPELINE_STAGE_ALL_TRANSFER =
-    vk::PipelineStageFlagBits::eTopOfPipe |
-    vk::PipelineStageFlagBits::eTransfer |
-    vk::PipelineStageFlagBits::eBottomOfPipe |
-    vk::PipelineStageFlagBits::eHost |
-    vk::PipelineStageFlagBits::eAllCommands;
-
-} // namespace VulkanUtilities

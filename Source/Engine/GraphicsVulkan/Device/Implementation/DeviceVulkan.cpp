@@ -461,9 +461,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     XII_SUCCEED_OR_RETURN(InitializePhysicalDeviceProperties());
   }
 
-  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
-  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
-
   return XII_SUCCESS;
 }
 
@@ -1014,6 +1011,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
+  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
+  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
+
   return XII_FAILURE;
 }
 
@@ -1043,9 +1043,9 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
     }
   }
 
-  m_LogicalDevice.destroy();
+  m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
 
-  m_Instance.destroy();
+  m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
 
   return XII_SUCCESS;
 }
