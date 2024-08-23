@@ -645,6 +645,8 @@ function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
     set(PKG_TYPE "tar.gz")
   elseif(${URL} MATCHES ".tar.xz$")
     set(PKG_TYPE "tar.xz")
+  elseif(${URL} MATCHES ".exe$")
+    set(PKG_TYPE "exe")
   else()
     get_filename_component(PKG_TYPE ${URL} LAST_EXT)
   endif()
@@ -678,26 +680,28 @@ function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
 
   message(STATUS "Extracting '${FULL_FILENAME}'...")
 
-  if(${PKG_TYPE} MATCHES "7z")
-    set(FULL_7ZA_PATH "${XII_ROOT}/${XII_CONFIG_PATH_7ZA}")
-    execute_process(COMMAND "${FULL_7ZA_PATH}"
-      x "${PKG_FILE}"
-      -aoa
-      WORKING_DIRECTORY "${DEST_FOLDER}"
-      COMMAND_ERROR_IS_FATAL ANY
-      RESULT_VARIABLE CMD_STATUS)
+  if(NOT ${PKG_TYPE} MATCHES "exe")
+    if(${PKG_TYPE} MATCHES "7z")
+      set(FULL_7ZA_PATH "${XII_ROOT}/${XII_CONFIG_PATH_7ZA}")
+      execute_process(COMMAND "${FULL_7ZA_PATH}"
+        x "${PKG_FILE}"
+        -aoa
+        WORKING_DIRECTORY "${DEST_FOLDER}"
+        COMMAND_ERROR_IS_FATAL ANY
+        RESULT_VARIABLE CMD_STATUS)
 
-  else()
-    execute_process(COMMAND ${CMAKE_COMMAND}
-      -E tar -xf "${PKG_FILE}"
-      WORKING_DIRECTORY "${DEST_FOLDER}"
-      COMMAND_ERROR_IS_FATAL ANY
-      RESULT_VARIABLE CMD_STATUS)
-  endif()
+    else()
+      execute_process(COMMAND ${CMAKE_COMMAND}
+        -E tar -xf "${PKG_FILE}"
+        WORKING_DIRECTORY "${DEST_FOLDER}"
+        COMMAND_ERROR_IS_FATAL ANY
+        RESULT_VARIABLE CMD_STATUS)
+    endif()
 
-  if(NOT CMD_STATUS EQUAL 0)
-    message(FATAL_ERROR "Extracting package '${FULL_FILENAME}' failed.")
-    return()
+    if(NOT CMD_STATUS EQUAL 0)
+      message(FATAL_ERROR "Extracting package '${FULL_FILENAME}' failed.")
+      return()
+    endif()
   endif()
 
   file(TOUCH ${EXTRACT_MARKER})
