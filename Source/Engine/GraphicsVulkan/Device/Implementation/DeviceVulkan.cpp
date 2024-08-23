@@ -309,10 +309,13 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     // Find instance maximum available version.
     {
-      xiiUInt32 uiMaxAPIVersion = 0U;
-      if (m_InstanceDispatchLoader.vkEnumerateInstanceVersion != nullptr && vk::enumerateInstanceVersion(&uiMaxAPIVersion, m_InstanceDispatchLoader) == vk::Result::eSuccess)
+      if (m_InstanceDispatchLoader.vkEnumerateInstanceVersion != nullptr)
       {
-        m_uiVulkanVersion = uiMaxAPIVersion;
+        // If the implementation is available, this call must return vk::Result::eSuccess.
+        m_uiVulkanVersion = vk::enumerateInstanceVersion();
+
+        // Remove the patch version.
+        m_uiVulkanVersion &= ~VK_MAKE_VERSION(0, 0, VK_API_VERSION_PATCH(~0U));
       }
       else
       {
@@ -1039,6 +1042,8 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
       m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
     }
   }
+
+  m_LogicalDevice.destroy();
 
   m_Instance.destroy();
 

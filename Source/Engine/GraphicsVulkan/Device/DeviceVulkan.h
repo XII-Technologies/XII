@@ -2,7 +2,6 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
 
@@ -166,7 +165,7 @@ private:
   xiiDynamicArray<const char*>             m_EnabledExtensions;
   xiiDynamicArray<vk::PhysicalDevice>      m_PhysicalDevices;
 
-  // Vulkan Device Objects.
+  // Vulkan Physical Device Objects.
   vk::Device                                 m_Device;
   vk::PhysicalDevice                         m_PhysicalDevice;
   vk::PhysicalDeviceProperties               m_PhysicalDeviceProperties;
