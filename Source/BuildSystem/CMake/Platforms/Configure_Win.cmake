@@ -70,12 +70,33 @@ endmacro()
 macro(xii_platformhook_find_vulkan)
   if(XII_CMAKE_ARCHITECTURE_64BIT)
     if((XII_VULKAN_DIR STREQUAL "XII_VULKAN_DIR-NOTFOUND") OR (XII_VULKAN_DIR STREQUAL ""))
-      # set(CMAKE_FIND_DEBUG_MODE TRUE)
       unset(XII_VULKAN_DIR CACHE)
       unset(XIIVulkan_DIR CACHE)
-      find_path(XII_VULKAN_DIR Config/vk_layer_settings.txt PATHS ${XII_VULKAN_DIR} $ENV{VULKAN_SDK} REQUIRED)
 
+      # set(CMAKE_FIND_DEBUG_MODE TRUE)
+      find_path(XII_VULKAN_DIR Config/vk_layer_settings.txt PATHS ${XII_VULKAN_DIR} $ENV{VULKAN_SDK})
       # set(CMAKE_FIND_DEBUG_MODE FALSE)
+    endif()
+
+    if((XII_VULKAN_DIR STREQUAL "XII_VULKAN_DIR-NOTFOUND") OR (XII_VULKAN_DIR STREQUAL ""))
+      unset(XII_VULKAN_DIR CACHE)
+      unset(XIIVulkan_DIR CACHE)
+
+      xii_download_and_extract("${XII_CONFIG_VULKAN_SDK_WINDOWSX64_URL}" "${CMAKE_BINARY_DIR}/vulkan-sdk" "vulkan-sdk-${XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION}")
+      set(XII_VULKAN_DIR "${CMAKE_BINARY_DIR}/vulkan-sdk/${XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION}" CACHE PATH "Directory of the Vulkan SDK" FORCE)
+
+      # On windows, the Vulkan SDK is an installer, we need to install the components to the sdk directory.
+      set(XII_FULL_VULKAN_INSTALLER_PATH "${CMAKE_BINARY_DIR}/vulkan-sdk/vulkan-sdk-${XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION}.exe")
+      set(XII_FULL_VULKAN_INSTALL_PATH "${CMAKE_BINARY_DIR}/vulkan-sdk/${XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION}")
+      # execute_process(COMMAND "{XII_FULL_VULKAN_INSTALLER_PATH}" --root --accept-licenses --default-answer --confirm-command install WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/vulkan-sdk")
+
+      # set(CMAKE_FIND_DEBUG_MODE TRUE)
+      find_path(XII_VULKAN_DIR config/vk_layer_settings.txt PATHS ${XII_VULKAN_DIR} $ENV{VULKAN_SDK} REQUIRED)
+      # set(CMAKE_FIND_DEBUG_MODE FALSE)
+
+      # TODO: Remove once we have the required vulkan libraries on windows.
+      unset(XII_VULKAN_DIR CACHE)
+      unset(XIIVulkan_DIR CACHE)
     endif()
   else()
     message(FATAL_ERROR "TODO: Vulkan is not yet supported on this platform and/or architecture.")

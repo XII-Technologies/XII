@@ -1,7 +1,6 @@
 # #####################################
 # ## Vulkan support
 # #####################################
-
 set(XII_BUILD_VULKAN OFF CACHE BOOL "Build the Vulkan Graphics Device.")
 
 # #####################################

@@ -16,9 +16,14 @@ set_property(GLOBAL PROPERTY XII_CONFIG_PATH_7ZA "Data/Tools/Precompiled/7z.exe"
 set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_VERSION "Qt6-6.4.0-vs143-x64")
 set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_URL "https://github.com/ezEngine/thirdparty/releases/download/Qt6-6.4.0-vs143-x64/Qt6-6.4.0-vs143-x64.7z")
 
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION "1.3.275.0")
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_URL "https://sdk.lunarg.com/sdk/download/1.3.275.0/linux/vulkansdk-linux-x86_64-1.3.275.0.tar.xz")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION "1.3.290.0")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_WINDOWSX64_URL "https://sdk.lunarg.com/sdk/download/1.3.290.0/windows/VulkanSDK-1.3.290.0-Installer.exe")
 
-# Android validation layers version 1.3.275.0 are broken, so a different version is used compared to the SDK.
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION "1.3.280.0")
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.3.280.0/android-binaries-1.3.280.0.tar.gz")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION "1.3.290.0")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_URL "https://sdk.lunarg.com/sdk/download/1.3.290.0/linux/vulkansdk-linux-x86_64-1.3.290.0.tar.xz")
+
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_VERSION "1.3.290.0")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_URL "https://sdk.lunarg.com/sdk/download/1.3.290.0/mac/vulkansdk-macos-1.3.290.0.dmg")
+
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION "1.3.290.0")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.3.290.0/android-binaries-1.3.290.0.tar.gz")
