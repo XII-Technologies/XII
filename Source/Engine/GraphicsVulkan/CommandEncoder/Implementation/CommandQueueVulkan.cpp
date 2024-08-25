@@ -11,12 +11,13 @@ xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVu
 
 xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
 
-void xiiGALCommandQueueVulkan::InitializePlatform(xiiUInt32 uiQueueFamilyIndex)
+void xiiGALCommandQueueVulkan::InitializePlatform(xiiUInt32 uiQueueFamilyIndex, vk::Queue vkQueue)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   m_vkDevice           = pDeviceVulkan->GetVulkanLogicalDevice();
   m_uiQueueFamilyIndex = uiQueueFamilyIndex;
+  m_vkQueue            = vkQueue;
 
   vk::CommandPoolCreateInfo commandPoolCreationDescription = {};
   commandPoolCreationDescription.pNext                     = nullptr;
@@ -67,8 +68,10 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
   {
     xiiGALCommandListVulkan* pCommandList = m_pAvailableCommandLists.GetReverseIterator().Key();
 
-    m_pAvailableCommandLists.Remove(pCommandList);
+    XII_VERIFY(m_pAvailableCommandLists.Remove(pCommandList), "");
     m_pUsedCommandLists.Insert(pCommandList);
+
+    pCommandList->Begin();
 
     return pCommandList;
   }
@@ -91,6 +94,8 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 
     m_pUsedCommandLists.Insert(pCommandListVulkan);
 
+    pCommandListVulkan->Begin();
+
     return pCommandListVulkan;
   }
 
@@ -99,6 +104,33 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 
 xiiUInt64 xiiGALCommandQueueVulkan::Submit(xiiGALCommandList* pCommandList, bool bReset)
 {
+  xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
+
+  if (pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
+  {
+    pCommandListVulkan->End();
+  }
+
+  vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
+
+  vk::SubmitInfo vkSubmitInformation     = {};
+  vkSubmitInformation.pCommandBuffers    = &vkCommandBuffer;
+  vkSubmitInformation.commandBufferCount = 1U;
+
+  VK_ASSERT_DEV(m_vkQueue.submit(1U, &vkSubmitInformation, VK_NULL_HANDLE, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  // TODO: Resolve with fence.
+  m_vkQueue.waitIdle();
+
+  if (bReset)
+  {
+    pCommandListVulkan->Reset();
+
+    XII_VERIFY(m_pUsedCommandLists.Remove(pCommandListVulkan), "");
+    m_pAvailableCommandLists.Insert(pCommandListVulkan);
+  }
+
   return 0U;
 }
 

@@ -7,6 +7,8 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
 public:
+  vk::CommandBuffer GetVulkanCommandBuffer() const;
+
 protected:
   friend class xiiGALCommandQueueVulkan;
   friend class xiiGALDeviceVulkan;

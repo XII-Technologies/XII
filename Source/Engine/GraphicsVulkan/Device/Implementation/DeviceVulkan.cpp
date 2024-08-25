@@ -986,6 +986,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
+
+      m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_vkQueue);
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -994,6 +996,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
       m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
+
+      m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_vkQueue);
     }
 
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1002,6 +1006,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
       m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
+
+      m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_vkQueue);
     }
   }
 
@@ -1086,6 +1092,25 @@ void xiiGALDeviceVulkan::FlushPendingObjects()
 
 xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
 {
+  {
+    if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
+    {
+      m_pTransferCommandQueue->DeInitializePlatform();
+      m_pTransferCommandQueue.Clear();
+    }
+
+    if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
+    {
+      m_pComputeCommandQueue->DeInitializePlatform();
+      m_pComputeCommandQueue.Clear();
+    }
+
+    m_pGraphicsCommandQueue->DeInitializePlatform();
+    m_pGraphicsCommandQueue.Clear();
+  }
+
+  m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
+
   if (m_DebugMode != DebugMode::Disabled)
   {
     if (m_DebugMessenger != VK_NULL_HANDLE)
@@ -1098,8 +1123,6 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
       m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
     }
   }
-
-  m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
 
   m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
 
@@ -1142,27 +1165,6 @@ void xiiGALDeviceVulkan::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
 
   XII_DELETE(&m_Allocator, pSwapChainVulkan);
 }
-
-//xiiGALCommandQueue* xiiGALDeviceVulkan::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
-//{
-//  xiiGALCommandQueueVulkan* pCommandQueueVulkan = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, description);
-//
-//  if (pCommandQueueVulkan->InitPlatform().Succeeded())
-//    return pCommandQueueVulkan;
-//
-//  XII_DELETE(&m_Allocator, pCommandQueueVulkan);
-//
-//  return pCommandQueueVulkan;
-//}
-//
-//void xiiGALDeviceVulkan::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
-//{
-//  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pCommandQueue);
-//
-//  pCommandQueueVulkan->DeInitPlatform().IgnoreResult();
-//
-//  XII_DELETE(&m_Allocator, pCommandQueueVulkan);
-//}
 
 xiiGALBlendState* xiiGALDeviceVulkan::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {

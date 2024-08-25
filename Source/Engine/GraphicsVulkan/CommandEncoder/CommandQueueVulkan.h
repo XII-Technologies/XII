@@ -31,7 +31,7 @@ protected:
 
   virtual ~xiiGALCommandQueueVulkan();
 
-  void InitializePlatform(xiiUInt32 uiQueueFamilyIndex);
+  void InitializePlatform(xiiUInt32 uiQueueFamilyIndex, vk::Queue vkQueue);
 
   void DeInitializePlatform();
 
@@ -40,6 +40,8 @@ protected:
 protected:
   vk::Device m_vkDevice;
   xiiUInt32  m_uiQueueFamilyIndex = xiiInvalidIndex;
+
+  vk::Queue m_vkQueue;
 
   vk::CommandPool m_vkCommandPool;
   xiiDynamicArray<vk::CommandBuffer> m_vkCommandBuffers;
