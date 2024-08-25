@@ -2,7 +2,6 @@
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
-#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateVulkan, 1, xiiRTTINoAllocator)

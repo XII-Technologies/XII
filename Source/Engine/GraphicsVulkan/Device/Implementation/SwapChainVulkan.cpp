@@ -6,8 +6,6 @@
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
-#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
-
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(pDeviceVulkan, creationDescription)
 {

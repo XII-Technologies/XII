@@ -31,7 +31,6 @@
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
-#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 
 #include <bitset>
 

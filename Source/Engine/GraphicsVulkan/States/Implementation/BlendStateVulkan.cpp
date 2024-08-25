@@ -2,7 +2,6 @@
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/BlendStateVulkan.h>
-#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendStateVulkan, 1, xiiRTTINoAllocator)

@@ -47,3 +47,5 @@ namespace VulkanUtilities
 } // namespace VulkanUtilities
 
 XII_DEFINE_AS_POD_TYPE(vk::Format);
+
+#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
