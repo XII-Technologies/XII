@@ -98,8 +98,8 @@ protected:
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
-  xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) final;
-  void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) final;
+  xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description);
+  void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue);
 
   xiiUInt64 m_uiFrameNumber = 0U;
 
