@@ -119,6 +119,20 @@ xiiGALDeviceVulkan::xiiGALDeviceVulkan(const xiiGALDeviceCreationDescription& de
 
 xiiGALDeviceVulkan::~xiiGALDeviceVulkan() = default;
 
+xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
+{
+  if (queueType.IsSet(xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
+    return m_pGraphicsCommandQueue.Borrow();
+
+  if (queueType.IsSet(xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
+    return m_pComputeCommandQueue.Borrow();
+
+  if (queueType.IsSet(xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandQueue.Borrow();
+
+  return nullptr;
+}
+
 xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::InitializePlatform");
@@ -483,48 +497,65 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Warning("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
   }
 
-  xiiDynamicArray<vk::DeviceQueueGlobalPriorityCreateInfoEXT>                          queueGlobalPriority;
-  xiiDynamicArray<vk::DeviceQueueCreateInfo>                                           queueDescriptions;
-  xiiDynamicArray<float>                                                               queuePriorities;
-  xiiHybridArray<xiiUInt8, XII_GAL_MAX_ADAPTER_QUEUE_COUNT>                            queueIDToQueueDescription;
-  xiiHybridArray<xiiEnum<xiiGALCommandQueuePriority>, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> queueIDToQueuePriority;
-
-  for (xiiUInt32 i = 0; i < XII_GAL_MAX_ADAPTER_QUEUE_COUNT; ++i)
-  {
-    queueIDToQueuePriority.PushBack(xiiGALCommandQueuePriority::Unknown);
-    queueIDToQueueDescription.PushBack(XII_GAL_DEFAULT_QUEUE_ID);
-  }
+  xiiDynamicArray<vk::DeviceQueueCreateInfo> queueDescriptions;
 
   // Setup device queues.
   {
-    bool bSetupDedicatedQueues = false;
+    xiiHybridArray<xiiUInt32, 3U> excludedQueueIndices;
 
-    if (bSetupDedicatedQueues)
+    float fQueuePriorities = 1.0f;
+
+    // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
+    // must support both graphics and compute operations.
+
+    xiiUInt32 uiGraphicsQueueIndex = FindQueueFamily(vk::QueueFlagBits::eGraphics, excludedQueueIndices);
+    if (uiGraphicsQueueIndex != xiiInvalidIndex)
     {
-      XII_ASSERT_NOT_IMPLEMENTED;
+      excludedQueueIndices.PushBack(uiGraphicsQueueIndex);
+
+      vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
+      queueDescription.pNext                      = nullptr;
+      queueDescription.flags                      = {};
+      queueDescription.queueFamilyIndex           = uiGraphicsQueueIndex;
+      queueDescription.queueCount                 = 1U;
+      queueDescription.pQueuePriorities           = &fQueuePriorities;
+
+      m_GraphicsQueueInformation.m_uiQueueFamilyIndex = uiGraphicsQueueIndex;
     }
     else
     {
-      queueDescriptions.SetCount(1);
-      queuePriorities.SetCount(1);
+      xiiLog::Error("Failed to locate a valid Vulkan queue family index for {}.", vk::to_string(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute).data());
+      return XII_FAILURE;
+    }
 
-      vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.PeekBack();
-      queuePriorities[0]                          = 1.0f; // Ask for the highest priority for the queue. (range is [0, 1])
-      queueIDToQueueDescription[0]                = 0U;
+    xiiUInt32 uiComputeQueueIndex = FindQueueFamily(vk::QueueFlagBits::eCompute, excludedQueueIndices);
+    if (uiComputeQueueIndex != xiiInvalidIndex)
+    {
+      excludedQueueIndices.PushBack(uiComputeQueueIndex);
 
-      // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
-      // must support both graphics and compute operations.
+      vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
+      queueDescription.pNext                      = nullptr;
+      queueDescription.flags                      = {};
+      queueDescription.queueFamilyIndex           = uiComputeQueueIndex;
+      queueDescription.queueCount                 = 1U;
+      queueDescription.pQueuePriorities           = &fQueuePriorities;
 
-      queueDescription.flags            = {}; // Reserved for future use.
-      queueDescription.queueFamilyIndex = FindQueueFamily(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
-      queueDescription.queueCount       = 1U;
-      queueDescription.pQueuePriorities = queuePriorities.GetData();
+      m_ComputeQueueInformation.m_uiQueueFamilyIndex = uiComputeQueueIndex;
+    }
 
-      if (queueDescription.queueFamilyIndex == xiiInvalidIndex)
-      {
-        xiiLog::Error("Failed to locate a valid Vulkan queue family index for {}.", vk::to_string(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute).data());
-        return XII_FAILURE;
-      }
+    xiiUInt32 uiTransferQueueIndex = FindQueueFamily(vk::QueueFlagBits::eTransfer, excludedQueueIndices);
+    if (uiTransferQueueIndex != xiiInvalidIndex)
+    {
+      excludedQueueIndices.PushBack(uiTransferQueueIndex);
+
+      vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
+      queueDescription.pNext                      = nullptr;
+      queueDescription.flags                      = {};
+      queueDescription.queueFamilyIndex           = uiTransferQueueIndex;
+      queueDescription.queueCount                 = 1U;
+      queueDescription.pQueuePriorities           = &fQueuePriorities;
+
+      m_TransferQueueInformation.m_uiQueueFamilyIndex = uiTransferQueueIndex;
     }
   }
 
@@ -943,6 +974,18 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.createDevice(&deviceCreationDescription, nullptr, &m_LogicalDevice, m_InstanceDispatchLoader));
 
     m_InstanceDispatchLoader.init(m_LogicalDevice);
+
+    m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+
+    if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
+    {
+      m_LogicalDevice.getQueue(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_uiQueueIndex, &m_ComputeQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+    }
+
+    if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
+    {
+      m_LogicalDevice.getQueue(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_uiQueueIndex, &m_TransferQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+    }
   }
 
   {
@@ -1010,14 +1053,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
-  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
+  xiiClipSpaceDepthRange::Default = xiiClipSpaceDepthRange::ZeroToOne;
+
+  // We use xiiClipSpaceYMode::Regular and rely in the Vulkan 1.1 feature that a negative height performs y-inversion of the clip-space to framebuffer-space transform.
+  // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VK_KHR_maintenance1.html
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
   return XII_FAILURE;
-}
-
-void xiiGALDeviceVulkan::ReportLiveGPUObjects()
-{
 }
 
 void xiiGALDeviceVulkan::FlushPendingObjects()
@@ -1027,8 +1069,6 @@ void xiiGALDeviceVulkan::FlushPendingObjects()
 
 xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
 {
-  ReportLiveGPUObjects();
-
   if (m_DebugMode != DebugMode::Disabled)
   {
     if (m_DebugMessenger != VK_NULL_HANDLE)
@@ -2536,7 +2576,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
   return deviceFeatures;
 }
 
-xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags) const
+xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArrayPtr<xiiUInt32> excludedQueueIndices /* = xiiArrayPtr<xiiUInt32>()*/) const
 {
   // All commands that are allowed on a queue that supports transfer operations are also allowed on a queue that supports either graphics or compute operations.
   // Thus, if the capabilities of a queue family include vk::QueueFlagBits::eGraphics or vk::QueueFlagBits::eCompute, then reporting the vk::QueueFlagBits::Transfer
@@ -2556,7 +2596,7 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags) const
     // First try to find a queue, for which the flags match exactly. (i.e. dedicated compute or transfer queue)
     const vk::QueueFamilyProperties& properties = m_PhysicalDeviceQueueFamilyProperties[i];
 
-    if (properties.queueFlags == queueFlags || properties.queueFlags == queueFlagsOption)
+    if ((properties.queueFlags == queueFlags || properties.queueFlags == queueFlagsOption) && !excludedQueueIndices.Contains(i))
     {
       uiQueueFamilyIndex = i;
       break;
@@ -2571,7 +2611,7 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags) const
       const vk::QueueFamilyProperties& properties = m_PhysicalDeviceQueueFamilyProperties[i];
 
       // Check only queueFlags as vk::QueueFlagBits::eTransfer is optional for graphics and/or compute queues.
-      if ((properties.queueFlags & queueFlags) == queueFlags)
+      if (((properties.queueFlags & queueFlags) == queueFlags) && !excludedQueueIndices.Contains(i))
       {
         uiQueueFamilyIndex = i;
         break;

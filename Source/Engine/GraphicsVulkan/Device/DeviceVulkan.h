@@ -20,8 +20,6 @@ public:
 
   // Internal objects retrieval.
 
-  void ReportLiveGPUObjects();
-
   void FlushPendingObjects();
 
   // These functions are implemented by a graphics API implementation.
@@ -155,6 +153,13 @@ private:
     vk::PhysicalDeviceMultiDrawPropertiesEXT              m_MultiDraw;
   };
 
+  struct QueueInformation
+  {
+    vk::Queue m_vkQueue;
+    xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
+    xiiUInt32 m_uiQueueIndex       = 0U;
+  };
+
   vk::Instance              m_Instance;
   xiiUInt32                 m_uiVulkanVersion = 0U;
   vk::DispatchLoaderDynamic m_InstanceDispatchLoader;
@@ -188,11 +193,17 @@ private:
   vk::DebugUtilsMessengerEXT m_DebugMessenger;
   vk::DebugReportCallbackEXT m_DebugCallback;
 
-  // 0 : Graphics Queue
-  // 1 : Compute Queue
-  // 2 : Transfer Queue
-  // 3 : Sparse Queue
-  xiiUniquePtr<xiiGALCommandQueueVulkan> m_CommandQueues[4];
+  // Graphics Queue Information.
+  QueueInformation                       m_GraphicsQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueVulkan> m_pGraphicsCommandQueue;
+
+  // Compute Queue Information.
+  QueueInformation                       m_ComputeQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueVulkan> m_pComputeCommandQueue;
+
+  // Graph Queue Information.
+  QueueInformation                       m_TransferQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
 
 private:
   vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
@@ -206,7 +217,7 @@ private:
   xiiGALDeviceFeatures ConvertVulkanFeaturesToDeviceFeatures(xiiUInt32 uiVulkanVersion, const vk::PhysicalDeviceFeatures& vkFeatures, const vk::PhysicalDeviceProperties& vkDeviceProperties, const ExtensionFeatures& extensionFeatures, const ExtensionProperties& extensionProperties, xiiGALDeviceFeatureState::Enum optionalState = xiiGALDeviceFeatureState::Enabled);
   xiiGALDeviceFeatures GetEnabledDeviceFeatures(const xiiGALDeviceFeatures& supportedDeviceFeatures, const xiiGALDeviceFeatures& requestedDeviceFeatures);
 
-  xiiUInt32 FindQueueFamily(vk::QueueFlags queueFlags) const;
+  xiiUInt32 FindQueueFamily(vk::QueueFlags queueFlags, xiiArrayPtr<xiiUInt32> excludedQueueIndices = xiiArrayPtr<xiiUInt32>()) const;
 };
 
 #include <GraphicsVulkan/Device/Implementation/DeviceVulkan_inl.h>
