@@ -1698,15 +1698,6 @@ class xiiGALSwapChainHandle
   friend class xiiGALDevice;
 };
 
-// Command Encoder
-
-class xiiGALCommandQueueHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALCommandQueueHandle, xiiGAL::xii20_12Id);
-
-  friend class xiiGALDevice;
-};
-
 // Resources
 
 class xiiGALBottomLevelASHandle

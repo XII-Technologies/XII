@@ -53,17 +53,6 @@ public:
   void DestroySwapChain(xiiGALSwapChainHandle hSwapChain);
 
 
-  /// \brief This creates a new command queue object.
-  ///
-  /// \param description - The command queue description. See xiiGALCommandQueueCreationDescription.
-  ///
-  /// \return The handle to the created command queue object. The function calls AddRef(), so that the new object will have one reference.
-  [[nodiscard]] xiiGALCommandQueueHandle CreateCommandQueue(const xiiGALCommandQueueCreationDescription& description);
-
-  /// \brief This destroys the command queue with the given handle.
-  void DestroyCommandQueue(xiiGALCommandQueueHandle hCommandQueue);
-
-
   /// \brief This creates a new blend state object.
   ///
   /// \param description - The blend state description. See xiiGALBlendStateCreationDescription.
@@ -317,9 +306,6 @@ public:
   /// \brief Retrieves a pointer to the swap chain object with the given handle.
   [[nodiscard]] xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
 
-  /// \brief Retrieves a pointer to the command queue object with the given handle.
-  [[nodiscard]] xiiGALCommandQueue* GetCommandQueue(xiiGALCommandQueueHandle hCommandQueue) const;
-
   /// \brief Retrieves a pointer to the blend state object with the given handle.
   [[nodiscard]] xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
 
@@ -433,7 +419,6 @@ protected:
   mutable xiiMutex m_Mutex;
 
   using SwapChainTable                 = xiiIdTable<xiiGALSwapChainHandle::IdType, xiiGALSwapChain*, xiiLocalAllocatorWrapper>;
-  using CommandQueueTable              = xiiIdTable<xiiGALCommandQueueHandle::IdType, xiiGALCommandQueue*, xiiLocalAllocatorWrapper>;
   using BlendStateTable                = xiiIdTable<xiiGALBlendStateHandle::IdType, xiiGALBlendState*, xiiLocalAllocatorWrapper>;
   using DepthStencilStateTable         = xiiIdTable<xiiGALDepthStencilStateHandle::IdType, xiiGALDepthStencilState*, xiiLocalAllocatorWrapper>;
   using RasterizerStateTable           = xiiIdTable<xiiGALRasterizerStateHandle::IdType, xiiGALRasterizerState*, xiiLocalAllocatorWrapper>;
@@ -454,7 +439,6 @@ protected:
   using PipelineResourceSignatureTable = xiiIdTable<xiiGALPipelineResourceSignatureHandle::IdType, xiiGALPipelineResourceSignature*, xiiLocalAllocatorWrapper>;
 
   SwapChainTable                 m_SwapChains;
-  CommandQueueTable              m_CommandQueues;
   BlendStateTable                m_BlendStates;
   DepthStencilStateTable         m_DepthStencilStates;
   RasterizerStateTable           m_RasterizerStates;
@@ -505,8 +489,6 @@ protected:
   virtual xiiResult InitializePlatform()     = 0;
   virtual xiiResult PostInitializePlatform() = 0;
   virtual xiiResult ShutdownPlatform()       = 0;
-
-  virtual xiiResult CreateCommandQueuesPlatform() = 0;
 
   virtual void BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame = 0U) = 0;
   virtual void EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)                                       = 0;

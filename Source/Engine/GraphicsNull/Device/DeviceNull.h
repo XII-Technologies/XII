@@ -39,9 +39,6 @@ protected:
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
 
-  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) override final;
-  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
-
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
 
@@ -98,11 +95,12 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
-  virtual xiiResult CreateCommandQueuesPlatform() override final;
-
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
+  xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) final;
+  void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) final;
+
   xiiUInt64 m_uiFrameNumber = 0U;
 
   xiiUniquePtr<xiiGALCommandQueueNull> m_pDefaultQueue;

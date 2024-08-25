@@ -69,6 +69,10 @@ xiiResult xiiGALDeviceNull::InitializePlatform()
 
 xiiResult xiiGALDeviceNull::PostInitializePlatform()
 {
+  xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
+
+  m_pDefaultQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, this, queueDescription);
+
   return XII_SUCCESS;
 }
 
@@ -125,27 +129,6 @@ void xiiGALDeviceNull::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   pSwapChainNull->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainNull);
-}
-
-xiiGALCommandQueue* xiiGALDeviceNull::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
-{
-  xiiGALCommandQueueNull* pCommandQueueNull = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, this, description);
-
-  if (pCommandQueueNull->InitPlatform().Succeeded())
-    return pCommandQueueNull;
-
-  XII_DELETE(&m_Allocator, pCommandQueueNull);
-
-  return pCommandQueueNull;
-}
-
-void xiiGALDeviceNull::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
-{
-  xiiGALCommandQueueNull* pCommandQueueNull = static_cast<xiiGALCommandQueueNull*>(pCommandQueue);
-
-  pCommandQueueNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pCommandQueueNull);
 }
 
 xiiGALBlendState* xiiGALDeviceNull::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -531,15 +514,6 @@ void xiiGALDeviceNull::WaitIdlePlatform()
   FlushPendingObjects();
 }
 
-xiiResult xiiGALDeviceNull::CreateCommandQueuesPlatform()
-{
-  xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
-
-  m_pDefaultQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, this, queueDescription);
-
-  return XII_SUCCESS;
-}
-
 xiiResult xiiGALDeviceNull::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Null;
@@ -668,6 +642,27 @@ xiiResult xiiGALDeviceNull::FillCapabilitiesPlatform()
   // Null graphics device does not handle command queues yet.
 
   return XII_SUCCESS;
+}
+
+xiiGALCommandQueue* xiiGALDeviceNull::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
+{
+  xiiGALCommandQueueNull* pCommandQueueNull = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, this, description);
+
+  if (pCommandQueueNull->InitPlatform().Succeeded())
+    return pCommandQueueNull;
+
+  XII_DELETE(&m_Allocator, pCommandQueueNull);
+
+  return pCommandQueueNull;
+}
+
+void xiiGALDeviceNull::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
+{
+  xiiGALCommandQueueNull* pCommandQueueNull = static_cast<xiiGALCommandQueueNull*>(pCommandQueue);
+
+  pCommandQueueNull->DeInitPlatform().IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pCommandQueueNull);
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Device_Implementation_DeviceNull);
