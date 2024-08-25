@@ -981,16 +981,27 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
     m_InstanceDispatchLoader.init(m_LogicalDevice);
 
-    m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+    {
+      m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
+      m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
+    }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
       m_LogicalDevice.getQueue(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_uiQueueIndex, &m_ComputeQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
+      m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
     }
 
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
       m_LogicalDevice.getQueue(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_uiQueueIndex, &m_TransferQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
+      m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
     }
   }
 
@@ -1065,7 +1076,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VK_KHR_maintenance1.html
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 void xiiGALDeviceVulkan::FlushPendingObjects()
@@ -1093,11 +1104,6 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
   m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
 
   return XII_SUCCESS;
-}
-
-xiiResult xiiGALDeviceVulkan::CreateCommandQueuesPlatform()
-{
-  return XII_FAILURE;
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
@@ -1137,26 +1143,26 @@ void xiiGALDeviceVulkan::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   XII_DELETE(&m_Allocator, pSwapChainVulkan);
 }
 
-xiiGALCommandQueue* xiiGALDeviceVulkan::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
-{
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, description);
-
-  if (pCommandQueueVulkan->InitPlatform().Succeeded())
-    return pCommandQueueVulkan;
-
-  XII_DELETE(&m_Allocator, pCommandQueueVulkan);
-
-  return pCommandQueueVulkan;
-}
-
-void xiiGALDeviceVulkan::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
-{
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pCommandQueue);
-
-  pCommandQueueVulkan->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pCommandQueueVulkan);
-}
+//xiiGALCommandQueue* xiiGALDeviceVulkan::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
+//{
+//  xiiGALCommandQueueVulkan* pCommandQueueVulkan = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, description);
+//
+//  if (pCommandQueueVulkan->InitPlatform().Succeeded())
+//    return pCommandQueueVulkan;
+//
+//  XII_DELETE(&m_Allocator, pCommandQueueVulkan);
+//
+//  return pCommandQueueVulkan;
+//}
+//
+//void xiiGALDeviceVulkan::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
+//{
+//  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pCommandQueue);
+//
+//  pCommandQueueVulkan->DeInitPlatform().IgnoreResult();
+//
+//  XII_DELETE(&m_Allocator, pCommandQueueVulkan);
+//}
 
 xiiGALBlendState* xiiGALDeviceVulkan::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {

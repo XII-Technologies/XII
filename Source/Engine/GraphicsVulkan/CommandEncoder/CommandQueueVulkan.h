@@ -20,8 +20,6 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
-  void UnbindTextureFromFramebuffer(xiiGALTextureVulkan* pTextureVulkan);
-
 protected:
   xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
 
@@ -33,14 +31,21 @@ protected:
 
   virtual ~xiiGALCommandQueueVulkan();
 
-  virtual xiiResult InitPlatform() override final;
+  void InitializePlatform(xiiUInt32 uiQueueFamilyIndex);
 
-  virtual xiiResult DeInitPlatform() override final;
+  void DeInitializePlatform();
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
-  xiiUniquePtr<xiiGALCommandListVulkan> m_pDefaultCommandList;
+  vk::Device m_vkDevice;
+  xiiUInt32  m_uiQueueFamilyIndex = xiiInvalidIndex;
+
+  vk::CommandPool m_vkCommandPool;
+  xiiDynamicArray<vk::CommandBuffer> m_vkCommandBuffers;
+
+  xiiSet<xiiGALCommandListVulkan*> m_pAvailableCommandLists;
+  xiiSet<xiiGALCommandListVulkan*> m_pUsedCommandLists;
 };
 
 #include <GraphicsVulkan/CommandEncoder/Implementation/CommandQueueVulkan_inl.h>

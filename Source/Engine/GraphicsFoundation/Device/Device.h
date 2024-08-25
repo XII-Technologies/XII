@@ -496,9 +496,6 @@ protected:
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) = 0;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)                          = 0;
 
-  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) = 0;
-  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)                       = 0;
-
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) = 0;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)                         = 0;
 

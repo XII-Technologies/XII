@@ -12,7 +12,7 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription, vk::CommandBuffer vkCommandBuffer);
 
   virtual ~xiiGALCommandListVulkan();
 
@@ -80,6 +80,9 @@ protected:
   virtual void InvalidateStatePlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
+private:
+  vk::CommandBuffer m_vkCommandBuffer;
 };
 
 #include <GraphicsVulkan/CommandEncoder/Implementation/CommandListVulkan_inl.h>

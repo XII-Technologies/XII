@@ -38,10 +38,6 @@ protected:
 
   virtual ~xiiGALCommandQueue();
 
-  virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
-
 protected:
   xiiGALCommandQueueCreationDescription m_Description;
 };
