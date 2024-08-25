@@ -20,6 +20,9 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
+  xiiUInt32 GetVulkanQueueFamilyIndex() const;
+  vk::Queue GetVulkanQueue() const;
+
 protected:
   xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
 
@@ -39,11 +42,10 @@ protected:
 
 protected:
   vk::Device m_vkDevice;
+  vk::Queue  m_vkQueue;
   xiiUInt32  m_uiQueueFamilyIndex = xiiInvalidIndex;
 
-  vk::Queue m_vkQueue;
-
-  vk::CommandPool m_vkCommandPool;
+  vk::CommandPool                    m_vkCommandPool;
   xiiDynamicArray<vk::CommandBuffer> m_vkCommandBuffers;
 
   xiiSet<xiiGALCommandListVulkan*> m_pAvailableCommandLists;

@@ -119,20 +119,6 @@ xiiGALDeviceVulkan::xiiGALDeviceVulkan(const xiiGALDeviceCreationDescription& de
 
 xiiGALDeviceVulkan::~xiiGALDeviceVulkan() = default;
 
-xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
-{
-  if (queueType.IsSet(xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
-    return m_pGraphicsCommandQueue.Borrow();
-
-  if (queueType.IsSet(xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
-    return m_pComputeCommandQueue.Borrow();
-
-  if (queueType.IsSet(xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
-    return m_pTransferCommandQueue.Borrow();
-
-  return nullptr;
-}
-
 xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::InitializePlatform");
@@ -1143,6 +1129,20 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchai
   {
     pSwapChain->Present();
   }
+}
+
+xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
+{
+  if (queueType.IsSet(xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
+    return m_pGraphicsCommandQueue.Borrow();
+
+  if (queueType.IsSet(xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
+    return m_pComputeCommandQueue.Borrow();
+
+  if (queueType.IsSet(xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandQueue.Borrow();
+
+  return nullptr;
 }
 
 xiiGALSwapChain* xiiGALDeviceVulkan::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)

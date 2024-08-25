@@ -57,6 +57,15 @@ void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
 }
 
+xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  return xiiUInt64();
+}
+
 xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
@@ -119,9 +128,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::Submit(xiiGALCommandList* pCommandList, bool
   vkSubmitInformation.commandBufferCount = 1U;
 
   VK_ASSERT_DEV(m_vkQueue.submit(1U, &vkSubmitInformation, VK_NULL_HANDLE, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-  // TODO: Resolve with fence.
-  m_vkQueue.waitIdle();
 
   if (bReset)
   {
