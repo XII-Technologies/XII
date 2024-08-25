@@ -511,6 +511,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiUInt32 uiGraphicsQueueIndex = FindQueueFamily(vk::QueueFlagBits::eGraphics, excludedQueueIndices);
     if (uiGraphicsQueueIndex != xiiInvalidIndex)
     {
+      XII_ASSERT_DEV(!excludedQueueIndices.Contains(uiGraphicsQueueIndex), "");
+
       excludedQueueIndices.PushBack(uiGraphicsQueueIndex);
 
       vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
@@ -531,6 +533,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiUInt32 uiComputeQueueIndex = FindQueueFamily(vk::QueueFlagBits::eCompute, excludedQueueIndices);
     if (uiComputeQueueIndex != xiiInvalidIndex)
     {
+      XII_ASSERT_DEV(!excludedQueueIndices.Contains(uiComputeQueueIndex), "");
+
       excludedQueueIndices.PushBack(uiComputeQueueIndex);
 
       vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
@@ -546,6 +550,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiUInt32 uiTransferQueueIndex = FindQueueFamily(vk::QueueFlagBits::eTransfer, excludedQueueIndices);
     if (uiTransferQueueIndex != xiiInvalidIndex)
     {
+      XII_ASSERT_DEV(!excludedQueueIndices.Contains(uiTransferQueueIndex), "");
+
       excludedQueueIndices.PushBack(uiTransferQueueIndex);
 
       vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
