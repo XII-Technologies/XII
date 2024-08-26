@@ -423,6 +423,11 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALTextureFo
   return vk::Format::eUndefined;
 }
 
+XII_ALWAYS_INLINE xiiGALTextureFormat::Enum xiiVulkanTypeConversions::GetGALFormat(vk::Format e)
+{
+  return xiiGALTextureFormat::Enum();
+}
+
 XII_ALWAYS_INLINE vk::ShaderStageFlags xiiVulkanTypeConversions::GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e)
 {
   if (e == xiiGALShaderType::AllGraphics)

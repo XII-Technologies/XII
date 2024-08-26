@@ -29,14 +29,31 @@ protected:
   virtual ~xiiGALSwapChainVulkan();
 
   virtual xiiResult InitPlatform() override final;
-
   virtual xiiResult DeInitPlatform() override final;
 
-  xiiResult CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
+  xiiResult CreateVulkanSurface();
+  xiiResult CreateVulkanSwapChain();
 
+  xiiResult CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
   void DestroyBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
 
 protected:
+  vk::SurfaceKHR   m_vkSurface;
+  vk::SwapchainKHR m_vkSwapChain;
+  vk::Format       m_vkColorFormat = vk::Format::eUndefined;
+
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
+  // Surface extent corresponding to identity transform. We have to store this value,
+  // because on Android vkGetPhysicalDeviceSurfaceCapabilitiesKHR is not reliable and
+  // starts reporting incorrect dimensions after few rotations.
+  vk::Extent2D m_vkSurfaceIdentityExtent;
+
+  // Keep track of current surface transform to detect orientation changes.
+  vk::SurfaceTransformFlagsKHR m_vkCurrentSurfaceTransformFlag = {};
+#endif
+
+  xiiUInt32 m_uiBackBufferIndex = 0U;
+  bool      m_bIsMinimized      = false;
 };
 
 #include <GraphicsVulkan/Device/Implementation/SwapChainVulkan_inl.h>
