@@ -562,3 +562,58 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALCommandQueueType> xiiVulkanTypeConversions::
 
   return xiiGALCommandQueueType::Unknown;
 }
+
+XII_ALWAYS_INLINE vk::SurfaceTransformFlagsKHR xiiVulkanTypeConversions::GetSurfaceTransform(xiiGALSurfaceTransform::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALSurfaceTransform::Optimal:
+      XII_ASSERT_DEV(false, "No Vulkan equivalent of xiiGALSurfaceTransform::Optimal.");
+      return vk::SurfaceTransformFlagBitsKHR::eIdentity;
+    case xiiGALSurfaceTransform::Identity:
+      return vk::SurfaceTransformFlagBitsKHR::eIdentity;
+    case xiiGALSurfaceTransform::Rotate90:
+      return vk::SurfaceTransformFlagBitsKHR::eRotate90;
+    case xiiGALSurfaceTransform::Rotate180:
+      return vk::SurfaceTransformFlagBitsKHR::eRotate180;
+    case xiiGALSurfaceTransform::Rotate270:
+      return vk::SurfaceTransformFlagBitsKHR::eRotate270;
+    case xiiGALSurfaceTransform::HorizontalMirror:
+      return vk::SurfaceTransformFlagBitsKHR::eHorizontalMirror;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate90:
+      return vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate180:
+      return vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate180;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate270:
+      return vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::SurfaceTransformFlagBitsKHR::eIdentity;
+}
+
+XII_ALWAYS_INLINE xiiGALSurfaceTransform::Enum xiiVulkanTypeConversions::GetGALSurfaceTransform(vk::SurfaceTransformFlagsKHR e)
+{
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(xiiVulkanTypeConversions::GetUnderlyingFlagsValue(e)), "Expected a single bit transform.");
+
+  if (e & vk::SurfaceTransformFlagBitsKHR::eIdentity)
+    return xiiGALSurfaceTransform::Identity;
+  if (e & vk::SurfaceTransformFlagBitsKHR::eRotate90)
+    return xiiGALSurfaceTransform::Rotate90;
+  if (e & vk::SurfaceTransformFlagBitsKHR::eRotate180)
+    return xiiGALSurfaceTransform::Rotate180;
+  if (e & vk::SurfaceTransformFlagBitsKHR::eRotate270)
+    return xiiGALSurfaceTransform::Rotate270;
+  if (e & vk::SurfaceTransformFlagBitsKHR::eHorizontalMirror)
+    return xiiGALSurfaceTransform::HorizontalMirror;
+  if (e & vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90)
+    return xiiGALSurfaceTransform::HorizontalMirrorRotate90;
+  if (e & vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate180)
+    return xiiGALSurfaceTransform::HorizontalMirrorRotate180;
+  if (e & vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270)
+    return xiiGALSurfaceTransform::HorizontalMirrorRotate270;
+
+  XII_ASSERT_DEV(false, "Unexpected surface transform flag.");
+
+  return xiiGALSurfaceTransform::Identity;
+}

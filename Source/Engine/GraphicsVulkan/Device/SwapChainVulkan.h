@@ -49,8 +49,10 @@ protected:
   vk::Extent2D m_vkSurfaceIdentityExtent;
 
   // Keep track of current surface transform to detect orientation changes.
-  vk::SurfaceTransformFlagsKHR m_vkCurrentSurfaceTransformFlag = {};
+  vk::SurfaceTransformFlagsKHR m_vkCurrentSurfaceTransform = {};
 #endif
+
+  xiiUInt32 m_uiDesiredBufferCount = 0U;
 
   xiiUInt32 m_uiBackBufferIndex = 0U;
   bool      m_bIsMinimized      = false;

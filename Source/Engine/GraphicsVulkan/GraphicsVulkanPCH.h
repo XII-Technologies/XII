@@ -52,5 +52,6 @@ namespace VulkanUtilities
 } // namespace VulkanUtilities
 
 XII_DEFINE_AS_POD_TYPE(vk::Format);
+XII_DEFINE_AS_POD_TYPE(vk::PresentModeKHR);
 
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>

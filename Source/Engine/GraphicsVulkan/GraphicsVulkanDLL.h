@@ -73,7 +73,6 @@
 class xiiGALCommandListVulkan;
 class xiiGALCommandQueueVulkan;
 class xiiGALDeviceVulkan;
-class xiiGALPassVulkan;
 class xiiGALSwapChainVulkan;
 class xiiGALBottomLevelASVulkan;
 class xiiGALBufferVulkan;

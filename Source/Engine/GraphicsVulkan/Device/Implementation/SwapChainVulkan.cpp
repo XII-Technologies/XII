@@ -16,6 +16,9 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
+  XII_SUCCEED_OR_RETURN(CreateVulkanSwapChain());
+
   return CreateBackBufferInternal(pDeviceVulkan);
 }
 
@@ -113,6 +116,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 {
   xiiGALDeviceVulkan* pDeviceVulkan    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+  vk::Device          vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // Retrieve the list of vk::Formats that are supported.
   xiiUInt32 uiFormatCount = 0U;
@@ -182,6 +186,213 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
       }
     }
   }
+
+  vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface, &surfaceCapabilities, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  xiiUInt32 uiPresentModeCount = 0U;
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfacePresentModesKHR(m_vkSurface, &uiPresentModeCount, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  XII_ASSERT_DEV(uiPresentModeCount > 0, "");
+
+  xiiDynamicArray<vk::PresentModeKHR> presentModes(pDeviceVulkan->GetAllocator());
+  presentModes.SetCount(uiPresentModeCount);
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfacePresentModesKHR(m_vkSurface, &uiPresentModeCount, presentModes.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  XII_ASSERT_DEV(uiPresentModeCount == presentModes.GetCount(), "");
+
+  vk::SurfaceTransformFlagsKHR vkPreTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
+  if (m_DesiredSurfaceTransform != xiiGALSurfaceTransform::Optimal)
+  {
+    vkPreTransform = xiiVulkanTypeConversions::GetSurfaceTransform(m_DesiredSurfaceTransform);
+
+    if (surfaceCapabilities.supportedTransforms & vkPreTransform)
+    {
+      m_Description.m_PreTransform = m_DesiredSurfaceTransform;
+    }
+    else
+    {
+      xiiLog::Warning("{} is not supported engine. Optimal surface transform will be used instead. Query the swap chain description to get the actual surface transform.", vk::to_string(vkPreTransform).data());
+
+      m_DesiredSurfaceTransform = xiiGALSurfaceTransform::Optimal;
+    }
+  }
+
+  if (m_DesiredSurfaceTransform == xiiGALSurfaceTransform::Optimal)
+  {
+    // Use current surface transform to avoid extra cost of presenting the image.
+    // If preTransform does not match the currentTransform value returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation.
+    // https://android-developers.googleblog.com/2020/02/handling-device-orientation-efficiently.html
+    // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/appropriate-use-of-surface-rotation
+
+    vkPreTransform               = surfaceCapabilities.currentTransform;
+    m_Description.m_PreTransform = xiiVulkanTypeConversions::GetGALSurfaceTransform(vkPreTransform);
+
+    xiiLog::Info("Using {} swap chain pre-transform.", vk::to_string(vkPreTransform).data());
+  }
+
+  vk::Extent2D swapchainExtent = {};
+  // The width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
+  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && m_Description.m_Resolution.width != 0 && m_Description.m_Resolution.height != 0)
+  {
+    // If the surface size is undefined, the size is set to the size of the images requested.
+    swapchainExtent.width  = xiiMath::Min(xiiMath::Max(m_Description.m_Resolution.width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
+    swapchainExtent.height = xiiMath::Min(xiiMath::Max(m_Description.m_Resolution.height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
+  }
+  else
+  {
+    // If the surface size is defined, the swap chain size must match.
+    swapchainExtent = surfaceCapabilities.currentExtent;
+  }
+
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
+  // On Android, vkGetPhysicalDeviceSurfaceCapabilitiesKHR is not reliable and starts reporting incorrect dimensions after few rotations.
+  // To alleviate the problem, we store the surface extent corresponding to identity rotation.
+  // https://android-developers.googleblog.com/2020/02/handling-device-orientation-efficiently.html
+  if (m_vkSurfaceIdentityExtent.width == 0 || m_vkSurfaceIdentityExtent.height == 0)
+  {
+    m_vkSurfaceIdentityExtent = surfaceCapabilities.currentExtent;
+
+    constexpr vk::SurfaceTransformFlagsKHR rotate90TransformFlags = vk::SurfaceTransformFlagBitsKHR::eRotate90 | vk::SurfaceTransformFlagBitsKHR::eRotate270 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270;
+    if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
+    {
+      xiiMath::Swap(m_vkSurfaceIdentityExtent.width, m_vkSurfaceIdentityExtent.height);
+    }
+  }
+
+  if (m_DesiredSurfaceTransform == xiiGALSurfaceTransform::Optimal)
+  {
+    swapchainExtent = m_vkSurfaceIdentityExtent;
+  }
+  m_vkCurrentSurfaceTransform = surfaceCapabilities.currentTransform;
+#endif
+
+  swapchainExtent.width             = xiiMath::Max(swapchainExtent.width, 1U);
+  swapchainExtent.height            = xiiMath::Max(swapchainExtent.height, 1U);
+  m_Description.m_Resolution.width  = swapchainExtent.width;
+  m_Description.m_Resolution.height = swapchainExtent.height;
+
+  // The FIFO present mode is guaranteed by the spec to always be supported.
+  vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
+  {
+    xiiDynamicArray<vk::PresentModeKHR> preferredPresentModes(pDeviceVulkan->GetAllocator());
+
+    if (m_PresentMode == xiiGALPresentMode::VSync)
+    {
+      // FIFO relaxed waits for the next VSync, but if the frame is late,
+      // it still shows it even if VSync has already passed, which may
+      // result in tearing.
+      preferredPresentModes.PushBack(vk::PresentModeKHR::eFifoRelaxed);
+      preferredPresentModes.PushBack(vk::PresentModeKHR::eFifo);
+    }
+    else
+    {
+      // Mailbox is the lowest latency non-tearing presentation mode.
+      preferredPresentModes.PushBack(vk::PresentModeKHR::eMailbox);
+      preferredPresentModes.PushBack(vk::PresentModeKHR::eImmediate);
+      preferredPresentModes.PushBack(vk::PresentModeKHR::eFifo);
+    }
+
+    for (const vk::PresentModeKHR& preferredMode : preferredPresentModes)
+    {
+      if (preferredPresentModes.Contains(preferredMode))
+      {
+        presentMode = preferredMode;
+        break;
+      }
+    }
+
+    xiiLog::Info("Using {} swap chain present mode.", vk::to_string(presentMode).data());
+  }
+
+  // Determine the number of VkImage's to use in the swap chain.
+  // We need to acquire only 1 presentable image at at time.
+  // Asking for minImageCount images ensures that we can acquire 1 presentable image as long as we present it before attempting to acquire another.
+  if (m_uiDesiredBufferCount < surfaceCapabilities.minImageCount)
+  {
+    xiiLog::Info("Desired back buffer count ({}) is smaller than the minimal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.minImageCount, surfaceCapabilities.minImageCount);
+
+    m_uiDesiredBufferCount = surfaceCapabilities.minImageCount;
+  }
+  if (surfaceCapabilities.maxImageCount != 0 && m_uiDesiredBufferCount > surfaceCapabilities.maxImageCount)
+  {
+    xiiLog::Info("Desired back buffer count ({}) is greater than the maximal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.maxImageCount, surfaceCapabilities.maxImageCount);
+
+    m_uiDesiredBufferCount = surfaceCapabilities.maxImageCount;
+  }
+
+  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan on Android
+  // may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
+  //                          m_Description.m_uiBufferCount
+  // CreateVulkanSwapChain()          2 -> 4
+  // CreateVulkanSwapChain()          4 -> 6
+  // CreateVulkanSwapChain()          6 -> 8
+  xiiUInt32 uiDesiredSwapChainImageCount = m_uiDesiredBufferCount;
+
+  // Find a supported composite alpha mode - one of these is guaranteed to be set.
+  vk::CompositeAlphaFlagBitsKHR compositeAlpha         = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+  vk::CompositeAlphaFlagBitsKHR compositeAlphaFlags[4] = {vk::CompositeAlphaFlagBitsKHR::eOpaque, vk::CompositeAlphaFlagBitsKHR::ePreMultiplied, vk::CompositeAlphaFlagBitsKHR::ePostMultiplied, vk::CompositeAlphaFlagBitsKHR::eInherit};
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(compositeAlphaFlags); ++i)
+  {
+    if (surfaceCapabilities.supportedCompositeAlpha & compositeAlphaFlags[i])
+    {
+      compositeAlpha = compositeAlphaFlags[i];
+      break;
+    }
+  }
+
+  auto vkOldSwapChain = m_vkSwapChain;
+  m_vkSwapChain       = VK_NULL_HANDLE;
+
+  vk::SwapchainCreateInfoKHR swapChainCreateInfo = {};
+  swapChainCreateInfo.flags                      = {};
+  swapChainCreateInfo.pNext                      = nullptr;
+  swapChainCreateInfo.surface                    = m_vkSurface;
+  swapChainCreateInfo.minImageCount              = uiDesiredSwapChainImageCount;
+  swapChainCreateInfo.imageFormat                = m_vkColorFormat;
+  swapChainCreateInfo.imageExtent.width          = swapchainExtent.width;
+  swapChainCreateInfo.imageExtent.height         = swapchainExtent.height;
+  swapChainCreateInfo.preTransform               = static_cast<vk::SurfaceTransformFlagBitsKHR>(xiiVulkanTypeConversions::GetUnderlyingFlagsValue(vkPreTransform));
+  swapChainCreateInfo.compositeAlpha             = compositeAlpha;
+  swapChainCreateInfo.imageArrayLayers           = 1U;
+  swapChainCreateInfo.presentMode                = presentMode;
+  swapChainCreateInfo.oldSwapchain               = vkOldSwapChain;
+  swapChainCreateInfo.clipped                    = vk::True;
+  swapChainCreateInfo.imageColorSpace            = colorSpace;
+
+  XII_ASSERT_DEV(m_Description.m_Usage != xiiGALSwapChainUsageFlags::None, "No swap chain flags are defined.");
+  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+    swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
+  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
+    swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eSampled;
+  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
+    swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eInputAttachment;
+  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::CopySource))
+    swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eTransferSrc;
+
+  swapChainCreateInfo.imageSharingMode      = vk::SharingMode::eExclusive;
+  swapChainCreateInfo.queueFamilyIndexCount = 0U;
+  swapChainCreateInfo.pQueueFamilyIndices   = nullptr;
+
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSwapchainKHR(&swapChainCreateInfo, nullptr, &m_vkSwapChain, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  if (vkOldSwapChain != VK_NULL_HANDLE)
+  {
+    vkLogicalDevice.destroySwapchainKHR(vkOldSwapChain, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    vkOldSwapChain = VK_NULL_HANDLE;
+  }
+
+  xiiUInt32 uiSwapChainImageCount = 0U;
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  XII_ASSERT_DEV(uiSwapChainImageCount > 0, "");
+
+  if (uiSwapChainImageCount != m_Description.m_uiBufferCount)
+  {
+    xiiLog::Info("Created swap chain with {} images vs {} requested.", uiSwapChainImageCount, m_Description.m_uiBufferCount);
+
+    m_Description.m_uiBufferCount = uiSwapChainImageCount;
+  }
+
+  /// \todo Acquire fences and semaphores.
 
   return XII_FAILURE;
 }
