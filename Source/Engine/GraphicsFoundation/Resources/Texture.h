@@ -62,12 +62,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
                                                                                                  ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
   void* m_pExisitingNativeObject = nullptr;                                                      ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 
-  bool      IsArray() const;
-  bool      Is1D() const;
-  bool      Is2D() const;
-  bool      Is3D() const;
-  bool      IsCube() const;
-  xiiUInt32 GetArraySize() const;
+  constexpr XII_ALWAYS_INLINE bool      IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
+  constexpr XII_ALWAYS_INLINE bool      Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }
+  constexpr XII_ALWAYS_INLINE bool      Is2D() const { return m_Type == xiiGALResourceDimension::Texture2D || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
+  constexpr XII_ALWAYS_INLINE bool      Is3D() const { return m_Type == xiiGALResourceDimension::Texture3D; }
+  constexpr XII_ALWAYS_INLINE bool      IsCube() const { return m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
+  constexpr XII_ALWAYS_INLINE xiiUInt32 GetArraySize() const { return IsArray() ? m_uiArraySizeOrDepth : 1U; }
 };
 
 /// \brief This describes the data for one texture sub-resource.
@@ -138,7 +138,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALTexture : public xiiGALResource
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALTextureCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief This returns the handle of the default view.
   ///
@@ -173,5 +173,3 @@ protected:
 private:
   void CreateDefaultResourceViews(xiiGALTextureHandle hTexture);
 };
-
-#include <GraphicsFoundation/Resources/Implementation/Texture_inl.h>

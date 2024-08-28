@@ -12,6 +12,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE
 xiiGALDeviceObject::xiiGALDeviceObject(xiiGALDevice* pDevice) :
   m_pDevice(pDevice)
 {
+  XII_ASSERT_DEV(pDevice != nullptr, "Invalid Device provided for device object.");
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Declarations_Implementation_DeviceObject);

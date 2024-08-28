@@ -127,7 +127,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPass : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALRenderPassCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALRenderPassCreationDescription& GetDescription() const { return m_Description; }
 
 protected:
   friend class xiiGALDevice;
@@ -143,5 +143,3 @@ protected:
 protected:
   xiiGALRenderPassCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/RenderPass_inl.h>

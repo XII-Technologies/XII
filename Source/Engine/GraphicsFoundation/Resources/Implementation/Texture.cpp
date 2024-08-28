@@ -23,6 +23,15 @@ xiiGALTexture::xiiGALTexture(xiiGALDevice* pDevice, const xiiGALTextureCreationD
 
 xiiGALTexture::~xiiGALTexture() = default;
 
+xiiGALTextureViewHandle xiiGALTexture::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
+{
+  XII_ASSERT_DEV(viewType > xiiGALTextureViewType::Undefined && viewType < xiiGALTextureViewType::ENUM_COUNT, "Invalid view type.");
+
+  XII_ASSERT_DEV(!m_DefaultTextureViews[viewType.GetValue()].IsInvalidated(), "Texture view handle is invalid!");
+
+  return m_DefaultTextureViews[viewType.GetValue()];
+}
+
 void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
 {
   // For texture cubes and texture cube arrays, we only address a single texture view per texture cube.

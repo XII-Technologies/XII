@@ -77,7 +77,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALQuery : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALQueryCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueryCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief This retrieves the query data.
   ///
@@ -119,5 +119,3 @@ protected:
 
   QueryState m_QueryState = QueryState::Inactive;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/Query_inl.h>

@@ -91,7 +91,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceSignature : public xiiGAL
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALPipelineResourceSignatureCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALPipelineResourceSignatureCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief Returns true if this pipeline resource signature is compatible with the given pipeline resource signature.
   virtual [[nodiscard]] bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const = 0;
@@ -110,5 +110,3 @@ protected:
 protected:
   xiiGALPipelineResourceSignatureCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/States/Implementation/PipelineResourceSignature_inl.h>

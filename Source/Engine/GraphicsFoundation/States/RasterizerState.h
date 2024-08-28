@@ -76,7 +76,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerState : public xiiGALDeviceObje
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALRasterizerStateCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALRasterizerStateCreationDescription& GetDescription() const { return m_Description; }
 
 protected:
   friend class xiiGALDevice;
@@ -92,5 +92,3 @@ protected:
 protected:
   xiiGALRasterizerStateCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/States/Implementation/RasterizerState_inl.h>

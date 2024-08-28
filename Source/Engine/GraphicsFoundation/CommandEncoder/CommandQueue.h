@@ -41,5 +41,3 @@ protected:
 protected:
   xiiGALCommandQueueCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/CommandEncoder/Implementation/CommandQueue_inl.h>

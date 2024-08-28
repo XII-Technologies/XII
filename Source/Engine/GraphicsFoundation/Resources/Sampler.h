@@ -70,7 +70,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALSampler : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALSamplerCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSamplerCreationDescription& GetDescription() const { return m_Description; }
 
 protected:
   friend class xiiGALDevice;
@@ -86,5 +86,3 @@ protected:
 protected:
   xiiGALSamplerCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/Sampler_inl.h>

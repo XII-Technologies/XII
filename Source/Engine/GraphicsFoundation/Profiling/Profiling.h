@@ -38,5 +38,3 @@ protected:
 #else
 #  define XII_PROFILE_AND_MARKER(GALContext, szName)
 #endif
-
-#include <GraphicsFoundation/Profiling/Implementation/Profiling_inl.h>

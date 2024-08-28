@@ -68,10 +68,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALCommandListCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief This returns the command queue for this object.
-  [[nodiscard]] xiiGALCommandQueue* GetCommandQueue() const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueue* GetCommandQueue() const { return m_pCommandQueue; };
 
 public:
   /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
@@ -391,9 +391,9 @@ public:
     Reset      ///< The command list has been reset and is ready to be recorded again.
   };
 
-  void AssertRenderingThread() const;
+  XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };
 
-  RecordingState GetRecordingState() const;
+  XII_ALWAYS_INLINE RecordingState GetRecordingState() const { return m_RecordingState; };
 
 protected:
   friend class xiiGALDevice;
@@ -497,9 +497,13 @@ protected:
   xiiHybridArray<xiiRectU32, 2U>     m_ScissorRects;
 
 private:
-  void CountDispatchCall();
-  void CountDrawCall();
-  void ClearStatisticCounters();
+  XII_ALWAYS_INLINE void CountDispatchCall() { ++m_uiDispatchCalls; };
+  XII_ALWAYS_INLINE void CountDrawCall() { ++m_uiDrawCalls; };
+  XII_ALWAYS_INLINE void ClearStatisticCounters()
+  {
+    m_uiDrawCalls     = 0;
+    m_uiDispatchCalls = 0;
+  };
 
   // Statistic variables.
   xiiUInt32 m_uiDrawCalls     = 0U;
@@ -511,5 +515,3 @@ private:
   xiiMap<xiiUInt32, xiiEnum<xiiGALMapType>> m_MappedBuffers;
 #endif
 };
-
-#include <GraphicsFoundation/CommandEncoder/Implementation/CommandList_inl.h>

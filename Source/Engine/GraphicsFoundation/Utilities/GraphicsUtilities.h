@@ -59,5 +59,3 @@ public:
   /// \brief Returns the default sampler creation description.
   static [[nodiscard]] xiiGALSamplerCreationDescription GetDefaultSamplerDescription() noexcept;
 };
-
-#include <GraphicsFoundation/Utilities/Implementation/GraphicsUtilities_inl.h>

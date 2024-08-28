@@ -90,7 +90,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALResource
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALBottomLevelASCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBottomLevelASCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
@@ -136,5 +136,3 @@ protected:
 protected:
   xiiGALBottomLevelASCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/BottomLevelAS_inl.h>

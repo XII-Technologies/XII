@@ -203,5 +203,3 @@ protected:
 
   virtual ~xiiGALShaderResourceVariable();
 };
-
-#include <GraphicsFoundation/Shader/Implementation/ShaderResourceVariable_inl.h>
