@@ -165,10 +165,10 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
       vk::Format vkReplacementColorFormat = vk::Format::eUndefined;
       switch (m_vkColorFormat)
       {
-        case vk::Format::eR8G8B8A8Unorm: vk::Format::eB8G8R8A8Unorm; break;
-        case vk::Format::eB8G8R8A8Unorm: vk::Format::eR8G8B8A8Unorm; break;
-        case vk::Format::eB8G8R8A8Srgb: vk::Format::eR8G8B8A8Srgb; break;
-        case vk::Format::eR8G8B8A8Srgb: vk::Format::eB8G8R8A8Srgb; break;
+        case vk::Format::eR8G8B8A8Unorm: vkReplacementColorFormat = vk::Format::eB8G8R8A8Unorm; break;
+        case vk::Format::eB8G8R8A8Unorm: vkReplacementColorFormat = vk::Format::eR8G8B8A8Unorm; break;
+        case vk::Format::eB8G8R8A8Srgb: vkReplacementColorFormat = vk::Format::eR8G8B8A8Srgb; break;
+        case vk::Format::eR8G8B8A8Srgb: vkReplacementColorFormat = vk::Format::eB8G8R8A8Srgb; break;
 
         default: vkReplacementColorFormat = vk::Format::eUndefined; break;
       }
@@ -453,14 +453,14 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
     xiiGALTextureCreationDescription textureCreationDescription;
-    textureCreationDescription.m_Type               = xiiGALResourceDimension::Texture2D;
-    textureCreationDescription.m_Size.width         = m_Description.m_Resolution.width;
-    textureCreationDescription.m_Size.height        = m_Description.m_Resolution.height;
-    textureCreationDescription.m_Format             = m_Description.m_ColorBufferFormat;
-    textureCreationDescription.m_BindFlags          = {}; // todo
-    textureCreationDescription.m_uiMipLevels        = 1U;
-    textureCreationDescription.m_uiArraySizeOrDepth = 1U;
-    textureCreationDescription.m_uiSampleCount      = 1U;
+    textureCreationDescription.m_Type                   = xiiGALResourceDimension::Texture2D;
+    textureCreationDescription.m_Size.width             = m_Description.m_Resolution.width;
+    textureCreationDescription.m_Size.height            = m_Description.m_Resolution.height;
+    textureCreationDescription.m_Format                 = m_Description.m_ColorBufferFormat;
+    textureCreationDescription.m_BindFlags              = {}; // todo
+    textureCreationDescription.m_uiMipLevels            = 1U;
+    textureCreationDescription.m_uiArraySizeOrDepth     = 1U;
+    textureCreationDescription.m_uiSampleCount          = 1U;
     textureCreationDescription.m_pExisitingNativeObject = m_SwapChainImages[i];
   }
   return XII_FAILURE;
