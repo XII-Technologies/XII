@@ -6,7 +6,7 @@
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALSwapChain(pDeviceVulkan, creationDescription), m_ImageAcquiredSemaphores(pDeviceVulkan->GetAllocator()), m_DrawCompleteSemaphores(pDeviceVulkan->GetAllocator()), m_ImageAcquiredFences(pDeviceVulkan->GetAllocator()), m_SwapChainImages(pDeviceVulkan->GetAllocator()), m_SwapChainTextures(pDeviceVulkan->GetAllocator())
+  xiiGALSwapChain(pDeviceVulkan, creationDescription), m_ImageAcquiredSemaphores(pDeviceVulkan->GetAllocator()), m_DrawCompleteSemaphores(pDeviceVulkan->GetAllocator()), m_ImageAcquiredFences(pDeviceVulkan->GetAllocator()), m_SwapChainImages(pDeviceVulkan->GetAllocator()), m_SwapChainTextures(pDeviceVulkan->GetAllocator()), m_SwapChainImagesInitialized(pDeviceVulkan->GetAllocator()), m_ImageAcquiredFenceSubmitted(pDeviceVulkan->GetAllocator())
 {
 }
 
@@ -16,12 +16,10 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
 {
   XII_LOG_BLOCK("xiiGALSwapChainVulkan::InitPlatform");
 
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-
   XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
   XII_SUCCEED_OR_RETURN(CreateVulkanSwapChain());
 
-  return CreateBackBufferInternal(pDeviceVulkan);
+  return CreateBackBufferInternal();
 }
 
 xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
@@ -428,12 +426,47 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan)
+xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  {
+    xiiUInt32  uiSwapChainImageCount = 0U;
+    vk::Result result                = vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    XII_ASSERT_DEBUG(result == vk::Result::eSuccess, "");
+    XII_ASSERT_DEBUG(uiSwapChainImageCount == m_Description.m_uiBufferCount, "Unexpected swap chain buffer count.");
+  }
+#endif
+
+  m_SwapChainImages.SetCount(m_Description.m_uiBufferCount);
+  m_SwapChainTextures.SetCount(m_Description.m_uiBufferCount);
+  m_SwapChainImagesInitialized.SetCount(m_Description.m_uiBufferCount, false);
+  m_ImageAcquiredFenceSubmitted.SetCount(m_Description.m_uiBufferCount, false);
+
+  xiiUInt32 uiSwapChainImageCount = m_Description.m_uiBufferCount;
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, m_SwapChainImages.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  XII_ASSERT_DEV(uiSwapChainImageCount == m_SwapChainImages.GetCount(), "");
+
+  for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
+  {
+    xiiGALTextureCreationDescription textureCreationDescription;
+    textureCreationDescription.m_Type               = xiiGALResourceDimension::Texture2D;
+    textureCreationDescription.m_Size.width         = m_Description.m_Resolution.width;
+    textureCreationDescription.m_Size.height        = m_Description.m_Resolution.height;
+    textureCreationDescription.m_Format             = m_Description.m_ColorBufferFormat;
+    textureCreationDescription.m_BindFlags          = {}; // todo
+    textureCreationDescription.m_uiMipLevels        = 1U;
+    textureCreationDescription.m_uiArraySizeOrDepth = 1U;
+    textureCreationDescription.m_uiSampleCount      = 1U;
+    textureCreationDescription.m_pExisitingNativeObject = m_SwapChainImages[i];
+  }
   return XII_FAILURE;
 }
 
-void xiiGALSwapChainVulkan::DestroyBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan)
+void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
 {
 }
 

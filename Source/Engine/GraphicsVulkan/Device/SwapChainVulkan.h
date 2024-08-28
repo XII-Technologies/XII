@@ -34,8 +34,8 @@ protected:
   xiiResult CreateVulkanSurface();
   xiiResult CreateVulkanSwapChain();
 
-  xiiResult CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
-  void      DestroyBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
+  xiiResult CreateBackBufferInternal();
+  void      DestroyBackBufferInternal();
 
 protected:
   vk::SurfaceKHR   m_vkSurface;
@@ -60,6 +60,8 @@ protected:
 
   xiiDynamicArray<vk::Image>           m_SwapChainImages;
   xiiDynamicArray<xiiGALTextureHandle> m_SwapChainTextures;
+  xiiDynamicArray<bool>                m_SwapChainImagesInitialized;
+  xiiDynamicArray<bool>                m_ImageAcquiredFenceSubmitted;
   xiiUInt32                            m_uiBackBufferIndex = 0U;
   xiiUInt32                            m_uiSemaphoreIndex  = 0U;
 
