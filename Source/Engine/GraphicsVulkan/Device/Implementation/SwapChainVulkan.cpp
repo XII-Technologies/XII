@@ -6,7 +6,7 @@
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALSwapChain(pDeviceVulkan, creationDescription)
+  xiiGALSwapChain(pDeviceVulkan, creationDescription), m_ImageAcquiredSemaphores(pDeviceVulkan->GetAllocator()), m_DrawCompleteSemaphores(pDeviceVulkan->GetAllocator()), m_ImageAcquiredFences(pDeviceVulkan->GetAllocator()), m_SwapChainImages(pDeviceVulkan->GetAllocator()), m_SwapChainTextures(pDeviceVulkan->GetAllocator())
 {
 }
 
@@ -14,6 +14,8 @@ xiiGALSwapChainVulkan::~xiiGALSwapChainVulkan() = default;
 
 xiiResult xiiGALSwapChainVulkan::InitPlatform()
 {
+  XII_LOG_BLOCK("xiiGALSwapChainVulkan::InitPlatform");
+
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
@@ -24,8 +26,18 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
 
 xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
-  XII_ASSERT_NOT_IMPLEMENTED;
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Instance        vkInstance    = pDeviceVulkan->GetVulkanInstance();
+
+  if (m_vkSwapChain != VK_NULL_HANDLE)
+  {
+    // TODO
+  }
+
+  if (m_vkSurface != VK_NULL_HANDLE)
+  {
+    vkInstance.destroySurfaceKHR(m_vkSurface, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
   return XII_SUCCESS;
 }
 
@@ -306,6 +318,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   // Determine the number of VkImage's to use in the swap chain.
   // We need to acquire only 1 presentable image at at time.
   // Asking for minImageCount images ensures that we can acquire 1 presentable image as long as we present it before attempting to acquire another.
+  m_uiDesiredBufferCount = m_Description.m_uiBufferCount;
   if (m_uiDesiredBufferCount < surfaceCapabilities.minImageCount)
   {
     xiiLog::Info("Desired back buffer count ({}) is smaller than the minimal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.minImageCount, surfaceCapabilities.minImageCount);
@@ -392,9 +405,27 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     m_Description.m_uiBufferCount = uiSwapChainImageCount;
   }
 
-  /// \todo Acquire fences and semaphores.
+  m_ImageAcquiredSemaphores.SetCount(uiSwapChainImageCount);
+  m_DrawCompleteSemaphores.SetCount(uiSwapChainImageCount);
+  m_ImageAcquiredFences.SetCount(uiSwapChainImageCount);
 
-  return XII_FAILURE;
+  for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
+  {
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.flags                   = {};
+    vkSemaphoreCreateInfo.pNext                   = nullptr;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_ImageAcquiredSemaphores[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_DrawCompleteSemaphores[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    vk::FenceCreateInfo vkFenceCreateInfo = {};
+    vkFenceCreateInfo.flags               = {};
+    vkFenceCreateInfo.pNext               = nullptr;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createFence(&vkFenceCreateInfo, nullptr, &m_ImageAcquiredFences[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  }
+
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan)

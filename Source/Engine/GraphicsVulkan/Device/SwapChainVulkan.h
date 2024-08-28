@@ -35,7 +35,7 @@ protected:
   xiiResult CreateVulkanSwapChain();
 
   xiiResult CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
-  void DestroyBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
+  void      DestroyBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
 
 protected:
   vk::SurfaceKHR   m_vkSurface;
@@ -54,8 +54,16 @@ protected:
 
   xiiUInt32 m_uiDesiredBufferCount = 0U;
 
-  xiiUInt32 m_uiBackBufferIndex = 0U;
-  bool      m_bIsMinimized      = false;
+  xiiDynamicArray<vk::Semaphore> m_ImageAcquiredSemaphores;
+  xiiDynamicArray<vk::Semaphore> m_DrawCompleteSemaphores;
+  xiiDynamicArray<vk::Fence>     m_ImageAcquiredFences;
+
+  xiiDynamicArray<vk::Image>           m_SwapChainImages;
+  xiiDynamicArray<xiiGALTextureHandle> m_SwapChainTextures;
+  xiiUInt32                            m_uiBackBufferIndex = 0U;
+  xiiUInt32                            m_uiSemaphoreIndex  = 0U;
+
+  bool m_bIsMinimized = false;
 };
 
 #include <GraphicsVulkan/Device/Implementation/SwapChainVulkan_inl.h>
