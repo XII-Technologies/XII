@@ -29,6 +29,3 @@ protected:
 
 protected:
 };
-
-
-#include <GraphicsVulkan/States/Implementation/PipelineStateVulkan_inl.h>

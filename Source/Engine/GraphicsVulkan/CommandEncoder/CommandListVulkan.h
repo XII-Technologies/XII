@@ -7,7 +7,7 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
 public:
-  vk::CommandBuffer GetVulkanCommandBuffer() const;
+  XII_ALWAYS_INLINE vk::CommandBuffer GetVulkanCommandBuffer() const { return m_vkCommandBuffer; };
 
 protected:
   friend class xiiGALCommandQueueVulkan;
@@ -86,5 +86,3 @@ protected:
 private:
   vk::CommandBuffer m_vkCommandBuffer;
 };
-
-#include <GraphicsVulkan/CommandEncoder/Implementation/CommandListVulkan_inl.h>

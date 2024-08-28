@@ -24,4 +24,10 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+const xiiGALSparseTextureProperties& xiiGALTextureVulkan::GetSparseProperties() const
+{
+  static xiiGALSparseTextureProperties tmp;
+  return tmp;
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_TextureVulkan);

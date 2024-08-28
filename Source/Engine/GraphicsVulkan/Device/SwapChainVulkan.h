@@ -67,5 +67,3 @@ protected:
 
   bool m_bIsMinimized = false;
 };
-
-#include <GraphicsVulkan/Device/Implementation/SwapChainVulkan_inl.h>

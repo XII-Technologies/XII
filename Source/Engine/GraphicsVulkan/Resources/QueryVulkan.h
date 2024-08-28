@@ -25,5 +25,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Resources/Implementation/QueryVulkan_inl.h>

@@ -21,5 +21,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Resources/Implementation/FramebufferVulkan_inl.h>

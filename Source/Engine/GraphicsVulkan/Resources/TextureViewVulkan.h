@@ -21,5 +21,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Resources/Implementation/TextureViewVulkan_inl.h>

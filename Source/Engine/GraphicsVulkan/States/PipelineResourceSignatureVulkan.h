@@ -7,7 +7,7 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : public xiiGALPipelineResourceSignature
 {
 public:
-  virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final;
+  XII_ALWAYS_INLINE virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final { return false; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -23,5 +23,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/States/Implementation/PipelineResourceSignatureVulkan_inl.h>

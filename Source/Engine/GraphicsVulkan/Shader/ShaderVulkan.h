@@ -22,5 +22,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Shader/Implementation/ShaderVulkan_inl.h>

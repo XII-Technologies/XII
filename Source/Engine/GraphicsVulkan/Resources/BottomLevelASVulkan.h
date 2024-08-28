@@ -29,5 +29,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Resources/Implementation/BottomLevelASVulkan_inl.h>

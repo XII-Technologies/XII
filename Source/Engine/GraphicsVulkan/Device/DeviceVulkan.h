@@ -82,37 +82,37 @@ public:
 
   // Internal objects retrieval.
 
-  xiiAllocatorBase* GetAllocator() const;
+  XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
 
-  vk::Instance                     GetVulkanInstance() const;
-  xiiUInt32                        GetVulkanVersion() const;
-  const vk::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const;
+  XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
+  XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
+  XII_ALWAYS_INLINE const vk::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
 
-  xiiArrayPtr<vk::LayerProperties>     GetVulkanInstanceLayers();
-  xiiArrayPtr<vk::ExtensionProperties> GetVulkanInstanceExtensionProperties();
-  xiiArrayPtr<const char*>             GetVulkanInstanceEnabledExtensions();
-  xiiArrayPtr<vk::PhysicalDevice>      GetVulkanPhysicalDevices();
+  XII_ALWAYS_INLINE xiiArrayPtr<vk::LayerProperties> GetVulkanInstanceLayers() { return m_Layers; }
+  XII_ALWAYS_INLINE xiiArrayPtr<vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() { return m_Extensions; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const char*> GetVulkanInstanceEnabledExtensions() { return m_EnabledExtensions; }
+  XII_ALWAYS_INLINE xiiArrayPtr<vk::PhysicalDevice> GetVulkanPhysicalDevices() { return m_PhysicalDevices; }
 
-  vk::PhysicalDevice                             GetVulkanPhysicalDevice() const;
-  const vk::PhysicalDeviceProperties&            GetVulkanPhysicalDeviceProperties() const;
-  const vk::PhysicalDeviceFeatures&              GetVulkanPhysicalDeviceFeatures() const;
-  const vk::PhysicalDeviceMemoryProperties&      GetVulkanPhysicalDeviceMemoryProperties() const;
-  xiiArrayPtr<vk::QueueFamilyProperties>         GetPhysicalDeviceQueueFamilyProperties();
-  xiiArrayPtr<vk::ExtensionProperties>           GetPhysicalDeviceSupportedExtensions();
-  const xiiGALDeviceVulkan::ExtensionFeatures&   GetPhysicalDeviceExtensionFeatures() const;
-  const xiiGALDeviceVulkan::ExtensionProperties& GetPhysicalDeviceExtensionProperties() const;
+  XII_ALWAYS_INLINE vk::PhysicalDevice GetVulkanPhysicalDevice() const { return m_PhysicalDevice; }
+  XII_ALWAYS_INLINE const vk::PhysicalDeviceProperties& GetVulkanPhysicalDeviceProperties() const { return m_PhysicalDeviceProperties; }
+  XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanPhysicalDeviceFeatures() const { return m_PhysicalDeviceFeatures; }
+  XII_ALWAYS_INLINE const vk::PhysicalDeviceMemoryProperties& GetVulkanPhysicalDeviceMemoryProperties() const { return m_PhysicalDeviceMemoryProperties; }
+  XII_ALWAYS_INLINE xiiArrayPtr<vk::QueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties() { return m_PhysicalDeviceQueueFamilyProperties; }
+  XII_ALWAYS_INLINE xiiArrayPtr<vk::ExtensionProperties> GetPhysicalDeviceSupportedExtensions() { return m_PhysicalDeviceSupportedExtensions; }
+  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetPhysicalDeviceExtensionFeatures() const { return m_PhysicalDeviceExtensionFeatures; }
+  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionProperties& GetPhysicalDeviceExtensionProperties() const { return m_PhysicalDeviceExtensionProperties; }
 
-  vk::Device                                   GetVulkanLogicalDevice() const;
-  const vk::PhysicalDeviceFeatures&            GetVulkanLogicalDeviceFeatures() const;
-  const xiiGALDeviceVulkan::ExtensionFeatures& GetVulkanLogicalDeviceExtensionFeatures() const;
-  xiiArrayPtr<vk::PipelineStageFlags>          GetVulkanLogicalDeviceSupportedStagesFlags();
-  xiiArrayPtr<vk::AccessFlags>                 GetVulkanLogicalDeviceSupportedAccessFlags();
+  XII_ALWAYS_INLINE vk::Device GetVulkanLogicalDevice() const { return m_LogicalDevice; }
+  XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanLogicalDeviceFeatures() const { return m_LogicalDeviceFeatures; }
+  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetVulkanLogicalDeviceExtensionFeatures() const { return m_LogicalDeviceExtensionFeatures; }
+  XII_ALWAYS_INLINE xiiArrayPtr<vk::PipelineStageFlags> GetVulkanLogicalDeviceSupportedStagesFlags() { return m_LogicalDeviceSupportedStagesFlags; }
+  XII_ALWAYS_INLINE xiiArrayPtr<vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() { return m_LogicalDeviceSupportedAccessFlags; }
 
-  const xiiGALDeviceVulkan::QueueInformation& GetGraphicsQueueInformation() const;
-  const xiiGALDeviceVulkan::QueueInformation& GetComputeQueueInformation() const;
-  const xiiGALDeviceVulkan::QueueInformation& GetTransferQueueInformation() const;
+  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
+  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }
+  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetTransferQueueInformation() const { return m_TransferQueueInformation; }
 
-  xiiGALDeviceVulkan::DebugMode GetDebugMode() const;
+  XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
 
   void FlushPendingObjects();
 
@@ -245,5 +245,3 @@ private:
 
   xiiUInt32 FindQueueFamily(vk::QueueFlags queueFlags, xiiArrayPtr<xiiUInt32> excludedQueueIndices = xiiArrayPtr<xiiUInt32>()) const;
 };
-
-#include <GraphicsVulkan/Device/Implementation/DeviceVulkan_inl.h>

@@ -21,5 +21,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Shader/Implementation/InputLayoutVulkan_inl.h>

@@ -29,5 +29,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Resources/Implementation/BufferVulkan_inl.h>
