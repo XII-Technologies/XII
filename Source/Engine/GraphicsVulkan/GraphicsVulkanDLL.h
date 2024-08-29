@@ -15,50 +15,50 @@
 
 #define VK_BOOL(expression) (expression) ? vk::True : vk::False
 
-#define VK_ASSERT_DEBUG(code)                                                                                                                                                                                                         \
-  do                                                                                                                                                                                                                                  \
-  {                                                                                                                                                                                                                                   \
-    auto s = (code);                                                                                                                                                                                                                  \
+#define VK_ASSERT_DEBUG(code)                                                                                                                                                                                                          \
+  do                                                                                                                                                                                                                                   \
+  {                                                                                                                                                                                                                                    \
+    auto s = (code);                                                                                                                                                                                                                   \
     XII_ASSERT_DEBUG(static_cast<vk::Result>(s) == vk::Result::eSuccess, "Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
   } while (false)
 
-#define VK_ASSERT_DEV(code)                                                                                                                                                                                                         \
-  do                                                                                                                                                                                                                                \
-  {                                                                                                                                                                                                                                 \
-    auto s = (code);                                                                                                                                                                                                                \
+#define VK_ASSERT_DEV(code)                                                                                                                                                                                                          \
+  do                                                                                                                                                                                                                                 \
+  {                                                                                                                                                                                                                                  \
+    auto s = (code);                                                                                                                                                                                                                 \
     XII_ASSERT_DEV(static_cast<vk::Result>(s) == vk::Result::eSuccess, "Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
   } while (false)
 
-#define VK_LOG_ERROR(code)                                                                                                                                                       \
-  do                                                                                                                                                                             \
-  {                                                                                                                                                                              \
-    auto s = (code);                                                                                                                                                             \
-    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
-    {                                                                                                                                                                            \
+#define VK_LOG_ERROR(code)                                                                                                                                                        \
+  do                                                                                                                                                                              \
+  {                                                                                                                                                                               \
+    auto s = (code);                                                                                                                                                              \
+    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                       \
+    {                                                                                                                                                                             \
       xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
-    }                                                                                                                                                                            \
+    }                                                                                                                                                                             \
   } while (false)
 
-#define VK_SUCCEED_OR_RETURN_LOG(code)                                                                                                                                           \
-  do                                                                                                                                                                             \
-  {                                                                                                                                                                              \
-    auto s = (code);                                                                                                                                                             \
-    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
-    {                                                                                                                                                                            \
+#define VK_SUCCEED_OR_RETURN_LOG(code)                                                                                                                                            \
+  do                                                                                                                                                                              \
+  {                                                                                                                                                                               \
+    auto s = (code);                                                                                                                                                              \
+    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                       \
+    {                                                                                                                                                                             \
       xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
-      return s;                                                                                                                                                                  \
-    }                                                                                                                                                                            \
+      return s;                                                                                                                                                                   \
+    }                                                                                                                                                                             \
   } while (false)
 
-#define VK_SUCCEED_OR_RETURN_XII_FAILURE(code)                                                                                                                                   \
-  do                                                                                                                                                                             \
-  {                                                                                                                                                                              \
-    auto s = (code);                                                                                                                                                             \
-    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                      \
-    {                                                                                                                                                                            \
+#define VK_SUCCEED_OR_RETURN_XII_FAILURE(code)                                                                                                                                    \
+  do                                                                                                                                                                              \
+  {                                                                                                                                                                               \
+    auto s = (code);                                                                                                                                                              \
+    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                       \
+    {                                                                                                                                                                             \
       xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
-      return XII_FAILURE;                                                                                                                                                        \
-    }                                                                                                                                                                            \
+      return XII_FAILURE;                                                                                                                                                         \
+    }                                                                                                                                                                             \
   } while (false)
 
 #define XII_SUCCEED_OR_RETURN_FAILURE(expression, ...) \

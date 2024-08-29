@@ -455,7 +455,7 @@ namespace
     xiiDeque<PersistentCrossData>  m_Crosses;
     xiiDeque<PersistentSphereData> m_Spheres;
     xiiDeque<PersistentBoxData>    m_Boxes;
-    xiiDeque<PersistentLineData>    m_Lines;
+    xiiDeque<PersistentLineData>   m_Lines;
   };
 
   static xiiHashTable<xiiDebugRendererContext, PersistentPerContextData> s_PersistentPerContextData;

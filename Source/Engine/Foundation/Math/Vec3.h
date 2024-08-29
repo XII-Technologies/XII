@@ -109,7 +109,8 @@ public:
 
   /// \brief Returns a normalized version of this vector, leaves the vector itself unchanged.
   XII_DECLARE_IF_FLOAT_TYPE
-  [[nodiscard]] const xiiVec3Template<Type> GetNormalized() const; // [tested]
+    [[nodiscard]] const xiiVec3Template<Type>
+    GetNormalized() const; // [tested]
 
   /// \brief Normalizes this vector.
   XII_DECLARE_IF_FLOAT_TYPE

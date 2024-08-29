@@ -390,7 +390,7 @@ void xiiQtUiServices::OpenWith(xiiStringView sPath)
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   xiiStringWChar wpath(sPathBuilder);
-  OPENASINFO    oi;
+  OPENASINFO     oi;
   oi.pcszFile    = wpath.GetData();
   oi.pcszClass   = NULL;
   oi.oaifInFlags = OAIF_EXEC;
