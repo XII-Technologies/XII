@@ -140,7 +140,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
   m_vkColorFormat = xiiVulkanTypeConversions::GetFormat(m_Description.m_ColorBufferFormat);
 
-  vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eVkColorspaceSrgbNonlinear;
+  vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
   if (uiFormatCount == 1 && supportedFormats.PeekBack().format == vk::Format::eUndefined)
   {
     // If the format list includes just one entry of vk::Format::eUndefined, the surface has no preferred format.  Otherwise, at least one
@@ -452,16 +452,31 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
+    // No Special bind flag needed for xiiGALSwapChainUsageFlags::CopySource.
+    xiiBitflags<xiiGALBindFlags> swapChainBindFlags = xiiGALBindFlags::None;
+    if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+      swapChainBindFlags |= xiiGALBindFlags::RenderTarget;
+    if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
+      swapChainBindFlags |= xiiGALBindFlags::ShaderResource;
+    if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
+      swapChainBindFlags |= xiiGALBindFlags::InputAttachment;
+
     xiiGALTextureCreationDescription textureCreationDescription;
     textureCreationDescription.m_Type                   = xiiGALResourceDimension::Texture2D;
     textureCreationDescription.m_Size.width             = m_Description.m_Resolution.width;
     textureCreationDescription.m_Size.height            = m_Description.m_Resolution.height;
     textureCreationDescription.m_Format                 = m_Description.m_ColorBufferFormat;
-    textureCreationDescription.m_BindFlags              = {}; // todo
-    textureCreationDescription.m_uiMipLevels            = 1U;
     textureCreationDescription.m_uiArraySizeOrDepth     = 1U;
+    textureCreationDescription.m_uiMipLevels            = 1U;
     textureCreationDescription.m_uiSampleCount          = 1U;
+    textureCreationDescription.m_BindFlags              = swapChainBindFlags;
+    textureCreationDescription.m_Usage                  = xiiGALResourceUsage::Default;
+    textureCreationDescription.m_CPUAccessFlags         = xiiGALCPUAccessFlag::None;
+    textureCreationDescription.m_MiscFlags              = xiiGALMiscTextureFlags::None;
     textureCreationDescription.m_pExisitingNativeObject = m_SwapChainImages[i];
+
+    m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
+    XII_ASSERT_RELEASE(!m_SwapChainTextures[i].IsInvalidated(), "Failed to create native backbuffer texture object!");
   }
   return XII_FAILURE;
 }
@@ -472,6 +487,53 @@ void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
 
 void xiiGALSwapChainVulkan::AcquireNextRenderTarget()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  // Applications should not rely on vkAcquireNextImageKHR blocking in order to meter their rendering speed.
+  // The implementation may return from this function immediately regardless of how many presentation requests are queued,
+  // and regardless of when queued presentation requests will complete relative to the call. Instead, applications can use fences
+  // to meter their frame generation work to match the presentation rate.
+
+  // Explicitly make sure that there are no more pending frames in the command queue than the number of the swap chain images.
+  //
+  // Nsc = 3 - number of the swap chain images
+  //
+  //   N-Ns          N-2           N-1            N (Current frame)
+  //    |             |             |             |
+  //                  |
+  //          Wait for this fence
+  //
+  // When acquiring swap chain image for frame N, we need to make sure that frame N-Nsc has completed. To achieve that, we wait for the image acquire
+  // fence for frame N-Nsc-1. Thus we will have no more than Nsc frames in the queue.
+  xiiUInt32 uiOldestSubmittedImageFenceIndex = (m_uiSemaphoreIndex % 1U) % m_ImageAcquiredFenceSubmitted.GetCount();
+  if (m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex])
+  {
+    const vk::Fence& oldestSubmittedFence = m_ImageAcquiredFences[uiOldestSubmittedImageFenceIndex];
+    if (vkLogicalDevice.getFenceStatus(oldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
+    {
+      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &oldestSubmittedFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    }
+
+    VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &oldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex] = false;
+  }
+
+  const vk::Fence&     imageAcquiredFence     = m_ImageAcquiredFences[m_uiSemaphoreIndex];
+  const vk::Semaphore& imageAcquiredSemaphore = m_ImageAcquiredSemaphores[m_uiSemaphoreIndex];
+
+  vk::Result result = vkLogicalDevice.acquireNextImageKHR(m_vkSwapChain, xiiMath::MaxValue<xiiUInt64>(), imageAcquiredSemaphore, imageAcquiredFence, &m_uiBackBufferIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  m_ImageAcquiredFenceSubmitted[m_uiSemaphoreIndex] = (result == vk::Result::eSuccess);
+  if (result == vk::Result::eSuccess)
+  {
+    // Next command in the device context must wait for the next image to be acquired.
+    // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2).
+    // Swapchain image may be used as render target or as destination for copy command.
+    /// \todo Wait semaphore here.
+    /// \todo Clear render target to free uninitialized memory by clearing the render target.
+    m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
+  }
 }
 
 void xiiGALSwapChainVulkan::Present()
