@@ -29,6 +29,15 @@ xiiGALBuffer::xiiGALBuffer(xiiGALDevice* pDevice, const xiiGALBufferCreationDesc
 
 xiiGALBuffer::~xiiGALBuffer() = default;
 
+xiiGALBufferViewHandle xiiGALBuffer::GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType)
+{
+  XII_ASSERT_DEV(viewType > xiiGALBufferViewType::Undefined && viewType < xiiGALBufferViewType::ENUM_COUNT, "Invalid view type.");
+
+  XII_ASSERT_DEV(!m_DefaultBufferViews[viewType.GetValue()].IsInvalidated(), "Buffer view handle is invalid!");
+
+  return m_DefaultBufferViews[viewType.GetValue()];
+}
+
 void xiiGALBuffer::CreateDefaultResourceViews(xiiGALBufferHandle hBuffer)
 {
   // Cannot create default views for formatted buffers, since the view format is unknown at creation time.

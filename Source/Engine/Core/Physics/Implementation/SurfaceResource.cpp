@@ -28,6 +28,8 @@ xiiSurfaceResource::~xiiSurfaceResource()
 
 xiiResourceLoadDesc xiiSurfaceResource::UnloadData(Unload WhatToUnload)
 {
+  XII_IGNORE_UNUSED(WhatToUnload);
+
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
@@ -43,7 +45,7 @@ xiiResourceLoadDesc xiiSurfaceResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiSurfaceResource::UpdateContent(xiiStreamReader* Stream)
 {
-  XII_LOG_BLOCK("xiiSurfaceResource::UpdateContent", GetResourceDescription().GetData());
+  XII_LOG_BLOCK("xiiSurfaceResource::UpdateContent", GetResourceIdOrDescription());
 
   m_Interactions.Clear();
 
@@ -62,7 +64,6 @@ xiiResourceLoadDesc xiiSurfaceResource::UpdateContent(xiiStreamReader* Stream)
     xiiStringBuilder sAbsFilePath;
     (*Stream) >> sAbsFilePath;
   }
-
 
   xiiAssetFileHeader AssetHash;
   AssetHash.Read(*Stream).IgnoreResult();
@@ -201,7 +202,6 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
     case xiiSurfaceInteractionAlignment::ReverseIncidentDirection:
       vDir = vIncomingDirection;
-      ;
       break;
 
     case xiiSurfaceInteractionAlignment::ReverseReflectedDirection:
@@ -260,7 +260,6 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
     vDir = matTilt * vDir;
   }
-
 
   // finally compute the bi-tangent
   const xiiVec3 vBiTangent = vDir.CrossRH(vTangent);
@@ -340,6 +339,5 @@ bool xiiSurfaceResource::IsBasedOn(const xiiSurfaceResourceHandle hThisOrBaseSur
 
   return IsBasedOn(pThisOrBaseSurface.GetPointer());
 }
-
 
 XII_STATICLINK_FILE(Core, Core_Physics_Implementation_SurfaceResource);

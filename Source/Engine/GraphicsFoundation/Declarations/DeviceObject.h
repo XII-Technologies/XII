@@ -13,14 +13,13 @@ public:
   /// \brief Returns the xiiGALDevice that created this resource.
   ///
   /// \note This does **not** increase the ref count on the device.
-  [[nodiscard]] xiiGALDevice* GetDevice() const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDevice* GetDevice() const { return m_pDevice; };
 
 protected:
   friend class xiiGALDevice;
 
   xiiGALDeviceObject(xiiGALDevice* pDevice);
 
-  xiiGALDevice* m_pDevice = nullptr;
+protected:
+  xiiGALDevice* m_pDevice;
 };
-
-#include <GraphicsFoundation/Declarations/Implementation/DeviceObject_inl.h>

@@ -62,3 +62,5 @@ void xiiScriptExtensionClass_Log::Error(xiiStringView sText, const xiiVariantArr
   xiiStringBuilder sStorage;
   xiiLog::Error(BuildFormattedText(sText, params, sStorage));
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_ScriptClasses_Implementation_ScriptExtensionClass_Log);

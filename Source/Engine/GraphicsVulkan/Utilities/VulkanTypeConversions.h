@@ -6,15 +6,6 @@
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-#include <vulkan/vulkan.hpp>
-
-// Some of the functionality we need has moved from vulkan.hpp to vulkan_format_traits.hpp in later versions of the Vulkan SDK.
-#if __has_include(<vulkan/vulkan_format_traits.hpp>)
-#  include <vulkan/vulkan_format_traits.hpp>
-#endif
-
-XII_DEFINE_AS_POD_TYPE(vk::PresentModeKHR);
-
 class XII_GRAPHICSVULKAN_DLL xiiVulkanTypeConversions
 {
 public:
@@ -32,17 +23,31 @@ public:
     return static_cast<typename T::MaskType>(value);
   }
 
-  static vk::BlendOp     GetBlendOp(xiiEnum<xiiGALBlendOperation> e);
-  static vk::BlendFactor GetBlendFactor(xiiEnum<xiiGALBlendFactor> e);
-  static vk::LogicOp     GetLogicOp(xiiEnum<xiiGALLogicOperation> e);
+  static vk::BlendOp     GetBlendOp(xiiGALBlendOperation::Enum e);
+  static vk::BlendFactor GetBlendFactor(xiiGALBlendFactor::Enum e);
+  static vk::LogicOp     GetLogicOp(xiiGALLogicOperation::Enum e);
 
-  static vk::CompareOp GetCompareOp(xiiEnum<xiiGALComparisonFunction> e);
-  static vk::StencilOp GetStencilOp(xiiEnum<xiiGALStencilOperation> e);
+  static vk::CompareOp GetCompareOp(xiiGALComparisonFunction::Enum e);
+  static vk::StencilOp GetStencilOp(xiiGALStencilOperation::Enum e);
 
-  static vk::PolygonMode      GetPolygonMode(xiiEnum<xiiGALFillMode> e);
-  static vk::CullModeFlagBits GetCullMode(xiiEnum<xiiGALCullMode> e);
+  static vk::PolygonMode      GetPolygonMode(xiiGALFillMode::Enum e);
+  static vk::CullModeFlagBits GetCullMode(xiiGALCullMode::Enum e);
 
   static vk::ColorComponentFlags GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
+
+  static vk::Format                GetFormat(xiiGALTextureFormat::Enum e);
+  static xiiGALTextureFormat::Enum GetGALFormat(vk::Format e);
+
+  static vk::ShaderStageFlags          GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e);
+  static xiiBitflags<xiiGALShaderType> GetGALShaderStageFlags(vk::ShaderStageFlags e);
+
+  static vk::Extent2D                        ShadingRateToFragmentSize(xiiBitflags<xiiGALShadingRateFlags> e);
+  static xiiBitflags<xiiGALShadingRateFlags> FragmentSizeToShadingRate(vk::Extent2D e);
+
+  static xiiBitflags<xiiGALCommandQueueType> GetGALCommandQueueType(vk::QueueFlags e);
+
+  static vk::SurfaceTransformFlagsKHR GetSurfaceTransform(xiiGALSurfaceTransform::Enum e);
+  static xiiGALSurfaceTransform::Enum GetGALSurfaceTransform(vk::SurfaceTransformFlagsKHR e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

@@ -61,6 +61,11 @@ xiiWindWorldModuleInterface::xiiWindWorldModuleInterface(xiiWorld* pWorld) :
 {
 }
 
+xiiSimdVec4f xiiWindWorldModuleInterface::GetWindAtSimd(const xiiSimdVec4f& vPosition) const
+{
+  return xiiSimdConversion::ToVec3(GetWindAt(xiiSimdConversion::ToVec3(vPosition)));
+}
+
 xiiVec3 xiiWindWorldModuleInterface::ComputeWindFlutter(const xiiVec3& vWind, const xiiVec3& vObjectDir, float fFlutterSpeed, xiiUInt32 uiFlutterRandomOffset) const
 {
   if (vWind.IsZero(0.001f))

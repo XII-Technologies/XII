@@ -113,5 +113,4 @@ xiiInt32 xiiDuktapeFunction::ReturnCustom()
 
 #endif
 
-
 XII_STATICLINK_FILE(Core, Core_Scripting_Duktape_DuktapeFunction);

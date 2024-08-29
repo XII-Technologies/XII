@@ -38,9 +38,7 @@ void xiiLuaWrapper::Clear()
 
 xiiResult xiiLuaWrapper::ExecuteString(const char* szString, const char* szDebugChunkName, xiiLogInterface* pLogInterface) const
 {
-  XII_ASSERT_DEV(m_States.m_iLuaReturnValues == 0,
-                 "xiiLuaWrapper::ExecuteString: You didn't discard the return-values of the previous script call. {0} Return-values were expected.",
-                 m_States.m_iLuaReturnValues);
+  XII_ASSERT_DEV(m_States.m_iLuaReturnValues == 0, "xiiLuaWrapper::ExecuteString: You didn't discard the return-values of the previous script call. {0} Return-values were expected.", m_States.m_iLuaReturnValues);
 
   if (!pLogInterface)
     pLogInterface = xiiLog::GetThreadLocalLogSystem();
@@ -74,6 +72,8 @@ xiiResult xiiLuaWrapper::ExecuteString(const char* szString, const char* szDebug
 
 void* xiiLuaWrapper::lua_allocator(void* ud, void* ptr, size_t osize, size_t nsize)
 {
+  XII_IGNORE_UNUSED(ud);
+
   /// \todo Create optimized allocator.
 
   if (nsize == 0)

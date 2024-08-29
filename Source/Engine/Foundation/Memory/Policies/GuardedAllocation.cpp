@@ -3,9 +3,9 @@
 #include <Foundation/Memory/Policies/GuardedAllocation.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Memory/Policies/Win/GuardedAllocation_win.h>
+#  include <Foundation/Platform/Implementation/Windows/GuardedAllocation_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Memory/Policies/Posix/GuardedAllocation_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/GuardedAllocation_posix.h>
 #else
 #  error "xiiGuardedAllocation is not implemented on current platform"
 #endif

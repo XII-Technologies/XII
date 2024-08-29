@@ -143,6 +143,34 @@ struct xiiComponentHandle
   friend class xiiComponent;
 };
 
+/// \brief A typed handle to a component.
+///
+/// This should be preferred if the component type to be stored inside the handle is known, as it provides
+/// compile time checks against wrong usages (e.g. assigning unrelated types) and more clearly conveys intent.
+///
+/// See struct \see xiiComponentHandle for more information about general component handle usage.
+template <typename TYPE>
+struct xiiTypedComponentHandle : public xiiComponentHandle
+{
+  xiiTypedComponentHandle() = default;
+  explicit xiiTypedComponentHandle(const xiiComponentHandle& hUntyped)
+  {
+    m_InternalId = hUntyped.GetInternalID();
+  }
+
+  template <typename T, std::enable_if_t<std::is_convertible_v<T*, TYPE*>, bool> = true>
+  explicit xiiTypedComponentHandle(const xiiTypedComponentHandle<T>& other) :
+    xiiTypedComponentHandle(static_cast<const xiiComponentHandle&>(other))
+  {
+  }
+
+  template <typename T, std::enable_if_t<std::is_convertible_v<T*, TYPE*>, bool> = true>
+  XII_ALWAYS_INLINE void operator=(const xiiTypedComponentHandle<T>& other)
+  {
+    xiiComponentHandle::operator=(other);
+  }
+};
+
 /// \brief HashHelper implementation so component handles can be used as key in a hashtable.
 template <>
 struct xiiHashHelper<xiiComponentHandle>
@@ -287,9 +315,9 @@ struct XII_CORE_DLL xiiOnComponentFinishedAction
 
   enum Enum : StorageType
   {
-    None,
-    DeleteComponent,
-    DeleteGameObject,
+    None,             ///< Nothing happens after the action is finished.
+    DeleteComponent,  ///< The component deletes only itself, but its game object stays.
+    DeleteGameObject, ///< When finished the component deletes its owner game object. If there are multiple objects with this mode, the component instead deletes itself, and only the last such component deletes the game object.
 
     Default = None
   };
@@ -320,10 +348,10 @@ struct XII_CORE_DLL xiiOnComponentFinishedAction2
 
   enum Enum
   {
-    None,
-    DeleteComponent,
-    DeleteGameObject,
-    Restart,
+    None,             ///< Nothing happens after the action is finished.
+    DeleteComponent,  ///< The component deletes only itself, but its game object stays.
+    DeleteGameObject, ///< When finished the component deletes its owner game object. If there are multiple objects with this mode, the component instead deletes itself, and only the last such component deletes the game object.
+    Restart,          ///< When finished, restart from the beginning.
 
     Default = None
   };

@@ -6,11 +6,11 @@
 #include <Foundation/Logging/Log.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Configuration/Implementation/Win/Plugin_Win.h>
+#  include <Foundation/Platform/Implementation/Windows/Plugin_Win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/Configuration/Implementation/Posix/Plugin_Posix.h>
+#  include <Foundation/Platform/Implementation/Posix/Plugin_Posix.h>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Configuration/Implementation/Android/Plugin_Android.h>
+#  include <Foundation/Platform/Implementation/Android/Plugin_Android.h>
 #else
 #  error "Plugins not implemented on this Platform."
 #endif

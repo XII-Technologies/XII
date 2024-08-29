@@ -46,7 +46,7 @@ public:
   /// \brief Allows to specify a different coordinate system in which the camera input and output coordinates are given.
   ///
   /// The default in z is forward = PositiveX, right = PositiveY, Up = PositiveZ.
-  void SetCoordinateSystem(xiiBasisAxis::Enum forwardAxis, xiiBasisAxis::Enum rightAxis, xiiBasisAxis::Enum upAxis);
+  void SetCoordinateSystem(xiiBasisAxis::Enum forwardAxis, xiiBasisAxis::Enum rightAxis, xiiBasisAxis::Enum axis);
 
   /// \brief Allows to specify a full xiiCoordinateSystemProvider to determine forward/right/up vectors for camera movement
   void SetCoordinateSystem(const xiiSharedPtr<xiiCoordinateSystemProvider>& pProvider);
@@ -158,13 +158,13 @@ public:
   ///
   /// Rotate around \a rightAxis for looking up/down. \forwardAxis is roll. For turning left/right use RotateGlobally().
   /// Not supported for stereo cameras.
-  void RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle upAxis);
+  void RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle axis);
 
   /// \brief Rotates the camera around the forward, right and up axis of the coordinate system in global space.
   ///
   /// Rotate around Z for turning the camera left/right.
   /// Not supported for stereo cameras.
-  void RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle upAxis);
+  void RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle axis);
 
   /// \brief Returns the view matrix for the given eye.
   ///
@@ -195,7 +195,7 @@ public:
 
 private:
   /// \brief This function is called whenever the camera position or rotation changed.
-  void CameraOrientationChanged(bool bPosition, bool bRotation) { ++m_uiOrientationModificationCounter; }
+  void CameraOrientationChanged() { ++m_uiOrientationModificationCounter; }
 
   /// \brief This function is called when the camera mode or projection changes (e.g. SetCameraProjectionAndMode was called).
   void CameraSettingsChanged();

@@ -84,7 +84,7 @@ void xiiGeometry::AddPolygon(const xiiArrayPtr<xiiUInt32>& vertices, bool bFlipW
 
   for (xiiUInt32 v = 0; v < vertices.GetCount(); ++v)
   {
-    XII_ASSERT_DEV(vertices[v] < m_Vertices.GetCount(), "Invalid vertex index {0}, geometry only has {1} vertices", vertices[v], m_Vertices.GetCount());
+    XII_ASSERT_DEBUG(vertices[v] < m_Vertices.GetCount(), "Invalid vertex index {0}, geometry only has {1} vertices", vertices[v], m_Vertices.GetCount());
   }
 
   m_Polygons.ExpandAndGetRef().m_Vertices = vertices;
@@ -110,7 +110,6 @@ void xiiGeometry::AddLine(xiiUInt32 uiStartVertex, xiiUInt32 uiEndVertex)
 
 void xiiGeometry::TriangulatePolygons(xiiUInt32 uiMaxVerticesInPolygon /*= 3*/)
 {
-  XII_ASSERT_DEV(uiMaxVerticesInPolygon >= 3, "Can't triangulate polygons that are already triangles.");
   uiMaxVerticesInPolygon = xiiMath::Max<xiiUInt32>(uiMaxVerticesInPolygon, 3);
 
   const xiiUInt32 uiNumPolys = m_Polygons.GetCount();
@@ -244,8 +243,14 @@ struct TangentContext
 
   static void setTSpace(const SMikkTSpaceContext* pContext, const float pTangent[], const float pBiTangent[], const float fMagS, const float fMagT, const tbool isOrientationPreserving, const int iFace, const int iVert)
   {
-    int i = 0;
-    (void)i;
+    XII_IGNORE_UNUSED(pContext);
+    XII_IGNORE_UNUSED(pTangent);
+    XII_IGNORE_UNUSED(pBiTangent);
+    XII_IGNORE_UNUSED(fMagS);
+    XII_IGNORE_UNUSED(fMagT);
+    XII_IGNORE_UNUSED(isOrientationPreserving);
+    XII_IGNORE_UNUSED(iFace);
+    XII_IGNORE_UNUSED(iVert);
   }
 
   xiiGeometry*                           m_pGeom;
@@ -383,7 +388,7 @@ void xiiGeometry::Merge(const xiiGeometry& other)
   }
 }
 
-void xiiGeometry::AddRectXY(const xiiVec2& vSize, xiiUInt32 uiTesselationX, xiiUInt32 uiTesselationY, const GeoOptions& options)
+void xiiGeometry::AddRect(const xiiVec2& vSize, xiiUInt32 uiTesselationX, xiiUInt32 uiTesselationY, const GeoOptions& options)
 {
   if (uiTesselationX == 0)
     uiTesselationX = 1;
@@ -393,6 +398,8 @@ void xiiGeometry::AddRectXY(const xiiVec2& vSize, xiiUInt32 uiTesselationX, xiiU
   const xiiVec2 halfSize     = vSize * 0.5f;
   const bool    bFlipWinding = options.IsFlipWindingNecessary();
 
+  const xiiQuat mainDir = xiiBasisAxis::GetBasisRotation(xiiBasisAxis::PositiveZ, options.m_MainAxis);
+
   const xiiVec2 sizeFraction = vSize.CompDiv(xiiVec2(static_cast<float>(uiTesselationX), static_cast<float>(uiTesselationY)));
 
   for (xiiUInt32 vy = 0; vy < uiTesselationY + 1; ++vy)
@@ -401,7 +408,7 @@ void xiiGeometry::AddRectXY(const xiiVec2& vSize, xiiUInt32 uiTesselationX, xiiU
     {
       const xiiVec2 tc((float)vx / (float)uiTesselationX, (float)vy / (float)uiTesselationY);
 
-      AddVertex(xiiVec3(-halfSize.x + vx * sizeFraction.x, -halfSize.y + vy * sizeFraction.y, 0), xiiVec3(0, 0, 1), tc, options);
+      AddVertex(options, mainDir * xiiVec3(-halfSize.x + vx * sizeFraction.x, -halfSize.y + vy * sizeFraction.y, 0), mainDir * xiiVec3(0, 0, 1), tc);
     }
   }
 
@@ -438,50 +445,50 @@ void xiiGeometry::AddBox(const xiiVec3& vFullExtents, bool bExtraVerticesForText
     xiiUInt32 idx[4];
 
     {
-      idx[0] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0, 1), options);
-      idx[1] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0, 0), options);
-      idx[2] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, 0, 1), xiiVec2(1, 0), options);
-      idx[3] = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, 0, 1), xiiVec2(1, 1), options);
+      idx[0] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0, 1));
+      idx[1] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0, 0));
+      idx[2] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, 0, 1), xiiVec2(1, 0));
+      idx[3] = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, 0, 1), xiiVec2(1, 1));
       AddPolygon(idx, bFlipWinding);
     }
 
     {
-      idx[0] = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(1, 0), options);
-      idx[1] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(1, 1), options);
-      idx[2] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0, 1), options);
-      idx[3] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0, 0), options);
+      idx[0] = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(1, 0));
+      idx[1] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(1, 1));
+      idx[2] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0, 1));
+      idx[3] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0, 0));
       AddPolygon(idx, bFlipWinding);
     }
 
     {
-      idx[0] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(-1, 0, 0), xiiVec2(0, 1), options);
-      idx[1] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(-1, 0, 0), xiiVec2(0, 0), options);
-      idx[2] = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(-1, 0, 0), xiiVec2(1, 0), options);
-      idx[3] = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(-1, 0, 0), xiiVec2(1, 1), options);
+      idx[0] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(-1, 0, 0), xiiVec2(0, 1));
+      idx[1] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(-1, 0, 0), xiiVec2(0, 0));
+      idx[2] = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(-1, 0, 0), xiiVec2(1, 0));
+      idx[3] = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(-1, 0, 0), xiiVec2(1, 1));
       AddPolygon(idx, bFlipWinding);
     }
 
     {
-      idx[0] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(1, 0, 0), xiiVec2(0, 1), options);
-      idx[1] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(1, 0, 0), xiiVec2(0, 0), options);
-      idx[2] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(1, 0, 0), xiiVec2(1, 0), options);
-      idx[3] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(1, 0, 0), xiiVec2(1, 1), options);
+      idx[0] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(1, 0, 0), xiiVec2(0, 1));
+      idx[1] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(1, 0, 0), xiiVec2(0, 0));
+      idx[2] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(1, 0, 0), xiiVec2(1, 0));
+      idx[3] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(1, 0, 0), xiiVec2(1, 1));
       AddPolygon(idx, bFlipWinding);
     }
 
     {
-      idx[0] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, -1, 0), xiiVec2(0, 1), options);
-      idx[1] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, -1, 0), xiiVec2(0, 0), options);
-      idx[2] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, -1, 0), xiiVec2(1, 0), options);
-      idx[3] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, -1, 0), xiiVec2(1, 1), options);
+      idx[0] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, -1, 0), xiiVec2(0, 1));
+      idx[1] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, -1, 0), xiiVec2(0, 0));
+      idx[2] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, -1, 0), xiiVec2(1, 0));
+      idx[3] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, -1, 0), xiiVec2(1, 1));
       AddPolygon(idx, bFlipWinding);
     }
 
     {
-      idx[0] = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, +1, 0), xiiVec2(0, 1), options);
-      idx[1] = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, +1, 0), xiiVec2(0, 0), options);
-      idx[2] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, +1, 0), xiiVec2(1, 0), options);
-      idx[3] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, +1, 0), xiiVec2(1, 1), options);
+      idx[0] = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, +1, 0), xiiVec2(0, 1));
+      idx[1] = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, +1, 0), xiiVec2(0, 0));
+      idx[2] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, +1, 0), xiiVec2(1, 0));
+      idx[3] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, +1, 0), xiiVec2(1, 1));
       AddPolygon(idx, bFlipWinding);
     }
   }
@@ -489,15 +496,15 @@ void xiiGeometry::AddBox(const xiiVec3& vFullExtents, bool bExtraVerticesForText
   {
     xiiUInt32 idx[8];
 
-    idx[0] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-    idx[1] = AddVertex(xiiVec3(halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-    idx[2] = AddVertex(xiiVec3(halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-    idx[3] = AddVertex(xiiVec3(-halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
+    idx[0] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+    idx[1] = AddVertex(options, xiiVec3(halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+    idx[2] = AddVertex(options, xiiVec3(halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+    idx[3] = AddVertex(options, xiiVec3(-halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
 
-    idx[4] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-    idx[5] = AddVertex(xiiVec3(halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-    idx[6] = AddVertex(xiiVec3(halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-    idx[7] = AddVertex(xiiVec3(-halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
+    idx[4] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+    idx[5] = AddVertex(options, xiiVec3(halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+    idx[6] = AddVertex(options, xiiVec3(halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+    idx[7] = AddVertex(options, xiiVec3(-halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
 
     xiiUInt32 poly[4];
 
@@ -543,15 +550,15 @@ void xiiGeometry::AddLineBox(const xiiVec3& vSize, const GeoOptions& options)
 {
   const xiiVec3 halfSize = vSize * 0.5f;
 
-  AddVertex(xiiVec3(-halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-  AddVertex(xiiVec3(halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-  AddVertex(xiiVec3(halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-  AddVertex(xiiVec3(-halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
+  AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+  AddVertex(options, xiiVec3(halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+  AddVertex(options, xiiVec3(halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+  AddVertex(options, xiiVec3(-halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
 
-  AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-  AddVertex(xiiVec3(halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-  AddVertex(xiiVec3(halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-  AddVertex(xiiVec3(-halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
+  AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+  AddVertex(options, xiiVec3(halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+  AddVertex(options, xiiVec3(halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+  AddVertex(options, xiiVec3(-halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
 
   AddLine(0, 1);
   AddLine(1, 2);
@@ -571,20 +578,19 @@ void xiiGeometry::AddLineBox(const xiiVec3& vSize, const GeoOptions& options)
 
 void xiiGeometry::AddLineBoxCorners(const xiiVec3& vSize, float fCornerFraction, const GeoOptions& options)
 {
-  XII_ASSERT_DEV(fCornerFraction >= 0.0f && fCornerFraction <= 1.0f, "A fraction value of {0} is invalid", xiiArgF(fCornerFraction, 2));
-
+  fCornerFraction = xiiMath::Clamp(fCornerFraction, 0.0f, 1.0f);
   fCornerFraction *= 0.5f;
   const xiiVec3 halfSize = vSize * 0.5f;
 
-  AddVertex(xiiVec3(-halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-  AddVertex(xiiVec3(halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-  AddVertex(xiiVec3(halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
-  AddVertex(xiiVec3(-halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
+  AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+  AddVertex(options, xiiVec3(halfSize.x, -halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+  AddVertex(options, xiiVec3(halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
+  AddVertex(options, xiiVec3(-halfSize.x, halfSize.y, halfSize.z), xiiVec3(0, 0, 1), xiiVec2(0));
 
-  AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-  AddVertex(xiiVec3(halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-  AddVertex(xiiVec3(halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
-  AddVertex(xiiVec3(-halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0), options);
+  AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+  AddVertex(options, xiiVec3(halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+  AddVertex(options, xiiVec3(halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
+  AddVertex(options, xiiVec3(-halfSize.x, halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0));
 
   for (xiiUInt32 c = 0; c < 8; ++c)
   {
@@ -594,9 +600,9 @@ void xiiGeometry::AddLineBoxCorners(const xiiVec3& vSize, float fCornerFraction,
     const xiiVec3 op2 = xiiVec3(op.x, -xiiMath::Sign(op.y) * xiiMath::Abs(op.y), op.z);
     const xiiVec3 op3 = xiiVec3(-xiiMath::Sign(op.x) * xiiMath::Abs(op.x), op.y, op.z);
 
-    const xiiUInt32 ix1 = AddVertex(xiiMath::Lerp(op, op1, fCornerFraction), m_Vertices[c].m_vPosition, m_Vertices[c].m_vTexCoord, options);
-    const xiiUInt32 ix2 = AddVertex(xiiMath::Lerp(op, op2, fCornerFraction), m_Vertices[c].m_vPosition, m_Vertices[c].m_vTexCoord, options);
-    const xiiUInt32 ix3 = AddVertex(xiiMath::Lerp(op, op3, fCornerFraction), m_Vertices[c].m_vPosition, m_Vertices[c].m_vTexCoord, options);
+    const xiiUInt32 ix1 = AddVertex(options, xiiMath::Lerp(op, op1, fCornerFraction), m_Vertices[c].m_vPosition, m_Vertices[c].m_vTexCoord);
+    const xiiUInt32 ix2 = AddVertex(options, xiiMath::Lerp(op, op2, fCornerFraction), m_Vertices[c].m_vPosition, m_Vertices[c].m_vTexCoord);
+    const xiiUInt32 ix3 = AddVertex(options, xiiMath::Lerp(op, op3, fCornerFraction), m_Vertices[c].m_vPosition, m_Vertices[c].m_vTexCoord);
 
     AddLine(c, ix1);
     AddLine(c, ix2);
@@ -604,18 +610,21 @@ void xiiGeometry::AddLineBoxCorners(const xiiVec3& vSize, float fCornerFraction,
   }
 }
 
-void xiiGeometry::AddPyramid(const xiiVec3& vSize, bool bCap, const GeoOptions& options)
+void xiiGeometry::AddPyramid(float fBaseSize, float fHeight, bool bCap, const GeoOptions& options)
 {
-  const xiiVec3 halfSize     = vSize * 0.5f;
-  const bool    bFlipWinding = options.IsFlipWindingNecessary();
-  xiiUInt32     quad[4];
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
 
-  quad[0] = AddVertex(xiiVec3(-halfSize.x, halfSize.y, 0), xiiVec3(-1, 1, 0).GetNormalized(), xiiVec2(0), options);
-  quad[1] = AddVertex(xiiVec3(halfSize.x, halfSize.y, 0), xiiVec3(1, 1, 0).GetNormalized(), xiiVec2(0), options);
-  quad[2] = AddVertex(xiiVec3(halfSize.x, -halfSize.y, 0), xiiVec3(1, -1, 0).GetNormalized(), xiiVec2(0), options);
-  quad[3] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, 0), xiiVec3(-1, -1, 0).GetNormalized(), xiiVec2(0), options);
+  const float halfSize     = fBaseSize * 0.5f;
+  const bool  bFlipWinding = options.IsFlipWindingNecessary();
+  xiiUInt32   quad[4];
 
-  const xiiUInt32 tip = AddVertex(xiiVec3(0, 0, vSize.z), xiiVec3(0, 0, 1), xiiVec2(0), options);
+  quad[0] = AddVertex(trans, options, xiiVec3(-halfSize, halfSize, 0), xiiVec3(-1, 1, 0).GetNormalized(), xiiVec2(0));
+  quad[1] = AddVertex(trans, options, xiiVec3(halfSize, halfSize, 0), xiiVec3(1, 1, 0).GetNormalized(), xiiVec2(0));
+  quad[2] = AddVertex(trans, options, xiiVec3(halfSize, -halfSize, 0), xiiVec3(1, -1, 0).GetNormalized(), xiiVec2(0));
+  quad[3] = AddVertex(trans, options, xiiVec3(-halfSize, -halfSize, 0), xiiVec3(-1, -1, 0).GetNormalized(), xiiVec2(0));
+
+  const xiiUInt32 tip = AddVertex(trans, options, xiiVec3(0, 0, fHeight), xiiVec3(0, 0, 1), xiiVec2(0));
 
   if (bCap)
   {
@@ -808,11 +817,8 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
 
 void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options, xiiAngle fraction /*= xiiAngle::MakeFromDegree(360.0f)*/)
 {
-  XII_ASSERT_DEV(uiSegments >= 3, "Cannot create a cylinder with only {0} segments", uiSegments);
-  XII_ASSERT_DEV(fraction.GetDegree() >= -0.01f, "A cylinder cannot be built with more less than 0 degree");
-  XII_ASSERT_DEV(fraction.GetDegree() <= 360.01f, "A cylinder cannot be built with more than 360 degree");
-
-  fraction = xiiMath::Clamp(fraction, xiiAngle(), xiiAngle::MakeFromDegree(360.0f));
+  uiSegments = xiiMath::Max<xiiUInt16>(uiSegments, 3u);
+  fraction   = xiiMath::Clamp(fraction, xiiAngle(), xiiAngle::MakeFromDegree(360.0f));
 
   const bool     bFlipWinding = options.IsFlipWindingNecessary();
   const bool     bIsFraction  = fraction.GetDegree() < 360.0f;
@@ -820,6 +826,9 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
   const xiiVec3 vTopCenter(0, 0, fPositiveLength);
   const xiiVec3 vBottomCenter(0, 0, -fNegativeLength);
+
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
 
   // cylinder wall
   {
@@ -837,8 +846,8 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
       const xiiVec3 vDir(fX, fY, 0);
 
-      VertsTop.PushBack(AddVertex(vTopCenter + vDir * fRadiusTop, vDir, xiiVec2(fU, 0), options));
-      VertsBottom.PushBack(AddVertex(vBottomCenter + vDir * fRadiusBottom, vDir, xiiVec2(fU, 1), options));
+      VertsTop.PushBack(AddVertex(trans, options, vTopCenter + vDir * fRadiusTop, vDir, xiiVec2(fU, 0)));
+      VertsBottom.PushBack(AddVertex(trans, options, vBottomCenter + vDir * fRadiusBottom, vDir, xiiVec2(fU, 1)));
     }
 
     for (xiiUInt32 i = 1; i <= uiSegments; ++i)
@@ -863,19 +872,19 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
     xiiUInt32 quad[4];
 
     const xiiVec3 vNrm0 = -xiiVec3(0, 0, 1).CrossRH(vDir0).GetNormalized();
-    quad[0]             = AddVertex(vTopCenter + vDir0 * fRadiusTop, vNrm0, xiiVec2(0, 0), options);
-    quad[1]             = AddVertex(vTopCenter, vNrm0, xiiVec2(1, 0), options);
-    quad[2]             = AddVertex(vBottomCenter, vNrm0, xiiVec2(1, 1), options);
-    quad[3]             = AddVertex(vBottomCenter + vDir0 * fRadiusBottom, vNrm0, xiiVec2(0, 1), options);
+    quad[0]             = AddVertex(trans, options, vTopCenter + vDir0 * fRadiusTop, vNrm0, xiiVec2(0, 0));
+    quad[1]             = AddVertex(trans, options, vTopCenter, vNrm0, xiiVec2(1, 0));
+    quad[2]             = AddVertex(trans, options, vBottomCenter, vNrm0, xiiVec2(1, 1));
+    quad[3]             = AddVertex(trans, options, vBottomCenter + vDir0 * fRadiusBottom, vNrm0, xiiVec2(0, 1));
 
 
     AddPolygon(quad, bFlipWinding);
 
     const xiiVec3 vNrm1 = xiiVec3(0, 0, 1).CrossRH(vDir1).GetNormalized();
-    quad[0]             = AddVertex(vTopCenter, vNrm1, xiiVec2(0, 0), options);
-    quad[1]             = AddVertex(vTopCenter + vDir1 * fRadiusTop, vNrm1, xiiVec2(1, 0), options);
-    quad[2]             = AddVertex(vBottomCenter + vDir1 * fRadiusBottom, vNrm1, xiiVec2(1, 1), options);
-    quad[3]             = AddVertex(vBottomCenter, vNrm1, xiiVec2(0, 1), options);
+    quad[0]             = AddVertex(trans, options, vTopCenter, vNrm1, xiiVec2(0, 0));
+    quad[1]             = AddVertex(trans, options, vTopCenter + vDir1 * fRadiusTop, vNrm1, xiiVec2(1, 0));
+    quad[2]             = AddVertex(trans, options, vBottomCenter + vDir1 * fRadiusBottom, vNrm1, xiiVec2(1, 1));
+    quad[3]             = AddVertex(trans, options, vBottomCenter, vNrm1, xiiVec2(0, 1));
 
     AddPolygon(quad, bFlipWinding);
   }
@@ -886,7 +895,7 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
     if (bIsFraction)
     {
-      const xiiUInt32 uiCenterVtx = AddVertex(vBottomCenter, xiiVec3(0, 0, -1), xiiVec2(0), options);
+      const xiiUInt32 uiCenterVtx = AddVertex(trans, options, vBottomCenter, xiiVec3(0, 0, -1), xiiVec2(0));
 
       for (xiiInt32 i = uiSegments; i >= 0; --i)
       {
@@ -897,7 +906,7 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
         const xiiVec3 vDir(fX, fY, 0);
 
-        AddVertex(vBottomCenter + vDir * fRadiusBottom, xiiVec3(0, 0, -1), xiiVec2(fY, fX), options);
+        AddVertex(trans, options, vBottomCenter + vDir * fRadiusBottom, xiiVec3(0, 0, -1), xiiVec2(fY, fX));
       }
 
       VertsBottom.SetCountUninitialized(3);
@@ -922,7 +931,7 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
         const xiiVec3 vDir(fX, fY, 0);
 
-        VertsBottom.PushBack(AddVertex(vBottomCenter + vDir * fRadiusBottom, xiiVec3(0, 0, -1), xiiVec2(fY, fX), options));
+        VertsBottom.PushBack(AddVertex(trans, options, vBottomCenter + vDir * fRadiusBottom, xiiVec3(0, 0, -1), xiiVec2(fY, fX)));
       }
 
       AddPolygon(VertsBottom, bFlipWinding);
@@ -935,7 +944,7 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
     if (bIsFraction)
     {
-      const xiiUInt32 uiCenterVtx = AddVertex(vTopCenter, xiiVec3(0, 0, 1), xiiVec2(0), options);
+      const xiiUInt32 uiCenterVtx = AddVertex(trans, options, vTopCenter, xiiVec3(0, 0, 1), xiiVec2(0));
 
       for (xiiInt32 i = 0; i <= uiSegments; ++i)
       {
@@ -946,7 +955,7 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
         const xiiVec3 vDir(fX, fY, 0);
 
-        AddVertex(vTopCenter + vDir * fRadiusTop, xiiVec3(0, 0, 1), xiiVec2(fY, -fX), options);
+        AddVertex(trans, options, vTopCenter + vDir * fRadiusTop, xiiVec3(0, 0, 1), xiiVec2(fY, -fX));
       }
 
       VertsTop.SetCountUninitialized(3);
@@ -971,7 +980,7 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
         const xiiVec3 vDir(fX, fY, 0);
 
-        VertsTop.PushBack(AddVertex(vTopCenter + vDir * fRadiusTop, xiiVec3(0, 0, 1), xiiVec2(fY, -fX), options));
+        VertsTop.PushBack(AddVertex(trans, options, vTopCenter + vDir * fRadiusTop, xiiVec3(0, 0, 1), xiiVec2(fY, -fX)));
       }
 
       AddPolygon(VertsTop, bFlipWinding);
@@ -981,10 +990,13 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
 void xiiGeometry::AddCylinderOnePiece(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, xiiUInt16 uiSegments, const GeoOptions& options)
 {
-  XII_ASSERT_DEV(uiSegments >= 3, "Cannot create a cylinder with only {0} segments", uiSegments);
+  uiSegments = xiiMath::Max<xiiUInt16>(uiSegments, 3u);
 
   const bool     bFlipWinding = options.IsFlipWindingNecessary();
   const xiiAngle fDegStep     = xiiAngle::MakeFromDegree(360.0f / uiSegments);
+
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
 
   const xiiVec3 vTopCenter(0, 0, fPositiveLength);
   const xiiVec3 vBottomCenter(0, 0, -fNegativeLength);
@@ -1005,8 +1017,8 @@ void xiiGeometry::AddCylinderOnePiece(float fRadiusTop, float fRadiusBottom, flo
 
       const xiiVec3 vDir(fX, fY, 0);
 
-      VertsTop.PushBack(AddVertex(vTopCenter + vDir * fRadiusTop, vDir, xiiVec2(fU, 0), options));
-      VertsBottom.PushBack(AddVertex(vBottomCenter + vDir * fRadiusBottom, vDir, xiiVec2(fU, 1), options));
+      VertsTop.PushBack(AddVertex(trans, options, vTopCenter + vDir * fRadiusTop, vDir, xiiVec2(fU, 0)));
+      VertsBottom.PushBack(AddVertex(trans, options, vBottomCenter + vDir * fRadiusBottom, vDir, xiiVec2(fU, 1)));
     }
 
     for (xiiUInt32 i = 1; i <= uiSegments; ++i)
@@ -1027,7 +1039,10 @@ void xiiGeometry::AddCylinderOnePiece(float fRadiusTop, float fRadiusBottom, flo
 
 void xiiGeometry::AddCone(float fRadius, float fHeight, bool bCap, xiiUInt16 uiSegments, const GeoOptions& options)
 {
-  XII_ASSERT_DEV(uiSegments >= 3, "Cannot create a cone with only {0} segments", uiSegments);
+  uiSegments = xiiMath::Max<xiiUInt16>(uiSegments, 3);
+
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
 
   const bool bFlipWinding = options.IsFlipWindingNecessary();
 
@@ -1035,7 +1050,7 @@ void xiiGeometry::AddCone(float fRadius, float fHeight, bool bCap, xiiUInt16 uiS
 
   const xiiAngle fDegStep = xiiAngle::MakeFromDegree(360.0f / uiSegments);
 
-  const xiiUInt32 uiTip = AddVertex(xiiVec3(0, 0, fHeight), xiiVec3(0, 0, 1), xiiVec2(0), options);
+  const xiiUInt32 uiTip = AddVertex(trans, options, xiiVec3(0, 0, fHeight), xiiVec3(0, 0, 1));
 
   for (xiiInt32 i = uiSegments - 1; i >= 0; --i)
   {
@@ -1043,7 +1058,7 @@ void xiiGeometry::AddCone(float fRadius, float fHeight, bool bCap, xiiUInt16 uiS
 
     xiiVec3 vDir(xiiMath::Cos(deg), xiiMath::Sin(deg), 0);
 
-    VertsBottom.PushBack(AddVertex(vDir * fRadius, vDir, xiiVec2(0), options));
+    VertsBottom.PushBack(AddVertex(trans, options, vDir * fRadius, vDir));
   }
 
   xiiUInt32 uiPrevSeg = uiSegments - 1;
@@ -1066,10 +1081,13 @@ void xiiGeometry::AddCone(float fRadius, float fHeight, bool bCap, xiiUInt16 uiS
   }
 }
 
-void xiiGeometry::AddSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 uiStacks, const GeoOptions& options)
+void xiiGeometry::AddStackedSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 uiStacks, const GeoOptions& options)
 {
-  XII_ASSERT_DEV(uiSegments >= 3, "Sphere must have at least 3 segments");
-  XII_ASSERT_DEV(uiStacks >= 2, "Sphere must have at least 2 stacks");
+  uiSegments = xiiMath::Max<xiiUInt16>(uiSegments, 3u);
+  uiStacks   = xiiMath::Max<xiiUInt16>(uiStacks, 2u);
+
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
 
   const bool     bFlipWinding        = options.IsFlipWindingNecessary();
   const xiiAngle fDegreeDiffSegments = xiiAngle::MakeFromDegree(360.0f / (float)(uiSegments));
@@ -1100,7 +1118,7 @@ void xiiGeometry::AddSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 uiSta
 
       xiiVec3 vNormal = vPos;
       vNormal.NormalizeIfNotZero(xiiVec3(0, 0, 1)).IgnoreResult();
-      AddVertex(vPos, vNormal, xiiVec2(fU, fV), options);
+      AddVertex(trans, options, vPos, vNormal, xiiVec2(fU, fV));
     }
   }
 
@@ -1112,7 +1130,7 @@ void xiiGeometry::AddSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 uiSta
   {
     float fU = ((p + 0.5f) / (float)(uiSegments)) * 2.0f;
 
-    tri[0] = AddVertex(xiiVec3(0, 0, fRadius), xiiVec3(0, 0, 1), xiiVec2(fU, 0), options);
+    tri[0] = AddVertex(trans, options, xiiVec3(0, 0, fRadius), xiiVec3(0, 0, 1), xiiVec2(fU, 0));
     tri[1] = uiFirstVertex + p + 1;
     tri[2] = uiFirstVertex + p;
 
@@ -1143,7 +1161,7 @@ void xiiGeometry::AddSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 uiSta
   {
     float fU = ((p + 0.5f) / (float)(uiSegments)) * 2.0f;
 
-    tri[0] = AddVertex(xiiVec3(0, 0, -fRadius), xiiVec3(0, 0, -1), xiiVec2(fU, 1), options);
+    tri[0] = AddVertex(trans, options, xiiVec3(0, 0, -fRadius), xiiVec3(0, 0, -1), xiiVec2(fU, 1));
     tri[1] = uiFirstVertex + (iTopStack + p);
     tri[2] = uiFirstVertex + (iTopStack + p + 1);
 
@@ -1153,8 +1171,11 @@ void xiiGeometry::AddSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 uiSta
 
 void xiiGeometry::AddHalfSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 uiStacks, bool bCap, const GeoOptions& options)
 {
-  XII_ASSERT_DEV(uiSegments >= 3, "Sphere must have at least 3 segments");
-  XII_ASSERT_DEV(uiStacks >= 1, "Sphere must have at least 1 stacks");
+  uiSegments = xiiMath::Max<xiiUInt16>(uiSegments, 3u);
+  uiStacks   = xiiMath::Max<xiiUInt16>(uiStacks, 1u);
+
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
 
   const bool     bFlipWinding        = options.IsFlipWindingNecessary();
   const xiiAngle fDegreeDiffSegments = xiiAngle::MakeFromDegree(360.0f / (float)(uiSegments));
@@ -1187,11 +1208,11 @@ void xiiGeometry::AddHalfSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 u
       vPos.y = xiiMath::Sin(fDegree) * fRadius * fCosDS;
       vPos.z = fY;
 
-      AddVertex(vPos, vPos.GetNormalized(), xiiVec2(fU, fV), options);
+      AddVertex(trans, options, vPos, vPos.GetNormalized(), xiiVec2(fU, fV));
     }
   }
 
-  xiiUInt32 uiTopVertex = AddVertex(xiiVec3(0, 0, fRadius), xiiVec3(0, 0, 1), xiiVec2(0.0f), options);
+  xiiUInt32 uiTopVertex = AddVertex(trans, options, xiiVec3(0, 0, fRadius), xiiVec3(0, 0, 1), xiiVec2(0.0f));
 
   xiiUInt32 tri[3];
   xiiUInt32 quad[4];
@@ -1237,9 +1258,12 @@ void xiiGeometry::AddHalfSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 u
 
 void xiiGeometry::AddCapsule(float fRadius, float fHeight, xiiUInt16 uiSegments, xiiUInt16 uiStacks, const GeoOptions& options)
 {
-  XII_ASSERT_DEV(uiSegments >= 3, "Capsule must have at least 3 segments");
-  XII_ASSERT_DEV(uiStacks >= 1, "Capsule must have at least 1 stacks");
-  XII_ASSERT_DEV(fHeight >= 0.0f, "Height must be positive");
+  uiSegments = xiiMath::Max<xiiUInt16>(uiSegments, 3u);
+  uiStacks   = xiiMath::Max<xiiUInt16>(uiStacks, 1u);
+  fHeight    = xiiMath::Max(fHeight, 0.0f);
+
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
 
   const bool     bFlipWinding      = options.IsFlipWindingNecessary();
   const xiiAngle fDegreeDiffStacks = xiiAngle::MakeFromDegree(90.0f / (float)(uiStacks));
@@ -1269,7 +1293,7 @@ void xiiGeometry::AddCapsule(float fRadius, float fHeight, xiiUInt16 uiSegments,
         vPos.z = fY + fOffset;
         vPos.y = xiiMath::Sin(fDegree) * fRadius * fCosDS;
 
-        AddVertex(vPos, vPos.GetNormalized(), xiiVec2(0), options);
+        AddVertex(trans, options, vPos, vPos.GetNormalized(), xiiVec2(0));
       }
     }
 
@@ -1291,13 +1315,13 @@ void xiiGeometry::AddCapsule(float fRadius, float fHeight, xiiUInt16 uiSegments,
         vPos.z = fY + fOffset;
         vPos.y = xiiMath::Sin(fDegree) * fRadius * fCosDS;
 
-        AddVertex(vPos, vPos.GetNormalized(), xiiVec2(0), options);
+        AddVertex(trans, options, vPos, vPos.GetNormalized(), xiiVec2(0));
       }
     }
   }
 
-  xiiUInt32 uiTopVertex    = AddVertex(xiiVec3(0, 0, fRadius + fHeight * 0.5f), xiiVec3(0, 0, 1), xiiVec2(0), options);
-  xiiUInt32 uiBottomVertex = AddVertex(xiiVec3(0, 0, -fRadius - fHeight * 0.5f), xiiVec3(0, 0, -1), xiiVec2(0), options);
+  xiiUInt32 uiTopVertex    = AddVertex(trans, options, xiiVec3(0, 0, fRadius + fHeight * 0.5f), xiiVec3(0, 0, 1), xiiVec2(0));
+  xiiUInt32 uiBottomVertex = AddVertex(trans, options, xiiVec3(0, 0, -fRadius - fHeight * 0.5f), xiiVec3(0, 0, -1), xiiVec2(0));
 
   xiiUInt32 tri[3];
   xiiUInt32 quad[4];
@@ -1345,9 +1369,12 @@ void xiiGeometry::AddCapsule(float fRadius, float fHeight, xiiUInt16 uiSegments,
 
 void xiiGeometry::AddTorus(float fInnerRadius, float fOuterRadius, xiiUInt16 uiSegments, xiiUInt16 uiSegmentDetail, bool bExtraVerticesForTexturing, const GeoOptions& options)
 {
-  XII_ASSERT_DEV(fInnerRadius < fOuterRadius, "Inner radius must be smaller than outer radius. Doh!");
-  XII_ASSERT_DEV(uiSegments >= 3, "Invalid number of segments.");
-  XII_ASSERT_DEV(uiSegmentDetail >= 3, "Invalid segment detail value.");
+  uiSegments      = xiiMath::Max<xiiUInt16>(uiSegments, 3u);
+  uiSegmentDetail = xiiMath::Max<xiiUInt16>(uiSegmentDetail, 3u);
+  fOuterRadius    = xiiMath::Max(fInnerRadius + 0.01f, fOuterRadius);
+
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
 
   const bool  bFlipWinding    = options.IsFlipWindingNecessary();
   const float fCylinderRadius = (fOuterRadius - fInnerRadius) * 0.5f;
@@ -1384,7 +1411,7 @@ void xiiGeometry::AddTorus(float fInnerRadius, float fOuterRadius, xiiUInt16 uiS
 
       const xiiVec3 vPos = vLoopPos + fCylinderRadius * vDir;
 
-      AddVertex(vPos, vDir, xiiVec2(fU, fV), options.m_Color, options.m_uiBoneIndex, options.m_Transform);
+      AddVertex(trans, options, vPos, vDir, xiiVec2(fU, fV));
     }
   }
 
@@ -1453,40 +1480,40 @@ void xiiGeometry::AddTexturedRamp(const xiiVec3& vSize, const GeoOptions& option
 
   {
     xiiVec3 vNormal = xiiVec3(-halfSize.z, 0, halfSize.x).GetNormalized();
-    idx[0]          = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), vNormal, xiiVec2(0, 1), options);
-    idx[1]          = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), vNormal, xiiVec2(0, 0), options);
-    idx[2]          = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), vNormal, xiiVec2(1, 0), options);
-    idx[3]          = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), vNormal, xiiVec2(1, 1), options);
+    idx[0]          = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), vNormal, xiiVec2(0, 1));
+    idx[1]          = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), vNormal, xiiVec2(0, 0));
+    idx[2]          = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), vNormal, xiiVec2(1, 0));
+    idx[3]          = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), vNormal, xiiVec2(1, 1));
     AddPolygon(idx, bFlipWinding);
   }
 
   {
-    idx[0] = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(1, 0), options);
-    idx[1] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(1, 1), options);
-    idx[2] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0, 1), options);
-    idx[3] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0, 0), options);
+    idx[0] = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(1, 0));
+    idx[1] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(1, 1));
+    idx[2] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0, 1));
+    idx[3] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, 0, -1), xiiVec2(0, 0));
     AddPolygon(idx, bFlipWinding);
   }
 
   {
-    idx[0] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(1, 0, 0), xiiVec2(0, 1), options);
-    idx[1] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(1, 0, 0), xiiVec2(0, 0), options);
-    idx[2] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(1, 0, 0), xiiVec2(1, 0), options);
-    idx[3] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(1, 0, 0), xiiVec2(1, 1), options);
+    idx[0] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(1, 0, 0), xiiVec2(0, 1));
+    idx[1] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(1, 0, 0), xiiVec2(0, 0));
+    idx[2] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(1, 0, 0), xiiVec2(1, 0));
+    idx[3] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(1, 0, 0), xiiVec2(1, 1));
     AddPolygon(idx, bFlipWinding);
   }
 
   {
-    idx3[0] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, -1, 0), xiiVec2(0, 1), options);
-    idx3[1] = AddVertex(xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, -1, 0), xiiVec2(0, 0), options);
-    idx3[2] = AddVertex(xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, -1, 0), xiiVec2(1, 1), options);
+    idx3[0] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, -1, 0), xiiVec2(0, 1));
+    idx3[1] = AddVertex(options, xiiVec3(+halfSize.x, -halfSize.y, +halfSize.z), xiiVec3(0, -1, 0), xiiVec2(0, 0));
+    idx3[2] = AddVertex(options, xiiVec3(-halfSize.x, -halfSize.y, -halfSize.z), xiiVec3(0, -1, 0), xiiVec2(1, 1));
     AddPolygon(idx3, bFlipWinding);
   }
 
   {
-    idx3[0] = AddVertex(xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, +1, 0), xiiVec2(0, 1), options);
-    idx3[1] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, +1, 0), xiiVec2(1, 0), options);
-    idx3[2] = AddVertex(xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, +1, 0), xiiVec2(1, 1), options);
+    idx3[0] = AddVertex(options, xiiVec3(-halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, +1, 0), xiiVec2(0, 1));
+    idx3[1] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, +halfSize.z), xiiVec3(0, +1, 0), xiiVec2(1, 0));
+    idx3[2] = AddVertex(options, xiiVec3(+halfSize.x, +halfSize.y, -halfSize.z), xiiVec3(0, +1, 0), xiiVec2(1, 1));
     AddPolygon(idx3, bFlipWinding);
   }
 }
@@ -1555,41 +1582,41 @@ void xiiGeometry::AddStairs(const xiiVec3& vSize, xiiUInt32 uiNumSteps, xiiAngle
     xiiUInt32 poly[4];
 
     // top
-    poly[0] = AddVertex(vTopL0, xiiVec3(0, 0, 1), xiiVec2(fTexU0, 0), options);
-    poly[3] = AddVertex(vTopL1, xiiVec3(0, 0, 1), xiiVec2(fTexU0, 1), options);
-    poly[1] = AddVertex(vTopR0, xiiVec3(0, 0, 1), xiiVec2(fTexU1, 0), options);
-    poly[2] = AddVertex(vTopR1, xiiVec3(0, 0, 1), xiiVec2(fTexU1, 1), options);
+    poly[0] = AddVertex(options, vTopL0, xiiVec3(0, 0, 1), xiiVec2(fTexU0, 0));
+    poly[3] = AddVertex(options, vTopL1, xiiVec3(0, 0, 1), xiiVec2(fTexU0, 1));
+    poly[1] = AddVertex(options, vTopR0, xiiVec3(0, 0, 1), xiiVec2(fTexU1, 0));
+    poly[2] = AddVertex(options, vTopR1, xiiVec3(0, 0, 1), xiiVec2(fTexU1, 1));
     AddPolygon(poly, bFlipWinding);
 
     // bottom
-    poly[0] = AddVertex(vBaseL0, xiiVec3(0, 0, -1), xiiVec2(fTexU0, 0), options);
-    poly[1] = AddVertex(vBaseL1, xiiVec3(0, 0, -1), xiiVec2(fTexU0, 1), options);
-    poly[3] = AddVertex(vBaseR0, xiiVec3(0, 0, -1), xiiVec2(fTexU1, 0), options);
-    poly[2] = AddVertex(vBaseR1, xiiVec3(0, 0, -1), xiiVec2(fTexU1, 1), options);
+    poly[0] = AddVertex(options, vBaseL0, xiiVec3(0, 0, -1), xiiVec2(fTexU0, 0));
+    poly[1] = AddVertex(options, vBaseL1, xiiVec3(0, 0, -1), xiiVec2(fTexU0, 1));
+    poly[3] = AddVertex(options, vBaseR0, xiiVec3(0, 0, -1), xiiVec2(fTexU1, 0));
+    poly[2] = AddVertex(options, vBaseR1, xiiVec3(0, 0, -1), xiiVec2(fTexU1, 1));
     AddPolygon(poly, bFlipWinding);
 
     // step front
     if (!bSmoothSloped)
     {
-      poly[0] = AddVertex(vPrevTopR0, xiiVec3(-1, 0, 0), xiiVec2(0, fTexU0), options);
-      poly[3] = AddVertex(vPrevTopR1, xiiVec3(-1, 0, 0), xiiVec2(1, fTexU0), options);
-      poly[1] = AddVertex(vTopL0, xiiVec3(-1, 0, 0), xiiVec2(0, fTexU1), options);
-      poly[2] = AddVertex(vTopL1, xiiVec3(-1, 0, 0), xiiVec2(1, fTexU1), options);
+      poly[0] = AddVertex(options, vPrevTopR0, xiiVec3(-1, 0, 0), xiiVec2(0, fTexU0));
+      poly[3] = AddVertex(options, vPrevTopR1, xiiVec3(-1, 0, 0), xiiVec2(1, fTexU0));
+      poly[1] = AddVertex(options, vTopL0, xiiVec3(-1, 0, 0), xiiVec2(0, fTexU1));
+      poly[2] = AddVertex(options, vTopL1, xiiVec3(-1, 0, 0), xiiVec2(1, fTexU1));
       AddPolygon(poly, bFlipWinding);
     }
 
     // side 1
-    poly[0] = AddVertex(vBaseL0, -vSideNormal0, xiiVec2(fTexU0, 0), options);
-    poly[1] = AddVertex(vBaseR0, -vSideNormal1, xiiVec2(fTexU1, 0), options);
-    poly[3] = AddVertex(vTopL0, -vSideNormal0, xiiVec2(fTexU0, fTexU1), options);
-    poly[2] = AddVertex(vTopR0, -vSideNormal1, xiiVec2(fTexU1, fTexU1), options);
+    poly[0] = AddVertex(options, vBaseL0, -vSideNormal0, xiiVec2(fTexU0, 0));
+    poly[1] = AddVertex(options, vBaseR0, -vSideNormal1, xiiVec2(fTexU1, 0));
+    poly[3] = AddVertex(options, vTopL0, -vSideNormal0, xiiVec2(fTexU0, fTexU1));
+    poly[2] = AddVertex(options, vTopR0, -vSideNormal1, xiiVec2(fTexU1, fTexU1));
     AddPolygon(poly, bFlipWinding);
 
     // side 2
-    poly[0] = AddVertex(vBaseL1, vSideNormal0, xiiVec2(fTexU0, 0), options);
-    poly[3] = AddVertex(vBaseR1, vSideNormal1, xiiVec2(fTexU1, 0), options);
-    poly[1] = AddVertex(vTopL1, vSideNormal0, xiiVec2(fTexU0, fTexU1), options);
-    poly[2] = AddVertex(vTopR1, vSideNormal1, xiiVec2(fTexU1, fTexU1), options);
+    poly[0] = AddVertex(options, vBaseL1, vSideNormal0, xiiVec2(fTexU0, 0));
+    poly[3] = AddVertex(options, vBaseR1, vSideNormal1, xiiVec2(fTexU1, 0));
+    poly[1] = AddVertex(options, vTopL1, vSideNormal0, xiiVec2(fTexU0, fTexU1));
+    poly[2] = AddVertex(options, vTopR1, vSideNormal1, xiiVec2(fTexU1, fTexU1));
     AddPolygon(poly, bFlipWinding);
 
     vPrevTopR0 = vTopR0;
@@ -1615,17 +1642,21 @@ void xiiGeometry::AddStairs(const xiiVec3& vSize, xiiUInt32 uiNumSteps, xiiAngle
   // back
   {
     xiiUInt32 poly[4];
-    poly[0] = AddVertex(vBaseL0, -vStepFrontNormal, xiiVec2(0, 0), options);
-    poly[1] = AddVertex(vBaseL1, -vStepFrontNormal, xiiVec2(1, 0), options);
-    poly[3] = AddVertex(vPrevTopR0, -vStepFrontNormal, xiiVec2(0, 1), options);
-    poly[2] = AddVertex(vPrevTopR1, -vStepFrontNormal, xiiVec2(1, 1), options);
+    poly[0] = AddVertex(options, vBaseL0, -vStepFrontNormal, xiiVec2(0, 0));
+    poly[1] = AddVertex(options, vBaseL1, -vStepFrontNormal, xiiVec2(1, 0));
+    poly[3] = AddVertex(options, vPrevTopR0, -vStepFrontNormal, xiiVec2(0, 1));
+    poly[2] = AddVertex(options, vPrevTopR1, -vStepFrontNormal, xiiVec2(1, 1));
     AddPolygon(poly, bFlipWinding);
   }
 }
 
-
-void xiiGeometry::AddArch(const xiiVec3& vSize, xiiUInt32 uiNumSegments, float fThickness, xiiAngle angle, bool bMakeSteps, bool bSmoothBottom, bool bSmoothTop, bool bCapTopAndBottom, const GeoOptions& options)
+void xiiGeometry::AddArch(const xiiVec3& vSize0, xiiUInt32 uiNumSegments, float fThickness, xiiAngle angle, bool bMakeSteps, bool bSmoothBottom, bool bSmoothTop, bool bCapTopAndBottom, const GeoOptions& options)
 {
+  const xiiQuat tilt  = xiiBasisAxis::GetBasisRotation(options.m_MainAxis, xiiBasisAxis::PositiveZ);
+  const xiiMat4 trans = options.m_Transform * tilt.GetAsMat4();
+
+  const xiiVec3 vSize = tilt * vSize0;
+
   // sanitize input values
   {
     if (angle.GetRadian() == 0.0f)
@@ -1738,39 +1769,39 @@ void xiiGeometry::AddArch(const xiiVec3& vSize, xiiUInt32 uiNumSegments, float f
 
     // Outside
     {
-      poly[0] = AddVertex(vCurBottomOuter, vCurDirOutwards, xiiVec2(fCurOuterU, 0), options);
-      poly[1] = AddVertex(vNextBottomOuter, vNextDirOutwards, xiiVec2(fNextOuterU, 0), options);
-      poly[3] = AddVertex(vCurTopOuter, vCurDirOutwards, xiiVec2(fCurOuterU, 1), options);
-      poly[2] = AddVertex(vNextTopOuter, vNextDirOutwards, xiiVec2(fNextOuterU, 1), options);
+      poly[0] = AddVertex(trans, options, vCurBottomOuter, vCurDirOutwards, xiiVec2(fCurOuterU, 0));
+      poly[1] = AddVertex(trans, options, vNextBottomOuter, vNextDirOutwards, xiiVec2(fNextOuterU, 0));
+      poly[3] = AddVertex(trans, options, vCurTopOuter, vCurDirOutwards, xiiVec2(fCurOuterU, 1));
+      poly[2] = AddVertex(trans, options, vNextTopOuter, vNextDirOutwards, xiiVec2(fNextOuterU, 1));
       AddPolygon(poly, bFlipWinding);
     }
 
     // Inside
     {
-      poly[0] = AddVertex(vCurBottomInner, -vCurDirOutwards, xiiVec2(fCurOuterU, 0), options);
-      poly[3] = AddVertex(vNextBottomInner, -vNextDirOutwards, xiiVec2(fNextOuterU, 0), options);
-      poly[1] = AddVertex(vCurTopInner, -vCurDirOutwards, xiiVec2(fCurOuterU, 1), options);
-      poly[2] = AddVertex(vNextTopInner, -vNextDirOutwards, xiiVec2(fNextOuterU, 1), options);
+      poly[0] = AddVertex(trans, options, vCurBottomInner, -vCurDirOutwards, xiiVec2(fCurOuterU, 0));
+      poly[3] = AddVertex(trans, options, vNextBottomInner, -vNextDirOutwards, xiiVec2(fNextOuterU, 0));
+      poly[1] = AddVertex(trans, options, vCurTopInner, -vCurDirOutwards, xiiVec2(fCurOuterU, 1));
+      poly[2] = AddVertex(trans, options, vNextTopInner, -vNextDirOutwards, xiiVec2(fNextOuterU, 1));
       AddPolygon(poly, bFlipWinding);
     }
 
     // Bottom
     if (bCapTopAndBottom)
     {
-      poly[0] = AddVertex(vCurBottomInner, xiiVec3(0, 0, -1), vCurBottomInner.GetAsVec2(), options);
-      poly[1] = AddVertex(vNextBottomInner, xiiVec3(0, 0, -1), vNextBottomInner.GetAsVec2(), options);
-      poly[3] = AddVertex(vCurBottomOuter, xiiVec3(0, 0, -1), vCurBottomOuter.GetAsVec2(), options);
-      poly[2] = AddVertex(vNextBottomOuter, xiiVec3(0, 0, -1), vNextBottomOuter.GetAsVec2(), options);
+      poly[0] = AddVertex(trans, options, vCurBottomInner, xiiVec3(0, 0, -1), vCurBottomInner.GetAsVec2());
+      poly[1] = AddVertex(trans, options, vNextBottomInner, xiiVec3(0, 0, -1), vNextBottomInner.GetAsVec2());
+      poly[3] = AddVertex(trans, options, vCurBottomOuter, xiiVec3(0, 0, -1), vCurBottomOuter.GetAsVec2());
+      poly[2] = AddVertex(trans, options, vNextBottomOuter, xiiVec3(0, 0, -1), vNextBottomOuter.GetAsVec2());
       AddPolygon(poly, bFlipWinding);
     }
 
     // Top
     if (bCapTopAndBottom)
     {
-      poly[0] = AddVertex(vCurTopInner, xiiVec3(0, 0, 1), vCurTopInner.GetAsVec2(), options);
-      poly[3] = AddVertex(vNextTopInner, xiiVec3(0, 0, 1), vNextTopInner.GetAsVec2(), options);
-      poly[1] = AddVertex(vCurTopOuter, xiiVec3(0, 0, 1), vCurTopOuter.GetAsVec2(), options);
-      poly[2] = AddVertex(vNextTopOuter, xiiVec3(0, 0, 1), vNextTopOuter.GetAsVec2(), options);
+      poly[0] = AddVertex(trans, options, vCurTopInner, xiiVec3(0, 0, 1), vCurTopInner.GetAsVec2());
+      poly[3] = AddVertex(trans, options, vNextTopInner, xiiVec3(0, 0, 1), vNextTopInner.GetAsVec2());
+      poly[1] = AddVertex(trans, options, vCurTopOuter, xiiVec3(0, 0, 1), vCurTopOuter.GetAsVec2());
+      poly[2] = AddVertex(trans, options, vNextTopOuter, xiiVec3(0, 0, 1), vNextTopOuter.GetAsVec2());
       AddPolygon(poly, bFlipWinding);
     }
 
@@ -1778,10 +1809,10 @@ void xiiGeometry::AddArch(const xiiVec3& vSize, xiiUInt32 uiNumSegments, float f
     if (bMakeSteps || (!isFullCircle && segment == 0))
     {
       const xiiVec3 vNormal = (bFlipWinding ? -1.0f : 1.0f) * vCurDirOutwards.CrossRH(xiiVec3(0, 0, 1));
-      poly[0]               = AddVertex(vCurBottomInner, vNormal, xiiVec2(0, 0), options);
-      poly[1]               = AddVertex(vCurBottomOuter, vNormal, xiiVec2(1, 0), options);
-      poly[3]               = AddVertex(vCurTopInner, vNormal, xiiVec2(0, 1), options);
-      poly[2]               = AddVertex(vCurTopOuter, vNormal, xiiVec2(1, 1), options);
+      poly[0]               = AddVertex(trans, options, vCurBottomInner, vNormal, xiiVec2(0, 0));
+      poly[1]               = AddVertex(trans, options, vCurBottomOuter, vNormal, xiiVec2(1, 0));
+      poly[3]               = AddVertex(trans, options, vCurTopInner, vNormal, xiiVec2(0, 1));
+      poly[2]               = AddVertex(trans, options, vCurTopOuter, vNormal, xiiVec2(1, 1));
       AddPolygon(poly, bFlipWinding);
     }
 
@@ -1789,10 +1820,10 @@ void xiiGeometry::AddArch(const xiiVec3& vSize, xiiUInt32 uiNumSegments, float f
     if (bMakeSteps || (!isFullCircle && segment == uiNumSegments - 1))
     {
       const xiiVec3 vNormal = (bFlipWinding ? -1.0f : 1.0f) * -vNextDirOutwards.CrossRH(xiiVec3(0, 0, 1));
-      poly[0]               = AddVertex(vNextBottomInner, vNormal, xiiVec2(0, 0), options);
-      poly[3]               = AddVertex(vNextBottomOuter, vNormal, xiiVec2(1, 0), options);
-      poly[1]               = AddVertex(vNextTopInner, vNormal, xiiVec2(0, 1), options);
-      poly[2]               = AddVertex(vNextTopOuter, vNormal, xiiVec2(1, 1), options);
+      poly[0]               = AddVertex(trans, options, vNextBottomInner, vNormal, xiiVec2(0, 0));
+      poly[3]               = AddVertex(trans, options, vNextBottomOuter, vNormal, xiiVec2(1, 0));
+      poly[1]               = AddVertex(trans, options, vNextTopInner, vNormal, xiiVec2(0, 1));
+      poly[2]               = AddVertex(trans, options, vNextTopOuter, vNormal, xiiVec2(1, 1));
       AddPolygon(poly, bFlipWinding);
     }
 

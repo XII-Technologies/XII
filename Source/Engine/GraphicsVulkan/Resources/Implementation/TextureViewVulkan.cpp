@@ -15,7 +15,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
 {
   // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALTextureViewVulkan::DeInitPlatform()

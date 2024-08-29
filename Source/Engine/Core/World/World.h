@@ -177,6 +177,14 @@ public:
   template <typename ComponentType>
   [[nodiscard]] bool TryGetComponent(const xiiComponentHandle& hComponent, const ComponentType*& out_pComponent) const;
 
+  /// \brief Explicitly delete TryGetComponent overload when handle type is not related to a pointer type given by out_pComponent.
+  template <typename T, typename U, std::enable_if_t<!std::disjunction_v<std::is_base_of<U, T>, std::is_base_of<T, U>>, bool> = true>
+  [[nodiscard]] bool TryGetComponent(const xiiTypedComponentHandle<T>& hComponent, U*& out_pComponent) = delete;
+
+  /// \brief Explicitly delete TryGetComponent overload when handle type is not related to a pointer type given by out_pComponent.
+  template <typename T, typename U, std::enable_if_t<!std::disjunction_v<std::is_base_of<U, T>, std::is_base_of<T, U>>, bool> = true>
+  [[nodiscard]] bool TryGetComponent(const xiiTypedComponentHandle<T>& hComponent, const U*& out_pComponent) const = delete;
+
   /// \brief Creates a new component init batch.
   /// It is ensured that the Initialize function is called for all components in a batch before the OnSimulationStarted is called.
   /// If bMustFinishWithinOneFrame is set to false the processing of an init batch can be distributed over multiple frames if

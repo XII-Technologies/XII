@@ -12,7 +12,19 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALSwapChainCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSwapChainCreationDescription& GetDescription() const { return m_Description; };
+
+  /// \brief This retrieves the current back buffer texture.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALTextureHandle GetBackBufferTexture() const { return m_hBackBufferTexture; };
+
+  /// \brief This retrieves the current swap chain size.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_Description.m_Resolution; };
+
+  /// \brief This sets the present mode.
+  XII_ALWAYS_INLINE void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode) { m_PresentMode = presentMode; };
+
+  /// \brief This retrieves the current present mode.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiEnum<xiiGALPresentMode> GetPresentMode() const { return m_PresentMode; };
 
   /// \brief Acquires the next render target for presenting.
   virtual void AcquireNextRenderTarget() = 0;
@@ -39,15 +51,7 @@ public:
   /// This value is only relevant for DirectX11 and DirectX12 backends and ignored for others. By default it matches the number of buffers in the swap chain. For example, for a 2-buffer
   /// swap chain, the CPU can enqueue frames 0 and 1, but Present command of frame 2 will block until frame 0 is presented. If in the example above the maximum frame latency is set
   /// to 1, then Present command of frame 1 will block until Present of frame 0 is complete.
-  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency);
-
-  void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode);
-
-  [[nodiscard]] xiiGALTextureHandle GetBackBufferTexture() const;
-
-  [[nodiscard]] xiiSizeU32 GetCurrentSize() const;
-
-  [[nodiscard]] xiiEnum<xiiGALPresentMode> GetPresentMode() const;
+  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency){};
 
 protected:
   friend class xiiGALDevice;
@@ -69,5 +73,3 @@ protected:
 
   xiiEnum<xiiGALSurfaceTransform> m_DesiredSurfaceTransform = xiiGALSurfaceTransform::Optimal;
 };
-
-#include <GraphicsFoundation/Device/Implementation/SwapChain_inl.h>

@@ -188,3 +188,38 @@ bool xiiGameGrid<CellData>::GetRayIntersectionExpandedBBox(const xiiVec3& vRaySt
 
   return true;
 }
+
+template <class CellData>
+xiiResult xiiGameGrid<CellData>::Serialize(xiiStreamWriter& ref_stream) const
+{
+  ref_stream.WriteVersion(1);
+
+  ref_stream << m_uiGridSizeX;
+  ref_stream << m_uiGridSizeY;
+  ref_stream << m_mRotateToWorldspace;
+  ref_stream << m_mRotateToGridspace;
+  ref_stream << m_vWorldSpaceOrigin;
+  ref_stream << m_vLocalSpaceCellSize;
+  ref_stream << m_vInverseLocalSpaceCellSize;
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_Cells));
+
+  return XII_SUCCESS;
+}
+
+template <class CellData>
+xiiResult xiiGameGrid<CellData>::Deserialize(xiiStreamReader& ref_stream)
+{
+  const xiiTypeVersion version = ref_stream.ReadVersion(1);
+  XII_IGNORE_UNUSED(version);
+
+  ref_stream >> m_uiGridSizeX;
+  ref_stream >> m_uiGridSizeY;
+  ref_stream >> m_mRotateToWorldspace;
+  ref_stream >> m_mRotateToGridspace;
+  ref_stream >> m_vWorldSpaceOrigin;
+  ref_stream >> m_vLocalSpaceCellSize;
+  ref_stream >> m_vInverseLocalSpaceCellSize;
+  XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_Cells));
+
+  return XII_SUCCESS;
+}

@@ -19,6 +19,8 @@ namespace xiiInternal
 
     virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const override
     {
+      XII_IGNORE_UNUSED(vGlobalPosition);
+
       out_coordinateSystem.m_vForwardDir = xiiVec3(1.0f, 0.0f, 0.0f);
       out_coordinateSystem.m_vRightDir   = xiiVec3(0.0f, 1.0f, 0.0f);
       out_coordinateSystem.m_vUpDir      = xiiVec3(0.0f, 0.0f, 1.0f);

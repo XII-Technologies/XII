@@ -188,7 +188,7 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_state
       }
       else
       {
-        if (pCVAR->GetFlags().IsAnySet(xiiCVarFlags::RequiresRestart))
+        if (pCVAR->GetFlags().IsAnySet(xiiCVarFlags::ShowRequiresRestartMsg))
         {
           inout_state.AddOutputLine("  This change takes only effect after a restart.", xiiConsoleString::Type::Note);
         }
@@ -208,7 +208,9 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_state
         inout_state.AddOutputLine(sTemp, xiiConsoleString::Type::Success);
       }
       else
+      {
         inout_state.AddOutputLine("  No Description available.", xiiConsoleString::Type::Success);
+      }
     }
 
     return;
@@ -278,7 +280,6 @@ static int LUAFUNC_ReadCVAR(lua_State* pState)
 
   return s.ReturnToScript();
 }
-
 
 static int LUAFUNC_WriteCVAR(lua_State* pState)
 {
@@ -362,6 +363,5 @@ __metatable = \"Access Denied\",\n\
 }
 
 #endif // BUILDSYSTEM_ENABLE_LUA_SUPPORT
-
 
 XII_STATICLINK_FILE(Core, Core_Console_Implementation_LuaInterpreter);

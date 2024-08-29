@@ -9,14 +9,6 @@
 #include <Core/ResourceManager/ResourceManager.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiProfileTargetPlatform, 1)
-  XII_ENUM_CONSTANTS(xiiProfileTargetPlatform::PC, xiiProfileTargetPlatform::UWP, xiiProfileTargetPlatform::Android)
-XII_END_STATIC_REFLECTED_ENUM;
-// clang-format on
-
-//////////////////////////////////////////////////////////////////////////
-
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProfileConfigData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE
 // clang-format on
@@ -24,8 +16,15 @@ XII_END_DYNAMIC_REFLECTED_TYPE
 xiiProfileConfigData::xiiProfileConfigData()  = default;
 xiiProfileConfigData::~xiiProfileConfigData() = default;
 
-void xiiProfileConfigData::SaveRuntimeData(xiiChunkStreamWriter& ref_stream) const {}
-void xiiProfileConfigData::LoadRuntimeData(xiiChunkStreamReader& ref_stream) {}
+void xiiProfileConfigData::SaveRuntimeData(xiiChunkStreamWriter& ref_stream) const
+{
+  XII_IGNORE_UNUSED(ref_stream);
+}
+
+void xiiProfileConfigData::LoadRuntimeData(xiiChunkStreamReader& ref_stream)
+{
+  XII_IGNORE_UNUSED(ref_stream);
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +34,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPlatformProfile, 1, xiiRTTIDefaultAllocator<
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiHiddenAttribute()),
-    XII_ENUM_MEMBER_PROPERTY("Platform", xiiProfileTargetPlatform, m_TargetPlatform),
+    XII_MEMBER_PROPERTY("TargetPlatform", m_sTargetPlatform)->AddAttributes(new xiiDynamicStringEnumAttribute("TargetPlatformNames"), new xiiDefaultValueAttribute("Windows")),
     XII_ARRAY_MEMBER_PROPERTY("Configs", m_Configs)->AddFlags(xiiPropertyFlags::PointerOwner)->AddAttributes(new xiiContainerAttribute(false, false, false)),
   }
   XII_END_PROPERTIES;
@@ -88,6 +87,9 @@ void xiiPlatformProfile::AddMissingConfigs()
       }
     },
     xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+
+  // in case unknown configs were loaded from disk, remove them
+  m_Configs.RemoveAndSwap(nullptr);
 
   // sort all configs alphabetically
   m_Configs.Sort([](const xiiProfileConfigData* lhs, const xiiProfileConfigData* rhs) -> bool { return lhs->GetDynamicRTTI()->GetTypeName().Compare(rhs->GetDynamicRTTI()->GetTypeName()) < 0; });
@@ -150,9 +152,8 @@ xiiResult xiiPlatformProfile::LoadForRuntime(xiiStringView sFile)
 
   chunk.EndStream();
 
+  ++m_uiLastModificationCounter;
   return XII_SUCCESS;
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_Configuration_Implementation_PlatformProfile);

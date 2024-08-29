@@ -393,7 +393,7 @@ public:
     }
 
     // Add the empty data directory to access files via absolute paths
-    xiiFileSystem::AddDataDirectory("", "App", ":", xiiFileSystem::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
     // pass the absolute path to the directory that should be scanned as the first parameter to this application
     xiiStringBuilder sCompileCommandsPath;

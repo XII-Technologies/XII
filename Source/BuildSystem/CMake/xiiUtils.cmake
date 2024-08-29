@@ -28,8 +28,14 @@ macro(xii_pull_config_vars)
   get_property(XII_CONFIG_QT_WINX64_URL GLOBAL PROPERTY XII_CONFIG_QT_WINX64_URL)
   get_property(XII_CONFIG_QT_WINX64_VERSION GLOBAL PROPERTY XII_CONFIG_QT_WINX64_VERSION)
 
+  get_property(XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION)
+  get_property(XII_CONFIG_VULKAN_SDK_WINDOWSX64_URL GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_WINDOWSX64_URL)
+
   get_property(XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION)
   get_property(XII_CONFIG_VULKAN_SDK_LINUXX64_URL GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_URL)
+
+  get_property(XII_CONFIG_VULKAN_SDK_OSX64_VERSION GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_VERSION)
+  get_property(XII_CONFIG_VULKAN_SDK_OSX64_URL GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_URL)
 
   get_property(XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION)
   get_property(XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL)
@@ -618,6 +624,26 @@ function(xii_set_build_types)
 endfunction()
 
 # #####################################
+# ## xii_create_link(<source> <destination-folder> <destination-name>)
+# #####################################
+function(xii_create_link SOURCE DEST_FOLDER DEST_NAME)
+  if(NOT EXISTS "${DEST_FOLDER}")
+    file(MAKE_DIRECTORY ${DEST_FOLDER})
+  endif()
+
+  # We re-create the link every time because it could become a dead link when shared between workspaces.
+  if(EXISTS "${DEST_FOLDER}/${DEST_NAME}")
+    file(REMOVE ${DEST_FOLDER}/${DEST_NAME})
+  endif()
+
+  file(CREATE_LINK ${SOURCE} ${DEST_FOLDER}/${DEST_NAME} RESULT OUT_RESULT SYMBOLIC)
+
+  if (NOT ${OUT_RESULT} EQUAL 0)
+    message(FATAL_ERROR "Failed to run: file(CREATE_LINK ${SOURCE} ${DEST_FOLDER}/${DEST_NAME} RESULT OUT_RESULT SYMBOLIC) \nRe-run with admin rights:\n${OUT_RESULT}")
+  endif ()
+endfunction()
+
+# #####################################
 # ## xii_download_and_extract(<url-to-download> <dest-folder-path> <dest-filename-without-extension>)
 # #####################################
 function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
@@ -625,6 +651,8 @@ function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
     set(PKG_TYPE "tar.gz")
   elseif(${URL} MATCHES ".tar.xz$")
     set(PKG_TYPE "tar.xz")
+  elseif(${URL} MATCHES ".exe$")
+    set(PKG_TYPE "exe")
   else()
     get_filename_component(PKG_TYPE ${URL} LAST_EXT)
   endif()
@@ -658,26 +686,28 @@ function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
 
   message(STATUS "Extracting '${FULL_FILENAME}'...")
 
-  if(${PKG_TYPE} MATCHES "7z")
-    set(FULL_7ZA_PATH "${XII_ROOT}/${XII_CONFIG_PATH_7ZA}")
-    execute_process(COMMAND "${FULL_7ZA_PATH}"
-      x "${PKG_FILE}"
-      -aoa
-      WORKING_DIRECTORY "${DEST_FOLDER}"
-      COMMAND_ERROR_IS_FATAL ANY
-      RESULT_VARIABLE CMD_STATUS)
+  if(NOT ${PKG_TYPE} MATCHES "exe")
+    if(${PKG_TYPE} MATCHES "7z")
+      set(FULL_7ZA_PATH "${XII_ROOT}/${XII_CONFIG_PATH_7ZA}")
+      execute_process(COMMAND "${FULL_7ZA_PATH}"
+        x "${PKG_FILE}"
+        -aoa
+        WORKING_DIRECTORY "${DEST_FOLDER}"
+        COMMAND_ERROR_IS_FATAL ANY
+        RESULT_VARIABLE CMD_STATUS)
 
-  else()
-    execute_process(COMMAND ${CMAKE_COMMAND}
-      -E tar -xf "${PKG_FILE}"
-      WORKING_DIRECTORY "${DEST_FOLDER}"
-      COMMAND_ERROR_IS_FATAL ANY
-      RESULT_VARIABLE CMD_STATUS)
-  endif()
+    else()
+      execute_process(COMMAND ${CMAKE_COMMAND}
+        -E tar -xf "${PKG_FILE}"
+        WORKING_DIRECTORY "${DEST_FOLDER}"
+        COMMAND_ERROR_IS_FATAL ANY
+        RESULT_VARIABLE CMD_STATUS)
+    endif()
 
-  if(NOT CMD_STATUS EQUAL 0)
-    message(FATAL_ERROR "Extracting package '${FULL_FILENAME}' failed.")
-    return()
+    if(NOT CMD_STATUS EQUAL 0)
+      message(FATAL_ERROR "Extracting package '${FULL_FILENAME}' failed.")
+      return()
+    endif()
   endif()
 
   file(TOUCH ${EXTRACT_MARKER})

@@ -65,3 +65,5 @@ xiiScriptCoroutine::Result xiiScriptCoroutine_MoveTo::Update(xiiTime deltaTimeSi
 
   return Result::Completed();
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_ScriptClasses_Implementation_ScriptCoroutine_MoveTo);

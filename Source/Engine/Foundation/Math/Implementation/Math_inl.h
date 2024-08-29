@@ -503,3 +503,41 @@ XII_ALWAYS_INLINE size_t xiiMath::SafeConvertToSizeT(xiiUInt64 uiValue)
   return uiValue;
 }
 #endif
+
+XII_ALWAYS_INLINE constexpr xiiUInt32 xiiMath::WrapUInt(xiiUInt32 uiValue, xiiUInt32 uiExcludedMaxValue)
+{
+  return uiValue % uiExcludedMaxValue;
+}
+
+XII_ALWAYS_INLINE constexpr xiiInt32 xiiMath::WrapInt(xiiInt32 iValue, xiiUInt32 uiExcludedMaxValue)
+{
+  const xiiInt32 wrapped = (iValue % static_cast<xiiInt32>(uiExcludedMaxValue));
+  return wrapped >= 0 ? wrapped : (wrapped + uiExcludedMaxValue);
+}
+
+XII_ALWAYS_INLINE constexpr xiiInt32 xiiMath::WrapInt(xiiInt32 iValue, xiiInt32 iMinValue, xiiInt32 iExcludedMaxValue)
+{
+  XII_ASSERT_DEBUG(iMinValue < iExcludedMaxValue, "Invalid range to wrap integer around.");
+
+  return iMinValue + WrapInt(iValue - iMinValue, static_cast<xiiUInt32>(iExcludedMaxValue - iMinValue));
+}
+
+XII_ALWAYS_INLINE float xiiMath::WrapFloat01(float fValue)
+{
+  if (fValue < 0.0f)
+  {
+    return fValue + Ceil(-fValue);
+  }
+  else if (fValue > 1.0f)
+  {
+    return fValue - Ceil(fValue - 1.0f);
+  }
+
+  return fValue;
+}
+
+XII_ALWAYS_INLINE float xiiMath::WrapFloat(float fValue, float fMinValue, float fMaxValue)
+{
+  const float range = fMaxValue - fMinValue;
+  return fMinValue + WrapFloat01((fValue - fMinValue) / range) * range;
+}

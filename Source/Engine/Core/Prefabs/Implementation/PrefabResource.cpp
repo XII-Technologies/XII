@@ -129,7 +129,7 @@ xiiResourceLoadDesc xiiPrefabResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiPrefabResource::UpdateContent(xiiStreamReader* Stream)
 {
-  XII_LOG_BLOCK("xiiPrefabResource::UpdateContent", GetResourceDescription().GetData());
+  XII_LOG_BLOCK("xiiPrefabResource::UpdateContent", GetResourceIdOrDescription());
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -212,6 +212,8 @@ void xiiPrefabResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiPrefabResource, xiiPrefabResourceDescriptor)
 {
+  XII_IGNORE_UNUSED(descriptor);
+
   xiiResourceLoadDesc desc;
   desc.m_State                      = xiiResourceState::Loaded;
   desc.m_uiQualityLevelsDiscardable = 0;

@@ -33,5 +33,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Shader/Implementation/ShaderResourceVariableVulkan_inl.h>

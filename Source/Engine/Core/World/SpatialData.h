@@ -26,11 +26,11 @@ struct xiiSpatialData
   struct Category
   {
     XII_ALWAYS_INLINE Category() :
-      m_uiValue(xiiInvalidIndex)
+      m_uiValue(xiiSmallInvalidIndex)
     {
     }
 
-    XII_ALWAYS_INLINE explicit Category(xiiUInt32 uiValue) :
+    XII_ALWAYS_INLINE explicit Category(xiiUInt16 uiValue) :
       m_uiValue(uiValue)
     {
     }
@@ -38,9 +38,9 @@ struct xiiSpatialData
     XII_ALWAYS_INLINE bool operator==(const Category& other) const { return m_uiValue == other.m_uiValue; }
     XII_ALWAYS_INLINE bool operator!=(const Category& other) const { return m_uiValue != other.m_uiValue; }
 
-    xiiUInt32 m_uiValue;
+    xiiUInt16 m_uiValue;
 
-    XII_ALWAYS_INLINE xiiUInt32 GetBitmask() const { return m_uiValue != xiiInvalidIndex ? static_cast<xiiUInt32>(XII_BIT(m_uiValue)) : 0; }
+    XII_ALWAYS_INLINE xiiUInt32 GetBitmask() const { return m_uiValue != xiiSmallInvalidIndex ? static_cast<xiiUInt32>(XII_BIT(m_uiValue)) : 0; }
   };
 
   /// \brief Registers a spatial data category under the given name.

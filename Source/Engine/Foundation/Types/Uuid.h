@@ -13,13 +13,12 @@ public:
   XII_DECLARE_POD_TYPE();
 
   /// \brief Default constructor. Constructed Uuid will be invalid.
-  XII_ALWAYS_INLINE xiiUuid(); // [tested]
+  XII_ALWAYS_INLINE xiiUuid() = default; // [tested]
 
   /// \brief Constructs the Uuid from existing values
-  XII_ALWAYS_INLINE xiiUuid(xiiUInt64 uiLow, xiiUInt64 uiHigh)
+  XII_ALWAYS_INLINE constexpr xiiUuid(xiiUInt64 uiLow, xiiUInt64 uiHigh) :
+    m_uiLow(uiLow), m_uiHigh(uiHigh)
   {
-    m_uiLow  = uiLow;
-    m_uiHigh = uiHigh;
   }
 
   /// \brief Comparison operator. [tested]
@@ -63,8 +62,8 @@ private:
   friend XII_FOUNDATION_DLL_FRIEND void operator>>(xiiStreamReader& ref_stream, xiiUuid& ref_value);
   friend XII_FOUNDATION_DLL_FRIEND void operator<<(xiiStreamWriter& ref_stream, const xiiUuid& value);
 
-  xiiUInt64 m_uiHigh;
-  xiiUInt64 m_uiLow;
+  xiiUInt64 m_uiHigh = 0U;
+  xiiUInt64 m_uiLow  = 0U;
 };
 
 #include <Foundation/Types/Implementation/Uuid_inl.h>

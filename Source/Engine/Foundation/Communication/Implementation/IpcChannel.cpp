@@ -7,7 +7,7 @@
 #include <Foundation/Logging/Log.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <Foundation/Communication/Implementation/Win/PipeChannel_win.h>
+#  include <Foundation/Platform/Implementation/Windows/PipeChannel_win.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Communication/Implementation/Linux/PipeChannel_linux.h>
 #endif

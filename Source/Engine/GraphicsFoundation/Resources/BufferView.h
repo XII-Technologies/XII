@@ -35,10 +35,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResourceView
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALBufferViewCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferViewCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief Returns the buffer of which the buffer view is created with.
-  [[nodiscard]] xiiGALBuffer* GetBuffer() const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALBuffer* GetBuffer() const { return m_pBuffer; }
 
 protected:
   friend class xiiGALDevice;
@@ -56,5 +56,3 @@ protected:
 
   xiiGALBufferViewCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/BufferView_inl.h>

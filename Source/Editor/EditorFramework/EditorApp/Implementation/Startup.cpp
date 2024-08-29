@@ -282,10 +282,10 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     xiiFileSystem::CreateDirectoryStructure(sAppDir).IgnoreResult();
     xiiFileSystem::CreateDirectoryStructure(sUserData).IgnoreResult();
 
-    xiiFileSystem::AddDataDirectory("", "AbsPaths", ":", xiiFileSystem::AllowWrites).IgnoreResult();             // for absolute paths
-    xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiFileSystem::AllowWrites).IgnoreResult();     // writing to the binary directory
-    xiiFileSystem::AddDataDirectory(sAppDir, "AppData", "app").IgnoreResult();                                   // app specific data
-    xiiFileSystem::AddDataDirectory(sUserData, "AppData", "appdata", xiiFileSystem::AllowWrites).IgnoreResult(); // for writing app user data
+    xiiFileSystem::AddDataDirectory("", "AbsPaths", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();             // for absolute paths
+    xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiDataDirUsage::AllowWrites).IgnoreResult();     // writing to the binary directory
+    xiiFileSystem::AddDataDirectory(sAppDir, "AppData", "app").IgnoreResult();                                     // app specific data
+    xiiFileSystem::AddDataDirectory(sUserData, "AppData", "appdata", xiiDataDirUsage::AllowWrites).IgnoreResult(); // for writing app user data
   }
 
   {

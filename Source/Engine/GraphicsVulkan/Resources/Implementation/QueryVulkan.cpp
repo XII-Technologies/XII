@@ -24,4 +24,13 @@ xiiResult xiiGALQueryVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
+{
+  return false;
+}
+
+void xiiGALQueryVulkan::Invalidate()
+{
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_QueryVulkan);

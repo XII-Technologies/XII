@@ -35,3 +35,5 @@ xiiScriptCoroutine::Result xiiScriptCoroutine_Wait::Update(xiiTime deltaTimeSinc
 
   return Result::Completed();
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_ScriptClasses_Implementation_ScriptCoroutine_Wait);

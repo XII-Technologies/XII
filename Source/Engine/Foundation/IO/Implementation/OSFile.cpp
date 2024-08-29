@@ -736,14 +736,14 @@ void xiiFileSystemIterator::SkipFolder()
 
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/IO/Implementation/Win/OSFile_win.h>
+#  include <Foundation/Platform/Implementation/Windows/OSFile_win.h>
 
 // For UWP we're currently using a mix of WinRT functions and posix.
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#    include <Foundation/IO/Implementation/Posix/OSFile_posix.h>
+#    include <Foundation/Platform/Implementation/Posix/OSFile_posix.h>
 #  endif
 #elif XII_ENABLED(XII_USE_POSIX_FILE_API)
-#  include <Foundation/IO/Implementation/Posix/OSFile_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/OSFile_posix.h>
 #else
 #  error "Unknown Platform."
 #endif

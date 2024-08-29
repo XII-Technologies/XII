@@ -65,7 +65,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelAS : public xiiGALResource
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALTopLevelASCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTopLevelASCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief This returns the instance description that can be used in the shader binding table.
   ///
@@ -102,5 +102,3 @@ protected:
 protected:
   xiiGALTopLevelASCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/TopLevelAS_inl.h>

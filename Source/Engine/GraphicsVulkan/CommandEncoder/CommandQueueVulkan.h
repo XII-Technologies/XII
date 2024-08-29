@@ -10,17 +10,18 @@ class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALComma
 {
 public:
   /// \brief This returns the value of the internal fence that will be signaled the next time.
-  virtual xiiUInt64 GetNextFenceValue() const override final;
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return 0ULL; }
 
   /// \brief This returns the last completed value of the internal fence.
-  virtual xiiUInt64 GetCompletedFenceValue() override final;
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return 0ULL; }
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
-  void UnbindTextureFromFramebuffer(xiiGALTextureVulkan* pTextureVulkan);
+  XII_ALWAYS_INLINE xiiUInt32 GetVulkanQueueFamilyIndex() const { return m_uiQueueFamilyIndex; };
+  XII_ALWAYS_INLINE vk::Queue GetVulkanQueue() const { return m_vkQueue; };
 
 protected:
   xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
@@ -33,14 +34,20 @@ protected:
 
   virtual ~xiiGALCommandQueueVulkan();
 
-  virtual xiiResult InitPlatform() override final;
+  void InitializePlatform(xiiUInt32 uiQueueFamilyIndex, vk::Queue vkQueue);
 
-  virtual xiiResult DeInitPlatform() override final;
+  void DeInitializePlatform();
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
-  xiiUniquePtr<xiiGALCommandListVulkan> m_pDefaultCommandList;
-};
+  vk::Device m_vkDevice;
+  vk::Queue  m_vkQueue;
+  xiiUInt32  m_uiQueueFamilyIndex = xiiInvalidIndex;
 
-#include <GraphicsVulkan/CommandEncoder/Implementation/CommandQueueVulkan_inl.h>
+  vk::CommandPool                    m_vkCommandPool;
+  xiiDynamicArray<vk::CommandBuffer> m_vkCommandBuffers;
+
+  xiiSet<xiiGALCommandListVulkan*> m_pAvailableCommandLists;
+  xiiSet<xiiGALCommandListVulkan*> m_pUsedCommandLists;
+};

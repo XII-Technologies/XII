@@ -36,9 +36,9 @@ public:
   xiiResult InitializeFromPath(const xiiRTTI* pRootObjectRtti, const xiiArrayPtr<const xiiPropertyPathStep> path);
 
   ///\brief Applies the entire path and allows writing to the target object.
-  xiiResult WriteToLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
+  xiiResult WriteToLeafObject(void* pRootObject, const xiiRTTI* pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
   ///\brief Applies the entire path and allows reading from the target object.
-  xiiResult ReadFromLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
+  xiiResult ReadFromLeafObject(void* pRootObject, const xiiRTTI* pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
 
   ///\brief Applies the path up to the last step and allows a functor to write to the final property.
   xiiResult WriteProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const;

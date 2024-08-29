@@ -2,6 +2,7 @@
 
 #if XII_ENABLED(XII_SUPPORTS_DIRECTORY_WATCHER)
 
+#  include <Foundation/Configuration/CVar.h>
 #  include <Foundation/IO/DirectoryWatcher.h>
 #  include <Foundation/IO/OSFile.h>
 #  include <Foundation/Threading/ThreadUtils.h>
@@ -35,7 +36,8 @@ namespace DirectoryWatcherTestHelpers
   }
 } // namespace DirectoryWatcherTestHelpers
 
-XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
+
+void DirectoryWatcherTest()
 {
   using namespace DirectoryWatcherTestHelpers;
 
@@ -742,5 +744,20 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
 
   xiiOSFile::DeleteFolder(sTestRootPath).IgnoreResult();
 }
+
+XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
+{
+  DirectoryWatcherTest();
+}
+
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcherNonNTFS)
+{
+  auto* pForceNonNTFS = static_cast<xiiCVarBool*>(xiiCVar::FindCVarByName("DirectoryWatcher.ForceNonNTFS"));
+  *pForceNonNTFS      = true;
+  DirectoryWatcherTest();
+  *pForceNonNTFS = false;
+}
+#  endif
 
 #endif

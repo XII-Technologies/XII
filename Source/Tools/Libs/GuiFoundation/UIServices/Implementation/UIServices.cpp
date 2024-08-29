@@ -14,6 +14,10 @@
 #include <QSettings>
 #include <QUrl>
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  include <ShlObj_core.h>
+#endif
+
 XII_IMPLEMENT_SINGLETON(xiiQtUiServices);
 
 xiiEvent<const xiiQtUiServices::Event&>     xiiQtUiServices::s_Events;
@@ -373,6 +377,24 @@ void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
   args << QDir::toNativeSeparators(sPath);
 
   QProcess::startDetached("xdg-open", args);
+#else
+  XII_ASSERT_NOT_IMPLEMENTED
+#endif
+}
+
+void xiiQtUiServices::OpenWith(xiiStringView sPath)
+{
+  xiiStringBuilder sPathBuilder = sPath;
+  sPathBuilder.MakeCleanPath();
+  sPathBuilder.MakePathSeparatorsNative();
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  xiiStringWChar wpath(sPathBuilder);
+  OPENASINFO     oi;
+  oi.pcszFile    = wpath.GetData();
+  oi.pcszClass   = NULL;
+  oi.oaifInFlags = OAIF_EXEC;
+  SHOpenWithDialog(NULL, &oi);
 #else
   XII_ASSERT_NOT_IMPLEMENTED
 #endif

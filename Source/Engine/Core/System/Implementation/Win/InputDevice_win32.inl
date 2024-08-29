@@ -217,45 +217,45 @@ void xiiStandardInputDevice::RegisterInputSlots()
   RegisterInputSlot(xiiInputSlot_MousePositionY, "Mouse Position Y", xiiInputSlotFlags::IsMouseAxisPosition);
 
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint0, "Touchpoint 1", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionX, "Touchpoint 1 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionY, "Touchpoint 1 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint0, "Touchpoint 0", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionX, "Touchpoint 0 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionY, "Touchpoint 0 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint1, "Touchpoint 2", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionX, "Touchpoint 2 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionY, "Touchpoint 2 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint1, "Touchpoint 1", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionX, "Touchpoint 1 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionY, "Touchpoint 1 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint2, "Touchpoint 3", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionX, "Touchpoint 3 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionY, "Touchpoint 3 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint2, "Touchpoint 2", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionX, "Touchpoint 2 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionY, "Touchpoint 2 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint3, "Touchpoint 4", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionX, "Touchpoint 4 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionY, "Touchpoint 4 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint3, "Touchpoint 3", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionX, "Touchpoint 3 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionY, "Touchpoint 3 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint4, "Touchpoint 5", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionX, "Touchpoint 5 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionY, "Touchpoint 5 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint4, "Touchpoint 4", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionX, "Touchpoint 4 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionY, "Touchpoint 4 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint5, "Touchpoint 6", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionX, "Touchpoint 6 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionY, "Touchpoint 6 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint5, "Touchpoint 5", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionX, "Touchpoint 5 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionY, "Touchpoint 5 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint6, "Touchpoint 7", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionX, "Touchpoint 7 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionY, "Touchpoint 7 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint6, "Touchpoint 6", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionX, "Touchpoint 6 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionY, "Touchpoint 6 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint7, "Touchpoint 8", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionX, "Touchpoint 8 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionY, "Touchpoint 8 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint7, "Touchpoint 7", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionX, "Touchpoint 7 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionY, "Touchpoint 7 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint8, "Touchpoint 9", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionX, "Touchpoint 9 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionY, "Touchpoint 9 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint8, "Touchpoint 8", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionX, "Touchpoint 8 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionY, "Touchpoint 8 Position Y", xiiInputSlotFlags::IsTouchPosition);
 
-  RegisterInputSlot(xiiInputSlot_TouchPoint9, "Touchpoint 10", xiiInputSlotFlags::IsTouchPoint);
-  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionX, "Touchpoint 10 Position X", xiiInputSlotFlags::IsTouchPosition);
-  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionY, "Touchpoint 10 Position Y", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint9, "Touchpoint 9", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionX, "Touchpoint 9 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionY, "Touchpoint 9 Position Y", xiiInputSlotFlags::IsTouchPosition);
 }
 
 void xiiStandardInputDevice::ResetInputSlotValues()
@@ -301,6 +301,12 @@ void xiiStandardInputDevice::UpdateInputSlotValues()
         --m_uiMouseButtonReceivedDown[i];
         m_InputSlotValues[slotDown[i]] = 1.0f;
       }
+      // This is a workaround for a win32 bug: Double clicking on a title bar maximizes a window but only fires a single mouse up event. If that happens, no further clicks would be recognized because the balance between up and down events is broken. So if the slot is not signaled and there is no down event but an up event instead, we just consume it.
+      else if (m_uiMouseButtonReceivedUp[i] > 0)
+      {
+        --m_uiMouseButtonReceivedUp[i];
+        m_InputSlotValues[slotDown[i]] = 0;
+      }
     }
   }
 
@@ -345,8 +351,8 @@ void xiiStandardInputDevice::ApplyClipRect(xiiMouseCursorClipMode::Enum mode, xi
     if (GetCursorPos(&mp))
     {
       // Ensure the position is inside the window rect
-      mp.x = xiiMath::Clamp(mp.x, r.left, r.right);
-      mp.y = xiiMath::Clamp(mp.y, r.top, r.bottom);
+      mp.x = r.left + (r.right - r.left) / 2;
+      mp.y = r.top + (r.bottom - r.top) / 2;
 
       r.top    = mp.y;
       r.bottom = mp.y;
@@ -421,6 +427,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindo
     case WM_SETFOCUS:
     {
       m_bApplyClipRect = true;
+
       ApplyClipRect(m_ClipCursorMode, hWnd);
     }
     break;
@@ -443,22 +450,20 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindo
     // therefore it is not used
 #if 0
     case WM_LBUTTONDBLCLK:
-     {
+    {
       m_InputSlotValues[xiiInputSlot_MouseDblClick0] = 1.0f;
       return;
-     }
-
+    }
     case WM_RBUTTONDBLCLK:
-     {
+    {
       m_InputSlotValues[xiiInputSlot_MouseDblClick1] = 1.0f;
       return;
-     }
-
+    }
     case WM_MBUTTONDBLCLK:
-     {
+    {
       m_InputSlotValues[xiiInputSlot_MouseDblClick2] = 1.0f;
       return;
-     }
+    }
 #endif
 
 #if XII_ENABLED(XII_MOUSEBUTTON_COMPATIBILTY_MODE)
@@ -632,11 +637,6 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindo
 
         bWasLeftShift = false;
 
-        xiiInt32 iRequest = raw->data.keyboard.MakeCode << 16;
-
-        if (raw->data.keyboard.Flags & RI_KEY_E0)
-          iRequest |= 1 << 24;
-
         const bool bPressed = !(raw->data.keyboard.Flags & 0x01);
 
         m_InputSlotValues[sInputSlotName] = bPressed ? 1.0f : 0.0f;
@@ -664,14 +664,10 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindo
         // If at all, we should handle them as touch points, not as mouse positions.
         if ((raw->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) == 0)
         {
-          m_InputSlotValues[xiiInputSlot_MouseMoveNegX] +=
-            ((raw->data.mouse.lLastX < 0) ? (float)-raw->data.mouse.lLastX : 0.0f) * GetMouseSpeed().x;
-          m_InputSlotValues[xiiInputSlot_MouseMovePosX] +=
-            ((raw->data.mouse.lLastX > 0) ? (float)raw->data.mouse.lLastX : 0.0f) * GetMouseSpeed().x;
-          m_InputSlotValues[xiiInputSlot_MouseMoveNegY] +=
-            ((raw->data.mouse.lLastY < 0) ? (float)-raw->data.mouse.lLastY : 0.0f) * GetMouseSpeed().y;
-          m_InputSlotValues[xiiInputSlot_MouseMovePosY] +=
-            ((raw->data.mouse.lLastY > 0) ? (float)raw->data.mouse.lLastY : 0.0f) * GetMouseSpeed().y;
+          m_InputSlotValues[xiiInputSlot_MouseMoveNegX] += ((raw->data.mouse.lLastX < 0) ? (float)-raw->data.mouse.lLastX : 0.0f) * GetMouseSpeed().x;
+          m_InputSlotValues[xiiInputSlot_MouseMovePosX] += ((raw->data.mouse.lLastX > 0) ? (float)raw->data.mouse.lLastX : 0.0f) * GetMouseSpeed().x;
+          m_InputSlotValues[xiiInputSlot_MouseMoveNegY] += ((raw->data.mouse.lLastY < 0) ? (float)-raw->data.mouse.lLastY : 0.0f) * GetMouseSpeed().y;
+          m_InputSlotValues[xiiInputSlot_MouseMovePosY] += ((raw->data.mouse.lLastY > 0) ? (float)raw->data.mouse.lLastY : 0.0f) * GetMouseSpeed().y;
 
           // Mouse input does not always work via WM_INPUT
           // e.g. some VMs don't send mouse click input via WM_INPUT when the mouse cursor is visible
@@ -719,8 +715,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindo
           }
           else
           {
-            static xiiInt32 iTouchPoint     = 0;
-            static bool     bTouchPointDown = false;
+            static xiiInt32 iTouchPoint = 0;
 
             xiiStringView sSlot  = xiiInputManager::GetInputSlotTouchPoint(iTouchPoint);
             xiiStringView sSlotX = xiiInputManager::GetInputSlotTouchPointPositionX(iTouchPoint);
@@ -731,21 +726,18 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindo
 
             if ((uiButtons & (RI_MOUSE_BUTTON_1_DOWN | RI_MOUSE_BUTTON_2_DOWN)) != 0)
             {
-              bTouchPointDown          = true;
               m_InputSlotValues[sSlot] = 1.0f;
             }
 
             if ((uiButtons & (RI_MOUSE_BUTTON_1_UP | RI_MOUSE_BUTTON_2_UP)) != 0)
             {
-              bTouchPointDown          = false;
               m_InputSlotValues[sSlot] = 0.0f;
             }
           }
         }
         else
         {
-          xiiLog::Info("Unknown Mouse Move: {0} | {1}, Flags = {2}", xiiArgF(raw->data.mouse.lLastX, 1), xiiArgF(raw->data.mouse.lLastY, 1),
-                       (xiiUInt32)raw->data.mouse.usFlags);
+          xiiLog::Info("Unknown Mouse Move: {0} | {1}, Flags = {2}", xiiArgF(raw->data.mouse.lLastX, 1), xiiArgF(raw->data.mouse.lLastY, 1), (xiiUInt32)raw->data.mouse.usFlags);
         }
       }
     }

@@ -15,6 +15,12 @@ XII_BEGIN_COMPONENT_TYPE(xiiScriptComponent, 1, xiiComponentMode::Static)
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("ScriptClass")),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(SetScriptVariable, In, "Name", In, "Value"),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetScriptVariable, In, "Name"),
+  }
+  XII_END_FUNCTIONS;
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Scripting"),
@@ -111,16 +117,22 @@ void xiiScriptComponent::OnSimulationStarted()
   CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::OnSimulationStarted);
 }
 
-bool xiiScriptComponent::SendEventMessage(xiiMessage& ref_msg)
+void xiiScriptComponent::SetScriptVariable(const xiiHashedString& sName, const xiiVariant& value)
 {
-  auto& sender = FindSender(ref_msg);
-  return sender.SendEventMessage(ref_msg, this, GetOwner());
+  if (m_pInstance != nullptr)
+  {
+    m_pInstance->SetInstanceVariable(sName, value);
+  }
 }
 
-void xiiScriptComponent::PostEventMessage(xiiMessage& ref_msg, xiiTime delay)
+xiiVariant xiiScriptComponent::GetScriptVariable(const xiiHashedString& sName) const
 {
-  auto& sender = FindSender(ref_msg);
-  sender.PostEventMessage(ref_msg, this, GetOwner(), delay);
+  if (m_pInstance != nullptr)
+  {
+    return m_pInstance->GetInstanceVariable(sName);
+  }
+
+  return xiiVariant();
 }
 
 void xiiScriptComponent::SetScriptClass(const xiiScriptClassResourceHandle& hScript)
@@ -155,7 +167,11 @@ void xiiScriptComponent::SetScriptClassFile(xiiStringView sFile)
 
 xiiStringView xiiScriptComponent::GetScriptClassFile() const
 {
-  return m_hScriptClass.IsValid() ? m_hScriptClass.GetResourceID().GetData() : "";
+  if (m_hScriptClass.IsValid())
+  {
+    return m_hScriptClass.GetResourceID();
+  }
+  return {};
 }
 
 void xiiScriptComponent::SetUpdateInterval(xiiTime interval)
@@ -197,7 +213,7 @@ void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& valu
 
 void xiiScriptComponent::RemoveParameter(xiiStringView sKey)
 {
-  if (m_Parameters.RemoveAndCopy(sKey))
+  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
     if (IsInitialized() && m_hScriptClass.IsValid())
     {
@@ -241,7 +257,7 @@ void xiiScriptComponent::InstantiateScript(bool bActivate)
   m_pInstance = pScript->Instantiate(*this, GetWorld());
   if (m_pInstance != nullptr)
   {
-    m_pInstance->ApplyParameters(m_Parameters);
+    m_pInstance->SetInstanceVariables(m_Parameters);
   }
 
   GetWorld()->AddResourceReloadFunction(m_hScriptClass, GetHandle(), nullptr,
@@ -330,23 +346,4 @@ void xiiScriptComponent::ReloadScript()
   InstantiateScript(IsActiveAndInitialized());
 }
 
-xiiEventMessageSender<xiiMessage>& xiiScriptComponent::FindSender(xiiMessage& ref_msg)
-{
-  const xiiRTTI* pType = ref_msg.GetDynamicRTTI();
-  if (pType->IsDerivedFrom<xiiEventMessage>())
-  {
-    static_cast<xiiEventMessage&>(ref_msg).FillFromSenderComponent(this);
-  }
-
-  for (auto& sender : m_EventSenders)
-  {
-    if (sender.m_pMsgType == pType)
-    {
-      return sender.m_Sender;
-    }
-  }
-
-  auto& sender      = m_EventSenders.ExpandAndGetRef();
-  sender.m_pMsgType = pType;
-  return sender.m_Sender;
-}
+XII_STATICLINK_FILE(Core, Core_Scripting_Implementation_ScriptComponent);

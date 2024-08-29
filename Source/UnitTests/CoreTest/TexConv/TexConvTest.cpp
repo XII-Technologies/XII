@@ -48,7 +48,7 @@ private:
       return XII_FAILURE;
     }
 
-    xiiFileSystem::AddDataDirectory(">xiitest/", "TexConvDataDir", "imgout", xiiFileSystem::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory(">xiitest/", "TexConvDataDir", "imgout", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
     return XII_SUCCESS;
   }

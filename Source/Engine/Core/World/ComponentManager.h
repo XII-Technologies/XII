@@ -43,7 +43,7 @@ public:
 
   /// \brief Create a new component instance and returns a handle to it.
   template <typename ComponentType>
-  xiiComponentHandle CreateComponent(xiiGameObject* pOwnerObject, ComponentType*& out_pComponent);
+  xiiTypedComponentHandle<ComponentType> CreateComponent(xiiGameObject* pOwnerObject, ComponentType*& out_pComponent);
 
   /// \brief Deletes the given component. Note that the component will be invalidated first and the actual deletion is postponed.
   void DeleteComponent(const xiiComponentHandle& hComponent);
@@ -157,10 +157,20 @@ private:
 #define XII_ADD_COMPONENT_FUNCTIONALITY(componentType, baseType, managerType)                                             \
 public:                                                                                                                   \
   using ComponentManagerType = managerType;                                                                               \
-  virtual xiiWorldModuleTypeId                  GetTypeId() const override { return s_TypeId; }                           \
-  static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId() { return s_TypeId; }                                             \
+  virtual xiiWorldModuleTypeId GetTypeId() const override                                                                 \
+  {                                                                                                                       \
+    return s_TypeId;                                                                                                      \
+  }                                                                                                                       \
+  static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId()                                                                  \
+  {                                                                                                                       \
+    return s_TypeId;                                                                                                      \
+  }                                                                                                                       \
+  xiiTypedComponentHandle<componentType> GetHandle() const                                                                \
+  {                                                                                                                       \
+    return xiiTypedComponentHandle<componentType>(xiiComponent::GetHandle());                                             \
+  }                                                                                                                       \
   virtual xiiComponentMode::Enum                GetMode() const override;                                                 \
-  static xiiComponentHandle                     CreateComponent(xiiGameObject* pOwnerObject, componentType*& pComponent); \
+  static xiiTypedComponentHandle<componentType> CreateComponent(xiiGameObject* pOwnerObject, componentType*& pComponent); \
   static void                                   DeleteComponent(componentType* pComponent);                               \
   void                                          DeleteComponent();                                                        \
                                                                                                                           \
@@ -168,10 +178,16 @@ private:                                                                        
   friend managerType;                                                                                                     \
   static xiiWorldModuleTypeId s_TypeId
 
-#define XII_ADD_ABSTRACT_COMPONENT_FUNCTIONALITY(componentType, baseType)                                       \
-public:                                                                                                         \
-  virtual xiiWorldModuleTypeId                  GetTypeId() const override { return xiiWorldModuleTypeId(-1); } \
-  static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId() { return xiiWorldModuleTypeId(-1); }
+#define XII_ADD_ABSTRACT_COMPONENT_FUNCTIONALITY(componentType, baseType) \
+public:                                                                   \
+  virtual xiiWorldModuleTypeId GetTypeId() const override                 \
+  {                                                                       \
+    return xiiWorldModuleTypeId(-1);                                      \
+  }                                                                       \
+  static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId()                  \
+  {                                                                       \
+    return xiiWorldModuleTypeId(-1);                                      \
+  }
 
 /// \brief Add this macro to a custom component type inside the type declaration.
 #define XII_DECLARE_COMPONENT_TYPE(componentType, baseType, managerType) \
@@ -187,27 +203,34 @@ public:                                                                         
 /// \brief Implements rtti and component specific functionality. Add this macro to a cpp file.
 ///
 /// \see XII_BEGIN_DYNAMIC_REFLECTED_TYPE
-#define XII_BEGIN_COMPONENT_TYPE(componentType, version, mode)                                                                                 \
-  xiiWorldModuleTypeId componentType::s_TypeId =                                                                                               \
-    xiiWorldModuleFactory::GetInstance()->RegisterWorldModule<typename componentType::ComponentManagerType, componentType>();                  \
-  xiiComponentMode::Enum componentType::GetMode() const { return mode; }                                                                       \
-  xiiComponentHandle     componentType::CreateComponent(xiiGameObject* pOwnerObject, componentType*& out_pComponent)                           \
-  {                                                                                                                                            \
-    return pOwnerObject->GetWorld()->GetOrCreateComponentManager<ComponentManagerType>()->CreateComponent(pOwnerObject, out_pComponent);       \
-  }                                                                                                                                            \
-  void componentType::DeleteComponent(componentType* pComponent) { pComponent->GetOwningManager()->DeleteComponent(pComponent->GetHandle()); } \
-  void componentType::DeleteComponent() { GetOwningManager()->DeleteComponent(GetHandle()); }                                                  \
+#define XII_BEGIN_COMPONENT_TYPE(componentType, version, mode)                                                                           \
+  xiiWorldModuleTypeId componentType::s_TypeId =                                                                                         \
+    xiiWorldModuleFactory::GetInstance()->RegisterWorldModule<typename componentType::ComponentManagerType, componentType>();            \
+  xiiComponentMode::Enum componentType::GetMode() const                                                                                  \
+  {                                                                                                                                      \
+    return mode;                                                                                                                         \
+  }                                                                                                                                      \
+  xiiTypedComponentHandle<componentType> componentType::CreateComponent(xiiGameObject* pOwnerObject, componentType*& out_pComponent)     \
+  {                                                                                                                                      \
+    return pOwnerObject->GetWorld()->GetOrCreateComponentManager<ComponentManagerType>()->CreateComponent(pOwnerObject, out_pComponent); \
+  }                                                                                                                                      \
+  void componentType::DeleteComponent(componentType* pComponent)                                                                         \
+  {                                                                                                                                      \
+    pComponent->GetOwningManager()->DeleteComponent(pComponent->GetHandle());                                                            \
+  }                                                                                                                                      \
+  void componentType::DeleteComponent()                                                                                                  \
+  {                                                                                                                                      \
+    GetOwningManager()->DeleteComponent(GetHandle());                                                                                    \
+  }                                                                                                                                      \
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(componentType, version, xiiRTTINoAllocator)
 
 /// \brief Implements rtti and abstract component specific functionality. Add this macro to a cpp file.
 ///
 /// \see XII_BEGIN_DYNAMIC_REFLECTED_TYPE
-#define XII_BEGIN_ABSTRACT_COMPONENT_TYPE(componentType, version)              \
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(componentType, version, xiiRTTINoAllocator) \
-  flags.Add(xiiTypeFlags::Abstract);
+#define XII_BEGIN_ABSTRACT_COMPONENT_TYPE(componentType, version) XII_BEGIN_ABSTRACT_DYNAMIC_REFLECTED_TYPE(componentType, version)
 
 /// \brief Ends the component implementation code block that was opened with XII_BEGIN_COMPONENT_TYPE.
 #define XII_END_COMPONENT_TYPE          XII_END_DYNAMIC_REFLECTED_TYPE
-#define XII_END_ABSTRACT_COMPONENT_TYPE XII_END_DYNAMIC_REFLECTED_TYPE
+#define XII_END_ABSTRACT_COMPONENT_TYPE XII_END_ABSTRACT_DYNAMIC_REFLECTED_TYPE
 
 #include <Core/World/Implementation/ComponentManager_inl.h>

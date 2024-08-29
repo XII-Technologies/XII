@@ -129,6 +129,11 @@ xiiUInt32 xiiWorldReader::GetComponentTypeVersion(const xiiRTTI* pRtti) const
   return uiVersion;
 }
 
+bool xiiWorldReader::HasComponentOfType(const xiiRTTI* pRtti) const
+{
+  return m_ComponentTypeVersions.Contains(pRtti);
+}
+
 void xiiWorldReader::ClearAndCompact()
 {
   m_IndexToGameObjectHandle.Clear();
@@ -662,8 +667,6 @@ bool xiiWorldReader::InstantiationContext::DeserializeComponents(xiiTime endTime
 {
   XII_PROFILE_SCOPE("xiiWorldReader::DeserializeComponents");
 
-  xiiStreamReader& s = *m_WorldReader.m_pStream;
-
   for (; m_uiCurrentComponentTypeIndex < m_WorldReader.m_ComponentTypes.GetCount(); ++m_uiCurrentComponentTypeIndex)
   {
     auto& compTypeInfo = m_WorldReader.m_ComponentTypes[m_uiCurrentComponentTypeIndex];
@@ -702,8 +705,6 @@ bool xiiWorldReader::InstantiationContext::AddComponentsToBatch(xiiTime endTime)
 {
   XII_PROFILE_SCOPE("xiiWorldReader::AddComponentsToBatch");
 
-  xiiUInt32 uiInitializedComponents = 0;
-
   if (!m_hComponentInitBatch.IsInvalidated())
   {
     m_WorldReader.m_pWorld->BeginAddingComponentsToInitBatch(m_hComponentInitBatch);
@@ -721,7 +722,6 @@ bool xiiWorldReader::InstantiationContext::AddComponentsToBatch(xiiTime endTime)
       if (m_WorldReader.m_pWorld->TryGetComponent(compTypeInfo.m_ComponentIndexToHandle[m_uiCurrentIndex++], pComponent))
       {
         pComponent->GetOwningManager()->InitializeComponent(pComponent);
-        ++uiInitializedComponents;
 
         ++m_uiCurrentNumComponentsProcessed;
 

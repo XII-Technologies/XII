@@ -27,6 +27,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiColorGradientResource, xiiColorGradientReso
 
 xiiResourceLoadDesc xiiColorGradientResource::UnloadData(Unload WhatToUnload)
 {
+  XII_IGNORE_UNUSED(WhatToUnload);
+
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
@@ -39,7 +41,7 @@ xiiResourceLoadDesc xiiColorGradientResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiColorGradientResource::UpdateContent(xiiStreamReader* Stream)
 {
-  XII_LOG_BLOCK("xiiColorGradientResource::UpdateContent", GetResourceDescription().GetData());
+  XII_LOG_BLOCK("xiiColorGradientResource::UpdateContent", GetResourceIdOrDescription());
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;

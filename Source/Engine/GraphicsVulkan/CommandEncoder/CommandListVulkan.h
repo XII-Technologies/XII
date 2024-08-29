@@ -7,12 +7,14 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
 public:
+  XII_ALWAYS_INLINE vk::CommandBuffer GetVulkanCommandBuffer() const { return m_vkCommandBuffer; };
+
 protected:
   friend class xiiGALCommandQueueVulkan;
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription, vk::CommandBuffer vkCommandBuffer);
 
   virtual ~xiiGALCommandListVulkan();
 
@@ -80,6 +82,7 @@ protected:
   virtual void InvalidateStatePlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
-};
 
-#include <GraphicsVulkan/CommandEncoder/Implementation/CommandListVulkan_inl.h>
+private:
+  vk::CommandBuffer m_vkCommandBuffer;
+};

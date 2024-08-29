@@ -75,7 +75,7 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
     ++iHideCursor;
 #  endif
 
-#  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#  if XII_ENABLED(XII_COMPILE_FOR_DEBUG) && defined(_DEBUG)
 
   xiiInt32 iRes = _CrtDbgReport(_CRT_ASSERT, szSourceFile, uiLine, nullptr, "'%s'\nFunction: %s\nMessage: %s", szExpression, szFunction, szAssertMsg);
 

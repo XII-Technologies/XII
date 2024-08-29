@@ -116,7 +116,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayout : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALInputLayoutCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALInputLayoutCreationDescription& GetDescription() const { return m_Description; };
 
 protected:
   friend class xiiGALDevice;
@@ -133,4 +133,3 @@ protected:
   xiiGALInputLayoutCreationDescription m_Description;
 };
 
-#include <GraphicsFoundation/Shader/Implementation/InputLayout_inl.h>

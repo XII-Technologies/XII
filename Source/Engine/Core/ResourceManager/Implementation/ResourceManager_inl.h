@@ -99,13 +99,12 @@ xiiResourceManager::GetOrCreateResource(xiiStringView sResourceID, DescriptorTyp
 
 XII_FORCE_INLINE xiiResource* xiiResourceManager::BeginAcquireResourcePointer(const xiiRTTI* pType, const xiiTypelessResourceHandle& hResource)
 {
+  XII_IGNORE_UNUSED(pType);
   XII_ASSERT_DEV(hResource.IsValid(), "Cannot acquire a resource through an invalid handle!");
 
   xiiResource* pResource = (xiiResource*)hResource.m_pResource;
 
-  XII_ASSERT_DEBUG(pResource->GetDynamicRTTI()->IsDerivedFrom(pType),
-                   "The requested resource does not have the same type ('{0}') as the resource handle ('{1}').", pResource->GetDynamicRTTI()->GetTypeName(),
-                   pType->GetTypeName());
+  XII_ASSERT_DEBUG(pResource->GetDynamicRTTI()->IsDerivedFrom(pType), "The requested resource does not have the same type ('{0}') as the resource handle ('{1}').", pResource->GetDynamicRTTI()->GetTypeName(), pType->GetTypeName());
 
   // pResource->m_iLockCount.Increment();
   return pResource;
@@ -132,9 +131,7 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
   ResourceType* pResource = (ResourceType*)hResource.m_hTypeless.m_pResource;
 
   // XII_ASSERT_DEV(pResource->m_iLockCount < 20, "You probably forgot somewhere to call 'EndAcquireResource' in sync with 'BeginAcquireResource'.");
-  XII_ASSERT_DEBUG(pResource->GetDynamicRTTI()->template IsDerivedFrom<ResourceType>(),
-                   "The requested resource does not have the same type ('{0}') as the resource handle ('{1}').", pResource->GetDynamicRTTI()->GetTypeName(),
-                   xiiGetStaticRTTI<ResourceType>()->GetTypeName());
+  XII_ASSERT_DEBUG(pResource->GetDynamicRTTI()->template IsDerivedFrom<ResourceType>(), "The requested resource does not have the same type ('{0}') as the resource handle ('{1}').", pResource->GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<ResourceType>()->GetTypeName());
 
   if (mode == xiiResourceAcquireMode::AllowLoadingFallback && GetForceNoFallbackAcquisition() > 0)
   {
@@ -161,8 +158,7 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
       // if BlockTillLoaded is specified, it will prepended to the preload array, thus will be loaded immediately
       InternalPreloadResource(pResource, mode >= xiiResourceAcquireMode::BlockTillLoaded);
 
-      if (mode == xiiResourceAcquireMode::AllowLoadingFallback &&
-          (pResource->m_hLoadingFallback.IsValid() || hFallbackResource.IsValid() || GetResourceTypeLoadingFallback<ResourceType>().IsValid()))
+      if (mode == xiiResourceAcquireMode::AllowLoadingFallback && (pResource->m_hLoadingFallback.IsValid() || hFallbackResource.IsValid() || GetResourceTypeLoadingFallback<ResourceType>().IsValid()))
       {
         // return the fallback resource for now, if there is one
         if (out_pAcquireResult)
@@ -203,14 +199,12 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
       if (out_pAcquireResult)
         *out_pAcquireResult = xiiResourceAcquireResult::MissingFallback;
 
-      return (ResourceType*)BeginAcquireResource(
-        xiiResourceManager::GetResourceTypeMissingFallback<ResourceType>(), xiiResourceAcquireMode::BlockTillLoaded);
+      return (ResourceType*)BeginAcquireResource(xiiResourceManager::GetResourceTypeMissingFallback<ResourceType>(), xiiResourceAcquireMode::BlockTillLoaded);
     }
 
     if (mode != xiiResourceAcquireMode::AllowLoadingFallback_NeverFail && mode != xiiResourceAcquireMode::BlockTillLoaded_NeverFail)
     {
-      XII_REPORT_FAILURE("The resource '{0}' of type '{1}' is missing and no fallback is available", pResource->GetResourceID(),
-                         xiiGetStaticRTTI<ResourceType>()->GetTypeName());
+      XII_REPORT_FAILURE("The resource '{0}' of type '{1}' is missing and no fallback is available", pResource->GetResourceID(), xiiGetStaticRTTI<ResourceType>()->GetTypeName());
     }
 
     if (out_pAcquireResult)
@@ -229,12 +223,16 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
 template <typename ResourceType>
 void xiiResourceManager::EndAcquireResource(ResourceType* pResource)
 {
+  XII_IGNORE_UNUSED(pResource);
+
   // XII_ASSERT_DEV(pResource->m_iLockCount > 0, "The resource lock counter is incorrect: {0}", (xiiInt32)pResource->m_iLockCount);
   // pResource->m_iLockCount.Decrement();
 }
 
 XII_FORCE_INLINE void xiiResourceManager::EndAcquireResourcePointer(xiiResource* pResource)
 {
+  XII_IGNORE_UNUSED(pResource);
+
   // XII_ASSERT_DEV(pResource->m_iLockCount > 0, "The resource lock counter is incorrect: {0}", (xiiInt32)pResource->m_iLockCount);
   // pResource->m_iLockCount.Decrement();
 }

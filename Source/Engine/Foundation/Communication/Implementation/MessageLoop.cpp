@@ -8,11 +8,11 @@
 XII_IMPLEMENT_SINGLETON(xiiMessageLoop);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <Foundation/Communication/Implementation/Win/MessageLoop_win.h>
+#  include <Foundation/Platform/Implementation/Windows/MessageLoop_win.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/Communication/Implementation/Linux/MessageLoop_linux.h>
+#  include <Foundation/Platform/Implementation/Linux/MessageLoop_linux.h>
 #else
-#  include <Foundation/Communication/Implementation/Mobile/MessageLoop_null.h>
+#  include <Foundation/Platform/Implementation/NoImpl/MessageLoop_NoImpl.h>
 #endif
 
 // clang-format off

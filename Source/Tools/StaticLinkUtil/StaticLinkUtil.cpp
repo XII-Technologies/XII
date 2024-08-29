@@ -124,7 +124,7 @@ public:
     m_sSearchDir = sSearchDir;
 
     // Add the empty data directory to access files via absolute paths
-    xiiFileSystem::AddDataDirectory("", "App", ":", xiiFileSystem::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
     // Use such a path to write to an absolute file
     // ':abs/C:/some/file.txt"

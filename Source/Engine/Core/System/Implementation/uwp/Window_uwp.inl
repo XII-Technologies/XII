@@ -31,19 +31,21 @@ xiiResult xiiWindow::Initialize()
   {
     if (m_CreationDescription.m_WindowMode == xiiWindowMode::FullscreenFixedResolution)
     {
-      xiiLog::Warning("xiiWindowMode::FullscreenFixedResolution is not supported on UWP. Falling back to "
-                      "xiiWindowMode::FullscreenBorderlessNativeResolution.");
+      xiiLog::Warning("xiiWindowMode::FullscreenFixedResolution is not supported on UWP. Falling back to xiiWindowMode::FullscreenBorderlessNativeResolution.");
+
       m_CreationDescription.m_WindowMode = xiiWindowMode::FullscreenBorderlessNativeResolution;
     }
     else if (m_CreationDescription.m_WindowMode == xiiWindowMode::WindowFixedResolution)
     {
-      xiiLog::Warning("xiiWindowMode::WindowFixedResolution is not supported on UWP since resizing a window can not be restricted. Falling "
-                      "back to xiiWindowMode::WindowResizable");
+      xiiLog::Warning("xiiWindowMode::WindowFixedResolution is not supported on UWP since resizing a window can not be restricted. Falling back to xiiWindowMode::WindowResizable");
+
       m_CreationDescription.m_WindowMode = xiiWindowMode::WindowResizable;
     }
 
     if (m_CreationDescription.AdjustWindowSizeAndPosition().Failed())
+    {
       xiiLog::Warning("Failed to adjust window size and position settings.");
+    }
 
     XII_ASSERT_RELEASE(m_CreationDescription.m_Resolution.HasNonZeroArea(), "The client area size can't be zero sized!");
   }
@@ -72,18 +74,23 @@ xiiResult xiiWindow::Initialize()
     // Get current *logical* screen DPI to do a pixel correct resize.
     ComPtr<ABI::Windows::Graphics::Display::IDisplayInformationStatics> displayInfoStatics;
     XII_HRESULT_TO_FAILURE(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_Graphics_Display_DisplayInformation).Get(), &displayInfoStatics));
+
     ComPtr<ABI::Windows::Graphics::Display::IDisplayInformation> displayInfo;
     XII_HRESULT_TO_FAILURE(displayInfoStatics->GetForCurrentView(&displayInfo));
+
     FLOAT logicalDpi = 1.0f;
     XII_HRESULT_TO_FAILURE(displayInfo->get_LogicalDpi(&logicalDpi));
 
     // Need application view for the next steps...
     ComPtr<ABI::Windows::UI::ViewManagement::IApplicationViewStatics2> appViewStatics;
     XII_HRESULT_TO_FAILURE(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_ViewManagement_ApplicationView).Get(), &appViewStatics));
+
     ComPtr<ABI::Windows::UI::ViewManagement::IApplicationView> appView;
     XII_HRESULT_TO_FAILURE(appViewStatics->GetForCurrentView(&appView));
+
     ComPtr<ABI::Windows::UI::ViewManagement::IApplicationView2> appView2;
     XII_HRESULT_TO_FAILURE(appView.As(&appView2));
+
     ComPtr<ABI::Windows::UI::ViewManagement::IApplicationView3> appView3;
     XII_HRESULT_TO_FAILURE(appView.As(&appView3));
 
@@ -119,8 +126,7 @@ xiiResult xiiWindow::Initialize()
         xiiUInt32 actualWidth  = static_cast<xiiUInt32>(visibleBounds.Width * (logicalDpi / 96.0f));
         xiiUInt32 actualHeight = static_cast<xiiUInt32>(visibleBounds.Height * (logicalDpi / 96.0f));
 
-        xiiLog::Warning("Failed to resize the window to {0}x{1}, instead (visible) size remains at {2}x{3}",
-                        m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height, actualWidth, actualHeight);
+        xiiLog::Warning("Failed to resize the window to {0}x{1}, instead (visible) size remains at {2}x{3}", m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height, actualWidth, actualHeight);
 
         // m_CreationDescription.m_Resolution.width = actualWidth;
         // m_CreationDescription.m_Resolution.height = actualHeight;
@@ -155,7 +161,9 @@ xiiResult xiiWindow::Destroy()
 
 xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 {
-  //#TODO Resizing fails on UWP already via the init code.
+  // #TODO Resizing fails on UWP already via the init code.
+  XII_IGNORE_UNUSED(newWindowSize);
+
   return XII_FAILURE;
 }
 

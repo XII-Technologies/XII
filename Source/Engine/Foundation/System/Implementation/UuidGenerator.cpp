@@ -4,13 +4,13 @@
 
 // Include inline file
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/System/Implementation/Win/UuidGenerator_win.h>
+#  include <Foundation/Platform/Implementation/Windows/UuidGenerator_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
-#  include <Foundation/System/Implementation/Posix/UuidGenerator_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/UuidGenerator_posix.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/System/Implementation/Posix/UuidGenerator_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/UuidGenerator_posix.h>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/System/Implementation/Android/UuidGenerator_android.h>
+#  include <Foundation/Platform/Implementation/Android/UuidGenerator_android.h>
 #else
 #  error "Uuid generation functions are not implemented on current platform"
 #endif

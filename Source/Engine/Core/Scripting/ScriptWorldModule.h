@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Foundation/CodeUtils/Expression/ExpressionVM.h>
+
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/Scripting/ScriptCoroutine.h>
 #include <Core/Utils/IntervalScheduler.h>
@@ -49,6 +51,10 @@ public:
 
   ///@}
 
+  /// \brief Returns a expression vm that can be used in custom script implementations.
+  /// Make sure to only execute one expression at a time, the VM is NOT thread safe.
+  xiiExpressionVM& GetSharedExpressionVM() { return m_SharedExpressionVM; }
+
   struct FunctionContext
   {
     enum Flags : xiiUInt8
@@ -74,6 +80,8 @@ private:
   xiiIdTable<xiiScriptCoroutineId, xiiUniquePtr<xiiScriptCoroutine>>           m_RunningScriptCoroutines;
   xiiHashTable<xiiScriptInstance*, xiiSmallArray<xiiScriptCoroutineHandle, 8>> m_InstanceToScriptCoroutines;
   xiiDynamicArray<xiiUniquePtr<xiiScriptCoroutine>>                            m_DeadScriptCoroutines;
+
+  xiiExpressionVM m_SharedExpressionVM;
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -14,7 +14,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 {
   // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALTextureVulkan::DeInitPlatform()
@@ -22,6 +22,12 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
   // Prevent releasing native objects.
   XII_ASSERT_NOT_IMPLEMENTED;
   return XII_SUCCESS;
+}
+
+const xiiGALSparseTextureProperties& xiiGALTextureVulkan::GetSparseProperties() const
+{
+  static xiiGALSparseTextureProperties tmp;
+  return tmp;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_TextureVulkan);

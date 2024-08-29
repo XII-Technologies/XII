@@ -146,7 +146,7 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
   xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
 
   xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
-  xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiFileSystem::AllowWrites).IgnoreResult();
+  xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
   xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);

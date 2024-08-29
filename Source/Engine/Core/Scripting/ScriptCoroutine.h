@@ -72,7 +72,7 @@ public:
     xiiTime        m_MaxDelay = xiiTime::MakeZero();
   };
 
-  virtual void   Start(xiiArrayPtr<xiiVariant> arguments) = 0;
+  virtual void   StartWithVarArgs(xiiArrayPtr<xiiVariant> arguments) = 0;
   virtual void   Stop() {}
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) = 0;
 
@@ -104,7 +104,7 @@ private:
     static_cast<Derived*>(this)->Start(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
   }
 
-  virtual void Start(xiiArrayPtr<xiiVariant> arguments) override
+  virtual void StartWithVarArgs(xiiArrayPtr<xiiVariant> arguments) override
   {
     StartImpl(arguments, std::make_index_sequence<sizeof...(Args)>{});
   }
@@ -120,9 +120,9 @@ struct xiiScriptCoroutineCreationMode
 
   enum Enum
   {
-    StopOther,     ///< Stop the other coroutine before creating a new one with the same name
-    DontCreateNew, ///< Don't create a new coroutine if there is already one running with the same name
-    AllowOverlap,  ///< Allow multiple overlapping coroutines with the same name
+    StopOther,     ///< Stop the other coroutine before creating a new one with the same name.
+    DontCreateNew, ///< Don't create a new coroutine if there is already one running with the same name.
+    AllowOverlap,  ///< Allow multiple overlapping coroutines with the same name.
 
     Default = StopOther
   };
@@ -157,8 +157,18 @@ public:
   virtual const xiiRTTI*                GetReturnType() const override { return nullptr; }
   virtual xiiBitflags<xiiPropertyFlags> GetReturnFlags() const override { return xiiPropertyFlags::Void; }
   virtual xiiUInt32                     GetArgumentCount() const override { return 0; }
-  virtual const xiiRTTI*                GetArgumentType(xiiUInt32 uiParamIndex) const override { return nullptr; }
-  virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const override { return xiiPropertyFlags::Void; }
+
+  virtual const xiiRTTI* GetArgumentType(xiiUInt32 uiParamIndex) const override
+  {
+    XII_IGNORE_UNUSED(uiParamIndex);
+    return nullptr;
+  }
+
+  virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const override
+  {
+    XII_IGNORE_UNUSED(uiParamIndex);
+    return xiiPropertyFlags::Void;
+  }
 
   virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override;
 
@@ -192,5 +202,16 @@ struct xiiHashHelper<xiiScriptCoroutineHandle>
 };
 
 /// \brief Currently not implemented as it is not needed for coroutine handles.
-XII_ALWAYS_INLINE void operator<<(xiiStreamWriter& ref_stream, const xiiScriptCoroutineHandle& hValue) {}
-XII_ALWAYS_INLINE void operator>>(xiiStreamReader& ref_stream, xiiScriptCoroutineHandle& ref_hValue) {}
+XII_ALWAYS_INLINE void operator<<(xiiStreamWriter& ref_stream, const xiiScriptCoroutineHandle& hValue)
+{
+  XII_IGNORE_UNUSED(ref_stream);
+  XII_IGNORE_UNUSED(hValue);
+  XII_ASSERT_NOT_IMPLEMENTED;
+}
+
+XII_ALWAYS_INLINE void operator>>(xiiStreamReader& ref_stream, xiiScriptCoroutineHandle& ref_hValue)
+{
+  XII_IGNORE_UNUSED(ref_stream);
+  XII_IGNORE_UNUSED(ref_hValue);
+  XII_ASSERT_NOT_IMPLEMENTED;
+}

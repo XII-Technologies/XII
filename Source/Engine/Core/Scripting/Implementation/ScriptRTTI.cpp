@@ -57,7 +57,7 @@ xiiScriptFunctionProperty::xiiScriptFunctionProperty(xiiStringView sName) :
   xiiAbstractFunctionProperty(nullptr)
 {
   m_sPropertyNameStorage.Assign(sName);
-  m_sPropertyName = m_sPropertyNameStorage.GetView();
+  m_sPropertyName = m_sPropertyNameStorage;
 }
 
 xiiScriptFunctionProperty::~xiiScriptFunctionProperty() = default;
@@ -94,9 +94,17 @@ void xiiScriptMessageHandler::FillMessagePropertyValues(const xiiMessage& msg, x
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiScriptInstance::xiiScriptInstance(xiiReflectedClass& ref_owner, xiiWorld* pWorld) :
-  m_Owner(ref_owner), m_pWorld(pWorld)
+xiiScriptInstance::xiiScriptInstance(xiiReflectedClass& inout_owner, xiiWorld* pWorld) :
+  m_Owner(inout_owner), m_pWorld(pWorld)
 {
+}
+
+void xiiScriptInstance::SetInstanceVariables(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters)
+{
+  for (auto it : parameters)
+  {
+    SetInstanceVariable(it.key, it.value);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////

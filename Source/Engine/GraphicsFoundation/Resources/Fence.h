@@ -41,7 +41,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALFence : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALFenceCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALFenceCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief This returns the last completed value signaled by the GPU.
   ///
@@ -82,5 +82,3 @@ protected:
 
   xiiAtomicInteger64 m_uiLastCompletedFenceValue;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/Fence_inl.h>

@@ -50,9 +50,19 @@ namespace xiiMath
     return floorf(f);
   }
 
+  XII_ALWAYS_INLINE xiiInt32 FloorToInt(float f)
+  {
+    return static_cast<xiiInt32>(floorf(f));
+  }
+
   XII_ALWAYS_INLINE float Ceil(float f)
   {
     return ceilf(f);
+  }
+
+  XII_ALWAYS_INLINE xiiInt32 CeilToInt(float f)
+  {
+    return static_cast<xiiInt32>(ceilf(f));
   }
 
   XII_ALWAYS_INLINE float Round(float f)
@@ -60,11 +70,15 @@ namespace xiiMath
     return Floor(f + 0.5f);
   }
 
+  XII_ALWAYS_INLINE xiiInt32 RoundToInt(float f)
+  {
+    return FloorToInt(f + 0.5f);
+  }
+
   XII_ALWAYS_INLINE float RoundToMultiple(float f, float fMultiple)
   {
     return Round(f / fMultiple) * fMultiple;
   }
-
 
   inline float RoundDown(float f, float fMultiple)
   {

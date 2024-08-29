@@ -56,22 +56,6 @@ public:
   static void UnregisterEventHandler(xiiEventSubscriptionID subscriptionId);
 
 public:
-  /// \brief Describes in which mode a data directory is mounted.
-  enum DataDirUsage
-  {
-    ReadOnly,
-    AllowWrites,
-  };
-
-  struct DataDirectoryInfo
-  {
-    DataDirUsage m_Usage;
-
-    xiiString             m_sRootName;
-    xiiString             m_sGroup;
-    xiiDataDirectoryType* m_pDataDirectory = nullptr;
-  };
-
   /// \name Data Directory Modifications
   ///
   /// All functions that add / remove data directories are not thread safe and require that this is done
@@ -87,7 +71,7 @@ public:
   /// mounted in different ways. For example a simple folder could be mounted on the local system, or via a HTTP server
   /// over a network (lets call it a 'FileServer'). Thus depending on which type of factories are registered, the file system
   /// can provide data from very different sources.
-  using xiiDataDirFactory = xiiDataDirectoryType* (*)(xiiStringView, xiiStringView, xiiStringView, xiiFileSystem::DataDirUsage);
+  using xiiDataDirFactory = xiiDataDirectoryType* (*)(xiiStringView, xiiStringView, xiiStringView, xiiDataDirUsage);
 
   /// \brief This function allows to register another data directory factory, which might be invoked when a new data directory is to be added.
   static void RegisterDataDirectoryFactory(xiiDataDirFactory factory, float fPriority = 0); // [tested]
@@ -107,7 +91,7 @@ public:
   /// that data directory. It must be used when writing to a file in this directory. For instance, if a data dir root name is "mydata", then the path
   /// ":mydata/SomeFile.txt" can be used to write to the top level folder of this data directory. The same can be used for reading exactly that file
   /// and ignoring the other data dirs.
-  static xiiResult AddDataDirectory(xiiStringView sDataDirectory, xiiStringView sGroup = {}, xiiStringView sRootName = {}, xiiFileSystem::DataDirUsage usage = ReadOnly); // [tested]
+  static xiiResult AddDataDirectory(xiiStringView sDataDirectory, xiiStringView sGroup = {}, xiiStringView sRootName = {}, xiiDataDirUsage usage = xiiDataDirUsage::ReadOnly); // [tested]
 
   /// \brief Searches for a data directory with the given root name and removes it
   ///
@@ -121,7 +105,7 @@ public:
   static void ClearAllDataDirectories(); // [tested]
 
   /// \brief If a data directory with the given root name already exists, it will be returned, nullptr otherwise.
-  static const DataDirectoryInfo* FindDataDirectoryWithRoot(xiiStringView sRootName);
+  static const xiiDataDirectoryInfo* FindDataDirectoryWithRoot(xiiStringView sRootName);
 
   /// \brief Returns the number of currently active data directories.
   static xiiUInt32 GetNumDataDirectories(); // [tested]
@@ -130,7 +114,7 @@ public:
   static xiiDataDirectoryType* GetDataDirectory(xiiUInt32 uiDataDirIndex); // [tested]
 
   /// \brief Returns the info about the n-th currently active data directory.
-  static const DataDirectoryInfo& GetDataDirectoryInfo(xiiUInt32 uiDataDirIndex);
+  static const xiiDataDirectoryInfo& GetDataDirectoryInfo(xiiUInt32 uiDataDirIndex);
 
   /// \brief Calls xiiDataDirectoryType::ReloadExternalConfigs() on all active data directories.
   static void ReloadAllExternalDataDirectoryConfigs();
@@ -245,7 +229,7 @@ public:
   /// \param out_ppDataDir If not null, it will be set to the data directory that would handle this path.
   ///
   /// \returns The function will return XII_FAILURE if it was not able to determine any location where the file could be read from or written to.
-  static xiiResult ResolvePath(xiiStringView sPath, xiiStringBuilder* out_pAbsolutePath, xiiStringBuilder* out_pDataDirRelativePath, xiiDataDirectoryType** out_pDataDir = nullptr); // [tested]
+  static xiiResult ResolvePath(xiiStringView sPath, xiiStringBuilder* out_pAbsolutePath, xiiStringBuilder* out_pDataDirRelativePath, const xiiDataDirectoryInfo** out_pDataDir = nullptr); // [tested]
 
   /// \brief Starts at szStartDirectory and goes up until it finds a folder that contains the given sub folder structure.
   ///
@@ -312,8 +296,8 @@ private:
 
   struct FileSystemData
   {
-    xiiHybridArray<Factory, 4>            m_DataDirFactories;
-    xiiHybridArray<DataDirectoryInfo, 16> m_DataDirectories;
+    xiiHybridArray<Factory, 4>               m_DataDirFactories;
+    xiiHybridArray<xiiDataDirectoryInfo, 16> m_DataDirectories;
 
     xiiEvent<const FileEvent&, xiiMutex> m_Event;
     xiiMutex                             m_FsMutex;
@@ -325,7 +309,7 @@ private:
   /// \brief Returns the given path relative to its data directory. The path must be inside the given data directory.
   static xiiStringView GetDataDirRelativePath(xiiStringView sFile, xiiUInt32 uiDataDir);
 
-  static DataDirectoryInfo* GetDataDirForRoot(const xiiString& sRoot);
+  static xiiDataDirectoryInfo* GetDataDirForRoot(const xiiString& sRoot);
 
   static void CleanUpRootName(xiiStringBuilder& sRoot);
 

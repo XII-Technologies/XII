@@ -486,7 +486,7 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALWaveFeature, 1)
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Basic),
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Vote),
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Arithmetic),
-  XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::BallOut),
+  XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Ballot),
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Shuffle),
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::ShuffleRelative),
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Clustered),
@@ -522,13 +522,13 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCommandQueuePriority, 1)
   XII_ENUM_CONSTANT(xiiGALCommandQueuePriority::RealTime),
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateCombiner, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::PassThrough),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerOverride),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerMin),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerMax),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerSum),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombiner::CombinerMul),
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateCombinerFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::PassThrough),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerOverride),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerMin),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerMax),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerSum),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCombinerFlags::CombinerMul),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShadingRateFormat, 1)
@@ -544,16 +544,16 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShadingRateAxis, 1)
   XII_ENUM_CONSTANT(xiiGALShadingRateAxis::X4),
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRate, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_1X1),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_1X2),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_1X4),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_2X1),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_2X2),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_2X4),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_4X1),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_4X2),
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_4X4),
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_1X1),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_1X2),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_1X4),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_2X1),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_2X2),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_2X4),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_4X1),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_4X2),
+  XII_BITFLAGS_CONSTANT(xiiGALShadingRateFlags::_4X4),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSampleCount, 1)

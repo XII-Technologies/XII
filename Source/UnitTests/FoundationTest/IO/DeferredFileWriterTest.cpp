@@ -6,7 +6,7 @@
 
 XII_CREATE_SIMPLE_TEST(IO, DeferredFileWriter)
 {
-  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "", ":", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
   const xiiStringBuilder szOutputFolder = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   xiiStringBuilder       sOutputFolderResolved;

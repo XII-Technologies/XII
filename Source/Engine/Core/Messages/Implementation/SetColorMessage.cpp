@@ -18,6 +18,17 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetColor, 1, xiiRTTIDefaultAllocator<xiiM
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgSetCustomData);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetCustomData, 1, xiiRTTIDefaultAllocator<xiiMsgSetCustomData>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Data", m_vData),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 void xiiMsgSetColor::ModifyColor(xiiColor& ref_color) const
@@ -66,8 +77,24 @@ void xiiMsgSetColor::Serialize(xiiStreamWriter& ref_stream) const
 
 void xiiMsgSetColor::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion)
 {
+  XII_IGNORE_UNUSED(uiTypeVersion);
+
   ref_stream >> m_Color;
   ref_stream >> m_Mode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void xiiMsgSetCustomData::Serialize(xiiStreamWriter& ref_stream) const
+{
+  ref_stream << m_vData;
+}
+
+void xiiMsgSetCustomData::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion)
+{
+  XII_IGNORE_UNUSED(uiTypeVersion);
+
+  ref_stream >> m_vData;
 }
 
 

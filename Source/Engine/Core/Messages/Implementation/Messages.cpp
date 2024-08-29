@@ -67,6 +67,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
 
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgInterruptPlaying);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgInterruptPlaying, 1, xiiRTTIDefaultAllocator<xiiMsgInterruptPlaying>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+//////////////////////////////////////////////////////////////////////////
+
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgParentChanged);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgParentChanged, 1, xiiRTTIDefaultAllocator<xiiMsgParentChanged>)
 {

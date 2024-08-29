@@ -14,7 +14,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALRasterizerStateVulkan final : public xiiGALRa
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRasterizerStateVulkan, xiiGALRasterizerState);
 
 public:
-  const vk::PipelineRasterizationStateCreateInfo* GetRasterizerState() const;
+  XII_ALWAYS_INLINE const vk::PipelineRasterizationStateCreateInfo* GetRasterizerState() const { return &m_RasterizerState; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -31,5 +31,3 @@ protected:
 protected:
   vk::PipelineRasterizationStateCreateInfo m_RasterizerState = {};
 };
-
-#include <GraphicsVulkan/States/Implementation/RasterizerStateVulkan_inl.h>

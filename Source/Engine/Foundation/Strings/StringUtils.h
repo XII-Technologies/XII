@@ -266,6 +266,12 @@ public:
   static void OutputFormattedUInt(char* szOutputBuffer, xiiUInt32 uiBufferSize, xiiUInt32& ref_uiWritePos, xiiUInt64 value, xiiUInt8 uiWidth, bool bPadZeros, xiiUInt8 uiBase, bool bUpperCase);
   /// \brief [internal] Prefer to use snprintf.
   static void OutputFormattedFloat(char* szOutputBuffer, xiiUInt32 uiBufferSize, xiiUInt32& ref_uiWritePos, double value, xiiUInt8 uiWidth, bool bPadZeros, xiiInt8 iPrecision, bool bScientific, bool bRemoveTrailingZeroes = false);
+
+  /// \brief Calculates in which line number szOffset is in the given string.
+  ///
+  /// Line numbers are 1-based.
+  /// Returns 0, if szOffset is outside the given string.
+  static xiiUInt32 CalculateLineNumber(const char* szString, const char* szOffset, const char* pStringEnd = xiiUnicodeUtils::GetMaxStringEnd<char>());
 };
 
 #include <Foundation/Strings/Implementation/StringUtils_inl.h>

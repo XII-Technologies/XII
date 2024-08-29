@@ -38,8 +38,9 @@ void xiiInputManager::RegisterInputSlot(xiiStringView sInputSlot, xiiStringView 
     {
       if ((it.Value().m_SlotFlags != xiiInputSlotFlags::Default) && (SlotFlags != xiiInputSlotFlags::Default))
       {
-        xiiStringBuilder tmp;
-        tmp.SetPrintf("Different devices register Input Slot '%s' with different Slot Flags: %16b vs. %16b", sInputSlot, it.Value().m_SlotFlags.GetValue(), SlotFlags.GetValue());
+        xiiStringBuilder tmp, tmp2;
+        tmp.SetPrintf("Different devices register Input Slot '%s' with different Slot Flags: %16b vs. %16b", sInputSlot.GetData(tmp2), it.Value().m_SlotFlags.GetValue(), SlotFlags.GetValue());
+
         xiiLog::Warning(tmp);
       }
 
@@ -153,8 +154,9 @@ xiiKeyState::Enum xiiInputManager::GetInputSlotState(xiiStringView sInputSlot, f
   if (it.IsValid())
   {
     if (pValue)
-      *pValue = it.Value().m_fValue;
-
+    {
+      *pValue = s_bInputSlotResetRequired ? it.Value().m_fValue : it.Value().m_fValueOld;
+    }
     return it.Value().m_State;
   }
 
@@ -164,6 +166,7 @@ xiiKeyState::Enum xiiInputManager::GetInputSlotState(xiiStringView sInputSlot, f
   xiiLog::Warning("xiiInputManager::GetInputSlotState: Input Slot '{0}' does not exist (yet). To ensure all devices are initialized, call "
                   "xiiInputManager::Update before querying device states, or at least call xiiInputManager::PollHardware.",
                   sInputSlot);
+
   RegisterInputSlot(sInputSlot, sInputSlot, xiiInputSlotFlags::None);
 
   return xiiKeyState::Up;
@@ -205,7 +208,8 @@ void xiiInputManager::ResetInputSlotValues()
   // this is crucial for accumulating the new values and for resetting the input state later
   for (xiiInputSlotsMap::Iterator it = GetInternals().s_InputSlots.GetIterator(); it.IsValid(); it.Next())
   {
-    it.Value().m_fValue = 0.0f;
+    it.Value().m_fValueOld = it.Value().m_fValue;
+    it.Value().m_fValue    = 0.0f;
   }
 }
 
@@ -312,7 +316,7 @@ xiiStringView xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::Enum mustH
   return xiiInputSlot_None;
 }
 
-xiiStringView xiiInputManager::GetInputSlotTouchPoint(unsigned int uiIndex)
+xiiStringView xiiInputManager::GetInputSlotTouchPoint(xiiUInt32 uiIndex)
 {
   switch (uiIndex)
   {
@@ -342,7 +346,7 @@ xiiStringView xiiInputManager::GetInputSlotTouchPoint(unsigned int uiIndex)
   }
 }
 
-xiiStringView xiiInputManager::GetInputSlotTouchPointPositionX(unsigned int uiIndex)
+xiiStringView xiiInputManager::GetInputSlotTouchPointPositionX(xiiUInt32 uiIndex)
 {
   switch (uiIndex)
   {
@@ -372,7 +376,7 @@ xiiStringView xiiInputManager::GetInputSlotTouchPointPositionX(unsigned int uiIn
   }
 }
 
-xiiStringView xiiInputManager::GetInputSlotTouchPointPositionY(unsigned int uiIndex)
+xiiStringView xiiInputManager::GetInputSlotTouchPointPositionY(xiiUInt32 uiIndex)
 {
   switch (uiIndex)
   {

@@ -62,6 +62,8 @@ xiiResourceLoadData xiiResourceLoaderFromFile::OpenDataStream(const xiiResource*
 
 void xiiResourceLoaderFromFile::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData)
 {
+  XII_IGNORE_UNUSED(pResource);
+
   FileResourceLoadData* pData = static_cast<FileResourceLoadData*>(loaderData.m_pCustomLoaderData);
 
   XII_DEFAULT_DELETE(pData);
@@ -93,6 +95,8 @@ bool xiiResourceLoaderFromFile::IsResourceOutdated(const xiiResource* pResource)
 
 xiiResourceLoadData xiiResourceLoaderFromMemory::OpenDataStream(const xiiResource* pResource)
 {
+  XII_IGNORE_UNUSED(pResource);
+
   m_Reader.SetStorage(&m_CustomData);
   m_Reader.SetReadPosition(0);
 
@@ -108,6 +112,9 @@ xiiResourceLoadData xiiResourceLoaderFromMemory::OpenDataStream(const xiiResourc
 
 void xiiResourceLoaderFromMemory::CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData)
 {
+  XII_IGNORE_UNUSED(pResource);
+  XII_IGNORE_UNUSED(loaderData);
+
   m_Reader.SetStorage(nullptr);
 }
 
@@ -123,7 +130,5 @@ bool xiiResourceLoaderFromMemory::IsResourceOutdated(const xiiResource* pResourc
 
   return true;
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_ResourceTypeLoader);

@@ -128,18 +128,18 @@ xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI* pRootObjectRtti, co
   return XII_SUCCESS;
 }
 
-xiiResult xiiPropertyPath::WriteToLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
+xiiResult xiiPropertyPath::WriteToLeafObject(void* pRootObject, const xiiRTTI* pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
 {
   XII_ASSERT_DEBUG(m_PathSteps.IsEmpty() || m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class), "To resolve the leaf object the path needs to be empty or end in a class.");
 
-  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr(), true, func);
+  return ResolvePath(pRootObject, pType, m_PathSteps.GetArrayPtr(), true, func);
 }
 
-xiiResult xiiPropertyPath::ReadFromLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
+xiiResult xiiPropertyPath::ReadFromLeafObject(void* pRootObject, const xiiRTTI* pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
 {
   XII_ASSERT_DEBUG(m_PathSteps.IsEmpty() || m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class), "To resolve the leaf object the path needs to be empty or end in a class.");
 
-  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr(), false, func);
+  return ResolvePath(pRootObject, pType, m_PathSteps.GetArrayPtr(), false, func);
 }
 
 xiiResult xiiPropertyPath::WriteProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const

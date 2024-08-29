@@ -125,6 +125,8 @@ xiiScriptCoroutineFunctionProperty::~xiiScriptCoroutineFunctionProperty() = defa
 
 void xiiScriptCoroutineFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const
 {
+  XII_IGNORE_UNUSED(out_returnValue);
+
   XII_ASSERT_DEBUG(pInstance != nullptr, "Invalid instance");
   auto pScriptInstance = static_cast<xiiScriptInstance*>(pInstance);
 
@@ -165,6 +167,7 @@ xiiScriptCoroutineMessageHandler::~xiiScriptCoroutineMessageHandler() = default;
 void xiiScriptCoroutineMessageHandler::Dispatch(xiiAbstractMessageHandler* pSelf, void* pInstance, xiiMessage& ref_msg)
 {
   XII_ASSERT_DEBUG(pInstance != nullptr, "Invalid instance.");
+
   auto pHandler        = static_cast<xiiScriptCoroutineMessageHandler*>(pSelf);
   auto pComponent      = static_cast<xiiScriptComponent*>(pInstance);
   auto pScriptInstance = pComponent->GetScriptInstance();
@@ -190,3 +193,5 @@ void xiiScriptCoroutineMessageHandler::Dispatch(xiiAbstractMessageHandler* pSelf
     pModule->StartCoroutine(hCoroutine, arguments);
   }
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_Implementation_ScriptCoroutine);

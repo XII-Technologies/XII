@@ -45,9 +45,9 @@ public:
 
   struct QueryParams
   {
-    xiiUInt32 m_uiCategoryBitmask = 0;
-    xiiTagSet m_IncludeTags;
-    xiiTagSet m_ExcludeTags;
+    xiiUInt32        m_uiCategoryBitmask = 0;
+    const xiiTagSet* m_pIncludeTags      = nullptr;
+    const xiiTagSet* m_pExcludeTags      = nullptr;
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     QueryStats* m_pStats = nullptr;
 #endif

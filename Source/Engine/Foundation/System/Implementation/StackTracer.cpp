@@ -7,15 +7,15 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#    include <Foundation/System/Implementation/Win/StackTracer_uwp.h>
+#    include <Foundation/Platform/Implementation/UWP/StackTracer_uwp.h>
 #  else
-#    include <Foundation/System/Implementation/Win/StackTracer_win.h>
+#    include <Foundation/Platform/Implementation/Windows/StackTracer_win.h>
 #  endif
 
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/System/Implementation/Posix/StackTracer_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/StackTracer_posix.h>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/System/Implementation/Android/StackTracer_android.h>
+#  include <Foundation/Platform/Implementation/Android/StackTracer_android.h>
 #else
 #  error "StackTracer is not implemented on current platform"
 #endif

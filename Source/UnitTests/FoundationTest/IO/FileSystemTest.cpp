@@ -53,8 +53,8 @@ Only concrete and clocks.\n\
     xiiFileSystem::RegisterDataDirectoryFactory(xiiDataDirectory::FolderType::Factory);
 
     // for absolute paths
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites) == XII_SUCCESS);
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(szOutputFolder, "Clear", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "", ":", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(szOutputFolder, "Clear", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
     xiiStringBuilder sTempFile = sOutputFolder1Resolved;
     sTempFile.AppendPath(LongPath);
@@ -70,16 +70,16 @@ Only concrete and clocks.\n\
     XII_TEST_BOOL(TempFile.Open(sTempFile) == XII_SUCCESS);
     TempFile.Close();
 
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder1, "Clear", "output1", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder1, "Clear", "output1", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
     XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Clear") == XII_SUCCESS);
 
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Remove", "output2", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Remove", "output2", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
     XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder1, "Remove") == XII_SUCCESS);
     XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Remove") == XII_SUCCESS);
 
     XII_TEST_INT(xiiFileSystem::RemoveDataDirectoryGroup("Remove"), 3);
 
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Remove", "output2", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Remove", "output2", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
     XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder1, "Remove") == XII_SUCCESS);
     XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Remove") == XII_SUCCESS);
 
@@ -88,13 +88,13 @@ Only concrete and clocks.\n\
     XII_TEST_INT(xiiFileSystem::RemoveDataDirectoryGroup("Remove"), 0);
     XII_TEST_INT(xiiFileSystem::RemoveDataDirectoryGroup("Clear"), 0);
 
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder1, "", "output1", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder1, "", "output1", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
     XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2) == XII_SUCCESS);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Add / Remove Data Dirs")
   {
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "xyz-rooted", "xyz", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "xyz-rooted", "xyz", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
     XII_TEST_BOOL(xiiFileSystem::FindDataDirectoryWithRoot("xyz") != nullptr);
 
@@ -244,7 +244,7 @@ Only concrete and clocks.\n\
 
     // create a file in the second dir
     {
-      XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Remove", "output2", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+      XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "Remove", "output2", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
       {
         xiiFileWriter FileOut;
@@ -293,8 +293,8 @@ Only concrete and clocks.\n\
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "FindFolderWithSubPath")
   {
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(szOutputFolder, "remove", "toplevel", xiiFileSystem::AllowWrites) == XII_SUCCESS);
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "remove", "output2", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(szOutputFolder, "remove", "toplevel", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder2, "remove", "output2", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
     xiiStringBuilder StartPath;
     xiiStringBuilder SubPath;

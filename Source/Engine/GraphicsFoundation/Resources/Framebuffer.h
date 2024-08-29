@@ -24,7 +24,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALFramebuffer : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALFramebufferCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALFramebufferCreationDescription& GetDescription() const { return m_Description; }
 
 protected:
   friend class xiiGALDevice;
@@ -40,5 +40,3 @@ protected:
 protected:
   xiiGALFramebufferCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/Framebuffer_inl.h>

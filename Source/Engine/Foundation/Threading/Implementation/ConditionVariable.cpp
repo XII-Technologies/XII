@@ -27,9 +27,9 @@ void xiiConditionVariable::Unlock()
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Threading/Implementation/Win/ConditionVariable_win.h>
+#  include <Foundation/Platform/Implementation/Windows/ConditionVariable_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Threading/Implementation/Posix/ConditionVariable_posix.h>
+#  include <Foundation/Platform/Implementation/Posix/ConditionVariable_posix.h>
 #else
 #  error "Unsupported Platform."
 #endif

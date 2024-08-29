@@ -90,10 +90,80 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
   };
 
   /// \brief This returns the size of the shader primitive data type.
-  static xiiUInt32 GetPrimitiveTypeSize(xiiGALShaderPrimitiveType::Enum type);
+  XII_ALWAYS_INLINE static xiiUInt32 GetPrimitiveTypeSize(xiiGALShaderPrimitiveType::Enum type)
+  {
+    switch (type)
+    {
+      case xiiGALShaderPrimitiveType::Bool:
+        return sizeof(xiiUInt32);
+      case xiiGALShaderPrimitiveType::Int8:
+        return sizeof(xiiInt8);
+      case xiiGALShaderPrimitiveType::Int16:
+        return sizeof(xiiInt16);
+      case xiiGALShaderPrimitiveType::Int32:
+        return sizeof(xiiInt32);
+      case xiiGALShaderPrimitiveType::Int64:
+        return sizeof(xiiInt64);
+      case xiiGALShaderPrimitiveType::UInt8:
+        return sizeof(xiiUInt8);
+      case xiiGALShaderPrimitiveType::UInt16:
+        return sizeof(xiiUInt16);
+      case xiiGALShaderPrimitiveType::UInt32:
+        return sizeof(xiiUInt32);
+      case xiiGALShaderPrimitiveType::UInt64:
+        return sizeof(xiiUInt64);
+      case xiiGALShaderPrimitiveType::Float16:
+        return sizeof(float) / 2;
+      case xiiGALShaderPrimitiveType::Float32:
+        return sizeof(float);
+      case xiiGALShaderPrimitiveType::Double:
+        return sizeof(double);
+      case xiiGALShaderPrimitiveType::Min8Float:
+        return 8U;
+      case xiiGALShaderPrimitiveType::Min10Float:
+        return 10U;
+      case xiiGALShaderPrimitiveType::Min16Float:
+        return 16U;
+      case xiiGALShaderPrimitiveType::Min12Int:
+        return 12U;
+      case xiiGALShaderPrimitiveType::Min16Int:
+        return 16U;
+      case xiiGALShaderPrimitiveType::Min16UInt:
+        return 16U;
+
+      default:
+        XII_ASSERT_DEV(false, "The requested type is not a primitive type");
+    }
+    return 0;
+  }
 
   /// \brief This returns true if the given shader primitive data type is a number representation, else false.
-  static bool IsNumberType(xiiGALShaderPrimitiveType::Enum type);
+  XII_ALWAYS_INLINE static bool IsNumberType(xiiGALShaderPrimitiveType::Enum type)
+  {
+    switch (type)
+    {
+      case xiiGALShaderPrimitiveType::Bool:
+      case xiiGALShaderPrimitiveType::Int8:
+      case xiiGALShaderPrimitiveType::Int16:
+      case xiiGALShaderPrimitiveType::Int32:
+      case xiiGALShaderPrimitiveType::Int64:
+      case xiiGALShaderPrimitiveType::UInt8:
+      case xiiGALShaderPrimitiveType::UInt16:
+      case xiiGALShaderPrimitiveType::UInt32:
+      case xiiGALShaderPrimitiveType::UInt64:
+      case xiiGALShaderPrimitiveType::Float16:
+      case xiiGALShaderPrimitiveType::Float32:
+      case xiiGALShaderPrimitiveType::Double:
+      case xiiGALShaderPrimitiveType::Min8Float:
+      case xiiGALShaderPrimitiveType::Min10Float:
+      case xiiGALShaderPrimitiveType::Min16Float:
+      case xiiGALShaderPrimitiveType::Min12Int:
+      case xiiGALShaderPrimitiveType::Min16Int:
+      case xiiGALShaderPrimitiveType::Min16UInt:
+        return true;
+    }
+    return false;
+  }
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderPrimitiveType);
@@ -169,16 +239,32 @@ public:
   xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& pByteCode);
 
   /// \brief This returns a raw pointer to the shader bytecode.
-  [[nodiscard]] const void* GetByteCode() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const void* GetByteCode() const
+  {
+    if (m_ByteCode.IsEmpty())
+      return nullptr;
+
+    return m_ByteCode.GetData();
+  };
 
   /// \brief This returns the size of the shader bytecode.
-  [[nodiscard]] xiiUInt32 GetSize() const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetSize() const { return m_ByteCode.GetCount(); };
 
   /// \brief This returns true if the shader bytecode is not empty, else returns false.
-  [[nodiscard]] bool IsValid() const;
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !m_ByteCode.IsEmpty(); }
 
   /// \brief This retrieves the shader resource description of the resource with the given name.
-  [[nodiscard]] const xiiGALShaderResourceDescription* GetDescription(const xiiTempHashedString& sName) const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALShaderResourceDescription* GetDescription(const xiiTempHashedString& sName) const
+  {
+    for (const auto& binding : m_ShaderResourceBindings)
+    {
+      if (binding.m_sName == sName)
+      {
+        return &binding;
+      }
+    }
+    return nullptr;
+  }
 
 public:
   void CopyFrom(const xiiArrayPtr<const xiiUInt8>& pByteCode);
@@ -194,5 +280,3 @@ public:
   xiiBitflags<xiiGALShaderType> m_ShaderStage           = xiiGALShaderType::Unknown;
   bool                          m_bWasCompiledWithDebug = false;
 };
-
-#include <GraphicsFoundation/Shader/Implementation/ShaderByteCode_inl.h>

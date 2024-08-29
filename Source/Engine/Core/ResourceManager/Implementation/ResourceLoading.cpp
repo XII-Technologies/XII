@@ -56,7 +56,7 @@ void xiiResourceManager::InternalPreloadResource(xiiResource* pResource, bool bH
       xiiResourceManager::s_pState->m_bAllowLaunchDataLoadTask = true;
     }
 
-    RunWorkerTask(pResource);
+    RunWorkerTask();
   }
 }
 
@@ -93,7 +93,7 @@ void xiiResourceManager::SetupWorkerTasks()
   }
 }
 
-void xiiResourceManager::RunWorkerTask(xiiResource* pResource)
+void xiiResourceManager::RunWorkerTask()
 {
   if (s_pState->m_bShutdown)
     return;
@@ -324,7 +324,7 @@ bool xiiResourceManager::ReloadResource(xiiResource* pResource, bool bForce)
   }
   else
   {
-    s_pState->m_ResourcesToUnloadOnMainThread.Insert(xiiTempHashedString(pResource->GetResourceID().GetView()), pResource->GetDynamicRTTI());
+    s_pState->m_ResourcesToUnloadOnMainThread.Insert(xiiTempHashedString(pResource->GetResourceID().GetData()), pResource->GetDynamicRTTI());
   }
 
   if (bAllowPreloading)
@@ -434,9 +434,7 @@ void xiiResourceManager::EnsureResourceLoadingState(xiiResource* pResourceToLoad
     else
     {
       // do not use xiiThreadUtils::YieldTimeSlice here, otherwise the thread is not tagged as 'blocked' in the TaskSystem
-      xiiTaskSystem::WaitForCondition([=]() -> bool {
-        return (xiiInt32)pResourceToLoad->GetLoadingState() >= (xiiInt32)RequestedState || (pResourceToLoad->GetLoadingState() == xiiResourceState::LoadedResourceMissing);
-      });
+      xiiTaskSystem::WaitForCondition([=]() -> bool { return (xiiInt32)pResourceToLoad->GetLoadingState() >= (xiiInt32)RequestedState || (pResourceToLoad->GetLoadingState() == xiiResourceState::LoadedResourceMissing); });
     }
   }
 }

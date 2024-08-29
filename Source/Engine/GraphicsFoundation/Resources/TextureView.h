@@ -119,10 +119,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureView : public xiiGALResourceView
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALTextureViewCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureViewCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief Returns the texture of which the texture view is created with.
-  [[nodiscard]] xiiGALTexture* GetTexture() const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALTexture* GetTexture() const { return m_pTexture; }
 
 protected:
   friend class xiiGALDevice;
@@ -140,5 +140,3 @@ protected:
 
   xiiGALTextureViewCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/Resources/Implementation/TextureView_inl.h>

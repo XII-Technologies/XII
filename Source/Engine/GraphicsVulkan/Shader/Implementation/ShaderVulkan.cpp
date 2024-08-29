@@ -3,8 +3,6 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
 
-#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
-
 xiiGALShaderVulkan::xiiGALShaderVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALShader(pDeviceVulkan, creationDescription)
 {

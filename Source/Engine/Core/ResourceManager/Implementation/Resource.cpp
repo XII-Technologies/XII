@@ -22,6 +22,8 @@ XII_CORE_DLL void IncreaseResourceRefCount(xiiResource* pResource, const void* p
 
     info.m_uiNumPtrs = xiiStackTracer::GetStackTrace(ptr);
   }
+#else
+  XII_IGNORE_UNUSED(pOwner);
 #endif
 
   pResource->m_iReferenceCount.Increment();
@@ -38,6 +40,8 @@ XII_CORE_DLL void DecreaseResourceRefCount(xiiResource* pResource, const void* p
       XII_REPORT_FAILURE("No associated stack-trace!");
     }
   }
+#else
+  XII_IGNORE_UNUSED(pOwner);
 #endif
 
   pResource->m_iReferenceCount.Decrement();
@@ -249,8 +253,7 @@ xiiResourceTypeLoader* xiiResource::GetDefaultResourceTypeLoader() const
 
 void xiiResource::ReportResourceIsMissing()
 {
-  xiiLog::SeriousWarning("Missing Resource of Type '{2}': '{0}' ('{1}')", xiiArgSensitive(GetResourceID(), "ResourceID"),
-                         xiiArgSensitive(m_sResourceDescription, "ResourceDesc"), GetDynamicRTTI()->GetTypeName());
+  xiiLog::SeriousWarning("Missing Resource of Type '{2}': '{0}' ('{1}')", xiiArgSensitive(GetResourceID(), "ResourceID"), xiiArgSensitive(m_sResourceDescription, "ResourceDesc"), GetDynamicRTTI()->GetTypeName());
 }
 
 void xiiResource::VerifyAfterCreateResource(const xiiResourceLoadDesc& ld)

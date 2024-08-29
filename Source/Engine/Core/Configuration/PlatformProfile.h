@@ -6,22 +6,6 @@
 class xiiChunkStreamWriter;
 class xiiChunkStreamReader;
 
-struct xiiProfileTargetPlatform
-{
-  enum Enum
-  {
-    PC,
-    UWP,
-    Android,
-
-    Default = PC
-  };
-
-  using StorageType = xiiUInt8;
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiProfileTargetPlatform);
-
 //////////////////////////////////////////////////////////////////////////
 
 /// \brief Base class for configuration objects that store e.g. asset transform settings or runtime configuration information
@@ -39,7 +23,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-class XII_CORE_DLL xiiPlatformProfile : public xiiReflectedClass
+class XII_CORE_DLL xiiPlatformProfile final : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPlatformProfile, xiiReflectedClass);
 
@@ -47,7 +31,11 @@ public:
   xiiPlatformProfile();
   ~xiiPlatformProfile();
 
+  void          SetConfigName(xiiStringView sName) { m_sName = sName; }
   xiiStringView GetConfigName() const { return m_sName; }
+
+  void          SetTargetPlatform(xiiStringView sPlatform) { m_sTargetPlatform = sPlatform; }
+  xiiStringView GetTargetPlatform() const { return m_sTargetPlatform; }
 
   void Clear();
   void AddMissingConfigs();
@@ -70,8 +58,13 @@ public:
   xiiResult SaveForRuntime(xiiStringView sFile) const;
   xiiResult LoadForRuntime(xiiStringView sFile);
 
+  /// \brief Returns a number indicating when the profile counter changed last. By storing and comparing this value, other code can update their state if necessary.
+  xiiUInt32 GetLastModificationCounter() const { return m_uiLastModificationCounter; }
+
+private:
+  xiiUInt32                              m_uiLastModificationCounter = 0;
   xiiString                              m_sName;
-  xiiEnum<xiiProfileTargetPlatform>      m_TargetPlatform;
+  xiiString                              m_sTargetPlatform = "Windows";
   xiiDynamicArray<xiiProfileConfigData*> m_Configs;
 };
 

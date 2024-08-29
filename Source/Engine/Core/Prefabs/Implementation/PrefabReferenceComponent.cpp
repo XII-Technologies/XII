@@ -14,7 +14,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPrefabReferenceComponent, 4, xiiComponentMode::Stati
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("General"),
+    new xiiCategoryAttribute("Prefabs"),
   }
   XII_END_ATTRIBUTES;
 }
@@ -23,7 +23,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 enum PrefabComponentFlags
 {
-  SelfDeletion = 1
+  SelfDeletion = 1, ///< the prefab component is currently deleting itself but does not want to remove the instantiated objects
 };
 
 xiiPrefabReferenceComponent::xiiPrefabReferenceComponent()  = default;
@@ -57,7 +57,7 @@ void xiiPrefabReferenceComponent::SerializePrefabParameters(const xiiWorld& worl
         if (var.IsA<xiiString>())
         {
           // and the resolver CAN map this string to a game object handle
-          xiiGameObjectHandle hObject = resolver(var.Get<xiiString>(), xiiComponentHandle(), nullptr);
+          xiiGameObjectHandle hObject = resolver(var.Get<xiiString>().GetData(), xiiComponentHandle(), nullptr);
           if (!hObject.IsInvalidated())
           {
             // write the handle properly to file (this enables correct remapping during deserialization)
@@ -295,6 +295,9 @@ void xiiPrefabReferenceComponent::InstantiatePrefab()
 
       for (xiiGameObject* pChild : createdRootObjects)
       {
+        if (pChild == GetOwner())
+          continue;
+
         FixComponent(pChild, uiUniqueID);
       }
 
@@ -398,7 +401,7 @@ const xiiRangeView<xiiStringView, xiiUInt32> xiiPrefabReferenceComponent::GetPar
   return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                                 [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
                                                 [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt); });
+                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
 }
 
 void xiiPrefabReferenceComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
@@ -422,7 +425,7 @@ void xiiPrefabReferenceComponent::SetParameter(xiiStringView sKey, const xiiVari
 
 void xiiPrefabReferenceComponent::RemoveParameter(xiiStringView sKey)
 {
-  if (m_Parameters.RemoveAndCopy(sKey))
+  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
     if (IsActiveAndInitialized())
     {
@@ -483,6 +486,8 @@ void xiiPrefabReferenceComponentManager::ResourceEventHandler(const xiiResourceE
 
 void xiiPrefabReferenceComponentManager::Update(const xiiWorldModule::UpdateContext& context)
 {
+  XII_IGNORE_UNUSED(context);
+
   for (auto hComp : m_ComponentsToUpdate)
   {
     xiiPrefabReferenceComponent* pComponent;

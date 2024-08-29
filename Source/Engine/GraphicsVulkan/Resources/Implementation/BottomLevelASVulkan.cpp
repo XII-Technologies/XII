@@ -24,4 +24,24 @@ xiiResult xiiGALBottomLevelASVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryDescriptionIndex(xiiStringView sName) const
+{
+  return xiiUInt32();
+}
+
+xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryIndex(xiiStringView sName) const
+{
+  return xiiUInt32();
+}
+
+xiiUInt32 xiiGALBottomLevelASVulkan::GetActualGeometryCount() const
+{
+  return xiiUInt32();
+}
+
+xiiGALScratchBufferSizeDescription xiiGALBottomLevelASVulkan::GetScratchBufferSizeDescription() const
+{
+  return xiiGALScratchBufferSizeDescription();
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_BottomLevelASVulkan);

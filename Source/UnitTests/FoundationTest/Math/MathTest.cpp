@@ -514,6 +514,18 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_BOOL(-12 == xiiMath::Ceil(-12.34f));
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "FloorToInt")
+  {
+    XII_TEST_BOOL(12 == xiiMath::FloorToInt(12.34f));
+    XII_TEST_BOOL(-13 == xiiMath::FloorToInt(-12.34f));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CeilToInt")
+  {
+    XII_TEST_BOOL(13 == xiiMath::CeilToInt(12.34f));
+    XII_TEST_BOOL(-12 == xiiMath::CeilToInt(-12.34f));
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "RoundDown (float)")
   {
     XII_TEST_FLOAT(10.0f, xiiMath::RoundDown(12.34f, 5.0f), 0.0000001f);
@@ -562,6 +574,15 @@ XII_CREATE_SIMPLE_TEST(Math, General)
 
     XII_TEST_BOOL(xiiMath::Round(12.54f) == 13);
     XII_TEST_BOOL(xiiMath::Round(-12.54f) == -13);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "RoundToInt")
+  {
+    XII_TEST_BOOL(xiiMath::RoundToInt(12.34f) == 12);
+    XII_TEST_BOOL(xiiMath::RoundToInt(-12.34f) == -12);
+
+    XII_TEST_BOOL(xiiMath::RoundToInt(12.54f) == 13);
+    XII_TEST_BOOL(xiiMath::RoundToInt(-12.54f) == -13);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "RoundClosest (float)")
@@ -1272,5 +1293,100 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, a, a));
     XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, c, b));
     XII_TEST_BOOL(xiiComparisonOperator::Compare(xiiComparisonOperator::GreaterEqual, a, b) == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "WrapUInt")
+  {
+    XII_TEST_INT(xiiMath::WrapUInt(0, 5), 0);
+    XII_TEST_INT(xiiMath::WrapUInt(1, 5), 1);
+    XII_TEST_INT(xiiMath::WrapUInt(2, 5), 2);
+    XII_TEST_INT(xiiMath::WrapUInt(3, 5), 3);
+    XII_TEST_INT(xiiMath::WrapUInt(4, 5), 4);
+    XII_TEST_INT(xiiMath::WrapUInt(5, 5), 0);
+    XII_TEST_INT(xiiMath::WrapUInt(6, 5), 1);
+
+    XII_TEST_INT(xiiMath::WrapUInt(0, 1), 0);
+    XII_TEST_INT(xiiMath::WrapUInt(1, 1), 0);
+    XII_TEST_INT(xiiMath::WrapUInt(2, 1), 0);
+
+    XII_TEST_INT(xiiMath::WrapUInt(0, 2), 0);
+    XII_TEST_INT(xiiMath::WrapUInt(1, 2), 1);
+    XII_TEST_INT(xiiMath::WrapUInt(2, 2), 0);
+    XII_TEST_INT(xiiMath::WrapUInt(3, 2), 1);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "WrapInt")
+  {
+    XII_TEST_INT(xiiMath::WrapInt(0, 5), 0);
+    XII_TEST_INT(xiiMath::WrapInt(1, 5), 1);
+    XII_TEST_INT(xiiMath::WrapInt(2, 5), 2);
+    XII_TEST_INT(xiiMath::WrapInt(3, 5), 3);
+    XII_TEST_INT(xiiMath::WrapInt(4, 5), 4);
+    XII_TEST_INT(xiiMath::WrapInt(5, 5), 0);
+    XII_TEST_INT(xiiMath::WrapInt(6, 5), 1);
+    XII_TEST_INT(xiiMath::WrapInt(7, 5), 2);
+
+    XII_TEST_INT(xiiMath::WrapInt(-1, 5), 4);
+    XII_TEST_INT(xiiMath::WrapInt(-2, 5), 3);
+    XII_TEST_INT(xiiMath::WrapInt(-4, 5), 1);
+    XII_TEST_INT(xiiMath::WrapInt(-5, 5), 0);
+    XII_TEST_INT(xiiMath::WrapInt(-6, 5), 4);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "WrapInt (min, max)")
+  {
+    XII_TEST_INT(xiiMath::WrapInt(0, 1, 5), 4);
+    XII_TEST_INT(xiiMath::WrapInt(1, 1, 5), 1);
+    XII_TEST_INT(xiiMath::WrapInt(2, 1, 5), 2);
+    XII_TEST_INT(xiiMath::WrapInt(3, 1, 5), 3);
+    XII_TEST_INT(xiiMath::WrapInt(4, 1, 5), 4);
+    XII_TEST_INT(xiiMath::WrapInt(5, 1, 5), 1);
+    XII_TEST_INT(xiiMath::WrapInt(6, 1, 5), 2);
+    XII_TEST_INT(xiiMath::WrapInt(7, 1, 5), 3);
+
+    XII_TEST_INT(xiiMath::WrapInt(-1, 1, 5), 3);
+    XII_TEST_INT(xiiMath::WrapInt(-2, 1, 5), 2);
+    XII_TEST_INT(xiiMath::WrapInt(-3, 1, 5), 1);
+    XII_TEST_INT(xiiMath::WrapInt(-4, 1, 5), 4);
+    XII_TEST_INT(xiiMath::WrapInt(-5, 1, 5), 3);
+    XII_TEST_INT(xiiMath::WrapInt(-6, 1, 5), 2);
+
+    XII_TEST_INT(xiiMath::WrapInt(-5, -5, -2), -5);
+    XII_TEST_INT(xiiMath::WrapInt(-6, -5, -2), -3);
+    XII_TEST_INT(xiiMath::WrapInt(-7, -5, -2), -4);
+    XII_TEST_INT(xiiMath::WrapInt(-8, -5, -2), -5);
+
+    XII_TEST_INT(xiiMath::WrapInt(0, -5, -2), -3);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "WrapFloat01")
+  {
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(0.0f), 0.0f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(0.5f), 0.5f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(1.0f), 1.0f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(1.1f), 0.1f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(1.7f), 0.7f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(2.0f), 1.0f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(2.2f), 0.2f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(-0.2f), 0.8f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(-0.9f), 0.1f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(-1.0f), 0.0f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(-1.1f), 0.9f, 0.0000001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat01(-1.01f), 0.99f, 0.0000001f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "WrapFloat")
+  {
+    XII_TEST_FLOAT(xiiMath::WrapFloat(3.5f, 3.5f, 5.7f), 3.5f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat(5.0f, 3.5f, 5.7f), 5.0f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat(5.7f, 3.5f, 5.7f), 5.7f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat(5.8f, 3.5f, 5.7f), 3.6f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat(3.4f, 3.5f, 5.7f), 5.6f, 0.00001f);
+
+    XII_TEST_FLOAT(xiiMath::WrapFloat(-1.2f, -1.2f, 0.5f), -1.2f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat(0.0f, -1.2f, 0.5f), 0.0f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat(0.5f, -1.2f, 0.5f), 0.5f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat(0.6f, -1.2f, 0.5f), -1.1f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::WrapFloat(-1.3f, -1.2f, 0.5f), 0.4f, 0.00001f);
   }
 }

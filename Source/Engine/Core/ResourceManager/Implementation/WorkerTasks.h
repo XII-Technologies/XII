@@ -38,6 +38,7 @@ private:
   friend class xiiResourceManager;
   friend class xiiResourceManagerState;
   friend class xiiResourceManagerWorkerDataLoad;
+
   xiiResourceManagerWorkerUpdateContent();
 
   virtual void Execute() override;

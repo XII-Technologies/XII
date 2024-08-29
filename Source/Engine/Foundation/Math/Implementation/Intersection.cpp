@@ -4,18 +4,102 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Math/Plane.h>
 
+bool xiiIntersectionUtils::RayTriangleIntersection(const xiiVec3& vRayStartPos, const xiiVec3& vRayDir, const xiiVec3& vVertex0, const xiiVec3& vVertex1, const xiiVec3& vVertex2, float* out_pIntersectionTime, xiiVec3* out_pIntersectionPoint)
+{
+  const xiiPlane plane = xiiPlane::MakeFromPoints(vVertex0, vVertex1, vVertex2);
+
+  xiiVec3 vIntersection;
+
+  if (!plane.GetRayIntersection(vRayStartPos, vRayDir, out_pIntersectionTime, &vIntersection))
+    return false;
+
+  if (out_pIntersectionPoint)
+    *out_pIntersectionPoint = vIntersection;
+
+  {
+    const xiiVec3 edge = vVertex1 - vVertex0;
+    const xiiVec3 vp   = vIntersection - vVertex0;
+    if (plane.m_vNormal.Dot(edge.CrossRH(vp)) < 0)
+    {
+      return false;
+    }
+  }
+
+  {
+    const xiiVec3 edge = vVertex2 - vVertex1;
+    const xiiVec3 vp   = vIntersection - vVertex1;
+    if (plane.m_vNormal.Dot(edge.CrossRH(vp)) < 0)
+    {
+      return false;
+    }
+  }
+
+  {
+    const xiiVec3 edge = vVertex0 - vVertex2;
+    const xiiVec3 vp   = vIntersection - vVertex2;
+    if (plane.m_vNormal.Dot(edge.CrossRH(vp)) < 0)
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool xiiIntersectionUtils::RayTriangleIntersection(const xiiVec3d& vRayStartPos, const xiiVec3d& vRayDir, const xiiVec3d& vVertex0, const xiiVec3d& vVertex1, const xiiVec3d& vVertex2, double* out_pIntersectionTime, xiiVec3d* out_pIntersectionPoint)
+{
+  const xiiPlaned plane = xiiPlaned::MakeFromPoints(vVertex0, vVertex1, vVertex2);
+
+  xiiVec3d vIntersection;
+
+  if (!plane.GetRayIntersection(vRayStartPos, vRayDir, out_pIntersectionTime, &vIntersection))
+    return false;
+
+  if (out_pIntersectionPoint)
+    *out_pIntersectionPoint = vIntersection;
+
+  {
+    const xiiVec3d edge = vVertex1 - vVertex0;
+    const xiiVec3d vp   = vIntersection - vVertex0;
+    if (plane.m_vNormal.Dot(edge.CrossRH(vp)) < 0)
+    {
+      return false;
+    }
+  }
+
+  {
+    const xiiVec3d edge = vVertex2 - vVertex1;
+    const xiiVec3d vp   = vIntersection - vVertex1;
+    if (plane.m_vNormal.Dot(edge.CrossRH(vp)) < 0)
+    {
+      return false;
+    }
+  }
+
+  {
+    const xiiVec3d edge = vVertex0 - vVertex2;
+    const xiiVec3d vp   = vIntersection - vVertex2;
+    if (plane.m_vNormal.Dot(edge.CrossRH(vp)) < 0)
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3& vRayStartPos, const xiiVec3& vRayDir, const xiiVec3* pPolygonVertices, xiiUInt32 uiNumVertices, float* out_pIntersectionTime, xiiVec3* out_pIntersectionPoint, xiiUInt32 uiVertexStride)
 {
   XII_ASSERT_DEBUG(uiNumVertices >= 3, "A polygon must have at least three vertices.");
   XII_ASSERT_DEBUG(uiVertexStride >= sizeof(xiiVec3), "The vertex stride is invalid.");
 
-  xiiPlane p = xiiPlane::MakeFromPoints(*pPolygonVertices, *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride), *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride * 2));
+  xiiPlane plane = xiiPlane::MakeFromPoints(*pPolygonVertices, *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride), *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride * 2));
 
-  XII_ASSERT_DEBUG(p.IsValid(), "The given polygon's plane is invalid (computed from the first three vertices only).");
+  XII_ASSERT_DEBUG(plane.IsValid(), "The given polygon's plane is invalid (computed from the first three vertices only).");
 
   xiiVec3 vIntersection;
 
-  if (!p.GetRayIntersection(vRayStartPos, vRayDir, out_pIntersectionTime, &vIntersection))
+  if (!plane.GetRayIntersection(vRayStartPos, vRayDir, out_pIntersectionTime, &vIntersection))
     return false;
 
   if (out_pIntersectionPoint)
@@ -29,11 +113,12 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3& vRayStartPos, c
   {
     const xiiVec3 vThisPoint = *xiiMemoryUtils::AddByteOffset(pPolygonVertices, xiiMath::SafeMultiply32(uiVertexStride, i));
 
-    xiiPlane EdgePlane = xiiPlane::MakeFromPoints(vThisPoint, vPrevPoint, vPrevPoint + p.m_vNormal);
-
-    // if the intersection point is outside of any of the edge planes, it is not inside the (convex) polygon
-    if (EdgePlane.GetPointPosition(vIntersection) == xiiPositionOnPlane::Back)
+    const xiiVec3 edge = vThisPoint - vPrevPoint;
+    const xiiVec3 vp   = vIntersection - vPrevPoint;
+    if (plane.m_vNormal.Dot(edge.CrossRH(vp)) < 0)
+    {
       return false;
+    }
 
     vPrevPoint = vThisPoint;
   }
@@ -47,13 +132,13 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3d& vRayStartPos, 
   XII_ASSERT_DEBUG(uiNumVertices >= 3, "A polygon must have at least three vertices.");
   XII_ASSERT_DEBUG(uiVertexStride >= sizeof(xiiVec3d), "The vertex stride is invalid.");
 
-  xiiPlaned p = xiiPlaned::MakeFromPoints(*pPolygonVertices, *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride), *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride * 2));
+  xiiPlaned plane = xiiPlaned::MakeFromPoints(*pPolygonVertices, *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride), *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride * 2));
 
-  XII_ASSERT_DEBUG(p.IsValid(), "The given polygon's plane is invalid (computed from the first three vertices only).");
+  XII_ASSERT_DEBUG(plane.IsValid(), "The given polygon's plane is invalid (computed from the first three vertices only).");
 
   xiiVec3d vIntersection;
 
-  if (!p.GetRayIntersection(vRayStartPos, vRayDir, out_pIntersectionTime, &vIntersection))
+  if (!plane.GetRayIntersection(vRayStartPos, vRayDir, out_pIntersectionTime, &vIntersection))
     return false;
 
   if (out_pIntersectionPoint)
@@ -67,11 +152,12 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3d& vRayStartPos, 
   {
     const xiiVec3d vThisPoint = *xiiMemoryUtils::AddByteOffset(pPolygonVertices, xiiMath::SafeMultiply32(uiVertexStride, i));
 
-    xiiPlaned EdgePlane = xiiPlaned::MakeFromPoints(vThisPoint, vPrevPoint, vPrevPoint + p.m_vNormal);
-
-    // if the intersection point is outside of any of the edge planes, it is not inside the (convex) polygon
-    if (EdgePlane.GetPointPosition(vIntersection) == xiiPositionOnPlane::Back)
+    const xiiVec3d edge = vThisPoint - vPrevPoint;
+    const xiiVec3d vp   = vIntersection - vPrevPoint;
+    if (plane.m_vNormal.Dot(edge.CrossRH(vp)) < 0)
+    {
       return false;
+    }
 
     vPrevPoint = vThisPoint;
   }

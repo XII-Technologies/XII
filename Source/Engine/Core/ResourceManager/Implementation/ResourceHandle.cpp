@@ -91,7 +91,13 @@ void xiiResourceHandleStreamOperations::ReadHandle(xiiStreamReader& Stream, xiiT
     return;
   }
 
-  const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sTemp);
+  const xiiRTTI* pRtti = xiiResourceManager::FindResourceForAssetType(sTemp);
+
+  if (pRtti == nullptr)
+  {
+    pRtti = xiiRTTI::FindTypeByName(sTemp);
+  }
+
   if (pRtti == nullptr)
   {
     xiiLog::Error("Unknown resource type '{0}'", sTemp);
@@ -106,7 +112,5 @@ void xiiResourceHandleStreamOperations::ReadHandle(xiiStreamReader& Stream, xiiT
     ResourceHandle = xiiResourceManager::LoadResourceByType(pRtti, sTemp);
   }
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_ResourceHandle);

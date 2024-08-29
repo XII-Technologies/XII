@@ -12,6 +12,12 @@ struct XII_CORE_DLL xiiMsgSetPlaying : public xiiMessage
   bool m_bPlay = true;
 };
 
+/// \brief Common message for components that can or need to be canceled immediately
+struct XII_CORE_DLL xiiMsgInterruptPlaying : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgInterruptPlaying, xiiMessage);
+};
+
 /// \brief Basic message to set some generic parameter to a float value.
 struct XII_CORE_DLL xiiMsgSetFloatParameter : public xiiMessage
 {

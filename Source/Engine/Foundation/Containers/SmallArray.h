@@ -166,6 +166,8 @@ public:
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
 
+  using value_type             = T;
+  using const_reference        = const T&;
   using const_iterator         = const T*;
   using const_reverse_iterator = const_reverse_pointer_iterator<T>;
   using iterator               = T*;

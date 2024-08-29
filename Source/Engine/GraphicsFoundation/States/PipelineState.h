@@ -206,16 +206,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription : publi
                                                                                        ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
 
   /// \brief Returns true if this pipeline state is a graphics pipeline.
-  bool IsAnyGraphicsPipeline() const;
+  XII_ALWAYS_INLINE constexpr bool IsAnyGraphicsPipeline() const { return m_PipelineType == xiiGALPipelineType::Graphics || m_PipelineType == xiiGALPipelineType::Mesh; }
 
   /// \brief Returns true if this pipeline state is a compute pipeline.
-  bool IsComputePipeline() const;
+  XII_ALWAYS_INLINE constexpr bool IsComputePipeline() const { return m_PipelineType == xiiGALPipelineType::Compute; }
 
   /// \brief Returns true if this pipeline state is a ray tracing pipeline.
-  bool IsRayTracingPipeline() const;
+  XII_ALWAYS_INLINE constexpr bool IsRayTracingPipeline() const { return m_PipelineType == xiiGALPipelineType::RayTracing; }
 
   /// \brief Returns true if this pipeline state is a tile pipeline.
-  bool IsTilePipeline() const;
+  XII_ALWAYS_INLINE constexpr bool IsTilePipeline() const { return m_PipelineType == xiiGALPipelineType::Tile; }
 };
 
 /// \brief Interface that defines methods to manipulate a pipeline state object.
@@ -225,7 +225,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineState : public xiiGALDeviceObject
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALPipelineStateCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALPipelineStateCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief This is used to set the constant (uniform) buffer for a shader resource.
   ///
@@ -295,5 +295,3 @@ protected:
 protected:
   xiiGALPipelineStateCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/States/Implementation/PipelineState_inl.h>

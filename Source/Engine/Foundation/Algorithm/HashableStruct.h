@@ -21,6 +21,8 @@ public:
 
   void operator=(const xiiHashableStruct<DERIVED>& other); // [tested]
 
+  XII_ALWAYS_INLINE constexpr bool operator==(const xiiHashableStruct<DERIVED>& rhs) const = default;
+
   /// \brief Calculates the 32 bit hash of the struct and returns it
   xiiUInt32 CalculateHash() const; // [tested]
 };

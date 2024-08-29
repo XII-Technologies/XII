@@ -19,7 +19,7 @@ XII_CREATE_SIMPLE_TEST(Image, ImageUtils)
   if (addDir.Failed())
     return;
 
-  addDir = xiiFileSystem::AddDataDirectory(sWriteDir.GetData(), "ImageTest", "output", xiiFileSystem::AllowWrites);
+  addDir = xiiFileSystem::AddDataDirectory(sWriteDir.GetData(), "ImageTest", "output", xiiDataDirUsage::AllowWrites);
   XII_TEST_BOOL(addDir == XII_SUCCESS);
 
   if (addDir.Failed())

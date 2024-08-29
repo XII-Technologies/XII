@@ -24,7 +24,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiComponent, 1, xiiRTTINoAllocator)
     XII_SCRIPT_FUNCTION_PROPERTY(OnActivated)->AddAttributes(new xiiScriptBaseClassFunctionAttribute(xiiComponent_ScriptBaseClassFunctions::OnActivated)),
     XII_SCRIPT_FUNCTION_PROPERTY(OnDeactivated)->AddAttributes(new xiiScriptBaseClassFunctionAttribute(xiiComponent_ScriptBaseClassFunctions::OnDeactivated)),
     XII_SCRIPT_FUNCTION_PROPERTY(OnSimulationStarted)->AddAttributes(new xiiScriptBaseClassFunctionAttribute(xiiComponent_ScriptBaseClassFunctions::OnSimulationStarted)),
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_Update)->AddAttributes(new xiiScriptBaseClassFunctionAttribute(xiiComponent_ScriptBaseClassFunctions::Update)),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_Update, In, "DeltaTime")->AddAttributes(new xiiScriptBaseClassFunctionAttribute(xiiComponent_ScriptBaseClassFunctions::Update)),
   }
   XII_END_FUNCTIONS;
 }
@@ -53,10 +53,12 @@ const xiiWorld* xiiComponent::GetWorld() const
 
 void xiiComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
+  XII_IGNORE_UNUSED(ref_stream);
 }
 
 void xiiComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
+  XII_IGNORE_UNUSED(ref_stream);
 }
 
 void xiiComponent::EnsureInitialized()
@@ -150,11 +152,15 @@ void xiiComponent::EnableUnhandledMessageHandler(bool enable)
 
 bool xiiComponent::OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg)
 {
+  XII_IGNORE_UNUSED(msg);
+  XII_IGNORE_UNUSED(bWasPostedMsg);
   return false;
 }
 
 bool xiiComponent::OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) const
 {
+  XII_IGNORE_UNUSED(msg);
+  XII_IGNORE_UNUSED(bWasPostedMsg);
   return false;
 }
 
@@ -196,8 +202,9 @@ xiiWorld* xiiComponent::Reflection_GetWorld() const
   return m_pManager->GetWorld();
 }
 
-void xiiComponent::Reflection_Update()
+void xiiComponent::Reflection_Update(xiiTime deltaTime)
 {
+  XII_IGNORE_UNUSED(deltaTime);
   // This is just a dummy function for the scripting reflection
 }
 
@@ -207,8 +214,7 @@ bool xiiComponent::SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg)
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     if (msg.GetDebugMessageRouting())
-      xiiLog::Warning("Discarded message with ID {0} because component of type '{1}' is neither initialized nor active at the moment", msg.GetId(),
-                      GetDynamicRTTI()->GetTypeName());
+      xiiLog::Warning("Discarded message with ID {0} because component of type '{1}' is neither initialized nor active at the moment", msg.GetId(), GetDynamicRTTI()->GetTypeName());
 #endif
 
     return false;
@@ -234,8 +240,7 @@ bool xiiComponent::SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) cons
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     if (msg.GetDebugMessageRouting())
-      xiiLog::Warning("Discarded message with ID {0} because component of type '{1}' is neither initialized nor active at the moment", msg.GetId(),
-                      GetDynamicRTTI()->GetTypeName());
+      xiiLog::Warning("Discarded message with ID {0} because component of type '{1}' is neither initialized nor active at the moment", msg.GetId(), GetDynamicRTTI()->GetTypeName());
 #endif
 
     return false;
@@ -254,6 +259,5 @@ bool xiiComponent::SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) cons
 
   return false;
 }
-
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_Component);

@@ -32,10 +32,10 @@ void xiiDataDirectoryReaderWriterBase::Close()
   xiiFileSystem::FileEvent fe;
   fe.m_EventType        = xiiFileSystem::FileEventType::CloseFile;
   fe.m_sFileOrDirectory = GetFilePath();
-  fe.m_pDataDir         = m_pDataDirectory;
+  fe.m_pDataDir         = m_pDataDirType;
   xiiFileSystem::s_pData->m_Event.Broadcast(fe);
 
-  m_pDataDirectory->OnReaderWriterClose(this);
+  m_pDataDirType->OnReaderWriterClose(this);
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_FileSystem_Implementation_DataDirType);

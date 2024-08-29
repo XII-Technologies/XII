@@ -38,7 +38,6 @@ namespace
     enum Enum : xiiUInt8
     {
       SwapChain = 0U,
-      CommandQueue,
       BottomLevelAS,
       Buffer,
       BufferView,
@@ -61,7 +60,6 @@ namespace
   };
 
   static_assert(sizeof(xiiGALSwapChainHandle) == sizeof(xiiUInt32));
-  static_assert(sizeof(xiiGALCommandQueueHandle) == sizeof(xiiUInt32));
   static_assert(sizeof(xiiGALBottomLevelASHandle) == sizeof(xiiUInt32));
   static_assert(sizeof(xiiGALBufferHandle) == sizeof(xiiUInt32));
   static_assert(sizeof(xiiGALBufferViewHandle) == sizeof(xiiUInt32));
@@ -159,13 +157,14 @@ xiiResult xiiGALDevice::Initialize()
 {
   XII_LOG_BLOCK("xiiGALDevice::Initialize");
 
+  // Initialize platform device.
   XII_SUCCEED_OR_RETURN(InitializePlatform());
 
   // Fill the device capabilities
-  FillCapabilitiesPlatform();
+  XII_SUCCEED_OR_RETURN(FillCapabilitiesPlatform());
 
-  // Create command queues.
-  XII_SUCCEED_OR_RETURN(CreateCommandQueuesPlatform());
+  // Initialize device after platform capabilities have been filled.
+  XII_SUCCEED_OR_RETURN(PostInitializePlatform());
 
   xiiLog::Info("Adapter: '{}' - {} VRAM, {} Sys RAM, {} Shared RAM.", m_AdapterDescription.m_sAdapterName, xiiArgFileSize(m_AdapterDescription.m_MemoryProperties.m_uiLocalMemory),
                xiiArgFileSize(m_AdapterDescription.m_MemoryProperties.m_uiHostVisibleMemory), xiiArgFileSize(m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory));
@@ -187,6 +186,11 @@ xiiResult xiiGALDevice::Initialize()
   }
 
   return XII_SUCCESS;
+}
+
+xiiResult xiiGALDevice::PostInitialize()
+{
+  return PostInitializePlatform();
 }
 
 xiiResult xiiGALDevice::Shutdown()
@@ -283,11 +287,22 @@ void xiiGALDevice::EndFrame()
   }
 }
 
+#define XII_VERIFY_SWAP_CHAIN(expression, ...)             \
+  do                                                       \
+  {                                                        \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);             \
+    if (!(expression)) { return xiiGALSwapChainHandle(); } \
+  } while (false)
+
 xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  /// \todo GraphicsFoundation: Add swap chain description validation.
+  XII_VERIFY_SWAP_CHAIN(description.m_pWindow != nullptr, "The swap chain window handle is invalid.");
+  XII_VERIFY_SWAP_CHAIN(description.m_Resolution.HasNonZeroArea(), "The swap chain resolution must have a non-zero area.");
+  XII_VERIFY_SWAP_CHAIN(description.m_ColorBufferFormat != xiiGALTextureFormat::Unknown, "The swap chain color buffer format is invalid.");
+  XII_VERIFY_SWAP_CHAIN(!description.m_Usage.IsNoFlagSet(), "The swap chain usage is not set.");
+  XII_VERIFY_SWAP_CHAIN(description.m_fDefaultDepthValue > 0.0f, "The swap chain usage is not set.");
 
   xiiGALSwapChain* pSwapChain = CreateSwapChainPlatform(description);
 
@@ -317,39 +332,7 @@ void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
   }
 }
 
-xiiGALCommandQueueHandle xiiGALDevice::CreateCommandQueue(const xiiGALCommandQueueCreationDescription& description)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  /// \todo GraphicsFoundation: Add command queue description validation.
-
-  xiiGALCommandQueue* pCommandQueue = CreateCommandQueuePlatform(description);
-
-  if (pCommandQueue == nullptr)
-  {
-    return xiiGALCommandQueueHandle();
-  }
-  else
-  {
-    return xiiGALCommandQueueHandle(m_CommandQueues.Insert(pCommandQueue));
-  }
-}
-
-void xiiGALDevice::DestroyCommandQueue(xiiGALCommandQueueHandle hCommandQueue)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  xiiGALCommandQueue* pCommandQueue = nullptr;
-
-  if (m_CommandQueues.TryGetValue(hCommandQueue, pCommandQueue))
-  {
-    AddDestroyedObject(GALObjectType::CommandQueue, hCommandQueue);
-  }
-  else
-  {
-    xiiLog::Warning("DestroyCommandQueue called on invalid handle (double free?).");
-  }
-}
+#undef XII_VERIFY_SWAP_CHAIN
 
 #define XII_VERIFY_BLEND_STATE(expression, ...)             \
   do                                                        \
@@ -2617,16 +2600,6 @@ void xiiGALDevice::FlushDestroyedObjects()
         XII_VERIFY(m_SwapChains.Remove(hSwapChain, &pSwapChain), "SwapChain not found in idTable.");
 
         DestroySwapChainPlatform(pSwapChain);
-      }
-      break;
-      case GALObjectType::CommandQueue:
-      {
-        xiiGALCommandQueueHandle hCommandQueue(xiiGALCommandQueueHandle::IdType(destroyedObject.m_uiHandle));
-        xiiGALCommandQueue*      pCommandQueue = nullptr;
-
-        XII_VERIFY(m_CommandQueues.Remove(hCommandQueue, &pCommandQueue), "CommandQueue not found in idTable.");
-
-        DestroyCommandQueuePlatform(pCommandQueue);
       }
       break;
       case GALObjectType::BottomLevelAS:

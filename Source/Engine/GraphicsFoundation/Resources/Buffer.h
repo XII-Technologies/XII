@@ -94,7 +94,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBuffer : public xiiGALResource
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALBufferCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief This returns the handle of the default view.
   ///
@@ -160,5 +160,3 @@ protected:
 private:
   void CreateDefaultResourceViews(xiiGALBufferHandle hBuffer);
 };
-
-#include <GraphicsFoundation/Resources/Implementation/Buffer_inl.h>

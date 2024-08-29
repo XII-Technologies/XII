@@ -26,9 +26,8 @@ if(XII_CMAKE_PLATFORM_LINUX)
   target_include_directories(${PROJECT_NAME} PRIVATE "${THIRDPARTY_DIR}/DirectXMath/include" "${THIRDPARTY_DIR}/sal")
 endif()
 
-if (NOT XII_CMAKE_PLATFORM_WINDOWS_UWP) # Not supported on UWP
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    tinyexr
-  )
+if(XII_3RDPARTY_TINYEXR_SUPPORT)
+  if (NOT XII_CMAKE_PLATFORM_WINDOWS_UWP)
+    target_link_libraries(${PROJECT_NAME} PRIVATE tinyexr)
+  endif()
 endif()

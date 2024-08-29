@@ -1,6 +1,6 @@
 #include <Texture/TexturePCH.h>
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
+#ifdef BUILDSYSTEM_ENABLE_TINYEXR_SUPPORT
 
 #  include <Texture/Image/Formats/ExrFileFormat.h>
 #  include <Texture/Image/Image.h>

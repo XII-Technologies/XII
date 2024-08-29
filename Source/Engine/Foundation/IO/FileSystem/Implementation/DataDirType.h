@@ -8,6 +8,23 @@ class xiiDataDirectoryReaderWriterBase;
 class xiiDataDirectoryReader;
 class xiiDataDirectoryWriter;
 struct xiiFileStats;
+class xiiDataDirectoryType;
+
+/// \brief Describes in which mode a data directory is mounted.
+enum class xiiDataDirUsage
+{
+  ReadOnly,
+  AllowWrites,
+};
+
+struct xiiDataDirectoryInfo
+{
+  xiiDataDirUsage m_Usage;
+
+  xiiString             m_sRootName;
+  xiiString             m_sGroup;
+  xiiDataDirectoryType* m_pDataDirType = nullptr;
+};
 
 /// \brief The base class for all data directory types.
 ///
@@ -145,7 +162,7 @@ protected:
 
   bool                  m_bIsReader;
   xiiInt32              m_iDataDirUserData = 0;
-  xiiDataDirectoryType* m_pDataDirectory;
+  xiiDataDirectoryType* m_pDataDirType;
   xiiString128          m_sFilePath;
 };
 

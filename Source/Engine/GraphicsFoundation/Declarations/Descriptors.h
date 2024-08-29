@@ -48,7 +48,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_ResourceBuffer8BitAccess          = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports reading and writing 8-bit types from buffers bound as shader resource or unordered access views.
   xiiEnum<xiiGALDeviceFeatureState> m_UniformBuffer8BitAccess           = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports reading 8-bit types from uniform buffers.
   xiiEnum<xiiGALDeviceFeatureState> m_ShaderResourceRuntimeArray        = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports runtime-sized shader arrays (eg. arrays without a specific size).This feature is always enabled in DirectX12 backend and can optionally be enabled in Vulkan backend. Run-time sized shader arrays are not available in other backends.
-  xiiEnum<xiiGALDeviceFeatureState> m_WaveOp                            = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports wave ops or (DirectX 12) or subgroups (Vulkan).
+  xiiEnum<xiiGALDeviceFeatureState> m_WaveOperation                     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports wave operations or (DirectX 12) or subgroups (Vulkan).
   xiiEnum<xiiGALDeviceFeatureState> m_InstanceDataStepRate              = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports instance data step rates other than 1.
   xiiEnum<xiiGALDeviceFeatureState> m_NativeFence                       = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports fence with Uint64 counter. Native fence can wait on GPU for a signal from CPU, can be enqueued for wait operation for any value. If not natively supported by the device, the fence is emulated where possible.
   xiiEnum<xiiGALDeviceFeatureState> m_TileShaders                       = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports tile shaders.
@@ -57,9 +57,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_SparseResources                   = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports sparse (aka. tiled or partially resident) resources.
   xiiEnum<xiiGALDeviceFeatureState> m_SubpassFramebufferFetch           = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports framebuffer fetch for input attachments.
   xiiEnum<xiiGALDeviceFeatureState> m_TextureComponentSwizzle           = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports texture component swizzle.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALDeviceFeatures& rhs) const;
+  xiiEnum<xiiGALDeviceFeatureState> m_NativeMultiDraw                   = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports a dedicated command that can be used to issue multiple draw calls with a single command (e.g. vkCmdDrawMultiExt).
+  xiiEnum<xiiGALDeviceFeatureState> m_AsynchronousShaderCompilation     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports asynchronous shader compilation.
 };
 
 /// \brief This describes the optimized depth-stencil clear value.
@@ -69,9 +68,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilClearValue : public xiiHasha
 
   float    m_fDepth    = 1.0f; ///< Depth clear value.
   xiiUInt8 m_uiStencil = 0U;   ///< Stencil clear value.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALDepthStencilClearValue& rhs) const;
 };
 
 /// \brief This describes the optimized color clear value.
@@ -82,9 +78,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashable
   xiiEnum<xiiGALTextureFormat> m_TextureFormat = xiiGALTextureFormat::Unknown; ///< Texture format.
   xiiColor                     m_ClearColor    = xiiColor::Black;              ///< Render target clear value.
   xiiGALDepthStencilClearValue m_DepthStencil;                                 ///< Depth stencil clear value.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALOptimizedClearValue& rhs) const;
 };
 
 /// \brief This describes the display mode attributes.
@@ -98,9 +91,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDisplayModeDescription : public xiiHasha
   xiiUInt32                    m_uiRefreshRateDenominator = 0U;                               ///< Refresh rate denominator.
   xiiEnum<xiiGALScalingMode>   m_ScalingMode              = xiiGALScalingMode::Unspecified;   ///< The scaling mode.
   xiiEnum<xiiGALScanLineOrder> m_ScanLineOrder            = xiiGALScanLineOrder::Unspecified; ///< The scanline drawing mode.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALDisplayModeDescription& rhs) const;
 };
 
 /// \brief This describes the swap chain creation description.
@@ -119,9 +109,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   float     m_fDefaultDepthValue    = 1.0f;                                                               ///< Default depth value, which is used as the optimized depth clear value in D3D12.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                 ///< Default stencil value, which is used as the optimized clear value in D3D12.
   bool      m_bIsPrimary            = true;                                                               ///< This indicates if this swap chain is a primary swap chain.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALSwapChainCreationDescription& rhs) const;
 };
 
 /// \brief This describes the full screen mode description.
@@ -134,9 +121,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFullScreenModeDescription : public xiiHa
   xiiUInt32                    m_uiRefreshRateDenominator = 0U;                               ///< Refresh rate denominator.
   xiiEnum<xiiGALScalingMode>   m_ScalingMode              = xiiGALScalingMode::Unspecified;   ///< The scaling mode.
   xiiEnum<xiiGALScanLineOrder> m_ScanLineOrder            = xiiGALScanLineOrder::Unspecified; ///< The scanline drawing mode.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALFullScreenModeDescription& rhs) const;
 };
 
 /// \brief This describes the texture properties.
@@ -155,9 +139,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureProperties : public xiiHashableSt
   bool      m_bTextureViewSupported       = false; ///< Indicates if device supports texture views.
   bool      m_bCubeMapArraysSupported     = false; ///< Indicates if device supports cube map arrays.
   bool      m_bTextureView2DOn3DSupported = false; ///< Indicates if device supports 2D views from 3D texture.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALTextureProperties& rhs) const;
 };
 
 /// \brief This describes the texture sampler properties.
@@ -165,12 +146,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerProperties : public xiiHashableSt
 {
   XII_DECLARE_POD_TYPE();
 
-  bool m_bBorderSamplingModeSupported   = false; ///< Indicates if device supports border texture addressing mode.
-  bool m_bAnisotropicFilteringSupported = false; ///< Indicates if device supports anisotropic filtering.
-  bool m_bLODBiasSupported              = false; ///< Indicates if device supports MIP load bias.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALSamplerProperties& rhs) const;
+  bool     m_bBorderSamplingModeSupported = false; ///< Indicates if device supports border texture addressing mode.
+  xiiUInt8 m_uiMaxAnisotropy              = 1U;    ///< Maximum anisotropy level supported by the device. If anisotropic filtering is not supported by the device, this value is 1.
+  bool     m_bLODBiasSupported            = false; ///< Indicates if device supports MIP load bias.
 };
 
 /// \brief This describes the sampler properties.
@@ -182,9 +160,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveOperationProperties : public xiiHash
   xiiUInt32                      m_uiMaxSize             = 0U;                         ///< Maximum supported size of the wave. If variable wave size is not supported then this value is equal to MinSize. Direct3D12 backend: requires shader model 6.6. Vulkan backend: requires VK_EXT_subgroup_size_control.
   xiiBitflags<xiiGALShaderType>  m_SupportedShaderStages = xiiGALShaderType::Unknown;  ///< Shader stages in which wave operations can be used.
   xiiBitflags<xiiGALWaveFeature> m_WaveFeatures          = xiiGALWaveFeature::Unknown; ///< Indicates which groups of wave operations are supported by this device.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALWaveOperationProperties& rhs) const;
 };
 
 /// \brief This describes the buffer properties.
@@ -194,9 +169,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferProperties : public xiiHashableStr
 
   xiiUInt32 m_uiConstantBufferAlignment         = 0U; ///< The minimum required alignment, in bytes, for the constant buffer offsets.
   xiiUInt32 m_uiStructuredBufferOffsetAlignment = 0U; ///< The minimum required alignment, in bytes, for the structured buffer offsets.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALBufferProperties& rhs) const;
 };
 
 /// \brief This describes the ray tracing properties.
@@ -220,9 +192,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProperties : public xiiHashabl
   xiiUInt32 m_uiShaderGroupHandleSize    = 0U; ///< Internal usage.
   xiiUInt32 m_uiMaxShaderRecordStride    = 0U; ///< Internal usage.
   xiiUInt32 m_uiShaderGroupBaseAlignment = 0U; ///< Internal usage.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALRayTracingProperties& rhs) const;
 };
 
 /// \brief This describes the mesh shader properties.
@@ -234,9 +203,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMeshShaderProperties : public xiiHashabl
   xiiUInt32 m_uiMaxThreadGroupCountY     = 0U; ///< The maximum number of mesh shader thread groups in Y direction.
   xiiUInt32 m_uiMaxThreadGroupCountZ     = 0U; ///< The maximum number of mesh shader thread groups in Z direction.
   xiiUInt32 m_uiMaxThreadGroupTotalCount = 0U; ///< The total maximum number of mesh shader groups per draw command.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALMeshShaderProperties& rhs) const;
 };
 
 /// \brief This describes the compute shader properties.
@@ -254,9 +220,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputeShaderProperties : public xiiHash
   xiiUInt32 m_uiMaxThreadGroupCountX = 0U; ///< The maximum number of thread groups that can be dispatched in X dimension.
   xiiUInt32 m_uiMaxThreadGroupCountY = 0U; ///< The maximum number of thread groups that can be dispatched in Y dimension.
   xiiUInt32 m_uiMaxThreadGroupCountZ = 0U; ///< The maximum number of thread groups that can be dispatched in Z dimension.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALComputeShaderProperties& rhs) const;
 };
 
 /// \brief This describes the normalized device coordinates attribute.
@@ -269,10 +232,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALNormalizedDeviceCoordinates : public xii
   float m_fYToVScale     = 0.0f;
 
   /// \brief Returns ZtoDepthBias such that given NDC z coordinate, depth value can be computed as d = z * ZtoDepthScale + ZtoDepthBias.
-  constexpr float GetZtoDepthBias() const;
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALNormalizedDeviceCoordinates& rhs) const;
+  XII_ALWAYS_INLINE constexpr float GetZtoDepthBias() const { return -m_fMinZ * m_fZToDepthScale; };
 };
 
 /// \brief This describes the graphics device creation description.
@@ -286,9 +246,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHa
   xiiUInt32                            m_uiAdapterID        = XII_GAL_DEFAULT_ADAPTER_ID;
   xiiGALDeviceFeatures                 m_DeviceFeatures;
   xiiGALNormalizedDeviceCoordinates    m_DeviceNormalizedCoordinates;
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALDeviceCreationDescription& rhs) const;
 };
 
 /// \brief This describes the device memory properties.
@@ -302,9 +259,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceMemoryProperties : public xiiHasha
   xiiUInt64                        m_uiMaxMemoryAllocation       = 0U;                        ///< Maximum size of a continuous memory block.
   xiiBitflags<xiiGALCPUAccessFlag> m_UnifiedMemoryCPUAccessFlags = xiiGALCPUAccessFlag::None; ///< Supported access types for the unified memory.
   xiiBitflags<xiiGALBindFlags>     m_MemorylessTextureBindFlags  = xiiGALBindFlags::None;     ///< Indicates if device supports color and depth attachments in on-chip memory. If supported, it will be combination of the following flags: RenderTarget, DepthStencil, InputAttachment.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALDeviceMemoryProperties& rhs) const;
 };
 
 /// \brief This describes a combination of a shading rate and multi-sampling mode.
@@ -312,28 +266,22 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiBitflags<xiiGALShadingRate> m_ShadingRate = xiiGALShadingRate::_1X1; ///< The supported shading rate.
-  xiiBitflags<xiiGALSampleCount> m_SampleBits  = xiiGALSampleCount::None; ///< The combination of supported sample counts.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALShadingRateMode& rhs) const;
+  xiiBitflags<xiiGALShadingRateFlags> m_ShadingRate = xiiGALShadingRateFlags::_1X1; ///< The supported shading rate.
+  xiiBitflags<xiiGALSampleCount>      m_SampleBits  = xiiGALSampleCount::None;      ///< The combination of supported sample counts.
 };
 
 /// \brief This describes the shading rate properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashableStruct<xiiGALShadingRateProperties>
 {
-  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Modes;                                                                ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
-  xiiBitflags<xiiGALShadingRateCapabilityFlags>                   m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;  ///< Shading rate capability flags.
-  xiiBitflags<xiiGALShadingRateCombiner>                          m_CombinerFlags              = xiiGALShadingRateCombiner::PassThrough;  ///< Combination of all supported shading rate combiners.
-  xiiEnum<xiiGALShadingRateFormat>                                m_Format                     = xiiGALShadingRateFormat::Unknown;        ///< Indicates which shading rate texture format is used by this device.
-  xiiEnum<xiiGALShadingRateTextureAccess>                         m_TextureAccess              = xiiGALShadingRateTextureAccess::Unknown; ///< Shading rate texture access type.
-  xiiBitflags<xiiGALBindFlags>                                    m_BindFlags                  = xiiGALBindFlags::None;                   ///< Indicates which bind flags are allowed for shading rate texture.
-  xiiSizeU32                                                      m_MinTileSize                = xiiSizeU32(0U, 0U);                      ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
-  xiiSizeU32                                                      m_MaxTileSize                = xiiSizeU32(0U, 0U);                      ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
-  xiiUInt32                                                       m_uiMaxSubSampledArraySlices = 0U;                                      ///< Maximum size of the texture array created with texture subsampled flag.
-
-  /// \brief Equality comparison operator.
-  bool operator==(const xiiGALShadingRateProperties& rhs) const;
+  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Modes;                                                                    ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiBitflags<xiiGALShadingRateCapabilityFlags>                   m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;      ///< Shading rate capability flags.
+  xiiBitflags<xiiGALShadingRateCombinerFlags>                     m_CombinerFlags              = xiiGALShadingRateCombinerFlags::PassThrough; ///< Combination of all supported shading rate combiners.
+  xiiEnum<xiiGALShadingRateFormat>                                m_Format                     = xiiGALShadingRateFormat::Unknown;            ///< Indicates which shading rate texture format is used by this device.
+  xiiEnum<xiiGALShadingRateTextureAccess>                         m_TextureAccess              = xiiGALShadingRateTextureAccess::Unknown;     ///< Shading rate texture access type.
+  xiiBitflags<xiiGALBindFlags>                                    m_BindFlags                  = xiiGALBindFlags::None;                       ///< Indicates which bind flags are allowed for shading rate texture.
+  xiiSizeU32                                                      m_MinTileSize                = xiiSizeU32(0U, 0U);                          ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
+  xiiSizeU32                                                      m_MaxTileSize                = xiiSizeU32(0U, 0U);                          ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
+  xiiUInt32                                                       m_uiMaxSubSampledArraySlices = 0U;                                          ///< Maximum size of the texture array created with texture subsampled flag.
 };
 
 /// \brief This describes the draw command properties.
@@ -344,9 +292,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandProperties : public xiiHashab
   xiiBitflags<xiiGALDrawCommandCapabilityFlags> m_CapabilityFlags        = xiiGALDrawCommandCapabilityFlags::None; ///< Draw command capability flags.
   xiiUInt32                                     m_uiMaxIndexValue        = 0U;                                     ///< Maximum supported index value for index buffer.
   xiiUInt32                                     m_uiMaxDrawIndirectCount = 0U;                                     ///< Maximum supported draw commands counter for indirect and indexed indirect draw commands.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALDrawCommandProperties& rhs) const;
 };
 
 /// \brief This describes the sparse memory properties.
@@ -359,20 +304,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHas
   xiiBitflags<xiiGALSparseResourceCapabilityFlags> m_CapabilityFlags     = xiiGALSparseResourceCapabilityFlags::None; ///< Sparse resource capability flags.
   xiiUInt32                                        m_uiStandardBlockSize = 0U;                                        ///< Size of the standard sparse memory block in bytes.
   xiiBitflags<xiiGALBindFlags>                     m_BindFlags           = xiiGALBindFlags::None;                     ///< Allowed bind flags for sparse buffer.
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALSparseResourceProperties& rhs) const;
 };
 
 /// \brief This describes the command queue properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHashableStruct<xiiGALCommandQueueProperties>
 {
-  xiiBitflags<xiiGALCommandQueueType> m_Type                = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
-  xiiUInt32                           m_uiMaxDeviceContexts = 0U;                              ///< The maximum number of command queues that may be created for this queue.
-  xiiStaticArray<xiiUInt32, 3U>       m_TextureCopyGranularity;                                ///< Defines required texture offset and size alignment for copy operations in transfer queues.
+  XII_DECLARE_POD_TYPE();
 
-  /// \brief Equality comparison operator.
-  bool operator==(const xiiGALCommandQueueProperties& rhs) const;
+  xiiBitflags<xiiGALCommandQueueType> m_Type                       = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
+  xiiUInt32                           m_uiMaxDeviceContexts        = 0U;                              ///< The maximum number of command queues that may be created for this queue.
+  xiiUInt32                           m_TextureCopyGranularity[3U] = {};                              ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
 /// \brief This describes the graphics device adapter properties.
@@ -397,9 +338,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceAdapterDescription : publi
   xiiGALSparseResourceProperties                                                m_SparseResourceProperties;                                  ///< Sparse resource properties.
   xiiGALDeviceFeatures                                                          m_Features;                                                  ///< Supported device features.
   xiiStaticArray<xiiGALCommandQueueProperties, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> m_CommandQueueProperties;                                    ///< An array of NumQueues command queues supported by this device.
-
-  /// \brief Equality comparison operator.
-  bool operator==(const xiiGALGraphicsDeviceAdapterDescription& rhs) const;
 };
 
 /// \brief This describes the graphics abstraction layer device events.
@@ -407,11 +345,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEvent : public xiiHashableStruct<x
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALDevice*                  m_pDevice = nullptr;
   xiiEnum<xiiGALDeviceEventType> m_Type    = xiiGALDeviceEventType::Unknown;
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALDeviceEvent& rhs) const;
+  xiiGALDevice*                  m_pDevice = nullptr;
 };
 
 /// \brief This describes the invariant texture format attributes. These attributes are intrinsic to the texture format itself and do not depend on the format support.
@@ -428,10 +363,5 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatDescription : public xiiHas
   xiiUInt8                                  m_uiBlockHeight    = 0U;                                          ///< For block-compressed formats, the compression block height.
 
   /// \brief For non-compressed formats, returns the texel size. For block-compressed formats, returns the block size.
-  xiiUInt32 GetElementSize() const;
-
-  /// \brief Equality comparison operator.
-  constexpr bool operator==(const xiiGALTextureFormatDescription& rhs) const;
+  XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (m_ComponentType != xiiGALTextureFormatComponentType::Compressed ? m_uiComponentCount : 1); };
 };
-
-#include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>

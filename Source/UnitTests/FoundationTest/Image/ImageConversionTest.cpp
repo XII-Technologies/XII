@@ -201,7 +201,7 @@ private:
       return XII_FAILURE;
     }
 
-    xiiFileSystem::AddDataDirectory(">xiitest/", "ImageComparisonDataDir", "imgout", xiiFileSystem::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory(">xiitest/", "ImageComparisonDataDir", "imgout", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
     // On linux we use CPU based BC6 and BC7 compression, which sometimes gives slightly different results from the GPU compression on Windows.

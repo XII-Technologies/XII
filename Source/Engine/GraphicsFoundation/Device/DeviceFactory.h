@@ -24,5 +24,3 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFactory
 
   static void GetShaderModelAndCompiler(xiiStringView sRendererName, xiiStringView& ref_sShaderModel, xiiStringView& ref_sShaderCompiler);
 };
-
-#include <GraphicsFoundation/Device/Implementation/DeviceFactory_inl.h>

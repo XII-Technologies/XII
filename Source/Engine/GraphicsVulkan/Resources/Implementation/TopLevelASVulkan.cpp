@@ -24,4 +24,19 @@ xiiResult xiiGALTopLevelASVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+xiiGALTopLevelASInstanceDescription xiiGALTopLevelASVulkan::GetInstanceDescription(xiiStringView sName) const
+{
+  return xiiGALTopLevelASInstanceDescription();
+}
+
+xiiGALTopLevelASBuildDescription xiiGALTopLevelASVulkan::GetBuildDescription() const
+{
+  return xiiGALTopLevelASBuildDescription();
+}
+
+xiiGALScratchBufferSizeDescription xiiGALTopLevelASVulkan::GetScratchBufferSizeDescription() const
+{
+  return xiiGALScratchBufferSizeDescription();
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_TopLevelASVulkan);

@@ -61,7 +61,7 @@ void xiiInputManager::SetInputActionConfig(xiiStringView sInputSet, xiiStringVie
   {
     for (xiiUInt32 i1 = 0; i1 < xiiInputActionConfig::MaxInputSlotAlternatives; ++i1)
     {
-      ClearInputMapping(sInputSet, config.m_sInputSlotTrigger[i1].GetData());
+      ClearInputMapping(sInputSet, config.m_sInputSlotTrigger[i1]);
     }
   }
 
@@ -309,7 +309,7 @@ void xiiInputManager::UpdateInputActions(xiiStringView sInputSet, xiiActionMap& 
       InputEventData e;
       e.m_EventType    = InputEventData::InputActionChanged;
       e.m_sInputSet    = sInputSet;
-      e.m_sInputAction = ItActions.Key().GetData();
+      e.m_sInputAction = ItActions.Key();
 
       s_InputEvents.Broadcast(e);
     }

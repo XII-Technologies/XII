@@ -5,7 +5,55 @@
 
 namespace xiiIntersectionUtils
 {
+  /// \brief Checks whether a ray intersects with a triangle.
+  ///
+  /// The vertex winding order does not matter, triangles will be hit from both sides.
+  ///
+  /// \param vRayStartPos
+  ///   The start position of the ray.
+  /// \param vRayDir
+  ///   The direction of the ray. This does not need to be normalized. Depending on its length, out_fIntersectionTime will be scaled differently.
+  /// \param vVertex0, vVertex1, vVertex2
+  ///   The three vertices forming the triangle.
+  /// \param out_fIntersectionTime
+  ///   The 'time' at which the ray intersects the triangle. If \a vRayDir is normalized, this is the exact distance.
+  ///   out_fIntersectionPoint == vRayStartPos + vRayDir * out_fIntersectionTime
+  ///   This parameter is optional and may be set to nullptr.
+  /// \param out_fIntersectionPoint
+  ///   The point where the ray intersects the triangle.
+  ///   out_fIntersectionPoint == vRayStartPos + vRayDir * out_fIntersectionTime
+  ///   This parameter is optional and may be set to nullptr.
+  ///
+  /// \return
+  ///   True, if the ray intersects the triangle, false otherwise.
+  XII_FOUNDATION_DLL bool RayTriangleIntersection(const xiiVec3& vRayStartPos, const xiiVec3& vRayDir, const xiiVec3& vVertex0, const xiiVec3& vVertex1, const xiiVec3& vVertex2, float* out_pIntersectionTime = nullptr, xiiVec3* out_pIntersectionPoint = nullptr); // [tested]
+
+  /// \brief Checks whether a ray intersects with a triangle.
+  ///
+  /// The vertex winding order does not matter, triangles will be hit from both sides.
+  ///
+  /// \param vRayStartPos
+  ///   The start position of the ray.
+  /// \param vRayDir
+  ///   The direction of the ray. This does not need to be normalized. Depending on its length, out_fIntersectionTime will be scaled differently.
+  /// \param vVertex0, vVertex1, vVertex2
+  ///   The three vertices forming the triangle.
+  /// \param out_fIntersectionTime
+  ///   The 'time' at which the ray intersects the triangle. If \a vRayDir is normalized, this is the exact distance.
+  ///   out_fIntersectionPoint == vRayStartPos + vRayDir * out_fIntersectionTime
+  ///   This parameter is optional and may be set to nullptr.
+  /// \param out_fIntersectionPoint
+  ///   The point where the ray intersects the triangle.
+  ///   out_fIntersectionPoint == vRayStartPos + vRayDir * out_fIntersectionTime
+  ///   This parameter is optional and may be set to nullptr.
+  ///
+  /// \return
+  ///   True, if the ray intersects the triangle, false otherwise.
+  XII_FOUNDATION_DLL bool RayTriangleIntersection(const xiiVec3d& vRayStartPos, const xiiVec3d& vRayDir, const xiiVec3d& vVertex0, const xiiVec3d& vVertex1, const xiiVec3d& vVertex2, double* out_pIntersectionTime = nullptr, xiiVec3d* out_pIntersectionPoint = nullptr); // [tested]
+
   /// \brief Checks whether a ray intersects with a polygon.
+  ///
+  /// The vertex winding order does not matter, polygons will be hit from both sides.
   ///
   /// \param vRayStartPos
   ///   The start position of the ray.
@@ -31,6 +79,8 @@ namespace xiiIntersectionUtils
   XII_FOUNDATION_DLL bool RayPolygonIntersection(const xiiVec3& vRayStartPos, const xiiVec3& vRayDir, const xiiVec3* pPolygonVertices, xiiUInt32 uiNumVertices, float* out_pIntersectionTime = nullptr, xiiVec3* out_pIntersectionPoint = nullptr, xiiUInt32 uiVertexStride = sizeof(xiiVec3)); // [tested]
 
   /// \brief Checks whether a ray intersects with a polygon.
+  ///
+  /// The vertex winding order does not matter, polygons will be hit from both sides.
   ///
   /// \param vRayStartPos
   ///   The start position of the ray.

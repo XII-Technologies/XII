@@ -23,8 +23,7 @@ XII_ALWAYS_INLINE const xiiEvent<const xiiGameObject*>& xiiWorld::GetObjectDelet
 XII_FORCE_INLINE bool xiiWorld::IsValidObject(const xiiGameObjectHandle& hObject) const
 {
   CheckForReadAccess();
-  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex,
-                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
+  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex, "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
 
   return m_Data.m_Objects.Contains(hObject);
 }
@@ -32,8 +31,7 @@ XII_FORCE_INLINE bool xiiWorld::IsValidObject(const xiiGameObjectHandle& hObject
 XII_FORCE_INLINE bool xiiWorld::TryGetObject(const xiiGameObjectHandle& hObject, xiiGameObject*& out_pObject)
 {
   CheckForReadAccess();
-  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex,
-                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
+  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex, "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
 
   return m_Data.m_Objects.TryGetValue(hObject, out_pObject);
 }
@@ -41,8 +39,7 @@ XII_FORCE_INLINE bool xiiWorld::TryGetObject(const xiiGameObjectHandle& hObject,
 XII_FORCE_INLINE bool xiiWorld::TryGetObject(const xiiGameObjectHandle& hObject, const xiiGameObject*& out_pObject) const
 {
   CheckForReadAccess();
-  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex,
-                 "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
+  XII_ASSERT_DEV(hObject.IsInvalidated() || hObject.m_InternalId.m_WorldIndex == m_uiIndex, "Object does not belong to this world. Expected world id {0} got id {1}", m_uiIndex, hObject.m_InternalId.m_WorldIndex);
 
   xiiGameObject* pObject = nullptr;
   bool           bResult = m_Data.m_Objects.TryGetValue(hObject, pObject);

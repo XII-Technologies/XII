@@ -92,7 +92,7 @@ XII_CREATE_SIMPLE_TEST(Scripting, TypeScript)
 
     xiiStringBuilder sTestDataDir(">sdk/", xiiTestFramework::GetInstance()->GetRelTestDataPath());
     sTestDataDir.AppendPath("Scripting/TypeScript");
-    if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(sTestDataDir, "TypeScriptTest", "TypeScriptTest", xiiFileSystem::AllowWrites)))
+    if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(sTestDataDir, "TypeScriptTest", "TypeScriptTest", xiiDataDirUsage::AllowWrites)))
       return;
 
     if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Tools/xiiEditor", "DuktapeTest")))

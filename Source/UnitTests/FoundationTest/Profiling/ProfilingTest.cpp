@@ -10,7 +10,7 @@ namespace
   void WriteOutProfilingCapture(const char* szFilePath)
   {
     xiiStringBuilder outputPath = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(outputPath.GetData(), "test", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(outputPath.GetData(), "test", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
     xiiFileWriter fileWriter;
     if (fileWriter.Open(szFilePath) == XII_SUCCESS)

@@ -10,6 +10,11 @@ xiiStandardInputDevice::~xiiStandardInputDevice() = default;
 
 void xiiStandardInputDevice::SetShowMouseCursor(bool bShow) {}
 
+bool xiiStandardInputDevice::GetShowMouseCursor() const
+{
+  return false;
+}
+
 void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mode) {}
 
 xiiMouseCursorClipMode::Enum xiiStandardInputDevice::GetClipMouseCursor() const

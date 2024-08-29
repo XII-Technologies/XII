@@ -63,8 +63,7 @@ public:
   /// \param szDebugChunkName
   ///   An optional name for the Lua code, to ease debugging when errors occur.
   /// \param pLogInterface
-  ///   An optional log interface where error messages are written to. If nullptr is passed in, error messages are written to the global
-  ///   log.
+  ///   An optional log interface where error messages are written to. If nullptr is passed in, error messages are written to the global log.
   xiiResult ExecuteString(const char* szString, const char* szDebugChunkName = "chunk", xiiLogInterface* pLogInterface = nullptr) const; // [tested]
 
   /// @}

@@ -14,7 +14,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALDepthStencilStateVulkan final : public xiiGAL
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDepthStencilStateVulkan, xiiGALDepthStencilState);
 
 public:
-  const vk::PipelineDepthStencilStateCreateInfo* GetDepthStencilState() const;
+  XII_ALWAYS_INLINE const vk::PipelineDepthStencilStateCreateInfo* GetDepthStencilState() const { return &m_DepthStencilState; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -31,5 +31,3 @@ protected:
 protected:
   vk::PipelineDepthStencilStateCreateInfo m_DepthStencilState = {};
 };
-
-#include <GraphicsVulkan/States/Implementation/DepthStencilStateVulkan_inl.h>

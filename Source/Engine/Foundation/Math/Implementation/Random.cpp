@@ -35,8 +35,11 @@ void xiiRandom::Initialize(xiiUInt64 uiSeed)
 
 void xiiRandom::InitializeFromCurrentTime()
 {
+  // needed to fix quick calls to this function that would result in an identical timestamp (it's not high resolution enough for that)
+  static xiiAtomicInteger32 uiRandomIncrement;
+
   xiiTimestamp ts = xiiTimestamp::CurrentTimestamp();
-  Initialize(static_cast<xiiUInt64>(ts.GetInt64(xiiSIUnitOfTime::Nanosecond)));
+  Initialize(static_cast<xiiUInt64>(ts.GetInt64(xiiSIUnitOfTime::Nanosecond)) + uiRandomIncrement.Increment());
 }
 
 void xiiRandom::Save(xiiStreamWriter& ref_stream) const

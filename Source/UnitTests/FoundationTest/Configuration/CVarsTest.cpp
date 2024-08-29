@@ -54,7 +54,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
 
   xiiStringBuilder sOutputFolder1 = xiiTestFramework::GetInstance()->GetAbsOutputPath();
 
-  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder1.GetData(), "test", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+  XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder1.GetData(), "test", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
   // Delete all cvar setting files
   {
@@ -90,7 +90,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SaveCVarsToFile and LoadCVarsFromFile again")
   {
     const char* cvarConfigFileDir = xiiTestFramework::GetInstance()->GetAbsOutputPath();
-    XII_TEST_BOOL_MSG(xiiFileSystem::AddDataDirectory(cvarConfigFileDir, "CVarsTest", "CVarConfigTempDir", xiiFileSystem::AllowWrites) == XII_SUCCESS, "Failed to mount data dir '%s'", cvarConfigFileDir);
+    XII_TEST_BOOL_MSG(xiiFileSystem::AddDataDirectory(cvarConfigFileDir, "CVarsTest", "CVarConfigTempDir", xiiDataDirUsage::AllowWrites) == XII_SUCCESS, "Failed to mount data dir '%s'", cvarConfigFileDir);
     xiiStringView cvarConfigFile = ":CVarConfigTempDir/CVars.cfg";
 
     xiiCVarInt    testCVarInt("testCVarInt", 0, xiiCVarFlags::Default, "Test");

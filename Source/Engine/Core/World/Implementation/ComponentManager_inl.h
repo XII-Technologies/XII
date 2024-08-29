@@ -23,7 +23,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiComponentManagerBase::GetComponentCount() const
 }
 
 template <typename ComponentType>
-XII_ALWAYS_INLINE xiiComponentHandle xiiComponentManagerBase::CreateComponent(xiiGameObject* pOwnerObject, ComponentType*& out_pComponent)
+XII_ALWAYS_INLINE xiiTypedComponentHandle<ComponentType> xiiComponentManagerBase::CreateComponent(xiiGameObject* pOwnerObject, ComponentType*& out_pComponent)
 {
   xiiComponent*      pComponent = nullptr;
   xiiComponentHandle hComponent = CreateComponentNoInit(pOwnerObject, pComponent);
@@ -34,7 +34,7 @@ XII_ALWAYS_INLINE xiiComponentHandle xiiComponentManagerBase::CreateComponent(xi
   }
 
   out_pComponent = xiiStaticCast<ComponentType*>(pComponent);
-  return hComponent;
+  return xiiTypedComponentHandle<ComponentType>(hComponent);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,11 +52,8 @@ xiiComponentManager<T, StorageType>::~xiiComponentManager() = default;
 template <typename T, xiiBlockStorageType::Enum StorageType>
 XII_FORCE_INLINE bool xiiComponentManager<T, StorageType>::TryGetComponent(const xiiComponentHandle& hComponent, ComponentType*& out_pComponent)
 {
-  XII_ASSERT_DEV(ComponentType::TypeId() == hComponent.GetInternalID().m_TypeId,
-                 "The given component handle is not of the expected type. Expected type id {0}, got type id {1}", ComponentType::TypeId(),
-                 hComponent.GetInternalID().m_TypeId);
-  XII_ASSERT_DEV(hComponent.GetInternalID().m_WorldIndex == GetWorldIndex(),
-                 "Component does not belong to this world. Expected world id {0} got id {1}", GetWorldIndex(), hComponent.GetInternalID().m_WorldIndex);
+  XII_ASSERT_DEV(ComponentType::TypeId() == hComponent.GetInternalID().m_TypeId, "The given component handle is not of the expected type. Expected type id {0}, got type id {1}", ComponentType::TypeId(), hComponent.GetInternalID().m_TypeId);
+  XII_ASSERT_DEV(hComponent.GetInternalID().m_WorldIndex == GetWorldIndex(), "Component does not belong to this world. Expected world id {0} got id {1}", GetWorldIndex(), hComponent.GetInternalID().m_WorldIndex);
 
   xiiComponent* pComponent = nullptr;
   bool          bResult    = xiiComponentManagerBase::TryGetComponent(hComponent, pComponent);
@@ -65,15 +62,10 @@ XII_FORCE_INLINE bool xiiComponentManager<T, StorageType>::TryGetComponent(const
 }
 
 template <typename T, xiiBlockStorageType::Enum StorageType>
-XII_FORCE_INLINE bool xiiComponentManager<T, StorageType>::TryGetComponent(
-  const xiiComponentHandle& hComponent,
-  const ComponentType*&     out_pComponent) const
+XII_FORCE_INLINE bool xiiComponentManager<T, StorageType>::TryGetComponent(const xiiComponentHandle& hComponent, const ComponentType*& out_pComponent) const
 {
-  XII_ASSERT_DEV(ComponentType::TypeId() == hComponent.GetInternalID().m_TypeId,
-                 "The given component handle is not of the expected type. Expected type id {0}, got type id {1}", ComponentType::TypeId(),
-                 hComponent.GetInternalID().m_TypeId);
-  XII_ASSERT_DEV(hComponent.GetInternalID().m_WorldIndex == GetWorldIndex(),
-                 "Component does not belong to this world. Expected world id {0} got id {1}", GetWorldIndex(), hComponent.GetInternalID().m_WorldIndex);
+  XII_ASSERT_DEV(ComponentType::TypeId() == hComponent.GetInternalID().m_TypeId, "The given component handle is not of the expected type. Expected type id {0}, got type id {1}", ComponentType::TypeId(), hComponent.GetInternalID().m_TypeId);
+  XII_ASSERT_DEV(hComponent.GetInternalID().m_WorldIndex == GetWorldIndex(), "Component does not belong to this world. Expected world id {0} got id {1}", GetWorldIndex(), hComponent.GetInternalID().m_WorldIndex);
 
   const xiiComponent* pComponent = nullptr;
   bool                bResult    = xiiComponentManagerBase::TryGetComponent(hComponent, pComponent);
@@ -148,8 +140,7 @@ XII_FORCE_INLINE void xiiComponentManager<T, StorageType>::RegisterUpdateFunctio
 {
   // round up to multiple of data block capacity so tasks only have to deal with complete data blocks
   if (desc.m_uiGranularity != 0)
-    desc.m_uiGranularity = static_cast<xiiUInt16>(
-      xiiMath::RoundUp(static_cast<xiiInt32>(desc.m_uiGranularity), xiiDataBlock<ComponentType, xiiInternal::DEFAULT_BLOCK_SIZE>::CAPACITY));
+    desc.m_uiGranularity = static_cast<xiiUInt16>(xiiMath::RoundUp(static_cast<xiiInt32>(desc.m_uiGranularity), xiiDataBlock<ComponentType, xiiInternal::DEFAULT_BLOCK_SIZE>::CAPACITY));
 
   xiiComponentManagerBase::RegisterUpdateFunction(desc);
 }

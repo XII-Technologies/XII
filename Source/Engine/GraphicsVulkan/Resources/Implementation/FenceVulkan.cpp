@@ -24,4 +24,12 @@ xiiResult xiiGALFenceVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALFenceVulkan::Signal(xiiUInt64 uiValue)
+{
+}
+
+void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
+{
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_FenceVulkan);

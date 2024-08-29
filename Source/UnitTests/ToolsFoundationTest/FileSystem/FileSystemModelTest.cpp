@@ -3,6 +3,7 @@
 #if XII_ENABLED(XII_SUPPORTS_DIRECTORY_WATCHER) && XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
 
 #  include <Foundation/Application/Config/FileSystemConfig.h>
+#  include <Foundation/Configuration/CVar.h>
 #  include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #  include <Foundation/IO/FileSystem/FileReader.h>
 #  include <Foundation/IO/FileSystem/FileSystem.h>
@@ -155,7 +156,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, DataDirPath)
   }
 }
 
-XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
+void FileSystemModelTest()
 {
   constexpr xiiUInt32 WAIT_LOOPS = 1000;
 
@@ -232,7 +233,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     XII_LOCK(fileEventLock);
     if (XII_TEST_INT(expected.GetCount(), fileEvents.GetCount()))
     {
-      for (size_t i = 0; i < expected.GetCount(); i++)
+      for (xiiUInt32 i = 0; i < expected.GetCount(); i++)
       {
         XII_TEST_INT((int)expected[i].m_Type, (int)fileEvents[i].m_Type);
         XII_TEST_STRING(expected[i].m_Path, fileEvents[i].m_Path);
@@ -252,7 +253,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     XII_LOCK(folderEventLock);
     if (XII_TEST_INT(expected.GetCount(), folderEvents.GetCount()))
     {
-      for (size_t i = 0; i < expected.GetCount(); i++)
+      for (xiiUInt32 i = 0; i < expected.GetCount(); i++)
       {
         XII_TEST_INT((int)expected[i].m_Type, (int)folderEvents[i].m_Type);
         XII_TEST_STRING(expected[i].m_Path, folderEvents[i].m_Path);
@@ -280,8 +281,8 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     XII_TEST_RESULT(xiiFileSystem::CreateDirectoryStructure(sOutputFolderResolved));
 
     // for absolute paths
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites) == XII_SUCCESS);
-    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder, "Clear", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory("", "", ":", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sOutputFolder, "Clear", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
     xiiFileSystemModel::GetSingleton()->Initialize(fsConfig, {}, {});
 
@@ -1049,5 +1050,20 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.RemoveEventHandler(folderId);
   }
 }
+
+XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
+{
+  FileSystemModelTest();
+}
+
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModelNonNTFS)
+{
+  auto* pForceNonNTFS = static_cast<xiiCVarBool*>(xiiCVar::FindCVarByName("DirectoryWatcher.ForceNonNTFS"));
+  *pForceNonNTFS      = true;
+  FileSystemModelTest();
+  *pForceNonNTFS = false;
+}
+#  endif
 
 #endif

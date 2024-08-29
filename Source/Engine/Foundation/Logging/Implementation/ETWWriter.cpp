@@ -6,9 +6,9 @@
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #    include <Foundation/Basics/Platform/Win/IncludeWindows.h>
-#    include <Foundation/Logging/Implementation/Win/ETWProvider_win.h>
-#  else
-#    include <Foundation/Logging/Implementation/Win/ETWProvider_linux.h>
+#    include <Foundation/Platform/Implementation/Windows/ETWProvider_win.h>
+#  elif XII_ENABLED(XII_PLATFORM_LINUX)
+#    include <Foundation/Platform/Implementation/Linux/ETWProvider_linux.h>
 #  endif
 
 void xiiLogWriter::ETW::LogMessageHandler(const xiiLoggingEventData& eventData)

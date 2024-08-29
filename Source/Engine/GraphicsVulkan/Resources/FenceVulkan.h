@@ -7,7 +7,7 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALFenceVulkan final : public xiiGALFence
 {
 public:
-  virtual xiiUInt64 GetCompletedValue() override final;
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedValue() override final { return 0ULL; }
 
   virtual void Signal(xiiUInt64 uiValue) override final;
 
@@ -27,5 +27,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsVulkan/Resources/Implementation/FenceVulkan_inl.h>

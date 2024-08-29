@@ -32,9 +32,9 @@ protected:
 
   virtual ~xiiGALCommandQueueNull();
 
-  virtual xiiResult InitPlatform() override final;
+  xiiResult InitPlatform();
 
-  virtual xiiResult DeInitPlatform() override final;
+  xiiResult DeInitPlatform();
 
 protected:
   xiiUniquePtr<xiiGALCommandListNull> m_pDefaultCommandList;

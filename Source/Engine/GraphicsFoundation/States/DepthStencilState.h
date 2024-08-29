@@ -76,7 +76,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilState : public xiiGALDeviceOb
 
 public:
   /// \brief This returns the creation description for this object.
-  [[nodiscard]] const xiiGALDepthStencilStateCreationDescription& GetDescription() const;
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDepthStencilStateCreationDescription& GetDescription() const { return m_Description; };
 
 protected:
   friend class xiiGALDevice;
@@ -92,5 +92,3 @@ protected:
 protected:
   xiiGALDepthStencilStateCreationDescription m_Description;
 };
-
-#include <GraphicsFoundation/States/Implementation/DepthStencilState_inl.h>

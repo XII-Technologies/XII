@@ -101,6 +101,15 @@ public:
 
   /// \brief Converts this color to xiiColor.
   xiiColor ToLinearFloat() const;
+
+  /// \brief Extracts the values from a uint32 with R at the least significant bits, then G, then B and A at the most significant bits.
+  static xiiColorLinearUB MakeFromABGR8(xiiUInt32 value)
+  {
+    return xiiColorLinearUB(static_cast<xiiUInt8>(value >> 0) & 0xFF,
+                            static_cast<xiiUInt8>(value >> 8) & 0xFF,
+                            static_cast<xiiUInt8>(value >> 16) & 0xFF,
+                            static_cast<xiiUInt8>(value >> 24) & 0xFF);
+  }
 };
 
 static_assert(sizeof(xiiColorGammaUB) == 4);

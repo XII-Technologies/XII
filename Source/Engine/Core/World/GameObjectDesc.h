@@ -20,7 +20,7 @@ struct XII_CORE_DLL xiiGameObjectDesc
 
   xiiVec3   m_LocalPosition       = xiiVec3::MakeZero();     ///< The local position relative to the parent (or the world)
   xiiQuat   m_LocalRotation       = xiiQuat::MakeIdentity(); ///< The local rotation relative to the parent (or the world)
-  xiiVec3   m_LocalScaling        = xiiVec3(1, 1, 1);        ///< The local scaling relative to the parent (or the world)
+  xiiVec3   m_LocalScaling        = xiiVec3(1);              ///< The local scaling relative to the parent (or the world)
   float     m_LocalUniformScaling = 1.0f;                    ///< An additional local uniform scaling relative to the parent (or the world)
   xiiTagSet m_Tags;                                          ///< See xiiGameObject::GetTags()
   xiiUInt32 m_uiStableRandomSeed = 0xFFFFFFFF;               ///< 0 means the game object gets a random value assigned, 0xFFFFFFFF means that if the object has a parent, the value will be derived deterministically from that one's seed, otherwise it gets a random value, any other value will be used directly

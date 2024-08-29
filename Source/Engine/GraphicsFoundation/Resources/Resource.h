@@ -15,10 +15,10 @@ public:
   ///
   /// \note This method does not perform state transition, but resets the buffer state to the given value.
   ///       This method should be used after manually managing the buffer state to hand over state management back to the engine.
-  virtual void SetResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags);
+  virtual void SetResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) {}
 
   /// \brief This returns the buffer state.
-  [[nodiscard]] virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const;
+  [[nodiscard]] XII_ALWAYS_INLINE virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const { return m_ResourceState; }
 
 protected:
   friend class xiiGALDevice;
@@ -39,5 +39,3 @@ protected:
 
   xiiGALResourceView(xiiGALDevice* pDevice);
 };
-
-#include <GraphicsFoundation/Resources/Implementation/Resource_inl.h>

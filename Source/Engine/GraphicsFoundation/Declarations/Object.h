@@ -9,7 +9,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALObject : public xiiReflectedClass, public
 
 public:
   /// \brief Returns the debug name of this resource.
-  [[nodiscard]] xiiStringView GetDebugName() const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiStringView GetDebugName() const { return m_sDebugName.GetView(); }
 
   /// \brief Sets the debug name for this resource.
   void SetDebugName(xiiStringView sDebugName);
@@ -17,10 +17,8 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName){};
+  XII_ALWAYS_INLINE virtual void SetDebugNamePlatform(xiiStringView sName){};
 
 private:
   mutable xiiHashedString m_sDebugName;
 };
-
-#include <GraphicsFoundation/Declarations/Implementation/Object_inl.h>

@@ -24,7 +24,7 @@ xiiResult xiiGALDepthStencilStateVulkan::InitPlatform()
   m_DepthStencilState.depthTestEnable       = VK_BOOL(m_Description.m_bDepthEnable);
   m_DepthStencilState.depthWriteEnable      = VK_BOOL(m_Description.m_bDepthWriteEnable);
   m_DepthStencilState.depthCompareOp        = xiiVulkanTypeConversions::GetCompareOp(m_Description.m_ComparisonDepthFunction);
-  m_DepthStencilState.depthBoundsTestEnable = VK_FALSE;
+  m_DepthStencilState.depthBoundsTestEnable = vk::False;
   m_DepthStencilState.minDepthBounds        = 0.0f;
   m_DepthStencilState.maxDepthBounds        = 1.0f;
 

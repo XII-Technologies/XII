@@ -27,7 +27,7 @@ xiiSpatialData::Category xiiSpatialData::RegisterCategory(xiiStringView sCategor
     return xiiInvalidSpatialDataCategory;
   }
 
-  Category newCategory = Category(GetCategoryData().GetCount());
+  Category newCategory = Category(static_cast<xiiUInt16>(GetCategoryData().GetCount()));
 
   auto& data = GetCategoryData().ExpandAndGetRef();
   data.m_sName.Assign(sCategoryName);
@@ -44,7 +44,7 @@ xiiSpatialData::Category xiiSpatialData::FindCategory(xiiStringView sCategoryNam
   for (xiiUInt32 uiCategoryIndex = 0; uiCategoryIndex < GetCategoryData().GetCount(); ++uiCategoryIndex)
   {
     if (GetCategoryData()[uiCategoryIndex].m_sName == categoryName)
-      return Category(uiCategoryIndex);
+      return Category(static_cast<xiiUInt16>(uiCategoryIndex));
   }
 
   return xiiInvalidSpatialDataCategory;
@@ -74,6 +74,5 @@ xiiSpatialData::Category xiiDefaultSpatialDataCategories::RenderStatic     = xii
 xiiSpatialData::Category xiiDefaultSpatialDataCategories::RenderDynamic    = xiiSpatialData::RegisterCategory("RenderDynamic", xiiSpatialData::Flags::FrequentChanges);
 xiiSpatialData::Category xiiDefaultSpatialDataCategories::OcclusionStatic  = xiiSpatialData::RegisterCategory("OcclusionStatic", xiiSpatialData::Flags::None);
 xiiSpatialData::Category xiiDefaultSpatialDataCategories::OcclusionDynamic = xiiSpatialData::RegisterCategory("OcclusionDynamic", xiiSpatialData::Flags::FrequentChanges);
-
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_SpatialData);

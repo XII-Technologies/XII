@@ -8,6 +8,19 @@
 
 xiiCVarInt cvar_SpatialQueriesCachingThreshold("Spatial.Queries.CachingThreshold", 100, xiiCVarFlags::Default, "Number of objects that are tested for a query before it is considered for caching");
 
+struct PlaneData
+{
+  xiiSimdVec4f m_x0x1x2x3;
+  xiiSimdVec4f m_y0y1y2y3;
+  xiiSimdVec4f m_z0z1z2z3;
+  xiiSimdVec4f m_w0w1w2w3;
+
+  xiiSimdVec4f m_x4x5x4x5;
+  xiiSimdVec4f m_y4y5y4y5;
+  xiiSimdVec4f m_z4z5z4z5;
+  xiiSimdVec4f m_w4w5w4w5;
+};
+
 namespace
 {
   enum
@@ -47,17 +60,22 @@ namespace
     return xiiSimdBBox(bmin, bmax);
   }
 
-  XII_ALWAYS_INLINE bool FilterByCategory(xiiUInt32 uiCategoryBitmask, xiiUInt32 uiQueryBitmask)
+  XII_ALWAYS_INLINE bool AreTagSetsEqual(const xiiTagSet& a, const xiiTagSet* pB)
   {
-    return (uiCategoryBitmask & uiQueryBitmask) == 0;
+    if (pB != nullptr)
+    {
+      return a == *pB;
+    }
+
+    return a.IsEmpty();
   }
 
-  XII_ALWAYS_INLINE bool FilterByTags(const xiiTagSet& tags, const xiiTagSet& includeTags, const xiiTagSet& excludeTags)
+  XII_ALWAYS_INLINE bool FilterByTags(const xiiTagSet& tags, const xiiTagSet* pIncludeTags, const xiiTagSet* pExcludeTags)
   {
-    if (!excludeTags.IsEmpty() && excludeTags.IsAnySet(tags))
+    if (pExcludeTags != nullptr && !pExcludeTags->IsEmpty() && pExcludeTags->IsAnySet(tags))
       return true;
 
-    if (!includeTags.IsEmpty() && !includeTags.IsAnySet(tags))
+    if (pIncludeTags != nullptr && !pIncludeTags->IsEmpty() && !pIncludeTags->IsAnySet(tags))
       return true;
 
     return false;
@@ -68,6 +86,7 @@ namespace
     return xiiSpatialData::GetCategoryFlags(category).IsSet(xiiSpatialData::Flags::FrequentChanges) == false;
   }
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   void TagsToString(const xiiTagSet& tags, xiiStringBuilder& out_sSb)
   {
     out_sSb.Append("{ ");
@@ -85,19 +104,7 @@ namespace
 
     out_sSb.Append(" }");
   }
-
-  struct PlaneData
-  {
-    xiiSimdVec4f m_x0x1x2x3;
-    xiiSimdVec4f m_y0y1y2y3;
-    xiiSimdVec4f m_z0z1z2z3;
-    xiiSimdVec4f m_w0w1w2w3;
-
-    xiiSimdVec4f m_x4x5x4x5;
-    xiiSimdVec4f m_y4y5y4y5;
-    xiiSimdVec4f m_z4z5z4z5;
-    xiiSimdVec4f m_w4w5w4w5;
-  };
+#endif
 
   XII_FORCE_INLINE bool SphereFrustumIntersect(const xiiSimdBSphere& sphere, const PlaneData& planeData)
   {
@@ -275,7 +282,7 @@ struct xiiSpatialSystem_RegularGrid::Grid
   Grid(xiiSpatialSystem_RegularGrid& ref_system, xiiSpatialData::Category category) :
     m_System(ref_system), m_Cells(&ref_system.m_Allocator), m_CellKeyToCellIndex(&ref_system.m_Allocator), m_Category(category), m_bCanBeCached(CanBeCached(category))
   {
-    xiiSimdBBox overflowBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(xiiSimdVec4f::MakeZero(), xiiSimdVec4f((float)(ref_system.m_vCellSize.x() * MAX_CELL_INDEX)));
+    const xiiSimdBBox overflowBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(xiiSimdVec4f::MakeZero(), xiiSimdVec4f((float)(ref_system.m_vCellSize.x() * MAX_CELL_INDEX)));
 
     auto pOverflowCell      = XII_NEW(&m_System.m_AlignedAllocator, Cell, &m_System.m_AlignedAllocator, &m_System.m_Allocator);
     pOverflowCell->m_Bounds = overflowBox;
@@ -353,7 +360,7 @@ struct xiiSpatialSystem_RegularGrid::Grid
     auto& pOtherCell = other.m_Cells[mapping.m_uiCellIndex];
 
     const xiiTagSet& tags = pOtherCell->m_TagSets[mapping.m_uiCellDataIndex];
-    if (FilterByTags(tags, m_IncludeTags, m_ExcludeTags))
+    if (FilterByTags(tags, &m_IncludeTags, &m_ExcludeTags))
       return false;
 
     xiiSimdBBoxSphere bounds;
@@ -475,6 +482,8 @@ namespace xiiInternal
     template <typename T, bool UseTagsFilter>
     static xiiVisitorExecution::Enum ShapeQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& ref_stats, void* pUserData, xiiVisibilityState visType)
     {
+      XII_IGNORE_UNUSED(visType);
+
       auto pQueryData = static_cast<const ShapeQueryData<T>*>(pUserData);
       T    shape      = pQueryData->m_Shape;
 
@@ -496,7 +505,7 @@ namespace xiiInternal
 
         if constexpr (UseTagsFilter)
         {
-          if (FilterByTags(tagSets[i], queryParams.m_IncludeTags, queryParams.m_ExcludeTags))
+          if (FilterByTags(tagSets[i], queryParams.m_pIncludeTags, queryParams.m_pExcludeTags))
           {
             ref_stats.m_uiNumObjectsFiltered++;
             continue;
@@ -538,12 +547,11 @@ namespace xiiInternal
         }
       }
 
-      xiiSimdBBox bbox;
-      auto        boundingSpheres               = cell.m_BoundingSpheres.GetData();
-      auto        boundingBoxHalfExtents        = cell.m_BoundingBoxHalfExtents.GetData();
-      auto        tagSets                       = cell.m_TagSets.GetData();
-      auto        objectPointers                = cell.m_ObjectPointers.GetData();
-      auto        lastVisibleFrameIdxAndVisType = cell.m_LastVisibleFrameIdxAndVisType.GetData();
+      auto boundingSpheres               = cell.m_BoundingSpheres.GetData();
+      auto boundingBoxHalfExtents        = cell.m_BoundingBoxHalfExtents.GetData();
+      auto tagSets                       = cell.m_TagSets.GetData();
+      auto objectPointers                = cell.m_ObjectPointers.GetData();
+      auto lastVisibleFrameIdxAndVisType = cell.m_LastVisibleFrameIdxAndVisType.GetData();
 
       const xiiUInt32 numSpheres = cell.m_BoundingSpheres.GetCount();
       ref_stats.m_uiNumObjectsTested += numSpheres;
@@ -572,7 +580,7 @@ namespace xiiInternal
 
             if constexpr (UseTagsFilter)
             {
-              if (FilterByTags(tagSets[i], queryParams.m_IncludeTags, queryParams.m_ExcludeTags))
+              if (FilterByTags(tagSets[i], queryParams.m_pIncludeTags, queryParams.m_pExcludeTags))
               {
                 ref_stats.m_uiNumObjectsFiltered++;
                 continue;
@@ -581,7 +589,7 @@ namespace xiiInternal
 
             if constexpr (UseOcclusionCallback)
             {
-              bbox = xiiSimdBBox::MakeFromCenterAndHalfExtents(boundingSpheres[i].GetCenter(), boundingBoxHalfExtents[i]);
+              const xiiSimdBBox bbox = xiiSimdBBox::MakeFromCenterAndHalfExtents(boundingSpheres[i].GetCenter(), boundingBoxHalfExtents[i]);
               if (pQueryData->m_IsOccludedCB(bbox))
               {
                 continue;
@@ -606,7 +614,7 @@ namespace xiiInternal
 
           if constexpr (UseTagsFilter)
           {
-            if (FilterByTags(tagSets[i], queryParams.m_IncludeTags, queryParams.m_ExcludeTags))
+            if (FilterByTags(tagSets[i], queryParams.m_pIncludeTags, queryParams.m_pExcludeTags))
             {
               ref_stats.m_uiNumObjectsFiltered++;
               continue;
@@ -615,7 +623,7 @@ namespace xiiInternal
 
           if constexpr (UseOcclusionCallback)
           {
-            bbox = xiiSimdBBox::MakeFromCenterAndHalfExtents(boundingSpheres[i].GetCenter(), boundingBoxHalfExtents[i]);
+            const xiiSimdBBox bbox = xiiSimdBBox::MakeFromCenterAndHalfExtents(boundingSpheres[i].GetCenter(), boundingBoxHalfExtents[i]);
 
             if (pQueryData->m_IsOccludedCB(bbox))
             {
@@ -641,7 +649,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSpatialSystem_RegularGrid, 1, xiiRTTINoAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiSpatialSystem_RegularGrid::xiiSpatialSystem_RegularGrid(xiiUInt32 uiCellSize /*= 128*/) :
-  m_AlignedAllocator("Spatial System Aligned", xiiFoundation::GetAlignedAllocator()), m_Grids(&m_Allocator), m_DataTable(&m_Allocator), m_vCellSize(uiCellSize), m_vOverlapSize(uiCellSize / 4.0f), m_fInvCellSize(1.0f / uiCellSize)
+  m_AlignedAllocator("Spatial System Aligned", xiiFoundation::GetAlignedAllocator()), m_vCellSize(uiCellSize), m_vOverlapSize(uiCellSize / 4.0f), m_fInvCellSize(1.0f / uiCellSize), m_Grids(&m_Allocator), m_DataTable(&m_Allocator)
 {
   static_assert(sizeof(Data) == 8);
 
@@ -651,7 +659,8 @@ xiiSpatialSystem_RegularGrid::xiiSpatialSystem_RegularGrid(xiiUInt32 uiCellSize 
     if (e.m_EventType == xiiCVarEvent::ValueChanged)
     {
       RemoveAllCachedGrids();
-    } });
+    }
+  });
 }
 
 xiiSpatialSystem_RegularGrid::~xiiSpatialSystem_RegularGrid() = default;
@@ -769,7 +778,7 @@ xiiSpatialDataHandle xiiSpatialSystem_RegularGrid::CreateSpatialDataAlwaysVisibl
   if (uiCategoryBitmask == 0)
     return xiiSpatialDataHandle();
 
-  xiiSimdBBox hugeBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(xiiSimdVec4f::MakeZero(), xiiSimdVec4f((float)(m_vCellSize.x() * MAX_CELL_INDEX)));
+  const xiiSimdBBox hugeBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(xiiSimdVec4f::MakeZero(), xiiSimdVec4f((float)(m_vCellSize.x() * MAX_CELL_INDEX)));
 
   return AddSpatialDataToGrids(hugeBox, pObject, uiCategoryBitmask, tags, true);
 }
@@ -781,6 +790,7 @@ void xiiSpatialSystem_RegularGrid::DeleteSpatialData(const xiiSpatialDataHandle&
 
   ForEachGrid(oldData, hData,
               [&](Grid& ref_grid, const CellDataMapping& mapping) {
+                XII_IGNORE_UNUSED(mapping);
                 ref_grid.RemoveSpatialData(hData);
                 return xiiVisitorExecution::Continue;
               });
@@ -838,14 +848,12 @@ void xiiSpatialSystem_RegularGrid::FindObjectsInSphere(const xiiBoundingSphere& 
   XII_PROFILE_SCOPE("FindObjectsInSphere");
 
   xiiSimdBSphere simdSphere(xiiSimdConversion::ToVec3(sphere.m_vCenter), sphere.m_fRadius);
-  xiiSimdBBox    simdBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(simdSphere.m_CenterAndRadius, simdSphere.m_CenterAndRadius.Get<xiiSwizzle::WWWW>());
+
+  const xiiSimdBBox simdBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(simdSphere.m_CenterAndRadius, simdSphere.m_CenterAndRadius.Get<xiiSwizzle::WWWW>());
 
   xiiInternal::QueryHelper::ShapeQueryData<xiiSimdBSphere> queryData = {simdSphere, callback};
 
-  ForEachCellInBoxInMatchingGrids(simdBox, queryParams,
-                                  &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBSphere, false>,
-                                  &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBSphere, true>,
-                                  &queryData, xiiVisibilityState::Indirect);
+  ForEachCellInBoxInMatchingGrids(simdBox, queryParams, &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBSphere, false>, &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBSphere, true>, &queryData, xiiVisibilityState::Indirect);
 }
 
 void xiiSpatialSystem_RegularGrid::FindObjectsInBox(const xiiBoundingBox& box, const QueryParams& queryParams, QueryCallback callback) const
@@ -856,10 +864,7 @@ void xiiSpatialSystem_RegularGrid::FindObjectsInBox(const xiiBoundingBox& box, c
 
   xiiInternal::QueryHelper::ShapeQueryData<xiiSimdBBox> queryData = {simdBox, callback};
 
-  ForEachCellInBoxInMatchingGrids(simdBox, queryParams,
-                                  &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBBox, false>,
-                                  &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBBox, true>,
-                                  &queryData, xiiVisibilityState::Indirect);
+  ForEachCellInBoxInMatchingGrids(simdBox, queryParams, &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBBox, false>, &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBBox, true>, &queryData, xiiVisibilityState::Indirect);
 }
 
 void xiiSpatialSystem_RegularGrid::FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_Objects, xiiSpatialSystem::IsOccludedFunc IsOccluded, xiiVisibilityState visType) const
@@ -879,7 +884,7 @@ void xiiSpatialSystem_RegularGrid::FindVisibleObjects(const xiiFrustum& frustum,
     simdCornerPoints[i] = xiiSimdConversion::ToVec3(cornerPoints[i]);
   }
 
-  xiiSimdBBox simdBox = xiiSimdBBox::MakeFromPoints(simdCornerPoints, 8);
+  const xiiSimdBBox simdBox = xiiSimdBBox::MakeFromPoints(simdCornerPoints, 8);
 
   xiiInternal::QueryHelper::FrustumQueryData queryData;
   {
@@ -914,17 +919,11 @@ void xiiSpatialSystem_RegularGrid::FindVisibleObjects(const xiiFrustum& frustum,
 
   if (IsOccluded.IsValid())
   {
-    ForEachCellInBoxInMatchingGrids(simdBox, queryParams,
-                                    &xiiInternal::QueryHelper::FrustumQueryCallback<false, true>,
-                                    &xiiInternal::QueryHelper::FrustumQueryCallback<true, true>,
-                                    &queryData, visType);
+    ForEachCellInBoxInMatchingGrids(simdBox, queryParams, &xiiInternal::QueryHelper::FrustumQueryCallback<false, true>, &xiiInternal::QueryHelper::FrustumQueryCallback<true, true>, &queryData, visType);
   }
   else
   {
-    ForEachCellInBoxInMatchingGrids(simdBox, queryParams,
-                                    &xiiInternal::QueryHelper::FrustumQueryCallback<false, false>,
-                                    &xiiInternal::QueryHelper::FrustumQueryCallback<true, false>,
-                                    &queryData, visType);
+    ForEachCellInBoxInMatchingGrids(simdBox, queryParams, &xiiInternal::QueryHelper::FrustumQueryCallback<false, false>, &xiiInternal::QueryHelper::FrustumQueryCallback<true, false>, &queryData, visType);
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -963,33 +962,55 @@ xiiVisibilityState xiiSpatialSystem_RegularGrid::GetVisibilityState(const xiiSpa
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 void xiiSpatialSystem_RegularGrid::GetInternalStats(xiiStringBuilder& sb) const
 {
-  sb = "Cache Candidates:\n";
-
   XII_LOCK(m_CacheCandidatesMutex);
+
+  xiiUInt32 uiNumActiveGrids = 0;
+  for (auto& pGrid : m_Grids)
+  {
+    uiNumActiveGrids += (pGrid != nullptr) ? 1 : 0;
+  }
+
+  sb.SetFormat("Num Grids: {}\n", uiNumActiveGrids);
+
+  for (auto& pGrid : m_Grids)
+  {
+    if (pGrid == nullptr)
+      continue;
+
+    sb.AppendFormat(" \nCategory: {}, CanBeCached: {}\nIncludeTags: ", xiiSpatialData::GetCategoryName(pGrid->m_Category), pGrid->m_bCanBeCached);
+    TagsToString(pGrid->m_IncludeTags, sb);
+    sb.Append(", ExcludeTags: ");
+    TagsToString(pGrid->m_ExcludeTags, sb);
+    sb.Append("\n");
+  }
+
+  sb.Append("\nCache Candidates:\n");
 
   for (auto& sortedCandidate : m_SortedCacheCandidates)
   {
-    auto& candidate = m_CacheCandidates[sortedCandidate.m_uiIndex];
+    auto&           candidate   = m_CacheCandidates[sortedCandidate.m_uiIndex];
+    const xiiUInt32 uiGridIndex = candidate.m_uiGridIndex;
+    Grid*           pGrid       = nullptr;
 
-    sb.AppendFormat(" \nCategory: {}\nInclude Tags: ", candidate.m_Category.m_uiValue);
+    if (uiGridIndex != xiiInvalidIndex)
+    {
+      pGrid = m_Grids[uiGridIndex].Borrow();
+      if (pGrid->CachingCompleted())
+      {
+        continue;
+      }
+    }
+
+    sb.AppendFormat(" \nCategory: {}\nIncludeTags: ", xiiSpatialData::GetCategoryName(candidate.m_Category));
     TagsToString(candidate.m_IncludeTags, sb);
-    sb.Append("\nExclude Tags: ");
+    sb.Append(", ExcludeTags: ");
     TagsToString(candidate.m_ExcludeTags, sb);
     sb.AppendFormat("\nScore: {}", xiiArgF(sortedCandidate.m_fScore, 2));
 
-    const xiiUInt32 uiGridIndex = candidate.m_uiGridIndex;
-    if (uiGridIndex != xiiInvalidIndex)
+    if (pGrid != nullptr)
     {
-      auto& pGrid = m_Grids[uiGridIndex];
-      if (pGrid->CachingCompleted())
-      {
-        sb.Append("\nReady to use!\n");
-      }
-      else
-      {
-        const xiiUInt32 uiNumObjectsMigrated = pGrid->m_uiLastMigrationIndex;
-        sb.AppendFormat("\nMigration Status: {}%%\n", xiiArgF(float(uiNumObjectsMigrated) / m_DataTable.GetCount() * 100.0f, 2));
-      }
+      const xiiUInt32 uiNumObjectsMigrated = pGrid->m_uiLastMigrationIndex;
+      sb.AppendFormat("\nMigrationStatus: {}%%\n", xiiArgF(float(uiNumObjectsMigrated) / m_DataTable.GetCount() * 100.0f, 2));
     }
   }
 }
@@ -1013,7 +1034,7 @@ xiiSpatialDataHandle xiiSpatialSystem_RegularGrid::AddSpatialDataToGrids(const x
     if (pGrid == nullptr)
       continue;
 
-    if ((pGrid->m_Category.GetBitmask() & uiCategoryBitmask) == 0 || FilterByTags(tags, pGrid->m_IncludeTags, pGrid->m_ExcludeTags))
+    if ((pGrid->m_Category.GetBitmask() & uiCategoryBitmask) == 0 || FilterByTags(tags, &pGrid->m_IncludeTags, &pGrid->m_ExcludeTags))
       continue;
 
     data.m_uiGridBitmask |= XII_BIT(uiCachedGridIndex);
@@ -1030,7 +1051,7 @@ xiiSpatialDataHandle xiiSpatialSystem_RegularGrid::AddSpatialDataToGrids(const x
     auto& pGrid = m_Grids[uiGridIndex];
     if (pGrid == nullptr)
     {
-      pGrid = XII_NEW(&m_Allocator, Grid, *this, xiiSpatialData::Category(uiGridIndex));
+      pGrid = XII_NEW(&m_Allocator, Grid, *this, xiiSpatialData::Category(static_cast<xiiUInt16>(uiGridIndex)));
     }
 
     pGrid->AddSpatialData(bounds, tags, pObject, m_uiFrameCounter, hData);
@@ -1076,7 +1097,7 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
     if (pGrid == nullptr || pGrid->CachingCompleted() == false)
       continue;
 
-    if (((pGrid->m_Category.GetBitmask() & uiGridBitmask) == 0) || (pGrid->m_IncludeTags != queryParams.m_IncludeTags) || (pGrid->m_ExcludeTags != queryParams.m_ExcludeTags))
+    if ((pGrid->m_Category.GetBitmask() & uiGridBitmask) == 0 || AreTagSetsEqual(pGrid->m_IncludeTags, queryParams.m_pIncludeTags) == false || AreTagSetsEqual(pGrid->m_ExcludeTags, queryParams.m_pExcludeTags) == false)
       continue;
 
     uiGridBitmask &= ~pGrid->m_Category.GetBitmask();
@@ -1087,7 +1108,7 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
                               return noFilterCallback(cell, queryParams, stats, pUserData, visType);
                             });
 
-    UpdateCacheCandidate(queryParams.m_IncludeTags, queryParams.m_ExcludeTags, pGrid->m_Category, 0.0f);
+    UpdateCacheCandidate(queryParams.m_pIncludeTags, queryParams.m_pExcludeTags, pGrid->m_Category, 0.0f);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     if (queryParams.m_pStats != nullptr)
@@ -1099,7 +1120,7 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
   }
 
   // then search for the rest
-  const bool   useTagsFilter = (queryParams.m_IncludeTags.IsEmpty() == false) || (queryParams.m_ExcludeTags.IsEmpty() == false);
+  const bool   useTagsFilter = (queryParams.m_pIncludeTags && queryParams.m_pIncludeTags->IsEmpty() == false) || (queryParams.m_pExcludeTags && queryParams.m_pExcludeTags->IsEmpty() == false);
   CellCallback cellCallback  = useTagsFilter ? filterByTagsCallback : noFilterCallback;
 
   while (uiGridBitmask > 0)
@@ -1128,7 +1149,7 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
       // Doesn't make sense to cache if there are only few objects in total or only few objects have been filtered
       if (totalNumObjectsAfterSpatialTest > cacheThreshold && filteredRatio > 0.1f)
       {
-        UpdateCacheCandidate(queryParams.m_IncludeTags, queryParams.m_ExcludeTags, pGrid->m_Category, filteredRatio);
+        UpdateCacheCandidate(queryParams.m_pIncludeTags, queryParams.m_pExcludeTags, pGrid->m_Category, filteredRatio);
       }
     }
 
@@ -1236,14 +1257,14 @@ void xiiSpatialSystem_RegularGrid::RemoveAllCachedGrids()
   }
 }
 
-void xiiSpatialSystem_RegularGrid::UpdateCacheCandidate(const xiiTagSet& includeTags, const xiiTagSet& excludeTags, xiiSpatialData::Category category, float filteredRatio) const
+void xiiSpatialSystem_RegularGrid::UpdateCacheCandidate(const xiiTagSet* pIncludeTags, const xiiTagSet* pExcludeTags, xiiSpatialData::Category category, float filteredRatio) const
 {
   XII_LOCK(m_CacheCandidatesMutex);
 
   CacheCandidate* pCacheCandiate = nullptr;
   for (auto& cacheCandidate : m_CacheCandidates)
   {
-    if ((cacheCandidate.m_Category == category) && (cacheCandidate.m_IncludeTags == includeTags) && (cacheCandidate.m_ExcludeTags == excludeTags))
+    if (cacheCandidate.m_Category == category && AreTagSetsEqual(cacheCandidate.m_IncludeTags, pIncludeTags) && AreTagSetsEqual(cacheCandidate.m_ExcludeTags, pExcludeTags))
     {
       pCacheCandiate = &cacheCandidate;
       break;
@@ -1257,7 +1278,19 @@ void xiiSpatialSystem_RegularGrid::UpdateCacheCandidate(const xiiTagSet& include
   }
   else
   {
-    m_CacheCandidates.PushBack({includeTags, excludeTags, category, 1, filteredRatio});
+    auto& cacheCandidate            = m_CacheCandidates.ExpandAndGetRef();
+    cacheCandidate.m_Category       = category;
+    cacheCandidate.m_fQueryCount    = 1;
+    cacheCandidate.m_fFilteredRatio = filteredRatio;
+
+    if (pIncludeTags != nullptr)
+    {
+      cacheCandidate.m_IncludeTags = *pIncludeTags;
+    }
+    if (pExcludeTags != nullptr)
+    {
+      cacheCandidate.m_ExcludeTags = *pExcludeTags;
+    }
   }
 }
 

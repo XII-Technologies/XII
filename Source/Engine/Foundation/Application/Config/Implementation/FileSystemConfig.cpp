@@ -142,7 +142,7 @@ void xiiApplicationFileSystemConfig::Apply()
   {
     // if (xiiFileSystem::ResolveSpecialDirectory(var.m_sDataDirSpecialPath, s).Succeeded())
     {
-      xiiFileSystem::AddDataDirectory(var.m_sDataDirSpecialPath, "AppFileSystemConfig", var.m_sRootName, (!var.m_sRootName.IsEmpty() && var.m_bWritable) ? xiiFileSystem::DataDirUsage::AllowWrites : xiiFileSystem::DataDirUsage::ReadOnly).IgnoreResult();
+      xiiFileSystem::AddDataDirectory(var.m_sDataDirSpecialPath, "AppFileSystemConfig", var.m_sRootName, (!var.m_sRootName.IsEmpty() && var.m_bWritable) ? xiiDataDirUsage::AllowWrites : xiiDataDirUsage::ReadOnly).IgnoreResult();
     }
   }
 }

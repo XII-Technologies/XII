@@ -113,9 +113,9 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
 
   const xiiUInt64 uiMaxBytes = file.GetFileSize();
 
-  constexpr xiiUInt32 uiMaxNumWorkerThreads = 12u;
-
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
+  constexpr xiiUInt32 uiMaxNumWorkerThreads = 12U;
+
   xiiUInt32 uiWorkerThreadCount;
   if (uiMaxBytes > xiiMath::MaxValue<xiiUInt32>())
   {
@@ -153,13 +153,15 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
 #endif
 
     default:
+    {
       compression = xiiArchiveCompressionMode::Uncompressed;
-      break;
+    }
+    break;
   }
 
   inout_tocEntry.m_CompressionMode = compression;
 
-  xiiUInt64 uiRead = 0;
+  xiiUInt64                 uiRead = 0;
   xiiDynamicArray<xiiUInt8> buffer;
   buffer.SetCountUninitialized(1024 * 32);
 
@@ -193,8 +195,10 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
 
     case xiiArchiveCompressionMode::Uncompressed:
     default:
+    {
       inout_tocEntry.m_uiStoredDataSize = inout_tocEntry.m_uiUncompressedDataSize;
-      break;
+    }
+    break;
   }
 
   inout_uiCurrentStreamPosition += inout_tocEntry.m_uiStoredDataSize;

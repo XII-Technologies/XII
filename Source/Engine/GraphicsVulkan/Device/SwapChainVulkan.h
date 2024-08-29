@@ -29,14 +29,41 @@ protected:
   virtual ~xiiGALSwapChainVulkan();
 
   virtual xiiResult InitPlatform() override final;
-
   virtual xiiResult DeInitPlatform() override final;
 
-  xiiResult CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
+  xiiResult CreateVulkanSurface();
+  xiiResult CreateVulkanSwapChain();
 
-  void DestroyBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
+  xiiResult CreateBackBufferInternal();
+  void      DestroyBackBufferInternal();
 
 protected:
-};
+  vk::SurfaceKHR   m_vkSurface;
+  vk::SwapchainKHR m_vkSwapChain;
+  vk::Format       m_vkColorFormat = vk::Format::eUndefined;
 
-#include <GraphicsVulkan/Device/Implementation/SwapChainVulkan_inl.h>
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
+  // Surface extent corresponding to identity transform. We have to store this value,
+  // because on Android vkGetPhysicalDeviceSurfaceCapabilitiesKHR is not reliable and
+  // starts reporting incorrect dimensions after few rotations.
+  vk::Extent2D m_vkSurfaceIdentityExtent;
+
+  // Keep track of current surface transform to detect orientation changes.
+  vk::SurfaceTransformFlagsKHR m_vkCurrentSurfaceTransform = {};
+#endif
+
+  xiiUInt32 m_uiDesiredBufferCount = 0U;
+
+  xiiDynamicArray<vk::Semaphore> m_ImageAcquiredSemaphores;
+  xiiDynamicArray<vk::Semaphore> m_DrawCompleteSemaphores;
+  xiiDynamicArray<vk::Fence>     m_ImageAcquiredFences;
+
+  xiiDynamicArray<vk::Image>           m_SwapChainImages;
+  xiiDynamicArray<xiiGALTextureHandle> m_SwapChainTextures;
+  xiiDynamicArray<bool>                m_SwapChainImagesInitialized;
+  xiiDynamicArray<bool>                m_ImageAcquiredFenceSubmitted;
+  xiiUInt32                            m_uiBackBufferIndex = 0U;
+  xiiUInt32                            m_uiSemaphoreIndex  = 0U;
+
+  bool m_bIsMinimized = false;
+};
