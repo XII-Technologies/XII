@@ -74,8 +74,7 @@ public:
   // *** Functions dealing with length ***
 public:
   /// \brief Returns the length of the vector.
-  XII_DECLARE_IF_FLOAT_TYPE
-  Type GetLength() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type GetLength() const; // [tested]
 
   /// \brief Returns the squared length. Faster, since no square-root is taken. Useful, if one only wants to compare the lengths of two
   /// vectors.
@@ -83,21 +82,17 @@ public:
 
   /// \brief Normalizes this vector and returns its previous length in one operation. More efficient than calling GetLength and then
   /// Normalize.
-  XII_DECLARE_IF_FLOAT_TYPE
-  Type GetLengthAndNormalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type GetLengthAndNormalize(); // [tested]
 
   /// \brief Returns a normalized version of this vector, leaves the vector itself unchanged.
-  XII_DECLARE_IF_FLOAT_TYPE
-  const xiiVec4Template<Type> GetNormalized() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec4Template<Type> GetNormalized() const; // [tested]
 
   /// \brief Normalizes this vector.
-  XII_DECLARE_IF_FLOAT_TYPE
-  void Normalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE void Normalize(); // [tested]
 
   /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
-  XII_DECLARE_IF_FLOAT_TYPE
-  xiiResult NormalizeIfNotZero(const xiiVec4Template<Type>& vFallback = xiiVec4Template<Type>(1, 0, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE xiiResult NormalizeIfNotZero(const xiiVec4Template<Type>& vFallback = xiiVec4Template<Type>(1, 0, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
 
   /// \brief Returns, whether this vector is (0, 0, 0, 0).
   bool IsZero() const; // [tested]
@@ -106,8 +101,7 @@ public:
   bool IsZero(Type fEpsilon) const; // [tested]
 
   /// \brief Returns, whether the squared length of this vector is between 0.999f and 1.001f.
-  XII_DECLARE_IF_FLOAT_TYPE
-  bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
 
   /// \brief Returns true, if any of x, y, z or w is NaN.
   bool IsNaN() const; // [tested]
@@ -116,8 +110,7 @@ public:
   bool IsValid() const; // [tested]
 
   /// \brief Returns the distance between two 3D Vectors.
-  XII_DECLARE_IF_FLOAT_TYPE
-  Type Distance(const xiiVec4Template<Type>& vPoint) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type Distance(const xiiVec4Template<Type>& vPoint) const; // [tested]
 
   /// \brief Returns the squared distance between two 3D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
   /// vectors regardless of the magnitude.
