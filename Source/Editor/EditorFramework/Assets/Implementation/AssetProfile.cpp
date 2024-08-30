@@ -228,11 +228,11 @@ void xiiAssetCurator::SetupDefaultAssetProfiles()
 
 void xiiAssetCurator::ComputeAllDocumentManagerAssetProfileHashes()
 {
-  for (auto pMan : xiiDocumentManager::GetAllDocumentManagers())
+  for (auto pDocumentManager : xiiDocumentManager::GetAllDocumentManagers())
   {
-    if (auto pAssMan = xiiDynamicCast<xiiAssetDocumentManager*>(pMan))
+    if (auto pAssetDocumentManager = xiiDynamicCast<xiiAssetDocumentManager*>(pDocumentManager))
     {
-      pAssMan->ComputeAssetProfileHash(GetActiveAssetProfile());
+      pAssetDocumentManager->ComputeAssetProfileHash(GetActiveAssetProfile());
     }
   }
 }

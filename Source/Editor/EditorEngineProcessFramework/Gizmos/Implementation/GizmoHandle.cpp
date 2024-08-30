@@ -168,7 +168,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferRect()
   const float fLength = 2.0f / 3.0f;
 
   xiiGeometry geom;
-  geom.AddRectXY(xiiVec2(fLength));
+  geom.AddRect(xiiVec2(fLength));
 
   return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Rect", xiiGALPrimitiveTopology::TriangleList);
 }
@@ -189,10 +189,10 @@ static xiiMeshBufferResourceHandle CreateMeshBufferLineRect()
 
   const xiiVec2 halfSize(1.0f);
 
-  geom.AddVertex(xiiVec3(-halfSize.x, -halfSize.y, 0), xiiVec3(0, 0, 1), xiiVec2(0, 1), xiiColor::White, 0, m);
-  geom.AddVertex(xiiVec3(halfSize.x, -halfSize.y, 0), xiiVec3(0, 0, 1), xiiVec2(0, 0), xiiColor::White, 0, m);
-  geom.AddVertex(xiiVec3(halfSize.x, halfSize.y, 0), xiiVec3(0, 0, 1), xiiVec2(1, 0), xiiColor::White, 0, m);
-  geom.AddVertex(xiiVec3(-halfSize.x, halfSize.y, 0), xiiVec3(0, 0, 1), xiiVec2(1, 1), xiiColor::White, 0, m);
+  geom.AddVertex(m, xiiVec3(-halfSize.x, -halfSize.y, 0), xiiVec3(0, 0, 1), xiiVec2(0, 1));
+  geom.AddVertex(m, xiiVec3(halfSize.x, -halfSize.y, 0), xiiVec3(0, 0, 1), xiiVec2(0, 0));
+  geom.AddVertex(m, xiiVec3(halfSize.x, halfSize.y, 0), xiiVec3(0, 0, 1), xiiVec2(1, 0));
+  geom.AddVertex(m, xiiVec3(-halfSize.x, halfSize.y, 0), xiiVec3(0, 0, 1), xiiVec2(1, 1));
 
   geom.AddLine(0, 1);
   geom.AddLine(1, 2);
@@ -311,11 +311,11 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxFaces()
   xiiGeometry::GeoOptions opt;
   opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0, 0, 0.5f));
 
-  geom.AddRectXY(xiiVec2(0.5f), 1, 1, opt);
+  geom.AddRect(xiiVec2(0.5f), 1, 1, opt);
 
-  opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(180.0f));
+  opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(180.0));
   opt.m_Transform.SetTranslationVector(xiiVec3(0, 0, -0.5f));
-  geom.AddRectXY(xiiVec2(0.5f), 1, 1, opt);
+  geom.AddRect(xiiVec2(0.5f), 1, 1, opt);
 
   return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxFaces", xiiGALPrimitiveTopology::TriangleList);
 }
@@ -340,10 +340,10 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxEdges()
 
     opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.5f - 0.125f, 0, 0.5f));
     opt.m_Transform = rot * opt.m_Transform;
-    geom.AddRectXY(xiiVec2(0.25f, 0.5f), 1, 1, opt);
+    geom.AddRect(xiiVec2(0.25f, 0.5f), 1, 1, opt);
 
     opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(-0.5f + 0.125f, 0, 0.5f));
-    geom.AddRectXY(xiiVec2(0.25f, 0.5f), 1, 1, opt);
+    geom.AddRect(xiiVec2(0.25f, 0.5f), 1, 1, opt);
   }
 
   return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxEdges", xiiGALPrimitiveTopology::TriangleList);
@@ -373,19 +373,19 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxCorners()
   {
     opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.5f - 0.125f, 0.5f - 0.125f, 0.5f));
     opt.m_Transform = rot[i] * opt.m_Transform;
-    geom.AddRectXY(xiiVec2(0.25f, 0.25f), 1, 1, opt);
+    geom.AddRect(xiiVec2(0.25f, 0.25f), 1, 1, opt);
 
     opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.5f - 0.125f, -0.5f + 0.125f, 0.5f));
     opt.m_Transform = rot[i] * opt.m_Transform;
-    geom.AddRectXY(xiiVec2(0.25f, 0.25f), 1, 1, opt);
+    geom.AddRect(xiiVec2(0.25f, 0.25f), 1, 1, opt);
 
     opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(-0.5f + 0.125f, 0.5f - 0.125f, 0.5f));
     opt.m_Transform = rot[i] * opt.m_Transform;
-    geom.AddRectXY(xiiVec2(0.25f, 0.25f), 1, 1, opt);
+    geom.AddRect(xiiVec2(0.25f, 0.25f), 1, 1, opt);
 
     opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(-0.5f + 0.125f, -0.5f + 0.125f, 0.5f));
     opt.m_Transform = rot[i] * opt.m_Transform;
-    geom.AddRectXY(xiiVec2(0.25f, 0.25f), 1, 1, opt);
+    geom.AddRect(xiiVec2(0.25f, 0.25f), 1, 1, opt);
   }
 
   return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxCorners", xiiGALPrimitiveTopology::TriangleList);
@@ -424,12 +424,12 @@ static xiiMeshBufferResourceHandle CreateMeshBufferFrustum()
 
   xiiGeometry geom;
 
-  geom.AddVertex(xiiVec3(0, 0, 0), xiiVec3(0, 0, 1), xiiVec2(0), xiiColor::White, 0, m);
+  geom.AddVertex(m, xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
 
-  geom.AddVertex(xiiVec3(1.0f, -1.0f, 1.0f), xiiVec3(0, 0, 1), xiiVec2(0), xiiColor::White, 0, m);
-  geom.AddVertex(xiiVec3(1.0f, 1.0f, 1.0f), xiiVec3(0, 0, 1), xiiVec2(0), xiiColor::White, 0, m);
-  geom.AddVertex(xiiVec3(1.0f, -1.0f, -1.0f), xiiVec3(0, 0, 1), xiiVec2(0), xiiColor::White, 0, m);
-  geom.AddVertex(xiiVec3(1.0f, 1.0f, -1.0f), xiiVec3(0, 0, 1), xiiVec2(0), xiiColor::White, 0, m);
+  geom.AddVertex(m, xiiVec3(1.0f, -1.0f, 1.0f), xiiVec3(0, 0, 1));
+  geom.AddVertex(m, xiiVec3(1.0f, 1.0f, 1.0f), xiiVec3(0, 0, 1));
+  geom.AddVertex(m, xiiVec3(1.0f, -1.0f, -1.0f), xiiVec3(0, 0, 1));
+  geom.AddVertex(m, xiiVec3(1.0f, 1.0f, -1.0f), xiiVec3(0, 0, 1));
 
   geom.AddLine(0, 1);
   geom.AddLine(0, 2);
