@@ -50,7 +50,7 @@ void xiiDecalAssetDocumentManager::AddEntriesToAssetTable(xiiStringView sDataDir
 
   if (projectDir.StartsWith_NoCase(sDataDirectory))
   {
-    addEntry("{ ProjectDecalAtlas }", "PC/Decals.xiiTextureAtlas", "Decal Atlas");
+    addEntry("{ ProjectDecalAtlas }", "Default/Decals.xiiTextureAtlas", "Decal Atlas");
   }
 }
 

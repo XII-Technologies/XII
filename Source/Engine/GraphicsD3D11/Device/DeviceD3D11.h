@@ -59,9 +59,8 @@ public:
   // These functions are implemented by a graphics API implementation.
 protected:
   virtual xiiResult InitializePlatform() override final;
+  virtual xiiResult PostInitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
-
-  virtual xiiResult CreateCommandQueuesPlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
@@ -70,9 +69,6 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) override final;
-  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -130,7 +126,7 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
-  virtual void FillCapabilitiesPlatform() override final;
+  virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

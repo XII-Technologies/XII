@@ -224,6 +224,18 @@ public:
   /// \brief Renders a line arrow.
   static void DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
 
+  /// \brief Returns the width of single glyph in pixels for the given text size
+  static float GetTextGlyphWidth(xiiUInt32 uiSizeInPixel = 16U);
+
+  /// \brief Returns the line height in pixels for the given text size
+  static float GetTextLineHeight(xiiUInt32 uiSizeInPixel = 16U);
+
+  /// \brief Returns the global debug text scale
+  static float GetTextScale();
+
+  /// \brief Sets the global debug text scale
+  static void SetTextScale(float fScale);
+
 private:
   friend class xiiSimpleRenderPass;
 

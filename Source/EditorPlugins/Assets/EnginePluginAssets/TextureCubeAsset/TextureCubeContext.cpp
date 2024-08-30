@@ -69,7 +69,7 @@ void xiiTextureCubeContext::OnInitialize()
     {
       // Build geometry
       xiiGeometry geom;
-      geom.AddSphere(0.5f, 64, 64);
+      geom.AddStackedSphere(0.5f, 64, 64);
       geom.ComputeTangents();
 
       xiiMeshBufferResourceDescriptor desc;

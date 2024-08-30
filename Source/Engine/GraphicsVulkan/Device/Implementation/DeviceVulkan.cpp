@@ -1071,11 +1071,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::FlushPendingObjects()
-{
-  FlushDestroyedObjects();
-}
-
 xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
 {
   {
@@ -1113,6 +1108,11 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
   m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
 
   return XII_SUCCESS;
+}
+
+void xiiGALDeviceVulkan::FlushPendingObjects()
+{
+  FlushDestroyedObjects();
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)

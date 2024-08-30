@@ -313,12 +313,13 @@ void xiiGameApplication::RenderConsole()
 
   const float fViewWidth             = pView->GetViewport().width;
   const float fViewHeight            = pView->GetViewport().height;
-  const float fTextHeight            = 20.0f;
+  const float fGlyphWidth            = xiiDebugRenderer::GetTextGlyphWidth();
+  const float fLineHeight            = xiiDebugRenderer::GetTextLineHeight();
   const float fConsoleHeight         = (fViewHeight / 2.0f);
   const float fBorderWidth           = 3.0f;
-  const float fConsoleTextAreaHeight = fConsoleHeight - fTextHeight - (2.0f * fBorderWidth);
+  const float fConsoleTextAreaHeight = fConsoleHeight - fLineHeight - (2.0f * fBorderWidth);
 
-  const xiiInt32 iTextHeight = (xiiInt32)fTextHeight;
+  const xiiInt32 iTextHeight = (xiiInt32)fLineHeight;
   const xiiInt32 iTextLeft   = (xiiInt32)(fBorderWidth);
 
   {
@@ -327,7 +328,7 @@ void xiiGameApplication::RenderConsole()
 
     xiiColor foregroundColor(0.0f, 0.0f, 0.0f, 0.8f);
     xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, 0.0f, fViewWidth - (2.0f * fBorderWidth), fConsoleTextAreaHeight), 0.0f, foregroundColor);
-    xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, fConsoleTextAreaHeight + fBorderWidth, fViewWidth - (2.0f * fBorderWidth), fTextHeight), 0.0f, foregroundColor);
+    xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, fConsoleTextAreaHeight + fBorderWidth, fViewWidth - (2.0f * fBorderWidth), fLineHeight), 0.0f, foregroundColor);
   }
 
   {
@@ -335,7 +336,7 @@ void xiiGameApplication::RenderConsole()
 
     auto& consoleStrings = m_pConsole->GetConsoleStrings();
 
-    xiiUInt32 uiNumConsoleLines = (xiiUInt32)(xiiMath::Ceil(fConsoleTextAreaHeight / fTextHeight));
+    xiiUInt32 uiNumConsoleLines = (xiiUInt32)(xiiMath::Ceil(fConsoleTextAreaHeight / fLineHeight));
     xiiInt32  iFirstLinePos     = (xiiInt32)fConsoleTextAreaHeight - uiNumConsoleLines * iTextHeight;
     xiiInt32  uiFirstLine       = m_pConsole->GetScrollPosition() + uiNumConsoleLines - 1;
     xiiInt32  uiSkippedLines    = xiiMath::Max(uiFirstLine - (xiiInt32)consoleStrings.GetCount() + 1, 0);
@@ -346,13 +347,15 @@ void xiiGameApplication::RenderConsole()
       xiiDebugRenderer::Draw2DText(hView, consoleString.m_sText.GetData(), xiiVec2I32(iTextLeft, iFirstLinePos + i * iTextHeight), consoleString.GetColor());
     }
 
-    xiiDebugRenderer::Draw2DText(hView, m_pConsole->GetInputLine(), xiiVec2I32(iTextLeft, (xiiInt32)(fConsoleTextAreaHeight + fBorderWidth)), xiiColor::White);
+    xiiDebugRenderer::Draw2DText(hView, m_pConsole->GetInputLine(), xiiVec2I32(iTextLeft, (xiiInt32)(fConsoleTextAreaHeight + fBorderWidth + (fLineHeight * 0.5f))), xiiColor::White, 16, xiiDebugTextHAlign::Default, xiiDebugTextVAlign::Center);
 
     if (xiiMath::Fraction(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds()) > 0.5)
     {
-      float    fCaretPosition = (float)m_pConsole->GetCaretPosition();
-      xiiColor caretColor(1.0f, 1.0f, 1.0f, 0.5f);
-      xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth + fCaretPosition * 8.0f + 2.0f, fConsoleTextAreaHeight + fBorderWidth + 1.0f, 2.0f, fTextHeight - 2.0f), 0.0f, caretColor);
+      const float fCaretPosition = (float)m_pConsole->GetCaretPosition();
+      const float fCaretX        = fBorderWidth + (fCaretPosition + 0.5f) * fGlyphWidth;
+      const float fCaretY        = fConsoleTextAreaHeight + fBorderWidth + 1.0f;
+      xiiColor    caretColor(1.0f, 1.0f, 1.0f, 0.5f);
+      xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fCaretX, fCaretY, 2.0f, fLineHeight - 2.0f), 0.0f, caretColor);
     }
   }
 }

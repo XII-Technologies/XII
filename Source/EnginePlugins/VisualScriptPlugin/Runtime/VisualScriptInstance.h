@@ -9,7 +9,8 @@ class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptInstance : public xiiScriptInsta
 public:
   xiiVisualScriptInstance(xiiReflectedClass& inout_owner, xiiWorld* pWorld, const xiiSharedPtr<xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pInstanceDataDesc, const xiiSharedPtr<xiiVisualScriptInstanceDataMapping>& pInstanceDataMapping);
 
-  virtual void ApplyParameters(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters) override;
+  virtual void       SetInstanceVariable(const xiiHashedString& sName, const xiiVariant& value) override;
+  virtual xiiVariant GetInstanceVariable(const xiiHashedString& sName) override;
 
   xiiVisualScriptDataStorage* GetConstantDataStorage() { return m_pConstantDataStorage.Borrow(); }
   xiiVisualScriptDataStorage* GetInstanceDataStorage() { return m_pInstanceDataStorage.Borrow(); }

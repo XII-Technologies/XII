@@ -346,10 +346,11 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
   {
     // Send project setup.
     xiiSetupProjectMsgToEngine msg;
-    msg.m_sProjectDir      = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-    msg.m_FileSystemConfig = m_FileSystemConfig;
-    msg.m_PluginConfig     = m_PluginConfig;
-    msg.m_sAssetProfile    = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName();
+    msg.m_sProjectDir       = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+    msg.m_FileSystemConfig  = m_FileSystemConfig;
+    msg.m_PluginConfig      = m_PluginConfig;
+    msg.m_sAssetProfile     = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName();
+    msg.m_fDevicePixelRatio = QApplication::activeWindow() != nullptr ? QApplication::activeWindow()->devicePixelRatio() : 1.0f;
 
     SendMessage(&msg);
   }

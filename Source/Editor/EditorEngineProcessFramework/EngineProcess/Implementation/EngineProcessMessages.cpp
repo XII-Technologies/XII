@@ -48,6 +48,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSetupProjectMsgToEngine, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("PluginConfig", m_PluginConfig),
     XII_MEMBER_PROPERTY("FileserveAddress", m_sFileserveAddress),
     XII_MEMBER_PROPERTY("Platform", m_sAssetProfile),
+    XII_MEMBER_PROPERTY("DevicePixelRatio", m_fDevicePixelRatio),
   }
   XII_END_PROPERTIES;
 }

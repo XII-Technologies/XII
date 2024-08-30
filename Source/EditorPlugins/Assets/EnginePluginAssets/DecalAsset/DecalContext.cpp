@@ -45,7 +45,7 @@ void xiiDecalContext::OnInitialize()
       t               = xiiMat4::MakeTranslation(xiiVec3(0, 1.5f, 0));
       r               = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
       opt.m_Transform = t * r;
-      geom.AddSphere(0.5f, 64, 64, opt);
+      geom.AddStackedSphere(0.5f, 64, 64, opt);
 
       t.SetTranslationVector(xiiVec3(0, -1.5f, 0));
       r               = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));

@@ -3,7 +3,7 @@
 #include <Core/Graphics/Geometry.h>
 #include <Core/Scripting/ScriptAttributes.h>
 #include <Core/World/World.h>
-#include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -15,6 +15,8 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+
+xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -278,7 +280,7 @@ namespace
   }
 
   template <typename AddFunc>
-  static xiiUInt32 AddTextLines(const xiiDebugRendererContext& context, const xiiFormatString& text0, const xiiVec2I32& vPositionInPixel, float fSizeInPixel, xiiDebugTextHAlign::Enum horizontalAlignment, xiiDebugTextVAlign::Enum verticalAlignment, AddFunc func)
+  static xiiUInt32 AddTextLines(const xiiDebugRendererContext& context, const xiiFormatString& text0, const xiiVec2I32& vPositionInPixel, xiiUInt32 uiSizeInPixel, xiiDebugTextHAlign::Enum horizontalAlignment, xiiDebugTextVAlign::Enum verticalAlignment, AddFunc func)
   {
     if (text0.IsEmpty())
       return 0;
@@ -333,9 +335,10 @@ namespace
       maxColumWidth.PushBack(maxLineLength);
     }
 
-    // Glyphs only use 8x10 pixels in their 16x16 pixel block, thus we don't advance by full size here.
-    const float fGlyphWidth = xiiMath::Ceil(fSizeInPixel * (8.0f / 16.0f));
-    const float fLineHeight = xiiMath::Ceil(fSizeInPixel * (20.0f / 16.0f));
+    const float fGlyphWidth  = xiiDebugRenderer::GetTextGlyphWidth(uiSizeInPixel);
+    const float fGlyphHeight = xiiMath::Ceil(uiSizeInPixel * cvar_DebugTextScale);
+    const float fLineHeight  = xiiDebugRenderer::GetTextLineHeight(uiSizeInPixel);
+    const float fLineSpacing = fLineHeight - fGlyphHeight;
 
     float screenPosX = (float)vPositionInPixel.x;
     if (horizontalAlignment == xiiDebugTextHAlign::Right)
@@ -343,9 +346,9 @@ namespace
 
     float screenPosY = (float)vPositionInPixel.y;
     if (verticalAlignment == xiiDebugTextVAlign::Center)
-      screenPosY -= xiiMath::Ceil(lines.GetCount() * fLineHeight * 0.5f);
+      screenPosY -= xiiMath::Ceil(lines.GetCount() * fLineHeight * 0.5f) - fLineSpacing * 0.5f;
     else if (verticalAlignment == xiiDebugTextVAlign::Bottom)
-      screenPosY -= lines.GetCount() * fLineHeight;
+      screenPosY -= lines.GetCount() * fLineHeight - fLineSpacing;
 
     {
       XII_LOCK(s_Mutex);
@@ -400,7 +403,7 @@ namespace
   static void AppendGlyphs(xiiDynamicArray<GlyphData, xiiAlignedAllocatorWrapper>& ref_glyphs, const TextLineData2D& textLine)
   {
     xiiVec2     currentPos  = textLine.m_topLeftCorner;
-    const float fGlyphWidth = xiiMath::Ceil(textLine.m_uiSizeInPixel * (8.0f / 16.0f));
+    const float fGlyphWidth = xiiDebugRenderer::GetTextGlyphWidth(textLine.m_uiSizeInPixel);
 
     for (xiiUInt32 uiCharacter : textLine.m_text)
     {
@@ -408,7 +411,7 @@ namespace
       glyphData.m_topLeftCorner = currentPos;
       glyphData.m_color         = textLine.m_color;
       glyphData.m_glyphIndex    = uiCharacter < 128 ? static_cast<xiiUInt16>(uiCharacter) : 0;
-      glyphData.m_sizeInPixel   = (xiiUInt16)textLine.m_uiSizeInPixel;
+      glyphData.m_sizeInPixel   = (xiiUInt16)xiiMath::Ceil(textLine.m_uiSizeInPixel * cvar_DebugTextScale);
 
       currentPos.x += fGlyphWidth;
     }
@@ -1001,7 +1004,7 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
 
 xiiUInt32 xiiDebugRenderer::Draw2DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec2I32& vPositionInPixel, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Left*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Top*/)
 {
-  return AddTextLines(context, text, vPositionInPixel, (float)uiSizeInPixel, horizontalAlignment, verticalAlignment, [=](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
+  return AddTextLines(context, text, vPositionInPixel, uiSizeInPixel, horizontalAlignment, verticalAlignment, [=](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
     auto& textLine = ref_data.m_textLines2D.ExpandAndGetRef();
     textLine.m_text = sLine;
     textLine.m_topLeftCorner = vTopLeftCorner;
@@ -1026,7 +1029,7 @@ void xiiDebugRenderer::DrawInfoText(const xiiDebugRendererContext& context, xiiD
 
 xiiUInt32 xiiDebugRenderer::Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Center*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Bottom*/)
 {
-  return AddTextLines(context, text, xiiVec2I32(0), (float)uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
+  return AddTextLines(context, text, xiiVec2I32(0), uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
     auto& textLine = ref_data.m_textLines3D.ExpandAndGetRef();
     textLine.m_text = sLine;
     textLine.m_topLeftCorner = vTopLeftCorner;
@@ -1341,6 +1344,31 @@ void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float f
   lines[8] = Line(lines[4].m_end, lines[1].m_end);
 
   DrawLines(context, lines, color, transform);
+}
+
+// static
+float xiiDebugRenderer::GetTextGlyphWidth(xiiUInt32 uiSizeInPixel /*= 16*/)
+{
+  // Glyphs only use 8x10 pixels in their 16x16 pixel block, thus we don't advance by full size here.
+  return xiiMath::Ceil(uiSizeInPixel * cvar_DebugTextScale * (8.0f / 16.0f));
+}
+
+// static
+float xiiDebugRenderer::GetTextLineHeight(xiiUInt32 uiSizeInPixel /*= 16*/)
+{
+  return xiiMath::Ceil(uiSizeInPixel * cvar_DebugTextScale * (20.0f / 16.0f));
+}
+
+// static
+float xiiDebugRenderer::GetTextScale()
+{
+  return cvar_DebugTextScale;
+}
+
+// static
+void xiiDebugRenderer::SetTextScale(float fScale)
+{
+  cvar_DebugTextScale = fScale;
 }
 
 // static
@@ -1705,7 +1733,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       xiiDebugTextVAlign::Bottom,
       xiiDebugTextVAlign::Bottom};
 
-    int offs[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT] = {20, 20, 20, -20, -20, -20};
+    xiiInt32 lineHeight = (xiiInt32)GetTextLineHeight();
 
     xiiInt32 resX = (xiiInt32)renderViewContext.m_pViewData->m_ViewPortRect.width;
     xiiInt32 resY = (xiiInt32)renderViewContext.m_pViewData->m_ViewPortRect.height;
@@ -1725,15 +1753,16 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       // InsertionSort is stable
       xiiSorting::InsertionSort(cd, [](const InfoTextData& lhs, const InfoTextData& rhs) -> bool { return lhs.m_group < rhs.m_group; });
 
-      xiiVec2I32 pos = anchor[corner];
+      xiiVec2I32 pos    = anchor[corner];
+      xiiInt32   offset = offset = va[corner] == xiiDebugTextVAlign::Top ? lineHeight : -lineHeight;
 
       for (xiiUInt32 i = 0; i < cd.GetCount(); ++i)
       {
         // add some space between groups
         if (i > 0 && cd[i - 1].m_group != cd[i].m_group)
-          pos.y += offs[corner];
+          pos.y += offset;
 
-        pos.y += offs[corner] * Draw2DText(context, cd[i].m_text.GetData(), pos, cd[i].m_color, 16, ha[corner], va[corner]);
+        pos.y += offset * Draw2DText(context, cd[i].m_text.GetData(), pos, cd[i].m_color, 16, ha[corner], va[corner]);
       }
     }
   }
@@ -1966,7 +1995,7 @@ void xiiDebugRenderer::OnEngineStartup()
     desc.m_DescGAL               = xiiGALGraphicsUtilities::GetDefaultTexture2DDescription();
     desc.m_DescGAL.m_Size.width  = debugFontImage.GetWidth();
     desc.m_DescGAL.m_Size.height = debugFontImage.GetHeight();
-    desc.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
+    desc.m_DescGAL.m_Format      = xiiGALTextureFormat::R8UNormalized;
     desc.m_InitialContent        = xiiMakeArrayPtr(&memoryDesc, 1);
 
     s_hDebugFontTexture = xiiResourceManager::CreateResource<xiiTexture2DResource>("DebugFontTexture", std::move(desc));

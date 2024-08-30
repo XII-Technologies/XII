@@ -91,7 +91,7 @@ void xiiMaterialContext::OnInitialize()
         xiiGeometry::GeoOptions opt;
         opt.m_Color     = xiiColor::Red;
         opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
-        geom.AddSphere(0.1f, 64, 64, opt);
+        geom.AddStackedSphere(0.1f, 64, 64, opt);
         geom.ComputeTangents();
 
         xiiMeshBufferResourceDescriptor desc;
@@ -181,7 +181,7 @@ void xiiMaterialContext::OnInitialize()
         xiiGeometry::GeoOptions opt;
         opt.m_Color     = xiiColor::Red;
         opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(-90));
-        geom.AddRectXY(xiiVec2(0.2f), 64, 64, opt);
+        geom.AddRect(xiiVec2(0.2f), 64, 64, opt);
         geom.ComputeTangents();
 
         xiiMeshBufferResourceDescriptor desc;

@@ -132,4 +132,3 @@ protected:
 protected:
   xiiGALInputLayoutCreationDescription m_Description;
 };
-

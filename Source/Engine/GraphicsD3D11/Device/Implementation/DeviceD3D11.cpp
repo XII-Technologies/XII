@@ -277,7 +277,8 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
     if (m_CommandQueues[i] == nullptr)
       continue;
 
-    DestroyCommandQueuePlatform(m_CommandQueues[i].Release());
+    m_CommandQueues[i]->DeInitializePlatform();
+    m_CommandQueues[i].Clear();
   }
 
   for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
@@ -312,8 +313,7 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
-
-xiiResult xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
+xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
 {
   xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
 
@@ -333,9 +333,10 @@ xiiResult xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
 
         xiiUInt32 uiCommandQueueIndex = GetCommandQueueIndex(queueType);
 
-        xiiGALCommandQueueCreationDescription queueDescription   = {.m_QueueType = queueType};
-        xiiGALCommandQueueD3D11*              pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(CreateCommandQueuePlatform(queueDescription));
-        m_CommandQueues[uiCommandQueueIndex]                     = xiiUniquePtr<xiiGALCommandQueueD3D11>(pCommandQueueD3D11, &m_Allocator);
+        xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = queueType};
+        m_CommandQueues[uiCommandQueueIndex]                   = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
+
+        m_CommandQueues[uiCommandQueueIndex]->InitializePlatform();
 
         xiiStringBuilder sb;
         sb.SetFormat("Command Queue ({}) - {}", uiCommandQueueIndex, sName);
@@ -410,27 +411,6 @@ void xiiGALDeviceD3D11::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   pSwapChainD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainD3D11);
-}
-
-xiiGALCommandQueue* xiiGALDeviceD3D11::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
-{
-  xiiGALCommandQueueD3D11* pCommandQueueD3D11 = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, description);
-
-  if (pCommandQueueD3D11->InitPlatform().Succeeded())
-    return pCommandQueueD3D11;
-
-  XII_DELETE(&m_Allocator, pCommandQueueD3D11);
-
-  return pCommandQueueD3D11;
-}
-
-void xiiGALDeviceD3D11::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
-{
-  xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(pCommandQueue);
-
-  pCommandQueueD3D11->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pCommandQueueD3D11);
 }
 
 xiiGALBlendState* xiiGALDeviceD3D11::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -820,7 +800,7 @@ void xiiGALDeviceD3D11::WaitIdlePlatform()
   ///\todo Release stale resources.
 }
 
-void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
+xiiResult xiiGALDeviceD3D11::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Direct3D12;
 
@@ -883,13 +863,12 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
 
     // Set queue information.
     {
-      auto& queueProperty                 = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
-      queueProperty.m_Type                = xiiGALCommandQueueType::Graphics;
-      queueProperty.m_uiMaxDeviceContexts = 1U;
-
-      queueProperty.m_TextureCopyGranularity.PushBack(1U);
-      queueProperty.m_TextureCopyGranularity.PushBack(1U);
-      queueProperty.m_TextureCopyGranularity.PushBack(1U);
+      auto& queueProperty                       = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+      queueProperty.m_Type                      = xiiGALCommandQueueType::Graphics;
+      queueProperty.m_uiMaxDeviceContexts       = 1U;
+      queueProperty.m_TextureCopyGranularity[0] = 1U;
+      queueProperty.m_TextureCopyGranularity[1] = 1U;
+      queueProperty.m_TextureCopyGranularity[2] = 1U;
     }
   }
 
@@ -935,9 +914,9 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
 
   // Sampler properties.
   {
-    m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported   = true;
-    m_AdapterDescription.m_SamplerProperties.m_bAnisotropicFilteringSupported = true;
-    m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported              = true;
+    m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported = true;
+    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy              = D3D11_DEFAULT_MAX_ANISOTROPY;
+    m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported            = true;
   }
 
   // Compute shader properties.
@@ -1005,6 +984,7 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
       }
     }
   }
+  return XII_SUCCESS;
 }
 
 ID3D11Resource* xiiGALDeviceD3D11::FindTemporaryBuffer(xiiUInt32 uiSize)

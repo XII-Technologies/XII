@@ -126,7 +126,7 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
   }
   else if (pProp->m_PrimitiveType == xiiMeshPrimitive::Pyramid)
   {
-    geom.AddPyramid(xiiVec3(1.0f), pProp->m_bCap, opt);
+    geom.AddPyramid(1.0f, 1.0f, pProp->m_bCap, opt);
   }
   else if (pProp->m_PrimitiveType == xiiMeshPrimitive::Rect)
   {
@@ -134,7 +134,7 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
     opt.m_Transform.Element(2, 1) = -opt.m_Transform.Element(2, 1);
     opt.m_Transform.Element(2, 2) = -opt.m_Transform.Element(2, 2);
 
-    geom.AddRectXY(xiiVec2(1.0f), xiiMath::Max<xiiUInt16>(1, detail1), xiiMath::Max<xiiUInt16>(1, detail2), opt);
+    geom.AddRect(xiiVec2(1.0f), xiiMath::Max<xiiUInt16>(1, detail1), xiiMath::Max<xiiUInt16>(1, detail2), opt);
   }
   else if (pProp->m_PrimitiveType == xiiMeshPrimitive::Sphere)
   {
@@ -144,7 +144,7 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
     if (detail2 == 0)
       detail2 = 32;
 
-    geom.AddSphere(pProp->m_fRadius, xiiMath::Max<xiiUInt16>(3, detail1), xiiMath::Max<xiiUInt16>(2, detail2), opt);
+    geom.AddStackedSphere(pProp->m_fRadius, xiiMath::Max<xiiUInt16>(3, detail1), xiiMath::Max<xiiUInt16>(2, detail2), opt);
   }
   else if (pProp->m_PrimitiveType == xiiMeshPrimitive::Torus)
   {

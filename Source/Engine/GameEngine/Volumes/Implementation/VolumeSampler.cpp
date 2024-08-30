@@ -17,10 +17,10 @@ void xiiVolumeSampler::RegisterValue(xiiHashedString sName, xiiVariant defaultVa
   {
     // Reach 90% of target value after interpolation duration:
     // Lerp factor for exponential moving average:
-    // y = 1-(1-f)^t
+    // y = 1-f^t
     // solve for f with y = 0.9:
-    // f = 1 - 10^(-1 / t)
-    value.m_fInterpolationFactor = 1.0 - xiiMath::Pow(10.0, -1.0 / interpolationDuration.GetSeconds());
+    // f = 10^(-1 / t)
+    value.m_fInterpolationFactor = xiiMath::Pow(10.0, -1.0 / interpolationDuration.GetSeconds());
   }
   else
   {
@@ -140,7 +140,7 @@ void xiiVolumeSampler::SampleAtPosition(const xiiWorld& world, xiiSpatialData::C
 
     if (value.m_fInterpolationFactor > 0.0)
     {
-      double f             = 1.0 - xiiMath::Pow(1.0 - value.m_fInterpolationFactor, deltaTime.GetSeconds());
+      double f             = 1.0 - xiiMath::Pow(value.m_fInterpolationFactor, deltaTime.GetSeconds());
       value.m_CurrentValue = xiiMath::Lerp(value.m_CurrentValue, value.m_TargetValue, f);
     }
     else

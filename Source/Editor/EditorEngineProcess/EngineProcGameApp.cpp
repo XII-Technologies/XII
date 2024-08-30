@@ -1,6 +1,11 @@
 #include <EditorEngineProcess/EditorEngineProcessPCH.h>
 
 #include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/Logging/ETWWriter.h>
+#include <Foundation/Profiling/ProfilingUtils.h>
+#include <Foundation/System/CrashHandler.h>
 #include <Foundation/System/SystemInformation.h>
 
 #include <Core/Console/QuakeConsole.h>
@@ -9,15 +14,14 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
-#include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
-#include <Foundation/IO/FileSystem/FileWriter.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <shellscalingapi.h>
 #endif
-#include <Foundation/Profiling/ProfilingUtils.h>
+
 
 // Will forward assert messages and crash handler messages to the log system and then to the editor.
 // Note that this is unsafe as in some crash situation allocating memory will not be possible but it's better to have some logs compared to none.
@@ -73,13 +77,14 @@ void xiiEngineProcessGameApplication::AfterCoreSystemsStartup()
 
   WaitForDebugger();
 
+  xiiCrashHandler::SetCrashHandler(&xiiCrashHandler_WriteMiniDump::g_Instance);
+
   DisableErrorReport();
 
   xiiTaskSystem::SetTargetFrameTime(xiiTime::MakeFromSeconds(1.0 / 20.0));
 
   ConnectToHost();
 }
-
 
 void xiiEngineProcessGameApplication::ConnectToHost()
 {
@@ -209,6 +214,8 @@ bool xiiEngineProcessGameApplication::ProcessIPCMessages(bool bPendingOpInProgre
     TerminateProcess(GetCurrentProcess(), 0);
 #endif
 
+    xiiLog::SeriousWarning("Host process no longer alive, exiting engine process.");
+
     // The OS will still call destructors for our objects (even though we called abort ... what a pointless design).
     // Our code might assert on destruction, so make sure our assert handler doesn't show anything.
     xiiSetAssertHandler(EmptyAssertHandler);
@@ -324,6 +331,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       xiiStartup::StartupHighLevelSystems();
 
       xiiRenderContext::GetDefaultInstance()->SetAllowAsyncShaderLoading(true);
+      xiiDebugRenderer::SetTextScale(pMsg->m_fDevicePixelRatio);
     }
 
     // After the xiiSetupProjectMsgToEngine was processed, all dynamic plugins should be loaded and we can finally send the reflection information over.
@@ -353,7 +361,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 
       xiiFileSystem::ReloadAllExternalDataDirectoryConfigs();
 
-      m_PlatformProfile.m_sName = pMsg1->m_sPayload;
+      m_PlatformProfile.SetConfigName(pMsg1->m_sPayload);
       Init_PlatformProfile_LoadForRuntime();
 
       xiiResourceManager::ReloadAllResources(false);
@@ -478,7 +486,6 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     {
       xiiEngineProcessDocumentContext::DestroyDocumentContext(pDocMsg->m_DocumentGuid);
     }
-
     return;
   }
 
@@ -587,14 +594,15 @@ void xiiEngineProcessGameApplication::Init_FileSystem_ConfigureDataDirs()
   xiiStringBuilder sUserData = ">user/XII/EditorEngineProcess";
 
   // make sure these directories exist
-  xiiFileSystem::CreateDirectoryStructure(sAppDir).IgnoreResult();
-  xiiFileSystem::CreateDirectoryStructure(sUserData).IgnoreResult();
+  xiiFileSystem::CreateDirectoryStructure(sAppDir).AssertSuccess();
+  xiiFileSystem::CreateDirectoryStructure(sUserData).AssertSuccess();
+  xiiFileSystem::CreateDirectoryStructure(">sdk/Output/").AssertSuccess();
 
-  xiiFileSystem::AddDataDirectory("", "EngineProcess", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();                   // for absolute paths
-  xiiFileSystem::AddDataDirectory(">appdir/", "EngineProcess", "bin", xiiDataDirUsage::ReadOnly).IgnoreResult();            // writing to the binary directory
-  xiiFileSystem::AddDataDirectory(">appdir/", "EngineProcess", "shadercache", xiiDataDirUsage::AllowWrites).IgnoreResult(); // for shader files
-  xiiFileSystem::AddDataDirectory(sAppDir.GetData(), "EngineProcess", "app").IgnoreResult();                                // app specific data
-  xiiFileSystem::AddDataDirectory(sUserData, "EngineProcess", "appdata", xiiDataDirUsage::AllowWrites).IgnoreResult();      // for writing app user data
+  xiiFileSystem::AddDataDirectory("", "EngineProcess", ":", xiiDataDirUsage::AllowWrites).AssertSuccess();                       // for absolute paths
+  xiiFileSystem::AddDataDirectory(">appdir/", "EngineProcess", "bin", xiiDataDirUsage::ReadOnly).AssertSuccess();                // writing to the binary directory
+  xiiFileSystem::AddDataDirectory(">sdk/Output/", "EngineProcess", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess(); // for shader files
+  xiiFileSystem::AddDataDirectory(sAppDir.GetData(), "EngineProcess", "app").AssertSuccess();                                    // app specific data
+  xiiFileSystem::AddDataDirectory(sUserData, "EngineProcess", "appdata", xiiDataDirUsage::AllowWrites).AssertSuccess();          // for writing app user data
 
   m_CustomFileSystemConfig.Apply();
 
@@ -636,6 +644,7 @@ void xiiEngineProcessGameApplication::BaseInit_ConfigureLogging()
 
   xiiGlobalLog::AddLogWriter(xiiMakeDelegate(&xiiEngineProcessGameApplication::LogWriter, this));
   xiiGlobalLog::AddLogWriter(xiiLoggingEvent::Handler(&xiiLogWriter::HTML::LogMessageHandler, &m_LogHTML));
+  xiiGlobalLog::AddLogWriter(xiiLogWriter::ETW::LogMessageHandler);
 
   xiiLog::SetCustomPrintFunction(&EditorPrintFunction);
 
