@@ -16,19 +16,17 @@ xiiGALCommandQueueD3D11::xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11
 
 xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11() = default;
 
-xiiResult xiiGALCommandQueueD3D11::InitPlatform()
+void xiiGALCommandQueueD3D11::InitializePlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   D3D11_FENCE_FLAG fenceFlags = D3D11_FENCE_FLAG_SHARED;
-  XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D11->GetD3D11Device()->CreateFence(0U, fenceFlags, IID_PPV_ARGS(&m_pD3D11DFence)));
+  XII_HRESULT_TO_ASSERT(pDeviceD3D11->GetD3D11Device()->CreateFence(0U, fenceFlags, IID_PPV_ARGS(&m_pD3D11DFence)));
 
   m_pImmediateContext->Signal(m_pD3D11DFence, 0U);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandQueueD3D11::DeInitPlatform()
+void xiiGALCommandQueueD3D11::DeInitializePlatform()
 {
   m_SwapChainCommandListReferences.Clear();
 
@@ -43,8 +41,6 @@ xiiResult xiiGALCommandQueueD3D11::DeInitPlatform()
   CloseHandle(m_WaitForGPUEventHandle);
 
   XII_GAL_D3D11_RELEASE(m_pD3D11DFence);
-
-  return XII_SUCCESS;
 }
 
 void xiiGALCommandQueueD3D11::SetDebugNamePlatform(xiiStringView sName)

@@ -299,7 +299,7 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
   deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer8BitAccess          = xiiGALDeviceFeatureState::Disabled;
   deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer8BitAccess           = xiiGALDeviceFeatureState::Disabled;
   deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray        = xiiGALDeviceFeatureState::Disabled;
-  deviceCreationDescription.m_DeviceFeatures.m_WaveOp                            = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_WaveOperation                     = xiiGALDeviceFeatureState::Disabled;
   deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate              = xiiGALDeviceFeatureState::Enabled;
   deviceCreationDescription.m_DeviceFeatures.m_NativeFence                       = xiiGALDeviceFeatureState::Optional;
   deviceCreationDescription.m_DeviceFeatures.m_TileShaders                       = xiiGALDeviceFeatureState::Disabled;

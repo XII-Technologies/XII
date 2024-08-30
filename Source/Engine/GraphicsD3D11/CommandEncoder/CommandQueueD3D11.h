@@ -37,9 +37,9 @@ protected:
 
   virtual ~xiiGALCommandQueueD3D11();
 
-  virtual xiiResult InitPlatform() override final;
+  void InitializePlatform();
 
-  virtual xiiResult DeInitPlatform() override final;
+  void DeInitializePlatform();
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 

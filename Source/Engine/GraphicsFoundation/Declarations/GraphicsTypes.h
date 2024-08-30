@@ -750,7 +750,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
     Default = Undefined
   };
 
-  XII_ALWAYS_INLINE xiiUInt32 VerticesPerPrimitive(xiiGALPrimitiveTopology::Enum e)
+  XII_ALWAYS_INLINE static xiiUInt32 VerticesPerPrimitive(xiiGALPrimitiveTopology::Enum e)
   {
     switch (e)
     {
