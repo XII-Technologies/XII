@@ -323,7 +323,7 @@ void xiiGameApplication::RenderConsole()
   const xiiInt32 iTextLeft   = (xiiInt32)(fBorderWidth);
 
   {
-    xiiColor backgroundColor(0.3f, 0.3f, 0.3f, 0.7f);
+    xiiColor backgroundColor(0.0f, 0.0f, 0.0f, 0.7f);
     xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(0.0f, 0.0f, fViewWidth, fConsoleHeight), 0.0f, backgroundColor);
 
     xiiColor foregroundColor(0.0f, 0.0f, 0.0f, 0.8f);
