@@ -30,7 +30,7 @@ xiiUInt32 xiiAssetCurator::FindAssetProfileByName(const char* szPlatform)
 
   for (xiiUInt32 i = 0; i < m_AssetProfiles.GetCount(); ++i)
   {
-    if (m_AssetProfiles[i]->m_sName.IsEqual_NoCase(szPlatform))
+    if (m_AssetProfiles[i]->GetConfigName().IsEqual_NoCase(szPlatform))
     {
       return i;
     }
@@ -149,7 +149,7 @@ xiiResult xiiAssetCurator::SaveAssetProfiles()
 
   for (const auto* pCfg : m_AssetProfiles)
   {
-    ddl.BeginObject("Config", pCfg->m_sName);
+    ddl.BeginObject("Config", pCfg->GetConfigName());
 
     // make sure to create the same GUID every time, otherwise the serialized file changes all the time
     const xiiUuid guid = xiiUuid::MakeStableUuidFromString(pCfg->GetConfigName());
@@ -201,6 +201,16 @@ xiiResult xiiAssetCurator::LoadAssetProfiles()
     }
   }
 
+  if (m_AssetProfiles.IsEmpty() || m_AssetProfiles[0]->GetConfigName() != "Default")
+  {
+    xiiPlatformProfile* pCfg = XII_DEFAULT_NEW(xiiPlatformProfile);
+    pCfg->SetConfigName("Default");
+    pCfg->SetTargetPlatform("Windows");
+
+    pCfg->AddMissingConfigs();
+    m_AssetProfiles.InsertAt(0, pCfg);
+  }
+
   return XII_SUCCESS;
 }
 
@@ -220,7 +230,8 @@ void xiiAssetCurator::SetupDefaultAssetProfiles()
 
   {
     xiiPlatformProfile* pCfg = XII_DEFAULT_NEW(xiiPlatformProfile);
-    pCfg->m_sName            = "PC";
+    pCfg->SetConfigName("Default");
+    pCfg->SetTargetPlatform("Windows");
     pCfg->AddMissingConfigs();
     m_AssetProfiles.PushBack(pCfg);
   }

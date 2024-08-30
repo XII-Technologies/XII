@@ -201,7 +201,7 @@ protected:
   ///
   /// \param stream Data stream to write the asset to.
   /// \param szOutputTag Either empty for the default output or matches one of the tags defined in xiiAssetDocumentInfo::m_Outputs.
-  /// \param szPlatform Platform for which is the output is to be created. Default is 'PC'.
+  /// \param szPlatform Platform for which is the output is to be created. Default is 'Default'.
   /// \param AssetHeader Header already written to the stream, provided for reference.
   /// \param transformFlags flags that affect the transform process, see xiiTransformFlags.
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) = 0;

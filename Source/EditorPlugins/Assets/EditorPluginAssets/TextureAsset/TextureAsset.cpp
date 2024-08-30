@@ -388,8 +388,6 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
     return xiiTransformStatus();
   }
 
-  // XII_ASSERT_DEV(xiiStringUtils::IsEqual(szPlatform, "PC"), "Platform '{0}' is not supported", szPlatform);
-
   const auto* pAssetConfig = pAssetProfile->GetTypeConfig<xiiTextureAssetProfileConfig>();
 
   const auto props = GetProperties();

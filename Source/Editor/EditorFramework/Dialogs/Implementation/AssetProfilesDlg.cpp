@@ -3,6 +3,8 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Dialogs/AssetProfilesDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <Foundation/Platform/PlatformDescription.h>
+#include <GuiFoundation/UIServices/DynamicStringEnum.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
@@ -44,19 +46,11 @@ public:
     {
       if (iRole == Qt::DecorationRole)
       {
-        const xiiInt32 iPlatform = pObject->GetTypeAccessor().GetValue("Platform").ConvertTo<xiiInt32>();
+        const xiiString sTargetPlatform = pObject->GetTypeAccessor().GetValue("TargetPlatform").ConvertTo<xiiString>();
 
-        switch (iPlatform)
-        {
-          case xiiProfileTargetPlatform::PC:
-            return xiiQtUiServices::GetSingleton()->GetCachedIconResource(":EditorFramework/Icons/PlatformWindows.svg");
+        const xiiStringBuilder sIconName(":Platforms/Icons/Platform", sTargetPlatform, ".svg");
 
-          case xiiProfileTargetPlatform::UWP:
-            return xiiQtUiServices::GetSingleton()->GetCachedIconResource(":EditorFramework/Icons/PlatformWindows.svg"); // TODO: icon
-
-          case xiiProfileTargetPlatform::Android:
-            return xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/PlatformAndroid.svg");
-        }
+        return xiiQtUiServices::GetSingleton()->GetCachedIconResource(sIconName);
       }
 
       if (iRole == Qt::DisplayRole)
@@ -94,6 +88,16 @@ xiiQtAssetProfilesDlg::xiiQtAssetProfilesDlg(QWidget* pParent) :
   // do not allow to delete or rename the first item
   DeleteButton->setEnabled(false);
   RenameButton->setEnabled(false);
+
+  {
+    auto& platEnum = xiiDynamicStringEnum::CreateDynamicEnum("TargetPlatformNames");
+    platEnum.Clear();
+
+    for (auto pDesc = xiiPlatformDescription::GetFirstInstance(); pDesc != nullptr; pDesc = pDesc->GetNextInstance())
+    {
+      platEnum.AddValidValue(pDesc->GetName(), true);
+    }
+  }
 
   m_pDocument = XII_DEFAULT_NEW(xiiAssetProfilesDocument, "<none>");
   m_pDocument->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAssetProfilesDlg::SelectionEventHandler, this));

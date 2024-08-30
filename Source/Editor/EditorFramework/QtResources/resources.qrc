@@ -19,17 +19,17 @@
     <file>Icons/DataDirectory.svg</file>
     <file>Icons/Folder.svg</file>
     <file>Icons/ImportableFileType.svg</file>
-  <file>Icons/ImportableFile.svg</file>
+    <file>Icons/ImportableFile.svg</file>
     <file>Icons/ImportedFile.svg</file>
     <file>Icons/StoredSettings.svg</file>
     <file>Icons/Input.svg</file>
     <file>Icons/AssetUnknown.svg</file>
     <file>Icons/AssetNeedsTransform.svg</file>
     <file>Icons/AssetNeedsThumbnail.svg</file>
-  <file>Icons/AssetNeedsImport.svg</file>
+    <file>Icons/AssetNeedsImport.svg</file>
     <file>Icons/AssetProcessingPause.svg</file>
     <file>Icons/AssetProcessingStart.svg</file>
-  <file>Icons/AssetProcessingForceStop.svg</file>
+    <file>Icons/AssetProcessingForceStop.svg</file>
     <file>Icons/AssetOk.svg</file>
     <file>Icons/ResavAllAssets.svg</file>
     <file>Icons/AssetMissingDependency.svg</file>
@@ -52,16 +52,13 @@
     <file>Icons/Selection.svg</file>
     <file>Icons/Attention.svg</file>
     <file>Icons/SnapSettings.svg</file>
-    <file>Icons/PlatformWindows.svg</file>
-    <file>Icons/PlatformAndroid.svg</file>
-    <file>Icons/PlatformApple.svg</file>
     <file>Icons/CreateEmpty.svg</file>
     <file>Icons/Discord.svg</file>
     <file>Icons/Twitter.svg</file>
     <file>Icons/GitHub.svg</file>
     <file>Icons/GitHub-Light.svg</file>
     <file>Icons/ViewLightMenu.svg</file>
-  <file>Icons/VisualStudio.svg</file>
+    <file>Icons/VisualStudio.svg</file>
   </qresource>
   <qresource prefix="TypeIcons">
     <file>xiiDragToPositionGizmoEditTool.svg</file>
@@ -75,5 +72,15 @@
   </qresource>
   <qresource prefix="AssetIcons">
     <file>Icons/AllAssets.svg</file>
+  </qresource>
+  <qresource prefix="Platforms">
+    <file>Icons/PlatformWindows.svg</file>
+    <file>Icons/PlatformAndroid.svg</file>
+    <file>Icons/PlatformOSX.svg</file>
+    <file>Icons/PlatformSwitch.svg</file>
+    <file>Icons/PlatformXbox.svg</file>
+    <file>Icons/PlatformLinux.svg</file>
+    <file>Icons/PlatformUWP.svg</file>
+    <file>Icons/PlatformPlayStation.svg</file>
   </qresource>
 </RCC>

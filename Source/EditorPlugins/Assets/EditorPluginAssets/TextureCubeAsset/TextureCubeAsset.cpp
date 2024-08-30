@@ -195,7 +195,6 @@ void xiiTextureCubeAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* 
 
 xiiTransformStatus xiiTextureCubeAssetDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
-  // XII_ASSERT_DEV(xiiStringUtils::IsEqual(szPlatform, "PC"), "Platform '{0}' is not supported", szPlatform);
   const bool bUpdateThumbnail = pAssetProfile == xiiAssetCurator::GetSingleton()->GetDevelopmentAssetProfile();
 
   xiiTransformStatus result = RunTexConv(szTargetFile, AssetHeader, bUpdateThumbnail);
