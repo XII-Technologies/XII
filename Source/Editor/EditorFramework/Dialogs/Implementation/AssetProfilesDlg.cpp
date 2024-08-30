@@ -284,7 +284,7 @@ void xiiQtAssetProfilesDlg::on_AddButton_clicked()
     return;
 
   xiiPlatformProfile profile;
-  profile.m_sName = sProfileName;
+  profile.SetConfigName(sProfileName);
   profile.AddMissingConfigs();
 
   auto& binding      = m_ProfileBindings[NativeToObject(&profile)];
