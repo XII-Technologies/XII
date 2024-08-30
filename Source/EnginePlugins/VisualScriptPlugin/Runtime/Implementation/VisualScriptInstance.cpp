@@ -18,27 +18,36 @@ xiiVisualScriptInstance::xiiVisualScriptInstance(xiiReflectedClass& inout_owner,
   }
 }
 
-void xiiVisualScriptInstance::ApplyParameters(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters)
+void xiiVisualScriptInstance::SetInstanceVariable(const xiiHashedString& sName, const xiiVariant& value)
 {
   if (m_pInstanceDataMapping == nullptr)
     return;
 
-  for (auto it : parameters)
+  xiiVisualScriptInstanceData* pInstanceData = nullptr;
+  if (m_pInstanceDataMapping->m_Content.TryGetValue(sName, pInstanceData) == false)
+    return;
+
+  xiiResult            conversionStatus = XII_FAILURE;
+  xiiVariantType::Enum targetType       = xiiVisualScriptDataType::GetVariantType(pInstanceData->m_DataOffset.GetType());
+
+  xiiVariant convertedValue = value.ConvertTo(targetType, &conversionStatus);
+  if (conversionStatus.Failed())
   {
-    xiiVisualScriptInstanceData* pInstanceData = nullptr;
-    if (m_pInstanceDataMapping->m_Content.TryGetValue(it.key, pInstanceData))
-    {
-      xiiResult            conversionStatus = XII_FAILURE;
-      xiiVariantType::Enum targetType       = xiiVisualScriptDataType::GetVariantType(pInstanceData->m_DataOffset.GetType());
-
-      xiiVariant convertedValue = it.value.ConvertTo(targetType, &conversionStatus);
-      if (conversionStatus.Failed())
-      {
-        xiiLog::Error("Can't apply script parameter '{}' because the given value of type '{}' can't be converted the expected target type '{}'", it.key, it.value.GetType(), targetType);
-        continue;
-      }
-
-      m_pInstanceDataStorage->SetDataFromVariant(pInstanceData->m_DataOffset, convertedValue, 0);
-    }
+    xiiLog::Error("Can't apply instance variable '{}' because the given value of type '{}' can't be converted the expected target type '{}'", sName, value.GetType(), targetType);
+    return;
   }
+
+  m_pInstanceDataStorage->SetDataFromVariant(pInstanceData->m_DataOffset, convertedValue, 0);
+}
+
+xiiVariant xiiVisualScriptInstance::GetInstanceVariable(const xiiHashedString& sName)
+{
+  if (m_pInstanceDataMapping == nullptr)
+    return xiiVariant();
+
+  xiiVisualScriptInstanceData* pInstanceData = nullptr;
+  if (m_pInstanceDataMapping->m_Content.TryGetValue(sName, pInstanceData) == false)
+    return xiiVariant();
+
+  return m_pInstanceDataStorage->GetDataAsVariant(pInstanceData->m_DataOffset, nullptr, 0);
 }

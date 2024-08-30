@@ -9,7 +9,7 @@ public:
   xiiVisualScriptCoroutine(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc);
   ~xiiVisualScriptCoroutine();
 
-  virtual void   Start(xiiArrayPtr<xiiVariant> arguments) override;
+  virtual void   StartWithVarArgs(xiiArrayPtr<xiiVariant> arguments) override;
   virtual void   Stop() override;
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) override;
 

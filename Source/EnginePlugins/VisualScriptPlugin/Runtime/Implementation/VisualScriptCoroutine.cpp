@@ -10,7 +10,7 @@ xiiVisualScriptCoroutine::xiiVisualScriptCoroutine(const xiiSharedPtr<const xiiV
 
 xiiVisualScriptCoroutine::~xiiVisualScriptCoroutine() = default;
 
-void xiiVisualScriptCoroutine::Start(xiiArrayPtr<xiiVariant> arguments)
+void xiiVisualScriptCoroutine::StartWithVarArgs(xiiArrayPtr<xiiVariant> arguments)
 {
   m_LocalDataStorage.AllocateStorage();
 
