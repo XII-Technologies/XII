@@ -2,13 +2,13 @@
 
 #include <Foundation/IO/Stream.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
-#include <Texture/Image/Formats/TgaFileFormat.h>
+#include <Texture/Image/Formats/StbImageFileFormats.h>
 #include <Texture/Image/ImageConversion.h>
 
 #if XII_ENABLED(XII_EMBED_FONT_FILE)
 
-extern xiiUInt32      g_FontFileTGASize;
-extern const xiiUInt8 g_FontFileTGA[];
+extern xiiUInt32      g_FontFilePNGSize;
+extern const xiiUInt8 g_FontFilePNG[];
 
 #else
 
@@ -1176,22 +1176,11 @@ void xiiGraphicsUtils::CreateSimpleASCIIFontTexture(xiiImage& ref_img, bool bSet
   };
 
   VariableReader reader;
-  reader.m_uiSize = g_FontFileTGASize;
-  reader.m_pData  = g_FontFileTGA;
+  reader.m_uiSize = g_FontFilePNGSize;
+  reader.m_pData  = g_FontFilePNG;
 
-  xiiTgaFileFormat tga;
-  tga.ReadImage(reader, ref_img, "tga").IgnoreResult();
-
-  xiiImageConversion::Convert(ref_img, ref_img, xiiImageFormat::R8G8B8A8_UNORM).IgnoreResult();
-
-  for (xiiUInt32 y = 0; y < ref_img.GetHeight(); ++y)
-  {
-    for (xiiUInt32 x = 0; x < ref_img.GetWidth(); ++x)
-    {
-      xiiUInt8* pPixel = ref_img.GetPixelPointer<xiiUInt8>(0, 0, 0, x, y, 0);
-      pPixel[1] = pPixel[2] = pPixel[3] = pPixel[0]; // copy R into GBA
-    }
-  }
+  xiiStbImageFileFormats png;
+  png.ReadImage(reader, ref_img, "png").IgnoreResult();
 
 #endif
 }

@@ -469,7 +469,7 @@ public:
     xiiGeometry             geom;
     xiiGeometry::GeoOptions opt;
     opt.m_Color = xiiColor::Black;
-    geom.AddRectXY(xiiVec2(100, 100), 1, 1, opt);
+    geom.AddRect(xiiVec2(100, 100), 1, 1, opt);
 
     xiiDynamicArray<Vertex>    Vertices;
     xiiDynamicArray<xiiUInt16> Indices;
