@@ -105,7 +105,7 @@ public:
   ///
   /// \return The handle to the created buffer object. The function calls AddRef(), so that the new object will have one reference.
   ///
-  /// \remarks Size of a uniform buffer (xiiGALBindFlags) must be multiple of 16.\n
+  /// \remarks Size of a uniform buffer (xiiGALBindFlags::UniformBuffer) must be multiple of 16.\n
   /// Stride of a formatted buffer will be computed automatically from the format if the m_uiElementByteStride member of buffer description is set to default value (0).
   [[nodiscard]] xiiGALBufferHandle CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr);
 
