@@ -1,6 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Core/System/Window.h>
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
@@ -530,14 +531,50 @@ void xiiGALSwapChainVulkan::AcquireNextRenderTarget()
     // Next command in the device context must wait for the next image to be acquired.
     // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2).
     // Swapchain image may be used as render target or as destination for copy command.
-    /// \todo Wait semaphore here.
-    /// \todo Clear render target to free uninitialized memory by clearing the render target.
-    m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
+
+    xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+    pGraphicsQueueVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+
+    if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
+    {
+      // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
+      /// \todo GraphicsVulkan: Clear render target to free uninitialized memory by clearing the render target.
+      m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
+    }
   }
 }
 
 void xiiGALSwapChainVulkan::Present()
 {
+  xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>( pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
+  xiiGALTextureVulkan* pCurrentBackbufferVulkan = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_hBackBufferTexture));
+
+  if (!m_bIsMinimized)
+  {
+    pGraphicsQueueVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+    pGraphicsQueueVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+  }
+
+  // \todo Flush command queue.
+
+  if (!m_bIsMinimized)
+  {
+    // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2)
+    vk::Result result = vk::Result::eSuccess;
+
+    vk::PresentInfoKHR vkPresentInformation = {};
+    vkPresentInformation.pNext              = nullptr;
+    vkPresentInformation.pResults           = &result;
+    vkPresentInformation.pSwapchains        = &m_vkSwapChain;
+    vkPresentInformation.pImageIndices      = &m_uiBackBufferIndex;
+    vkPresentInformation.swapchainCount     = 1U;
+    vkPresentInformation.pWaitSemaphores    = &m_DrawCompleteSemaphores[m_uiSemaphoreIndex];
+    vkPresentInformation.waitSemaphoreCount = 1U;
+
+    vk::Queue vkQueue = pGraphicsQueueVulkan->GetVulkanQueue();
+    VK_ASSERT_DEV(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  }
 }
 
 xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
