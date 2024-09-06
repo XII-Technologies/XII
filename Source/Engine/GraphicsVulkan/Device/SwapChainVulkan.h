@@ -33,9 +33,14 @@ protected:
 
   xiiResult CreateVulkanSurface();
   xiiResult CreateVulkanSwapChain();
+  xiiResult RecreateVulkanSwapChain();
 
   xiiResult CreateBackBufferInternal();
   void      DestroyBackBufferInternal();
+
+  vk::Result AcquireNextImage();
+
+  void WaitForImageAcquiredFences();
 
 protected:
   vk::SurfaceKHR   m_vkSurface;
@@ -66,4 +71,5 @@ protected:
   xiiUInt32                            m_uiSemaphoreIndex  = 0U;
 
   bool m_bIsMinimized = false;
+  bool m_bIsVSyncEnabled = false;
 };
