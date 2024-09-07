@@ -642,6 +642,84 @@ void xiiGALSwapChainVulkan::Present()
 
 xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
+  bool bRecreateSwapChain = false;
+
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
+  if (m_vkSurface != VK_NULL_HANDLE)
+  {
+    xiiGALDeviceVulkan* pDeviceVulkan    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+    vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+    vk::Device          vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
+
+    // Check orientation.
+    vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
+    VK_ASSERT_DEV(vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface, &surfaceCapabilities, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    if (m_vkCurrentSurfaceTransform != surfaceCapabilities.currentTransform)
+    {
+      // Surface orientation - we need to recreate the swap chain.
+      bRecreateSwapChain = true;
+    }
+
+    constexpr vk::SurfaceTransformFlagsKHR rotate90TransformFlags = vk::SurfaceTransformFlagBitsKHR::eRotate90 | vk::SurfaceTransformFlagBitsKHR::eRotate270 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270;
+
+    if (!newSize.HasNonZeroArea())
+    {
+      newSize.width  = m_vkSurfaceIdentityExtent.width;
+      newSize.height = m_vkSurfaceIdentityExtent.height;
+
+      if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
+      {
+        // Swap to get the logical dimensions as input new width and new height are expected to be logical sizes.
+        xiiMath::Swap(newSize.width, newSize.height);
+      }
+    }
+
+    if (newTransform == xiiGALSurfaceTransform::Optimal)
+    {
+      if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
+      {
+        // Swap to get physical dimensions.
+        xiiMath::Swap(newSize.width, newSize.height);
+      }
+    }
+    else
+    {
+      // Swap if necessary to get the desired sizes after pre-transform.
+      if (newTransform == xiiGALSurfaceTransform::Rotate90 || newTransform == xiiGALSurfaceTransform::Rotate270 || newTransform == xiiGALSurfaceTransform::HorizontalMirrorRotate90 || newTransform == xiiGALSurfaceTransform::HorizontalMirrorRotate270)
+      {
+        xiiMath::Swap(newSize.width, newSize.height);
+      }
+    }
+  }
+#endif
+
+  if (newSize.HasNonZeroArea() && (newSize != m_Description.m_Resolution || m_DesiredSurfaceTransform != newTransform))
+  {
+    m_Description.m_Resolution = newSize;
+    m_DesiredSurfaceTransform  = newTransform;
+    bRecreateSwapChain         = true;
+
+    xiiLog::Info("Resizing swap chain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+  }
+
+  if (bRecreateSwapChain)
+  {
+    if (RecreateVulkanSwapChain().Succeeded())
+    {
+      if (AcquireNextImage() != vk::Result::eSuccess)
+      {
+        xiiLog::Error("Failed to acquire next image for the just resized swap chain.");
+      }
+    }
+    else
+    {
+      xiiLog::Error("Failed to resize the swap chain.");
+    }
+  }
+
+  m_bIsMinimized = !newSize.HasNonZeroArea();
+
   return XII_FAILURE;
 }
 
