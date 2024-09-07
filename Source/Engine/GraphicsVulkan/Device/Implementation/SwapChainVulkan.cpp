@@ -2,6 +2,7 @@
 
 #include <Core/System/Window.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
@@ -545,7 +546,12 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
     {
       // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
-      /// \todo GraphicsVulkan: Clear render target to free uninitialized memory by clearing the render target.
+      if (xiiGALCommandList* pCommandList = pGraphicsQueueVulkan->BeginCommandList())
+      {
+        pCommandList->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+        pCommandList->Submit();
+      }
+
       m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
     }
   }
