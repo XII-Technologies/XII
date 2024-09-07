@@ -19,8 +19,10 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
 
   XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
   XII_SUCCEED_OR_RETURN(CreateVulkanSwapChain());
+  XII_SUCCEED_OR_RETURN(CreateBackBufferInternal());
+  VK_ASSERT_DEV(AcquireNextImage());
 
-  return CreateBackBufferInternal();
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
@@ -493,27 +495,6 @@ void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
 
 vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 {
-  return vk::Result();
-}
-
-void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
-{
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
-  for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
-  {
-    const vk::Fence& vkFence = m_ImageAcquiredFences[i];
-
-    if (vkLogicalDevice.getFenceStatus(vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
-    {
-      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-    }
-  }
-}
-
-void xiiGALSwapChainVulkan::AcquireNextRenderTarget()
-{
   xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
@@ -568,6 +549,29 @@ void xiiGALSwapChainVulkan::AcquireNextRenderTarget()
       m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
     }
   }
+
+  return result;
+}
+
+void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
+{
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
+  {
+    const vk::Fence& vkFence = m_ImageAcquiredFences[i];
+
+    if (vkLogicalDevice.getFenceStatus(vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
+    {
+      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    }
+  }
+}
+
+void xiiGALSwapChainVulkan::AcquireNextRenderTarget()
+{
+  VK_ASSERT_DEV(AcquireNextImage());
 }
 
 void xiiGALSwapChainVulkan::Present()
@@ -649,7 +653,6 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
   {
     xiiGALDeviceVulkan* pDeviceVulkan    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
     vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
-    vk::Device          vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
     // Check orientation.
     vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
