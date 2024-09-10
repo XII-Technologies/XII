@@ -1,8 +1,8 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Core/System/Window.h>
-#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
@@ -432,7 +432,78 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
 xiiResult xiiGALSwapChainVulkan::RecreateVulkanSwapChain()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+  vk::Device          vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  // Do not release the Vulakn swap chain as we will use use it as oldSwapchain paramter.
+  ReleaseSwapChainResources(false);
+
+  // Check if the surface is lost.
+  {
+    vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
+    if (vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface, &surfaceCapabilities, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eErrorSurfaceLostKHR)
+    {
+      // Destroy the swap chain associated with the surface.
+      if (m_vkSwapChain != VK_NULL_HANDLE)
+      {
+        vkLogicalDevice.destroySwapchainKHR(m_vkSwapChain, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+        m_vkSwapChain = VK_NULL_HANDLE;
+      }
+
+      // Recreate the surface.
+      XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
+    }
+  }
+
+  XII_SUCCEED_OR_RETURN(CreateVulkanSwapChain());
+  XII_SUCCEED_OR_RETURN(CreateBackBufferInternal());
+
   return XII_SUCCESS;
+}
+
+void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
+{
+  if (m_vkSwapChain == VK_NULL_HANDLE)
+    return;
+
+  xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device                vkLogicalDevice     = pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+
+  // Flush to submit all pending commands and semaphores to the queue.
+  pCommandQueueVulkan->Flush();
+
+  pDeviceVulkan->WaitIdle();
+
+  // We need to explicitly wait for all submitted Image Acquired Fences to signal.
+  // Just idling the GPU is not enough and results in validation warnings.
+  // As a matter of fact, it is only required to check the fence status.
+  WaitForImageAcquiredFences();
+
+  // All references to the swap chain must be released before it can be destroyed.
+  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
+  {
+    pDeviceVulkan->DestroyTexture(m_SwapChainTextures[i]);
+
+    m_SwapChainTextures[i].Invalidate();
+  }
+  m_SwapChainImagesInitialized.Clear();
+
+
+  // We must wait until GPU is idled before destroying the fences as they are destroyed immediately.
+  // The semaphores are managed and will be kept alive by the command queue they are submitted to.
+  // \todo: submit to the device for safe deletion.
+
+  for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
+  {
+    vkLogicalDevice.destroyFence(m_ImageAcquiredFences[i], nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_ImageAcquiredFences[i] = VK_NULL_HANDLE;
+  }
+  m_ImageAcquiredFences.Clear();
+  m_ImageAcquiredFenceSubmitted.Clear();
 }
 
 xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()

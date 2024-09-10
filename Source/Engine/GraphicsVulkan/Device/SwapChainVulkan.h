@@ -34,6 +34,7 @@ protected:
   xiiResult CreateVulkanSurface();
   xiiResult CreateVulkanSwapChain();
   xiiResult RecreateVulkanSwapChain();
+  void      ReleaseSwapChainResources(bool bReleaseSwapChain);
 
   xiiResult CreateBackBufferInternal();
   void      DestroyBackBufferInternal();

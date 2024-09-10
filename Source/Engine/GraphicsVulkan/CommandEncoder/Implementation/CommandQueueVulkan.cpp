@@ -129,6 +129,10 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
   return nullptr;
 }
 
+void xiiGALCommandQueueVulkan::Flush()
+{
+}
+
 xiiUInt64 xiiGALCommandQueueVulkan::Submit(xiiGALCommandList* pCommandList, bool bReset)
 {
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);

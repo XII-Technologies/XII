@@ -35,6 +35,7 @@ public:
   XII_ALWAYS_INLINE xiiUInt32 GetVulkanQueueFamilyIndex() const { return m_uiQueueFamilyIndex; };
   XII_ALWAYS_INLINE vk::Queue GetVulkanQueue() const { return m_vkQueue; };
 
+  void Flush();
 
 protected:
   xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
