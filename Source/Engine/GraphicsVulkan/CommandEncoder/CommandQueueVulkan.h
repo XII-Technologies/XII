@@ -9,6 +9,18 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
 {
 public:
+  struct FenceInfo
+  {
+    vk::Fence m_vkFence;
+    xiiUInt64 m_uiWaitValue = 0U;
+  };
+
+public:
+  void TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout imageLayout);
+
+  void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags);
+  void AddSignalSemaphore(vk::Semaphore semaphore);
+
   /// \brief This returns the value of the internal fence that will be signaled the next time.
   XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return 0ULL; }
 
@@ -22,6 +34,8 @@ public:
 
   XII_ALWAYS_INLINE xiiUInt32 GetVulkanQueueFamilyIndex() const { return m_uiQueueFamilyIndex; };
   XII_ALWAYS_INLINE vk::Queue GetVulkanQueue() const { return m_vkQueue; };
+
+  void Flush();
 
 protected:
   xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
@@ -50,4 +64,16 @@ protected:
 
   xiiSet<xiiGALCommandListVulkan*> m_pAvailableCommandLists;
   xiiSet<xiiGALCommandListVulkan*> m_pUsedCommandLists;
+
+  xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
+  xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;
+  xiiDynamicArray<vk::PipelineStageFlags> m_vkWaitDestinationStageFlags;
+
+  // Can be used only if timeline semaphore extension is enabled.
+  xiiDynamicArray<xiiUInt64> m_vkWaitSemaphoreValues;
+  xiiDynamicArray<xiiUInt64> m_vkSignalSemaphoreValues;
+
+  // List of fences to signal/wait next time the command queue is flushed.
+  xiiDynamicArray<xiiGALCommandQueueVulkan::FenceInfo> m_SignalFences;
+  xiiDynamicArray<xiiGALCommandQueueVulkan::FenceInfo> m_WaitFences;
 };

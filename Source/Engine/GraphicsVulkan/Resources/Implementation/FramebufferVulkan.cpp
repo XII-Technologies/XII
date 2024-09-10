@@ -15,14 +15,48 @@ xiiGALFramebufferVulkan::~xiiGALFramebufferVulkan() = default;
 
 xiiResult xiiGALFramebufferVulkan::InitPlatform()
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
-  return XII_FAILURE;
+  vk::FramebufferCreateInfo framebufferCreateInfo = {};
+  framebufferCreateInfo.pNext                     = nullptr;
+  framebufferCreateInfo.flags                     = {};
+  framebufferCreateInfo.width                     = m_Description.m_FramebufferSize.width;
+  framebufferCreateInfo.height                    = m_Description.m_FramebufferSize.height;
+  framebufferCreateInfo.layers                    = m_Description.m_uiArraySliceCount;
+
+  xiiGALRenderPassVulkan* pRenderPassVulkan = static_cast<xiiGALRenderPassVulkan*>(pDeviceVulkan->GetRenderPass(m_Description.m_hRenderPass));
+  framebufferCreateInfo.renderPass          = pRenderPassVulkan->GetVulkanRenderPass();
+
+  xiiHybridArray<vk::ImageView, 8U> vkImageViews(pDeviceVulkan->GetAllocator());
+  for (xiiUInt32 i = 0; i < m_Description.m_Attachments.GetCount(); ++i)
+  {
+    const xiiGALTextureViewHandle& hAttachmentView = m_Description.m_Attachments[i];
+
+    if (!hAttachmentView.IsInvalidated())
+    {
+      xiiGALTextureViewVulkan* pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pDeviceVulkan->GetTextureView(m_Description.m_Attachments[i]));
+
+      vkImageViews.PushBack(pTextureViewVulkan->GetVulkanImageView());
+    }
+    else
+    {
+      vkImageViews.PushBack(vk::ImageView());
+    }
+  }
+  framebufferCreateInfo.attachmentCount = vkImageViews.GetCount();
+  framebufferCreateInfo.pAttachments    = vkImageViews.GetData();
+
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createFramebuffer(&framebufferCreateInfo, nullptr, &m_vkFramebuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALFramebufferVulkan::DeInitPlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkFramebuffer));
 
   return XII_SUCCESS;
 }

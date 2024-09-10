@@ -346,11 +346,11 @@ void xiiSorting::InsertionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex,
 template <typename Container, typename Comparer>
 void xiiSorting::BubbleSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  bool sorted = false;
+  bool bIsSorted = false;
 
-  while (!sorted)
+  while (!bIsSorted)
   {
-    sorted = true;
+    bIsSorted = true;
 
     for (xiiUInt32 i = uiStartIndex + 1; i <= uiEndIndex; ++i)
     {
@@ -358,7 +358,7 @@ void xiiSorting::BubbleSort(Container& container, xiiUInt32 uiStartIndex, xiiUIn
       if (DoCompare(comparer, container[uiHoleIndex], container[uiHoleIndex - 1]))
       {
         xiiMath::Swap(container[uiHoleIndex], container[uiHoleIndex - 1]);
-        sorted = false;
+        bIsSorted = false;
       }
     }
   }
@@ -368,11 +368,11 @@ template <typename T, typename Comparer>
 void xiiSorting::BubbleSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
   T*   ptr    = arrayPtr.GetPtr();
-  bool sorted = false;
+  bool bIsSorted = false;
 
-  while (!sorted)
+  while (!bIsSorted)
   {
-    sorted = true;
+    bIsSorted = true;
 
     for (xiiUInt32 i = uiStartIndex + 1; i <= uiEndIndex; ++i)
     {
@@ -380,7 +380,7 @@ void xiiSorting::BubbleSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xi
       if (DoCompare(comparer, ptr[uiHoleIndex], ptr[uiHoleIndex - 1]))
       {
         xiiMath::Swap(ptr[uiHoleIndex], ptr[uiHoleIndex - 1]);
-        sorted = false;
+        bIsSorted = false;
       }
     }
   }

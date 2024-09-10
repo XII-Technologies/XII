@@ -1546,6 +1546,17 @@ void xiiGALDeviceVulkan::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipe
 
 void xiiGALDeviceVulkan::WaitIdlePlatform()
 {
+  if (xiiGALCommandQueueVulkan* pGraphicsQueue = m_pGraphicsCommandQueue.Borrow())
+    pGraphicsQueue->WaitForIdle();
+
+  if (xiiGALCommandQueueVulkan* pComputeQueue = m_pComputeCommandQueue.Borrow())
+    pComputeQueue->WaitForIdle();
+
+  if (xiiGALCommandQueueVulkan* pTransferQueue = m_pTransferCommandQueue.Borrow())
+    pTransferQueue->WaitForIdle();
+
+  m_LogicalDevice.waitIdle();
+
   FlushPendingObjects();
 }
 

@@ -53,8 +53,25 @@ void xiiGALCommandQueueVulkan::DeInitializePlatform()
   m_vkDevice = nullptr;
 }
 
-void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALCommandQueueVulkan::TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout imageLayout)
 {
+}
+
+void xiiGALCommandQueueVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
+{
+  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
+
+  m_vkWaitSemaphores.PushBack(semaphore);
+  m_vkWaitDestinationStageFlags.PushBack(pipelineFlags);
+  m_vkWaitSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
+}
+
+void xiiGALCommandQueueVulkan::AddSignalSemaphore(vk::Semaphore semaphore)
+{
+  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
+
+  m_vkSignalSemaphores.PushBack(semaphore);
+  m_vkSignalSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
 }
 
 xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
@@ -111,6 +128,10 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
   return nullptr;
 }
 
+void xiiGALCommandQueueVulkan::Flush()
+{
+}
+
 xiiUInt64 xiiGALCommandQueueVulkan::Submit(xiiGALCommandList* pCommandList, bool bReset)
 {
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
@@ -138,6 +159,10 @@ xiiUInt64 xiiGALCommandQueueVulkan::Submit(xiiGALCommandList* pCommandList, bool
   }
 
   return 0U;
+}
+
+void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_CommandEncoder_Implementation_CommandQueueVulkan);

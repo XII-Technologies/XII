@@ -7,6 +7,8 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALTextureViewVulkan final : public xiiGALTextureView
 {
 public:
+  XII_ALWAYS_INLINE vk::ImageView GetVulkanImageView() const { return m_vkImageView; }
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -20,4 +22,5 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
+  vk::ImageView m_vkImageView;
 };
