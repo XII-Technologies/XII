@@ -20,4 +20,5 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
+  vk::Framebuffer m_vkFramebuffer;
 };

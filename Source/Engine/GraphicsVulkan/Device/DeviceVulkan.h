@@ -80,6 +80,11 @@ public:
 public:
   virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
 
+  template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
+  void SafeReleaseDeviceObject(ObjectType&& object)
+  {
+  }
+
   // Internal objects retrieval.
 
   XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
