@@ -65,8 +65,8 @@ protected:
   xiiSet<xiiGALCommandListVulkan*> m_pAvailableCommandLists;
   xiiSet<xiiGALCommandListVulkan*> m_pUsedCommandLists;
 
-  xiiDynamicArray<vk::Semaphore> m_vkWaitSemaphores;
-  xiiDynamicArray<vk::Semaphore> m_vkSignalSemaphores;
+  xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
+  xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;
   xiiDynamicArray<vk::PipelineStageFlags> m_vkWaitDestinationStageFlags;
 
   // Can be used only if timeline semaphore extension is enabled.

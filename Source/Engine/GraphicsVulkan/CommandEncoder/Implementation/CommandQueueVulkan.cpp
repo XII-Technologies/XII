@@ -55,7 +55,6 @@ void xiiGALCommandQueueVulkan::DeInitializePlatform()
 
 void xiiGALCommandQueueVulkan::TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout imageLayout)
 {
-  
 }
 
 void xiiGALCommandQueueVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
