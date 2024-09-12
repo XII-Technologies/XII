@@ -4,6 +4,11 @@
 
 #include <GraphicsFoundation/Resources/TextureView.h>
 
+namespace vk
+{
+  class ImageView;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALTextureViewVulkan final : public xiiGALTextureView
 {
 public:

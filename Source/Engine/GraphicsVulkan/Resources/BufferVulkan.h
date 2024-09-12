@@ -4,6 +4,11 @@
 
 #include <GraphicsFoundation/Resources/Buffer.h>
 
+namespace vk
+{
+  class Buffer;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALBufferVulkan final : public xiiGALBuffer
 {
 public:
@@ -14,6 +19,8 @@ public:
   virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
 
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
+
+  XII_ALWAYS_INLINE vk::Buffer GetVulkanBuffer() const { return m_vkBuffer; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -28,4 +35,5 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
+  vk::Buffer m_vkBuffer;
 };

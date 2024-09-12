@@ -4,9 +4,16 @@
 
 #include <GraphicsFoundation/Resources/BufferView.h>
 
+namespace vk
+{
+  class BufferView;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALBufferViewVulkan final : public xiiGALBufferView
 {
 public:
+  XII_ALWAYS_INLINE const vk::BufferView GetVulkanBufferView() const { return m_vkBufferView; }
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -20,4 +27,5 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
+  vk::BufferView m_vkBufferView;
 };

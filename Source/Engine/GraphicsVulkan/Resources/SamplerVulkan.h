@@ -4,9 +4,16 @@
 
 #include <GraphicsFoundation/Resources/Sampler.h>
 
+namespace vk
+{
+  class Sampler;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALSamplerVulkan final : public xiiGALSampler
 {
 public:
+  XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_vkSampler; }
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -20,4 +27,5 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
+  vk::Sampler m_vkSampler;
 };
