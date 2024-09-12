@@ -398,7 +398,6 @@ public:
     {
       xiiGALSwapChainCreationDescription swapChainDesc;
       swapChainDesc.m_pWindow               = m_pWindow;
-      swapChainDesc.m_bIsPrimary            = true;
       swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
       swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
       swapChainDesc.m_ColorBufferFormat     = xiiGALTextureFormat::RGBA8UNormalizedSRGB;

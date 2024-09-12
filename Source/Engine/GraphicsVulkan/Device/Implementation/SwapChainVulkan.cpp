@@ -694,9 +694,8 @@ void xiiGALSwapChainVulkan::Present()
     }
   }
 
-  if (m_Description.m_bIsPrimary)
+  // Release stale resources.
   {
-    // Release stale resources.
   }
 
   if (!m_bIsMinimized)

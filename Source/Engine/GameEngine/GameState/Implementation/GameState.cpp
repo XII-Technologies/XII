@@ -372,7 +372,6 @@ xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiW
   desc.m_uiBufferCount         = 2U;
   desc.m_fDefaultDepthValue    = 1.0f;
   desc.m_uiDefaultStencilValue = 0U;
-  desc.m_bIsPrimary            = true;
 
   pOutput->CreateSwapchain(desc);
 
