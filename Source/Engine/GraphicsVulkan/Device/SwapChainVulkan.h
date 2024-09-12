@@ -4,6 +4,19 @@
 
 #include <GraphicsFoundation/Device/SwapChain.h>
 
+namespace vk
+{
+  enum class Format;
+
+  struct Extent2D;
+
+  class SurfaceKHR;
+  class SwapchainKHR;
+  class Semaphore;
+  class Fence;
+  class Image;
+} // namespace vk
+
 class XII_GRAPHICSVULKAN_DLL xiiGALSwapChainVulkan final : public xiiGALSwapChain
 {
 public:
@@ -71,6 +84,6 @@ protected:
   xiiUInt32                            m_uiBackBufferIndex = 0U;
   xiiUInt32                            m_uiSemaphoreIndex  = 0U;
 
-  bool m_bIsMinimized = false;
+  bool m_bIsMinimized    = false;
   bool m_bIsVSyncEnabled = false;
 };

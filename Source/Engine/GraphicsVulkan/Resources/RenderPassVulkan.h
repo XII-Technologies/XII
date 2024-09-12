@@ -4,6 +4,11 @@
 
 #include <GraphicsFoundation/Resources/RenderPass.h>
 
+namespace vk
+{
+  class RenderPass;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALRenderPassVulkan final : public xiiGALRenderPass
 {
 public:

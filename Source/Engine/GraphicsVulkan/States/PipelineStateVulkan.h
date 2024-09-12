@@ -4,9 +4,16 @@
 
 #include <GraphicsFoundation/States/PipelineState.h>
 
+namespace vk
+{
+  class Pipeline;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALPipelineStateVulkan final : public xiiGALPipelineState
 {
 public:
+  XII_ALWAYS_INLINE vk::Pipeline GetVulkanPipeline() const { return m_vkPipeline; }
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -28,4 +35,5 @@ protected:
   virtual void ResetBoundResources() override final;
 
 protected:
+  vk::Pipeline m_vkPipeline;
 };

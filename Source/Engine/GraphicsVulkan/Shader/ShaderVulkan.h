@@ -5,9 +5,16 @@
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 
+namespace vk
+{
+  class ShaderModule;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALShaderVulkan final : public xiiGALShader
 {
 public:
+  XII_ALWAYS_INLINE vk::ShaderModule GetVulkanShaderModule() const { return m_vkShaderModule; }
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -21,4 +28,5 @@ protected:
   virtual xiiResult DeInitPlatform();
 
 protected:
+  vk::ShaderModule m_vkShaderModule;
 };

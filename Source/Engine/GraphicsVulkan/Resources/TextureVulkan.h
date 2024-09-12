@@ -4,10 +4,17 @@
 
 #include <GraphicsFoundation/Resources/Texture.h>
 
+namespace vk
+{
+  class Image;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALTextureVulkan final : public xiiGALTexture
 {
 public:
   virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final;
+
+  XII_ALWAYS_INLINE vk::Image GetVulkanImage() const { return m_vkImage; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -22,4 +29,5 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
+  vk::Image m_vkImage;
 };

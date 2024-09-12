@@ -4,6 +4,11 @@
 
 #include <GraphicsFoundation/Resources/Fence.h>
 
+namespace vk
+{
+  class Fence;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALFenceVulkan final : public xiiGALFence
 {
 public:
@@ -12,6 +17,8 @@ public:
   virtual void Signal(xiiUInt64 uiValue) override final;
 
   virtual void Wait(xiiUInt64 uiValue) override final;
+
+  XII_ALWAYS_INLINE vk::Fence GetVulkanFence() const { return m_vkFence; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -26,4 +33,5 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
+  vk::Fence m_vkFence;
 };

@@ -108,7 +108,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   xiiUInt32 m_uiBufferCount         = 2U;                                                                 ///< The number of buffers in the swap chain.
   float     m_fDefaultDepthValue    = 1.0f;                                                               ///< Default depth value, which is used as the optimized depth clear value in D3D12.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                 ///< Default stencil value, which is used as the optimized clear value in D3D12.
-  bool      m_bIsPrimary            = true;                                                               ///< This indicates if this swap chain is a primary swap chain.
 };
 
 /// \brief This describes the full screen mode description.
