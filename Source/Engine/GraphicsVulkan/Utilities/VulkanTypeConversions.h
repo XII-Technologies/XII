@@ -48,6 +48,11 @@ public:
 
   static vk::SurfaceTransformFlagsKHR GetSurfaceTransform(xiiGALSurfaceTransform::Enum e);
   static xiiGALSurfaceTransform::Enum GetGALSurfaceTransform(vk::SurfaceTransformFlagsKHR e);
+
+  static vk::Filter             GetFilter(xiiGALFilterType::Enum e);
+  static vk::SamplerMipmapMode  GetSamplerMipMapMode(xiiGALFilterType::Enum e);
+  static vk::SamplerAddressMode GetSamplerAddressMode(xiiGALTextureAddressMode::Enum e);
+  static vk::BorderColor        GetBorderColor(const xiiColor& c);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
