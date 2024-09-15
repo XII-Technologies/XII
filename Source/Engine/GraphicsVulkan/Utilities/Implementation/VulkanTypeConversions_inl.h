@@ -617,3 +617,97 @@ XII_ALWAYS_INLINE xiiGALSurfaceTransform::Enum xiiVulkanTypeConversions::GetGALS
 
   return xiiGALSurfaceTransform::Identity;
 }
+
+XII_ALWAYS_INLINE vk::Filter xiiVulkanTypeConversions::GetFilter(xiiGALFilterType::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALFilterType::Point:
+    case xiiGALFilterType::ComparisonPoint:
+    case xiiGALFilterType::MinimumPoint:
+    case xiiGALFilterType::MaximumPoint:
+      return vk::Filter::eNearest;
+
+    case xiiGALFilterType::Linear:
+    case xiiGALFilterType::Anisotropic:
+    case xiiGALFilterType::ComparisonLinear:
+    case xiiGALFilterType::ComparisonAnisotropic:
+    case xiiGALFilterType::MinimumAnisotropic:
+    case xiiGALFilterType::MinimumLinear:
+    case xiiGALFilterType::MaximumLinear:
+    case xiiGALFilterType::MaximumAnisotropic:
+      return vk::Filter::eLinear;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::Filter::eNearest;
+}
+
+XII_ALWAYS_INLINE vk::SamplerMipmapMode xiiVulkanTypeConversions::GetSamplerMipMapMode(xiiGALFilterType::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALFilterType::Point:
+    case xiiGALFilterType::ComparisonPoint:
+    case xiiGALFilterType::MinimumPoint:
+    case xiiGALFilterType::MaximumPoint:
+      return vk::SamplerMipmapMode::eNearest;
+
+    case xiiGALFilterType::Linear:
+    case xiiGALFilterType::Anisotropic:
+    case xiiGALFilterType::ComparisonLinear:
+    case xiiGALFilterType::ComparisonAnisotropic:
+    case xiiGALFilterType::MinimumLinear:
+    case xiiGALFilterType::MinimumAnisotropic:
+    case xiiGALFilterType::MaximumLinear:
+    case xiiGALFilterType::MaximumAnisotropic:
+      return vk::SamplerMipmapMode::eLinear;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::SamplerMipmapMode::eNearest;
+}
+
+XII_ALWAYS_INLINE vk::SamplerAddressMode xiiVulkanTypeConversions::GetSamplerAddressMode(xiiGALTextureAddressMode::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALTextureAddressMode::Wrap:
+      return vk::SamplerAddressMode::eRepeat;
+    case xiiGALTextureAddressMode::Mirror:
+      return vk::SamplerAddressMode::eMirroredRepeat;
+    case xiiGALTextureAddressMode::Clamp:
+      return vk::SamplerAddressMode::eClampToEdge;
+    case xiiGALTextureAddressMode::Border:
+      return vk::SamplerAddressMode::eClampToBorder;
+    case xiiGALTextureAddressMode::MirrorOnce:
+      return vk::SamplerAddressMode::eMirrorClampToEdge;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::SamplerAddressMode::eClampToEdge;
+}
+
+XII_ALWAYS_INLINE vk::BorderColor xiiVulkanTypeConversions::GetBorderColor(const xiiColor& c)
+{
+  vk::BorderColor vkBorderColor = vk::BorderColor::eFloatTransparentBlack;
+
+  if (c.r == 0 && c.g == 0 && c.b == 0 && c.a == 0)
+  {
+    vkBorderColor = vk::BorderColor::eFloatTransparentBlack;
+  }
+  else if (c.r == 0 && c.g == 0 && c.b == 0 && c.a == 1)
+  {
+    vkBorderColor = vk::BorderColor::eFloatOpaqueBlack;
+  }
+  else if (c.r == 1 && c.g == 1 && c.b == 1 && c.a == 1)
+  {
+    vkBorderColor = vk::BorderColor::eFloatOpaqueWhite;
+  }
+  else
+  {
+    xiiLog::Error("Vulkan samplers only allow transparent black (0,0,0,0), opaque black (0,0,0,1) or opaque white (1,1,1,1) as border colors.");
+  }
+
+  return vkBorderColor;
+}

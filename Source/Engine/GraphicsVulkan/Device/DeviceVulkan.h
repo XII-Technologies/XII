@@ -192,6 +192,33 @@ protected:
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
+  enum class VulkanObjectType : xiiUInt32
+  {
+    CommandPool,
+    CommandBuffer,
+    Buffer,
+    BufferView,
+    Image,
+    ImageView,
+    DeviceMemory,
+    Fence,
+    RenderPass,
+    Pipeline,
+    ShaderModule,
+    PipelineLayout,
+    Sampler,
+    Framebuffer,
+    DescriptorPool,
+    DescriptorSetLayout,
+    DescriptorSet,
+    Semaphore,
+    Queue,
+    Event,
+    QueryPool,
+    AccelerationStructureKHR,
+    PipelineCache
+  };
+
   vk::Instance              m_Instance;
   xiiUInt32                 m_uiVulkanVersion = 0U;
   vk::DispatchLoaderDynamic m_InstanceDispatchLoader;
