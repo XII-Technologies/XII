@@ -5,6 +5,7 @@
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiVulkanTypeConversions
 {
@@ -53,6 +54,8 @@ public:
   static vk::SamplerMipmapMode  GetSamplerMipMapMode(xiiGALFilterType::Enum e);
   static vk::SamplerAddressMode GetSamplerAddressMode(xiiGALTextureAddressMode::Enum e);
   static vk::BorderColor        GetBorderColor(const xiiColor& c);
+
+  static vk::VertexInputRate GetFrequency(xiiGALInputElementFrequency::Enum e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
