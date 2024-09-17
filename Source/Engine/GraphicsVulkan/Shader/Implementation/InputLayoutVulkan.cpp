@@ -59,7 +59,7 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform()
       return XII_FAILURE;
     }
 
-    uiUsedBindings |= XII_BIT( layoutElement.m_uiBufferSlot);
+    uiUsedBindings |= XII_BIT(layoutElement.m_uiBufferSlot);
     if (layoutElement.m_uiBufferSlot >= m_vkVertexInputBindings.GetCount())
     {
       m_vkVertexInputBindings.SetCount(layoutElement.m_uiBufferSlot + 1);

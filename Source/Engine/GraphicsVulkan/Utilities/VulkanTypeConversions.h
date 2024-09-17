@@ -2,10 +2,10 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
-#include <GraphicsFoundation/Shader/InputLayout.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiVulkanTypeConversions
 {
