@@ -14,17 +14,11 @@ namespace xiiMath
 {
   /// \brief Returns whether the given value is NaN under this type.
   template <typename Type>
-  constexpr static bool IsNaN(Type value)
-  {
-    return false;
-  }
+  constexpr static bool IsNaN(Type value) { return false; }
 
   /// \brief Returns whether the given value represents a finite value (i.e. not +/- Infinity and not NaN)
   template <typename Type>
-  constexpr static bool IsFinite(Type value)
-  {
-    return true;
-  }
+  constexpr static bool IsFinite(Type value) { return true; }
 
   /// ***** Trigonometric Functions *****
 

@@ -1,3 +1,4 @@
+#include "VulkanTypeConversions.h"
 
 XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiGALBlendOperation::Enum e)
 {
@@ -710,4 +711,18 @@ XII_ALWAYS_INLINE vk::BorderColor xiiVulkanTypeConversions::GetBorderColor(const
   }
 
   return vkBorderColor;
+}
+
+XII_ALWAYS_INLINE vk::VertexInputRate xiiVulkanTypeConversions::GetFrequency(xiiGALInputElementFrequency::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALInputElementFrequency::PerVertex:
+      return vk::VertexInputRate::eVertex;
+    case xiiGALInputElementFrequency::PerInstance:
+      return vk::VertexInputRate::eInstance;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::VertexInputRate::eVertex;
 }
