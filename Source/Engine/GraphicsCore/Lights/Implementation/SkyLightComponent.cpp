@@ -29,8 +29,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkyLightComponent, 3, xiiComponentMode::Static)
   {
     XII_ENUM_ACCESSOR_PROPERTY("ReflectionProbeMode", xiiReflectionProbeMode, GetReflectionProbeMode, SetReflectionProbeMode)->AddAttributes(new xiiDefaultValueAttribute(xiiReflectionProbeMode::Dynamic), new xiiGroupAttribute("Capture Description")),
     XII_ACCESSOR_PROPERTY("CubeMap", GetCubeMapFile, SetCubeMapFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Cube")),
-    XII_ACCESSOR_PROPERTY("Intensity", GetIntensity, SetIntensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(1.0f)),
-    XII_ACCESSOR_PROPERTY("Saturation", GetSaturation, SetSaturation)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(1.0f)),
+    XII_ACCESSOR_PROPERTY("Intensity", GetIntensity, SetIntensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(0.4f)),
+    XII_ACCESSOR_PROPERTY("Saturation", GetSaturation, SetSaturation)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(0.3f)),
     XII_SET_ACCESSOR_PROPERTY("IncludeTags", GetIncludeTags, InsertIncludeTag, RemoveIncludeTag)->AddAttributes(new xiiTagSetWidgetAttribute("Default"), new xiiDefaultValueAttribute(GetDefaultTags())),
     XII_SET_ACCESSOR_PROPERTY("ExcludeTags", GetExcludeTags, InsertExcludeTag, RemoveExcludeTag)->AddAttributes(new xiiTagSetWidgetAttribute("Default")),
     XII_ACCESSOR_PROPERTY("NearPlane", GetNearPlane, SetNearPlane)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, {}), new xiiMinValueTextAttribute("Auto")),

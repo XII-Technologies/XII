@@ -124,8 +124,6 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 
     return pCommandListVulkan;
   }
-
-  return nullptr;
 }
 
 void xiiGALCommandQueueVulkan::Flush()

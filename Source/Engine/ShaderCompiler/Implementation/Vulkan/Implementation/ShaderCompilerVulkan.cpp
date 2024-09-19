@@ -207,7 +207,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
       shaderResourceBinding.m_uiTotalSize                   = 0U;
       shaderResourceBinding.m_sName.Assign(descriptorBinding.name);
 
-      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)Stage.GetValue())], shaderResourceBinding, descriptorBinding).Failed())
+      if (FillResourceBinding(shaderResourceBinding, descriptorBinding).Failed())
         continue;
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
@@ -221,7 +221,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
   {
@@ -239,19 +239,19 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiGALShaderByteCode& sha
 
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
   {
-    return FillSRVResourceBinding(shaderBinary, binding, info);
+    return FillSRVResourceBinding(binding, info);
   }
 
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_UAV)
   {
-    return FillUAVResourceBinding(shaderBinary, binding, info);
+    return FillUAVResourceBinding(binding, info);
   }
 
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV)
   {
     binding.m_Type = xiiGALShaderResourceType::ConstantBuffer;
 
-    return ReflectConstantBufferLayout(shaderBinary, binding, info);
+    return ReflectConstantBufferLayout(binding, info);
   }
 
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
@@ -266,7 +266,7 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiGALShaderByteCode& sha
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   XII_LOG_BLOCK("Constant Buffer Layout", info.name);
 
@@ -459,7 +459,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
   {
@@ -599,7 +599,7 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiGALShaderByteCode& 
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerVulkan::FillUAVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerVulkan::FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
   {
