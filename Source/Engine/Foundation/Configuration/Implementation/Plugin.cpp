@@ -327,6 +327,7 @@ xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPlugin
 
 #if XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
   // #TODO XII_COMPILE_ENGINE_AS_DLL and being able to load plugins are not necessarily the same thing.
+  XII_IGNORE_UNUSED(flags);
   return XII_FAILURE;
 #else
 
