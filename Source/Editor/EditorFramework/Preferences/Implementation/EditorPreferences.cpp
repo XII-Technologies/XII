@@ -29,7 +29,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("SkyLightCubeMap", m_sSkyLightCubeMap)->AddAttributes(new xiiDefaultValueAttribute(xiiStringView("{ 0b202e08-a64f-465d-b38e-15b81d161822 }")), new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Cube")),
     XII_MEMBER_PROPERTY("SkyLightIntensity", m_fSkyLightIntensity)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 20.0f)),
     XII_MEMBER_PROPERTY("DirectionalLight", m_bDirectionalLight)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("DirectionalLightAngle", m_DirectionalLightAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(-90.0f), xiiAngle::MakeFromDegree(90.0f))),
+    XII_MEMBER_PROPERTY("DirectionalLightAngle", m_DirectionalLightAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(70.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(360.0f))),
     XII_MEMBER_PROPERTY("DirectionalLightShadows", m_bDirectionalLightShadows),
     XII_MEMBER_PROPERTY("DirectionalLightIntensity", m_fDirectionalLightIntensity)->AddAttributes(new xiiDefaultValueAttribute(10.0f)),
     XII_MEMBER_PROPERTY("Fog", m_bFog),

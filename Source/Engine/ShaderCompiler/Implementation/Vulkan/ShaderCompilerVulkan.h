@@ -30,10 +30,10 @@ private:
   IDxcCompiler3* m_pDxcCompiler = nullptr;
 
   xiiResult ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderType> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping);
-  xiiResult ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
-  xiiResult FillResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
-  xiiResult FillSRVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
-  xiiResult FillUAVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
+  xiiResult ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
+  xiiResult FillResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
+  xiiResult FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
+  xiiResult FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
 };
 
 #endif

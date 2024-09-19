@@ -17,17 +17,37 @@ public:
 
   XII_FORCE_INLINE void operator=(const xiiMat3& m)
   {
-    for (xiiUInt32 c = 0; c < 3; ++c)
-    {
-      m_Data[c * 4 + 0] = m.Element(c, 0);
-      m_Data[c * 4 + 1] = m.Element(c, 1);
-      m_Data[c * 4 + 2] = m.Element(c, 2);
-      m_Data[c * 4 + 3] = 0.0f;
-    }
+    xiiMemoryUtils::Copy(&m_Data[0], &m.m_fElementsCM[0], 3);
+    m_Data[3] = 0.0f;
+
+    xiiMemoryUtils::Copy(&m_Data[4], &m.m_fElementsCM[3], 3);
+    m_Data[7] = 0.0f;
+
+    xiiMemoryUtils::Copy(&m_Data[8], &m.m_fElementsCM[6], 3);
+    m_Data[11] = 0.0f;
   }
 
 private:
   float m_Data[12];
+};
+
+/// \brief A wrapper class that converts a xiiMat4 into the correct data layout for shaders.
+class xiiShaderMat4
+{
+public:
+  XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE xiiShaderMat4() = default;
+
+  XII_ALWAYS_INLINE xiiShaderMat4(const xiiMat4& m) { *this = m; }
+
+  XII_FORCE_INLINE void operator=(const xiiMat4& m)
+  {
+    xiiMemoryUtils::Copy(m_Data, m.m_fElementsCM, 16U);
+  }
+
+private:
+  float m_Data[16];
 };
 
 /// \brief A wrapper class that converts a xiiTransform into the correct data layout for shaders.

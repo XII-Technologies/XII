@@ -87,7 +87,7 @@ float3x3 TransformToRotation(Transform t)
 #  define UINT3(Name)                xiiVec3U32 Name
 #  define UINT4(Name)                xiiVec4U32 Name
 #  define MAT3(Name)                 xiiShaderMat3 Name
-#  define MAT4(Name)                 xiiMat4 Name
+#  define MAT4(Name)                 xiiShaderMat4 Name
 #  define TRANSFORM(Name)            xiiShaderTransform Name
 #  define COLOR4F(Name)              xiiColor Name
 #  define COLOR4UB(Name)             xiiColorGammaUB Name

@@ -161,7 +161,7 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout
       shaderResourceBinding.m_ShaderStages                  = Stage;
       shaderResourceBinding.m_sName.Assign(inputDescription.Name);
 
-      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)Stage.GetValue())], shaderResourceBinding, pReflector, inputDescription).Failed())
+      if (FillResourceBinding(shaderResourceBinding, pReflector, inputDescription).Failed())
         continue;
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
@@ -176,7 +176,7 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, xiiComPtr<ID3D11ShaderReflection>& pReflector, const D3D11_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiGALShaderResourceDescription& binding, xiiComPtr<ID3D11ShaderReflection>& pReflector, const D3D11_SHADER_INPUT_BIND_DESC& info)
 {
   // clang-format off
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
@@ -185,7 +185,7 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiGALShaderByteCode& shad
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS)
   // clang-format on
   {
-    return FillSRVResourceBinding(shaderBinary, binding, info);
+    return FillSRVResourceBinding(binding, info);
   }
 
   // clang-format off
@@ -198,14 +198,14 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiGALShaderByteCode& shad
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_FEEDBACKTEXTURE)
   // clang-format on
   {
-    return FillUAVResourceBinding(shaderBinary, binding, info);
+    return FillUAVResourceBinding(binding, info);
   }
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_CBUFFER)
   {
     binding.m_Type = xiiGALShaderResourceType::ConstantBuffer;
 
-    return ReflectConstantBufferLayout(shaderBinary, binding, pReflector->GetConstantBufferByName(info.Name));
+    return ReflectConstantBufferLayout(binding, pReflector->GetConstantBufferByName(info.Name));
   }
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_SAMPLER)
@@ -227,7 +227,7 @@ xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiGALShaderByteCode& shad
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerD3D11::ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, xiiGALShaderResourceDescription& binding, ID3D11ShaderReflectionConstantBuffer* pConstantBufferReflection)
+xiiResult xiiShaderCompilerD3D11::ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, ID3D11ShaderReflectionConstantBuffer* pConstantBufferReflection)
 {
   XII_LOG_BLOCK("Constant Buffer Layout", binding.m_sName);
 
@@ -370,7 +370,7 @@ xiiResult xiiShaderCompilerD3D11::ReflectConstantBufferLayout(xiiGALShaderByteCo
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerD3D11::FillSRVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D11_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D11::FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const D3D11_SHADER_INPUT_BIND_DESC& info)
 {
   if (info.Type == D3D_SIT_STRUCTURED || info.Type == D3D_SIT_BYTEADDRESS || info.Type == D3D_SVT_BUFFER)
   {
@@ -428,7 +428,7 @@ xiiResult xiiShaderCompilerD3D11::FillSRVResourceBinding(xiiGALShaderByteCode& s
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerD3D11::FillUAVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D11_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D11::FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const D3D11_SHADER_INPUT_BIND_DESC& info)
 {
   switch (info.Type)
   {

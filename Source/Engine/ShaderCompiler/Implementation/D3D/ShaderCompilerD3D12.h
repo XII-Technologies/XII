@@ -34,10 +34,10 @@ private:
   IDxcCompiler3* m_pDxcCompiler = nullptr;
 
   xiiResult ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderType> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping);
-  xiiResult ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, xiiGALShaderResourceDescription& binding, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection);
-  xiiResult FillResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, xiiComPtr<ID3D12ShaderReflection>& pReflector, const D3D12_SHADER_INPUT_BIND_DESC& info);
-  xiiResult FillSRVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info);
-  xiiResult FillUAVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info);
+  xiiResult ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection);
+  xiiResult FillResourceBinding(xiiGALShaderResourceDescription& binding, xiiComPtr<ID3D12ShaderReflection>& pReflector, const D3D12_SHADER_INPUT_BIND_DESC& info);
+  xiiResult FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info);
+  xiiResult FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info);
 };
 
 #endif

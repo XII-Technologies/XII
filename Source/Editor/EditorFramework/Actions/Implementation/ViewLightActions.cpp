@@ -270,7 +270,7 @@ xiiViewLightSliderAction::xiiViewLightSliderAction(const xiiActionContext& conte
       break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged:
       SetIconPath(":/TypeIcons/xiiDirectionalLightComponent.svg");
-      SetRange(-90, 90);
+      SetRange(0, 360);
       break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightIntensityChanged:
       SetIconPath(":/TypeIcons/xiiDirectionalLightComponent.svg");
@@ -331,7 +331,7 @@ void xiiViewLightSliderAction::UpdateAction()
     break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged:
     {
-      SetValue(xiiMath::Clamp((xiiInt32)(m_pSettings->GetDirectionalLightAngle().GetDegree()), -90, 90));
+      SetValue(xiiMath::Clamp((xiiInt32)(m_pSettings->GetDirectionalLightAngle().GetDegree()), 0, 360));
     }
     break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightIntensityChanged:

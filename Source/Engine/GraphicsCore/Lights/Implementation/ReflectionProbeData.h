@@ -9,7 +9,7 @@ struct xiiReflectionProbeMode
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     Static,
     Dynamic,
@@ -32,8 +32,8 @@ struct XII_GRAPHICSCORE_DLL xiiReflectionProbeDesc
   bool m_bShowDebugInfo = false;
   bool m_bShowMipMaps   = false;
 
-  float   m_fIntensity     = 1.0f;
-  float   m_fSaturation    = 1.0f;
+  float   m_fIntensity     = 0.4f;
+  float   m_fSaturation    = 0.3f;
   float   m_fNearPlane     = 0.0f;
   float   m_fFarPlane      = 100.0f;
   xiiVec3 m_vCaptureOffset = xiiVec3::MakeZero();

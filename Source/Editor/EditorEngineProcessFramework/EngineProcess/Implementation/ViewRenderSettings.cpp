@@ -260,9 +260,9 @@ void xiiEngineViewLightSettings::UpdateForEngine(xiiWorld* pWorld)
   const bool bNeedGameObject = m_bDirectionalLight || m_bSkyLight;
   if (xiiGameObject* pParent = SyncGameObject(m_pWorld, m_hGameObject, bNeedGameObject))
   {
-    xiiQuat rot;
-    rot = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), m_DirectionalLightAngle + xiiAngle::MakeFromDegree(90.0));
-    pParent->SetLocalRotation(rot);
+    xiiQuat rotY = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::MakeFromDegree(120.0));
+    xiiQuat rotZ = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), m_DirectionalLightAngle);
+    pParent->SetLocalRotation(rotZ * rotY);
 
     if (xiiDirectionalLightComponent* pDirLight = SyncComponent<xiiDirectionalLightComponent>(m_pWorld, pParent, m_hDirLight, m_bDirectionalLight))
     {
@@ -279,9 +279,11 @@ void xiiEngineViewLightSettings::UpdateForEngine(xiiWorld* pWorld)
 
     if (xiiFogComponent* pFog = SyncComponent<xiiFogComponent>(m_pWorld, pParent, m_hFog, m_bFog))
     {
-      pFog->SetColor(xiiColor(0.02f, 0.02f, 0.02f));
+      // pFog->SetColor(xiiColor(0.1f, 0.1f, 0.1f));
       pFog->SetDensity(5.0f);
       pFog->SetHeightFalloff(0);
+      pFog->SetModulateWithSkyColor(m_bSkyBox);
+      pFog->SetSkyDistance(100.0f);
     }
   }
 }
