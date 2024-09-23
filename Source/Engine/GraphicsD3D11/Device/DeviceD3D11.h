@@ -34,17 +34,26 @@ public:
   ~xiiGALDeviceD3D11();
 
 public:
-  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
+  XII_ALWAYS_INLINE virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final
+  {
+    if (queueType.IsSet(xiiGALCommandQueueType::Graphics))
+      return m_pGraphicsCommandQueue.Borrow();
+
+    if (queueType.IsSet(xiiGALCommandQueueType::Compute))
+      return m_pComputeCommandQueue.Borrow();
+
+    if (queueType.IsSet(xiiGALCommandQueueType::Transfer))
+      return m_pTransferCommandQueue.Borrow();
+
+    return nullptr;
+  };
 
   // Internal objects retrieval.
 
-  ID3D11Device5* GetD3D11Device() const;
-  IDXGIAdapter4* GetDXGIAdapter() const;
-  IDXGIFactory5* GetDXGIFactory() const;
-
-  ID3D11DeviceContext4* GetImmediateContext();
-
-  xiiUInt32 GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const;
+  XII_ALWAYS_INLINE ID3D11Device5* GetD3D11Device() const { return m_pDeviceD3D11; };
+  XII_ALWAYS_INLINE IDXGIAdapter4* GetDXGIAdapter() const { return m_pDXGIAdapter; };
+  XII_ALWAYS_INLINE IDXGIFactory5* GetDXGIFactory() const { return m_pDXGIFactory; };
+  XII_ALWAYS_INLINE ID3D11DeviceContext4* GetImmediateContext() const { return m_pDeviceContext; };
 
   void ReportLiveGPUObjects();
 
@@ -149,11 +158,9 @@ private:
 
   xiiUInt64 m_uiFrameCounter = 0U;
 
-  // 0 : Graphics Queue
-  // 1 : Compute Queue
-  // 2 : Transfer Queue
-  // 3 : Sparse Queue
-  xiiUniquePtr<xiiGALCommandQueueD3D11> m_CommandQueues[4];
+  xiiUniquePtr<xiiGALCommandQueueD3D11> m_pGraphicsCommandQueue;
+  xiiUniquePtr<xiiGALCommandQueueD3D11> m_pComputeCommandQueue;
+  xiiUniquePtr<xiiGALCommandQueueD3D11> m_pTransferCommandQueue;
 
   struct TemporaryResourceType
   {
@@ -180,5 +187,3 @@ private:
   xiiMap<xiiUInt32, xiiDynamicArray<ID3D11Resource*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TemporaryResourceType::ENUM_COUNT];
   xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                       m_UsedTempResources[TemporaryResourceType::ENUM_COUNT];
 };
-
-#include <GraphicsD3D11/Device/Implementation/DeviceD3D11_inl.h>

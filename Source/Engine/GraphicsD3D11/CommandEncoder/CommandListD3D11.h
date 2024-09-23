@@ -14,8 +14,8 @@ class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandL
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D11, xiiGALCommandList);
 
 public:
-  ID3D11CommandList*    GetD3D11CommandList() const;
-  ID3D11DeviceContext1* GetD3D11DeferredContext() const;
+  XII_ALWAYS_INLINE ID3D11CommandList* GetD3D11CommandList() const { return m_pSubmittedCommandList; }
+  XII_ALWAYS_INLINE ID3D11DeviceContext1* GetD3D11DeferredContext() const { return m_pCommandList; }
 
 protected:
   virtual void BeginPlatform() override final;
@@ -141,5 +141,3 @@ protected:
   xiiDisjointQueryPool                                     m_DisjointQueryPool;
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> m_pActiveDisjointQuery;
 };
-
-#include <GraphicsD3D11/CommandEncoder/Implementation/CommandListD3D11_inl.h>

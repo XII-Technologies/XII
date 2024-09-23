@@ -14,7 +14,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALInputLayoutD3D11 final : public xiiGALInputLay
   XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayoutD3D11, xiiGALInputLayout);
 
 public:
-  ID3D11InputLayout* GetInputLayout() const;
+  XII_ALWAYS_INLINE ID3D11InputLayout* GetInputLayout() const { return m_pInputLayout; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -33,5 +33,3 @@ protected:
 protected:
   ID3D11InputLayout* m_pInputLayout = nullptr;
 };
-
-#include <GraphicsD3D11/Shader/Implementation/InputLayoutD3D11_inl.h>

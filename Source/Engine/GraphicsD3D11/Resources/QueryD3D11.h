@@ -13,11 +13,24 @@ class XII_GRAPHICSD3D11_DLL xiiGALQueryD3D11 final : public xiiGALQuery
 public:
   virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate) override final;
 
-  virtual void Invalidate() override final;
+  XII_ALWAYS_INLINE virtual void Invalidate() override final
+  {
+    m_DisjointQuery.Clear();
 
-  ID3D11Query* GetQuery(xiiUInt32 uiQueryID) const;
+    m_QueryState = QueryState::Inactive;
+  }
 
-  void SetDisjointQuery(xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> disjointQuery);
+  XII_ALWAYS_INLINE ID3D11Query* GetQuery(xiiUInt32 uiQueryID) const
+  {
+    XII_ASSERT_DEV(uiQueryID == 0 || (m_Description.m_Type == xiiGALQueryType::Duration && uiQueryID == 1), "");
+
+    return m_pQueryD3D11[uiQueryID];
+  }
+
+  XII_ALWAYS_INLINE void SetDisjointQuery(xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> disjointQuery)
+  {
+    m_DisjointQuery = disjointQuery;
+  }
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -38,5 +51,3 @@ protected:
 
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> m_DisjointQuery;
 };
-
-#include <GraphicsD3D11/Resources/Implementation/QueryD3D11_inl.h>

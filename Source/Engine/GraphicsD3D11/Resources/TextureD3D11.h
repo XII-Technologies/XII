@@ -14,9 +14,9 @@ class XII_GRAPHICSD3D11_DLL xiiGALTextureD3D11 final : public xiiGALTexture
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureD3D11, xiiGALTexture);
 
 public:
-  virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final;
+  XII_ALWAYS_INLINE virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final { return m_SparseTextureProperties; };
 
-  ID3D11Resource* GetTexture() const;
+  XII_ALWAYS_INLINE ID3D11Resource* GetTexture() const { return m_pTexture; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -45,5 +45,3 @@ protected:
   ID3D11Resource*               m_pTexture = nullptr;
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 };
-
-#include <GraphicsD3D11/Resources/Implementation/TextureD3D11_inl.h>

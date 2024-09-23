@@ -13,7 +13,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALCommandQueueD3D11 final : public xiiGALCommand
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueueD3D11, xiiGALCommandQueue);
 
 public:
-  virtual xiiUInt64 GetNextFenceValue() const override final;
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_NextFenceValue.load(); };
 
   virtual xiiUInt64 GetCompletedFenceValue() override final;
 
@@ -61,5 +61,3 @@ protected:
   ID3D11Fence* m_pD3D11DFence          = nullptr;
   HANDLE       m_WaitForGPUEventHandle = {};
 };
-
-#include <GraphicsD3D11/CommandEncoder/Implementation/CommandQueueD3D11_inl.h>

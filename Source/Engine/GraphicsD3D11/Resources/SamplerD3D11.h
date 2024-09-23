@@ -11,7 +11,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALSamplerD3D11 final : public xiiGALSampler
   XII_ADD_DYNAMIC_REFLECTION(xiiGALSamplerD3D11, xiiGALSampler);
 
 public:
-  ID3D11SamplerState* GetSampler() const;
+  XII_ALWAYS_INLINE ID3D11SamplerState* GetSampler() const { return m_pSampler; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -30,5 +30,3 @@ protected:
 protected:
   ID3D11SamplerState* m_pSampler = nullptr;
 };
-
-#include <GraphicsD3D11/Resources/Implementation/SamplerD3D11_inl.h>

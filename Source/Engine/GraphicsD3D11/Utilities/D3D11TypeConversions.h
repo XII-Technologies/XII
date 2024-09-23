@@ -17,20 +17,6 @@
 class XII_GRAPHICSD3D11_DLL xiiD3D11TypeConversions
 {
 public:
-  /// \brief Helper function to hash D3D11 enumerations.
-  template <typename T, typename R = typename std::underlying_type<T>::type>
-  static R GetUnderlyingValue(T value)
-  {
-    return static_cast<typename std::underlying_type<T>::type>(value);
-  }
-
-  /// \brief Helper function to hash D3D11 flags.
-  template <typename T>
-  static auto GetUnderlyingFlagsValue(T value)
-  {
-    return static_cast<typename T::MaskType>(value);
-  }
-
   static D3D11_BLEND    GetBlendFactor(xiiEnum<xiiGALBlendFactor> e);
   static D3D11_BLEND_OP GetBlendOp(xiiEnum<xiiGALBlendOperation> e);
 
