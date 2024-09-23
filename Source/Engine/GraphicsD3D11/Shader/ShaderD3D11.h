@@ -12,7 +12,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALShaderD3D11 final : public xiiGALShader
   XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderD3D11, xiiGALShader);
 
 public:
-  ID3D11DeviceChild* GetD3D11Shader() const;
+  XII_ALWAYS_INLINE ID3D11DeviceChild* GetD3D11Shader() const { return m_pD3D11Shader; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -31,5 +31,3 @@ protected:
 protected:
   ID3D11DeviceChild* m_pD3D11Shader = nullptr;
 };
-
-#include <GraphicsD3D11/Shader/Implementation/ShaderD3D11_inl.h>

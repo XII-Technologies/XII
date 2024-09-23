@@ -19,9 +19,9 @@ public:
 
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
-  ID3D11Buffer* GetBuffer() const;
+  XII_ALWAYS_INLINE ID3D11Buffer* GetBuffer() const { return m_pBuffer; };
 
-  xiiEnum<xiiGALValueType> GetIndexFormat() const;
+  XII_ALWAYS_INLINE xiiEnum<xiiGALValueType> GetIndexFormat() const { return m_IndexFormat; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -42,5 +42,3 @@ protected:
 
   xiiEnum<xiiGALValueType> m_IndexFormat = xiiGALValueType::Undefined; // Strictly index buffers.
 };
-
-#include <GraphicsD3D11/Resources/Implementation/BufferD3D11_inl.h>

@@ -44,16 +44,16 @@ public:
     static ShaderType::Enum GetIndex(xiiBitflags<xiiGALShaderType> type);
   };
 
-  ID3D11BlendState*        GetD3D11BlendState() const;
-  ID3D11RasterizerState*   GetD3D11RasterizerState() const;
-  ID3D11DepthStencilState* GetD3D11DepthStencilState() const;
-  ID3D11InputLayout*       GetD3D11InputLayout() const;
-  ID3D11VertexShader*      GetD3D11VertexShader() const;
-  ID3D11PixelShader*       GetD3D11PixelShader() const;
-  ID3D11GeometryShader*    GetD3D11GeometryShader() const;
-  ID3D11DomainShader*      GetD3D11DomainShader() const;
-  ID3D11HullShader*        GetD3D11HullShader() const;
-  ID3D11ComputeShader*     GetD3D11ComputeShader() const;
+  XII_ALWAYS_INLINE ID3D11BlendState* GetD3D11BlendState() const { return m_pBlendStateD3D11 ? m_pBlendStateD3D11->GetBlendState() : nullptr; };
+  XII_ALWAYS_INLINE ID3D11RasterizerState* GetD3D11RasterizerState() const { return m_pRasterizerStateD3D11 ? m_pRasterizerStateD3D11->GetRasterizerState() : nullptr; };
+  XII_ALWAYS_INLINE ID3D11DepthStencilState* GetD3D11DepthStencilState() const { return m_pDepthStencilStateD3D11 ? m_pDepthStencilStateD3D11->GetDepthStencilState() : nullptr; };
+  XII_ALWAYS_INLINE ID3D11InputLayout* GetD3D11InputLayout() const { return m_pInputLayoutD3D11 ? m_pInputLayoutD3D11->GetInputLayout() : nullptr; };
+  XII_ALWAYS_INLINE ID3D11VertexShader* GetD3D11VertexShader() const { return m_pVertexShaderD3D11 != nullptr ? static_cast<ID3D11VertexShader*>(m_pVertexShaderD3D11->GetD3D11Shader()) : nullptr; };
+  XII_ALWAYS_INLINE ID3D11PixelShader* GetD3D11PixelShader() const { return m_pPixelShaderD3D11 != nullptr ? static_cast<ID3D11PixelShader*>(m_pPixelShaderD3D11->GetD3D11Shader()) : nullptr; };
+  XII_ALWAYS_INLINE ID3D11GeometryShader* GetD3D11GeometryShader() const { return m_pGeometryShaderD3D11 != nullptr ? static_cast<ID3D11GeometryShader*>(m_pGeometryShaderD3D11->GetD3D11Shader()) : nullptr; };
+  XII_ALWAYS_INLINE ID3D11DomainShader* GetD3D11DomainShader() const { return m_pDomainShaderD3D11 != nullptr ? static_cast<ID3D11DomainShader*>(m_pDomainShaderD3D11->GetD3D11Shader()) : nullptr; };
+  XII_ALWAYS_INLINE ID3D11HullShader* GetD3D11HullShader() const { return m_pHullShaderD3D11 != nullptr ? static_cast<ID3D11HullShader*>(m_pHullShaderD3D11->GetD3D11Shader()) : nullptr; };
+  XII_ALWAYS_INLINE ID3D11ComputeShader* GetD3D11ComputeShader() const { return m_pComputeShaderD3D11 != nullptr ? static_cast<ID3D11ComputeShader*>(m_pComputeShaderD3D11->GetD3D11Shader()) : nullptr; };
 
   xiiResult CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11);
 
@@ -109,5 +109,3 @@ protected:
   ID3D11SamplerState*   m_pBoundSamplerStates[ShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundSamplerStatesRange[ShaderType::ENUM_COUNT];
 };
-
-#include <GraphicsD3D11/States/Implementation/PipelineStateD3D11_inl.h>

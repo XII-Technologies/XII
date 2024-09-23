@@ -25,7 +25,7 @@ public:
 
   void WaitForFrame();
 
-  IDXGISwapChain4* GetSwapChain() const;
+  XII_ALWAYS_INLINE IDXGISwapChain4* GetSwapChain() const { return m_pSwapChain; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -60,5 +60,3 @@ protected:
 
   xiiUInt32 m_uiMaximumFrameLatency = 0U;
 };
-
-#include <GraphicsD3D11/Device/Implementation/SwapChainD3D11_inl.h>

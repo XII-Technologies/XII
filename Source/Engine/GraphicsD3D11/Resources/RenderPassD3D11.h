@@ -20,5 +20,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsD3D11/Resources/Implementation/RenderPassD3D11_inl.h>

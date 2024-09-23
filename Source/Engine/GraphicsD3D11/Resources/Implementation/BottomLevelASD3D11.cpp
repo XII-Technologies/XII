@@ -27,4 +27,28 @@ xiiResult xiiGALBottomLevelASD3D11::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+xiiUInt32 xiiGALBottomLevelASD3D11::GetGeometryDescriptionIndex(xiiStringView sName) const
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiInvalidIndex;
+}
+
+xiiUInt32 xiiGALBottomLevelASD3D11::GetGeometryIndex(xiiStringView sName) const
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiInvalidIndex;
+}
+
+xiiUInt32 xiiGALBottomLevelASD3D11::GetActualGeometryCount() const
+{
+  return 0U;
+}
+
+xiiGALScratchBufferSizeDescription xiiGALBottomLevelASD3D11::GetScratchBufferSizeDescription() const
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiGALScratchBufferSizeDescription{.m_uiBuild = 0, .m_uiUpdate = 0};
+}
+
+
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Resources_Implementation_BottomLevelASD3D11);

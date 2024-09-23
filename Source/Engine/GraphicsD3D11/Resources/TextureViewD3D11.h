@@ -11,7 +11,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALTextureViewD3D11 final : public xiiGALTextureV
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureViewD3D11, xiiGALTextureView);
 
 public:
-  ID3D11View* GetTextureView() const;
+  XII_ALWAYS_INLINE ID3D11View* GetTextureView() const { return m_pTextureView; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -35,5 +35,3 @@ protected:
 protected:
   ID3D11View* m_pTextureView = nullptr;
 };
-
-#include <GraphicsD3D11/Resources/Implementation/TextureViewD3D11_inl.h>

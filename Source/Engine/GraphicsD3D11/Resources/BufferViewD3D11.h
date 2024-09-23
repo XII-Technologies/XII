@@ -11,7 +11,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALBufferViewD3D11 final : public xiiGALBufferVie
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferViewD3D11, xiiGALBufferView);
 
 public:
-  ID3D11View* GetBufferView() const;
+  XII_ALWAYS_INLINE ID3D11View* GetBufferView() const { return m_pBufferView; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -33,5 +33,3 @@ protected:
 protected:
   ID3D11View* m_pBufferView = nullptr;
 };
-
-#include <GraphicsD3D11/Resources/Implementation/BufferViewD3D11_inl.h>

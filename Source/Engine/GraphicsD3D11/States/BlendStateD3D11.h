@@ -11,7 +11,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALBlendStateD3D11 final : public xiiGALBlendStat
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBlendStateD3D11, xiiGALBlendState);
 
 public:
-  ID3D11BlendState* GetBlendState() const;
+  XII_ALWAYS_INLINE ID3D11BlendState* GetBlendState() const { return m_pBlendState; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -30,5 +30,3 @@ protected:
 protected:
   ID3D11BlendState* m_pBlendState = nullptr;
 };
-
-#include <GraphicsD3D11/States/Implementation/BlendStateD3D11_inl.h>

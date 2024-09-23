@@ -261,24 +261,40 @@ void xiiGALDeviceD3D11::FlushPendingObjects()
 
 void xiiGALDeviceD3D11::ResetCommandQueuesSwapChainReferences()
 {
-  for (auto& queue : m_CommandQueues)
+  if (m_pGraphicsCommandQueue != nullptr)
   {
-    if (queue != nullptr)
-    {
-      queue->ReleaseSwapChainCommanListReferences();
-    }
+    m_pGraphicsCommandQueue->ReleaseSwapChainCommanListReferences();
+  }
+
+  if (m_pComputeCommandQueue != nullptr)
+  {
+    m_pComputeCommandQueue->ReleaseSwapChainCommanListReferences();
+  }
+
+  if (m_pTransferCommandQueue != nullptr)
+  {
+    m_pTransferCommandQueue->ReleaseSwapChainCommanListReferences();
   }
 }
 
 xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
 {
-  for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(m_CommandQueues); ++i)
+  if (m_pGraphicsCommandQueue != nullptr)
   {
-    if (m_CommandQueues[i] == nullptr)
-      continue;
+    m_pGraphicsCommandQueue->DeInitializePlatform();
+    m_pGraphicsCommandQueue.Clear();
+  }
 
-    m_CommandQueues[i]->DeInitializePlatform();
-    m_CommandQueues[i].Clear();
+  if (m_pComputeCommandQueue != nullptr)
+  {
+    m_pComputeCommandQueue->DeInitializePlatform();
+    m_pComputeCommandQueue.Clear();
+  }
+
+  if (m_pTransferCommandQueue != nullptr)
+  {
+    m_pTransferCommandQueue->DeInitializePlatform();
+    m_pTransferCommandQueue.Clear();
   }
 
   for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
@@ -331,18 +347,35 @@ xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
       {
         queueCountPerContext[i] += 1;
 
-        xiiUInt32 uiCommandQueueIndex = GetCommandQueueIndex(queueType);
-
         xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = queueType};
-        m_CommandQueues[uiCommandQueueIndex]                   = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
 
-        m_CommandQueues[uiCommandQueueIndex]->InitializePlatform();
+        xiiGALCommandQueueD3D11* pCommandQueueD3D11 = nullptr;
+        if (queueType == xiiGALCommandQueueType::Graphics)
+        {
+          m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
+          pCommandQueueD3D11      = m_pGraphicsCommandQueue.Borrow();
+        }
+        else if (queueType == xiiGALCommandQueueType::Compute)
+        {
+          m_pComputeCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
+          pCommandQueueD3D11     = m_pComputeCommandQueue.Borrow();
+        }
+        else if (queueType == xiiGALCommandQueueType::Transfer)
+        {
+          m_pTransferCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
+          pCommandQueueD3D11      = m_pTransferCommandQueue.Borrow();
+        }
 
-        xiiStringBuilder sb;
-        sb.SetFormat("Command Queue ({}) - {}", uiCommandQueueIndex, sName);
-        m_CommandQueues[uiCommandQueueIndex]->SetDebugName(sb);
+        if (pCommandQueueD3D11 != nullptr)
+        {
+          pCommandQueueD3D11->InitializePlatform();
 
-        xiiLog::Info("Created {}", sb);
+          xiiStringBuilder sb;
+          sb.SetFormat("Command Queue ({})", sName);
+          pCommandQueueD3D11->SetDebugName(sb);
+
+          xiiLog::Info("Created {}", sb);
+        }
 
         return true;
       }
@@ -355,7 +388,6 @@ xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
 
   CreateCommandQueue(xiiGALCommandQueueType::Transfer, "Default Transfer", m_Description.m_uiAdapterID);
   CreateCommandQueue(xiiGALCommandQueueType::Compute, "Default Compute", m_Description.m_uiAdapterID);
-  CreateCommandQueue(xiiGALCommandQueueType::SparseBinding, "Default Sparse Binding", m_Description.m_uiAdapterID);
 
   return XII_SUCCESS;
 }

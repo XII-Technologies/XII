@@ -11,7 +11,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALRasterizerStateD3D11 final : public xiiGALRast
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRasterizerStateD3D11, xiiGALRasterizerState);
 
 public:
-  ID3D11RasterizerState* GetRasterizerState() const;
+  XII_ALWAYS_INLINE ID3D11RasterizerState* GetRasterizerState() const { return m_pRasterizerState; };
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -30,5 +30,3 @@ protected:
 protected:
   ID3D11RasterizerState* m_pRasterizerState = nullptr;
 };
-
-#include <GraphicsD3D11/States/Implementation/RasterizerStateD3D11_inl.h>

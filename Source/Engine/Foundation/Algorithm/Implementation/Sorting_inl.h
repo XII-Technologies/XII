@@ -367,7 +367,7 @@ void xiiSorting::BubbleSort(Container& container, xiiUInt32 uiStartIndex, xiiUIn
 template <typename T, typename Comparer>
 void xiiSorting::BubbleSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  T*   ptr    = arrayPtr.GetPtr();
+  T*   ptr       = arrayPtr.GetPtr();
   bool bIsSorted = false;
 
   while (!bIsSorted)
