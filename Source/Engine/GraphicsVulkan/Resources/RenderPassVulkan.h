@@ -26,6 +26,9 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  template <xiiUInt8 RenderPassVersion>
+  void CreateRenderPassForVersion();
+
 protected:
   vk::RenderPass m_vkRenderPass;
 };
