@@ -101,9 +101,81 @@ void xiiGALRenderPassVulkan::CreateRenderPassForVersion()
   xiiUInt32 uiTotalAttachmentReferencesCount   = 0U;
   xiiUInt32 uiTotalPreserveAttachmentsCount    = 0U;
   xiiUInt32 uiTotalShadingRateAttachmentsCount = 0U;
-
-  if constexpr (std::is_same_v<RenderPassCIType, vk::AttachmentDescription2>)
+  for (xiiUInt32 i = 0; i < m_Description.m_SubPasses.GetCount(); ++i)
   {
+    const auto& xiiSubPass = m_Description.m_SubPasses[i];
+
+    uiTotalAttachmentReferencesCount += xiiSubPass.m_InputAttachments.GetCount();
+    uiTotalAttachmentReferencesCount += xiiSubPass.m_RenderTargetAttachments.GetCount();
+
+    if (!xiiSubPass.m_ResolveAttachments.IsEmpty())
+    {
+      uiTotalAttachmentReferencesCount += xiiSubPass.m_RenderTargetAttachments.GetCount();
+    }
+    if (!xiiSubPass.m_DepthStencilAttachment.IsEmpty())
+    {
+      uiTotalAttachmentReferencesCount += 1;
+    }
+    if (!xiiSubPass.m_ShadingRateAttachment.IsEmpty() && bShadingRateEnabled)
+    {
+      uiTotalShadingRateAttachmentsCount += 1;
+    }
+    uiTotalPreserveAttachmentsCount += xiiSubPass.m_PreserveAttachments.GetCount();
+  }
+
+  xiiDynamicArray<AttachmentReferenceType> vkAttachmentReference(pDeviceVulkan->GetAllocator());
+  vkAttachmentReference.SetCount(uiTotalAttachmentReferencesCount + uiTotalShadingRateAttachmentsCount);
+
+  xiiDynamicArray<xiiUInt32> vkPreserveAttachments(pDeviceVulkan->GetAllocator());
+  vkPreserveAttachments.SetCount(uiTotalPreserveAttachmentsCount);
+
+  xiiDynamicArray<vk::FragmentShadingRateAttachmentInfoKHR> vkShadingRate(pDeviceVulkan->GetAllocator());
+  vkShadingRate.SetCount(uiTotalShadingRateAttachmentsCount);
+
+  const xiiGALShadingRateAttachmentDescription* pMainShadingRateAttachment = nullptr;
+
+  xiiUInt32 uiCurrentAttachmentReferenceIndex = 0;
+  xiiUInt32 uiCurrentPreserveAttachmentIndex  = 0;
+
+  // State flags for every attachment in each subpass.
+  // This array is used to detect attachments that are used as render target or depth-stencil, but also as input attachment in the same subpass. Such attachments need to use GENERAL layout.
+  xiiDynamicArray<xiiBitflags<xiiGALResourceStateFlags>> attachmentStates(pDeviceVulkan->GetAllocator());
+  attachmentStates.SetCount(m_Description.m_Attachments.GetCount());
+
+  xiiDynamicArray<SubpassDescriptionType> vkSubPasses(pDeviceVulkan->GetAllocator());
+  vkSubPasses.SetCount(m_Description.m_SubPasses.GetCount());
+
+  for (xiiUInt32 i = 0; i < m_Description.m_SubPasses.GetCount(); ++i)
+  {
+    const auto& xiiSubPass = m_Description.m_SubPasses[i];
+    auto&       vkSubPass  = vkSubPasses[i];
+
+    vkSubPass.flags             = {};
+    vkSubPass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+    if constexpr (std::is_same_v<SubpassDescriptionType, vk::SubpassDescription2>)
+    {
+      vkSubPass.pNext = nullptr;
+    }
+
+    for (xiiUInt32 j = 0; j < attachmentStates.GetCount(); ++j)
+    {
+      attachmentStates[i] = xiiGALResourceStateFlags::Unknown;
+    }
+
+    auto UpdateAttachmentsStates = [&attachmentStates](xiiUInt32 uiAttachmentCount, const xiiGALAttachmentReferenceDescription* pSourceAttachments) -> void {
+      if (pSourceAttachments == nullptr)
+        return;
+
+      for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < uiAttachmentCount; ++uiAttachmentIndex)
+      {
+        const auto& sourceAttachmentReference = pSourceAttachments[uiAttachmentIndex];
+
+        if (sourceAttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+        {
+          attachmentStates[sourceAttachmentReference.m_uiAttachmentIndex] |= sourceAttachmentReference.m_ResourceStateFlags;
+        }
+      }
+    };
   }
 }
 
