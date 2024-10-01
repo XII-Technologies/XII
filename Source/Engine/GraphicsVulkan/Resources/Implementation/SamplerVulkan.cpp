@@ -53,9 +53,9 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
     vkSamplerCreateInfo.flags |= vk::SamplerCreateFlagBits::eSubsampledCoarseReconstructionEXT;
   }
 
-  VK_ASSERT_DEV(vkLogicalDevice.createSampler(&vkSamplerCreateInfo, nullptr, &m_vkSampler, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSampler(&vkSamplerCreateInfo, nullptr, &m_vkSampler, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALSamplerVulkan::DeInitPlatform()
@@ -64,7 +64,7 @@ xiiResult xiiGALSamplerVulkan::DeInitPlatform()
 
   pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkSampler));
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_SamplerVulkan);

@@ -1,4 +1,3 @@
-#include "VulkanTypeConversions.h"
 
 XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiGALBlendOperation::Enum e)
 {
@@ -725,4 +724,29 @@ XII_ALWAYS_INLINE vk::VertexInputRate xiiVulkanTypeConversions::GetFrequency(xii
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return vk::VertexInputRate::eVertex;
+}
+
+XII_ALWAYS_INLINE vk::AttachmentLoadOp xiiVulkanTypeConversions::GetAttachmentLoadOperation(xiiGALAttachmentLoadOperation::Enum e)
+{
+  return vk::AttachmentLoadOp();
+}
+
+XII_ALWAYS_INLINE vk::AttachmentStoreOp xiiVulkanTypeConversions::GetAttachmentStoreOperation(xiiGALAttachmentStoreOperation::Enum e)
+{
+  return vk::AttachmentStoreOp();
+}
+
+XII_ALWAYS_INLINE vk::ImageLayout xiiVulkanTypeConversions::GetImageLayout(xiiBitflags<xiiGALResourceStateFlags> e, bool bIsInsideRenderPass, bool bFragDensityMapInsteadOfShadingRate)
+{
+  return vk::ImageLayout();
+}
+
+XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e)
+{
+  return vk::PipelineStageFlags();
+}
+
+XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e)
+{
+  return vk::AccessFlags();
 }

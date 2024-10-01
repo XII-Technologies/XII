@@ -2,6 +2,7 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
@@ -56,6 +57,14 @@ public:
   static vk::BorderColor        GetBorderColor(const xiiColor& c);
 
   static vk::VertexInputRate GetFrequency(xiiGALInputElementFrequency::Enum e);
+
+  static vk::AttachmentLoadOp  GetAttachmentLoadOperation(xiiGALAttachmentLoadOperation::Enum e);
+  static vk::AttachmentStoreOp GetAttachmentStoreOperation(xiiGALAttachmentStoreOperation::Enum e);
+
+  static vk::ImageLayout GetImageLayout(xiiBitflags<xiiGALResourceStateFlags> e, bool bIsInsideRenderPass = false, bool bFragDensityMapInsteadOfShadingRate = false);
+
+  static vk::PipelineStageFlags GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e);
+  static vk::AccessFlags        GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
