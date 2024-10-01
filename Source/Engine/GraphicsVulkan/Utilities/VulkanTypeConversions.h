@@ -62,6 +62,9 @@ public:
   static vk::AttachmentStoreOp GetAttachmentStoreOperation(xiiGALAttachmentStoreOperation::Enum e);
 
   static vk::ImageLayout GetImageLayout(xiiBitflags<xiiGALResourceStateFlags> e, bool bIsInsideRenderPass = false, bool bFragDensityMapInsteadOfShadingRate = false);
+
+  static vk::PipelineStageFlags GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e);
+  static vk::AccessFlags        GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
