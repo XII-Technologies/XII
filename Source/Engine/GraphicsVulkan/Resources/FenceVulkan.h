@@ -6,8 +6,8 @@
 
 namespace vk
 {
-  class Fence;
-}
+  class Semaphore;
+} // namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALFenceVulkan final : public xiiGALFence
 {
@@ -18,7 +18,9 @@ public:
 
   virtual void Wait(xiiUInt64 uiValue) override final;
 
-  XII_ALWAYS_INLINE vk::Fence GetVulkanFence() const { return m_vkFence; }
+  XII_ALWAYS_INLINE vk::Semaphore GetVulkanSemaphore() const { return m_vkTimelineSemaphore; }
+
+  XII_ALWAYS_INLINE bool IsTimelineSemaphore() const { return m_vkTimelineSemaphore != nullptr; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -32,6 +34,22 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  xiiUInt64 InternalGetCompletedValue();
+
 protected:
-  vk::Fence m_vkFence;
+  static constexpr xiiUInt32 s_uiRequiredArraySize = 8U;
+
+  struct SyncPointData
+  {
+    const xiiUInt64 m_uiValue;
+  };
+
+  vk::Semaphore m_vkTimelineSemaphore;
+
+  xiiMutex                m_SyncPointGuard;
+  xiiDeque<SyncPointData> m_SyncPoints;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  xiiUInt64 m_uiMaxSyncPoints = 0U;
+#endif
 };
