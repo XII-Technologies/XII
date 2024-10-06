@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 
+#include <atomic>
+
 /// \brief This describes the fence type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFenceType
 {
@@ -64,6 +66,16 @@ public:
   /// \note The method blocks the execution of the calling thread until the wait is complete.
   virtual void Wait(xiiUInt64 uiValue) = 0;
 
+  /// \brief Validates fence signal.
+  ///
+  /// \param uiValue - The enqueued value.
+  void ValidateFenceSignal(xiiUInt64 uiValue);
+
+  /// \brief Validates device wait for fence.
+  ///
+  /// \param uiValue - The enqueued value.
+  void ValidateDeviceWaitForFence(xiiUInt64 uiValue);
+
 protected:
   friend class xiiGALDevice;
 
@@ -80,5 +92,9 @@ protected:
 protected:
   xiiGALFenceCreationDescription m_Description;
 
-  xiiAtomicInteger64 m_uiLastCompletedFenceValue;
+  std::atomic<xiiUInt64> m_LastCompletedFenceValue;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  std::atomic<xiiUInt64> m_EnqueuedFenceValue{0};
+#endif
 };
