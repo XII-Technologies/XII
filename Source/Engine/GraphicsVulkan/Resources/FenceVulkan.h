@@ -6,6 +6,7 @@
 
 namespace vk
 {
+  class Fence;
   class Semaphore;
 } // namespace vk
 
