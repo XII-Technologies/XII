@@ -64,6 +64,8 @@ void xiiGALFenceD3D11::Signal(xiiUInt64 uiValue)
   XII_ASSERT_DEV(m_Description.m_Type == xiiGALFenceType::General, "The fence must be created with xiiGALFenceType::General.");
   XII_ASSERT_DEV(m_pDevice->GetDescription().m_DeviceFeatures.m_NativeFence == xiiGALDeviceFeatureState::Enabled, "CPU fence signal requires the device Native Fence feature.");
 
+  ValidateFenceSignal(uiValue);
+
   HRESULT hResult = pDeviceD3D11->GetImmediateContext()->Signal(m_pD3D11Fence, uiValue);
   if (FAILED(hResult))
   {
