@@ -559,36 +559,10 @@ xiiStringView xiiOSFile::GetApplicationPath()
   return s_sApplicationPath;
 }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <Foundation/Basics/Platform/uwp/UWPUtils.h>
-#  include <windows.storage.h>
-#endif
-
 xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDataPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-    ComPtr<ABI::Windows::Storage::IApplicationDataStatics> appDataStatics;
-    if (SUCCEEDED(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_Storage_ApplicationData).Get(), &appDataStatics)))
-    {
-      ComPtr<ABI::Windows::Storage::IApplicationData> applicationData;
-      if (SUCCEEDED(appDataStatics->get_Current(&applicationData)))
-      {
-        ComPtr<ABI::Windows::Storage::IStorageFolder> applicationDataLocal;
-        if (SUCCEEDED(applicationData->get_LocalFolder(&applicationDataLocal)))
-        {
-          ComPtr<ABI::Windows::Storage::IStorageItem> localFolderItem;
-          if (SUCCEEDED(applicationDataLocal.As(&localFolderItem)))
-          {
-            HSTRING path;
-            localFolderItem->get_Path(&path);
-            s_sUserDataPath = xiiStringUtf8(path).GetData();
-          }
-        }
-      }
-    }
-#else
     wchar_t* pPath = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_DEFAULT, nullptr, &pPath)))
     {
@@ -599,7 +573,6 @@ xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
     {
       CoTaskMemFree(pPath);
     }
-#endif
   }
 
   xiiStringBuilder s = s_sUserDataPath;
@@ -614,27 +587,6 @@ xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder /*= nullptr*/)
 
   if (s_sTempDataPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-    ComPtr<ABI::Windows::Storage::IApplicationDataStatics> appDataStatics;
-    if (SUCCEEDED(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_Storage_ApplicationData).Get(), &appDataStatics)))
-    {
-      ComPtr<ABI::Windows::Storage::IApplicationData> applicationData;
-      if (SUCCEEDED(appDataStatics->get_Current(&applicationData)))
-      {
-        ComPtr<ABI::Windows::Storage::IStorageFolder> applicationTempData;
-        if (SUCCEEDED(applicationData->get_TemporaryFolder(&applicationTempData)))
-        {
-          ComPtr<ABI::Windows::Storage::IStorageItem> tempFolderItem;
-          if (SUCCEEDED(applicationTempData.As(&tempFolderItem)))
-          {
-            HSTRING path;
-            tempFolderItem->get_Path(&path);
-            s_sTempDataPath = xiiStringUtf8(path).GetData();
-          }
-        }
-      }
-    }
-#else
     wchar_t* pPath = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, KF_FLAG_DEFAULT, nullptr, &pPath)))
     {
@@ -647,7 +599,6 @@ xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder /*= nullptr*/)
     {
       CoTaskMemFree(pPath);
     }
-#endif
   }
 
   s = s_sTempDataPath;
@@ -660,9 +611,6 @@ xiiString xiiOSFile::GetUserDocumentsFolder(xiiStringView sSubFolder /*= {}*/)
 {
   if (s_sUserDocumentsPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-    XII_ASSERT_NOT_IMPLEMENTED;
-#else
     wchar_t* pPath = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_PublicDocuments, KF_FLAG_DEFAULT, nullptr, &pPath)))
     {
@@ -673,7 +621,6 @@ xiiString xiiOSFile::GetUserDocumentsFolder(xiiStringView sSubFolder /*= {}*/)
     {
       CoTaskMemFree(pPath);
     }
-#endif
   }
 
   xiiStringBuilder s = s_sUserDocumentsPath;

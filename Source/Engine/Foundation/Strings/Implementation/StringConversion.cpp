@@ -197,32 +197,6 @@ void xiiStringUtf8::operator=(const wchar_t* pWChar)
   m_Data.PushBack('\0');
 }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-
-void xiiStringUtf8::operator=(const Microsoft::WRL::Wrappers::HString& hstring)
-{
-  xiiUInt32      len = 0;
-  const wchar_t* raw = hstring.GetRawBuffer(&len);
-
-  // delegate to wchar_t operator
-  *this = raw;
-}
-
-void xiiStringUtf8::operator=(const HSTRING& hstring)
-{
-  Microsoft::WRL::Wrappers::HString tmp;
-  tmp.Attach(hstring);
-
-  xiiUInt32      len = 0;
-  const wchar_t* raw = tmp.GetRawBuffer(&len);
-
-  // delegate to wchar_t operator
-  *this = raw;
-}
-
-#endif
-
-
 // **************** xiiStringUtf16 ****************
 
 void xiiStringUtf16::operator=(const char* szUtf8)
@@ -402,53 +376,5 @@ void xiiStringUtf32::operator=(const wchar_t* pWChar)
   // append terminator
   m_Data.PushBack('\0');
 }
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-
-xiiStringHString::xiiStringHString()
-{
-}
-
-xiiStringHString::xiiStringHString(const char* szUtf8)
-{
-  *this = szUtf8;
-}
-
-xiiStringHString::xiiStringHString(const xiiUInt16* szUtf16)
-{
-  *this = szUtf16;
-}
-
-xiiStringHString::xiiStringHString(const xiiUInt32* szUtf32)
-{
-  *this = szUtf32;
-}
-
-xiiStringHString::xiiStringHString(const wchar_t* szWChar)
-{
-  *this = szWChar;
-}
-
-void xiiStringHString::operator=(const char* szUtf8)
-{
-  m_Data.Set(xiiStringWChar(szUtf8).GetData());
-}
-
-void xiiStringHString::operator=(const xiiUInt16* szUtf16)
-{
-  m_Data.Set(xiiStringWChar(szUtf16).GetData());
-}
-
-void xiiStringHString::operator=(const xiiUInt32* szUtf32)
-{
-  m_Data.Set(xiiStringWChar(szUtf32).GetData());
-}
-
-void xiiStringHString::operator=(const wchar_t* szWChar)
-{
-  m_Data.Set(xiiStringWChar(szWChar).GetData());
-}
-
-#endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringConversion);

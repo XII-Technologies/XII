@@ -6,11 +6,6 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <Foundation/Basics/Platform/uwp/UWPUtils.h>
-#  include <windows.networking.connectivity.h>
-#endif
-
 #include <Foundation/Strings/String.h>
 
 // Helper function to detect a 64-bit Windows
@@ -61,11 +56,7 @@ void xiiSystemInformation::Initialize()
 
   s_SystemInformation.m_uiInstalledMainMemory = memStatus.ullTotalPhys;
   s_SystemInformation.m_bB64BitOS             = Is64BitWindows();
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  s_SystemInformation.m_szPlatformName = "Windows - UWP";
-#else
-  s_SystemInformation.m_szPlatformName       = "Windows - Desktop";
-#endif
+  s_SystemInformation.m_szPlatformName        = "Windows - Desktop";
 
 #if defined BUILDSYSTEM_BUILDTYPE
   s_SystemInformation.m_szBuildConfiguration = BUILDSYSTEM_BUILDTYPE;
@@ -74,39 +65,8 @@ void xiiSystemInformation::Initialize()
 #endif
 
   // Retrieve host name
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  using namespace ABI::Windows::Networking::Connectivity;
-  using namespace ABI::Windows::Networking;
-  ComPtr<INetworkInformationStatics> networkInformation;
-  if (SUCCEEDED(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_Networking_Connectivity_NetworkInformation).Get(), &networkInformation)))
-  {
-    ComPtr<ABI::Windows::Foundation::Collections::IVectorView<HostName*>> hostNames;
-    if (SUCCEEDED(networkInformation->GetHostNames(&hostNames)))
-    {
-      xiiUwpUtils::xiiWinRtIterateIVectorView<IHostName*>(hostNames, [](UINT, IHostName* hostName) {
-        HostNameType hostNameType;
-        if (FAILED(hostName->get_Type(&hostNameType)))
-          return true;
-
-        if (hostNameType == HostNameType_DomainName)
-        {
-          HString name;
-          if (FAILED(hostName->get_CanonicalName(name.GetAddressOf())))
-            return true;
-
-          xiiStringUtils::Copy(s_SystemInformation.m_sHostName, sizeof(s_SystemInformation.m_sHostName), xiiStringUtf8(name).GetData());
-          return false;
-        }
-
-        return true; });
-    }
-  }
-
-#else
-  DWORD bufCharCount                         = sizeof(s_SystemInformation.m_sHostName);
+  DWORD bufCharCount = sizeof(s_SystemInformation.m_sHostName);
   GetComputerNameA(s_SystemInformation.m_sHostName, &bufCharCount);
-#endif
 
   s_SystemInformation.m_bIsInitialized = true;
 }
@@ -122,8 +82,6 @@ xiiUInt64 xiiSystemInformation::GetAvailableMainMemory() const
 
 float xiiSystemInformation::GetCPUUtilization() const
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-
   LARGE_INTEGER kernel, user, idle;
   GetSystemTimes((FILETIME*)&idle, (FILETIME*)&kernel, (FILETIME*)&user);
 
@@ -140,9 +98,4 @@ float xiiSystemInformation::GetCPUUtilization() const
   auto util = static_cast<float>(kernelTime + userTime - idleTime) / (kernelTime + userTime);
 
   return xiiMath::Clamp(util, 0.f, 1.f) * 100.f;
-
-#else
-  XII_ASSERT_NOT_IMPLEMENTED;
-  return 0.0f;
-#endif
 }

@@ -64,10 +64,8 @@ xiiResult xiiEnvironmentVariableUtils::UnsetVariable(xiiStringView sName)
   return UnsetVariableImpl(sName);
 }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/EnvironmentVariableUtils_win.h>
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <Foundation/Platform/Implementation/UWP/EnvironmentVariableUtils_win_uwp.h>
 #else
 #  include <Foundation/Platform/Implementation/Posix/EnvironmentVariableUtils_posix.h>
 #endif

@@ -65,15 +65,10 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
-    // Ensure the cursor is definitely shown, since the user must be able to click buttons.
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-    // Todo: Use modern Windows API to show cursor in current window.
-    // http://stackoverflow.com/questions/37956628/change-mouse-pointer-in-uwp-app
-#  else
+  // Ensure the cursor is definitely shown, since the user must be able to click buttons.
   xiiInt32 iHideCursor = 1;
   while (ShowCursor(true) < 0)
     ++iHideCursor;
-#  endif
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG) && defined(_DEBUG)
 
@@ -83,21 +78,15 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
   if (iRes == 0)
   {
     // when the user ignores the assert, restore the cursor show/hide state to the previous count
-#    if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-    // Todo: Use modern Windows API to restore cursor.
-#    else
     for (xiiInt32 i = 0; i < iHideCursor; ++i)
       ShowCursor(false);
-#    endif
 
     return false;
   }
 
 #  else
 
-#    if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   MessageBoxA(nullptr, szTemp, "Assertion", MB_ICONERROR);
-#    endif
 
 #  endif
 

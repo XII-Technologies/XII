@@ -3,7 +3,7 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 #  include <Foundation/Basics.h>
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>

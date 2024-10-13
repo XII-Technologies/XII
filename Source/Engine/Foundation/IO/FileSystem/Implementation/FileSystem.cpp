@@ -126,6 +126,7 @@ xiiResult xiiFileSystem::AddDataDirectory(xiiStringView sDataDirectory, xiiStrin
           s_pData->m_Event.Broadcast(fe);
         }
 
+        xiiLog::Dev("Added Data Directory '{}' -> '{}'.", sRootName, sDataDirectory);
         return XII_SUCCESS;
       }
     }
@@ -857,10 +858,8 @@ xiiResult xiiFileSystem::DetectSdkRootDirectory(xiiStringView sExpectedSubFolder
 
   xiiStringBuilder sdkRoot;
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
   // Probably this is what needs to be done on all mobile platforms as well
-  sdkRoot = xiiOSFile::GetApplicationDirectory();
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
   sdkRoot = xiiOSFile::GetApplicationDirectory();
 #else
   if (xiiFileSystem::FindFolderWithSubPath(sdkRoot, xiiOSFile::GetApplicationDirectory(), sExpectedSubFolder, "xiiSdkRoot.txt").Failed())
@@ -900,6 +899,8 @@ void xiiFileSystem::SetSpecialDirectory(xiiStringView sName, xiiStringView sRepl
   else
   {
     s_SpecialDirectories[tmp] = sReplacement;
+
+    xiiLog::Dev("Setting special directory '{}' to '{}'.", sName, sReplacement);
   }
 }
 
@@ -1058,6 +1059,9 @@ xiiResult xiiFileSystem::CreateDirectoryStructure(xiiStringView sPath)
   {
     xiiFileSystem::ResolvePath(sRedir, &sRedir, nullptr).AssertSuccess();
   }
+
+  if (!sRedir.IsAbsolutePath())
+    return XII_FAILURE;
 
   return xiiOSFile::CreateDirectoryStructure(sRedir);
 }

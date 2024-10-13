@@ -68,21 +68,6 @@ inline xiiStringUtf8::xiiStringUtf8(const wchar_t* pWChar, xiiAllocatorBase* pAl
   *this = pWChar;
 }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-
-inline xiiStringUtf8::xiiStringUtf8(const Microsoft::WRL::Wrappers::HString& hstring, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/) :
-  m_Data(pAllocator)
-{
-  *this = hstring;
-}
-
-inline xiiStringUtf8::xiiStringUtf8(const HSTRING& hstring, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
-{
-  *this = hstring;
-}
-
-#endif
-
 // **************** xiiStringUtf16 ****************
 
 inline xiiStringUtf16::xiiStringUtf16(xiiAllocatorBase* pAllocator) :

@@ -1,6 +1,6 @@
 #include <Foundation/FoundationPCH.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 #  include <Foundation/Platform/Implementation/Windows/ApplicationEntryPoint_win.h>
 

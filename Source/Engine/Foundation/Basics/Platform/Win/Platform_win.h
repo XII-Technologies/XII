@@ -18,16 +18,8 @@
 
 #include <winapifamily.h>
 
-#undef XII_PLATFORM_WINDOWS_UWP
-#undef XII_PLATFORM_WINDOWS_DESKTOP
-
-// Distinguish between Windows desktop and Windows UWP.
-#if WINAPI_FAMILY == WINAPI_FAMILY_APP
-#  define XII_PLATFORM_WINDOWS_UWP     XII_ON
-#  define XII_PLATFORM_WINDOWS_DESKTOP XII_OFF
-#else
-#  define XII_PLATFORM_WINDOWS_UWP     XII_OFF
-#  define XII_PLATFORM_WINDOWS_DESKTOP XII_ON
+#if WINAPI_FAMILY != WINAPI_FAMILY_DESKTOP_APP
+#  error "Unsupported windows API family. Only the WINAPI_FAMILY_DESKTOP_APP is supported currently."
 #endif
 
 #ifndef NULL

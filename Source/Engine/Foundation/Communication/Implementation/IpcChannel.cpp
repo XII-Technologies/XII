@@ -6,7 +6,7 @@
 #include <Foundation/Communication/RemoteMessage.h>
 #include <Foundation/Logging/Log.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/PipeChannel_win.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Communication/Implementation/Linux/PipeChannel_linux.h>
@@ -34,7 +34,7 @@ xiiInternal::NewInstance<xiiIpcChannel> xiiIpcChannel::CreatePipeChannel(xiiStri
     return nullptr;
   }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   return XII_DEFAULT_NEW(xiiPipeChannel_win, sAddress, mode);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
   return XII_DEFAULT_NEW(xiiPipeChannel_linux, sAddress, mode);

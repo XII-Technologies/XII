@@ -3,13 +3,6 @@
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/StringView.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-// Include our windows.h header first to get rid of defines.
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
-// For HString, HStringReference and co.
-#  include <wrl/wrappers/corewrappers.h>
-#endif
-
 /// \brief A very simple string class that should only be used to temporarily convert text to the OSes native wchar_t convention (16 or 32
 /// Bit).
 ///
@@ -52,20 +45,10 @@ public:
   xiiStringUtf8(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
   xiiStringUtf8(const wchar_t* pWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  xiiStringUtf8(const Microsoft::WRL::Wrappers::HString& hstring, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf8(const HSTRING& hstring, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-#endif
-
   void operator=(const char* szUtf8);
   void operator=(const xiiUInt16* pUtf16);
   void operator=(const xiiUInt32* pUtf32);
   void operator=(const wchar_t* pWChar);
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  void operator=(const Microsoft::WRL::Wrappers::HString& hstring);
-  void operator=(const HSTRING& hstring);
-#endif
 
   XII_ALWAYS_INLINE operator const char*() const
   {
@@ -148,37 +131,5 @@ private:
   static constexpr xiiUInt32            BufferSize = 1024;
   xiiHybridArray<xiiUInt32, BufferSize> m_Data;
 };
-
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-
-/// \brief A very simple string class that should only be used to temporarily convert text to the OSes native HString (on UWP platforms).
-///
-/// This should be used when one needs to output text via some function that only accepts HString strings.
-/// DO NOT use this for storage or anything else that is not temporary.
-class XII_FOUNDATION_DLL xiiStringHString
-{
-public:
-  xiiStringHString();
-  xiiStringHString(const char* szUtf8);
-  xiiStringHString(const xiiUInt16* szUtf16);
-  xiiStringHString(const xiiUInt32* szUtf32);
-  xiiStringHString(const wchar_t* szWChar);
-
-  void operator=(const char* szUtf8);
-  void operator=(const xiiUInt16* szUtf16);
-  void operator=(const xiiUInt32* szUtf32);
-  void operator=(const wchar_t* szWChar);
-
-  /// \brief Unfortunately you cannot assign HStrings, so you cannot copy the result to another HString, you have to use this result
-  /// directly
-  XII_ALWAYS_INLINE const Microsoft::WRL::Wrappers::HString& GetData() const { return m_Data; }
-
-private:
-  Microsoft::WRL::Wrappers::HString m_Data;
-};
-
-#endif
-
 
 #include <Foundation/Strings/Implementation/StringConversion_inl.h>

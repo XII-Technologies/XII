@@ -55,7 +55,7 @@ void xiiCommandLineUtils::SplitCommandLineString(const char* szCommandString, bo
 
 void xiiCommandLineUtils::SetCommandLine(xiiUInt32 uiArgc, const char** pArgv, ArgMode mode /*= UseArgcArgv*/)
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   if (mode == ArgMode::PreferOsArgs)
   {
     SetCommandLine();
@@ -75,7 +75,7 @@ void xiiCommandLineUtils::SetCommandLine(xiiArrayPtr<xiiString> commands)
   m_Commands = commands;
 }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 void xiiCommandLineUtils::SetCommandLine()
 {
@@ -102,8 +102,6 @@ void xiiCommandLineUtils::SetCommandLine()
   LocalFree(argvw);
 }
 
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-// Not implemented on Windows UWP.
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 // Not implemented on OSX.
 #elif XII_ENABLED(XII_PLATFORM_LINUX)

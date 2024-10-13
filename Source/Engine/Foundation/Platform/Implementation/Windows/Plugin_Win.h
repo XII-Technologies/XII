@@ -64,13 +64,7 @@ xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModu
   // reset last error code
   SetLastError(ERROR_SUCCESS);
 
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  xiiStringBuilder relativePath = sFileToLoad;
-  XII_SUCCEED_OR_RETURN(relativePath.MakeRelativeTo(xiiOSFile::GetApplicationDirectory()));
-  ref_pModule = LoadPackagedLibrary(xiiStringWChar(relativePath).GetData(), 0);
-#  else
   ref_pModule = LoadLibraryW(xiiStringWChar(sFileToLoad).GetData());
-#  endif
 
   if (ref_pModule == nullptr)
   {
