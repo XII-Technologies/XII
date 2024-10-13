@@ -61,7 +61,7 @@ function(xii_sources_target_spirv_reflect TARGET_NAME)
   find_package(XIIVulkan REQUIRED)
 
   if(XIIVULKAN_FOUND)
-    if(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP AND XII_CMAKE_ARCHITECTURE_64BIT)
+    if(XII_CMAKE_PLATFORM_WINDOWS AND XII_CMAKE_ARCHITECTURE_64BIT)
       target_include_directories(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/Source/SPIRV-Reflect")
       target_sources(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/Source/SPIRV-Reflect/spirv_reflect.h")
       target_sources(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/Source/SPIRV-Reflect/spirv_reflect.c")
