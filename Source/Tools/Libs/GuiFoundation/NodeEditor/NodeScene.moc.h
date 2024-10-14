@@ -123,6 +123,7 @@ private:
   bool                                   m_bIgnoreSelectionChange = false;
   xiiQtPin*                              m_pStartPin              = nullptr;
   xiiQtConnection*                       m_pTempConnection        = nullptr;
+  xiiQtNode*                             m_pTempNode              = nullptr;
   xiiDeque<const xiiDocumentObject*>     m_Selection;
   xiiVec2                                m_vMousePos = xiiVec2::MakeZero();
   QString                                m_sContextMenuSearchText;
