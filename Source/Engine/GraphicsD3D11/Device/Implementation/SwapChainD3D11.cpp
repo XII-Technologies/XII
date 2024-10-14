@@ -9,7 +9,7 @@
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 
-#include <Foundation/Basics/Platform/Win/HResultUtils.h>
+#include <Foundation/Basics/Platform/Windows/HResultUtils.h>
 
 #include <VersionHelpers.h>
 #include <dxgi1_4.h>

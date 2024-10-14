@@ -22,7 +22,7 @@ class xiiOpenDdlReaderElement;
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
-#  include <Foundation/Basics/Platform/Win/MinWindows.h>
+#  include <Foundation/Basics/Platform/Windows/MinWindows.h>
 using xiiWindowHandle         = xiiMinWindows::HWND;
 using xiiWindowInternalHandle = xiiWindowHandle;
 #  define INVALID_WINDOW_HANDLE_VALUE (xiiWindowHandle)(0)

@@ -398,7 +398,7 @@ xiiStringView xiiArgSensitive::BuildString_SensitiveUserData_Hash(char* szTmp, x
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg)
 {

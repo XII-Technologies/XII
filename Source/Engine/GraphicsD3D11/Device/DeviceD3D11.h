@@ -2,7 +2,7 @@
 
 #include <GraphicsD3D11/GraphicsD3D11DLL.h>
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
 

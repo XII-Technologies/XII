@@ -2,7 +2,7 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 namespace xiiMemoryPolicies
 {

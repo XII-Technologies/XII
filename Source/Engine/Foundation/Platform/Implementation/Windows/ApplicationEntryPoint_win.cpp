@@ -1,7 +1,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #  include <Foundation/Platform/Implementation/Windows/ApplicationEntryPoint_win.h>
 
 namespace xiiApplicationDetails

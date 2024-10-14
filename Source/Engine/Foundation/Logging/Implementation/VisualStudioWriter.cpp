@@ -4,7 +4,7 @@
 #include <Foundation/Strings/StringConversion.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 void xiiLogWriter::VisualStudio::LogMessageHandler(const xiiLoggingEventData& eventData)
 {

@@ -4,7 +4,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #  include <Foundation/Configuration/Plugin.h>
 #  include <Foundation/IO/OSFile.h>
 #  include <Foundation/Logging/Log.h>

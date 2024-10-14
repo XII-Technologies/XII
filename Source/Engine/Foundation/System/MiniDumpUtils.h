@@ -2,7 +2,7 @@
 
 #include <Foundation/Basics.h>
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #include <Foundation/Types/Status.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)

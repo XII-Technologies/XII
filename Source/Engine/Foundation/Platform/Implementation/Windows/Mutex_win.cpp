@@ -3,7 +3,7 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Threading/Mutex.h>
 
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 template <xiiUInt32 a, xiiUInt32 b>
 struct SameSize

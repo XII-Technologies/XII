@@ -16,7 +16,7 @@
 
 #if XII_DISABLED(XII_USE_POSIX_FILE_API)
 
-#  include <Foundation/Basics/Platform/Win/MinWindows.h>
+#  include <Foundation/Basics/Platform/Windows/MinWindows.h>
 
 struct xiiOSFileData
 {

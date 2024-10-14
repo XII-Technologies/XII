@@ -1,6 +1,6 @@
 #include <Texture/TexturePCH.h>
 
-#include <Foundation/Basics/Platform/Win/HResultUtils.h>
+#include <Foundation/Basics/Platform/Windows/HResultUtils.h>
 #include <Foundation/Containers/StaticArray.h>
 #include <Foundation/IO/Stream.h>
 #include <Texture/Image/Formats/ImageFormatMappings.h>

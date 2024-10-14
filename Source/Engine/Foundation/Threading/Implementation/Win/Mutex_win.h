@@ -53,7 +53,7 @@ inline xiiResult xiiMutex::TryLock()
 
 #else
 
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 inline void xiiMutex::Lock()
 {

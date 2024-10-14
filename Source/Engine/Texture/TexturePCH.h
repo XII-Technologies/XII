@@ -7,7 +7,7 @@
 // since XII undef's DeleteFile to PREVENT such name issues, this actually now CREATES an issue,
 // so in this lib we need to 'fix' this again
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 #if defined(_UNICODE) || defined(UNICODE)
 #  define DeleteFile DeleteFileW

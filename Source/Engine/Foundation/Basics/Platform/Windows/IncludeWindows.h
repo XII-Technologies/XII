@@ -29,7 +29,7 @@
 #  undef OPAQUE
 #  undef SetPort
 
-#  include <Foundation/Basics/Platform/Win/MinWindows.h>
+#  include <Foundation/Basics/Platform/Windows/MinWindows.h>
 
 namespace xiiMinWindows
 {

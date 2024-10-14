@@ -1,7 +1,7 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>
 #include <Foundation/System/MiniDumpUtils.h>
