@@ -12,28 +12,20 @@ class xiiOpenDdlReader;
 class xiiOpenDdlReaderElement;
 
 // Include the proper Input implementation to use
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <Core/System/Implementation/Win/InputDevice_win32.h>
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <Core/System/Implementation/uwp/InputDevice_uwp.h>
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Core/System/Implementation/Windows/InputDevice_win32.h>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <Core/System/Implementation/Android/InputDevice_android.h>
 #else
 #  include <Core/System/Implementation/null/InputDevice_null.h>
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 #  include <Foundation/Basics/Platform/Win/MinWindows.h>
 using xiiWindowHandle         = xiiMinWindows::HWND;
 using xiiWindowInternalHandle = xiiWindowHandle;
 #  define INVALID_WINDOW_HANDLE_VALUE (xiiWindowHandle)(0)
-
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-
-using xiiWindowHandle         = IUnknown*;
-using xiiWindowInternalHandle = xiiWindowHandle;
-#  define INVALID_WINDOW_HANDLE_VALUE nullptr
 
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
 

@@ -8,12 +8,9 @@
 #include <Foundation/IO/OpenDdlWriter.h>
 #include <Foundation/System/Screen.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <Core/System/Implementation/Win/InputDevice_win32.inl>
-#  include <Core/System/Implementation/Win/Window_win32.inl>
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <Core/System/Implementation/uwp/InputDevice_uwp.inl>
-#  include <Core/System/Implementation/uwp/Window_uwp.inl>
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Core/System/Implementation/Windows/InputDevice_win32.inl>
+#  include <Core/System/Implementation/Windows/Window_win32.inl>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <Core/System/Implementation/Android/InputDevice_android.inl>
 #  include <Core/System/Implementation/Android/Window_android.inl>

@@ -31,11 +31,12 @@ xiiResult xiiWindow::Initialize()
         xiiHybridArray<xiiScreenInfo, 2> screens;
         if (xiiScreen::EnumerateScreens(screens).Succeeded())
         {
-          m_CreationDescription.m_Resolution.width = screens[0].m_iResolutionX;
+          m_CreationDescription.m_Resolution.width  = screens[0].m_iResolutionX;
           m_CreationDescription.m_Resolution.height = screens[0].m_iResolutionY;
           this->OnResize(xiiSizeU32(screens[0].m_iResolutionX, screens[0].m_iResolutionY));
         }
-      } });
+      }
+    });
   }
 
   // Checking and adjustments to creation desc.
@@ -82,7 +83,7 @@ xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 
 void xiiWindow::ProcessWindowMessages()
 {
-  XII_ASSERT_RELEASE(s_androidWindow != nullptr, "No uwp window data available.");
+  XII_ASSERT_RELEASE(s_androidWindow != nullptr, "No android window data available.");
 }
 
 void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
