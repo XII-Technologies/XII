@@ -2,7 +2,7 @@
 
 #include <Texture/Image/Formats/ImageFileFormat.h>
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OSFile.h>
@@ -115,14 +115,10 @@ void xiiTestFramework::Initialize()
   {
     // if the UI is run with GUI disabled, set the environment variable XII_SILENT_ASSERTS
     // to make sure that no child process that the tests launch shows an assert dialog in case of a crash
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-    // Not supported
-#else
     if (xiiEnvironmentVariableUtils::SetValueInt("XII_SILENT_ASSERTS", 1).Failed())
     {
       xiiLog::Print("Failed to set 'XII_SILENT_ASSERTS' environment variable!");
     }
-#endif
   }
 
   if (m_Settings.m_bShowTimestampsInLog)
@@ -435,7 +431,7 @@ void xiiTestFramework::UpdateReferenceImages()
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) && XII_ENABLED(XII_SUPPORTS_FILE_STATS)
 
 
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
   xiiStringBuilder sOptiPng = xiiFileSystem::GetSdkRootDirectory();
   sOptiPng.AppendPath("Data/Tools/Precompiled/optipng/optipng.exe");
 
@@ -455,7 +451,6 @@ void xiiTestFramework::UpdateReferenceImages()
       xiiProcess::Execute(opt).IgnoreResult();
     }
   }
-
 #  endif
 
   // If some target files already exist somewhere (ie. custom folders for the tests), overwrite the existing files in their location
@@ -1567,7 +1562,7 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
   auto SaveResultImage = [&]() {
     imgRgba.SaveTo(sImgPathResult).IgnoreResult();
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
     xiiStringBuilder sAbsPath;
     if (xiiFileSystem::ResolvePath(sImgPathResult, &sAbsPath, nullptr).Failed())
     {

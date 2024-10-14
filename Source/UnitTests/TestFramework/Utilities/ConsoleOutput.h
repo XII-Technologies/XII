@@ -2,7 +2,7 @@
 
 #include <TestFramework/Framework/TestFramework.h>
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <android/log.h>
@@ -11,9 +11,7 @@
 #  include <Foundation/Logging/ETWWriter.h>
 inline void SetConsoleColorInl(WORD ui)
 {
-#  if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), ui);
-#  endif
 }
 #else
 inline void SetConsoleColorInl(xiiUInt8 ui) {}
@@ -77,48 +75,6 @@ inline void OutputToConsole(xiiTestOutput::Enum type, const char* szMsg)
   printf("%*s%s\n", iIndentation, "", szMsg);
   SetConsoleColorInl(0x07);
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  xiiLogMsgType::Enum logType = xiiLogMsgType::None;
-  switch (Type)
-  {
-    case xiiTestOutput::StartOutput:
-    case xiiTestOutput::InvalidType:
-    case xiiTestOutput::AllOutputTypes:
-      logType = xiiLogMsgType::None;
-      break;
-    case xiiTestOutput::BeginBlock:
-      logType = xiiLogMsgType::BeginGroup;
-      break;
-    case xiiTestOutput::EndBlock:
-      logType = xiiLogMsgType::EndGroup;
-      break;
-    case xiiTestOutput::ImportantInfo:
-    case xiiTestOutput::Details:
-    case xiiTestOutput::Message:
-    case xiiTestOutput::Duration:
-    case xiiTestOutput::FinalResult:
-      logType = xiiLogMsgType::InfoMsg;
-      break;
-    case xiiTestOutput::Success:
-      logType = xiiLogMsgType::SuccessMsg;
-      break;
-    case xiiTestOutput::Warning:
-      logType = xiiLogMsgType::WarningMsg;
-      break;
-    case xiiTestOutput::Error:
-      logType = xiiLogMsgType::ErrorMsg;
-      break;
-    case xiiTestOutput::ImageDiffFile:
-      logType = xiiLogMsgType::DevMsg;
-      break;
-    default:
-      break;
-  }
-  if (logType != xiiLogMsgType::None)
-  {
-    xiiLogWriter::ETW::LogMessage(xiiLogMsgType::InfoMsg, iIndentation, szMsg);
-  }
-#endif
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   char sz[4096];
   xiiStringUtils::snprintf(sz, 4096, "%*s%s\n", iIndentation, "", szMsg);

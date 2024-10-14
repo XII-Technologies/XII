@@ -139,7 +139,7 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
       {"RGBA", "png", 0},
       {"RGB", "jpg", 4650},
       {"RGBA", "jpeg", 16670},
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
       {"RGB", "tif", 0},
       {"RGBA", "tif", 0},
 #endif

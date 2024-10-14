@@ -1056,7 +1056,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   FileSystemModelTest();
 }
 
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModelNonNTFS)
 {
   auto* pForceNonNTFS = static_cast<xiiCVarBool*>(xiiCVar::FindCVarByName("DirectoryWatcher.ForceNonNTFS"));

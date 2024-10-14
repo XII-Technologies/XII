@@ -456,7 +456,7 @@ void OpenInExplorer(const char* szPath)
 
   args << QDir::toNativeSeparators(szPath);
 
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
   QProcess::startDetached("explorer", args);
 #  elif XII_ENABLED(XII_PLATFORM_LINUX)
   QProcess::startDetached("xdg-open", args);

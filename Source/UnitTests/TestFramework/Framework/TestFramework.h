@@ -227,7 +227,7 @@ protected:
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/MinWindows.h>
+#  include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #  define XII_NV_OPTIMUS                                                                           \
     extern "C"                                                                                     \
     {                                                                                              \

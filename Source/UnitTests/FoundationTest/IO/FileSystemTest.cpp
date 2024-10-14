@@ -149,8 +149,6 @@ Only concrete and clocks.\n\
     FileIn.Close();
   }
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
-
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Read File (Absolute Path)")
   {
     xiiFileReader FileIn;
@@ -172,8 +170,6 @@ Only concrete and clocks.\n\
 
     FileIn.Close();
   }
-
-#endif
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Delete File / Exists File")
   {

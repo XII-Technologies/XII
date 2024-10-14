@@ -11,8 +11,6 @@
 #ifdef XII_USE_QT
 #  include <TestFramework/Framework/Qt/qtTestFramework.h>
 #  include <TestFramework/Framework/Qt/qtTestGUI.h>
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <TestFramework/Framework/Uwp/uwpTestFramework.h>
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -27,13 +25,6 @@ xiiTestFramework* xiiTestSetup::InitTestFramework(const char* szTestName, const 
   s_iArgc = iArgc;
   s_pArgv = pArgv;
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  if (FAILED(RoInitialize(RO_INIT_MULTITHREADED)))
-  {
-    std::cout << "Failed to init WinRT." << std::endl;
-  }
-#endif
-
   // without a proper file system the current working directory is pretty much useless
   std::string sTestFolder = std::string(xiiOSFile::GetUserDataFolder());
   if (*sTestFolder.rbegin() != '/')
@@ -46,9 +37,6 @@ xiiTestFramework* xiiTestSetup::InitTestFramework(const char* szTestName, const 
 
 #ifdef XII_USE_QT
   xiiTestFramework* pTestFramework = new xiiQtTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), iArgc, pArgv);
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  // Command line args in UWP are handled differently and can't be retrieved from the main function.
-  xiiTestFramework* pTestFramework = new xiiUwpTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), 0, nullptr);
 #else
   xiiTestFramework* pTestFramework = new xiiTestFramework(szNiceTestName, sTestFolder.c_str(), sTestDataSubFolder.c_str(), iArgc, pArgv);
 #endif
@@ -119,9 +107,6 @@ xiiTestAppRun xiiTestSetup::RunTests()
   }
 
   return xiiTestAppRun::Quit;
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  static_cast<xiiUwpTestFramework*>(pTestFramework)->Run();
-  return xiiTestAppRun::Quit;
 #else
   // Run all the tests with the given order
   return pTestFramework->RunTestExecutionLoop();
@@ -134,13 +119,10 @@ void xiiTestSetup::DeInitTestFramework(bool bSilent /*= false*/)
 
   xiiStartup::ShutdownCoreSystems();
 
-  // In the UWP case we never initialized this thread for XII so we can't do log output now.
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   if (!bSilent)
   {
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
   }
-#endif
 
   TestSettings settings = pTestFramework->GetSettings();
   if (settings.m_bKeepConsoleOpen && !bSilent)

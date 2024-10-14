@@ -2,8 +2,6 @@
 
 #include <Foundation/System/EnvironmentVariableUtils.h>
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
-
 static xiiUInt32 uiVersionForVariableSetting = 0;
 
 XII_CREATE_SIMPLE_TEST(Utility, EnvironmentVariableUtils)
@@ -80,5 +78,3 @@ XII_CREATE_SIMPLE_TEST(Utility, EnvironmentVariableUtils)
     XII_TEST_BOOL(!xiiEnvironmentVariableUtils::IsVariableSet(szVarName));
   }
 }
-
-#endif
