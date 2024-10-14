@@ -43,8 +43,9 @@ public:
     {
       BezierCurve,
       StraightLine,
+      SubwayLines,
 
-      Default = BezierCurve
+      Default = SubwayLines
     };
   };
 
@@ -57,7 +58,8 @@ public:
 
     enum Enum
     {
-      DirectionArrows = XII_BIT(0), ///< Draw an arrow to indicate the connection's direction. Only works with straight lines atm.
+      DirectionArrows = XII_BIT(0), ///< Draw an arrow to indicate the connection's direction. This currently only works with straight lines.
+      DrawDebugging   = XII_BIT(1), ///< Draw animated effect to denote debugging.
 
       Default = 0
     };
@@ -65,6 +67,7 @@ public:
     struct Bits
     {
       StorageType DirectionArrows : 1;
+      StorageType DrawDebugging : 1;
     };
   };
 
@@ -120,6 +123,7 @@ private:
   bool                                   m_bIgnoreSelectionChange = false;
   xiiQtPin*                              m_pStartPin              = nullptr;
   xiiQtConnection*                       m_pTempConnection        = nullptr;
+  xiiQtNode*                             m_pTempNode              = nullptr;
   xiiDeque<const xiiDocumentObject*>     m_Selection;
   xiiVec2                                m_vMousePos = xiiVec2::MakeZero();
   QString                                m_sContextMenuSearchText;

@@ -220,13 +220,35 @@ void xiiQtNodeScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         const xiiPin* pSourcePin = startWasInput ? pPin->GetPin() : m_pStartPin->GetPin();
         const xiiPin* pTargetPin = startWasInput ? m_pStartPin->GetPin() : pPin->GetPin();
         ConnectPinsAction(*pSourcePin, *pTargetPin);
-        break;
+        goto Cleanup;
       }
     }
 
+    OpenSearchMenu(QCursor::pos());
+
+    if (m_pTempNode)
+    {
+      const auto Pins = startWasInput ? m_pTempNode->GetOutputPins() : m_pTempNode->GetInputPins();
+
+      for (auto& pPin : Pins)
+      {
+        const xiiPin*                            pSourcePin = startWasInput ? pPin->GetPin() : m_pStartPin->GetPin();
+        const xiiPin*                            pTargetPin = startWasInput ? m_pStartPin->GetPin() : pPin->GetPin();
+        xiiDocumentNodeManager::CanConnectResult connect;
+        xiiStatus                                res = m_pManager->CanConnect(m_pManager->GetConnectionType(), *pSourcePin, *pTargetPin, connect);
+        if (res.Succeeded())
+        {
+          ConnectPinsAction(*pSourcePin, *pTargetPin);
+          break;
+        }
+      }
+    }
+
+  Cleanup:
     delete m_pTempConnection;
     m_pTempConnection = nullptr;
     m_pStartPin       = nullptr;
+    m_pTempNode       = nullptr;
 
     ResetConnectablePinMarkup();
     return;

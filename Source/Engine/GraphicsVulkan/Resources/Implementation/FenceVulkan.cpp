@@ -88,7 +88,6 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 
     return InternalGetCompletedValue();
   }
-  return xiiUInt64();
 }
 
 xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
