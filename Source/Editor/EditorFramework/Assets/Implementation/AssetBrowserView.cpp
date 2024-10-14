@@ -3,6 +3,7 @@
 #include <EditorFramework/Assets/AssetBrowserModel.moc.h>
 #include <EditorFramework/Assets/AssetBrowserView.moc.h>
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <Foundation/IO/OSFile.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 
 xiiQtAssetBrowserView::xiiQtAssetBrowserView(QWidget* pParent) :
@@ -12,6 +13,8 @@ xiiQtAssetBrowserView::xiiQtAssetBrowserView(QWidget* pParent) :
   m_pDelegate           = new xiiQtIconViewDelegate(this);
 
   SetDialogMode(false);
+
+  setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectItems);
   setViewMode(QListView::ViewMode::IconMode);
   setUniformItemSizes(true);
   setResizeMode(QListView::ResizeMode::Adjust);
@@ -68,6 +71,113 @@ void xiiQtAssetBrowserView::SetIconScale(xiiInt32 iIconSizePercentage)
 xiiInt32 xiiQtAssetBrowserView::GetIconScale() const
 {
   return m_iIconSizePercentage;
+}
+
+void xiiQtAssetBrowserView::dragEnterEvent(QDragEnterEvent* pEvent)
+{
+  if (pEvent->source())
+    pEvent->acceptProposedAction();
+}
+
+void xiiQtAssetBrowserView::dragMoveEvent(QDragMoveEvent* pEvent)
+{
+  pEvent->acceptProposedAction();
+}
+
+void xiiQtAssetBrowserView::dragLeaveEvent(QDragLeaveEvent* pEvent)
+{
+  pEvent->accept();
+}
+
+static void NotifyFileChanges(xiiArrayPtr<xiiString> files)
+{
+  for (const auto& file : files)
+  {
+    xiiFileSystemModel::GetSingleton()->NotifyOfChange(file);
+  }
+}
+
+void xiiQtAssetBrowserView::dropEvent(QDropEvent* pEvent)
+{
+  if (!pEvent->mimeData()->hasUrls())
+    return;
+
+  QList<QUrl>     paths           = pEvent->mimeData()->urls();
+  const xiiString targetDirectory = indexAt(pEvent->pos()).data(xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
+  if (targetDirectory.IsEmpty())
+  {
+    return;
+  }
+
+  xiiHybridArray<xiiString, 32> touchedFiles;
+  // make sure to notify the filesystem of files and folders that were touched
+  XII_SCOPE_EXIT(NotifyFileChanges(touchedFiles));
+
+  for (auto it = paths.begin(); it != paths.end(); it++)
+  {
+    xiiStringBuilder src = it->path().toUtf8().constData();
+    src.TrimWordStart("/"); // remove '/' at start
+    src.MakeCleanPath();
+
+    xiiStringBuilder dst = targetDirectory;
+    dst.AppendPath(qtToXIIString(it->fileName()));
+    dst.MakeCleanPath();
+
+    if (src == dst)
+      continue;
+
+    if (xiiOSFile::ExistsDirectory(src))
+    {
+      if (xiiOSFile::ExistsDirectory(dst)) // ask to overwrite if target already exists
+      {
+        const int res = xiiQtUiServices::MessageBoxQuestion(xiiFmt("Directory already exists:\n\n'{}'\n\nOverwrite files inside directory?", dst), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Cancel);
+
+        if (res == QMessageBox::Cancel)
+          return;
+
+        if (res == QMessageBox::No)
+          continue;
+      }
+
+      if (xiiOSFile::CopyFolder(src, dst, &touchedFiles).Failed())
+      {
+        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to copy folder:\n\n'{}'\n\nto\n\n'{}'\n\nAborting operation.", src, dst));
+        return;
+      }
+
+      touchedFiles.PushBack(dst);
+
+      if (xiiOSFile::DeleteFolder(src).Failed())
+      {
+        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to remove folder:\n\n'{}'\n\nAborting operation.", src));
+        return;
+      }
+    }
+    else if (xiiOSFile::ExistsFile(src))
+    {
+      if (xiiOSFile::ExistsFile(dst)) // ask to overwrite if target already exists
+      {
+        const int res = xiiQtUiServices::MessageBoxQuestion(xiiFmt("The file already exists:\n\n'{}'\n\nOverwrite file?", dst), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Cancel);
+
+        if (res == QMessageBox::Cancel)
+          return;
+
+        if (res == QMessageBox::No)
+          continue;
+
+        xiiOSFile::DeleteFile(dst).IgnoreResult();
+      }
+
+      touchedFiles.PushBack(src);
+      touchedFiles.PushBack(dst);
+
+      if (xiiOSFile::MoveFileOrDirectory(src, dst).Failed())
+      {
+        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to move file:\n\n'{}'\n\nto\n\n'{}'\n\nAborting operation.", src, dst));
+        return;
+      }
+    }
+  }
 }
 
 void xiiQtAssetBrowserView::wheelEvent(QWheelEvent* pEvent)

@@ -22,7 +22,6 @@ class XII_EDITORFRAMEWORK_DLL xiiQtAssetFilter : public QObject
 public:
   explicit xiiQtAssetFilter(QObject* pParent);
   virtual bool          IsAssetFiltered(xiiStringView sDataDirParentRelativePath, bool bIsFolder, const xiiSubAsset* pInfo) const = 0;
-  virtual xiiStringView GetFilterRelativePath(xiiStringView sDataDirParentRelativePath) const { return sDataDirParentRelativePath; }
   virtual bool          GetSortByRecentUse() const { return false; }
 
 Q_SIGNALS:
