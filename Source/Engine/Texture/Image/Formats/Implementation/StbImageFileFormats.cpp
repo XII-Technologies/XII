@@ -206,7 +206,7 @@ bool xiiStbImageFileFormats::CanReadFileType(xiiStringView sExtension) const
   if (sExtension.IsEqual_NoCase("hdr"))
     return true;
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_DISABLED(XII_PLATFORM_WINDOWS)
 
   // on Windows Desktop, we prefer to use WIC (xiiWicFileFormat)
   if (sExtension.IsEqual_NoCase("png") || sExtension.IsEqual_NoCase("jpg") || sExtension.IsEqual_NoCase("jpeg"))

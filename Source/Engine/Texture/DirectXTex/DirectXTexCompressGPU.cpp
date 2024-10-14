@@ -1,6 +1,6 @@
 #include <Texture/TexturePCH.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 //-------------------------------------------------------------------------------------
 // DirectXTexCompressGPU.cpp

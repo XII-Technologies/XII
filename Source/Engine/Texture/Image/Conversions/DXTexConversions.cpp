@@ -11,7 +11,7 @@
 
 xiiCVarBool cvar_TexturePenalizeDXConversions("Texture.PenalizeDXConversions", false, xiiCVarFlags::RequiresRestart, "Add a penalty to DirectX-based conversion when choosing how to convert textures");
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  define XII_SUPPORTS_DIRECTXTEX XII_ON
 #else
 #  define XII_SUPPORTS_DIRECTXTEX XII_OFF

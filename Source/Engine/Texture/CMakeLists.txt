@@ -27,7 +27,5 @@ if(XII_CMAKE_PLATFORM_LINUX)
 endif()
 
 if(XII_3RDPARTY_TINYEXR_SUPPORT)
-  if (NOT XII_CMAKE_PLATFORM_WINDOWS_UWP)
-    target_link_libraries(${PROJECT_NAME} PRIVATE tinyexr)
-  endif()
+  target_link_libraries(${PROJECT_NAME} PRIVATE tinyexr)
 endif()

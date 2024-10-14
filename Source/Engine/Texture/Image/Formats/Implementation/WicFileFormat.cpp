@@ -8,7 +8,7 @@
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 #  include <Foundation/IO/StreamUtils.h>
 #  include <Foundation/Profiling/Profiling.h>
