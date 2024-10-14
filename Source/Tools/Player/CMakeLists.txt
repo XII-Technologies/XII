@@ -18,22 +18,6 @@ target_link_libraries(${PROJECT_NAME}
   GameEngine
 )
 
-if (XII_CMAKE_PLATFORM_WINDOWS_UWP)
-  # Due to app sandboxing we need to explicitly name required plugins for UWP.
-  target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-    ParticlePlugin
-    InspectorPlugin
-    TypeScriptPlugin
-  )
-
-  if (XII_BUILD_OPENXR)
-    find_package(xiiOpenXR REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PUBLIC OpenXRPlugin)
-  endif()
-
-endif()
-
 add_dependencies(${PROJECT_NAME}
   InspectorPlugin
 )

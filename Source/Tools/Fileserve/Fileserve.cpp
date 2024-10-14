@@ -7,7 +7,7 @@
 
 #ifdef XII_USE_QT
 #  include <Fileserve/Gui.moc.h>
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #  include <QApplication>
 #  include <qstylefactory.h>
 #endif

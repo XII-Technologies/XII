@@ -3,7 +3,7 @@
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/System/StackTracer.h>
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 #include <DbgHelp.h>
 #include <Foundation/IO/JSONWriter.h>
