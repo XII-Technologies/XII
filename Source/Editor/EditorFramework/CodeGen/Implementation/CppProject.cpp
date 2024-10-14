@@ -8,7 +8,7 @@
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Shlobj.h>
 #endif
 
@@ -398,7 +398,7 @@ xiiResult xiiCppProject::FindMsBuild(const xiiCppSettings& cfg)
   if (!cfg.m_sMsBuildPath.IsEmpty())
     return XII_SUCCESS;
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   xiiStringBuilder sVsWhere;
 
   wchar_t* pPath = nullptr;

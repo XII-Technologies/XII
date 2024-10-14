@@ -1,6 +1,6 @@
 #include <EditorEngineProcess/EditorEngineProcessPCH.h>
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Logging/ETWWriter.h>
@@ -18,10 +18,9 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <shellscalingapi.h>
 #endif
-
 
 // Will forward assert messages and crash handler messages to the log system and then to the editor.
 // Note that this is unsafe as in some crash situation allocating memory will not be possible but it's better to have some logs compared to none.
@@ -35,7 +34,7 @@ static xiiAssertHandler g_PreviousAssertHandler = nullptr;
 xiiEngineProcessGameApplication::xiiEngineProcessGameApplication() :
   xiiGameApplication("xiiEditorEngineProcess", nullptr)
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 #endif
 
@@ -49,7 +48,7 @@ xiiResult xiiEngineProcessGameApplication::BeforeCoreSystemsStartup()
   m_pApp = CreateEngineProcessApp();
   xiiStartup::AddApplicationTag("editorengineprocess");
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP) || XII_ENABLED(XII_PLATFORM_LINUX)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
   // Make sure to disable the fileserve plugin
   xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument("-fs_off");
 #endif
@@ -63,7 +62,7 @@ void xiiEngineProcessGameApplication::AfterCoreSystemsStartup()
   // skip project creation at this point
   // SUPER::AfterCoreSystemsStartup();
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_DESKTOP) && XII_DISABLED(XII_PLATFORM_LINUX)
+#if XII_DISABLED(XII_PLATFORM_WINDOWS) && XII_DISABLED(XII_PLATFORM_LINUX)
   {
     // on all 'mobile' platforms, we assume we are in remote mode
     xiiEditorEngineProcessApp::GetSingleton()->SetRemoteMode();
@@ -98,7 +97,7 @@ void xiiEngineProcessGameApplication::ConnectToHost()
 
 void xiiEngineProcessGameApplication::DisableErrorReport()
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   // Setting this flags prevents Windows from showing a dialog when the Engine process crashes
   // this also speeds up process termination significantly (down to less than a second)
   DWORD dwMode = SetErrorMode(SEM_NOGPFAULTERRORBOX);

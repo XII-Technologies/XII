@@ -1,6 +1,6 @@
 #include <Foundation/Basics.h>
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 #include <Core/Input/InputManager.h>
 #include <Foundation/Application/Application.h>

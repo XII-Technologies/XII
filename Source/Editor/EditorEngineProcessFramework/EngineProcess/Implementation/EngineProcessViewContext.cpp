@@ -38,7 +38,7 @@ void xiiEngineProcessViewContext::SetViewID(xiiUInt32 uiId)
 
 void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP) || XII_ENABLED(XII_PLATFORM_LINUX)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
   if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewRedrawMsgToEngine>())
   {
     const xiiViewRedrawMsgToEngine* pMsg2 = static_cast<const xiiViewRedrawMsgToEngine*>(pMsg);
@@ -47,7 +47,7 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
 
     if (pMsg2->m_uiWindowWidth > 0 && pMsg2->m_uiWindowHeight > 0)
     {
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
       HandleWindowUpdate(reinterpret_cast<xiiWindowHandle>(pMsg2->m_uiHWND), pMsg2->m_uiWindowWidth, pMsg2->m_uiWindowHeight);
 #  else
       xiiWindowHandle windowHandle;
@@ -419,7 +419,7 @@ void xiiEngineProcessViewContext::DrawSimpleGrid() const
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <EditorEngineProcessFramework/EngineProcess/Implementation/Win/EngineProcessViewContext_win.h>
+#  include <EditorEngineProcessFramework/EngineProcess/Implementation/Windows/EngineProcessViewContext_win.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <EditorEngineProcessFramework/EngineProcess/Implementation/Linux/EngineProcessViewContext_linux.h>
 #else

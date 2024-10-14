@@ -2,7 +2,7 @@
 
 #include <Foundation/Basics.h>
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/TranslationLookup.h>

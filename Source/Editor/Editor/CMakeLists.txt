@@ -26,7 +26,7 @@ add_dependencies(${PROJECT_NAME}
 )
 
 # For SetProcessDpiAwareness
-if (XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
+if (XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Shcore.lib
