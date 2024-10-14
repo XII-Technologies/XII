@@ -15,12 +15,3 @@ target_link_libraries(${PROJECT_NAME}
 if (XII_3RDPARTY_IMGUI_SUPPORT)
   target_link_libraries(${PROJECT_NAME} PUBLIC Imgui)
 endif()
-
-if (XII_CMAKE_PLATFORM_WINDOWS_UWP)
-
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    FileservePlugin
-  )
-
-endif()
