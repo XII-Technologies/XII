@@ -207,7 +207,7 @@ void xiiQtConnection::DrawSubwayPath(QPainterPath& path, const QPointF& startPoi
   const float diffX = fabs(endPoint.x() - startPoint.x());
   float       diffY = fabs(endPoint.y() - startPoint.y());
 
-  const qreal bxiiierOffset    = 5;
+  const qreal bxiiierOffset   = 5;
   const qreal nodeCableOffset = 20;
 
   if (!isStartLeftOfTarget)
