@@ -35,6 +35,11 @@ public:
   void SaveState(const char* szSettingsName);
   void RestoreState(const char* szSettingsName);
 
+  void dragEnterEvent(QDragEnterEvent* pEvent) override;
+  void dragMoveEvent(QDragMoveEvent* pEvent) override;
+  void dragLeaveEvent(QDragLeaveEvent* pEvent) override;
+  void dropEvent(QDropEvent* pEvent) override;
+
   xiiQtAssetBrowserModel*        GetAssetBrowserModel() { return m_pModel; }
   const xiiQtAssetBrowserModel*  GetAssetBrowserModel() const { return m_pModel; }
   xiiQtAssetBrowserFilter*       GetAssetBrowserFilter() { return m_pFilter; }

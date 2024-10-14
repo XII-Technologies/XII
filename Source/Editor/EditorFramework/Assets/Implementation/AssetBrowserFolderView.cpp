@@ -291,8 +291,8 @@ void eqQtAssetBrowserFolderView::dropEvent(QDropEvent* e)
     return;
   }
 
-  QMessageBox::StandardButton choice = xiiQtUiServices::MessageBoxQuestion(xiiFmt("Do you want to move {} files / folders into '{}'?", files.GetCount(), sTargetFolder), QMessageBox::StandardButton::Cancel | QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::Yes);
-  if (choice == QMessageBox::StandardButton::Cancel)
+  QMessageBox::StandardButton choice = xiiQtUiServices::MessageBoxQuestion(xiiFmt("Move {} items into '{}'?", files.GetCount(), sTargetFolder), QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No);
+  if (choice == QMessageBox::StandardButton::No)
     return;
 
   xiiStringBuilder sNewLocation;

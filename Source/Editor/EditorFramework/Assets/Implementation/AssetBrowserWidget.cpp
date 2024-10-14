@@ -34,6 +34,10 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   ListAssets->setModel(m_pModel);
   ListAssets->SetIconScale(IconSizeSlider->value());
   ListAssets->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+  ListAssets->setDragEnabled(true);
+  ListAssets->setAcceptDrops(true);
+  ListAssets->setDropIndicatorShown(true);
+
   on_ButtonIconMode_clicked();
 
   splitter->setStretchFactor(0, 0);
@@ -64,6 +68,8 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 
   xiiAssetCurator::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::AssetCuratorEventHandler, this));
   xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::ProjectEventHandler, this));
+
+  setAcceptDrops(true);
 }
 
 xiiQtAssetBrowserWidget::~xiiQtAssetBrowserWidget()
@@ -72,6 +78,144 @@ xiiQtAssetBrowserWidget::~xiiQtAssetBrowserWidget()
   xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::AssetCuratorEventHandler, this));
 
   ListAssets->setModel(nullptr);
+}
+
+void xiiQtAssetBrowserWidget::dragEnterEvent(QDragEnterEvent* pEvent)
+{
+  if (!pEvent->source())
+    pEvent->acceptProposedAction();
+}
+
+void xiiQtAssetBrowserWidget::dragMoveEvent(QDragMoveEvent* pEvent)
+{
+  pEvent->acceptProposedAction();
+}
+
+void xiiQtAssetBrowserWidget::dragLeaveEvent(QDragLeaveEvent* pEvent)
+{
+  pEvent->accept();
+}
+
+static void CleanUpFiles(xiiArrayPtr<xiiString> files)
+{
+  for (const auto& file : files)
+  {
+    xiiOSFile::DeleteFile(file).IgnoreResult();
+    xiiFileSystemModel::GetSingleton()->NotifyOfChange(file);
+  }
+}
+
+void xiiQtAssetBrowserWidget::dropEvent(QDropEvent* pEvent)
+{
+  const QMimeData* mime = pEvent->mimeData();
+  if (!mime->hasUrls())
+  {
+    pEvent->ignore();
+  }
+
+  pEvent->acceptProposedAction();
+
+  xiiStringBuilder sTargetDir;
+
+  if (TreeFolderFilter->currentItem() != nullptr)
+  {
+    sTargetDir = TreeFolderFilter->currentItem()->data(0, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
+  }
+
+  if (sTargetDir.IsEmpty())
+  {
+    xiiQtUiServices::MessageBoxInformation("Please first select a folder in the asset browser as the destination for the file import.");
+    return;
+  }
+
+  QList<QUrl>                   urlList = mime->urls();
+  xiiHybridArray<xiiString, 16> assetsToImport;
+
+  // if we leave this function prematurely, delete all these temp files
+  XII_SCOPE_EXIT(CleanUpFiles(assetsToImport));
+
+  bool overWriteAll = false;
+  for (qsizetype i = 0, count = qMin(urlList.size(), qsizetype(32)); i < count; ++i)
+  {
+    QUrl      url = urlList.at(i);
+    QFileInfo fileinfo(url.toLocalFile());
+
+    if (!fileinfo.exists())
+      continue;
+
+    // build source and destination paths info
+    xiiStringBuilder srcPath = urlList.at(i).path().toUtf8().constData();
+    srcPath.TrimWordStart("/"); // remove the "/" at the beginning of the source path
+
+    xiiStringBuilder dstPath = sTargetDir;
+    dstPath.AppendPath(fileinfo.fileName().toUtf8().constData());
+
+    // Move the file/folder
+    if (fileinfo.isDir())
+    {
+      if (!overWriteAll && xiiOSFile::ExistsDirectory(dstPath))
+      {
+        const auto res = xiiQtUiServices::MessageBoxQuestion(xiiFmt("This folder already exists:\n'{}'\n\nOverwrite existing files inside it?", dstPath), QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel, QMessageBox::Cancel);
+
+        switch (res)
+        {
+          case QMessageBox::Yes:
+            break;
+
+          case QMessageBox::YesToAll:
+            overWriteAll = true;
+            break;
+
+          case QMessageBox::Cancel:
+          default:
+            return;
+        }
+      }
+
+      if (xiiOSFile::CopyFolder(srcPath, dstPath, &assetsToImport) != XII_SUCCESS)
+      {
+        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to copy\n\n'{}'\n\nto\n\n'{}'\n\nAborting operation.", srcPath, dstPath));
+        return;
+      }
+    }
+    else if (fileinfo.isFile())
+    {
+      if (!overWriteAll && xiiOSFile::ExistsFile(dstPath))
+      {
+        const auto res = xiiQtUiServices::MessageBoxQuestion(xiiFmt("This file already exists:\n'{}'\n\nOverwrite it?", dstPath), QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel, QMessageBox::Cancel);
+
+        switch (res)
+        {
+          case QMessageBox::Yes:
+            break;
+          case QMessageBox::YesToAll:
+            overWriteAll = true;
+            break;
+          case QMessageBox::Cancel:
+          default:
+            return;
+        }
+      }
+
+      if (xiiOSFile::CopyFile(srcPath, dstPath) != XII_SUCCESS)
+      {
+        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to copy\n\n'{}'\n\nto\n\n'{}'\n\nAborting operation.", srcPath, dstPath));
+        return;
+      }
+
+      assetsToImport.PushBack(dstPath);
+    }
+  }
+
+  for (const auto& file : assetsToImport)
+  {
+    xiiFileSystemModel::GetSingleton()->NotifyOfChange(file);
+  }
+
+  xiiAssetDocumentGenerator::ImportAssets(assetsToImport);
+
+  // now that we've successfully imported the assets, clear this list so that the files don't get deleted
+  assetsToImport.Clear();
 }
 
 void xiiQtAssetBrowserWidget::UpdateAssetTypes()
