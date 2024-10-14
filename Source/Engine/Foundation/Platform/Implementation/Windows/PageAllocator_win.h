@@ -1,7 +1,7 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <Foundation/Basics/Platform/Win/Platform_win.h>
+#include <Foundation/Basics/Platform/Windows/Platform_win.h>
 #include <Foundation/Time/Time.h>
 
 // static

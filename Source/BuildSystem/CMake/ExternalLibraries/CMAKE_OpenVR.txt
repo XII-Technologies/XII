@@ -29,18 +29,6 @@ macro(AddOpenVR)
 
     SET (LINK_LIBRARIES ${LINK_LIBRARIES} openvr_api)
 
-    # Make part of the AppX bundle for uwp build
-    if (BUILDSYSTEM_PLATFORM_WINDOWS_UWP)
-      SET (OPENVR_DLLS
-        ${XII_OPENVR_DIR}/bin/${XII_OPENVR_PLATFORM}/openvr_api.dll
-      )
-
-      set_property(SOURCE ${OPENVR_DLLS} PROPERTY VS_DEPLOYMENT_CONTENT 1)
-      set_property(SOURCE ${OPENVR_DLLS} PROPERTY VS_DEPLOYMENT_LOCATION "")
-      source_group("OpenVR Dlls" FILES ${OPENVR_DLLS})
-
-      set(CONTENT_FILES ${CONTENT_FILES} ${OPENVR_DLLS})
-    endif()
   endif()
 
 endmacro()

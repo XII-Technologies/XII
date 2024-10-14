@@ -54,24 +54,7 @@ macro(xii_pull_output_vars LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
   set(ARCH "x${XII_CMAKE_ARCHITECTURE_POSTFIX}")
 
   # PLATFORM-TODO (build output path hook? add more variables?)
-  if(XII_CMAKE_PLATFORM_WINDOWS_UWP)
-    # UWP has deployment problems if all applications output to the same path.
-    set(SUB_DIR "/${TARGET_NAME}")
-    set(PLATFORM_PREFIX "uwp_")
-
-    if(${ARCH} STREQUAL "x32")
-      set(ARCH "x86")
-    endif()
-
-    if(${ARCH} STREQUAL "xArm32")
-      set(ARCH "arm")
-    endif()
-
-    if(${ARCH} STREQUAL "xArm64")
-      set(ARCH "arm64")
-    endif()
-
-  elseif(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
+  if(XII_CMAKE_PLATFORM_WINDOWS)
     set(PLATFORM_POSTFIX "_win10")
 
   elseif(XII_CMAKE_PLATFORM_EMSCRIPTEN)
@@ -409,7 +392,7 @@ endmacro()
 # ## xii_requires_desktop()
 # #####################################
 macro(xii_requires_desktop)
-  xii_requires_one_of(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP XII_CMAKE_PLATFORM_LINUX)
+  xii_requires_one_of(XII_CMAKE_PLATFORM_WINDOWS XII_CMAKE_PLATFORM_LINUX)
 endmacro()
 
 # #####################################

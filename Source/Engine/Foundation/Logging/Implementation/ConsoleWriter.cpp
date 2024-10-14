@@ -9,13 +9,11 @@
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 static void SetConsoleColor(WORD ui)
 {
-#  if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), ui);
-#  endif
 }
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
 static void SetConsoleColor(xiiUInt8 ui) {}

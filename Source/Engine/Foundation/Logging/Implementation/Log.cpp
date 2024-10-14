@@ -279,7 +279,7 @@ void xiiLog::OsMessageBox(const xiiFormatString& text)
   xiiStringBuilder display = text.GetText(tmp);
   display.Trim(" \n\r\t");
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   const char* title = "";
   if (xiiApplication::GetApplicationInstance())
   {
@@ -322,8 +322,7 @@ void xiiLog::GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& re
 
 void xiiLog::SetThreadLocalLogSystem(xiiLogInterface* pInterface)
 {
-  XII_ASSERT_DEV(pInterface != nullptr,
-                 "You cannot set a nullptr logging system. If you want to discard all log information, set a dummy system that does not do anything.");
+  XII_ASSERT_DEV(pInterface != nullptr, "You cannot set a nullptr logging system. If you want to discard all log information, set a dummy system that does not do anything.");
 
   s_DefaultLogSystem = pInterface;
 }

@@ -4,7 +4,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #  include <Foundation/Configuration/Plugin.h>
 #  include <Foundation/IO/OSFile.h>
 #  include <Foundation/Logging/Log.h>
@@ -64,13 +64,7 @@ xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModu
   // reset last error code
   SetLastError(ERROR_SUCCESS);
 
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  xiiStringBuilder relativePath = sFileToLoad;
-  XII_SUCCEED_OR_RETURN(relativePath.MakeRelativeTo(xiiOSFile::GetApplicationDirectory()));
-  ref_pModule = LoadPackagedLibrary(xiiStringWChar(relativePath).GetData(), 0);
-#  else
   ref_pModule = LoadLibraryW(xiiStringWChar(sFileToLoad).GetData());
-#  endif
 
   if (ref_pModule == nullptr)
   {

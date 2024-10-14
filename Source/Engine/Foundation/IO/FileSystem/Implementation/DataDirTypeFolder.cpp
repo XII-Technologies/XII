@@ -198,7 +198,6 @@ namespace xiiDataDirectory
     }
   }
 
-
   bool FolderType::ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir)
   {
     xiiStringBuilder sRedirectedAsset;
@@ -206,7 +205,7 @@ namespace xiiDataDirectory
 
     xiiStringBuilder sPath = GetRedirectedDataDirectoryPath();
     sPath.AppendPath(sRedirectedAsset);
-    return xiiOSFile::ExistsFile(sPath);
+    return sPath.IsAbsolutePath() && xiiOSFile::ExistsFile(sPath);
   }
 
   xiiResult FolderType::GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)

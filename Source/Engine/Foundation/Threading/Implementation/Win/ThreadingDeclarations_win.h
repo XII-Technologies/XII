@@ -3,7 +3,7 @@
 // Deactivate Doxygen document generation for the following block.
 /// \cond
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 
 #if XII_ENABLED(XII_PLATFORM_32BIT)
 struct alignas(4) xiiMutexHandle

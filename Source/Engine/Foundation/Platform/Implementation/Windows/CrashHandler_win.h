@@ -38,14 +38,10 @@ void xiiCrashHandler::SetCrashHandler(xiiCrashHandler* pHandler)
 
 bool xiiCrashHandler_WriteMiniDump::WriteOwnProcessMiniDump(void* pOsSpecificData)
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   xiiStatus res = xiiMiniDumpUtils::WriteOwnProcessMiniDump(m_sDumpFilePath, (_EXCEPTION_POINTERS*)pOsSpecificData);
   if (res.Failed())
     xiiLog::Printf("WriteOwnProcessMiniDump failed: %s\n", res.m_sMessage.GetData());
   return res.Succeeded();
-#else
-  return false;
-#endif
 }
 
 void xiiCrashHandler_WriteMiniDump::PrintStackTrace(void* pOsSpecificData)

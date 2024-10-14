@@ -7,7 +7,7 @@
 
 XII_IMPLEMENT_SINGLETON(xiiMessageLoop);
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/MessageLoop_win.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Linux/MessageLoop_linux.h>
@@ -28,7 +28,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, MessageLoop)
     if (xiiStartup::HasApplicationTag("NoMessageLoop"))
       return;
 
-    #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+    #if XII_ENABLED(XII_PLATFORM_WINDOWS)
       XII_DEFAULT_NEW(xiiMessageLoop_win);
     #elif XII_ENABLED(XII_PLATFORM_LINUX)
       XII_DEFAULT_NEW(xiiMessageLoop_linux);

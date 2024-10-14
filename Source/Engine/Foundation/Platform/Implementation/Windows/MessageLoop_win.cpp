@@ -1,6 +1,6 @@
 #include <Foundation/FoundationPCH.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 #  include <Foundation/Communication/IpcChannel.h>
 #  include <Foundation/Platform/Implementation/Windows/MessageLoop_win.h>

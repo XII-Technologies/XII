@@ -1,7 +1,7 @@
 #pragma once
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/PlatformFeatures_win.h>
+#  include <Foundation/Basics/Platform/Windows/PlatformFeatures_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 #  include <Foundation/Basics/Platform/OSX/PlatformFeatures_OSX.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)

@@ -12,7 +12,7 @@
 #include <d3d11_4.h>
 #include <dxgitype.h>
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
 class XII_GRAPHICSD3D11_DLL xiiD3D11TypeConversions
 {

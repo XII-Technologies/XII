@@ -37,6 +37,6 @@
 #  include <QWidget>
 
 // QtWidgets includes Windows.h
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #  include <QtWidgets>
 #endif

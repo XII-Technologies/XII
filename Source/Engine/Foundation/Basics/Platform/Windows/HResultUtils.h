@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Foundation/Basics.h>
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #include <Foundation/Strings/String.h>
 
 /// Build string implementation for HRESULT.

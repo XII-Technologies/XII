@@ -6,7 +6,7 @@
 #include <iostream>
 #include <sstream>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <shellapi.h>
 #endif
 
@@ -175,7 +175,7 @@ struct xiiOutputToHTML
 
         std::string sOutputFile = std::string(xiiTestFramework::GetInstance()->GetAbsOutputPath()) + "/UnitTestsLog.htm";
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
         TestSettings settings = xiiTestFramework::GetInstance()->GetSettings();
         if (settings.m_bOpenHtmlOutputOnError && bError)
         {

@@ -1,7 +1,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #endif
 
 void xiiMemoryUtils::ReserveLower4GBAddressSpace()

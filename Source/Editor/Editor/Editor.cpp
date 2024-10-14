@@ -3,7 +3,7 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <shellscalingapi.h>
 #endif
 
@@ -15,7 +15,7 @@ public:
   xiiEditorApplication() :
     xiiApplication("xiiEditor")
   {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
     SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 #endif
     EnableMemoryLeakReporting(true);
@@ -45,10 +45,10 @@ public:
   virtual Execution Run() override
   {
     {
-      xiiStringBuilder cmdHelp;
-      if (xiiCommandLineOption::LogAvailableOptionsToBuffer(cmdHelp, xiiCommandLineOption::LogAvailableModes::IfHelpRequested, "_Editor;cvar"))
+      xiiStringBuilder sCMDHelp;
+      if (xiiCommandLineOption::LogAvailableOptionsToBuffer(sCMDHelp, xiiCommandLineOption::LogAvailableModes::IfHelpRequested, "_Editor;cvar"))
       {
-        xiiQtUiServices::GetSingleton()->MessageBoxInformation(cmdHelp);
+        xiiQtUiServices::GetSingleton()->MessageBoxInformation(sCMDHelp);
         return xiiApplication::Execution::Quit;
       }
     }

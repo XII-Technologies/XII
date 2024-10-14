@@ -750,7 +750,7 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
   DirectoryWatcherTest();
 }
 
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcherNonNTFS)
 {
   auto* pForceNonNTFS = static_cast<xiiCVarBool*>(xiiCVar::FindCVarByName("DirectoryWatcher.ForceNonNTFS"));

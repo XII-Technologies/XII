@@ -2,7 +2,7 @@
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
-#  include <Foundation/Basics/Platform/Win/HResultUtils.h>
+#  include <Foundation/Basics/Platform/Windows/HResultUtils.h>
 #  include <Foundation/Strings/StringBuilder.h>
 #  include <Foundation/Strings/StringConversion.h>
 

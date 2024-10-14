@@ -8,7 +8,7 @@ xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
 {
   xiiStringBuilder toolExe = szToolName;
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   toolExe.ChangeFileExtension("exe");
 #else
   toolExe.RemoveFileExtension();
@@ -48,7 +48,7 @@ xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arg
 
   xiiStringBuilder toolExe = szTool;
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   toolExe.ChangeFileExtension("exe");
 #else
   toolExe.RemoveFileExtension();

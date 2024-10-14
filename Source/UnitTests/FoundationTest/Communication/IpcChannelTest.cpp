@@ -4,7 +4,7 @@
 #include <Foundation/Time/Stopwatch.h>
 #include <optional>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP) || XII_ENABLED(XII_PLATFORM_LINUX)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
 
 class ChannelTester
 {

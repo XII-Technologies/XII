@@ -9,7 +9,7 @@
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 
-#include <Foundation/Basics/Platform/Win/HResultUtils.h>
+#include <Foundation/Basics/Platform/Windows/HResultUtils.h>
 
 #include <VersionHelpers.h>
 #include <dxgi1_4.h>
@@ -101,7 +101,6 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
 
   HWND hNativeWindow = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   if (!m_Description.m_Resolution.HasNonZeroArea())
   {
     RECT rect;
@@ -116,7 +115,6 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     }
     m_Description.m_Resolution = xiiSizeU32(rect.right - rect.left, rect.bottom - rect.top);
   }
-#endif
 
   DXGI_FORMAT dxgiColorBufferFormat = xiiD3D11TypeConversions::GetFormat(m_Description.m_ColorBufferFormat);
 
@@ -193,7 +191,6 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     swapChainDescription.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
   }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullScreenDescription = {};
 
   fullScreenDescription.Windowed                = D3D11_BOOL(!m_FullScreenMode.m_bIsFullScreen);
@@ -231,18 +228,6 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
       pFactoryFromSC->MakeWindowAssociation(hNativeWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
     }
   }
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  if (m_FullScreenMode.m_bIsFullScreen)
-  {
-    xiiLog::Warning("UWP applications do not support full screen mode.");
-  }
-
-  if (FAILED(pDXGIFactory->CreateSwapChainForCoreWindow(pDeviceD3D11->GetD3D11Device(), reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &pSwapChain1)))
-  {
-    xiiLog::Error("Failed to create the DXGI Swap Chain.");
-    return XII_FAILURE;
-  }
-#endif
 
   if (FAILED(pSwapChain1->QueryInterface(__uuidof(m_pSwapChain), reinterpret_cast<void**>(static_cast<IDXGISwapChain4**>(&m_pSwapChain)))))
   {
@@ -427,8 +412,6 @@ void xiiGALSwapChainD3D11::Present()
   }
 
   xiiUInt32 uiSyncInterval = 1U;
-
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   switch (m_PresentMode)
   {
     case xiiGALPresentMode::Immediate:
@@ -438,7 +421,6 @@ void xiiGALSwapChainD3D11::Present()
       uiSyncInterval = 1U;
       break;
   }
-#endif
 
   // We wait for the frame as late as possible - right before presenting.
   // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame

@@ -33,7 +33,7 @@
 
 // include the different headers for the supported platforms.
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/Platform_win.h>
+#  include <Foundation/Basics/Platform/Windows/Platform_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 #  include <Foundation/Basics/Platform/OSX/Platform_OSX.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)

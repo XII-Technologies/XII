@@ -2,7 +2,7 @@
 
 #include <Foundation/Basics.h>
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #include <Foundation/Types/Status.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -25,7 +25,7 @@ struct XII_FOUNDATION_DLL xiiMiniDumpUtils
   /// \note On Windows: If the command line option '-fullcrashdumps' is specified, it is forwarded to the MiniDumpTool.
   static xiiStatus LaunchMiniDumpTool(xiiStringView sDumpFile);
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   /// \brief Windows-specific implementation for writing a mini-dump of the running process.
   ///
   /// \sa WriteProcessMiniDump()

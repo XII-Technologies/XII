@@ -42,7 +42,6 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
   xiiStringBuilder sFileCopy = sFile;
   const char*      szFile    = sFileCopy;
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP) // UWP does not support these functions
   xiiInt32 fd = -1;
   switch (OpenMode)
   {
@@ -122,29 +121,6 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
   {
     close(fd);
   }
-
-#else
-
-  switch (OpenMode)
-  {
-    case xiiFileOpenMode::Read:
-      m_FileData.m_pFileHandle = fopen(szFile, "rb");
-      break;
-    case xiiFileOpenMode::Write:
-      m_FileData.m_pFileHandle = fopen(szFile, "wb");
-      break;
-    case xiiFileOpenMode::Append:
-      m_FileData.m_pFileHandle = fopen(szFile, "ab");
-
-      // in append mode we need to set the file pointer to the end explicitly, otherwise GetFilePosition might return 0 the first time
-      if (m_FileData.m_pFileHandle != nullptr)
-        InternalSetFilePosition(0, xiiFileSeekMode::FromEnd);
-
-      break;
-    default:
-      break;
-  }
-#endif
 
   if (m_FileData.m_pFileHandle == nullptr)
   {
@@ -338,7 +314,7 @@ xiiResult xiiOSFile::InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, x
   return XII_SUCCESS;
 }
 
-#if XII_ENABLED(XII_SUPPORTS_FILE_STATS) && XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
 xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats)
 {
   struct stat tempStat;
@@ -358,13 +334,11 @@ xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileSt
 }
 #endif
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
-
 xiiStringView xiiOSFile::GetApplicationPath()
 {
   if (s_sApplicationPath.IsEmpty())
   {
-#  if XII_ENABLED(XII_PLATFORM_OSX)
+#if XII_ENABLED(XII_PLATFORM_OSX)
 
     CFBundleRef appBundle  = CFBundleGetMainBundle();
     CFURLRef    bundleURL  = CFBundleCopyBundleURL(appBundle);
@@ -388,7 +362,7 @@ xiiStringView xiiOSFile::GetApplicationPath()
     CFRelease(bundlePath);
     CFRelease(bundleURL);
     CFRelease(appBundle);
-#  elif XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_ANDROID)
     {
       xiiJniAttachment attachment;
 
@@ -399,11 +373,11 @@ xiiStringView xiiOSFile::GetApplicationPath()
       sTemp.AppendPath("Assets/xiiTempBin");
       s_sApplicationPath = sTemp;
     }
-#  else
+#else
     char    result[PATH_MAX];
     ssize_t length     = readlink("/proc/self/exe", result, PATH_MAX);
     s_sApplicationPath = xiiStringView(result, result + length);
-#  endif
+#endif
   }
 
   return s_sApplicationPath;
@@ -413,15 +387,15 @@ xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDataPath.IsEmpty())
   {
-#  if XII_ENABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
     android_app* pAndroidApp = xiiAndroidUtils::GetNativeAndroidApp();
     s_sUserDataPath          = pAndroidApp->activity->internalDataPath;
-#  else
+#else
     s_sUserDataPath = getenv("HOME");
 
     if (s_sUserDataPath.IsEmpty())
       s_sUserDataPath = getpwuid(getuid())->pw_dir;
-#  endif
+#endif
   }
 
   xiiStringBuilder s = s_sUserDataPath;
@@ -434,15 +408,15 @@ xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder)
 {
   if (s_sTempDataPath.IsEmpty())
   {
-#  if XII_ENABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
     xiiJniAttachment attachment;
 
     xiiJniObject cacheDir = attachment.GetActivity().Call<xiiJniObject>("getCacheDir");
     xiiJniString path     = cacheDir.Call<xiiJniString>("getPath");
     s_sTempDataPath       = path.GetData();
-#  else
+#else
     s_sTempDataPath = GetUserDataFolder(".cache").GetData();
-#  endif
+#endif
   }
 
   xiiStringBuilder s = s_sTempDataPath;
@@ -455,14 +429,14 @@ xiiString xiiOSFile::GetUserDocumentsFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDocumentsPath.IsEmpty())
   {
-#  if XII_ENABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
     XII_ASSERT_NOT_IMPLEMENTED;
-#  else
+#else
     s_sUserDataPath = getenv("HOME");
 
     if (s_sUserDataPath.IsEmpty())
       s_sUserDataPath = getpwuid(getuid())->pw_dir;
-#  endif
+#endif
   }
 
   xiiStringBuilder s = s_sUserDocumentsPath;
@@ -481,7 +455,7 @@ const xiiString xiiOSFile::GetCurrentWorkingDirectory()
   return clean;
 }
 
-#  if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
+#if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
 
 xiiFileSystemIterator::xiiFileSystemIterator() = default;
 
@@ -680,6 +654,4 @@ xiiInt32 xiiFileSystemIterator::InternalNext()
   return XII_SUCCESS;
 }
 
-#  endif
-
-#endif // XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
+#endif

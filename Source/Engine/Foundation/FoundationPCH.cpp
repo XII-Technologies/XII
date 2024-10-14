@@ -14,8 +14,6 @@ XII_STATICLINK_LIBRARY(Foundation)
   XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_Application);
   XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_MainLoop);
   XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_Win_ApplicationEntryPoint_win);
-  XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_uwp_ApplicationEntryPoint_uwp);
-  XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_uwp_Application_uwp);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Assert);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Basics);
   XII_STATICLINK_REFERENCE(Foundation_Basics_IncludeAll);
@@ -24,7 +22,6 @@ XII_STATICLINK_LIBRARY(Foundation)
   XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_Win_HResultUtils);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_Win_MinWindows);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_Win_WinRTUtils);
-  XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_uwp_UWPUtils);
   XII_STATICLINK_REFERENCE(Foundation_CodeUtils_Expression_Implementation_ExpressionAST);
   XII_STATICLINK_REFERENCE(Foundation_CodeUtils_Expression_Implementation_ExpressionASTTransforms);
   XII_STATICLINK_REFERENCE(Foundation_CodeUtils_Expression_Implementation_ExpressionByteCode);

@@ -191,14 +191,6 @@ namespace xiiStreamWriterUtil
 
   // serialization of array
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
-  template <class T>
-  XII_ALWAYS_INLINE auto SerializeArrayImpl(xiiStreamWriter& ref_stream, const T* pArray, xiiUInt64 uiCount, xiiInt32) -> decltype(SerializeArray(ref_stream, pArray, uiCount), xiiResult(XII_SUCCESS))
-  {
-    return SerializeArray(ref_stream, pArray, uiCount);
-  }
-#endif
-
   template <class T>
   xiiResult SerializeArrayImpl(xiiStreamWriter& ref_stream, const T* pArray, xiiUInt64 uiCount, long)
   {
@@ -317,14 +309,6 @@ namespace xiiStreamReaderUtil
   }
 
   // serialization of array
-
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
-  template <class T>
-  XII_ALWAYS_INLINE auto DeserializeArrayImpl(xiiStreamReader& ref_stream, T* pArray, xiiUInt64 uiCount, xiiInt32) -> decltype(DeserializeArray(ref_stream, pArray, uiCount), xiiResult(XII_SUCCESS))
-  {
-    return DeserializeArray(ref_stream, pArray, uiCount);
-  }
-#endif
 
   template <class T>
   xiiResult DeserializeArrayImpl(xiiStreamReader& ref_stream, T* pArray, xiiUInt64 uiCount, long)

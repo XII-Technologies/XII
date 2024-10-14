@@ -2,10 +2,8 @@
 
 #include <Foundation/System/Screen.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/Screen_win32.inl>
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-#  include <Foundation/Platform/Implementation/uwp/Screen_uwp.inl>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <Foundation/Platform/Implementation/Android/Screen_android.inl>
 #else

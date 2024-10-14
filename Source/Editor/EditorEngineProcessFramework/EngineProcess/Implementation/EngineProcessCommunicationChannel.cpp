@@ -5,8 +5,8 @@
 #include <Foundation/Communication/IpcChannel.h>
 #include <Foundation/Communication/IpcProcessMessageProtocol.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <signal.h>
 #endif
@@ -21,7 +21,7 @@ bool xiiEngineProcessCommunicationChannel::IsHostAlive() const
 
   bool bValid = true;
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   DWORD  pid      = static_cast<DWORD>(m_iHostPID);
   HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
   bValid          = (hProcess != INVALID_HANDLE_VALUE) && (hProcess != nullptr);

@@ -41,12 +41,10 @@ public:
   /// \brief Initializes xiiCommandLineUtils from a list of already split up commands.
   void SetCommandLine(xiiArrayPtr<xiiString> commands);
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   /// \brief Initializes xiiCommandLineUtils by querying the command line parameters directly from the OS.
   ///
   /// This function is not available on all platforms.
   void SetCommandLine();
-#endif
 
   /// \brief Returns the split up command line.
   const xiiDynamicArray<xiiString>& GetCommandLineArray() const;

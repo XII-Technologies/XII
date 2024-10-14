@@ -1,7 +1,7 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>
 #include <Foundation/System/MiniDumpUtils.h>
@@ -10,7 +10,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 #  include <Dbghelp.h>
 #  include <Shlwapi.h>
@@ -109,7 +109,6 @@ xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(xiiStringView sDumpFile
 
 xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID)
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   HANDLE hProcess = xiiMiniDumpUtils::GetProcessHandleWithNecessaryRights(uiProcessID);
 
   if (hProcess == nullptr)
@@ -118,15 +117,10 @@ xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(xiiStringView sDumpFile
   }
 
   return WriteProcessMiniDump(sDumpFile, uiProcessID, hProcess, nullptr);
-
-#else
-  return xiiStatus("Not implemented on UWP");
-#endif
 }
 
 xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(xiiStringView sDumpFile)
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   xiiStringBuilder sDumpToolPath = xiiOSFile::GetApplicationDirectory();
   sDumpToolPath.AppendPath("xiiMiniDumpTool.exe");
   sDumpToolPath.MakeCleanPath();
@@ -155,8 +149,4 @@ xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(xiiStringView sDumpFile)
     return xiiStatus("Waiting for MiniDumpTool to finish failed.");
 
   return xiiStatus(XII_SUCCESS);
-
-#else
-  return xiiStatus("Not implemented on UWP");
-#endif
 }

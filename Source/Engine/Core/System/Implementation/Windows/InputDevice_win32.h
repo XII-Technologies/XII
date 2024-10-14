@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/Input/DeviceTypes/MouseKeyboard.h>
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 
 class XII_CORE_DLL xiiStandardInputDevice : public xiiInputDeviceMouseKeyboard
 {

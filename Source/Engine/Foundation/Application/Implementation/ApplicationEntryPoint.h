@@ -2,13 +2,9 @@
 
 #include <Foundation/Basics.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 #  include <Foundation/Platform/Implementation/Windows/ApplicationEntryPoint_win.h>
-
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-
-#  include <Foundation/Platform/Implementation/UWP/ApplicationEntryPoint_uwp.h>
 
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 

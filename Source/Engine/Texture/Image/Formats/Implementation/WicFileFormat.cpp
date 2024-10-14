@@ -1,6 +1,6 @@
 #include <Texture/TexturePCH.h>
 
-#include <Foundation/Basics/Platform/Win/HResultUtils.h>
+#include <Foundation/Basics/Platform/Windows/HResultUtils.h>
 #include <Foundation/Containers/StaticArray.h>
 #include <Foundation/IO/Stream.h>
 #include <Texture/Image/Formats/ImageFormatMappings.h>
@@ -8,7 +8,7 @@
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 #  include <Foundation/IO/StreamUtils.h>
 #  include <Foundation/Profiling/Profiling.h>

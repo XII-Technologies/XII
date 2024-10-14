@@ -1,7 +1,7 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #include <Foundation/Strings/StringConversion.h>
 
 xiiAtomicInteger32 xiiOSThread::s_iThreadCount;
@@ -26,8 +26,6 @@ using THREADNAME_INFO = struct tagTHREADNAME_INFO
 
 XII_WARNING_PUSH()
 XII_WARNING_DISABLE_MSVC(6312)
-
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
 
 // See https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setthreaddescription.
 // This is the new way to set thread names which are also stored with crash dumps and work in more tools (like Pix etc.).
@@ -66,8 +64,6 @@ pfnSetThreadDescription GetSetThreadDescriptionProcAddr()
   return retVal;
 }
 
-#endif
-
 void SetThreadNameViaException(HANDLE hThread, LPCSTR pThreadName)
 {
   THREADNAME_INFO info;
@@ -88,7 +84,6 @@ void SetThreadNameViaException(HANDLE hThread, LPCSTR pThreadName)
 
 void SetThreadName(HANDLE hThread, LPCSTR pThreadName)
 {
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   static pfnSetThreadDescription s_pSetThreadDescriptionFnPtr = GetSetThreadDescriptionProcAddr();
 
   if (s_pSetThreadDescriptionFnPtr)
@@ -100,9 +95,6 @@ void SetThreadName(HANDLE hThread, LPCSTR pThreadName)
   {
     SetThreadNameViaException(hThread, pThreadName);
   }
-#else
-  SetThreadNameViaException(hThread, szThreadName);
-#endif
 }
 
 XII_WARNING_POP()

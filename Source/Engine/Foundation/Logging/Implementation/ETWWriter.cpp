@@ -5,7 +5,7 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS) || (XII_ENABLED(XII_PLATFORM_LINUX) && defined(BUILDSYSTEM_ENABLE_TRACELOGGING_LTTNG_SUPPORT))
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#    include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#    include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #    include <Foundation/Platform/Implementation/Windows/ETWProvider_win.h>
 #  elif XII_ENABLED(XII_PLATFORM_LINUX)
 #    include <Foundation/Platform/Implementation/Linux/ETWProvider_linux.h>

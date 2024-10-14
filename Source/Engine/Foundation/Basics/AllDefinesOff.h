@@ -20,9 +20,7 @@
 
 
 // All the supported Platforms
-#define XII_PLATFORM_WINDOWS         XII_OFF // Enabled for all Windows platforms, both UWP and desktop.
-#define XII_PLATFORM_WINDOWS_UWP     XII_OFF // Enabled for UWP apps, together with XII_PLATFORM_WINDOWS.
-#define XII_PLATFORM_WINDOWS_DESKTOP XII_OFF // Enabled for desktop apps, together with XII_PLATFORM_WINDOWS.
+#define XII_PLATFORM_WINDOWS         XII_OFF
 #define XII_PLATFORM_OSX             XII_OFF
 #define XII_PLATFORM_LINUX           XII_OFF
 #define XII_PLATFORM_IOS             XII_OFF

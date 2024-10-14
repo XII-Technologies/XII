@@ -2,7 +2,7 @@
 
 #include <Texture/Image/Formats/ImageFileFormat.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
 /// \brief File format implementation for loading TIFF files using WIC.
 class XII_TEXTURE_DLL xiiWicFileFormat : public xiiImageFileFormat

@@ -20,7 +20,7 @@ static xiiString GetVersionFilePath()
 
 PageDownloader::PageDownloader(const QString& sUrl)
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   QStringList args;
 
   args << "-Command";
@@ -122,7 +122,7 @@ xiiResult xiiQtVersionChecker::StoreKnownVersion()
 
 bool xiiQtVersionChecker::Check(bool bForce)
 {
-#if XII_DISABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_DISABLED(XII_PLATFORM_WINDOWS)
   XII_ASSERT_DEV(!bForce, "The version check is not yet implemented on this platform.");
   return false;
 #endif

@@ -24,25 +24,7 @@ if((XII_OPENXR_LOADER_DIR STREQUAL "XII_OPENXR_LOADER_DIR-NOTFOUND") OR(XII_OPEN
   set(XII_OPENXR_REMOTING_DIR "${CMAKE_BINARY_DIR}/packages/Microsoft.Holographic.Remoting.OpenXr.2.4.0" CACHE PATH "Directory of OpenXR remoting installation" FORCE)
 endif()
 
-if(XII_CMAKE_PLATFORM_WINDOWS_UWP)
-  set(OPENXR_DYNAMIC ON)
-  find_path(XII_OPENXR_HEADERS_DIR include/openxr/openxr.h)
-
-  if(XII_CMAKE_ARCHITECTURE_ARM)
-    if(XII_CMAKE_ARCHITECTURE_64BIT)
-      set(OPENXR_BIN_PREFIX "arm64_uwp")
-    else()
-      set(OPENXR_BIN_PREFIX "arm_uwp")
-    endif()
-  else()
-    if(XII_CMAKE_ARCHITECTURE_64BIT)
-      set(OPENXR_BIN_PREFIX "x64_uwp")
-    else()
-      set(OPENXR_BIN_PREFIX "Win32_uwp")
-    endif()
-  endif()
-
-elseif(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
+if(XII_CMAKE_PLATFORM_WINDOWS)
   set(OPENXR_DYNAMIC ON)
   find_path(XII_OPENXR_HEADERS_DIR include/openxr/openxr.h)
 
@@ -76,19 +58,12 @@ if(XIIOPENXR_FOUND)
     set_target_properties(xiiOpenXR::Loader PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${XII_OPENXR_HEADERS_DIR}/include")
   endif()
 
-  xii_uwp_mark_import_as_content(xiiOpenXR::Loader)
-
-  if(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP AND XII_CMAKE_ARCHITECTURE_64BIT)
+  if(XII_CMAKE_PLATFORM_WINDOWS AND XII_CMAKE_ARCHITECTURE_64BIT)
 
     add_library(xiiOpenXR::Remoting INTERFACE IMPORTED)
 
-    if(XII_CMAKE_PLATFORM_WINDOWS_UWP)
-      list(APPEND REMOTING_ASSETS "${XII_OPENXR_REMOTING_DIR}/build/native/bin/x64/uwp/RemotingXR.json")
-      list(APPEND REMOTING_ASSETS "${XII_OPENXR_REMOTING_DIR}/build/native/bin/x64/uwp/Microsoft.Holographic.AppRemoting.OpenXr.dll")
-    else()
-      list(APPEND REMOTING_ASSETS "${XII_OPENXR_REMOTING_DIR}/build/native/bin/x64/Desktop/RemotingXR.json")
-      list(APPEND REMOTING_ASSETS "${XII_OPENXR_REMOTING_DIR}/build/native/bin/x64/Desktop/Microsoft.Holographic.AppRemoting.OpenXr.dll")
-    endif()
+    list(APPEND REMOTING_ASSETS "${XII_OPENXR_REMOTING_DIR}/build/native/bin/x64/Desktop/RemotingXR.json")
+    list(APPEND REMOTING_ASSETS "${XII_OPENXR_REMOTING_DIR}/build/native/bin/x64/Desktop/Microsoft.Holographic.AppRemoting.OpenXr.dll")
 
     set_target_properties(xiiOpenXR::Remoting PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${XII_OPENXR_REMOTING_DIR}/build/native/include")
     set_target_properties(xiiOpenXR::Remoting PROPERTIES INTERFACE_SOURCES "${REMOTING_ASSETS}")

@@ -1,7 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #endif
 
 #include <Foundation/Configuration/Startup.h>

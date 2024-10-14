@@ -14,7 +14,7 @@
 #include <QSettings>
 #include <QUrl>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <ShlObj_core.h>
 #endif
 
@@ -358,7 +358,7 @@ void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
 {
   QStringList args;
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   if (bIsFile)
     args << "/select,";
 
@@ -388,7 +388,7 @@ void xiiQtUiServices::OpenWith(xiiStringView sPath)
   sPathBuilder.MakeCleanPath();
   sPathBuilder.MakePathSeparatorsNative();
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   xiiStringWChar wpath(sPathBuilder);
   OPENASINFO     oi;
   oi.pcszFile    = wpath.GetData();

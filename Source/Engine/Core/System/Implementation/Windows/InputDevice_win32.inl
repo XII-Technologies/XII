@@ -1,6 +1,6 @@
 #include <Core/Input/InputManager.h>
-#include <Core/System/Implementation/Win/InputDevice_win32.h>
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#include <Core/System/Implementation/Windows/InputDevice_win32.h>
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/StringConversion.h>

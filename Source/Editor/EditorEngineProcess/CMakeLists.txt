@@ -19,19 +19,9 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # For SetProcessDpiAwareness
-if (XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
+if (XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Shcore.lib
   )
-endif()
-
-# For plugins to work in UWP builds, they must be direct link dependencies, otherwise they are not packaged with the app.
-if (XII_CMAKE_PLATFORM_WINDOWS_UWP)
-
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    InspectorPlugin
-  )
-
 endif()

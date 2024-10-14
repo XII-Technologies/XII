@@ -3,7 +3,7 @@
 
 /// \file
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Memory/MemoryTracker.h>
 #include <Foundation/Threading/Lock.h>

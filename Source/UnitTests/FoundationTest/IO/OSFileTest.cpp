@@ -205,7 +205,7 @@ Only concrete and clocks.\n\
     }
 
 // The binary folder will only have subdirectories on windows desktop
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
     XII_TEST_BOOL(uiFolders > 0);
 #  endif
     XII_TEST_BOOL(uiFiles > 0);

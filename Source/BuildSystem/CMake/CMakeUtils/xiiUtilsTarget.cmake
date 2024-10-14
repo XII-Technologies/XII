@@ -48,7 +48,6 @@ macro(xii_create_target TYPE TARGET_NAME)
     endif()
 
     # PLATFORM-TODO (use hook above?)
-    xii_uwp_fix_library_properties(${TARGET_NAME} "${ALL_SOURCE_FILES}")
 
   elseif(${TYPE} STREQUAL "APPLICATION")
     message(STATUS "Application: ${TARGET_NAME}")
@@ -69,7 +68,6 @@ macro(xii_create_target TYPE TARGET_NAME)
     endif()
 
     # PLATFORM-TODO (use hook from below?)
-    xii_uwp_add_default_content(${TARGET_NAME})
 
     if(COMMAND xii_platformhook_set_application_properties)
       xii_platformhook_set_application_properties(${TARGET_NAME})
