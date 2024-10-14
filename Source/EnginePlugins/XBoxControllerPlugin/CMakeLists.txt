@@ -12,12 +12,7 @@ target_link_libraries(${PROJECT_NAME}
   Core
 )
 
-if (XII_CMAKE_PLATFORM_WINDOWS_UWP)
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    Xinputuap
-  )
-elseif (XII_CMAKE_PLATFORM_WINDOWS)
+if (XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     XINPUT9_1_0
