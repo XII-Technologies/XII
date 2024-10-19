@@ -5,7 +5,7 @@
 
 // Include inline file
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#    include <Foundation/Platform/Implementation/Windows/StackTracer_win.h>
+#  include <Foundation/Platform/Implementation/Windows/StackTracer_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/StackTracer_posix.h>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
