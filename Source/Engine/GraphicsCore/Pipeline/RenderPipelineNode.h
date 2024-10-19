@@ -16,46 +16,63 @@ struct xiiRenderPipelineNodePin
 
     enum Enum : StorageType
     {
-      Unknown = 0U,
-      Input,
-      Output,
-      PassThrough,
+      Input           = XII_BIT(0),
+      Output          = XII_BIT(1),
+      PassThrough     = XII_BIT(2),
+      TextureProvider = XII_BIT(3), ///< Pass provides pin texture to the pipeline each frame.
 
-      Default = Unknown
+      Default = 0U
+    };
+
+    struct Bits
+    {
+      StorageType Input : 1;
+      StorageType Output : 1;
+      StorageType PassThrough : 1;
+      StorageType TextureProvider : 1;
     };
   };
 
-  xiiEnum<Type>          m_Type;
+  xiiBitflags<Type>      m_Type;
   xiiUInt8               m_uiInputIndex  = 0xFFU;
   xiiUInt8               m_uiOutputIndex = 0xFFU;
   xiiRenderPipelineNode* m_pParent       = nullptr;
 };
+XII_DECLARE_FLAGS_OPERATORS(xiiRenderPipelineNodePin::Type);
 
 struct xiiRenderPipelineNodeInputPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputPin()
-  {
-    m_Type = Type::Input;
-  }
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputPin() { m_Type = Type::Input; }
 };
 
 struct xiiRenderPipelineNodeOutputPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputPin()
-  {
-    m_Type = Type::Output;
-  }
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputPin() { m_Type = Type::Output; }
 };
 
-struct xiiRenderPipelineNodePassThrougPin : public xiiRenderPipelineNodePin
+struct xiiRenderPipelineNodeInputProviderPin : public xiiRenderPipelineNodeInputPin
 {
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThrougPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputProviderPin() { m_Type = Type::Input | Type::TextureProvider; }
+};
+
+struct xiiRenderPipelineNodeOutputProviderPin : public xiiRenderPipelineNodeOutputPin
+{
+  XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputProviderPin() { m_Type = Type::Output | Type::TextureProvider; }
+};
+
+struct xiiRenderPipelineNodePassThroughPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughPin()
   {
     m_Type = Type::PassThrough;
   }
@@ -86,4 +103,6 @@ private:
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePin);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputPin);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputPin);
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThrougPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputProviderPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputProviderPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughPin);

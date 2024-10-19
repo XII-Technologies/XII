@@ -14,12 +14,15 @@ class xiiStreamWriter;
 /// \brief Passed to xiiRenderPipelinePass::InitRenderPipelinePass to inform about existing connections on each input / output pin index.
 struct xiiRenderPipelinePassConnection
 {
-  xiiRenderPipelinePassConnection() { m_pOutput = nullptr; }
+  xiiRenderPipelinePassConnection() :
+    m_pOutput(nullptr)
+  {
+  }
 
   xiiGALTextureCreationDescription                   m_Desc;
   xiiGALTextureHandle                                m_TextureHandle;
-  const xiiRenderPipelineNodePin*                    m_pOutput = nullptr; ///< The output pin that this connection spawns from.
-  xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;            ///< The various input pins this connection is connected to.
+  const xiiRenderPipelineNodePin*                    m_pOutput; ///< The output pin that this connection spawns from.
+  xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;  ///< The various input pins this connection is connected to.
 };
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiRenderPipelineNode
@@ -43,6 +46,13 @@ public:
   /// \brief For a given input pin configuration, provide the output configuration of this node.
   /// Outputs is already resized to the number of output pins.
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) = 0;
+
+  /// Returns the current texture this node provides at the given *ProviderPin.
+  /// This function is called every frame if this node holds a xiiRenderPipelineNodeInputProviderPin or xiiRenderPipelineNodeOutputProviderPin pin. The node can return a valid texture handle, or an invalid handle, in which case the missing texture will be created from the texture pool.
+  /// \param pPin - The member pin for which the texture is requested.
+  /// \param desc - The format of the texture that should be provided.
+  /// \return The texture to use for this pin's connections. Or invalid, in which case it reverts to a regular input / output pin.
+  virtual xiiGALTextureHandle QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) { return {}; }
 
   /// \brief After GetRenderTargetDescriptions was called successfully for each pass, this function is called
   /// with the inputs and outputs for review. Disconnected pins have a nullptr value in the passed in arrays.

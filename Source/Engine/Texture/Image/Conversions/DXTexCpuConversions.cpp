@@ -2,7 +2,11 @@
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
 
+// BC.h infiltrates the preprocessor, making it impossible to include algorithm afterwards, so this has to be here.
+#  include <algorithm>
+
 #  include <Texture/DirectXTex/BC.h>
+
 #  include <Texture/Image/ImageConversion.h>
 
 #  include <Foundation/Threading/TaskSystem.h>

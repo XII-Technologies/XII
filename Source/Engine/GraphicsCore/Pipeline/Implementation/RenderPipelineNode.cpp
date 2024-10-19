@@ -24,7 +24,7 @@ XII_END_STATIC_REFLECTED_TYPE;
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThrougPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
