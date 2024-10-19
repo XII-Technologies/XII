@@ -357,7 +357,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Round() const
 #if XII_SSE_LEVEL >= XII_SSE_41
   return _mm_round_ps(m_v, _MM_FROUND_NINT);
 #else
-  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiSimdVec4f(floorf(static_cast<float>(x()) + 0.5f), floorf(static_cast<float>(y()) + 0.5f), floorf(static_cast<float>(z()) + 0.5f), floorf(static_cast<float>(w()) + 0.5f));
 #endif
 }
 
@@ -366,7 +366,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Floor() const
 #if XII_SSE_LEVEL >= XII_SSE_41
   return _mm_round_ps(m_v, _MM_FROUND_FLOOR);
 #else
-  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiSimdVec4f(floorf(static_cast<float>(x())), floorf(static_cast<float>(y())), floorf(static_cast<float>(z())), floorf(static_cast<float>(w())));
 #endif
 }
 
@@ -375,7 +375,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Ceil() const
 #if XII_SSE_LEVEL >= XII_SSE_41
   return _mm_round_ps(m_v, _MM_FROUND_CEIL);
 #else
-  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiSimdVec4f(ceilf(static_cast<float>(x())), ceilf(static_cast<float>(y())), ceilf(static_cast<float>(z())), ceilf(static_cast<float>(w())));
 #endif
 }
 
@@ -384,7 +384,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Trunc() const
 #if XII_SSE_LEVEL >= XII_SSE_41
   return _mm_round_ps(m_v, _MM_FROUND_TRUNC);
 #else
-  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiSimdVec4f(int(x()), int(y()), int(z()), int(w()));
 #endif
 }
 

@@ -174,7 +174,6 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::CompMul(const xiiSimdVec4i& v) cons
 #if XII_SSE_LEVEL >= XII_SSE_41
   return _mm_mullo_epi32(m_v, v.m_v);
 #else
-  XII_ASSERT_NOT_IMPLEMENTED; // not sure whether this code works so better assert
   __m128i tmp1 = _mm_mul_epu32(m_v, v.m_v);
   __m128i tmp2 = _mm_mul_epu32(_mm_srli_si128(m_v, 4), _mm_srli_si128(v.m_v, 4));
   return _mm_unpacklo_epi32(_mm_shuffle_epi32(tmp1, XII_SHUFFLE(0, 2, 0, 0)), _mm_shuffle_epi32(tmp2, XII_SHUFFLE(0, 2, 0, 0)));
