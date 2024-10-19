@@ -18,6 +18,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBlurPass, 1, xiiRTTIDefaultAllocator<xiiBlur
     XII_ACCESSOR_PROPERTY("Radius", GetRadius, SetRadius)->AddAttributes(new xiiDefaultValueAttribute(15)),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Utilities")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

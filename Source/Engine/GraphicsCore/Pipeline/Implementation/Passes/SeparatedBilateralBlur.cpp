@@ -18,12 +18,17 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSeparatedBilateralBlurPass, 2, xiiRTTIDefaul
     XII_MEMBER_PROPERTY("Depth", m_PinDepthInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
     XII_ACCESSOR_PROPERTY("BlurRadius", GetRadius, SetRadius)->AddAttributes(new xiiDefaultValueAttribute(7)),
-      // Should we really expose that? This gives the user control over the error compared to a perfect gaussian.
-      // In theory we could also compute this for a given error from the blur radius. See http://dev.theomader.com/gaussian-kernel-calculator/ for visualization.
+    // Should we really expose that? This gives the user control over the error compared to a perfect gaussian.
+    // In theory we could also compute this for a given error from the blur radius. See http://dev.theomader.com/gaussian-kernel-calculator/ for visualization.
     XII_ACCESSOR_PROPERTY("GaussianSigma", GetGaussianSigma, SetGaussianSigma)->AddAttributes(new xiiDefaultValueAttribute(4.0f)),
     XII_ACCESSOR_PROPERTY("Sharpness", GetSharpness, SetSharpness)->AddAttributes(new xiiDefaultValueAttribute(120.0f)),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Utilities")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

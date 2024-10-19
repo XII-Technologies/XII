@@ -22,7 +22,7 @@ xiiCommandLineOptionBool   opt_Resave("_EditorProcessor", "-resave", "If specifi
 xiiCommandLineOptionString opt_Transform("_EditorProcessor", "-transform", "If specified, assets will be transformed for the given platform profile.\n\
 \n\
 Example:\n\
-  -transform PC\n\
+  -transform Default\n\
 ",
                                          "");
 
@@ -272,7 +272,8 @@ public:
 
           m_IPC.WaitForMessages();
 
-          bRecursionBlock = false; });
+          bRecursionBlock = false;
+        });
 
         const xiiInt32 iReturnCode = xiiQtEditorApp::GetSingleton()->RunEditor();
         SetReturnCode(iReturnCode);

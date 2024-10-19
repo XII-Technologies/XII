@@ -8,7 +8,7 @@ XII_CREATE_SIMPLE_TEST(Utility, EnvironmentVariableUtils)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetValueString / GetValueInt")
   {
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
     // Windows will have "NUMBER_OF_PROCESSORS" and "USERNAME" set, let's see if we can get them
     XII_TEST_BOOL(xiiEnvironmentVariableUtils::IsVariableSet("NUMBER_OF_PROCESSORS"));
@@ -20,14 +20,14 @@ XII_CREATE_SIMPLE_TEST(Utility, EnvironmentVariableUtils)
     xiiString szUserName = xiiEnvironmentVariableUtils::GetValueString("USERNAME");
     XII_TEST_BOOL(szUserName.GetElementCount() > 0);
 
-#  elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 
     // Mac OS & Linux will have "USER" set
     XII_TEST_BOOL(xiiEnvironmentVariableUtils::IsVariableSet("USER"));
     xiiString szUserName = xiiEnvironmentVariableUtils::GetValueString("USER");
     XII_TEST_BOOL(szUserName.GetElementCount() > 0);
 
-#  endif
+#endif
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsVariableSet/SetValue")

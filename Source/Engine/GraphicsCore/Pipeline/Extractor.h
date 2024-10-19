@@ -20,9 +20,9 @@ public:
   /// \brief returns the name of the extractor.
   xiiStringView GetName() const;
 
-  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData);
+  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) = 0;
 
-  virtual void PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData);
+  virtual void PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) = 0;
 
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
@@ -59,7 +59,9 @@ public:
   xiiVisibleObjectsExtractor(xiiStringView sName = "VisibleObjectsExtractor");
   ~xiiVisibleObjectsExtractor();
 
-  virtual void      Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
+  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
+  virtual void PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override {}
+
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
 };
@@ -72,7 +74,9 @@ public:
   xiiSelectedObjectsExtractorBase(xiiStringView sName = "SelectedObjectsExtractor");
   ~xiiSelectedObjectsExtractorBase();
 
-  virtual void                                 Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
+  virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
+  virtual void PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override {}
+
   virtual const xiiDeque<xiiGameObjectHandle>* GetSelection() = 0;
 
   xiiRenderData::Category m_OverrideCategory;
