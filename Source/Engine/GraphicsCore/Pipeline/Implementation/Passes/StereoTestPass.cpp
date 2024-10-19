@@ -18,6 +18,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStereoTestPass, 1, xiiRTTIDefaultAllocator<x
     XII_MEMBER_PROPERTY("Output", m_PinOutput)
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Unit Tests")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

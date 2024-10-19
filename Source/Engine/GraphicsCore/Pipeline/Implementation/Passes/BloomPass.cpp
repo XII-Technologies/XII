@@ -24,6 +24,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 1, xiiRTTIDefaultAllocator<xiiBlo
     XII_MEMBER_PROPERTY("OuterTintColor", m_OuterTintColor),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Post Processing")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

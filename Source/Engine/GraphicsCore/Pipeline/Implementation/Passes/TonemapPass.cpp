@@ -30,6 +30,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTonemapPass, 1, xiiRTTIDefaultAllocator<xiiT
     XII_ACCESSOR_PROPERTY("LUT2", GetLUT2TextureFile, SetLUT2TextureFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_3D")),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Post Processing")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

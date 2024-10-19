@@ -98,6 +98,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExtractor, 1, xiiRTTINoAllocator)
     XII_BEGIN_ATTRIBUTES
     {
       new xiiColorAttribute(xiiColorScheme::DarkUI(xiiColorScheme::Red)),
+      new xiiCategoryAttribute("Extractors")
     }
     XII_END_ATTRIBUTES;
   }
@@ -258,22 +259,12 @@ void xiiExtractor::ExtractRenderData(const xiiView& view, const xiiGameObject* p
   }
 }
 
-void xiiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
-{
-}
-
-void xiiExtractor::PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
-{
-}
-
-
 xiiResult xiiExtractor::Serialize(xiiStreamWriter& inout_stream) const
 {
   inout_stream << m_bActive;
   inout_stream << m_sName;
   return XII_SUCCESS;
 }
-
 
 xiiResult xiiExtractor::Deserialize(xiiStreamReader& inout_stream)
 {

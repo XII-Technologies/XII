@@ -21,6 +21,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 1, xiiRTTINoAllocator)
     XII_ENUM_MEMBER_PROPERTY("ShadingQuality", xiiForwardRenderShadingQuality, m_ShadingQuality)->AddAttributes(new xiiDefaultValueAttribute((int)xiiForwardRenderShadingQuality::Normal)),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Rendering")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 

@@ -20,6 +20,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocato
     XII_MEMBER_PROPERTY("MarqueeActionID", m_uiMarqueeActionID),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Rendering")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

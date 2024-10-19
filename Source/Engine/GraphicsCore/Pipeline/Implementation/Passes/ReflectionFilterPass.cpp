@@ -27,6 +27,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiReflectionFilterPass, 1, xiiRTTIDefaultAlloc
     XII_ACCESSOR_PROPERTY("InputCubemap", GetInputCubemap, SetInputCubemap)
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Effects")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

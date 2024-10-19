@@ -15,6 +15,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyTexturePass, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("Output", m_PinOutput)
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Utilities")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

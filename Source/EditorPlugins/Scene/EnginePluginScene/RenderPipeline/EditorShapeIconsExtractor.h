@@ -14,6 +14,8 @@ public:
   ~xiiEditorShapeIconsExtractor();
 
   virtual void      Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
+  virtual void      PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override {}
+
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
 

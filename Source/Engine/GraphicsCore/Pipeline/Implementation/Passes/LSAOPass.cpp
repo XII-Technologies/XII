@@ -30,6 +30,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLSAOPass, 1, xiiRTTIDefaultAllocator<xiiLSAO
     XII_MEMBER_PROPERTY("DistributedGathering", m_bDistributedGathering)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Post Processing")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

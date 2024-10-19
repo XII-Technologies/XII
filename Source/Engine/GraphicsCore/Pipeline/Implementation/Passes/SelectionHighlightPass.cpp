@@ -23,6 +23,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSelectionHighlightPass, 1, xiiRTTIDefaultAll
     XII_MEMBER_PROPERTY("OverlayOpacity", m_fOverlayOpacity)->AddAttributes(new xiiDefaultValueAttribute(0.1f))
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Effects")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

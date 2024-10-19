@@ -16,6 +16,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthOnlyPass, 1, xiiRTTIDefaultAllocator<xi
     XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Rendering")
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
