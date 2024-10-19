@@ -122,25 +122,29 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
 
   xiiFileSystem::CreateDirectoryStructure(sUserDataPath).AssertSuccess();
 
-  xiiString writableBinRoot = ">appdir/";
-  xiiString shaderCacheRoot = ">sdk/Output/";
+  xiiString sWritableBinRoot = ">appdir/";
+  xiiString sShaderCacheRoot = ">sdk/Output/";
 
 #if XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
-  // On platforms where this is disabled, one can usually only write to the user directory
-  // e.g. on UWP and mobile platforms
-  writableBinRoot = sUserDataPath;
-  shaderCacheRoot = sUserDataPath;
+  // On platforms where this is disabled, one can usually only write to the user directory.
+  // e.g. on mobile platforms.
+  sWritableBinRoot = sUserDataPath;
 #endif
-  xiiFileSystem::CreateDirectoryStructure(shaderCacheRoot).AssertSuccess();
+
+  xiiFileSystem::CreateDirectoryStructure(sShaderCacheRoot).IgnoreResult();
 
   // for absolute paths, read-only
   xiiFileSystem::AddDataDirectory("", "GameApplicationBase", ":", xiiDataDirUsage::ReadOnly).AssertSuccess();
 
   // ":bin/" : writing to the binary directory
-  xiiFileSystem::AddDataDirectory(writableBinRoot, "GameApplicationBase", "bin", xiiDataDirUsage::AllowWrites).AssertSuccess();
+  xiiFileSystem::AddDataDirectory(sWritableBinRoot, "GameApplicationBase", "bin", xiiDataDirUsage::AllowWrites).AssertSuccess();
 
   // ":shadercache/" for reading and writing shader files
-  xiiFileSystem::AddDataDirectory(shaderCacheRoot, "GameApplicationBase", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
+#if XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
+  xiiFileSystem::AddDataDirectory(sShaderCacheRoot, "GameApplicationBase", "shadercache", xiiDataDirUsage::ReadOnly).AssertSuccess();
+#else
+  xiiFileSystem::AddDataDirectory(sShaderCacheRoot, "GameApplicationBase", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
+#endif
 
   // ":appdata/" for reading and writing app user data
   xiiFileSystem::AddDataDirectory(sUserDataPath, "GameApplicationBase", "appdata", xiiDataDirUsage::AllowWrites).AssertSuccess();
@@ -153,9 +157,9 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
 
   // ":plugins/" for plugin specific data (optional, if it exists)
   {
-    xiiStringBuilder dir;
-    xiiFileSystem::ResolveSpecialDirectory(">sdk/Data/Plugins", dir).IgnoreResult();
-    if (xiiOSFile::ExistsDirectory(dir))
+    xiiStringBuilder sDir;
+    xiiFileSystem::ResolveSpecialDirectory(">sdk/Data/Plugins", sDir).IgnoreResult();
+    if (sDir.IsAbsolutePath() && xiiOSFile::ExistsDirectory(sDir))
     {
       xiiFileSystem::AddDataDirectory(">sdk/Data/Plugins", "GameApplicationBase", "plugins", xiiDataDirUsage::ReadOnly).IgnoreResult();
     }
