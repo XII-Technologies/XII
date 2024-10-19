@@ -136,10 +136,4 @@ void xiiPlayerApplication::DetermineProjectPath()
 
   // store it now, even if it fails, for error reporting
   m_sAppProjectPath = sProjectPath;
-
-  if (!xiiOSFile::ExistsDirectory(sProjectPath))
-  {
-    SetReturnCode(1);
-    return;
-  }
 }
