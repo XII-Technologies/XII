@@ -6,6 +6,7 @@
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
+#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 struct xiiGALTextureCreationDescription;
@@ -51,8 +52,8 @@ public:
   /// This function is called every frame if this node holds a xiiRenderPipelineNodeInputProviderPin or xiiRenderPipelineNodeOutputProviderPin pin. The node can return a valid texture handle, or an invalid handle, in which case the missing texture will be created from the texture pool.
   /// \param pPin - The member pin for which the texture is requested.
   /// \param desc - The format of the texture that should be provided.
-  /// \return The texture to use for this pin's connections. Or invalid, in which case it reverts to a regular input / output pin.
-  virtual xiiGALTextureHandle QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) { return {}; }
+  /// \return The texture view to use for this pin's connections. Or invalid, in which case it reverts to a regular input / output pin.
+  virtual xiiGALTextureViewHandle QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) { return {}; }
 
   /// \brief After GetRenderTargetDescriptions was called successfully for each pass, this function is called
   /// with the inputs and outputs for review. Disconnected pins have a nullptr value in the passed in arrays.

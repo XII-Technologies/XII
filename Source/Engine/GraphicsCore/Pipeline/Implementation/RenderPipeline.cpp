@@ -187,11 +187,11 @@ bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedStr
   else
   {
     // Check that only one passthrough is connected
-    if (pPinTarget->m_Type == xiiRenderPipelineNodePin::Type::PassThrough)
+    if (pPinTarget->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough))
     {
       for (const xiiRenderPipelineNodePin* pPin : pConnection->m_Inputs)
       {
-        if (pPin->m_Type == xiiRenderPipelineNodePin::Type::PassThrough)
+        if (pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough))
         {
           xiiLog::Error("A pass through pin is already connected to the '{0}' pin!", sOutputPinName);
           return false;
@@ -477,7 +477,7 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
     auto inputPins = pPass->GetInputPins();
     for (const xiiRenderPipelineNodePin* pPin : inputPins)
     {
-      if (pPin->m_Type == xiiRenderPipelineNodePin::Type::PassThrough)
+      if (pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough))
       {
         if (data.m_Outputs[pPin->m_uiOutputIndex] != nullptr)
         {
@@ -512,103 +512,109 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
   {
     const auto&     pPass = m_Passes[i].Borrow();
     ConnectionData& data  = m_Connections[pPass];
-    for (xiiRenderPipelinePassConnection* pConn : data.m_Inputs)
+    for (xiiRenderPipelinePassConnection* pConnection : data.m_Inputs)
     {
-      if (pConn != nullptr)
+      if (pConnection != nullptr)
       {
-        xiiUInt32 uiDataIdx                        = m_ConnectionToTextureIndex[pConn];
+        xiiUInt32 uiDataIdx                        = m_ConnectionToTextureIndex[pConnection];
         m_TextureUsage[uiDataIdx].m_uiLastUsageIdx = i;
       }
     }
 
-    for (xiiRenderPipelinePassConnection* pConn : data.m_Outputs)
+    for (xiiRenderPipelinePassConnection* pConnection : data.m_Outputs)
     {
-      if (pConn != nullptr)
+      if (pConnection != nullptr)
       {
-        if (pConn->m_pOutput->m_Type == xiiRenderPipelineNodePin::Type::PassThrough && data.m_Inputs[pConn->m_pOutput->m_uiInputIndex] != nullptr)
+        if (pConnection->m_pOutput->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough) && data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex] != nullptr)
         {
-          xiiRenderPipelinePassConnection* pCorrespondingInputConn = data.m_Inputs[pConn->m_pOutput->m_uiInputIndex];
+          xiiRenderPipelinePassConnection* pCorrespondingInputConn = data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex];
           XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pCorrespondingInputConn), "");
           xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pCorrespondingInputConn];
-          m_TextureUsage[uiDataIdx].m_UsedBy.PushBack(pConn);
+          m_TextureUsage[uiDataIdx].m_UsedBy.PushBack(pConnection);
           m_TextureUsage[uiDataIdx].m_uiLastUsageIdx = i;
 
-          XII_ASSERT_DEV(!m_ConnectionToTextureIndex.Contains(pConn), "");
-          m_ConnectionToTextureIndex[pConn] = uiDataIdx;
+          XII_ASSERT_DEV(!m_ConnectionToTextureIndex.Contains(pConnection), "");
+          m_ConnectionToTextureIndex[pConnection] = uiDataIdx;
         }
         else
         {
-          m_ConnectionToTextureIndex[pConn] = m_TextureUsage.GetCount();
-          TextureUsageData& texData         = m_TextureUsage.ExpandAndGetRef();
+          m_ConnectionToTextureIndex[pConnection] = m_TextureUsage.GetCount();
+          TextureUsageData& texData               = m_TextureUsage.ExpandAndGetRef();
 
-          texData.m_iTargetTextureIndex = -1;
-          texData.m_uiFirstUsageIdx     = i;
-          texData.m_uiLastUsageIdx      = i;
-          texData.m_UsedBy.PushBack(pConn);
+          texData.m_uiFirstUsageIdx = i;
+          texData.m_uiLastUsageIdx  = i;
+          texData.m_UsedBy.PushBack(pConnection);
         }
       }
     }
   }
 
-  static xiiUInt32 defaultTextureDescHash = xiiGALTextureCreationDescription{}.CalculateHash();
-  // Set view's render target textures to target pass connections.
-  for (xiiUInt32 i = 0; i < m_Passes.GetCount(); i++)
+  // If a texture desc has this hash, it is uninitialized and no texture will be created at runtime.
+  static xiiUInt32 uiDefaultTextureCreationDescriptionHash = xiiGALTextureCreationDescription{}.CalculateHash();
+
+  // Find pins that provide textures into the pipeline, e.g. xiiTargetPass pins.
+  // There can only be up to one provider pin connected to a texture usage block or there would be an ambiguity which of them provides the texture.
+  for (xiiUInt32 i = 0; i < m_Passes.GetCount(); ++i)
   {
-    const auto& pPass = m_Passes[i].Borrow();
-    if (pPass->IsInstanceOf<xiiTargetPass>())
-    {
-      const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
+    TextureUsageData&               textureUsageData = m_TextureUsage[i];
+    const xiiRenderPipelineNodePin* pTextureProvider = nullptr;
+    auto                            CheckForProvider = [&](const xiiRenderPipelineNodePin* pPin) -> bool {
+      if (!pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::TextureProvider))
+        return true;
 
-      xiiTargetPass*  pTargetPass = static_cast<xiiTargetPass*>(pPass);
-      ConnectionData& data        = m_Connections[pPass];
-      for (xiiUInt32 j = 0; j < data.m_Inputs.GetCount(); j++)
+      if (!pTextureProvider)
       {
-        xiiRenderPipelinePassConnection* pConn = data.m_Inputs[j];
-        if (pConn != nullptr)
+        pTextureProvider = pPin;
+        return true;
+      }
+
+      auto pPinOwner      = static_cast<xiiRenderPipelinePass*>(pPin->m_pParent);
+      auto pProviderOwner = static_cast<xiiRenderPipelinePass*>(pTextureProvider->m_pParent);
+      xiiLog::Error("Two provider pins are connected to the same texture either directly or via passthrough pins: {}.{} and {}.{}", pProviderOwner->GetName().IsEmpty() ? pProviderOwner->GetDynamicRTTI()->GetTypeName() : pProviderOwner->GetName(), pProviderOwner->GetPinName(pTextureProvider).GetView(), pPinOwner->GetName().IsEmpty() ? pPinOwner->GetDynamicRTTI()->GetTypeName() : pPinOwner->GetName(), pPinOwner->GetPinName(pPin).GetView());
+      return false;
+    };
+
+    for (xiiRenderPipelinePassConnection* pUsedByConnection : textureUsageData.m_UsedBy)
+    {
+      if (!CheckForProvider(pUsedByConnection->m_pOutput))
+        return false;
+
+      for (const xiiRenderPipelineNodePin* pPin : pUsedByConnection->m_Inputs)
+      {
+        if (!CheckForProvider(pPin))
+          return false;
+      }
+    }
+
+    if (pTextureProvider)
+    {
+      auto                    pPass        = xiiDynamicCast<xiiRenderPipelinePass*>(pTextureProvider->m_pParent);
+      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(pTextureProvider, textureUsageData.m_UsedBy[0]->m_Desc);
+      if (hTextureView.IsInvalidated())
+      {
+        // In this case, e.g. xiiTargetPass does not provide a render target for the connection but if the descriptor is set, we can instead use the pool to supplement the missing texture later.
+        textureUsageData.m_pTextureProvider = nullptr;
+        for (auto pUsedByConnection : textureUsageData.m_UsedBy)
         {
-          const xiiGALTextureViewHandle* hTextureView = pTargetPass->GetTextureViewHandle(renderTargets, pPass->GetInputPins()[j]);
-          XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pConn), "");
-
-          xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pConn];
-          if (!hTextureView)
-          {
-            m_TextureUsage[uiDataIdx].m_iTargetTextureIndex = -1;
-            for (auto pUsedByConn : m_TextureUsage[uiDataIdx].m_UsedBy)
-            {
-              pUsedByConn->m_TextureHandle.Invalidate();
-            }
-          }
-          else if (!hTextureView->IsInvalidated() || pConn->m_Desc.CalculateHash() == defaultTextureDescHash)
-          {
-            m_TextureUsage[uiDataIdx].m_iTargetTextureIndex = static_cast<xiiInt32>(hTextureView - reinterpret_cast<const xiiGALTextureViewHandle*>(&renderTargets));
-            XII_ASSERT_DEV(reinterpret_cast<const xiiGALTextureViewHandle*>(&renderTargets)[m_TextureUsage[uiDataIdx].m_iTargetTextureIndex] == *hTextureView, "Offset computation broken.");
-
-            for (auto pUsedByConn : m_TextureUsage[uiDataIdx].m_UsedBy)
-            {
-              if (xiiGALTextureView* pTextureView = pDevice->GetTextureView(*hTextureView))
-              {
-                pUsedByConn->m_TextureHandle = pTextureView->GetDescription().m_hTexture;
-              }
-              else
-              {
-                pUsedByConn->m_TextureHandle = xiiGALTextureHandle();
-              }
-            }
-          }
-          else
-          {
-            // In this case, the xiiTargetPass does not provide a render target for the connection but the descriptor is set so we can instead use the pool to supplement the missing texture.
-          }
+          pUsedByConnection->m_TextureHandle.Invalidate();
+        }
+      }
+      else
+      {
+        textureUsageData.m_pTextureProvider = pTextureProvider;
+        for (auto pUsedByConnection : textureUsageData.m_UsedBy)
+        {
+          pUsedByConnection->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
         }
       }
     }
   }
 
-  // Inconvenient loop to gather all TextureUsageData indices that are not view render target textures.
-  for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); i++)
+  // Inconvenient loop to gather all TextureUsageData indices that are not provider textures and valid.
+  for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); ++i)
   {
     TextureUsageData& data = m_TextureUsage[i];
-    if (data.m_iTargetTextureIndex != -1)
+    if (data.m_pTextureProvider || data.m_UsedBy[0]->m_Desc.CalculateHash() == uiDefaultTextureCreationDescriptionHash)
       continue;
 
     m_TextureUsageIdxSortedByFirstUsage.PushBack((xiiUInt16)i);
@@ -1184,22 +1190,17 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(renderViewContext.m_pViewData->m_hSwapChain))
+  // Update textures from texture providers as these can change every frame (e.g. swap chain textures).
+  for (TextureUsageData& textureUsageData : m_TextureUsage)
   {
-    xiiGALRenderTargets renderTargets;
-    renderTargets.m_hRTs[0] = pDevice->GetTexture(pSwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-    // Update target textures after the swap chain acquired new textures.
-    for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); i++)
+    if (!textureUsageData.m_pTextureProvider)
+      continue;
+
+    auto                    pPass        = static_cast<xiiRenderPipelinePass*>(textureUsageData.m_pTextureProvider->m_pParent);
+    xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(textureUsageData.m_pTextureProvider, textureUsageData.m_UsedBy[0]->m_Desc);
+    for (xiiRenderPipelinePassConnection* pUsedByConnection : textureUsageData.m_UsedBy)
     {
-      TextureUsageData& textureUsageData = m_TextureUsage[i];
-      if (textureUsageData.m_iTargetTextureIndex != -1)
-      {
-        xiiGALTextureViewHandle hTextureView = reinterpret_cast<const xiiGALTextureViewHandle*>(&renderTargets)[textureUsageData.m_iTargetTextureIndex];
-        for (auto pUsedByConn : textureUsageData.m_UsedBy)
-        {
-          pUsedByConn->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
-        }
-      }
+      pUsedByConnection->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
     }
   }
 
@@ -1318,7 +1319,7 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
     for (const xiiRenderPipelinePassConnection* pCon : data.m_UsedBy)
     {
       xiiDGMLGraph::NodeDesc nd;
-      nd.m_Color = data.m_iTargetTextureIndex != -1 ? xiiColor::Black : xiiColorScheme::GetColor(static_cast<xiiColorScheme::Enum>(i % xiiColorScheme::Count), 4);
+      nd.m_Color = data.m_pTextureProvider ? xiiColor::Black : xiiColorScheme::GetColor(static_cast<xiiColorScheme::Enum>(i % xiiColorScheme::Count), 4);
       nd.m_Shape = xiiDGMLGraph::NodeShape::RoundedRectangle;
 
       xiiStringBuilder sFormat;
@@ -1326,7 +1327,7 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       {
         sFormat.SetFormat("Unknown Format {}", (int)pCon->m_Desc.m_Format);
       }
-      sTmp.SetFormat("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_iTargetTextureIndex != -1 ? "RenderTarget" : "PoolTexture", i, pCon->m_Desc.m_Size.width, pCon->m_Desc.m_Size.height, pCon->m_Desc.m_uiArraySizeOrDepth, pCon->m_Desc.m_uiSampleCount, xiiGALTextureFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
+      sTmp.SetFormat("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_pTextureProvider ? "External" : "PoolTexture", i, pCon->m_Desc.m_Size.width, pCon->m_Desc.m_Size.height, pCon->m_Desc.m_uiArraySizeOrDepth, pCon->m_Desc.m_uiSampleCount, xiiGALTextureFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
       xiiUInt32 uiTextureNode = ref_graph.AddNode(sTmp, &nd);
 
       xiiUInt32 uiOutputNode = *nodeMap.GetValue(pCon->m_pOutput->m_pParent);

@@ -19,7 +19,7 @@ public:
 
 protected:
   xiiRenderPipelineNodePassThroughPin m_PinColor;
-  xiiRenderPipelineNodeInputPin      m_PinDepthStencil;
+  xiiRenderPipelineNodeInputPin       m_PinDepthStencil;
 
   xiiShaderResourceHandle        m_hShader;
   xiiConstantBufferStorageHandle m_hConstantBuffer;

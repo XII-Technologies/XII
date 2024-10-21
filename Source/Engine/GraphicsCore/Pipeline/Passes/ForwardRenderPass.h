@@ -7,7 +7,7 @@ struct xiiForwardRenderShadingQuality
 {
   using StorageType = xiiInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     Normal,
     Simplified,
