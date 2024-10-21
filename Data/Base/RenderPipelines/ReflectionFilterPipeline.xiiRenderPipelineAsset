@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{5963804767315103672,5433555503478725399}}
-		u4 %Hash{7738546205720984193}
+		u4 %Hash{13500494471452189567}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -24,7 +24,7 @@ Objects
 o
 {
 	Uuid %id{u4{11281321821419367342,3985204654413113789}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
@@ -76,7 +76,7 @@ o
 		Uuid %IrradianceData{u4{3796248088956775667,8325318231547522961}}
 		u3 %IrradianceOutputIndex{0}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xC1A2F843,0x1B90A143}}
+		Vec2 %Node::Pos{f{0x5CFF0744,0x6638C343}}
 		f %Saturation{0x0000803F}
 		u3 %SpecularOutputIndex{0}
 	}
@@ -118,7 +118,7 @@ o
 o
 {
 	Uuid %id{u4{18033239895229086407,5936273586877258208}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
@@ -143,7 +143,7 @@ o
 o
 {
 	Uuid %id{u4{4351417456117455497,7021933259158745380}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
@@ -157,21 +157,21 @@ o
 o
 {
 	Uuid %id{u4{12779088908473012928,8843815235720188792}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{9179876790401181893,9404880298870400463}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{5064157575773237196,10846767988578980990}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
@@ -185,21 +185,21 @@ o
 o
 {
 	Uuid %id{u4{120345010372302782,14904842470169854986}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{13306539704625075368,18181627133137522626}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{14455014302106423940,18224443472601444815}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
@@ -220,6 +220,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiDocumentRoot"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16531145568626605552,4457094835024808881}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiCategoryAttribute"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -356,6 +373,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelineNodeInputPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16479430116335932890,12296207084152995939}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodeInputPin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeInputProviderPin"}
 		u3 %TypeVersion{1}
 	}
 }
