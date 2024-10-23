@@ -408,12 +408,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties();
 
     xiiUInt32 uiQueueFamilyCount = 0U;
-    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr);
+    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, m_InstanceDispatchLoader);
 
     XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "");
 
     m_PhysicalDeviceQueueFamilyProperties.SetCount(uiQueueFamilyCount);
-    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, m_PhysicalDeviceQueueFamilyProperties.GetData());
+    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, m_PhysicalDeviceQueueFamilyProperties.GetData(), m_InstanceDispatchLoader);
 
     XII_ASSERT_DEV(m_PhysicalDeviceQueueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
 
@@ -1062,6 +1062,23 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
+  // Initialize vulkan memory allocator. We prefer dynamically finding the function pointers.
+  {
+    VmaVulkanFunctions vmaVulkanFunctions    = {};
+    vmaVulkanFunctions.vkGetInstanceProcAddr = m_InstanceDispatchLoader.vkGetInstanceProcAddr;
+    vmaVulkanFunctions.vkGetDeviceProcAddr   = m_InstanceDispatchLoader.vkGetDeviceProcAddr;
+
+    VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
+    vmaAllocatorCreateInfo.vulkanApiVersion       = m_uiVulkanVersion;
+    vmaAllocatorCreateInfo.instance               = m_Instance;
+    vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
+    vmaAllocatorCreateInfo.device                 = m_LogicalDevice;
+    vmaAllocatorCreateInfo.pVulkanFunctions       = &vmaVulkanFunctions;
+    // vmaAllocatorCreateInfo.flags               = VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
+  }
+
   xiiClipSpaceDepthRange::Default = xiiClipSpaceDepthRange::ZeroToOne;
 
   // We use xiiClipSpaceYMode::Regular and rely in the Vulkan 1.1 feature that a negative height performs y-inversion of the clip-space to framebuffer-space transform.
@@ -1089,6 +1106,8 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
     m_pGraphicsCommandQueue->DeInitializePlatform();
     m_pGraphicsCommandQueue.Clear();
   }
+
+  vmaDestroyAllocator(m_vkVmaAllocator);
 
   m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
 

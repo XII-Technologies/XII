@@ -4,6 +4,7 @@
 
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
 {
@@ -88,6 +89,7 @@ public:
   // Internal objects retrieval.
 
   XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
+  XII_ALWAYS_INLINE VmaAllocator      GetVulkanMemoryAllocator() const { return m_vkVmaAllocator; }
 
   XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
   XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
@@ -219,6 +221,7 @@ private:
     PipelineCache
   };
 
+  // Vulkan Instance Information.
   vk::Instance              m_Instance;
   xiiUInt32                 m_uiVulkanVersion = 0U;
   vk::DispatchLoaderDynamic m_InstanceDispatchLoader;
@@ -250,6 +253,9 @@ private:
   DebugMode                  m_DebugMode = DebugMode::Disabled;
   vk::DebugUtilsMessengerEXT m_DebugMessenger;
   vk::DebugReportCallbackEXT m_DebugCallback;
+
+  // Vulkan Memory Allocation.
+  VmaAllocator m_vkVmaAllocator;
 
   // Graphics Queue Information.
   QueueInformation                       m_GraphicsQueueInformation;
