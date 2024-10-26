@@ -92,7 +92,6 @@ public:
     void Next(); // [tested]
 
     bool operator==(const ConstIterator& other) const; // [tested]
-    bool operator!=(const ConstIterator& other) const; // [tested]
 
     /// \brief Returns 'Value()' to enable foreach.
     xiiUInt32 operator*() const; // [tested]
@@ -281,9 +280,6 @@ private:
   template <typename U>
   friend bool operator==(xiiStaticBitfield<U> lhs, xiiStaticBitfield<U> rhs);
 
-  template <typename U>
-  friend bool operator!=(xiiStaticBitfield<U> lhs, xiiStaticBitfield<U> rhs);
-
   StorageType m_Storage = 0;
 };
 
@@ -309,12 +305,6 @@ template <typename T>
 inline bool operator==(xiiStaticBitfield<T> lhs, xiiStaticBitfield<T> rhs)
 {
   return lhs.m_Storage == rhs.m_Storage;
-}
-
-template <typename T>
-inline bool operator!=(xiiStaticBitfield<T> lhs, xiiStaticBitfield<T> rhs)
-{
-  return lhs.m_Storage != rhs.m_Storage;
 }
 
 //////////////////////////////////////////////////////////////////////////

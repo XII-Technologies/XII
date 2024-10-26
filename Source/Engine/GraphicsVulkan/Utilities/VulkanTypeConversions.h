@@ -65,6 +65,7 @@ public:
 
   static vk::PipelineStageFlags GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e);
   static vk::AccessFlags        GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
+  static vk::AccessFlags        GetAccessFlags(xiiBitflags<xiiGALResourceStateFlags> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

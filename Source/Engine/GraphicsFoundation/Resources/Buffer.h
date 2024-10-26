@@ -112,7 +112,7 @@ public:
   /// The memory properties are only relevant for persistently mapped buffers.
   /// In particular, if the memory is not coherent, an application must call xiiGALBuffer::FlushMappedRange() to make writes by the CPU available to the GPU, and
   /// call xiiGALBuffer::InvalidateMappedRange() to make writes by the GPU visible to the CPU.
-  [[nodiscard]] virtual xiiGALMemoryProperties GetMemoryProperties() const = 0;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALMemoryPropertyFlags> GetMemoryProperties() const { return m_MemoryPropertyFlags; }
 
   /// \brief This flushes the specified range of non-coherent memory from the host cache to make it available to the GPU.
   ///
@@ -152,6 +152,8 @@ protected:
 
 protected:
   xiiGALBufferCreationDescription m_Description;
+
+  xiiBitflags<xiiGALMemoryPropertyFlags> m_MemoryPropertyFlags;
 
   xiiHashTable<xiiUInt32, xiiGALBufferViewHandle> m_BufferViews;
 

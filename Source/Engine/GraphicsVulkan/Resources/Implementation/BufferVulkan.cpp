@@ -12,21 +12,162 @@ xiiGALBufferVulkan::~xiiGALBufferVulkan() = default;
 
 xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
+  xiiGALDeviceVulkan*                 pDeviceVulkan              = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::PhysicalDevice                  vkPhysicalDevice           = pDeviceVulkan->GetVulkanPhysicalDevice();
+  vk::Device                          vkLogicalDevice            = pDeviceVulkan->GetVulkanLogicalDevice();
+  const vk::PhysicalDeviceProperties& vkPhysicalDeviceProperties = pDeviceVulkan->GetVulkanPhysicalDeviceProperties();
+
+  vk::BufferCreateInfo vkBufferCreateInfo  = {};
+  vkBufferCreateInfo.pNext                 = nullptr;
+  vkBufferCreateInfo.flags                 = {};
+  vkBufferCreateInfo.size                  = m_Description.m_uiSize;
+  vkBufferCreateInfo.usage                 = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
+  vkBufferCreateInfo.sharingMode           = vk::SharingMode::eExclusive; // Sharing mode of the buffer when it is accessed by multiple queue families.
+  vkBufferCreateInfo.pQueueFamilyIndices   = nullptr;                     // The list of queue families that will access this buffer (ignored if sharingMode is not vk::SharingMode::eConcurrent).
+  vkBufferCreateInfo.queueFamilyIndexCount = 0U;                          // The number of entries in the pQueueFamilyIndices array.
+
+  for (xiiUInt32 uiBit : m_Description.m_BindFlags)
+  {
+    switch (uiBit)
+    {
+      case xiiGALBindFlags::ShaderResource:
+      {
+        if (m_Description.m_Mode == xiiGALBufferMode::Formatted)
+        {
+          // Formatted buffers are mapped to uniform texel buffers in Vulkan.
+          vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eUniformTexelBuffer;
+        }
+        else
+        {
+          // Structured and ByteAddress buffers are mapped to read-only storage buffers in Vulkan.
+          vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eStorageBuffer;
+        }
+      }
+      break;
+      case xiiGALBindFlags::UnorderedAccess:
+      {
+        if (m_Description.m_Mode == xiiGALBufferMode::Formatted)
+        {
+          // Read-Write formatted buffers are mapped to storage texel buffers in Vulkan.
+          vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eStorageTexelBuffer;
+        }
+        else
+        {
+          // Read-Write Structured and Read-Write ByteAddress buffers are mapped to storage buffers in Vulkan.
+          vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eStorageBuffer;
+        }
+      }
+      break;
+      case xiiGALBindFlags::VertexBuffer:
+      {
+        vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eVertexBuffer;
+      }
+      break;
+      case xiiGALBindFlags::IndexBuffer:
+      {
+        vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eIndexBuffer;
+      }
+      break;
+      case xiiGALBindFlags::IndirectDrawArguments:
+      {
+        vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eIndirectBuffer;
+      }
+      break;
+      case xiiGALBindFlags::UniformBuffer:
+      {
+        vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eUniformBuffer;
+      }
+      break;
+      case xiiGALBindFlags::RayTracing:
+      {
+        vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eStorageBuffer; // For scratch buffer.
+        vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eShaderBindingTableKHR;
+        vkBufferCreateInfo.usage |= vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR; // Acceleration structure build inputs such as vertex, index, transform, aabb, and instance data.
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+
+  xiiHybridArray<xiiUInt32, 3U> queueFamilies;
+  queueFamilies.PushBack(pDeviceVulkan->GetGraphicsQueueInformation().m_uiQueueFamilyIndex);
+  if (pDeviceVulkan->GetComputeQueueInformation().m_uiQueueFamilyIndex != xiiInvalidIndex && !queueFamilies.Contains(pDeviceVulkan->GetComputeQueueInformation().m_uiQueueFamilyIndex))
+  {
+    queueFamilies.PushBack(pDeviceVulkan->GetComputeQueueInformation().m_uiQueueFamilyIndex);
+  }
+  if (pDeviceVulkan->GetTransferQueueInformation().m_uiQueueFamilyIndex != xiiInvalidIndex && !queueFamilies.Contains(pDeviceVulkan->GetTransferQueueInformation().m_uiQueueFamilyIndex))
+  {
+    queueFamilies.PushBack(pDeviceVulkan->GetTransferQueueInformation().m_uiQueueFamilyIndex);
+  }
+
+  if (queueFamilies.GetCount() > 1U)
+  {
+    // If sharingMode is vk::SharingMode::eConcurrent, queueFamilyIndexCount must be greater than 1.
+    vkBufferCreateInfo.sharingMode           = vk::SharingMode::eConcurrent;
+    vkBufferCreateInfo.pQueueFamilyIndices   = queueFamilies.GetData();
+    vkBufferCreateInfo.queueFamilyIndexCount = queueFamilies.GetCount();
+  }
+
+  constexpr vk::BufferUsageFlags usageFlagsThatRequireBackingBuffer = vk::BufferUsageFlagBits::eStorageTexelBuffer | vk::BufferUsageFlagBits::eUniformTexelBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+  const bool                     bRequiresBackingBuffer             = (vkBufferCreateInfo.usage & usageFlagsThatRequireBackingBuffer) ||
+    // We only need a backing buffer for the storage buffer if there is an unordered access bind flag (aka RW structured buffers).
+    // Read-only storage buffers (aka structured buffers) don't need a backing buffer.
+    ((vkBufferCreateInfo.usage & vk::BufferUsageFlagBits::eStorageBuffer) && m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
+
+  if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse)
+  {
+    vkBufferCreateInfo.flags = vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency |
+      (m_Description.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias) ? vk::BufferCreateFlagBits::eSparseAliased : static_cast<vk::BufferCreateFlagBits>(0U));
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createBuffer(&vkBufferCreateInfo, nullptr, &m_vkBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    SetResourceState(xiiGALResourceStateFlags::Undefined);
+  }
+  else if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Dynamic && !bRequiresBackingBuffer)
+  {
+    XII_ASSERT_DEV(vkBufferCreateInfo.sharingMode == vk::SharingMode::eExclusive, "Sharing mode is not supported for dynamic buffers, this should have caused buffer creation failure.");
+
+    // Dynamic constant/vertex/index/structured buffers are suballocated in the upload heap when Map() is called.
+    // Dynamic formatted buffers or writable buffers need to be allocated in GPU-local memory.
+    xiiBitflags<xiiGALResourceStateFlags> state = xiiGALResourceStateFlags::VertexBuffer | xiiGALResourceStateFlags::IndexBuffer | xiiGALResourceStateFlags::ConstantBuffer | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::IndirectArgument;
+    SetResourceState(state);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    {
+      constexpr vk::AccessFlags vkAccessFlags = vk::AccessFlagBits::eIndirectCommandRead | vk::AccessFlagBits::eIndexRead | vk::AccessFlagBits::eVertexAttributeRead | vk::AccessFlagBits::eUniformRead | vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead;
+
+      XII_ASSERT_DEBUG(xiiVulkanTypeConversions::GetAccessFlags(state) == vkAccessFlags, "");
+    }
+#endif
+
+    // Dynamic buffer memory is always host-coherent.
+    m_MemoryPropertyFlags = xiiGALMemoryPropertyFlags::HostCoherent;
+  }
+  else
+  {
+    XII_ASSERT_DEV(m_Description.m_ResourceUsage != xiiGALResourceUsage::Dynamic && xiiMath::CountBits(m_Description.m_uiCommandQueueMask) <= 1U, "The command queue mask must contain a single set bit, this error should have been caught in buffer validation.");
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createBuffer(&vkBufferCreateInfo, nullptr, &m_vkBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  }
 
   return XII_FAILURE;
 }
 
 xiiResult xiiGALBufferVulkan::DeInitPlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  if (m_vkStagingBuffer != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer));
+  }
+  if (m_vkBuffer != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBuffer));
+  }
   return XII_SUCCESS;
-}
-
-xiiGALMemoryProperties xiiGALBufferVulkan::GetMemoryProperties() const
-{
-  return xiiGALMemoryProperties();
 }
 
 void xiiGALBufferVulkan::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)

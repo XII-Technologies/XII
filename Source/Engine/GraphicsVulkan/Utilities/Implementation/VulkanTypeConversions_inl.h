@@ -750,3 +750,8 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
 {
   return vk::AccessFlags();
 }
+
+XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBitflags<xiiGALResourceStateFlags> e)
+{
+  return vk::AccessFlags();
+}
