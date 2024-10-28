@@ -486,7 +486,7 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         if (pGALCommandList->MapTextureSubresource(m_hThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
         {
           const auto& textureDescription = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRTStaging)->GetDescription();
-          const auto& formatProperties   = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+          const auto& formatProperties   = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
 
           if (mappedSubResource.m_pData)
           {

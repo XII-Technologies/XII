@@ -14,7 +14,7 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
 
@@ -1987,12 +1987,12 @@ void xiiDebugRenderer::OnEngineStartup()
     xiiGraphicsUtils::CreateSimpleASCIIFontTexture(debugFontImage);
 
     xiiGALTextureSubResourceData memoryDesc;
-    memoryDesc.m_pData         = debugFontImage.GetPixelPointer<xiiUInt8>();
+    memoryDesc.m_pData         = debugFontImage.GetByteBlobPtr();
     memoryDesc.m_uiStride      = static_cast<xiiUInt32>(debugFontImage.GetRowPitch());
     memoryDesc.m_uiDepthStride = static_cast<xiiUInt32>(debugFontImage.GetDepthPitch());
 
     xiiTexture2DResourceDescriptor desc;
-    desc.m_DescGAL               = xiiGALGraphicsUtilities::GetDefaultTexture2DDescription();
+    desc.m_DescGAL               = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
     desc.m_DescGAL.m_Size.width  = debugFontImage.GetWidth();
     desc.m_DescGAL.m_Size.height = debugFontImage.GetHeight();
     desc.m_DescGAL.m_Format      = xiiGALTextureFormat::R8UNormalized;

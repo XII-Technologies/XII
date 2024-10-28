@@ -6,7 +6,7 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshBufferResource, 1, xiiRTTIDefaultAllocator<xiiMeshBufferResource>)
@@ -71,7 +71,7 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSe
   si.m_Semantic      = semantic;
   si.m_Format        = format;
   si.m_uiOffset      = 0;
-  si.m_uiElementSize = static_cast<xiiUInt16>(xiiGALGraphicsUtilities::GetTextureFormatProperties(format).GetElementSize());
+  si.m_uiElementSize = static_cast<xiiUInt16>(xiiGALTextureUtilities::GetTextureFormatProperties(format).GetElementSize());
   m_uiVertexSize += si.m_uiElementSize;
 
   XII_ASSERT_DEV(si.m_uiElementSize > 0, "Invalid Element Size. Format not supported?");

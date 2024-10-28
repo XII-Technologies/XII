@@ -1457,7 +1457,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
 
       xiiGALTextureSubResourceData sourceData;
-      sourceData.m_pData    = fb.GetData();
+      sourceData.m_pData    = fb.GetByteArrayPtr();
       sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
 
       pCommandList->UpdateTextureExtended(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
@@ -1478,7 +1478,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
     d.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8SNormalized;
 
     xiiGALTextureSubResourceData content[1];
-    content[0].m_pData         = fb.GetData();
+    content[0].m_pData         = fb.GetByteArrayPtr();
     content[0].m_uiStride      = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_Size.width;
     content[0].m_uiDepthStride = content[0].m_uiStride * d.m_DescGAL.m_Size.height;
     d.m_InitialContent         = content;

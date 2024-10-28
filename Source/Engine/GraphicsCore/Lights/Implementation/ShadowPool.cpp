@@ -14,6 +14,7 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/LightData.h>

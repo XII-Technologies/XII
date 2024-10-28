@@ -71,7 +71,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
   const xiiEnum<xiiGALTextureFormat> format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
-  const auto&                        formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(format);
+  const auto&                        formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(format);
 
   ref_td.m_DescGAL.m_Format      = format;
   ref_td.m_DescGAL.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);
@@ -114,8 +114,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
       for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetNumMipLevels(); ++mip)
       {
         xiiGALTextureSubResourceData& id = ref_initData.ExpandAndGetRef();
-
-        id.m_pData = const_cast<xiiUInt8*>(pImage->GetPixelPointer<xiiUInt8>(mip, face, arrayIndex));
+        id.m_pData                       = pImage->GetSubImageView(mip, face, arrayIndex).GetByteBlobPtr();
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {

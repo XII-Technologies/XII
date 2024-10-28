@@ -92,7 +92,7 @@ void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
   if (!hFont.IsValid())
   {
     xiiGALTextureSubResourceData memoryDesc;
-    memoryDesc.m_pData         = pixels;
+    memoryDesc.m_pData         = xiiMakeByteBlobPtr(pixels, xiiUInt64(width) * height * 4ull);
     memoryDesc.m_uiStride      = width * 4;
     memoryDesc.m_uiDepthStride = width * height * 4;
 

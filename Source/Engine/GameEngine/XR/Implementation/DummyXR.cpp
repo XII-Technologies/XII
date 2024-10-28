@@ -10,6 +10,7 @@
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 XII_IMPLEMENT_SINGLETON(xiiDummyXR);

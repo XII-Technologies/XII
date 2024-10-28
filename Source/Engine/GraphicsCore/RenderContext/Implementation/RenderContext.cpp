@@ -13,7 +13,7 @@
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/States/PipelineState.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
@@ -1380,7 +1380,7 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
         xiiGALTexture*                          pDepthTexture      = pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget())->GetTexture();
         const xiiGALTextureCreationDescription& textureDescription = pDepthTexture->GetDescription();
 
-        xiiVec3U32 size                                 = xiiGALGraphicsUtilities::GetMipLevelSize(pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget())->GetDescription().m_uiMostDetailedMip, textureDescription);
+        xiiVec3U32 size                                 = xiiGALTextureUtilities::GetMipLevelSize(pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget())->GetDescription().m_uiMostDetailedMip, textureDescription);
         frameBufferDescription.m_FramebufferSize.width  = size.x;
         frameBufferDescription.m_FramebufferSize.height = size.y;
         frameBufferDescription.m_uiArraySliceCount      = textureDescription.m_uiArraySizeOrDepth;
@@ -1393,7 +1393,7 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
         xiiGALTexture*                          pColourTexture     = pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)))->GetTexture();
         const xiiGALTextureCreationDescription& textureDescription = pColourTexture->GetDescription();
 
-        xiiVec3U32 size                                 = xiiGALGraphicsUtilities::GetMipLevelSize(pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)))->GetDescription().m_uiMostDetailedMip, textureDescription);
+        xiiVec3U32 size                                 = xiiGALTextureUtilities::GetMipLevelSize(pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)))->GetDescription().m_uiMostDetailedMip, textureDescription);
         frameBufferDescription.m_FramebufferSize.width  = size.x;
         frameBufferDescription.m_FramebufferSize.height = size.y;
         frameBufferDescription.m_uiArraySliceCount      = textureDescription.m_uiArraySizeOrDepth;

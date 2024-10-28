@@ -187,7 +187,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
       if (pCommandList->MapTextureSubresource(m_hPickingDepthRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
       {
         const auto& textureDescription = pDevice->GetTexture(m_hPickingDepthRTStaging)->GetDescription();
-        const auto& formatProperties   = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+        const auto& formatProperties   = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
 
         if (mappedSubResource.m_pData)
         {
@@ -230,7 +230,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
       if (pCommandList->MapTextureSubresource(m_hPickingIdRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
       {
         const auto& textureDescription = pDevice->GetTexture(m_hPickingIdRTStaging)->GetDescription();
-        const auto& formatProperties   = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+        const auto& formatProperties   = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
 
         if (mappedSubResource.m_pData)
         {
