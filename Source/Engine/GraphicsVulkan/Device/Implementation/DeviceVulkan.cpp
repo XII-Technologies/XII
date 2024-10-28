@@ -7,7 +7,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
@@ -1608,7 +1608,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         break;
     }
 
-    m_AdapterDescription.m_Vendor             = xiiGALGraphicsUtilities::GetVendorFromID(m_PhysicalDeviceProperties.vendorID);
+    m_AdapterDescription.m_Vendor             = xiiGALDeviceUtilities::GetVendorFromID(m_PhysicalDeviceProperties.vendorID);
     m_AdapterDescription.m_uiVendorID         = m_PhysicalDeviceProperties.vendorID;
     m_AdapterDescription.m_uiDeviceID         = m_PhysicalDeviceProperties.deviceID;
     m_AdapterDescription.m_uiVideoOutputCount = 0U;

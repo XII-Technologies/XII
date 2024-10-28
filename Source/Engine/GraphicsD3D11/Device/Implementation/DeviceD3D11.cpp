@@ -3,7 +3,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsD3D11/CommandEncoder/CommandListD3D11.h>
 #include <GraphicsD3D11/CommandEncoder/CommandQueueD3D11.h>
@@ -851,7 +851,7 @@ xiiResult xiiGALDeviceD3D11::FillCapabilitiesPlatform()
     else
       m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
 
-    m_AdapterDescription.m_Vendor             = xiiGALGraphicsUtilities::GetVendorFromID(dxgiAdapterDescription.VendorId);
+    m_AdapterDescription.m_Vendor             = xiiGALDeviceUtilities::GetVendorFromID(dxgiAdapterDescription.VendorId);
     m_AdapterDescription.m_uiVendorID         = dxgiAdapterDescription.VendorId;
     m_AdapterDescription.m_uiDeviceID         = dxgiAdapterDescription.DeviceId;
     m_AdapterDescription.m_uiVideoOutputCount = 0U;

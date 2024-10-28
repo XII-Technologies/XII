@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandList, 1, xiiRTTINoAllocator)
@@ -261,7 +261,7 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
   {
     const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
-    const auto& formatProperties      = xiiGALGraphicsUtilities::GetTextureFormatProperties(attachmentDescription.m_Format);
+    const auto& formatProperties      = xiiGALTextureUtilities::GetTextureFormatProperties(attachmentDescription.m_Format);
 
     if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Load)
     {

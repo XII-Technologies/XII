@@ -2,7 +2,7 @@
 
 #include <Foundation/Memory/MemoryUtils.h>
 
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsD3D11/CommandEncoder/CommandListD3D11.h>
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
@@ -637,7 +637,7 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   destinationBox.bottom    = textureBox.m_vMax.y;
   destinationBox.back      = textureBox.m_vMax.z;
 
-  const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+  const auto& formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
 
   if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Compressed)
   {
@@ -654,7 +654,7 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   xiiUInt32 uiDestinationSubresourceIndex = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
   xiiUInt32 uiCopyFlags                   = D3D11_COPY_DISCARD;
 
-  m_pCommandList->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData, static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
+  m_pCommandList->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData.GetPtr(), static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
 }
 
 void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
@@ -684,29 +684,29 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
     HRESULT                  hRes = pCommandList->Map(pDXTempTexture, 0, D3D11_MAP_WRITE, 0, &MapResult);
     XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
 
-    xiiUInt32 uiRowPitch   = uiWidth * xiiGALGraphicsUtilities::GetTextureFormatProperties(format).GetElementSize();
+    xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureUtilities::GetTextureFormatProperties(format).GetElementSize();
     xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
     XII_ASSERT_DEV(subresourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, subresourceData.m_uiStride);
     XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}", uiSlicePitch, subresourceData.m_uiDepthStride);
 
     if (MapResult.RowPitch == uiRowPitch && MapResult.DepthPitch == uiSlicePitch)
     {
-      memcpy(MapResult.pData, subresourceData.m_pData, uiSlicePitch * uiDepth);
+      memcpy(MapResult.pData, subresourceData.m_pData.GetPtr(), uiSlicePitch * uiDepth);
     }
     else
     {
       // Copy row by row
       for (xiiUInt32 z = 0; z < uiDepth; ++z)
       {
-        const void* pSource = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData, z * uiSlicePitch);
-        void*       pDest   = xiiMemoryUtils::AddByteOffset(MapResult.pData, z * MapResult.DepthPitch);
+        const void* pSource      = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), z * uiSlicePitch);
+        void*       pDestination = xiiMemoryUtils::AddByteOffset(MapResult.pData, z * MapResult.DepthPitch);
 
         for (xiiUInt32 y = 0; y < uiHeight; ++y)
         {
-          memcpy(pDest, pSource, uiRowPitch);
+          memcpy(pDestination, pSource, uiRowPitch);
 
-          pSource = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
-          pDest   = xiiMemoryUtils::AddByteOffset(pDest, MapResult.RowPitch);
+          pSource      = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
+          pDestination = xiiMemoryUtils::AddByteOffset(pDestination, MapResult.RowPitch);
         }
       }
     }
