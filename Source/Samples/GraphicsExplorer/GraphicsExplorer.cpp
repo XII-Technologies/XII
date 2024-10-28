@@ -25,7 +25,7 @@
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -512,7 +512,7 @@ public:
       const auto& backBufferTextureDesc = m_pDevice->GetTexture(hBackBuffer)->GetDescription();
       const auto& backBufferViewDesc    = m_pDevice->GetTextureView(hBackBufferView)->GetDescription();
 
-      xiiVec3U32 vSize = xiiGALGraphicsUtilities::GetMipLevelSize(backBufferViewDesc.m_uiMostDetailedMip, backBufferTextureDesc);
+      xiiVec3U32 vSize = xiiGALTextureUtilities::GetMipLevelSize(backBufferViewDesc.m_uiMostDetailedMip, backBufferTextureDesc);
 
       xiiGALFramebufferCreationDescription framebufferDesc;
       framebufferDesc.m_hRenderPass       = m_hRenderPass;

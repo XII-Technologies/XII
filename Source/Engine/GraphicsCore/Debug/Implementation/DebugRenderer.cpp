@@ -13,7 +13,6 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
