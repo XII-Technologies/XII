@@ -1,9 +1,4 @@
 
-XII_ALWAYS_INLINE xiiGALMemoryProperties xiiGALBufferNull::GetMemoryProperties() const
-{
-  return xiiGALMemoryProperties();
-}
-
 XII_ALWAYS_INLINE void xiiGALBufferNull::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
 }
