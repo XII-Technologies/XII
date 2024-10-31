@@ -118,8 +118,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 
   if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse)
   {
-    vkBufferCreateInfo.flags = vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency |
-      (m_Description.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias) ? vk::BufferCreateFlagBits::eSparseAliased : static_cast<vk::BufferCreateFlagBits>(0U));
+    vkBufferCreateInfo.flags = vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency | (m_Description.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias) ? vk::BufferCreateFlagBits::eSparseAliased : static_cast<vk::BufferCreateFlagBits>(0U));
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createBuffer(&vkBufferCreateInfo, nullptr, &m_vkBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
