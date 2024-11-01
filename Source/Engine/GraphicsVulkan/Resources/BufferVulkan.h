@@ -33,6 +33,8 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
   vk::Buffer m_vkBuffer;
   vk::Buffer m_vkStagingBuffer;

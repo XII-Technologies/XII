@@ -60,4 +60,22 @@ void xiiGALBuffer::CreateDefaultResourceViews(xiiGALBufferHandle hBuffer)
   }
 }
 
+void xiiGALBuffer::VerifyFlushMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(GetMemoryProperties().IsSet(xiiGALMemoryPropertyFlags::HostCoherent), "Coherent memory does not need to be flushed.");
+  XII_ASSERT_DEV(m_Description.m_ResourceUsage != xiiGALResourceUsage::Dynamic, "Dynamic buffer mapped memory must never be flushed.");
+  XII_ASSERT_DEV((uiStartOffset + uiSize) <= m_Description.m_uiSize, "Memory range is out of buffer bounds.");
+#endif
+}
+
+void xiiGALBuffer::VerifyInvalidateMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(GetMemoryProperties().IsSet(xiiGALMemoryPropertyFlags::HostCoherent), "Coherent memory does not need to be invalidated.");
+  XII_ASSERT_DEV(m_Description.m_ResourceUsage != xiiGALResourceUsage::Dynamic, "Dynamic buffer mapped memory must never be invalidated.");
+  XII_ASSERT_DEV((uiStartOffset + uiSize) <= m_Description.m_uiSize, "Memory range is out of buffer bounds.");
+#endif
+}
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Buffer);

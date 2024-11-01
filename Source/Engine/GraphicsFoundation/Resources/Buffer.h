@@ -150,6 +150,9 @@ protected:
 
   virtual xiiResult DeInitPlatform() = 0;
 
+  void VerifyFlushMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const;
+  void VerifyInvalidateMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const;
+
 protected:
   xiiGALBufferCreationDescription m_Description;
 

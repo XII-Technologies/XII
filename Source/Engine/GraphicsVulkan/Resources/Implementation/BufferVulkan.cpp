@@ -169,17 +169,62 @@ xiiResult xiiGALBufferVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALBufferVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  if (pDeviceVulkan->GetDebugMode() != xiiGALDeviceVulkan::DebugMode::Disabled)
+  {
+    xiiStringBuilder sb;
+
+    vk::DebugUtilsObjectNameInfoEXT debugUtilsObjectInfo = {};
+    debugUtilsObjectInfo.pNext                           = {};
+    debugUtilsObjectInfo.objectType                      = m_vkBuffer.objectType;
+    debugUtilsObjectInfo.pObjectName                     = sName.GetData(sb);
+    debugUtilsObjectInfo.objectHandle                    = (xiiUInt64) static_cast<vk::Buffer::NativeType>(m_vkBuffer);
+
+    VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().setDebugUtilsObjectNameEXT(&debugUtilsObjectInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  }
+}
+
 void xiiGALBufferVulkan::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
+  VerifyInvalidateMappedRangeArguments(uiStartOffset, uiSize);
+
+  vk::MappedMemoryRange vkMappedRange = {};
+  vkMappedRange.memory                = vk::DeviceMemory{}; // TODO.
+  vkMappedRange.offset                = {};                 // TODO.
+  vkMappedRange.size                  = {};                 // TODO.
+
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().flushMappedMemoryRanges(1, &vkMappedRange, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 }
 
 void xiiGALBufferVulkan::InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
+  VerifyInvalidateMappedRangeArguments(uiStartOffset, uiSize);
+
+  vk::MappedMemoryRange vkMappedRange = {};
+  vkMappedRange.memory                = vk::DeviceMemory{}; // TODO.
+  vkMappedRange.offset                = {};                 // TODO.
+  vkMappedRange.size                  = {};                 // TODO.
+
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().invalidateMappedMemoryRanges(1, &vkMappedRange, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 }
 
 xiiGALSparseBufferProperties xiiGALBufferVulkan::GetSparseProperties() const
 {
-  return xiiGALSparseBufferProperties();
+  XII_ASSERT_DEV(m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse, "xiiGALBuffer::GetSparseProperties() must be used for sparse buffer.");
+
+  xiiGALDeviceVulkan*    pDeviceVulkan        = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::MemoryRequirements vkMemoryRequirements = pDeviceVulkan->GetVulkanLogicalDevice().getBufferMemoryRequirements(GetVulkanBuffer());
+
+  xiiGALSparseBufferProperties sparseBufferProperties = {};
+  sparseBufferProperties.m_uiAddressSpaceSize         = vkMemoryRequirements.size;
+  sparseBufferProperties.m_uiBlockSize                = static_cast<xiiUInt32>(vkMemoryRequirements.alignment);
+
+  return sparseBufferProperties;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_BufferVulkan);
