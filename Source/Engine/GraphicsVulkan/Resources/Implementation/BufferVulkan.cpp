@@ -246,4 +246,14 @@ vk::DeviceAddress xiiGALBufferVulkan::GetVulkanBufferDeviceAddress() const
   return vkBufferDeviceAddress;
 }
 
+void xiiGALBufferVulkan::SetAccessFlags(vk::AccessFlags accessFlags)
+{
+  SetResourceState(xiiVulkanTypeConversions::GetResourceState(accessFlags));
+}
+
+vk::AccessFlags xiiGALBufferVulkan::GetAccessFlags() const
+{
+  return xiiVulkanTypeConversions::GetAccessFlags(GetResourceState());
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_BufferVulkan);

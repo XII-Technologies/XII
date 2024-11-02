@@ -946,3 +946,9 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
   }
   return accessFlags;
 }
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceState(vk::AccessFlags e)
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiBitflags<xiiGALResourceStateFlags>();
+}
