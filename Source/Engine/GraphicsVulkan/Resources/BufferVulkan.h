@@ -13,13 +13,13 @@ class XII_GRAPHICSVULKAN_DLL xiiGALBufferVulkan final : public xiiGALBuffer
 {
 public:
   virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
-
   virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
-
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
   XII_ALWAYS_INLINE vk::Buffer GetVulkanBuffer() const { return m_vkBuffer; }
   XII_ALWAYS_INLINE vk::Buffer GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
+
+  vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
 
 protected:
   friend class xiiGALDeviceVulkan;

@@ -227,4 +227,23 @@ xiiGALSparseBufferProperties xiiGALBufferVulkan::GetSparseProperties() const
   return sparseBufferProperties;
 }
 
+vk::DeviceAddress xiiGALBufferVulkan::GetVulkanBufferDeviceAddress() const
+{
+  xiiBitflags<xiiGALBindFlags> deviceAddressFlags = xiiGALBindFlags::RayTracing;
+
+  if (m_vkBuffer == VK_NULL_HANDLE || !m_Description.m_BindFlags.IsAnySet(deviceAddressFlags))
+    return 0;
+
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  vk::BufferDeviceAddressInfo vkBufferInfo = {};
+  vkBufferInfo.pNext                       = nullptr;
+  vkBufferInfo.buffer                      = m_vkBuffer;
+
+  vk::DeviceAddress vkBufferDeviceAddress = pDeviceVulkan->GetVulkanLogicalDevice().getBufferAddress(&vkBufferInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  XII_ASSERT_DEV(vkBufferDeviceAddress > 0, "Invalid buffer device address!");
+
+  return vkBufferDeviceAddress;
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_BufferVulkan);
