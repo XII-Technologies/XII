@@ -84,14 +84,23 @@ void xiiGALCommandListD3D11::ResetPlatform()
 
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 
+  InvalidateState();
+
   m_RecordingState = RecordingState::Reset;
 
-  InvalidateState();
+  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
+  {
+    pCommandQueueD3D11->ResetCommandList(this);
+  }
 }
 
 xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform(bool bReset)
 {
-  return static_cast<xiiGALCommandQueueD3D11*>(m_pCommandQueue)->Submit(this, bReset);
+  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(m_pCommandQueue))
+  {
+    return pCommandQueueD3D11->SubmitCommandList(this, bReset);
+  }
+  return xiiMath::MaxValue<xiiUInt64>();
 }
 
 void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)

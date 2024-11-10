@@ -21,12 +21,14 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
+  void ResetCommandList(xiiGALCommandListD3D11* pCommandListD3D11);
+
   void AddSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
   void RemoveSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
   void ReleaseSwapChainCommanListReferences();
 
 protected:
-  xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
+  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -47,7 +49,7 @@ protected:
   ID3D11DeviceContext4* m_pImmediateContext = nullptr;
 
   xiiMutex                                 m_QueueMutex;
-  xiiDeque<xiiGALCommandList*>             m_CommandLists;
+  xiiDeque<xiiGALCommandListD3D11*>        m_CommandLists;
   xiiDynamicArray<xiiGALCommandListD3D11*> m_SwapChainCommandListReferences;
 
   // A value that will be signaled by the command queue next.

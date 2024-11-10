@@ -70,6 +70,8 @@ void xiiGALCommandList::Reset()
 
 xiiUInt64 xiiGALCommandList::Submit(bool bReset)
 {
+  XII_ASSERT_RELEASE(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Commandlist is already reset.");
+
   if (m_RecordingState == xiiGALCommandList::RecordingState::Recording)
   {
     End();
