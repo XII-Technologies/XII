@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{15507879570940844990,5062162254587685694}}
-		u4 %Hash{417807848370462791}
+		u4 %Hash{6194140337801568462}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -243,7 +243,7 @@ o
 		b %Clear{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
 		s %Format{"xiiSourceFormat::Depth24BitStencil8Bit"}
-		s %MSAA_Mode{"xiiGALMSAASampleCount::OneSample"}
+		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
 		s %Name{"DepthStencil"}
 		Vec2 %Node::Pos{f{0x48A4EAC4,0x296FF6C3}}
 		Uuid %Output{u4{12435465676689222153,5086440773997006539}}
@@ -287,7 +287,7 @@ o
 		b %Clear{1}
 		Color %ClearColor{f{0xC7B6543C,0xC7B6543C,0xC7B6543C,0x0000803F}}
 		s %Format{"xiiSourceFormat::Color4Channel8BitNormalized_sRGB"}
-		s %MSAA_Mode{"xiiGALMSAASampleCount::OneSample"}
+		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
 		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x1A7091C4,0x53CD0EC4}}
 		Uuid %Output{u4{16295825073444485828,4971536062717786227}}
