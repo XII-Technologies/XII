@@ -21,6 +21,7 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
+  void BeginCommandList(xiiGALCommandListD3D11* pCommandListD3D11);
   void ResetCommandList(xiiGALCommandListD3D11* pCommandListD3D11);
 
   void AddSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);

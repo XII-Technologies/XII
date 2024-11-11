@@ -67,6 +67,11 @@ void xiiGALCommandListD3D11::BeginPlatform()
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 
   m_RecordingState = RecordingState::Recording;
+
+  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
+  {
+    pCommandQueueD3D11->BeginCommandList(this);
+  }
 }
 
 void xiiGALCommandListD3D11::EndPlatform()
@@ -96,7 +101,7 @@ void xiiGALCommandListD3D11::ResetPlatform()
 
 xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform(bool bReset)
 {
-  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(m_pCommandQueue))
+  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
   {
     return pCommandQueueD3D11->SubmitCommandList(this, bReset);
   }

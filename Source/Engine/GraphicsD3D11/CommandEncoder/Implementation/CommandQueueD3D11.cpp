@@ -87,8 +87,6 @@ xiiUInt64 xiiGALCommandQueueD3D11::WaitForIdle()
 
 xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 {
-  XII_LOCK(m_QueueMutex);
-
   xiiGALCommandListD3D11* pCommandListD3D11 = nullptr;
   if (!m_CommandLists.IsEmpty() && m_CommandLists.PeekFront()->GetRecordingState() == xiiGALCommandList::RecordingState::Reset)
   {
@@ -99,12 +97,16 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 
   if (pCommandListD3D11 == nullptr)
   {
-    // Allocate a new command list.
-    xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-    xiiGALDeviceD3D11*                   pDeviceD3D11           = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-    pCommandListD3D11                                           = XII_DEFAULT_NEW(xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
+    {
+      XII_LOCK(m_QueueMutex);
 
-    m_CommandLists.PushBack(pCommandListD3D11);
+      // Allocate a new command list.
+      xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
+      xiiGALDeviceD3D11*                   pDeviceD3D11           = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+      pCommandListD3D11                                           = XII_DEFAULT_NEW(xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
+
+      m_CommandLists.PushBack(pCommandListD3D11);
+    }
 
     xiiStringBuilder sb;
     sb.SetFormat("Command List {}", m_CommandLists.GetCount());
@@ -116,6 +118,17 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
   XII_ASSERT_DEV(pCommandListD3D11 != nullptr && pCommandListD3D11->GetRecordingState() == xiiGALCommandList::RecordingState::Recording, "The retrieved command list is not begun.");
 
   return pCommandListD3D11;
+}
+
+void xiiGALCommandQueueD3D11::BeginCommandList(xiiGALCommandListD3D11* pCommandListD3D11)
+{
+  XII_LOCK(m_QueueMutex);
+
+  XII_VERIFY(m_CommandLists.RemoveAndSwap(pCommandListD3D11), "Invalid command list to reset.");
+
+  XII_ASSERT_DEV(!m_CommandLists.Contains(pCommandListD3D11), "Command list duplication error.");
+
+  m_CommandLists.PushBack(pCommandListD3D11);
 }
 
 void xiiGALCommandQueueD3D11::ResetCommandList(xiiGALCommandListD3D11* pCommandListD3D11)
