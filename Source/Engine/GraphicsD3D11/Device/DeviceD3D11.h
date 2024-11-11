@@ -48,6 +48,8 @@ public:
     return nullptr;
   };
 
+  XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
+
   // Internal objects retrieval.
 
   XII_ALWAYS_INLINE ID3D11Device5* GetD3D11Device() const { return m_pDeviceD3D11; };
@@ -58,8 +60,6 @@ public:
   void ReportLiveGPUObjects();
 
   void FlushPendingObjects();
-
-  void ResetCommandQueuesSwapChainReferences();
 
   ID3D11Resource* FindTemporaryBuffer(xiiUInt32 uiSize);
   ID3D11Resource* FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALTextureFormat> format);

@@ -6,6 +6,7 @@
 
 #include <GraphicsD3D11/CommandEncoder/CommandListD3D11.h>
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
+#include <GraphicsD3D11/Device/SwapChainD3D11.h>
 
 #include <GraphicsD3D11/Resources/BottomLevelASD3D11.h>
 #include <GraphicsD3D11/Resources/BufferD3D11.h>
@@ -34,7 +35,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D11, pCommandQueueD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
+  xiiGALCommandList(pDeviceD3D11, pCommandQueueD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11), m_GALSwapChainD3D11EventSubscriptionID(xiiGALSwapChainD3D11::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGALCommandListD3D11::GALSwapChainD3D11EventHandler, this)))
 {
   HRESULT hResult = pDeviceD3D11->GetD3D11Device()->CreateDeferredContext1(0U, &m_pCommandList);
 
@@ -46,6 +47,8 @@ xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, 
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
 {
+  xiiGALSwapChainD3D11::s_Events.RemoveEventHandler(m_GALSwapChainD3D11EventSubscriptionID);
+
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
   XII_GAL_D3D11_RELEASE(m_pCommandList);
 }
@@ -59,6 +62,15 @@ void xiiGALCommandListD3D11::SetDebugNamePlatform(xiiStringView sName)
     {
       xiiLog::Error("Failed to set the Direct3D11 deferred context debug name.");
     }
+  }
+}
+
+void xiiGALCommandListD3D11::GALSwapChainD3D11EventHandler(const xiiGALSwapChainD3D11Event& e)
+{
+  // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
+  if (e.m_pSwapChainD3D11 != nullptr && e.m_Type == xiiGALSwapChainD3D11EventType::BeforeBufferRelease)
+  {
+    XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
   }
 }
 
@@ -313,8 +325,6 @@ void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPa
 
   // Set the active render targes.
   CommitRenderTargets();
-
-  m_pCommandQueueD3D11->AddSwapChainCommandListReference(this);
 }
 
 void xiiGALCommandListD3D11::NextSubpassPlatform()
@@ -324,8 +334,6 @@ void xiiGALCommandListD3D11::NextSubpassPlatform()
 
 void xiiGALCommandListD3D11::EndRenderPassPlatform()
 {
-  m_pCommandQueueD3D11->RemoveSwapChainCommandListReference(this);
-
   ResetRenderTargets();
 }
 
@@ -1058,11 +1066,6 @@ void xiiGALCommandListD3D11::ResetRenderTargets()
   m_uiBoundRenderTargetCount     = 0U;
 
   m_pCommandList->OMSetRenderTargets(0, nullptr, nullptr);
-}
-
-void xiiGALCommandListD3D11::ReleaseInternalCommandList()
-{
-  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 }
 
 xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()

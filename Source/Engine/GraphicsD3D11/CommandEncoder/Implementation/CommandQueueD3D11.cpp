@@ -28,13 +28,13 @@ void xiiGALCommandQueueD3D11::InitializePlatform()
 
 void xiiGALCommandQueueD3D11::DeInitializePlatform()
 {
-  m_SwapChainCommandListReferences.Clear();
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   for (xiiUInt32 i = 0; i < m_CommandLists.GetCount(); ++i)
   {
-    auto pCommandList = m_CommandLists[i];
+    xiiGALCommandListD3D11* pCommandList = m_CommandLists[i];
 
-    XII_DEFAULT_DELETE(pCommandList)
+    XII_DELETE(pDeviceD3D11->GetAllocator(), pCommandList);
   }
   m_CommandLists.Clear();
 
@@ -103,7 +103,7 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
       // Allocate a new command list.
       xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
       xiiGALDeviceD3D11*                   pDeviceD3D11           = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-      pCommandListD3D11                                           = XII_DEFAULT_NEW(xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
+      pCommandListD3D11                                           = XII_NEW(pDeviceD3D11->GetAllocator(), xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
 
       m_CommandLists.PushBack(pCommandListD3D11);
     }
@@ -140,41 +140,6 @@ void xiiGALCommandQueueD3D11::ResetCommandList(xiiGALCommandListD3D11* pCommandL
   XII_ASSERT_DEV(!m_CommandLists.Contains(pCommandListD3D11), "Command list duplication error.");
 
   m_CommandLists.PushFront(pCommandListD3D11);
-}
-
-void xiiGALCommandQueueD3D11::AddSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11)
-{
-  m_SwapChainCommandListReferences.PushBack(pCommandListD3D11);
-}
-
-void xiiGALCommandQueueD3D11::RemoveSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11)
-{
-  for (xiiUInt32 i = 0; i < m_SwapChainCommandListReferences.GetCount(); ++i)
-  {
-    auto pCommandListReferenceD3D11 = m_SwapChainCommandListReferences[i];
-
-    if (pCommandListReferenceD3D11 == pCommandListD3D11)
-    {
-      XII_ASSERT_DEV(pCommandListReferenceD3D11->GetRecordingState() != xiiGALCommandList::RecordingState::Reset, "Attempting to remove a command list in recording state is an error, until the command list has been reset.");
-
-      m_SwapChainCommandListReferences.RemoveAtAndSwap(i);
-      break;
-    }
-  }
-}
-
-void xiiGALCommandQueueD3D11::ReleaseSwapChainCommanListReferences()
-{
-  for (xiiUInt32 i = 0; i < m_SwapChainCommandListReferences.GetCount(); ++i)
-  {
-    auto pCommandListReferenceD3D11 = m_SwapChainCommandListReferences[i];
-
-    if (pCommandListReferenceD3D11->GetRecordingState() != xiiGALCommandList::RecordingState::Reset)
-    {
-      pCommandListReferenceD3D11->ReleaseInternalCommandList();
-    }
-  }
-  m_SwapChainCommandListReferences.Clear();
 }
 
 xiiUInt64 xiiGALCommandQueueD3D11::SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset)

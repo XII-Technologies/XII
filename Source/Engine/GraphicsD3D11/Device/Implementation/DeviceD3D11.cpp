@@ -259,24 +259,6 @@ void xiiGALDeviceD3D11::FlushPendingObjects()
   FlushDestroyedObjects();
 }
 
-void xiiGALDeviceD3D11::ResetCommandQueuesSwapChainReferences()
-{
-  if (m_pGraphicsCommandQueue != nullptr)
-  {
-    m_pGraphicsCommandQueue->ReleaseSwapChainCommanListReferences();
-  }
-
-  if (m_pComputeCommandQueue != nullptr)
-  {
-    m_pComputeCommandQueue->ReleaseSwapChainCommanListReferences();
-  }
-
-  if (m_pTransferCommandQueue != nullptr)
-  {
-    m_pTransferCommandQueue->ReleaseSwapChainCommanListReferences();
-  }
-}
-
 xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
 {
   if (m_pGraphicsCommandQueue != nullptr)
