@@ -134,19 +134,18 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
   m_uiMemoryGPU[m_uiLoadedTextures] = 0;
 
-  const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(m_Format);
+  const auto& formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(m_Format);
 
   xiiHybridArray<xiiGALTextureSubResourceData, 32> InitData;
 
-  for (xiiUInt32 array_index = 0; array_index < pImage->GetNumArrayIndices(); ++array_index)
+  for (xiiUInt32 arrayIndex = 0; arrayIndex < pImage->GetNumArrayIndices(); ++arrayIndex)
   {
     for (xiiUInt32 face = 0; face < pImage->GetNumFaces(); ++face)
     {
       for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetNumMipLevels(); ++mip)
       {
         xiiGALTextureSubResourceData& id = InitData.ExpandAndGetRef();
-
-        id.m_pData = pImage->GetPixelPointer<xiiUInt8>(mip, face, array_index);
+        id.m_pData                       = pImage->GetSubImageView(mip, face, arrayIndex).GetByteBlobPtr();
 
         XII_ASSERT_DEV(pImage->GetDepthPitch(mip) < xiiMath::MaxValue<xiiUInt32>(), "Depth pitch exceeds xiiGAL limits.");
 

@@ -3,7 +3,7 @@
 #include <Foundation/Math/Float16.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 namespace
 {
@@ -58,7 +58,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 // static
 xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
-  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALGraphicsUtilities::GetTextureFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
+  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetTextureFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
 
   switch (destFormat)
   {
@@ -76,7 +76,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<x
 // static
 xiiResult xiiMeshBufferUtils::EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
-  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALGraphicsUtilities::GetTextureFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
+  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetTextureFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
 
   switch (destFormat)
   {
@@ -96,7 +96,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr
 // static
 xiiResult xiiMeshBufferUtils::EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
-  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALGraphicsUtilities::GetTextureFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
+  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetTextureFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
 
   switch (destFormat)
   {
@@ -145,7 +145,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr
 // static
 xiiResult xiiMeshBufferUtils::EncodeFromVec4(const xiiVec4& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
-  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALGraphicsUtilities::GetTextureFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
+  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetTextureFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
 
   switch (destFormat)
   {
@@ -200,7 +200,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec4(const xiiVec4& vSource, xiiArrayPtr
 // static
 xiiResult xiiMeshBufferUtils::DecodeToFloat(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, float& ref_fDest)
 {
-  XII_ASSERT_DEBUG(source.GetCount() >= xiiGALGraphicsUtilities::GetTextureFormatProperties(sourceFormat).GetElementSize(), "Source buffer is too small");
+  XII_ASSERT_DEBUG(source.GetCount() >= xiiGALTextureUtilities::GetTextureFormatProperties(sourceFormat).GetElementSize(), "Source buffer is too small");
 
   switch (sourceFormat)
   {
@@ -218,7 +218,7 @@ xiiResult xiiMeshBufferUtils::DecodeToFloat(xiiArrayPtr<const xiiUInt8> source, 
 // static
 xiiResult xiiMeshBufferUtils::DecodeToVec2(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec2& ref_vDest)
 {
-  XII_ASSERT_DEBUG(source.GetCount() >= xiiGALGraphicsUtilities::GetTextureFormatProperties(sourceFormat).GetElementSize(), "Source buffer is too small");
+  XII_ASSERT_DEBUG(source.GetCount() >= xiiGALTextureUtilities::GetTextureFormatProperties(sourceFormat).GetElementSize(), "Source buffer is too small");
 
   switch (sourceFormat)
   {
@@ -236,7 +236,7 @@ xiiResult xiiMeshBufferUtils::DecodeToVec2(xiiArrayPtr<const xiiUInt8> source, x
 // static
 xiiResult xiiMeshBufferUtils::DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec3& ref_vDest)
 {
-  XII_ASSERT_DEBUG(source.GetCount() >= xiiGALGraphicsUtilities::GetTextureFormatProperties(sourceFormat).GetElementSize(), "Source buffer is too small");
+  XII_ASSERT_DEBUG(source.GetCount() >= xiiGALTextureUtilities::GetTextureFormatProperties(sourceFormat).GetElementSize(), "Source buffer is too small");
 
   switch (sourceFormat)
   {
@@ -281,7 +281,7 @@ xiiResult xiiMeshBufferUtils::DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, x
 // static
 xiiResult xiiMeshBufferUtils::DecodeToVec4(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec4& ref_vDest)
 {
-  XII_ASSERT_DEBUG(source.GetCount() >= xiiGALGraphicsUtilities::GetTextureFormatProperties(sourceFormat).GetElementSize(), "Source buffer is too small");
+  XII_ASSERT_DEBUG(source.GetCount() >= xiiGALTextureUtilities::GetTextureFormatProperties(sourceFormat).GetElementSize(), "Source buffer is too small");
 
   switch (sourceFormat)
   {

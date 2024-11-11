@@ -4,6 +4,7 @@
 
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
 {
@@ -42,12 +43,13 @@ public:
     vk::PhysicalDeviceMultiDrawFeaturesEXT              m_MultiDraw;
     vk::PhysicalDeviceShaderDrawParametersFeatures      m_ShaderDrawParameters;
 
-    bool m_bSpirv14              = false; // Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension
-    bool m_bSpirv15              = false; // DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5
-    bool m_bSubgroupOps          = false; // Requires Vulkan 1.1
-    bool m_bHasPortabilitySubset = false;
-    bool m_bRenderPass2          = false;
-    bool m_bDrawIndirectCount    = false;
+    bool m_bSpirv14                  = false; // Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension
+    bool m_bSpirv15                  = false; // DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5
+    bool m_bSubgroupOps              = false; // Requires Vulkan 1.1
+    bool m_bHasPortabilitySubset     = false;
+    bool m_bRenderPass2              = false;
+    bool m_bDrawIndirectCount        = false;
+    bool m_bShaderViewportIndexLayer = false;
   };
 
   struct ExtensionProperties
@@ -88,6 +90,7 @@ public:
   // Internal objects retrieval.
 
   XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
+  XII_ALWAYS_INLINE VmaAllocator      GetVulkanMemoryAllocator() const { return m_vkVmaAllocator; }
 
   XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
   XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
@@ -219,6 +222,7 @@ private:
     PipelineCache
   };
 
+  // Vulkan Instance Information.
   vk::Instance              m_Instance;
   xiiUInt32                 m_uiVulkanVersion = 0U;
   vk::DispatchLoaderDynamic m_InstanceDispatchLoader;
@@ -250,6 +254,9 @@ private:
   DebugMode                  m_DebugMode = DebugMode::Disabled;
   vk::DebugUtilsMessengerEXT m_DebugMessenger;
   vk::DebugReportCallbackEXT m_DebugCallback;
+
+  // Vulkan Memory Allocation.
+  VmaAllocator m_vkVmaAllocator;
 
   // Graphics Queue Information.
   QueueInformation                       m_GraphicsQueueInformation;

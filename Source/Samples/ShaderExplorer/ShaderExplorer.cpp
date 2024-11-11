@@ -358,6 +358,7 @@ public:
     // Create a device
     {
       xiiGALDeviceCreationDescription DeviceInit;
+      DeviceInit.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;

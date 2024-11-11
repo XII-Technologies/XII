@@ -7,7 +7,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
@@ -408,12 +408,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties();
 
     xiiUInt32 uiQueueFamilyCount = 0U;
-    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr);
+    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, m_InstanceDispatchLoader);
 
     XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "");
 
     m_PhysicalDeviceQueueFamilyProperties.SetCount(uiQueueFamilyCount);
-    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, m_PhysicalDeviceQueueFamilyProperties.GetData());
+    m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, m_PhysicalDeviceQueueFamilyProperties.GetData(), m_InstanceDispatchLoader);
 
     XII_ASSERT_DEV(m_PhysicalDeviceQueueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
 
@@ -953,7 +953,14 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Error("Can not enable extended device features when VK_KHR_get_physical_device_properties2 extension is not supported by device");
   }
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  if (m_PhysicalDeviceExtensionFeatures.m_bShaderViewportIndexLayer)
+  {
+    XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME), "");
+
+    deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
+  }
+
+  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
 
   deviceCreationDescription.ppEnabledExtensionNames = deviceExtensions.IsEmpty() ? nullptr : deviceExtensions.GetData();
   deviceCreationDescription.enabledExtensionCount   = deviceExtensions.GetCount();
@@ -1062,6 +1069,23 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
+  // Initialize vulkan memory allocator. We prefer dynamically finding the function pointers.
+  {
+    VmaVulkanFunctions vmaVulkanFunctions    = {};
+    vmaVulkanFunctions.vkGetInstanceProcAddr = m_InstanceDispatchLoader.vkGetInstanceProcAddr;
+    vmaVulkanFunctions.vkGetDeviceProcAddr   = m_InstanceDispatchLoader.vkGetDeviceProcAddr;
+
+    VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
+    vmaAllocatorCreateInfo.vulkanApiVersion       = m_uiVulkanVersion;
+    vmaAllocatorCreateInfo.instance               = m_Instance;
+    vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
+    vmaAllocatorCreateInfo.device                 = m_LogicalDevice;
+    vmaAllocatorCreateInfo.pVulkanFunctions       = &vmaVulkanFunctions;
+    // vmaAllocatorCreateInfo.flags               = VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
+  }
+
   xiiClipSpaceDepthRange::Default = xiiClipSpaceDepthRange::ZeroToOne;
 
   // We use xiiClipSpaceYMode::Regular and rely in the Vulkan 1.1 feature that a negative height performs y-inversion of the clip-space to framebuffer-space transform.
@@ -1089,6 +1113,8 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
     m_pGraphicsCommandQueue->DeInitializePlatform();
     m_pGraphicsCommandQueue.Clear();
   }
+
+  vmaDestroyAllocator(m_vkVmaAllocator);
 
   m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
 
@@ -1589,7 +1615,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         break;
     }
 
-    m_AdapterDescription.m_Vendor             = xiiGALGraphicsUtilities::GetVendorFromID(m_PhysicalDeviceProperties.vendorID);
+    m_AdapterDescription.m_Vendor             = xiiGALDeviceUtilities::GetVendorFromID(m_PhysicalDeviceProperties.vendorID);
     m_AdapterDescription.m_uiVendorID         = m_PhysicalDeviceProperties.vendorID;
     m_AdapterDescription.m_uiDeviceID         = m_PhysicalDeviceProperties.deviceID;
     m_AdapterDescription.m_uiVideoOutputCount = 0U;
@@ -2300,6 +2326,11 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     m_PhysicalDeviceExtensionFeatures.m_bDrawIndirectCount = true;
   }
 
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bShaderViewportIndexLayer = true;
+  }
+
   if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME))
   {
     *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_Maintenance3;
@@ -2491,6 +2522,8 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   INITIALIZE_DEVICE_FEATURE(NativeMultiDraw, (extensionFeatures.m_MultiDraw.multiDraw != vk::False && extensionFeatures.m_ShaderDrawParameters.shaderDrawParameters != vk::False));
 
+  INITIALIZE_DEVICE_FEATURE(VertexShaderRenderTargetArrayIndex, extensionFeatures.m_bShaderViewportIndexLayer);
+
 #undef INITIALIZE_DEVICE_FEATURE
 
   // Not supported in MoltenVk.
@@ -2502,7 +2535,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   deviceFeatures.m_AsynchronousShaderCompilation = xiiGALDeviceFeatureState::Enabled;
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
@@ -2549,54 +2582,55 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
 #define ENABLE_DEVICE_FEATURE(feature, featureName) deviceFeatures.m_##feature = GetFeatureState(requestedDeviceFeatures.m_##feature, supportedDeviceFeatures.m_##feature, featureName)
 
   // clang-format off
-  ENABLE_DEVICE_FEATURE(SeparablePrograms,                 "Separable programs are");
-  ENABLE_DEVICE_FEATURE(ShaderResourceQueries,             "Shader resource queries are");
-  ENABLE_DEVICE_FEATURE(WireframeFill,                     "Wireframe fill is");
-  ENABLE_DEVICE_FEATURE(MultithreadedResourceCreation,     "Multithreaded resource creation is");
-  ENABLE_DEVICE_FEATURE(ComputeShaders,                    "Compute shaders are");
-  ENABLE_DEVICE_FEATURE(GeometryShaders,                   "Geometry shaders are");
-  ENABLE_DEVICE_FEATURE(Tessellation,                      "Tessellation is");
-  ENABLE_DEVICE_FEATURE(MeshShaders,                       "Mesh shaders are");
-  ENABLE_DEVICE_FEATURE(RayTracing,                        "Ray tracing is");
-  ENABLE_DEVICE_FEATURE(BindlessResources,                 "Bindless resources are");
-  ENABLE_DEVICE_FEATURE(OcclusionQueries,                  "Occlusion queries are");
-  ENABLE_DEVICE_FEATURE(BinaryOcclusionQueries,            "Binary occlusion queries are");
-  ENABLE_DEVICE_FEATURE(TimestampQueries,                  "Timestamp queries are");
-  ENABLE_DEVICE_FEATURE(PipelineStatisticsQueries,         "Pipeline statistics queries are");
-  ENABLE_DEVICE_FEATURE(DurationQueries,                   "Duration queries are");
-  ENABLE_DEVICE_FEATURE(DepthBiasClamp,                    "Depth bias clamp is");
-  ENABLE_DEVICE_FEATURE(DepthClamp,                        "Depth clamp is");
-  ENABLE_DEVICE_FEATURE(IndependentBlend,                  "Independent blend is");
-  ENABLE_DEVICE_FEATURE(DualSourceBlend,                   "Dual-source blend is");
-  ENABLE_DEVICE_FEATURE(MultiViewport,                     "Multiviewport is");
-  ENABLE_DEVICE_FEATURE(TextureCompressionBC,              "BC texture compression is");
-  ENABLE_DEVICE_FEATURE(VertexPipelineUAVWritesAndAtomics, "Vertex pipeline UAV writes and atomics are");
-  ENABLE_DEVICE_FEATURE(PixelUAVWritesAndAtomics,          "Pixel UAV writes and atomics are");
-  ENABLE_DEVICE_FEATURE(TextureUAVExtendedFormats,         "Texture UAV extended formats are");
-  ENABLE_DEVICE_FEATURE(ShaderFloat16,                     "16-bit float shader operations are");
-  ENABLE_DEVICE_FEATURE(ResourceBuffer16BitAccess,         "16-bit resource buffer access is");
-  ENABLE_DEVICE_FEATURE(UniformBuffer16BitAccess,          "16-bit uniform buffer access is");
-  ENABLE_DEVICE_FEATURE(ShaderInputOutput16,               "16-bit shader inputs/outputs are");
-  ENABLE_DEVICE_FEATURE(ShaderInt8,                        "8-bit int shader operations are");
-  ENABLE_DEVICE_FEATURE(ResourceBuffer8BitAccess,          "8-bit resource buffer access is");
-  ENABLE_DEVICE_FEATURE(UniformBuffer8BitAccess,           "8-bit uniform buffer access is");
-  ENABLE_DEVICE_FEATURE(ShaderResourceRuntimeArray,        "Shader resource runtime array is");
-  ENABLE_DEVICE_FEATURE(WaveOperation,                     "Wave operations are");
-  ENABLE_DEVICE_FEATURE(InstanceDataStepRate,              "Instance data step rate is");
-  ENABLE_DEVICE_FEATURE(NativeFence,                       "Native fence is");
-  ENABLE_DEVICE_FEATURE(TileShaders,                       "Tile shaders are");
-  ENABLE_DEVICE_FEATURE(TransferQueueTimestampQueries,     "Timestamp queries in transfer queues are");
-  ENABLE_DEVICE_FEATURE(VariableRateShading,               "Variable shading rate is");
-  ENABLE_DEVICE_FEATURE(SparseResources,                   "Sparse resources are");
-  ENABLE_DEVICE_FEATURE(SubpassFramebufferFetch,           "Subpass framebuffer fetch is");
-  ENABLE_DEVICE_FEATURE(TextureComponentSwizzle,           "Texture component swizzle is");
-  ENABLE_DEVICE_FEATURE(NativeMultiDraw,                   "Native multi-draw commands are");
-  ENABLE_DEVICE_FEATURE(AsynchronousShaderCompilation,     "Asynchronous shader compilation is");
+  ENABLE_DEVICE_FEATURE(SeparablePrograms,                  "Separable programs are");
+  ENABLE_DEVICE_FEATURE(ShaderResourceQueries,              "Shader resource queries are");
+  ENABLE_DEVICE_FEATURE(WireframeFill,                      "Wireframe fill is");
+  ENABLE_DEVICE_FEATURE(MultithreadedResourceCreation,      "Multithreaded resource creation is");
+  ENABLE_DEVICE_FEATURE(ComputeShaders,                     "Compute shaders are");
+  ENABLE_DEVICE_FEATURE(GeometryShaders,                    "Geometry shaders are");
+  ENABLE_DEVICE_FEATURE(Tessellation,                       "Tessellation is");
+  ENABLE_DEVICE_FEATURE(MeshShaders,                        "Mesh shaders are");
+  ENABLE_DEVICE_FEATURE(RayTracing,                         "Ray tracing is");
+  ENABLE_DEVICE_FEATURE(BindlessResources,                  "Bindless resources are");
+  ENABLE_DEVICE_FEATURE(OcclusionQueries,                   "Occlusion queries are");
+  ENABLE_DEVICE_FEATURE(BinaryOcclusionQueries,             "Binary occlusion queries are");
+  ENABLE_DEVICE_FEATURE(TimestampQueries,                   "Timestamp queries are");
+  ENABLE_DEVICE_FEATURE(PipelineStatisticsQueries,          "Pipeline statistics queries are");
+  ENABLE_DEVICE_FEATURE(DurationQueries,                    "Duration queries are");
+  ENABLE_DEVICE_FEATURE(DepthBiasClamp,                     "Depth bias clamp is");
+  ENABLE_DEVICE_FEATURE(DepthClamp,                         "Depth clamp is");
+  ENABLE_DEVICE_FEATURE(IndependentBlend,                   "Independent blend is");
+  ENABLE_DEVICE_FEATURE(DualSourceBlend,                    "Dual-source blend is");
+  ENABLE_DEVICE_FEATURE(MultiViewport,                      "Multiviewport is");
+  ENABLE_DEVICE_FEATURE(TextureCompressionBC,               "BC texture compression is");
+  ENABLE_DEVICE_FEATURE(VertexPipelineUAVWritesAndAtomics,  "Vertex pipeline UAV writes and atomics are");
+  ENABLE_DEVICE_FEATURE(PixelUAVWritesAndAtomics,           "Pixel UAV writes and atomics are");
+  ENABLE_DEVICE_FEATURE(TextureUAVExtendedFormats,          "Texture UAV extended formats are");
+  ENABLE_DEVICE_FEATURE(ShaderFloat16,                      "16-bit float shader operations are");
+  ENABLE_DEVICE_FEATURE(ResourceBuffer16BitAccess,          "16-bit resource buffer access is");
+  ENABLE_DEVICE_FEATURE(UniformBuffer16BitAccess,           "16-bit uniform buffer access is");
+  ENABLE_DEVICE_FEATURE(ShaderInputOutput16,                "16-bit shader inputs/outputs are");
+  ENABLE_DEVICE_FEATURE(ShaderInt8,                         "8-bit int shader operations are");
+  ENABLE_DEVICE_FEATURE(ResourceBuffer8BitAccess,           "8-bit resource buffer access is");
+  ENABLE_DEVICE_FEATURE(UniformBuffer8BitAccess,            "8-bit uniform buffer access is");
+  ENABLE_DEVICE_FEATURE(ShaderResourceRuntimeArray,         "Shader resource runtime array is");
+  ENABLE_DEVICE_FEATURE(WaveOperation,                      "Wave operations are");
+  ENABLE_DEVICE_FEATURE(InstanceDataStepRate,               "Instance data step rate is");
+  ENABLE_DEVICE_FEATURE(NativeFence,                        "Native fence is");
+  ENABLE_DEVICE_FEATURE(TileShaders,                        "Tile shaders are");
+  ENABLE_DEVICE_FEATURE(TransferQueueTimestampQueries,      "Timestamp queries in transfer queues are");
+  ENABLE_DEVICE_FEATURE(VariableRateShading,                "Variable shading rate is");
+  ENABLE_DEVICE_FEATURE(SparseResources,                    "Sparse resources are");
+  ENABLE_DEVICE_FEATURE(SubpassFramebufferFetch,            "Subpass framebuffer fetch is");
+  ENABLE_DEVICE_FEATURE(TextureComponentSwizzle,            "Texture component swizzle is");
+  ENABLE_DEVICE_FEATURE(NativeMultiDraw,                    "Native multi-draw commands are");
+  ENABLE_DEVICE_FEATURE(AsynchronousShaderCompilation,      "Asynchronous shader compilation is");
+  ENABLE_DEVICE_FEATURE(VertexShaderRenderTargetArrayIndex, "Vertex shader render target array index is");
   // clang-format on
 
 #undef ENABLE_DEVICE_FEATURE
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }

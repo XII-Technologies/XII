@@ -196,6 +196,8 @@ void xiiReflectionPool::UpdateSkyLight(const xiiWorld* pWorld, xiiReflectionProb
 // static
 void xiiReflectionPool::SetConstantSkyIrradiance(const xiiWorld* pWorld, const xiiAmbientCube<xiiColor>& skyIrradiance)
 {
+  XII_LOCK(s_pData->m_Mutex);
+
   xiiUInt32                         uiWorldIndex     = pWorld->GetIndex();
   xiiAmbientCube<xiiColorLinear16f> skyIrradiance16f = skyIrradiance;
 
@@ -210,6 +212,8 @@ void xiiReflectionPool::SetConstantSkyIrradiance(const xiiWorld* pWorld, const x
 
 void xiiReflectionPool::ResetConstantSkyIrradiance(const xiiWorld* pWorld)
 {
+  XII_LOCK(s_pData->m_Mutex);
+
   xiiUInt32 uiWorldIndex = pWorld->GetIndex();
 
   auto& skyIrradianceStorage = s_pData->m_SkyIrradianceStorage;
@@ -318,8 +322,8 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
         destBox.m_vMin.Set(0, i, 0);
         destBox.m_vMax.Set(6, i + 1, 1);
         xiiGALTextureSubResourceData memDesc;
-        memDesc.m_pData    = &skyIrradianceStorage[i].m_Values[0];
         memDesc.m_uiStride = sizeof(xiiAmbientCube<xiiColorLinear16f>);
+        memDesc.m_pData    = xiiMakeByteBlobPtr(&skyIrradianceStorage[i].m_Values[0], memDesc.m_uiStride * 1);
         pGALCommandList->UpdateTextureExtended(s_pData->m_hSkyIrradianceTexture, xiiGALTextureMipLevelData(), destBox, memDesc);
 
         uiSkyIrradianceChanged &= ~XII_BIT(i);

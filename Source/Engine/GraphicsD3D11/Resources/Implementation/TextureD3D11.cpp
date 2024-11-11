@@ -228,7 +228,7 @@ void xiiGALTextureD3D11::PrepareInitialData(const xiiGALTextureCreationDescripti
 
     for (xiiUInt32 i = 0; i < uiInitialDataCount; ++i)
     {
-      out_InitialData[i].pSysMem          = pInitialData->m_SubResources[i].m_pData;
+      out_InitialData[i].pSysMem          = pInitialData->m_SubResources[i].m_pData.GetPtr();
       out_InitialData[i].SysMemPitch      = static_cast<xiiUInt32>(pInitialData->m_SubResources[i].m_uiStride);
       out_InitialData[i].SysMemSlicePitch = static_cast<xiiUInt32>(pInitialData->m_SubResources[i].m_uiDepthStride);
     }

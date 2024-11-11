@@ -356,12 +356,6 @@ XII_ALWAYS_INLINE bool xiiBitfield<Container>::ConstIterator::operator==(const C
 }
 
 template <class Container>
-XII_ALWAYS_INLINE bool xiiBitfield<Container>::ConstIterator::operator!=(const ConstIterator& other) const
-{
-  return m_pBitfield != other.m_pBitfield || m_Iterator != other.m_Iterator || m_uiChunk != other.m_uiChunk;
-}
-
-template <class Container>
 XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::ConstIterator::operator*() const
 {
   return Value();

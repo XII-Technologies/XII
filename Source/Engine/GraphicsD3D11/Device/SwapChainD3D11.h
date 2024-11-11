@@ -6,11 +6,40 @@
 
 struct IDXGISwapChain4;
 
+struct XII_GRAPHICSD3D11_DLL xiiGALSwapChainD3D11EventType
+{
+  using StorageType = xiiInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = -1,        ///< Unknown swapchain event.
+    BeforeBufferRelease, ///< Before swapchain buffer release.
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSD3D11_DLL, xiiGALSwapChainD3D11EventType);
+
+/// \brief This describes the graphics abstraction layer device events.
+struct XII_GRAPHICSD3D11_DLL xiiGALSwapChainD3D11Event : public xiiHashableStruct<xiiGALSwapChainD3D11Event>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALSwapChainD3D11EventType> m_Type            = xiiGALSwapChainD3D11EventType::Unknown;
+  xiiGALSwapChainD3D11*                  m_pSwapChainD3D11 = nullptr;
+};
+
 class XII_GRAPHICSD3D11_DLL xiiGALSwapChainD3D11 final : public xiiGALSwapChain
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALSwapChainD3D11, xiiGALSwapChain);
 
 public:
+  /// \brief Registers event handlers.
+  static xiiEvent<const xiiGALSwapChainD3D11Event&, xiiNoMutex, xiiStaticAllocatorWrapper> s_Events;
+
   virtual void AcquireNextRenderTarget() override final;
 
   virtual void Present() override final;

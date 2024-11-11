@@ -7,8 +7,6 @@
 class XII_GRAPHICSNULL_DLL xiiGALBufferNull final : public xiiGALBuffer
 {
 public:
-  virtual xiiGALMemoryProperties GetMemoryProperties() const override final;
-
   virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
 
   virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;

@@ -1,0 +1,114 @@
+#include <GraphicsFoundation/GraphicsFoundationPCH.h>
+
+#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+
+xiiEnum<xiiGALGraphicsAdapterVendor> xiiGALDeviceUtilities::GetVendorFromID(xiiUInt32 uiID)
+{
+  switch (uiID)
+  {
+    case 0x01002: // AMD
+      return xiiGALGraphicsAdapterVendor::AMD;
+    case 0x010DE: // NVIDIA
+      return xiiGALGraphicsAdapterVendor::Nvidia;
+    case 0x08086: // Intel
+      return xiiGALGraphicsAdapterVendor::Intel;
+    case 0x013B5: // ARM
+      return xiiGALGraphicsAdapterVendor::ARM;
+    case 0x05143: // Qualcomm
+      return xiiGALGraphicsAdapterVendor::Qualcomm;
+    case 0x01010: // Imagination Technologies
+      return xiiGALGraphicsAdapterVendor::ImaginationTechnologies;
+    case 0x01414: // Microsoft
+      return xiiGALGraphicsAdapterVendor::Microsoft;
+    case 0x0106B: // Apple
+      return xiiGALGraphicsAdapterVendor::Apple;
+    case 0x10005: // Mesa
+      return xiiGALGraphicsAdapterVendor::Mesa;
+    case 0x014E4: // Broadcom
+      return xiiGALGraphicsAdapterVendor::Broadcom;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALGraphicsAdapterVendor::Unknown;
+}
+
+xiiGALBufferHandle xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
+{
+  XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
+
+  const bool bIsImmutable = (!pInitialData.IsEmpty() && !bDataIsMutable);
+
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
+  bufferDescription.m_uiElementByteStride = uiVertexSize;
+  bufferDescription.m_uiSize              = uiVertexSize * xiiMath::Max(1U, uiVertexCount);
+  bufferDescription.m_ResourceUsage       = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_CPUAccessFlags      = bIsImmutable ? xiiGALCPUAccessFlag::None : xiiGALCPUAccessFlag::Write;
+
+  xiiGALBufferData initialData;
+  initialData.m_pData      = pInitialData.GetPtr();
+  initialData.m_uiDataSize = pInitialData.GetCount();
+
+  return pDevice->CreateBuffer(bufferDescription, &initialData);
+}
+
+xiiGALBufferHandle xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
+{
+  XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
+
+  const bool bIsImmutable = (!pInitialData.IsEmpty() && !bDataIsMutable);
+
+  xiiUInt32 uiIndexSize = 0;
+  if (indexType == IndexType::UShort)
+    uiIndexSize = sizeof(xiiUInt16);
+  else if (indexType == IndexType::UInt)
+    uiIndexSize = sizeof(xiiUInt32);
+
+  XII_ASSERT_DEV(uiIndexCount != 0U, "Implementation Error: Unexpected index size.");
+
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
+  bufferDescription.m_uiElementByteStride = uiIndexSize;
+  bufferDescription.m_uiSize              = uiIndexSize * xiiMath::Max(1U, uiIndexCount);
+  bufferDescription.m_ResourceUsage       = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_CPUAccessFlags      = bIsImmutable ? xiiGALCPUAccessFlag::None : xiiGALCPUAccessFlag::Write;
+
+  xiiGALBufferData initialData;
+  initialData.m_pData      = pInitialData.GetPtr();
+  initialData.m_uiDataSize = pInitialData.GetCount();
+
+  return pDevice->CreateBuffer(bufferDescription, &initialData);
+}
+
+xiiGALBufferHandle xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
+{
+  XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
+
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  bufferDescription.m_uiElementByteStride = 0U;
+  bufferDescription.m_uiSize              = uiBufferSize;
+  bufferDescription.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
+  return pDevice->CreateBuffer(bufferDescription);
+}
+
+xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32 size, xiiGALTextureFormat::Enum format, xiiUInt32 uiSampleCount)
+{
+  return xiiGALTextureCreationDescription{
+    .m_Type               = xiiGALResourceDimension::Texture2D,
+    .m_Size               = size,
+    .m_uiArraySizeOrDepth = 1U,
+    .m_Format             = format,
+    .m_uiMipLevels        = 1U,
+    .m_uiSampleCount      = uiSampleCount,
+    .m_BindFlags          = xiiGALBindFlags::ShaderResource | (xiiGALTextureFormat::IsDepthFormat(format) ? xiiGALBindFlags::DepthStencil : xiiGALBindFlags::RenderTarget),
+    .m_Usage              = xiiGALResourceUsage::Default,
+    .m_MiscFlags          = xiiGALMiscTextureFlags::None,
+  };
+}
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_DeviceUtilities);

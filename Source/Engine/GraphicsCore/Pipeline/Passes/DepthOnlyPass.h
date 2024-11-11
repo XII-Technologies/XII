@@ -15,5 +15,5 @@ public:
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
 
 protected:
-  xiiRenderPipelineNodePassThrougPin m_PinDepthStencil;
+  xiiRenderPipelineNodePassThroughPin m_PinDepthStencil;
 };

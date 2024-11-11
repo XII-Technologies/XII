@@ -36,5 +36,7 @@ XII_STATICLINK_LIBRARY(GraphicsFoundation)
   XII_STATICLINK_REFERENCE(GraphicsFoundation_States_Implementation_PipelineState);
   XII_STATICLINK_REFERENCE(GraphicsFoundation_States_Implementation_RasterizerState);
   XII_STATICLINK_REFERENCE(GraphicsFoundation_Utilities_Implementation_DescriptorHash);
+  XII_STATICLINK_REFERENCE(GraphicsFoundation_Utilities_Implementation_DeviceUtilities);
   XII_STATICLINK_REFERENCE(GraphicsFoundation_Utilities_Implementation_GraphicsUtilities);
+  XII_STATICLINK_REFERENCE(GraphicsFoundation_Utilities_Implementation_TextureUtilities);
 }

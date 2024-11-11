@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{2725015508337577781,9195918795680669165}}
-		u4 %Hash{3273854717444698945}
+		u4 %Hash{14754473506441451548}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -24,49 +24,49 @@ Objects
 o
 {
 	Uuid %id{u4{17376913910501255926,621987784387625351}}
-	s %t{"xiiRenderPipelineNodePassThrougPin"}
+	s %t{"xiiRenderPipelineNodePassThroughPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{3508954014848652468,935613500971266449}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{15564761471900001097,2244285748408815056}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{2456968345026003070,2693155665197949939}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{16459423193822199732,3247375400523461065}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{13371334179912167793,4188854620501822339}}
-	s %t{"xiiRenderPipelineNodePassThrougPin"}
+	s %t{"xiiRenderPipelineNodePassThroughPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{6992213900229058551,4414397420737327975}}
-	s %t{"xiiRenderPipelineNodePassThrougPin"}
+	s %t{"xiiRenderPipelineNodePassThroughPin"}
 	u3 %v{1}
 	p{}
 }
@@ -205,10 +205,10 @@ o
 		b %Clear{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
 		s %Format{"xiiSourceFormat::Depth24BitStencil8Bit"}
+		s %MSAA_Mode{"xiiGALMSAASampleCount::OneSample"}
 		s %Name{"DepthStencil"}
-		Vec2 %Node::Pos{f{0xE19BB9C4,0x25F266C3}}
+		Vec2 %Node::Pos{f{0x55FCB9C4,0x52E75DC3}}
 		Uuid %Output{u4{1500338303832159158,6081944764471030876}}
-		s %SampleCount{"xiiGALMSAASampleCount::OneSample"}
 	}
 }
 o
@@ -292,10 +292,10 @@ o
 		b %Clear{1}
 		Color %ClearColor{f{0,0,0,0x0000803F}}
 		s %Format{"xiiSourceFormat::Color4Channel8BitNormalized_sRGB"}
+		s %MSAA_Mode{"xiiGALMSAASampleCount::OneSample"}
 		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x89DFB9C4,0x1409A7C3}}
 		Uuid %Output{u4{7053429786865683355,12290627144904873763}}
-		s %SampleCount{"xiiGALMSAASampleCount::OneSample"}
 	}
 }
 o
@@ -338,42 +338,42 @@ o
 o
 {
 	Uuid %id{u4{9031175148332770523,6595992340210126230}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{10261658672040982017,7057844770348847793}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{14282393167202529858,7464273541253981483}}
-	s %t{"xiiRenderPipelineNodePassThrougPin"}
+	s %t{"xiiRenderPipelineNodePassThroughPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{17424646834486165085,7583993110615702566}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{2725560692618687699,9529164957605534258}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
 	Uuid %id{u4{1098247820759959335,10175976730578120097}}
-	s %t{"xiiRenderPipelineNodePassThrougPin"}
+	s %t{"xiiRenderPipelineNodePassThroughPin"}
 	u3 %v{1}
 	p{}
 }
@@ -409,7 +409,7 @@ o
 o
 {
 	Uuid %id{u4{15193297583014511214,14441702725461986901}}
-	s %t{"xiiRenderPipelineNodeInputPin"}
+	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
 }
@@ -423,7 +423,7 @@ o
 o
 {
 	Uuid %id{u4{8176470888492187454,16871958825404129907}}
-	s %t{"xiiRenderPipelineNodePassThrougPin"}
+	s %t{"xiiRenderPipelineNodePassThroughPin"}
 	u3 %v{1}
 	p{}
 }
@@ -444,23 +444,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiTransparentForwardRenderPass"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{15772312541523044296,1232336658502742947}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelineNodePin"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiRenderPipelineNodePassThrougPin"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -500,6 +483,23 @@ o
 }
 o
 {
+	Uuid %id{u4{16531145568626605552,4457094835024808881}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiCategoryAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{9458844672690985845,4779112216626949986}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -512,6 +512,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelineNodePin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{17474407330144976873,5753112702795605815}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodePin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodePassThroughPin"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -540,7 +557,7 @@ o
 	p
 	{
 		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
 		s %ParentTypeName{"xiiReflectedClass"}
 		s %PluginName{"Static"}
@@ -733,6 +750,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelineNodeInputPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16479430116335932890,12296207084152995939}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodeInputPin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeInputProviderPin"}
 		u3 %TypeVersion{1}
 	}
 }

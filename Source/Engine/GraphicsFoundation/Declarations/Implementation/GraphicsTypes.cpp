@@ -427,9 +427,9 @@ const char* xiiGALPrimitiveTopology::Names[ENUM_COUNT] = {
   "ControlPointPatchList32",
 };
 
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMemoryProperties, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALMemoryProperties::Unknown),
-  XII_BITFLAGS_CONSTANT(xiiGALMemoryProperties::HostCoherent),
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMemoryPropertyFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALMemoryPropertyFlags::Unknown),
+  XII_BITFLAGS_CONSTANT(xiiGALMemoryPropertyFlags::HostCoherent),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALDeviceAdapterType, 1)

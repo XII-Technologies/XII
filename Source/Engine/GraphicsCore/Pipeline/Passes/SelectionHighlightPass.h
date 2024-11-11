@@ -18,8 +18,8 @@ public:
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
 
 protected:
-  xiiRenderPipelineNodePassThrougPin m_PinColor;
-  xiiRenderPipelineNodeInputPin      m_PinDepthStencil;
+  xiiRenderPipelineNodePassThroughPin m_PinColor;
+  xiiRenderPipelineNodeInputPin       m_PinDepthStencil;
 
   xiiShaderResourceHandle        m_hShader;
   xiiConstantBufferStorageHandle m_hConstantBuffer;

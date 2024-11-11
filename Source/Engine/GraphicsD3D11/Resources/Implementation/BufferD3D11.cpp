@@ -113,15 +113,6 @@ void xiiGALBufferD3D11::SetDebugNamePlatform(xiiStringView sName)
   }
 }
 
-xiiGALMemoryProperties xiiGALBufferD3D11::GetMemoryProperties() const
-{
-  /// \todo GraphicsD3D11: Not yet implemented.
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiGALMemoryProperties();
-}
-
 void xiiGALBufferD3D11::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
 }

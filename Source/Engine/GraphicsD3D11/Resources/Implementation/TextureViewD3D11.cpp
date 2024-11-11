@@ -3,7 +3,7 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureViewD3D11, 1, xiiRTTINoAllocator)
@@ -23,7 +23,7 @@ xiiResult xiiGALTextureViewD3D11::InitPlatform()
   {
     case xiiGALTextureViewType::ShaderResource:
     {
-      if (!xiiGALGraphicsUtilities::IsIdentityComponentMapping(m_Description.m_ComponentSwizzle))
+      if (!xiiGALTextureUtilities::IsIdentityComponentMapping(m_Description.m_ComponentSwizzle))
       {
         xiiLog::Error("Direct3D11 does not support texture component swizzle.");
         return XII_FAILURE;
@@ -312,7 +312,7 @@ xiiResult xiiGALTextureViewD3D11::CreateDSV(ID3D11DepthStencilView** ppDepthSten
   {
     viewDescription.Flags |= D3D11_DSV_READ_ONLY_DEPTH;
 
-    const auto& formatDescription = xiiGALGraphicsUtilities::GetTextureFormatProperties(m_Description.m_Format);
+    const auto& formatDescription = xiiGALTextureUtilities::GetTextureFormatProperties(m_Description.m_Format);
     if (formatDescription.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
     {
       viewDescription.Flags |= D3D11_DSV_READ_ONLY_STENCIL;

@@ -8,6 +8,7 @@
 
 struct ID3D11DeviceContext;
 struct ID3D11CommandList;
+struct xiiGALSwapChainD3D11Event;
 
 class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandList
 {
@@ -18,6 +19,8 @@ public:
   XII_ALWAYS_INLINE ID3D11DeviceContext1* GetD3D11DeferredContext() const { return m_pCommandList; }
 
 protected:
+  void GALSwapChainD3D11EventHandler(const xiiGALSwapChainD3D11Event& e);
+
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
@@ -84,8 +87,6 @@ protected:
   void CommitRenderTargets();
   void ResetRenderTargets();
 
-  void ReleaseInternalCommandList();
-
 protected:
   friend class xiiGALCommandQueueD3D11;
   friend class xiiGALDeviceD3D11;
@@ -103,6 +104,8 @@ protected:
   xiiResult FlushDeferredStateChanges();
 
 protected:
+  xiiEventSubscriptionID m_GALSwapChainD3D11EventSubscriptionID;
+
   xiiGALCommandQueueD3D11* m_pCommandQueueD3D11 = nullptr;
 
   ID3D11DeviceContext1* m_pCommandList          = nullptr;

@@ -36,29 +36,11 @@ xiiTargetPass::xiiTargetPass(xiiStringView sName) :
 
 xiiTargetPass::~xiiTargetPass() = default;
 
-const xiiGALTextureViewHandle* xiiTargetPass::GetTextureViewHandle(const xiiGALRenderTargets& renderTargets, const xiiRenderPipelineNodePin* pPin)
-{
-  // auto inputs = GetInputPins();
-  if (pPin->m_pParent != this)
-  {
-    xiiLog::Error("xiiTargetPass::GetTextureHandle: The given pin is not part of this pass!");
-    return nullptr;
-  }
-
-  if (pPin->m_uiInputIndex == 8)
-  {
-    return &renderTargets.m_hDSTarget;
-  }
-  else
-  {
-    return &renderTargets.m_hRTs[pPin->m_uiInputIndex];
-  }
-
-  return nullptr;
-}
-
 bool xiiTargetPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
+  m_hSwapChain    = view.GetSwapChain();
+  m_RenderTargets = view.GetRenderTargets();
+
   const char* pinNames[] = {
     "Color0",
     "Color1",
@@ -80,6 +62,32 @@ bool xiiTargetPass::GetRenderTargetDescriptions(const xiiView& view, const xiiAr
   return true;
 }
 
+xiiGALTextureViewHandle xiiTargetPass::QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc)
+{
+  XII_ASSERT_DEV(pPin->m_pParent == this, "xiiTargetPass::QueryTextureProvider: The given pin is not part of this pass!");
+
+  if (pPin->m_uiOutputIndex == 8)
+  {
+    return m_RenderTargets.m_hDSTarget;
+  }
+  else
+  {
+    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(m_hSwapChain))
+    {
+      if (pPin->m_uiInputIndex == 0)
+      {
+        return pDevice->GetTexture(pSwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+      }
+    }
+    else
+    {
+      return m_RenderTargets.m_hRTs[pPin->m_uiInputIndex];
+    }
+  }
+  return xiiGALTextureViewHandle();
+}
+
 void xiiTargetPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) {}
 
 bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiStringView sPinName)
@@ -89,10 +97,10 @@ bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTex
   const xiiRenderPipelineNodePin* pPin = GetPinByName(sPinName);
   if (inputs[pPin->m_uiInputIndex])
   {
-    const xiiGALTextureViewHandle* pHandle = GetTextureViewHandle(view.GetActiveRenderTargets(), pPin);
-    if (pHandle)
+    const xiiGALTextureViewHandle hTextureViewHandle = QueryTextureProvider(pPin, *inputs[pPin->m_uiInputIndex]);
+    if (!hTextureViewHandle.IsInvalidated())
     {
-      const xiiGALTextureView* pTextureView = pDevice->GetTextureView(*pHandle);
+      const xiiGALTextureView* pTextureView = pDevice->GetTextureView(hTextureViewHandle);
       if (pTextureView)
       {
         // TODO: Need a more sophisticated check here what is considered 'matching'

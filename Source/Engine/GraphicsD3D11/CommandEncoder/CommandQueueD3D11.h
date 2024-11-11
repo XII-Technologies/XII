@@ -21,12 +21,11 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
-  void AddSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
-  void RemoveSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
-  void ReleaseSwapChainCommanListReferences();
+  void BeginCommandList(xiiGALCommandListD3D11* pCommandListD3D11);
+  void ResetCommandList(xiiGALCommandListD3D11* pCommandListD3D11);
 
 protected:
-  xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
+  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -44,11 +43,10 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
-  ID3D11DeviceContext4* m_pImmediateContext = nullptr;
+  xiiMutex m_QueueMutex;
 
-  xiiMutex                                 m_QueueMutex;
-  xiiDeque<xiiGALCommandList*>             m_CommandLists;
-  xiiDynamicArray<xiiGALCommandListD3D11*> m_SwapChainCommandListReferences;
+  ID3D11DeviceContext4*             m_pImmediateContext = nullptr;
+  xiiDeque<xiiGALCommandListD3D11*> m_CommandLists;
 
   // A value that will be signaled by the command queue next.
   std::atomic<xiiUInt64> m_NextFenceValue{1};

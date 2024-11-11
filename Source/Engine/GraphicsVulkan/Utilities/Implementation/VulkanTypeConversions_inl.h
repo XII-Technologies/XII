@@ -728,25 +728,227 @@ XII_ALWAYS_INLINE vk::VertexInputRate xiiVulkanTypeConversions::GetFrequency(xii
 
 XII_ALWAYS_INLINE vk::AttachmentLoadOp xiiVulkanTypeConversions::GetAttachmentLoadOperation(xiiGALAttachmentLoadOperation::Enum e)
 {
-  return vk::AttachmentLoadOp();
+  switch (e)
+  {
+    case xiiGALAttachmentLoadOperation::Load:
+      return vk::AttachmentLoadOp::eLoad;
+    case xiiGALAttachmentLoadOperation::Clear:
+      return vk::AttachmentLoadOp::eClear;
+    case xiiGALAttachmentLoadOperation::Discard:
+      return vk::AttachmentLoadOp::eDontCare;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::AttachmentLoadOp::eLoad;
 }
 
 XII_ALWAYS_INLINE vk::AttachmentStoreOp xiiVulkanTypeConversions::GetAttachmentStoreOperation(xiiGALAttachmentStoreOperation::Enum e)
 {
-  return vk::AttachmentStoreOp();
+  switch (e)
+  {
+    case xiiGALAttachmentStoreOperation::Store:
+      return vk::AttachmentStoreOp::eStore;
+    case xiiGALAttachmentStoreOperation::Discard:
+      return vk::AttachmentStoreOp::eDontCare;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::AttachmentStoreOp::eStore;
 }
 
 XII_ALWAYS_INLINE vk::ImageLayout xiiVulkanTypeConversions::GetImageLayout(xiiBitflags<xiiGALResourceStateFlags> e, bool bIsInsideRenderPass, bool bFragDensityMapInsteadOfShadingRate)
 {
-  return vk::ImageLayout();
+  if (e == xiiGALResourceStateFlags::Unknown)
+    return vk::ImageLayout::eUndefined;
+
+  // Currently not used:
+  // VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL
+  // VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
+  // VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV
+  // VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
+  // VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
+
+  XII_ASSERT_DEV(e.GetValue() & (e.GetValue() - 1), "Expected a single bit set.");
+
+  switch (e.GetValue())
+  {
+    case xiiGALResourceStateFlags::Undefined:
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::VertexBuffer:
+      XII_ASSERT_DEV(false, "Invalid resource state!");
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::ConstantBuffer:
+      XII_ASSERT_DEV(false, "Invalid resource state!");
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::IndexBuffer:
+      XII_ASSERT_DEV(false, "Invalid resource state!");
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::RenderTarget:
+      return vk::ImageLayout::eColorAttachmentOptimal;
+    case xiiGALResourceStateFlags::UnorderedAccess:
+      return vk::ImageLayout::eGeneral;
+    case xiiGALResourceStateFlags::DepthWrite:
+      return vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    case xiiGALResourceStateFlags::DepthRead:
+      return vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    case xiiGALResourceStateFlags::ShaderResource:
+      return vk::ImageLayout::eShaderReadOnlyOptimal;
+    case xiiGALResourceStateFlags::StreamOut:
+      XII_ASSERT_DEV(false, "Invalid resource state!");
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::IndirectArgument:
+      XII_ASSERT_DEV(false, "Invalid resource state!");
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::CopyDestination:
+      return vk::ImageLayout::eTransferDstOptimal;
+    case xiiGALResourceStateFlags::CopySource:
+      return vk::ImageLayout::eTransferSrcOptimal;
+    case xiiGALResourceStateFlags::ResolveDestination:
+      return bIsInsideRenderPass ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::eTransferDstOptimal;
+    case xiiGALResourceStateFlags::ResolveSource:
+      return vk::ImageLayout::eTransferSrcOptimal;
+    case xiiGALResourceStateFlags::InputAttachment:
+      return vk::ImageLayout::eShaderReadOnlyOptimal;
+    case xiiGALResourceStateFlags::Present:
+      return vk::ImageLayout::ePresentSrcKHR;
+    case xiiGALResourceStateFlags::BuildAsRead:
+      XII_ASSERT_DEV(false, "Invalid resource state!");
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::BuildAsWrite:
+      XII_ASSERT_DEV(false, "Invalid resource state!");
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::RayTracing:
+      XII_ASSERT_DEV(false, "Invalid resource state!");
+      return vk::ImageLayout::eUndefined;
+    case xiiGALResourceStateFlags::Common:
+      return vk::ImageLayout::eGeneral;
+    case xiiGALResourceStateFlags::ShadingRate:
+      return bFragDensityMapInsteadOfShadingRate ? vk::ImageLayout::eFragmentDensityMapOptimalEXT : vk::ImageLayout::eFragmentShadingRateAttachmentOptimalKHR;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::ImageLayout::eUndefined;
 }
 
 XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e)
 {
-  return vk::PipelineStageFlags();
+  vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eNone;
+
+  if (e.IsSet(xiiGALPipelineStageFlags::TopOfPipeline))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTopOfPipe;
+  if (e.IsSet(xiiGALPipelineStageFlags::DrawIndirect))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eDrawIndirect;
+  if (e.IsSet(xiiGALPipelineStageFlags::VertexInput))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+  if (e.IsSet(xiiGALPipelineStageFlags::VertexShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
+  if (e.IsSet(xiiGALPipelineStageFlags::HullShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTessellationControlShader;
+  if (e.IsSet(xiiGALPipelineStageFlags::DomainShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTessellationEvaluationShader;
+  if (e.IsSet(xiiGALPipelineStageFlags::GeometryShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eGeometryShader;
+  if (e.IsSet(xiiGALPipelineStageFlags::PixelShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
+  if (e.IsSet(xiiGALPipelineStageFlags::EarlyFragmentTests))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
+  if (e.IsSet(xiiGALPipelineStageFlags::LateFragmentTests))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eLateFragmentTests;
+  if (e.IsSet(xiiGALPipelineStageFlags::RenderTarget))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+  if (e.IsSet(xiiGALPipelineStageFlags::ComputeShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eComputeShader;
+  if (e.IsSet(xiiGALPipelineStageFlags::Transfer))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
+  if (e.IsSet(xiiGALPipelineStageFlags::BottomOfPipeline))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eBottomOfPipe;
+  if (e.IsSet(xiiGALPipelineStageFlags::Host))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eHost;
+  if (e.IsSet(xiiGALPipelineStageFlags::ConditionalRendering))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eConditionalRenderingEXT;
+  if (e.IsSet(xiiGALPipelineStageFlags::ShadingRateTexture))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eShadingRateImageNV;
+  if (e.IsSet(xiiGALPipelineStageFlags::RayTracingShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eRayTracingShaderNV;
+  if (e.IsSet(xiiGALPipelineStageFlags::AccelerationStructureBuild))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildNV;
+  if (e.IsSet(xiiGALPipelineStageFlags::TaskShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTaskShaderEXT;
+  if (e.IsSet(xiiGALPipelineStageFlags::MeshShader))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eMeshShaderEXT;
+  if (e.IsSet(xiiGALPipelineStageFlags::FragmentDensityProcess))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentDensityProcessEXT;
+
+  return pipelineStageFlags;
 }
 
 XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e)
 {
-  return vk::AccessFlags();
+  vk::AccessFlags accessFlags = vk::AccessFlagBits::eNone;
+
+  if (e.IsSet(xiiGALAccessFlags::IndirectCommandRead))
+    accessFlags |= vk::AccessFlagBits::eIndirectCommandRead;
+  if (e.IsSet(xiiGALAccessFlags::IndexRead))
+    accessFlags |= vk::AccessFlagBits::eIndexRead;
+  if (e.IsSet(xiiGALAccessFlags::VertexRead))
+    accessFlags |= vk::AccessFlagBits::eVertexAttributeRead;
+  if (e.IsSet(xiiGALAccessFlags::UniformRead))
+    accessFlags |= vk::AccessFlagBits::eUniformRead;
+  if (e.IsSet(xiiGALAccessFlags::InputAttachmentRead))
+    accessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
+  if (e.IsSet(xiiGALAccessFlags::ShaderRead))
+    accessFlags |= vk::AccessFlagBits::eShaderRead;
+  if (e.IsSet(xiiGALAccessFlags::ShaderWrite))
+    accessFlags |= vk::AccessFlagBits::eShaderWrite;
+  if (e.IsSet(xiiGALAccessFlags::RenderTargetRead))
+    accessFlags |= vk::AccessFlagBits::eColorAttachmentRead;
+  if (e.IsSet(xiiGALAccessFlags::RenderTargetWrite))
+    accessFlags |= vk::AccessFlagBits::eColorAttachmentWrite;
+  if (e.IsSet(xiiGALAccessFlags::DepthStencilRead))
+    accessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentRead;
+  if (e.IsSet(xiiGALAccessFlags::DepthStencilWrite))
+    accessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+  if (e.IsSet(xiiGALAccessFlags::CopySource))
+    accessFlags |= vk::AccessFlagBits::eTransferRead;
+  if (e.IsSet(xiiGALAccessFlags::CopyDestination))
+    accessFlags |= vk::AccessFlagBits::eTransferWrite;
+  if (e.IsSet(xiiGALAccessFlags::HostRead))
+    accessFlags |= vk::AccessFlagBits::eHostRead;
+  if (e.IsSet(xiiGALAccessFlags::HostWrite))
+    accessFlags |= vk::AccessFlagBits::eHostWrite;
+  if (e.IsSet(xiiGALAccessFlags::MemoryRead))
+    accessFlags |= vk::AccessFlagBits::eMemoryRead;
+  if (e.IsSet(xiiGALAccessFlags::MemoryWrite))
+    accessFlags |= vk::AccessFlagBits::eMemoryWrite;
+  if (e.IsSet(xiiGALAccessFlags::ConditionalRenderingRead))
+    accessFlags |= vk::AccessFlagBits::eConditionalRenderingReadEXT;
+  if (e.IsSet(xiiGALAccessFlags::ShadingRateTextureRead))
+    accessFlags |= vk::AccessFlagBits::eShadingRateImageReadNV;
+  if (e.IsSet(xiiGALAccessFlags::AccelerationStructureRead))
+    accessFlags |= vk::AccessFlagBits::eAccelerationStructureReadNV;
+  if (e.IsSet(xiiGALAccessFlags::AccelerationStructureWrite))
+    accessFlags |= vk::AccessFlagBits::eAccelerationStructureWriteNV;
+  if (e.IsSet(xiiGALAccessFlags::FragmentDensityMapRead))
+    accessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT;
+
+  return accessFlags;
+}
+
+XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBitflags<xiiGALResourceStateFlags> e)
+{
+  vk::AccessFlags accessFlags = vk::AccessFlagBits::eNone;
+  while (e != xiiGALResourceStateFlags::Unknown)
+  {
+    auto bit = xiiMath::FirstBitLow(e.GetValue());
+    accessFlags |= xiiVulkanTypeConversions::GetAccessFlags(static_cast<xiiGALResourceStateFlags::Enum>(bit));
+
+    e.Remove(static_cast<xiiGALResourceStateFlags::Enum>(bit));
+  }
+  return accessFlags;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceState(vk::AccessFlags e)
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiBitflags<xiiGALResourceStateFlags>();
 }

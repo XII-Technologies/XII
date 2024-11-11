@@ -848,7 +848,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPrimitiveTopology);
 
 /// \brief This describes memory property flags.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryProperties
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryPropertyFlags
 {
   using StorageType = xiiUInt8;
 
@@ -869,9 +869,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryProperties
   };
 };
 
-XII_DECLARE_FLAGS_OPERATORS(xiiGALMemoryProperties);
+XII_DECLARE_FLAGS_OPERATORS(xiiGALMemoryPropertyFlags);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMemoryProperties);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMemoryPropertyFlags);
 
 /// \brief This describes the hardware adapter type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceAdapterType

@@ -2,10 +2,11 @@
 
 #include <Foundation/Memory/MemoryUtils.h>
 
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsD3D11/CommandEncoder/CommandListD3D11.h>
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
+#include <GraphicsD3D11/Device/SwapChainD3D11.h>
 
 #include <GraphicsD3D11/Resources/BottomLevelASD3D11.h>
 #include <GraphicsD3D11/Resources/BufferD3D11.h>
@@ -34,7 +35,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D11, pCommandQueueD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
+  xiiGALCommandList(pDeviceD3D11, pCommandQueueD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11), m_GALSwapChainD3D11EventSubscriptionID(xiiGALSwapChainD3D11::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGALCommandListD3D11::GALSwapChainD3D11EventHandler, this)))
 {
   HRESULT hResult = pDeviceD3D11->GetD3D11Device()->CreateDeferredContext1(0U, &m_pCommandList);
 
@@ -46,6 +47,8 @@ xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, 
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
 {
+  xiiGALSwapChainD3D11::s_Events.RemoveEventHandler(m_GALSwapChainD3D11EventSubscriptionID);
+
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
   XII_GAL_D3D11_RELEASE(m_pCommandList);
 }
@@ -62,11 +65,25 @@ void xiiGALCommandListD3D11::SetDebugNamePlatform(xiiStringView sName)
   }
 }
 
+void xiiGALCommandListD3D11::GALSwapChainD3D11EventHandler(const xiiGALSwapChainD3D11Event& e)
+{
+  // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
+  if (e.m_pSwapChainD3D11 != nullptr && e.m_Type == xiiGALSwapChainD3D11EventType::BeforeBufferRelease)
+  {
+    XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+  }
+}
+
 void xiiGALCommandListD3D11::BeginPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 
   m_RecordingState = RecordingState::Recording;
+
+  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
+  {
+    pCommandQueueD3D11->BeginCommandList(this);
+  }
 }
 
 void xiiGALCommandListD3D11::EndPlatform()
@@ -84,14 +101,23 @@ void xiiGALCommandListD3D11::ResetPlatform()
 
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 
+  InvalidateState();
+
   m_RecordingState = RecordingState::Reset;
 
-  InvalidateState();
+  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
+  {
+    pCommandQueueD3D11->ResetCommandList(this);
+  }
 }
 
 xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform(bool bReset)
 {
-  return static_cast<xiiGALCommandQueueD3D11*>(m_pCommandQueue)->Submit(this, bReset);
+  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
+  {
+    return pCommandQueueD3D11->SubmitCommandList(this, bReset);
+  }
+  return xiiMath::MaxValue<xiiUInt64>();
 }
 
 void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -299,8 +325,6 @@ void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPa
 
   // Set the active render targes.
   CommitRenderTargets();
-
-  m_pCommandQueueD3D11->AddSwapChainCommandListReference(this);
 }
 
 void xiiGALCommandListD3D11::NextSubpassPlatform()
@@ -310,8 +334,6 @@ void xiiGALCommandListD3D11::NextSubpassPlatform()
 
 void xiiGALCommandListD3D11::EndRenderPassPlatform()
 {
-  m_pCommandQueueD3D11->RemoveSwapChainCommandListReference(this);
-
   ResetRenderTargets();
 }
 
@@ -637,7 +659,7 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   destinationBox.bottom    = textureBox.m_vMax.y;
   destinationBox.back      = textureBox.m_vMax.z;
 
-  const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+  const auto& formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
 
   if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Compressed)
   {
@@ -654,7 +676,7 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   xiiUInt32 uiDestinationSubresourceIndex = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
   xiiUInt32 uiCopyFlags                   = D3D11_COPY_DISCARD;
 
-  m_pCommandList->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData, static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
+  m_pCommandList->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData.GetPtr(), static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
 }
 
 void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
@@ -684,29 +706,29 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
     HRESULT                  hRes = pCommandList->Map(pDXTempTexture, 0, D3D11_MAP_WRITE, 0, &MapResult);
     XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
 
-    xiiUInt32 uiRowPitch   = uiWidth * xiiGALGraphicsUtilities::GetTextureFormatProperties(format).GetElementSize();
+    xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureUtilities::GetTextureFormatProperties(format).GetElementSize();
     xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
     XII_ASSERT_DEV(subresourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, subresourceData.m_uiStride);
     XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}", uiSlicePitch, subresourceData.m_uiDepthStride);
 
     if (MapResult.RowPitch == uiRowPitch && MapResult.DepthPitch == uiSlicePitch)
     {
-      memcpy(MapResult.pData, subresourceData.m_pData, uiSlicePitch * uiDepth);
+      memcpy(MapResult.pData, subresourceData.m_pData.GetPtr(), uiSlicePitch * uiDepth);
     }
     else
     {
       // Copy row by row
       for (xiiUInt32 z = 0; z < uiDepth; ++z)
       {
-        const void* pSource = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData, z * uiSlicePitch);
-        void*       pDest   = xiiMemoryUtils::AddByteOffset(MapResult.pData, z * MapResult.DepthPitch);
+        const void* pSource      = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), z * uiSlicePitch);
+        void*       pDestination = xiiMemoryUtils::AddByteOffset(MapResult.pData, z * MapResult.DepthPitch);
 
         for (xiiUInt32 y = 0; y < uiHeight; ++y)
         {
-          memcpy(pDest, pSource, uiRowPitch);
+          memcpy(pDestination, pSource, uiRowPitch);
 
-          pSource = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
-          pDest   = xiiMemoryUtils::AddByteOffset(pDest, MapResult.RowPitch);
+          pSource      = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
+          pDestination = xiiMemoryUtils::AddByteOffset(pDestination, MapResult.RowPitch);
         }
       }
     }
@@ -1044,11 +1066,6 @@ void xiiGALCommandListD3D11::ResetRenderTargets()
   m_uiBoundRenderTargetCount     = 0U;
 
   m_pCommandList->OMSetRenderTargets(0, nullptr, nullptr);
-}
-
-void xiiGALCommandListD3D11::ReleaseInternalCommandList()
-{
-  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 }
 
 xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()

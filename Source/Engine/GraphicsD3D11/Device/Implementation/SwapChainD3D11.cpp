@@ -15,9 +15,16 @@
 #include <dxgi1_4.h>
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALSwapChainD3D11EventType, 1)
+  XII_ENUM_CONSTANT(xiiGALSwapChainD3D11EventType::Unknown),
+  XII_ENUM_CONSTANT(xiiGALSwapChainD3D11EventType::BeforeBufferRelease),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+xiiEvent<const xiiGALSwapChainD3D11Event&, xiiNoMutex, xiiStaticAllocatorWrapper> xiiGALSwapChainD3D11::s_Events;
 
 xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(pDeviceD3D11, creationDescription)
@@ -44,7 +51,12 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceD3D11->ResetCommandQueuesSwapChainReferences();
+  {
+    xiiGALSwapChainD3D11Event e;
+    e.m_pSwapChainD3D11 = this;
+    e.m_Type            = xiiGALSwapChainD3D11EventType::BeforeBufferRelease;
+    s_Events.Broadcast(e);
+  }
 
   DestroyBackBufferInternal(pDeviceD3D11);
 
@@ -264,7 +276,12 @@ xiiResult xiiGALSwapChainD3D11::UpdateSwapChain(bool bCreateNew)
   if (ID3D11DeviceContext* pContextD3D11 = pDeviceD3D11->GetImmediateContext())
   {
     // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
-    pDeviceD3D11->ResetCommandQueuesSwapChainReferences();
+    {
+      xiiGALSwapChainD3D11Event e;
+      e.m_pSwapChainD3D11 = this;
+      e.m_Type            = xiiGALSwapChainD3D11EventType::BeforeBufferRelease;
+      s_Events.Broadcast(e);
+    }
 
     DestroyBackBufferInternal(pDeviceD3D11);
 

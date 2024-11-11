@@ -6,7 +6,6 @@
 #include <GraphicsCore/Pipeline/Renderer.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-#include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
 // clang-format off

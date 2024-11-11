@@ -308,6 +308,7 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
   deviceCreationDescription.m_DeviceFeatures.m_SparseResources                   = xiiGALDeviceFeatureState::Disabled;
   deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch           = xiiGALDeviceFeatureState::Disabled;
   deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle           = xiiGALDeviceFeatureState::Optional;
+  deviceCreationDescription.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics = xiiGALDeviceFeatureState::Optional;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;

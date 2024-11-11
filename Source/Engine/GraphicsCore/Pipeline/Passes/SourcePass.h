@@ -33,16 +33,17 @@ public:
   xiiSourcePass(xiiStringView sName = "SourcePass");
   ~xiiSourcePass();
 
-  virtual bool      GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-  virtual void      Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
-  virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;
-  virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
+  static xiiGALTextureCreationDescription GetOutputDescription(const xiiView& view, xiiEnum<xiiSourceFormat> format, xiiEnum<xiiGALMSAASampleCount> msaaMode);
+  virtual bool                            GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
+  virtual void                            Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual xiiResult                       Serialize(xiiStreamWriter& inout_stream) const override;
+  virtual xiiResult                       Deserialize(xiiStreamReader& inout_stream) override;
 
 protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  xiiEnum<xiiSourceFormat>       m_Format;
-  xiiEnum<xiiGALMSAASampleCount> m_SampleCount;
-  xiiColor                       m_ClearColor;
-  bool                           m_bClear;
+  xiiEnum<xiiSourceFormat>       m_Format     = xiiSourceFormat::Default;
+  xiiEnum<xiiGALMSAASampleCount> m_MsaaMode   = xiiGALMSAASampleCount::OneSample;
+  xiiColor                       m_ClearColor = xiiColor::Black;
+  bool                           m_bClear     = false;
 };

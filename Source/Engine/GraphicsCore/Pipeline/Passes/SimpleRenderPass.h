@@ -23,8 +23,8 @@ public:
   void SetMessage(const char* szMessage);
 
 protected:
-  xiiRenderPipelineNodePassThrougPin m_PinColor;
-  xiiRenderPipelineNodePassThrougPin m_PinDepthStencil;
+  xiiRenderPipelineNodePassThroughPin m_PinColor;
+  xiiRenderPipelineNodePassThroughPin m_PinDepthStencil;
 
   xiiString m_sMessage;
 };

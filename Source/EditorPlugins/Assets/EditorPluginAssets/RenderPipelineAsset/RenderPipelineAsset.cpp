@@ -58,7 +58,7 @@ void xiiRenderPipelineNodeManager::InternalCreatePins(const xiiDocumentObject* p
       auto pPin = XII_DEFAULT_NEW(xiiPin, xiiPin::Type::Output, pProp->GetPropertyName(), pinColor, pObject);
       ref_node.m_Outputs.PushBack(pPin);
     }
-    else if (pProp->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodePassThrougPin>())
+    else if (pProp->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodePassThroughPin>())
     {
       auto pPinIn = XII_DEFAULT_NEW(xiiPin, xiiPin::Type::Input, pProp->GetPropertyName(), pinColor, pObject);
       ref_node.m_Inputs.PushBack(pPinIn);

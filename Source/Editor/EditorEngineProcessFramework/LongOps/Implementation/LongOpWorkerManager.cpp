@@ -84,8 +84,7 @@ void xiiLongOpWorkerManager::LaunchWorkerOperation(WorkerOpInfo& opInfo, xiiStre
 {
   opInfo.m_Progress.SetCompletion(0.0f);
   opInfo.m_Progress.m_pUserData = &opInfo;
-  opInfo.m_Progress.m_Events.AddEventHandler(
-    xiiMakeDelegate(&xiiLongOpWorkerManager::WorkerProgressBarEventHandler, this), opInfo.m_ProgressSubscription);
+  opInfo.m_Progress.m_Events.AddEventHandler(xiiMakeDelegate(&xiiLongOpWorkerManager::WorkerProgressBarEventHandler, this), opInfo.m_ProgressSubscription);
 
   SendProgress(opInfo);
 

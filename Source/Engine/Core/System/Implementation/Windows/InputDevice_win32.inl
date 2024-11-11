@@ -33,7 +33,9 @@ xiiStandardInputDevice::~xiiStandardInputDevice()
   }
 
   if (m_uiWindowNumber == 0)
+  {
     xiiStandardInputDevice::s_bMainWindowUsed = false;
+  }
 }
 
 void xiiStandardInputDevice::InitializeDevice()
@@ -59,10 +61,14 @@ void xiiStandardInputDevice::InitializeDevice()
       xiiLog::Error("Could not initialize RawInput for Mouse and Keyboard input.");
     }
     else
+    {
       xiiLog::Success("Initialized RawInput for Mouse and Keyboard input.");
+    }
   }
   else
+  {
     xiiLog::Info("Window {0} does not need to initialize Mouse or Keyboard.", m_uiWindowNumber);
+  }
 }
 
 void xiiStandardInputDevice::RegisterInputSlots()
