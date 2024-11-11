@@ -900,13 +900,23 @@ xiiResult xiiGALDeviceD3D11::FillCapabilitiesPlatform()
       }
       deviceFeatures.m_ShaderFloat16 = bShaderFloat16Supported ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
     }
+
+    {
+      bool bVertexShaderRenderTargetArrayIndexSupported = false;
+
+      D3D11_FEATURE_DATA_D3D11_OPTIONS3 d3d11FeatureDataOptions3 = {};
+      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS3, &d3d11FeatureDataOptions3, sizeof(d3d11FeatureDataOptions3))))
+      {
+        bVertexShaderRenderTargetArrayIndexSupported = d3d11FeatureDataOptions3.VPAndRTArrayIndexFromAnyShaderFeedingRasterizer != FALSE;
+      }
+      deviceFeatures.m_VertexShaderRenderTargetArrayIndex = bVertexShaderRenderTargetArrayIndexSupported ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
+    }
   }
 
   // Buffer properties.
   {
     // Offsets passed to *SSetConstantBuffers1 are measured in shader constants, which are
-    // 16 bytes (4*32-bit components). Each offset must be a multiple of 16 constants,
-    // i.e. 256 bytes.
+    // 16 bytes (4*32-bit components). Each offset must be a multiple of 16 constants, i.e. 256 bytes.
     m_AdapterDescription.m_BufferProperties.m_uiConstantBufferAlignment         = 256U;
     m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
   }

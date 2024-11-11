@@ -1106,7 +1106,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   XII_ASSERT_DEV(m_uiLastRenderFrame != xiiRenderWorld::GetFrameCounter(), "Render must not be called multiple times per frame.");
   m_uiLastRenderFrame = xiiRenderWorld::GetFrameCounter();
 
-
+  xiiGALDevice*      pDevice    = xiiGALDevice::GetDefaultDevice();
   auto&              data       = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
   const xiiCamera*   pCamera    = &data.GetCamera();
   const xiiCamera*   pLodCamera = &data.GetLodCamera();
@@ -1167,8 +1167,10 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   else
     pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
 
-  /// \todo Check vertex shader render target array index.
-  pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
+  if (pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled)
+    pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
+  else
+    pRenderContext->SetShaderPermutationVariable(sVSRTAI, sFalse);
 
   pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 

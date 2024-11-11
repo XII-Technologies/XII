@@ -1147,8 +1147,10 @@ void xiiRenderContext::LoadBuiltinShader(xiiShaderUtilities::xiiBuiltinShaderTyp
 
   permutationVariables.Insert(sCameraMode, bStereo ? sStereo : sPerspective);
 
-  /// \todo Check vertex shader render target array index.
-  permutationVariables.Insert(sVSRTAI, sTrue);
+  if (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled)
+    permutationVariables.Insert(sVSRTAI, sTrue);
+  else
+    permutationVariables.Insert(sVSRTAI, sFalse);
 
   xiiShaderPermutationResourceHandle hActiveShaderPermutation = xiiShaderManager::PreloadSinglePermutation(hActiveShader, permutationVariables, false);
 

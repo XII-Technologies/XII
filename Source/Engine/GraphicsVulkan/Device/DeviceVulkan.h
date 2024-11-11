@@ -43,12 +43,13 @@ public:
     vk::PhysicalDeviceMultiDrawFeaturesEXT              m_MultiDraw;
     vk::PhysicalDeviceShaderDrawParametersFeatures      m_ShaderDrawParameters;
 
-    bool m_bSpirv14              = false; // Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension
-    bool m_bSpirv15              = false; // DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5
-    bool m_bSubgroupOps          = false; // Requires Vulkan 1.1
-    bool m_bHasPortabilitySubset = false;
-    bool m_bRenderPass2          = false;
-    bool m_bDrawIndirectCount    = false;
+    bool m_bSpirv14                  = false; // Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension
+    bool m_bSpirv15                  = false; // DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5
+    bool m_bSubgroupOps              = false; // Requires Vulkan 1.1
+    bool m_bHasPortabilitySubset     = false;
+    bool m_bRenderPass2              = false;
+    bool m_bDrawIndirectCount        = false;
+    bool m_bShaderViewportIndexLayer = false;
   };
 
   struct ExtensionProperties
