@@ -15,6 +15,7 @@
 #include <GuiFoundation/Action/ActionManager.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
+// clang-format off
 xiiCommandLineOptionPath   opt_OutputDir("_EditorProcessor", "-outputDir", "Output directory", "");
 xiiCommandLineOptionBool   opt_SaveProfilingData("_EditorProcessor", "-profiling", "Saves performance profiling information into the output folder.", false);
 xiiCommandLineOptionPath   opt_Project("_EditorProcessor", "-project", "Path to the project folder.", "");
@@ -24,7 +25,8 @@ xiiCommandLineOptionString opt_Transform("_EditorProcessor", "-transform", "If s
 Example:\n\
   -transform Default\n\
 ",
-                                         "");
+"");
+// clang-format on
 
 class xiiEditorApplication : public xiiApplication
 {
@@ -77,8 +79,7 @@ public:
 
       xiiProcessAssetResponseMsg msg;
       {
-        xiiLogEntryDelegate logger([&msg](xiiLogEntry& ref_entry) -> void { msg.m_LogEntries.PushBack(std::move(ref_entry)); },
-                                   xiiLogMsgType::WarningMsg);
+        xiiLogEntryDelegate logger([&msg](xiiLogEntry& ref_entry) -> void { msg.m_LogEntries.PushBack(std::move(ref_entry)); }, xiiLogMsgType::WarningMsg);
         xiiLogSystemScope   logScope(&logger);
 
         const xiiUInt32 uiPlatform = xiiAssetCurator::GetSingleton()->FindAssetProfileByName(pMsg->m_sPlatform);
@@ -92,8 +93,7 @@ public:
           xiiUInt64 uiAssetHash = 0;
           xiiUInt64 uiThumbHash = 0;
 
-          // TODO: there is currently no 'nice' way to switch the active platform for the asset processors
-          // it is also not clear whether this is actually safe to execute here
+          // TODO: there is currently no 'nice' way to switch the active platform for the asset processors it is also not clear whether this is actually safe to execute here
           xiiAssetCurator::GetSingleton()->SetActiveAssetProfileByIndex(uiPlatform);
           // First, force checking for file system changes for the asset and the transitive hull of all dependencies and runtime references. This needs to be done as this EditorProcessor instance might not know all the files yet as some might just have been written. We can't rely on the filesystem watcher as it is not instant and also might just miss some events.
           for (const xiiString& sDepOrRef : pMsg->m_DepRefHull)
