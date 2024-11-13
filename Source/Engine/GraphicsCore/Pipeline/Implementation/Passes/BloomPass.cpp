@@ -86,9 +86,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
   auto pColorInput  = inputs[m_PinInput.m_uiInputIndex];
   auto pColorOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pColorInput == nullptr || pColorOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 

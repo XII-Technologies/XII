@@ -49,10 +49,10 @@ bool xiiMsaaUpscalePass::GetRenderTargetDescriptions(const xiiView& view, const 
       return false;
     }
 
-    xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_uiSampleCount                  = m_MsaaMode;
+    xiiGALTextureCreationDescription textureDescription = *pInput;
+    textureDescription.m_uiSampleCount                  = m_MsaaMode;
 
-    outputs[m_PinOutput.m_uiOutputIndex] = desc;
+    outputs[m_PinOutput.m_uiOutputIndex] = textureDescription;
   }
   else
   {
@@ -91,16 +91,21 @@ void xiiMsaaUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
 xiiResult xiiMsaaUpscalePass::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
+
   inout_stream << m_MsaaMode;
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiMsaaUpscalePass::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(inout_stream));
+
   const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
   XII_IGNORE_UNUSED(uiVersion);
+
   inout_stream >> m_MsaaMode;
+
   return XII_SUCCESS;
 }
 

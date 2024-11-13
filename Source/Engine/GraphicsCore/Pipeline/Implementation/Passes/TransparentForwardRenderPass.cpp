@@ -36,9 +36,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 {
   auto pColorInput = inputs[m_PinColor.m_uiInputIndex];
   if (pColorInput == nullptr)
-  {
     return;
-  }
 
   CreateSampler();
 
