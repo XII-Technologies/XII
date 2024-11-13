@@ -297,9 +297,7 @@ void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, c
 {
   auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -314,6 +312,7 @@ void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, c
 xiiResult xiiAOPass::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
+
   inout_stream << m_fRadius;
   inout_stream << m_fMaxScreenSpaceRadius;
   inout_stream << m_fContrast;
@@ -323,14 +322,17 @@ xiiResult xiiAOPass::Serialize(xiiStreamWriter& inout_stream) const
   inout_stream << m_fPositionBias;
   inout_stream << m_fMipLevelScale;
   inout_stream << m_fDepthBlurThreshold;
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiAOPass::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(inout_stream));
+
   const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
   XII_IGNORE_UNUSED(uiVersion);
+
   inout_stream >> m_fRadius;
   inout_stream >> m_fMaxScreenSpaceRadius;
   inout_stream >> m_fContrast;
@@ -340,6 +342,7 @@ xiiResult xiiAOPass::Deserialize(xiiStreamReader& inout_stream)
   inout_stream >> m_fPositionBias;
   inout_stream >> m_fMipLevelScale;
   inout_stream >> m_fDepthBlurThreshold;
+
   return XII_SUCCESS;
 }
 
