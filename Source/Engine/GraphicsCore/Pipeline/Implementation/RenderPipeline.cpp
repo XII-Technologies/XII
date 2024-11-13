@@ -790,7 +790,7 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePass* pPass)
   auto it = m_Connections.Find(pPass);
   if (!it.IsValid())
     return;
-   
+
   ConnectionData& data = it.Value();
   for (xiiUInt32 i = 0; i < data.m_Inputs.GetCount(); ++i)
   {

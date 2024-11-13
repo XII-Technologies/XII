@@ -50,9 +50,7 @@ void xiiProcessingStream::SetSize(xiiUInt64 uiNumElements)
   FreeData();
 
   if (uiNewDataSize == 0)
-  {
     return;
-  }
 
   /// \todo Allow to reuse memory from a pool ?
   if (m_uiAlignment > 0)

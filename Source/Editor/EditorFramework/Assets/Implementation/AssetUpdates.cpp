@@ -447,9 +447,7 @@ void xiiAssetCurator::UpdateSubAssets(xiiAssetInfo& assetInfo)
 {
   CURATOR_PROFILE("UpdateSubAssets");
   if (assetInfo.m_ExistanceState == xiiAssetExistanceState::FileRemoved)
-  {
     return;
-  }
 
   if (assetInfo.m_ExistanceState == xiiAssetExistanceState::FileAdded)
   {

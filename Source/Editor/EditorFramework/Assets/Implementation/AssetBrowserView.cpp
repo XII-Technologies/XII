@@ -105,9 +105,7 @@ void xiiQtAssetBrowserView::dropEvent(QDropEvent* pEvent)
   QList<QUrl>     paths           = pEvent->mimeData()->urls();
   const xiiString targetDirectory = indexAt(pEvent->pos()).data(xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
   if (targetDirectory.IsEmpty())
-  {
     return;
-  }
 
   xiiHybridArray<xiiString, 32> touchedFiles;
   // make sure to notify the filesystem of files and folders that were touched

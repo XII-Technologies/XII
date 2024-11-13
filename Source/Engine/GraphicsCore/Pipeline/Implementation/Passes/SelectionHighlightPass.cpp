@@ -64,21 +64,15 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
 {
   auto pColorOutput = outputs[m_PinColor.m_uiOutputIndex];
   if (pColorOutput == nullptr)
-  {
     return;
-  }
 
   auto pDepthInput = inputs[m_PinDepthStencil.m_uiInputIndex];
   if (pDepthInput == nullptr)
-  {
     return;
-  }
 
   xiiRenderDataBatchList renderDataBatchList = GetPipeline()->GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Selection);
   if (renderDataBatchList.GetBatchCount() == 0)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 

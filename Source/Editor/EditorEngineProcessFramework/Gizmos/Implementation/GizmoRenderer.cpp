@@ -54,9 +54,7 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
   // This can happen when the resource has been reloaded and now has fewer submeshes.
   const auto& subMeshes = pMesh->GetSubMeshes();
   if (subMeshes.GetCount() <= uiSubMeshIndex)
-  {
     return;
-  }
 
   const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiSubMeshIndex];
 

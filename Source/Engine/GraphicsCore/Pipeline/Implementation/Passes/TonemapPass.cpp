@@ -107,9 +107,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
   auto pColorInput  = inputs[m_PinColorInput.m_uiInputIndex];
   auto pColorOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pColorInput == nullptr || pColorOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 

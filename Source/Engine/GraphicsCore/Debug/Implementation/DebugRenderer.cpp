@@ -1481,15 +1481,11 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
 
   DoubleBufferedPerContextData* pDoubleBufferedContextData = nullptr;
   if (!s_PerContextData.TryGetValue(context, pDoubleBufferedContextData))
-  {
     return;
-  }
 
   PerContextData* pData = pDoubleBufferedContextData->m_pData[xiiRenderWorld::GetDataIndexForRendering()].Borrow();
   if (pData == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice*      pDevice         = xiiGALDevice::GetDefaultDevice();
   xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
@@ -1703,15 +1699,11 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
 {
   DoubleBufferedPerContextData* pDoubleBufferedContextData = nullptr;
   if (!s_PerContextData.TryGetValue(context, pDoubleBufferedContextData))
-  {
     return;
-  }
 
   PerContextData* pData = pDoubleBufferedContextData->m_pData[xiiRenderWorld::GetDataIndexForRendering()].Borrow();
   if (pData == nullptr)
-  {
     return;
-  }
 
   // draw info text
   {

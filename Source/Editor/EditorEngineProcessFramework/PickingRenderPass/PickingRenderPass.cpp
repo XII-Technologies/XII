@@ -424,9 +424,7 @@ void xiiPickingRenderPass::ReadBackPropertiesMarqueePick(xiiView* pView)
   const xiiUInt32 uiIndex2 = (y0 * m_uiWindowWidth) + x0;
 
   if ((uiIndex1 >= m_PickingResultsDepth.GetCount() || x0 >= m_uiWindowWidth || y0 >= m_uiWindowHeight) || (uiIndex2 >= m_PickingResultsDepth.GetCount() || x1 >= m_uiWindowWidth || y1 >= m_uiWindowHeight))
-  {
     return;
-  }
 
   m_MarqueePickPosition0.Set(-1);
   m_MarqueePickPosition1.Set(-1);

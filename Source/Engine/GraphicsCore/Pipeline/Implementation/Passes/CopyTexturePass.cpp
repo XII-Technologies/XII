@@ -58,9 +58,9 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-  const xiiGALTexture* pDestinationTexture   = pDevice->GetTexture(pOutput->m_TextureHandle);
-  const xiiGALTexture* pSourceTexture = pDevice->GetTexture(pInput->m_TextureHandle);
+  xiiGALDevice*        pDevice             = xiiGALDevice::GetDefaultDevice();
+  const xiiGALTexture* pDestinationTexture = pDevice->GetTexture(pOutput->m_TextureHandle);
+  const xiiGALTexture* pSourceTexture      = pDevice->GetTexture(pInput->m_TextureHandle);
 
   if (pDestinationTexture->GetDescription().m_Format != pSourceTexture->GetDescription().m_Format)
   {

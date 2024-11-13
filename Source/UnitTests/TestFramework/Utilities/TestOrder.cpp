@@ -227,9 +227,7 @@ void LoadTestSettings(const char* szFile, TestSettings& ref_testSettings)
 {
   FILE* pFile = fopen(szFile, "rb");
   if (!pFile)
-  {
     return;
-  }
 
   bool bInSettings = false;
 

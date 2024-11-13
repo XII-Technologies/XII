@@ -110,9 +110,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   auto pDepthInput = inputs[m_PinDepthInput.m_uiInputIndex];
   auto pOutput     = outputs[m_PinOutput.m_uiOutputIndex];
   if (pDepthInput == nullptr || pOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 

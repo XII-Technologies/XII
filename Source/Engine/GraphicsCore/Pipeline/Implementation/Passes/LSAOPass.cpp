@@ -243,9 +243,7 @@ void xiiLSAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext,
 {
   auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 

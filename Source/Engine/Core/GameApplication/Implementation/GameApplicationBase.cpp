@@ -164,9 +164,7 @@ void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHan
 {
   xiiFrameCaptureInterface* pCaptureInterface = xiiSingletonRegistry::GetSingletonInstance<xiiFrameCaptureInterface>();
   if (!pCaptureInterface)
-  {
     return;
-  }
 
   XII_PROFILE_SCOPE("ExecuteFrameCapture");
   // If we still have a running capture (i.e., if no one else has taken the capture so far), finish it
@@ -309,9 +307,7 @@ void xiiGameApplicationBase::AfterCoreSystemsStartup()
   // something must have gone wrong. Don't continue initialization and let the
   // application exit.
   if (WasQuitRequested())
-  {
     return;
-  }
 
   xiiStartup::StartupHighLevelSystems();
 

@@ -674,9 +674,7 @@ void xiiDirectoryWatcher::EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> wat
 
   // Wait for any of the watchers to have some data ready
   if (WaitForMultipleObjects(events.GetCount(), events.GetData(), FALSE, static_cast<DWORD>(waitUpTo.GetMilliseconds())) == WAIT_TIMEOUT)
-  {
     return;
-  }
 
   // Iterate all of them to make sure we report all changes up to this point.
   for (xiiDirectoryWatcher* watcher : watchers)
