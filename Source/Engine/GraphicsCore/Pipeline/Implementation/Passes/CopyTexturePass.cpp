@@ -70,9 +70,14 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
   }
   else
   {
-    if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+    auto pCommandQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer);
+    if (pCommandQueue == nullptr)
     {
-      auto pCommandList = pGraphicsQueue->BeginCommandList();
+      pCommandQueue = pDevice->GetDefaultCommandQueue();
+    }
+
+    {
+      auto pCommandList = pCommandQueue->BeginCommandList();
 
       pCommandList->BeginDebugGroup(GetName());
       {

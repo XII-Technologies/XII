@@ -123,7 +123,7 @@ public:
 
   XII_ALWAYS_INLINE static RenderingScope BeginPassAndRenderingScope(const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, xiiStringView sName, bool bStereoRendering = false)
   {
-    xiiGALCommandQueue* pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
+    xiiGALCommandQueue* pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
     xiiGALCommandList*  pCommandList  = pCommandQueue->BeginCommandList();
 
     viewContext.m_pRenderContext->BeginRendering(renderingSetup, viewContext.m_pViewData->m_ViewPortRect, sName, bStereoRendering);
@@ -139,7 +139,7 @@ public:
 
   XII_ALWAYS_INLINE static ComputeScope BeginPassAndComputeScope(const xiiRenderViewContext& viewContext, xiiStringView sName)
   {
-    xiiGALCommandQueue* pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
+    xiiGALCommandQueue* pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
     xiiGALCommandList*  pCommandList  = pCommandQueue->BeginCommandList();
 
     viewContext.m_pRenderContext->BeginCompute(sName);
