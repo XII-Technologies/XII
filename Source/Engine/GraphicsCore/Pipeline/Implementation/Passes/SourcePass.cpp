@@ -156,18 +156,19 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     return;
 
   xiiGALDevice* pDevice              = xiiGALDevice::GetDefaultDevice();
-  bool          bRecreateRenderPass  = false;
-  bool          bRecreateFramebuffer = false;
+  bool          bRecreateRenderPass  = true;
+  bool          bRecreateFramebuffer = true;
   const bool    bIsDepthAttachment   = xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format);
 
   if (!m_hRenderPass.IsInvalidated())
   {
-    xiiGALRenderPass* pRenderPass = pDevice->GetRenderPass(m_hRenderPass);
+    xiiGALRenderPass* pRenderPass           = pDevice->GetRenderPass(m_hRenderPass);
+    const auto&       textureDescription    = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription();
+    const auto&       attachmentDescription = pRenderPass->GetDescription().m_Attachments.PeekBack();
 
-    const auto& attachmentDescription = pRenderPass->GetDescription().m_Attachments.PeekBack();
-    if (attachmentDescription.m_Format != m_Format || attachmentDescription.m_uiSampleCount != m_MsaaMode.GetValue())
+    if (attachmentDescription.m_Format == textureDescription.m_Format && attachmentDescription.m_uiSampleCount == m_MsaaMode.GetValue())
     {
-      bRecreateRenderPass = true;
+      bRecreateRenderPass = false;
     }
   }
 
@@ -176,9 +177,9 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     xiiGALFramebuffer* pFramebuffer    = pDevice->GetFramebuffer(m_hFramebuffer);
     const auto&        hAttachmentView = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
 
-    if (pDevice->GetFramebuffer(m_hFramebuffer)->GetDescription().m_Attachments.PeekBack() != hAttachmentView)
+    if (pDevice->GetFramebuffer(m_hFramebuffer)->GetDescription().m_Attachments.PeekBack() == hAttachmentView)
     {
-      bRecreateRenderPass = true;
+      bRecreateFramebuffer = false;
     }
   }
 
