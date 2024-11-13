@@ -7,7 +7,6 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSourcePass, 1, xiiRTTIDefaultAllocator<xiiSourcePass>)
@@ -163,10 +162,9 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
   if (!m_hRenderPass.IsInvalidated())
   {
     xiiGALRenderPass* pRenderPass           = pDevice->GetRenderPass(m_hRenderPass);
-    const auto&       textureDescription    = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription();
     const auto&       attachmentDescription = pRenderPass->GetDescription().m_Attachments.PeekBack();
 
-    if (attachmentDescription.m_Format == textureDescription.m_Format && attachmentDescription.m_uiSampleCount == m_MsaaMode.GetValue())
+    if (attachmentDescription.m_Format == pOutput->m_Desc.m_Format && attachmentDescription.m_uiSampleCount == m_MsaaMode.GetValue())
     {
       bRecreateRenderPass = false;
     }
@@ -240,11 +238,6 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
       dependencyDescription.m_SourceAccessFlags      = xiiGALAccessFlags::RenderTargetWrite;
       dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::RenderTargetWrite;
     }
-
-    // Fix memory usage on the containers to the cost of a single element.
-    renderPassDescription.m_SubPasses.SetCount(1);
-    renderPassDescription.m_Attachments.SetCount(1);
-    renderPassDescription.m_Dependencies.SetCount(1);
 
     m_hRenderPass = pDevice->CreateRenderPass(renderPassDescription);
     XII_ASSERT_DEV(!m_hRenderPass.IsInvalidated(), "Failed to create render pass.");
