@@ -45,16 +45,21 @@ void xiiHistoryTargetPass::Execute(const xiiRenderViewContext& renderViewContext
 xiiResult xiiHistoryTargetPass::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
+
   inout_stream << m_sSourcePassName;
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiHistoryTargetPass::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(inout_stream));
+
   const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
   XII_IGNORE_UNUSED(uiVersion);
+
   inout_stream >> m_sSourcePassName;
+
   return XII_SUCCESS;
 }
 
