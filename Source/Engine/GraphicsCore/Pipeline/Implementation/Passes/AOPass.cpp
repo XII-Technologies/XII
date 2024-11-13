@@ -116,8 +116,8 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiUInt32 uiWidth  = pDepthInput->m_Desc.m_Size.width;
-  xiiUInt32 uiHeight = pDepthInput->m_Desc.m_Size.height;
+  xiiUInt32 uiWidth  = pDepthInput->m_TextureDescription.m_Size.width;
+  xiiUInt32 uiHeight = pDepthInput->m_TextureDescription.m_Size.height;
 
   xiiUInt32 uiNumMips   = 3;
   xiiUInt32 uiHzbWidth  = xiiMath::RoundUp(uiWidth, 1u << uiNumMips);
@@ -143,7 +143,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       desc.m_Type               = xiiGALResourceDimension::Texture2DArray;
       desc.m_Format             = xiiGALTextureFormat::R16Float;
       desc.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
-      desc.m_uiArraySizeOrDepth = pOutput->m_Desc.m_uiArraySizeOrDepth;
+      desc.m_uiArraySizeOrDepth = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
       hzbTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
     }
@@ -162,7 +162,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
         desc.m_hTexture                  = hzbTexture;
         desc.m_uiMostDetailedMip         = i;
         desc.m_uiMipLevelCount           = 1;
-        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_Desc.m_uiArraySizeOrDepth;
+        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
         hzbResourceViews.PushBack(pDevice->CreateTextureView(desc));
       }
@@ -174,13 +174,13 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
         desc.m_hTexture                  = hzbTexture;
         desc.m_uiMostDetailedMip         = i;
         desc.m_uiMipLevelCount           = 1;
-        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_Desc.m_uiArraySizeOrDepth;
+        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
         hzbRenderTargetViews.PushBack(pDevice->CreateTextureView(desc));
       }
     }
 
-    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_Desc.m_uiArraySizeOrDepth, true);
+    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_TextureDescription.m_uiArraySizeOrDepth, true);
   }
 
   // Mip map passes

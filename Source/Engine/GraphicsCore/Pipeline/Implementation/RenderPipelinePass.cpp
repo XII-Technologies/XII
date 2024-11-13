@@ -29,7 +29,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiRenderPipelinePass::xiiRenderPipelinePass(xiiStringView sName, bool bIsStereoAware) :
   m_bIsStereoAware(bIsStereoAware)
 {
-  m_sName.Assign(sName);
+  if (!sName.IsEmpty())
+  {
+    m_sName.Assign(sName);
+  }
 }
 
 xiiRenderPipelinePass::~xiiRenderPipelinePass() = default;
@@ -57,6 +60,7 @@ xiiResult xiiRenderPipelinePass::Serialize(xiiStreamWriter& inout_stream) const
 {
   inout_stream << m_bActive;
   inout_stream << m_sName;
+
   return XII_SUCCESS;
 }
 
@@ -67,6 +71,7 @@ xiiResult xiiRenderPipelinePass::Deserialize(xiiStreamReader& inout_stream)
 
   inout_stream >> m_bActive;
   inout_stream >> m_sName;
+
   return XII_SUCCESS;
 }
 

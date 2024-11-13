@@ -98,14 +98,14 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
   xiiGALDevice* pDevice              = xiiGALDevice::GetDefaultDevice();
   bool          bRecreateRenderPass  = true;
   bool          bRecreateFramebuffer = true;
-  const bool    bIsDepthAttachment   = xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format);
+  const bool    bIsDepthAttachment   = xiiGALTextureFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 
   if (!m_hRenderPass.IsInvalidated())
   {
     xiiGALRenderPass* pRenderPass           = pDevice->GetRenderPass(m_hRenderPass);
     const auto&       attachmentDescription = pRenderPass->GetDescription().m_Attachments.PeekBack();
 
-    if (attachmentDescription.m_Format == pOutput->m_Desc.m_Format && attachmentDescription.m_uiSampleCount == m_MsaaMode.GetValue())
+    if (attachmentDescription.m_Format == pOutput->m_TextureDescription.m_Format && attachmentDescription.m_uiSampleCount == m_MsaaMode.GetValue())
     {
       bRecreateRenderPass = false;
     }
@@ -206,14 +206,14 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
   if (bIsDepthAttachment)
   {
     auto& clearValue                      = renderPassDescription.m_ClearValues.ExpandAndGetRef();
-    clearValue.m_TextureFormat            = pOutput->m_Desc.m_Format;
+    clearValue.m_TextureFormat            = pOutput->m_TextureDescription.m_Format;
     clearValue.m_DepthStencil.m_fDepth    = 1.0f;
     clearValue.m_DepthStencil.m_uiStencil = 0U;
   }
   else
   {
     auto& clearValue           = renderPassDescription.m_ClearValues.ExpandAndGetRef();
-    clearValue.m_TextureFormat = pOutput->m_Desc.m_Format;
+    clearValue.m_TextureFormat = pOutput->m_TextureDescription.m_Format;
     clearValue.m_ClearColor    = m_ClearColor;
   }
 

@@ -40,8 +40,8 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   CreateSampler();
 
-  xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(pColorInput->m_Desc.m_Size, pColorInput->m_Desc.m_Format);
-  desc.m_uiArraySizeOrDepth             = pColorInput->m_Desc.GetArraySize();
+  xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(pColorInput->m_TextureDescription.m_Size, pColorInput->m_TextureDescription.m_Format);
+  desc.m_uiArraySizeOrDepth             = pColorInput->m_TextureDescription.GetArraySize();
 
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
 

@@ -334,7 +334,7 @@ bool xiiRenderPipeline::SortPasses()
   // Find all source passes from which we can start the output description propagation.
   for (auto& pPass : m_Passes)
   {
-    // if (std::all_of(cbegin(it.Value().m_Inputs), cend(it.Value().m_Inputs), [](xiiRenderPipelinePassConnection* pConn){return pConn == nullptr; }))
+    // if (std::all_of(cbegin(it.Value().m_Inputs), cend(it.Value().m_Inputs), [](xiiRenderPipelinePassConnection* pConnection){return pConnection == nullptr; }))
     if (AreInputDescriptionsAvailable(pPass.Borrow(), done))
     {
       usable.PushBack(pPass.Borrow());
@@ -449,7 +449,7 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
     {
       if (data.m_Inputs[i] != nullptr)
       {
-        inputs[i] = &data.m_Inputs[i]->m_Desc;
+        inputs[i] = &data.m_Inputs[i]->m_TextureDescription;
       }
       else
       {
@@ -469,7 +469,7 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
     {
       if (data.m_Outputs[i] != nullptr)
       {
-        data.m_Outputs[i]->m_Desc = outputs[i];
+        data.m_Outputs[i]->m_TextureDescription = outputs[i];
       }
     }
 
@@ -486,7 +486,7 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
             // xiiLog::Error("The pass of type '{0}' has a pass through pin '{1}' that has an output but no input!", pPass->GetDynamicRTTI()->GetTypeName(), pPass->GetPinName(pPin));
             // return false;
           }
-          else if (data.m_Outputs[pPin->m_uiOutputIndex]->m_Desc.CalculateHash() != data.m_Inputs[pPin->m_uiInputIndex]->m_Desc.CalculateHash())
+          else if (data.m_Outputs[pPin->m_uiOutputIndex]->m_TextureDescription.CalculateHash() != data.m_Inputs[pPin->m_uiInputIndex]->m_TextureDescription.CalculateHash())
           {
             xiiLog::Error("The pass has a pass through pin '{0}' that has different descriptors for input and output!", pPass->GetPinName(pPin));
             return false;
@@ -589,7 +589,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     if (pTextureProvider)
     {
       auto                    pPass        = xiiDynamicCast<xiiRenderPipelinePass*>(pTextureProvider->m_pParent);
-      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(pTextureProvider, textureUsageData.m_UsedBy[0]->m_Desc);
+      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
       if (hTextureView.IsInvalidated())
       {
         // In this case, e.g. xiiTargetPass does not provide a render target for the connection but if the descriptor is set, we can instead use the pool to supplement the missing texture later.
@@ -614,7 +614,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
   for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); ++i)
   {
     TextureUsageData& data = m_TextureUsage[i];
-    if (data.m_pTextureProvider || data.m_UsedBy[0]->m_Desc.CalculateHash() == uiDefaultTextureCreationDescriptionHash)
+    if (data.m_pTextureProvider || data.m_UsedBy[0]->m_TextureDescription.CalculateHash() == uiDefaultTextureCreationDescriptionHash)
       continue;
 
     m_TextureUsageIdxSortedByFirstUsage.PushBack((xiiUInt16)i);
@@ -782,7 +782,6 @@ xiiExtractor* xiiRenderPipeline::GetExtractorByName(const xiiStringView& sExtrac
       return pExtractor.Borrow();
     }
   }
-
   return nullptr;
 }
 
@@ -791,30 +790,30 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePass* pPass)
   auto it = m_Connections.Find(pPass);
   if (!it.IsValid())
     return;
-
+   
   ConnectionData& data = it.Value();
   for (xiiUInt32 i = 0; i < data.m_Inputs.GetCount(); ++i)
   {
-    xiiRenderPipelinePassConnection* pConn = data.m_Inputs[i];
-    if (pConn != nullptr)
+    xiiRenderPipelinePassConnection* pConnection = data.m_Inputs[i];
+    if (pConnection != nullptr)
     {
-      xiiRenderPipelinePass* pSource = static_cast<xiiRenderPipelinePass*>(pConn->m_pOutput->m_pParent);
-      bool                   bRes    = Disconnect(pSource, pSource->GetPinName(pConn->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
+      xiiRenderPipelinePass* pSource = static_cast<xiiRenderPipelinePass*>(pConnection->m_pOutput->m_pParent);
+      bool                   bRes    = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
       XII_IGNORE_UNUSED(bRes);
       XII_ASSERT_DEBUG(bRes, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
     }
   }
   for (xiiUInt32 i = 0; i < data.m_Outputs.GetCount(); ++i)
   {
-    xiiRenderPipelinePassConnection* pConn = data.m_Outputs[i];
-    while (pConn != nullptr)
+    xiiRenderPipelinePassConnection* pConnection = data.m_Outputs[i];
+    while (pConnection != nullptr)
     {
-      xiiRenderPipelinePass* pTarget = static_cast<xiiRenderPipelinePass*>(pConn->m_Inputs[0]->m_pParent);
-      bool                   bRes    = Disconnect(pPass, pPass->GetPinName(pConn->m_pOutput), pTarget, pTarget->GetPinName(pConn->m_Inputs[0]));
+      xiiRenderPipelinePass* pTarget = static_cast<xiiRenderPipelinePass*>(pConnection->m_Inputs[0]->m_pParent);
+      bool                   bRes    = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
       XII_IGNORE_UNUSED(bRes);
       XII_ASSERT_DEBUG(bRes, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
 
-      pConn = data.m_Outputs[i];
+      pConnection = data.m_Outputs[i];
     }
   }
 }
@@ -825,19 +824,17 @@ void xiiRenderPipeline::ClearRenderPassGraphTextures()
   m_TextureUsageIdxSortedByFirstUsage.Clear();
   m_TextureUsageIdxSortedByLastUsage.Clear();
 
-  // xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   for (auto it = m_Connections.GetIterator(); it.IsValid(); ++it)
   {
-    auto& conn = it.Value();
-    for (auto pConn : conn.m_Outputs)
+    auto& connection = it.Value();
+    for (auto pConnection : connection.m_Outputs)
     {
-      if (pConn)
+      if (pConnection)
       {
-        pConn->m_Desc = xiiGALTextureCreationDescription();
-        if (!pConn->m_TextureHandle.IsInvalidated())
+        pConnection->m_TextureDescription = xiiGALTextureCreationDescription();
+        if (!pConnection->m_TextureHandle.IsInvalidated())
         {
-          pConn->m_TextureHandle.Invalidate();
+          pConnection->m_TextureHandle.Invalidate();
         }
       }
     }
@@ -850,11 +847,11 @@ bool xiiRenderPipeline::AreInputDescriptionsAvailable(const xiiRenderPipelinePas
   const ConnectionData& data = it.Value();
   for (xiiUInt32 i = 0; i < data.m_Inputs.GetCount(); ++i)
   {
-    const xiiRenderPipelinePassConnection* pConn = data.m_Inputs[i];
-    if (pConn != nullptr)
+    const xiiRenderPipelinePassConnection* pConnection = data.m_Inputs[i];
+    if (pConnection != nullptr)
     {
       // If the connections source is not done yet, the connections output is undefined yet and the inputs can't be processed yet.
-      if (!done.Contains(static_cast<xiiRenderPipelinePass*>(pConn->m_pOutput->m_pParent)))
+      if (!done.Contains(static_cast<xiiRenderPipelinePass*>(pConnection->m_pOutput->m_pParent)))
       {
         return false;
       }
@@ -874,10 +871,10 @@ bool xiiRenderPipeline::ArePassThroughInputsDone(const xiiRenderPipelinePass* pP
     const xiiRenderPipelineNodePin* pPin = inputs[i];
     if (pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough))
     {
-      const xiiRenderPipelinePassConnection* pConn = data.m_Inputs[pPin->m_uiInputIndex];
-      if (pConn != nullptr)
+      const xiiRenderPipelinePassConnection* pConnection = data.m_Inputs[pPin->m_uiInputIndex];
+      if (pConnection != nullptr)
       {
-        for (const xiiRenderPipelineNodePin* pInputPin : pConn->m_Inputs)
+        for (const xiiRenderPipelineNodePin* pInputPin : pConnection->m_Inputs)
         {
           // Any input that is also connected to the source of pPin must be done before we can use the pass through input
           if (pInputPin != pPin && !done.Contains(static_cast<xiiRenderPipelinePass*>(pInputPin->m_pParent)))
@@ -1195,7 +1192,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         continue;
 
       auto                    pPass        = static_cast<xiiRenderPipelinePass*>(textureUsageData.m_pTextureProvider->m_pParent);
-      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(textureUsageData.m_pTextureProvider, textureUsageData.m_UsedBy[0]->m_Desc);
+      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(textureUsageData.m_pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
       for (xiiRenderPipelinePassConnection* pUsedByConnection : textureUsageData.m_UsedBy)
       {
         pUsedByConnection->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
@@ -1217,11 +1214,11 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         TextureUsageData& usageData          = m_TextureUsage[uiCurrentUsageData];
         if (usageData.m_uiFirstUsageIdx == i)
         {
-          xiiGALTextureHandle hTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(usageData.m_UsedBy[0]->m_Desc);
+          xiiGALTextureHandle hTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(usageData.m_UsedBy[0]->m_TextureDescription);
           XII_ASSERT_DEV(!hTexture.IsInvalidated(), "GPU pool returned an invalidated texture!");
-          for (xiiRenderPipelinePassConnection* pConn : usageData.m_UsedBy)
+          for (xiiRenderPipelinePassConnection* pConnection : usageData.m_UsedBy)
           {
-            pConn->m_TextureHandle = hTexture;
+            pConnection->m_TextureHandle = hTexture;
           }
           ++uiCurrentFirstUsageIdx;
         }
@@ -1253,9 +1250,9 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         if (usageData.m_uiLastUsageIdx == i)
         {
           xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(usageData.m_UsedBy[0]->m_TextureHandle);
-          for (xiiRenderPipelinePassConnection* pConn : usageData.m_UsedBy)
+          for (xiiRenderPipelinePassConnection* pConnection : usageData.m_UsedBy)
           {
-            pConn->m_TextureHandle.Invalidate();
+            pConnection->m_TextureHandle.Invalidate();
           }
           ++uiCurrentLastUsageIdx;
         }
@@ -1323,11 +1320,11 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       nd.m_Shape = xiiDGMLGraph::NodeShape::RoundedRectangle;
 
       xiiStringBuilder sFormat;
-      if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureFormat>(), pConnection->m_Desc.m_Format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+      if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureFormat>(), pConnection->m_TextureDescription.m_Format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
       {
-        sFormat.SetFormat("Unknown Format {}", (xiiInt32)pConnection->m_Desc.m_Format);
+        sFormat.SetFormat("Unknown Format {}", (xiiInt32)pConnection->m_TextureDescription.m_Format);
       }
-      sTmp.SetFormat("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_pTextureProvider ? "External" : "PoolTexture", i, pConnection->m_Desc.m_Size.width, pConnection->m_Desc.m_Size.height, pConnection->m_Desc.GetArraySize(), pConnection->m_Desc.m_uiSampleCount, xiiGALTextureFormat::IsDepthFormat(pConnection->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
+      sTmp.SetFormat("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_pTextureProvider ? "External" : "PoolTexture", i, pConnection->m_TextureDescription.m_Size.width, pConnection->m_TextureDescription.m_Size.height, pConnection->m_TextureDescription.GetArraySize(), pConnection->m_TextureDescription.m_uiSampleCount, xiiGALTextureFormat::IsDepthFormat(pConnection->m_TextureDescription.m_Format) ? "Depth" : "Color", sFormat);
       xiiUInt32 uiTextureNode = ref_graph.AddNode(sTmp, &nd);
 
       xiiUInt32 uiOutputNode = *nodeMap.GetValue(pConnection->m_pOutput->m_pParent);

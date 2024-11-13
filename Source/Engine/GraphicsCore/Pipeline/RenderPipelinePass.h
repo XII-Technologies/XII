@@ -20,7 +20,7 @@ struct xiiRenderPipelinePassConnection
   {
   }
 
-  xiiGALTextureCreationDescription                   m_Desc;
+  xiiGALTextureCreationDescription                   m_TextureDescription;
   xiiGALTextureHandle                                m_TextureHandle;
   const xiiRenderPipelineNodePin*                    m_pOutput; ///< The output pin that this connection spawns from.
   xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;  ///< The various input pins this connection is connected to.

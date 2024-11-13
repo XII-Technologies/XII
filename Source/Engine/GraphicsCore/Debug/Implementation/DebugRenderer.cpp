@@ -1029,12 +1029,13 @@ void xiiDebugRenderer::DrawInfoText(const xiiDebugRendererContext& context, xiiD
 xiiUInt32 xiiDebugRenderer::Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Center*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Bottom*/)
 {
   return AddTextLines(context, text, xiiVec2I32(0), uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
-    auto& textLine = ref_data.m_textLines3D.ExpandAndGetRef();
-    textLine.m_text = sLine;
+    auto& textLine           = ref_data.m_textLines3D.ExpandAndGetRef();
+    textLine.m_text          = sLine;
     textLine.m_topLeftCorner = vTopLeftCorner;
-    textLine.m_color = color;
+    textLine.m_color         = color;
     textLine.m_uiSizeInPixel = uiSizeInPixel;
-    textLine.m_position = vGlobalPosition; });
+    textLine.m_position      = vGlobalPosition;
+  });
 }
 
 void xiiDebugRenderer::AddPersistentCross(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration)

@@ -100,10 +100,10 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
     auto pFilteredSpecularOutput = outputs[m_PinFilteredSpecular.m_uiOutputIndex];
     if (pFilteredSpecularOutput != nullptr && !pFilteredSpecularOutput->m_TextureHandle.IsInvalidated())
     {
-      xiiUInt32 uiNumMipMaps = pFilteredSpecularOutput->m_Desc.m_uiMipLevels;
+      xiiUInt32 uiNumMipMaps = pFilteredSpecularOutput->m_TextureDescription.m_uiMipLevels;
 
-      xiiUInt32 uiWidth  = pFilteredSpecularOutput->m_Desc.m_Size.width;
-      xiiUInt32 uiHeight = pFilteredSpecularOutput->m_Desc.m_Size.height;
+      xiiUInt32 uiWidth  = pFilteredSpecularOutput->m_TextureDescription.m_Size.width;
+      xiiUInt32 uiHeight = pFilteredSpecularOutput->m_TextureDescription.m_Size.height;
 
       auto pCommandList = xiiRenderContext::BeginComputeScope(renderViewContext, "ReflectionFilter");
       renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));

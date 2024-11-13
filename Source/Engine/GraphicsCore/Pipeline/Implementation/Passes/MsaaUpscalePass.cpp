@@ -68,9 +68,7 @@ void xiiMsaaUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   auto pInput  = inputs[m_PinInput.m_uiInputIndex];
   auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pInput == nullptr || pOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
