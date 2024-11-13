@@ -48,6 +48,7 @@ void xiiGALCommandList::Begin()
 
 void xiiGALCommandList::End()
 {
+  XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "The command list has not begun.");
 
   if (m_RecordingState == RecordingState::Recording)
@@ -58,6 +59,8 @@ void xiiGALCommandList::End()
 
 void xiiGALCommandList::Reset()
 {
+  XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
+
   if (m_RecordingState == RecordingState::Recording)
   {
     End();
@@ -70,7 +73,8 @@ void xiiGALCommandList::Reset()
 
 xiiUInt64 xiiGALCommandList::Submit(bool bReset)
 {
-  XII_ASSERT_RELEASE(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Commandlist is already reset.");
+  XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
+  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Commandlist is already reset.");
 
   if (m_RecordingState == xiiGALCommandList::RecordingState::Recording)
   {
