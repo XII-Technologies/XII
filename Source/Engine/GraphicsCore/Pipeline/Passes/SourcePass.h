@@ -39,6 +39,8 @@ public:
   virtual xiiResult                       Serialize(xiiStreamWriter& inout_stream) const override;
   virtual xiiResult                       Deserialize(xiiStreamReader& inout_stream) override;
 
+  void FreeCachedRenderPasses();
+
 protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
@@ -46,4 +48,7 @@ protected:
   xiiEnum<xiiGALMSAASampleCount> m_MsaaMode   = xiiGALMSAASampleCount::OneSample;
   xiiColor                       m_ClearColor = xiiColor::Black;
   bool                           m_bClear     = false;
+
+  xiiGALRenderPassHandle  m_hRenderPass;
+  xiiGALFramebufferHandle m_hFramebuffer;
 };
