@@ -1157,18 +1157,18 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchai
   }
 }
 
-xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
+xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const
 {
-  if (queueType.IsSet(xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
+  if (((queueType & xiiGALCommandQueueType::Graphics) == xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
     return m_pGraphicsCommandQueue.Borrow();
 
-  if (queueType.IsSet(xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
+  if (((queueType & xiiGALCommandQueueType::Compute) == xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandQueue.Borrow();
 
-  if (queueType.IsSet(xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (((queueType & xiiGALCommandQueueType::Transfer) == xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
 
-  return nullptr;
+  return bAllowGraphicsCommandQueueFallback ? GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false) : nullptr;
 }
 
 xiiGALSwapChain* xiiGALDeviceVulkan::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)

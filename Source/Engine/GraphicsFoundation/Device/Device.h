@@ -301,7 +301,7 @@ public:
   /// \param queueType - The queue type that has the required feature.
   ///
   /// \note The default graphics queue is guaranteed to exist, for a successful device initialization.
-  [[nodiscard]] virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType = xiiGALCommandQueueType::Graphics) const = 0;
+  [[nodiscard]] virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType = xiiGALCommandQueueType::Graphics, bool bAllowGraphicsCommandQueueFallback = true) const = 0;
 
   /// \brief Retrieves a pointer to the swap chain object with the given handle.
   [[nodiscard]] xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;

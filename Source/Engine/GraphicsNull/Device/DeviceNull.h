@@ -19,7 +19,7 @@ public:
   ~xiiGALDeviceNull();
 
 public:
-  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final;
 
   // Internal objects retrieval.
 

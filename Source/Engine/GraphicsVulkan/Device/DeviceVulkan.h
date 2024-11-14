@@ -80,7 +80,7 @@ public:
   ~xiiGALDeviceVulkan();
 
 public:
-  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final;
 
   template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
   void SafeReleaseDeviceObject(ObjectType&& object)

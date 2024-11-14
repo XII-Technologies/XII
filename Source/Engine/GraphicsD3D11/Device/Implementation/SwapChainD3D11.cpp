@@ -417,14 +417,9 @@ void xiiGALSwapChainD3D11::Present()
 
   if (!m_hActualBackBufferTexture.IsInvalidated())
   {
-    auto pCommandQueue = pDeviceD3D11->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer);
-    if (pCommandQueue == nullptr)
+    if (auto pGraphicsOrTransferQueue = pDeviceD3D11->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer, true))
     {
-      pCommandQueue = pDeviceD3D11->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
-    }
-
-    {
-      auto pCommandList = pCommandQueue->BeginCommandList();
+      auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
 
       pCommandList->BeginDebugGroup("Update Backbuffer");
       {
@@ -432,9 +427,9 @@ void xiiGALSwapChainD3D11::Present()
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
-    }
 
-    pCommandQueue->WaitForIdle();
+      pGraphicsOrTransferQueue->WaitForIdle();
+    }
   }
 
   xiiUInt32 uiSyncInterval = 1U;
