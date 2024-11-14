@@ -110,14 +110,12 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   auto pDepthInput = inputs[m_PinDepthInput.m_uiInputIndex];
   auto pOutput     = outputs[m_PinOutput.m_uiOutputIndex];
   if (pDepthInput == nullptr || pOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiUInt32 uiWidth  = pDepthInput->m_Desc.m_Size.width;
-  xiiUInt32 uiHeight = pDepthInput->m_Desc.m_Size.height;
+  xiiUInt32 uiWidth  = pDepthInput->m_TextureDescription.m_Size.width;
+  xiiUInt32 uiHeight = pDepthInput->m_TextureDescription.m_Size.height;
 
   xiiUInt32 uiNumMips   = 3;
   xiiUInt32 uiHzbWidth  = xiiMath::RoundUp(uiWidth, 1u << uiNumMips);
@@ -143,7 +141,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       desc.m_Type               = xiiGALResourceDimension::Texture2DArray;
       desc.m_Format             = xiiGALTextureFormat::R16Float;
       desc.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
-      desc.m_uiArraySizeOrDepth = pOutput->m_Desc.m_uiArraySizeOrDepth;
+      desc.m_uiArraySizeOrDepth = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
       hzbTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
     }
@@ -162,7 +160,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
         desc.m_hTexture                  = hzbTexture;
         desc.m_uiMostDetailedMip         = i;
         desc.m_uiMipLevelCount           = 1;
-        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_Desc.m_uiArraySizeOrDepth;
+        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
         hzbResourceViews.PushBack(pDevice->CreateTextureView(desc));
       }
@@ -174,13 +172,13 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
         desc.m_hTexture                  = hzbTexture;
         desc.m_uiMostDetailedMip         = i;
         desc.m_uiMipLevelCount           = 1;
-        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_Desc.m_uiArraySizeOrDepth;
+        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
         hzbRenderTargetViews.PushBack(pDevice->CreateTextureView(desc));
       }
     }
 
-    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_Desc.m_uiArraySizeOrDepth, true);
+    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_TextureDescription.m_uiArraySizeOrDepth, true);
   }
 
   // Mip map passes
@@ -297,9 +295,7 @@ void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, c
 {
   auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -314,6 +310,7 @@ void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, c
 xiiResult xiiAOPass::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
+
   inout_stream << m_fRadius;
   inout_stream << m_fMaxScreenSpaceRadius;
   inout_stream << m_fContrast;
@@ -323,14 +320,17 @@ xiiResult xiiAOPass::Serialize(xiiStreamWriter& inout_stream) const
   inout_stream << m_fPositionBias;
   inout_stream << m_fMipLevelScale;
   inout_stream << m_fDepthBlurThreshold;
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiAOPass::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(inout_stream));
+
   const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
   XII_IGNORE_UNUSED(uiVersion);
+
   inout_stream >> m_fRadius;
   inout_stream >> m_fMaxScreenSpaceRadius;
   inout_stream >> m_fContrast;
@@ -340,6 +340,7 @@ xiiResult xiiAOPass::Deserialize(xiiStreamReader& inout_stream)
   inout_stream >> m_fPositionBias;
   inout_stream >> m_fMipLevelScale;
   inout_stream >> m_fDepthBlurThreshold;
+
   return XII_SUCCESS;
 }
 

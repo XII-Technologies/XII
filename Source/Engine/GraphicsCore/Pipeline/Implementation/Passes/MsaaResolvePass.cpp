@@ -41,7 +41,7 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_uiSampleCount == (xiiUInt32)xiiGALMSAASampleCount::OneSample)
+    if (pInput->m_uiSampleCount == xiiGALMSAASampleCount::OneSample)
     {
       xiiLog::Error("Input is not a valid msaa target");
       return false;
@@ -50,10 +50,10 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
     m_bIsDepth        = xiiGALTextureFormat::IsDepthFormat(pInput->m_Format);
     m_MsaaSampleCount = (xiiGALMSAASampleCount::Enum)pInput->m_uiSampleCount;
 
-    xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_uiSampleCount                  = xiiGALMSAASampleCount::OneSample;
+    xiiGALTextureCreationDescription textureDescription = *pInput;
+    textureDescription.m_uiSampleCount                  = xiiGALMSAASampleCount::OneSample;
 
-    outputs[m_PinOutput.m_uiOutputIndex] = desc;
+    outputs[m_PinOutput.m_uiOutputIndex] = textureDescription;
   }
   else
   {
@@ -69,9 +69,7 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   auto pInput  = inputs[m_PinInput.m_uiInputIndex];
   auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pInput == nullptr || pOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -95,18 +93,25 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   }
   else
   {
-    auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, xiiGALRenderingSetup(), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
-
-    xiiGALTextureMipLevelData subresource;
-    subresource.m_uiMipLevel   = 0;
-    subresource.m_uiArraySlice = 0;
-
-    pCommandEncoder->ResolveTextureSubResource(pInput->m_TextureHandle, subresource, pOutput->m_TextureHandle, subresource);
-
-    if (renderViewContext.m_pCamera->IsStereoscopic())
+    if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
     {
-      subresource.m_uiArraySlice = 1;
-      pCommandEncoder->ResolveTextureSubResource(pInput->m_TextureHandle, subresource, pOutput->m_TextureHandle, subresource);
+      auto pCommandList = pGraphicsQueue->BeginCommandList();
+
+      pCommandList->BeginDebugGroup(GetName());
+      {
+        xiiGALTextureMipLevelData mipLevelData{.m_uiMipLevel = 0U, .m_uiArraySlice = 0U};
+
+        pCommandList->ResolveTextureSubResource(pInput->m_TextureHandle, mipLevelData, pOutput->m_TextureHandle, mipLevelData);
+
+        if (renderViewContext.m_pCamera->IsStereoscopic())
+        {
+          mipLevelData.m_uiArraySlice = 1U;
+
+          pCommandList->ResolveTextureSubResource(pInput->m_TextureHandle, mipLevelData, pOutput->m_TextureHandle, mipLevelData);
+        }
+      }
+      pCommandList->EndDebugGroup();
+      pCommandList->Submit();
     }
   }
 }

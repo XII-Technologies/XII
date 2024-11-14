@@ -110,9 +110,7 @@ const xiiGALRenderTargets& xiiView::GetActiveRenderTargets() const
 void xiiView::SetRenderPipelineResource(xiiRenderPipelineResourceHandle hPipeline)
 {
   if (hPipeline == m_hRenderPipeline)
-  {
     return;
-  }
 
   m_uiRenderPipelineResourceDescriptionCounter = 0;
   m_hRenderPipeline                            = hPipeline;

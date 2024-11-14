@@ -21,11 +21,17 @@ public:
   virtual xiiResult               Serialize(xiiStreamWriter& inout_stream) const override;
   virtual xiiResult               Deserialize(xiiStreamReader& inout_stream) override;
 
+  void FreeCachedRenderPasses();
+
 protected:
   xiiRenderPipelineNodeOutputProviderPin m_PinOutput;
-  xiiEnum<xiiSourceFormat>               m_Format     = xiiSourceFormat::Default;
-  xiiEnum<xiiGALMSAASampleCount>         m_MsaaMode   = xiiGALMSAASampleCount::OneSample;
-  xiiColor                               m_ClearColor = xiiColor::Black;
+
+  xiiEnum<xiiSourceFormat>       m_Format     = xiiSourceFormat::Default;
+  xiiEnum<xiiGALMSAASampleCount> m_MsaaMode   = xiiGALMSAASampleCount::OneSample;
+  xiiColor                       m_ClearColor = xiiColor::Black;
+
+  xiiGALRenderPassHandle  m_hRenderPass;
+  xiiGALFramebufferHandle m_hFramebuffer;
 
   bool m_bFirstExecute = true;
 };

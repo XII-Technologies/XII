@@ -34,18 +34,18 @@ public:
   ~xiiGALDeviceD3D11();
 
 public:
-  XII_ALWAYS_INLINE virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final
+  XII_ALWAYS_INLINE virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final
   {
-    if (queueType.IsSet(xiiGALCommandQueueType::Graphics))
+    if (((queueType & xiiGALCommandQueueType::Graphics) == xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
       return m_pGraphicsCommandQueue.Borrow();
 
-    if (queueType.IsSet(xiiGALCommandQueueType::Compute))
+    if (((queueType & xiiGALCommandQueueType::Compute) == xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
       return m_pComputeCommandQueue.Borrow();
 
-    if (queueType.IsSet(xiiGALCommandQueueType::Transfer))
+    if (((queueType & xiiGALCommandQueueType::Transfer) == xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
       return m_pTransferCommandQueue.Borrow();
 
-    return nullptr;
+    return bAllowGraphicsCommandQueueFallback ? GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false) : nullptr;
   };
 
   XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }

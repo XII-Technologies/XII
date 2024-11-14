@@ -931,9 +931,7 @@ void xiiFileSystemModel::FireFileChangedEvent(const xiiDataDirPath& file, xiiFil
   e.m_Type               = type;
 
   if (g_bInFileBroadcast)
-  {
     return;
-  }
 
   g_bInFileBroadcast = true;
   XII_SCOPE_EXIT(g_bInFileBroadcast = false);
@@ -955,9 +953,7 @@ void xiiFileSystemModel::FireFolderChangedEvent(const xiiDataDirPath& file, xiiF
   e.m_Type                 = type;
 
   if (g_bInFolderBroadcast)
-  {
     return;
-  }
 
   g_bInFolderBroadcast = true;
   XII_SCOPE_EXIT(g_bInFolderBroadcast = false);

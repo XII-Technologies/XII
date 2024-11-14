@@ -83,9 +83,7 @@ void xiiAssetProcessor::StartProcessTask()
 {
   XII_LOCK(m_ProcessorMutex);
   if (m_ProcessTaskState != ProcessTaskState::Stopped)
-  {
     return;
-  }
 
   // Join old thread.
   if (m_pThread)

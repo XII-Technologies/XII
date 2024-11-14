@@ -37,9 +37,9 @@ bool xiiCopyTexturePass::GetRenderTargetDescriptions(const xiiView& view, const 
 
   if (pInput != nullptr)
   {
-    xiiGALTextureCreationDescription desc = *pInput;
+    xiiGALTextureCreationDescription textureDescription = *pInput;
 
-    outputs[m_PinOutput.m_uiOutputIndex] = desc;
+    outputs[m_PinOutput.m_uiOutputIndex] = textureDescription;
   }
   else
   {
@@ -56,26 +56,31 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
   auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
 
   if (pInput == nullptr || pOutput == nullptr)
-  {
     return;
-  }
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiGALDevice*        pDevice             = xiiGALDevice::GetDefaultDevice();
+  const xiiGALTexture* pDestinationTexture = pDevice->GetTexture(pOutput->m_TextureHandle);
+  const xiiGALTexture* pSourceTexture      = pDevice->GetTexture(pInput->m_TextureHandle);
 
-  const xiiGALTexture* pDest   = pDevice->GetTexture(pOutput->m_TextureHandle);
-  const xiiGALTexture* pSource = pDevice->GetTexture(pInput->m_TextureHandle);
-
-  if (pDest->GetDescription().m_Format != pSource->GetDescription().m_Format)
+  if (pDestinationTexture->GetDescription().m_Format != pSourceTexture->GetDescription().m_Format)
   {
-    // TODO: use a shader when the format doesn't match exactly
+    /// \todo GraphicsCore: Use a shader when the format is not an exact match.
 
-    xiiLog::Error("Copying textures of different formats is not implemented");
+    xiiLog::Error("Copying textures of different formats is not implemented!");
   }
   else
   {
-    auto pCommandEncoder = xiiRenderContext::BeginComputeScope(renderViewContext, GetName());
+    if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+    {
+      auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
 
-    pCommandEncoder->CopyTexture(pInput->m_TextureHandle, pOutput->m_TextureHandle);
+      pCommandList->BeginDebugGroup(GetName());
+      {
+        pCommandList->CopyTexture(pInput->m_TextureHandle, pOutput->m_TextureHandle);
+      }
+      pCommandList->EndDebugGroup();
+      pCommandList->Submit();
+    }
   }
 }
 

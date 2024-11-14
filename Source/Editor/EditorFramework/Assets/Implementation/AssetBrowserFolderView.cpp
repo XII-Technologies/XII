@@ -287,9 +287,7 @@ void eqQtAssetBrowserFolderView::dropEvent(QDropEvent* e)
   e->accept();
   QTreeWidget::dropEvent(e);
   if (canDrop(e, files, sTargetFolder).Failed())
-  {
     return;
-  }
 
   QMessageBox::StandardButton choice = xiiQtUiServices::MessageBoxQuestion(xiiFmt("Move {} items into '{}'?", files.GetCount(), sTargetFolder), QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No);
   if (choice == QMessageBox::StandardButton::No)

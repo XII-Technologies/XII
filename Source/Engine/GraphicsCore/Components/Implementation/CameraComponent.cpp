@@ -629,9 +629,7 @@ void xiiCameraComponent::ActivateRenderToTexture()
   xiiResourceLock<xiiRenderToTexture2DResource> pRenderTarget(m_hRenderTarget, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
 
   if (pRenderTarget.GetAcquireResult() != xiiResourceAcquireResult::Final)
-  {
     return;
-  }
 
   // query the render pipeline to use
   if (const auto* pConfig = xiiRenderWorld::FindCameraConfig(m_sRenderPipeline))

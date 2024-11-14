@@ -233,9 +233,8 @@ void xiiReflectionProbeUpdater::GenerateUpdateSteps()
 void xiiReflectionProbeUpdater::ScheduleUpdateSteps()
 {
   if (m_bUpdateStepsFlushed)
-  {
     return;
-  }
+
   m_bUpdateStepsFlushed = true;
 
   //#TODO: would like to do that in the ctor but then the renderer tests assert that don't have the base asset directory set up.

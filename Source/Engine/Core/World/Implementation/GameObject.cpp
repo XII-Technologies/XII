@@ -155,9 +155,7 @@ xiiObjectMode::Enum xiiGameObject::Reflection_GetMode() const
 void xiiGameObject::Reflection_SetMode(xiiObjectMode::Enum mode)
 {
   if (Reflection_GetMode() == mode)
-  {
     return;
-  }
 
   if (mode == xiiObjectMode::ForceDynamic)
   {
@@ -236,9 +234,7 @@ void xiiGameObject::ConditionalMakeStatic(xiiComponent* pComponentToIgnore /*= n
 void xiiGameObject::MakeStaticInternal()
 {
   if (IsStatic())
-  {
     return;
-  }
 
   m_Flags.Remove(xiiObjectFlags::Dynamic);
 
@@ -338,9 +334,7 @@ void xiiGameObject::operator=(const xiiGameObject& other)
 void xiiGameObject::MakeDynamic()
 {
   if (IsDynamic())
-  {
     return;
-  }
 
   m_Flags.Add(xiiObjectFlags::Dynamic);
 

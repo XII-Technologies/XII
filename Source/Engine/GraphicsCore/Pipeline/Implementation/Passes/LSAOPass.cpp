@@ -120,8 +120,8 @@ bool xiiLSAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArra
 void xiiLSAOPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
   // Todo: Support half resolution.
-  const xiiGALTextureCreationDescription& desc = inputs[m_PinDepthInput.m_uiInputIndex]->m_Desc;
-  SetupLineSweepData(xiiVec3I32(desc.m_Size.width, desc.m_Size.height, desc.m_uiArraySizeOrDepth));
+  const xiiGALTextureCreationDescription& textureDescription = inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureDescription;
+  SetupLineSweepData(xiiVec3I32(textureDescription.m_Size.width, textureDescription.m_Size.height, textureDescription.m_uiArraySizeOrDepth));
 }
 
 void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
@@ -135,8 +135,8 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 
   if (m_bSweepDataDirty)
   {
-    const xiiGALTextureCreationDescription& desc = inputs[m_PinDepthInput.m_uiInputIndex]->m_Desc;
-    SetupLineSweepData(xiiVec3I32(desc.m_Size.width, desc.m_Size.height, desc.m_uiArraySizeOrDepth));
+    const xiiGALTextureCreationDescription& textureDescription = inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureDescription;
+    SetupLineSweepData(xiiVec3I32(textureDescription.m_Size.width, textureDescription.m_Size.height, textureDescription.m_uiArraySizeOrDepth));
   }
   if (outputs[m_PinOutput.m_uiOutputIndex] == nullptr)
     return;
@@ -147,7 +147,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   xiiGALTextureHandle  tempTexture;
   if (m_bDistributedGathering)
   {
-    xiiGALTextureCreationDescription tempTextureDesc = outputs[m_PinOutput.m_uiOutputIndex]->m_Desc;
+    xiiGALTextureCreationDescription tempTextureDesc = outputs[m_PinOutput.m_uiOutputIndex]->m_TextureDescription;
     tempTextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
     tempTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
@@ -243,9 +243,7 @@ void xiiLSAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext,
 {
   auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 

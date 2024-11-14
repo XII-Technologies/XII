@@ -610,9 +610,7 @@ void xiiRenderContext::BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBu
 void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2, xiiGALBufferHandle hVertexBuffer3, xiiGALBufferHandle hVertexBuffer4)
 {
   if (m_hVertexBuffers[0] == hVertexBuffer && m_hVertexBuffers[1] == hVertexBuffer2 && m_hVertexBuffers[2] == hVertexBuffer3 && m_hVertexBuffers[3] == hVertexBuffer4 && m_hIndexBuffer == hIndexBuffer && m_pInputLayoutInfo == pInputLayoutInfo && m_Topology == topology && m_uiMeshBufferPrimitiveCount == uiPrimitiveCount)
-  {
     return;
-  }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   if (pInputLayoutInfo)

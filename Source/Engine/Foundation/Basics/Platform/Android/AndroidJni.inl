@@ -1505,9 +1505,7 @@ template <typename T>
 void xiiJniClass::SetStaticField(const char* name, const T& arg) const
 {
   if (xiiJniAttachment::FailOnPendingErrorOrException())
-  {
     return;
-  }
 
   if (!GetJObject())
   {
@@ -1672,9 +1670,7 @@ template <typename T>
 void xiiJniObject::SetField(const char* name, const T& arg) const
 {
   if (xiiJniAttachment::FailOnPendingErrorOrException())
-  {
     return;
-  }
 
   if (!m_object)
   {

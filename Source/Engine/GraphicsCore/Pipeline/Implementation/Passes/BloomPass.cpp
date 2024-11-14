@@ -86,14 +86,12 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
   auto pColorInput  = inputs[m_PinInput.m_uiInputIndex];
   auto pColorOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pColorInput == nullptr || pColorOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiUInt32 uiWidth        = pColorInput->m_Desc.m_Size.width;
-  xiiUInt32 uiHeight       = pColorInput->m_Desc.m_Size.height;
+  xiiUInt32 uiWidth        = pColorInput->m_TextureDescription.m_Size.width;
+  xiiUInt32 uiHeight       = pColorInput->m_TextureDescription.m_Size.height;
   bool      bFastDownscale = xiiMath::IsEven(uiWidth) && xiiMath::IsEven(uiHeight);
 
   const float     fMaxRes         = (float)xiiMath::Max(uiWidth, uiHeight);
@@ -112,7 +110,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     uiWidth  = xiiMath::Max(uiWidth / 2, 1u);
     uiHeight = xiiMath::Max(uiHeight / 2, 1u);
     targetSizes.PushBack(xiiVec2((float)uiWidth, (float)uiHeight));
-    auto uiSliceCount = pColorOutput->m_Desc.m_uiArraySizeOrDepth;
+    auto uiSliceCount = pColorOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
     tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALMSAASampleCount::OneSample, uiSliceCount));
 
@@ -252,9 +250,7 @@ void xiiBloomPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext
 {
   auto pColorOutput = outputs[m_PinOutput.m_uiOutputIndex];
   if (pColorOutput == nullptr)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 

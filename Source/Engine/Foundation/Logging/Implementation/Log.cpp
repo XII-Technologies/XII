@@ -297,9 +297,7 @@ void xiiLog::GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& re
 {
   // if mode is 'None', early out to not even retrieve a timestamp
   if (mode == TimestampMode::None)
-  {
     return;
-  }
 
   const xiiDateTime dateTime = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
 

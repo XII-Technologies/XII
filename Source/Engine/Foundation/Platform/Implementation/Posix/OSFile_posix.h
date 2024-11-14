@@ -552,9 +552,7 @@ void xiiFileSystemIterator::StartSearch(xiiStringView sSearchTerm, xiiBitflags<x
     return;
 
   if (UpdateCurrentFile(m_CurFile, m_sCurPath, hSearch, m_Data.m_wildcardSearch).Failed())
-  {
     return;
-  }
 
   m_Data.m_Handles.PushBack(hSearch);
 

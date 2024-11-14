@@ -106,7 +106,7 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
     xiiGALTextureViewHandle hDepthInputView      = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
 
     // Get temp texture for horizontal target / vertical source.
-    xiiGALTextureCreationDescription tempTextureDesc = outputs[m_PinBlurSourceInput.m_uiInputIndex]->m_Desc;
+    xiiGALTextureCreationDescription tempTextureDesc = outputs[m_PinBlurSourceInput.m_uiInputIndex]->m_TextureDescription;
     tempTextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
     xiiGALTextureHandle tempTexture           = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
     rvcd.m_hTexture                           = tempTexture;

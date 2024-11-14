@@ -136,7 +136,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
     }
   }
 
-  auto pCommandQueue   = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
+  auto pCommandQueue   = pDevice->GetDefaultCommandQueue();
   auto pGALCommandList = pCommandQueue->BeginCommandList();
 
   pGALCommandList->BeginDebugGroup("CaptureImage");

@@ -417,14 +417,18 @@ void xiiGALSwapChainD3D11::Present()
 
   if (!m_hActualBackBufferTexture.IsInvalidated())
   {
-    if (auto pQueue = pDeviceD3D11->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics))
+    if (auto pGraphicsOrTransferQueue = pDeviceD3D11->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer, true))
     {
-      auto pCommandList = pQueue->BeginCommandList();
+      auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
 
-      pCommandList->CopyTexture(m_hBackBufferTexture, m_hActualBackBufferTexture);
+      pCommandList->BeginDebugGroup("Update Backbuffer");
+      {
+        pCommandList->CopyTexture(m_hBackBufferTexture, m_hActualBackBufferTexture);
+      }
+      pCommandList->EndDebugGroup();
       pCommandList->Submit();
 
-      pQueue->WaitForIdle();
+      pGraphicsOrTransferQueue->WaitForIdle();
     }
   }
 

@@ -409,9 +409,7 @@ void xiiProjectileComponent::OnSimulationStarted()
 void xiiProjectileComponent::SpawnDeathPrefab()
 {
   if (!m_bSpawnPrefabOnStatic)
-  {
     return;
-  }
 
   if (m_hDeathPrefab.IsValid())
   {

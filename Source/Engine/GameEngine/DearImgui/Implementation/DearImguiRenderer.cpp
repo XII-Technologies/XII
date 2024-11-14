@@ -36,9 +36,7 @@ void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const
 {
   xiiImgui* pImGui = xiiImgui::GetSingleton();
   if (pImGui == nullptr)
-  {
     return;
-  }
 
   {
     XII_LOCK(pImGui->m_ViewToContextTableMutex);

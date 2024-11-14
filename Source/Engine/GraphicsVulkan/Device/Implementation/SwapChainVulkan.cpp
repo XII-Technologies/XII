@@ -470,7 +470,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
   xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device                vkLogicalDevice     = pDeviceVulkan->GetVulkanLogicalDevice();
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
 
   // Flush to submit all pending commands and semaphores to the queue.
   pCommandQueueVulkan->Flush();
@@ -611,7 +611,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2).
     // Swapchain image may be used as render target or as destination for copy command.
 
-    xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+    xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
     pGraphicsQueueVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
 
     if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
@@ -654,7 +654,7 @@ void xiiGALSwapChainVulkan::AcquireNextRenderTarget()
 void xiiGALSwapChainVulkan::Present()
 {
   xiiGALDeviceVulkan*       pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALCommandQueueVulkan* pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+  xiiGALCommandQueueVulkan* pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
   xiiGALTextureVulkan*      pCurrentBackbufferVulkan = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_hBackBufferTexture));
 
   if (!m_bIsMinimized)

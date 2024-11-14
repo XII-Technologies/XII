@@ -64,21 +64,15 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
 {
   auto pColorOutput = outputs[m_PinColor.m_uiOutputIndex];
   if (pColorOutput == nullptr)
-  {
     return;
-  }
 
   auto pDepthInput = inputs[m_PinDepthStencil.m_uiInputIndex];
   if (pDepthInput == nullptr)
-  {
     return;
-  }
 
   xiiRenderDataBatchList renderDataBatchList = GetPipeline()->GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Selection);
   if (renderDataBatchList.GetBatchCount() == 0)
-  {
     return;
-  }
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -86,10 +80,10 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
 
   // render all selection objects to depth target only
   {
-    xiiUInt32                      uiWidth      = pColorOutput->m_Desc.m_Size.width;
-    xiiUInt32                      uiHeight     = pColorOutput->m_Desc.m_Size.height;
-    xiiEnum<xiiGALMSAASampleCount> sampleCount  = (xiiGALMSAASampleCount::Enum)pColorOutput->m_Desc.m_uiSampleCount;
-    xiiUInt32                      uiSliceCount = pColorOutput->m_Desc.m_uiArraySizeOrDepth;
+    xiiUInt32                      uiWidth      = pColorOutput->m_TextureDescription.m_Size.width;
+    xiiUInt32                      uiHeight     = pColorOutput->m_TextureDescription.m_Size.height;
+    xiiEnum<xiiGALMSAASampleCount> sampleCount  = (xiiGALMSAASampleCount::Enum)pColorOutput->m_TextureDescription.m_uiSampleCount;
+    xiiUInt32                      uiSliceCount = pColorOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
     hDepthTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::D24UNormalizedS8UInt, sampleCount, uiSliceCount);
 

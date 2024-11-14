@@ -218,9 +218,7 @@ void xiiCamera::SetCameraMode(xiiCameraMode::Enum mode, float fFovOrDim, float f
 {
   // early out if no change
   if (m_Mode == mode && m_fFovOrDim == fFovOrDim && m_fNearPlane == fNearPlane && m_fFarPlane == fFarPlane)
-  {
     return;
-  }
 
   m_Mode       = mode;
   m_fFovOrDim  = fFovOrDim;
