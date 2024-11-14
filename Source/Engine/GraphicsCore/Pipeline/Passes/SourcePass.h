@@ -44,10 +44,15 @@ public:
 protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  xiiEnum<xiiSourceFormat>       m_Format     = xiiSourceFormat::Default;
-  xiiEnum<xiiGALMSAASampleCount> m_MsaaMode   = xiiGALMSAASampleCount::OneSample;
-  xiiColor                       m_ClearColor = xiiColor::Black;
-  bool                           m_bClear     = false;
+  xiiEnum<xiiSourceFormat>                m_Format                          = xiiSourceFormat::Default;
+  xiiEnum<xiiGALMSAASampleCount>          m_SampleCount                     = xiiGALMSAASampleCount::OneSample;
+  xiiEnum<xiiGALAttachmentLoadOperation>  m_AttachmentLoadOperation         = xiiGALAttachmentLoadOperation::Load;
+  xiiEnum<xiiGALAttachmentStoreOperation> m_AttachmentStoreOperation        = xiiGALAttachmentStoreOperation::Store;
+  xiiEnum<xiiGALAttachmentLoadOperation>  m_AttachmentStencilLoadOperation  = xiiGALAttachmentLoadOperation::Load;
+  xiiEnum<xiiGALAttachmentStoreOperation> m_AttachmentStencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
+  xiiColor                                m_ClearColor                      = xiiColor::Black;
+  float                                   m_fDepthClearValue                = 1.0f;
+  xiiUInt8                                m_uiStencilClearValue             = 0U;
 
   xiiGALRenderPassHandle  m_hRenderPass;
   xiiGALFramebufferHandle m_hFramebuffer;

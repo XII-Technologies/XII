@@ -20,7 +20,7 @@ o
 			s{":app/VisualShader/Textures.ddl"}
 		}
 		Uuid %DocumentID{u4{15150418825657775493,4791833822222609996}}
-		u4 %Hash{15140944375104974861}
+		u4 %Hash{15976896681345992520}
 		VarArray %MetaInfo{}
 		VarArray %Outputs
 		{
@@ -246,6 +246,7 @@ o
 		f %MaskThreshold{0x0000803E}
 		s %SHADING_MODE{"SHADING_MODE::SHADING_MODE_LIT"}
 		b %TWO_SIDED{0}
+		b %VERTEX_SKINNING{0}
 	}
 }
 o
@@ -476,7 +477,7 @@ o
 	u3 %v{1}
 	p
 	{
-		s %Category{"Constant"}
+		s %Category{"Permutation"}
 	}
 }
 o
@@ -535,6 +536,16 @@ o
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::ReadOnly"}
 		s %Name{"SHADING_MODE::SHADING_MODE_LIT"}
 		s %Type{"xiiInt32"}
+	}
+}
+o
+{
+	Uuid %id{u4{12458030611623288269,2064728862349306946}}
+	s %t{"xiiDefaultValueAttribute"}
+	u3 %v{1}
+	p
+	{
+		d %Value{0x000000000000D03F}
 	}
 }
 o
@@ -641,16 +652,6 @@ o
 }
 o
 {
-	Uuid %id{u4{12760459667731604115,3740457461937282434}}
-	s %t{"xiiDefaultValueAttribute"}
-	u3 %v{1}
-	p
-	{
-		d %Value{0x000000000000D03F}
-	}
-}
-o
-{
 	Uuid %id{u4{16393153594407016602,3744118329769567614}}
 	s %t{"xiiReflectedPropertyDescriptor"}
 	u3 %v{2}
@@ -713,13 +714,12 @@ o
 		VarArray %Attributes
 		{
 			Uuid{u4{6383700394435492028,1781729205549413146}}
-			Uuid{u4{12760459667731604115,3740457461937282434}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
 		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
-		s %Name{"MaskThreshold"}
-		s %Type{"float"}
+		s %Name{"VERTEX_SKINNING"}
+		s %Type{"bool"}
 	}
 }
 o
@@ -1260,6 +1260,7 @@ o
 			Uuid{u4{3147425565529656162,18026212097111181463}}
 			Uuid{u4{6808908269860252022,17729851528392174799}}
 			Uuid{u4{3991288692830125235,4158620249600075924}}
+			Uuid{u4{3488058366557872223,13862929775797413910}}
 		}
 		s %TypeName{"AssetCache/Common/Materials/Common/Pattern.autogen.xiiShader"}
 		u3 %TypeVersion{2}
@@ -1284,6 +1285,16 @@ o
 		}
 		s %TypeName{"ShaderNode::Multiply"}
 		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{12486606517353248778,12712663967784907453}}
+	s %t{"xiiCategoryAttribute"}
+	u3 %v{1}
+	p
+	{
+		s %Category{"Constant"}
 	}
 }
 o
@@ -1339,6 +1350,25 @@ o
 	p
 	{
 		Vec3 %Value{f{0,0,0}}
+	}
+}
+o
+{
+	Uuid %id{u4{3488058366557872223,13862929775797413910}}
+	s %t{"xiiReflectedPropertyDescriptor"}
+	u3 %v{2}
+	p
+	{
+		VarArray %Attributes
+		{
+			Uuid{u4{12486606517353248778,12712663967784907453}}
+			Uuid{u4{12458030611623288269,2064728862349306946}}
+		}
+		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
+		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
+		s %Name{"MaskThreshold"}
+		s %Type{"float"}
 	}
 }
 o

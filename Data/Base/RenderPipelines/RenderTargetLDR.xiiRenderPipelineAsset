@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{9340082855766888863,4792825339744186213}}
-		u4 %Hash{376819971497462660}
+		u4 %Hash{10055378868850872724}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -251,13 +251,18 @@ o
 	p
 	{
 		b %Active{1}
-		b %Clear{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
+		f %DepthClearValue{0x0000803F}
 		s %Format{"xiiSourceFormat::Depth24BitStencil8Bit"}
-		s %MSAA_Mode{"xiiGALMSAASampleCount::OneSample"}
+		s %LoadOperation{"xiiGALAttachmentLoadOperation::Clear"}
 		s %Name{"DepthStencil"}
-		Vec2 %Node::Pos{f{0xBC773C43,0x1C8EF443}}
+		Vec2 %Node::Pos{f{0xFB8A4C43,0xAD500244}}
 		Uuid %Output{u4{9559375821426009877,9124962636108765151}}
+		s %SampleCount{"xiiGALMSAASampleCount::OneSample"}
+		u1 %StencilClearValue{0}
+		s %StencilLoadOperation{"xiiGALAttachmentLoadOperation::Clear"}
+		s %StencilStoreOperation{"xiiGALAttachmentStoreOperation::Store"}
+		s %StoreOperation{"xiiGALAttachmentStoreOperation::Store"}
 	}
 }
 o
@@ -307,13 +312,18 @@ o
 	p
 	{
 		b %Active{1}
-		b %Clear{1}
 		Color %ClearColor{f{0xC11AE13E,0x79C4F23B,0xF3A5CB3E,0x0000803F}}
+		f %DepthClearValue{0x0000803F}
 		s %Format{"xiiSourceFormat::Color4Channel16BitFloat"}
-		s %MSAA_Mode{"xiiGALMSAASampleCount::OneSample"}
+		s %LoadOperation{"xiiGALAttachmentLoadOperation::Clear"}
 		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x0286EA43,0x7E0FC143}}
 		Uuid %Output{u4{12443079280382946204,2690749705785395176}}
+		s %SampleCount{"xiiGALMSAASampleCount::OneSample"}
+		u1 %StencilClearValue{0}
+		s %StencilLoadOperation{"xiiGALAttachmentLoadOperation::Load"}
+		s %StencilStoreOperation{"xiiGALAttachmentStoreOperation::Store"}
+		s %StoreOperation{"xiiGALAttachmentStoreOperation::Store"}
 	}
 }
 o
@@ -582,6 +592,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiExtractor"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{5439521205521971955,7384827757096646076}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALAttachmentLoadOperation"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -888,6 +915,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiGALMSAASampleCount"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16657029035147867850,16722978231481703579}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALAttachmentStoreOperation"}
 		u3 %TypeVersion{1}
 	}
 }
