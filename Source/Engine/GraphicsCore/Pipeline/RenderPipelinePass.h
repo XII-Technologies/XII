@@ -7,8 +7,8 @@
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 struct xiiGALTextureCreationDescription;
 class xiiStreamWriter;
