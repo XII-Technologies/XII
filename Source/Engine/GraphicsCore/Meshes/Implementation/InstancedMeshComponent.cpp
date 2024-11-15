@@ -130,26 +130,35 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
   if (m_RequireUpdate.IsEmpty())
     return;
 
-  xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
-  pRenderContext->BeginCompute("Update Instanced Mesh Data");
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  for (const auto& componentToUpdate : m_RequireUpdate)
+  if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
   {
-    xiiInstancedMeshComponent* pComp = nullptr;
-    if (!TryGetComponent(componentToUpdate.m_hComponent, pComp))
-      continue;
+    auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
 
-    if (pComp->m_pExplicitInstanceData)
+    pCommandList->BeginDebugGroup("xiiInstanceData Update");
     {
-      xiiUInt32 uiOffset     = 0;
-      auto      instanceData = pComp->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
-      instanceData.CopyFrom(componentToUpdate.m_InstanceData);
+      for (const auto& componentToUpdate : m_RequireUpdate)
+      {
+        xiiInstancedMeshComponent* pInstancedMeshComponent = nullptr;
+        if (!TryGetComponent(componentToUpdate.m_hComponent, pInstancedMeshComponent))
+          continue;
 
-      pComp->m_pExplicitInstanceData->UpdateInstanceData(pRenderContext, instanceData.GetCount());
+        if (pInstancedMeshComponent->m_pExplicitInstanceData)
+        {
+          xiiUInt32 uiOffset     = 0;
+          auto      instanceData = pInstancedMeshComponent->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
+          instanceData.CopyFrom(componentToUpdate.m_InstanceData);
+
+          pInstancedMeshComponent->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, instanceData.GetCount());
+        }
+      }
     }
-  }
+    pCommandList->EndDebugGroup();
+    pCommandList->Submit();
 
-  pRenderContext->EndCompute();
+    pGraphicsOrTransferQueue->WaitForIdle();
+  }
 
   m_RequireUpdate.Clear();
 }

@@ -75,7 +75,9 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
   if (!bHasExplicitInstanceData)
   {
-    xiiUInt32 uiStartIndex = 0;
+    xiiGALDevice* pDevice      = xiiGALDevice::GetDefaultDevice();
+    xiiUInt32     uiStartIndex = 0;
+
     while (uiStartIndex < batch.GetCount())
     {
       const xiiUInt32 uiRemainingInstances = batch.GetCount() - uiStartIndex;
@@ -88,7 +90,19 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       if (uiFilteredCount > 0) // Instance data might be empty if all render data was filtered.
       {
-        pInstanceData->UpdateInstanceData(pContext, uiFilteredCount);
+        if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+        {
+          auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
+
+          pCommandList->BeginDebugGroup("xiiInstanceData Update");
+          {
+            pInstanceData->UpdateInstanceData(pCommandList, uiFilteredCount);
+          }
+          pCommandList->EndDebugGroup();
+          pCommandList->Submit();
+
+          pGraphicsOrTransferQueue->WaitForIdle();
+        }
 
         const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];
 

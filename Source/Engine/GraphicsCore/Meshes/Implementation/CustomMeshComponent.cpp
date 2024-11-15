@@ -318,6 +318,8 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
   pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
 
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
   for (auto it = batch.GetIterator<xiiCustomMeshRenderData>(0, batch.GetCount()); it.IsValid(); ++it)
   {
     const xiiCustomMeshRenderData* pRenderData = it;
@@ -348,7 +350,19 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
       instanceData[0].ObjectToWorldNormal = mInverse.GetTranspose();
     }
 
-    pInstanceData->UpdateInstanceData(pRenderContext, 1);
+    if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+    {
+      auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
+
+      pCommandList->BeginDebugGroup("xiiInstanceData Update");
+      {
+        pInstanceData->UpdateInstanceData(pCommandList, 1);
+      }
+      pCommandList->EndDebugGroup();
+      pCommandList->Submit();
+
+      pGraphicsOrTransferQueue->WaitForIdle();
+    }
 
     const auto& desc = pBuffer->GetDescriptor();
     pBuffer->UpdateGpuBuffer(pGALCommandList);

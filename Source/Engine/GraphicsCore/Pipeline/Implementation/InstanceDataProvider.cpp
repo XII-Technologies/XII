@@ -45,19 +45,17 @@ xiiArrayPtr<xiiPerInstanceData> xiiInstanceData::GetInstanceData(xiiUInt32 uiCou
   return m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
 }
 
-void xiiInstanceData::UpdateInstanceData(xiiRenderContext* pRenderContext, xiiUInt32 uiCount)
+void xiiInstanceData::UpdateInstanceData(xiiGALCommandList* pCommandList, xiiUInt32 uiCount)
 {
   XII_ASSERT_DEV(m_uiBufferOffset + uiCount <= m_uiBufferSize, "Implementation error");
-
-  xiiGALCommandList* pGALCommandList = pRenderContext->GetCommandList();
 
   xiiUInt32                   uiDestOffset = m_uiBufferOffset * sizeof(xiiPerInstanceData);
   auto                        pSourceData  = m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
   xiiBitflags<xiiGALMapFlags> mapFlags     = (m_uiBufferOffset == 0) ? xiiGALMapFlags::Discard : xiiGALMapFlags::NoOverWrite;
 
-  pGALCommandList->UpdateBufferExtended(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), mapFlags, true);
+  pCommandList->UpdateBufferExtended(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), mapFlags, false);
 
-  xiiObjectConstants* pConstants = pRenderContext->GetConstantBufferData<xiiObjectConstants>(m_hConstantBuffer);
+  xiiObjectConstants* pConstants = xiiRenderContext::GetConstantBufferData<xiiObjectConstants>(m_hConstantBuffer);
   pConstants->InstanceDataOffset = m_uiBufferOffset;
 
   m_uiBufferOffset += uiCount;
@@ -70,15 +68,15 @@ void xiiInstanceData::CreateBuffer(xiiUInt32 uiSize)
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiGALBufferCreationDescription desc;
-  desc.m_Mode                = xiiGALBufferMode::Structured;
-  desc.m_uiElementByteStride = sizeof(xiiPerInstanceData);
-  desc.m_uiSize              = desc.m_uiElementByteStride * uiSize;
-  desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-  desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
-  desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+  bufferDescription.m_uiElementByteStride = sizeof(xiiPerInstanceData);
+  bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * uiSize;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  bufferDescription.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-  m_hInstanceDataBuffer = pDevice->CreateBuffer(desc);
+  m_hInstanceDataBuffer = pDevice->CreateBuffer(bufferDescription);
 }
 
 void xiiInstanceData::Reset()
