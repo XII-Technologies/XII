@@ -73,6 +73,37 @@ void xiiGALPipelineState::SetConstantBuffer(const xiiGALPipelineResourceDescript
   SetConstantBufferPlatform(bindingInformation, pBuffer);
 }
 
+void xiiGALPipelineState::SetConstantBuffer(xiiStringView sName, xiiGALBufferHandle hConstantBuffer)
+{
+  const xiiGALPipelineResourceSignature* pResourceSignature        = m_pDevice->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature);
+  const auto&                            signatureDescription      = pResourceSignature->GetDescription();
+  xiiUInt32                              uiBindingInformationIndex = 0U;
+
+  bool bResourceFound = false;
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == xiiTempHashedString(sName) && resource.m_ResourceType == xiiGALShaderResourceType::ConstantBuffer)
+    {
+      bResourceFound = true;
+      break;
+    }
+
+    ++uiBindingInformationIndex;
+  }
+
+  if (!bResourceFound)
+  {
+    xiiLog::Error("The constant buffer resource with the name '{0}' does not exist in the pipeline resource signature.", sName);
+    return;
+  }
+
+  xiiGALBuffer* pBuffer = m_pDevice->GetBuffer(hConstantBuffer);
+
+  XII_ASSERT_DEV(pBuffer == nullptr || pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer), "Incorrect buffer bind flags. The buffer must be created with xiiGALBindFlags::UniformBuffer if not invalidated.");
+
+  SetConstantBufferPlatform(signatureDescription.m_Resources[uiBindingInformationIndex], pBuffer);
+}
+
 void xiiGALPipelineState::SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView)
 {
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -102,6 +133,37 @@ void xiiGALPipelineState::SetShaderResourceBufferView(const xiiGALPipelineResour
   XII_ASSERT_DEV(pBufferView == nullptr || pBufferView->GetDescription().m_ViewType == xiiGALBufferViewType::ShaderResource, "Incorrect buffer view type. The view must be created with xiiGALBufferViewType::ShaderResource if not invalidated.");
 
   SetShaderResourceBufferViewPlatform(bindingInformation, pBufferView);
+}
+
+void xiiGALPipelineState::SetShaderResourceBufferView(xiiStringView sName, xiiGALBufferViewHandle hBufferView)
+{
+  const xiiGALPipelineResourceSignature* pResourceSignature        = m_pDevice->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature);
+  const auto&                            signatureDescription      = pResourceSignature->GetDescription();
+  xiiUInt32                              uiBindingInformationIndex = 0U;
+
+  bool bResourceFound = false;
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == xiiTempHashedString(sName) && resource.m_ResourceType == xiiGALShaderResourceType::BufferSRV)
+    {
+      bResourceFound = true;
+      break;
+    }
+
+    ++uiBindingInformationIndex;
+  }
+
+  if (!bResourceFound)
+  {
+    xiiLog::Error("The shader resource buffer view with the name '{0}' does not exist in the pipeline resource signature.", sName);
+    return;
+  }
+
+  xiiGALBufferView* pBufferView = m_pDevice->GetBufferView(hBufferView);
+
+  XII_ASSERT_DEV(pBufferView == nullptr || pBufferView->GetDescription().m_ViewType == xiiGALBufferViewType::ShaderResource, "Incorrect buffer view type. The view must be created with xiiGALBufferViewType::ShaderResource if not invalidated.");
+
+  SetShaderResourceBufferViewPlatform(signatureDescription.m_Resources[uiBindingInformationIndex], pBufferView);
 }
 
 void xiiGALPipelineState::SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView)
@@ -135,6 +197,37 @@ void xiiGALPipelineState::SetShaderResourceTextureView(const xiiGALPipelineResou
   SetShaderResourceTextureViewPlatform(bindingInformation, pTextureView);
 }
 
+void xiiGALPipelineState::SetShaderResourceTextureView(xiiStringView sName, xiiGALTextureViewHandle hTextureView)
+{
+  const xiiGALPipelineResourceSignature* pResourceSignature        = m_pDevice->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature);
+  const auto&                            signatureDescription      = pResourceSignature->GetDescription();
+  xiiUInt32                              uiBindingInformationIndex = 0U;
+
+  bool bResourceFound = false;
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == xiiTempHashedString(sName) && resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV)
+    {
+      bResourceFound = true;
+      break;
+    }
+
+    ++uiBindingInformationIndex;
+  }
+
+  if (!bResourceFound)
+  {
+    xiiLog::Error("The shader resource texture view with the name '{0}' does not exist in the pipeline resource signature.", sName);
+    return;
+  }
+
+  xiiGALTextureView* pTextureView = m_pDevice->GetTextureView(hTextureView);
+
+  XII_ASSERT_DEV(pTextureView == nullptr || pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::ShaderResource, "Incorrect texture view type. The view must be created with xiiGALTextureViewType::ShaderResource if not invalidated.");
+
+  SetShaderResourceTextureViewPlatform(signatureDescription.m_Resources[uiBindingInformationIndex], pTextureView);
+}
+
 void xiiGALPipelineState::SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView)
 {
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -164,6 +257,37 @@ void xiiGALPipelineState::SetUnorderedAccessBufferView(const xiiGALPipelineResou
   XII_ASSERT_DEV(pBufferView == nullptr || pBufferView->GetDescription().m_ViewType == xiiGALBufferViewType::UnorderedAccess, "Incorrect buffer view type. The view must be created with xiiGALBufferViewType::UnorderedAccess if not invalidated.");
 
   SetUnorderedAccessBufferViewPlatform(bindingInformation, pBufferView);
+}
+
+void xiiGALPipelineState::SetUnorderedAccessBufferView(xiiStringView sName, xiiGALBufferViewHandle hBufferView)
+{
+  const xiiGALPipelineResourceSignature* pResourceSignature        = m_pDevice->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature);
+  const auto&                            signatureDescription      = pResourceSignature->GetDescription();
+  xiiUInt32                              uiBindingInformationIndex = 0U;
+
+  bool bResourceFound = false;
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == xiiTempHashedString(sName) && resource.m_ResourceType == xiiGALShaderResourceType::BufferUAV)
+    {
+      bResourceFound = true;
+      break;
+    }
+
+    ++uiBindingInformationIndex;
+  }
+
+  if (!bResourceFound)
+  {
+    xiiLog::Error("The unordered access buffer view with the name '{0}' does not exist in the pipeline resource signature.", sName);
+    return;
+  }
+
+  xiiGALBufferView* pBufferView = m_pDevice->GetBufferView(hBufferView);
+
+  XII_ASSERT_DEV(pBufferView == nullptr || pBufferView->GetDescription().m_ViewType == xiiGALBufferViewType::UnorderedAccess, "Incorrect buffer view type. The view must be created with xiiGALBufferViewType::ShaderResource if not invalidated.");
+
+  SetUnorderedAccessBufferViewPlatform(signatureDescription.m_Resources[uiBindingInformationIndex], pBufferView);
 }
 
 void xiiGALPipelineState::SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView)
@@ -197,6 +321,37 @@ void xiiGALPipelineState::SetUnorderedAccessTextureView(const xiiGALPipelineReso
   SetUnorderedAccessTextureViewPlatform(bindingInformation, pTextureView);
 }
 
+void xiiGALPipelineState::SetUnorderedAccessTextureView(xiiStringView sName, xiiGALTextureViewHandle hTextureView)
+{
+  const xiiGALPipelineResourceSignature* pResourceSignature        = m_pDevice->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature);
+  const auto&                            signatureDescription      = pResourceSignature->GetDescription();
+  xiiUInt32                              uiBindingInformationIndex = 0U;
+
+  bool bResourceFound = false;
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == xiiTempHashedString(sName) && resource.m_ResourceType == xiiGALShaderResourceType::TextureUAV)
+    {
+      bResourceFound = true;
+      break;
+    }
+
+    ++uiBindingInformationIndex;
+  }
+
+  if (!bResourceFound)
+  {
+    xiiLog::Error("The unordered access texture view with the name '{0}' does not exist in the pipeline resource signature.", sName);
+    return;
+  }
+
+  xiiGALTextureView* pTextureView = m_pDevice->GetTextureView(hTextureView);
+
+  XII_ASSERT_DEV(pTextureView == nullptr || pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::UnorderedAccess, "Incorrect texture view type. The view must be created with xiiGALTextureViewType::ShaderResource if not invalidated.");
+
+  SetUnorderedAccessTextureViewPlatform(signatureDescription.m_Resources[uiBindingInformationIndex], pTextureView);
+}
+
 void xiiGALPipelineState::SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSamplerHandle hSampler)
 {
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -224,6 +379,35 @@ void xiiGALPipelineState::SetSampler(const xiiGALPipelineResourceDescription& bi
   xiiGALSampler* pSampler = m_pDevice->GetSampler(hSampler);
 
   SetSamplerPlatform(bindingInformation, pSampler);
+}
+
+void xiiGALPipelineState::SetSampler(xiiStringView sName, xiiGALSamplerHandle hSampler)
+{
+  const xiiGALPipelineResourceSignature* pResourceSignature        = m_pDevice->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature);
+  const auto&                            signatureDescription      = pResourceSignature->GetDescription();
+  xiiUInt32                              uiBindingInformationIndex = 0U;
+
+  bool bResourceFound = false;
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == xiiTempHashedString(sName) && resource.m_ResourceType == xiiGALShaderResourceType::Sampler)
+    {
+      bResourceFound = true;
+      break;
+    }
+
+    ++uiBindingInformationIndex;
+  }
+
+  if (!bResourceFound)
+  {
+    xiiLog::Error("The sampler with the name '{0}' does not exist in the pipeline resource signature.", sName);
+    return;
+  }
+
+  xiiGALSampler* pSampler = m_pDevice->GetSampler(hSampler);
+
+  SetSamplerPlatform(signatureDescription.m_Resources[uiBindingInformationIndex], pSampler);
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineState);
