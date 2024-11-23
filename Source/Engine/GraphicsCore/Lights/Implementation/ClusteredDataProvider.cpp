@@ -203,7 +203,7 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
           if (!pData->m_ReflectionProbeData.IsEmpty())
           {
             pCommandList->UpdateBufferExtended(m_Data.m_hReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray());
-          } 
+          }
 
           pCommandList->UpdateBufferExtended(m_Data.m_hClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray());
         }

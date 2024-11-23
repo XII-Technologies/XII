@@ -683,7 +683,7 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
 void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
   xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  auto               pImmediateCommandList  = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
+  auto               pImmediateCommandList = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
   auto               pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
 
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
