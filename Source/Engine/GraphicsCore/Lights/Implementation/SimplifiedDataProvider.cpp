@@ -46,10 +46,6 @@ xiiSimplifiedDataProvider::~xiiSimplifiedDataProvider() = default;
 
 void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
-  xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
-
-  XII_PROFILE_AND_MARKER(pGALCommandList, "Update Clustered Data");
-
   if (auto pData = extractedData.GetFrameData<xiiSimplifiedDataCPU>())
   {
     m_Data.m_uiSkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
@@ -58,7 +54,7 @@ void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderVi
     // Update Constants
     const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;
 
-    xiiSimplifiedDataConstants* pConstants = renderViewContext.m_pRenderContext->GetConstantBufferData<xiiSimplifiedDataConstants>(m_Data.m_hConstantBuffer);
+    xiiSimplifiedDataConstants* pConstants = xiiRenderContext::GetConstantBufferData<xiiSimplifiedDataConstants>(m_Data.m_hConstantBuffer);
 
     pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
   }

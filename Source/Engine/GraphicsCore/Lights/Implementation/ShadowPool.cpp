@@ -979,27 +979,31 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   if (s_pData->m_hShadowAtlasTexture.IsInvalidated() || s_pData->m_hShadowDataBuffer.IsInvalidated())
     return;
 
-  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto pCommandList = pGALCommandQueue->BeginCommandList();
-
-  pCommandList->BeginDebugGroup("Shadow Atlas");
-
-  pCommandList->ClearDepthStencilView(pDevice->GetTexture(s_pData->m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
-
-  xiiUInt32 uiDataIndex      = xiiRenderWorld::GetDataIndexForRendering();
-  auto&     packedShadowData = s_pData->m_PackedShadowData[uiDataIndex];
-  if (!packedShadowData.IsEmpty())
+  if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
   {
-    XII_PROFILE_SCOPE("Shadow Data Buffer Update");
+    auto pCommandList = pGraphicsQueue->BeginCommandList();
 
-    pCommandList->UpdateBufferExtended(s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr());
+    pCommandList->BeginDebugGroup("Shadow Atlas");
+    {
+      pCommandList->ClearDepthStencilView(pDevice->GetTexture(s_pData->m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
+
+      xiiUInt32 uiDataIndex      = xiiRenderWorld::GetDataIndexForRendering();
+      auto&     packedShadowData = s_pData->m_PackedShadowData[uiDataIndex];
+
+      if (!packedShadowData.IsEmpty())
+      {
+        XII_PROFILE_SCOPE("Shadow Data Buffer Update");
+
+        pCommandList->UpdateBufferExtended(s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr());
+      }
+    }
+    pCommandList->EndDebugGroup();
+    pCommandList->Submit();
+
+    pGraphicsQueue->WaitForIdle();
   }
-  pCommandList->EndDebugGroup();
-  pCommandList->Submit();
-
-  pGALCommandQueue->WaitForIdle();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ShadowPool);

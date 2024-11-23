@@ -5,6 +5,7 @@
 #include <GraphicsCore/Shader/ConstantBufferStorage.h>
 
 struct xiiPerInstanceData;
+class xiiGALCommandList;
 class xiiInstanceDataProvider;
 class xiiInstancedMeshComponent;
 
@@ -23,7 +24,7 @@ public:
   void BindResources(xiiRenderContext* pRenderContext);
 
   xiiArrayPtr<xiiPerInstanceData> GetInstanceData(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
-  void                            UpdateInstanceData(xiiRenderContext* pRenderContext, xiiUInt32 uiCount);
+  void                            UpdateInstanceData(xiiGALCommandList* pCommandList, xiiUInt32 uiCount);
 
 private:
   friend xiiInstanceDataProvider;

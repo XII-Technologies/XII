@@ -73,6 +73,18 @@ public:
   /// \brief This returns the command queue for this object.
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueue* GetCommandQueue() const { return m_pCommandQueue; };
 
+  /// \brief This returns the active pipeline state handle for this object.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALPipelineStateHandle GetPipelineState() const { return m_hPipelineState; };
+
+  /// \brief This returns the active pipeline resource signature handle for this object.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALPipelineResourceSignatureHandle GetPipelineResourceSignature() const { return m_hPipelineResourceSignature; };
+
+  /// \brief This returns the active render pass handle for this object.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALRenderPassHandle GetRenderPassHandle() const { return m_hRenderPass; };
+
+  /// \brief This returns the active frame buffer handle for this object.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFramebufferHandle GetFramebufferHandle() const { return m_hFramebuffer; };
+
 public:
   /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
   ///

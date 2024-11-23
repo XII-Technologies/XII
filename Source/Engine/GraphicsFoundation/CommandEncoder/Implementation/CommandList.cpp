@@ -269,7 +269,7 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
     const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
     const auto& formatProperties      = xiiGALTextureUtilities::GetTextureFormatProperties(attachmentDescription.m_Format);
 
-    if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Load)
+    if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
     {
       uiRequiredClearValueCount = i + 1;
     }

@@ -488,6 +488,8 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
   xiiResourceLock<xiiDynamicMeshBufferResource> pBuffer(m_hDynamicMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
 
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
   for (auto it = batch.GetIterator<xiiClothSheetRenderData>(0, batch.GetCount()); it.IsValid(); ++it)
   {
     const xiiClothSheetRenderData* pRenderData = it;
@@ -504,7 +506,19 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
     instanceData[0].GameObjectID        = pRenderData->m_uiUniqueID;
     instanceData[0].Color               = pRenderData->m_Color;
 
-    pInstanceData->UpdateInstanceData(pRenderContext, 1);
+    if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+    {
+      auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
+
+      pCommandList->BeginDebugGroup("xiiInstanceData Update");
+      {
+        pInstanceData->UpdateInstanceData(pCommandList, 1);
+      }
+      pCommandList->EndDebugGroup();
+      pCommandList->Submit();
+
+      pGraphicsOrTransferQueue->WaitForIdle();
+    }
 
     {
       auto pVertexData = pBuffer->AccessVertexData();
