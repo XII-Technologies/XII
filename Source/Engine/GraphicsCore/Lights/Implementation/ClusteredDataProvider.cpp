@@ -207,6 +207,8 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
 
           pCommandList->UpdateBufferExtended(m_Data.m_hClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray());
         }
+
+        pCommandList->UpdateBufferExtended(m_Data.m_hClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray());
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
