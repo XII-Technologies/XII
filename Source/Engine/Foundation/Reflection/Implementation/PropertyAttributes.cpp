@@ -428,10 +428,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBoxManipulatorAttribute, 1, xiiRTTIDefaultAl
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(xiiStringView, bool, float),
-    XII_CONSTRUCTOR_PROPERTY(xiiStringView, bool, float),
-    XII_CONSTRUCTOR_PROPERTY(xiiStringView, bool, float, xiiStringView),
-    XII_CONSTRUCTOR_PROPERTY(xiiStringView, bool, float, xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, bool),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, bool),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, bool, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, float, bool, xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
@@ -540,7 +540,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransformManipulatorAttribute, 1, xiiRTTIDef
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView, xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
