@@ -11,7 +11,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALSamplerD3D12 final : public xiiGALSampler
   XII_ADD_DYNAMIC_REFLECTION(xiiGALSamplerD3D12, xiiGALSampler);
 
 public:
-  D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle() const;
+  XII_ALWAYS_INLINE D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle() const { return {}; }
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -28,5 +28,3 @@ protected:
 protected:
   ID3D12DescriptorHeap* m_pDescriptorHeap = nullptr;
 };
-
-#include <GraphicsD3D12/Resources/Implementation/SamplerD3D12_inl.h>

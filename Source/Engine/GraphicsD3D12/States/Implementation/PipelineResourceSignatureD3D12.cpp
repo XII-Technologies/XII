@@ -15,6 +15,11 @@ xiiGALPipelineResourceSignatureD3D12::xiiGALPipelineResourceSignatureD3D12(xiiGA
 
 xiiGALPipelineResourceSignatureD3D12::~xiiGALPipelineResourceSignatureD3D12() = default;
 
+bool xiiGALPipelineResourceSignatureD3D12::IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const
+{
+  return false;
+}
+
 xiiResult xiiGALPipelineResourceSignatureD3D12::InitPlatform()
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);

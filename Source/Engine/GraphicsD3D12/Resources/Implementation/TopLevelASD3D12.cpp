@@ -29,4 +29,19 @@ xiiResult xiiGALTopLevelASD3D12::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+xiiGALTopLevelASInstanceDescription xiiGALTopLevelASD3D12::GetInstanceDescription(xiiStringView sName) const
+{
+  return xiiGALTopLevelASInstanceDescription();
+}
+
+xiiGALTopLevelASBuildDescription xiiGALTopLevelASD3D12::GetBuildDescription() const
+{
+  return xiiGALTopLevelASBuildDescription();
+}
+
+xiiGALScratchBufferSizeDescription xiiGALTopLevelASD3D12::GetScratchBufferSizeDescription() const
+{
+  return xiiGALScratchBufferSizeDescription();
+}
+
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_TopLevelASD3D12);

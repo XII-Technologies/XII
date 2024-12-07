@@ -106,5 +106,3 @@ private:
 
   StateCache m_StateCache;
 };
-
-#include <GraphicsD3D12/CommandEncoder/Implementation/CommandListD3D12_inl.h>

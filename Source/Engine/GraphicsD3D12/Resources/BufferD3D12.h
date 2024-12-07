@@ -9,8 +9,6 @@ class XII_GRAPHICSD3D12_DLL xiiGALBufferD3D12 final : public xiiGALBuffer
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferD3D12, xiiGALBuffer);
 
 public:
-  virtual xiiGALMemoryProperties GetMemoryProperties() const override final;
-
   virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
 
   virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
@@ -31,5 +29,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsD3D12/Resources/Implementation/BufferD3D12_inl.h>

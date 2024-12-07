@@ -35,5 +35,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsD3D12/Shader/Implementation/ShaderResourceVariableD3D12_inl.h>

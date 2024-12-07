@@ -31,5 +31,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsD3D12/Resources/Implementation/BottomLevelASD3D12_inl.h>

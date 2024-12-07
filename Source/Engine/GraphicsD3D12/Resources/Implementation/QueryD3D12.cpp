@@ -29,4 +29,13 @@ xiiResult xiiGALQueryD3D12::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+bool xiiGALQueryD3D12::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
+{
+  return false;
+}
+
+void xiiGALQueryD3D12::Invalidate()
+{
+}
+
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_QueryD3D12);

@@ -29,5 +29,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsD3D12/Resources/Implementation/TopLevelASD3D12_inl.h>

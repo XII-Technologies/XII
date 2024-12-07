@@ -15,7 +15,7 @@ public:
 
   virtual void Wait(xiiUInt64 uiValue) override final;
 
-  ID3D12Fence* GetD3D12Fence() const;
+  XII_ALWAYS_INLINE ID3D12Fence* GetD3D12Fence() const { return m_pD3D12Fence; }
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -36,5 +36,3 @@ protected:
 
   const HANDLE m_pFenceCompleteEvent;
 };
-
-#include <GraphicsD3D12/Resources/Implementation/FenceD3D12_inl.h>

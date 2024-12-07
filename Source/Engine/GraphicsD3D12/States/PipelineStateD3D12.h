@@ -31,6 +31,3 @@ protected:
 
 protected:
 };
-
-
-#include <GraphicsD3D12/States/Implementation/PipelineStateD3D12_inl.h>

@@ -29,4 +29,24 @@ xiiResult xiiGALBottomLevelASD3D12::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+xiiUInt32 xiiGALBottomLevelASD3D12::GetGeometryDescriptionIndex(xiiStringView sName) const
+{
+  return xiiUInt32();
+}
+
+xiiUInt32 xiiGALBottomLevelASD3D12::GetGeometryIndex(xiiStringView sName) const
+{
+  return xiiUInt32();
+}
+
+xiiUInt32 xiiGALBottomLevelASD3D12::GetActualGeometryCount() const
+{
+  return xiiUInt32();
+}
+
+xiiGALScratchBufferSizeDescription xiiGALBottomLevelASD3D12::GetScratchBufferSizeDescription() const
+{
+  return xiiGALScratchBufferSizeDescription();
+}
+
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_BottomLevelASD3D12);
