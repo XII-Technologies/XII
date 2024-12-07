@@ -1123,7 +1123,7 @@ xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
   // Sampler properties.
   {
     m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported   = true;
-    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy = D3D12_DEFAULT_MAX_ANISOTROPY;
+    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy                = D3D12_DEFAULT_MAX_ANISOTROPY;
     m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported              = true;
   }
 
