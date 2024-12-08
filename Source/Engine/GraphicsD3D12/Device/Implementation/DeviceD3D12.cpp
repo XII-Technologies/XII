@@ -3,7 +3,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
 #include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
@@ -249,6 +249,69 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   return XII_SUCCESS;
 }
 
+xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
+{
+  xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
+
+  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueType> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
+    const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
+
+    for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
+    {
+      auto& currentQueue = queues[i];
+
+      if (queueCountPerContext[i] >= currentQueue.m_uiMaxDeviceContexts)
+        continue;
+
+      if ((currentQueue.m_Type & queueType) == queueType)
+      {
+        queueCountPerContext[i] += 1;
+
+        xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = queueType};
+
+        xiiGALCommandQueueD3D12* pCommandQueueD3D12 = nullptr;
+        if (queueType == xiiGALCommandQueueType::Graphics)
+        {
+          m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
+          pCommandQueueD3D12      = m_pGraphicsCommandQueue.Borrow();
+        }
+        else if (queueType == xiiGALCommandQueueType::Compute)
+        {
+          m_pComputeCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
+          pCommandQueueD3D12     = m_pComputeCommandQueue.Borrow();
+        }
+        else if (queueType == xiiGALCommandQueueType::Transfer)
+        {
+          m_pTransferCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
+          pCommandQueueD3D12      = m_pTransferCommandQueue.Borrow();
+        }
+
+        if (pCommandQueueD3D12 != nullptr)
+        {
+          pCommandQueueD3D12->InitializePlatform();
+
+          xiiStringBuilder sb;
+          sb.SetFormat("Command Queue ({})", sName);
+          pCommandQueueD3D12->SetDebugName(sb);
+
+          xiiLog::Info("Created {}", sb);
+        }
+
+        return true;
+      }
+    }
+    return false;
+  };
+
+  if (!CreateCommandQueue(xiiGALCommandQueueType::Graphics, "Default Graphics", m_Description.m_uiAdapterID))
+    return XII_FAILURE;
+
+  CreateCommandQueue(xiiGALCommandQueueType::Transfer, "Default Transfer", m_Description.m_uiAdapterID);
+  CreateCommandQueue(xiiGALCommandQueueType::Compute, "Default Compute", m_Description.m_uiAdapterID);
+
+  return XII_SUCCESS;
+}
+
 void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -275,12 +338,22 @@ void xiiGALDeviceD3D12::FlushPendingObjects()
 
 xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 {
-  for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(m_CommandQueues); ++i)
+  if (m_pGraphicsCommandQueue != nullptr)
   {
-    if (m_CommandQueues[i] == nullptr)
-      continue;
+    m_pGraphicsCommandQueue->DeInitializePlatform();
+    m_pGraphicsCommandQueue.Clear();
+  }
 
-    DestroyCommandQueuePlatform(m_CommandQueues[i].Release());
+  if (m_pComputeCommandQueue != nullptr)
+  {
+    m_pComputeCommandQueue->DeInitializePlatform();
+    m_pComputeCommandQueue.Clear();
+  }
+
+  if (m_pTransferCommandQueue != nullptr)
+  {
+    m_pTransferCommandQueue->DeInitializePlatform();
+    m_pTransferCommandQueue.Clear();
   }
 
   XII_GAL_D3D12_RELEASE(m_pD3D12Debug);
@@ -291,50 +364,6 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
   ReportLiveGPUObjects();
 
   return XII_SUCCESS;
-}
-
-xiiResult xiiGALDeviceD3D12::CreateCommandQueuesPlatform()
-{
-  xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
-
-  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueType> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
-    const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
-
-    for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
-    {
-      auto& currentQueue = queues[i];
-
-      if (queueCountPerContext[i] >= currentQueue.m_uiMaxDeviceContexts)
-        continue;
-
-      if ((currentQueue.m_Type & queueType) == queueType)
-      {
-        queueCountPerContext[i] += 1;
-
-        xiiUInt32 uiCommandQueueIndex = GetCommandQueueIndex(queueType);
-
-        xiiGALCommandQueueCreationDescription queueDescription   = {.m_QueueType = queueType};
-        xiiGALCommandQueueD3D12*              pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(CreateCommandQueuePlatform(queueDescription));
-        m_CommandQueues[uiCommandQueueIndex]                     = xiiUniquePtr<xiiGALCommandQueueD3D12>(pCommandQueueD3D12, &m_Allocator);
-
-        xiiStringBuilder sb;
-        sb.SetFormat("Command Queue ({}) - {}", uiCommandQueueIndex, sName);
-        m_CommandQueues[uiCommandQueueIndex]->SetDebugName(sb);
-
-        return true;
-      }
-    }
-    return false;
-  };
-
-  if (!CreateCommandQueue(xiiGALCommandQueueType::Graphics, "Default Graphics", m_Description.m_uiAdapterID))
-    return XII_FAILURE;
-
-  CreateCommandQueue(xiiGALCommandQueueType::Transfer, "Default Transfer", m_Description.m_uiAdapterID);
-  CreateCommandQueue(xiiGALCommandQueueType::Compute, "Default Compute", m_Description.m_uiAdapterID);
-  CreateCommandQueue(xiiGALCommandQueueType::SparseBinding, "Default Sparse Binding", m_Description.m_uiAdapterID);
-
-  return XII_FAILURE;
 }
 
 void xiiGALDeviceD3D12::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
@@ -366,27 +395,6 @@ void xiiGALDeviceD3D12::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   pSwapChainD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainD3D12);
-}
-
-xiiGALCommandQueue* xiiGALDeviceD3D12::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
-{
-  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, description);
-
-  if (pCommandQueueD3D12->InitPlatform().Succeeded())
-    return pCommandQueueD3D12;
-
-  XII_DELETE(&m_Allocator, pCommandQueueD3D12);
-
-  return pCommandQueueD3D12;
-}
-
-void xiiGALDeviceD3D12::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
-{
-  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pCommandQueue);
-
-  pCommandQueueD3D12->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pCommandQueueD3D12);
 }
 
 xiiGALBlendState* xiiGALDeviceD3D12::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -776,7 +784,7 @@ void xiiGALDeviceD3D12::WaitIdlePlatform()
   ///\todo Release stale resources.
 }
 
-void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
+xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Direct3D12;
 
@@ -804,7 +812,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       }
     }
 
-    m_AdapterDescription.m_Vendor             = xiiGALGraphicsUtilities::GetVendorFromID(dxgiAdapterDescription.VendorId);
+    m_AdapterDescription.m_Vendor             = xiiGALDeviceUtilities::GetVendorFromID(dxgiAdapterDescription.VendorId);
     m_AdapterDescription.m_uiVendorID         = dxgiAdapterDescription.VendorId;
     m_AdapterDescription.m_uiDeviceID         = dxgiAdapterDescription.DeviceId;
     m_AdapterDescription.m_uiVideoOutputCount = 0U;
@@ -856,7 +864,6 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       queueProperty.m_Type                = queueIndexType[i];
       queueProperty.m_uiMaxDeviceContexts = 0xFFU;
 
-      queueProperty.m_TextureCopyGranularity.SetCountUninitialized(3);
       queueProperty.m_TextureCopyGranularity[0] = 1U;
       queueProperty.m_TextureCopyGranularity[1] = 1U;
       queueProperty.m_TextureCopyGranularity[2] = 1U;
@@ -976,12 +983,12 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       {
         if (featureDataOptions1.WaveOps != FALSE)
         {
-          deviceFeatures.m_WaveOp = xiiGALDeviceFeatureState::Enabled;
+          deviceFeatures.m_WaveOperation = xiiGALDeviceFeatureState::Enabled;
 
           m_AdapterDescription.m_WaveOperationProperties.m_uiMinSize             = featureDataOptions1.WaveLaneCountMin;
           m_AdapterDescription.m_WaveOperationProperties.m_uiMaxSize             = featureDataOptions1.WaveLaneCountMax;
           m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages = xiiGALShaderType::Pixel | xiiGALShaderType::Compute;
-          m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Basic | xiiGALWaveFeature::Vote | xiiGALWaveFeature::Arithmetic | xiiGALWaveFeature::BallOut | xiiGALWaveFeature::Quad;
+          m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Basic | xiiGALWaveFeature::Vote | xiiGALWaveFeature::Arithmetic | xiiGALWaveFeature::Ballot | xiiGALWaveFeature::Quad;
           if (bMeshShadersSupported)
             m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderType::Amplification | xiiGALShaderType::Mesh;
         }
@@ -1040,7 +1047,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       {
         // https://microsoft.github.io/DirectX-Specs/d3d/VariableRateShading.html#feature-tiering
         auto& shadingRateProperties = m_AdapterDescription.m_ShadingRateProperties;
-        auto  AddShadingRate        = [&shadingRateProperties](xiiEnum<xiiGALShadingRate> shadingRate, xiiBitflags<xiiGALSampleCount> sampleBits) -> void {
+        auto  AddShadingRate        = [&shadingRateProperties](xiiBitflags<xiiGALShadingRateFlags> shadingRate, xiiBitflags<xiiGALSampleCount> sampleBits) -> void {
           XII_ASSERT_DEV(shadingRateProperties.m_Modes.GetCount() < XII_GAL_MAX_SHADING_RATE, "Shading rate properties exeeds the GAL maximum shaing rate count.");
 
           auto& mode         = shadingRateProperties.m_Modes.ExpandAndGetRef();
@@ -1050,23 +1057,23 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
         if (featureDataOptions6.AdditionalShadingRatesSupported != FALSE)
         {
-          AddShadingRate(xiiGALShadingRate::_4X4, xiiGALSampleCount::OneSample);
-          AddShadingRate(xiiGALShadingRate::_4X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples);
-          AddShadingRate(xiiGALShadingRate::_2X4, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples);
+          AddShadingRate(xiiGALShadingRateFlags::_4X4, xiiGALSampleCount::OneSample);
+          AddShadingRate(xiiGALShadingRateFlags::_4X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples);
+          AddShadingRate(xiiGALShadingRateFlags::_2X4, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples);
         }
         if (featureDataOptions6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_1)
         {
           deviceFeatures.m_VariableRateShading = xiiGALDeviceFeatureState::Enabled;
 
           shadingRateProperties.m_Format = xiiGALShadingRateFormat::Palette;
-          shadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombiner::PassThrough;
+          shadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombinerFlags::PassThrough;
           shadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::PerDraw;
 
           // 1x1, 1x2, 2x1, 2x2 are always supported
-          AddShadingRate(xiiGALShadingRate::_2X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
-          AddShadingRate(xiiGALShadingRate::_2X1, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
-          AddShadingRate(xiiGALShadingRate::_1X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
-          AddShadingRate(xiiGALShadingRate::_1X1, xiiGALSampleCount::AllSamples);
+          AddShadingRate(xiiGALShadingRateFlags::_2X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
+          AddShadingRate(xiiGALShadingRateFlags::_2X1, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
+          AddShadingRate(xiiGALShadingRateFlags::_1X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
+          AddShadingRate(xiiGALShadingRateFlags::_1X1, xiiGALSampleCount::AllSamples);
         }
         if (featureDataOptions6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_2)
         {
@@ -1075,7 +1082,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
           shadingRateProperties.m_MinTileSize = xiiSizeU32(featureDataOptions6.ShadingRateImageTileSize, featureDataOptions6.ShadingRateImageTileSize);
           shadingRateProperties.m_MaxTileSize = xiiSizeU32(featureDataOptions6.ShadingRateImageTileSize, featureDataOptions6.ShadingRateImageTileSize);
-          shadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombiner::CombinerOverride | xiiGALShadingRateCombiner::CombinerMin | xiiGALShadingRateCombiner::CombinerMax | xiiGALShadingRateCombiner::CombinerSum;
+          shadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombinerFlags::CombinerOverride | xiiGALShadingRateCombinerFlags::CombinerMin | xiiGALShadingRateCombinerFlags::CombinerMax | xiiGALShadingRateCombinerFlags::CombinerSum;
           shadingRateProperties.m_BindFlags |= xiiGALBindFlags::ShadingRate | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShadingRate;
           shadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnGPU;
         }
@@ -1116,7 +1123,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
   // Sampler properties.
   {
     m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported   = true;
-    m_AdapterDescription.m_SamplerProperties.m_bAnisotropicFilteringSupported = true;
+    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy                = D3D12_DEFAULT_MAX_ANISOTROPY;
     m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported              = true;
   }
 
@@ -1141,6 +1148,8 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 #endif
     m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::BaseVertex | xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer;
   }
+
+  return XII_SUCCESS;
 }
 
 void xiiGALDeviceD3D12::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel)
@@ -1247,11 +1256,6 @@ void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
       }
     }
   }
-}
-
-xiiGALCommandQueue* xiiGALDeviceD3D12::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
-{
-  return m_CommandQueues[GetCommandQueueIndex(queueType)].Borrow();
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_DeviceD3D12);

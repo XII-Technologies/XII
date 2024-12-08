@@ -27,5 +27,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsD3D12/Resources/Implementation/QueryD3D12_inl.h>

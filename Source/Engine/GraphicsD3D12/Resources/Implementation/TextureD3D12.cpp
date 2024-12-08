@@ -27,4 +27,9 @@ xiiResult xiiGALTextureD3D12::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+const xiiGALSparseTextureProperties& xiiGALTextureD3D12::GetSparseProperties() const
+{
+  return m_SparseTextureProperties;
+}
+
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_TextureD3D12);

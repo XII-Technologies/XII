@@ -7,8 +7,6 @@
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
-#include <Foundation/Basics/Platform/Win/HResultUtils.h>
-
 #include <VersionHelpers.h>
 #include <dxgi1_4.h>
 
@@ -85,7 +83,6 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
 
   HWND hNativeWindow = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   if (!m_Description.m_Resolution.HasNonZeroArea())
   {
     RECT rect;
@@ -100,7 +97,6 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     }
     m_Description.m_Resolution = xiiSizeU32(rect.right - rect.left, rect.bottom - rect.top);
   }
-#endif
 
   DXGI_FORMAT dxgiColorBufferFormat = xiiD3D12TypeConversions::GetFormat(m_Description.m_ColorBufferFormat);
 
@@ -195,11 +191,10 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     }
   }
 
-  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
   IDXGISwapChain1*         pDXGISwapChain1    = nullptr;
   XII_GAL_D3D12_RELEASE(pDXGISwapChain1);
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullScreenDescription = {};
 
   fullScreenDescription.Windowed                = D3D12_BOOL(!m_FullScreenMode.m_bIsFullScreen);
@@ -228,18 +223,6 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
       pFactoryFromSC->MakeWindowAssociation(hNativeWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
     }
   }
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  if (m_FullScreenMode.m_bIsFullScreen)
-  {
-    xiiLog::Warning("UWP applications do not support full screen mode.");
-  }
-
-  if (FAILED(pDXGIFactory2->CreateSwapChainForCoreWindow(pD3D12CommandQueue, reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &pDXGISwapChain1)))
-  {
-    xiiLog::Error("Failed to create the DXGI Swap Chain.");
-    return XII_FAILURE;
-  }
-#endif
 
   if (FAILED(pDXGISwapChain1->QueryInterface(__uuidof(m_pDXGISwapChain3), reinterpret_cast<void**>(static_cast<IDXGISwapChain3**>(&m_pDXGISwapChain3)))))
   {
@@ -278,7 +261,7 @@ xiiResult xiiGALSwapChainD3D12::UpdateSwapChain(bool bCreateNew)
   if (!m_pDXGISwapChain3)
     return XII_SUCCESS;
 
-  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
   // Flush command queue?
 
   {
@@ -380,7 +363,6 @@ void xiiGALSwapChainD3D12::Present()
 #endif
 
   xiiUInt32 uiSyncInterval = 1U;
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   switch (m_PresentMode)
   {
     case xiiGALPresentMode::Immediate:
@@ -390,7 +372,6 @@ void xiiGALSwapChainD3D12::Present()
       uiSyncInterval = 1U;
       break;
   }
-#endif
 
   // In contrast to MSDN sample, we wait for the frame as late as possible - right
   // before presenting.

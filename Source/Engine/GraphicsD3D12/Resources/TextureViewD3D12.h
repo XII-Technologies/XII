@@ -23,5 +23,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsD3D12/Resources/Implementation/TextureViewD3D12_inl.h>

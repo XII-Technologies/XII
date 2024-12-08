@@ -11,7 +11,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALDepthStencilStateD3D12 final : public xiiGALDe
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDepthStencilStateD3D12, xiiGALDepthStencilState);
 
 public:
-  const D3D12_DEPTH_STENCIL_DESC* GetDepthStencilState() const;
+  XII_ALWAYS_INLINE const D3D12_DEPTH_STENCIL_DESC* GetDepthStencilState() const { return &m_DepthStencilState; }
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -28,5 +28,3 @@ protected:
 protected:
   D3D12_DEPTH_STENCIL_DESC m_DepthStencilState = {};
 };
-
-#include <GraphicsD3D12/States/Implementation/DepthStencilStateD3D12_inl.h>

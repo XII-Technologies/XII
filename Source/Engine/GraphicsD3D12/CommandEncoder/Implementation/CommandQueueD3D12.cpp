@@ -7,32 +7,32 @@
 xiiGALCommandQueueD3D12::xiiGALCommandQueueD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALCommandQueueCreationDescription& creationDescription) :
   xiiGALCommandQueue(pDeviceD3D12, creationDescription)
 {
-  xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListD3D12, pDeviceD3D12, this, commandListDescription);
 }
 
 xiiGALCommandQueueD3D12::~xiiGALCommandQueueD3D12()
 {
-  m_pDefaultCommandList.Clear();
 }
 
-xiiResult xiiGALCommandQueueD3D12::InitPlatform()
+void xiiGALCommandQueueD3D12::InitializePlatform()
 {
-  return XII_FAILURE;
 }
 
-xiiResult xiiGALCommandQueueD3D12::DeInitPlatform()
+void xiiGALCommandQueueD3D12::DeInitializePlatform()
 {
-  return XII_FAILURE;
 }
 
 void xiiGALCommandQueueD3D12::SetDebugNamePlatform(xiiStringView sName)
 {
 }
 
+xiiUInt64 xiiGALCommandQueueD3D12::WaitForIdle()
+{
+  return xiiUInt64();
+}
+
 xiiGALCommandList* xiiGALCommandQueueD3D12::BeginCommandList()
 {
-  return m_pDefaultCommandList.Borrow();
+  return nullptr;
 }
 
 void xiiGALCommandQueueD3D12::UnbindTextureFromFramebuffer(xiiGALTextureD3D12* pTextureD3D12)

@@ -2,10 +2,12 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
-#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Basics/Platform/Windows/MinWindows.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsFoundation/Device/Device.h>
+
+#include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 
 enum D3D_FEATURE_LEVEL;
 
@@ -30,17 +32,27 @@ public:
   ~xiiGALDeviceD3D12();
 
 public:
-  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
+  XII_ALWAYS_INLINE virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final
+  {
+    if (((queueType & xiiGALCommandQueueType::Graphics) == xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
+      return m_pGraphicsCommandQueue.Borrow();
+
+    if (((queueType & xiiGALCommandQueueType::Compute) == xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
+      return m_pComputeCommandQueue.Borrow();
+
+    if (((queueType & xiiGALCommandQueueType::Transfer) == xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
+      return m_pTransferCommandQueue.Borrow();
+
+    return bAllowGraphicsCommandQueueFallback ? GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false) : nullptr;
+  };
 
   // Internal objects retrieval.
 
-  ID3D12Device1* GetD3D12Device() const;
-  IDXGIAdapter1* GetDXGIAdapter() const;
-  IDXGIFactory4* GetDXGIFactory() const;
+  XII_ALWAYS_INLINE ID3D12Device1* GetD3D12Device() const { return m_pD3D12Device; }
+  XII_ALWAYS_INLINE IDXGIAdapter1* GetDXGIAdapter() const { return m_pDXGIAdapter; }
+  XII_ALWAYS_INLINE IDXGIFactory4* GetDXGIFactory() const { return m_pDXGIFactory; }
 
-  xiiMemoryAllocatorD3D12* GetD3D12Allocator() const;
-
-  xiiUInt32 GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const;
+  XII_ALWAYS_INLINE xiiMemoryAllocatorD3D12* GetD3D12Allocator() const { return m_pAllocatorD3D12.Borrow(); }
 
   void ReportLiveGPUObjects();
 
@@ -49,18 +61,14 @@ public:
   // These functions are implemented by a graphics API implementation.
 protected:
   virtual xiiResult InitializePlatform() override final;
+  virtual xiiResult PostInitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
-
-  virtual xiiResult CreateCommandQueuesPlatform() override final;
 
   virtual void BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame) override final;
   virtual void EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains) override final;
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) override final;
-  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -118,7 +126,7 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
-  virtual void FillCapabilitiesPlatform() override final;
+  virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
   void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
@@ -138,7 +146,7 @@ private:
 
   xiiUInt64 m_uiFrameCounter = 0U;
 
-  xiiUniquePtr<xiiGALCommandQueueD3D12> m_CommandQueues[4];
+  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pGraphicsCommandQueue;
+  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pComputeCommandQueue;
+  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pTransferCommandQueue;
 };
-
-#include <GraphicsD3D12/Device/Implementation/DeviceD3D12_inl.h>

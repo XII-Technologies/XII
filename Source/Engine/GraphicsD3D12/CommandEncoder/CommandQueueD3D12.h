@@ -12,10 +12,10 @@ class XII_GRAPHICSD3D12_DLL xiiGALCommandQueueD3D12 final : public xiiGALCommand
 {
 public:
   /// \brief This returns the value of the internal fence that will be signaled the next time.
-  virtual xiiUInt64 GetNextFenceValue() const override final;
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return 0ULL; }
 
   /// \brief This returns the last completed value of the internal fence.
-  virtual xiiUInt64 GetCompletedFenceValue() override final;
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return 0ULL; }
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
@@ -24,7 +24,7 @@ public:
 
   void UnbindTextureFromFramebuffer(xiiGALTextureD3D12* pTextureD3D12);
 
-  ID3D12CommandQueue* GetD3D12CommandQueue() const;
+  XII_ALWAYS_INLINE ID3D12CommandQueue* GetD3D12CommandQueue() const { return m_pCommandQueueD3D12; }
 
 protected:
   xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
@@ -37,14 +37,12 @@ protected:
 
   virtual ~xiiGALCommandQueueD3D12();
 
-  virtual xiiResult InitPlatform() override final;
+  void InitializePlatform();
 
-  virtual xiiResult DeInitPlatform() override final;
+  void DeInitializePlatform();
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
-  xiiUniquePtr<xiiGALCommandListD3D12> m_pDefaultCommandList;
+  ID3D12CommandQueue* m_pCommandQueueD3D12;
 };
-
-#include <GraphicsD3D12/CommandEncoder/Implementation/CommandQueueD3D12_inl.h>

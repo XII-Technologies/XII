@@ -29,4 +29,17 @@ xiiResult xiiGALBufferD3D12::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALBufferD3D12::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
+{
+}
+
+void xiiGALBufferD3D12::InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
+{
+}
+
+xiiGALSparseBufferProperties xiiGALBufferD3D12::GetSparseProperties() const
+{
+  return xiiGALSparseBufferProperties();
+}
+
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_BufferD3D12);

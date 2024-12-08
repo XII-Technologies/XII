@@ -57,5 +57,3 @@ protected:
 
   xiiUInt32 m_uiMaximumFrameLatency = 0U;
 };
-
-#include <GraphicsD3D12/Device/Implementation/SwapChainD3D12_inl.h>

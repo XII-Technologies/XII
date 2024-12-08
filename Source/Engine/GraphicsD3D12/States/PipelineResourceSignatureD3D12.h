@@ -25,5 +25,3 @@ protected:
 
 protected:
 };
-
-#include <GraphicsD3D12/States/Implementation/PipelineResourceSignatureD3D12_inl.h>

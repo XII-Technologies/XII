@@ -24,6 +24,5 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
+  xiiGALSparseTextureProperties m_SparseTextureProperties;
 };
-
-#include <GraphicsD3D12/Resources/Implementation/TextureD3D12_inl.h>

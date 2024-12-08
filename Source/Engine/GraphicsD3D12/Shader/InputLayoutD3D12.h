@@ -11,7 +11,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALInputLayoutD3D12 final : public xiiGALInputLay
   XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayoutD3D12, xiiGALInputLayout);
 
 public:
-  xiiArrayPtr<const D3D12_INPUT_ELEMENT_DESC> GetD3D12InputLayoutElements() const;
+  XII_ALWAYS_INLINE xiiArrayPtr<const D3D12_INPUT_ELEMENT_DESC> GetD3D12InputLayoutElements() const { return m_InputLayoutElements; }
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -28,5 +28,3 @@ protected:
 protected:
   xiiDynamicArray<D3D12_INPUT_ELEMENT_DESC> m_InputLayoutElements;
 };
-
-#include <GraphicsD3D12/Shader/Implementation/InputLayoutD3D12_inl.h>

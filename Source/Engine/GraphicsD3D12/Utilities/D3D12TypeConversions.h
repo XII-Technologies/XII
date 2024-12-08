@@ -12,8 +12,6 @@
 #include <d3d12.h>
 #include <dxgitype.h>
 
-#include <Foundation/Basics/Platform/Win/IncludeWindows.h>
-
 class XII_GRAPHICSD3D12_DLL xiiD3D12TypeConversions
 {
 public:
