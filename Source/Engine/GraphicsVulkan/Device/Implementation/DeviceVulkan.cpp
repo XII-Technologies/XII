@@ -616,8 +616,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   ExtensionFeatures enabledExtensionFeatures = {};
 
-  // To enable some device extensions you must enable instance extension VK_KHR_get_physical_device_properties2
-  // and add feature description to DeviceCreateInfo.pNext.
+  // To enable some device extensions you must enable instance extension VK_KHR_get_physical_device_properties2 and add feature description to DeviceCreateInfo.pNext.
   const bool bSupportsDeviceFeatures2 = IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   if (bSupportsDeviceFeatures2)
   {
@@ -1081,7 +1080,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
     vmaAllocatorCreateInfo.device                 = m_LogicalDevice;
     vmaAllocatorCreateInfo.pVulkanFunctions       = &vmaVulkanFunctions;
-    // vmaAllocatorCreateInfo.flags               = VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+    vmaAllocatorCreateInfo.flags                  = VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT; // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION is required by our implementation.
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
   }
