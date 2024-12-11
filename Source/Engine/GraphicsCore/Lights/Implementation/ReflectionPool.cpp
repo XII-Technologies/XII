@@ -337,8 +337,6 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
     }
     pGALCommandList->EndDebugGroup();
     pGALCommandList->Submit();
-
-    pGALCommandQueue->WaitForIdle();
   }
 
   {
@@ -369,8 +367,6 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
     }
     pGALCommandList->EndDebugGroup();
     pGALCommandList->Submit();
-
-    pGALCommandQueue->WaitForIdle();
   }
 }
 

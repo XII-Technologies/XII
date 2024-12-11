@@ -151,7 +151,6 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
     // Submit immediately, so that the data is available when reading back the result from the staging texture.
     pCommandList->Submit(false);
-    pCommandList->GetCommandQueue()->WaitForIdle();
 
     xiiMat4 mProj;
     renderViewContext.m_pCamera->GetProjectionMatrix((float)m_uiWindowWidth / m_uiWindowHeight, mProj);
@@ -259,7 +258,6 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     }
     pCommandList->EndDebugGroup();
     pCommandList->Submit(false);
-    pCommandList->GetCommandQueue()->WaitForIdle();
   }
 }
 

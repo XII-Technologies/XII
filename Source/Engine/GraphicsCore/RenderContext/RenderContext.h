@@ -90,8 +90,6 @@ public:
 
         XII_ASSERT_DEV(m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Reset, "Scoped command list is not ended.");
 
-        m_pCommandListScope->GetCommandQueue()->WaitForIdle();
-
         m_RenderContext.m_pScopedCommandList = nullptr;
       }
     }

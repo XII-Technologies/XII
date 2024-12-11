@@ -427,8 +427,6 @@ void xiiGALSwapChainD3D11::Present()
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
-
-      pGraphicsOrTransferQueue->WaitForIdle();
     }
   }
 

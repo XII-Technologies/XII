@@ -148,7 +148,6 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
   // Since we are reading data from the backbuffer, we need to ensure that the copy command has completed before mapping the staging texture for reading.
   // This is mainly a D3D11 deferred context limitation, we will need to update/branch this code path on modern api's like D3D12 and Vulkan.
   pGALCommandList->Submit(false);
-  pCommandQueue->WaitForIdle();
 
   pGALCommandList->Begin();
 
@@ -203,8 +202,6 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   pGALCommandList->EndDebugGroup();
   pGALCommandList->Submit();
-
-  pCommandQueue->WaitForIdle();
 
   xiiImageHeader header;
   header.SetWidth(uiWidth);

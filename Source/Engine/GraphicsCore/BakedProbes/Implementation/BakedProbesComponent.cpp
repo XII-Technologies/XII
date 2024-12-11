@@ -128,8 +128,6 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       pGALCommandList->UpdateTextureExtended(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
       pGALCommandList->EndDebugGroup();
       pGALCommandList->Submit();
-
-      pGALCommandQueue->WaitForIdle();
     }
   }
 }

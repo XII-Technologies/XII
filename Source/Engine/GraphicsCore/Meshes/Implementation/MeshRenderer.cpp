@@ -100,8 +100,6 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
           }
           pCommandList->EndDebugGroup();
           pCommandList->Submit();
-
-          pGraphicsOrTransferQueue->WaitForIdle();
         }
 
         const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];

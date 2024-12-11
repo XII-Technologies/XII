@@ -172,8 +172,6 @@ public:
         pCommandList->BeginRenderPass(beginRenderPass);
         pCommandList->EndRenderPass();
         pCommandList->Submit();
-
-        pGraphicsQueue->WaitForIdle();
       }
 
       m_pDevice->EndFrame();

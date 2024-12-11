@@ -456,7 +456,6 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         // Submit this before attempting to download thumbnail image from staging texture.
         pGALCommandList->Submit(false);
         pGALCommandList->EndDebugGroup();
-        pGALCommandQueue->WaitForIdle();
 
         const xiiGALTexture*               pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);
         const xiiEnum<xiiGALTextureFormat> format          = pThumbnailColor->GetDescription().m_Format;
@@ -519,7 +518,6 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
 
         pGALCommandList->EndDebugGroup();
         pGALCommandList->Submit();
-        pGALCommandQueue->WaitForIdle();
 
         xiiImage  imageSwap;
         xiiImage* pImage     = &image;
