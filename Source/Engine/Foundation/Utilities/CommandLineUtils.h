@@ -15,8 +15,7 @@ public:
   enum ArgMode
   {
     UseArgcArgv,  ///< Use the passed in argc/argv values as they are passed in
-    PreferOsArgs, ///< On Windows, ignore argc/argv and instead query the global arguments from the OS. Necessary to properly support
-                  ///< Unicode strings in arguments.
+    PreferOsArgs, ///< On Windows, ignore argc/argv and instead query the global arguments from the OS. Necessary to properly support Unicode strings in arguments.
   };
 
   /// \brief Returns one global instance of xiiCommandLineUtils.

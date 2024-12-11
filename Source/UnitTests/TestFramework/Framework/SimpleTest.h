@@ -56,7 +56,7 @@ private:
   xiiSimpleTestGroup::SimpleTestFunc m_Func;
 };
 
-#define XII_CREATE_SIMPLE_TEST_GROUP(GroupName) xiiSimpleTestGroup XII_PP_CONCAT(g_SimpleTestGroup__, GroupName)(XII_PP_STRINGIFY(GroupName));
+#define XII_CREATE_SIMPLE_TEST_GROUP(GroupName) xiiSimpleTestGroup XII_PP_CONCAT(g_SimpleTestGroup__, GroupName)(XII_PP_STRINGIFY(GroupName))
 
 #define XII_CREATE_SIMPLE_TEST(GroupName, TestName)                                                                               \
   extern xiiSimpleTestGroup   XII_PP_CONCAT(g_SimpleTestGroup__, GroupName);                                                      \

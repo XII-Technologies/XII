@@ -147,10 +147,9 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
   if (uiFormatCount == 1 && supportedFormats.PeekBack().format == vk::Format::eUndefined)
   {
-    // If the format list includes just one entry of vk::Format::eUndefined, the surface has no preferred format.  Otherwise, at least one
-    // supported format will be returned.
+    // If the format list includes just one entry of vk::Format::eUndefined, the surface has no preferred format. Otherwise, at least one supported format will be returned.
 
-    // Do nothing.
+    // Nothing else to do.
   }
   else
   {
