@@ -22,7 +22,7 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
   XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
   XII_SUCCEED_OR_RETURN(CreateVulkanSwapChain());
   XII_SUCCEED_OR_RETURN(CreateBackBufferInternal());
-  VK_ASSERT_DEV(AcquireNextImage());
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(AcquireNextImage());
 
   return XII_SUCCESS;
 }
@@ -577,7 +577,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
   //
   // When acquiring swap chain image for frame N, we need to make sure that frame N-Nsc has completed. To achieve that, we wait for the image acquire
   // fence for frame N-Nsc-1. Thus we will have no more than Nsc frames in the queue.
-  xiiUInt32 uiOldestSubmittedImageFenceIndex = (m_uiSemaphoreIndex % 1U) % m_ImageAcquiredFenceSubmitted.GetCount();
+  xiiUInt32 uiOldestSubmittedImageFenceIndex = (m_uiSemaphoreIndex + 1U) % m_ImageAcquiredFenceSubmitted.GetCount();
   if (m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex])
   {
     const vk::Fence& oldestSubmittedFence = m_ImageAcquiredFences[uiOldestSubmittedImageFenceIndex];
