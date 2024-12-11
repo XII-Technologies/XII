@@ -2,6 +2,22 @@
 
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
+xiiBitflags<xiiGALBindFlags> xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(xiiBitflags<xiiGALSwapChainUsageFlags> swapChainUsageFlags)
+{
+  xiiBitflags<xiiGALBindFlags> bindFlags = xiiGALBindFlags::None;
+
+  if (swapChainUsageFlags.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+    bindFlags |= xiiGALBindFlags::RenderTarget;
+  if (swapChainUsageFlags.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
+    bindFlags |= xiiGALBindFlags::ShaderResource;
+  if (swapChainUsageFlags.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
+    bindFlags |= xiiGALBindFlags::InputAttachment;
+
+  // No special bind flag is needed for xiiGALSwapChainUsageFlags::CopySource.
+
+  return bindFlags;
+}
+
 xiiBitflags<xiiGALPipelineResourceFlags> xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(xiiEnum<xiiGALShaderResourceType> type)
 {
   xiiBitflags<xiiGALPipelineResourceFlags> pipelineResourceFlags = xiiGALPipelineResourceFlags::None;

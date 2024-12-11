@@ -1,6 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Core/System/Window.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
@@ -372,14 +373,14 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   swapChainCreateInfo.clipped                    = vk::True;
   swapChainCreateInfo.imageColorSpace            = colorSpace;
 
-  XII_ASSERT_DEV(m_Description.m_Usage != xiiGALSwapChainUsageFlags::None, "No swap chain flags are defined.");
-  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+  XII_ASSERT_DEV(m_Description.m_UsageFlags != xiiGALSwapChainUsageFlags::None, "No swap chain flags are defined.");
+  if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
-  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
+  if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eSampled;
-  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
+  if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eInputAttachment;
-  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::CopySource))
+  if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::CopySource))
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eTransferSrc;
 
   swapChainCreateInfo.imageSharingMode      = vk::SharingMode::eExclusive;
@@ -531,15 +532,6 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
-    // No Special bind flag needed for xiiGALSwapChainUsageFlags::CopySource.
-    xiiBitflags<xiiGALBindFlags> swapChainBindFlags = xiiGALBindFlags::None;
-    if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
-      swapChainBindFlags |= xiiGALBindFlags::RenderTarget;
-    if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
-      swapChainBindFlags |= xiiGALBindFlags::ShaderResource;
-    if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
-      swapChainBindFlags |= xiiGALBindFlags::InputAttachment;
-
     xiiGALTextureCreationDescription textureCreationDescription;
     textureCreationDescription.m_Type                   = xiiGALResourceDimension::Texture2D;
     textureCreationDescription.m_Size.width             = m_Description.m_Resolution.width;
@@ -548,7 +540,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     textureCreationDescription.m_uiArraySizeOrDepth     = 1U;
     textureCreationDescription.m_uiMipLevels            = 1U;
     textureCreationDescription.m_uiSampleCount          = 1U;
-    textureCreationDescription.m_BindFlags              = swapChainBindFlags;
+    textureCreationDescription.m_BindFlags              = xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(m_Description.m_UsageFlags);
     textureCreationDescription.m_Usage                  = xiiGALResourceUsage::Default;
     textureCreationDescription.m_CPUAccessFlags         = xiiGALCPUAccessFlag::None;
     textureCreationDescription.m_MiscFlags              = xiiGALMiscTextureFlags::None;

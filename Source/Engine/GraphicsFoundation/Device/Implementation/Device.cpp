@@ -301,7 +301,7 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreatio
 
   XII_VERIFY_SWAP_CHAIN(description.m_pWindow != nullptr, "The swap chain window handle is invalid.");
   XII_VERIFY_SWAP_CHAIN(description.m_ColorBufferFormat != xiiGALTextureFormat::Unknown, "The swap chain color buffer format is invalid.");
-  XII_VERIFY_SWAP_CHAIN(!description.m_Usage.IsNoFlagSet(), "The swap chain usage is not set.");
+  XII_VERIFY_SWAP_CHAIN(!description.m_UsageFlags.IsNoFlagSet(), "The swap chain usage is not set.");
   XII_VERIFY_SWAP_CHAIN(description.m_fDefaultDepthValue > 0.0f, "The swap chain usage is not set.");
 
   xiiGALSwapChain* pSwapChain = CreateSwapChainPlatform(description);

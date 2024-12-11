@@ -102,7 +102,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   xiiWindowBase*                         m_pWindow           = nullptr;                                   ///< Pointer to the window class.
   xiiSizeU32                             m_Resolution        = xiiSizeU32(0U, 0U);                        ///< Swap chain resolution.
   xiiEnum<xiiGALTextureFormat>           m_ColorBufferFormat = xiiGALTextureFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
-  xiiBitflags<xiiGALSwapChainUsageFlags> m_Usage             = xiiGALSwapChainUsageFlags::RenderTarget;   ///< Swap chain usage flags.
+  xiiBitflags<xiiGALSwapChainUsageFlags> m_UsageFlags        = xiiGALSwapChainUsageFlags::RenderTarget;   ///< Swap chain usage flags.
   xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;           ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
                                                                                                           ///
                                                                                                           ///  \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.

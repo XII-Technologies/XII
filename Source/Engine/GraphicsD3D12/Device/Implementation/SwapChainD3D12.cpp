@@ -129,13 +129,13 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
       break;
   }
 
-  XII_ASSERT_DEV(!m_Description.m_Usage.IsNoFlagSet(), "No swap chain usage flags are set!");
+  XII_ASSERT_DEV(!m_Description.m_UsageFlags.IsNoFlagSet(), "No swap chain usage flags are set!");
 
-  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+  if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
   {
     swapChainDescription.BufferUsage |= DXGI_USAGE_RENDER_TARGET_OUTPUT;
   }
-  if (m_Description.m_Usage.IsAnySet(xiiGALSwapChainUsageFlags::ShaderResource | xiiGALSwapChainUsageFlags::InputAttachment))
+  if (m_Description.m_UsageFlags.IsAnySet(xiiGALSwapChainUsageFlags::ShaderResource | xiiGALSwapChainUsageFlags::InputAttachment))
   {
     swapChainDescription.BufferUsage |= DXGI_USAGE_SHADER_INPUT;
   }
