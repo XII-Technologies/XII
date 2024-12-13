@@ -29,7 +29,11 @@ xiiQtVarianceTypeWidget::xiiQtVarianceTypeWidget()
   m_pVarianceWidget->setMaximum(100);
   m_pVarianceWidget->setSingleStep(1);
 
+  QLabel* pText = new QLabel("Variance:");
+  pText->setToolTip("Random deviation of base value:\nSlider to the left -> 0 variance, no randomness at all.\nSlider in the middle -> 0.5 variance, value will be in range [0.5 * base ... 1.5 * base]\nSlider to the right -> full variance, value will be in range [0 ... 2 * base]\n\nNote that values deviate from base using a Bell curve, meaning that values close to 'base' are more likely.");
+
   m_pLayout->addWidget(m_pValueWidget);
+  m_pLayout->addWidget(pText);
   m_pLayout->addWidget(m_pVarianceWidget);
 
   connect(m_pValueWidget, SIGNAL(editingFinished()), this, SLOT(onEndTemporary()));
@@ -116,7 +120,7 @@ void xiiQtVarianceTypeWidget::OnInit()
   }
   if (const xiiClampValueAttribute* pClamp = m_pProp->GetAttributeByType<xiiClampValueAttribute>())
   {
-    if (pClamp->GetMinValue().CanConvertTo<double>())
+    if (pClamp->GetMinValue().CanConvertTo<double>() || pClamp->GetMinValue().IsA<xiiTime>() || pClamp->GetMinValue().IsA<xiiAngle>() || pClamp->GetMinValue().IsA<xiiAngled>())
     {
       m_pValueWidget->setMinimum(pClamp->GetMinValue());
     }
@@ -147,7 +151,7 @@ void xiiQtVarianceTypeWidget::OnInit()
   }
   if (const xiiDefaultValueAttribute* pDefault = m_pProp->GetAttributeByType<xiiDefaultValueAttribute>())
   {
-    if (pDefault->GetValue().CanConvertTo<double>())
+    if (pDefault->GetValue().CanConvertTo<double>() || pDefault->GetValue().IsA<xiiTime>() || pDefault->GetValue().IsA<xiiAngle>() || pDefault->GetValue().IsA<xiiAngled>())
     {
       m_pValueWidget->setDefaultValue(pDefault->GetValue());
     }
