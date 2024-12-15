@@ -17,7 +17,6 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
   vk::Device                          vkLogicalDevice            = pDeviceVulkan->GetVulkanLogicalDevice();
   const vk::PhysicalDeviceProperties& vkPhysicalDeviceProperties = pDeviceVulkan->GetVulkanPhysicalDeviceProperties();
 
-
   vk::SamplerCreateInfo vkSamplerCreateInfo = {};
   vkSamplerCreateInfo.pNext                 = nullptr;
   vkSamplerCreateInfo.flags                 = {};
