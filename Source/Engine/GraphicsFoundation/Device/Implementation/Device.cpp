@@ -866,23 +866,18 @@ xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDe
       XII_VERIFY_BUFFER_VIEW((description.m_uiByteWidth % bufferDescription.m_uiElementByteStride) == 0U, "The buffer view byte width ({0}) is not a multiple of the element byte stride ({1}).", description.m_uiByteWidth, bufferDescription.m_uiElementByteStride);
     }
 
-    XII_VERIFY_BUFFER_VIEW(!(bufferDescription.m_Mode == xiiGALBufferMode::Formatted && description.m_Format.m_ValueType == xiiGALValueType::Undefined), "The format must be specified when creating a view of a formatted buffer.");
+    XII_VERIFY_BUFFER_VIEW(!(bufferDescription.m_Mode == xiiGALBufferMode::Formatted && description.m_Format == xiiGALTextureFormat::Unknown), "The format must be specified when creating a view of a formatted buffer.");
 
-    if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format.m_ValueType != xiiGALValueType::Undefined))
+    if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format != xiiGALTextureFormat::Unknown))
     {
-      XII_VERIFY_BUFFER_VIEW(description.m_Format.m_uiComponents > 0U && description.m_Format.m_uiComponents <= 4U, "Incorrect number of format components ({0}). 1, 2, 3, or 4 are allowed values.");
-
-      if (description.m_Format.m_ValueType == xiiGALValueType::Float16 || description.m_Format.m_ValueType == xiiGALValueType::Float32)
-        description.m_Format.m_bIsNormalized = false;
-
       XII_VERIFY_BUFFER_VIEW(bufferDescription.m_Mode != xiiGALBufferMode::Raw && bufferDescription.m_uiElementByteStride != 0U, "To enable formatted views of a raw buffer, the element byte stride must be specified in the buffer creation description.");
 
-      const xiiUInt32 uiViewElementStride = xiiGALValueType::GetSize(description.m_Format.m_ValueType) * description.m_Format.m_uiComponents;
+      const xiiGALTextureFormatDescription& formatProperties    = xiiGALTextureUtilities::GetTextureFormatProperties(description.m_Format);
 
-      XII_VERIFY_BUFFER_VIEW(bufferDescription.m_uiElementByteStride == uiViewElementStride, "The buffer element byte stride ({0}) is not consistent with the size ({1}) defined by the format value type of the view ({2}).", bufferDescription.m_uiElementByteStride, uiViewElementStride, description.m_Format.m_ValueType);
+      XII_VERIFY_BUFFER_VIEW(bufferDescription.m_uiElementByteStride == formatProperties.GetElementSize(), "The buffer element byte stride ({0}) is not consistent with the size ({1}) defined by the format ({2}) of the view ({2}).", bufferDescription.m_uiElementByteStride, formatProperties.GetElementSize(), description.m_Format);
     }
 
-    if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format.m_ValueType == xiiGALValueType::Undefined)
+    if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format == xiiGALTextureFormat::Unknown)
     {
       XII_VERIFY_BUFFER_VIEW((description.m_uiByteOffset % 16U) == 0U, "When creating a Raw buffer view, the offset of the first element from the start of the buffer ({0}) must be a multiple of 16 bytes.", description.m_uiByteOffset);
     }

@@ -414,14 +414,14 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
       xiiGALBufferViewCreationDescription uavDesc;
       uavDesc.m_ViewType     = xiiGALBufferViewType::UnorderedAccess;
       uavDesc.m_hBuffer      = m_hLineSweepOutputBuffer;
-      uavDesc.m_Format       = xiiGALBufferFormat{.m_ValueType = xiiGALValueType::UInt32, .m_uiComponents = 1, .m_bIsNormalized = false};
+      uavDesc.m_Format       = xiiGALTextureFormat::R32UInt;
       uavDesc.m_uiByteOffset = 0;
       uavDesc.m_uiByteWidth  = imageResolution.z * totalNumberOfSamples / 2;
       m_hLineSweepOutputUAV  = device->CreateBufferView(uavDesc);
 
       xiiGALBufferViewCreationDescription srvDesc;
       srvDesc.m_hBuffer      = m_hLineSweepOutputBuffer;
-      uavDesc.m_Format       = xiiGALBufferFormat{.m_ValueType = xiiGALValueType::UInt32, .m_uiComponents = 1, .m_bIsNormalized = false};
+      uavDesc.m_Format       = xiiGALTextureFormat::R32UInt;
       srvDesc.m_uiByteOffset = 0;
       srvDesc.m_uiByteWidth  = imageResolution.z * totalNumberOfSamples / 2;
       m_hLineSweepOutputSRV  = device->CreateBufferView(srvDesc);
