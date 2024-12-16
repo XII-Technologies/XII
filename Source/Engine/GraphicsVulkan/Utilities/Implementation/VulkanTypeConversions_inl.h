@@ -952,3 +952,32 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions
   XII_ASSERT_NOT_IMPLEMENTED;
   return xiiBitflags<xiiGALResourceStateFlags>();
 }
+
+XII_ALWAYS_INLINE vk::ComponentSwizzle xiiVulkanTypeConversions::GetComponentSwizzle(xiiGALTextureComponentSwizzle::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALTextureComponentSwizzle::Identity:
+      return vk::ComponentSwizzle::eIdentity;
+    case xiiGALTextureComponentSwizzle::Zero:
+      return vk::ComponentSwizzle::eZero;
+    case xiiGALTextureComponentSwizzle::One:
+      return vk::ComponentSwizzle::eOne;
+    case xiiGALTextureComponentSwizzle::R:
+      return vk::ComponentSwizzle::eR;
+    case xiiGALTextureComponentSwizzle::G:
+      return vk::ComponentSwizzle::eG;
+    case xiiGALTextureComponentSwizzle::B:
+      return vk::ComponentSwizzle::eB;
+    case xiiGALTextureComponentSwizzle::A:
+      return vk::ComponentSwizzle::eA;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::ComponentSwizzle::eIdentity;
+}
+
+XII_ALWAYS_INLINE vk::ComponentMapping xiiVulkanTypeConversions::GetComponentMapping(const xiiGALTextureComponentMapping& mapping)
+{
+  return vk::ComponentMapping{xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_R), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_G), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_B), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_A)};
+}

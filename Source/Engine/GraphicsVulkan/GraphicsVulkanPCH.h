@@ -21,6 +21,10 @@
 #  define VK_USE_PLATFORM_IOS_MVK
 #endif
 
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+
 #include <vulkan/vulkan.hpp>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)

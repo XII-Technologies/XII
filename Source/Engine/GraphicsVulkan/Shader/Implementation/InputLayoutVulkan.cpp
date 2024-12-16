@@ -1,6 +1,5 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
