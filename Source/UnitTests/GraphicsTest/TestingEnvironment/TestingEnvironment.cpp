@@ -166,7 +166,7 @@ xiiResult xiiGPUTestingEnvironmentD3D11::CreateWindow(xiiUInt32 uiResolutionX, x
     swapChainDesc.m_pWindow               = m_pWindow;
     swapChainDesc.m_Resolution.width      = uiResolutionX;
     swapChainDesc.m_Resolution.height     = uiResolutionY;
-    swapChainDesc.m_ColorBufferFormat     = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+    swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
     swapChainDesc.m_Usage                 = xiiGALSwapChainUsageFlags::RenderTarget;
     swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
     swapChainDesc.m_uiBufferCount         = 2U;
@@ -353,7 +353,7 @@ xiiResult xiiGPUTestingEnvironmentVulkan::CreateWindow(xiiUInt32 uiResolutionX, 
     swapChainDesc.m_pWindow               = m_pWindow;
     swapChainDesc.m_Resolution.width      = uiResolutionX;
     swapChainDesc.m_Resolution.height     = uiResolutionY;
-    swapChainDesc.m_ColorBufferFormat     = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+    swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
     swapChainDesc.m_Usage                 = xiiGALSwapChainUsageFlags::RenderTarget;
     swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
     swapChainDesc.m_uiBufferCount         = 2U;

@@ -457,8 +457,8 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         pGALCommandList->Submit(false);
         pGALCommandList->EndDebugGroup();
 
-        const xiiGALTexture*               pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);
-        const xiiEnum<xiiGALTextureFormat> format          = pThumbnailColor->GetDescription().m_Format;
+        const xiiGALTexture*                pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);
+        const xiiEnum<xiiGALResourceFormat> format          = pThumbnailColor->GetDescription().m_Format;
 
 
         xiiImageHeader header;
@@ -483,7 +483,7 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         if (pGALCommandList->MapTextureSubresource(m_hThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
         {
           const auto& textureDescription = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRTStaging)->GetDescription();
-          const auto& formatProperties   = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+          const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
           if (mappedSubResource.m_pData)
           {
@@ -571,7 +571,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
   // Create render target for picking
   xiiGALTextureCreationDescription tcd;
   tcd.m_Type        = xiiGALResourceDimension::Texture2D;
-  tcd.m_Format      = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+  tcd.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
   tcd.m_Size.width  = m_uiThumbnailWidth;
   tcd.m_Size.height = m_uiThumbnailHeight;
   tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
@@ -584,7 +584,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   m_hThumbnailColorRTStaging = pDevice->CreateTexture(tcd);
 
-  tcd.m_Format         = xiiGALTextureFormat::D32Float;
+  tcd.m_Format         = xiiGALResourceFormat::D32Float;
   tcd.m_CPUAccessFlags = {};
   tcd.m_Usage          = xiiGALResourceUsage::Default;
   tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;

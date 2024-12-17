@@ -267,14 +267,14 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
   {
     const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
-    const auto& formatProperties      = xiiGALTextureUtilities::GetTextureFormatProperties(attachmentDescription.m_Format);
+    const auto& formatProperties      = xiiGALTextureUtilities::GetResourceFormatProperties(attachmentDescription.m_Format);
 
     if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
     {
       uiRequiredClearValueCount = i + 1;
     }
 
-    if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
+    if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
     {
       if (attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Clear)
       {

@@ -62,7 +62,7 @@ public:
   void FlushPendingObjects();
 
   ID3D11Resource* FindTemporaryBuffer(xiiUInt32 uiSize);
-  ID3D11Resource* FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALTextureFormat> format);
+  ID3D11Resource* FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALResourceFormat> format);
   void            FreeTemporaryResources(xiiUInt64 uiFrame);
 
   // These functions are implemented by a graphics API implementation.
@@ -145,7 +145,7 @@ private:
   void                            GetHardwareAdapter(IDXGIFactory5* pFactory, IDXGIAdapter4** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
   xiiDynamicArray<IDXGIAdapter4*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
 
-  void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter4* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
+  void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter4* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALResourceFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
 
 private:
   IDXGIFactory5*        m_pDXGIFactory   = nullptr;

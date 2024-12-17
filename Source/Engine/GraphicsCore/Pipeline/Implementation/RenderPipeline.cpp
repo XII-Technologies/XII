@@ -1320,11 +1320,11 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       nd.m_Shape = xiiDGMLGraph::NodeShape::RoundedRectangle;
 
       xiiStringBuilder sFormat;
-      if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureFormat>(), pConnection->m_TextureDescription.m_Format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+      if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), pConnection->m_TextureDescription.m_Format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
       {
         sFormat.SetFormat("Unknown Format {}", (xiiInt32)pConnection->m_TextureDescription.m_Format);
       }
-      sTmp.SetFormat("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_pTextureProvider ? "External" : "PoolTexture", i, pConnection->m_TextureDescription.m_Size.width, pConnection->m_TextureDescription.m_Size.height, pConnection->m_TextureDescription.GetArraySize(), pConnection->m_TextureDescription.m_uiSampleCount, xiiGALTextureFormat::IsDepthFormat(pConnection->m_TextureDescription.m_Format) ? "Depth" : "Color", sFormat);
+      sTmp.SetFormat("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_pTextureProvider ? "External" : "PoolTexture", i, pConnection->m_TextureDescription.m_Size.width, pConnection->m_TextureDescription.m_Size.height, pConnection->m_TextureDescription.GetArraySize(), pConnection->m_TextureDescription.m_uiSampleCount, xiiGALResourceFormat::IsDepthFormat(pConnection->m_TextureDescription.m_Format) ? "Depth" : "Color", sFormat);
       xiiUInt32 uiTextureNode = ref_graph.AddNode(sTmp, &nd);
 
       xiiUInt32 uiOutputNode = *nodeMap.GetValue(pConnection->m_pOutput->m_pParent);
@@ -1437,7 +1437,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       desc.m_Type           = xiiGALResourceDimension::Texture2D;
       desc.m_Size.width     = uiImgWidth;
       desc.m_Size.height    = uiImgHeight;
-      desc.m_Format         = xiiGALTextureFormat::RGBA8UNormalized;
+      desc.m_Format         = xiiGALResourceFormat::RGBA8UNormalized;
       desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
       desc.m_Usage          = xiiGALResourceUsage::Default;
@@ -1472,7 +1472,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
     d.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
     d.m_DescGAL.m_Size.width  = rasterizer.GetResolutionX();
     d.m_DescGAL.m_Size.height = rasterizer.GetResolutionY();
-    d.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8SNormalized;
+    d.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8SNormalized;
 
     xiiGALTextureSubResourceData content[1];
     content[0].m_pData         = fb.GetByteArrayPtr();

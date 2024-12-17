@@ -660,9 +660,9 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   destinationBox.bottom    = textureBox.m_vMax.y;
   destinationBox.back      = textureBox.m_vMax.z;
 
-  const auto& formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
-  if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Compressed)
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
     // Align update region by the compressed block size.
     XII_ASSERT_DEV((destinationBox.left % formatProperties.m_uiBlockWidth) == 0, "The update region min X coordinate ({0}) must be a multiple of a compressed block width ({1}).", destinationBox.left, formatProperties.m_uiBlockWidth);
@@ -682,9 +682,9 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
 
 void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11          = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   auto               pImmediateCommandList = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
-  auto               pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
+  auto               pTextureD3D11         = static_cast<xiiGALTextureD3D11*>(pTexture);
 
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
 
@@ -696,10 +696,10 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
     return;
   }
 
-  xiiUInt32                    uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1u);
-  xiiUInt32                    uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1u);
-  xiiUInt32                    uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1u);
-  xiiEnum<xiiGALTextureFormat> format   = pTextureD3D11->GetDescription().m_Format;
+  xiiUInt32                     uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1u);
+  xiiUInt32                     uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1u);
+  xiiUInt32                     uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1u);
+  xiiEnum<xiiGALResourceFormat> format   = pTextureD3D11->GetDescription().m_Format;
 
   if (ID3D11Resource* pDXTempTexture = pDeviceD3D11->FindTemporaryTexture(uiWidth, uiHeight, uiDepth, format))
   {
@@ -708,7 +708,7 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
     XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
     XII_IGNORE_UNUSED(hRes);
 
-    xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureUtilities::GetTextureFormatProperties(format).GetElementSize();
+    xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureUtilities::GetResourceFormatProperties(format).GetElementSize();
     xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
     XII_ASSERT_DEV(subresourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, subresourceData.m_uiStride);
     XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}", uiSlicePitch, subresourceData.m_uiDepthStride);

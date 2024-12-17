@@ -17,7 +17,7 @@
 #  endif
 #  include <dxc/dxcapi.h>
 
-xiiEnum<xiiGALTextureFormat> GetXIIFormatVulkan(SpvReflectFormat format);
+xiiEnum<xiiGALResourceFormat> GetXIIFormatVulkan(SpvReflectFormat format);
 
 xiiResult xiiShaderCompilerVulkan::CompileShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
@@ -168,7 +168,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
           xiiLog::Dev("Unknown vertex input semantic found: {}", pInputVariable->semantic);
 
         attribute.m_Format = GetXIIFormatVulkan(pInputVariable->format);
-        XII_ASSERT_DEV(attribute.m_Format != xiiGALTextureFormat::Unknown, "Unknown vertex input format found: {}", pInputVariable->format);
+        XII_ASSERT_DEV(attribute.m_Format != xiiGALResourceFormat::Unknown, "Unknown vertex input format found: {}", pInputVariable->format);
       }
     }
   }
@@ -623,37 +623,37 @@ xiiResult xiiShaderCompilerVulkan::FillUAVResourceBinding(xiiGALShaderResourceDe
   return XII_FAILURE;
 }
 
-xiiEnum<xiiGALTextureFormat> GetXIIFormatVulkan(SpvReflectFormat format)
+xiiEnum<xiiGALResourceFormat> GetXIIFormatVulkan(SpvReflectFormat format)
 {
   switch (format)
   {
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_UINT:
-      return xiiGALTextureFormat::R32UInt;
+      return xiiGALResourceFormat::R32UInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_SINT:
-      return xiiGALTextureFormat::R32SInt;
+      return xiiGALResourceFormat::R32SInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_SFLOAT:
-      return xiiGALTextureFormat::R32Float;
+      return xiiGALResourceFormat::R32Float;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_UINT:
-      return xiiGALTextureFormat::RG32UInt;
+      return xiiGALResourceFormat::RG32UInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_SINT:
-      return xiiGALTextureFormat::RG32SInt;
+      return xiiGALResourceFormat::RG32SInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_SFLOAT:
-      return xiiGALTextureFormat::RG32Float;
+      return xiiGALResourceFormat::RG32Float;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_UINT:
-      return xiiGALTextureFormat::RGB32UInt;
+      return xiiGALResourceFormat::RGB32UInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_SINT:
-      return xiiGALTextureFormat::RGB32SInt;
+      return xiiGALResourceFormat::RGB32SInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:
-      return xiiGALTextureFormat::RGB32Float;
+      return xiiGALResourceFormat::RGB32Float;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_UINT:
-      return xiiGALTextureFormat::RGBA32UInt;
+      return xiiGALResourceFormat::RGBA32UInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_SINT:
-      return xiiGALTextureFormat::RGBA32SInt;
+      return xiiGALResourceFormat::RGBA32SInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT:
-      return xiiGALTextureFormat::RGBA32Float;
+      return xiiGALResourceFormat::RGBA32Float;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_UNDEFINED:
     default:
-      return xiiGALTextureFormat::Unknown;
+      return xiiGALResourceFormat::Unknown;
   }
 }
 

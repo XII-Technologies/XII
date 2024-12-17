@@ -151,10 +151,10 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   pGALCommandList->Begin();
 
-  const xiiGALTexture*               pBackbuffer = xiiGALDevice::GetDefaultDevice()->GetTexture(hBackbuffer);
-  const xiiUInt32                    uiWidth     = pBackbuffer->GetDescription().m_Size.width;
-  const xiiUInt32                    uiHeight    = pBackbuffer->GetDescription().m_Size.height;
-  const xiiEnum<xiiGALTextureFormat> format      = pBackbuffer->GetDescription().m_Format;
+  const xiiGALTexture*                pBackbuffer = xiiGALDevice::GetDefaultDevice()->GetTexture(hBackbuffer);
+  const xiiUInt32                     uiWidth     = pBackbuffer->GetDescription().m_Size.width;
+  const xiiUInt32                     uiHeight    = pBackbuffer->GetDescription().m_Size.height;
+  const xiiEnum<xiiGALResourceFormat> format      = pBackbuffer->GetDescription().m_Format;
 
   xiiDynamicArray<xiiUInt8> backbufferData;
   backbufferData.SetCountUninitialized(uiWidth * uiHeight * 4);
@@ -168,7 +168,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
   XII_SUCCEED_OR_RETURN(pGALCommandList->MapTextureSubresource(m_hBackbufferStagingTexture, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource));
 
   const auto& textureDescription = pDevice->GetTexture(m_hBackbufferStagingTexture)->GetDescription();
-  const auto& formatProperties   = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+  const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
   if (mappedSubResource.m_pData)
   {

@@ -186,8 +186,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public x
 /// \brief This describes the tile pipeline information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription : public xiiHashableStruct<xiiGALTilePipelineDescription>
 {
-  xiiEnum<xiiGALSampleCount>                                                   m_SampleCount = xiiGALSampleCount::OneSample; ///< The number of samples in the render targets.
-  xiiStaticArray<xiiEnum<xiiGALTextureFormat>, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargetFormats;                        ///< The render target formats.
+  xiiEnum<xiiGALSampleCount>                                                    m_SampleCount = xiiGALSampleCount::OneSample; ///< The number of samples in the render targets.
+  xiiStaticArray<xiiEnum<xiiGALResourceFormat>, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargetFormats;                        ///< The render target formats.
 };
 
 /// \brief This describes the pipeline state creation description.

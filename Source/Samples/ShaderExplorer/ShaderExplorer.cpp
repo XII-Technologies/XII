@@ -404,7 +404,7 @@ public:
       swapChainDesc.m_pWindow               = m_pWindow;
       swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
       swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
-      swapChainDesc.m_ColorBufferFormat     = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+      swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
       swapChainDesc.m_Usage                 = xiiGALSwapChainUsageFlags::RenderTarget;
       swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
       swapChainDesc.m_uiBufferCount         = 2U;
@@ -439,7 +439,7 @@ public:
       texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
       texDesc.m_Size.width  = g_uiWindowWidth;
       texDesc.m_Size.height = g_uiWindowHeight;
-      texDesc.m_Format      = xiiGALTextureFormat::D24UNormalizedS8UInt;
+      texDesc.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
       texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
 
       m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
@@ -454,7 +454,7 @@ public:
     geom.AddRect(xiiVec2(2, 2), 1, 1, opt);
 
     xiiMeshBufferResourceDescriptor desc;
-    desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+    desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
 
     desc.AllocateStreams(geom.GetVertices().GetCount(), xiiGALPrimitiveTopology::TriangleList, geom.GetPolygons().GetCount() * 2);
 

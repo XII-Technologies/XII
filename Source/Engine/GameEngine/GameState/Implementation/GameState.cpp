@@ -366,7 +366,7 @@ xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiW
 
   xiiGALSwapChainCreationDescription desc;
   desc.m_pWindow               = pMainWindow;
-  desc.m_ColorBufferFormat     = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+  desc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
   desc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
   desc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
   desc.m_uiBufferCount         = 2U;

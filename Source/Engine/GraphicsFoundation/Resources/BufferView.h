@@ -11,7 +11,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewCreationDescription : public x
 
   xiiGALBufferHandle            m_hBuffer;                                        ///< The handle to the buffer of which the view is created.
   xiiEnum<xiiGALBufferViewType> m_ViewType     = xiiGALBufferViewType::Undefined; ///< The view type. The default is Undefined.
-  xiiEnum<xiiGALTextureFormat>  m_Format       = xiiGALTextureFormat::Unknown;    ///< The format of the view. This member is only used for formatted and raw buffers. To create raw view of a raw buffer, set to xiiGALTextureFormat::Unknown. The default is xiiGALTextureFormat::Unknown.
+  xiiEnum<xiiGALResourceFormat> m_Format       = xiiGALResourceFormat::Unknown;   ///< The format of the view. This member is only used for formatted and raw buffers. To create raw view of a raw buffer, set to xiiGALResourceFormat::Unknown. The default is xiiGALResourceFormat::Unknown.
   xiiUInt64                     m_uiByteOffset = 0U;                              ///< The offset in bytes from the beginning of the buffer to the start of the buffer region referenced by the view.
   xiiUInt64                     m_uiByteWidth  = 0U;                              ///< The size in bytes of the referenced buffer region.
 };

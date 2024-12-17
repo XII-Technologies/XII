@@ -73,9 +73,9 @@ static xiiMeshBufferResourceHandle CreateMeshBufferResource(xiiGeometry& inout_g
   inout_geom.ComputeSmoothVertexNormals();
 
   xiiMeshBufferResourceDescriptor desc;
-  desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
-  desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
-  desc.AddStream(xiiGALInputLayoutSemantic::Normal, xiiGALTextureFormat::RGB32Float);
+  desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
+  desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
+  desc.AddStream(xiiGALInputLayoutSemantic::Normal, xiiGALResourceFormat::RGB32Float);
   desc.AllocateStreamsFromGeometry(inout_geom, topology);
   desc.ComputeBounds();
 

@@ -1886,30 +1886,30 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     // Retrieve supported bind flags.
     if (m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureBased))
     {
-      vk::Format          vkShadingRateTextureFormat = vk::Format::eUndefined;
-      vk::ImageUsageFlags vkShadingRateTextureUsage  = (vk::ImageUsageFlagBits)0U;
+      vk::Format          vkShadingRateResourceFormat = vk::Format::eUndefined;
+      vk::ImageUsageFlags vkShadingRateTextureUsage   = (vk::ImageUsageFlagBits)0U;
 
       if (m_AdapterDescription.m_ShadingRateProperties.m_Format == xiiGALShadingRateFormat::RG8UNormalized)
       {
-        vkShadingRateTextureFormat = vk::Format::eR8G8Unorm;
-        vkShadingRateTextureUsage  = vk::ImageUsageFlagBits::eFragmentDensityMapEXT;
+        vkShadingRateResourceFormat = vk::Format::eR8G8Unorm;
+        vkShadingRateTextureUsage   = vk::ImageUsageFlagBits::eFragmentDensityMapEXT;
       }
       else
       {
-        vkShadingRateTextureFormat = vk::Format::eR8Uint;
-        vkShadingRateTextureUsage  = vk::ImageUsageFlagBits::eFragmentShadingRateAttachmentKHR;
+        vkShadingRateResourceFormat = vk::Format::eR8Uint;
+        vkShadingRateTextureUsage   = vk::ImageUsageFlagBits::eFragmentShadingRateAttachmentKHR;
       }
 
       auto TestImageUsage = [&](vk::ImageUsageFlags usageFlags) -> bool {
         vk::ImageFormatProperties imageFormatProperties = {};
 
-        vk::Result result = m_PhysicalDevice.getImageFormatProperties(vkShadingRateTextureFormat, vk::ImageType::e2D, vk::ImageTiling::eOptimal, vkShadingRateTextureUsage | usageFlags, {}, &imageFormatProperties, m_InstanceDispatchLoader);
+        vk::Result result = m_PhysicalDevice.getImageFormatProperties(vkShadingRateResourceFormat, vk::ImageType::e2D, vk::ImageTiling::eOptimal, vkShadingRateTextureUsage | usageFlags, {}, &imageFormatProperties, m_InstanceDispatchLoader);
 
         return result == vk::Result::eSuccess;
       };
 
       vk::FormatProperties formatProperties = {};
-      m_PhysicalDevice.getFormatProperties(vkShadingRateTextureFormat, &formatProperties);
+      m_PhysicalDevice.getFormatProperties(vkShadingRateResourceFormat, &formatProperties);
       XII_ASSERT_DEV(formatProperties.optimalTilingFeatures & (vk::FormatFeatureFlagBits::eFragmentShadingRateAttachmentKHR | vk::FormatFeatureFlagBits::eFragmentDensityMapEXT), "");
 
       m_AdapterDescription.m_ShadingRateProperties.m_BindFlags = xiiGALBindFlags::ShadingRate;
@@ -2360,7 +2360,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   {
     if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
     {
-      // For D3D12 compatibility, shading rate texture must support xiiGALTextureFormat::R8UInt format.
+      // For D3D12 compatibility, shading rate texture must support xiiGALResourceFormat::R8UInt format.
       vk::FormatProperties formatProperties = {};
       m_PhysicalDevice.getFormatProperties(vk::Format::eR8Uint, &formatProperties, m_InstanceDispatchLoader);
 

@@ -21,7 +21,7 @@ xiiTextureCubeResource::xiiTextureCubeResource() :
   m_uiLoadedTextures = 0;
   m_uiMemoryGPU[0]   = 0;
   m_uiMemoryGPU[1]   = 0;
-  m_Format           = xiiGALTextureFormat::Unknown;
+  m_Format           = xiiGALResourceFormat::Unknown;
   m_uiWidthAndHeight = 0;
 }
 
@@ -134,7 +134,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
   m_uiMemoryGPU[m_uiLoadedTextures] = 0;
 
-  const auto& formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(m_Format);
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Format);
 
   xiiHybridArray<xiiGALTextureSubResourceData, 32> InitData;
 

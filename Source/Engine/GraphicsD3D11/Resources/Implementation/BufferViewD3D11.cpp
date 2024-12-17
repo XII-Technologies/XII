@@ -77,7 +77,7 @@ xiiResult xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderRe
 
   const auto& bufferDescription = pBufferD3D11->GetDescription();
 
-  if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format == xiiGALTextureFormat::Unknown)
+  if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format == xiiGALResourceFormat::Unknown)
   {
     // Raw buffer view.
     xiiUInt32 uiElementByteStride = 4U;
@@ -93,17 +93,17 @@ xiiResult xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderRe
   }
   else
   {
-    if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALTextureFormat::Unknown))
+    if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALResourceFormat::Unknown))
     {
       shaderResourceViewDescription.Format = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
     }
 
     xiiUInt32 uiElementByteStride = 0U;
-    if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_Mode == xiiGALBufferMode::Structured) || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALTextureFormat::Unknown))
+    if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_Mode == xiiGALBufferMode::Structured) || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALResourceFormat::Unknown))
     {
       uiElementByteStride = bufferDescription.m_uiElementByteStride;
     }
-    else if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format == xiiGALTextureFormat::Unknown)
+    else if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format == xiiGALResourceFormat::Unknown)
     {
       uiElementByteStride = 4U;
     }
@@ -138,17 +138,17 @@ xiiResult xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorder
 
   const auto& bufferDescription = pBufferD3D11->GetDescription();
 
-  if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_BindFlags == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALTextureFormat::Unknown))
+  if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_BindFlags == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALResourceFormat::Unknown))
   {
     unorderedAccessViewDescription.Format = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
   }
 
   xiiUInt32 uiElementByteStride = 0U;
-  if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_Mode == xiiGALBufferMode::Structured) || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALTextureFormat::Unknown))
+  if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_Mode == xiiGALBufferMode::Structured) || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALResourceFormat::Unknown))
   {
     uiElementByteStride = bufferDescription.m_uiElementByteStride;
   }
-  else if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format == xiiGALTextureFormat::Unknown)
+  else if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format == xiiGALResourceFormat::Unknown)
   {
     uiElementByteStride = 4U;
   }
@@ -162,7 +162,7 @@ xiiResult xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorder
     unorderedAccessViewDescription.Buffer.NumElements  = static_cast<xiiUInt32>(m_Description.m_uiByteWidth / uiElementByteStride);
   }
 
-  if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALTextureFormat::Unknown)
+  if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format != xiiGALResourceFormat::Unknown)
   {
     unorderedAccessViewDescription.Format       = DXGI_FORMAT_R32_TYPELESS;
     unorderedAccessViewDescription.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;

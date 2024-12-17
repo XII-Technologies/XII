@@ -62,7 +62,7 @@ bool xiiReflectionFilterPass::GetRenderTargetDescriptions(const xiiView& view, c
     xiiGALTextureCreationDescription desc;
     desc.m_Size.width         = xiiReflectionPool::GetReflectionCubeMapSize();
     desc.m_Size.height        = desc.m_Size.width;
-    desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
+    desc.m_Format             = xiiGALResourceFormat::RGBA16Float;
     desc.m_Type               = xiiGALResourceDimension::TextureCube;
     desc.m_uiArraySizeOrDepth = 6U;
     desc.m_uiMipLevels        = xiiMath::Log2i(desc.m_Size.width) - 1;

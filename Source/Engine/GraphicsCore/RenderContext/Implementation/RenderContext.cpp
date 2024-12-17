@@ -1319,7 +1319,7 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
         {
           auto& attachment = renderPassDescription.m_Attachments[i];
 
-          const bool bIsDepthAttachment = xiiGALTextureFormat::IsDepthFormat(attachment.m_Format);
+          const bool bIsDepthAttachment = xiiGALResourceFormat::IsDepthFormat(attachment.m_Format);
           if (bIsDepthAttachment)
           {
             attachment.m_FinalStateFlags = xiiGALResourceStateFlags::DepthWrite;

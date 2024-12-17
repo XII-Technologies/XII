@@ -144,8 +144,8 @@ void xiiBakedProbesComponentManager::CreateDebugResources()
     if (!hMeshBuffer.IsValid())
     {
       xiiMeshBufferResourceDescriptor desc;
-      desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
-      desc.AddStream(xiiGALInputLayoutSemantic::Normal, xiiGALTextureFormat::RGB32Float);
+      desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
+      desc.AddStream(xiiGALInputLayoutSemantic::Normal, xiiGALResourceFormat::RGB32Float);
       desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
       hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szBufferResourceName, std::move(desc), szBufferResourceName);
@@ -452,7 +452,7 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
     desc.m_Type        = xiiGALResourceDimension::Texture2D;
     desc.m_Size.width  = uiWidth;
     desc.m_Size.height = uiHeight;
-    desc.m_Format      = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+    desc.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
     desc.m_BindFlags   = xiiGALBindFlags::ShaderResource;
     desc.m_Usage       = xiiGALResourceUsage::Default;
 

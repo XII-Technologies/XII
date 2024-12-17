@@ -17,7 +17,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
   xiiGALTextureVulkan* pTextureVulkan     = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_Description.m_hTexture));
   const auto&          textureDescription = pTextureVulkan->GetDescription();
 
-  if (m_Description.m_Format == xiiGALTextureFormat::Unknown)
+  if (m_Description.m_Format == xiiGALResourceFormat::Unknown)
   {
     m_Description.m_Format = textureDescription.m_Format;
   }
@@ -101,16 +101,16 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
       return XII_FAILURE;
   }
 
-  xiiEnum<xiiGALTextureFormat> correctedViewFormat = m_Description.m_Format;
+  xiiEnum<xiiGALResourceFormat> correctedViewFormat = m_Description.m_Format;
   if (textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
   {
     correctedViewFormat = xiiGALTextureUtilities::GetDefaultTextureViewFormat(correctedViewFormat, xiiGALTextureViewType::DepthStencil, textureDescription.m_BindFlags);
   }
   vkImageViewCreateInfo.format = xiiVulkanTypeConversions::GetFormat(correctedViewFormat);
 
-  if (m_Description.m_Format == xiiGALTextureFormat::A8UNormalized)
+  if (m_Description.m_Format == xiiGALResourceFormat::A8UNormalized)
   {
-    auto GetTextureFormatA8Swizzle = [](xiiGALTextureComponentSwizzle::Enum component, xiiGALTextureComponentSwizzle::Enum swizzle) -> vk::ComponentSwizzle {
+    auto GetResourceFormatA8Swizzle = [](xiiGALTextureComponentSwizzle::Enum component, xiiGALTextureComponentSwizzle::Enum swizzle) -> vk::ComponentSwizzle {
       if (swizzle == xiiGALTextureComponentSwizzle::Zero || swizzle == xiiGALTextureComponentSwizzle::One)
       {
         return xiiVulkanTypeConversions::GetComponentSwizzle(swizzle);
@@ -123,10 +123,10 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
     };
 
     vkImageViewCreateInfo.components = {
-      GetTextureFormatA8Swizzle(xiiGALTextureComponentSwizzle::R, m_Description.m_ComponentSwizzle.m_R),
-      GetTextureFormatA8Swizzle(xiiGALTextureComponentSwizzle::G, m_Description.m_ComponentSwizzle.m_G),
-      GetTextureFormatA8Swizzle(xiiGALTextureComponentSwizzle::B, m_Description.m_ComponentSwizzle.m_B),
-      GetTextureFormatA8Swizzle(xiiGALTextureComponentSwizzle::A, m_Description.m_ComponentSwizzle.m_A),
+      GetResourceFormatA8Swizzle(xiiGALTextureComponentSwizzle::R, m_Description.m_ComponentSwizzle.m_R),
+      GetResourceFormatA8Swizzle(xiiGALTextureComponentSwizzle::G, m_Description.m_ComponentSwizzle.m_G),
+      GetResourceFormatA8Swizzle(xiiGALTextureComponentSwizzle::B, m_Description.m_ComponentSwizzle.m_B),
+      GetResourceFormatA8Swizzle(xiiGALTextureComponentSwizzle::A, m_Description.m_ComponentSwizzle.m_A),
     };
   }
   else
@@ -148,16 +148,16 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
     vkImageViewCreateInfo.subresourceRange.layerCount     = 1;
   }
 
-  const auto& textureFormatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(correctedViewFormat);
+  const auto& textureFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(correctedViewFormat);
 
   if (m_Description.m_ViewType == xiiGALTextureViewType::DepthStencil || m_Description.m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil)
   {
     // When an imageView of a depth/stencil image is used as a depth/stencil framebuffer attachment, the aspectMask is ignored and both depth and stencil image subresources are used. (11.5)
-    if (textureFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth)
+    if (textureFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
     {
       vkImageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
     }
-    else if (textureFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
+    else if (textureFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
     {
       vkImageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
     }
@@ -170,21 +170,21 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
   else
   {
     // The aspectMask must be only VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_DEPTH_BIT or VK_IMAGE_ASPECT_STENCIL_BIT if format is a color, depth-only or stencil-only format, respectively. (11.5)
-    if (textureFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth)
+    if (textureFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
     {
       vkImageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
     }
-    else if (textureFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
+    else if (textureFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
     {
-      if (m_Description.m_Format == xiiGALTextureFormat::D32FloatS8X24UInt || m_Description.m_Format == xiiGALTextureFormat::D24UNormalizedS8UInt)
+      if (m_Description.m_Format == xiiGALResourceFormat::D32FloatS8X24UInt || m_Description.m_Format == xiiGALResourceFormat::D24UNormalizedS8UInt)
       {
         vkImageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
       }
-      else if (m_Description.m_Format == xiiGALTextureFormat::R32FloatX8X24Typeless || m_Description.m_Format == xiiGALTextureFormat::R24UNormalizedX8Typeless)
+      else if (m_Description.m_Format == xiiGALResourceFormat::R32FloatX8X24Typeless || m_Description.m_Format == xiiGALResourceFormat::R24UNormalizedX8Typeless)
       {
         vkImageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
       }
-      else if (m_Description.m_Format == xiiGALTextureFormat::X32TypelessG8X24UInt || m_Description.m_Format == xiiGALTextureFormat::X24TypelessG8UInt)
+      else if (m_Description.m_Format == xiiGALResourceFormat::X32TypelessG8X24UInt || m_Description.m_Format == xiiGALResourceFormat::X24TypelessG8UInt)
       {
         vkImageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
       }

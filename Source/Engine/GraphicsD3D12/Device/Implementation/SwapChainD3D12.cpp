@@ -424,9 +424,9 @@ void xiiGALSwapChainD3D12::SetFullScreenMode(const xiiGALDisplayModeDescription&
     m_FullScreenMode.m_ScanLineOrder            = displayMode.m_ScanLineOrder;
 
     m_Description.m_Resolution = displayMode.m_Resolution;
-    if (displayMode.m_TextureFormat != xiiGALTextureFormat::Unknown)
+    if (displayMode.m_ResourceFormat != xiiGALResourceFormat::Unknown)
     {
-      m_Description.m_ColorBufferFormat = displayMode.m_TextureFormat;
+      m_Description.m_ColorBufferFormat = displayMode.m_ResourceFormat;
     }
 
     UpdateSwapChain(true).AssertSuccess();

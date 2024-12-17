@@ -478,7 +478,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBufferViewType);
 /// APIs (DX10+, OpenGL3.3+ and OpenGLES3.0+). Specific requirements are additionally indicated.
 /// \sa <a href = "https://docs.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format">DXGI_FORMAT enumeration on MSDN.</a>,
 ///     <a href = "https://www.opengl.org/wiki/Image_Format">OpenGL Texture Formats.</a>
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
 {
   using StorageType = xiiUInt16;
 
@@ -591,16 +591,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
   };
 
   /// \brief Returns whether the given texture format is a depth format.
-  XII_ALWAYS_INLINE static bool IsDepthFormat(xiiGALTextureFormat::Enum format) { return format == D16UNormalized || format == D24UNormalizedS8UInt || format == D32Float || format == D32FloatS8X24UInt; }
+  XII_ALWAYS_INLINE static bool IsDepthFormat(xiiGALResourceFormat::Enum format) { return format == D16UNormalized || format == D24UNormalizedS8UInt || format == D32Float || format == D32FloatS8X24UInt; }
 
   /// \brief Returns whether the given texture format is a stencil format
-  XII_ALWAYS_INLINE static bool IsStencilFormat(xiiGALTextureFormat::Enum format) { return format == D24UNormalizedS8UInt || format == D32FloatS8X24UInt; }
+  XII_ALWAYS_INLINE static bool IsStencilFormat(xiiGALResourceFormat::Enum format) { return format == D24UNormalizedS8UInt || format == D32FloatS8X24UInt; }
 
   /// \brief Returns whether the given texture format is a sRGB format.
-  XII_ALWAYS_INLINE static bool IsSrgb(xiiGALTextureFormat::Enum format) { return format == RGBA8UNormalizedSRGB || format == BGRX8UNormalizedSRGB || format == BGRA8UNormalizedSRGB || format == BC1UNormalizedSRGB || format == BC2UNormalizedSRGB || format == BC3UNormalizedSRGB || format == BC7UNormalizedSRGB; }
+  XII_ALWAYS_INLINE static bool IsSrgb(xiiGALResourceFormat::Enum format) { return format == RGBA8UNormalizedSRGB || format == BGRX8UNormalizedSRGB || format == BGRA8UNormalizedSRGB || format == BC1UNormalizedSRGB || format == BC2UNormalizedSRGB || format == BC3UNormalizedSRGB || format == BC7UNormalizedSRGB; }
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureFormat);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceFormat);
 
 /// \brief This describes the filter type.
 ///
@@ -1488,7 +1488,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSparseResourceCapabilityFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseResourceCapabilityFlags);
 
 /// \brief This describes the texture format component type.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatComponentType
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatComponentType
 {
   using StorageType = xiiInt8;
 
@@ -1512,7 +1512,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatComponentType
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureFormatComponentType);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceFormatComponentType);
 
 /// \brief This describes the device support of a particular resource dimension for a given texture format.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimensionCapabilityFlags

@@ -97,8 +97,8 @@ void xiiMaterialContext::OnInitialize()
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
         desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALResourceFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
@@ -142,8 +142,8 @@ void xiiMaterialContext::OnInitialize()
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
         desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALResourceFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
@@ -187,8 +187,8 @@ void xiiMaterialContext::OnInitialize()
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
         desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALResourceFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);

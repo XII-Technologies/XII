@@ -7,9 +7,9 @@
 
 struct XII_GRAPHICSCORE_DLL xiiTextureUtils
 {
-  static xiiEnum<xiiGALTextureFormat> ImageFormatToGalFormat(xiiEnum<xiiImageFormat> format, bool bSRGB);
-  static xiiEnum<xiiImageFormat>      GalFormatToImageFormat(xiiEnum<xiiGALTextureFormat> format, bool bRemoveSRGB);
-  static xiiEnum<xiiImageFormat>      GalFormatToImageFormat(xiiEnum<xiiGALTextureFormat> format);
+  static xiiEnum<xiiGALResourceFormat> ImageFormatToGalFormat(xiiEnum<xiiImageFormat> format, bool bSRGB);
+  static xiiEnum<xiiImageFormat>       GalFormatToImageFormat(xiiEnum<xiiGALResourceFormat> format, bool bRemoveSRGB);
+  static xiiEnum<xiiImageFormat>       GalFormatToImageFormat(xiiEnum<xiiGALResourceFormat> format);
 
   static void ConfigureSampler(xiiEnum<xiiTextureFilterSetting> filter, xiiGALSamplerCreationDescription& out_sampler);
 

@@ -100,7 +100,7 @@ void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
     desc.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
     desc.m_DescGAL.m_Size.width  = width;
     desc.m_DescGAL.m_Size.height = height;
-    desc.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
+    desc.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
     desc.m_DescGAL.m_Usage       = xiiGALResourceUsage::Immutable;
     desc.m_InitialContent        = xiiMakeArrayPtr(&memoryDesc, 1);
 

@@ -273,7 +273,7 @@ namespace xiiModelImporter2
 
   static void AllocateMeshStreams(xiiMeshBufferResourceDescriptor& ref_mb, xiiArrayPtr<aiMesh*> referenceMeshes, StreamIndices& inout_streams, xiiUInt32 uiTotalMeshVertices, xiiUInt32 uiTotalMeshTriangles, xiiEnum<xiiMeshNormalPrecision> meshNormalsPrecision, xiiEnum<xiiMeshTexCoordPrecision> meshTexCoordsPrecision, bool bImportSkinningData, bool b8BitBoneIndices, xiiEnum<xiiMeshBoneWeigthPrecision> meshWeightsPrecision)
   {
-    inout_streams.uiPositions = ref_mb.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+    inout_streams.uiPositions = ref_mb.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
     inout_streams.uiNormals   = ref_mb.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(meshNormalsPrecision));
     inout_streams.uiUV0       = ref_mb.AddStream(xiiGALInputLayoutSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(meshTexCoordsPrecision));
     inout_streams.uiTangents  = ref_mb.AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(meshNormalsPrecision));
@@ -281,9 +281,9 @@ namespace xiiModelImporter2
     if (bImportSkinningData)
     {
       if (b8BitBoneIndices)
-        inout_streams.uiBoneIdx = ref_mb.AddStream(xiiGALInputLayoutSemantic::BoneIndices0, xiiGALTextureFormat::RGBA8UInt);
+        inout_streams.uiBoneIdx = ref_mb.AddStream(xiiGALInputLayoutSemantic::BoneIndices0, xiiGALResourceFormat::RGBA8UInt);
       else
-        inout_streams.uiBoneIdx = ref_mb.AddStream(xiiGALInputLayoutSemantic::BoneIndices0, xiiGALTextureFormat::RGBA16UInt);
+        inout_streams.uiBoneIdx = ref_mb.AddStream(xiiGALInputLayoutSemantic::BoneIndices0, xiiGALResourceFormat::RGBA16UInt);
 
       inout_streams.uiBoneWgt = ref_mb.AddStream(xiiGALInputLayoutSemantic::BoneWeights0, xiiMeshBoneWeigthPrecision::ToResourceFormat(meshWeightsPrecision));
     }
@@ -309,11 +309,11 @@ namespace xiiModelImporter2
 
     if (bVertexColors0)
     {
-      inout_streams.uiColor0 = ref_mb.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
+      inout_streams.uiColor0 = ref_mb.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
     }
     if (bVertexColors1)
     {
-      inout_streams.uiColor1 = ref_mb.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBA8UNormalized);
+      inout_streams.uiColor1 = ref_mb.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALResourceFormat::RGBA8UNormalized);
     }
 
     ref_mb.AllocateStreams(uiTotalMeshVertices, xiiGALPrimitiveTopology::TriangleList, uiTotalMeshTriangles, true);
@@ -350,9 +350,9 @@ namespace xiiModelImporter2
     const xiiUInt8*                  m_pNormals     = nullptr;
     const xiiUInt8*                  m_pTexCoords   = nullptr;
     xiiUInt8*                        m_pTangents    = nullptr;
-    xiiGALTextureFormat::Enum        m_NormalsFormat;
-    xiiGALTextureFormat::Enum        m_TexCoordsFormat;
-    xiiGALTextureFormat::Enum        m_TangentsFormat;
+    xiiGALResourceFormat::Enum       m_NormalsFormat;
+    xiiGALResourceFormat::Enum       m_TexCoordsFormat;
+    xiiGALResourceFormat::Enum       m_TangentsFormat;
   };
 
   static int MikkGetNumFaces(const SMikkTSpaceContext* pContext)

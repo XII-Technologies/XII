@@ -99,7 +99,7 @@ xiiResult xiiGALTextureViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderR
     return XII_FAILURE;
   }
 
-  XII_ASSERT_DEV(m_Description.m_Format != xiiGALTextureFormat::Unknown, "");
+  XII_ASSERT_DEV(m_Description.m_Format != xiiGALResourceFormat::Unknown, "");
 
   xiiGALDeviceD3D11*  pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(m_pDevice->GetTexture(m_Description.m_hTexture));
@@ -207,7 +207,7 @@ xiiResult xiiGALTextureViewD3D11::CreateRTV(ID3D11RenderTargetView** ppRenderTar
     return XII_FAILURE;
   }
 
-  XII_ASSERT_DEV(m_Description.m_Format != xiiGALTextureFormat::Unknown, "");
+  XII_ASSERT_DEV(m_Description.m_Format != xiiGALResourceFormat::Unknown, "");
 
   xiiGALDeviceD3D11*  pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(m_pDevice->GetTexture(m_Description.m_hTexture));
@@ -296,7 +296,7 @@ xiiResult xiiGALTextureViewD3D11::CreateDSV(ID3D11DepthStencilView** ppDepthSten
     return XII_FAILURE;
   }
 
-  XII_ASSERT_DEV(m_Description.m_Format != xiiGALTextureFormat::Unknown, "");
+  XII_ASSERT_DEV(m_Description.m_Format != xiiGALResourceFormat::Unknown, "");
 
   xiiGALDeviceD3D11*  pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(m_pDevice->GetTexture(m_Description.m_hTexture));
@@ -312,8 +312,8 @@ xiiResult xiiGALTextureViewD3D11::CreateDSV(ID3D11DepthStencilView** ppDepthSten
   {
     viewDescription.Flags |= D3D11_DSV_READ_ONLY_DEPTH;
 
-    const auto& formatDescription = xiiGALTextureUtilities::GetTextureFormatProperties(m_Description.m_Format);
-    if (formatDescription.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
+    const auto& formatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
+    if (formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
     {
       viewDescription.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
     }
@@ -394,7 +394,7 @@ xiiResult xiiGALTextureViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorde
     return XII_FAILURE;
   }
 
-  XII_ASSERT_DEV(m_Description.m_Format != xiiGALTextureFormat::Unknown, "");
+  XII_ASSERT_DEV(m_Description.m_Format != xiiGALResourceFormat::Unknown, "");
 
   xiiGALDeviceD3D11*  pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(m_pDevice->GetTexture(m_Description.m_hTexture));

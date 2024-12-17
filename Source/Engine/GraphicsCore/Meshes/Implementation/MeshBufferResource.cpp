@@ -57,7 +57,7 @@ xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper>& xiiMeshBufferResourceDesc
   return m_IndexBufferData;
 }
 
-xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSemantic> semantic, xiiEnum<xiiGALTextureFormat> format)
+xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSemantic> semantic, xiiEnum<xiiGALResourceFormat> format)
 {
   XII_ASSERT_DEV(m_VertexStreamData.IsEmpty(), "This function can only be called before 'AllocateStreams' is called");
 
@@ -71,7 +71,7 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSe
   si.m_Semantic      = semantic;
   si.m_Format        = format;
   si.m_uiOffset      = 0;
-  si.m_uiElementSize = static_cast<xiiUInt16>(xiiGALTextureUtilities::GetTextureFormatProperties(format).GetElementSize());
+  si.m_uiElementSize = static_cast<xiiUInt16>(xiiGALTextureUtilities::GetResourceFormatProperties(format).GetElementSize());
   m_uiVertexSize += si.m_uiElementSize;
 
   XII_ASSERT_DEV(si.m_uiElementSize > 0, "Invalid Element Size. Format not supported?");
@@ -86,7 +86,7 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSe
 
 void xiiMeshBufferResourceDescriptor::AddCommonStreams()
 {
-  AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+  AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
   AddStream(xiiGALInputLayoutSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
   AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::Default));
   AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::Default));
@@ -175,7 +175,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
     {
       case xiiGALInputLayoutSemantic::Position:
       {
-        if (si.m_Format == xiiGALTextureFormat::RGB32Float)
+        if (si.m_Format == xiiGALResourceFormat::RGB32Float)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -218,7 +218,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       case xiiGALInputLayoutSemantic::Color0:
       case xiiGALInputLayoutSemantic::Color1:
       {
-        if (si.m_Format == xiiGALTextureFormat::RGBA8UNormalized)
+        if (si.m_Format == xiiGALResourceFormat::RGBA8UNormalized)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -250,7 +250,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       {
         // if a bone index array is available, move the custom index into it
 
-        if (si.m_Format == xiiGALTextureFormat::RGBA8UInt)
+        if (si.m_Format == xiiGALResourceFormat::RGBA8UInt)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -259,7 +259,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
             SetVertexData<xiiVec4U8>(s, v, storage);
           }
         }
-        else if (si.m_Format == xiiGALTextureFormat::RGBA16UInt)
+        else if (si.m_Format == xiiGALResourceFormat::RGBA16UInt)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -273,7 +273,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       {
         // if a bone weight array is available, set it to fully use the first bone
 
-        if (si.m_Format == xiiGALTextureFormat::RGBA8UNormalized)
+        if (si.m_Format == xiiGALResourceFormat::RGBA8UNormalized)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -281,7 +281,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
           }
         }
 
-        if (si.m_Format == xiiGALTextureFormat::RGBA32Float)
+        if (si.m_Format == xiiGALResourceFormat::RGBA32Float)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -407,7 +407,7 @@ xiiBoundingBoxSphere xiiMeshBufferResourceDescriptor::ComputeBounds() const
   {
     if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALInputLayoutSemantic::Position)
     {
-      XII_ASSERT_DEBUG(m_InputLayout.m_VertexStreams[i].m_Format == xiiGALTextureFormat::RGB32Float, "Position format is not usable");
+      XII_ASSERT_DEBUG(m_InputLayout.m_VertexStreams[i].m_Format == xiiGALResourceFormat::RGB32Float, "Position format is not usable");
 
       const xiiUInt32 offset = m_InputLayout.m_VertexStreams[i].m_uiOffset;
 
@@ -426,14 +426,14 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
   if (m_Topology != xiiGALPrimitiveTopology::TriangleList)
     return XII_FAILURE; // normals not needed
 
-  const xiiUInt32              uiVertexSize  = m_uiVertexSize;
-  const xiiUInt8*              pPositions    = nullptr;
-  xiiUInt8*                    pNormals      = nullptr;
-  xiiEnum<xiiGALTextureFormat> normalsFormat = xiiGALTextureFormat::RGB32Float;
+  const xiiUInt32               uiVertexSize  = m_uiVertexSize;
+  const xiiUInt8*               pPositions    = nullptr;
+  xiiUInt8*                     pNormals      = nullptr;
+  xiiEnum<xiiGALResourceFormat> normalsFormat = xiiGALResourceFormat::RGB32Float;
 
   for (xiiUInt32 i = 0; i < m_InputLayout.m_VertexStreams.GetCount(); ++i)
   {
-    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALInputLayoutSemantic::Position && m_InputLayout.m_VertexStreams[i].m_Format == xiiGALTextureFormat::RGB32Float)
+    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALInputLayoutSemantic::Position && m_InputLayout.m_VertexStreams[i].m_Format == xiiGALResourceFormat::RGB32Float)
     {
       pPositions = GetVertexData(i, 0).GetPtr();
     }

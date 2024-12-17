@@ -84,7 +84,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALVertexInputLayout
 
   xiiEnum<xiiGALInputLayoutSemantic> m_Semantic        = xiiGALInputLayoutSemantic::Undefined;
   xiiUInt8                           m_uiSemanticIndex = 0U;
-  xiiEnum<xiiGALTextureFormat>       m_Format          = xiiGALTextureFormat::Unknown;
+  xiiEnum<xiiGALResourceFormat>      m_Format          = xiiGALResourceFormat::Unknown;
 };
 
 /// \brief This describes a single element in the input layout.
@@ -95,7 +95,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct
   xiiEnum<xiiGALInputLayoutSemantic>   m_Semantic               = xiiGALInputLayoutSemantic::Undefined;   ///< The element semantic. The default is Undefined.
   xiiUInt32                            m_uiInputIndex           = 0U;                                     ///< The input index of the element specified in the vertex shader. The default is 0.
   xiiUInt32                            m_uiBufferSlot           = 0U;                                     ///< The buffer slot index that this element is read from. The default is 0.
-  xiiEnum<xiiGALTextureFormat>         m_Format                 = xiiGALTextureFormat::Unknown;           ///< The element format. The default is xiiGALTextureFormat::Unknown.
+  xiiEnum<xiiGALResourceFormat>        m_Format                 = xiiGALResourceFormat::Unknown;          ///< The element format. The default is xiiGALResourceFormat::Unknown.
   xiiUInt32                            m_uiRelativeOffset       = XII_GAL_LAYOUT_ELEMENT_AUTO_OFFSET;     ///< The relative offset to the element in bytes. If this value is set to XII_GAL_LAYOUT_ELEMENT_AUTO_OFFSET (default value), the offset will be computed automatically by placing the element right after the previous one.
   xiiUInt32                            m_uiStride               = XII_GAL_LAYOUT_ELEMENT_AUTO_STRIDE;     ///< The stride in bytes between two elements for this buffer slot. If this value is is set to XII_GAL_LAYOUT_ELEMENT_AUTO_STRIDE (default value), the stride will be computed automatically assuming that all elements in the same buffer are packed contiguously. If the buffer slot contains multiple layout elements, they all must specify the same stride or use the XII_GAL_LAYOUT_ELEMENT_AUTO_OFFSET value.
   xiiEnum<xiiGALInputElementFrequency> m_Frequency              = xiiGALInputElementFrequency::PerVertex; ///< The element frequency. The default is xiiGALInputElementFrequency::PerVertex.

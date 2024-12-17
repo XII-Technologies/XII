@@ -57,7 +57,7 @@ struct xiiRenderTargetFormat
 {
   using StorageType = xiiInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     RGBA8sRgb,
     RGBA8,

@@ -40,8 +40,8 @@ public:
 
   static xiiUInt8 GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
 
-  static DXGI_FORMAT               GetFormat(xiiGALTextureFormat::Enum e);
-  static xiiGALTextureFormat::Enum GetGALFormat(DXGI_FORMAT e);
+  static DXGI_FORMAT                GetFormat(xiiGALResourceFormat::Enum e);
+  static xiiGALResourceFormat::Enum GetGALFormat(DXGI_FORMAT e);
 
   static DXGI_MODE_SCALING         GetScalingMode(xiiGALScalingMode::Enum e);
   static xiiGALScalingMode::Enum   GetGALScalingMode(DXGI_MODE_SCALING e);

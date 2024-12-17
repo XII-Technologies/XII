@@ -76,9 +76,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashable
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALTextureFormat> m_TextureFormat = xiiGALTextureFormat::Unknown; ///< Texture format.
-  xiiColor                     m_ClearColor    = xiiColor::Black;              ///< Render target clear value.
-  xiiGALDepthStencilClearValue m_DepthStencil;                                 ///< Depth stencil clear value.
+  xiiEnum<xiiGALResourceFormat> m_ResourceFormat = xiiGALResourceFormat::Unknown; ///< Texture format.
+  xiiColor                      m_ClearColor     = xiiColor::Black;               ///< Render target clear value.
+  xiiGALDepthStencilClearValue  m_DepthStencil;                                   ///< Depth stencil clear value.
 };
 
 /// \brief This describes the display mode attributes.
@@ -86,12 +86,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDisplayModeDescription : public xiiHasha
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiSizeU32                   m_Resolution               = xiiSizeU32(0U, 0U);               ///< Display resolution.
-  xiiEnum<xiiGALTextureFormat> m_TextureFormat            = xiiGALTextureFormat::Unknown;     ///< Display format.
-  xiiUInt32                    m_uiRefreshRateNumerator   = 0U;                               ///< Refresh rate numerator.
-  xiiUInt32                    m_uiRefreshRateDenominator = 0U;                               ///< Refresh rate denominator.
-  xiiEnum<xiiGALScalingMode>   m_ScalingMode              = xiiGALScalingMode::Unspecified;   ///< The scaling mode.
-  xiiEnum<xiiGALScanLineOrder> m_ScanLineOrder            = xiiGALScanLineOrder::Unspecified; ///< The scanline drawing mode.
+  xiiSizeU32                    m_Resolution               = xiiSizeU32(0U, 0U);               ///< Display resolution.
+  xiiEnum<xiiGALResourceFormat> m_ResourceFormat           = xiiGALResourceFormat::Unknown;    ///< Display format.
+  xiiUInt32                     m_uiRefreshRateNumerator   = 0U;                               ///< Refresh rate numerator.
+  xiiUInt32                     m_uiRefreshRateDenominator = 0U;                               ///< Refresh rate denominator.
+  xiiEnum<xiiGALScalingMode>    m_ScalingMode              = xiiGALScalingMode::Unspecified;   ///< The scaling mode.
+  xiiEnum<xiiGALScanLineOrder>  m_ScanLineOrder            = xiiGALScanLineOrder::Unspecified; ///< The scanline drawing mode.
 };
 
 /// \brief This describes the swap chain creation description.
@@ -99,16 +99,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiWindowBase*                         m_pWindow           = nullptr;                                   ///< Pointer to the window class.
-  xiiSizeU32                             m_Resolution        = xiiSizeU32(0U, 0U);                        ///< Swap chain resolution.
-  xiiEnum<xiiGALTextureFormat>           m_ColorBufferFormat = xiiGALTextureFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
-  xiiBitflags<xiiGALSwapChainUsageFlags> m_UsageFlags        = xiiGALSwapChainUsageFlags::RenderTarget;   ///< Swap chain usage flags.
-  xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;           ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
-                                                                                                          ///
-                                                                                                          ///  \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.
-  xiiUInt32 m_uiBufferCount         = 2U;                                                                 ///< The number of buffers in the swap chain.
-  float     m_fDefaultDepthValue    = 1.0f;                                                               ///< Default depth value, which is used as the optimized depth clear value in D3D12.
-  xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                 ///< Default stencil value, which is used as the optimized clear value in D3D12.
+  xiiWindowBase*                         m_pWindow           = nullptr;                                    ///< Pointer to the window class.
+  xiiSizeU32                             m_Resolution        = xiiSizeU32(0U, 0U);                         ///< Swap chain resolution.
+  xiiEnum<xiiGALResourceFormat>          m_ColorBufferFormat = xiiGALResourceFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
+  xiiBitflags<xiiGALSwapChainUsageFlags> m_UsageFlags        = xiiGALSwapChainUsageFlags::RenderTarget;    ///< Swap chain usage flags.
+  xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;            ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
+                                                                                                           ///
+                                                                                                           ///  \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.
+  xiiUInt32 m_uiBufferCount         = 2U;                                                                  ///< The number of buffers in the swap chain.
+  float     m_fDefaultDepthValue    = 1.0f;                                                                ///< Default depth value, which is used as the optimized depth clear value in D3D12.
+  xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                  ///< Default stencil value, which is used as the optimized clear value in D3D12.
 };
 
 /// \brief This describes the full screen mode description.
@@ -350,18 +350,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEvent : public xiiHashableStruct<x
 };
 
 /// \brief This describes the invariant texture format attributes. These attributes are intrinsic to the texture format itself and do not depend on the format support.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatDescription : public xiiHashableStruct<xiiGALTextureFormatDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHashableStruct<xiiGALResourceFormatDescription>
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALTextureFormat>              m_Format           = xiiGALTextureFormat::Unknown;                ///< Texture format.
-  xiiUInt8                                  m_uiComponentSize  = 0U;                                          ///< The size of one component in bytes.
-  xiiUInt8                                  m_uiComponentCount = 0U;                                          ///< The number of components.
-  xiiEnum<xiiGALTextureFormatComponentType> m_ComponentType    = xiiGALTextureFormatComponentType::Undefined; ///< The component type.
-  bool                                      m_bIsTypeless      = false;                                       ///< Indicates whether the format is a typeless format.
-  xiiUInt8                                  m_uiBlockWidth     = 0U;                                          ///< For block-compressed formats, the compression block width.
-  xiiUInt8                                  m_uiBlockHeight    = 0U;                                          ///< For block-compressed formats, the compression block height.
+  xiiEnum<xiiGALResourceFormat>              m_Format           = xiiGALResourceFormat::Unknown;                ///< Texture format.
+  xiiUInt8                                   m_uiComponentSize  = 0U;                                           ///< The size of one component in bytes.
+  xiiUInt8                                   m_uiComponentCount = 0U;                                           ///< The number of components.
+  xiiEnum<xiiGALResourceFormatComponentType> m_ComponentType    = xiiGALResourceFormatComponentType::Undefined; ///< The component type.
+  bool                                       m_bIsTypeless      = false;                                        ///< Indicates whether the format is a typeless format.
+  xiiUInt8                                   m_uiBlockWidth     = 0U;                                           ///< For block-compressed formats, the compression block width.
+  xiiUInt8                                   m_uiBlockHeight    = 0U;                                           ///< For block-compressed formats, the compression block height.
 
   /// \brief For non-compressed formats, returns the texel size. For block-compressed formats, returns the block size.
-  XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (m_ComponentType != xiiGALTextureFormatComponentType::Compressed ? m_uiComponentCount : 1); };
+  XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (m_ComponentType != xiiGALResourceFormatComponentType::Compressed ? m_uiComponentCount : 1); };
 };

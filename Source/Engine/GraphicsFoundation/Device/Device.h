@@ -156,7 +156,7 @@ public:
   ///
   /// \remarks To create a shader resource view addressing the entire texture, set only xiiGALTextureViewCreationDescription::m_ViewType member of the description parameter to xiiGALTextureViewType::ShaderResource and leave all other
   ///          members in their default values. Using the same method, you can create render target or depth stencil view addressing the largest mip level.\n
-  ///          If texture view format is xiiGALTextureFormat::Unknown, the view format will match the texture format.\n
+  ///          If texture view format is xiiGALResourceFormat::Unknown, the view format will match the texture format.\n
   ///          If texture view type is xiiGALTextureViewType::Undefined, the type will match the texture type.\n
   ///          If the number of mip levels is 0, and the view type is shader resource, the view will address all mip levels. For other view types it will address one mip level.\n
   ///          If the number of slices is 0, all slices from m_uiFirstArraySlice or m_uiFirstDepthSlice will be referenced by the view.

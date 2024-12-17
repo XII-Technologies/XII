@@ -19,7 +19,7 @@ xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
 
   xiiGALTextureCreationDescription desc;
   desc.m_Type               = xiiGALResourceDimension::TextureCubeArray;
-  desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
+  desc.m_Format             = xiiGALResourceFormat::RGBA16Float;
   desc.m_Size.width         = s_uiReflectionCubeMapSize;
   desc.m_Size.height        = s_uiReflectionCubeMapSize;
   desc.m_uiMipLevels        = GetMipLevels();

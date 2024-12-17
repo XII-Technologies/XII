@@ -259,7 +259,7 @@ struct xiiShadowPool::Data
     {
       xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-      xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight), xiiGALTextureFormat::D16UNormalized, xiiGALMSAASampleCount::OneSample);
+      xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight), xiiGALResourceFormat::D16UNormalized, xiiGALMSAASampleCount::OneSample);
 
       m_hShadowAtlasTexture = pDevice->CreateTexture(desc);
 

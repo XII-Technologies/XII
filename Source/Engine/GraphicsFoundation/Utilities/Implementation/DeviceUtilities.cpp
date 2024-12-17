@@ -96,7 +96,7 @@ xiiGALBufferHandle xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDe
   return pDevice->CreateBuffer(bufferDescription);
 }
 
-xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32 size, xiiGALTextureFormat::Enum format, xiiUInt32 uiSampleCount)
+xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32 size, xiiGALResourceFormat::Enum format, xiiUInt32 uiSampleCount)
 {
   return xiiGALTextureCreationDescription{
     .m_Type               = xiiGALResourceDimension::Texture2D,
@@ -105,7 +105,7 @@ xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescri
     .m_Format             = format,
     .m_uiMipLevels        = 1U,
     .m_uiSampleCount      = uiSampleCount,
-    .m_BindFlags          = xiiGALBindFlags::ShaderResource | (xiiGALTextureFormat::IsDepthFormat(format) ? xiiGALBindFlags::DepthStencil : xiiGALBindFlags::RenderTarget),
+    .m_BindFlags          = xiiGALBindFlags::ShaderResource | (xiiGALResourceFormat::IsDepthFormat(format) ? xiiGALBindFlags::DepthStencil : xiiGALBindFlags::RenderTarget),
     .m_Usage              = xiiGALResourceUsage::Default,
     .m_MiscFlags          = xiiGALMiscTextureFlags::None,
   };

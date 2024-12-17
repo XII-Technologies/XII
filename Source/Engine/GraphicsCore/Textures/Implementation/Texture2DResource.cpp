@@ -70,8 +70,8 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
-  const xiiEnum<xiiGALTextureFormat> format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
-  const auto&                        formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(format);
+  const xiiEnum<xiiGALResourceFormat> format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
+  const auto&                         formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
 
   ref_td.m_DescGAL.m_Format      = format;
   ref_td.m_DescGAL.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);

@@ -369,7 +369,7 @@ xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDev
   m_hBackBufferTexture = hBackbufferTexture;
 
   // If we sRGB backbuffer was requested, we create a "practical backbuffer".
-  if (m_Description.m_ColorBufferFormat == xiiGALTextureFormat::RGBA8UNormalizedSRGB || m_Description.m_ColorBufferFormat == xiiGALTextureFormat::BGRA8UNormalizedSRGB)
+  if (m_Description.m_ColorBufferFormat == xiiGALResourceFormat::RGBA8UNormalizedSRGB || m_Description.m_ColorBufferFormat == xiiGALResourceFormat::BGRA8UNormalizedSRGB)
   {
     textureDescription.m_pExisitingNativeObject = nullptr;
     textureDescription.m_Format                 = m_Description.m_ColorBufferFormat;
@@ -491,9 +491,9 @@ void xiiGALSwapChainD3D11::SetFullScreenMode(const xiiGALDisplayModeDescription&
     m_FullScreenMode.m_ScanLineOrder            = displayMode.m_ScanLineOrder;
 
     m_Description.m_Resolution = displayMode.m_Resolution;
-    if (displayMode.m_TextureFormat != xiiGALTextureFormat::Unknown)
+    if (displayMode.m_ResourceFormat != xiiGALResourceFormat::Unknown)
     {
-      m_Description.m_ColorBufferFormat = displayMode.m_TextureFormat;
+      m_Description.m_ColorBufferFormat = displayMode.m_ResourceFormat;
     }
 
     UpdateSwapChain(true).AssertSuccess();

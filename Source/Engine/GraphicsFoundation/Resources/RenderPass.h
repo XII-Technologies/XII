@@ -60,7 +60,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassAttachmentDescription : public
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALTextureFormat>            m_Format                = xiiGALTextureFormat::Unknown;          ///< The format of the texture view that will be used for the attachment. The default is xiiGALTextureFormat::Unknown.
+  xiiEnum<xiiGALResourceFormat>           m_Format                = xiiGALResourceFormat::Unknown;         ///< The format of the texture view that will be used for the attachment. The default is xiiGALResourceFormat::Unknown.
   xiiUInt8                                m_uiSampleCount         = 0U;                                    ///< The number of samples in the texture. The default is 0.
   xiiEnum<xiiGALAttachmentLoadOperation>  m_LoadOperation         = xiiGALAttachmentLoadOperation::Load;   ///< The load operation that specifies how the contents of color and depth components of the attachment are treated at the beginning of the sub pass where it is first used. The default is xiiGALAttachmentLoadOperation::Load.
   xiiEnum<xiiGALAttachmentStoreOperation> m_StoreOperation        = xiiGALAttachmentStoreOperation::Store; ///< The store operation how the contents of color and depth components of the attachment are treated at the end of the sub pass where it is last used. The default is xiiGALAttachmentStoreOperation::Store.

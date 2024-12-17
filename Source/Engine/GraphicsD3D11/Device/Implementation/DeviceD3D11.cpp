@@ -176,7 +176,7 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
     return XII_FAILURE;
   }
 
-  EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALTextureFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
+  EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALResourceFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
 
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
@@ -1064,7 +1064,7 @@ ID3D11Resource* xiiGALDeviceD3D11::FindTemporaryBuffer(xiiUInt32 uiSize)
   return pResource;
 }
 
-ID3D11Resource* xiiGALDeviceD3D11::FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALTextureFormat> format)
+ID3D11Resource* xiiGALDeviceD3D11::FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALResourceFormat> format)
 {
   xiiUInt32 data[] = {uiWidth, uiHeight, uiDepth, (xiiUInt32)format};
   xiiUInt32 uiHash = xiiHashingUtils::xxHash32(data, sizeof(data));
@@ -1242,7 +1242,7 @@ xiiDynamicArray<IDXGIAdapter4*> xiiGALDeviceD3D11::GetCompatibleAdapters(D3D_FEA
   return DXGIAdapters;
 }
 
-void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter4* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes)
+void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter4* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALResourceFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes)
 {
   auto DXGIAdapters = GetCompatibleAdapters(featureLevel);
 
@@ -1276,7 +1276,7 @@ void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
         auto&       galDisplayMode  = displayModes.ExpandAndGetRef();
 
         galDisplayMode.m_Resolution               = xiiSizeU32(dxgiDisplayMode.Width, dxgiDisplayMode.Height);
-        galDisplayMode.m_TextureFormat            = xiiD3D11TypeConversions::GetGALFormat(dxgiDisplayMode.Format);
+        galDisplayMode.m_ResourceFormat           = xiiD3D11TypeConversions::GetGALFormat(dxgiDisplayMode.Format);
         galDisplayMode.m_uiRefreshRateNumerator   = dxgiDisplayMode.RefreshRate.Numerator;
         galDisplayMode.m_uiRefreshRateDenominator = dxgiDisplayMode.RefreshRate.Denominator;
         galDisplayMode.m_ScalingMode              = xiiD3D11TypeConversions::GetGALScalingMode(dxgiDisplayMode.Scaling);

@@ -85,25 +85,25 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
   {
     xiiVertexStreamInfo si;
     si.m_uiOffset      = 0;
-    si.m_Format        = xiiGALTextureFormat::RGB32Float;
+    si.m_Format        = xiiGALResourceFormat::RGB32Float;
     si.m_Semantic      = xiiGALInputLayoutSemantic::Position;
     si.m_uiElementSize = sizeof(xiiVec3);
     m_InputLayout.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALTextureFormat::RG32Float;
+    si.m_Format        = xiiGALResourceFormat::RG32Float;
     si.m_Semantic      = xiiGALInputLayoutSemantic::TexCoord0;
     si.m_uiElementSize = sizeof(xiiVec2);
     m_InputLayout.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALTextureFormat::RGB32Float;
+    si.m_Format        = xiiGALResourceFormat::RGB32Float;
     si.m_Semantic      = xiiGALInputLayoutSemantic::Normal;
     si.m_uiElementSize = sizeof(xiiVec3);
     m_InputLayout.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALTextureFormat::RGBA32Float;
+    si.m_Format        = xiiGALResourceFormat::RGBA32Float;
     si.m_Semantic      = xiiGALInputLayoutSemantic::Tangent;
     si.m_uiElementSize = sizeof(xiiVec4);
     m_InputLayout.m_VertexStreams.PushBack(si);
@@ -112,7 +112,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     {
       si.m_uiVertexBufferSlot = 1; // separate buffer
       si.m_uiOffset           = 0;
-      si.m_Format             = xiiGALTextureFormat::RGBA8UNormalized;
+      si.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
       si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
       si.m_uiElementSize      = sizeof(xiiColorLinearUB);
       m_InputLayout.m_VertexStreams.PushBack(si);
