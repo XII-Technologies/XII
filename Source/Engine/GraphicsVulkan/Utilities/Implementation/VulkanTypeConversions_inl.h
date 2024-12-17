@@ -981,3 +981,17 @@ XII_ALWAYS_INLINE vk::ComponentMapping xiiVulkanTypeConversions::GetComponentMap
 {
   return vk::ComponentMapping{xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_R), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_G), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_B), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_A)};
 }
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALSparseTextureFlags> xiiVulkanTypeConversions::GetSparseTextureFlags(vk::SparseImageFormatFlags e)
+{
+  xiiBitflags<xiiGALSparseTextureFlags> sparseTextureFlags = xiiGALSparseTextureFlags::None;
+
+  if (e & vk::SparseImageFormatFlagBits::eSingleMiptail)
+    sparseTextureFlags |= xiiGALSparseTextureFlags::SingleMipTail;
+  if (e & vk::SparseImageFormatFlagBits::eAlignedMipSize)
+    sparseTextureFlags |= xiiGALSparseTextureFlags::AlignedMipSize;
+  if (e & vk::SparseImageFormatFlagBits::eNonstandardBlockSize)
+    sparseTextureFlags |= xiiGALSparseTextureFlags::NonStandardBlockSize;
+
+  return sparseTextureFlags;
+}

@@ -70,6 +70,8 @@ public:
 
   static vk::ComponentSwizzle GetComponentSwizzle(xiiGALTextureComponentSwizzle::Enum e);
   static vk::ComponentMapping GetComponentMapping(const xiiGALTextureComponentMapping& mapping);
+
+  static xiiBitflags<xiiGALSparseTextureFlags> GetSparseTextureFlags(vk::SparseImageFormatFlags e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
