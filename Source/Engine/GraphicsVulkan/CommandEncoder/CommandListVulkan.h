@@ -85,4 +85,19 @@ protected:
 
 private:
   vk::CommandBuffer m_vkCommandBuffer;
+
+  struct ContextState
+  {
+    bool      m_bCommittedVertexBuffersUpToDate = false; ///< Flag indicating if currently committed vertex buffers are up to date.
+    bool      m_bCommittedIndexBuffersUpToDate  = false; ///< Flag indicating if currently committed index buffer is up to date.
+    bool      m_bShadingRateIsSet               = false; ///< If pipeline state object was created with shading rate dynamic state, then vkCmdSetFragmentShadingRateKHR must be called before the draw.
+    bool      m_bNullRenderTargets              = false; ///< Current graphics pipeline state object uses no depth/render targets.
+    xiiUInt32 m_uiCommandCount                  = 0U;    ///< Number of commands issued in the current command buffer.
+
+    vk::PipelineBindPoint m_vkPipelineBindPoint = static_cast<vk::PipelineBindPoint>(VK_PIPELINE_BIND_POINT_MAX_ENUM); ///< The type of pipeline bound to the command buffer.
+  } m_ContextState;
+
+  // Graphics/Mesh, Compute, Ray Tracing.
+  static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;
+  static constexpr xiiUInt32 s_MaxDescriptorSetPerSignature = 2U;
 };
