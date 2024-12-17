@@ -169,209 +169,209 @@ XII_ALWAYS_INLINE xiiUInt8 xiiD3D12TypeConversions::GetColorWriteMask(xiiBitflag
   return uiColorMask;
 }
 
-XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiGALTextureFormat::Enum e)
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiGALResourceFormat::Enum e)
 {
   switch (e)
   {
-    case xiiGALTextureFormat::Unknown:
+    case xiiGALResourceFormat::Unknown:
       return DXGI_FORMAT_UNKNOWN;
-    case xiiGALTextureFormat::RGBA32Typeless:
+    case xiiGALResourceFormat::RGBA32Typeless:
       return DXGI_FORMAT_R32G32B32A32_TYPELESS;
-    case xiiGALTextureFormat::RGBA32Float:
+    case xiiGALResourceFormat::RGBA32Float:
       return DXGI_FORMAT_R32G32B32A32_FLOAT;
-    case xiiGALTextureFormat::RGBA32UInt:
+    case xiiGALResourceFormat::RGBA32UInt:
       return DXGI_FORMAT_R32G32B32A32_UINT;
-    case xiiGALTextureFormat::RGBA32SInt:
+    case xiiGALResourceFormat::RGBA32SInt:
       return DXGI_FORMAT_R32G32B32A32_SINT;
-    case xiiGALTextureFormat::RGB32Typeless:
+    case xiiGALResourceFormat::RGB32Typeless:
       return DXGI_FORMAT_R32G32B32_TYPELESS;
-    case xiiGALTextureFormat::RGB32Float:
+    case xiiGALResourceFormat::RGB32Float:
       return DXGI_FORMAT_R32G32B32_FLOAT;
-    case xiiGALTextureFormat::RGB32UInt:
+    case xiiGALResourceFormat::RGB32UInt:
       return DXGI_FORMAT_R32G32B32_UINT;
-    case xiiGALTextureFormat::RGB32SInt:
+    case xiiGALResourceFormat::RGB32SInt:
       return DXGI_FORMAT_R32G32B32_SINT;
-    case xiiGALTextureFormat::RGBA16Typeless:
+    case xiiGALResourceFormat::RGBA16Typeless:
       return DXGI_FORMAT_R16G16B16A16_TYPELESS;
-    case xiiGALTextureFormat::RGBA16Float:
+    case xiiGALResourceFormat::RGBA16Float:
       return DXGI_FORMAT_R16G16B16A16_FLOAT;
-    case xiiGALTextureFormat::RGBA16UNormalized:
+    case xiiGALResourceFormat::RGBA16UNormalized:
       return DXGI_FORMAT_R16G16B16A16_UNORM;
-    case xiiGALTextureFormat::RGBA16UInt:
+    case xiiGALResourceFormat::RGBA16UInt:
       return DXGI_FORMAT_R16G16B16A16_UINT;
-    case xiiGALTextureFormat::RGBA16SNormalized:
+    case xiiGALResourceFormat::RGBA16SNormalized:
       return DXGI_FORMAT_R16G16B16A16_SNORM;
-    case xiiGALTextureFormat::RGBA16SInt:
+    case xiiGALResourceFormat::RGBA16SInt:
       return DXGI_FORMAT_R16G16B16A16_SINT;
-    case xiiGALTextureFormat::RG32Typeless:
+    case xiiGALResourceFormat::RG32Typeless:
       return DXGI_FORMAT_R32G32_TYPELESS;
-    case xiiGALTextureFormat::RG32Float:
+    case xiiGALResourceFormat::RG32Float:
       return DXGI_FORMAT_R32G32_FLOAT;
-    case xiiGALTextureFormat::RG32UInt:
+    case xiiGALResourceFormat::RG32UInt:
       return DXGI_FORMAT_R32G32_UINT;
-    case xiiGALTextureFormat::RG32SInt:
+    case xiiGALResourceFormat::RG32SInt:
       return DXGI_FORMAT_R32G32_SINT;
-    case xiiGALTextureFormat::R32G8X24Typeless:
+    case xiiGALResourceFormat::R32G8X24Typeless:
       return DXGI_FORMAT_R32G8X24_TYPELESS;
-    case xiiGALTextureFormat::D32FloatS8X24UInt:
+    case xiiGALResourceFormat::D32FloatS8X24UInt:
       return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
-    case xiiGALTextureFormat::R32FloatX8X24Typeless:
+    case xiiGALResourceFormat::R32FloatX8X24Typeless:
       return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
-    case xiiGALTextureFormat::X32TypelessG8X24UInt:
+    case xiiGALResourceFormat::X32TypelessG8X24UInt:
       return DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
-    case xiiGALTextureFormat::RGB10A2Typeless:
+    case xiiGALResourceFormat::RGB10A2Typeless:
       return DXGI_FORMAT_R10G10B10A2_TYPELESS;
-    case xiiGALTextureFormat::RGB10A2UNormalized:
+    case xiiGALResourceFormat::RGB10A2UNormalized:
       return DXGI_FORMAT_R10G10B10A2_UNORM;
-    case xiiGALTextureFormat::RGB10A2UInt:
+    case xiiGALResourceFormat::RGB10A2UInt:
       return DXGI_FORMAT_R10G10B10A2_UINT;
-    case xiiGALTextureFormat::RG11B10Float:
+    case xiiGALResourceFormat::RG11B10Float:
       return DXGI_FORMAT_R11G11B10_FLOAT;
-    case xiiGALTextureFormat::RGBA8Typeless:
+    case xiiGALResourceFormat::RGBA8Typeless:
       return DXGI_FORMAT_R8G8B8A8_TYPELESS;
-    case xiiGALTextureFormat::RGBA8UNormalized:
+    case xiiGALResourceFormat::RGBA8UNormalized:
       return DXGI_FORMAT_R8G8B8A8_UNORM;
-    case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
+    case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
       return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    case xiiGALTextureFormat::RGBA8UInt:
+    case xiiGALResourceFormat::RGBA8UInt:
       return DXGI_FORMAT_R8G8B8A8_UINT;
-    case xiiGALTextureFormat::RGBA8SNormalized:
+    case xiiGALResourceFormat::RGBA8SNormalized:
       return DXGI_FORMAT_R8G8B8A8_SNORM;
-    case xiiGALTextureFormat::RGBA8SInt:
+    case xiiGALResourceFormat::RGBA8SInt:
       return DXGI_FORMAT_R8G8B8A8_SINT;
-    case xiiGALTextureFormat::RG16Typeless:
+    case xiiGALResourceFormat::RG16Typeless:
       return DXGI_FORMAT_R16G16_TYPELESS;
-    case xiiGALTextureFormat::RG16Float:
+    case xiiGALResourceFormat::RG16Float:
       return DXGI_FORMAT_R16G16_FLOAT;
-    case xiiGALTextureFormat::RG16UNormalized:
+    case xiiGALResourceFormat::RG16UNormalized:
       return DXGI_FORMAT_R16G16_UNORM;
-    case xiiGALTextureFormat::RG16UInt:
+    case xiiGALResourceFormat::RG16UInt:
       return DXGI_FORMAT_R16G16_UINT;
-    case xiiGALTextureFormat::RG16SNormalized:
+    case xiiGALResourceFormat::RG16SNormalized:
       return DXGI_FORMAT_R16G16_SNORM;
-    case xiiGALTextureFormat::RG16SInt:
+    case xiiGALResourceFormat::RG16SInt:
       return DXGI_FORMAT_R16G16_SINT;
-    case xiiGALTextureFormat::R32Typeless:
+    case xiiGALResourceFormat::R32Typeless:
       return DXGI_FORMAT_R32_TYPELESS;
-    case xiiGALTextureFormat::D32Float:
+    case xiiGALResourceFormat::D32Float:
       return DXGI_FORMAT_D32_FLOAT;
-    case xiiGALTextureFormat::R32Float:
+    case xiiGALResourceFormat::R32Float:
       return DXGI_FORMAT_R32_FLOAT;
-    case xiiGALTextureFormat::R32UInt:
+    case xiiGALResourceFormat::R32UInt:
       return DXGI_FORMAT_R32_UINT;
-    case xiiGALTextureFormat::R32SInt:
+    case xiiGALResourceFormat::R32SInt:
       return DXGI_FORMAT_R32_SINT;
-    case xiiGALTextureFormat::R24G8Typeless:
+    case xiiGALResourceFormat::R24G8Typeless:
       return DXGI_FORMAT_R24G8_TYPELESS;
-    case xiiGALTextureFormat::D24UNormalizedS8UInt:
+    case xiiGALResourceFormat::D24UNormalizedS8UInt:
       return DXGI_FORMAT_D24_UNORM_S8_UINT;
-    case xiiGALTextureFormat::R24UNormalizedX8Typeless:
+    case xiiGALResourceFormat::R24UNormalizedX8Typeless:
       return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-    case xiiGALTextureFormat::X24TypelessG8UInt:
+    case xiiGALResourceFormat::X24TypelessG8UInt:
       return DXGI_FORMAT_X24_TYPELESS_G8_UINT;
-    case xiiGALTextureFormat::RG8Typeless:
+    case xiiGALResourceFormat::RG8Typeless:
       return DXGI_FORMAT_R8G8_TYPELESS;
-    case xiiGALTextureFormat::RG8UNormalized:
+    case xiiGALResourceFormat::RG8UNormalized:
       return DXGI_FORMAT_R8G8_UNORM;
-    case xiiGALTextureFormat::RG8UInt:
+    case xiiGALResourceFormat::RG8UInt:
       return DXGI_FORMAT_R8G8_UINT;
-    case xiiGALTextureFormat::RG8SNormalized:
+    case xiiGALResourceFormat::RG8SNormalized:
       return DXGI_FORMAT_R8G8_SNORM;
-    case xiiGALTextureFormat::RG8SInt:
+    case xiiGALResourceFormat::RG8SInt:
       return DXGI_FORMAT_R8G8_SINT;
-    case xiiGALTextureFormat::R16Typeless:
+    case xiiGALResourceFormat::R16Typeless:
       return DXGI_FORMAT_R16_TYPELESS;
-    case xiiGALTextureFormat::R16Float:
+    case xiiGALResourceFormat::R16Float:
       return DXGI_FORMAT_R16_FLOAT;
-    case xiiGALTextureFormat::D16UNormalized:
+    case xiiGALResourceFormat::D16UNormalized:
       return DXGI_FORMAT_D16_UNORM;
-    case xiiGALTextureFormat::R16UNormalized:
+    case xiiGALResourceFormat::R16UNormalized:
       return DXGI_FORMAT_R16_UNORM;
-    case xiiGALTextureFormat::R16UInt:
+    case xiiGALResourceFormat::R16UInt:
       return DXGI_FORMAT_R16_UINT;
-    case xiiGALTextureFormat::R16SNormalized:
+    case xiiGALResourceFormat::R16SNormalized:
       return DXGI_FORMAT_R16_SNORM;
-    case xiiGALTextureFormat::R16SInt:
+    case xiiGALResourceFormat::R16SInt:
       return DXGI_FORMAT_R16_SINT;
-    case xiiGALTextureFormat::R8Typeless:
+    case xiiGALResourceFormat::R8Typeless:
       return DXGI_FORMAT_R8_TYPELESS;
-    case xiiGALTextureFormat::R8UNormalized:
+    case xiiGALResourceFormat::R8UNormalized:
       return DXGI_FORMAT_R8_UNORM;
-    case xiiGALTextureFormat::R8UInt:
+    case xiiGALResourceFormat::R8UInt:
       return DXGI_FORMAT_R8_UINT;
-    case xiiGALTextureFormat::R8SNormalized:
+    case xiiGALResourceFormat::R8SNormalized:
       return DXGI_FORMAT_R8_SNORM;
-    case xiiGALTextureFormat::R8SInt:
+    case xiiGALResourceFormat::R8SInt:
       return DXGI_FORMAT_R8_SINT;
-    case xiiGALTextureFormat::A8UNormalized:
+    case xiiGALResourceFormat::A8UNormalized:
       return DXGI_FORMAT_A8_UNORM;
-    case xiiGALTextureFormat::R1UNormalized:
+    case xiiGALResourceFormat::R1UNormalized:
       return DXGI_FORMAT_R1_UNORM;
-    case xiiGALTextureFormat::RGB9E5SharedExponent:
+    case xiiGALResourceFormat::RGB9E5SharedExponent:
       return DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
-    case xiiGALTextureFormat::RG8BG8UNormalized:
+    case xiiGALResourceFormat::RG8BG8UNormalized:
       return DXGI_FORMAT_R8G8_B8G8_UNORM;
-    case xiiGALTextureFormat::GR8GB8UNormalized:
+    case xiiGALResourceFormat::GR8GB8UNormalized:
       return DXGI_FORMAT_G8R8_G8B8_UNORM;
-    case xiiGALTextureFormat::BC1Typeless:
+    case xiiGALResourceFormat::BC1Typeless:
       return DXGI_FORMAT_BC1_TYPELESS;
-    case xiiGALTextureFormat::BC1UNormalized:
+    case xiiGALResourceFormat::BC1UNormalized:
       return DXGI_FORMAT_BC1_UNORM;
-    case xiiGALTextureFormat::BC1UNormalizedSRGB:
+    case xiiGALResourceFormat::BC1UNormalizedSRGB:
       return DXGI_FORMAT_BC1_UNORM_SRGB;
-    case xiiGALTextureFormat::BC2Typeless:
+    case xiiGALResourceFormat::BC2Typeless:
       return DXGI_FORMAT_BC2_TYPELESS;
-    case xiiGALTextureFormat::BC2UNormalized:
+    case xiiGALResourceFormat::BC2UNormalized:
       return DXGI_FORMAT_BC2_UNORM;
-    case xiiGALTextureFormat::BC2UNormalizedSRGB:
+    case xiiGALResourceFormat::BC2UNormalizedSRGB:
       return DXGI_FORMAT_BC2_UNORM_SRGB;
-    case xiiGALTextureFormat::BC3Typeless:
+    case xiiGALResourceFormat::BC3Typeless:
       return DXGI_FORMAT_BC3_TYPELESS;
-    case xiiGALTextureFormat::BC3UNormalized:
+    case xiiGALResourceFormat::BC3UNormalized:
       return DXGI_FORMAT_BC3_UNORM;
-    case xiiGALTextureFormat::BC3UNormalizedSRGB:
+    case xiiGALResourceFormat::BC3UNormalizedSRGB:
       return DXGI_FORMAT_BC3_UNORM_SRGB;
-    case xiiGALTextureFormat::BC4Typeless:
+    case xiiGALResourceFormat::BC4Typeless:
       return DXGI_FORMAT_BC4_TYPELESS;
-    case xiiGALTextureFormat::BC4UNormalized:
+    case xiiGALResourceFormat::BC4UNormalized:
       return DXGI_FORMAT_BC4_UNORM;
-    case xiiGALTextureFormat::BC4SNormalized:
+    case xiiGALResourceFormat::BC4SNormalized:
       return DXGI_FORMAT_BC4_SNORM;
-    case xiiGALTextureFormat::BC5Typeless:
+    case xiiGALResourceFormat::BC5Typeless:
       return DXGI_FORMAT_BC5_TYPELESS;
-    case xiiGALTextureFormat::BC5UNormalized:
+    case xiiGALResourceFormat::BC5UNormalized:
       return DXGI_FORMAT_BC5_UNORM;
-    case xiiGALTextureFormat::BC5SNormalized:
+    case xiiGALResourceFormat::BC5SNormalized:
       return DXGI_FORMAT_BC5_SNORM;
-    case xiiGALTextureFormat::B5G6R5UNormalized:
+    case xiiGALResourceFormat::B5G6R5UNormalized:
       return DXGI_FORMAT_B5G6R5_UNORM;
-    case xiiGALTextureFormat::B5G5R5A1UNormalized:
+    case xiiGALResourceFormat::B5G5R5A1UNormalized:
       return DXGI_FORMAT_B5G5R5A1_UNORM;
-    case xiiGALTextureFormat::BGRA8UNormalized:
+    case xiiGALResourceFormat::BGRA8UNormalized:
       return DXGI_FORMAT_B8G8R8A8_UNORM;
-    case xiiGALTextureFormat::BGRX8UNormalized:
+    case xiiGALResourceFormat::BGRX8UNormalized:
       return DXGI_FORMAT_B8G8R8X8_UNORM;
-    case xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized:
+    case xiiGALResourceFormat::R10G10B10XRBiasA2UNormalized:
       return DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM;
-    case xiiGALTextureFormat::BGRA8Typeless:
+    case xiiGALResourceFormat::BGRA8Typeless:
       return DXGI_FORMAT_B8G8R8A8_TYPELESS;
-    case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
+    case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
       return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-    case xiiGALTextureFormat::BGRX8Typeless:
+    case xiiGALResourceFormat::BGRX8Typeless:
       return DXGI_FORMAT_B8G8R8X8_TYPELESS;
-    case xiiGALTextureFormat::BGRX8UNormalizedSRGB:
+    case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
       return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-    case xiiGALTextureFormat::BC6HTypeless:
+    case xiiGALResourceFormat::BC6HTypeless:
       return DXGI_FORMAT_BC6H_TYPELESS;
-    case xiiGALTextureFormat::BC6HUF16:
+    case xiiGALResourceFormat::BC6HUF16:
       return DXGI_FORMAT_BC6H_UF16;
-    case xiiGALTextureFormat::BC6HSF16:
+    case xiiGALResourceFormat::BC6HSF16:
       return DXGI_FORMAT_BC6H_SF16;
-    case xiiGALTextureFormat::BC7Typeless:
+    case xiiGALResourceFormat::BC7Typeless:
       return DXGI_FORMAT_BC7_TYPELESS;
-    case xiiGALTextureFormat::BC7UNormalized:
+    case xiiGALResourceFormat::BC7UNormalized:
       return DXGI_FORMAT_BC7_UNORM;
-    case xiiGALTextureFormat::BC7UNormalizedSRGB:
+    case xiiGALResourceFormat::BC7UNormalizedSRGB:
       return DXGI_FORMAT_BC7_UNORM_SRGB;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -379,214 +379,214 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiGALTextureFo
   return DXGI_FORMAT_UNKNOWN;
 }
 
-XII_ALWAYS_INLINE xiiGALTextureFormat::Enum xiiD3D12TypeConversions::GetGALFormat(DXGI_FORMAT e)
+XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiD3D12TypeConversions::GetGALFormat(DXGI_FORMAT e)
 {
   switch (e)
   {
     case DXGI_FORMAT_UNKNOWN:
-      return xiiGALTextureFormat::Unknown;
+      return xiiGALResourceFormat::Unknown;
     case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-      return xiiGALTextureFormat::RGBA32Typeless;
+      return xiiGALResourceFormat::RGBA32Typeless;
     case DXGI_FORMAT_R32G32B32A32_FLOAT:
-      return xiiGALTextureFormat::RGBA32Float;
+      return xiiGALResourceFormat::RGBA32Float;
     case DXGI_FORMAT_R32G32B32A32_UINT:
-      return xiiGALTextureFormat::RGBA32UInt;
+      return xiiGALResourceFormat::RGBA32UInt;
     case DXGI_FORMAT_R32G32B32A32_SINT:
-      return xiiGALTextureFormat::RGBA32SInt;
+      return xiiGALResourceFormat::RGBA32SInt;
     case DXGI_FORMAT_R32G32B32_TYPELESS:
-      return xiiGALTextureFormat::RGB32Typeless;
+      return xiiGALResourceFormat::RGB32Typeless;
     case DXGI_FORMAT_R32G32B32_FLOAT:
-      return xiiGALTextureFormat::RGB32Float;
+      return xiiGALResourceFormat::RGB32Float;
     case DXGI_FORMAT_R32G32B32_UINT:
-      return xiiGALTextureFormat::RGB32UInt;
+      return xiiGALResourceFormat::RGB32UInt;
     case DXGI_FORMAT_R32G32B32_SINT:
-      return xiiGALTextureFormat::RGB32SInt;
+      return xiiGALResourceFormat::RGB32SInt;
     case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-      return xiiGALTextureFormat::RGBA16Typeless;
+      return xiiGALResourceFormat::RGBA16Typeless;
     case DXGI_FORMAT_R16G16B16A16_FLOAT:
-      return xiiGALTextureFormat::RGBA16Float;
+      return xiiGALResourceFormat::RGBA16Float;
     case DXGI_FORMAT_R16G16B16A16_UNORM:
-      return xiiGALTextureFormat::RGBA16UNormalized;
+      return xiiGALResourceFormat::RGBA16UNormalized;
     case DXGI_FORMAT_R16G16B16A16_UINT:
-      return xiiGALTextureFormat::RGBA16UInt;
+      return xiiGALResourceFormat::RGBA16UInt;
     case DXGI_FORMAT_R16G16B16A16_SNORM:
-      return xiiGALTextureFormat::RGBA16SNormalized;
+      return xiiGALResourceFormat::RGBA16SNormalized;
     case DXGI_FORMAT_R16G16B16A16_SINT:
-      return xiiGALTextureFormat::RGBA16SInt;
+      return xiiGALResourceFormat::RGBA16SInt;
     case DXGI_FORMAT_R32G32_TYPELESS:
-      return xiiGALTextureFormat::RG32Typeless;
+      return xiiGALResourceFormat::RG32Typeless;
     case DXGI_FORMAT_R32G32_FLOAT:
-      return xiiGALTextureFormat::RG32Float;
+      return xiiGALResourceFormat::RG32Float;
     case DXGI_FORMAT_R32G32_UINT:
-      return xiiGALTextureFormat::RG32UInt;
+      return xiiGALResourceFormat::RG32UInt;
     case DXGI_FORMAT_R32G32_SINT:
-      return xiiGALTextureFormat::RG32SInt;
+      return xiiGALResourceFormat::RG32SInt;
     case DXGI_FORMAT_R32G8X24_TYPELESS:
-      return xiiGALTextureFormat::R32G8X24Typeless;
+      return xiiGALResourceFormat::R32G8X24Typeless;
     case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-      return xiiGALTextureFormat::D32FloatS8X24UInt;
+      return xiiGALResourceFormat::D32FloatS8X24UInt;
     case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
-      return xiiGALTextureFormat::R32FloatX8X24Typeless;
+      return xiiGALResourceFormat::R32FloatX8X24Typeless;
     case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
-      return xiiGALTextureFormat::X32TypelessG8X24UInt;
+      return xiiGALResourceFormat::X32TypelessG8X24UInt;
     case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-      return xiiGALTextureFormat::RGB10A2Typeless;
+      return xiiGALResourceFormat::RGB10A2Typeless;
     case DXGI_FORMAT_R10G10B10A2_UNORM:
-      return xiiGALTextureFormat::RGB10A2UNormalized;
+      return xiiGALResourceFormat::RGB10A2UNormalized;
     case DXGI_FORMAT_R10G10B10A2_UINT:
-      return xiiGALTextureFormat::RGB10A2UInt;
+      return xiiGALResourceFormat::RGB10A2UInt;
     case DXGI_FORMAT_R11G11B10_FLOAT:
-      return xiiGALTextureFormat::RG11B10Float;
+      return xiiGALResourceFormat::RG11B10Float;
     case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-      return xiiGALTextureFormat::RGBA8Typeless;
+      return xiiGALResourceFormat::RGBA8Typeless;
     case DXGI_FORMAT_R8G8B8A8_UNORM:
-      return xiiGALTextureFormat::RGBA8UNormalized;
+      return xiiGALResourceFormat::RGBA8UNormalized;
     case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-      return xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+      return xiiGALResourceFormat::RGBA8UNormalizedSRGB;
     case DXGI_FORMAT_R8G8B8A8_UINT:
-      return xiiGALTextureFormat::RGBA8UInt;
+      return xiiGALResourceFormat::RGBA8UInt;
     case DXGI_FORMAT_R8G8B8A8_SNORM:
-      return xiiGALTextureFormat::RGBA8SNormalized;
+      return xiiGALResourceFormat::RGBA8SNormalized;
     case DXGI_FORMAT_R8G8B8A8_SINT:
-      return xiiGALTextureFormat::RGBA8SInt;
+      return xiiGALResourceFormat::RGBA8SInt;
     case DXGI_FORMAT_R16G16_TYPELESS:
-      return xiiGALTextureFormat::RG16Typeless;
+      return xiiGALResourceFormat::RG16Typeless;
     case DXGI_FORMAT_R16G16_FLOAT:
-      return xiiGALTextureFormat::RG16Float;
+      return xiiGALResourceFormat::RG16Float;
     case DXGI_FORMAT_R16G16_UNORM:
-      return xiiGALTextureFormat::RG16UNormalized;
+      return xiiGALResourceFormat::RG16UNormalized;
     case DXGI_FORMAT_R16G16_UINT:
-      return xiiGALTextureFormat::RG16UInt;
+      return xiiGALResourceFormat::RG16UInt;
     case DXGI_FORMAT_R16G16_SNORM:
-      return xiiGALTextureFormat::RG16SNormalized;
+      return xiiGALResourceFormat::RG16SNormalized;
     case DXGI_FORMAT_R16G16_SINT:
-      return xiiGALTextureFormat::RG16SInt;
+      return xiiGALResourceFormat::RG16SInt;
     case DXGI_FORMAT_R32_TYPELESS:
-      return xiiGALTextureFormat::R32Typeless;
+      return xiiGALResourceFormat::R32Typeless;
     case DXGI_FORMAT_D32_FLOAT:
-      return xiiGALTextureFormat::D32Float;
+      return xiiGALResourceFormat::D32Float;
     case DXGI_FORMAT_R32_FLOAT:
-      return xiiGALTextureFormat::R32Float;
+      return xiiGALResourceFormat::R32Float;
     case DXGI_FORMAT_R32_UINT:
-      return xiiGALTextureFormat::R32UInt;
+      return xiiGALResourceFormat::R32UInt;
     case DXGI_FORMAT_R32_SINT:
-      return xiiGALTextureFormat::R32SInt;
+      return xiiGALResourceFormat::R32SInt;
     case DXGI_FORMAT_R24G8_TYPELESS:
-      return xiiGALTextureFormat::R24G8Typeless;
+      return xiiGALResourceFormat::R24G8Typeless;
     case DXGI_FORMAT_D24_UNORM_S8_UINT:
-      return xiiGALTextureFormat::D24UNormalizedS8UInt;
+      return xiiGALResourceFormat::D24UNormalizedS8UInt;
     case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
-      return xiiGALTextureFormat::R24UNormalizedX8Typeless;
+      return xiiGALResourceFormat::R24UNormalizedX8Typeless;
     case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
-      return xiiGALTextureFormat::X24TypelessG8UInt;
+      return xiiGALResourceFormat::X24TypelessG8UInt;
     case DXGI_FORMAT_R8G8_TYPELESS:
-      return xiiGALTextureFormat::RG8Typeless;
+      return xiiGALResourceFormat::RG8Typeless;
     case DXGI_FORMAT_R8G8_UNORM:
-      return xiiGALTextureFormat::RG8UNormalized;
+      return xiiGALResourceFormat::RG8UNormalized;
     case DXGI_FORMAT_R8G8_UINT:
-      return xiiGALTextureFormat::RG8UInt;
+      return xiiGALResourceFormat::RG8UInt;
     case DXGI_FORMAT_R8G8_SNORM:
-      return xiiGALTextureFormat::RG8SNormalized;
+      return xiiGALResourceFormat::RG8SNormalized;
     case DXGI_FORMAT_R8G8_SINT:
-      return xiiGALTextureFormat::RG8SInt;
+      return xiiGALResourceFormat::RG8SInt;
     case DXGI_FORMAT_R16_TYPELESS:
-      return xiiGALTextureFormat::R16Typeless;
+      return xiiGALResourceFormat::R16Typeless;
     case DXGI_FORMAT_R16_FLOAT:
-      return xiiGALTextureFormat::R16Float;
+      return xiiGALResourceFormat::R16Float;
     case DXGI_FORMAT_D16_UNORM:
-      return xiiGALTextureFormat::D16UNormalized;
+      return xiiGALResourceFormat::D16UNormalized;
     case DXGI_FORMAT_R16_UNORM:
-      return xiiGALTextureFormat::R16UNormalized;
+      return xiiGALResourceFormat::R16UNormalized;
     case DXGI_FORMAT_R16_UINT:
-      return xiiGALTextureFormat::R16UInt;
+      return xiiGALResourceFormat::R16UInt;
     case DXGI_FORMAT_R16_SNORM:
-      return xiiGALTextureFormat::R16SNormalized;
+      return xiiGALResourceFormat::R16SNormalized;
     case DXGI_FORMAT_R16_SINT:
-      return xiiGALTextureFormat::R16SInt;
+      return xiiGALResourceFormat::R16SInt;
     case DXGI_FORMAT_R8_TYPELESS:
-      return xiiGALTextureFormat::R8Typeless;
+      return xiiGALResourceFormat::R8Typeless;
     case DXGI_FORMAT_R8_UNORM:
-      return xiiGALTextureFormat::R8UNormalized;
+      return xiiGALResourceFormat::R8UNormalized;
     case DXGI_FORMAT_R8_UINT:
-      return xiiGALTextureFormat::R8UInt;
+      return xiiGALResourceFormat::R8UInt;
     case DXGI_FORMAT_R8_SNORM:
-      return xiiGALTextureFormat::R8SNormalized;
+      return xiiGALResourceFormat::R8SNormalized;
     case DXGI_FORMAT_R8_SINT:
-      return xiiGALTextureFormat::R8SInt;
+      return xiiGALResourceFormat::R8SInt;
     case DXGI_FORMAT_A8_UNORM:
-      return xiiGALTextureFormat::A8UNormalized;
+      return xiiGALResourceFormat::A8UNormalized;
     case DXGI_FORMAT_R1_UNORM:
-      return xiiGALTextureFormat::R1UNormalized;
+      return xiiGALResourceFormat::R1UNormalized;
     case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
-      return xiiGALTextureFormat::RGB9E5SharedExponent;
+      return xiiGALResourceFormat::RGB9E5SharedExponent;
     case DXGI_FORMAT_R8G8_B8G8_UNORM:
-      return xiiGALTextureFormat::RG8BG8UNormalized;
+      return xiiGALResourceFormat::RG8BG8UNormalized;
     case DXGI_FORMAT_G8R8_G8B8_UNORM:
-      return xiiGALTextureFormat::GR8GB8UNormalized;
+      return xiiGALResourceFormat::GR8GB8UNormalized;
     case DXGI_FORMAT_BC1_TYPELESS:
-      return xiiGALTextureFormat::BC1Typeless;
+      return xiiGALResourceFormat::BC1Typeless;
     case DXGI_FORMAT_BC1_UNORM:
-      return xiiGALTextureFormat::BC1UNormalized;
+      return xiiGALResourceFormat::BC1UNormalized;
     case DXGI_FORMAT_BC1_UNORM_SRGB:
-      return xiiGALTextureFormat::BC1UNormalizedSRGB;
+      return xiiGALResourceFormat::BC1UNormalizedSRGB;
     case DXGI_FORMAT_BC2_TYPELESS:
-      return xiiGALTextureFormat::BC2Typeless;
+      return xiiGALResourceFormat::BC2Typeless;
     case DXGI_FORMAT_BC2_UNORM:
-      return xiiGALTextureFormat::BC2UNormalized;
+      return xiiGALResourceFormat::BC2UNormalized;
     case DXGI_FORMAT_BC2_UNORM_SRGB:
-      return xiiGALTextureFormat::BC2UNormalizedSRGB;
+      return xiiGALResourceFormat::BC2UNormalizedSRGB;
     case DXGI_FORMAT_BC3_TYPELESS:
-      return xiiGALTextureFormat::BC3Typeless;
+      return xiiGALResourceFormat::BC3Typeless;
     case DXGI_FORMAT_BC3_UNORM:
-      return xiiGALTextureFormat::BC3UNormalized;
+      return xiiGALResourceFormat::BC3UNormalized;
     case DXGI_FORMAT_BC3_UNORM_SRGB:
-      return xiiGALTextureFormat::BC3UNormalizedSRGB;
+      return xiiGALResourceFormat::BC3UNormalizedSRGB;
     case DXGI_FORMAT_BC4_TYPELESS:
-      return xiiGALTextureFormat::BC4Typeless;
+      return xiiGALResourceFormat::BC4Typeless;
     case DXGI_FORMAT_BC4_UNORM:
-      return xiiGALTextureFormat::BC4UNormalized;
+      return xiiGALResourceFormat::BC4UNormalized;
     case DXGI_FORMAT_BC4_SNORM:
-      return xiiGALTextureFormat::BC4SNormalized;
+      return xiiGALResourceFormat::BC4SNormalized;
     case DXGI_FORMAT_BC5_TYPELESS:
-      return xiiGALTextureFormat::BC5Typeless;
+      return xiiGALResourceFormat::BC5Typeless;
     case DXGI_FORMAT_BC5_UNORM:
-      return xiiGALTextureFormat::BC5UNormalized;
+      return xiiGALResourceFormat::BC5UNormalized;
     case DXGI_FORMAT_BC5_SNORM:
-      return xiiGALTextureFormat::BC5SNormalized;
+      return xiiGALResourceFormat::BC5SNormalized;
     case DXGI_FORMAT_B5G6R5_UNORM:
-      return xiiGALTextureFormat::B5G6R5UNormalized;
+      return xiiGALResourceFormat::B5G6R5UNormalized;
     case DXGI_FORMAT_B5G5R5A1_UNORM:
-      return xiiGALTextureFormat::B5G5R5A1UNormalized;
+      return xiiGALResourceFormat::B5G5R5A1UNormalized;
     case DXGI_FORMAT_B8G8R8A8_UNORM:
-      return xiiGALTextureFormat::BGRA8UNormalized;
+      return xiiGALResourceFormat::BGRA8UNormalized;
     case DXGI_FORMAT_B8G8R8X8_UNORM:
-      return xiiGALTextureFormat::BGRX8UNormalized;
+      return xiiGALResourceFormat::BGRX8UNormalized;
     case DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
-      return xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized;
+      return xiiGALResourceFormat::R10G10B10XRBiasA2UNormalized;
     case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-      return xiiGALTextureFormat::BGRA8Typeless;
+      return xiiGALResourceFormat::BGRA8Typeless;
     case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-      return xiiGALTextureFormat::BGRA8UNormalizedSRGB;
+      return xiiGALResourceFormat::BGRA8UNormalizedSRGB;
     case DXGI_FORMAT_B8G8R8X8_TYPELESS:
-      return xiiGALTextureFormat::BGRX8Typeless;
+      return xiiGALResourceFormat::BGRX8Typeless;
     case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-      return xiiGALTextureFormat::BGRX8UNormalizedSRGB;
+      return xiiGALResourceFormat::BGRX8UNormalizedSRGB;
     case DXGI_FORMAT_BC6H_TYPELESS:
-      return xiiGALTextureFormat::BC6HTypeless;
+      return xiiGALResourceFormat::BC6HTypeless;
     case DXGI_FORMAT_BC6H_UF16:
-      return xiiGALTextureFormat::BC6HUF16;
+      return xiiGALResourceFormat::BC6HUF16;
     case DXGI_FORMAT_BC6H_SF16:
-      return xiiGALTextureFormat::BC6HSF16;
+      return xiiGALResourceFormat::BC6HSF16;
     case DXGI_FORMAT_BC7_TYPELESS:
-      return xiiGALTextureFormat::BC7Typeless;
+      return xiiGALResourceFormat::BC7Typeless;
     case DXGI_FORMAT_BC7_UNORM:
-      return xiiGALTextureFormat::BC7UNormalized;
+      return xiiGALResourceFormat::BC7UNormalized;
     case DXGI_FORMAT_BC7_UNORM_SRGB:
-      return xiiGALTextureFormat::BC7UNormalizedSRGB;
+      return xiiGALResourceFormat::BC7UNormalizedSRGB;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-  return xiiGALTextureFormat::Unknown;
+  return xiiGALResourceFormat::Unknown;
 }
 
 XII_ALWAYS_INLINE DXGI_MODE_SCALING xiiD3D12TypeConversions::GetScalingMode(xiiGALScalingMode::Enum e)
@@ -964,7 +964,7 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xii
     break;
     case xiiGALValueType::Int32:
     {
-      XII_ASSERT_DEV(bIsNormalized, "32-bit signed normalized formats are unsupported. Use xiiGALTextureFormat::R32Float instead.");
+      XII_ASSERT_DEV(bIsNormalized, "32-bit signed normalized formats are unsupported. Use xiiGALResourceFormat::R32Float instead.");
 
       switch (uiComponentCount)
       {
@@ -1047,7 +1047,7 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xii
     break;
     case xiiGALValueType::UInt32:
     {
-      XII_ASSERT_DEV(bIsNormalized, "32-bit unsigned normalized formats are unsupported. Use xiiGALTextureFormat::R32Float instead.");
+      XII_ASSERT_DEV(bIsNormalized, "32-bit unsigned normalized formats are unsupported. Use xiiGALResourceFormat::R32Float instead.");
 
       switch (uiComponentCount)
       {

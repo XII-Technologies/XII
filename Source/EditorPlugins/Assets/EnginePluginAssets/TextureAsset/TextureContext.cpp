@@ -65,8 +65,8 @@ void xiiTextureContext::OnInitialize()
 
   m_hMaterial = xiiResourceManager::GetExistingResource<xiiMaterialResource>(sMaterialResource);
 
-  m_hTexture                              = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTextureGuid);
-  xiiGALTextureFormat::Enum textureFormat = xiiGALTextureFormat::Unknown;
+  m_hTexture                               = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTextureGuid);
+  xiiGALResourceFormat::Enum textureFormat = xiiGALResourceFormat::Unknown;
   {
     xiiResourceLock<xiiTexture2DResource> pTexture(m_hTexture, xiiResourceAcquireMode::PointerOnly);
 
@@ -122,7 +122,7 @@ void xiiTextureContext::OnInitialize()
 
     auto& param = md.m_Parameters.ExpandAndGetRef();
     param.m_Name.Assign("IsLinear");
-    param.m_Value = textureFormat != xiiGALTextureFormat::Unknown ? !xiiGALTextureFormat::IsSrgb(textureFormat) : false;
+    param.m_Value = textureFormat != xiiGALResourceFormat::Unknown ? !xiiGALResourceFormat::IsSrgb(textureFormat) : false;
 
     m_hMaterial = xiiResourceManager::GetOrCreateResource<xiiMaterialResource>(sMaterialResource, std::move(md));
   }
@@ -160,10 +160,10 @@ void xiiTextureContext::OnResourceEvent(const xiiResourceEvent& e)
   if (e.m_Type == xiiResourceEvent::Type::ResourceContentUpdated)
   {
     const xiiTexture2DResource* pTexture = static_cast<const xiiTexture2DResource*>(e.m_pResource);
-    if (pTexture->GetFormat() != xiiGALTextureFormat::Unknown)
+    if (pTexture->GetFormat() != xiiGALResourceFormat::Unknown)
     {
       xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::BlockTillLoaded);
-      pMaterial->SetParameter("IsLinear", !xiiGALTextureFormat::IsSrgb(pTexture->GetFormat()));
+      pMaterial->SetParameter("IsLinear", !xiiGALResourceFormat::IsSrgb(pTexture->GetFormat()));
     }
   }
 }

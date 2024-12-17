@@ -37,8 +37,8 @@ public:
 
   static vk::ColorComponentFlags GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
 
-  static vk::Format                GetFormat(xiiGALTextureFormat::Enum e);
-  static xiiGALTextureFormat::Enum GetGALFormat(vk::Format e);
+  static vk::Format                 GetFormat(xiiGALResourceFormat::Enum e);
+  static xiiGALResourceFormat::Enum GetGALFormat(vk::Format e);
 
   static vk::ShaderStageFlags          GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e);
   static xiiBitflags<xiiGALShaderType> GetGALShaderStageFlags(vk::ShaderStageFlags e);
@@ -67,6 +67,11 @@ public:
   static vk::AccessFlags                       GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
   static vk::AccessFlags                       GetAccessFlags(xiiBitflags<xiiGALResourceStateFlags> e);
   static xiiBitflags<xiiGALResourceStateFlags> GetResourceState(vk::AccessFlags e);
+
+  static vk::ComponentSwizzle GetComponentSwizzle(xiiGALTextureComponentSwizzle::Enum e);
+  static vk::ComponentMapping GetComponentMapping(const xiiGALTextureComponentMapping& mapping);
+
+  static xiiBitflags<xiiGALSparseTextureFlags> GetSparseTextureFlags(vk::SparseImageFormatFlags e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

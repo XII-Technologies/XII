@@ -156,8 +156,6 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
     }
     pCommandList->EndDebugGroup();
     pCommandList->Submit();
-
-    pGraphicsOrTransferQueue->WaitForIdle();
   }
 
   m_RequireUpdate.Clear();

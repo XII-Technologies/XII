@@ -442,7 +442,7 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
           }
         }
 
-        m_MeshBufferDescriptor.AddStream((xiiGALInputLayoutSemantic::Enum)iSemantic, (xiiGALTextureFormat::Enum)iFormat);
+        m_MeshBufferDescriptor.AddStream((xiiGALInputLayoutSemantic::Enum)iSemantic, (xiiGALResourceFormat::Enum)iFormat);
       }
 
       m_MeshBufferDescriptor.AllocateStreams(uiVertexCount, (xiiGALPrimitiveTopology::Enum)uiTopology, uiPrimitiveCount);

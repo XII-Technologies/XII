@@ -59,7 +59,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
   descGAL.m_uiMipLevels        = 1U;
   descGAL.m_uiSampleCount      = descriptor.m_SampleCount;
   descGAL.m_Format             = m_Format;
-  descGAL.m_BindFlags          = xiiGALBindFlags::ShaderResource | (!xiiGALTextureFormat::IsDepthFormat(m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil);
+  descGAL.m_BindFlags          = xiiGALBindFlags::ShaderResource | (!xiiGALResourceFormat::IsDepthFormat(m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil);
 
   xiiGALTextureData textureData;
   textureData.m_SubResources        = descriptor.m_InitialContent;
@@ -195,7 +195,7 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UpdateContent(xiiStreamReader*
       }
     }
 
-    td.m_Format   = static_cast<xiiGALTextureFormat::Enum>(texFormat.m_GalRenderTargetFormat);
+    td.m_Format   = static_cast<xiiGALResourceFormat::Enum>(texFormat.m_GalRenderTargetFormat);
     td.m_uiWidth  = texFormat.m_iRenderTargetResolutionX;
     td.m_uiHeight = texFormat.m_iRenderTargetResolutionY;
 

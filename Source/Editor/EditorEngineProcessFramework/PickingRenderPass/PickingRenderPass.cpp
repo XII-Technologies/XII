@@ -151,7 +151,6 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
     // Submit immediately, so that the data is available when reading back the result from the staging texture.
     pCommandList->Submit(false);
-    pCommandList->GetCommandQueue()->WaitForIdle();
 
     xiiMat4 mProj;
     renderViewContext.m_pCamera->GetProjectionMatrix((float)m_uiWindowWidth / m_uiWindowHeight, mProj);
@@ -183,7 +182,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
       if (pCommandList->MapTextureSubresource(m_hPickingDepthRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
       {
         const auto& textureDescription = pDevice->GetTexture(m_hPickingDepthRTStaging)->GetDescription();
-        const auto& formatProperties   = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+        const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
         if (mappedSubResource.m_pData)
         {
@@ -224,7 +223,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
       if (pCommandList->MapTextureSubresource(m_hPickingIdRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
       {
         const auto& textureDescription = pDevice->GetTexture(m_hPickingIdRTStaging)->GetDescription();
-        const auto& formatProperties   = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+        const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
         if (mappedSubResource.m_pData)
         {
@@ -259,7 +258,6 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     }
     pCommandList->EndDebugGroup();
     pCommandList->Submit(false);
-    pCommandList->GetCommandQueue()->WaitForIdle();
   }
 }
 
@@ -276,7 +274,7 @@ void xiiPickingRenderPass::CreateTarget()
   // Create render target for picking
   xiiGALTextureCreationDescription tcd;
   tcd.m_Type        = xiiGALResourceDimension::Texture2D;
-  tcd.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
+  tcd.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
   tcd.m_Size.width  = (xiiUInt32)m_TargetRect.width;
   tcd.m_Size.height = (xiiUInt32)m_TargetRect.height;
   tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
@@ -289,7 +287,7 @@ void xiiPickingRenderPass::CreateTarget()
 
   m_hPickingIdRTStaging = pDevice->CreateTexture(tcd);
 
-  tcd.m_Format         = xiiGALTextureFormat::D32Float;
+  tcd.m_Format         = xiiGALResourceFormat::D32Float;
   tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
   tcd.m_Usage          = xiiGALResourceUsage::Default;

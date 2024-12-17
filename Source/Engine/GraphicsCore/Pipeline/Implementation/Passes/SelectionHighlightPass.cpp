@@ -85,7 +85,7 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
     xiiEnum<xiiGALMSAASampleCount> sampleCount  = (xiiGALMSAASampleCount::Enum)pColorOutput->m_TextureDescription.m_uiSampleCount;
     xiiUInt32                      uiSliceCount = pColorOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
-    hDepthTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::D24UNormalizedS8UInt, sampleCount, uiSliceCount);
+    hDepthTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::D24UNormalizedS8UInt, sampleCount, uiSliceCount);
 
     xiiGALRenderingSetup renderingSetup;
     renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil));

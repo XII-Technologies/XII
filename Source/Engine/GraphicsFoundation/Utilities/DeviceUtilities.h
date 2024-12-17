@@ -46,7 +46,7 @@ public:
   /// \brief Creates a render target description with the given paramters.
   ///
   /// \param size          - The size (width and height) of the render target.
-  /// \param format        - The render target format. See xiiGALTextureFormat for details.
+  /// \param format        - The render target format. See xiiGALResourceFormat for details.
   /// \param uiSampleCount - The number of samples in the render target. The default is xiiGALMSAASampleCount::OneSample.
-  static [[nodiscard]] xiiGALTextureCreationDescription CreateRenderTargetDescription(xiiSizeU32 size, xiiGALTextureFormat::Enum format, xiiUInt32 uiSampleCount = xiiGALMSAASampleCount::OneSample);
+  static [[nodiscard]] xiiGALTextureCreationDescription CreateRenderTargetDescription(xiiSizeU32 size, xiiGALResourceFormat::Enum format, xiiUInt32 uiSampleCount = xiiGALMSAASampleCount::OneSample);
 };

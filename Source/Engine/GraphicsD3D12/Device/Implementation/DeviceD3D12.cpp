@@ -188,7 +188,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   // Create D3D12 Memory Allocator.
   m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, pD3D12Device);
 
-  EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALTextureFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
+  EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALResourceFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
 
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
@@ -1122,9 +1122,9 @@ xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
   // Sampler properties.
   {
-    m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported   = true;
-    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy                = D3D12_DEFAULT_MAX_ANISOTROPY;
-    m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported              = true;
+    m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported = true;
+    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy              = D3D12_DEFAULT_MAX_ANISOTROPY;
+    m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported            = true;
   }
 
   // Compute shader properties.
@@ -1214,7 +1214,7 @@ xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEA
   return DXGIAdapters;
 }
 
-void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes)
+void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALResourceFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes)
 {
   auto DXGIAdapters = GetCompatibleAdapters(featureLevel);
 
@@ -1248,7 +1248,7 @@ void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
         auto&       galDisplayMode  = displayModes.ExpandAndGetRef();
 
         galDisplayMode.m_Resolution               = xiiSizeU32(dxgiDisplayMode.Width, dxgiDisplayMode.Height);
-        galDisplayMode.m_TextureFormat            = xiiD3D12TypeConversions::GetGALFormat(dxgiDisplayMode.Format);
+        galDisplayMode.m_ResourceFormat           = xiiD3D12TypeConversions::GetGALFormat(dxgiDisplayMode.Format);
         galDisplayMode.m_uiRefreshRateNumerator   = dxgiDisplayMode.RefreshRate.Numerator;
         galDisplayMode.m_uiRefreshRateDenominator = dxgiDisplayMode.RefreshRate.Denominator;
         galDisplayMode.m_ScalingMode              = xiiD3D12TypeConversions::GetGALScalingMode(dxgiDisplayMode.Scaling);

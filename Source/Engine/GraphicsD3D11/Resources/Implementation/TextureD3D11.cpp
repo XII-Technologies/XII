@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-DXGI_FORMAT TextureFormatToDXGI_Format(xiiEnum<xiiGALTextureFormat> textureFormat, xiiBitflags<xiiGALBindFlags> bindFlags);
+DXGI_FORMAT ResourceFormatToDXGI_Format(xiiEnum<xiiGALResourceFormat> textureFormat, xiiBitflags<xiiGALBindFlags> bindFlags);
 
 xiiGALTextureD3D11::xiiGALTextureD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceD3D11, creationDescription)
@@ -88,8 +88,11 @@ xiiResult xiiGALTextureD3D11::InitPlatform(const xiiGALTextureData* pInitialData
 
 xiiResult xiiGALTextureD3D11::DeInitPlatform()
 {
-  XII_GAL_D3D11_RELEASE(m_pTexture);
-
+  // Prevent releasing native objects.
+  if (m_Description.m_pExisitingNativeObject != nullptr)
+  {
+    XII_GAL_D3D11_RELEASE(m_pTexture);
+  }
   return XII_SUCCESS;
 }
 
@@ -160,7 +163,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture2D(ID3D11Texture2D** ppTexture2D, con
   textureDescription.Height               = m_Description.m_Size.height;
   textureDescription.MipLevels            = m_Description.m_uiMipLevels;
   textureDescription.ArraySize            = m_Description.GetArraySize();
-  textureDescription.Format               = TextureFormatToDXGI_Format(m_Description.m_Format, m_Description.m_BindFlags);
+  textureDescription.Format               = ResourceFormatToDXGI_Format(m_Description.m_Format, m_Description.m_BindFlags);
   textureDescription.SampleDesc           = sampleDescription;
   textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
   textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
@@ -354,147 +357,147 @@ DXGI_FORMAT CorrectDXGIFormat(DXGI_FORMAT DXGIFormat, xiiBitflags<xiiGALBindFlag
   return DXGIFormat;
 }
 
-DXGI_FORMAT TextureFormatToDXGI_Format(xiiEnum<xiiGALTextureFormat> textureFormat, xiiBitflags<xiiGALBindFlags> bindFlags)
+DXGI_FORMAT ResourceFormatToDXGI_Format(xiiEnum<xiiGALResourceFormat> textureFormat, xiiBitflags<xiiGALBindFlags> bindFlags)
 {
-  static bool        bFormatMapInitialized                            = false;
-  static DXGI_FORMAT FmtToDXGIFmtMap[xiiGALTextureFormat::ENUM_COUNT] = {DXGI_FORMAT_UNKNOWN};
+  static bool        bFormatMapInitialized                             = false;
+  static DXGI_FORMAT FmtToDXGIFmtMap[xiiGALResourceFormat::ENUM_COUNT] = {DXGI_FORMAT_UNKNOWN};
   if (!bFormatMapInitialized)
   {
-    FmtToDXGIFmtMap[xiiGALTextureFormat::Unknown] = DXGI_FORMAT_UNKNOWN;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::Unknown] = DXGI_FORMAT_UNKNOWN;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA32Typeless] = DXGI_FORMAT_R32G32B32A32_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA32Float]    = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA32UInt]     = DXGI_FORMAT_R32G32B32A32_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA32SInt]     = DXGI_FORMAT_R32G32B32A32_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA32Typeless] = DXGI_FORMAT_R32G32B32A32_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA32Float]    = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA32UInt]     = DXGI_FORMAT_R32G32B32A32_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA32SInt]     = DXGI_FORMAT_R32G32B32A32_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGB32Typeless] = DXGI_FORMAT_R32G32B32_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGB32Float]    = DXGI_FORMAT_R32G32B32_FLOAT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGB32UInt]     = DXGI_FORMAT_R32G32B32_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGB32SInt]     = DXGI_FORMAT_R32G32B32_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGB32Typeless] = DXGI_FORMAT_R32G32B32_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGB32Float]    = DXGI_FORMAT_R32G32B32_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGB32UInt]     = DXGI_FORMAT_R32G32B32_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGB32SInt]     = DXGI_FORMAT_R32G32B32_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA16Typeless]    = DXGI_FORMAT_R16G16B16A16_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA16Float]       = DXGI_FORMAT_R16G16B16A16_FLOAT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA16UNormalized] = DXGI_FORMAT_R16G16B16A16_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA16UInt]        = DXGI_FORMAT_R16G16B16A16_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA16SNormalized] = DXGI_FORMAT_R16G16B16A16_SNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA16SInt]        = DXGI_FORMAT_R16G16B16A16_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA16Typeless]    = DXGI_FORMAT_R16G16B16A16_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA16Float]       = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA16UNormalized] = DXGI_FORMAT_R16G16B16A16_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA16UInt]        = DXGI_FORMAT_R16G16B16A16_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA16SNormalized] = DXGI_FORMAT_R16G16B16A16_SNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA16SInt]        = DXGI_FORMAT_R16G16B16A16_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG32Typeless] = DXGI_FORMAT_R32G32_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG32Float]    = DXGI_FORMAT_R32G32_FLOAT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG32UInt]     = DXGI_FORMAT_R32G32_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG32SInt]     = DXGI_FORMAT_R32G32_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG32Typeless] = DXGI_FORMAT_R32G32_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG32Float]    = DXGI_FORMAT_R32G32_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG32UInt]     = DXGI_FORMAT_R32G32_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG32SInt]     = DXGI_FORMAT_R32G32_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R32G8X24Typeless]      = DXGI_FORMAT_R32G8X24_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::D32FloatS8X24UInt]     = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R32FloatX8X24Typeless] = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::X32TypelessG8X24UInt]  = DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R32G8X24Typeless]      = DXGI_FORMAT_R32G8X24_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::D32FloatS8X24UInt]     = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R32FloatX8X24Typeless] = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::X32TypelessG8X24UInt]  = DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGB10A2Typeless]    = DXGI_FORMAT_R10G10B10A2_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGB10A2UNormalized] = DXGI_FORMAT_R10G10B10A2_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGB10A2UInt]        = DXGI_FORMAT_R10G10B10A2_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGB10A2Typeless]    = DXGI_FORMAT_R10G10B10A2_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGB10A2UNormalized] = DXGI_FORMAT_R10G10B10A2_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGB10A2UInt]        = DXGI_FORMAT_R10G10B10A2_UINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG11B10Float] = DXGI_FORMAT_R11G11B10_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG11B10Float] = DXGI_FORMAT_R11G11B10_FLOAT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA8Typeless]        = DXGI_FORMAT_R8G8B8A8_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA8UNormalized]     = DXGI_FORMAT_R8G8B8A8_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA8UNormalizedSRGB] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA8UInt]            = DXGI_FORMAT_R8G8B8A8_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA8SNormalized]     = DXGI_FORMAT_R8G8B8A8_SNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGBA8SInt]            = DXGI_FORMAT_R8G8B8A8_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA8Typeless]        = DXGI_FORMAT_R8G8B8A8_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA8UNormalized]     = DXGI_FORMAT_R8G8B8A8_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA8UNormalizedSRGB] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA8UInt]            = DXGI_FORMAT_R8G8B8A8_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA8SNormalized]     = DXGI_FORMAT_R8G8B8A8_SNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGBA8SInt]            = DXGI_FORMAT_R8G8B8A8_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG16Typeless]    = DXGI_FORMAT_R16G16_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG16Float]       = DXGI_FORMAT_R16G16_FLOAT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG16UNormalized] = DXGI_FORMAT_R16G16_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG16UInt]        = DXGI_FORMAT_R16G16_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG16SNormalized] = DXGI_FORMAT_R16G16_SNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG16SInt]        = DXGI_FORMAT_R16G16_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG16Typeless]    = DXGI_FORMAT_R16G16_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG16Float]       = DXGI_FORMAT_R16G16_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG16UNormalized] = DXGI_FORMAT_R16G16_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG16UInt]        = DXGI_FORMAT_R16G16_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG16SNormalized] = DXGI_FORMAT_R16G16_SNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG16SInt]        = DXGI_FORMAT_R16G16_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R32Typeless] = DXGI_FORMAT_R32_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::D32Float]    = DXGI_FORMAT_D32_FLOAT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R32Float]    = DXGI_FORMAT_R32_FLOAT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R32UInt]     = DXGI_FORMAT_R32_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R32SInt]     = DXGI_FORMAT_R32_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R32Typeless] = DXGI_FORMAT_R32_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::D32Float]    = DXGI_FORMAT_D32_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R32Float]    = DXGI_FORMAT_R32_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R32UInt]     = DXGI_FORMAT_R32_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R32SInt]     = DXGI_FORMAT_R32_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R24G8Typeless]            = DXGI_FORMAT_R24G8_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::D24UNormalizedS8UInt]     = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R24UNormalizedX8Typeless] = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::X24TypelessG8UInt]        = DXGI_FORMAT_X24_TYPELESS_G8_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R24G8Typeless]            = DXGI_FORMAT_R24G8_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::D24UNormalizedS8UInt]     = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R24UNormalizedX8Typeless] = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::X24TypelessG8UInt]        = DXGI_FORMAT_X24_TYPELESS_G8_UINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG8Typeless]    = DXGI_FORMAT_R8G8_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG8UNormalized] = DXGI_FORMAT_R8G8_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG8UInt]        = DXGI_FORMAT_R8G8_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG8SNormalized] = DXGI_FORMAT_R8G8_SNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG8SInt]        = DXGI_FORMAT_R8G8_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG8Typeless]    = DXGI_FORMAT_R8G8_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG8UNormalized] = DXGI_FORMAT_R8G8_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG8UInt]        = DXGI_FORMAT_R8G8_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG8SNormalized] = DXGI_FORMAT_R8G8_SNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG8SInt]        = DXGI_FORMAT_R8G8_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R16Typeless]    = DXGI_FORMAT_R16_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R16Float]       = DXGI_FORMAT_R16_FLOAT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::D16UNormalized] = DXGI_FORMAT_D16_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R16UNormalized] = DXGI_FORMAT_R16_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R16UInt]        = DXGI_FORMAT_R16_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R16SNormalized] = DXGI_FORMAT_R16_SNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R16SInt]        = DXGI_FORMAT_R16_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R16Typeless]    = DXGI_FORMAT_R16_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R16Float]       = DXGI_FORMAT_R16_FLOAT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::D16UNormalized] = DXGI_FORMAT_D16_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R16UNormalized] = DXGI_FORMAT_R16_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R16UInt]        = DXGI_FORMAT_R16_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R16SNormalized] = DXGI_FORMAT_R16_SNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R16SInt]        = DXGI_FORMAT_R16_SINT;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R8Typeless]    = DXGI_FORMAT_R8_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R8UNormalized] = DXGI_FORMAT_R8_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R8UInt]        = DXGI_FORMAT_R8_UINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R8SNormalized] = DXGI_FORMAT_R8_SNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R8SInt]        = DXGI_FORMAT_R8_SINT;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::A8UNormalized] = DXGI_FORMAT_A8_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R8Typeless]    = DXGI_FORMAT_R8_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R8UNormalized] = DXGI_FORMAT_R8_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R8UInt]        = DXGI_FORMAT_R8_UINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R8SNormalized] = DXGI_FORMAT_R8_SNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R8SInt]        = DXGI_FORMAT_R8_SINT;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::A8UNormalized] = DXGI_FORMAT_A8_UNORM;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R1UNormalized]        = DXGI_FORMAT_R1_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RGB9E5SharedExponent] = DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::RG8BG8UNormalized]    = DXGI_FORMAT_R8G8_B8G8_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::GR8GB8UNormalized]    = DXGI_FORMAT_G8R8_G8B8_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R1UNormalized]        = DXGI_FORMAT_R1_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RGB9E5SharedExponent] = DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::RG8BG8UNormalized]    = DXGI_FORMAT_R8G8_B8G8_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::GR8GB8UNormalized]    = DXGI_FORMAT_G8R8_G8B8_UNORM;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC1Typeless]        = DXGI_FORMAT_BC1_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC1UNormalized]     = DXGI_FORMAT_BC1_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC1UNormalizedSRGB] = DXGI_FORMAT_BC1_UNORM_SRGB;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC2Typeless]        = DXGI_FORMAT_BC2_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC2UNormalized]     = DXGI_FORMAT_BC2_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC2UNormalizedSRGB] = DXGI_FORMAT_BC2_UNORM_SRGB;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC3Typeless]        = DXGI_FORMAT_BC3_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC3UNormalized]     = DXGI_FORMAT_BC3_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC3UNormalizedSRGB] = DXGI_FORMAT_BC3_UNORM_SRGB;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC4Typeless]        = DXGI_FORMAT_BC4_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC4UNormalized]     = DXGI_FORMAT_BC4_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC4SNormalized]     = DXGI_FORMAT_BC4_SNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC5Typeless]        = DXGI_FORMAT_BC5_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC5UNormalized]     = DXGI_FORMAT_BC5_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC5SNormalized]     = DXGI_FORMAT_BC5_SNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC1Typeless]        = DXGI_FORMAT_BC1_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC1UNormalized]     = DXGI_FORMAT_BC1_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC1UNormalizedSRGB] = DXGI_FORMAT_BC1_UNORM_SRGB;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC2Typeless]        = DXGI_FORMAT_BC2_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC2UNormalized]     = DXGI_FORMAT_BC2_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC2UNormalizedSRGB] = DXGI_FORMAT_BC2_UNORM_SRGB;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC3Typeless]        = DXGI_FORMAT_BC3_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC3UNormalized]     = DXGI_FORMAT_BC3_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC3UNormalizedSRGB] = DXGI_FORMAT_BC3_UNORM_SRGB;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC4Typeless]        = DXGI_FORMAT_BC4_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC4UNormalized]     = DXGI_FORMAT_BC4_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC4SNormalized]     = DXGI_FORMAT_BC4_SNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC5Typeless]        = DXGI_FORMAT_BC5_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC5UNormalized]     = DXGI_FORMAT_BC5_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC5SNormalized]     = DXGI_FORMAT_BC5_SNORM;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::B5G6R5UNormalized]   = DXGI_FORMAT_B5G6R5_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::B5G5R5A1UNormalized] = DXGI_FORMAT_B5G5R5A1_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BGRA8UNormalized]    = DXGI_FORMAT_B8G8R8A8_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BGRX8UNormalized]    = DXGI_FORMAT_B8G8R8X8_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::B5G6R5UNormalized]   = DXGI_FORMAT_B5G6R5_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::B5G5R5A1UNormalized] = DXGI_FORMAT_B5G5R5A1_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BGRA8UNormalized]    = DXGI_FORMAT_B8G8R8A8_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BGRX8UNormalized]    = DXGI_FORMAT_B8G8R8X8_UNORM;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized] = DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::R10G10B10XRBiasA2UNormalized] = DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BGRA8Typeless]        = DXGI_FORMAT_B8G8R8A8_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BGRA8UNormalizedSRGB] = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BGRX8Typeless]        = DXGI_FORMAT_B8G8R8X8_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BGRX8UNormalizedSRGB] = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BGRA8Typeless]        = DXGI_FORMAT_B8G8R8A8_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BGRA8UNormalizedSRGB] = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BGRX8Typeless]        = DXGI_FORMAT_B8G8R8X8_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BGRX8UNormalizedSRGB] = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
 
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC6HTypeless]       = DXGI_FORMAT_BC6H_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC6HUF16]           = DXGI_FORMAT_BC6H_UF16;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC6HSF16]           = DXGI_FORMAT_BC6H_SF16;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC7Typeless]        = DXGI_FORMAT_BC7_TYPELESS;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC7UNormalized]     = DXGI_FORMAT_BC7_UNORM;
-    FmtToDXGIFmtMap[xiiGALTextureFormat::BC7UNormalizedSRGB] = DXGI_FORMAT_BC7_UNORM_SRGB;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC6HTypeless]       = DXGI_FORMAT_BC6H_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC6HUF16]           = DXGI_FORMAT_BC6H_UF16;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC6HSF16]           = DXGI_FORMAT_BC6H_SF16;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC7Typeless]        = DXGI_FORMAT_BC7_TYPELESS;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC7UNormalized]     = DXGI_FORMAT_BC7_UNORM;
+    FmtToDXGIFmtMap[xiiGALResourceFormat::BC7UNormalizedSRGB] = DXGI_FORMAT_BC7_UNORM_SRGB;
 
     bFormatMapInitialized = true;
   }
 
-  if (textureFormat >= xiiGALTextureFormat::Unknown && textureFormat < xiiGALTextureFormat::ENUM_COUNT)
+  if (textureFormat >= xiiGALResourceFormat::Unknown && textureFormat < xiiGALResourceFormat::ENUM_COUNT)
   {
     auto DXGIFormat = FmtToDXGIFmtMap[textureFormat];
-    XII_ASSERT_DEV(textureFormat == xiiGALTextureFormat::Unknown || DXGIFormat != DXGI_FORMAT_UNKNOWN, "Unsupported texture format");
+    XII_ASSERT_DEV(textureFormat == xiiGALResourceFormat::Unknown || DXGIFormat != DXGI_FORMAT_UNKNOWN, "Unsupported texture format");
     if (bindFlags.IsAnyFlagSet())
       DXGIFormat = CorrectDXGIFormat(DXGIFormat, bindFlags);
     return DXGIFormat;
   }
   else
   {
-    // UNEXPECTED("Texture format (", TexFormat, ") is out of allowed range [0, ", xiiGALTextureFormat::NUM_FORMATS - 1, "]");
+    // UNEXPECTED("Texture format (", TexFormat, ") is out of allowed range [0, ", xiiGALResourceFormat::NUM_FORMATS - 1, "]");
     return DXGI_FORMAT_UNKNOWN;
   }
 }

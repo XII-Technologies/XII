@@ -300,8 +300,8 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreatio
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
   XII_VERIFY_SWAP_CHAIN(description.m_pWindow != nullptr, "The swap chain window handle is invalid.");
-  XII_VERIFY_SWAP_CHAIN(description.m_ColorBufferFormat != xiiGALTextureFormat::Unknown, "The swap chain color buffer format is invalid.");
-  XII_VERIFY_SWAP_CHAIN(!description.m_Usage.IsNoFlagSet(), "The swap chain usage is not set.");
+  XII_VERIFY_SWAP_CHAIN(description.m_ColorBufferFormat != xiiGALResourceFormat::Unknown, "The swap chain color buffer format is invalid.");
+  XII_VERIFY_SWAP_CHAIN(!description.m_UsageFlags.IsNoFlagSet(), "The swap chain usage is not set.");
   XII_VERIFY_SWAP_CHAIN(description.m_fDefaultDepthValue > 0.0f, "The swap chain usage is not set.");
 
   xiiGALSwapChain* pSwapChain = CreateSwapChainPlatform(description);
@@ -866,23 +866,18 @@ xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDe
       XII_VERIFY_BUFFER_VIEW((description.m_uiByteWidth % bufferDescription.m_uiElementByteStride) == 0U, "The buffer view byte width ({0}) is not a multiple of the element byte stride ({1}).", description.m_uiByteWidth, bufferDescription.m_uiElementByteStride);
     }
 
-    XII_VERIFY_BUFFER_VIEW(!(bufferDescription.m_Mode == xiiGALBufferMode::Formatted && description.m_Format.m_ValueType == xiiGALValueType::Undefined), "The format must be specified when creating a view of a formatted buffer.");
+    XII_VERIFY_BUFFER_VIEW(!(bufferDescription.m_Mode == xiiGALBufferMode::Formatted && description.m_Format == xiiGALResourceFormat::Unknown), "The format must be specified when creating a view of a formatted buffer.");
 
-    if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format.m_ValueType != xiiGALValueType::Undefined))
+    if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format != xiiGALResourceFormat::Unknown))
     {
-      XII_VERIFY_BUFFER_VIEW(description.m_Format.m_uiComponents > 0U && description.m_Format.m_uiComponents <= 4U, "Incorrect number of format components ({0}). 1, 2, 3, or 4 are allowed values.");
-
-      if (description.m_Format.m_ValueType == xiiGALValueType::Float16 || description.m_Format.m_ValueType == xiiGALValueType::Float32)
-        description.m_Format.m_bIsNormalized = false;
-
       XII_VERIFY_BUFFER_VIEW(bufferDescription.m_Mode != xiiGALBufferMode::Raw && bufferDescription.m_uiElementByteStride != 0U, "To enable formatted views of a raw buffer, the element byte stride must be specified in the buffer creation description.");
 
-      const xiiUInt32 uiViewElementStride = xiiGALValueType::GetSize(description.m_Format.m_ValueType) * description.m_Format.m_uiComponents;
+      const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
 
-      XII_VERIFY_BUFFER_VIEW(bufferDescription.m_uiElementByteStride == uiViewElementStride, "The buffer element byte stride ({0}) is not consistent with the size ({1}) defined by the format value type of the view ({2}).", bufferDescription.m_uiElementByteStride, uiViewElementStride, description.m_Format.m_ValueType);
+      XII_VERIFY_BUFFER_VIEW(bufferDescription.m_uiElementByteStride == formatProperties.GetElementSize(), "The buffer element byte stride ({0}) is not consistent with the size ({1}) defined by the format ({2}) of the view ({2}).", bufferDescription.m_uiElementByteStride, formatProperties.GetElementSize(), description.m_Format);
     }
 
-    if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format.m_ValueType == xiiGALValueType::Undefined)
+    if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format == xiiGALResourceFormat::Unknown)
     {
       XII_VERIFY_BUFFER_VIEW((description.m_uiByteOffset % 16U) == 0U, "When creating a Raw buffer view, the offset of the first element from the start of the buffer ({0}) must be a multiple of 16 bytes.", description.m_uiByteOffset);
     }
@@ -953,7 +948,7 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  const auto& formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(description.m_Format);
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
 
   // Validate texture description.
 
@@ -1079,12 +1074,12 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
     {
       case xiiGALShadingRateFormat::Palette:
       {
-        XII_VERIFY_TEXTURE(description.m_Format == xiiGALTextureFormat::R8UInt, "The shading rate texture format must be xiiGALTextureFormat::R8UInt.");
+        XII_VERIFY_TEXTURE(description.m_Format == xiiGALResourceFormat::R8UInt, "The shading rate texture format must be xiiGALResourceFormat::R8UInt.");
       }
       break;
       case xiiGALShadingRateFormat::RG8UNormalized:
       {
-        XII_VERIFY_TEXTURE(description.m_Format == xiiGALTextureFormat::R8UNormalized, "The shading rate texture format must be xiiGALTextureFormat::R8UNormalized.");
+        XII_VERIFY_TEXTURE(description.m_Format == xiiGALResourceFormat::R8UNormalized, "The shading rate texture format must be xiiGALResourceFormat::R8UNormalized.");
       }
       break;
 
@@ -1199,7 +1194,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < textureDescription.m_uiMipLevels, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, textureDescription.m_uiMipLevels);
   XII_VERIFY_TEXTURE_VIEW((description.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS) || ((description.m_uiMostDetailedMip + description.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels), "The most detailed mip ({0}) and the number of mip levels in the view ({1}) is out of range. The texture has only {2} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount, textureDescription.m_uiMipLevels);
 
-  if (description.m_Format == xiiGALTextureFormat::Unknown)
+  if (description.m_Format == xiiGALResourceFormat::Unknown)
   {
     description.m_Format = xiiGALTextureUtilities::GetDefaultTextureViewFormat(textureDescription.m_Format, description.m_ViewType, textureDescription.m_BindFlags);
   }
@@ -1342,7 +1337,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
       XII_VERIFY_TEXTURE_VIEW(false, "Unexpected texture dimension.");
   }
 
-  XII_VERIFY_TEXTURE_VIEW(!xiiGALTextureUtilities::GetTextureFormatProperties(description.m_Format).m_bIsTypeless, "The texture view format ({0}) cannot be typeless.", description.m_Format.GetValue());
+  XII_VERIFY_TEXTURE_VIEW(!xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format).m_bIsTypeless, "The texture view format ({0}) cannot be typeless.", description.m_Format.GetValue());
 
   if (description.m_Flags.IsSet(xiiGALTextureViewFlags::AllowMipGeneration))
   {
@@ -1739,12 +1734,12 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
   {
     const auto& attachment = description.m_Attachments[uiAttachmentIndex];
 
-    XII_VERIFY_RENDER_PASS(attachment.m_Format != xiiGALTextureFormat::Unknown, "The format of attachment {0} is unknown.", uiAttachmentIndex);
+    XII_VERIFY_RENDER_PASS(attachment.m_Format != xiiGALResourceFormat::Unknown, "The format of attachment {0} is unknown.", uiAttachmentIndex);
     XII_VERIFY_RENDER_PASS(attachment.m_uiSampleCount != 0U, "The sample count of attachment {0} is zero.", uiAttachmentIndex);
     XII_VERIFY_RENDER_PASS(xiiMath::IsPowerOf2(attachment.m_uiSampleCount), "The sample count ({0}) of attachment {1} is not a power of 2.", attachment.m_uiSampleCount, uiAttachmentIndex);
 
-    const auto& formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(attachment.m_Format);
-    if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
+    const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(attachment.m_Format);
+    if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
     {
       XII_VERIFY_RENDER_PASS(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Undefined) || (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
                              "The initial state of the depth-stencil attachment {0} is invalid.", uiAttachmentIndex);
@@ -1795,8 +1790,8 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
       XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::RenderTarget || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::RenderTarget or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::RenderTarget"));
 
       const auto& format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-      const auto& rtFormatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(format);
-      XII_VERIFY_RENDER_PASS(rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::Depth && rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::DepthStencil && rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::Compressed, "Attachment with index {0} referenced as a render target attachment in sub pass {1} uses format {2}, which is not a valid render target format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
+      const auto& rtFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+      XII_VERIFY_RENDER_PASS(rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Depth && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::DepthStencil && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Compressed, "Attachment with index {0} referenced as a render target attachment in sub pass {1} uses format {2}, which is not a valid render target format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
     }
 
     if (!subpass.m_ResolveAttachments.IsEmpty())
@@ -1828,8 +1823,8 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
         XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthRead || attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthWrite || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index ({0}) of the depth-stencil attachment reference of sub pass {1} must be must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite"));
 
         const auto& format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-        const auto& depthFormatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(format);
-        XII_VERIFY_RENDER_PASS(depthFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
+        const auto& depthFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+        XII_VERIFY_RENDER_PASS(depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
       }
     }
 
@@ -1996,7 +1991,7 @@ xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferC
 
     if (textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless))
     {
-      const bool bHasStencilComponent = xiiGALTextureUtilities::GetTextureFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil;
+      const bool bHasStencilComponent = xiiGALTextureUtilities::GetResourceFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil;
 
       XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_LoadOperation != xiiGALAttachmentLoadOperation::Load && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Load), "Memoryless attachment {i} is not compatible with xiiGALAttachmentLoadOperation::Load.", uiAttachmentIndex);
       XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_StencilStoreOperation != xiiGALAttachmentStoreOperation::Store && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentStoreOperation::Store), "Memoryless attachment {i} is not compatible with xiiGALAttachmentStoreOperation::Store.", uiAttachmentIndex);
@@ -2562,7 +2557,7 @@ void xiiGALDevice::WaitIdle()
 
 xiiUInt64 xiiGALDevice::GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& desc) const
 {
-  auto& formatProperties = xiiGALTextureUtilities::GetTextureFormatProperties(desc.m_Format);
+  auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(desc.m_Format);
 
   // This generic implementation is only an approximation, but it can be overridden by specific devices to give an accurate memory consumption figure.
   xiiUInt64 uiMemory = xiiUInt64(desc.m_Size.width) * xiiUInt64(desc.m_Size.height) * xiiUInt64(desc.m_uiArraySizeOrDepth);

@@ -148,14 +148,13 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
   // Since we are reading data from the backbuffer, we need to ensure that the copy command has completed before mapping the staging texture for reading.
   // This is mainly a D3D11 deferred context limitation, we will need to update/branch this code path on modern api's like D3D12 and Vulkan.
   pGALCommandList->Submit(false);
-  pCommandQueue->WaitForIdle();
 
   pGALCommandList->Begin();
 
-  const xiiGALTexture*               pBackbuffer = xiiGALDevice::GetDefaultDevice()->GetTexture(hBackbuffer);
-  const xiiUInt32                    uiWidth     = pBackbuffer->GetDescription().m_Size.width;
-  const xiiUInt32                    uiHeight    = pBackbuffer->GetDescription().m_Size.height;
-  const xiiEnum<xiiGALTextureFormat> format      = pBackbuffer->GetDescription().m_Format;
+  const xiiGALTexture*                pBackbuffer = xiiGALDevice::GetDefaultDevice()->GetTexture(hBackbuffer);
+  const xiiUInt32                     uiWidth     = pBackbuffer->GetDescription().m_Size.width;
+  const xiiUInt32                     uiHeight    = pBackbuffer->GetDescription().m_Size.height;
+  const xiiEnum<xiiGALResourceFormat> format      = pBackbuffer->GetDescription().m_Format;
 
   xiiDynamicArray<xiiUInt8> backbufferData;
   backbufferData.SetCountUninitialized(uiWidth * uiHeight * 4);
@@ -169,7 +168,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
   XII_SUCCEED_OR_RETURN(pGALCommandList->MapTextureSubresource(m_hBackbufferStagingTexture, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource));
 
   const auto& textureDescription = pDevice->GetTexture(m_hBackbufferStagingTexture)->GetDescription();
-  const auto& formatProperties   = xiiGALTextureUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+  const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
   if (mappedSubResource.m_pData)
   {
@@ -203,8 +202,6 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   pGALCommandList->EndDebugGroup();
   pGALCommandList->Submit();
-
-  pCommandQueue->WaitForIdle();
 
   xiiImageHeader header;
   header.SetWidth(uiWidth);

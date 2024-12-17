@@ -159,13 +159,13 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
       break;
   }
 
-  XII_ASSERT_DEV(!m_Description.m_Usage.IsNoFlagSet(), "No swap chain usage flags are set!");
+  XII_ASSERT_DEV(!m_Description.m_UsageFlags.IsNoFlagSet(), "No swap chain usage flags are set!");
 
-  if (m_Description.m_Usage.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+  if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
   {
     swapChainDescription.BufferUsage |= DXGI_USAGE_RENDER_TARGET_OUTPUT;
   }
-  if (m_Description.m_Usage.IsAnySet(xiiGALSwapChainUsageFlags::ShaderResource | xiiGALSwapChainUsageFlags::InputAttachment))
+  if (m_Description.m_UsageFlags.IsAnySet(xiiGALSwapChainUsageFlags::ShaderResource | xiiGALSwapChainUsageFlags::InputAttachment))
   {
     swapChainDescription.BufferUsage |= DXGI_USAGE_SHADER_INPUT;
   }
@@ -369,7 +369,7 @@ xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDev
   m_hBackBufferTexture = hBackbufferTexture;
 
   // If we sRGB backbuffer was requested, we create a "practical backbuffer".
-  if (m_Description.m_ColorBufferFormat == xiiGALTextureFormat::RGBA8UNormalizedSRGB || m_Description.m_ColorBufferFormat == xiiGALTextureFormat::BGRA8UNormalizedSRGB)
+  if (m_Description.m_ColorBufferFormat == xiiGALResourceFormat::RGBA8UNormalizedSRGB || m_Description.m_ColorBufferFormat == xiiGALResourceFormat::BGRA8UNormalizedSRGB)
   {
     textureDescription.m_pExisitingNativeObject = nullptr;
     textureDescription.m_Format                 = m_Description.m_ColorBufferFormat;
@@ -427,8 +427,6 @@ void xiiGALSwapChainD3D11::Present()
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
-
-      pGraphicsOrTransferQueue->WaitForIdle();
     }
   }
 
@@ -493,9 +491,9 @@ void xiiGALSwapChainD3D11::SetFullScreenMode(const xiiGALDisplayModeDescription&
     m_FullScreenMode.m_ScanLineOrder            = displayMode.m_ScanLineOrder;
 
     m_Description.m_Resolution = displayMode.m_Resolution;
-    if (displayMode.m_TextureFormat != xiiGALTextureFormat::Unknown)
+    if (displayMode.m_ResourceFormat != xiiGALResourceFormat::Unknown)
     {
-      m_Description.m_ColorBufferFormat = displayMode.m_TextureFormat;
+      m_Description.m_ColorBufferFormat = displayMode.m_ResourceFormat;
     }
 
     UpdateSwapChain(true).AssertSuccess();

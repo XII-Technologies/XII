@@ -9,7 +9,7 @@
 
 XII_DEFINE_AS_POD_TYPE(D3D11_SHADER_INPUT_BIND_DESC);
 
-xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
+xiiEnum<xiiGALResourceFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
 
 xiiResult xiiShaderCompilerD3D11::CompileShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
@@ -129,7 +129,7 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout
           xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
 
         attribute.m_Format = GetXIIFormatD3D11(parameterDesc.ComponentType, parameterDesc.Mask);
-        XII_ASSERT_DEV(attribute.m_Format != xiiGALTextureFormat::Unknown, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
+        XII_ASSERT_DEV(attribute.m_Format != xiiGALResourceFormat::Unknown, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
       }
     }
   }
@@ -465,7 +465,7 @@ xiiResult xiiShaderCompilerD3D11::FillUAVResourceBinding(xiiGALShaderResourceDes
   return XII_FAILURE;
 }
 
-xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
+xiiEnum<xiiGALResourceFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
 {
   switch (format)
   {
@@ -474,13 +474,13 @@ xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE forma
       switch (numComponents)
       {
         case 0xF:
-          return xiiGALTextureFormat::RGBA32UInt;
+          return xiiGALResourceFormat::RGBA32UInt;
         case 0x7:
-          return xiiGALTextureFormat::RGB32UInt;
+          return xiiGALResourceFormat::RGB32UInt;
         case 0x3:
-          return xiiGALTextureFormat::RG32UInt;
+          return xiiGALResourceFormat::RG32UInt;
         case 0x1:
-          return xiiGALTextureFormat::R32UInt;
+          return xiiGALResourceFormat::R32UInt;
       }
     }
     break;
@@ -489,13 +489,13 @@ xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE forma
       switch (numComponents)
       {
         case 0xF:
-          return xiiGALTextureFormat::RGBA32SInt;
+          return xiiGALResourceFormat::RGBA32SInt;
         case 0x7:
-          return xiiGALTextureFormat::RGB32SInt;
+          return xiiGALResourceFormat::RGB32SInt;
         case 0x3:
-          return xiiGALTextureFormat::RG32SInt;
+          return xiiGALResourceFormat::RG32SInt;
         case 0x1:
-          return xiiGALTextureFormat::R32SInt;
+          return xiiGALResourceFormat::R32SInt;
       }
     }
     break;
@@ -504,22 +504,22 @@ xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE forma
       switch (numComponents)
       {
         case 0xF:
-          return xiiGALTextureFormat::RGBA32Float;
+          return xiiGALResourceFormat::RGBA32Float;
         case 0x7:
-          return xiiGALTextureFormat::RGB32Float;
+          return xiiGALResourceFormat::RGB32Float;
         case 0x3:
-          return xiiGALTextureFormat::RG32Float;
+          return xiiGALResourceFormat::RG32Float;
         case 0x1:
-          return xiiGALTextureFormat::R32Float;
+          return xiiGALResourceFormat::R32Float;
       }
     }
     break;
 
     case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UNKNOWN:
     default:
-      return xiiGALTextureFormat::Unknown;
+      return xiiGALResourceFormat::Unknown;
   }
 
-  return xiiGALTextureFormat::Unknown;
+  return xiiGALResourceFormat::Unknown;
 }
 #endif

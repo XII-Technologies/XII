@@ -48,8 +48,8 @@ class XII_GRAPHICSCORE_DLL xiiTextureCubeResource : public xiiResource
 public:
   xiiTextureCubeResource();
 
-  XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> GetFormat() const { return m_Format; }
-  XII_ALWAYS_INLINE xiiUInt32                    GetWidthAndHeight() const { return m_uiWidthAndHeight; }
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetFormat() const { return m_Format; }
+  XII_ALWAYS_INLINE xiiUInt32                     GetWidthAndHeight() const { return m_uiWidthAndHeight; }
 
   const xiiGALTextureHandle& GetGALTexture() const { return m_hGALTexture[m_uiLoadedTextures - 1]; }
   const xiiGALSamplerHandle& GetGALSampler() const { return m_hSampler; }
@@ -63,8 +63,8 @@ protected:
   xiiGALTextureHandle m_hGALTexture[2];
   xiiUInt32           m_uiMemoryGPU[2];
 
-  xiiEnum<xiiGALTextureFormat> m_Format;
-  xiiUInt32                    m_uiWidthAndHeight;
+  xiiEnum<xiiGALResourceFormat> m_Format;
+  xiiUInt32                     m_uiWidthAndHeight;
 
   xiiGALSamplerHandle m_hSampler;
 };

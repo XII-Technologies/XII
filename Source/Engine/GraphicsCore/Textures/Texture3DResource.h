@@ -48,10 +48,10 @@ class XII_GRAPHICSCORE_DLL xiiTexture3DResource : public xiiResource
 public:
   xiiTexture3DResource();
 
-  XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> GetFormat() const { return m_Format; }
-  XII_ALWAYS_INLINE xiiUInt32                    GetWidth() const { return m_uiWidth; }
-  XII_ALWAYS_INLINE xiiUInt32                    GetHeight() const { return m_uiHeight; }
-  XII_ALWAYS_INLINE xiiUInt32                    GetDepth() const { return m_uiDepth; }
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetFormat() const { return m_Format; }
+  XII_ALWAYS_INLINE xiiUInt32                     GetWidth() const { return m_uiWidth; }
+  XII_ALWAYS_INLINE xiiUInt32                     GetHeight() const { return m_uiHeight; }
+  XII_ALWAYS_INLINE xiiUInt32                     GetDepth() const { return m_uiDepth; }
   XII_ALWAYS_INLINE xiiEnum<xiiGALResourceDimension> GetType() const { return m_Type; }
 
   static void FillOutDescriptor(xiiTexture3DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
@@ -71,7 +71,7 @@ protected:
   xiiUInt32           m_uiMemoryGPU[2] = {0, 0};
 
   xiiEnum<xiiGALResourceDimension> m_Type     = xiiGALResourceDimension::Undefined;
-  xiiEnum<xiiGALTextureFormat>     m_Format   = xiiGALTextureFormat::Unknown;
+  xiiEnum<xiiGALResourceFormat>    m_Format   = xiiGALResourceFormat::Unknown;
   xiiUInt32                        m_uiWidth  = 0;
   xiiUInt32                        m_uiHeight = 0;
   xiiUInt32                        m_uiDepth  = 0;

@@ -2,6 +2,22 @@
 
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
+xiiBitflags<xiiGALBindFlags> xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(xiiBitflags<xiiGALSwapChainUsageFlags> swapChainUsageFlags)
+{
+  xiiBitflags<xiiGALBindFlags> bindFlags = xiiGALBindFlags::None;
+
+  if (swapChainUsageFlags.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+    bindFlags |= xiiGALBindFlags::RenderTarget;
+  if (swapChainUsageFlags.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
+    bindFlags |= xiiGALBindFlags::ShaderResource;
+  if (swapChainUsageFlags.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
+    bindFlags |= xiiGALBindFlags::InputAttachment;
+
+  // No special bind flag is needed for xiiGALSwapChainUsageFlags::CopySource.
+
+  return bindFlags;
+}
+
 xiiBitflags<xiiGALPipelineResourceFlags> xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(xiiEnum<xiiGALShaderResourceType> type)
 {
   xiiBitflags<xiiGALPipelineResourceFlags> pipelineResourceFlags = xiiGALPipelineResourceFlags::None;
@@ -44,9 +60,9 @@ xiiGALSamplerCreationDescription xiiGALGraphicsUtilities::GetDefaultSamplerDescr
     .m_MinFilter          = xiiGALFilterType::Linear,
     .m_MagFilter          = xiiGALFilterType::Linear,
     .m_MipFilter          = xiiGALFilterType::Linear,
-    .m_AddressU           = xiiGALTextureAddressMode::Clamp,
-    .m_AddressV           = xiiGALTextureAddressMode::Clamp,
-    .m_AddressW           = xiiGALTextureAddressMode::Clamp,
+    .m_AddressU           = xiiGALTextureAddressMode::Wrap,
+    .m_AddressV           = xiiGALTextureAddressMode::Wrap,
+    .m_AddressW           = xiiGALTextureAddressMode::Wrap,
     .m_Flags              = xiiGALSamplerFlags::None,
     .m_bUnormalizedCoords = false,
     .m_fMipLODBias        = 0.0f,

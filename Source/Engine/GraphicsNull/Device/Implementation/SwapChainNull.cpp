@@ -36,7 +36,7 @@ xiiResult xiiGALSwapChainNull::DeInitPlatform()
 
 xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDeviceNull)
 {
-  xiiEnum<xiiGALTextureFormat> textureFormat = pDeviceNull->GetDescription().m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Vulkan ? xiiGALTextureFormat::RGBA8UNormalizedSRGB : xiiGALTextureFormat::BGRA8UNormalizedSRGB;
+  xiiEnum<xiiGALResourceFormat> textureFormat = pDeviceNull->GetDescription().m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Vulkan ? xiiGALResourceFormat::RGBA8UNormalizedSRGB : xiiGALResourceFormat::BGRA8UNormalizedSRGB;
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_Type               = xiiGALResourceDimension::Texture2D;
@@ -50,7 +50,7 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDevic
   textureDescription.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
   textureDescription.m_MiscFlags          = xiiGALMiscTextureFlags::None;
 
-  textureDescription.m_ClearValue.m_TextureFormat            = textureFormat;
+  textureDescription.m_ClearValue.m_ResourceFormat           = textureFormat;
   textureDescription.m_ClearValue.m_ClearColor               = xiiColor::Black;
   textureDescription.m_ClearValue.m_DepthStencil.m_fDepth    = 1.0f;
   textureDescription.m_ClearValue.m_DepthStencil.m_uiStencil = 0U;

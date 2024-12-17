@@ -27,7 +27,7 @@ xiiResult xiiGALFenceVulkan::InitPlatform()
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkTimelineSemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALFenceVulkan::DeInitPlatform()
@@ -92,7 +92,7 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 
 xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 {
-  XII_ASSERT_DEV(!IsTimelineSemaphore(), "");
+  XII_ASSERT_DEV(!IsTimelineSemaphore(), "The fence has no timeline semaphore.");
 
   xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();

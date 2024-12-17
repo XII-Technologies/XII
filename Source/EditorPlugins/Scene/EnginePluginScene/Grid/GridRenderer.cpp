@@ -72,7 +72,7 @@ void xiiGridRenderer::CreateVertexBuffer()
     {
       xiiVertexStreamInfo& si = m_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALInputLayoutSemantic::Position;
-      si.m_Format             = xiiGALTextureFormat::RGB32Float;
+      si.m_Format             = xiiGALResourceFormat::RGB32Float;
       si.m_uiOffset           = 0;
       si.m_uiElementSize      = 12;
     }
@@ -80,7 +80,7 @@ void xiiGridRenderer::CreateVertexBuffer()
     {
       xiiVertexStreamInfo& si = m_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
-      si.m_Format             = xiiGALTextureFormat::RGBA8UNormalized;
+      si.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
       si.m_uiOffset           = 12;
       si.m_uiElementSize      = 4;
     }

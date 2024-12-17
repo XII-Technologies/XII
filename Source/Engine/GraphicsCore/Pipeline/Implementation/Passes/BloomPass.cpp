@@ -68,7 +68,7 @@ bool xiiBloomPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArr
     xiiGALTextureCreationDescription desc = *inputs[m_PinInput.m_uiInputIndex];
     desc.m_Size.width                     = desc.m_Size.width / 2;
     desc.m_Size.height                    = desc.m_Size.height / 2;
-    desc.m_Format                         = xiiGALTextureFormat::RG11B10Float;
+    desc.m_Format                         = xiiGALResourceFormat::RG11B10Float;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
@@ -112,12 +112,12 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     targetSizes.PushBack(xiiVec2((float)uiWidth, (float)uiHeight));
     auto uiSliceCount = pColorOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
-    tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALMSAASampleCount::OneSample, uiSliceCount));
+    tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG11B10Float, xiiGALMSAASampleCount::OneSample, uiSliceCount));
 
     // biggest upscale target is the output and lowest is not needed
     if (i > 0 && i < uiNumBlurPasses - 1)
     {
-      tempUpscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALMSAASampleCount::OneSample, uiSliceCount));
+      tempUpscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG11B10Float, xiiGALMSAASampleCount::OneSample, uiSliceCount));
     }
     else
     {

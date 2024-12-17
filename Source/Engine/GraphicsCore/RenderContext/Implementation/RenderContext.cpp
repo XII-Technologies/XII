@@ -281,7 +281,6 @@ void xiiRenderContext::EndRendering()
     m_pCommandList->End();
   }
   m_pCommandList->Submit(false);
-  m_pCommandList->GetCommandQueue()->WaitForIdle();
 
   m_pCommandList        = nullptr;
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
@@ -343,7 +342,6 @@ void xiiRenderContext::EndCompute()
     m_pCommandList->End();
   }
   m_pCommandList->Submit(false);
-  m_pCommandList->GetCommandQueue()->WaitForIdle();
 
   m_pCommandList = nullptr;
   m_bIsCompute   = false;
@@ -1321,7 +1319,7 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
         {
           auto& attachment = renderPassDescription.m_Attachments[i];
 
-          const bool bIsDepthAttachment = xiiGALTextureFormat::IsDepthFormat(attachment.m_Format);
+          const bool bIsDepthAttachment = xiiGALResourceFormat::IsDepthFormat(attachment.m_Format);
           if (bIsDepthAttachment)
           {
             attachment.m_FinalStateFlags = xiiGALResourceStateFlags::DepthWrite;

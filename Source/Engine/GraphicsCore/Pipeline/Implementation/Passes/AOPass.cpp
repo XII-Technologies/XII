@@ -90,7 +90,7 @@ bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayP
     }
 
     xiiGALTextureCreationDescription desc = *pDepthInput;
-    desc.m_Format                         = xiiGALTextureFormat::RG16Float;
+    desc.m_Format                         = xiiGALResourceFormat::RG16Float;
     desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
     desc.m_BindFlags.Remove(xiiGALBindFlags::DepthStencil);
 
@@ -139,7 +139,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       desc.m_Size.height        = uiHzbHeight / 2;
       desc.m_uiMipLevels        = 3;
       desc.m_Type               = xiiGALResourceDimension::Texture2DArray;
-      desc.m_Format             = xiiGALTextureFormat::R16Float;
+      desc.m_Format             = xiiGALResourceFormat::R16Float;
       desc.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
       desc.m_uiArraySizeOrDepth = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
@@ -156,7 +156,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       {
         xiiGALTextureViewCreationDescription desc;
         desc.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
-        desc.m_Format                    = xiiGALTextureFormat::R16Float;
+        desc.m_Format                    = xiiGALResourceFormat::R16Float;
         desc.m_hTexture                  = hzbTexture;
         desc.m_uiMostDetailedMip         = i;
         desc.m_uiMipLevelCount           = 1;
@@ -168,7 +168,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       {
         xiiGALTextureViewCreationDescription desc;
         desc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
-        desc.m_Format                    = xiiGALTextureFormat::R16Float;
+        desc.m_Format                    = xiiGALResourceFormat::R16Float;
         desc.m_hTexture                  = hzbTexture;
         desc.m_uiMostDetailedMip         = i;
         desc.m_uiMipLevelCount           = 1;
@@ -178,7 +178,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       }
     }
 
-    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_TextureDescription.m_uiArraySizeOrDepth, true);
+    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_TextureDescription.m_uiArraySizeOrDepth, true);
   }
 
   // Mip map passes

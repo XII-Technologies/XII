@@ -206,216 +206,216 @@ XII_ALWAYS_INLINE vk::ColorComponentFlags xiiVulkanTypeConversions::GetColorWrit
   return colorMask;
 }
 
-XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALTextureFormat::Enum e)
+XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALResourceFormat::Enum e)
 {
   switch (e)
   {
-    case xiiGALTextureFormat::Unknown:
+    case xiiGALResourceFormat::Unknown:
       return vk::Format::eUndefined;
 
-    case xiiGALTextureFormat::RGBA32Typeless:
-    case xiiGALTextureFormat::RGBA32Float:
+    case xiiGALResourceFormat::RGBA32Typeless:
+    case xiiGALResourceFormat::RGBA32Float:
       return vk::Format::eR32G32B32A32Sfloat;
-    case xiiGALTextureFormat::RGBA32UInt:
+    case xiiGALResourceFormat::RGBA32UInt:
       return vk::Format::eR32G32B32A32Uint;
-    case xiiGALTextureFormat::RGBA32SInt:
+    case xiiGALResourceFormat::RGBA32SInt:
       return vk::Format::eR32G32B32A32Sint;
 
-    case xiiGALTextureFormat::RGB32Typeless:
-    case xiiGALTextureFormat::RGB32Float:
+    case xiiGALResourceFormat::RGB32Typeless:
+    case xiiGALResourceFormat::RGB32Float:
       return vk::Format::eR32G32B32Sfloat;
-    case xiiGALTextureFormat::RGB32UInt:
+    case xiiGALResourceFormat::RGB32UInt:
       return vk::Format::eR32G32B32Uint;
-    case xiiGALTextureFormat::RGB32SInt:
+    case xiiGALResourceFormat::RGB32SInt:
       return vk::Format::eR32G32B32Sint;
 
-    case xiiGALTextureFormat::RGBA16Typeless:
-    case xiiGALTextureFormat::RGBA16Float:
+    case xiiGALResourceFormat::RGBA16Typeless:
+    case xiiGALResourceFormat::RGBA16Float:
       return vk::Format::eR16G16B16A16Sfloat;
-    case xiiGALTextureFormat::RGBA16UNormalized:
+    case xiiGALResourceFormat::RGBA16UNormalized:
       return vk::Format::eR16G16B16A16Unorm;
-    case xiiGALTextureFormat::RGBA16UInt:
+    case xiiGALResourceFormat::RGBA16UInt:
       return vk::Format::eR16G16B16A16Uint;
-    case xiiGALTextureFormat::RGBA16SNormalized:
+    case xiiGALResourceFormat::RGBA16SNormalized:
       return vk::Format::eR16G16B16A16Snorm;
-    case xiiGALTextureFormat::RGBA16SInt:
+    case xiiGALResourceFormat::RGBA16SInt:
       return vk::Format::eR16G16B16A16Sint;
 
-    case xiiGALTextureFormat::RG32Typeless:
-    case xiiGALTextureFormat::RG32Float:
+    case xiiGALResourceFormat::RG32Typeless:
+    case xiiGALResourceFormat::RG32Float:
       return vk::Format::eR32G32Sfloat;
-    case xiiGALTextureFormat::RG32UInt:
+    case xiiGALResourceFormat::RG32UInt:
       return vk::Format::eR32G32Uint;
-    case xiiGALTextureFormat::RG32SInt:
+    case xiiGALResourceFormat::RG32SInt:
       return vk::Format::eR32G32Sint;
 
-    case xiiGALTextureFormat::R32G8X24Typeless:
-    case xiiGALTextureFormat::D32FloatS8X24UInt:
-    case xiiGALTextureFormat::R32FloatX8X24Typeless:
+    case xiiGALResourceFormat::R32G8X24Typeless:
+    case xiiGALResourceFormat::D32FloatS8X24UInt:
+    case xiiGALResourceFormat::R32FloatX8X24Typeless:
       return vk::Format::eD32SfloatS8Uint;
 
-    case xiiGALTextureFormat::X32TypelessG8X24UInt:
+    case xiiGALResourceFormat::X32TypelessG8X24UInt:
       return vk::Format::eUndefined;
 
-    case xiiGALTextureFormat::RGB10A2Typeless:
-    case xiiGALTextureFormat::RGB10A2UNormalized:
+    case xiiGALResourceFormat::RGB10A2Typeless:
+    case xiiGALResourceFormat::RGB10A2UNormalized:
       return vk::Format::eA2R10G10B10UnormPack32;
-    case xiiGALTextureFormat::RGB10A2UInt:
+    case xiiGALResourceFormat::RGB10A2UInt:
       return vk::Format::eA2R10G10B10UintPack32;
-    case xiiGALTextureFormat::RG11B10Float:
+    case xiiGALResourceFormat::RG11B10Float:
       return vk::Format::eB10G11R11UfloatPack32;
 
-    case xiiGALTextureFormat::RGBA8Typeless:
-    case xiiGALTextureFormat::RGBA8UNormalized:
+    case xiiGALResourceFormat::RGBA8Typeless:
+    case xiiGALResourceFormat::RGBA8UNormalized:
       return vk::Format::eR8G8B8A8Unorm;
-    case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
+    case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
       return vk::Format::eR8G8B8A8Srgb;
-    case xiiGALTextureFormat::RGBA8UInt:
+    case xiiGALResourceFormat::RGBA8UInt:
       return vk::Format::eR8G8B8A8Uint;
-    case xiiGALTextureFormat::RGBA8SNormalized:
+    case xiiGALResourceFormat::RGBA8SNormalized:
       return vk::Format::eR8G8B8A8Snorm;
-    case xiiGALTextureFormat::RGBA8SInt:
+    case xiiGALResourceFormat::RGBA8SInt:
       return vk::Format::eR8G8B8A8Sint;
 
-    case xiiGALTextureFormat::RG16Typeless:
-    case xiiGALTextureFormat::RG16Float:
+    case xiiGALResourceFormat::RG16Typeless:
+    case xiiGALResourceFormat::RG16Float:
       return vk::Format::eR16G16Sfloat;
-    case xiiGALTextureFormat::RG16UNormalized:
+    case xiiGALResourceFormat::RG16UNormalized:
       return vk::Format::eR16G16Unorm;
-    case xiiGALTextureFormat::RG16UInt:
+    case xiiGALResourceFormat::RG16UInt:
       return vk::Format::eR16G16Uint;
-    case xiiGALTextureFormat::RG16SNormalized:
+    case xiiGALResourceFormat::RG16SNormalized:
       return vk::Format::eR16G16Snorm;
-    case xiiGALTextureFormat::RG16SInt:
+    case xiiGALResourceFormat::RG16SInt:
       return vk::Format::eR16G16Sint;
 
-    case xiiGALTextureFormat::R32Typeless:
+    case xiiGALResourceFormat::R32Typeless:
       return vk::Format::eR32Sfloat;
-    case xiiGALTextureFormat::D32Float:
+    case xiiGALResourceFormat::D32Float:
       return vk::Format::eD32Sfloat;
-    case xiiGALTextureFormat::R32Float:
+    case xiiGALResourceFormat::R32Float:
       return vk::Format::eR32Sfloat;
-    case xiiGALTextureFormat::R32UInt:
+    case xiiGALResourceFormat::R32UInt:
       return vk::Format::eR32Uint;
-    case xiiGALTextureFormat::R32SInt:
+    case xiiGALResourceFormat::R32SInt:
       return vk::Format::eR32Sint;
 
-    case xiiGALTextureFormat::R24G8Typeless:
-    case xiiGALTextureFormat::D24UNormalizedS8UInt:
-    case xiiGALTextureFormat::R24UNormalizedX8Typeless:
+    case xiiGALResourceFormat::R24G8Typeless:
+    case xiiGALResourceFormat::D24UNormalizedS8UInt:
+    case xiiGALResourceFormat::R24UNormalizedX8Typeless:
       return vk::Format::eD24UnormS8Uint;
 
-    case xiiGALTextureFormat::X24TypelessG8UInt:
+    case xiiGALResourceFormat::X24TypelessG8UInt:
       return vk::Format::eUndefined;
 
-    case xiiGALTextureFormat::RG8Typeless:
-    case xiiGALTextureFormat::RG8UNormalized:
+    case xiiGALResourceFormat::RG8Typeless:
+    case xiiGALResourceFormat::RG8UNormalized:
       return vk::Format::eR8G8Unorm;
-    case xiiGALTextureFormat::RG8UInt:
+    case xiiGALResourceFormat::RG8UInt:
       return vk::Format::eR8G8Uint;
-    case xiiGALTextureFormat::RG8SNormalized:
+    case xiiGALResourceFormat::RG8SNormalized:
       return vk::Format::eR8G8Snorm;
-    case xiiGALTextureFormat::RG8SInt:
+    case xiiGALResourceFormat::RG8SInt:
       return vk::Format::eR8G8Sint;
 
-    case xiiGALTextureFormat::R16Typeless:
-    case xiiGALTextureFormat::R16Float:
+    case xiiGALResourceFormat::R16Typeless:
+    case xiiGALResourceFormat::R16Float:
       return vk::Format::eR16Sfloat;
-    case xiiGALTextureFormat::D16UNormalized:
+    case xiiGALResourceFormat::D16UNormalized:
       return vk::Format::eD16Unorm;
-    case xiiGALTextureFormat::R16UNormalized:
+    case xiiGALResourceFormat::R16UNormalized:
       return vk::Format::eR16Unorm;
-    case xiiGALTextureFormat::R16UInt:
+    case xiiGALResourceFormat::R16UInt:
       return vk::Format::eR16Uint;
-    case xiiGALTextureFormat::R16SNormalized:
+    case xiiGALResourceFormat::R16SNormalized:
       return vk::Format::eR16Snorm;
-    case xiiGALTextureFormat::R16SInt:
+    case xiiGALResourceFormat::R16SInt:
       return vk::Format::eR16Sint;
 
-    case xiiGALTextureFormat::R8Typeless:
-    case xiiGALTextureFormat::R8UNormalized:
+    case xiiGALResourceFormat::R8Typeless:
+    case xiiGALResourceFormat::R8UNormalized:
       return vk::Format::eR8Unorm;
-    case xiiGALTextureFormat::R8UInt:
+    case xiiGALResourceFormat::R8UInt:
       return vk::Format::eR8Uint;
-    case xiiGALTextureFormat::R8SNormalized:
+    case xiiGALResourceFormat::R8SNormalized:
       return vk::Format::eR8Snorm;
-    case xiiGALTextureFormat::R8SInt:
+    case xiiGALResourceFormat::R8SInt:
       return vk::Format::eR8Sint;
-    case xiiGALTextureFormat::A8UNormalized:
-      // If we use vk::Format::eR8Unorm, to get the same behaviour as xiiGALTextureFormat::A8UNormalized, we have to
+    case xiiGALResourceFormat::A8UNormalized:
+      // If we use vk::Format::eR8Unorm, to get the same behaviour as xiiGALResourceFormat::A8UNormalized, we have to
       // Swizzle the components appropriately using the image view create info structure.
       return vk::Format::eA8UnormKHR;
 
-    case xiiGALTextureFormat::R1UNormalized:
+    case xiiGALResourceFormat::R1UNormalized:
       return vk::Format::eUndefined;
 
-    case xiiGALTextureFormat::RGB9E5SharedExponent:
+    case xiiGALResourceFormat::RGB9E5SharedExponent:
       return vk::Format::eE5B9G9R9UfloatPack32;
 
-    case xiiGALTextureFormat::RG8BG8UNormalized:
-    case xiiGALTextureFormat::GR8GB8UNormalized:
+    case xiiGALResourceFormat::RG8BG8UNormalized:
+    case xiiGALResourceFormat::GR8GB8UNormalized:
       return vk::Format::eUndefined;
 
-    case xiiGALTextureFormat::BC1Typeless:
-    case xiiGALTextureFormat::BC1UNormalized:
+    case xiiGALResourceFormat::BC1Typeless:
+    case xiiGALResourceFormat::BC1UNormalized:
       return vk::Format::eBc1RgbUnormBlock;
-    case xiiGALTextureFormat::BC1UNormalizedSRGB:
+    case xiiGALResourceFormat::BC1UNormalizedSRGB:
       return vk::Format::eBc1RgbSrgbBlock;
 
-    case xiiGALTextureFormat::BC2Typeless:
-    case xiiGALTextureFormat::BC2UNormalized:
+    case xiiGALResourceFormat::BC2Typeless:
+    case xiiGALResourceFormat::BC2UNormalized:
       return vk::Format::eBc2UnormBlock;
-    case xiiGALTextureFormat::BC2UNormalizedSRGB:
+    case xiiGALResourceFormat::BC2UNormalizedSRGB:
       return vk::Format::eBc2SrgbBlock;
 
-    case xiiGALTextureFormat::BC3Typeless:
-    case xiiGALTextureFormat::BC3UNormalized:
+    case xiiGALResourceFormat::BC3Typeless:
+    case xiiGALResourceFormat::BC3UNormalized:
       return vk::Format::eBc3UnormBlock;
-    case xiiGALTextureFormat::BC3UNormalizedSRGB:
+    case xiiGALResourceFormat::BC3UNormalizedSRGB:
       return vk::Format::eBc3SrgbBlock;
 
-    case xiiGALTextureFormat::BC4Typeless:
-    case xiiGALTextureFormat::BC4UNormalized:
+    case xiiGALResourceFormat::BC4Typeless:
+    case xiiGALResourceFormat::BC4UNormalized:
       return vk::Format::eBc4UnormBlock;
-    case xiiGALTextureFormat::BC4SNormalized:
+    case xiiGALResourceFormat::BC4SNormalized:
       return vk::Format::eBc4SnormBlock;
 
-    case xiiGALTextureFormat::BC5Typeless:
-    case xiiGALTextureFormat::BC5UNormalized:
+    case xiiGALResourceFormat::BC5Typeless:
+    case xiiGALResourceFormat::BC5UNormalized:
       return vk::Format::eBc5UnormBlock;
-    case xiiGALTextureFormat::BC5SNormalized:
+    case xiiGALResourceFormat::BC5SNormalized:
       return vk::Format::eBc5SnormBlock;
 
-    case xiiGALTextureFormat::B5G6R5UNormalized:
+    case xiiGALResourceFormat::B5G6R5UNormalized:
       return vk::Format::eB5G6R5UnormPack16;
-    case xiiGALTextureFormat::B5G5R5A1UNormalized:
+    case xiiGALResourceFormat::B5G5R5A1UNormalized:
       return vk::Format::eB5G5R5A1UnormPack16;
-    case xiiGALTextureFormat::BGRA8UNormalized:
-    case xiiGALTextureFormat::BGRX8UNormalized:
+    case xiiGALResourceFormat::BGRA8UNormalized:
+    case xiiGALResourceFormat::BGRX8UNormalized:
       return vk::Format::eB8G8R8A8Unorm;
 
-    case xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized:
+    case xiiGALResourceFormat::R10G10B10XRBiasA2UNormalized:
       return vk::Format::eUndefined;
 
-    case xiiGALTextureFormat::BGRA8Typeless:
+    case xiiGALResourceFormat::BGRA8Typeless:
       return vk::Format::eB8G8R8A8Unorm;
-    case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
+    case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
       return vk::Format::eB8G8R8A8Srgb;
-    case xiiGALTextureFormat::BGRX8Typeless:
+    case xiiGALResourceFormat::BGRX8Typeless:
       return vk::Format::eB8G8R8A8Unorm;
-    case xiiGALTextureFormat::BGRX8UNormalizedSRGB:
+    case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
       return vk::Format::eB8G8R8A8Srgb;
 
-    case xiiGALTextureFormat::BC6HTypeless:
-    case xiiGALTextureFormat::BC6HUF16:
+    case xiiGALResourceFormat::BC6HTypeless:
+    case xiiGALResourceFormat::BC6HUF16:
       return vk::Format::eBc6HUfloatBlock;
-    case xiiGALTextureFormat::BC6HSF16:
+    case xiiGALResourceFormat::BC6HSF16:
       return vk::Format::eBc6HSfloatBlock;
 
-    case xiiGALTextureFormat::BC7Typeless:
-    case xiiGALTextureFormat::BC7UNormalized:
+    case xiiGALResourceFormat::BC7Typeless:
+    case xiiGALResourceFormat::BC7UNormalized:
       return vk::Format::eBc7UnormBlock;
-    case xiiGALTextureFormat::BC7UNormalizedSRGB:
+    case xiiGALResourceFormat::BC7UNormalizedSRGB:
       return vk::Format::eBc7SrgbBlock;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -423,9 +423,9 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALTextureFo
   return vk::Format::eUndefined;
 }
 
-XII_ALWAYS_INLINE xiiGALTextureFormat::Enum xiiVulkanTypeConversions::GetGALFormat(vk::Format e)
+XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiVulkanTypeConversions::GetGALFormat(vk::Format e)
 {
-  return xiiGALTextureFormat::Enum();
+  return xiiGALResourceFormat::Enum();
 }
 
 XII_ALWAYS_INLINE vk::ShaderStageFlags xiiVulkanTypeConversions::GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e)
@@ -951,4 +951,47 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions
 {
   XII_ASSERT_NOT_IMPLEMENTED;
   return xiiBitflags<xiiGALResourceStateFlags>();
+}
+
+XII_ALWAYS_INLINE vk::ComponentSwizzle xiiVulkanTypeConversions::GetComponentSwizzle(xiiGALTextureComponentSwizzle::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALTextureComponentSwizzle::Identity:
+      return vk::ComponentSwizzle::eIdentity;
+    case xiiGALTextureComponentSwizzle::Zero:
+      return vk::ComponentSwizzle::eZero;
+    case xiiGALTextureComponentSwizzle::One:
+      return vk::ComponentSwizzle::eOne;
+    case xiiGALTextureComponentSwizzle::R:
+      return vk::ComponentSwizzle::eR;
+    case xiiGALTextureComponentSwizzle::G:
+      return vk::ComponentSwizzle::eG;
+    case xiiGALTextureComponentSwizzle::B:
+      return vk::ComponentSwizzle::eB;
+    case xiiGALTextureComponentSwizzle::A:
+      return vk::ComponentSwizzle::eA;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::ComponentSwizzle::eIdentity;
+}
+
+XII_ALWAYS_INLINE vk::ComponentMapping xiiVulkanTypeConversions::GetComponentMapping(const xiiGALTextureComponentMapping& mapping)
+{
+  return vk::ComponentMapping{xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_R), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_G), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_B), xiiVulkanTypeConversions::GetComponentSwizzle(mapping.m_A)};
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALSparseTextureFlags> xiiVulkanTypeConversions::GetSparseTextureFlags(vk::SparseImageFormatFlags e)
+{
+  xiiBitflags<xiiGALSparseTextureFlags> sparseTextureFlags = xiiGALSparseTextureFlags::None;
+
+  if (e & vk::SparseImageFormatFlagBits::eSingleMiptail)
+    sparseTextureFlags |= xiiGALSparseTextureFlags::SingleMipTail;
+  if (e & vk::SparseImageFormatFlagBits::eAlignedMipSize)
+    sparseTextureFlags |= xiiGALSparseTextureFlags::AlignedMipSize;
+  if (e & vk::SparseImageFormatFlagBits::eNonstandardBlockSize)
+    sparseTextureFlags |= xiiGALSparseTextureFlags::NonStandardBlockSize;
+
+  return sparseTextureFlags;
 }

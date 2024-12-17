@@ -212,8 +212,6 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
-
-      pGraphicsOrTransferQueue->WaitForIdle();
     }
 
     // Update Constants

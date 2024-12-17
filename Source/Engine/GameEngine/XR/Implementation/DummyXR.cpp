@@ -80,12 +80,12 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALMSA
 
   // Create dummy swap chain
   {
-    xiiGALTextureCreationDescription textureDesc = xiiGALDeviceUtilities::CreateRenderTargetDescription(m_Info.m_vEyeRenderTargetSize, xiiGALTextureFormat::RGBA8UNormalizedSRGB, msaaCount);
+    xiiGALTextureCreationDescription textureDesc = xiiGALDeviceUtilities::CreateRenderTargetDescription(m_Info.m_vEyeRenderTargetSize, xiiGALResourceFormat::RGBA8UNormalizedSRGB, msaaCount);
     textureDesc.m_uiArraySizeOrDepth             = 2U;
 
     m_hColorRT = pDevice->CreateTexture(textureDesc);
 
-    textureDesc.m_Format = xiiGALTextureFormat::D24UNormalizedS8UInt;
+    textureDesc.m_Format = xiiGALResourceFormat::D24UNormalizedS8UInt;
     m_hDepthRT           = pDevice->CreateTexture(textureDesc);
   }
 

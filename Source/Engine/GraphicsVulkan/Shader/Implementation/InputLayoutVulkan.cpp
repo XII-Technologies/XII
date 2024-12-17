@@ -1,6 +1,5 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
@@ -18,7 +17,7 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform()
   xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pDeviceVulkan->GetShader(m_Description.m_hVertexShader));
 
   xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputAttributes(pShaderVulkan->GetVertexInputLayout());
-  auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum semantic, xiiGALTextureFormat::Enum format) -> xiiUInt32 {
+  auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum semantic, xiiGALResourceFormat::Enum format) -> xiiUInt32 {
     for (xiiUInt32 i = 0U; i < vertexInputAttributes.GetCount(); ++i)
     {
       if (vertexInputAttributes[i].m_Semantic == semantic)

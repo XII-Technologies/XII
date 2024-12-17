@@ -83,7 +83,7 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
   return hNewTexture;
 }
 
-xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
+xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
 {
   xiiGALTextureCreationDescription TextureDesc;
   TextureDesc.m_Format             = format;
@@ -95,7 +95,7 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUI
   TextureDesc.m_BindFlags          = xiiGALBindFlags::ShaderResource;
   TextureDesc.m_Usage              = xiiGALResourceUsage::Immutable;
 
-  if (xiiGALTextureFormat::IsDepthFormat(format))
+  if (xiiGALResourceFormat::IsDepthFormat(format))
     TextureDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
   else
     TextureDesc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);

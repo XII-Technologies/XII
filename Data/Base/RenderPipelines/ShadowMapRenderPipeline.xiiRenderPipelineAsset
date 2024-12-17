@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{17711001407536439736,5505436445966180118}}
-		u4 %Hash{10127269058891377837}
+		u4 %Hash{10122275155245967283}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -117,11 +117,11 @@ o
 	{
 		b %Active{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
-		Color %DepthClearValue{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
+		f %DepthClearValue{0x0000803F}
 		s %Format{"xiiSourceFormat::Depth16Bit"}
 		s %LoadOperation{"xiiGALAttachmentLoadOperation::Load"}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xA821FD42,0xDE440244}}
+		Vec2 %Node::Pos{f{0x9FA6FE42,0xDE440244}}
 		Uuid %Output{u4{18145787413205851195,10498656058703515073}}
 		s %SampleCount{"xiiGALMSAASampleCount::OneSample"}
 		u1 %StencilClearValue{0}

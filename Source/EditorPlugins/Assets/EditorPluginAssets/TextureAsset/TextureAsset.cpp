@@ -403,26 +403,26 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
     const xiiUInt8 uiTexFileFormatVersion = 5;
     file << uiTexFileFormatVersion;
 
-    xiiGALTextureFormat::Enum format  = xiiGALTextureFormat::Unknown;
-    bool                      bIsSRGB = false;
+    xiiGALResourceFormat::Enum format  = xiiGALResourceFormat::Unknown;
+    bool                       bIsSRGB = false;
 
     switch (props->m_RtFormat)
     {
       case xiiRenderTargetFormat::RGBA8:
-        format = xiiGALTextureFormat::RGBA8UNormalized;
+        format = xiiGALResourceFormat::RGBA8UNormalized;
         break;
 
       case xiiRenderTargetFormat::RGBA8sRgb:
-        format  = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+        format  = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
         bIsSRGB = true;
         break;
 
       case xiiRenderTargetFormat::RGB10:
-        format = xiiGALTextureFormat::RG11B10Float;
+        format = xiiGALResourceFormat::RG11B10Float;
         break;
 
       case xiiRenderTargetFormat::RGBA16:
-        format = xiiGALTextureFormat::RGBA16Float;
+        format = xiiGALResourceFormat::RGBA16Float;
         break;
     }
 

@@ -70,7 +70,7 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   // Color
   if (format == xiiSourceFormat::Color4Channel8BitNormalized || format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
   {
-    xiiGALTextureFormat::Enum preferredFormat = xiiGALTextureFormat::Unknown;
+    xiiGALResourceFormat::Enum preferredFormat = xiiGALResourceFormat::Unknown;
     if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hRTs[0]))
     {
       auto rendertargetDesc = pTextureView->GetTexture()->GetDescription();
@@ -80,27 +80,27 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
 
     switch (preferredFormat)
     {
-      case xiiGALTextureFormat::RGBA8UNormalized:
-      case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
       default:
         if (format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
         {
-          textureDescription.m_Format = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+          textureDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
         }
         else
         {
-          textureDescription.m_Format = xiiGALTextureFormat::RGBA8UNormalized;
+          textureDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
         }
         break;
-      case xiiGALTextureFormat::BGRA8UNormalized:
-      case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
         if (format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
         {
-          textureDescription.m_Format = xiiGALTextureFormat::BGRA8UNormalizedSRGB;
+          textureDescription.m_Format = xiiGALResourceFormat::BGRA8UNormalizedSRGB;
         }
         else
         {
-          textureDescription.m_Format = xiiGALTextureFormat::BGRA8UNormalized;
+          textureDescription.m_Format = xiiGALResourceFormat::BGRA8UNormalized;
         }
         break;
     }
@@ -110,22 +110,22 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
     switch (format)
     {
       case xiiSourceFormat::Color4Channel16BitFloat:
-        textureDescription.m_Format = xiiGALTextureFormat::RGBA16Float;
+        textureDescription.m_Format = xiiGALResourceFormat::RGBA16Float;
         break;
       case xiiSourceFormat::Color4Channel32BitFloat:
-        textureDescription.m_Format = xiiGALTextureFormat::RGBA32Float;
+        textureDescription.m_Format = xiiGALResourceFormat::RGBA32Float;
         break;
       case xiiSourceFormat::Color3Channel11_11_10BitFloat:
-        textureDescription.m_Format = xiiGALTextureFormat::RG11B10Float;
+        textureDescription.m_Format = xiiGALResourceFormat::RG11B10Float;
         break;
       case xiiSourceFormat::Depth16Bit:
-        textureDescription.m_Format = xiiGALTextureFormat::D16UNormalized;
+        textureDescription.m_Format = xiiGALResourceFormat::D16UNormalized;
         break;
       case xiiSourceFormat::Depth24BitStencil8Bit:
-        textureDescription.m_Format = xiiGALTextureFormat::D24UNormalizedS8UInt;
+        textureDescription.m_Format = xiiGALResourceFormat::D24UNormalizedS8UInt;
         break;
       case xiiSourceFormat::Depth32BitFloat:
-        textureDescription.m_Format = xiiGALTextureFormat::D32Float;
+        textureDescription.m_Format = xiiGALResourceFormat::D32Float;
         break;
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -136,7 +136,7 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   textureDescription.m_Size.height        = uiHeight;
   textureDescription.m_uiSampleCount      = msaaMode;
   textureDescription.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2 : 1;
-  textureDescription.m_BindFlags          = ((!xiiGALTextureFormat::IsDepthFormat(textureDescription.m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil) | xiiGALBindFlags::ShaderResource);
+  textureDescription.m_BindFlags          = ((!xiiGALResourceFormat::IsDepthFormat(textureDescription.m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil) | xiiGALBindFlags::ShaderResource);
 
   if (textureDescription.m_uiArraySizeOrDepth > 1 || textureDescription.m_uiSampleCount > xiiGALMSAASampleCount::OneSample)
     textureDescription.m_Type = xiiGALResourceDimension::Texture2DArray;
@@ -159,7 +159,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
   xiiGALDevice* pDevice              = xiiGALDevice::GetDefaultDevice();
   bool          bRecreateRenderPass  = true;
   bool          bRecreateFramebuffer = true;
-  const bool    bIsDepthAttachment   = xiiGALTextureFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
+  const bool    bIsDepthAttachment   = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 
   if (!m_hRenderPass.IsInvalidated())
   {
@@ -255,15 +255,15 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
   if (bIsDepthAttachment)
   {
     auto& clearValue                      = renderPassDescription.m_ClearValues.ExpandAndGetRef();
-    clearValue.m_TextureFormat            = pOutput->m_TextureDescription.m_Format;
+    clearValue.m_ResourceFormat           = pOutput->m_TextureDescription.m_Format;
     clearValue.m_DepthStencil.m_fDepth    = m_fDepthClearValue;
     clearValue.m_DepthStencil.m_uiStencil = m_uiStencilClearValue;
   }
   else
   {
-    auto& clearValue           = renderPassDescription.m_ClearValues.ExpandAndGetRef();
-    clearValue.m_TextureFormat = pOutput->m_TextureDescription.m_Format;
-    clearValue.m_ClearColor    = m_ClearColor;
+    auto& clearValue            = renderPassDescription.m_ClearValues.ExpandAndGetRef();
+    clearValue.m_ResourceFormat = pOutput->m_TextureDescription.m_Format;
+    clearValue.m_ClearColor     = m_ClearColor;
   }
 
   if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())

@@ -516,8 +516,6 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
-
-      pGraphicsOrTransferQueue->WaitForIdle();
     }
 
     {

@@ -360,8 +360,6 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
-
-      pGraphicsOrTransferQueue->WaitForIdle();
     }
 
     const auto& desc = pBuffer->GetDescriptor();

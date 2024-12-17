@@ -248,7 +248,7 @@ void xiiImguiRenderer::SetupRenderer()
     {
       xiiVertexStreamInfo& si = m_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALInputLayoutSemantic::Position;
-      si.m_Format             = xiiGALTextureFormat::RGB32Float;
+      si.m_Format             = xiiGALResourceFormat::RGB32Float;
       si.m_uiOffset           = 0;
       si.m_uiElementSize      = 12;
     }
@@ -256,7 +256,7 @@ void xiiImguiRenderer::SetupRenderer()
     {
       xiiVertexStreamInfo& si = m_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALInputLayoutSemantic::TexCoord0;
-      si.m_Format             = xiiGALTextureFormat::RG32Float;
+      si.m_Format             = xiiGALResourceFormat::RG32Float;
       si.m_uiOffset           = 12;
       si.m_uiElementSize      = 8;
     }
@@ -264,7 +264,7 @@ void xiiImguiRenderer::SetupRenderer()
     {
       xiiVertexStreamInfo& si = m_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
-      si.m_Format             = xiiGALTextureFormat::RGBA8UNormalized;
+      si.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
       si.m_uiOffset           = 20;
       si.m_uiElementSize      = 4;
     }
