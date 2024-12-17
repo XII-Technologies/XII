@@ -38,8 +38,7 @@ static_assert(sizeof(xiiPerLightData) == 48);
 struct XII_SHADER_STRUCT xiiPointShadowData
 {
   FLOAT4(shadowParams); // x = slope bias, y = constant bias, z = penumbra size in texel, w = fadeout
-  MAT4(worldToLightMatrix)
-  [6];
+  MAT4(worldToLightMatrix)[6];
 };
 
 struct XII_SHADER_STRUCT xiiSpotShadowData
@@ -54,10 +53,8 @@ struct XII_SHADER_STRUCT xiiDirShadowData
   MAT4(worldToLightMatrix);
   FLOAT4(shadowParams2); // x = cascade border threshold, y = xy dither multiplier, z = z dither multiplier, w = penumbra size increment
   FLOAT4(fadeOutParams); // x = xy fadeout scale offset (fp16), y = z fadeout scale offset (fp16), z = distance fadeout scale, w = distance fadeout offset
-  FLOAT4(cascadeScaleOffset)
-  [6]; // interleaved, maxNumCascades - 1 since first cascade has identity scale and offset
-  FLOAT4(atlasScaleOffset)
-  [4];
+  FLOAT4(cascadeScaleOffset)[6]; // interleaved, maxNumCascades - 1 since first cascade has identity scale and offset
+  FLOAT4(atlasScaleOffset)[4];
 };
 
 #define GET_SHADOW_PARAMS_INDEX(baseOffset)                ((baseOffset) + 0)
