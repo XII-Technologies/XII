@@ -1067,3 +1067,49 @@ class XII_FOUNDATION_DLL xiiGameObjectReferenceAttribute : public xiiTypeWidgetA
 public:
   xiiGameObjectReferenceAttribute() = default;
 };
+
+//////////////////////////////////////////////////////////////////////////
+
+/// \brief Displays the value range as an image, allowing users to pick a value like on a slider.
+///
+/// This attribute always has to be combined with an xiiClampValueAttribute to define the min and max value range.
+/// The constructor takes the name of an image generator. The generator is used to build the QImage used for the slider background.
+///
+/// Image generators are registered through xiiQtImageSliderWidget::s_ImageGenerators. Search the codebase for that variable
+/// to determine which types of image generators are available. Custom generators can be registered as well.
+class XII_FOUNDATION_DLL xiiImageSliderUiAttribute : public xiiTypeWidgetAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiImageSliderUiAttribute, xiiTypeWidgetAttribute);
+
+public:
+  xiiImageSliderUiAttribute() = default;
+  xiiImageSliderUiAttribute(xiiStringView sImageGenerator) :
+    m_sImageGenerator(sImageGenerator)
+  {
+  }
+
+  xiiUntrackedString m_sImageGenerator;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+/// \brief Attribute that turns a string property into a selector for an RTTI type.
+///
+/// The base type defines what types to display.
+/// For example if "xiiComponent" is passed in, only types derived from xiiComponent are listed.
+class XII_FOUNDATION_DLL xiiRttiTypeStringAttribute : public xiiTypeWidgetAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRttiTypeStringAttribute, xiiTypeWidgetAttribute);
+
+public:
+  xiiRttiTypeStringAttribute() = default;
+  xiiRttiTypeStringAttribute(xiiStringView sBaseType) :
+    m_sBaseType(sBaseType)
+  {
+  }
+
+  xiiStringView GetBaseType() const { return m_sBaseType; }
+
+private:
+  xiiUntrackedString m_sBaseType;
+};
