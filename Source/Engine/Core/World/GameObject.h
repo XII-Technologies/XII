@@ -509,6 +509,9 @@ private:
 
   XII_ALLOW_PRIVATE_PROPERTIES(xiiGameObject);
 
+  void Reflection_SetTag(xiiStringView sTagName);
+  void Reflection_RemoveTag(xiiStringView sTagName);
+
   // Add / Detach child used by the reflected property keep their local transform as
   // updating that is handled by the editor.
   void                                                  Reflection_AddChild(xiiGameObject* pChild);

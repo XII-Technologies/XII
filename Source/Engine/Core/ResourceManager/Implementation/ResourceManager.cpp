@@ -6,6 +6,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Time/Clock.h>
 
 /// \todo Do not unload resources while they are acquired
 /// \todo Resource Type Memory Thresholds
@@ -440,7 +441,7 @@ void xiiResourceManager::PerFrameUpdate()
 {
   XII_PROFILE_SCOPE("xiiResourceManagerUpdate");
 
-  s_pState->m_LastFrameUpdate = xiiTime::Now();
+  s_pState->m_LastFrameUpdate = xiiClock::GetGlobalClock()->GetLastUpdateTime();
 
   if (s_pState->m_bBroadcastExistsEvent)
   {

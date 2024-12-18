@@ -30,7 +30,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_ACCESSOR_PROPERTY("LocalRotation", GetLocalRotation, SetLocalRotation),
     XII_ACCESSOR_PROPERTY("LocalScaling", GetLocalScaling, SetLocalScaling)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(1.0f, 1.0f, 1.0f))),
     XII_ACCESSOR_PROPERTY("LocalUniformScaling", GetLocalUniformScaling, SetLocalUniformScaling)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
-    XII_SET_MEMBER_PROPERTY("Tags", m_Tags)->AddAttributes(new xiiTagSetWidgetAttribute("Default"), new xiiDefaultValueAttribute(GetDefaultTags())),
+    XII_SET_ACCESSOR_PROPERTY("Tags", GetTags, Reflection_SetTag, Reflection_RemoveTag)->AddAttributes(new xiiTagSetWidgetAttribute("Default"), new xiiDefaultValueAttribute(GetDefaultTags())),
     XII_SET_ACCESSOR_PROPERTY("Children", Reflection_GetChildren, Reflection_AddChild, Reflection_DetachChild)->AddFlags(xiiPropertyFlags::PointerOwner | xiiPropertyFlags::Hidden),
     XII_SET_ACCESSOR_PROPERTY("Components", Reflection_GetComponents, Reflection_AddComponent, Reflection_RemoveComponent)->AddFlags(xiiPropertyFlags::PointerOwner),
   }
@@ -972,6 +972,27 @@ bool xiiGameObject::SendMessageRecursiveInternal(xiiMessage& msg, bool bWasPoste
   // #endif
   // #
   return bSentToAny;
+}
+
+void xiiGameObject::Reflection_SetTag(xiiStringView sTagName)
+{
+  if (sTagName.IsEmpty())
+    return;
+
+  const xiiTag& tag = xiiTagRegistry::GetGlobalRegistry().RegisterTag(sTagName);
+
+  SetTag(tag);
+}
+
+void xiiGameObject::Reflection_RemoveTag(xiiStringView sTagName)
+{
+  if (sTagName.IsEmpty())
+    return;
+
+  if (const xiiTag* pTag = xiiTagRegistry::GetGlobalRegistry().GetTagByName(xiiTempHashedString(sTagName)))
+  {
+    RemoveTag(*pTag);
+  }
 }
 
 void xiiGameObject::PostMessage(const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
