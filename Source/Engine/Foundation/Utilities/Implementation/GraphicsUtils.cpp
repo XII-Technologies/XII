@@ -2,6 +2,18 @@
 
 #include <Foundation/Utilities/GraphicsUtils.h>
 
+void xiiGraphicsUtils::ConvertScreenPixelPosToNormalizedPos(const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, xiiVec3& inout_vPixelPos)
+{
+  inout_vPixelPos.x = (inout_vPixelPos.x - uiViewportX) / uiViewportWidth;
+  inout_vPixelPos.y = (inout_vPixelPos.y - uiViewportY) / uiViewportHeight;
+}
+
+void xiiGraphicsUtils::ConvertScreenNormalizedPosToPixelPos(const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, xiiVec3& inout_vNormalizedPos)
+{
+  inout_vNormalizedPos.x = uiViewportX + uiViewportWidth * inout_vNormalizedPos.x;
+  inout_vNormalizedPos.y = uiViewportY + uiViewportHeight * inout_vNormalizedPos.y;
+}
+
 xiiResult xiiGraphicsUtils::ConvertWorldPosToScreenPos(const xiiMat4& mModelViewProjection, const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, const xiiVec3& vPoint, xiiVec3& out_vScreenPos, xiiClipSpaceDepthRange::Enum depthRange)
 {
   const xiiVec4 vToProject = vPoint.GetAsVec4(1.0f);
