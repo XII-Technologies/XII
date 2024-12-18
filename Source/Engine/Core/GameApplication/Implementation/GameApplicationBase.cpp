@@ -552,7 +552,7 @@ void xiiGameApplicationBase::Run_FinishFrame()
 void xiiGameApplicationBase::UpdateFrameTime()
 {
   // Do not use xiiClock for this, it smooths and clamps the timestep
-  const xiiTime tNow = xiiTime::Now();
+  const xiiTime tNow = xiiClock::GetGlobalClock()->GetLastUpdateTime();
 
   static xiiTime tLast = tNow;
   m_FrameTime          = tNow - tLast;

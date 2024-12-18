@@ -68,7 +68,11 @@ public:
 
   /// \brief Returns from which physical controller the given virtual controller takes its input. May be negative, which means
   /// the virtual controller is deactivated.
-  xiiInt8 GetControllerMapping(xiiUInt8 uiVirtual) const;
+  xiiInt8 GetPhysicalControllerMapping(xiiUInt8 uiVirtual) const;
+
+  /// \brief Returns to which virtual controller the given physical controller pushes its input. May be negative, which means
+  /// the physical controller is not used.
+  xiiInt8 GetVirtualControllerMapping(xiiUInt8 uiPhysical) const;
 
   /// \brief Queries whether the controller with the given physical index is connected to the computer.
   /// This may change at any time.
@@ -108,6 +112,7 @@ private:
   xiiUInt32 m_uiVibrationTrackPos;
   float     m_fVibrationTracks[MaxControllers][Motor::ENUM_COUNT][MaxVibrationSamples];
   bool      m_bVibrationEnabled[MaxControllers];
-  xiiInt8   m_iControllerMapping[MaxControllers];
+  xiiInt8   m_iVirtualToPhysicalControllerMapping[MaxControllers]; // maps from virtual controller index to physical device index
+  xiiInt8   m_iPhysicalToVirtualControllerMapping[MaxControllers]; // maps from physical device index to virtual controller index
   float     m_fVibrationStrength[MaxControllers][Motor::ENUM_COUNT];
 };
