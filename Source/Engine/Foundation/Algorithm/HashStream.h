@@ -24,6 +24,7 @@ private:
   void* m_pState = nullptr;
 };
 
+//////////////////////////////////////////////////////////////////////////
 
 /// \brief A stream writer that hashes the data written to it.
 ///
