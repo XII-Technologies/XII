@@ -139,7 +139,7 @@ void xiiActorManager::DestroyAllActors(const void* pCreatedBy, DestructionMode m
   }
 }
 
-void xiiActorManager::GetAllActors(xiiHybridArray<xiiActor*, 8>& out_allActors)
+void xiiActorManager::GetAllActors(xiiDynamicArray<xiiActor*>& out_allActors)
 {
   XII_LOCK(m_pImpl->m_Mutex);
 
