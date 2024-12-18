@@ -59,13 +59,29 @@ XII_WARNING_POP()
 /// they then end up in the final application, where they will do what they are meant for.
 #  define XII_STATICLINK_FILE(LibraryName, UniqueName) XII_CHECK_WINDOWS_INCLUDE(XII_INCLUDED_WINDOWS_H, _WINDOWS_)
 
-
 /// \brief Used by the tool 'StaticLinkUtil' to generate the block after XII_STATICLINK_LIBRARY, to create references to all
 /// files inside a library. \see XII_STATICLINK_FILE
 #  define XII_STATICLINK_REFERENCE(UniqueName)
 
 /// \brief This must occur exactly once in each static library, such that all XII_STATICLINK_FILE macros can reference it.
 #  define XII_STATICLINK_LIBRARY(LibraryName) void xiiReferenceFunction_##LibraryName(bool bReturn = true)
+
+/// \brief Adds a static link reference to a plugin into an application, to make sure all code gets pulled in by the linker.
+///
+/// Add a line like this to a CPP file of your application:
+/// XII_STATICLINK_PLUGIN(ParticlePlugin);
+///
+/// When statically linking, this ensures that all relevant code of that plugin gets added to your app.
+/// Without it, the linker may optimize too much code away, such that, for example, component types are unknown at runtime.
+///
+/// When dynamic linking is used, this macro has no effect, at all.
+#  define XII_STATICLINK_PLUGIN(PluginName)
+
+/// \brief A marker that can be placed in CPP files to enforce that the StaticLinkUtil doesn't skip this file.
+///
+/// Needed when a CPP file contains a global variable that's used for registering something (for example an xiiEnumerable),
+/// and there is no other indication for the StaticLinkUtil to consider the file.
+#  define XII_STATICLINK_FORCE
 
 #else
 
@@ -109,6 +125,25 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
 #  define XII_STATICLINK_LIBRARY(LibraryName)                                                             \
     xiiPluginRegister xiiPluginRegister_##LibraryName(XII_PP_STRINGIFY(XII_PP_CONCAT(xii, LibraryName))); \
     extern "C" void   xiiReferenceFunction_##LibraryName(bool bReturn = true)
+
+/// \brief Adds a static link reference to a plugin into an application, to make sure all code gets pulled in by the linker.
+///
+/// Add a line like this to a CPP file of your application:
+/// XII_STATICLINK_PLUGIN(ParticlePlugin);
+///
+/// When statically linking, this ensures that all relevant code of that plugin gets added to your app.
+/// Without it, the linker may optimize too much code away, such that, for example, component types are unknown at runtime.
+///
+/// When dynamic linking is used, this macro has no effect, at all.
+#  define XII_STATICLINK_PLUGIN(PluginName)                                                    \
+    extern "C" void     XII_PP_CONCAT(xiiReferenceFunction_, PluginName)(bool bReturn = true); \
+    xiiStaticLinkHelper XII_PP_CONCAT(xiiStaticLinkHelper_, PluginName)(XII_PP_CONCAT(xiiReferenceFunction_, PluginName));
+
+/// \brief A marker that can be placed in CPP files to enforce that the StaticLinkUtil doesn't skip this file.
+///
+/// Needed when a CPP file contains a global variable that's used for registering something (for example an xiiEnumerable),
+/// and there is no other indication for the StaticLinkUtil to consider the file.
+#  define XII_STATICLINK_FORCE
 
 #endif
 
