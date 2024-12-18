@@ -31,9 +31,9 @@ public:
   {
     const xiiVec3 unsignedValue = value * 0.5f + xiiVec3(0.5f);
 
-    const xiiUInt32 r = xiiMath::Clamp(static_cast<xiiUInt32>(unsignedValue.x * 1023.0f + 0.5f), 0U, 1023U);
-    const xiiUInt32 g = xiiMath::Clamp(static_cast<xiiUInt32>(unsignedValue.y * 1023.0f + 0.5f), 0U, 1023U);
-    const xiiUInt32 b = xiiMath::Clamp(static_cast<xiiUInt32>(unsignedValue.z * 1023.0f + 0.5f), 0U, 1023U);
+    const xiiUInt32 r = xiiMath::ColorFloatToUnsignedInt<10>(unsignedValue.x);
+    const xiiUInt32 g = xiiMath::ColorFloatToUnsignedInt<10>(unsignedValue.y);
+    const xiiUInt32 b = xiiMath::ColorFloatToUnsignedInt<10>(unsignedValue.z);
 
     return r | (g << 10) | (b << 20);
   }
