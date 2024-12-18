@@ -417,7 +417,7 @@ public:
       swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
       swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
       swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDesc.m_Usage                 = xiiGALSwapChainUsageFlags::RenderTarget;
+      swapChainDesc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
       swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
       swapChainDesc.m_uiBufferCount         = 2U;
       swapChainDesc.m_fDefaultDepthValue    = 1.0f;
