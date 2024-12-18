@@ -451,13 +451,22 @@ namespace
     xiiTime                                    m_Timeout;
   };
 
+  struct PersistentInfoTextData
+  {
+    xiiString                   m_sText;
+    xiiDebugTextPlacement::Enum m_Placement;
+    xiiColor                    m_Color;
+    xiiTime                     m_Timeout;
+  };
+
   struct PersistentPerContextData
   {
-    xiiTime                        m_Now;
-    xiiDeque<PersistentCrossData>  m_Crosses;
-    xiiDeque<PersistentSphereData> m_Spheres;
-    xiiDeque<PersistentBoxData>    m_Boxes;
-    xiiDeque<PersistentLineData>   m_Lines;
+    xiiTime                          m_Now;
+    xiiDeque<PersistentCrossData>    m_Crosses;
+    xiiDeque<PersistentSphereData>   m_Spheres;
+    xiiDeque<PersistentBoxData>      m_Boxes;
+    xiiDeque<PersistentLineData>     m_Lines;
+    xiiDeque<PersistentInfoTextData> m_InfoText;
   };
 
   static xiiHashTable<xiiDebugRendererContext, PersistentPerContextData> s_PersistentPerContextData;
@@ -1001,16 +1010,35 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
   data.m_texTriangle2DVertices[hResourceView].PushBackRange(xiiMakeArrayPtr(vertices));
 }
 
+void xiiDebugRenderer::Draw2DLineRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color)
+{
+  Line lines[4];
+
+  lines[0].m_start = xiiVec3(rectInPixel.Left(), rectInPixel.Top(), fDepth);
+  lines[0].m_end   = xiiVec3(rectInPixel.Right(), rectInPixel.Top(), fDepth);
+
+  lines[1].m_start = lines[0].m_end;
+  lines[1].m_end   = xiiVec3(rectInPixel.Right(), rectInPixel.Bottom(), fDepth);
+
+  lines[2].m_start = lines[1].m_end;
+  lines[2].m_end   = xiiVec3(rectInPixel.Left(), rectInPixel.Bottom(), fDepth);
+
+  lines[3].m_start = lines[2].m_end;
+  lines[3].m_end   = xiiVec3(rectInPixel.Left(), rectInPixel.Top(), fDepth);
+
+  Draw2DLines(context, lines, color);
+}
+
 xiiUInt32 xiiDebugRenderer::Draw2DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec2I32& vPositionInPixel, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Left*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Top*/)
 {
   return AddTextLines(context, text, vPositionInPixel, uiSizeInPixel, horizontalAlignment, verticalAlignment, [=](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
-    auto& textLine = ref_data.m_textLines2D.ExpandAndGetRef();
-    textLine.m_text = sLine;
+    auto& textLine           = ref_data.m_textLines2D.ExpandAndGetRef();
+    textLine.m_text          = sLine;
     textLine.m_topLeftCorner = vTopLeftCorner;
-    textLine.m_color = color;
-    textLine.m_uiSizeInPixel = uiSizeInPixel; });
+    textLine.m_color         = color;
+    textLine.m_uiSizeInPixel = uiSizeInPixel;
+  });
 }
-
 
 void xiiDebugRenderer::DrawInfoText(const xiiDebugRendererContext& context, xiiDebugTextPlacement::Enum placement, xiiStringView sGroupName, const xiiFormatString& text, const xiiColor& color)
 {
@@ -1024,6 +1052,20 @@ void xiiDebugRenderer::DrawInfoText(const xiiDebugRendererContext& context, xiiD
   e.m_group = sGroupName;
   e.m_text  = text.GetText(tmp);
   e.m_color = color;
+}
+
+void xiiDebugRenderer::AddPersistentInfoText(const xiiDebugRendererContext& context, xiiDebugTextPlacement::Enum placement, const xiiFormatString& text, xiiTime duration, const xiiColor& color)
+{
+  XII_LOCK(s_Mutex);
+
+  xiiStringBuilder tmp;
+
+  auto& data       = s_PersistentPerContextData[context];
+  auto& item       = data.m_InfoText.ExpandAndGetRef();
+  item.m_sText     = text.GetText(tmp);
+  item.m_Placement = placement;
+  item.m_Color     = color;
+  item.m_Timeout   = data.m_Now + duration;
 }
 
 xiiUInt32 xiiDebugRenderer::Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Center*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Bottom*/)
@@ -1392,7 +1434,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
     XII_LOCK(s_Mutex);
 
     auto& data = s_PersistentPerContextData[context];
-    data.m_Now = xiiTime::Now();
+    data.m_Now = xiiClock::GetGlobalClock()->GetLastUpdateTime();
 
     // persistent crosses
     {
@@ -1697,6 +1739,34 @@ void xiiDebugRenderer::RenderScreenSpace(const xiiRenderViewContext& renderViewC
 // static
 void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext)
 {
+  {
+    XII_LOCK(s_Mutex);
+
+    auto& data = s_PersistentPerContextData[context];
+    data.m_Now = xiiClock::GetGlobalClock()->GetLastUpdateTime();
+
+    // persistent info text
+    {
+      xiiUInt32 uiNumItems = data.m_InfoText.GetCount();
+      for (xiiUInt32 i = 0; i < uiNumItems;)
+      {
+        const auto& item = data.m_InfoText[i];
+
+        if (data.m_Now > item.m_Timeout)
+        {
+          data.m_InfoText.RemoveAtAndSwap(i);
+          --uiNumItems;
+        }
+        else
+        {
+          xiiDebugRenderer::DrawInfoText(context, item.m_Placement, "__Persistent", item.m_sText.GetView(), item.m_Color);
+
+          ++i;
+        }
+      }
+    }
+  }
+
   DoubleBufferedPerContextData* pDoubleBufferedContextData = nullptr;
   if (!s_PerContextData.TryGetValue(context, pDoubleBufferedContextData))
     return;
