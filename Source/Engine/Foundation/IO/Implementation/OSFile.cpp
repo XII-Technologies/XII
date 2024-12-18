@@ -117,6 +117,9 @@ void xiiOSFile::Close()
 
 xiiResult xiiOSFile::Write(const void* pBuffer, xiiUInt64 uiBytes)
 {
+  if (uiBytes == 0)
+    return XII_SUCCESS;
+
   XII_ASSERT_DEV((m_FileMode == xiiFileOpenMode::Write) || (m_FileMode == xiiFileOpenMode::Append), "The file is not opened for writing.");
   XII_ASSERT_DEV(pBuffer != nullptr, "pBuffer must not be nullptr.");
 
