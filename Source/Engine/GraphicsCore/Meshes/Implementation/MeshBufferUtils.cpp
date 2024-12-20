@@ -55,24 +55,27 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshBoneWeigthPrecision, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
+// clang-format off
 
 // static
-  xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
-  {
-    XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetResourceFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
+xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
+{
+  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetResourceFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
 
-    switch (destFormat)
-    {
-      case xiiGALResourceFormat::R32Float:
-        *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
-        return XII_SUCCESS;
-      case xiiGALResourceFormat::R16Float:
-        *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
-        return XII_SUCCESS;
-      default:
-        return XII_FAILURE;
-    }
+  switch (destFormat)
+  {
+    case xiiGALResourceFormat::R32Float:
+      *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
+      return XII_SUCCESS;
+    case xiiGALResourceFormat::R16Float:
+      *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
+      return XII_SUCCESS;
+    default:
+      return XII_FAILURE;
   }
+}
+
+// clang-format on
 
 // static
 xiiResult xiiMeshBufferUtils::EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
