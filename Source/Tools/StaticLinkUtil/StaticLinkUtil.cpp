@@ -36,9 +36,7 @@ Usage of this tool:
 
 Call this tool with the path to the root folder of some library as the sole command line argument:
 
-StaticLinkUtil.exe "C:\XII\Source\Engine\Foundation"
-
-Note: Do not add a trailing slash after the path.
+StaticLinkUtil.exe "C:\xiiEngine\Trunk\Code\Engine\Foundation"
 
 This will iterate over all files below that folder and insert the proper macros.
 Also make sure that exactly one file in each library contains the text 'XII_STATICLINK_LIBRARY();'
@@ -72,6 +70,9 @@ private:
   xiiSet<xiiString> m_GlobalIncludes;
 
   xiiMap<xiiString, FileContent> m_ModifiedFiles;
+
+  xiiSet<xiiString> m_FilesToModify;
+  xiiSet<xiiString> m_FilesToLink;
 
 
 public:
@@ -180,30 +181,33 @@ public:
 
   void SanitizeSourceCode(xiiStringBuilder& ref_sInOut)
   {
-    ref_sInOut.ReplaceAll("\r\n", "\n");
+    // this is now handled by clang-format and .editorconfig files
 
-    if (!ref_sInOut.EndsWith("\n"))
-      ref_sInOut.Append("\n");
+    // ref_sInOut.ReplaceAll("\r\n", "\n");
+    // if (!ref_sInOut.EndsWith("\n"))
+    //  ref_sInOut.Append("\n");
 
     while (ref_sInOut.EndsWith("\n\n\n\n"))
       ref_sInOut.Shrink(0, 1);
+    while (ref_sInOut.EndsWith("\r\n\r\n\r\n\r\n"))
+      ref_sInOut.Shrink(0, 2);
   }
 
-  xiiResult ReadEntireFile(const char* szFile, xiiStringBuilder& ref_sOut)
+  xiiResult ReadEntireFile(xiiStringView sFile, xiiStringBuilder& ref_sOut)
   {
     ref_sOut.Clear();
 
-    // If we have that file cached already, just return the cached (and possibly modified) content
-    if (!m_ModifiedFiles[szFile].m_sFileContent.IsEmpty())
+    // if we have that file cached already, just return the cached (and possibly modified) content
+    if (!m_ModifiedFiles[sFile].m_sFileContent.IsEmpty())
     {
-      ref_sOut = m_ModifiedFiles[szFile].m_sFileContent.GetData();
+      ref_sOut = m_ModifiedFiles[sFile].m_sFileContent.GetData();
       return XII_SUCCESS;
     }
 
     xiiFileReader File;
-    if (File.Open(szFile) == XII_FAILURE)
+    if (File.Open(sFile) == XII_FAILURE)
     {
-      xiiLog::Error("Could not open for reading: '{0}'", szFile);
+      xiiLog::Error("Could not open for reading: '{0}'", sFile);
       return XII_FAILURE;
     }
 
@@ -225,30 +229,55 @@ public:
     {
       xiiLog::Error("The file \"{0}\" contains characters that are not valid Utf8. This often happens when you type special characters in an editor "
                     "that does not save the file in Utf8 encoding.",
-                    szFile);
+                    sFile);
       return XII_FAILURE;
     }
 
     ref_sOut = (const char*)&FileContent[0];
 
-    m_ModifiedFiles[szFile].m_sFileContent = ref_sOut;
+    m_ModifiedFiles[sFile].m_sFileContent = ref_sOut;
 
     SanitizeSourceCode(ref_sOut);
 
     return XII_SUCCESS;
   }
 
-  void OverwriteFile(const char* szFile, const xiiStringBuilder& sFileContent)
+  bool IsNearlyIdentical(xiiStringView lhs, xiiStringView rhs)
+  {
+    while (lhs.EndsWith("\n") || lhs.EndsWith("\r"))
+      lhs.Shrink(0, 1);
+    while (rhs.EndsWith("\n") || rhs.EndsWith("\r"))
+      rhs.Shrink(0, 1);
+
+    while (true)
+    {
+      while (lhs.StartsWith("\n") || lhs.StartsWith("\r"))
+        lhs.ChopAwayFirstCharacterAscii();
+      while (rhs.StartsWith("\n") || rhs.StartsWith("\r"))
+        rhs.ChopAwayFirstCharacterAscii();
+
+      if (lhs == rhs)
+        return true;
+
+      if (lhs.GetCharacter() != rhs.GetCharacter())
+        return false;
+
+      lhs.ChopAwayFirstCharacterUtf8();
+      rhs.ChopAwayFirstCharacterUtf8();
+    }
+  }
+
+  void OverwriteFile(xiiStringView sFile, const xiiStringBuilder& sFileContent)
   {
     xiiStringBuilder sOut = sFileContent;
     SanitizeSourceCode(sOut);
 
-    if (m_ModifiedFiles[szFile].m_sFileContent == sOut)
+    if (IsNearlyIdentical(m_ModifiedFiles[sFile].m_sFileContent, sOut))
       return;
 
-    m_bAnyFileChanged                         = true;
-    m_ModifiedFiles[szFile].m_bFileHasChanged = true;
-    m_ModifiedFiles[szFile].m_sFileContent    = sOut;
+    m_bAnyFileChanged                        = true;
+    m_ModifiedFiles[sFile].m_bFileHasChanged = true;
+    m_ModifiedFiles[sFile].m_sFileContent    = sOut;
   }
 
   void OverwriteModifiedFiles()
@@ -310,16 +339,16 @@ public:
           return;
 
         ++szStartPos;
-        continue; // Next search will be for #i again
+        continue; // next search will be for #i again
       }
 
       if (xiiStringUtils::IsEqualN(szI, "#include", 8))
       {
-        szI += 8; // Skip the "#include" string
+        szI += 8; // skip the "#include" string
 
         const char* szLineEnd = xiiStringUtils::FindSubString(szI, "\n");
 
-        xiiStringView si(szI, szLineEnd);
+        xiiStringView si(szI, szLineEnd ? szLineEnd : szI + xiiStringUtils::GetStringElementCount(szI));
 
         xiiStringBuilder sInclude = si;
 
@@ -335,15 +364,15 @@ public:
         while (sInclude.EndsWith(" ") || sInclude.EndsWith("\t") || sInclude.EndsWith(">"))
           sInclude.Shrink(0, 1);
 
-        // Ignore relative includes, they will not work as expected from the PCH
+        // ignore relative includes, they will not work as expected from the PCH
         if (sInclude.StartsWith("\""))
           continue;
 
-        // Ignore includes into the own library
+        // ignore includes into the own library
         if (sInclude.StartsWith(sLibraryName.GetData()))
           continue;
 
-        // Ignore third-party includes
+        // ignore third-party includes
         if (sInclude.FindSubString_NoCase("ThirdParty"))
         {
           xiiLog::Dev("Skipping ThirdParty Include: '{0}'", sInclude);
@@ -356,17 +385,17 @@ public:
 
         xiiStringBuilder sCanFindInclude2 = m_sSearchDir.GetData();
         sCanFindInclude2.PathParentDirectory(2);
-        sCanFindInclude2.AppendPath("Source/Engine");
+        sCanFindInclude2.AppendPath("Code/Engine");
         sCanFindInclude2.AppendPath(sInclude.GetData());
 
-        // Ignore includes to files that cannot be found (ie. they are not part of the XII Engine source tree)
+        // ignore includes to files that cannot be found (ie. they are not part of the xiiEngine source tree)
         if (!xiiFileSystem::ExistsFile(sCanFindInclude.GetData()) && !xiiFileSystem::ExistsFile(sCanFindInclude2.GetData()))
         {
           xiiLog::Dev("Skipping non-Engine Include: '{0}'", sInclude);
           continue;
         }
 
-        // Warn about includes that have 'implementation' in their path
+        // warn about includes that have 'implementation' in their path
         if (sInclude.FindSubString_NoCase("Implementation"))
         {
           xiiLog::Warning("This file includes an implementation header from another library: '{0}'", sInclude);
@@ -379,11 +408,11 @@ public:
     }
   }
 
-  bool RemoveLineWithPrefix(xiiStringBuilder& ref_sFile, const char* szLineStart)
+  bool RemoveLineWithPrefix(xiiStringBuilder& ref_sFile, xiiStringView sLineStart)
   {
     const char* szSkipAhead = ref_sFile.FindSubString("// <StaticLinkUtil::StartHere>");
 
-    const char* szStart = ref_sFile.FindSubString(szLineStart, szSkipAhead);
+    const char* szStart = ref_sFile.FindSubString(sLineStart, szSkipAhead);
 
     if (szStart == nullptr)
       return false;
@@ -423,7 +452,7 @@ public:
 
     while (RemoveLineWithPrefix(sFileContent, "#include"))
     {
-      // Do this
+      // do this
     }
 
     SanitizeSourceCode(sFileContent);
@@ -442,24 +471,24 @@ public:
     OverwriteFile(sPCHFile.GetData(), sFileContent);
   }
 
-  void FixFileContents(const char* szFile)
+  void FixFileContents(xiiStringView sFile)
   {
     xiiStringBuilder sFileContent;
-    if (ReadEntireFile(szFile, sFileContent) == XII_FAILURE)
+    if (ReadEntireFile(sFile, sFileContent) == XII_FAILURE)
       return;
 
-    if (xiiStringUtils::EndsWith(szFile, "PCH.h"))
-      xiiLog::Dev("Skipping PCH for #include search: '{0}'", szFile);
+    if (sFile.EndsWith("PCH.h"))
+      xiiLog::Dev("Skipping PCH for #include search: '{0}'", sFile);
     else
       FindIncludes(sFileContent);
 
-    // Rewrite the entire file
-    OverwriteFile(szFile, sFileContent);
+    // rewrite the entire file
+    OverwriteFile(sFile, sFileContent);
   }
 
-  xiiString GetFileMarkerName(const char* szFile)
+  xiiString GetFileMarkerName(xiiStringView sFile)
   {
-    xiiStringBuilder sRel = szFile;
+    xiiStringBuilder sRel = sFile;
     sRel.MakeRelativeTo(m_sSearchDir.GetData()).IgnoreResult();
 
     xiiStringBuilder sRefPointName = xiiPathUtils::GetFileName(m_sSearchDir.GetData());
@@ -472,31 +501,34 @@ public:
     return sRefPointName;
   }
 
-  void InsertRefPoint(const char* szFile)
+  void InsertRefPoint(xiiStringView sFile)
   {
-    XII_LOG_BLOCK("InsertRefPoint", szFile);
+    XII_LOG_BLOCK("InsertRefPoint", sFile);
 
     xiiStringBuilder sFileContent;
-    if (ReadEntireFile(szFile, sFileContent) == XII_FAILURE)
+    if (ReadEntireFile(sFile, sFileContent) == XII_FAILURE)
       return;
 
-    // If we find this macro in here, we don't need to insert XII_STATICLINK_FILE in this file
+    // if we find this macro in here, we don't need to insert XII_STATICLINK_FILE in this file
     // but once we are done with all files, we want to come back to this file and rewrite the XII_STATICLINK_LIBRARY
     // part such that it will reference all the other files
     if (sFileContent.FindSubString("XII_STATICLINK_LIBRARY"))
       return;
 
     xiiString sLibraryMarker = GetLibraryMarkerName();
-    xiiString sFileMarker    = GetFileMarkerName(szFile);
+    xiiString sFileMarker    = GetFileMarkerName(sFile);
 
     xiiStringBuilder sNewMarker;
-    sNewMarker.SetFormat("XII_STATICLINK_FILE({0}, {1});", sLibraryMarker, sFileMarker);
 
-    m_AllRefPoints.Insert(sFileMarker.GetData());
+    if (m_FilesToLink.Contains(sFile))
+    {
+      m_AllRefPoints.Insert(sFileMarker.GetData());
+      sNewMarker.SetFormat("XII_STATICLINK_FILE({0}, {1});", sLibraryMarker, sFileMarker);
+    }
 
     const char* szMarker = sFileContent.FindSubString("XII_STATICLINK_FILE");
 
-    // If the marker already exists, replace it with the updated string
+    // if the marker already exists, replace it with the updated string
     if (szMarker != nullptr)
     {
       const char* szMarkerEnd = szMarker;
@@ -508,12 +540,12 @@ public:
     }
     else
     {
-      // Otherwise insert it at the end of the file
+      // otherwise insert it at the end of the file
       sFileContent.AppendFormat("\n\n{0}\n\n", sNewMarker);
     }
 
-    // Rewrite the entire file
-    OverwriteFile(szFile, sFileContent);
+    // rewrite the entire file
+    OverwriteFile(sFile, sFileContent);
   }
 
   void UpdateStaticLinkLibraryBlock()
@@ -521,17 +553,17 @@ public:
     if (m_bHadSeriousWarnings || m_bHadErrors)
       return;
 
-    const char* szFile = m_sRefPointGroupFile.GetData();
+    xiiStringView sFile = m_sRefPointGroupFile;
 
-    XII_LOG_BLOCK("RewriteRefPointGroup", szFile);
+    XII_LOG_BLOCK("RewriteRefPointGroup", sFile);
 
     xiiLog::Info("Replacing macro XII_STATICLINK_LIBRARY in file '{0}'.", m_sRefPointGroupFile);
 
     xiiStringBuilder sFileContent;
-    if (ReadEntireFile(szFile, sFileContent) == XII_FAILURE)
+    if (ReadEntireFile(sFile, sFileContent) == XII_FAILURE)
       return;
 
-    // Remove all instances of XII_STATICLINK_FILE from this file, it already contains XII_STATICLINK_LIBRARY
+    // remove all instances of XII_STATICLINK_FILE from this file, it already contains XII_STATICLINK_LIBRARY
     const char* szMarker = sFileContent.FindSubString("XII_STATICLINK_FILE");
     while (szMarker != nullptr)
     {
@@ -542,7 +574,7 @@ public:
       while (*szMarkerEnd != '\0' && *szMarkerEnd != '\n')
         ++szMarkerEnd;
 
-      // No ref point allowed in a file that has already a ref point group
+      // no ref point allowed in a file that has already a ref point group
       sFileContent.Remove(szMarker, szMarkerEnd);
 
       szMarker = sFileContent.FindSubString("XII_STATICLINK_FILE");
@@ -550,8 +582,8 @@ public:
 
     xiiStringBuilder sNewGroupMarker;
 
-    // Generate the code that should be inserted into this file
-    // This code will reference all the other files in the library
+    // generate the code that should be inserted into this file
+    // this code will reference all the other files in the library
     {
       sNewGroupMarker.SetFormat("XII_STATICLINK_LIBRARY({0})\n{\n  if (bReturn)\n    return;\n\n", GetLibraryMarkerName());
 
@@ -570,7 +602,7 @@ public:
 
     if (szGroupMarker != nullptr)
     {
-      // If we could find the macro XII_STATICLINK_LIBRARY, just replace it with the new code
+      // if we could find the macro XII_STATICLINK_LIBRARY, just replace it with the new code
 
       const char* szMarkerEnd = szGroupMarker;
 
@@ -591,17 +623,17 @@ public:
       if (*szMarkerEnd == '\n')
         ++szMarkerEnd;
 
-      // Now replace the existing XII_STATICLINK_LIBRARY and its code block with the new block
+      // now replace the existing XII_STATICLINK_LIBRARY and its code block with the new block
       sFileContent.ReplaceSubString(szGroupMarker, szMarkerEnd, sNewGroupMarker.GetData());
     }
     else
     {
-      // If we can't find the macro, append it to the end of the file.
-      // This can only happen, if we ever extend this tool such that it picks one file to auto-insert this macro
+      // if we can't find the macro, append it to the end of the file
+      // this can only happen, if we ever extend this tool such that it picks one file to auto-insert this macro
       sFileContent.AppendFormat("\n\n{0}\n\n", sNewGroupMarker);
     }
 
-    OverwriteFile(szFile, sFileContent);
+    OverwriteFile(sFile, sFileContent);
   }
 
   void IterateOverFiles()
@@ -609,50 +641,26 @@ public:
     if (m_bHadSeriousWarnings || m_bHadErrors)
       return;
 
-#if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) || defined(XII_DOCS)
-    const xiiUInt32 uiSearchDirLength = m_sSearchDir.GetElementCount() + 1;
+    xiiStringBuilder b, sExt;
 
-    // Retrieve a directory iterator for the search directory
-    xiiFileSystemIterator it;
-    it.StartSearch(m_sSearchDir.GetData(), xiiFileSystemIteratorFlags::ReportFilesRecursive);
-
-    if (it.IsValid())
+    for (const xiiString& sFile : m_FilesToModify)
     {
-      xiiStringBuilder b, sExt;
-
-      // While there are additional files / folders
-      for (; it.IsValid(); it.Next())
+      if (sFile.HasExtension("h") || sFile.HasExtension("inl"))
       {
-        // Build the absolute path to the current file
-        b = it.GetCurrentPath();
-        b.AppendPath(it.GetStats().m_sName.GetData());
+        XII_LOG_BLOCK("Header", sFile.GetFileNameAndExtension());
+        FixFileContents(sFile);
+        continue;
+      }
 
-        // File extensions are always converted to lower-case actually
-        sExt = b.GetFileExtension();
+      if (sFile.HasExtension("cpp"))
+      {
+        XII_LOG_BLOCK("Source", sFile.GetFileNameAndExtension());
+        FixFileContents(sFile);
 
-        if (sExt.IsEqual_NoCase("h") || sExt.IsEqual_NoCase("inl"))
-        {
-          XII_LOG_BLOCK("Header", &b.GetData()[uiSearchDirLength]);
-          FixFileContents(b.GetData());
-          continue;
-        }
-
-        if (sExt.IsEqual_NoCase("cpp"))
-        {
-          XII_LOG_BLOCK("Source", &b.GetData()[uiSearchDirLength]);
-          FixFileContents(b.GetData());
-
-          InsertRefPoint(b.GetData());
-          continue;
-        }
+        InsertRefPoint(sFile);
+        continue;
       }
     }
-    else
-      xiiLog::Error("Could not search the directory '{0}'", m_sSearchDir);
-
-#else
-    XII_REPORT_FAILURE("No file system iterator support, StaticLinkUtil sample can't run.");
-#endif
   }
 
   void MakeSureStaticLinkLibraryMacroExists()
@@ -660,7 +668,7 @@ public:
     if (m_bHadSeriousWarnings || m_bHadErrors)
       return;
 
-    // The macro XII_STATICLINK_LIBRARY was not found in any cpp file,
+    // The macro XII_STATICLINK_LIBRARY was not found in any cpp file
     // try to insert it into a PCH.cpp, if there is one
     if (!m_sRefPointGroupFile.IsEmpty())
       return;
@@ -712,6 +720,11 @@ public:
         // File extensions are always converted to lower-case actually
         sExt = sFile.GetFileExtension();
 
+        if (sExt.IsEqual_NoCase("h") || sExt.IsEqual_NoCase("inl"))
+        {
+          m_FilesToModify.Insert(sFile);
+        }
+
         if (sExt.IsEqual_NoCase("cpp"))
         {
           xiiStringBuilder sFileContent;
@@ -723,6 +736,8 @@ public:
           // part such that it will reference all the other files
           if (sFileContent.FindSubString("XII_STATICLINK_LIBRARY"))
           {
+            m_FilesToModify.Insert(sFile);
+
             xiiLog::Info("Found macro 'XII_STATICLINK_LIBRARY' in file '{0}'.", &sFile.GetData()[m_sSearchDir.GetElementCount() + 1]);
 
             if (!m_sRefPointGroupFile.IsEmpty())
@@ -730,6 +745,28 @@ public:
             else
               m_sRefPointGroupFile = sFile;
           }
+
+          if (sFileContent.FindSubString("XII_STATICLINK_FILE_DISABLE"))
+            continue;
+
+          m_FilesToModify.Insert(sFile);
+
+          bool bContainsGlobals = false;
+
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("XII_STATICLINK_FORCE") != nullptr);
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("XII_STATICLINK_LIBRARY") != nullptr);
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("XII_BEGIN_") != nullptr);
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("XII_PLUGIN_") != nullptr);
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("XII_ON_GLOBAL_EVENT") != nullptr);
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("xiiCVarBool ") != nullptr);
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("xiiCVarFloat ") != nullptr);
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("xiiCVarInt ") != nullptr);
+          bContainsGlobals = bContainsGlobals || (sFileContent.FindSubString("xiiCVarString ") != nullptr);
+
+          if (!bContainsGlobals)
+            continue;
+
+          m_FilesToLink.Insert(sFile);
         }
       }
     }
