@@ -36,7 +36,7 @@ xiiResult xiiImageFileFormat::ReadImageHeader(xiiStringView sFileName, xiiImageH
 {
   XII_LOG_BLOCK("Read Image Header", sFileName);
 
-  XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(sFileName).GetStartPointer());
+  XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(sFileName));
 
   xiiFileReader reader;
   if (reader.Open(sFileName) == XII_FAILURE)
@@ -47,9 +47,9 @@ xiiResult xiiImageFileFormat::ReadImageHeader(xiiStringView sFileName, xiiImageH
 
   xiiStringView it = xiiPathUtils::GetFileExtension(sFileName);
 
-  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it.GetStartPointer()))
+  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it))
   {
-    if (pFormat->ReadImageHeader(reader, ref_header, it.GetStartPointer()) != XII_SUCCESS)
+    if (pFormat->ReadImageHeader(reader, ref_header, it) != XII_SUCCESS)
     {
       xiiLog::Warning("Failed to read image file '{0}'", xiiArgSensitive(sFileName, "File"));
       return XII_FAILURE;
