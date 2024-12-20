@@ -72,6 +72,8 @@ public:
   static vk::ComponentMapping GetComponentMapping(const xiiGALTextureComponentMapping& mapping);
 
   static xiiBitflags<xiiGALSparseTextureFlags> GetSparseTextureFlags(vk::SparseImageFormatFlags e);
+
+  static vk::ImageUsageFlags GetImageUsageFlags(xiiBitflags<xiiGALBindFlags> bindFlags, bool bIsMemoryless, bool bFragmentDensityMapInsteadOfShadingRate);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

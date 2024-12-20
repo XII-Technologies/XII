@@ -1,3 +1,4 @@
+#include "VulkanTypeConversions.h"
 
 XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiGALBlendOperation::Enum e)
 {
@@ -994,4 +995,29 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALSparseTextureFlags> xiiVulkanTypeConversions
     sparseTextureFlags |= xiiGALSparseTextureFlags::NonStandardBlockSize;
 
   return sparseTextureFlags;
+}
+
+XII_ALWAYS_INLINE vk::ImageUsageFlags xiiVulkanTypeConversions::GetImageUsageFlags(xiiBitflags<xiiGALBindFlags> bindFlags, bool bIsMemoryless, bool bFragmentDensityMapInsteadOfShadingRate)
+{
+  vk::ImageUsageFlags vkImageUsageFlags = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+
+  if (bindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eSampled;
+  if (bindFlags.IsSet(xiiGALBindFlags::RenderTarget)) // VK_IMAGE_USAGE_TRANSFER_DST_BIT is required for vkCmdClearColorImage
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
+  if (bindFlags.IsSet(xiiGALBindFlags::DepthStencil)) // VK_IMAGE_USAGE_TRANSFER_DST_BIT is required for vkCmdClearDepthStencilImage()
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst;
+  if (bindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eStorage;
+  if (bindFlags.IsSet(xiiGALBindFlags::InputAttachment))
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eInputAttachment;
+  if (bindFlags.IsSet(xiiGALBindFlags::ShadingRate))
+    vkImageUsageFlags |= (bFragmentDensityMapInsteadOfShadingRate ? vk::ImageUsageFlagBits::eFragmentDensityMapEXT : vk::ImageUsageFlagBits::eFragmentShadingRateAttachmentKHR);
+
+  if (bIsMemoryless)
+  {
+    vkImageUsageFlags &= (vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eInputAttachment);
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eTransientAttachment;
+  }
+  return vkImageUsageFlags;
 }
