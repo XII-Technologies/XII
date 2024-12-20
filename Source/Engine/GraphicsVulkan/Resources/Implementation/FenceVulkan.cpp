@@ -59,6 +59,14 @@ xiiResult xiiGALFenceVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkTimelineSemaphore, sName.GetData(tmp));
+}
+
 void xiiGALFenceVulkan::ReleaseResourcesImmediately()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);

@@ -292,14 +292,43 @@ xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiGALTexture
 
 void xiiGALCommandListVulkan::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  xiiStringBuilder tmp;
+
+  vk::DebugUtilsLabelEXT vkDebugUtilsLabel = {};
+  vkDebugUtilsLabel.pNext                  = nullptr;
+  vkDebugUtilsLabel.pLabelName             = sName.GetData(tmp);
+  vkDebugUtilsLabel.color[0]               = color.r;
+  vkDebugUtilsLabel.color[1]               = color.g;
+  vkDebugUtilsLabel.color[2]               = color.b;
+  vkDebugUtilsLabel.color[3]               = color.a;
+
+  m_vkCommandBuffer.beginDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::EndDebugGroupPlatform()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  m_vkCommandBuffer.endDebugUtilsLabelEXT(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  xiiStringBuilder tmp;
+
+  vk::DebugUtilsLabelEXT vkDebugUtilsLabel = {};
+  vkDebugUtilsLabel.pNext                  = nullptr;
+  vkDebugUtilsLabel.pLabelName             = sName.GetData(tmp);
+  vkDebugUtilsLabel.color[0]               = color.r;
+  vkDebugUtilsLabel.color[1]               = color.g;
+  vkDebugUtilsLabel.color[2]               = color.b;
+  vkDebugUtilsLabel.color[3]               = color.a;
+
+  m_vkCommandBuffer.insertDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::FlushPlatform()
@@ -312,6 +341,10 @@ void xiiGALCommandListVulkan::InvalidateStatePlatform()
 
 void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkCommandBuffer, sName.GetData(tmp));
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_CommandEncoder_Implementation_CommandListVulkan);

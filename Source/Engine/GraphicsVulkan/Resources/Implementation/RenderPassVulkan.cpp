@@ -64,6 +64,14 @@ xiiResult xiiGALRenderPassVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALRenderPassVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkRenderPass, sName.GetData(tmp));
+}
+
 template <xiiUInt8 RenderPassVersion>
 vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
 {

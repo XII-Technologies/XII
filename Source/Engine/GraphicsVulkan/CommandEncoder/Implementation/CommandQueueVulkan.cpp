@@ -161,6 +161,10 @@ xiiUInt64 xiiGALCommandQueueVulkan::Submit(xiiGALCommandList* pCommandList, bool
 
 void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkCommandPool, sName.GetData(tmp));
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_CommandEncoder_Implementation_CommandQueueVulkan);

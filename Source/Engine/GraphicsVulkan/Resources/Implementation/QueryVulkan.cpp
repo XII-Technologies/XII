@@ -24,6 +24,10 @@ xiiResult xiiGALQueryVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALQueryVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+}
+
 bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
 {
   return false;

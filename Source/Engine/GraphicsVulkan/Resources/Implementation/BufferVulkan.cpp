@@ -172,19 +172,9 @@ xiiResult xiiGALBufferVulkan::DeInitPlatform()
 void xiiGALBufferVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
 
-  if (pDeviceVulkan->GetDebugMode() != xiiGALDeviceVulkan::DebugMode::Disabled)
-  {
-    xiiStringBuilder sb;
-
-    vk::DebugUtilsObjectNameInfoEXT debugUtilsObjectInfo = {};
-    debugUtilsObjectInfo.pNext                           = {};
-    debugUtilsObjectInfo.objectType                      = m_vkBuffer.objectType;
-    debugUtilsObjectInfo.pObjectName                     = sName.GetData(sb);
-    debugUtilsObjectInfo.objectHandle                    = (xiiUInt64) static_cast<vk::Buffer::NativeType>(m_vkBuffer);
-
-    VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().setDebugUtilsObjectNameEXT(&debugUtilsObjectInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-  }
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkBuffer, sName.GetData(tmp));
 }
 
 void xiiGALBufferVulkan::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)

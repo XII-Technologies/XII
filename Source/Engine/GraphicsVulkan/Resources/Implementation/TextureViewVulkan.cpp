@@ -244,4 +244,12 @@ xiiResult xiiGALTextureViewVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALTextureViewVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkImageView, sName.GetData(tmp));
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_TextureViewVulkan);

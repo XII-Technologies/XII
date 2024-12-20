@@ -1169,6 +1169,13 @@ xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGA
   return bAllowGraphicsCommandQueueFallback ? GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false) : nullptr;
 }
 
+void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiStringBuilder tmp;
+
+  SetVulkanObjectDebugName(m_LogicalDevice, sName.GetData(tmp));
+}
+
 xiiGALSwapChain* xiiGALDeviceVulkan::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
 {
   xiiGALSwapChainVulkan* pSwapChainVulkan = XII_NEW(&m_Allocator, xiiGALSwapChainVulkan, this, description);

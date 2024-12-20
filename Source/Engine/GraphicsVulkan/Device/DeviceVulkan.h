@@ -82,6 +82,28 @@ public:
 public:
   virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
+  template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>
+  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName)
+  {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    if (m_DebugMode != DebugMode::Disabled)
+    {
+      if (vkObject == VK_NULL_HANDLE)
+        return;
+
+      vk::DebugUtilsObjectNameInfoEXT vkDebugObjectNameInfo = {};
+      vkDebugObjectNameInfo.pNext                           = nullptr;
+      vkDebugObjectNameInfo.objectType                      = vkObject.objectType;
+      vkDebugObjectNameInfo.objectHandle                    = (uint64_t) static_cast<typename ObjectHandle::NativeType>(vkObject);
+      vkDebugObjectNameInfo.pObjectName                     = szDebugName;
+
+      m_LogicalDevice.setDebugUtilsObjectNameEXT(vkDebugObjectNameInfo, m_InstanceDispatchLoader);
+    }
+#endif
+  }
+
   template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
   void SafeReleaseDeviceObject(ObjectType&& object)
   {

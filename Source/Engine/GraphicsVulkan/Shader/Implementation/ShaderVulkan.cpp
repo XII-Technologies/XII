@@ -37,4 +37,12 @@ xiiResult xiiGALShaderVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALShaderVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkShaderModule, sName.GetData(tmp));
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Shader_Implementation_ShaderVulkan);

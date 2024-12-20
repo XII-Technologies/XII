@@ -27,6 +27,8 @@ protected:
 
   virtual xiiResult DeInitPlatform();
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
   vk::ShaderModule m_vkShaderModule;
 };

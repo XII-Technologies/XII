@@ -44,6 +44,8 @@ protected:
   virtual xiiResult InitPlatform() override final;
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
   xiiResult CreateVulkanSurface();
   xiiResult CreateVulkanSwapChain();
   xiiResult RecreateVulkanSwapChain();

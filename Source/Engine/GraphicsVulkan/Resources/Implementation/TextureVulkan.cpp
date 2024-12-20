@@ -31,6 +31,10 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
 
 void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkImage, sName.GetData(tmp));
 }
 
 void xiiGALTextureVulkan::InitializeSparseTextureProperties()
