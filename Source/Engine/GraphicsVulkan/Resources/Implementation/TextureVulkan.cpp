@@ -50,6 +50,13 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
     if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
     {
+      VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
+      vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+
+      VmaAllocationInfo vmaAllocationInfo = {};
+
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), &vkImageCreateInfo, &vmaAllocationCreateInfo, m_vkImage, &m_MemoryAllocation, &vmaAllocationInfo));
+
       VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
@@ -114,14 +121,62 @@ void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-  const bool          bInitialTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
+  xiiGALDeviceVulkan* pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice    = pDeviceVulkan->GetVulkanLogicalDevice();
+  const bool          bInitializeTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
 
-  vk::BufferCreateInfo vkStatingBufferCreateInfo = {};
-  vkStatingBufferCreateInfo.pNext                = nullptr;
-  vkStatingBufferCreateInfo.flags                = {};
-  vkStatingBufferCreateInfo.size                 = ;
+  vk::BufferCreateInfo vkStagingBufferCreateInfo = {};
+  vkStagingBufferCreateInfo.pNext                = nullptr;
+  vkStagingBufferCreateInfo.flags                = {};
+  vkStagingBufferCreateInfo.size                 = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, m_Description.GetArraySize(), 0, s_uiStagingBufferOffsetAlignment);
+
+  XII_ASSERT_DEV(m_Description.m_CPUAccessFlags.IsStrictlyAnySet(xiiGALCPUAccessFlag::Read) || m_Description.m_CPUAccessFlags.IsStrictlyAnySet(xiiGALCPUAccessFlag::Write), "Exactly one of xiiGALCPUAccessFlag::Read or xiiGALCPUAccessFlag::Write CPU access flags must be specified.");
+
+  vk::MemoryPropertyFlags vkMemoryPropertyFlags = vk::MemoryPropertyFlagBits::eHostVisible;
+
+  if (m_Description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read))
+  {
+    XII_ASSERT_DEV(!bInitializeTexture, "Readback textures should not be initialized with data.");
+
+    vkStagingBufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferDst;
+
+    vkMemoryPropertyFlags |= vk::MemoryPropertyFlagBits::eHostCached;
+
+    SetResourceState(xiiGALResourceStateFlags::CopyDestination);
+
+    // We do not set HOST_COHERENT bit, so we will have to use InvalidateMappedMemoryRanges, which requires the ranges to be aligned by nonCoherentAtomSize.
+    const auto& deviceLimits = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits;
+
+    // Align the buffer size to ensure that any aligned range is always in bounds.
+    vkStagingBufferCreateInfo.size = xiiMemoryUtils::AlignSize(vkStagingBufferCreateInfo.size, deviceLimits.nonCoherentAtomSize);
+  }
+  else if (m_Description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
+  {
+    vkStagingBufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
+
+    // VK_MEMORY_PROPERTY_HOST_COHERENT_BIT bit specifies that the host cache management commands vkFlushMappedMemoryRanges
+    // and vkInvalidateMappedMemoryRanges are NOT needed to flush host writes to the device or make device writes visible to the host (10.2).
+
+    vkMemoryPropertyFlags |= vk::MemoryPropertyFlagBits::eHostCoherent;
+
+    SetResourceState(xiiGALResourceStateFlags::CopySource);
+  }
+  else
+  {
+    XII_REPORT_FAILURE("Unexpected CPU access flags.");
+  }
+
+  vkStagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+  vkStagingBufferCreateInfo.pQueueFamilyIndices = nullptr;
+  vkStagingBufferCreateInfo.queueFamilyIndexCount = 0;
+
+  VK_SUCCEED_OR_RETURN_LOG(vkLogicalDevice.createBuffer(&vkStagingBufferCreateInfo, nullptr, &m_vkStagingBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()), "Failed to create Vulkan staging buffer.");
+
+  vk::MemoryRequirements vkStagingBufferMemoryRequirements = vkLogicalDevice.getBufferMemoryRequirements(m_vkStagingBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(vkStagingBufferMemoryRequirements.alignment), "Alignment is not a power of 2!");
+
+  /// \todo GraphicsVulkan: Allocate and bind memory for buffer.
 }
 
 void xiiGALTextureVulkan::InitializeSparseTextureProperties()

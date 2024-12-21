@@ -47,10 +47,9 @@ protected:
   static void InitializeImageContent(const xiiGALDeviceVulkan* pDeviceVulkan, const vk::ImageCreateInfo& vkImageCreateInfo, const vk::Image& vkImage, const xiiGALTextureData* pInitialData);
 
 protected:
-  vk::Image               m_vkImage;
-  vk::Buffer              m_vkStagingBuffer;
-  VmaAllocationCreateInfo m_MemoryAllocation;
-  vk::DeviceSize          m_StagingDataAlignedOffset = 0;
+  vk::Image     m_vkImage;
+  vk::Buffer    m_vkStagingBuffer;
+  VmaAllocation m_MemoryAllocation;
 
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 };
