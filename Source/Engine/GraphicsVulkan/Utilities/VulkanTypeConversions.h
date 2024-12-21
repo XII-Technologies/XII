@@ -61,7 +61,8 @@ public:
   static vk::AttachmentLoadOp  GetAttachmentLoadOperation(xiiGALAttachmentLoadOperation::Enum e);
   static vk::AttachmentStoreOp GetAttachmentStoreOperation(xiiGALAttachmentStoreOperation::Enum e);
 
-  static vk::ImageLayout GetImageLayout(xiiBitflags<xiiGALResourceStateFlags> e, bool bIsInsideRenderPass = false, bool bFragDensityMapInsteadOfShadingRate = false);
+  static vk::ImageLayout                       GetImageLayout(xiiBitflags<xiiGALResourceStateFlags> e, bool bIsInsideRenderPass = false, bool bFragDensityMapInsteadOfShadingRate = false);
+  static xiiBitflags<xiiGALResourceStateFlags> GetResourceState(vk::ImageLayout e);
 
   static vk::PipelineStageFlags                GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e);
   static vk::AccessFlags                       GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);

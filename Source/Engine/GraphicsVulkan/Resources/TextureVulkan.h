@@ -18,6 +18,9 @@ public:
   XII_ALWAYS_INLINE vk::Image GetVulkanImage() const { return m_vkImage; }
   XII_ALWAYS_INLINE vk::Buffer GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
 
+  vk::ImageLayout GetVulkanImageLayout() const;
+  void            SetVulkanImageLayout(vk::ImageLayout vkImageLayout);
+
   // For non-compressed color format buffer, the offset must be a multiple of the format's texel block size.
   // For compressed format buffer, the offset must be a multiple of the compressed texel block size in bytes.
   // For depth-stencil format buffer, the offset must be a multiple of 4.
@@ -41,10 +44,10 @@ protected:
 
   vk::Result CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties);
 
+  void InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData);
   void InitializeSparseTextureProperties();
 
   static void ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo);
-  static void InitializeImageContent(const xiiGALDeviceVulkan* pDeviceVulkan, const vk::ImageCreateInfo& vkImageCreateInfo, const vk::Image& vkImage, const xiiGALTextureData* pInitialData);
 
 protected:
   vk::Image     m_vkImage;

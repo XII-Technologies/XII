@@ -1,4 +1,3 @@
-#include "VulkanTypeConversions.h"
 
 XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiGALBlendOperation::Enum e)
 {
@@ -829,6 +828,50 @@ XII_ALWAYS_INLINE vk::ImageLayout xiiVulkanTypeConversions::GetImageLayout(xiiBi
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return vk::ImageLayout::eUndefined;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceState(vk::ImageLayout e)
+{
+  switch (e)
+  {
+    case vk::ImageLayout::eUndefined:
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::eGeneral:
+      return xiiGALResourceStateFlags::UnorderedAccess;
+    case vk::ImageLayout::eColorAttachmentOptimal:
+      return xiiGALResourceStateFlags::RenderTarget;
+    case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+      return xiiGALResourceStateFlags::DepthWrite;
+    case vk::ImageLayout::eDepthStencilReadOnlyOptimal:
+      return xiiGALResourceStateFlags::DepthRead;
+    case vk::ImageLayout::eShaderReadOnlyOptimal:
+      return xiiGALResourceStateFlags::ShaderResource;
+    case vk::ImageLayout::eTransferSrcOptimal:
+      return xiiGALResourceStateFlags::CopySource;
+    case vk::ImageLayout::eTransferDstOptimal:
+      return xiiGALResourceStateFlags::CopyDestination;
+    case vk::ImageLayout::ePreinitialized:
+      XII_REPORT_FAILURE("vk::ImageLayout::ePreinitialized is not supported.");
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal:
+      XII_REPORT_FAILURE("vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal is not supported.");
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal:
+      XII_REPORT_FAILURE("vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal is not supported.");
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::ePresentSrcKHR:
+      return xiiGALResourceStateFlags::Present;
+    case vk::ImageLayout::eSharedPresentKHR:
+      XII_REPORT_FAILURE("vk::ImageLayout::eSharedPresentKHR is not supported.");
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::eFragmentDensityMapOptimalEXT:
+    case vk::ImageLayout::eFragmentShadingRateAttachmentOptimalKHR:
+      return xiiGALResourceStateFlags::ShadingRate;
+
+    default:
+      XII_REPORT_FAILURE("Unknown Vulkan image layout ({}).", e);
+  }
+  return xiiGALResourceStateFlags::Undefined;
 }
 
 XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e)
