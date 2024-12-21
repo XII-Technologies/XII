@@ -40,7 +40,54 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
   {
     vk::ImageCreateInfo vkImageCreateInfo = {};
     ComputeVkImageCreateInfo(pDeviceVulkan, m_Description, vkImageCreateInfo);
+
+    /// \todo GraphicsVulkan: Selectively utilize vk::SharingMode::eConcurrent for multiple queue family's ownership of the vulkan image.
+
+    // initialLayout must be either VK_IMAGE_LAYOUT_UNDEFINED or VK_IMAGE_LAYOUT_PREINITIALIZED (11.4).
+    // If it is VK_IMAGE_LAYOUT_PREINITIALIZED, then the image data can be preinitialized by the host while using this layout, and the transition away from this layout will preserve that data.
+    // If it is VK_IMAGE_LAYOUT_UNDEFINED, then the contents of the data are considered to be undefined, and the transition away from this layout is not guaranteed to preserve that data.
+    vkImageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+    if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
+    {
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+      SetResourceState(xiiGALResourceStateFlags::Undefined);
+
+      InitializeSparseTextureProperties();
+    }
+    else
+    {
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+      const vk::MemoryRequirements  vkMemoryRequirements  = vkLogicalDevice.getImageMemoryRequirements(m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      const vk::MemoryPropertyFlags vkMemoryPropertyFlags = bIsMemoryLess ? vk::MemoryPropertyFlagBits::eLazilyAllocated : vk::MemoryPropertyFlagBits::eDeviceLocal;
+
+      XII_ASSERT_DEV(xiiMath::IsPowerOf2(vkMemoryRequirements.alignment), "Alignment is not a power of 2!");
+
+      /// \todo GraphicsVulkan: Perform VMA memory allocation and bind image memory.
+
+      if (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty())
+      {
+        InitializeImageContent(pDeviceVulkan, vkImageCreateInfo, m_vkImage, pInitialData);
+      }
+      else
+      {
+        SetResourceState(xiiGALResourceStateFlags::Undefined);
+      }
+    }
   }
+  else if (m_Description.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(CreateVulkanStagingBuffer(pInitialData, resourceFormatProperties));
+  }
+  else
+  {
+    xiiLog::Error("Unsupported usage ({}) in creating Vulkan image.", m_Description.m_Usage);
+    return XII_FAILURE;
+  }
+
+  XII_ASSERT_DEV(IsInKnownState(), "The Vulkan image is not in known state.");
 
   return XII_SUCCESS;
 }
@@ -63,6 +110,18 @@ void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkImage, sName.GetData(tmp));
+}
+
+vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  const bool          bInitialTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
+
+  vk::BufferCreateInfo vkStatingBufferCreateInfo = {};
+  vkStatingBufferCreateInfo.pNext                = nullptr;
+  vkStatingBufferCreateInfo.flags                = {};
+  vkStatingBufferCreateInfo.size                 = ;
 }
 
 void xiiGALTextureVulkan::InitializeSparseTextureProperties()
@@ -249,6 +308,10 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDe
       ref_vkImageCreateInfo.flags = vk::ImageCreateFlagBits::eSparseAliased;
     }
   }
+}
+
+void xiiGALTextureVulkan::InitializeImageContent(const xiiGALDeviceVulkan* pDeviceVulkan, const vk::ImageCreateInfo& vkImageCreateInfo, const vk::Image& vkImage, const xiiGALTextureData* pInitialData)
+{
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_TextureVulkan);

@@ -20,6 +20,9 @@ public:
   /// \brief This returns the buffer state.
   [[nodiscard]] XII_ALWAYS_INLINE virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const { return m_ResourceState; }
 
+  /// \brief This returns true if the resource is in known state by the engine.
+  [[nodiscard]] XII_ALWAYS_INLINE virtual bool IsInKnownState() const { return m_ResourceState != xiiGALResourceStateFlags::Unknown; }
+
 protected:
   friend class xiiGALDevice;
 

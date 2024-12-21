@@ -16,7 +16,7 @@ public:
   XII_ALWAYS_INLINE virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final { return m_SparseTextureProperties; }
 
   XII_ALWAYS_INLINE vk::Image GetVulkanImage() const { return m_vkImage; }
-  XII_ALWAYS_INLINE vk::Buffer GetVulkanStagingBuffer() const { return m_vkBuffer; }
+  XII_ALWAYS_INLINE vk::Buffer GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
 
   // For non-compressed color format buffer, the offset must be a multiple of the format's texel block size.
   // For compressed format buffer, the offset must be a multiple of the compressed texel block size in bytes.
@@ -39,13 +39,16 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+  vk::Result CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties);
+
   void InitializeSparseTextureProperties();
 
   static void ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo);
+  static void InitializeImageContent(const xiiGALDeviceVulkan* pDeviceVulkan, const vk::ImageCreateInfo& vkImageCreateInfo, const vk::Image& vkImage, const xiiGALTextureData* pInitialData);
 
 protected:
   vk::Image               m_vkImage;
-  vk::Buffer              m_vkBuffer;
+  vk::Buffer              m_vkStagingBuffer;
   VmaAllocationCreateInfo m_MemoryAllocation;
   vk::DeviceSize          m_StagingDataAlignedOffset = 0;
 
