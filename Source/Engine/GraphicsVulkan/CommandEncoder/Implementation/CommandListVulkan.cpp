@@ -33,8 +33,8 @@ void xiiGALCommandListVulkan::BeginPlatform()
 
   vk::CommandBufferBeginInfo vkCommandBufferBeginInfo = {};
   vkCommandBufferBeginInfo.pNext                      = nullptr;
-  vkCommandBufferBeginInfo.flags                      = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;// Each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
-  vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr; // Ignored for a primary command buffer.
+  vkCommandBufferBeginInfo.flags                      = vk::CommandBufferUsageFlagBits::eOneTimeSubmit; // Each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
+  vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr;                                        // Ignored for a primary command buffer.
 
   VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 

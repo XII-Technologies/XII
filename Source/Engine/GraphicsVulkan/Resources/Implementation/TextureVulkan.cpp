@@ -1,9 +1,9 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
-#include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/TextureVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
+#include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 xiiGALTextureVulkan::xiiGALTextureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceVulkan, creationDescription)
@@ -382,7 +382,6 @@ void xiiGALTextureVulkan::InitializeImageContent(const xiiGALDeviceVulkan* pDevi
   {
     if (auto pCommandList = pGraphicsQueue->BeginCommandList())
     {
-
     }
     else
     {
