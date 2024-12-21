@@ -5,6 +5,14 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 
+void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags sourceStageFlags, vk::PipelineStageFlags destinationStageFlags)
+{
+}
+
+void xiiGALCommandListVulkan::FlushBarriers()
+{
+}
+
 xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription)
 {

@@ -7,7 +7,31 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
 public:
-  XII_ALWAYS_INLINE vk::CommandBuffer GetVulkanCommandBuffer() const { return m_vkCommandBuffer; };
+  XII_ALWAYS_INLINE vk::CommandBuffer GetVulkanCommandBuffer() const { return m_vkCommandBuffer; }
+
+  XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanCommandBufferSupportedStageFlags() const { return m_PipelineBarrier.m_vkSupportedStagesMask; }
+
+  XII_ALWAYS_INLINE vk::AccessFlags GetVulkanCommandBufferSupportedAccessFlags() const { return m_PipelineBarrier.m_vkSupportedAccessMask; }
+
+  void TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags sourceStageFlags, vk::PipelineStageFlags destinationStageFlags);
+
+  void FlushBarriers();
+
+  struct CommandListState
+  {
+    vk::RenderPass  m_vkRenderPass         = VK_NULL_HANDLE;
+    vk::Framebuffer m_vkFramebuffer        = VK_NULL_HANDLE;
+    vk::Pipeline    m_vkGraphicsPipeline   = VK_NULL_HANDLE;
+    vk::Pipeline    m_vkComputePipeline    = VK_NULL_HANDLE;
+    vk::Pipeline    m_vkRayTracingPipeline = VK_NULL_HANDLE;
+    vk::Buffer      m_vkIndexBuffer        = VK_NULL_HANDLE;
+    vk::DeviceSize  m_vkIndexBufferOffset  = 0;
+    vk::IndexType   m_vkIndexType          = vk::IndexType::eNoneKHR;
+    xiiUInt32       m_uiFramebufferWidth   = 0;
+    xiiUInt32       m_uiFramebufferHeight  = 0;
+    xiiUInt32       m_uiInsidePassQueries  = 0;
+    xiiUInt32       m_uiOutsidePassQueries = 0;
+  };
 
 protected:
   friend class xiiGALCommandQueueVulkan;
@@ -84,7 +108,25 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
+  struct PipelineBarrier
+  {
+    vk::PipelineStageFlags m_vkMemorySourceStages      = {};
+    vk::PipelineStageFlags m_vkMemoryDestinationStages = {};
+    vk::AccessFlags        m_vkMemorySourceAccess      = {};
+    vk::AccessFlags        m_vkMemoryDestinationAccess = {};
+
+    vk::PipelineStageFlags m_vkImageSourceStages      = {};
+    vk::PipelineStageFlags m_vkImageDestinationStages = {};
+
+    vk::PipelineStageFlags m_vkSupportedStagesMask = vk::PipelineStageFlagBits::eNone;
+    vk::AccessFlags        m_vkSupportedAccessMask = vk::AccessFlagBits::eNone;
+  };
+
   vk::CommandBuffer m_vkCommandBuffer;
+  CommandListState  m_CommandListState;
+  PipelineBarrier   m_PipelineBarrier;
+
+  xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
 
   struct ContextState
   {
