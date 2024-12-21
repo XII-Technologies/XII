@@ -367,6 +367,70 @@ private:
   xiiStaticArray<xiiStaticArray<xiiGALResourceFormat::Enum, xiiGALTextureViewType::ENUM_COUNT>, xiiGALResourceFormat::ENUM_COUNT> m_ViewFormats;
 };
 
+xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevel, xiiUInt32 uiAlignment, xiiUInt32 uiLocationX, xiiUInt32 uiLocationY, xiiUInt32 uiLocationZ)
+{
+  XII_ASSERT_DEV(textureDescription.m_uiMipLevels > 0 && textureDescription.GetArraySize() > 0 && textureDescription.m_Size.HasNonZeroArea() && textureDescription.m_Format != xiiGALResourceFormat::Unknown, "");
+  XII_ASSERT_DEV((uiArraySlice < textureDescription.GetArraySize() && uiMipLevel < textureDescription.m_uiMipLevels) || (uiArraySlice == textureDescription.GetArraySize() && uiMipLevel == 0), "");
+
+  xiiUInt64 uiOffset = 0;
+  if (uiArraySlice > 0)
+  {
+    xiiUInt64 uiArraySliceSize = 0;
+
+    for (xiiUInt32 uiMip = 0; uiMip < textureDescription.m_uiMipLevels; ++uiMip)
+    {
+      xiiGALMipLevelProperties mipLevelProperties = GetMipLevelProperties(textureDescription, uiMip);
+
+      uiArraySliceSize += xiiMemoryUtils::AlignSize(mipLevelProperties.m_uiMipSize, xiiUInt64{uiAlignment});
+    }
+
+    uiOffset = uiArraySliceSize;
+
+    if (textureDescription.IsArray())
+    {
+      uiOffset *= uiArraySlice;
+    }
+  }
+
+  for (xiiUInt32 uiMip = 0; uiMip < uiMipLevel; ++uiMip)
+  {
+    xiiGALMipLevelProperties mipLevelProperties = GetMipLevelProperties(textureDescription, uiMip);
+
+    uiOffset += xiiMemoryUtils::AlignSize(mipLevelProperties.m_uiMipSize, xiiUInt64{uiAlignment});
+  }
+
+  if (uiArraySlice == textureDescription.GetArraySize())
+  {
+    XII_ASSERT_DEV(uiLocationX == 0 && uiLocationY == 0 && uiLocationZ == 0, "Staging buffer size is requested: location must be (0, 0, 0).");
+  }
+  else if (uiLocationX != 0 || uiLocationY != 0 || uiLocationZ != 0)
+  {
+    const xiiGALResourceFormatDescription& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+    xiiGALMipLevelProperties               mipLevelProperties = GetMipLevelProperties(textureDescription, uiMipLevel);
+
+    XII_ASSERT_DEV(uiLocationX < mipLevelProperties.m_LogicalSize.width && uiLocationY < mipLevelProperties.m_LogicalSize.height && uiLocationZ < mipLevelProperties.m_uiDepth, "The specified location is out of range.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+    {
+      XII_ASSERT_DEV((uiLocationX % formatProperties.m_uiBlockWidth) == 0 && (uiLocationY % formatProperties.m_uiBlockHeight) == 0, "For compressed resource formats, location must be a multiple of the compressed block size.");
+    }
+#endif
+
+    // For compressed-block formats, RowSize is the size of one compressed row.
+    // For non-compressed formats, BlockHeight is 1.
+    uiOffset += (uiLocationZ * mipLevelProperties.m_StorageSize.height + uiLocationY) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize;
+
+    // For non-compressed formats, BlockWidth is 1.
+    uiOffset += xiiUInt64{uiLocationX / formatProperties.m_uiBlockWidth} * formatProperties.GetElementSize();
+
+    // Note: This addressing complies with how Vulkan (as well as OpenGL/GLES and Metal) address textures when copying data to/from buffers:
+    //       address of (x,y,z) = bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+  }
+
+  return uiOffset;
+}
+
 xiiEnum<xiiGALResourceFormat> xiiGALTextureUtilities::GetDefaultTextureViewFormat(xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALTextureViewType> viewType, xiiBitflags<xiiGALBindFlags> bindFlags)
 {
   static ResourceFormatToViewFormatConverter formatConverter;
@@ -398,6 +462,38 @@ xiiUInt32 xiiGALTextureUtilities::GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLe
     uiSize = uiSize / 2;
   }
   return xiiMath::Max(1U, uiSize);
+}
+
+xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel)
+{
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+
+  xiiGALMipLevelProperties mipLevelProperties;
+  mipLevelProperties.m_LogicalSize.width  = xiiMath::Max(textureDescription.GetWidth() >> uiMipLevel, 1U);
+  mipLevelProperties.m_LogicalSize.height = xiiMath::Max(textureDescription.GetHeight() >> uiMipLevel, 1U);
+  mipLevelProperties.m_uiDepth            = xiiMath::Max(textureDescription.GetDepth() >> uiMipLevel, 1U);
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  {
+    XII_ASSERT_DEV(formatProperties.m_uiBlockWidth > 1 && formatProperties.m_uiBlockHeight > 1, "");
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "Compressed block width is expected to be a power of 2.");
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "Compressed block height is expected to be a power of 2.");
+
+    // For block-compression formats, all parameters are still specified in texels rather than compressed texel blocks (18.4.1).
+    mipLevelProperties.m_StorageSize.width  = xiiMemoryUtils::AlignSize(mipLevelProperties.m_LogicalSize.width, xiiUInt32{formatProperties.m_uiBlockWidth});
+    mipLevelProperties.m_StorageSize.height = xiiMemoryUtils::AlignSize(mipLevelProperties.m_LogicalSize.height, xiiUInt32{formatProperties.m_uiBlockHeight});
+    mipLevelProperties.m_uiRowSize          = xiiUInt64{mipLevelProperties.m_StorageSize.width} / formatProperties.m_uiBlockWidth * formatProperties.m_uiComponentSize; // Component size is the block size.
+    mipLevelProperties.m_uiDepthSliceSize   = mipLevelProperties.m_StorageSize.height / xiiUInt32{formatProperties.m_uiBlockHeight} * mipLevelProperties.m_uiRowSize;
+  }
+  else
+  {
+    mipLevelProperties.m_StorageSize      = mipLevelProperties.m_LogicalSize;
+    mipLevelProperties.m_uiRowSize        = xiiUInt64{mipLevelProperties.m_StorageSize.width} * formatProperties.m_uiComponentSize * formatProperties.m_uiComponentCount;
+    mipLevelProperties.m_uiDepthSliceSize = mipLevelProperties.m_uiRowSize * mipLevelProperties.m_StorageSize.height;
+    mipLevelProperties.m_uiMipSize        = mipLevelProperties.m_uiDepthSliceSize * mipLevelProperties.m_uiDepth;
+  }
+
+  return mipLevelProperties;
 }
 
 xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTexture1DDescription() noexcept

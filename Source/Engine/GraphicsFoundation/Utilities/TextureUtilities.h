@@ -4,6 +4,19 @@
 
 #include <GraphicsFoundation/Resources/Texture.h>
 
+/// \brief This describes the mip level properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMipLevelProperties : public xiiHashableStruct<xiiGALMipLevelProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiSizeU32 m_LogicalSize      = xiiSizeU32(0, 0); ///< The logical mip width and height.
+  xiiSizeU32 m_StorageSize      = xiiSizeU32(0, 0); ///< The storage mip width and height. For compressed formats, storage width and height are rounded up to the block size. For example, for a texture mip with logical width or height 10 and BC1 format (with 4x4 pixel block size), the storage width or height will be 12.
+  xiiUInt32  m_uiDepth          = 0;                ///< The mip level depth. Note that logical and storage depths are always equivalent.
+  xiiUInt64  m_uiRowSize        = 0;                ///< The row size in bytes. For compressed formats, row size defines the size of one row of compressed blocks.
+  xiiUInt64  m_uiDepthSliceSize = 0;                ///< The depth slice size in bytes.
+  xiiUInt64  m_uiMipSize        = 0;                ///< The total mip level data size in bytes.
+};
+
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureUtilities
 {
 public:
@@ -27,6 +40,8 @@ public:
 
   /// \brief This returns the mip size for a given mip level.
   static [[nodiscard]] xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel);
+
+  static [[nodiscard]] xiiGALMipLevelProperties GetMipLevelProperties(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel);
 
   /// \brief Returns an offset from the beginning of the buffer backing a staging texture to the specified location within the given subresource.
   ///
