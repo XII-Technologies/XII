@@ -2,6 +2,8 @@
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 
 xiiGALTextureVulkan::xiiGALTextureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceVulkan, creationDescription)
@@ -53,11 +55,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
 
-      VmaAllocationInfo vmaAllocationInfo = {};
-
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), &vkImageCreateInfo, &vmaAllocationCreateInfo, m_vkImage, &m_MemoryAllocation, &vmaAllocationInfo));
-
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -65,14 +63,11 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     }
     else
     {
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
+      vmaAllocationCreateInfo.requiredFlags           = bIsMemoryLess ? VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+      vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
 
-      const vk::MemoryRequirements  vkMemoryRequirements  = vkLogicalDevice.getImageMemoryRequirements(m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      const vk::MemoryPropertyFlags vkMemoryPropertyFlags = bIsMemoryLess ? vk::MemoryPropertyFlagBits::eLazilyAllocated : vk::MemoryPropertyFlagBits::eDeviceLocal;
-
-      XII_ASSERT_DEV(xiiMath::IsPowerOf2(vkMemoryRequirements.alignment), "Alignment is not a power of 2!");
-
-      /// \todo GraphicsVulkan: Perform VMA memory allocation and bind image memory.
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
 
       if (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty())
       {
@@ -103,11 +98,23 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  // Prevent releasing native objects.
-  if (m_Description.m_pExisitingNativeObject != nullptr)
+  if (m_vkStagingBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage));
+    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer), m_StagingBufferMemoryAllocation);
+
+    m_StagingBufferMemoryAllocation = {};
   }
+  m_vkStagingBuffer = VK_NULL_HANDLE;
+
+  // Prevent releasing the native object.
+  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject != nullptr)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), m_ImageMemoryAllocation);
+
+    m_ImageMemoryAllocation = {};
+  }
+  m_vkImage = VK_NULL_HANDLE;
+
   return XII_SUCCESS;
 }
 
@@ -367,6 +374,25 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDe
 
 void xiiGALTextureVulkan::InitializeImageContent(const xiiGALDeviceVulkan* pDeviceVulkan, const vk::ImageCreateInfo& vkImageCreateInfo, const vk::Image& vkImage, const xiiGALTextureData* pInitialData)
 {
+  vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  // Vulkan validation layers do not like uninitialized memory, so if no initial data is provided, we will clear the memory.
+
+  if (auto pGraphicsQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
+  {
+    if (auto pCommandList = pGraphicsQueue->BeginCommandList())
+    {
+
+    }
+    else
+    {
+      xiiLog::Error("Failed to retrieve a command list to initialize the Vulkan image content.");
+    }
+  }
+  else
+  {
+    xiiLog::Error("Failed to retrieve Vulkan default graphics queue to initialize the Vulkan image content.");
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_TextureVulkan);

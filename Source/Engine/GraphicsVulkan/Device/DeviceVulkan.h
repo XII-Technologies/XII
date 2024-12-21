@@ -85,7 +85,7 @@ public:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
   template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>
-  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName)
+  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {})
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     if (m_DebugMode != DebugMode::Disabled)
@@ -100,8 +100,18 @@ public:
       vkDebugObjectNameInfo.pObjectName                     = szDebugName;
 
       m_LogicalDevice.setDebugUtilsObjectNameEXT(vkDebugObjectNameInfo, m_InstanceDispatchLoader);
+
+      if (vmaAllocation != nullptr)
+      {
+        vmaSetAllocationUserData(m_vkVmaAllocator, vmaAllocation, vkDebugObjectNameInfo.pObjectName);
+      }
     }
 #endif
+  }
+
+  template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
+  void SafeReleaseDeviceObject(ObjectType&& object, VmaAllocation vmaAlloaction)
+  {
   }
 
   template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>

@@ -48,8 +48,10 @@ protected:
 
 protected:
   vk::Image     m_vkImage;
+  VmaAllocation m_ImageMemoryAllocation;
+
   vk::Buffer    m_vkStagingBuffer;
-  VmaAllocation m_MemoryAllocation;
+  VmaAllocation m_StagingBufferMemoryAllocation;
 
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 };
