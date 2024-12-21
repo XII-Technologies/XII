@@ -166,8 +166,8 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
     XII_REPORT_FAILURE("Unexpected CPU access flags.");
   }
 
-  vkStagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-  vkStagingBufferCreateInfo.pQueueFamilyIndices = nullptr;
+  vkStagingBufferCreateInfo.sharingMode           = vk::SharingMode::eExclusive;
+  vkStagingBufferCreateInfo.pQueueFamilyIndices   = nullptr;
   vkStagingBufferCreateInfo.queueFamilyIndexCount = 0;
 
   VK_SUCCEED_OR_RETURN_LOG(vkLogicalDevice.createBuffer(&vkStagingBufferCreateInfo, nullptr, &m_vkStagingBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()), "Failed to create Vulkan staging buffer.");
