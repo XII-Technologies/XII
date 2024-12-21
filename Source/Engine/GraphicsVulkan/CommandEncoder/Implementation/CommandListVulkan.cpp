@@ -5,28 +5,83 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 
-xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription, vk::CommandBuffer vkCommandBuffer) :
-  xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription), m_vkCommandBuffer(vkCommandBuffer)
+xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription)
 {
+  vk::CommandBufferAllocateInfo vkCommandBufferAllocateInfo = {};
+  vkCommandBufferAllocateInfo.pNext                         = nullptr;
+  vkCommandBufferAllocateInfo.commandPool                   = pCommandQueueVulkan->GetVulkanCommandPool();
+  vkCommandBufferAllocateInfo.level                         = vk::CommandBufferLevel::ePrimary;
+  vkCommandBufferAllocateInfo.commandBufferCount            = 1U;
+
+  VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 }
 
-xiiGALCommandListVulkan::~xiiGALCommandListVulkan() = default;
+xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
+{
+  xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
+
+  pDeviceVulkan->GetVulkanLogicalDevice().freeCommandBuffers(pCommandQueueVulkan->GetVulkanCommandPool(), 1U, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
 
 void xiiGALCommandListVulkan::BeginPlatform()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  vk::CommandBufferBeginInfo vkCommandBufferBeginInfo = {};
+  vkCommandBufferBeginInfo.pNext                      = nullptr;
+  vkCommandBufferBeginInfo.flags                      = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;// Each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
+  vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr; // Ignored for a primary command buffer.
+
+  VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  m_RecordingState = RecordingState::Recording;
+
+  if (xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue()))
+  {
+    pCommandQueueVulkan->BeginCommandList(this);
+  }
 }
 
 void xiiGALCommandListVulkan::EndPlatform()
 {
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  m_RecordingState = RecordingState::Ended;
 }
 
 void xiiGALCommandListVulkan::ResetPlatform()
 {
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  m_vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  InvalidateState();
+
+  m_RecordingState = RecordingState::Reset;
+
+  if (xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue()))
+  {
+    pCommandQueueVulkan->ResetCommandList(this);
+  }
 }
 
 xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform(bool bReset)
 {
-  return xiiUInt64();
+  if (xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue()))
+  {
+    return pCommandQueueVulkan->SubmitCommandList(this, bReset);
+  }
+  return xiiMath::MaxValue<xiiUInt64>();
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)

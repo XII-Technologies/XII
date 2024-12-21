@@ -32,17 +32,22 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
+  void BeginCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
+  void ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
+
   XII_ALWAYS_INLINE xiiUInt32 GetVulkanQueueFamilyIndex() const { return m_uiQueueFamilyIndex; };
   XII_ALWAYS_INLINE vk::Queue GetVulkanQueue() const { return m_vkQueue; };
+  XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
 
   void Flush();
 
 protected:
-  xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
+  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
+  friend class xiiGALCommandListVulkan;
 
   xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription);
 
@@ -55,15 +60,14 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
+  xiiMutex m_QueueMutex;
+
   vk::Device m_vkDevice;
   vk::Queue  m_vkQueue;
   xiiUInt32  m_uiQueueFamilyIndex = xiiInvalidIndex;
 
   vk::CommandPool                    m_vkCommandPool;
-  xiiDynamicArray<vk::CommandBuffer> m_vkCommandBuffers;
-
-  xiiSet<xiiGALCommandListVulkan*> m_pAvailableCommandLists;
-  xiiSet<xiiGALCommandListVulkan*> m_pUsedCommandLists;
+  xiiDeque<xiiGALCommandListVulkan*> m_CommandLists;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;

@@ -87,6 +87,8 @@ xiiUInt64 xiiGALCommandQueueD3D11::WaitForIdle()
 
 xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 {
+  XII_LOCK(m_QueueMutex);
+
   xiiGALCommandListD3D11* pCommandListD3D11 = nullptr;
   if (!m_CommandLists.IsEmpty() && m_CommandLists.PeekFront()->GetRecordingState() == xiiGALCommandList::RecordingState::Reset)
   {
@@ -97,16 +99,12 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 
   if (pCommandListD3D11 == nullptr)
   {
-    {
-      XII_LOCK(m_QueueMutex);
+    // Allocate a new command list.
+    xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
+    xiiGALDeviceD3D11*                   pDeviceD3D11           = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+    pCommandListD3D11                                           = XII_NEW(pDeviceD3D11->GetAllocator(), xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
 
-      // Allocate a new command list.
-      xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-      xiiGALDeviceD3D11*                   pDeviceD3D11           = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-      pCommandListD3D11                                           = XII_NEW(pDeviceD3D11->GetAllocator(), xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
-
-      m_CommandLists.PushBack(pCommandListD3D11);
-    }
+    m_CommandLists.PushBack(pCommandListD3D11);
 
     xiiStringBuilder sb;
     sb.SetFormat("Command List {}", m_CommandLists.GetCount());
