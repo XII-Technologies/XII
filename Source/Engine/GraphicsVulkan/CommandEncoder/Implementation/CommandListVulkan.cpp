@@ -203,10 +203,61 @@ void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xi
 
 void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
+  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pRenderTargetView->GetTexture());
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdClearColorImage() must be called outside render pass (17.1)");
+
+  // The aspectMask of all image subresource ranges must only include VK_IMAGE_ASPECT_COLOR_BIT(17.1)
+
+  vk::ImageSubresourceRange vkImageSubresourceRange = {};
+  vkImageSubresourceRange.aspectMask                = vk::ImageAspectFlagBits::eColor;
+  vkImageSubresourceRange.baseMipLevel              = 0U;
+  vkImageSubresourceRange.levelCount                = vk::RemainingMipLevels;
+  vkImageSubresourceRange.baseArrayLayer            = 0U;
+  vkImageSubresourceRange.layerCount                = vk::RemainingArrayLayers;
+
+  vk::ClearColorValue vkClearColorValue = {};
+  vkClearColorValue.float32[0]          = clearColor.r;
+  vkClearColorValue.float32[1]          = clearColor.g;
+  vkClearColorValue.float32[2]          = clearColor.b;
+  vkClearColorValue.float32[3]          = clearColor.a;
+
+  FlushBarriers();
+
+  // Must either be VK_IMAGE_LAYOUT_GENERAL or VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
+  m_vkCommandBuffer.clearColorImage(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, &vkClearColorValue, 1U, &vkImageSubresourceRange);
 }
 
 void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
+  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDepthStencilView->GetTexture());
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdClearDepthStencilImage() must be called outside render pass (17.1)");
+
+  // The aspectMask of all image subresource ranges must only include VK_IMAGE_ASPECT_COLOR_BIT(17.1)
+
+  vk::ImageSubresourceRange vkImageSubresourceRange = {};
+  vkImageSubresourceRange.aspectMask                = {};
+  vkImageSubresourceRange.baseMipLevel              = 0U;
+  vkImageSubresourceRange.levelCount                = vk::RemainingMipLevels;
+  vkImageSubresourceRange.baseArrayLayer            = 0U;
+  vkImageSubresourceRange.layerCount                = vk::RemainingArrayLayers;
+
+  if (bClearDepth)
+    vkImageSubresourceRange.aspectMask |= vk::ImageAspectFlagBits::eDepth;
+  if (bClearStencil)
+    vkImageSubresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+
+  vk::ClearDepthStencilValue vkClearDepthStencilValue = {};
+  vkClearDepthStencilValue.depth                      = fDepthClear;
+  vkClearDepthStencilValue.stencil                    = uiStencilClear;
+
+  FlushBarriers();
+
+  // Must either be VK_IMAGE_LAYOUT_GENERAL or VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
+  m_vkCommandBuffer.clearDepthStencilImage(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, &vkClearDepthStencilValue, 1U, &vkImageSubresourceRange);
 }
 
 void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
