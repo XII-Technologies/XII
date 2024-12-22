@@ -43,6 +43,9 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulk
   vkCommandBufferAllocateInfo.commandBufferCount            = 1U;
 
   VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  m_PipelineBarrier.m_vkSupportedStageFlags  = pCommandQueueVulkan->GetSupportedStagesFlags();
+  m_PipelineBarrier.m_vkSupportedAccessFlags = pCommandQueueVulkan->GetSupportedAccessFlags();
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
@@ -203,6 +206,7 @@ void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xi
 
 void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pRenderTargetView->GetTexture());
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
@@ -226,11 +230,12 @@ void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* p
   FlushBarriers();
 
   // Must either be VK_IMAGE_LAYOUT_GENERAL or VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
-  m_vkCommandBuffer.clearColorImage(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, &vkClearColorValue, 1U, &vkImageSubresourceRange);
+  m_vkCommandBuffer.clearColorImage(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, &vkClearColorValue, 1U, &vkImageSubresourceRange, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDepthStencilView->GetTexture());
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
@@ -257,7 +262,7 @@ void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* p
   FlushBarriers();
 
   // Must either be VK_IMAGE_LAYOUT_GENERAL or VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
-  m_vkCommandBuffer.clearDepthStencilImage(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, &vkClearDepthStencilValue, 1U, &vkImageSubresourceRange);
+  m_vkCommandBuffer.clearDepthStencilImage(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, &vkClearDepthStencilValue, 1U, &vkImageSubresourceRange, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)

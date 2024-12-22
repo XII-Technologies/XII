@@ -146,7 +146,9 @@ public:
   XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanLogicalDeviceFeatures() const { return m_LogicalDeviceFeatures; }
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetVulkanLogicalDeviceExtensionFeatures() const { return m_LogicalDeviceExtensionFeatures; }
   XII_ALWAYS_INLINE xiiArrayPtr<vk::PipelineStageFlags> GetVulkanLogicalDeviceSupportedStagesFlags() { return m_LogicalDeviceSupportedStagesFlags; }
+  XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanLogicalDeviceSupportedStagesFlags(xiiUInt32 uiQueueFamilyIndex) { return m_LogicalDeviceSupportedStagesFlags[uiQueueFamilyIndex]; }
   XII_ALWAYS_INLINE xiiArrayPtr<vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() { return m_LogicalDeviceSupportedAccessFlags; }
+  XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
 
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }

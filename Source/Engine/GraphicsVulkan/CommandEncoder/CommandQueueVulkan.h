@@ -15,6 +15,9 @@ public:
     xiiUInt64 m_uiWaitValue = 0U;
   };
 
+  vk::PipelineStageFlags GetSupportedStagesFlags() const { return m_vkSupportedStageFlags; }
+  vk::AccessFlags        GetSupportedAccessFlags() const { return m_vkSupportedAccessFlags; }
+
 public:
   void TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout imageLayout);
 
@@ -68,6 +71,8 @@ protected:
 
   vk::CommandPool                    m_vkCommandPool;
   xiiDeque<xiiGALCommandListVulkan*> m_CommandLists;
+  vk::PipelineStageFlags             m_vkSupportedStageFlags;
+  vk::AccessFlags                    m_vkSupportedAccessFlags;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;

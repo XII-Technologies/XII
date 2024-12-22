@@ -120,8 +120,8 @@ private:
     vk::PipelineStageFlags m_vkImageSourceStages      = {};
     vk::PipelineStageFlags m_vkImageDestinationStages = {};
 
-    vk::PipelineStageFlags m_vkSupportedStagesMask = vk::PipelineStageFlagBits::eNone;
-    vk::AccessFlags        m_vkSupportedAccessMask = vk::AccessFlagBits::eNone;
+    vk::PipelineStageFlags m_vkSupportedStageFlags  = {};
+    vk::AccessFlags        m_vkSupportedAccessFlags = {};
   };
 
   vk::CommandBuffer m_vkCommandBuffer;
