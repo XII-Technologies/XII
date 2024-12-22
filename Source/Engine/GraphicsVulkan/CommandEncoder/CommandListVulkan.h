@@ -19,6 +19,9 @@ public:
 
   void FlushBarriers();
 
+  void CopyBufferToImage(vk::Buffer vkSourceBuffer, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::BufferImageCopy> pRegions);
+  void CopyImageToBuffer(vk::Image vkSourceImage, vk::ImageLayout vkSourceImageLayout, vk::Buffer vkDestinationBuffer, xiiArrayPtr<const vk::BufferImageCopy> pRegions);
+
   struct CommandListState
   {
     vk::RenderPass  m_vkRenderPass         = VK_NULL_HANDLE;
