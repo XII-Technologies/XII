@@ -541,7 +541,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 
       pCommandListVulkan->MemoryBarrier(vk::AccessFlagBits::eHostWrite, vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eTransfer);
 
-       // Copy commands MUST be recorded outside of a render pass instance. This is OK here as copy will be the only command in the command buffer.
+      // Copy commands MUST be recorded outside of a render pass instance. This is OK here as copy will be the only command in the command buffer.
       // dstImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.4)
       pCommandListVulkan->CopyBufferToImage(vkStagingBuffer, m_vkImage, vkCurrentImageLayout, bufferImageCopyRegions);
 
