@@ -252,6 +252,7 @@ void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureViewHandle hDepthSten
   const auto&        viewDescription   = pDepthStencilView->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The texture view '{0}' was not created with the xiiGALTextureViewType::DepthStencil.", pDepthStencilView->GetDebugName());
+  XII_VERIFY_COMMAND_LIST(bClearDepth || bClearStencil, "At least one of bClearDepth or bClearStencil must be set.");
 
   ClearDepthStencilViewPlatform(pDepthStencilView, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
 }

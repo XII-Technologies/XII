@@ -4,8 +4,28 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
+#include <GraphicsVulkan/Resources/TextureVulkan.h>
+
+#define XII_VERIFY_COMMAND_LIST(expression, ...) \
+  do                                             \
+  {                                              \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);   \
+    if (!(expression)) { return; }               \
+  } while (false)
+
+#define XII_VERIFY_COMMAND_LIST_RESULT(expression, ...) \
+  do                                                    \
+  {                                                     \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);          \
+    if (!(expression)) { return XII_FAILURE; }          \
+  } while (false)
+
 
 void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags sourceStageFlags, vk::PipelineStageFlags destinationStageFlags)
+{
+}
+
+void xiiGALCommandListVulkan::MemoryBarrier(vk::AccessFlags vkSourceAccessFlags, vk::AccessFlags vkDestinationAccessFlags, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags)
 {
 }
 
@@ -37,7 +57,7 @@ void xiiGALCommandListVulkan::BeginPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
   vk::CommandBufferBeginInfo vkCommandBufferBeginInfo = {};
   vkCommandBufferBeginInfo.pNext                      = nullptr;
@@ -56,7 +76,7 @@ void xiiGALCommandListVulkan::BeginPlatform()
 
 void xiiGALCommandListVulkan::EndPlatform()
 {
-  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
@@ -67,7 +87,7 @@ void xiiGALCommandListVulkan::EndPlatform()
 
 void xiiGALCommandListVulkan::ResetPlatform()
 {
-  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
@@ -112,7 +132,7 @@ void xiiGALCommandListVulkan::SetBlendFactorPlatform(const xiiColor& blendFactor
 
 void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
 {
-  XII_ASSERT_DEV(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
+  XII_VERIFY_COMMAND_LIST(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
@@ -158,7 +178,7 @@ void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> p
 
 void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
 {
-  XII_ASSERT_DEV(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
+  XII_VERIFY_COMMAND_LIST(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
@@ -205,6 +225,10 @@ xiiResult xiiGALCommandListVulkan::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDraw() must be called inside render pass (19.3)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+
   m_vkCommandBuffer.draw(uiVertexCount, 1U, uiStartVertex, 0, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   return XII_SUCCESS;
@@ -214,6 +238,11 @@ xiiResult xiiGALCommandListVulkan::DrawIndexedPlatform(xiiUInt32 uiIndexCount, x
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexed() must be called inside render pass (19.3)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkIndexBuffer != VK_NULL_HANDLE, "No index buffer bound.");
+
   m_vkCommandBuffer.drawIndexed(uiIndexCount, 1U, uiStartIndex, uiBaseVertex, 0U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   return XII_SUCCESS;
@@ -222,6 +251,11 @@ xiiResult xiiGALCommandListVulkan::DrawIndexedPlatform(xiiUInt32 uiIndexCount, x
 xiiResult xiiGALCommandListVulkan::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexed() must be called inside render pass (19.3)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkIndexBuffer != VK_NULL_HANDLE, "No index buffer bound.");
 
   m_vkCommandBuffer.drawIndexed(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
@@ -233,6 +267,11 @@ xiiResult xiiGALCommandListVulkan::DrawIndexedInstancedIndirectPlatform(xiiGALBu
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pIndirectArgumentBuffer);
 
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexedindirect() must be called inside render pass (19.3)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkIndexBuffer != VK_NULL_HANDLE, "No index buffer bound.");
+
   m_vkCommandBuffer.drawIndexedIndirect(pBufferVulkan->GetVulkanBuffer(), uiArgumentOffsetInBytes, 0U, 0U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   return XII_SUCCESS;
@@ -241,6 +280,10 @@ xiiResult xiiGALCommandListVulkan::DrawIndexedInstancedIndirectPlatform(xiiGALBu
 xiiResult xiiGALCommandListVulkan::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDraw() must be called inside render pass (19.3)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
   m_vkCommandBuffer.draw(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
@@ -252,6 +295,10 @@ xiiResult xiiGALCommandListVulkan::DrawInstancedIndirectPlatform(xiiGALBuffer* p
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pIndirectArgumentBuffer);
 
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndirect() must be called inside render pass (19.3)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+
   m_vkCommandBuffer.drawIndirect(pBufferVulkan->GetVulkanBuffer(), uiArgumentOffsetInBytes, 0U, 0U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   return XII_SUCCESS;
@@ -260,6 +307,10 @@ xiiResult xiiGALCommandListVulkan::DrawInstancedIndirectPlatform(xiiGALBuffer* p
 xiiResult xiiGALCommandListVulkan::DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksEXT() must be called inside render pass (19.3)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
   m_vkCommandBuffer.drawMeshTasksEXT(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
@@ -270,6 +321,12 @@ xiiResult xiiGALCommandListVulkan::DispatchPlatform(xiiUInt32 uiThreadGroupCount
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdDispatch() must be called outside of render pass (27)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkComputePipeline != VK_NULL_HANDLE, "No compute pipeline bound.");
+
+  FlushBarriers();
+
   m_vkCommandBuffer.dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   return XII_SUCCESS;
@@ -279,6 +336,12 @@ xiiResult xiiGALCommandListVulkan::DispatchIndirectPlatform(xiiGALBuffer* pIndir
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pIndirectArgumentBuffer);
+
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdDispatchIndirect() must be called outside of render pass (27)");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkComputePipeline != VK_NULL_HANDLE, "No compute pipeline bound.");
+
+  FlushBarriers();
 
   m_vkCommandBuffer.dispatchIndirect(pBufferVulkan->GetVulkanBuffer(), uiArgumentOffsetInBytes, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
@@ -357,6 +420,8 @@ void xiiGALCommandListVulkan::BeginDebugGroupPlatform(xiiStringView sName, const
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
   xiiStringBuilder tmp;
 
   vk::DebugUtilsLabelEXT vkDebugUtilsLabel = {};
@@ -374,12 +439,16 @@ void xiiGALCommandListVulkan::EndDebugGroupPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
   m_vkCommandBuffer.endDebugUtilsLabelEXT(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
   xiiStringBuilder tmp;
 
@@ -406,6 +475,8 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkCommandBuffer, sName.GetData(tmp));
 }
