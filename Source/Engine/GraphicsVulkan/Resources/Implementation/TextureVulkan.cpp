@@ -393,7 +393,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 
   if (auto pGraphicsQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
   {
-    if (auto pCommandList = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueue->BeginCommandList()))
+    if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueue->BeginCommandList()))
     {
       vk::ImageAspectFlags imageAspectFlags = {};
       if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
@@ -420,7 +420,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
       vkSubresourceRange.baseMipLevel              = 0U;
       vkSubresourceRange.levelCount                = vk::RemainingMipLevels;
 
-      pCommandList->TransitionImageLayout(m_vkImage, vkImageCreateInfo.initialLayout, vk::ImageLayout::eTransferDstOptimal, vkSubresourceRange, vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer);
+      pCommandListVulkan->TransitionImageLayout(m_vkImage, vkImageCreateInfo.initialLayout, vk::ImageLayout::eTransferDstOptimal, vkSubresourceRange, vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer);
 
       SetResourceState(xiiGALResourceStateFlags::CopyDestination);
 
@@ -490,8 +490,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
       vkStagingBufferCreateInfo.queueFamilyIndexCount = 0;
 
       // VK_MEMORY_PROPERTY_HOST_COHERENT_BIT bit specifies that the host cache management commands vkFlushMappedMemoryRanges
-      // and vkInvalidateMappedMemoryRanges are NOT needed to flush host writes to the device or make device writes visible
-      // to the host (10.2)
+      // and vkInvalidateMappedMemoryRanges are NOT needed to flush host writes to the device or make device writes visible to the host (10.2)
       VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
       vmaAllocationCreateInfo.requiredFlags           = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
@@ -503,7 +502,50 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 
       pDeviceVulkan->SetVulkanObjectDebugName(vkStagingBuffer, "Staging memory for texture initial data.", stagingBufferAllocation);
 
-      // TODO: Map and copy memory.
+      XII_ASSERT_DEV(stagingBufferAllocationInfo.pMappedData != nullptr, "");
+
+      uiSubresourceIndex = 0;
+
+      for (xiiUInt32 uiLayer = 0; uiLayer < vkImageCreateInfo.arrayLayers; ++uiLayer)
+      {
+        for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
+        {
+          const auto& subresourceData  = pInitialData->m_SubResources[uiSubresourceIndex];
+          auto&       vkCopyRegion     = bufferImageCopyRegions[uiSubresourceIndex];
+          auto        mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
+
+          XII_ASSERT_DEV(mipLevelProperty.m_LogicalSize.width == vkCopyRegion.imageExtent.width, "");
+          XII_ASSERT_DEV(mipLevelProperty.m_LogicalSize.height == vkCopyRegion.imageExtent.height, "");
+          XII_ASSERT_DEV(mipLevelProperty.m_uiDepth == vkCopyRegion.imageExtent.depth, "");
+
+          XII_ASSERT_DEV(subresourceData.m_uiStride == 0 || subresourceData.m_uiStride >= mipLevelProperty.m_uiRowSize, "Stride is too small.");
+          // For compressed-block formats, mipLevelProperty.m_uiRowSize is the size of one row of blocks.
+          XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride >= ((mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight) * mipLevelProperty.m_uiRowSize), "Depth stride is too small.");
+
+          for (xiiUInt32 uiZ = 0; mipLevelProperty.m_uiDepth; ++uiZ)
+          {
+            for (xiiUInt32 uiY = 0; uiY < mipLevelProperty.m_StorageSize.height; ++uiY)
+            {
+              // The subresourceData.m_uiStride must be the stride of one row of compressed blocks.
+              memcpy(xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, vkCopyRegion.bufferOffset + ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / formatProperties.m_uiBlockHeight) * mipLevelProperty.m_uiRowSize),
+                     xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), (uiY / formatProperties.m_uiBlockHeight) * subresourceData.m_uiStride + uiZ * subresourceData.m_uiDepthStride),
+                     mipLevelProperty.m_uiRowSize);
+            }
+          }
+
+          ++uiSubresourceIndex;
+        }
+      }
+
+      XII_ASSERT_DEV(uiSubresourceIndex == pInitialData->m_SubResources.GetCount(), "");
+
+      pCommandListVulkan->MemoryBarrier(vk::AccessFlagBits::eHostWrite, vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eTransfer);
+
+       // Copy commands MUST be recorded outside of a render pass instance. This is OK here as copy will be the only command in the command buffer.
+      // dstImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.4)
+      pCommandListVulkan->CopyBufferToImage(vkStagingBuffer, m_vkImage, vkCurrentImageLayout, bufferImageCopyRegions);
+
+      pCommandListVulkan->Submit();
 
       pDeviceVulkan->SafeReleaseDeviceObject(std::move(vkStagingBuffer), stagingBufferAllocation);
     }

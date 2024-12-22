@@ -27,10 +27,63 @@ void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::Image
 
 void xiiGALCommandListVulkan::MemoryBarrier(vk::AccessFlags vkSourceAccessFlags, vk::AccessFlags vkDestinationAccessFlags, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags)
 {
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
+  {
+    EndRenderPassPlatform();
+  }
+
+  XII_VERIFY_COMMAND_LIST((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
+  XII_VERIFY_COMMAND_LIST((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
+
+  m_PipelineBarrier.m_vkMemorySourceStages |= vkPipelineSourceStageFlags;
+  m_PipelineBarrier.m_vkMemoryDestinationStages |= vkPipelineDestinationStageFlags;
+
+  m_PipelineBarrier.m_vkMemorySourceAccess |= vkSourceAccessFlags;
+  m_PipelineBarrier.m_vkMemoryDestinationAccess |= vkDestinationAccessFlags;
 }
 
 void xiiGALCommandListVulkan::FlushBarriers()
 {
+  if (m_PipelineBarrier.m_vkMemorySourceStages == vk::PipelineStageFlagBits::eNone && m_PipelineBarrier.m_vkMemoryDestinationStages == vk::PipelineStageFlagBits::eNone && m_ImageBarriers.IsEmpty())
+    return;
+
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
+  {
+    EndRenderPassPlatform();
+  }
+
+  vk::MemoryBarrier vkMemoryBarrier = {};
+  vkMemoryBarrier.pNext             = nullptr;
+  vkMemoryBarrier.srcAccessMask     = m_PipelineBarrier.m_vkMemorySourceAccess & m_PipelineBarrier.m_vkSupportedAccessFlags;
+  vkMemoryBarrier.dstAccessMask     = m_PipelineBarrier.m_vkMemoryDestinationAccess & m_PipelineBarrier.m_vkSupportedAccessFlags;
+
+  const bool bHasMemoryBarrier = m_PipelineBarrier.m_vkMemorySourceStages != vk::PipelineStageFlagBits::eNone && m_PipelineBarrier.m_vkMemoryDestinationStages == vk::PipelineStageFlagBits::eNone &&
+    m_PipelineBarrier.m_vkMemorySourceAccess == vk::AccessFlagBits::eNone && m_PipelineBarrier.m_vkMemoryDestinationAccess == vk::AccessFlagBits::eNone;
+
+  const vk::PipelineStageFlags vkSourceStages      = (m_PipelineBarrier.m_vkImageSourceStages | m_PipelineBarrier.m_vkMemorySourceStages) & m_PipelineBarrier.m_vkSupportedStageFlags;
+  const vk::PipelineStageFlags vkDestinationStages = (m_PipelineBarrier.m_vkImageDestinationStages | m_PipelineBarrier.m_vkMemoryDestinationStages) & m_PipelineBarrier.m_vkSupportedStageFlags;
+
+  XII_VERIFY_COMMAND_LIST(vkSourceStages != vk::PipelineStageFlagBits::eNone && vkDestinationStages != vk::PipelineStageFlagBits::eNone, "");
+
+  m_vkCommandBuffer.pipelineBarrier(vkSourceStages, vkDestinationStages, vk::DependencyFlagBits::eByRegion, bHasMemoryBarrier ? 1U : 0U, bHasMemoryBarrier ? &vkMemoryBarrier : nullptr, 0, nullptr, m_ImageBarriers.GetCount(), m_ImageBarriers.IsEmpty() ? nullptr : m_ImageBarriers.GetData());
+
+  m_ImageBarriers.Clear();
+
+  m_PipelineBarrier.m_vkImageSourceStages       = {};
+  m_PipelineBarrier.m_vkImageDestinationStages  = {};
+  m_PipelineBarrier.m_vkMemorySourceStages      = {};
+  m_PipelineBarrier.m_vkMemoryDestinationStages = {};
+  m_PipelineBarrier.m_vkMemorySourceAccess      = {};
+  m_PipelineBarrier.m_vkMemoryDestinationAccess = {};
+
+  // Do not clear SupportedStagesMask and SupportedAccessMask.
+}
 
 void xiiGALCommandListVulkan::CopyBufferToImage(vk::Buffer vkSourceBuffer, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::BufferImageCopy> pRegions)
 {

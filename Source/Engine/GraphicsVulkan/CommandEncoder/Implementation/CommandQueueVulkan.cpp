@@ -5,8 +5,9 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 
 xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription) :
-  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_vkCommandBuffers(pDeviceVulkan->GetAllocator()), m_pAvailableCommandLists(pDeviceVulkan->GetAllocator()), m_pUsedCommandLists(pDeviceVulkan->GetAllocator())
+  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_CommandLists(pDeviceVulkan->GetAllocator())
 {
+  /// \todo GraphicsVulkan: Allocate arrays with xiiGALDeviceVulkan memory allocator.
 }
 
 xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
@@ -24,7 +25,10 @@ void xiiGALCommandQueueVulkan::InitializePlatform(xiiUInt32 uiQueueFamilyIndex, 
   commandPoolCreationDescription.flags                     = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
   commandPoolCreationDescription.queueFamilyIndex          = m_uiQueueFamilyIndex;
 
-  m_vkCommandPool = m_vkDevice.createCommandPool(commandPoolCreationDescription, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  VK_ASSERT_DEV(m_vkDevice.createCommandPool(&commandPoolCreationDescription, nullptr, &m_vkCommandPool, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  m_vkSupportedStageFlags  = pDeviceVulkan->GetVulkanLogicalDeviceSupportedStagesFlags(uiQueueFamilyIndex);
+  m_vkSupportedAccessFlags = pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(uiQueueFamilyIndex);
 }
 
 void xiiGALCommandQueueVulkan::DeInitializePlatform()
