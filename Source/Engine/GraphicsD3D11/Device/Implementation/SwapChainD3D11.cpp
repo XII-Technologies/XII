@@ -405,10 +405,6 @@ void xiiGALSwapChainD3D11::DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD
   }
 }
 
-void xiiGALSwapChainD3D11::AcquireNextRenderTarget()
-{
-}
-
 void xiiGALSwapChainD3D11::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");

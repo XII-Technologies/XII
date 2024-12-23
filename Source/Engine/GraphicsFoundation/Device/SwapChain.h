@@ -26,10 +26,7 @@ public:
   /// \brief This retrieves the current present mode.
   [[nodiscard]] XII_ALWAYS_INLINE xiiEnum<xiiGALPresentMode> GetPresentMode() const { return m_PresentMode; };
 
-  /// \brief Acquires the next render target for presenting.
-  virtual void AcquireNextRenderTarget() = 0;
-
-  /// \brief This presents a rendered image to the screen.
+  /// \brief This presents a rendered image to the screen. Additionally, acquires the next render target for presenting on where supported.
   virtual void Present() = 0;
 
   /// \brief This changes the swap chain size.

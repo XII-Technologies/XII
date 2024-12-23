@@ -338,10 +338,6 @@ void xiiGALSwapChainD3D12::WaitForFrame()
   }
 }
 
-void xiiGALSwapChainD3D12::AcquireNextRenderTarget()
-{
-}
-
 void xiiGALSwapChainD3D12::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");

@@ -646,11 +646,6 @@ void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
   }
 }
 
-void xiiGALSwapChainVulkan::AcquireNextRenderTarget()
-{
-  VK_ASSERT_DEV(AcquireNextImage());
-}
-
 void xiiGALSwapChainVulkan::Present()
 {
   xiiGALDeviceVulkan*       pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);

@@ -40,8 +40,6 @@ public:
   /// \brief Registers event handlers.
   static xiiEvent<const xiiGALSwapChainD3D11Event&, xiiNoMutex, xiiStaticAllocatorWrapper> s_Events;
 
-  virtual void AcquireNextRenderTarget() override final;
-
   virtual void Present() override final;
 
   virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;

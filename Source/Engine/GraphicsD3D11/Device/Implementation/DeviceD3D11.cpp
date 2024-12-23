@@ -388,10 +388,6 @@ void xiiGALDeviceD3D11::SetDebugNamePlatform(xiiStringView sName)
 
 void xiiGALDeviceD3D11::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
-  for (auto pSwapChain : swapchains)
-  {
-    pSwapChain->AcquireNextRenderTarget();
-  }
 }
 
 void xiiGALDeviceD3D11::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)

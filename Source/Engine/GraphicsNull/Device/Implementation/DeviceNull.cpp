@@ -94,10 +94,6 @@ xiiResult xiiGALDeviceNull::ShutdownPlatform()
 
 void xiiGALDeviceNull::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
-  for (auto pSwapChain : swapchains)
-  {
-    pSwapChain->AcquireNextRenderTarget();
-  }
 }
 
 void xiiGALDeviceNull::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
