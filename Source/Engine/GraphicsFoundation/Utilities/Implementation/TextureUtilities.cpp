@@ -431,6 +431,25 @@ xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTe
   return uiOffset;
 }
 
+void xiiGALTextureUtilities::CopyTextureSubresource(const xiiGALTextureSubResourceData& sourceSubresource, xiiUInt32 uiRowCount, xiiUInt32 uiDepthSliceCount, xiiUInt64 uiRowSize, void* pDestinationData, xiiUInt64 uiDestinationRowStride, xiiUInt64 uiDestinationDepthStride)
+{
+  XII_ASSERT_DEV(sourceSubresource.m_hSourceBuffer.IsInvalidated() && !sourceSubresource.m_pData.IsEmpty(), "");
+  XII_ASSERT_DEV(pDestinationData != nullptr, "");
+  XII_ASSERT_DEV(sourceSubresource.m_uiStride >= uiRowSize, "Source data row stride ({}) is smaller than the row size ({}).", sourceSubresource.m_uiStride, uiRowSize);
+  XII_ASSERT_DEV(sourceSubresource.m_uiDepthStride >= uiRowSize, "Destination data row stride ({}) is smaller than the row size ({}).", uiDestinationDepthStride, uiRowSize);
+
+  for (xiiUInt32 uiZ = 0; uiZ < uiDepthSliceCount; ++uiZ)
+  {
+    const auto* pSourceSlice      = xiiMemoryUtils::AddByteOffset(sourceSubresource.m_pData.GetPtr(), sourceSubresource.m_uiDepthStride * uiZ);
+    auto*       pDestinationSlice = xiiMemoryUtils::AddByteOffset(pDestinationData, uiDestinationDepthStride * uiZ);
+
+    for (xiiUInt32 uiY = 0; uiY < uiRowCount; ++uiY)
+    {
+      memcpy(xiiMemoryUtils::AddByteOffset(pDestinationSlice, uiDestinationRowStride * uiY), xiiMemoryUtils::AddByteOffset(pSourceSlice, sourceSubresource.m_uiStride * uiY), uiRowSize);
+    }
+  }
+}
+
 xiiEnum<xiiGALResourceFormat> xiiGALTextureUtilities::GetDefaultTextureViewFormat(xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALTextureViewType> viewType, xiiBitflags<xiiGALBindFlags> bindFlags)
 {
   static ResourceFormatToViewFormatConverter formatConverter;

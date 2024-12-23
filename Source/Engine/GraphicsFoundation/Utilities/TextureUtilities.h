@@ -84,6 +84,17 @@ public:
     return GetStagingTextureLocationOffset(textureDescription, uiArraySlice, uiMipLevel, uiAlignment, 0, 0, 0);
   }
 
+  /// Copies texture subresource data on the CPU.
+  ///
+  /// \param sourceSubresource        - Source subresource data.
+  /// \param uiRowCount               - The number of rows in the subresource.
+  /// \param uiDepthSliceCount        - The number of depth slices in the subresource.
+  /// \param uiRowSize                - Subresource data row size, in bytes.
+  /// \param pDestinationData         - Pointer to the destination subresource data.
+  /// \param uiDestinationRowStride   - Destination subresource row stride, in bytes.
+  /// \param uiDestinationDepthStride - Destination subresource depth stride, in bytes.
+  static void CopyTextureSubresource(const xiiGALTextureSubResourceData& sourceSubresource, xiiUInt32 uiRowCount, xiiUInt32 uiDepthSliceCount, xiiUInt64 uiRowSize, void* pDestinationData, xiiUInt64 uiDestinationRowStride, xiiUInt64 uiDestinationDepthStride);
+
   /// \brief Returns the total memory size required to store the staging texture data.
   static [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetStagingTextureDataSize(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiAlignment = 4U)
   {
