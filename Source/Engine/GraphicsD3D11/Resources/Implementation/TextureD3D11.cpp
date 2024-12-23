@@ -88,11 +88,8 @@ xiiResult xiiGALTextureD3D11::InitPlatform(const xiiGALTextureData* pInitialData
 
 xiiResult xiiGALTextureD3D11::DeInitPlatform()
 {
-  // Prevent releasing native objects.
-  if (m_Description.m_pExisitingNativeObject != nullptr)
-  {
-    XII_GAL_D3D11_RELEASE(m_pTexture);
-  }
+  XII_GAL_D3D11_RELEASE(m_pTexture);
+
   return XII_SUCCESS;
 }
 

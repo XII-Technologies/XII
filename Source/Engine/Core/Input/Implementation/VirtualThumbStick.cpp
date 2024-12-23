@@ -1,6 +1,7 @@
 #include <Core/CorePCH.h>
 
 #include <Core/Input/VirtualThumbStick.h>
+#include <Foundation/Time/Clock.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVirtualThumbStick, 1, xiiRTTINoAllocator)
@@ -22,10 +23,6 @@ xiiVirtualThumbStick::xiiVirtualThumbStick()
   m_sName = s;
 
   ++s_iThumbsticks;
-
-  m_bEnabled       = false;
-  m_bConfigChanged = false;
-  m_bIsActive      = false;
 }
 
 xiiVirtualThumbStick::~xiiVirtualThumbStick()
@@ -183,7 +180,17 @@ void xiiVirtualThumbStick::SetInputArea(const xiiVec2& vLowerLeft, const xiiVec2
   m_CenterMode                       = center;
 }
 
-void xiiVirtualThumbStick::GetInputArea(xiiVec2& out_vLowerLeft, xiiVec2& out_vUpperRight)
+void xiiVirtualThumbStick::SetFlags(xiiBitflags<Flags> flags)
+{
+  m_Flags = flags;
+}
+
+void xiiVirtualThumbStick::SetInputCoordinateAspectRatio(float fWidthDivHeight)
+{
+  m_fAspectRatio = fWidthDivHeight;
+}
+
+void xiiVirtualThumbStick::GetInputArea(xiiVec2& out_vLowerLeft, xiiVec2& out_vUpperRight) const
 {
   out_vLowerLeft  = m_vLowerLeft;
   out_vUpperRight = m_vUpperRight;
@@ -230,10 +237,17 @@ void xiiVirtualThumbStick::UpdateInputSlotValues()
   {
     m_bIsActive = true;
 
-    xiiVec2 vTouchPos(0.0f);
+    if (m_CenterMode == CenterMode::Swipe)
+    {
+      const xiiTime tDiff = xiiClock::GetGlobalClock()->GetTimeDiff();
 
-    xiiInputManager::GetInputSlotState(m_ActionConfig.m_sFilterByInputSlotX[(xiiUInt32)iTriggerAlt].GetData(), &vTouchPos.x);
-    xiiInputManager::GetInputSlotState(m_ActionConfig.m_sFilterByInputSlotY[(xiiUInt32)iTriggerAlt].GetData(), &vTouchPos.y);
+      m_vCenter = xiiMath::Lerp(m_vCenter, m_vTouchPos, xiiMath::Min(1.0f, tDiff.AsFloatInSeconds() * 4.0f));
+    }
+
+    m_vTouchPos.Set(0.0f);
+
+    xiiInputManager::GetInputSlotState(m_ActionConfig.m_sFilterByInputSlotX[(xiiUInt32)iTriggerAlt].GetData(), &m_vTouchPos.x);
+    xiiInputManager::GetInputSlotState(m_ActionConfig.m_sFilterByInputSlotY[(xiiUInt32)iTriggerAlt].GetData(), &m_vTouchPos.y);
 
     if (ks == xiiKeyState::Pressed)
     {
@@ -243,21 +257,64 @@ void xiiVirtualThumbStick::UpdateInputSlotValues()
           m_vCenter = m_vLowerLeft + (m_vUpperRight - m_vLowerLeft) * 0.5f;
           break;
         case CenterMode::ActivationPoint:
-          m_vCenter = vTouchPos;
+        case CenterMode::Swipe:
+          m_vCenter = m_vTouchPos;
           break;
       }
     }
 
-    xiiVec2 vDir = vTouchPos - m_vCenter;
-    vDir.y *= -1;
+    m_vInputDirection = m_vTouchPos - m_vCenter;
 
-    const float fLength = xiiMath::Min(vDir.GetLength(), m_fRadius) / m_fRadius;
-    vDir.NormalizeIfNotZero(xiiVec2::MakeZero()).IgnoreResult();
+    m_vInputDirection.y /= m_fAspectRatio;
 
-    m_InputSlotValues[m_sOutputLeft]  = xiiMath::Max(0.0f, -vDir.x) * fLength;
-    m_InputSlotValues[m_sOutputRight] = xiiMath::Max(0.0f, vDir.x) * fLength;
-    m_InputSlotValues[m_sOutputUp]    = xiiMath::Max(0.0f, vDir.y) * fLength;
-    m_InputSlotValues[m_sOutputDown]  = xiiMath::Max(0.0f, -vDir.y) * fLength;
+    m_fInputStrength = xiiMath::Min(m_vInputDirection.GetLength(), m_fRadius) / m_fRadius;
+    m_vInputDirection.NormalizeIfNotZero(xiiVec2::MakeZero()).IgnoreResult();
+
+    const float fThreshold = 0.1f;
+
+    float& l = m_InputSlotValues[m_sOutputLeft];
+    float& r = m_InputSlotValues[m_sOutputRight];
+    float& u = m_InputSlotValues[m_sOutputUp];
+    float& d = m_InputSlotValues[m_sOutputDown];
+
+    if (m_Flags.IsSet(Flags::OnlyMaxAxis))
+    {
+      const float maxVal = xiiMath::Max(m_vInputDirection.x, -m_vInputDirection.x, m_vInputDirection.y, -m_vInputDirection.y);
+
+      // only activate the output axis that has the strongest (absolute) value
+      if (m_vInputDirection.x == maxVal)
+      {
+        r = maxVal * m_fInputStrength;
+      }
+      else if (-m_vInputDirection.x == maxVal)
+      {
+        l = maxVal * m_fInputStrength;
+      }
+      else if (m_vInputDirection.y == maxVal)
+      {
+        d = maxVal * m_fInputStrength;
+      }
+      else if (-m_vInputDirection.y == maxVal)
+      {
+        u = maxVal * m_fInputStrength;
+      }
+    }
+    else
+    {
+      l = xiiMath::Max(0.0f, -m_vInputDirection.x) * m_fInputStrength;
+      r = xiiMath::Max(0.0f, m_vInputDirection.x) * m_fInputStrength;
+      u = xiiMath::Max(0.0f, -m_vInputDirection.y) * m_fInputStrength;
+      d = xiiMath::Max(0.0f, m_vInputDirection.y) * m_fInputStrength;
+    }
+
+    if (l < fThreshold)
+      l = 0.0f;
+    if (r < fThreshold)
+      r = 0.0f;
+    if (u < fThreshold)
+      u = 0.0f;
+    if (d < fThreshold)
+      d = 0.0f;
   }
 }
 

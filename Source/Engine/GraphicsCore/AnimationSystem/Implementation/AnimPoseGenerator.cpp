@@ -434,6 +434,9 @@ void xiiAnimPoseGenerator::ExecuteCmd(xiiAnimPoseGeneratorCommandLocalToModelPos
 
   auto transforms = AcquireModelPoseTransforms(cmd.m_ModelPoseOutput);
 
+  // This cast is safe because m_OutputPose points to m_UsedModelTransforms which is 16 byte aligned.
+  XII_ASSERT_DEBUG(xiiMemoryUtils::IsAligned(m_OutputPose.GetPtr(), alignof(ozz::math::Float4x4)), "Unaligned cast.");
+
   job.output   = ozz::span<ozz::math::Float4x4>(reinterpret_cast<ozz::math::Float4x4*>(transforms.GetPtr()), transforms.GetCount());
   job.skeleton = &m_pSkeleton->GetDescriptor().m_Skeleton.GetOzzSkeleton();
   XII_ASSERT_DEBUG(job.Validate(), "");

@@ -20,8 +20,6 @@ namespace vk
 class XII_GRAPHICSVULKAN_DLL xiiGALSwapChainVulkan final : public xiiGALSwapChain
 {
 public:
-  virtual void AcquireNextRenderTarget() override final;
-
   virtual void Present() override final;
 
   virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
@@ -43,6 +41,8 @@ protected:
 
   virtual xiiResult InitPlatform() override final;
   virtual xiiResult DeInitPlatform() override final;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
   xiiResult CreateVulkanSurface();
   xiiResult CreateVulkanSwapChain();

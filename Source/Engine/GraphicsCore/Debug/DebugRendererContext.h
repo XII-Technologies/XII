@@ -10,10 +10,7 @@ class xiiViewHandle;
 class XII_GRAPHICSCORE_DLL xiiDebugRendererContext
 {
 public:
-  XII_ALWAYS_INLINE xiiDebugRendererContext() :
-    m_uiId(-1)
-  {
-  }
+  xiiDebugRendererContext() = default;
 
   /// \brief If this constructor is used, the geometry is rendered in all views for that scene.
   xiiDebugRendererContext(const xiiWorld* pWorld);
@@ -26,7 +23,7 @@ public:
 private:
   friend struct xiiHashHelper<xiiDebugRendererContext>;
 
-  xiiUInt32 m_uiId;
+  xiiUInt32 m_uiId = xiiInvalidIndex;
 };
 
 

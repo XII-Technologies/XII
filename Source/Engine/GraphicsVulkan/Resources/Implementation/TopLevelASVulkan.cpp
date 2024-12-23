@@ -24,6 +24,10 @@ xiiResult xiiGALTopLevelASVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALTopLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+}
+
 xiiGALTopLevelASInstanceDescription xiiGALTopLevelASVulkan::GetInstanceDescription(xiiStringView sName) const
 {
   return xiiGALTopLevelASInstanceDescription();

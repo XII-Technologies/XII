@@ -24,6 +24,10 @@ xiiResult xiiGALBottomLevelASVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALBottomLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+}
+
 xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryDescriptionIndex(xiiStringView sName) const
 {
   return xiiUInt32();

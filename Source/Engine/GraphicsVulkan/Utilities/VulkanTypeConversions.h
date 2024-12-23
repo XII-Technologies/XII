@@ -61,7 +61,8 @@ public:
   static vk::AttachmentLoadOp  GetAttachmentLoadOperation(xiiGALAttachmentLoadOperation::Enum e);
   static vk::AttachmentStoreOp GetAttachmentStoreOperation(xiiGALAttachmentStoreOperation::Enum e);
 
-  static vk::ImageLayout GetImageLayout(xiiBitflags<xiiGALResourceStateFlags> e, bool bIsInsideRenderPass = false, bool bFragDensityMapInsteadOfShadingRate = false);
+  static vk::ImageLayout                       GetImageLayout(xiiBitflags<xiiGALResourceStateFlags> e, bool bIsInsideRenderPass = false, bool bFragDensityMapInsteadOfShadingRate = false);
+  static xiiBitflags<xiiGALResourceStateFlags> GetResourceState(vk::ImageLayout e);
 
   static vk::PipelineStageFlags                GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e);
   static vk::AccessFlags                       GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
@@ -72,6 +73,8 @@ public:
   static vk::ComponentMapping GetComponentMapping(const xiiGALTextureComponentMapping& mapping);
 
   static xiiBitflags<xiiGALSparseTextureFlags> GetSparseTextureFlags(vk::SparseImageFormatFlags e);
+
+  static vk::ImageUsageFlags GetImageUsageFlags(xiiBitflags<xiiGALBindFlags> bindFlags, bool bIsMemoryless, bool bFragmentDensityMapInsteadOfShadingRate);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

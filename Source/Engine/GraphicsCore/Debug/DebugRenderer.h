@@ -159,6 +159,9 @@ public:
   /// \brief Renders a textured 2D rectangle in screen-space for one frame.
   static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALTextureViewHandle hResourceView, xiiVec2 vScale = xiiVec2(1, 1));
 
+  /// \brief Renders a wireframe 2D rectangle in screen-space for one frame.
+  static void Draw2DLineRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color);
+
   /// \brief Displays a string in screen-space for one frame.
   ///
   /// The string may contain newlines (\n) for multi-line output.
@@ -183,6 +186,9 @@ public:
   ///
   /// Text size cannot be changed.
   static void DrawInfoText(const xiiDebugRendererContext& context, xiiDebugTextPlacement::Enum placement, xiiStringView sGroupName, const xiiFormatString& text, const xiiColor& color = xiiColor::White);
+
+  /// \brief Same as DrawInfoText but displays the text for a certain duration.
+  static void AddPersistentInfoText(const xiiDebugRendererContext& context, xiiDebugTextPlacement::Enum placement, const xiiFormatString& text, xiiTime duration, const xiiColor& color = xiiColor::White);
 
   /// \brief Displays a string in 3D space for one frame.
   static xiiUInt32 Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel = 16, xiiDebugTextHAlign::Enum horizontalAlignment = xiiDebugTextHAlign::Center, xiiDebugTextVAlign::Enum verticalAlignment = xiiDebugTextVAlign::Bottom);

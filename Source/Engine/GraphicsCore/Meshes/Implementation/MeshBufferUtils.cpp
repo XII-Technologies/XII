@@ -5,6 +5,27 @@
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshNormalPrecision, 1)
+  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_8Bit),
+  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_10Bit),
+  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_16Bit),
+  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_32Bit),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshTexCoordPrecision, 1)
+  XII_ENUM_CONSTANT(xiiMeshTexCoordPrecision::_16Bit),
+  XII_ENUM_CONSTANT(xiiMeshTexCoordPrecision::_32Bit),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshBoneWeigthPrecision, 1)
+  XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_8Bit),
+  XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_10Bit),
+  XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_16Bit),
+  XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_32Bit),
+XII_END_STATIC_REFLECTED_ENUM;
+// clang-format on
+
 namespace
 {
   template <xiiUInt32 Bits>
@@ -34,43 +55,22 @@ namespace
   }
 } // namespace
 
-// clang-format off
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshNormalPrecision, 1)
-  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_8Bit),
-  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_10Bit),
-  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_16Bit),
-  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_32Bit),
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshTexCoordPrecision, 1)
-  XII_ENUM_CONSTANT(xiiMeshTexCoordPrecision::_16Bit),
-  XII_ENUM_CONSTANT(xiiMeshTexCoordPrecision::_32Bit),
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshBoneWeigthPrecision, 1)
-  XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_8Bit),
-  XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_10Bit),
-  XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_16Bit),
-  XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_32Bit),
-XII_END_STATIC_REFLECTED_ENUM;
-// clang-format on
-
 // static
-  xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
-  {
-    XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetResourceFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
+xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
+{
+  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetResourceFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
 
-    switch (destFormat)
-    {
-      case xiiGALResourceFormat::R32Float:
-        *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
-        return XII_SUCCESS;
-      case xiiGALResourceFormat::R16Float:
-        *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
-        return XII_SUCCESS;
-      default:
-        return XII_FAILURE;
-    }
+  switch (destFormat)
+  {
+    case xiiGALResourceFormat::R32Float:
+      *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
+      return XII_SUCCESS;
+    case xiiGALResourceFormat::R16Float:
+      *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
+      return XII_SUCCESS;
+    default:
+      return XII_FAILURE;
+  }
 }
 
 // static

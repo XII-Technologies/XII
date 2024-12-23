@@ -101,6 +101,8 @@ void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineStat
 
 void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetStencilRef arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+
   if (m_uiStencilRef != uiStencilRef)
   {
     m_uiStencilRef = uiStencilRef;
@@ -111,6 +113,8 @@ void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
 
 void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetBlendFactor arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+
   if (blendFactor != m_BlendFactors)
   {
     m_BlendFactors = blendFactor;
@@ -248,6 +252,7 @@ void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureViewHandle hDepthSten
   const auto&        viewDescription   = pDepthStencilView->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The texture view '{0}' was not created with the xiiGALTextureViewType::DepthStencil.", pDepthStencilView->GetDebugName());
+  XII_VERIFY_COMMAND_LIST(bClearDepth || bClearStencil, "At least one of bClearDepth or bClearStencil must be set.");
 
   ClearDepthStencilViewPlatform(pDepthStencilView, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
 }

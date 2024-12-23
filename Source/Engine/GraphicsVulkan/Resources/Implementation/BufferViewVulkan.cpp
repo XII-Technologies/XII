@@ -47,4 +47,12 @@ xiiResult xiiGALBufferViewVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALBufferViewVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkBufferView, sName.GetData(tmp));
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_BufferViewVulkan);

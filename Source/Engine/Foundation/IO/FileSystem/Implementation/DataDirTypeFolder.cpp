@@ -157,7 +157,9 @@ namespace xiiDataDirectory
       if (file.Open(sRedirectionFile, xiiFileOpenMode::Read).Succeeded())
       {
         xiiHybridArray<char, 1024 * 10> content;
-        char                            uiTemp[4096];
+        content.Reserve((xiiUInt32)(file.GetFileSize() + 1));
+
+        char uiTemp[4096];
 
         xiiUInt64 uiRead = 0;
 

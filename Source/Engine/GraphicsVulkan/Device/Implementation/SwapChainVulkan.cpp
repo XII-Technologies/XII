@@ -43,6 +43,14 @@ xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALSwapChainVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkSwapChain, sName.GetData(tmp));
+}
+
 xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
@@ -548,7 +556,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
     XII_ASSERT_RELEASE(!m_SwapChainTextures[i].IsInvalidated(), "Failed to create native backbuffer texture object!");
   }
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
@@ -607,15 +615,17 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
     {
       // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
-      if (xiiGALCommandList* pCommandList = pGraphicsQueueVulkan->BeginCommandList())
+      if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
       {
-        pCommandList->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
-        pCommandList->Submit();
+        pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+        pCommandListVulkan->Submit();
       }
 
       m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
     }
   }
+
+  m_hBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
 
   return result;
 }
@@ -634,11 +644,6 @@ void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
       VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     }
   }
-}
-
-void xiiGALSwapChainVulkan::AcquireNextRenderTarget()
-{
-  VK_ASSERT_DEV(AcquireNextImage());
 }
 
 void xiiGALSwapChainVulkan::Present()

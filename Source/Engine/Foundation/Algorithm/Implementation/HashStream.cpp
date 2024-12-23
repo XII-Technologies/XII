@@ -18,6 +18,9 @@ xiiHashStreamWriter32::~xiiHashStreamWriter32()
 
 xiiResult xiiHashStreamWriter32::WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite)
 {
+  if (uiBytesToWrite == 0)
+    return XII_SUCCESS;
+
   if (uiBytesToWrite > std::numeric_limits<size_t>::max())
     return XII_FAILURE;
 
@@ -32,6 +35,7 @@ xiiUInt32 xiiHashStreamWriter32::GetHashValue() const
   return XXH32_digest((XXH32_state_t*)m_pState);
 }
 
+//////////////////////////////////////////////////////////////////////////
 
 xiiHashStreamWriter64::xiiHashStreamWriter64(xiiUInt64 uiSeed)
 {
@@ -46,6 +50,9 @@ xiiHashStreamWriter64::~xiiHashStreamWriter64()
 
 xiiResult xiiHashStreamWriter64::WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite)
 {
+  if (uiBytesToWrite == 0)
+    return XII_SUCCESS;
+
   if (uiBytesToWrite > std::numeric_limits<size_t>::max())
     return XII_FAILURE;
 

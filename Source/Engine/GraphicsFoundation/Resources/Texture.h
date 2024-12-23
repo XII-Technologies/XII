@@ -69,6 +69,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   constexpr XII_ALWAYS_INLINE bool      Is3D() const { return m_Type == xiiGALResourceDimension::Texture3D; }
   constexpr XII_ALWAYS_INLINE bool      IsCube() const { return m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
   constexpr XII_ALWAYS_INLINE xiiUInt32 GetArraySize() const { return IsArray() ? m_uiArraySizeOrDepth : 1U; }
+  constexpr XII_ALWAYS_INLINE xiiUInt32 GetWidth() const { return m_Size.width; }
+  constexpr XII_ALWAYS_INLINE xiiUInt32 GetHeight() const { return Is1D() ? 1U : m_Size.height; }
+  constexpr XII_ALWAYS_INLINE xiiUInt32 GetDepth() const { return Is3D() ? m_uiArraySizeOrDepth : 1U; }
 };
 
 /// \brief This describes the data for one texture sub-resource.

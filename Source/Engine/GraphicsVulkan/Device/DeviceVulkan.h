@@ -82,6 +82,38 @@ public:
 public:
   virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
+  template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>
+  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {})
+  {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    if (m_DebugMode != DebugMode::Disabled)
+    {
+      if (vkObject == VK_NULL_HANDLE)
+        return;
+
+      vk::DebugUtilsObjectNameInfoEXT vkDebugObjectNameInfo = {};
+      vkDebugObjectNameInfo.pNext                           = nullptr;
+      vkDebugObjectNameInfo.objectType                      = vkObject.objectType;
+      vkDebugObjectNameInfo.objectHandle                    = (uint64_t) static_cast<typename ObjectHandle::NativeType>(vkObject);
+      vkDebugObjectNameInfo.pObjectName                     = szDebugName;
+
+      m_LogicalDevice.setDebugUtilsObjectNameEXT(vkDebugObjectNameInfo, m_InstanceDispatchLoader);
+
+      if (vmaAllocation != nullptr)
+      {
+        vmaSetAllocationUserData(m_vkVmaAllocator, vmaAllocation, (void*)vkDebugObjectNameInfo.pObjectName);
+      }
+    }
+#endif
+  }
+
+  template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
+  void SafeReleaseDeviceObject(ObjectType&& object, VmaAllocation vmaAlloaction)
+  {
+  }
+
   template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
   void SafeReleaseDeviceObject(ObjectType&& object)
   {
@@ -114,7 +146,9 @@ public:
   XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanLogicalDeviceFeatures() const { return m_LogicalDeviceFeatures; }
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetVulkanLogicalDeviceExtensionFeatures() const { return m_LogicalDeviceExtensionFeatures; }
   XII_ALWAYS_INLINE xiiArrayPtr<vk::PipelineStageFlags> GetVulkanLogicalDeviceSupportedStagesFlags() { return m_LogicalDeviceSupportedStagesFlags; }
+  XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanLogicalDeviceSupportedStagesFlags(xiiUInt32 uiQueueFamilyIndex) { return m_LogicalDeviceSupportedStagesFlags[uiQueueFamilyIndex]; }
   XII_ALWAYS_INLINE xiiArrayPtr<vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() { return m_LogicalDeviceSupportedAccessFlags; }
+  XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
 
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }

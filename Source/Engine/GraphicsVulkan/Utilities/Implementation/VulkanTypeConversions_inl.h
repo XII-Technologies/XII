@@ -768,7 +768,7 @@ XII_ALWAYS_INLINE vk::ImageLayout xiiVulkanTypeConversions::GetImageLayout(xiiBi
   // VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
   // VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
 
-  XII_ASSERT_DEV(e.GetValue() & (e.GetValue() - 1), "Expected a single bit set.");
+  XII_ASSERT_DEV((e.GetValue() & (e.GetValue() - 1)) == 0, "Expected a single bit set.");
 
   switch (e.GetValue())
   {
@@ -828,6 +828,50 @@ XII_ALWAYS_INLINE vk::ImageLayout xiiVulkanTypeConversions::GetImageLayout(xiiBi
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return vk::ImageLayout::eUndefined;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceState(vk::ImageLayout e)
+{
+  switch (e)
+  {
+    case vk::ImageLayout::eUndefined:
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::eGeneral:
+      return xiiGALResourceStateFlags::UnorderedAccess;
+    case vk::ImageLayout::eColorAttachmentOptimal:
+      return xiiGALResourceStateFlags::RenderTarget;
+    case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+      return xiiGALResourceStateFlags::DepthWrite;
+    case vk::ImageLayout::eDepthStencilReadOnlyOptimal:
+      return xiiGALResourceStateFlags::DepthRead;
+    case vk::ImageLayout::eShaderReadOnlyOptimal:
+      return xiiGALResourceStateFlags::ShaderResource;
+    case vk::ImageLayout::eTransferSrcOptimal:
+      return xiiGALResourceStateFlags::CopySource;
+    case vk::ImageLayout::eTransferDstOptimal:
+      return xiiGALResourceStateFlags::CopyDestination;
+    case vk::ImageLayout::ePreinitialized:
+      XII_REPORT_FAILURE("vk::ImageLayout::ePreinitialized is not supported.");
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal:
+      XII_REPORT_FAILURE("vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal is not supported.");
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal:
+      XII_REPORT_FAILURE("vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal is not supported.");
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::ePresentSrcKHR:
+      return xiiGALResourceStateFlags::Present;
+    case vk::ImageLayout::eSharedPresentKHR:
+      XII_REPORT_FAILURE("vk::ImageLayout::eSharedPresentKHR is not supported.");
+      return xiiGALResourceStateFlags::Undefined;
+    case vk::ImageLayout::eFragmentDensityMapOptimalEXT:
+    case vk::ImageLayout::eFragmentShadingRateAttachmentOptimalKHR:
+      return xiiGALResourceStateFlags::ShadingRate;
+
+    default:
+      XII_REPORT_FAILURE("Unknown Vulkan image layout ({}).", (xiiUInt32)e);
+  }
+  return xiiGALResourceStateFlags::Undefined;
 }
 
 XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e)
@@ -994,4 +1038,29 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALSparseTextureFlags> xiiVulkanTypeConversions
     sparseTextureFlags |= xiiGALSparseTextureFlags::NonStandardBlockSize;
 
   return sparseTextureFlags;
+}
+
+XII_ALWAYS_INLINE vk::ImageUsageFlags xiiVulkanTypeConversions::GetImageUsageFlags(xiiBitflags<xiiGALBindFlags> bindFlags, bool bIsMemoryless, bool bFragmentDensityMapInsteadOfShadingRate)
+{
+  vk::ImageUsageFlags vkImageUsageFlags = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+
+  if (bindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eSampled;
+  if (bindFlags.IsSet(xiiGALBindFlags::RenderTarget)) // VK_IMAGE_USAGE_TRANSFER_DST_BIT is required for vkCmdClearColorImage
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
+  if (bindFlags.IsSet(xiiGALBindFlags::DepthStencil)) // VK_IMAGE_USAGE_TRANSFER_DST_BIT is required for vkCmdClearDepthStencilImage()
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst;
+  if (bindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eStorage;
+  if (bindFlags.IsSet(xiiGALBindFlags::InputAttachment))
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eInputAttachment;
+  if (bindFlags.IsSet(xiiGALBindFlags::ShadingRate))
+    vkImageUsageFlags |= (bFragmentDensityMapInsteadOfShadingRate ? vk::ImageUsageFlagBits::eFragmentDensityMapEXT : vk::ImageUsageFlagBits::eFragmentShadingRateAttachmentKHR);
+
+  if (bIsMemoryless)
+  {
+    vkImageUsageFlags &= (vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eInputAttachment);
+    vkImageUsageFlags |= vk::ImageUsageFlagBits::eTransientAttachment;
+  }
+  return vkImageUsageFlags;
 }

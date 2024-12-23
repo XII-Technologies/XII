@@ -339,13 +339,13 @@ namespace xiiMath
   ///
   /// For N >= 32 all bits will be set.
   template <typename Type>
-  [[nodiscard]] Type Bitmask_LowN(xiiUInt32 uiNumBitsToSet);
+  [[nodiscard]] constexpr Type Bitmask_LowN(xiiUInt32 uiNumBitsToSet);
 
   /// \brief Creates a bitmask in which the high N bits are set. For example for N=5, this would be '1111 1000 ... 0000'
   ///
   /// For N >= 32 all bits will be set.
   template <typename Type>
-  [[nodiscard]] Type Bitmask_HighN(xiiUInt32 uiNumBitsToSet);
+  [[nodiscard]] constexpr Type Bitmask_HighN(xiiUInt32 uiNumBitsToSet);
 
   /// \brief Swaps the values in the two variables f1 and f2
   template <typename T>
@@ -421,28 +421,32 @@ namespace xiiMath
   template <typename Type>
   [[nodiscard]] bool IsZero(Type f, Type fEpsilon); // [tested]
 
-  /// \brief Converts a color value from float [0;1] range to unsigned byte [0;255] range, with proper rounding
+  /// \brief Converts a color value from float [0;1] range to unsigned int with the given number of bits, with proper rounding.
+  template <xiiUInt32 BitCount>
+  [[nodiscard]] xiiUInt32 ColorFloatToUnsignedInt(float value);
+
+  /// \brief Converts a color value from float [0;1] range to unsigned byte [0;255] range, with proper rounding.
   [[nodiscard]] xiiUInt8 ColorFloatToByte(float value); // [tested]
 
-  /// \brief Converts a color value from float [0;1] range to unsigned short [0;65535] range, with proper rounding
+  /// \brief Converts a color value from float [0;1] range to unsigned short [0;65535] range, with proper rounding.
   [[nodiscard]] xiiUInt16 ColorFloatToShort(float value); // [tested]
 
-  /// \brief Converts a color value from float [-1;1] range to signed byte [-127;127] range, with proper rounding
+  /// \brief Converts a color value from float [-1;1] range to signed byte [-127;127] range, with proper rounding.
   [[nodiscard]] xiiInt8 ColorFloatToSignedByte(float value); // [tested]
 
-  /// \brief Converts a color value from float [-1;1] range to signed short [-32767;32767] range, with proper rounding
+  /// \brief Converts a color value from float [-1;1] range to signed short [-32767;32767] range, with proper rounding.
   [[nodiscard]] xiiInt16 ColorFloatToSignedShort(float value); // [tested]
 
-  /// \brief Converts a color value from unsigned byte [0;255] range to float [0;1] range, with proper rounding
+  /// \brief Converts a color value from unsigned byte [0;255] range to float [0;1] range, with proper rounding.
   [[nodiscard]] constexpr float ColorByteToFloat(xiiUInt8 value); // [tested]
 
-  /// \brief Converts a color value from unsigned short [0;65535] range to float [0;1] range, with proper rounding
+  /// \brief Converts a color value from unsigned short [0;65535] range to float [0;1] range, with proper rounding.
   [[nodiscard]] constexpr float ColorShortToFloat(xiiUInt16 value); // [tested]
 
-  /// \brief Converts a color value from signed byte [-128;127] range to float [-1;1] range, with proper rounding
+  /// \brief Converts a color value from signed byte [-128;127] range to float [-1;1] range, with proper rounding.
   [[nodiscard]] constexpr float ColorSignedByteToFloat(xiiInt8 value); // [tested]
 
-  /// \brief Converts a color value from signed short [-32768;32767] range to float [0;1] range, with proper rounding
+  /// \brief Converts a color value from signed short [-32768;32767] range to float [0;1] range, with proper rounding.
   [[nodiscard]] constexpr float ColorSignedShortToFloat(xiiInt16 value); // [tested]
 
   /// \brief Evaluates the cubic spline defined by four control points at time \a t and returns the interpolated result.

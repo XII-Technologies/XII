@@ -971,35 +971,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.createDevice(&deviceCreationDescription, nullptr, &m_LogicalDevice, m_InstanceDispatchLoader));
 
     m_InstanceDispatchLoader.init(m_LogicalDevice);
-
-    {
-      m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
-
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
-      m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
-
-      m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_vkQueue);
-    }
-
-    if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
-    {
-      m_LogicalDevice.getQueue(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_uiQueueIndex, &m_ComputeQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
-
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
-      m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
-
-      m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_vkQueue);
-    }
-
-    if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
-    {
-      m_LogicalDevice.getQueue(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_uiQueueIndex, &m_TransferQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
-
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
-      m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
-
-      m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_vkQueue);
-    }
   }
 
   {
@@ -1084,6 +1055,38 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
   }
 
+  // Create command queues.
+  {
+    {
+      m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
+      m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
+
+      m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_vkQueue);
+    }
+
+    if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
+    {
+      m_LogicalDevice.getQueue(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_uiQueueIndex, &m_ComputeQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
+      m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
+
+      m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_vkQueue);
+    }
+
+    if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
+    {
+      m_LogicalDevice.getQueue(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_uiQueueIndex, &m_TransferQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
+
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
+      m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
+
+      m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_vkQueue);
+    }
+  }
+
   xiiClipSpaceDepthRange::Default = xiiClipSpaceDepthRange::ZeroToOne;
 
   // We use xiiClipSpaceYMode::Regular and rely in the Vulkan 1.1 feature that a negative height performs y-inversion of the clip-space to framebuffer-space transform.
@@ -1141,10 +1144,6 @@ void xiiGALDeviceVulkan::FlushPendingObjects()
 
 void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
-  for (auto pSwapChain : swapchains)
-  {
-    pSwapChain->AcquireNextRenderTarget();
-  }
 }
 
 void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
@@ -1167,6 +1166,13 @@ xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGA
     return m_pTransferCommandQueue.Borrow();
 
   return bAllowGraphicsCommandQueueFallback ? GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false) : nullptr;
+}
+
+void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiStringBuilder tmp;
+
+  SetVulkanObjectDebugName(m_LogicalDevice, sName.GetData(tmp));
 }
 
 xiiGALSwapChain* xiiGALDeviceVulkan::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)

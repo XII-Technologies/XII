@@ -9,8 +9,6 @@ struct IDXGISwapChain3;
 class XII_GRAPHICSD3D12_DLL xiiGALSwapChainD3D12 final : public xiiGALSwapChain
 {
 public:
-  virtual void AcquireNextRenderTarget() override final;
-
   virtual void Present() override final;
 
   virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;

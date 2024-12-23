@@ -2,6 +2,7 @@
 
 #include <Core/Input/DeviceTypes/Controller.h>
 #include <Core/Input/DeviceTypes/MouseKeyboard.h>
+#include <Foundation/Time/Clock.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInputDeviceMouseKeyboard, 1, xiiRTTINoAllocator)
@@ -19,8 +20,9 @@ xiiInputDeviceController::xiiInputDeviceController()
 
   for (xiiInt8 c = 0; c < MaxControllers; ++c)
   {
-    m_bVibrationEnabled[c]  = false;
-    m_iControllerMapping[c] = c;
+    m_bVibrationEnabled[c]                   = false;
+    m_iVirtualToPhysicalControllerMapping[c] = c;
+    m_iPhysicalToVirtualControllerMapping[c] = c;
 
     for (xiiInt8 m = 0; m < Motor::ENUM_COUNT; ++m)
     {
@@ -70,7 +72,7 @@ void xiiInputDeviceController::SetControllerMapping(xiiUInt8 uiVirtualController
   if (iTakeInputFromPhysical < 0)
   {
     // deactivates this virtual controller
-    m_iControllerMapping[uiVirtualController] = -1;
+    m_iVirtualToPhysicalControllerMapping[uiVirtualController] = -1;
   }
   else
   {
@@ -78,22 +80,46 @@ void xiiInputDeviceController::SetControllerMapping(xiiUInt8 uiVirtualController
     // uiVirtualController is currently mapped to
     for (xiiInt32 c = 0; c < MaxControllers; ++c)
     {
-      if (m_iControllerMapping[c] == iTakeInputFromPhysical)
+      if (m_iVirtualToPhysicalControllerMapping[c] == iTakeInputFromPhysical)
       {
-        m_iControllerMapping[c] = m_iControllerMapping[uiVirtualController];
+        m_iVirtualToPhysicalControllerMapping[c] = m_iVirtualToPhysicalControllerMapping[uiVirtualController];
         break;
       }
     }
 
-    m_iControllerMapping[uiVirtualController] = iTakeInputFromPhysical;
+    m_iVirtualToPhysicalControllerMapping[uiVirtualController] = iTakeInputFromPhysical;
+  }
+
+  // Rebuild all physical to virtual indices
+  {
+    for (xiiUInt32 i = 0; i < MaxControllers; ++i)
+    {
+      m_iPhysicalToVirtualControllerMapping[i] = -1;
+    }
+
+    for (xiiUInt8 i = 0; i < MaxControllers; ++i)
+    {
+      const xiiInt32 iPhysical = m_iVirtualToPhysicalControllerMapping[i];
+      if (iPhysical >= 0 && iPhysical < MaxControllers)
+      {
+        m_iPhysicalToVirtualControllerMapping[iPhysical] = i;
+      }
+    }
   }
 }
 
-xiiInt8 xiiInputDeviceController::GetControllerMapping(xiiUInt8 uiVirtual) const
+xiiInt8 xiiInputDeviceController::GetPhysicalControllerMapping(xiiUInt8 uiVirtual) const
 {
   XII_ASSERT_DEV(uiVirtual < MaxControllers, "Virtual Controller Index {0} is larger than allowed ({1}).", uiVirtual, MaxControllers);
 
-  return m_iControllerMapping[uiVirtual];
+  return m_iVirtualToPhysicalControllerMapping[uiVirtual];
+}
+
+xiiInt8 xiiInputDeviceController::GetVirtualControllerMapping(xiiUInt8 uiPhysical) const
+{
+  XII_ASSERT_DEV(uiPhysical < MaxControllers, "Physical Controller Index {0} is larger than allowed ({1}).", uiPhysical, MaxControllers);
+
+  return m_iPhysicalToVirtualControllerMapping[uiPhysical];
 }
 
 void xiiInputDeviceController::AddVibrationTrack(xiiUInt8 uiVirtual, Motor::Enum motor, float* pVibrationTrackValue, xiiUInt32 uiSamples, float fScalingFactor)
@@ -124,7 +150,9 @@ void xiiInputDeviceController::UpdateVibration(xiiTime tTimeDifference)
     for (xiiUInt32 c = 0; c < MaxControllers; ++c)
     {
       for (xiiUInt32 m = 0; m < Motor::ENUM_COUNT; ++m)
+      {
         m_fVibrationTracks[c][m][m_uiVibrationTrackPos] = 0.0f;
+      }
     }
 
     m_uiVibrationTrackPos = (m_uiVibrationTrackPos + 1) % MaxVibrationSamples;
@@ -137,7 +165,9 @@ void xiiInputDeviceController::UpdateVibration(xiiTime tTimeDifference)
   for (xiiUInt32 c = 0; c < MaxControllers; ++c)
   {
     for (xiiUInt32 m = 0; m < Motor::ENUM_COUNT; ++m)
+    {
       fVibrationToApply[c][m] = 0.0f;
+    }
   }
 
   // go through all controllers and motors
@@ -148,13 +178,15 @@ void xiiInputDeviceController::UpdateVibration(xiiTime tTimeDifference)
       continue;
 
     // check which physical controller this virtual controller is attached to
-    const xiiInt8 iPhysical = GetControllerMapping(c);
+    const xiiInt8 iPhysical = GetPhysicalControllerMapping(c);
 
     // if it is attached to any physical controller, store the vibration value
     if (iPhysical >= 0)
     {
       for (xiiUInt32 m = 0; m < Motor::ENUM_COUNT; ++m)
+      {
         fVibrationToApply[(xiiUInt8)iPhysical][m] = xiiMath::Max(m_fVibrationStrength[c][m], m_fVibrationTracks[c][m][m_uiVibrationTrackPos]);
+      }
     }
   }
 
@@ -174,7 +206,7 @@ void xiiInputDeviceMouseKeyboard::UpdateInputSlotValues()
   const char* slots[3]    = {xiiInputSlot_MouseButton0, xiiInputSlot_MouseButton1, xiiInputSlot_MouseButton2};
   const char* dlbSlots[3] = {xiiInputSlot_MouseDblClick0, xiiInputSlot_MouseDblClick1, xiiInputSlot_MouseDblClick2};
 
-  const xiiTime tNow = xiiTime::Now();
+  const xiiTime tNow = xiiClock::GetGlobalClock()->GetLastUpdateTime();
 
   for (int i = 0; i < 3; ++i)
   {

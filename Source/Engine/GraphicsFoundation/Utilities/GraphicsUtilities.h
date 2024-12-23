@@ -9,7 +9,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsUtilities
 {
 public:
   /// \brief This converts swap chain usage flags to bind flags.
-  static xiiBitflags<xiiGALBindFlags> SwapChainUsageFlagsToBindFlags(xiiBitflags<xiiGALSwapChainUsageFlags> swapChainUsageFlags);
+  static [[nodiscard]] xiiBitflags<xiiGALBindFlags> SwapChainUsageFlagsToBindFlags(xiiBitflags<xiiGALSwapChainUsageFlags> swapChainUsageFlags);
 
   /// \brief This returns the valid pipeline resource flags for a given shader resource type.
   static [[nodiscard]] xiiBitflags<xiiGALPipelineResourceFlags> GetValidPipelineResourceFlags(xiiEnum<xiiGALShaderResourceType> type);

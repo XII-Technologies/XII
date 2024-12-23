@@ -1059,4 +1059,42 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImageSliderUiAttribute, 1, xiiRTTIDefaultAllocator<xiiImageSliderUiAttribute>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("ImageGenerator", m_sImageGenerator),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRttiTypeStringAttribute, 1, xiiRTTIDefaultAllocator<xiiRttiTypeStringAttribute>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("BaseType", m_sBaseType),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+//////////////////////////////////////////////////////////////////////////
+
 XII_STATICLINK_FILE(Foundation, Foundation_Reflection_Implementation_PropertyAttributes);

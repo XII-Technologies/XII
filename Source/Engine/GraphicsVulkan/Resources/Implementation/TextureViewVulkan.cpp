@@ -194,6 +194,10 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
         return XII_FAILURE;
       }
     }
+    else
+    {
+      vkImageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    }
   }
 
   if (m_Description.m_ViewType == xiiGALTextureViewType::ShadingRate)
@@ -242,6 +246,14 @@ xiiResult xiiGALTextureViewVulkan::DeInitPlatform()
   pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImageView));
 
   return XII_SUCCESS;
+}
+
+void xiiGALTextureViewVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkImageView, sName.GetData(tmp));
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_TextureViewVulkan);

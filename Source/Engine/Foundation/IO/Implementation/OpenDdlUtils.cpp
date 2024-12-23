@@ -1154,7 +1154,7 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
       const xiiStringView* pValues = pString->GetPrimitivesString();
 
       value.SetCountUninitialized(pValues[0].GetElementCount() / 2);
-      xiiConversionUtils::ConvertHexToBinary(pValues[0].GetStartPointer(), value.GetData(), value.GetCount());
+      xiiConversionUtils::ConvertHexToBinary(pValues[0], value.GetData(), value.GetCount());
 
       out_result = value;
       return XII_SUCCESS;

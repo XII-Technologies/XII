@@ -74,10 +74,6 @@ void xiiGALSwapChainNull::DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNul
   m_hBackBufferTexture.Invalidate();
 }
 
-void xiiGALSwapChainNull::AcquireNextRenderTarget()
-{
-}
-
 void xiiGALSwapChainNull::Present()
 {
 }

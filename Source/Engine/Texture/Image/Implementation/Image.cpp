@@ -35,8 +35,7 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiImageHeader& header, xii
 
   xiiUInt64 dataSize = ComputeLayout();
 
-  XII_ASSERT_DEV(imageData.GetCount() == dataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)",
-                 imageData.GetCount(), dataSize);
+  XII_ASSERT_DEV(imageData.GetCount() == dataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)", imageData.GetCount(), dataSize);
 
   // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage
   m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), imageData.GetCount());
@@ -61,9 +60,9 @@ xiiResult xiiImageView::SaveTo(xiiStringView sFileName) const
 
   xiiStringView it = xiiPathUtils::GetFileExtension(sFileName);
 
-  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetWriterFormat(it.GetStartPointer()))
+  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetWriterFormat(it))
   {
-    if (pFormat->WriteImage(writer, *this, it.GetStartPointer()) != XII_SUCCESS)
+    if (pFormat->WriteImage(writer, *this, it) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write image file '{0}'", sFileName);
       return XII_FAILURE;
@@ -252,7 +251,7 @@ xiiResult xiiImage::LoadFrom(xiiStringView sFileName)
 {
   XII_LOG_BLOCK("Loading Image", sFileName);
 
-  XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(sFileName).GetStartPointer());
+  XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(sFileName));
 
   xiiFileReader reader;
   if (reader.Open(sFileName) == XII_FAILURE)
@@ -263,9 +262,9 @@ xiiResult xiiImage::LoadFrom(xiiStringView sFileName)
 
   xiiStringView it = xiiPathUtils::GetFileExtension(sFileName);
 
-  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it.GetStartPointer()))
+  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it))
   {
-    if (pFormat->ReadImage(reader, *this, it.GetStartPointer()) != XII_SUCCESS)
+    if (pFormat->ReadImage(reader, *this, it) != XII_SUCCESS)
     {
       xiiLog::Warning("Failed to read image file '{0}'", xiiArgSensitive(sFileName, "File"));
       return XII_FAILURE;

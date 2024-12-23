@@ -1,6 +1,7 @@
 #include <Core/Input/InputManager.h>
 #include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Time/Clock.h>
 #include <XBoxControllerPlugin/InputDeviceXBox.h>
 
 #include <Xinput.h>
@@ -82,23 +83,23 @@ void xiiInputDeviceXBox360::RegisterInputSlots()
   xiiLog::Success("Initialized XBox 360 Controller.");
 }
 
-const char* szControllerName[] = {
-  "controller0_",
-  "controller1_",
-  "controller2_",
-  "controller3_",
+const xiiStringView sControllerName[] = {
+  "controller0_"_xiisv,
+  "controller1_"_xiisv,
+  "controller2_"_xiisv,
+  "controller3_"_xiisv,
 
-  "controller4_",
-  "controller5_",
-  "controller6_",
-  "controller7_",
+  "controller4_"_xiisv,
+  "controller5_"_xiisv,
+  "controller6_"_xiisv,
+  "controller7_"_xiisv,
 };
 
-static_assert(XII_ARRAY_SIZE(szControllerName) >= xiiInputDeviceXBox360::MaxControllers);
+static_assert(XII_ARRAY_SIZE(sControllerName) >= xiiInputDeviceController::MaxControllers);
 
 void xiiInputDeviceXBox360::SetValue(xiiInt32 iController, const char* szButton, float fValue)
 {
-  xiiStringBuilder s = szControllerName[iController];
+  xiiStringBuilder s = sControllerName[iController];
   s.Append(szButton);
   float& fVal = m_InputSlotValues[s];
   fVal        = xiiMath::Max(fVal, fValue);
@@ -121,7 +122,7 @@ void xiiInputDeviceXBox360::UpdateInputSlotValues()
   // Update unconnected controllers only every few milliseconds, apparently it takes quite some time to do this
   // even on unconnected controllers
   static xiiTime tLastControllerSearch;
-  const xiiTime  tNow               = xiiTime::Now();
+  const xiiTime  tNow               = xiiClock::GetGlobalClock()->GetLastUpdateTime();
   const bool     bSearchControllers = tNow - tLastControllerSearch > xiiTime::MakeFromSeconds(0.5);
 
   if (bSearchControllers)
@@ -151,7 +152,7 @@ void xiiInputDeviceXBox360::UpdateInputSlotValues()
   for (xiiUInt8 uiVirtual = 0; uiVirtual < MaxControllers; ++uiVirtual)
   {
     // Check from which physical device to take the input data
-    const xiiInt8 iPhysical = GetControllerMapping(uiVirtual);
+    const xiiInt8 iPhysical = GetPhysicalControllerMapping(uiVirtual);
 
     // If the mapping is negative (which means 'deactivated'), ignore this controller
     if ((iPhysical < 0) || (iPhysical >= MaxControllers))

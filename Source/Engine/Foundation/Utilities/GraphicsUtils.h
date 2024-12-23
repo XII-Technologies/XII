@@ -4,6 +4,12 @@
 
 namespace xiiGraphicsUtils
 {
+  /// \brief Converts a screen-space position from pixel coordinates to normalized coordinates.
+  XII_FOUNDATION_DLL void ConvertScreenPixelPosToNormalizedPos(const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, xiiVec3& inout_vPixelPos);
+
+  /// \brief Converts a screen-space position from normalized coordinates to pixel coordinates.
+  XII_FOUNDATION_DLL void ConvertScreenNormalizedPosToPixelPos(const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, xiiVec3& inout_vNormalizedPos);
+
   /// \brief Projects the given point from 3D world space into screen space, if possible.
   ///
   /// \param ModelViewProjection

@@ -95,7 +95,7 @@ void xiiCollectionUtils::AddResourceHandle(xiiCollectionResourceDescriptor& ref_
     xiiStringView root, relFile;
     xiiPathUtils::GetRootedPathParts(resID, root, relFile);
     absFilename = sAbsFolderpath;
-    absFilename.AppendPath(relFile.GetStartPointer());
+    absFilename.AppendPath(relFile);
     absFilename.MakeCleanPath();
 
     xiiFileStats stats;

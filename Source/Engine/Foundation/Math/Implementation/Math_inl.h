@@ -207,13 +207,13 @@ namespace xiiMath
   }
 
   template <typename Type>
-  XII_ALWAYS_INLINE Type Bitmask_LowN(xiiUInt32 uiNumBitsToSet)
+  XII_ALWAYS_INLINE constexpr Type Bitmask_LowN(xiiUInt32 uiNumBitsToSet)
   {
     return (uiNumBitsToSet >= sizeof(Type) * 8) ? ~static_cast<Type>(0) : ((static_cast<Type>(1) << uiNumBitsToSet) - static_cast<Type>(1));
   }
 
   template <typename Type>
-  XII_ALWAYS_INLINE Type Bitmask_HighN(xiiUInt32 uiNumBitsToSet)
+  XII_ALWAYS_INLINE constexpr Type Bitmask_HighN(xiiUInt32 uiNumBitsToSet)
   {
     return (uiNumBitsToSet == 0) ? 0 : ~static_cast<Type>(0) << ((sizeof(Type) * 8) - xiiMath::Min<xiiUInt32>(uiNumBitsToSet, sizeof(Type) * 8));
   }
@@ -346,8 +346,11 @@ namespace xiiMath
     return (value * value * value * (value * ((Type)6 * value - (Type)15) + (Type)10));
   }
 
-  inline xiiUInt8 ColorFloatToByte(float value)
+  template <xiiUInt32 BitCount>
+  inline xiiUInt32 ColorFloatToUnsignedInt(float value)
   {
+    constexpr float fMaxValue = static_cast<float>(xiiMath::Bitmask_LowN<xiiUInt32>(BitCount));
+
     // Implemented according to
     // https://docs.microsoft.com/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
     if (IsNaN(value))
@@ -356,22 +359,18 @@ namespace xiiMath
     }
     else
     {
-      return static_cast<xiiUInt8>(Saturate(value) * 255.0f + 0.5f);
+      return static_cast<xiiUInt32>(Saturate(value) * fMaxValue + 0.5f);
     }
+  }
+
+  inline xiiUInt8 ColorFloatToByte(float value)
+  {
+    return static_cast<xiiUInt8>(ColorFloatToUnsignedInt<8>(value));
   }
 
   inline xiiUInt16 ColorFloatToShort(float value)
   {
-    // Implemented according to
-    // https://docs.microsoft.com/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-    if (IsNaN(value))
-    {
-      return 0;
-    }
-    else
-    {
-      return static_cast<xiiUInt16>(Saturate(value) * 65535.0f + 0.5f);
-    }
+    return static_cast<xiiUInt16>(ColorFloatToUnsignedInt<16>(value));
   }
 
   inline xiiInt8 ColorFloatToSignedByte(float value)
