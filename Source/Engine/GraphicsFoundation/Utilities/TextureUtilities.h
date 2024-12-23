@@ -17,6 +17,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMipLevelProperties : public xiiHashableS
   xiiUInt64  m_uiMipSize        = 0;                ///< The total mip level data size in bytes.
 };
 
+/// \brief This describes the information required to perform a copy operation between a buffer and a texture.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferToTextureCopyDescription : public xiiHashableStruct<xiiGALBufferToTextureCopyDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt64         m_uiRowSize           = 0;                             ///< Texture region row size, in bytes. For compressed formats, this is the size of one row of compressed blocks.
+  xiiUInt64         m_uiRowStride         = 0;                             ///< Row stride, in bytes. The stride is computed by aligning the RowSize, and is thus always >= RowSize.
+  xiiUInt32         m_uiRowStrideInTexels = 0;                             ///< Row stride in texels.
+  xiiUInt32         m_uiRowCount          = 0;                             ///< The number of rows in the region. For compressed formats, this is the number of compressed-block rows.
+  xiiUInt32         m_uiDepthStride       = 0;                             ///< Depth stride (RowStride * RowCount).
+  xiiUInt32         m_uiMemorySize        = 0;                             ///< Total memory size required to store the pixels in the region.
+  xiiBoundingBoxU32 m_Region              = xiiBoundingBoxU32::MakeZero(); ///< Texture region.
+};
+
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureUtilities
 {
 public:
@@ -84,7 +98,10 @@ public:
     return GetStagingTextureLocationOffset(textureDescription, uiArraySlice, uiMipLevel, uiAlignment, 0, 0, 0);
   }
 
-  /// Copies texture subresource data on the CPU.
+  /// \brief Computes the information required to perform a copy operation between a buffer and a texture.
+  static xiiGALBufferToTextureCopyDescription GetBufferToTextureCopyDescription(xiiGALResourceFormat::Enum format, const xiiBoundingBoxU32& region, xiiUInt32 uiRowStrideAlignment);
+
+  /// \brief Copies texture subresource data on the CPU.
   ///
   /// \param sourceSubresource        - Source subresource data.
   /// \param uiRowCount               - The number of rows in the subresource.

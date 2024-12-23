@@ -431,6 +431,57 @@ xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTe
   return uiOffset;
 }
 
+xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureCopyDescription(xiiGALResourceFormat::Enum format, const xiiBoundingBoxU32& region, xiiUInt32 uiRowStrideAlignment)
+{
+  xiiGALBufferToTextureCopyDescription bufferToTextureCopyDescription;
+
+  const auto& formatProperties = GetResourceFormatProperties(format);
+
+  XII_ASSERT_DEV(region.IsValid(), "");
+
+  const xiiUInt32 uiUpdateRegionWidth  = region.m_vMax.x - region.m_vMin.x;
+  const xiiUInt32 uiUpdateRegionHeight = region.m_vMax.y - region.m_vMin.y;
+  const xiiUInt32 uiUpdateRegionDepth  = region.m_vMax.z - region.m_vMin.z;
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  {
+    // Align region update size by the block size.
+
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "");
+
+    const auto uiBlockAlignedRegionWidth  = xiiMemoryUtils::AlignSize(uiUpdateRegionWidth, xiiUInt32{formatProperties.m_uiBlockWidth});
+    const auto uiBlockAlignedRegionHeight = xiiMemoryUtils::AlignSize(uiUpdateRegionHeight, xiiUInt32{formatProperties.m_uiBlockHeight});
+
+    bufferToTextureCopyDescription.m_uiRowSize  = xiiUInt64{uiBlockAlignedRegionWidth} / xiiUInt32{formatProperties.m_uiBlockWidth} * xiiUInt32{formatProperties.m_uiComponentSize};
+    bufferToTextureCopyDescription.m_uiRowCount = uiBlockAlignedRegionHeight / formatProperties.m_uiBlockHeight;
+  }
+  else
+  {
+    bufferToTextureCopyDescription.m_uiRowSize  = xiiUInt64{uiUpdateRegionWidth} * xiiUInt32{formatProperties.m_uiComponentSize} * xiiUInt32{formatProperties.m_uiComponentCount};
+    bufferToTextureCopyDescription.m_uiRowCount = uiUpdateRegionHeight;
+  }
+
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(uiRowStrideAlignment), "");
+
+  bufferToTextureCopyDescription.m_uiRowStride = xiiMemoryUtils::AlignSize(bufferToTextureCopyDescription.m_uiRowSize, xiiUInt64{uiRowStrideAlignment});
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  {
+    bufferToTextureCopyDescription.m_uiRowStrideInTexels = static_cast<xiiUInt32>(bufferToTextureCopyDescription.m_uiRowStride / xiiUInt64{formatProperties.m_uiComponentSize} * xiiUInt64{formatProperties.m_uiBlockWidth});
+  }
+  else
+  {
+    bufferToTextureCopyDescription.m_uiRowStrideInTexels = static_cast<xiiUInt32>(bufferToTextureCopyDescription.m_uiRowStride / (xiiUInt64{formatProperties.m_uiComponentSize} * xiiUInt64{formatProperties.m_uiComponentCount}));
+  }
+
+  bufferToTextureCopyDescription.m_uiDepthStride = bufferToTextureCopyDescription.m_uiRowCount * bufferToTextureCopyDescription.m_uiRowStride;
+  bufferToTextureCopyDescription.m_uiMemorySize  = uiUpdateRegionDepth * bufferToTextureCopyDescription.m_uiDepthStride;
+  bufferToTextureCopyDescription.m_Region        = region;
+
+  return bufferToTextureCopyDescription;
+}
+
 void xiiGALTextureUtilities::CopyTextureSubresource(const xiiGALTextureSubResourceData& sourceSubresource, xiiUInt32 uiRowCount, xiiUInt32 uiDepthSliceCount, xiiUInt64 uiRowSize, void* pDestinationData, xiiUInt64 uiDestinationRowStride, xiiUInt64 uiDestinationDepthStride)
 {
   XII_ASSERT_DEV(sourceSubresource.m_hSourceBuffer.IsInvalidated() && !sourceSubresource.m_pData.IsEmpty(), "");
