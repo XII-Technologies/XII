@@ -615,10 +615,10 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
     {
       // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
-      if (xiiGALCommandList* pCommandList = pGraphicsQueueVulkan->BeginCommandList())
+      if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
       {
-        pCommandList->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
-        pCommandList->Submit();
+        pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+        pCommandListVulkan->Submit();
       }
 
       m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
