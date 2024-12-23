@@ -127,7 +127,7 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
   m_vkStagingBuffer = VK_NULL_HANDLE;
 
   // Prevent releasing the native object.
-  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject != nullptr)
+  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
   {
     pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), m_ImageMemoryAllocation);
 
