@@ -475,7 +475,7 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
     bufferToTextureCopyDescription.m_uiRowStrideInTexels = static_cast<xiiUInt32>(bufferToTextureCopyDescription.m_uiRowStride / (xiiUInt64{formatProperties.m_uiComponentSize} * xiiUInt64{formatProperties.m_uiComponentCount}));
   }
 
-  bufferToTextureCopyDescription.m_uiDepthStride = bufferToTextureCopyDescription.m_uiRowCount * bufferToTextureCopyDescription.m_uiRowStride;
+  bufferToTextureCopyDescription.m_uiDepthStride = static_cast<xiiUInt32>(bufferToTextureCopyDescription.m_uiRowCount * bufferToTextureCopyDescription.m_uiRowStride);
   bufferToTextureCopyDescription.m_uiMemorySize  = uiUpdateRegionDepth * bufferToTextureCopyDescription.m_uiDepthStride;
   bufferToTextureCopyDescription.m_Region        = region;
 
