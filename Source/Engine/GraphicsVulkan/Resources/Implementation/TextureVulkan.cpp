@@ -28,7 +28,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  if (m_Description.m_Usage == xiiGALResourceUsage::Immutable && pInitialData == nullptr || pInitialData->m_SubResources.IsEmpty())
+  if (m_Description.m_Usage == xiiGALResourceUsage::Immutable && (pInitialData == nullptr || pInitialData->m_SubResources.IsEmpty()))
   {
     xiiLog::Error("Immutable textures must be initialized with data at creation time. The given subresources cannot be empty.");
     return XII_FAILURE;
