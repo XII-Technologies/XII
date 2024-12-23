@@ -18,7 +18,7 @@ void xiiGALTextureVulkan::SetVulkanImageLayout(vk::ImageLayout vkImageLayout)
 }
 
 xiiGALTextureVulkan::xiiGALTextureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
-  xiiGALTexture(pDeviceVulkan, creationDescription)
+  xiiGALTexture(pDeviceVulkan, creationDescription), m_ImageMemoryAllocation(nullptr), m_StagingBufferMemoryAllocation(nullptr)
 {
 }
 
@@ -50,7 +50,15 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
   vk::Device  vkLogicalDevice          = pDeviceVulkan->GetVulkanLogicalDevice();
   const auto& resourceFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
 
-  if (m_Description.m_Usage == xiiGALResourceUsage::Immutable || m_Description.m_Usage == xiiGALResourceUsage::Default || m_Description.m_Usage == xiiGALResourceUsage::Dynamic || m_Description.m_Usage == xiiGALResourceUsage::Sparse)
+  if (m_Description.m_pExisitingNativeObject != nullptr)
+  {
+    m_vkImage = static_cast<VkImage>(m_Description.m_pExisitingNativeObject);
+
+    SetResourceState(xiiGALResourceStateFlags::Undefined);
+
+    return XII_SUCCESS;
+  }
+  else if (m_Description.m_Usage == xiiGALResourceUsage::Immutable || m_Description.m_Usage == xiiGALResourceUsage::Default || m_Description.m_Usage == xiiGALResourceUsage::Dynamic || m_Description.m_Usage == xiiGALResourceUsage::Sparse)
   {
     vk::ImageCreateInfo vkImageCreateInfo = {};
     ComputeVkImageCreateInfo(pDeviceVulkan, m_Description, vkImageCreateInfo);

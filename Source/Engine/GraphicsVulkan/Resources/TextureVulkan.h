@@ -17,6 +17,7 @@ public:
 
   XII_ALWAYS_INLINE vk::Image GetVulkanImage() const { return m_vkImage; }
   XII_ALWAYS_INLINE vk::Buffer GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
+  XII_ALWAYS_INLINE bool       IsNativeObjectWrapper() const { return m_Description.m_pExisitingNativeObject != nullptr; }
 
   vk::ImageLayout GetVulkanImageLayout() const;
   void            SetVulkanImageLayout(vk::ImageLayout vkImageLayout);
