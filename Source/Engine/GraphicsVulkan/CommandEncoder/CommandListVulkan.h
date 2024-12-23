@@ -2,7 +2,12 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <Foundation/Algorithm/HashStream.h>
+
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
+
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
@@ -127,6 +132,43 @@ private:
     vk::AccessFlags        m_vkSupportedAccessFlags = {};
   };
 
+  struct MappedTextureKey
+  {
+    xiiGALTextureVulkan* const m_pTextureVulkan;
+    xiiUInt32 const            m_uiMipLevel;
+    xiiUInt32 const            m_uiArraySlice;
+
+    constexpr bool operator==(const MappedTextureKey& rhs) const
+    {
+      return m_pTextureVulkan == rhs.m_pTextureVulkan && m_uiMipLevel == rhs.m_uiMipLevel && m_uiArraySlice == rhs.m_uiArraySlice;
+    }
+
+    struct Hasher
+    {
+      static xiiUInt32 Hash(const MappedTextureKey& key)
+      {
+        xiiHashStreamWriter32 writer;
+
+        writer << key.m_pTextureVulkan;
+        writer << key.m_uiMipLevel;
+        writer << key.m_uiArraySlice;
+
+        return writer.GetHashValue();
+      }
+
+      static bool Equal(const MappedTextureKey& a, const MappedTextureKey& b)
+      {
+        return a == b;
+      }
+    };
+  };
+
+  struct MappedTexture
+  {
+    xiiGALBufferToTextureCopyDescription m_CopyDescription;
+    VmaAllocationInfo                    m_AllocationInfo;
+  };
+
   vk::CommandBuffer m_vkCommandBuffer;
   CommandListState  m_CommandListState;
   PipelineBarrier   m_PipelineBarrier;
@@ -147,4 +189,6 @@ private:
   // Graphics/Mesh, Compute, Ray Tracing.
   static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;
   static constexpr xiiUInt32 s_MaxDescriptorSetPerSignature = 2U;
+
+  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
 };
