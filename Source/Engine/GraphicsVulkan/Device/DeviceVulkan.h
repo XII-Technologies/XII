@@ -103,7 +103,7 @@ public:
 
       if (vmaAllocation != nullptr)
       {
-        vmaSetAllocationUserData(m_vkVmaAllocator, vmaAllocation, vkDebugObjectNameInfo.pObjectName);
+        vmaSetAllocationUserData(m_vkVmaAllocator, vmaAllocation, (void*) vkDebugObjectNameInfo.pObjectName);
       }
     }
 #endif

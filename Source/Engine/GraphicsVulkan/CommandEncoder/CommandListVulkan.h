@@ -9,9 +9,9 @@ class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALComman
 public:
   XII_ALWAYS_INLINE vk::CommandBuffer GetVulkanCommandBuffer() const { return m_vkCommandBuffer; }
 
-  XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanCommandBufferSupportedStageFlags() const { return m_PipelineBarrier.m_vkSupportedStagesMask; }
+  XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanCommandBufferSupportedStageFlags() const { return m_PipelineBarrier.m_vkSupportedStageFlags; }
 
-  XII_ALWAYS_INLINE vk::AccessFlags GetVulkanCommandBufferSupportedAccessFlags() const { return m_PipelineBarrier.m_vkSupportedAccessMask; }
+  XII_ALWAYS_INLINE vk::AccessFlags GetVulkanCommandBufferSupportedAccessFlags() const { return m_PipelineBarrier.m_vkSupportedAccessFlags; }
 
   void TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags sourceStageFlags, vk::PipelineStageFlags destinationStageFlags);
 

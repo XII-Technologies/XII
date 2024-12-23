@@ -869,7 +869,7 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions
       return xiiGALResourceStateFlags::ShadingRate;
 
     default:
-      XII_REPORT_FAILURE("Unknown Vulkan image layout ({}).", e);
+      XII_REPORT_FAILURE("Unknown Vulkan image layout ({}).", (xiiUInt32)e);
   }
   return xiiGALResourceStateFlags::Undefined;
 }
