@@ -1144,10 +1144,6 @@ void xiiGALDeviceVulkan::FlushPendingObjects()
 
 void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
-  for (auto pSwapChain : swapchains)
-  {
-    pSwapChain->AcquireNextRenderTarget();
-  }
 }
 
 void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)

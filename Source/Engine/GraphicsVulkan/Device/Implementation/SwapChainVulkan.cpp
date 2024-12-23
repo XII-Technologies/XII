@@ -556,7 +556,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
     XII_ASSERT_RELEASE(!m_SwapChainTextures[i].IsInvalidated(), "Failed to create native backbuffer texture object!");
   }
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
@@ -624,6 +624,8 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
       m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
     }
   }
+
+  m_hBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
 
   return result;
 }
