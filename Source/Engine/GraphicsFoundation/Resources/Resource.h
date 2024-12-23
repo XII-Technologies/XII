@@ -15,7 +15,7 @@ public:
   ///
   /// \note This method does not perform state transition, but resets the buffer state to the given value.
   ///       This method should be used after manually managing the buffer state to hand over state management back to the engine.
-  virtual void SetResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) {}
+  virtual void SetResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) { m_ResourceState = stateFlags; }
 
   /// \brief This returns the buffer state.
   [[nodiscard]] XII_ALWAYS_INLINE virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const { return m_ResourceState; }
