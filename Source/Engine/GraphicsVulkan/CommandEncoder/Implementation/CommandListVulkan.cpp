@@ -292,8 +292,9 @@ void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xi
 
 void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
-  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pRenderTargetView->GetTexture());
+  xiiGALDeviceVulkan*  pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pTextureVulkan  = static_cast<xiiGALTextureVulkan*>(pRenderTargetView->GetTexture());
+  const auto&          viewDescription = pRenderTargetView->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdClearColorImage() must be called outside render pass (17.1)");
@@ -302,10 +303,12 @@ void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* p
 
   vk::ImageSubresourceRange vkImageSubresourceRange = {};
   vkImageSubresourceRange.aspectMask                = vk::ImageAspectFlagBits::eColor;
-  vkImageSubresourceRange.baseMipLevel              = 0U;
-  vkImageSubresourceRange.levelCount                = vk::RemainingMipLevels;
-  vkImageSubresourceRange.baseArrayLayer            = 0U;
-  vkImageSubresourceRange.layerCount                = vk::RemainingArrayLayers;
+  vkImageSubresourceRange.baseMipLevel              = viewDescription.m_uiMostDetailedMip;
+  vkImageSubresourceRange.levelCount                = viewDescription.m_uiMipLevelCount;
+  vkImageSubresourceRange.baseArrayLayer            = viewDescription.m_uiFirstArrayOrDepthSlice;
+  vkImageSubresourceRange.layerCount                = viewDescription.m_uiArrayOrDepthSlicesCount;
+
+  XII_ASSERT_DEV(viewDescription.m_uiMipLevelCount > 0, "Render target view must contain at least a single mip level.");
 
   vk::ClearColorValue vkClearColorValue = {};
   vkClearColorValue.float32[0]          = clearColor.r;
@@ -321,8 +324,9 @@ void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* p
 
 void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDepthStencilView->GetTexture());
+  xiiGALDeviceVulkan*  pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pTextureVulkan  = static_cast<xiiGALTextureVulkan*>(pDepthStencilView->GetTexture());
+  const auto&          viewDescription = pDepthStencilView->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdClearDepthStencilImage() must be called outside render pass (17.1)");
@@ -331,10 +335,10 @@ void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* p
 
   vk::ImageSubresourceRange vkImageSubresourceRange = {};
   vkImageSubresourceRange.aspectMask                = {};
-  vkImageSubresourceRange.baseMipLevel              = 0U;
-  vkImageSubresourceRange.levelCount                = vk::RemainingMipLevels;
-  vkImageSubresourceRange.baseArrayLayer            = 0U;
-  vkImageSubresourceRange.layerCount                = vk::RemainingArrayLayers;
+  vkImageSubresourceRange.baseMipLevel              = viewDescription.m_uiMostDetailedMip;
+  vkImageSubresourceRange.levelCount                = viewDescription.m_uiMipLevelCount;
+  vkImageSubresourceRange.baseArrayLayer            = viewDescription.m_uiFirstArrayOrDepthSlice;
+  vkImageSubresourceRange.layerCount                = viewDescription.m_uiArrayOrDepthSlicesCount;
 
   if (bClearDepth)
     vkImageSubresourceRange.aspectMask |= vk::ImageAspectFlagBits::eDepth;
