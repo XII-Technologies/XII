@@ -189,13 +189,33 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
   vkStagingBufferCreateInfo.pQueueFamilyIndices   = nullptr;
   vkStagingBufferCreateInfo.queueFamilyIndexCount = 0;
 
-  VK_SUCCEED_OR_RETURN_LOG(vkLogicalDevice.createBuffer(&vkStagingBufferCreateInfo, nullptr, &m_vkStagingBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()), "Failed to create Vulkan staging buffer.");
+  VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
+  vmaAllocationCreateInfo.requiredFlags           = static_cast<VkMemoryPropertyFlags>(vkMemoryPropertyFlags);
+  vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
 
-  vk::MemoryRequirements vkStagingBufferMemoryRequirements = vkLogicalDevice.getBufferMemoryRequirements(m_vkStagingBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  vk::Buffer        vkStagingBuffer;
+  VmaAllocationInfo stagingBufferAllocationInfo;
+  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
 
-  XII_ASSERT_DEV(xiiMath::IsPowerOf2(vkStagingBufferMemoryRequirements.alignment), "Alignment is not a power of 2!");
+  XII_ASSERT_DEV(stagingBufferAllocationInfo.pMappedData != nullptr, "");
 
-  /// \todo GraphicsVulkan: Allocate and bind memory for buffer.
+  if (bInitializeTexture)
+  {
+    xiiUInt32 uiSubresourceIndex = 0;
+
+    for (xiiUInt32 uiLayer = 0; uiLayer < m_Description.GetArraySize(); ++uiLayer)
+    {
+      for (xiiUInt32 uiMip = 0; uiMip < m_Description.m_uiMipLevels; ++uiMip)
+      {
+        const auto& subresourceData                = pInitialData->m_SubResources[uiSubresourceIndex++];
+        auto        mipLevelProperty               = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
+        auto        uiDestinationSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, uiLayer, uiMip, s_uiStagingBufferOffsetAlignment);
+
+        xiiGALTextureUtilities::CopyTextureSubresource(subresourceData, mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight, mipLevelProperty.m_uiDepth, mipLevelProperty.m_uiRowSize, xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, uiDestinationSubresourceOffset), mipLevelProperty.m_uiRowSize, mipLevelProperty.m_uiDepthSliceSize);
+      }
+    }
+  }
+  return vk::Result::eSuccess;
 }
 
 void xiiGALTextureVulkan::InitializeSparseTextureProperties()
@@ -495,7 +515,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
       vmaAllocationCreateInfo.requiredFlags           = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
 
-      VkBuffer          vkStagingBuffer;
+      vk::Buffer        vkStagingBuffer;
       VmaAllocation     stagingBufferAllocation;
       VmaAllocationInfo stagingBufferAllocationInfo;
       VK_ASSERT_DEV(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&vkStagingBuffer), &stagingBufferAllocation, &stagingBufferAllocationInfo));
