@@ -768,7 +768,7 @@ XII_ALWAYS_INLINE vk::ImageLayout xiiVulkanTypeConversions::GetImageLayout(xiiBi
   // VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
   // VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
 
-  XII_ASSERT_DEV(e.GetValue() & (e.GetValue() - 1), "Expected a single bit set.");
+  XII_ASSERT_DEV((e.GetValue() & (e.GetValue() - 1)) == 0, "Expected a single bit set.");
 
   switch (e.GetValue())
   {
