@@ -194,6 +194,10 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
         return XII_FAILURE;
       }
     }
+    else
+    {
+      vkImageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    }
   }
 
   if (m_Description.m_ViewType == xiiGALTextureViewType::ShadingRate)
