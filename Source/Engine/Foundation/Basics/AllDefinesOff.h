@@ -20,11 +20,13 @@
 
 
 // All the supported Platforms
-#define XII_PLATFORM_WINDOWS XII_OFF
-#define XII_PLATFORM_OSX     XII_OFF
-#define XII_PLATFORM_LINUX   XII_OFF
-#define XII_PLATFORM_IOS     XII_OFF
-#define XII_PLATFORM_ANDROID XII_OFF
+#define XII_PLATFORM_WINDOWS         XII_OFF // Enabled for all Windows platforms.
+#define XII_PLATFORM_WINDOWS_DESKTOP XII_OFF // Enabled for Windows Desktop platforms, together with XII_PLATFORM_WINDOWS.
+#define XII_PLATFORM_WINDOWS_SERVER  XII_OFF // Enabled for Windows Server platforms, together with XII_PLATFORM_WINDOWS.
+#define XII_PLATFORM_OSX             XII_OFF
+#define XII_PLATFORM_LINUX           XII_OFF
+#define XII_PLATFORM_IOS             XII_OFF
+#define XII_PLATFORM_ANDROID         XII_OFF
 
 // Different Bit OSes
 #define XII_PLATFORM_32BIT XII_OFF

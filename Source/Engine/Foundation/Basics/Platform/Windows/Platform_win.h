@@ -18,8 +18,16 @@
 
 #include <winapifamily.h>
 
-#if WINAPI_FAMILY != WINAPI_FAMILY_DESKTOP_APP
-#  error "Unsupported windows API family. Only the WINAPI_FAMILY_DESKTOP_APP is supported currently."
+#undef XII_PLATFORM_WINDOWS_SERVER
+#undef XII_PLATFORM_WINDOWS
+
+// Distinguish between Windows Desktop and Windows Server.
+#if WINAPI_FAMILY == WINAPI_FAMILY_SERVER
+#  define XII_PLATFORM_WINDOWS_SERVER  XII_ON
+#  define XII_PLATFORM_WINDOWS XII_OFF
+#else
+#  define XII_PLATFORM_WINDOWS_SERVER  XII_OFF
+#  define XII_PLATFORM_WINDOWS XII_ON
 #endif
 
 #ifndef NULL
