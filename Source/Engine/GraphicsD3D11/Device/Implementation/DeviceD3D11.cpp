@@ -803,7 +803,14 @@ void xiiGALDeviceD3D11::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipel
 
 void xiiGALDeviceD3D11::WaitIdlePlatform()
 {
-  ///\todo Idle all command queues.
+  if (m_pGraphicsCommandQueue)
+    m_pGraphicsCommandQueue->WaitForIdle();
+
+  if (m_pComputeCommandQueue)
+    m_pComputeCommandQueue->WaitForIdle();
+
+  if (m_pTransferCommandQueue)
+    m_pTransferCommandQueue->WaitForIdle();
 
   FlushPendingObjects();
 
