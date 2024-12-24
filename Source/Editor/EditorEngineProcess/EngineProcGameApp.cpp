@@ -720,7 +720,7 @@ void xiiEngineProcessGameApplication::TransmitCVar(const xiiCVar* pCVar)
       msg.m_Value = ((xiiCVarString*)pCVar)->GetValue();
       break;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   m_IPC.SendMessage(&msg);
