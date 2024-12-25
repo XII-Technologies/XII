@@ -11,6 +11,5 @@ xii_add_output_xii_prefix(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
-  Core
   Texture
 )
