@@ -36,6 +36,7 @@ xiiWindowBase* xiiActorPluginWindowOwner::GetWindow() const
 {
   return m_pWindow.Borrow();
 }
+
 xiiWindowOutputTargetBase* xiiActorPluginWindowOwner::GetOutputTarget() const
 {
   return m_pWindowOutputTarget.Borrow();
@@ -57,6 +58,5 @@ xiiWindowOutputTargetBase* xiiActorPluginWindowShared::GetOutputTarget() const
 {
   return m_pWindowOutputTarget;
 }
-
 
 XII_STATICLINK_FILE(Core, Core_ActorSystem_Implementation_ActorPluginWindow);
