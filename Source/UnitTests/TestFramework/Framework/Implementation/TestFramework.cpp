@@ -1272,108 +1272,8 @@ void xiiTestFramework::SetImageReferenceOverrideFolderName(const char* szFolderN
   }
 }
 
-static const xiiUInt8 s_Base64EncodingTable[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
-                                                   'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'};
-
-static const xiiUInt8 BASE64_CHARS_PER_LINE = 76;
-
-static xiiUInt32 GetBase64EncodedLength(xiiUInt32 uiInputLength, bool bInsertLineBreaks)
+void xiiTestFramework::WriteImageDiffHtml(const char* szFileName, const xiiImage& referenceImgRgb, const xiiImage& referenceImgAlpha, const xiiImage& capturedImgRgb, const xiiImage& capturedImgAlpha, const xiiImage& diffImgRgb, const xiiImage& diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha)
 {
-  xiiUInt32 outputLength = (uiInputLength + 2) / 3 * 4;
-
-  if (bInsertLineBreaks)
-  {
-    outputLength += outputLength / BASE64_CHARS_PER_LINE;
-  }
-
-  return outputLength;
-}
-
-
-static xiiDynamicArray<char> ArrayToBase64(xiiArrayPtr<const xiiUInt8> in, bool bInsertLineBreaks = true)
-{
-  xiiDynamicArray<char> out;
-  out.SetCountUninitialized(GetBase64EncodedLength(in.GetCount(), bInsertLineBreaks));
-
-  xiiUInt32 offsetIn  = 0;
-  xiiUInt32 offsetOut = 0;
-
-  xiiUInt32 blocksTillNewline = BASE64_CHARS_PER_LINE / 4;
-  while (offsetIn < in.GetCount())
-  {
-    xiiUInt8 ibuf[3] = {0};
-
-    xiiUInt32 ibuflen = xiiMath::Min(in.GetCount() - offsetIn, 3u);
-
-    for (xiiUInt32 i = 0; i < ibuflen; ++i)
-    {
-      ibuf[i] = in[offsetIn++];
-    }
-
-    char obuf[4];
-    obuf[0] = s_Base64EncodingTable[(ibuf[0] >> 2)];
-    obuf[1] = s_Base64EncodingTable[((ibuf[0] << 4) & 0x30) | (ibuf[1] >> 4)];
-    obuf[2] = s_Base64EncodingTable[((ibuf[1] << 2) & 0x3c) | (ibuf[2] >> 6)];
-    obuf[3] = s_Base64EncodingTable[(ibuf[2] & 0x3f)];
-
-    if (ibuflen >= 3)
-    {
-      out[offsetOut++] = obuf[0];
-      out[offsetOut++] = obuf[1];
-      out[offsetOut++] = obuf[2];
-      out[offsetOut++] = obuf[3];
-    }
-    else // need to pad up to 4
-    {
-      switch (ibuflen)
-      {
-        case 1:
-          out[offsetOut++] = obuf[0];
-          out[offsetOut++] = obuf[1];
-          out[offsetOut++] = '=';
-          out[offsetOut++] = '=';
-          break;
-        case 2:
-          out[offsetOut++] = obuf[0];
-          out[offsetOut++] = obuf[1];
-          out[offsetOut++] = obuf[2];
-          out[offsetOut++] = '=';
-          break;
-      }
-    }
-
-    if (--blocksTillNewline == 0)
-    {
-      if (bInsertLineBreaks)
-      {
-        out[offsetOut++] = '\n';
-      }
-      blocksTillNewline = 19;
-    }
-  }
-
-  XII_ASSERT_DEV(offsetOut == out.GetCount(), "All output data should have been written");
-  return out;
-}
-
-static void AppendImageData(xiiStringBuilder& ref_sOutput, xiiImage& ref_img)
-{
-  xiiImageFileFormat* format = xiiImageFileFormat::GetWriterFormat("png");
-  XII_ASSERT_DEV(format != nullptr, "No PNG writer found");
-
-  xiiDynamicArray<xiiUInt8>                                         imgData;
-  xiiMemoryStreamContainerWrapperStorage<xiiDynamicArray<xiiUInt8>> storage(&imgData);
-  xiiMemoryStreamWriter                                             writer(&storage);
-  format->WriteImage(writer, ref_img, "png").IgnoreResult();
-
-  xiiDynamicArray<char> imgDataBase64 = ArrayToBase64(imgData.GetArrayPtr());
-  xiiStringView         imgDataBase64StringView(imgDataBase64.GetArrayPtr().GetPtr(), imgDataBase64.GetArrayPtr().GetEndPtr());
-  ref_sOutput.AppendFormat("data:image/png;base64,{0}", imgDataBase64StringView);
-}
-
-void xiiTestFramework::WriteImageDiffHtml(const char* szFileName, xiiImage& ref_referenceImgRgb, xiiImage& ref_referenceImgAlpha, xiiImage& ref_capturedImgRgb, xiiImage& ref_capturedImgAlpha, xiiImage& ref_diffImgRgb, xiiImage& ref_diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha)
-{
-
   xiiFileWriter outputFile;
   if (outputFile.Open(szFileName).Failed())
   {
@@ -1381,146 +1281,33 @@ void xiiTestFramework::WriteImageDiffHtml(const char* szFileName, xiiImage& ref_
     return;
   }
 
-  xiiStringBuilder output;
-  output.Append("<!DOCTYPE html PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
-                "<!DOCTYPE html PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
-                "<HTML> <HEAD>\n");
   const char* szTestName    = GetTest(GetCurrentTestIndex())->m_szTestName;
   const char* szSubTestName = GetTest(GetCurrentTestIndex())->m_SubTests[GetCurrentSubTestIndex()].m_szSubTestName;
-  output.AppendFormat("<TITLE>{} - {}</TITLE>\n", szTestName, szSubTestName);
-  output.Append("<script type = \"text/javascript\">\n"
-                "function showReferenceImage()\n"
-                "{\n"
-                "    document.getElementById('image_current_rgb').style.display = 'none'\n"
-                "    document.getElementById('image_current_a').style.display = 'none'\n"
-                "    document.getElementById('image_reference_rgb').style.display = 'inline-block'\n"
-                "    document.getElementById('image_reference_a').style.display = 'inline-block'\n"
-                "    document.getElementById('image_caption_rgb').innerHTML = 'Displaying: Reference Image RGB'\n"
-                "    document.getElementById('image_caption_a').innerHTML = 'Displaying: Reference Image Alpha'\n"
-                "}\n"
-                "function showCurrentImage()\n"
-                "{\n"
-                "    document.getElementById('image_current_rgb').style.display = 'inline-block'\n"
-                "    document.getElementById('image_current_a').style.display = 'inline-block'\n"
-                "    document.getElementById('image_reference_rgb').style.display = 'none'\n"
-                "    document.getElementById('image_reference_a').style.display = 'none'\n"
-                "    document.getElementById('image_caption_rgb').innerHTML = 'Displaying: Current Image RGB'\n"
-                "    document.getElementById('image_caption_a').innerHTML = 'Displaying: Current Image Alpha'\n"
-                "}\n"
-                "function imageover()\n"
-                "{\n"
-                "    var mode = document.querySelector('input[name=\"image_interaction_mode\"]:checked').value\n"
-                "    if (mode == 'interactive')\n"
-                "    {\n"
-                "        showReferenceImage()\n"
-                "    }\n"
-                "}\n"
-                "function imageout()\n"
-                "{\n"
-                "    var mode = document.querySelector('input[name=\"image_interaction_mode\"]:checked').value\n"
-                "    if (mode == 'interactive')\n"
-                "    {\n"
-                "        showCurrentImage()\n"
-                "    }\n"
-                "}\n"
-                "function handleModeClick(clickedItem)\n"
-                "{\n"
-                "    if (clickedItem.value == 'current_image' || clickedItem.value == 'interactive')\n"
-                "    {\n"
-                "        showCurrentImage()\n"
-                "    }\n"
-                "    else if (clickedItem.value == 'reference_image')\n"
-                "    {\n"
-                "        showReferenceImage()\n"
-                "    }\n"
-                "}\n"
-                "</script>\n"
-                "</HEAD>\n"
-                "<BODY bgcolor=\"#ccdddd\">\n"
-                "<div style=\"line-height: 1.5; margin-top: 0px; margin-left: 10px; font-family: sans-serif;\">\n");
 
-  output.AppendFormat("<b>Test result for \"{} > {}\" from ", szTestName, szSubTestName);
-  xiiDateTime dateTime = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
-  output.AppendFormat("{}-{}-{} {}:{}:{}</b><br>\n", dateTime.GetYear(), xiiArgI(dateTime.GetMonth(), 2, true), xiiArgI(dateTime.GetDay(), 2, true), xiiArgI(dateTime.GetHour(), 2, true), xiiArgI(dateTime.GetMinute(), 2, true), xiiArgI(dateTime.GetSecond(), 2, true));
+  xiiStringBuilder tmp(szTestName, " - ", szSubTestName);
 
-  output.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n");
+  xiiStringBuilder output;
+  xiiImageUtils::CreateImageDiffHtml(output, tmp, referenceImgRgb, referenceImgAlpha, capturedImgRgb, capturedImgAlpha, diffImgRgb, diffImgAlpha, uiError, uiThreshold, uiMinDiffRgb, uiMaxDiffRgb, uiMinDiffAlpha, uiMaxDiffAlpha);
 
   if (m_ImageDiffExtraInfoCallback)
   {
+    tmp.Clear();
+
     xiiDynamicArray<std::pair<xiiString, xiiString>> extraInfo = m_ImageDiffExtraInfoCallback();
 
     for (const auto& labelValuePair : extraInfo)
     {
-      output.AppendFormat("<tr>\n"
-                          "<td>{}:</td>\n"
-                          "<td align=\"right\" style=\"padding-left: 2em;\">{}</td>\n"
-                          "</tr>\n",
-                          labelValuePair.first, labelValuePair.second);
+      tmp.AppendFormat("<tr>\n"
+                       "<td>{}:</td>\n"
+                       "<td align=\"right\" style=\"padding-left: 2em;\">{}</td>\n"
+                       "</tr>\n",
+                       labelValuePair.first, labelValuePair.second);
     }
+
+    output.ReplaceFirst("<!-- STATS-TABLE-START -->", tmp);
   }
 
-  output.AppendFormat("<tr>\n"
-                      "<td>Error metric:</td>\n"
-                      "<td align=\"right\" style=\"padding-left: 2em;\">{}</td>\n"
-                      "</tr>\n",
-                      uiError);
-  output.AppendFormat("<tr>\n"
-                      "<td>Error threshold:</td>\n"
-                      "<td align=\"right\" style=\"padding-left: 2em;\">{}</td>\n"
-                      "</tr>\n",
-                      uiThreshold);
-  output.Append("</table>\n"
-                "<div style=\"margin-top: 0.5em; margin-bottom: -0.75em\">\n"
-                "    <input type=\"radio\" name=\"image_interaction_mode\" onclick=\"handleModeClick(this)\" value=\"interactive\" "
-                "checked=\"checked\"> Mouse-Over Image Switching\n"
-                "    <input type=\"radio\" name=\"image_interaction_mode\" onclick=\"handleModeClick(this)\" value=\"current_image\"> "
-                "Current Image\n"
-                "    <input type=\"radio\" name=\"image_interaction_mode\" onclick=\"handleModeClick(this)\" value=\"reference_image\"> "
-                "Reference Image\n"
-                "</div>\n");
-
-  output.AppendFormat("<div style=\"width:{}px;display: inline-block;\">\n", ref_capturedImgRgb.GetWidth());
-
-  output.Append("<p id=\"image_caption_rgb\">Displaying: Current Image RGB</p>\n"
-
-                "<div style=\"block;\" onmouseover=\"imageover()\" onmouseout=\"imageout()\">\n"
-                "<img id=\"image_current_rgb\" alt=\"Captured Image RGB\" src=\"");
-  AppendImageData(output, ref_capturedImgRgb);
-  output.Append("\" />\n"
-                "<img id=\"image_reference_rgb\" style=\"display: none\" alt=\"Reference Image RGB\" src=\"");
-  AppendImageData(output, ref_referenceImgRgb);
-  output.Append("\" />\n"
-                "</div>\n"
-                "<div style=\"display: block;\">\n");
-  output.AppendFormat("<p>RGB Difference (min: {}, max: {}):</p>\n", uiMinDiffRgb, uiMaxDiffRgb);
-  output.Append("<img alt=\"Diff Image RGB\" src=\"");
-  AppendImageData(output, ref_diffImgRgb);
-  output.Append("\" />\n"
-                "</div>\n"
-                "</div>\n");
-
-  output.AppendFormat("<div style=\"width:{}px;display: inline-block;\">\n", ref_capturedImgAlpha.GetWidth());
-
-  output.Append("<p id=\"image_caption_a\">Displaying: Current Image Alpha</p>\n"
-                "<div style=\"display: block;\" onmouseover=\"imageover()\" onmouseout=\"imageout()\">\n"
-                "<img id=\"image_current_a\" alt=\"Captured Image Alpha\" src=\"");
-  AppendImageData(output, ref_capturedImgAlpha);
-  output.Append("\" />\n"
-                "<img id=\"image_reference_a\" style=\"display: none\" alt=\"Reference Image Alpha\" src=\"");
-  AppendImageData(output, ref_referenceImgAlpha);
-  output.Append("\" />\n"
-                "</div>\n"
-                "<div style=\"px;display: block;\">\n");
-  output.AppendFormat("<p>Alpha Difference (min: {}, max: {}):</p>\n", uiMinDiffAlpha, uiMaxDiffAlpha);
-  output.Append("<img alt=\"Diff Image Alpha\" src=\"");
-  AppendImageData(output, ref_diffImgAlpha);
-  output.Append("\" />\n"
-                "</div>\n"
-                "</div>\n"
-                "</div>\n"
-                "</BODY> </HTML>");
-
-  outputFile.WriteBytes(output.GetData(), output.GetCharacterCount()).IgnoreResult();
+  outputFile.WriteBytes(output.GetData(), output.GetElementCount()).AssertSuccess();
   outputFile.Close();
 }
 
@@ -2085,5 +1872,3 @@ bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool bIsDepthIm
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Framework_TestFramework);
