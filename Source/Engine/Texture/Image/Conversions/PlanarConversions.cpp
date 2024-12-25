@@ -41,6 +41,9 @@ struct xiiImageConversion_NV12_sRGB : public xiiImageConversionStepDeplanarize
 
   virtual xiiResult ConvertPixels(xiiArrayPtr<xiiImageView> source, xiiImage target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
     for (xiiUInt32 y = 0; y < uiNumPixelsY; y += 2)
     {
       const xiiUInt8* luma0  = source[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
@@ -100,6 +103,9 @@ struct xiiImageConversion_sRGB_NV12 : public xiiImageConversionStepPlanarize
 
   virtual xiiResult ConvertPixels(const xiiImageView& source, xiiArrayPtr<xiiImage> target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
     for (xiiUInt32 y = 0; y < uiNumPixelsY; y += 2)
     {
       const xiiUInt8* rgba0 = source.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
@@ -139,7 +145,7 @@ struct xiiImageConversion_sRGB_NV12 : public xiiImageConversionStepPlanarize
   }
 };
 
-static xiiImageConversion_NV12_sRGB s_conversion_NV12_sRGB;
-static xiiImageConversion_sRGB_NV12 s_conversion_sRGB_NV12;
+XII_STATICLINK_FORCE static xiiImageConversion_NV12_sRGB s_conversion_NV12_sRGB;
+XII_STATICLINK_FORCE static xiiImageConversion_sRGB_NV12 s_conversion_sRGB_NV12;
 
 XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_PlanarConversions);

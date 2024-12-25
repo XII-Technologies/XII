@@ -973,5 +973,3 @@ HRESULT DirectX::CaptureTexture(
 }
 
 #endif
-
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_DirectXTexD3D11);

@@ -52,9 +52,7 @@ xiiResult xiiTexConvProcessor::Assemble2DSlice(const xiiTexConvSliceChannelMappi
           pSourceValues[channel] = &pSourcePixel->a;
           break;
 
-        default:
-          XII_ASSERT_NOT_IMPLEMENTED;
-          break;
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
       }
     }
     else
@@ -171,13 +169,10 @@ xiiResult xiiTexConvProcessor::DetermineTargetResolution(const xiiImage& image, 
 
     if (issueWarning)
     {
-      xiiLog::Warning("Chosen output image format is compressed, but target resolution does not fulfill block size requirements. {}x{} -> downscale {} / "
-                      "clamp({}, {}) -> {}x{}, adjusted to {}x{}",
+      xiiLog::Warning("Chosen output image format is compressed, but target resolution does not fulfill block size requirements. {}x{} -> downscale {} / clamp({}, {}) -> {}x{}, adjusted to {}x{}",
                       uiOrgResX, uiOrgResY, m_Descriptor.m_uiDownscaleSteps, m_Descriptor.m_uiMinResolution, m_Descriptor.m_uiMaxResolution, currentWidth, currentHeight, out_uiTargetResolutionX, out_uiTargetResolutionY);
     }
   }
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Texture, Texture_TexConv_Implementation_Texture2D);

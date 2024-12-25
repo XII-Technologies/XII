@@ -397,5 +397,4 @@ HRESULT DirectX::ComputeNormalMap(
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_DirectXTexNormalMaps);
 

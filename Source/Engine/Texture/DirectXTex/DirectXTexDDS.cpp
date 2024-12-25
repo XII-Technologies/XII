@@ -2,6 +2,9 @@
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_CLANG("-Wunused-but-set-variable")
+
 //-------------------------------------------------------------------------------------
 // DirectXTexDDS.cpp
 //
@@ -507,8 +510,8 @@ namespace
             switch (metadata.format)
             {
             case DXGI_FORMAT_B5G6R5_UNORM:
-              hasAlpha = false;
-              [[fallthrough]];
+                hasAlpha = false;
+                [[fallthrough]];
             case DXGI_FORMAT_B5G5R5A1_UNORM:
             case DXGI_FORMAT_B4G4R4A4_UNORM:
                 metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -2428,7 +2431,8 @@ HRESULT DirectX::SaveToDDSFile(
     return S_OK;
 }
 
+XII_WARNING_POP()
+
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_DirectXTexDDS);
 

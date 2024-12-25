@@ -38,5 +38,3 @@ xiiResult xiiTexConvProcessor::AssembleCubemap(xiiImage& dst) const
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Texture, Texture_TexConv_Implementation_TextureCube);

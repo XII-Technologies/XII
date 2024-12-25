@@ -860,5 +860,4 @@ HRESULT DirectX::Decompress(
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_DirectXTexCompress);
 

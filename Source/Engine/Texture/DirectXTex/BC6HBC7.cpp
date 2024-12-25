@@ -4,7 +4,7 @@
 
 //-------------------------------------------------------------------------------------
 // BC6HBC7.cpp
-//  
+//
 // Block-compression (BC) functionality for BC6H and BC7 (DirectX 11 texture compression)
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
@@ -1171,7 +1171,7 @@ namespace
     int nb;
     if (n == 0)
     {
-      return 0;	// no bits needed for 0, signed or not
+      return 0;  // no bits needed for 0, signed or not
     }
     else if (n > 0)
     {
@@ -1580,7 +1580,7 @@ namespace
         // Compute ErrorMetric
         tpixel = XMVectorSubtract(vpixel, tpixel);
         float fErr = XMVectorGetX(XMVector4Dot(tpixel, tpixel));
-        if (fErr > fBestErr)	// error increased, so we're done searching
+        if (fErr > fBestErr)  // error increased, so we're done searching
           break;
         if (fErr < fBestErr)
         {
@@ -1599,7 +1599,7 @@ namespace
         // Compute ErrorMetricRGB
         tpixel = XMVectorSubtract(vpixel, tpixel);
         float fErr = XMVectorGetX(XMVector3Dot(tpixel, tpixel));
-        if (fErr > fBestErr)	// error increased, so we're done searching
+        if (fErr > fBestErr)  // error increased, so we're done searching
           break;
         if (fErr < fBestErr)
         {
@@ -1615,7 +1615,7 @@ namespace
         // Compute ErrorMetricAlpha
         float ea = float(pixel.a) - float(aPalette[i].a);
         float fErr = ea * ea;
-        if (fErr > fBestErr)	// error increased, so we're done searching
+        if (fErr > fBestErr)  // error increased, so we're done searching
           break;
         if (fErr < fBestErr)
         {
@@ -1861,7 +1861,7 @@ void D3DX_BC6H::Encode(bool bSigned, const HDRColorA* const pIn) noexcept
 _Use_decl_annotations_
 int D3DX_BC6H::Quantize(int iValue, int prec, bool bSigned) noexcept
 {
-  assert(prec > 1);	// didn't bother to make it work for 1
+  assert(prec > 1);  // didn't bother to make it work for 1
   int q, s = 0;
   if (bSigned)
   {
@@ -2146,22 +2146,22 @@ void D3DX_BC6H::OptimizeOne(const EncodeParams* pEP, const INTColor aColors[], s
   {
     // figure out which endpoint when perturbed gives the most improvement and start there
     // if we just alternate, we can easily end up in a local minima
-    float fErr0 = PerturbOne(pEP, aColors, np, ch, aOptEndPts, new_a, aOptErr, 0);	// perturb endpt A
-    float fErr1 = PerturbOne(pEP, aColors, np, ch, aOptEndPts, new_b, aOptErr, 1);	// perturb endpt B
+    float fErr0 = PerturbOne(pEP, aColors, np, ch, aOptEndPts, new_a, aOptErr, 0);  // perturb endpt A
+    float fErr1 = PerturbOne(pEP, aColors, np, ch, aOptEndPts, new_b, aOptErr, 1);  // perturb endpt B
 
     if (fErr0 < fErr1)
     {
       if (fErr0 >= aOptErr) continue;
       aOptEndPts.A[ch] = new_a.A[ch];
       aOptErr = fErr0;
-      do_b = 1;		// do B next
+      do_b = 1;    // do B next
     }
     else
     {
       if (fErr1 >= aOptErr) continue;
       aOptEndPts.B[ch] = new_b.B[ch];
       aOptErr = fErr1;
-      do_b = 0;		// do A next
+      do_b = 0;    // do A next
     }
 
     // now alternate endpoints and keep trying until there is no improvement
@@ -2175,7 +2175,7 @@ void D3DX_BC6H::OptimizeOne(const EncodeParams* pEP, const INTColor aColors[], s
       else
         aOptEndPts.B[ch] = newEndPts.B[ch];
       aOptErr = fErr;
-      do_b = 1 - do_b;	// now move the other endpoint
+      do_b = 1 - do_b;  // now move the other endpoint
     }
   }
 }
@@ -2267,7 +2267,7 @@ void D3DX_BC6H::AssignIndices(const EncodeParams* pEP, const INTEndPntPair aEndP
     for (uint8_t j = 1; j < uNumIndices && fBestErr > 0; ++j)
     {
       float fErr = Norm(pEP->aIPixels[i], aPalette[uRegion][j]);
-      if (fErr > fBestErr) break;	// error increased, so we're done searching
+      if (fErr > fBestErr) break;  // error increased, so we're done searching
       if (fErr < fBestErr)
       {
         fBestErr = fErr;
@@ -3004,8 +3004,8 @@ void D3DX_BC7::OptimizeOne(const EncodeParams* pEP, const LDRColorA aColors[], s
 
     // figure out which endpoint when perturbed gives the most improvement and start there
     // if we just alternate, we can easily end up in a local minima
-    float fErr0 = PerturbOne(pEP, aColors, np, uIndexMode, ch, opt, new_a, fOptErr, 0);	// perturb endpt A
-    float fErr1 = PerturbOne(pEP, aColors, np, uIndexMode, ch, opt, new_b, fOptErr, 1);	// perturb endpt B
+    float fErr0 = PerturbOne(pEP, aColors, np, uIndexMode, ch, opt, new_a, fOptErr, 0);  // perturb endpt A
+    float fErr1 = PerturbOne(pEP, aColors, np, uIndexMode, ch, opt, new_b, fOptErr, 1);  // perturb endpt B
 
     uint8_t& copt_a = opt.A[ch];
     uint8_t& copt_b = opt.B[ch];
@@ -3018,7 +3018,7 @@ void D3DX_BC7::OptimizeOne(const EncodeParams* pEP, const LDRColorA aColors[], s
         continue;
       copt_a = cnew_a;
       fOptErr = fErr0;
-      do_b = 1;		// do B next
+      do_b = 1;    // do B next
     }
     else
     {
@@ -3026,7 +3026,7 @@ void D3DX_BC7::OptimizeOne(const EncodeParams* pEP, const LDRColorA aColors[], s
         continue;
       copt_b = cnew_b;
       fOptErr = fErr1;
-      do_b = 0;		// do A next
+      do_b = 0;    // do A next
     }
 
     // now alternate endpoints and keep trying until there is no improvement
@@ -3040,7 +3040,7 @@ void D3DX_BC7::OptimizeOne(const EncodeParams* pEP, const LDRColorA aColors[], s
       else
         copt_b = cnew_b;
       fOptErr = fErr;
-      do_b = 1u - do_b;	// now move the other endpoint
+      do_b = 1u - do_b;  // now move the other endpoint
     }
   }
 
@@ -3291,7 +3291,7 @@ void D3DX_BC7::FixEndpointPBits(const EncodeParams* pEP, const LDREndPntPair* pO
       }
     }
 
-    // Compute the actual pbits we'll use when we encode block. Note this is not 
+    // Compute the actual pbits we'll use when we encode block. Note this is not
     // rounding the component indices correctly in cases the pbits != a component's LSB.
     int pbits[BC7_MAX_REGIONS << 1];
     for (size_t i = 0; i < uPBits; i++)
@@ -3573,5 +3573,3 @@ void DirectX::D3DXEncodeBC7(uint8_t* pBC, const XMVECTOR* pColor, uint32_t flags
 }
 
 #endif
-
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_BC6HBC7);

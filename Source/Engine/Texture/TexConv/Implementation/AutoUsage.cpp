@@ -185,5 +185,3 @@ xiiResult xiiTexConvProcessor::AdjustUsage(xiiStringView sFilename, const xiiIma
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Texture, Texture_TexConv_Implementation_AutoUsage);

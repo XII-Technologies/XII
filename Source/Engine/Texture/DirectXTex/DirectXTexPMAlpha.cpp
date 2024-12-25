@@ -348,5 +348,4 @@ HRESULT DirectX::PremultiplyAlpha(
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_DirectXTexPMAlpha);
 

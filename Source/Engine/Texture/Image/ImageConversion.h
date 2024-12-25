@@ -11,8 +11,8 @@ XII_DECLARE_FLAGS(xiiUInt8, xiiImageConversionFlags, InPlace);
 /// A structure describing the pairs of source/target format that may be converted using the conversion routine.
 struct xiiImageConversionEntry
 {
-  xiiImageConversionEntry(xiiImageFormat::Enum source, xiiImageFormat::Enum target, xiiImageConversionFlags::Enum flags) :
-    m_sourceFormat(source), m_targetFormat(target), m_flags(flags)
+  xiiImageConversionEntry(xiiImageFormat::Enum source, xiiImageFormat::Enum target, xiiImageConversionFlags::Enum flags, float fAdditionalPenalty = 0) :
+    m_sourceFormat(source), m_targetFormat(target), m_flags(flags), m_fAdditionalPenalty(fAdditionalPenalty)
   {
   }
 
@@ -23,7 +23,7 @@ struct xiiImageConversionEntry
   /// This member adds an additional amount to the cost estimate for this conversion step.
   /// It can be used to bias the choice between steps when there are comparable conversion
   /// steps available.
-  float m_additionalPenalty = 0.0f;
+  float m_fAdditionalPenalty = 0.0f;
 };
 
 /// \brief Interface for a single image conversion step.
@@ -117,15 +117,12 @@ public:
   ///
   /// \param sourceFormat           The source format.
   /// \param targetFormat           The target format.
-  /// \param sourceEqualsTarget     If true, the generated path is applicable if source and target memory regions are equal, and may contain
-  /// additional copy-steps if the conversion can't be performed in-place.
-  ///                               A path generated with sourceEqualsTarget == true will work correctly even if source and target are not
-  ///                               the same, but may not be optimal. A path generated with sourceEqualsTarget == false will not work
-  ///                               correctly when source and target are the same.
-  /// \param path_out               The generated path.
-  /// \param numScratchBuffers_out The number of scratch buffers required for the conversion path.
+  /// \param sourceEqualsTarget     If true, the generated path is applicable if source and target memory regions are equal, and may contain additional copy-steps if the conversion can't be performed in-place.
+  ///                               A path generated with sourceEqualsTarget == true will work correctly even if source and target are not the same, but may not be optimal. A path generated with sourceEqualsTarget == false will not work correctly when source and target are the same.
+  /// \param out_path               The generated path.
+  /// \param out_numScratchBuffers  The number of scratch buffers required for the conversion path.
   /// \returns                      xii_SUCCESS if a path was found, xii_FAILURE otherwise.
-  static xiiResult BuildPath(xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, bool bSourceEqualsTarget, xiiHybridArray<ConversionPathNode, 16>& ref_path_out, xiiUInt32& ref_uiNumScratchBuffers_out);
+  static xiiResult BuildPath(xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, bool bSourceEqualsTarget, xiiHybridArray<ConversionPathNode, 16>& out_path, xiiUInt32& out_uiNumScratchBuffers);
 
   /// \brief  Converts the source image into a target image with the given format. Source and target may be the same.
   static xiiResult Convert(const xiiImageView& source, xiiImage& ref_target, xiiImageFormat::Enum targetFormat);

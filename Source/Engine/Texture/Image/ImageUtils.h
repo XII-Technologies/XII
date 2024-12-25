@@ -149,4 +149,10 @@ public:
   /// Currently only supports images of format R32G32B32A32_FLOAT and with identical resolution.
   /// Returns failure if any of those requirements are not met.
   static xiiResult CopyChannel(xiiImage& ref_dstImg, xiiUInt8 uiDstChannelIdx, const xiiImage& srcImg, xiiUInt8 uiSrcChannelIdx);
+
+  /// \brief Embeds the image as Base64 encoded text into an HTML file.
+  static void EmbedImageData(xiiStringBuilder& out_sHtml, const xiiImage& image);
+
+  /// \brief Generates an HTML file containing the given images with mouse-over functionality to compare them.
+  static void CreateImageDiffHtml(xiiStringBuilder& out_sHtml, xiiStringView sTitle, const xiiImage& referenceImgRgb, const xiiImage& referenceImgAlpha, const xiiImage& capturedImgRgb, const xiiImage& capturedImgAlpha, const xiiImage& diffImgRgb, const xiiImage& diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha);
 };

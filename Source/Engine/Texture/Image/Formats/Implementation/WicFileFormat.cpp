@@ -16,9 +16,9 @@
 
 using namespace DirectX;
 
-XII_DEFINE_AS_POD_TYPE(DirectX::Image); // Allow for storing this struct in XII containers
+XII_DEFINE_AS_POD_TYPE(DirectX::Image); // Allow for storing this struct in XII containers.
 
-xiiWicFileFormat g_wicFormat;
+XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiWicFileFormat> g_wicFormat;
 
 namespace
 {
@@ -89,12 +89,12 @@ static void SetHeader(xiiImageHeader& ref_header, xiiImageFormat::Enum imageForm
   ref_header.SetNumFaces(metadata.IsCubemap() ? 6 : 1);
 }
 
-xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImageHeader");
 
   xiiDynamicArray<xiiUInt8> storage;
-  XII_SUCCEED_OR_RETURN(ReadFileData(ref_stream, storage));
+  XII_SUCCEED_OR_RETURN(ReadFileData(inout_stream, storage));
 
   TexMetadata  metadata;
   ScratchImage scratchImage;
@@ -128,12 +128,12 @@ xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
   return XII_SUCCESS;
 }
 
-xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
+xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
   XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImage");
 
   xiiDynamicArray<xiiUInt8> storage;
-  XII_SUCCEED_OR_RETURN(ReadFileData(ref_stream, storage));
+  XII_SUCCEED_OR_RETURN(ReadFileData(inout_stream, storage));
 
   TexMetadata  metadata;
   ScratchImage scratchImage;
@@ -212,7 +212,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   return XII_SUCCESS;
 }
 
-xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
+xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   if (m_bTryCoInit)
   {
@@ -253,7 +253,7 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
       return XII_FAILURE;
     }
 
-    return WriteImage(ref_stream, convertedImage, sFileExtension);
+    return WriteImage(inout_stream, convertedImage, sFileExtension);
   }
 
   // Store xiiImage data in DirectXTex images
@@ -289,7 +289,7 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
     }
 
     // Push blob into output stream
-    if (ref_stream.WriteBytes(targetBlob.GetBufferPointer(), targetBlob.GetBufferSize()) != XII_SUCCESS)
+    if (inout_stream.WriteBytes(targetBlob.GetBufferPointer(), targetBlob.GetBufferSize()) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write image data!");
       return XII_FAILURE;
@@ -302,7 +302,6 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
 bool xiiWicFileFormat::CanReadFileType(xiiStringView sExtension) const
 {
   return sExtension.IsEqual_NoCase("png") || sExtension.IsEqual_NoCase("jpg") || sExtension.IsEqual_NoCase("jpeg") || sExtension.IsEqual_NoCase("tif") || sExtension.IsEqual_NoCase("tiff");
-  // || sExtension.IsEqual_NoCase("hdr")
 }
 
 bool xiiWicFileFormat::CanWriteFileType(xiiStringView sExtension) const
@@ -312,5 +311,7 @@ bool xiiWicFileFormat::CanWriteFileType(xiiStringView sExtension) const
 }
 
 #endif
+
+
 
 XII_STATICLINK_FILE(Texture, Texture_Image_Formats_WicFileFormat);

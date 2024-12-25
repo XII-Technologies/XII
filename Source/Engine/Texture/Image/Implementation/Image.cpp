@@ -35,6 +35,7 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiImageHeader& header, xii
 
   xiiUInt64 dataSize = ComputeLayout();
 
+  XII_IGNORE_UNUSED(dataSize);
   XII_ASSERT_DEV(imageData.GetCount() == dataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)", imageData.GetCount(), dataSize);
 
   // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage
@@ -60,7 +61,7 @@ xiiResult xiiImageView::SaveTo(xiiStringView sFileName) const
 
   xiiStringView it = xiiPathUtils::GetFileExtension(sFileName);
 
-  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetWriterFormat(it))
+  if (const xiiImageFileFormat* pFormat = xiiImageFileFormat::GetWriterFormat(it))
   {
     if (pFormat->WriteImage(writer, *this, it) != XII_SUCCESS)
     {
@@ -107,8 +108,7 @@ xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 ui
 void xiiImageView::ReinterpretAs(xiiImageFormat::Enum format)
 {
   XII_ASSERT_DEBUG(xiiImageFormat::IsCompressed(format) == xiiImageFormat::IsCompressed(GetImageFormat()), "Cannot reinterpret compressed and non-compressed formats");
-  XII_ASSERT_DEBUG(xiiImageFormat::GetBitsPerPixel(GetImageFormat()) == xiiImageFormat::GetBitsPerPixel(format),
-                   "Cannot reinterpret between formats of different sizes");
+  XII_ASSERT_DEBUG(xiiImageFormat::GetBitsPerPixel(GetImageFormat()) == xiiImageFormat::GetBitsPerPixel(format), "Cannot reinterpret between formats of different sizes");
 
   SetImageFormat(format);
 }
@@ -144,6 +144,11 @@ xiiUInt64 xiiImageView::ComputeLayout()
 
 void xiiImageView::ValidateSubImageIndices(xiiUInt32 uiMipLevel, xiiUInt32 uiFace, xiiUInt32 uiArrayIndex, xiiUInt32 uiPlaneIndex) const
 {
+  XII_IGNORE_UNUSED(uiMipLevel);
+  XII_IGNORE_UNUSED(uiFace);
+  XII_IGNORE_UNUSED(uiArrayIndex);
+  XII_IGNORE_UNUSED(uiPlaneIndex);
+
   XII_ASSERT_DEV(uiMipLevel < m_uiNumMipLevels, "Invalid mip level");
   XII_ASSERT_DEV(uiFace < m_uiNumFaces, "Invalid uiFace");
   XII_ASSERT_DEV(uiArrayIndex < m_uiNumArrayIndices, "Invalid array slice");
@@ -250,7 +255,6 @@ void xiiImage::ResetAndCopy(const xiiImageView& other)
 xiiResult xiiImage::LoadFrom(xiiStringView sFileName)
 {
   XII_LOG_BLOCK("Loading Image", sFileName);
-
   XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(sFileName));
 
   xiiFileReader reader;
@@ -262,7 +266,7 @@ xiiResult xiiImage::LoadFrom(xiiStringView sFileName)
 
   xiiStringView it = xiiPathUtils::GetFileExtension(sFileName);
 
-  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it))
+  if (const xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it))
   {
     if (pFormat->ReadImage(reader, *this, it) != XII_SUCCESS)
     {
@@ -374,5 +378,3 @@ bool xiiImage::UsesExternalStorage() const
 {
   return m_InternalStorage.GetBlobPtr<xiiUInt8>() != m_DataPtr;
 }
-
-XII_STATICLINK_FILE(Texture, Texture_Image_Implementation_Image);

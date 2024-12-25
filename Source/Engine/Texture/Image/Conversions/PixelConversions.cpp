@@ -1,9 +1,18 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/Math/Float16.h>
-#include <Foundation/SimdMath/SimdTypes.h>
 #include <Texture/Image/Conversions/PixelConversions.h>
 #include <Texture/Image/ImageConversion.h>
+
+#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE) || (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
+#  if XII_SSE_LEVEL >= XII_SSE_20
+#    include <emmintrin.h>
+#  endif
+
+#  if XII_SSE_LEVEL >= XII_SSE_30
+#    include <tmmintrin.h>
+#  endif
+#endif
 
 namespace
 {
@@ -179,6 +188,9 @@ class xiiImageConversionStep_Decompress16bpp : xiiImageConversionStepLinear
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
     xiiUInt32 sourceStride = 2;
     xiiUInt32 targetStride = 4;
 
@@ -216,6 +228,9 @@ class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 2;
 
@@ -261,6 +276,9 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 4;
 
@@ -295,7 +313,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
       __m128i mask2 = _mm_set1_epi32(0x00ff00ff);
 
       // Intel optimization manual, Color Pixel Format Conversion Using SSE2
-      while (numElements >= elementsPerBatch)
+      while (uiNumElements >= elementsPerBatch)
       {
         __m128i in0 = reinterpret_cast<const __m128i*>(sourcePointer)[0];
         __m128i in1 = reinterpret_cast<const __m128i*>(sourcePointer)[1];
@@ -307,7 +325,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
 
         sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
         targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        numElements -= elementsPerBatch;
+        uiNumElements -= elementsPerBatch;
       }
 #  endif
     }
@@ -347,6 +365,9 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 4;
 
@@ -411,6 +432,8 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+
     // Work with single channels instead of pixels
     uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
 
@@ -503,6 +526,9 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
     xiiUInt32 sourceStride = 16;
     xiiUInt32 targetStride = 4;
 
@@ -538,6 +564,8 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+
     // Work with single channels instead of pixels
     uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 16;
 
@@ -576,6 +604,8 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+
     // Work with single channels instead of pixels
     uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 16;
 
@@ -615,6 +645,8 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+
     // Work with single channels instead of pixels
     uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
 
@@ -654,6 +686,8 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+
     // Work with single channels instead of pixels
     uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
 
@@ -689,6 +723,9 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
     xiiUInt32 sourceStride = 4;
     xiiUInt32 targetStride = 16;
 
@@ -724,6 +761,8 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+
     // Work with single channels instead of pixels
     uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
 
@@ -736,6 +775,46 @@ public:
     while (uiNumElements)
     {
       *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorShortToFloat(*reinterpret_cast<const xiiUInt16*>(sourcePointer));
+
+      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
+      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      uiNumElements--;
+    }
+
+    return XII_SUCCESS;
+  }
+};
+
+class xiiImageConversion_S16_F32 : public xiiImageConversionStepLinear
+{
+public:
+  virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
+  {
+    static xiiImageConversionEntry supportedConversions[] = {
+      xiiImageConversionEntry(xiiImageFormat::R16_SNORM, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R16G16_SNORM, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_SNORM, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+    };
+    return supportedConversions;
+  }
+
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  {
+    XII_IGNORE_UNUSED(sourceFormat);
+    XII_IGNORE_UNUSED(targetFormat);
+
+    // Work with single channels instead of pixels
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+
+    xiiUInt32 sourceStride = 2;
+    xiiUInt32 targetStride = 4;
+
+    const void* sourcePointer = source.GetPtr();
+    void*       targetPointer = target.GetPtr();
+
+    while (uiNumElements)
+    {
+      *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorSignedShortToFloat(*reinterpret_cast<const xiiInt16*>(sourcePointer));
 
       sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
       targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
@@ -761,6 +840,8 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+
     // Work with single channels instead of pixels
     uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
 
@@ -798,6 +879,8 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(sourceFormat);
+
     // Work with single channels instead of pixels
     uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
 
@@ -1365,6 +1448,123 @@ public:
 };
 
 
+template <typename T>
+class xiiImageConversion_Int_To_F32 : public xiiImageConversionStepLinear
+{
+public:
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  {
+    XII_IGNORE_UNUSED(sourceFormat);
+
+    // Work with single channels instead of pixels
+    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+
+    const xiiUInt32 sourceStride = sizeof(T);
+    const xiiUInt32 targetStride = 4;
+
+    const void* sourcePointer = source.GetPtr();
+    void*       targetPointer = target.GetPtr();
+
+    while (uiNumElements)
+    {
+      *reinterpret_cast<float*>(targetPointer) = static_cast<float>(*reinterpret_cast<const T*>(sourcePointer));
+
+      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
+      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      uiNumElements--;
+    }
+
+    return XII_SUCCESS;
+  }
+};
+
+
+class xiiImageConversion_UINT8_F32 : public xiiImageConversion_Int_To_F32<xiiUInt8>
+{
+public:
+  virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
+  {
+    static xiiImageConversionEntry supportedConversions[] = {
+      xiiImageConversionEntry(xiiImageFormat::R8_UINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R8G8_UINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+    };
+    return supportedConversions;
+  }
+};
+
+class xiiImageConversion_SINT8_F32 : public xiiImageConversion_Int_To_F32<xiiInt8>
+{
+public:
+  virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
+  {
+    static xiiImageConversionEntry supportedConversions[] = {
+      xiiImageConversionEntry(xiiImageFormat::R8_SINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R8G8_SINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+    };
+    return supportedConversions;
+  }
+};
+
+class xiiImageConversion_UINT16_F32 : public xiiImageConversion_Int_To_F32<xiiUInt16>
+{
+public:
+  virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
+  {
+    static xiiImageConversionEntry supportedConversions[] = {
+      xiiImageConversionEntry(xiiImageFormat::R16_UINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R16G16_UINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_UINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+    };
+    return supportedConversions;
+  }
+};
+
+class xiiImageConversion_SINT16_F32 : public xiiImageConversion_Int_To_F32<xiiInt16>
+{
+public:
+  virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
+  {
+    static xiiImageConversionEntry supportedConversions[] = {
+      xiiImageConversionEntry(xiiImageFormat::R16_SINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R16G16_SINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_SINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+    };
+    return supportedConversions;
+  }
+};
+
+class xiiImageConversion_UINT32_F32 : public xiiImageConversion_Int_To_F32<xiiUInt32>
+{
+public:
+  virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
+  {
+    static xiiImageConversionEntry supportedConversions[] = {
+      xiiImageConversionEntry(xiiImageFormat::R32_UINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R32G32_UINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R32G32B32_UINT, xiiImageFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_UINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+    };
+    return supportedConversions;
+  }
+};
+
+class xiiImageConversion_SINT32_F32 : public xiiImageConversion_Int_To_F32<xiiInt32>
+{
+public:
+  virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
+  {
+    static xiiImageConversionEntry supportedConversions[] = {
+      xiiImageConversionEntry(xiiImageFormat::R32_SINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R32G32_SINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R32G32B32_SINT, xiiImageFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_SINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+    };
+    return supportedConversions;
+  }
+};
+
 
 #define ADD_16BPP_CONVERSION(format)                                                                                                       \
   static xiiImageConversionStep_Decompress16bpp<xiiDecompress##format, xiiImageFormat::format##_UNORM> s_conversion_xiiDecompress##format; \
@@ -1378,18 +1578,27 @@ ADD_16BPP_CONVERSION(B5G5R5A1);
 ADD_16BPP_CONVERSION(X1B5G5R5);
 ADD_16BPP_CONVERSION(A1B5G5R5);
 
-static xiiImageSwizzleConversion32_2103   s_conversion_swizzle2103;
-static xiiImageConversion_BGRX_BGRA       s_conversion_BGRX_BGRA;
-static xiiImageConversion_F32_U8          s_conversion_F32_U8;
-static xiiImageConversion_F32_sRGB        s_conversion_F32_sRGB;
-static xiiImageConversion_F32_U16         s_conversion_F32_U16;
-static xiiImageConversion_F32_F16         s_conversion_F32_F16;
-static xiiImageConversion_F32_S8          s_conversion_F32_S8;
-static xiiImageConversion_U8_F32          s_conversion_U8_F32;
-static xiiImageConversion_sRGB_F32        s_conversion_sRGB_F32;
-static xiiImageConversion_U16_F32         s_conversion_U16_F32;
-static xiiImageConversion_F16_F32         s_conversion_F16_F32;
-static xiiImageConversion_S8_F32          s_conversion_S8_F32;
+XII_STATICLINK_FORCE
+static xiiImageSwizzleConversion32_2103 s_conversion_swizzle2103;
+static xiiImageConversion_BGRX_BGRA     s_conversion_BGRX_BGRA;
+static xiiImageConversion_F32_U8        s_conversion_F32_U8;
+static xiiImageConversion_F32_sRGB      s_conversion_F32_sRGB;
+static xiiImageConversion_F32_U16       s_conversion_F32_U16;
+static xiiImageConversion_F32_F16       s_conversion_F32_F16;
+static xiiImageConversion_F32_S8        s_conversion_F32_S8;
+static xiiImageConversion_U8_F32        s_conversion_U8_F32;
+static xiiImageConversion_sRGB_F32      s_conversion_sRGB_F32;
+static xiiImageConversion_U16_F32       s_conversion_U16_F32;
+static xiiImageConversion_S16_F32       s_conversion_S16_F32;
+static xiiImageConversion_F16_F32       s_conversion_F16_F32;
+static xiiImageConversion_S8_F32        s_conversion_S8_F32;
+static xiiImageConversion_UINT8_F32     s_conversion_UINT8_F32;
+static xiiImageConversion_SINT8_F32     s_conversion_SINT8_F32;
+static xiiImageConversion_UINT16_F32    s_conversion_UINT16_F32;
+static xiiImageConversion_SINT16_F32    s_conversion_SINT16_F32;
+static xiiImageConversion_UINT32_F32    s_conversion_UINT32_F32;
+static xiiImageConversion_SINT32_F32    s_conversion_SINT32_F32;
+
 static xiiImageConversion_Pad_To_RGBA_U8  s_conversion_Pad_To_RGBA_U8;
 static xiiImageConversion_Pad_To_RGBA_F32 s_conversion_Pad_To_RGBA_F32;
 static xiiImageConversion_DiscardChannels s_conversion_DiscardChannels;

@@ -13,7 +13,10 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTexConvUsage::Enum target
     if (compressionMode >= xiiTexConvCompressionMode::Medium)
       return xiiImageFormat::R8G8_UNORM;
 
-    return xiiImageFormat::R16G16_UNORM;
+    // TODO: in the rare case that the input texture has higher precision, we could use R16G16_UNORM or R16G16_FLOAT here
+    // R16G16_UNORM isn't supported on all platforms, so R16G16_FLOAT may be better
+    // return xiiImageFormat::R16G16_FLOAT;
+    return xiiImageFormat::R8G8_UNORM;
   }
 
   if (targetFormat == xiiTexConvUsage::Color)
@@ -109,8 +112,7 @@ xiiResult xiiTexConvProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_F
       out_Format = DetermineOutputFormatPC(usage, m_Descriptor.m_CompressionMode, uiNumChannels);
       break;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   if (out_Format == xiiImageFormat::UNKNOWN)
@@ -121,7 +123,3 @@ xiiResult xiiTexConvProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_F
 
   return XII_SUCCESS;
 }
-
-
-
-XII_STATICLINK_FILE(Texture, Texture_TexConv_Implementation_OutputFormat);

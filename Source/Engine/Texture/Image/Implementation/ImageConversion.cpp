@@ -45,7 +45,7 @@ namespace
         }
       }
 
-      m_cost += entry.m_additionalPenalty;
+      m_cost += entry.m_fAdditionalPenalty;
     }
 
     const xiiImageConversionStep*        m_step         = nullptr;
@@ -99,8 +99,14 @@ namespace
   xiiHashTable<xiiUInt32, TableEntry> s_conversionTable;
   bool                                s_conversionTableValid = false;
 
-  constexpr xiiUInt32 MakeKey(xiiImageFormat::Enum a, xiiImageFormat::Enum b) { return a * xiiImageFormat::NUM_FORMATS + b; }
-  constexpr xiiUInt32 MakeTypeKey(xiiImageFormatType::Enum a, xiiImageFormatType::Enum b) { return (a << 16) + b; }
+  constexpr xiiUInt32 MakeKey(xiiImageFormat::Enum a, xiiImageFormat::Enum b)
+  {
+    return a * xiiImageFormat::NUM_FORMATS + b;
+  }
+  constexpr xiiUInt32 MakeTypeKey(xiiImageFormatType::Enum a, xiiImageFormatType::Enum b)
+  {
+    return (a << 16) + b;
+  }
 
   struct IntermediateBuffer
   {
@@ -153,12 +159,12 @@ xiiImageConversionStep::~xiiImageConversionStep()
   s_conversionTableValid = false;
 }
 
-xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, bool bSourceEqualsTarget, xiiHybridArray<xiiImageConversion::ConversionPathNode, 16>& ref_path_out, xiiUInt32& ref_uiNumScratchBuffers_out)
+xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, bool bSourceEqualsTarget, xiiHybridArray<xiiImageConversion::ConversionPathNode, 16>& out_path, xiiUInt32& out_uiNumScratchBuffers)
 {
   XII_LOCK(s_conversionTableLock);
 
-  ref_path_out.Clear();
-  ref_uiNumScratchBuffers_out = 0;
+  out_path.Clear();
+  out_uiNumScratchBuffers = 0;
 
   if (sourceFormat == targetFormat)
   {
@@ -169,7 +175,7 @@ xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiIm
     node.m_sourceBufferIndex = 0;
     node.m_targetBufferIndex = 0;
     node.m_step              = nullptr;
-    ref_path_out.PushBack(node);
+    out_path.PushBack(node);
     return XII_SUCCESS;
   }
 
@@ -197,30 +203,31 @@ xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiIm
 
     current = entry.m_targetFormat;
 
-    ref_path_out.PushBack(step);
+    out_path.PushBack(step);
   }
 
   xiiHybridArray<IntermediateBuffer, 16> scratchBuffers;
   scratchBuffers.PushBack(IntermediateBuffer(xiiImageFormat::GetBitsPerBlock(targetFormat)));
 
-  for (int i = ref_path_out.GetCount() - 1; i >= 0; --i)
+  const int iLastPathIndex = out_path.GetCount() - 1;
+  for (int i = iLastPathIndex; i >= 0; --i)
   {
-    if (i == ref_path_out.GetCount() - 1)
-      ref_path_out[i].m_targetBufferIndex = 0;
+    if (i == iLastPathIndex)
+      out_path[i].m_targetBufferIndex = 0;
     else
-      ref_path_out[i].m_targetBufferIndex = ref_path_out[i + 1].m_sourceBufferIndex;
+      out_path[i].m_targetBufferIndex = out_path[i + 1].m_sourceBufferIndex;
 
     if (i > 0)
     {
-      if (ref_path_out[i].m_inPlace)
+      if (out_path[i].m_inPlace)
       {
-        ref_path_out[i].m_sourceBufferIndex = ref_path_out[i].m_targetBufferIndex;
+        out_path[i].m_sourceBufferIndex = out_path[i].m_targetBufferIndex;
       }
       else
       {
-        xiiUInt32 bitsPerBlock = xiiImageFormat::GetBitsPerBlock(ref_path_out[i].m_sourceFormat);
+        xiiUInt32 bitsPerBlock = xiiImageFormat::GetBitsPerBlock(out_path[i].m_sourceFormat);
 
-        ref_path_out[i].m_sourceBufferIndex = allocateScratchBufferIndex(scratchBuffers, bitsPerBlock, ref_path_out[i].m_targetBufferIndex);
+        out_path[i].m_sourceBufferIndex = allocateScratchBufferIndex(scratchBuffers, bitsPerBlock, out_path[i].m_targetBufferIndex);
       }
     }
   }
@@ -228,40 +235,39 @@ xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiIm
   if (bSourceEqualsTarget)
   {
     // Enforce constraint that source == target
-    ref_path_out[0].m_sourceBufferIndex = 0;
+    out_path[0].m_sourceBufferIndex = 0;
 
     // Did we accidentally break the in-place invariant?
-    if (ref_path_out[0].m_sourceBufferIndex == ref_path_out[0].m_targetBufferIndex && !ref_path_out[0].m_inPlace)
+    if (out_path[0].m_sourceBufferIndex == out_path[0].m_targetBufferIndex && !out_path[0].m_inPlace)
     {
-      if (ref_path_out.GetCount() == 1)
+      if (out_path.GetCount() == 1)
       {
         // Only a single step, so we need to add a copy step
         xiiImageConversion::ConversionPathNode copy;
-        copy.m_inPlace                      = false;
-        copy.m_sourceFormat                 = sourceFormat;
-        copy.m_targetFormat                 = sourceFormat;
-        copy.m_sourceBufferIndex            = ref_path_out[0].m_sourceBufferIndex;
-        copy.m_targetBufferIndex            = allocateScratchBufferIndex(scratchBuffers, xiiImageFormat::GetBitsPerBlock(ref_path_out[0].m_sourceFormat), ref_path_out[0].m_sourceBufferIndex);
-        ref_path_out[0].m_sourceBufferIndex = copy.m_targetBufferIndex;
-        copy.m_step                         = nullptr;
-        ref_path_out.InsertAt(0, copy);
+        copy.m_inPlace                  = false;
+        copy.m_sourceFormat             = sourceFormat;
+        copy.m_targetFormat             = sourceFormat;
+        copy.m_sourceBufferIndex        = out_path[0].m_sourceBufferIndex;
+        copy.m_targetBufferIndex        = allocateScratchBufferIndex(scratchBuffers, xiiImageFormat::GetBitsPerBlock(out_path[0].m_sourceFormat), out_path[0].m_sourceBufferIndex);
+        out_path[0].m_sourceBufferIndex = copy.m_targetBufferIndex;
+        copy.m_step                     = nullptr;
+        out_path.InsertAt(0, copy);
       }
       else
       {
         // Turn second step to non-inplace
-        ref_path_out[1].m_inPlace = false;
-        ref_path_out[1].m_sourceBufferIndex =
-          allocateScratchBufferIndex(scratchBuffers, xiiImageFormat::GetBitsPerBlock(ref_path_out[1].m_sourceFormat), ref_path_out[0].m_sourceBufferIndex);
-        ref_path_out[0].m_targetBufferIndex = ref_path_out[1].m_sourceBufferIndex;
+        out_path[1].m_inPlace           = false;
+        out_path[1].m_sourceBufferIndex = allocateScratchBufferIndex(scratchBuffers, xiiImageFormat::GetBitsPerBlock(out_path[1].m_sourceFormat), out_path[0].m_sourceBufferIndex);
+        out_path[0].m_targetBufferIndex = out_path[1].m_sourceBufferIndex;
       }
     }
   }
   else
   {
-    ref_path_out[0].m_sourceBufferIndex = scratchBuffers.GetCount();
+    out_path[0].m_sourceBufferIndex = scratchBuffers.GetCount();
   }
 
-  ref_uiNumScratchBuffers_out = scratchBuffers.GetCount() - 1;
+  out_uiNumScratchBuffers = scratchBuffers.GetCount() - 1;
 
   return XII_SUCCESS;
 }
@@ -283,8 +289,7 @@ void xiiImageConversion::RebuildConversionTable()
 
       if (subConversion.m_flags.IsAnySet(xiiImageConversionFlags::InPlace))
       {
-        XII_ASSERT_DEV(xiiImageFormat::IsCompressed(subConversion.m_sourceFormat) == xiiImageFormat::IsCompressed(subConversion.m_targetFormat) &&
-                         xiiImageFormat::GetBitsPerBlock(subConversion.m_sourceFormat) == xiiImageFormat::GetBitsPerBlock(subConversion.m_targetFormat),
+        XII_ASSERT_DEV(xiiImageFormat::IsCompressed(subConversion.m_sourceFormat) == xiiImageFormat::IsCompressed(subConversion.m_targetFormat) && xiiImageFormat::GetBitsPerBlock(subConversion.m_sourceFormat) == xiiImageFormat::GetBitsPerBlock(subConversion.m_targetFormat),
                        "In-place conversions are only allowed between formats of the same number of bits per pixel and compressedness");
       }
 
@@ -786,5 +791,3 @@ xiiImageFormat::Enum xiiImageConversion::FindClosestCompatibleFormat(xiiImageFor
 
   return bestFormat;
 }
-
-XII_STATICLINK_FILE(Texture, Texture_Image_Implementation_ImageConversion);

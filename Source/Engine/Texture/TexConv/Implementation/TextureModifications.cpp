@@ -424,4 +424,19 @@ xiiResult xiiTexConvProcessor::DilateColor2D(xiiImage& img) const
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(Texture, Texture_TexConv_Implementation_TextureModifications);
+xiiResult xiiTexConvProcessor::InvertNormalMap(xiiImage& image)
+{
+  if (m_Descriptor.m_Usage != xiiTexConvUsage::NormalMap_Inverted)
+    return XII_SUCCESS;
+
+  // we'll assume that at this point in the processing pipeline, the format is
+  // RGBA32F which should result in tightly packed mipmaps.
+  XII_ASSERT_DEV(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT && image.GetRowPitch() % sizeof(float[4]) == 0, "");
+
+  for (auto& value : image.GetBlobPtr<xiiColor>())
+  {
+    value.g = 1.0f - value.g;
+  }
+
+  return XII_SUCCESS;
+}

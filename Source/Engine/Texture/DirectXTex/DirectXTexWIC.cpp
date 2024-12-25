@@ -1387,5 +1387,4 @@ HRESULT DirectX::SaveToWICFile(
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_DirectXTexWIC);
 

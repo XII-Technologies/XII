@@ -75,6 +75,8 @@ xiiResult xiiTexConvProcessor::Process()
     {
       XII_SUCCEED_OR_RETURN(Assemble2DTexture(m_Descriptor.m_InputImages[0].GetHeader(), assembledImg));
 
+      XII_SUCCEED_OR_RETURN(InvertNormalMap(assembledImg));
+
       XII_SUCCEED_OR_RETURN(DilateColor2D(assembledImg));
     }
     else if (m_Descriptor.m_OutputType == xiiTexConvOutputType::Cubemap)
@@ -237,8 +239,7 @@ xiiResult xiiTexConvProcessor::GenerateThumbnailOutput(const xiiImage& srcImg, x
 
       if (xiiImageUtils::Scale(*pCurrentScratch, *pOtherScratch, uiTargetRes, uiTargetHeight).Failed())
       {
-        xiiLog::Error("Failed to resize thumbnail image from {}x{} to {}x{}", pCurrentScratch->GetWidth(), pCurrentScratch->GetHeight(), uiTargetRes,
-                      uiTargetHeight);
+        xiiLog::Error("Failed to resize thumbnail image from {}x{} to {}x{}", pCurrentScratch->GetWidth(), pCurrentScratch->GetHeight(), uiTargetRes, uiTargetHeight);
         return XII_FAILURE;
       }
     }
@@ -251,8 +252,7 @@ xiiResult xiiTexConvProcessor::GenerateThumbnailOutput(const xiiImage& srcImg, x
 
       if (xiiImageUtils::Scale(*pCurrentScratch, *pOtherScratch, uiTargetWidth, uiTargetRes).Failed())
       {
-        xiiLog::Error("Failed to resize thumbnail image from {}x{} to {}x{}", pCurrentScratch->GetWidth(), pCurrentScratch->GetHeight(), uiTargetWidth,
-                      uiTargetRes);
+        xiiLog::Error("Failed to resize thumbnail image from {}x{} to {}x{}", pCurrentScratch->GetWidth(), pCurrentScratch->GetHeight(), uiTargetWidth, uiTargetRes);
         return XII_FAILURE;
       }
     }
@@ -313,15 +313,13 @@ xiiResult xiiTexConvProcessor::GenerateLowResOutput(const xiiImage& srcImg, xiiI
 
   XII_PROFILE_SCOPE("GenerateLowResOutput");
 
-  // Do not early out here in this case, otherwise external processes may consider the output to be incomplete.
-#if 0
-  if (srcImg.GetNumMipLevels() <= uiLowResMip)
-  {
-    // probably just a low-resolution input image, do not generate output, but also do not fail
-    xiiLog::Warning("LowRes image not generated, original resolution is already below threshold.");
-    return XII_SUCCESS;
-  }
-#endif
+  // don't early out here in this case, otherwise external processes may consider the output to be incomplete
+  // if (srcImg.GetNumMipLevels() <= uiLowResMip)
+  // {
+  //   // probably just a low-resolution input image, do not generate output, but also do not fail
+  //   xiiLog::Warning("LowRes image not generated, original resolution is already below threshold.");
+  //   return XII_SUCCESS;
+  // }
 
   if (xiiImageUtils::ExtractLowerMipChain(srcImg, dstImg, uiLowResMip).Failed())
   {

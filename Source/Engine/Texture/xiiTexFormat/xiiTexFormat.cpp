@@ -3,76 +3,72 @@
 #include <Foundation/IO/Stream.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
-void xiiTexFormat::WriteTextureHeader(xiiStreamWriter& ref_stream) const
+void xiiTexFormat::WriteTextureHeader(xiiStreamWriter& inout_stream) const
 {
   xiiUInt8 uiFileFormatVersion = 2;
-  ref_stream << uiFileFormatVersion;
+  inout_stream << uiFileFormatVersion;
 
-  ref_stream << m_bSRGB;
-  ref_stream << m_AddressModeU;
-  ref_stream << m_AddressModeV;
-  ref_stream << m_AddressModeW;
-  ref_stream << m_TextureFilter;
+  inout_stream << m_bSRGB;
+  inout_stream << m_AddressModeU;
+  inout_stream << m_AddressModeV;
+  inout_stream << m_AddressModeW;
+  inout_stream << m_TextureFilter;
 }
 
-void xiiTexFormat::WriteRenderTargetHeader(xiiStreamWriter& ref_stream) const
+void xiiTexFormat::WriteRenderTargetHeader(xiiStreamWriter& inout_stream) const
 {
   xiiUInt8 uiFileFormatVersion = 5;
-  ref_stream << uiFileFormatVersion;
+  inout_stream << uiFileFormatVersion;
 
   // version 2
-  ref_stream << m_bSRGB;
-  ref_stream << m_AddressModeU;
-  ref_stream << m_AddressModeV;
-  ref_stream << m_AddressModeW;
-  ref_stream << m_TextureFilter;
+  inout_stream << m_bSRGB;
+  inout_stream << m_AddressModeU;
+  inout_stream << m_AddressModeV;
+  inout_stream << m_AddressModeW;
+  inout_stream << m_TextureFilter;
 
   // version 3
-  ref_stream << m_iRenderTargetResolutionX;
-  ref_stream << m_iRenderTargetResolutionY;
+  inout_stream << m_iRenderTargetResolutionX;
+  inout_stream << m_iRenderTargetResolutionY;
 
   // version 4
-  ref_stream << m_fResolutionScale;
+  inout_stream << m_fResolutionScale;
 
   // version 5
-  ref_stream << m_GalRenderTargetFormat;
+  inout_stream << m_GalRenderTargetFormat;
 }
 
-void xiiTexFormat::ReadHeader(xiiStreamReader& ref_stream)
+void xiiTexFormat::ReadHeader(xiiStreamReader& inout_stream)
 {
   xiiUInt8 uiFileFormatVersion = 0;
-  ref_stream >> uiFileFormatVersion;
+  inout_stream >> uiFileFormatVersion;
 
   // version 2
   if (uiFileFormatVersion >= 2)
   {
-    ref_stream >> m_bSRGB;
-    ref_stream >> m_AddressModeU;
-    ref_stream >> m_AddressModeV;
-    ref_stream >> m_AddressModeW;
-    ref_stream >> m_TextureFilter;
+    inout_stream >> m_bSRGB;
+    inout_stream >> m_AddressModeU;
+    inout_stream >> m_AddressModeV;
+    inout_stream >> m_AddressModeW;
+    inout_stream >> m_TextureFilter;
   }
 
   // version 3
   if (uiFileFormatVersion >= 3)
   {
-    ref_stream >> m_iRenderTargetResolutionX;
-    ref_stream >> m_iRenderTargetResolutionY;
+    inout_stream >> m_iRenderTargetResolutionX;
+    inout_stream >> m_iRenderTargetResolutionY;
   }
 
   // version 4
   if (uiFileFormatVersion >= 4)
   {
-    ref_stream >> m_fResolutionScale;
+    inout_stream >> m_fResolutionScale;
   }
 
   // version 5
   if (uiFileFormatVersion >= 5)
   {
-    ref_stream >> m_GalRenderTargetFormat;
+    inout_stream >> m_GalRenderTargetFormat;
   }
 }
-
-
-
-XII_STATICLINK_FILE(Texture, Texture_xiiTexFormat_xiiTexFormat);

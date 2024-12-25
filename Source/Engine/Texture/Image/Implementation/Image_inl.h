@@ -78,5 +78,6 @@ template <typename T>
 void xiiImageView::ValidateDataTypeAccessor(xiiUInt32 uiPlaneIndex) const
 {
   xiiUInt32 bytesPerBlock = xiiImageFormat::GetBitsPerBlock(GetImageFormat(), uiPlaneIndex) / 8;
+  XII_IGNORE_UNUSED(bytesPerBlock);
   XII_ASSERT_DEV(bytesPerBlock % xiiImageSizeofHelper<T>::Size == 0, "Accessor type is not suitable for interpreting contained data");
 }

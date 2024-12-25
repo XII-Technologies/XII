@@ -1109,5 +1109,4 @@ HRESULT DirectX::Resize(
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_DirectXTexResize);
 
