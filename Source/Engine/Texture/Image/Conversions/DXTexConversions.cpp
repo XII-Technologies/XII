@@ -42,7 +42,7 @@ namespace
 
     *pFactory = nullptr;
 
-    typedef HRESULT(WINAPI * pfn_CreateDXGIFactory1)(REFIID riid, _Out_ void** ppFactory);
+    using pfn_CreateDXGIFactory1 = HRESULT(WINAPI*)(REFIID riid, _Out_ void** ppFactory);
 
     static pfn_CreateDXGIFactory1 s_CreateDXGIFactory1 = nullptr;
 
@@ -155,10 +155,10 @@ namespace
     };
 
     UINT createDeviceFlags = 0;
-    //#  ifdef _DEBUG
-    //    don't do this (especially not without a fallback for failure), not needed for texture conversion
-    //    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-    //#  endif
+    // #  ifdef _DEBUG
+    //     don't do this (especially not without a fallback for failure), not needed for texture conversion
+    //     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+    // #  endif
 
     D3D_FEATURE_LEVEL fl;
     HRESULT           hr = s_DynamicD3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags, featureLevels,
@@ -255,7 +255,7 @@ namespace
 
       for (auto& entry : xiiArrayPtr<xiiImageConversionEntry>(s_sourceConversions))
       {
-        entry.m_additionalPenalty = devicePenalty;
+        entry.m_fAdditionalPenalty = devicePenalty;
       }
 
       m_SupportedConversions = s_sourceConversions;
@@ -385,7 +385,7 @@ public:
   }
 };
 
-static xiiImageConversion_CompressDxTex s_conversion_compressDxTex;
+XII_STATICLINK_FORCE static xiiImageConversion_CompressDxTex s_conversion_compressDxTex;
 
 #endif
 

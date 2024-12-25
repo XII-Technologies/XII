@@ -20,11 +20,13 @@
 
 
 // All the supported Platforms
-#define XII_PLATFORM_WINDOWS XII_OFF
-#define XII_PLATFORM_OSX     XII_OFF
-#define XII_PLATFORM_LINUX   XII_OFF
-#define XII_PLATFORM_IOS     XII_OFF
-#define XII_PLATFORM_ANDROID XII_OFF
+#define XII_PLATFORM_WINDOWS         XII_OFF // Enabled for all Windows platforms.
+#define XII_PLATFORM_WINDOWS_DESKTOP XII_OFF // Enabled for Windows Desktop platforms, together with XII_PLATFORM_WINDOWS.
+#define XII_PLATFORM_WINDOWS_SERVER  XII_OFF // Enabled for Windows Server platforms, together with XII_PLATFORM_WINDOWS.
+#define XII_PLATFORM_OSX             XII_OFF
+#define XII_PLATFORM_LINUX           XII_OFF
+#define XII_PLATFORM_IOS             XII_OFF
+#define XII_PLATFORM_ANDROID         XII_OFF
 
 // Different Bit OSes
 #define XII_PLATFORM_32BIT XII_OFF
@@ -87,6 +89,16 @@
 #define XII_SIMD_IMPLEMENTATION_SSE  2
 #define XII_SIMD_IMPLEMENTATION_AVX  3
 #define XII_SIMD_IMPLEMENTATION_NEON 4
+
+// SSE Levels
+#define XII_SSE_20  0x20
+#define XII_SSE_30  0x30
+#define XII_SSE_31  0x31
+#define XII_SSE_41  0x41
+#define XII_SSE_42  0x42
+#define XII_AVX_1   0x50
+#define XII_AVX_2   0x51
+#define XII_AVX_512 0x52
 
 #define XII_SIMD_IMPLEMENTATION 0
 

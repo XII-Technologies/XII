@@ -25,8 +25,8 @@ struct XII_TEXTURE_DLL xiiTextureAtlasCreationDesc
   xiiHybridArray<Layer, 4> m_Layers;
   xiiDynamicArray<Item>    m_Items;
 
-  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
-  xiiResult Deserialize(xiiStreamReader& ref_stream);
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
 
   xiiResult Save(xiiStringView sFile) const;
   xiiResult Load(xiiStringView sFile);
@@ -45,6 +45,6 @@ struct XII_TEXTURE_DLL xiiTextureAtlasRuntimeDesc
 
   void Clear();
 
-  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
-  xiiResult Deserialize(xiiStreamReader& ref_stream);
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
 };

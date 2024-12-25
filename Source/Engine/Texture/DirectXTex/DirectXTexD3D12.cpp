@@ -2,6 +2,9 @@
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_CLANG("-Wunused-but-set-variable")
+
 //-------------------------------------------------------------------------------------
 // DirectXTexD3D12.cpp
 //
@@ -831,7 +834,8 @@ HRESULT DirectX::CaptureTexture(
     return S_OK;
 }
 
+XII_WARNING_POP()
+
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_DirectXTexD3D12);
 

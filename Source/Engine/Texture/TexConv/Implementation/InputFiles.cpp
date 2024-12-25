@@ -105,5 +105,3 @@ xiiResult xiiTexConvProcessor::ConvertAndScaleInputImages(xiiUInt32 uiResolution
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Texture, Texture_TexConv_Implementation_InputFiles);

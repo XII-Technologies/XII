@@ -400,23 +400,49 @@ static void SetupImageFormatTable()
   SetupSrgbPair(xiiImageFormat::ASTC_12x10_UNORM, xiiImageFormat::ASTC_12x10_UNORM_SRGB);
   SetupSrgbPair(xiiImageFormat::ASTC_12x12_UNORM, xiiImageFormat::ASTC_12x12_UNORM_SRGB);
 
-  s_formatMetaData[xiiImageFormat::NV12].m_szName        = "NV12";
-  s_formatMetaData[xiiImageFormat::NV12].m_formatType    = xiiImageFormatType::PLANAR;
-  s_formatMetaData[xiiImageFormat::NV12].m_uiNumChannels = 3;
+  {
+    auto& meta = s_formatMetaData[xiiImageFormat::NV12];
 
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData.SetCount(2);
+    meta.m_szName        = "NV12";
+    meta.m_formatType    = xiiImageFormatType::PLANAR;
+    meta.m_uiNumChannels = 3;
 
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[0].m_uiBitsPerBlock = 8;
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[0].m_uiBlockWidth   = 1;
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[0].m_uiBlockHeight  = 1;
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[0].m_uiBlockDepth   = 1;
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[0].m_subFormat      = xiiImageFormat::R8_UNORM;
+    meta.m_planeData.SetCount(2);
 
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[1].m_uiBitsPerBlock = 16;
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[1].m_uiBlockWidth   = 2;
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[1].m_uiBlockHeight  = 2;
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[1].m_uiBlockDepth   = 1;
-  s_formatMetaData[xiiImageFormat::NV12].m_planeData[1].m_subFormat      = xiiImageFormat::R8G8_UNORM;
+    meta.m_planeData[0].m_uiBitsPerBlock = 8;
+    meta.m_planeData[0].m_uiBlockWidth   = 1;
+    meta.m_planeData[0].m_uiBlockHeight  = 1;
+    meta.m_planeData[0].m_uiBlockDepth   = 1;
+    meta.m_planeData[0].m_subFormat      = xiiImageFormat::R8_UNORM;
+
+    meta.m_planeData[1].m_uiBitsPerBlock = 16;
+    meta.m_planeData[1].m_uiBlockWidth   = 2;
+    meta.m_planeData[1].m_uiBlockHeight  = 2;
+    meta.m_planeData[1].m_uiBlockDepth   = 1;
+    meta.m_planeData[1].m_subFormat      = xiiImageFormat::R8G8_UNORM;
+  }
+
+  {
+    auto& meta = s_formatMetaData[xiiImageFormat::P010];
+
+    meta.m_szName        = "P010";
+    meta.m_formatType    = xiiImageFormatType::PLANAR;
+    meta.m_uiNumChannels = 3;
+
+    meta.m_planeData.SetCount(2);
+
+    meta.m_planeData[0].m_uiBitsPerBlock = 10;
+    meta.m_planeData[0].m_uiBlockWidth   = 1;
+    meta.m_planeData[0].m_uiBlockHeight  = 1;
+    meta.m_planeData[0].m_uiBlockDepth   = 1;
+    meta.m_planeData[0].m_subFormat      = xiiImageFormat::R16_UNORM;
+
+    meta.m_planeData[1].m_uiBitsPerBlock = 20;
+    meta.m_planeData[1].m_uiBlockWidth   = 2;
+    meta.m_planeData[1].m_uiBlockHeight  = 2;
+    meta.m_planeData[1].m_uiBlockDepth   = 1;
+    meta.m_planeData[1].m_subFormat      = xiiImageFormat::R16G16_UNORM;
+  }
 }
 
 static const XII_ALWAYS_INLINE xiiImageFormatMetaData& GetImageFormatMetaData(xiiImageFormat::Enum format)

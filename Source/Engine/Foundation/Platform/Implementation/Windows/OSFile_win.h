@@ -73,7 +73,7 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
 
         break;
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
 
     const xiiResult res = ((m_FileData.m_pFileHandle != nullptr) && (m_FileData.m_pFileHandle != INVALID_HANDLE_VALUE)) ? XII_SUCCESS : XII_FAILURE;

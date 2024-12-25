@@ -220,6 +220,7 @@ struct XII_TEXTURE_DLL xiiImageFormat
 
     // Planar formats
     NV12,
+    P010,
 
     NUM_FORMATS,
 

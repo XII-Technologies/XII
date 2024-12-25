@@ -5,6 +5,7 @@
 #include <TexConv/TexConv.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
+#include <Texture/Image/ImageUtils.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
 xiiTexConv::xiiTexConv() :
@@ -69,7 +70,7 @@ xiiResult xiiTexConv::DetectOutputFormat()
     m_bOutputSupportsCompression = false;
     return XII_SUCCESS;
   }
-  if (sExt == "XIITEXTURE2D")
+  if (sExt == "XIIBINTEXTURE2D")
   {
     m_bOutputSupports2D          = true;
     m_bOutputSupports3D          = false;
@@ -80,7 +81,7 @@ xiiResult xiiTexConv::DetectOutputFormat()
     m_bOutputSupportsCompression = true;
     return XII_SUCCESS;
   }
-  if (sExt == "XIITEXTURE3D")
+  if (sExt == "XIIBINTEXTURE3D")
   {
     m_bOutputSupports2D          = false;
     m_bOutputSupports3D          = true;
@@ -91,7 +92,7 @@ xiiResult xiiTexConv::DetectOutputFormat()
     m_bOutputSupportsCompression = true;
     return XII_SUCCESS;
   }
-  if (sExt == "XIITEXTURECUBE")
+  if (sExt == "XIIBINTEXTURECUBE")
   {
     m_bOutputSupports2D          = false;
     m_bOutputSupports3D          = false;
@@ -102,7 +103,7 @@ xiiResult xiiTexConv::DetectOutputFormat()
     m_bOutputSupportsCompression = true;
     return XII_SUCCESS;
   }
-  if (sExt == "XIITEXTUREATLAS")
+  if (sExt == "XIIBINTEXTUREATLAS")
   {
     m_bOutputSupports2D          = false;
     m_bOutputSupports3D          = false;
@@ -113,7 +114,7 @@ xiiResult xiiTexConv::DetectOutputFormat()
     m_bOutputSupportsCompression = true;
     return XII_SUCCESS;
   }
-  if (sExt == "XIIIMAGEDATA")
+  if (sExt == "XIIBINIMAGEDATA")
   {
     m_bOutputSupports2D          = true;
     m_bOutputSupports3D          = false;
@@ -136,12 +137,12 @@ bool xiiTexConv::IsTexFormat() const
   return ext.StartsWith_NoCase("xii");
 }
 
-xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& ref_stream, const xiiImage& image)
+xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& inout_stream, const xiiImage& image)
 {
   xiiAssetFileHeader asset;
   asset.SetFileHashAndVersion(m_Processor.m_Descriptor.m_uiAssetHash, m_Processor.m_Descriptor.m_uiAssetVersion);
 
-  XII_SUCCEED_OR_RETURN(asset.Write(ref_stream));
+  XII_SUCCEED_OR_RETURN(asset.Write(inout_stream));
 
   xiiTexFormat texFormat;
   texFormat.m_bSRGB         = xiiImageFormat::IsSrgb(image.GetImageFormat());
@@ -150,10 +151,10 @@ xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& ref_stream, const xiiImage& 
   texFormat.m_AddressModeW  = m_Processor.m_Descriptor.m_AddressModeW;
   texFormat.m_TextureFilter = m_Processor.m_Descriptor.m_FilterMode;
 
-  texFormat.WriteTextureHeader(ref_stream);
+  texFormat.WriteTextureHeader(inout_stream);
 
   xiiDdsFileFormat ddsWriter;
-  if (ddsWriter.WriteImage(ref_stream, image, "dds").Failed())
+  if (ddsWriter.WriteImage(inout_stream, image, "dds").Failed())
   {
     xiiLog::Error("Failed to write DDS image chunk to xiiTex file.");
     return XII_FAILURE;
@@ -162,12 +163,12 @@ xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& ref_stream, const xiiImage& 
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::WriteOutputFile(const char* szFile, const xiiImage& image)
+xiiResult xiiTexConv::WriteOutputFile(xiiStringView sFile, const xiiImage& image)
 {
-  if (xiiPathUtils::HasExtension(szFile, "xiiImageData"))
+  if (sFile.HasExtension("xiiBinImageData"))
   {
     xiiDeferredFileWriter file;
-    file.SetOutput(szFile);
+    file.SetOutput(sFile);
 
     xiiAssetFileHeader asset;
     asset.SetFileHashAndVersion(m_Processor.m_Descriptor.m_uiAssetHash, m_Processor.m_Descriptor.m_uiAssetVersion);
@@ -196,7 +197,7 @@ xiiResult xiiTexConv::WriteOutputFile(const char* szFile, const xiiImage& image)
   else if (IsTexFormat())
   {
     xiiDeferredFileWriter file;
-    file.SetOutput(szFile);
+    file.SetOutput(sFile);
 
     XII_SUCCEED_OR_RETURN(WriteTexFile(file, image));
 
@@ -204,7 +205,7 @@ xiiResult xiiTexConv::WriteOutputFile(const char* szFile, const xiiImage& image)
   }
   else
   {
-    return image.SaveTo(szFile);
+    return image.SaveTo(sFile);
   }
 }
 
@@ -215,73 +216,118 @@ xiiApplication::Execution xiiTexConv::Run()
   if (ParseCommandLine().Failed())
     return xiiApplication::Execution::Quit;
 
-  if (m_Processor.Process().Failed())
-    return xiiApplication::Execution::Quit;
-
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas)
+  if (m_Mode == xiiTexConvMode::Compare)
   {
-    xiiDeferredFileWriter file;
-    file.SetOutput(m_sOutputFile);
-
-    xiiAssetFileHeader header;
-    header.SetFileHashAndVersion(m_Processor.m_Descriptor.m_uiAssetHash, m_Processor.m_Descriptor.m_uiAssetVersion);
-
-    header.Write(file).IgnoreResult();
-
-    m_Processor.m_TextureAtlas.CopyToStream(file).IgnoreResult();
-
-    if (file.Close().Succeeded())
-    {
-      SetReturnCode(0);
-    }
-    else
-    {
-      xiiLog::Error("Failed to write atlas output image.");
-    }
-
-    return xiiApplication::Execution::Quit;
-  }
-
-  if (!m_sOutputFile.IsEmpty() && m_Processor.m_OutputImage.IsValid())
-  {
-    if (WriteOutputFile(m_sOutputFile, m_Processor.m_OutputImage).Failed())
-    {
-      xiiLog::Error("Failed to write main result to '{}'", m_sOutputFile);
+    if (m_Comparer.Compare().Failed())
       return xiiApplication::Execution::Quit;
-    }
 
-    xiiLog::Success("Wrote main result to '{}'", m_sOutputFile);
-  }
+    SetReturnCode(0);
 
-  if (!m_sOutputThumbnailFile.IsEmpty() && m_Processor.m_ThumbnailOutputImage.IsValid())
-  {
-    if (m_Processor.m_ThumbnailOutputImage.SaveTo(m_sOutputThumbnailFile).Failed())
+    if (m_Comparer.m_bExceededMSE)
     {
-      xiiLog::Error("Failed to write thumbnail result to '{}'", m_sOutputThumbnailFile);
-      return xiiApplication::Execution::Quit;
-    }
+      SetReturnCode(m_Comparer.m_OutputMSE);
 
-    xiiLog::Success("Wrote thumbnail to '{}'", m_sOutputThumbnailFile);
-  }
-
-  if (!m_sOutputLowResFile.IsEmpty())
-  {
-    // the image may not exist, if we do not have enough mips, so make sure any old low-res file is cleaned up
-    xiiOSFile::DeleteFile(m_sOutputLowResFile).IgnoreResult();
-
-    if (m_Processor.m_LowResOutputImage.IsValid())
-    {
-      if (WriteOutputFile(m_sOutputLowResFile, m_Processor.m_LowResOutputImage).Failed())
+      if (!m_sOutputFile.IsEmpty())
       {
-        xiiLog::Error("Failed to write low-res result to '{}'", m_sOutputLowResFile);
+        xiiStringBuilder tmp;
+
+        tmp.Set(m_sOutputFile, "-rgb.png");
+        m_Comparer.m_OutputImageDiffRgb.SaveTo(tmp).IgnoreResult();
+
+        tmp.Set(m_sOutputFile, "-alpha.png");
+        m_Comparer.m_OutputImageDiffAlpha.SaveTo(tmp).IgnoreResult();
+
+        if (!m_sHtmlTitle.IsEmpty())
+        {
+          tmp.Set(m_sOutputFile, ".htm");
+
+          xiiFileWriter file;
+          if (file.Open(tmp).Succeeded())
+          {
+            xiiStringBuilder html;
+
+            xiiImageUtils::CreateImageDiffHtml(html, m_sHtmlTitle, m_Comparer.m_ExtractedExpectedRgb, m_Comparer.m_ExtractedExpectedAlpha, m_Comparer.m_ExtractedActualRgb, m_Comparer.m_ExtractedActualAlpha, m_Comparer.m_OutputImageDiffRgb, m_Comparer.m_OutputImageDiffAlpha, m_Comparer.m_OutputMSE, m_Comparer.m_Descriptor.m_MeanSquareErrorThreshold, m_Comparer.m_uiOutputMinDiffRgb, m_Comparer.m_uiOutputMaxDiffRgb, m_Comparer.m_uiOutputMinDiffAlpha, m_Comparer.m_uiOutputMaxDiffAlpha);
+
+            file.WriteBytes(html.GetData(), html.GetElementCount()).AssertSuccess();
+          }
+        }
+      }
+    }
+  }
+  else
+  {
+    if (m_Processor.Process().Failed())
+      return xiiApplication::Execution::Quit;
+
+    if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas)
+    {
+      xiiDeferredFileWriter file;
+      file.SetOutput(m_sOutputFile);
+
+      xiiAssetFileHeader header;
+      header.SetFileHashAndVersion(m_Processor.m_Descriptor.m_uiAssetHash, m_Processor.m_Descriptor.m_uiAssetVersion);
+
+      header.Write(file).IgnoreResult();
+
+      m_Processor.m_TextureAtlas.CopyToStream(file).IgnoreResult();
+
+      if (file.Close().Succeeded())
+      {
+        SetReturnCode(0);
+      }
+      else
+      {
+        xiiLog::Error("Failed to write atlas output image.");
+      }
+
+      return xiiApplication::Execution::Quit;
+    }
+
+    if (!m_sOutputFile.IsEmpty() && m_Processor.m_OutputImage.IsValid())
+    {
+      if (WriteOutputFile(m_sOutputFile, m_Processor.m_OutputImage).Failed())
+      {
+        xiiLog::Error("Failed to write main result to '{}'", m_sOutputFile);
+
         return xiiApplication::Execution::Quit;
       }
 
-      xiiLog::Success("Wrote low-res result to '{}'", m_sOutputLowResFile);
+      xiiLog::Success("Wrote main result to '{}'", m_sOutputFile);
     }
+
+    if (!m_sOutputThumbnailFile.IsEmpty() && m_Processor.m_ThumbnailOutputImage.IsValid())
+    {
+      if (m_Processor.m_ThumbnailOutputImage.SaveTo(m_sOutputThumbnailFile).Failed())
+      {
+        xiiLog::Error("Failed to write thumbnail result to '{}'", m_sOutputThumbnailFile);
+
+        return xiiApplication::Execution::Quit;
+      }
+
+      xiiLog::Success("Wrote thumbnail to '{}'", m_sOutputThumbnailFile);
+    }
+
+    if (!m_sOutputLowResFile.IsEmpty())
+    {
+      // the image may not exist, if we do not have enough mips, so make sure any old low-res file is cleaned up
+      xiiOSFile::DeleteFile(m_sOutputLowResFile).IgnoreResult();
+
+      if (m_Processor.m_LowResOutputImage.IsValid())
+      {
+        if (WriteOutputFile(m_sOutputLowResFile, m_Processor.m_LowResOutputImage).Failed())
+        {
+          xiiLog::Error("Failed to write low-res result to '{}'", m_sOutputLowResFile);
+
+          return xiiApplication::Execution::Quit;
+        }
+
+        xiiLog::Success("Wrote low-res result to '{}'", m_sOutputLowResFile);
+      }
+    }
+
+    SetReturnCode(0);
   }
 
-  SetReturnCode(0);
   return xiiApplication::Execution::Quit;
 }
 

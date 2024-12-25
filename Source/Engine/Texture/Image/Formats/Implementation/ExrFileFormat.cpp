@@ -11,7 +11,7 @@
 
 #  include <tinyexr/tinyexr.h>
 
-xiiExrFileFormat g_ExrFileFormat;
+XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiExrFileFormat> g_ExrFileFormat;
 
 xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiImageHeader& ref_header, EXRHeader& ref_exrHeader, EXRImage& ref_exrImage)
 {
@@ -165,6 +165,8 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
 
 xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImageHeader");
 
   EXRHeader exrHeader;
@@ -201,6 +203,8 @@ static void CopyChannel(xiiUInt8* pDst, const xiiUInt8* pSrc, xiiUInt32 uiNumEle
 
 xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImage");
 
   EXRHeader exrHeader;
@@ -304,6 +308,10 @@ xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
 
 xiiResult xiiExrFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(ref_stream);
+  XII_IGNORE_UNUSED(image);
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_ASSERT_NOT_IMPLEMENTED;
   return XII_FAILURE;
 }
@@ -315,6 +323,8 @@ bool xiiExrFileFormat::CanReadFileType(xiiStringView sExtension) const
 
 bool xiiExrFileFormat::CanWriteFileType(xiiStringView sExtension) const
 {
+  XII_IGNORE_UNUSED(sExtension);
+
   return false;
 }
 

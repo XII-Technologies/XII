@@ -111,7 +111,7 @@ public:
   void SetImageReferenceOverrideFolderName(const char* szFolderName);
 
   /// \brief Writes an Html file that contains test information and an image diff view for failed image comparisons.
-  void WriteImageDiffHtml(const char* szFileName, xiiImage& ref_referenceImgRgb, xiiImage& ref_referenceImgAlpha, xiiImage& ref_capturedImgRgb, xiiImage& ref_capturedImgAlpha, xiiImage& ref_diffImgRgb, xiiImage& ref_diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha);
+  void WriteImageDiffHtml(const char* szFileName, const xiiImage& referenceImgRgb, const xiiImage& referenceImgAlpha, const xiiImage& capturedImgRgb, const xiiImage& capturedImgAlpha, const xiiImage& diffImgRgb, const xiiImage& diffImgAlpha, xiiUInt32 uiError, xiiUInt32 uiThreshold, xiiUInt8 uiMinDiffRgb, xiiUInt8 uiMaxDiffRgb, xiiUInt8 uiMinDiffAlpha, xiiUInt8 uiMaxDiffAlpha);
 
   bool PerformImageComparison(xiiStringBuilder sImgName, const xiiImage& img, xiiUInt32 uiMaxError, bool bIsLineImage, char* szErrorMsg);
   bool CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool bIsDepthImage = false, bool bIsLineImage = false);

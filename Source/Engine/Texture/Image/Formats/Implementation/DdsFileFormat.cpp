@@ -6,7 +6,7 @@
 #include <Texture/Image/Formats/ImageFormatMappings.h>
 #include <Texture/Image/Image.h>
 
-xiiDdsFileFormat g_ddsFormat;
+XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiDdsFileFormat> g_ddsFormat;
 
 struct xiiDdsPixelFormat
 {
@@ -108,23 +108,23 @@ struct xiiDdsCaps2
 {
   enum Enum
   {
-    CUBEMAP            = 0x000200,
-    CUBEMAP_POSITIVEX  = 0x000400,
-    CUBEMAP_NEGATIVEX  = 0x000800,
-    CUBEMAP_POSITIVEY  = 0x001000,
-    CUBEMAP_NEGATIVEY  = 0x002000,
-    CUBEMAP_POSITIVXII = 0x004000,
-    CUBEMAP_NEGATIVXII = 0x008000,
-    VOLUME             = 0x200000,
+    CUBEMAP           = 0x000200,
+    CUBEMAP_POSITIVEX = 0x000400,
+    CUBEMAP_NEGATIVEX = 0x000800,
+    CUBEMAP_POSITIVEY = 0x001000,
+    CUBEMAP_NEGATIVEY = 0x002000,
+    CUBEMAP_POSITIVEZ = 0x004000,
+    CUBEMAP_NEGATIVEZ = 0x008000,
+    VOLUME            = 0x200000,
   };
 };
 
 static const xiiUInt32 xiiDdsMagic       = 0x20534444;
 static const xiiUInt32 xiiDdsDxt10FourCc = 0x30315844;
 
-static xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiImageHeader& ref_imageHeader, xiiDdsHeader& ref_ddsHeader)
+static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& ref_imageHeader, xiiDdsHeader& ref_ddsHeader)
 {
-  if (ref_stream.ReadBytes(&ref_ddsHeader, sizeof(xiiDdsHeader)) != sizeof(xiiDdsHeader))
+  if (inout_stream.ReadBytes(&ref_ddsHeader, sizeof(xiiDdsHeader)) != sizeof(xiiDdsHeader))
   {
     xiiLog::Error("Failed to read file header.");
     return XII_FAILURE;
@@ -197,7 +197,7 @@ static xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiImageHeader& ref_
   {
     if (ref_ddsHeader.m_ddspf.m_uiFourCC == xiiDdsDxt10FourCc)
     {
-      if (ref_stream.ReadBytes(&headerDxt10, sizeof(xiiDdsHeaderDxt10)) != sizeof(xiiDdsHeaderDxt10))
+      if (inout_stream.ReadBytes(&headerDxt10, sizeof(xiiDdsHeaderDxt10)) != sizeof(xiiDdsHeaderDxt10))
       {
         xiiLog::Error("Failed to read file header.");
         return XII_FAILURE;
@@ -217,9 +217,7 @@ static xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiImageHeader& ref_
 
       if (format == xiiImageFormat::UNKNOWN)
       {
-        xiiLog::Error("The FourCC code '{0}{1}{2}{3}' was not recognized.", xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 0)),
-                      xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 8)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 16)),
-                      xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 24)));
+        xiiLog::Error("The FourCC code '{0}{1}{2}{3}' was not recognized.", xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 0)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 8)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 16)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 24)));
         return XII_FAILURE;
       }
     }
@@ -261,21 +259,25 @@ static xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiImageHeader& ref_
   return XII_SUCCESS;
 }
 
-xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImageHeader");
 
   xiiDdsHeader ddsHeader;
-  return ReadImageData(ref_stream, ref_header, ddsHeader);
+  return ReadImageData(inout_stream, ref_header, ddsHeader);
 }
 
-xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
+xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImage");
 
   xiiImageHeader imageHeader;
   xiiDdsHeader   ddsHeader;
-  XII_SUCCEED_OR_RETURN(ReadImageData(ref_stream, imageHeader, ddsHeader));
+  XII_SUCCEED_OR_RETURN(ReadImageData(inout_stream, imageHeader, ddsHeader));
 
   ref_image.ResetAndAlloc(imageHeader);
 
@@ -290,7 +292,7 @@ xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
 
   xiiUInt64 uiDataSize = ref_image.GetByteBlobPtr().GetCount();
 
-  if (ref_stream.ReadBytes(ref_image.GetByteBlobPtr().GetPtr(), uiDataSize) != uiDataSize)
+  if (inout_stream.ReadBytes(ref_image.GetByteBlobPtr().GetPtr(), uiDataSize) != uiDataSize)
   {
     xiiLog::Error("Failed to read image data.");
     return XII_FAILURE;
@@ -299,8 +301,10 @@ xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   return XII_SUCCESS;
 }
 
-xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
+xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   const xiiImageFormat::Enum format = image.GetImageFormat();
   const xiiUInt32            uiBpp  = xiiImageFormat::GetBitsPerPixel(format);
 
@@ -388,8 +392,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
     }
 
     fileHeader.m_uiCaps |= xiiDdsCaps::COMPLEX;
-    fileHeader.m_uiCaps2 |= xiiDdsCaps2::CUBEMAP | xiiDdsCaps2::CUBEMAP_POSITIVEX | xiiDdsCaps2::CUBEMAP_NEGATIVEX | xiiDdsCaps2::CUBEMAP_POSITIVEY |
-      xiiDdsCaps2::CUBEMAP_NEGATIVEY | xiiDdsCaps2::CUBEMAP_POSITIVXII | xiiDdsCaps2::CUBEMAP_NEGATIVXII;
+    fileHeader.m_uiCaps2 |= xiiDdsCaps2::CUBEMAP | xiiDdsCaps2::CUBEMAP_POSITIVEX | xiiDdsCaps2::CUBEMAP_NEGATIVEX | xiiDdsCaps2::CUBEMAP_POSITIVEY | xiiDdsCaps2::CUBEMAP_NEGATIVEY | xiiDdsCaps2::CUBEMAP_POSITIVEZ | xiiDdsCaps2::CUBEMAP_NEGATIVEZ;
   }
 
   if (bArray)
@@ -488,7 +491,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
     headerDxt10.m_uiMiscFlags2 = 0;
   }
 
-  if (ref_stream.WriteBytes(&fileHeader, sizeof(fileHeader)) != XII_SUCCESS)
+  if (inout_stream.WriteBytes(&fileHeader, sizeof(fileHeader)) != XII_SUCCESS)
   {
     xiiLog::Error("Failed to write image header.");
     return XII_FAILURE;
@@ -496,14 +499,14 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
 
   if (bDxt10)
   {
-    if (ref_stream.WriteBytes(&headerDxt10, sizeof(headerDxt10)) != XII_SUCCESS)
+    if (inout_stream.WriteBytes(&headerDxt10, sizeof(headerDxt10)) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write image DX10 header.");
       return XII_FAILURE;
     }
   }
 
-  if (ref_stream.WriteBytes(image.GetByteBlobPtr().GetPtr(), image.GetByteBlobPtr().GetCount()) != XII_SUCCESS)
+  if (inout_stream.WriteBytes(image.GetByteBlobPtr().GetPtr(), image.GetByteBlobPtr().GetCount()) != XII_SUCCESS)
   {
     xiiLog::Error("Failed to write image data.");
     return XII_FAILURE;

@@ -4,7 +4,7 @@
 
 //-------------------------------------------------------------------------------------
 // BC4BC5.cpp
-//  
+//
 // Block-compression (BC) functionality for BC4 and BC5 (DirectX 10 texture compression)
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
@@ -571,5 +571,4 @@ void DirectX::D3DXEncodeBC5S(uint8_t *pBC, const XMVECTOR *pColor, uint32_t flag
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_DirectXTex_BC4BC5);
 

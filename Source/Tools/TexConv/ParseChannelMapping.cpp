@@ -2,7 +2,7 @@
 
 #include <TexConv/TexConv.h>
 
-static const char* ToString(xiiTexConvChannelValue::Enum e)
+static xiiStringView ToString(xiiTexConvChannelValue::Enum e)
 {
   switch (e)
   {
@@ -53,14 +53,10 @@ xiiResult xiiTexConv::ParseChannelMappings()
     xiiLog::Info("Custom output channel mapping:");
     for (xiiUInt32 m = 0; m < mappings.GetCount(); ++m)
     {
-      xiiLog::Info(
-        "Slice {}, R -> Input file {}, {}", m, mappings[m].m_Channel[0].m_iInputImageIndex, ToString(mappings[m].m_Channel[0].m_ChannelValue));
-      xiiLog::Info(
-        "Slice {}, G -> Input file {}, {}", m, mappings[m].m_Channel[1].m_iInputImageIndex, ToString(mappings[m].m_Channel[1].m_ChannelValue));
-      xiiLog::Info(
-        "Slice {}, B -> Input file {}, {}", m, mappings[m].m_Channel[2].m_iInputImageIndex, ToString(mappings[m].m_Channel[2].m_ChannelValue));
-      xiiLog::Info(
-        "Slice {}, A -> Input file {}, {}", m, mappings[m].m_Channel[3].m_iInputImageIndex, ToString(mappings[m].m_Channel[3].m_ChannelValue));
+      xiiLog::Info("Slice {}, R -> Input file {}, {}", m, mappings[m].m_Channel[0].m_iInputImageIndex, ToString(mappings[m].m_Channel[0].m_ChannelValue));
+      xiiLog::Info("Slice {}, G -> Input file {}, {}", m, mappings[m].m_Channel[1].m_iInputImageIndex, ToString(mappings[m].m_Channel[1].m_ChannelValue));
+      xiiLog::Info("Slice {}, B -> Input file {}, {}", m, mappings[m].m_Channel[2].m_iInputImageIndex, ToString(mappings[m].m_Channel[2].m_ChannelValue));
+      xiiLog::Info("Slice {}, A -> Input file {}, {}", m, mappings[m].m_Channel[3].m_iInputImageIndex, ToString(mappings[m].m_Channel[3].m_ChannelValue));
     }
   }
 
@@ -163,12 +159,12 @@ xiiResult xiiTexConv::ParseChannelSliceMapping(xiiInt32 iSlice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_mapping, const char* szCfg, xiiInt32 iChannelIndex, bool bSingleChannel)
+xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_mapping, xiiStringView sCfg, xiiInt32 iChannelIndex, bool bSingleChannel)
 {
   out_mapping.m_iInputImageIndex = -1;
   out_mapping.m_ChannelValue     = xiiTexConvChannelValue::White;
 
-  xiiStringBuilder tmp = szCfg;
+  xiiStringBuilder tmp = sCfg;
 
   // '-r black' for setting it to zero
   if (tmp.IsEqual_NoCase("black"))
@@ -202,7 +198,7 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_ma
     const char* szLastPos = nullptr;
     if (xiiConversionUtils::StringToInt(tmp, num, &szLastPos).Failed())
     {
-      xiiLog::Error("Could not parse channel mapping '{0}'", szCfg);
+      xiiLog::Error("Could not parse channel mapping '{0}'", sCfg);
       return XII_FAILURE;
     }
 
@@ -232,7 +228,7 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_ma
 
   if (!tmp.StartsWith("."))
   {
-    xiiLog::Error("Invalid channel mapping: Expected '.' after input file index in '{0}'", szCfg);
+    xiiLog::Error("Invalid channel mapping: Expected '.' after input file index in '{0}'", sCfg);
     return XII_FAILURE;
   }
 
@@ -249,7 +245,7 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_ma
   // no additional info, e.g. '-rgb in2.rg'
   if (tmp.IsEmpty())
   {
-    xiiLog::Error("Invalid channel mapping: Too few channel identifiers '{0}'", szCfg);
+    xiiLog::Error("Invalid channel mapping: Too few channel identifiers '{0}'", sCfg);
     return XII_FAILURE;
   }
 
@@ -274,7 +270,7 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_ma
     }
     else
     {
-      xiiLog::Error("Invalid channel mapping: Unexpected channel identifier in '{}'", szCfg);
+      xiiLog::Error("Invalid channel mapping: Unexpected channel identifier in '{}'", sCfg);
       return XII_FAILURE;
     }
 

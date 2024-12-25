@@ -34,6 +34,7 @@ private:
   xiiResult ClampInputValues(xiiArrayPtr<xiiImage> images, float maxValue) const;
   xiiResult ClampInputValues(xiiImage& image, float maxValue) const;
   xiiResult DetectNumChannels(xiiArrayPtr<const xiiTexConvSliceChannelMapping> channelMapping, xiiUInt32& uiNumChannels);
+  xiiResult InvertNormalMap(xiiImage& img);
 
   //////////////////////////////////////////////////////////////////////////
   // Reading from the descriptor

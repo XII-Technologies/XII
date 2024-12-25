@@ -6,7 +6,7 @@
 #include <Texture/Image/Formats/BmpFileFormat.h>
 #include <Texture/Image/ImageConversion.h>
 
-xiiBmpFileFormat g_bmpFormat;
+XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiBmpFileFormat> g_bmpFormat;
 
 enum xiiBmpCompression
 {
@@ -106,7 +106,7 @@ struct xiiBmpBgrxQuad
   xiiUInt8 m_reserved;
 };
 
-xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
+xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   // Technically almost arbitrary formats are supported, but we only use the common ones.
   xiiImageFormat::Enum compatibleFormats[] = {
@@ -137,7 +137,7 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
       return XII_FAILURE;
     }
 
-    return WriteImage(ref_stream, convertedImage, sFileExtension);
+    return WriteImage(inout_stream, convertedImage, sFileExtension);
   }
 
   xiiUInt64 uiRowPitch = image.GetRowPitch(0);
@@ -217,13 +217,13 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
   header.m_offBits   = uiHeaderSize;
 
   // Write all data
-  if (ref_stream.WriteBytes(&header, sizeof(header)) != XII_SUCCESS)
+  if (inout_stream.WriteBytes(&header, sizeof(header)) != XII_SUCCESS)
   {
     xiiLog::Error("Failed to write header.");
     return XII_FAILURE;
   }
 
-  if (ref_stream.WriteBytes(&fileInfoHeader, sizeof(fileInfoHeader)) != XII_SUCCESS)
+  if (inout_stream.WriteBytes(&fileInfoHeader, sizeof(fileInfoHeader)) != XII_SUCCESS)
   {
     xiiLog::Error("Failed to write fileInfoHeader.");
     return XII_FAILURE;
@@ -239,7 +239,7 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
     fileInfoHeaderV4.m_blueMask  = xiiImageFormat::GetBlueMask(format);
     fileInfoHeaderV4.m_alphaMask = xiiImageFormat::GetAlphaMask(format);
 
-    if (ref_stream.WriteBytes(&fileInfoHeaderV4, sizeof(fileInfoHeaderV4)) != XII_SUCCESS)
+    if (inout_stream.WriteBytes(&fileInfoHeaderV4, sizeof(fileInfoHeaderV4)) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write fileInfoHeaderV4.");
       return XII_FAILURE;
@@ -259,7 +259,7 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
     colorMask.m_green = xiiImageFormat::GetGreenMask(format);
     colorMask.m_blue  = xiiImageFormat::GetBlueMask(format);
 
-    if (ref_stream.WriteBytes(&colorMask, sizeof(colorMask)) != XII_SUCCESS)
+    if (inout_stream.WriteBytes(&colorMask, sizeof(colorMask)) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write colorMask.");
       return XII_FAILURE;
@@ -270,14 +270,14 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
   // Write rows in reverse order
   for (xiiInt32 iRow = uiHeight - 1; iRow >= 0; iRow--)
   {
-    if (ref_stream.WriteBytes(image.GetPixelPointer<void>(0, 0, 0, 0, iRow, 0), uiRowPitch) != XII_SUCCESS)
+    if (inout_stream.WriteBytes(image.GetPixelPointer<void>(0, 0, 0, 0, iRow, 0), uiRowPitch) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write data.");
       return XII_FAILURE;
     }
 
     xiiUInt8 zeroes[4] = {0, 0, 0, 0};
-    if (ref_stream.WriteBytes(zeroes, uiPaddedRowPitch - uiRowPitch) != XII_SUCCESS)
+    if (inout_stream.WriteBytes(zeroes, uiPaddedRowPitch - uiRowPitch) != XII_SUCCESS)
     {
       xiiLog::Error("Failed to write data.");
       return XII_FAILURE;
@@ -298,9 +298,9 @@ namespace
     return (reinterpret_cast<const xiiUInt8*>(pData)[uiByteAddress] >> uiShiftAmount) & uiMask;
   }
 
-  xiiResult ReadImageInfo(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiBmpFileHeader& ref_fileHeader, xiiBmpFileInfoHeader& ref_fileInfoHeader, bool& ref_bIndexed, bool& ref_bCompressed, xiiUInt32& ref_uiBpp, xiiUInt32& ref_uiDataSize)
+  xiiResult ReadImageInfo(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiBmpFileHeader& ref_fileHeader, xiiBmpFileInfoHeader& ref_fileInfoHeader, bool& ref_bIndexed, bool& ref_bCompressed, xiiUInt32& ref_uiBpp, xiiUInt32& ref_uiDataSize)
   {
-    if (ref_stream.ReadBytes(&ref_fileHeader, sizeof(xiiBmpFileHeader)) != sizeof(xiiBmpFileHeader))
+    if (inout_stream.ReadBytes(&ref_fileHeader, sizeof(xiiBmpFileHeader)) != sizeof(xiiBmpFileHeader))
     {
       xiiLog::Error("Failed to read header data.");
       return XII_FAILURE;
@@ -315,7 +315,7 @@ namespace
 
     // We expect at least header version 3
     xiiUInt32 uiHeaderVersion = 3;
-    if (ref_stream.ReadBytes(&ref_fileInfoHeader, sizeof(xiiBmpFileInfoHeader)) != sizeof(xiiBmpFileInfoHeader))
+    if (inout_stream.ReadBytes(&ref_fileInfoHeader, sizeof(xiiBmpFileInfoHeader)) != sizeof(xiiBmpFileInfoHeader))
     {
       xiiLog::Error("Failed to read header data (V3).");
       return XII_FAILURE;
@@ -335,7 +335,7 @@ namespace
     if (remainingHeaderBytes >= sizeof(xiiBmpFileInfoHeaderV4))
     {
       uiHeaderVersion = 4;
-      if (ref_stream.ReadBytes(&fileInfoHeaderV4, sizeof(xiiBmpFileInfoHeaderV4)) != sizeof(xiiBmpFileInfoHeaderV4))
+      if (inout_stream.ReadBytes(&fileInfoHeaderV4, sizeof(xiiBmpFileInfoHeaderV4)) != sizeof(xiiBmpFileInfoHeaderV4))
       {
         xiiLog::Error("Failed to read header data (V4).");
         return XII_FAILURE;
@@ -344,7 +344,7 @@ namespace
     }
 
     // Skip rest of header
-    if (ref_stream.SkipBytes(remainingHeaderBytes) != remainingHeaderBytes)
+    if (inout_stream.SkipBytes(remainingHeaderBytes) != remainingHeaderBytes)
     {
       xiiLog::Error("Failed to skip remaining header data.");
       return XII_FAILURE;
@@ -400,7 +400,7 @@ namespace
                 xiiUInt32 m_blue;
               } colorMask;
 
-              if (ref_stream.ReadBytes(&colorMask, sizeof(colorMask)) != sizeof(colorMask))
+              if (inout_stream.ReadBytes(&colorMask, sizeof(colorMask)) != sizeof(colorMask))
               {
                 return XII_FAILURE;
               }
@@ -496,8 +496,10 @@ namespace
 
 } // namespace
 
-xiiResult xiiBmpFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiBmpFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_PROFILE_SCOPE("xiiBmpFileFormat::ReadImage");
 
   xiiBmpFileHeader     fileHeader;
@@ -506,11 +508,13 @@ xiiResult xiiBmpFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
   xiiUInt32            uiBpp      = 0;
   xiiUInt32            uiDataSize = 0;
 
-  return ReadImageInfo(ref_stream, ref_header, fileHeader, fileInfoHeader, bIndexed, bCompressed, uiBpp, uiDataSize);
+  return ReadImageInfo(inout_stream, ref_header, fileHeader, fileInfoHeader, bIndexed, bCompressed, uiBpp, uiDataSize);
 }
 
-xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
+xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_PROFILE_SCOPE("xiiBmpFileFormat::ReadImage");
 
   xiiBmpFileHeader     fileHeader;
@@ -520,7 +524,7 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   xiiUInt32            uiBpp      = 0;
   xiiUInt32            uiDataSize = 0;
 
-  XII_SUCCEED_OR_RETURN(ReadImageInfo(ref_stream, header, fileHeader, fileInfoHeader, bIndexed, bCompressed, uiBpp, uiDataSize));
+  XII_SUCCEED_OR_RETURN(ReadImageInfo(inout_stream, header, fileHeader, fileInfoHeader, bIndexed, bCompressed, uiBpp, uiDataSize));
 
   ref_image.ResetAndAlloc(header);
 
@@ -544,7 +548,7 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
 
     xiiDynamicArray<xiiBmpBgrxQuad> palette;
     palette.SetCountUninitialized(paletteSize);
-    if (ref_stream.ReadBytes(&palette[0], paletteSize * sizeof(xiiBmpBgrxQuad)) != paletteSize * sizeof(xiiBmpBgrxQuad))
+    if (inout_stream.ReadBytes(&palette[0], paletteSize * sizeof(xiiBmpBgrxQuad)) != paletteSize * sizeof(xiiBmpBgrxQuad))
     {
       xiiLog::Error("Failed to read palette data.");
       return XII_FAILURE;
@@ -562,7 +566,7 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
       xiiDynamicArray<xiiUInt8> compressedData;
       compressedData.SetCountUninitialized(uiDataSize);
 
-      if (ref_stream.ReadBytes(&compressedData[0], uiDataSize) != uiDataSize)
+      if (inout_stream.ReadBytes(&compressedData[0], uiDataSize) != uiDataSize)
       {
         xiiLog::Error("Failed to read data.");
         return XII_FAILURE;
@@ -695,7 +699,7 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
     {
       xiiDynamicArray<xiiUInt8> indexedData;
       indexedData.SetCountUninitialized(uiDataSize);
-      if (ref_stream.ReadBytes(&indexedData[0], uiDataSize) != uiDataSize)
+      if (inout_stream.ReadBytes(&indexedData[0], uiDataSize) != uiDataSize)
       {
         xiiLog::Error("Failed to read data.");
         return XII_FAILURE;
@@ -733,7 +737,7 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
 
     // Skip palette data. Having a palette here doesn't make sense, but is not explicitly disallowed by the standard.
     xiiUInt32 paletteSize = fileInfoHeader.m_clrUsed * sizeof(xiiBmpBgrxQuad);
-    if (ref_stream.SkipBytes(paletteSize) != paletteSize)
+    if (inout_stream.SkipBytes(paletteSize) != paletteSize)
     {
       xiiLog::Error("Failed to skip palette data.");
       return XII_FAILURE;
@@ -742,12 +746,12 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
     // Read rows in reverse order
     for (xiiInt32 iRow = fileInfoHeader.m_height - 1; iRow >= 0; iRow--)
     {
-      if (ref_stream.ReadBytes(ref_image.GetPixelPointer<void>(0, 0, 0, 0, iRow, 0), uiRowPitch) != uiRowPitch)
+      if (inout_stream.ReadBytes(ref_image.GetPixelPointer<void>(0, 0, 0, 0, iRow, 0), uiRowPitch) != uiRowPitch)
       {
         xiiLog::Error("Failed to read row data.");
         return XII_FAILURE;
       }
-      if (ref_stream.SkipBytes(uiRowPitchIn - uiRowPitch) != uiRowPitchIn - uiRowPitch)
+      if (inout_stream.SkipBytes(uiRowPitchIn - uiRowPitch) != uiRowPitchIn - uiRowPitch)
       {
         xiiLog::Error("Failed to skip row data.");
         return XII_FAILURE;

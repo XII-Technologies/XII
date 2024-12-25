@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Foundation/Basics/Assert.h>
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Math/Math.h>
 
@@ -158,6 +159,17 @@ public:
     }
 
     return numMipMaps;
+  }
+
+  bool operator==(const xiiImageHeader& other) const
+  {
+    return m_uiNumMipLevels == other.m_uiNumMipLevels &&
+      m_uiNumFaces == other.m_uiNumFaces &&
+      m_uiNumArrayIndices == other.m_uiNumArrayIndices &&
+      m_uiWidth == other.m_uiWidth &&
+      m_uiHeight == other.m_uiHeight &&
+      m_uiDepth == other.m_uiDepth &&
+      m_Format == other.m_Format;
   }
 
 protected:

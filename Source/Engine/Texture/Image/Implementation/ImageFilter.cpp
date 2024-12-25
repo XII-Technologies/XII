@@ -182,7 +182,3 @@ xiiSimdFloat xiiImageFilterWeights::GetWeight(xiiUInt32 uiDstSampleIndex, xiiUIn
 
   return xiiSimdFloat(m_Weights[(uiDstSampleIndex % m_uiDstSamplesReduced) * m_uiNumWeights + uiWeightIndex]);
 }
-
-
-
-XII_STATICLINK_FILE(Texture, Texture_Image_Implementation_ImageFilter);

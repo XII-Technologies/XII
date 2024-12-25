@@ -186,4 +186,4 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 #define XII_DEFAULT_CASE_NOT_IMPLEMENTED \
   default:                               \
     XII_ASSERT_NOT_IMPLEMENTED           \
-    break;
+    break

@@ -4,17 +4,25 @@
 
 #include <Foundation/Utilities/CommandLineOptions.h>
 
-xiiCommandLineOptionPath opt_Out("_TexConv", "-out", "Absolute path to main output file.\n\
-   ext = tga, dds, xiiTexture2D, xiiTexture3D, xiiTextureCube or xiiTextureAtlas.",
+xiiCommandLineOptionEnum opt_Mode("_TexConv", "-mode", "Mode determines which arguments need to be set.\n\
+  In compare mode the mean-square error (MSE) is returned. 0 if it is below the threshold.\
+",
+                                  "Convert | Compare", 0);
+
+xiiCommandLineOptionPath opt_Out("_TexConv", "-out",
+                                 "Absolute path to main output file.\n\
+   ext = tga, dds, xiiBinTexture2D, xiiBinTexture3D, xiiBinTextureCube or xiiBinTextureAtlas.",
                                  "");
 
 
-xiiCommandLineOptionDoc opt_In("_TexConv", "-inX", "\"File\"", "Specifies input image X.\n\
+xiiCommandLineOptionDoc opt_In("_TexConv", "-inX", "\"File\"",
+                               "Specifies input image X.\n\
    X = 0 .. 63, e.g. -in0, -in1, etc.\n\
    If X is not given, X equals 0.",
                                "");
 
-xiiCommandLineOptionDoc opt_Channels("_TexConv", "-r;-rg;-rgb;-rgba", "inX.rgba", "\
+xiiCommandLineOptionDoc opt_Channels("_TexConv", "-r;-rg;-rgb;-rgba", "inX.rgba",
+                                     "\
   Specifies how many output channels are used (1 - 4) and from which input image to take the data.\n\
   Examples:\n\
   -rgba in0 -> Output has 4 channels, all taken from input image 0.\n\
@@ -38,13 +46,15 @@ xiiCommandLineOptionBool opt_Premulalpha("_TexConv", "-premulalpha", "Whether to
 
 xiiCommandLineOptionInt opt_ThumbnailRes("_TexConv", "-thumbnailRes", "Thumbnail resolution. Should be a power-of-two.", 0, 32, 1024);
 
-xiiCommandLineOptionPath opt_ThumbnailOut("_TexConv", "-thumbnailOut", "\
+xiiCommandLineOptionPath opt_ThumbnailOut("_TexConv", "-thumbnailOut",
+                                          "\
   Path to 2D thumbnail file.\n\
   ext = tga, jpg, png\n\
 ",
                                           "");
 
-xiiCommandLineOptionPath opt_LowOut("_TexConv", "-lowOut", "\
+xiiCommandLineOptionPath opt_LowOut("_TexConv", "-lowOut",
+                                    "\
   Path to low-resolution output file.\n\
   ext = Same as main output\n\
 ",
@@ -96,27 +106,96 @@ xiiCommandLineOptionEnum opt_BumpMapFilter("_TexConv", "-bumpMapFilter", "Filter
 
 xiiCommandLineOptionEnum opt_Platform("_TexConv", "-platform", "What platform to generate the textures for.", "PC | Android", 0);
 
+xiiCommandLineOptionString opt_CompareHtmlTitle("_TexConv", "-cmpHtml", "Title for the compare result HTML. If empty no HTML file is written.", "");
+xiiCommandLineOptionPath   opt_CompareActual("_TexConv", "-cmpImg", "Path to an image to compare with another.", "");
+xiiCommandLineOptionPath   opt_CompareExpected("_TexConv", "-cmpRef", "Path to a reference image to compare against.", "");
+xiiCommandLineOptionInt    opt_CompareThreshold("_TexConv", "-cmpMSE", "The error threshold for the comparison to be considered as failed.\n\
+  No output files are written, if the image difference is below this value.",
+                                             100, 0);
+xiiCommandLineOptionBool   opt_CompareRelaxed("_TexConv", "-cmpRelaxed", "Use a more lenient comparison method.\nUseful for images with single-pixel wide rasterized lines.", false);
+
+
 xiiResult xiiTexConv::ParseCommandLine()
 {
   if (xiiCommandLineOption::LogAvailableOptions(xiiCommandLineOption::LogAvailableModes::IfHelpRequested, "_TexConv"))
     return XII_FAILURE;
 
-  XII_SUCCEED_OR_RETURN(ParseOutputFiles());
-  XII_SUCCEED_OR_RETURN(DetectOutputFormat());
+  XII_SUCCEED_OR_RETURN(ParseMode());
 
-  XII_SUCCEED_OR_RETURN(ParseOutputType());
-  XII_SUCCEED_OR_RETURN(ParseAssetHeader());
-  XII_SUCCEED_OR_RETURN(ParseTargetPlatform());
-  XII_SUCCEED_OR_RETURN(ParseCompressionMode());
-  XII_SUCCEED_OR_RETURN(ParseUsage());
-  XII_SUCCEED_OR_RETURN(ParseMipmapMode());
-  XII_SUCCEED_OR_RETURN(ParseWrapModes());
-  XII_SUCCEED_OR_RETURN(ParseFilterModes());
-  XII_SUCCEED_OR_RETURN(ParseResolutionModifiers());
-  XII_SUCCEED_OR_RETURN(ParseMiscOptions());
-  XII_SUCCEED_OR_RETURN(ParseInputFiles());
-  XII_SUCCEED_OR_RETURN(ParseChannelMappings());
-  XII_SUCCEED_OR_RETURN(ParseBumpMapFilter());
+  if (m_Mode == xiiTexConvMode::Compare)
+  {
+    XII_SUCCEED_OR_RETURN(ParseCompareMode());
+  }
+  else
+  {
+    XII_SUCCEED_OR_RETURN(ParseOutputFiles());
+    XII_SUCCEED_OR_RETURN(DetectOutputFormat());
+
+    XII_SUCCEED_OR_RETURN(ParseOutputType());
+    XII_SUCCEED_OR_RETURN(ParseAssetHeader());
+    XII_SUCCEED_OR_RETURN(ParseTargetPlatform());
+    XII_SUCCEED_OR_RETURN(ParseCompressionMode());
+    XII_SUCCEED_OR_RETURN(ParseUsage());
+    XII_SUCCEED_OR_RETURN(ParseMipmapMode());
+    XII_SUCCEED_OR_RETURN(ParseWrapModes());
+    XII_SUCCEED_OR_RETURN(ParseFilterModes());
+    XII_SUCCEED_OR_RETURN(ParseResolutionModifiers());
+    XII_SUCCEED_OR_RETURN(ParseMiscOptions());
+    XII_SUCCEED_OR_RETURN(ParseInputFiles());
+    XII_SUCCEED_OR_RETURN(ParseChannelMappings());
+    XII_SUCCEED_OR_RETURN(ParseBumpMapFilter());
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiTexConv::ParseMode()
+{
+  switch (opt_Mode.GetOptionValue(xiiCommandLineOption::LogMode::FirstTime))
+  {
+    case 0:
+      m_Mode = xiiTexConvMode::Convert;
+      return XII_SUCCESS;
+
+    case 1:
+      m_Mode = xiiTexConvMode::Compare;
+      return XII_SUCCESS;
+  }
+
+  xiiLog::Error("Invalid mode selected.");
+  return XII_FAILURE;
+}
+
+xiiResult xiiTexConv::ParseCompareMode()
+{
+  m_sOutputFile = opt_Out.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+
+  if (m_sOutputFile.IsEmpty())
+  {
+    xiiLog::Warning("Output path is not specified. Use option '-out \"path\"' to set the prefix path for the output files.");
+  }
+
+  m_sHtmlTitle = opt_CompareHtmlTitle.GetOptionValue(xiiCommandLineOption::LogMode::FirstTime);
+
+  xiiStringBuilder tmp, res;
+  const auto       pCmd = xiiCommandLineUtils::GetGlobalInstance();
+
+  m_Comparer.m_Descriptor.m_sActualFile              = opt_CompareActual.GetOptionValue(xiiCommandLineOption::LogMode::FirstTime);
+  m_Comparer.m_Descriptor.m_sExpectedFile            = opt_CompareExpected.GetOptionValue(xiiCommandLineOption::LogMode::FirstTime);
+  m_Comparer.m_Descriptor.m_MeanSquareErrorThreshold = opt_CompareThreshold.GetOptionValue(xiiCommandLineOption::LogMode::FirstTime);
+  m_Comparer.m_Descriptor.m_bRelaxedComparison       = opt_CompareRelaxed.GetOptionValue(xiiCommandLineOption::LogMode::FirstTime);
+
+  if (m_Comparer.m_Descriptor.m_sActualFile.IsEmpty())
+  {
+    xiiLog::Error("Image to compare is not specified.");
+    return XII_FAILURE;
+  }
+
+  if (m_Comparer.m_Descriptor.m_sExpectedFile.IsEmpty())
+  {
+    xiiLog::Error("Reference image to compare against is not specified.");
+    return XII_FAILURE;
+  }
 
   return XII_SUCCESS;
 }

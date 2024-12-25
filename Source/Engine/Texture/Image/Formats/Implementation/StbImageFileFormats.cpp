@@ -10,8 +10,7 @@
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 
-
-xiiStbImageFileFormats g_StbImageFormats;
+XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiStbImageFileFormats> g_StbImageFormats;
 
 // stb_image callbacks would be better than loading the entire file into memory.
 // However, it turned out that it does not map well to xiiStreamReader
@@ -50,9 +49,9 @@ namespace
     writer->WriteBytes(pData, iSize).IgnoreResult();
   }
 
-  void* ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiImageHeader& ref_imageHeader, bool& ref_bIsHDR)
+  void* ReadImageData(xiiStreamReader& inout_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiImageHeader& ref_imageHeader, bool& ref_bIsHDR)
   {
-    xiiStreamUtils::ReadAllAndAppend(ref_stream, ref_fileBuffer);
+    xiiStreamUtils::ReadAllAndAppend(inout_stream, ref_fileBuffer);
 
     int width, height, numComp;
 
@@ -106,13 +105,15 @@ namespace
 
 } // namespace
 
-xiiResult xiiStbImageFileFormats::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiStbImageFileFormats::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImageHeader");
 
   bool                      isHDR = false;
   xiiDynamicArray<xiiUInt8> fileBuffer;
-  void*                     sourceImageData = ReadImageData(ref_stream, fileBuffer, ref_header, isHDR);
+  void*                     sourceImageData = ReadImageData(inout_stream, fileBuffer, ref_header, isHDR);
 
   if (sourceImageData == nullptr)
     return XII_FAILURE;
@@ -121,14 +122,16 @@ xiiResult xiiStbImageFileFormats::ReadImageHeader(xiiStreamReader& ref_stream, x
   return XII_SUCCESS;
 }
 
-xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
+xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
 {
+  XII_IGNORE_UNUSED(sFileExtension);
+
   XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImage");
 
   bool                      isHDR = false;
   xiiDynamicArray<xiiUInt8> fileBuffer;
   xiiImageHeader            imageHeader;
-  void*                     sourceImageData = ReadImageData(ref_stream, fileBuffer, imageHeader, isHDR);
+  void*                     sourceImageData = ReadImageData(inout_stream, fileBuffer, imageHeader, isHDR);
 
   if (sourceImageData == nullptr)
     return XII_FAILURE;
@@ -155,7 +158,7 @@ xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& ref_stream, xiiImag
   return XII_SUCCESS;
 }
 
-xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const
+xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   xiiImageFormat::Enum compatibleFormats[] = {xiiImageFormat::R8_UNORM, xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R8G8B8A8_UNORM};
 
@@ -179,12 +182,12 @@ xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& ref_stream, const 
       return XII_FAILURE;
     }
 
-    return WriteImage(ref_stream, convertedImage, sFileExtension);
+    return WriteImage(inout_stream, convertedImage, sFileExtension);
   }
 
   if (sFileExtension.IsEqual_NoCase("png"))
   {
-    if (stbi_write_png_to_func(write_func, &ref_stream, image.GetWidth(), image.GetHeight(), xiiImageFormat::GetNumChannels(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 0))
+    if (stbi_write_png_to_func(write_func, &inout_stream, image.GetWidth(), image.GetHeight(), xiiImageFormat::GetNumChannels(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 0))
     {
       return XII_SUCCESS;
     }
@@ -192,7 +195,7 @@ xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& ref_stream, const 
 
   if (sFileExtension.IsEqual_NoCase("jpg") || sFileExtension.IsEqual_NoCase("jpeg"))
   {
-    if (stbi_write_jpg_to_func(write_func, &ref_stream, image.GetWidth(), image.GetHeight(), xiiImageFormat::GetNumChannels(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 95))
+    if (stbi_write_jpg_to_func(write_func, &inout_stream, image.GetWidth(), image.GetHeight(), xiiImageFormat::GetNumChannels(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 95))
     {
       return XII_SUCCESS;
     }

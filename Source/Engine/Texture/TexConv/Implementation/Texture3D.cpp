@@ -12,6 +12,3 @@ xiiResult xiiTexConvProcessor::Assemble3DTexture(xiiImage& dst) const
 
   return xiiImageUtils::CreateVolumeTextureFromSingleFile(dst, images[0]);
 }
-
-
-XII_STATICLINK_FILE(Texture, Texture_TexConv_Implementation_Texture3D);

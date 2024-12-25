@@ -204,6 +204,7 @@ xiiUInt32 xiiImageFormatMappings::ToDxgiFormat(xiiImageFormat::Enum format)
       CASE_XII2DXGI(BC7_UNORM_SRGB);
       CASE_XII2DXGI(B4G4R4A4_UNORM);
       CASE_XII2DXGI(NV12);
+      CASE_XII2DXGI(P010);
   }
 }
 
@@ -286,6 +287,7 @@ xiiImageFormat::Enum xiiImageFormatMappings::FromDxgiFormat(xiiUInt32 uiDxgiForm
       CASE_DXGI2XII(BC7_UNORM_SRGB);
       CASE_DXGI2XII(B4G4R4A4_UNORM);
       CASE_DXGI2XII(NV12);
+      CASE_DXGI2XII(P010);
   }
 }
 
@@ -365,7 +367,3 @@ xiiImageFormat::Enum xiiImageFormatMappings::FromFourCc(xiiUInt32 uiFourCc)
       return xiiImageFormat::UNKNOWN;
   }
 }
-
-
-
-XII_STATICLINK_FILE(Texture, Texture_Image_Implementation_ImageFormatMappings);

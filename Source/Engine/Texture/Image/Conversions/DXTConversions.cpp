@@ -1,14 +1,17 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/Math/Color16f.h>
-#include <Foundation/SimdMath/SimdTypes.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <Texture/Image/Conversions/DXTConversions.h>
 #include <Texture/Image/Conversions/PixelConversions.h>
 #include <Texture/Image/ImageConversion.h>
 
-#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_SSE_LEVEL >= XII_SSE_41
+#if XII_SSE_LEVEL >= XII_SSE_41 && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
 #  define XII_SUPPORTS_BC4_COMPRESSOR
+
+#  include <emmintrin.h>
+#  include <smmintrin.h>
+#  include <tmmintrin.h>
 #endif
 
 void xiiDecompressBlockBC1(const xiiUInt8* pSource, xiiColorBaseUB* pTarget, bool bForceFourColorMode)
@@ -3127,6 +3130,8 @@ class xiiImageConversion_CompressBC4 : public xiiImageConversionStepCompressBloc
 
   virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(targetFormat);
+
     xiiUInt32 stride   = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt64 rowPitch = xiiImageFormat::GetRowPitch(sourceFormat, 4 * numBlocksX);
 
@@ -3183,6 +3188,8 @@ class xiiImageConversion_CompressBC5 : public xiiImageConversionStepCompressBloc
 
   virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
   {
+    XII_IGNORE_UNUSED(targetFormat);
+
     xiiUInt32 stride   = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt64 rowPitch = xiiImageFormat::GetRowPitch(sourceFormat, 4 * numBlocksX);
 
@@ -3244,6 +3251,7 @@ static xiiImageConversion_CompressBC5 s_conversion_compressBC5;
 
 #endif
 
+XII_STATICLINK_FORCE
 static xiiImageConversion_BC1_RGBA s_conversion_BC1_RGBA;
 static xiiImageConversion_BC2_RGBA s_conversion_BC2_RGBA;
 static xiiImageConversion_BC3_RGBA s_conversion_BC3_RGBA;

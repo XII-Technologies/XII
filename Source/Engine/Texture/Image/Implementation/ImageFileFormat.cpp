@@ -4,28 +4,26 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Image/Formats/ImageFileFormat.h>
 
-XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiImageFileFormat);
-
-xiiImageFileFormat* xiiImageFileFormat::GetReaderFormat(xiiStringView sExtension)
+const xiiImageFileFormat* xiiImageFileFormat::GetReaderFormat(xiiStringView sExtension)
 {
-  for (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetFirstInstance(); pFormat; pFormat = pFormat->GetNextInstance())
+  for (auto format = xiiRegisteredImageFileFormat::GetFirstInstance(); format != nullptr; format = format->GetNextInstance())
   {
-    if (pFormat->CanReadFileType(sExtension))
+    if (format->GetFormatType().CanReadFileType(sExtension))
     {
-      return pFormat;
+      return &format->GetFormatType();
     }
   }
 
   return nullptr;
 }
 
-xiiImageFileFormat* xiiImageFileFormat::GetWriterFormat(xiiStringView sExtension)
+const xiiImageFileFormat* xiiImageFileFormat::GetWriterFormat(xiiStringView sExtension)
 {
-  for (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetFirstInstance(); pFormat; pFormat = pFormat->GetNextInstance())
+  for (auto format = xiiRegisteredImageFileFormat::GetFirstInstance(); format != nullptr; format = format->GetNextInstance())
   {
-    if (pFormat->CanWriteFileType(sExtension))
+    if (format->GetFormatType().CanWriteFileType(sExtension))
     {
-      return pFormat;
+      return &format->GetFormatType();
     }
   }
 
@@ -47,7 +45,7 @@ xiiResult xiiImageFileFormat::ReadImageHeader(xiiStringView sFileName, xiiImageH
 
   xiiStringView it = xiiPathUtils::GetFileExtension(sFileName);
 
-  if (xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it))
+  if (const xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it))
   {
     if (pFormat->ReadImageHeader(reader, ref_header, it) != XII_SUCCESS)
     {
@@ -62,4 +60,9 @@ xiiResult xiiImageFileFormat::ReadImageHeader(xiiStringView sFileName, xiiImageH
   return XII_FAILURE;
 }
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Implementation_ImageFileFormat);
+//////////////////////////////////////////////////////////////////////////
+
+XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiRegisteredImageFileFormat);
+
+xiiRegisteredImageFileFormat::xiiRegisteredImageFileFormat()  = default;
+xiiRegisteredImageFileFormat::~xiiRegisteredImageFileFormat() = default;
