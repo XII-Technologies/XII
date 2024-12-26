@@ -636,17 +636,22 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     // Swapchain image may be used as render target or as destination for copy command.
 
     xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
-    pGraphicsQueueVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+
+    if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
+    {
+      pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+
+      // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
+      if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
+      {
+        pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+      }
+
+      pCommandListVulkan->Submit();
+    }
 
     if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
     {
-      // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
-      if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
-      {
-        pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
-        pCommandListVulkan->Submit();
-      }
-
       m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
     }
   }
@@ -680,8 +685,13 @@ void xiiGALSwapChainVulkan::Present()
 
   if (!m_bIsMinimized)
   {
-    pGraphicsQueueVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
-    pGraphicsQueueVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+    if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
+    {
+      pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+      pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+
+      pCommandListVulkan->Submit();
+    }
   }
 
   // \todo Execute command queue.
