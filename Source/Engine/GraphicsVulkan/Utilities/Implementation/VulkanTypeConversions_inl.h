@@ -974,7 +974,7 @@ XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineSt
     pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentDensityProcessEXT | vk::PipelineStageFlagBits::eFragmentShadingRateAttachmentKHR;
 
   // No flag to set for the following.
-  // if (e.IsSet(xiiGALResourceStateFlags::StreamOut)) 
+  // if (e.IsSet(xiiGALResourceStateFlags::StreamOut))
   //   pipelineStageFlags |= vk::PipelineStageFlagBits::eStreamOutput;
 
   return pipelineStageFlags;

@@ -198,7 +198,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 
   // Increment the value before submitting the buffer to be overly safe.
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
-  const auto& syncPoint = pFenceVulkan->CreateSyncPoint(uiFenceValue);
+  const auto&     syncPoint    = pFenceVulkan->CreateSyncPoint(uiFenceValue);
 
   VK_ASSERT_DEV(m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
