@@ -104,7 +104,7 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 
 /// \brief This type of assert can be used to mark code as 'not (yet) implemented' and makes it easier to find it later on by just searching for these
 /// asserts.
-#define XII_ASSERT_NOT_IMPLEMENTED XII_REPORT_FAILURE("Not implemented");
+#define XII_ASSERT_NOT_IMPLEMENTED XII_REPORT_FAILURE("Not implemented")
 
 // Occurrences of XII_ASSERT_DEBUG are compiled out in non-debug builds
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
@@ -185,5 +185,5 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 /// \brief Macro to make unhandled cases in a switch block an error.
 #define XII_DEFAULT_CASE_NOT_IMPLEMENTED \
   default:                               \
-    XII_ASSERT_NOT_IMPLEMENTED           \
+    XII_ASSERT_NOT_IMPLEMENTED;          \
     break

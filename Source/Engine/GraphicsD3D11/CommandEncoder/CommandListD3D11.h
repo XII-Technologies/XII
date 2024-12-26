@@ -133,10 +133,10 @@ protected:
   ID3D11DepthStencilView* m_pCommittedDepthStencilTarget                            = nullptr;
   xiiUInt32               m_uiBoundRenderTargetCount                                = 0U;
 
-  xiiUInt32                                                                 m_uiSubpassIndex = 0U;
-  xiiGALRenderPass*                                                         m_pRenderPass    = nullptr;
-  xiiGALFramebuffer*                                                        m_pFramebuffer   = nullptr;
-  xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_AttachmentClearValues;
+  xiiUInt32                                                                     m_uiSubpassIndex = 0U;
+  xiiGALRenderPass*                                                             m_pRenderPass    = nullptr;
+  xiiGALFramebuffer*                                                            m_pFramebuffer   = nullptr;
+  xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
   xiiMap<xiiGALBufferD3D11*, ID3D11DeviceContext*>  m_MappedBuffers;
   xiiMap<xiiGALTextureD3D11*, ID3D11DeviceContext*> m_MappedTextureSubresources;
