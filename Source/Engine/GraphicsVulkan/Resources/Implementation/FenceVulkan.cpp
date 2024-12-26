@@ -100,7 +100,7 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 
 xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 {
-  XII_ASSERT_DEV(!IsTimelineSemaphore(), "The fence has no timeline semaphore.");
+  XII_ASSERT_DEV(!IsTimelineSemaphore(), "The fence must have no timeline semaphore.");
 
   xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
@@ -127,7 +127,7 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 
 void xiiGALFenceVulkan::Signal(xiiUInt64 uiValue)
 {
-  XII_ASSERT_DEV(m_Description.m_Type == xiiGALFenceType::General, "Fence must have been created with FENCE_TYPE_GENERAL.");
+  XII_ASSERT_DEV(m_Description.m_Type == xiiGALFenceType::General, "Fence must have been created with xiiGALFenceType::General.");
 
   if (IsTimelineSemaphore())
   {
@@ -168,6 +168,26 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
   }
 }
 
+const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const xiiUInt64 uiFenceValue)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  /// \todo GraphicsVulkan: Use a pool to recycle sync fences.
+  vk::FenceCreateInfo vkFenceCreateInfo = {};
+  vkFenceCreateInfo.pNext               = nullptr;
+  vkFenceCreateInfo.flags               = {};
+
+  vk::Fence vkFence = {};
+  VK_ASSERT_DEV(vkLogicalDevice.createFence(&vkFenceCreateInfo, nullptr, &vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  xiiGALFenceVulkan::SyncPointData& syncPoint = m_SyncPoints.ExpandAndGetRef();
+  syncPoint.m_vkFence                         = vkFence;
+  syncPoint.m_uiValue                         = uiFenceValue;
+
+  return syncPoint;
+}
+
 void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
 {
   xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
@@ -204,6 +224,8 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
       XII_ASSERT_DEV(status == vk::Result::eSuccess, "All pending fences must now be complete!");
 
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
+
+      pDeviceVulkan->SafeReleaseDeviceObject(std::move(syncData.m_vkFence));
 
       m_SyncPoints.PopFront();
     }

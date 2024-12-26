@@ -23,6 +23,9 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
   XII_SUCCEED_OR_RETURN(CreateBackBufferInternal());
   VK_SUCCEED_OR_RETURN_XII_FAILURE(AcquireNextImage());
 
+  // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
+  m_Description.m_pWindow->AddReference();
+
   return XII_SUCCESS;
 }
 
@@ -33,7 +36,11 @@ xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
 
   if (m_vkSwapChain != VK_NULL_HANDLE)
   {
-    // TODO
+    ReleaseSwapChainResources(true);
+
+    XII_ASSERT_DEV(m_vkSwapChain == VK_NULL_HANDLE, "The Vulkan swap chain has not yet been released!");
+
+    m_Description.m_pWindow->RemoveReference();
   }
 
   if (m_vkSurface != VK_NULL_HANDLE)
@@ -361,8 +368,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     }
   }
 
-  auto vkOldSwapChain = m_vkSwapChain;
-  m_vkSwapChain       = VK_NULL_HANDLE;
+  vk::SwapchainKHR vkOldSwapChain = m_vkSwapChain;
+  m_vkSwapChain                   = VK_NULL_HANDLE;
 
   vk::SwapchainCreateInfoKHR swapChainCreateInfo = {};
   swapChainCreateInfo.flags                      = {};
@@ -537,6 +544,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, m_SwapChainImages.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiSwapChainImageCount == m_SwapChainImages.GetCount(), "");
 
+  xiiStringBuilder sb;
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
     xiiGALTextureCreationDescription textureCreationDescription;
@@ -555,12 +563,30 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
     XII_ASSERT_RELEASE(!m_SwapChainTextures[i].IsInvalidated(), "Failed to create native backbuffer texture object!");
+
+    sb.SetFormat("Main Back Buffer ({})");
+
+    pDeviceVulkan->GetTexture(m_SwapChainTextures[i])->SetDebugName(sb);
   }
   return XII_SUCCESS;
 }
 
 void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
 {
+  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
+  {
+    if (!m_SwapChainTextures[i].IsInvalidated())
+    {
+      m_pDevice->DestroyTexture(m_SwapChainTextures[i]);
+
+      m_SwapChainTextures[i].Invalidate();
+    }
+  }
+
+  if (m_hBackBufferTexture.IsInvalidated())
+  {
+    m_hBackBufferTexture.Invalidate();
+  }
 }
 
 vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
@@ -610,17 +636,22 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     // Swapchain image may be used as render target or as destination for copy command.
 
     xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
-    pGraphicsQueueVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+
+    if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
+    {
+      pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+
+      // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
+      if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
+      {
+        pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+      }
+
+      pCommandListVulkan->Submit();
+    }
 
     if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
     {
-      // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
-      if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
-      {
-        pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
-        pCommandListVulkan->Submit();
-      }
-
       m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
     }
   }
@@ -637,11 +668,14 @@ void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
 
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
   {
-    const vk::Fence& vkFence = m_ImageAcquiredFences[i];
-
-    if (vkLogicalDevice.getFenceStatus(vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
+    if (m_ImageAcquiredFenceSubmitted[i])
     {
-      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      const vk::Fence& vkFence = m_ImageAcquiredFences[i];
+
+      if (vkLogicalDevice.getFenceStatus(vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
+      {
+        VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
     }
   }
 }
@@ -654,11 +688,14 @@ void xiiGALSwapChainVulkan::Present()
 
   if (!m_bIsMinimized)
   {
-    pGraphicsQueueVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
-    pGraphicsQueueVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
-  }
+    if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
+    {
+      pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+      pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
 
-  // \todo Execute command queue.
+      pCommandListVulkan->Submit();
+    }
+  }
 
   if (!m_bIsMinimized)
   {

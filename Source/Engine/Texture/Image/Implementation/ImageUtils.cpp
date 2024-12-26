@@ -670,7 +670,7 @@ xiiUInt32 xiiImageUtils::GetSampleIndex(xiiUInt32 uiNumTexels, xiiInt32 iIndex, 
         return 0;
 
       default:
-        XII_ASSERT_NOT_IMPLEMENTED
+        XII_ASSERT_NOT_IMPLEMENTED;
         return 0;
     }
   }

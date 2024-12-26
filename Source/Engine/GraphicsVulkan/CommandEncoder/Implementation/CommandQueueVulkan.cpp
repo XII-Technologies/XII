@@ -29,6 +29,9 @@ void xiiGALCommandQueueVulkan::InitializePlatform(xiiUInt32 uiQueueFamilyIndex, 
 
   m_vkSupportedStageFlags  = pDeviceVulkan->GetVulkanLogicalDeviceSupportedStagesFlags(uiQueueFamilyIndex);
   m_vkSupportedAccessFlags = pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(uiQueueFamilyIndex);
+
+  xiiGALFenceCreationDescription fenceDescription = {.m_Type = xiiGALFenceType::CpuWaitOnly};
+  m_hQueueFence                                   = pDeviceVulkan->CreateFence(fenceDescription);
 }
 
 void xiiGALCommandQueueVulkan::DeInitializePlatform()
@@ -49,34 +52,23 @@ void xiiGALCommandQueueVulkan::DeInitializePlatform()
   m_vkDevice = nullptr;
 }
 
-void xiiGALCommandQueueVulkan::TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout imageLayout)
-{
-}
-
-void xiiGALCommandQueueVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
-{
-  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
-
-  m_vkWaitSemaphores.PushBack(semaphore);
-  m_vkWaitDestinationStageFlags.PushBack(pipelineFlags);
-  m_vkWaitSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
-}
-
-void xiiGALCommandQueueVulkan::AddSignalSemaphore(vk::Semaphore semaphore)
-{
-  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
-
-  m_vkSignalSemaphores.PushBack(semaphore);
-  m_vkSignalSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
-}
-
 xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 {
+  XII_LOCK(m_QueueMutex);
+
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALFenceVulkan*  pFenceVulkan  = static_cast<xiiGALFenceVulkan*>(pDeviceVulkan->GetFence(m_hQueueFence));
+
+  // Update last completed fence value to unlock all waiting events.
+  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
 
   m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
-  return xiiUInt64();
+  // TODO (VERIFY): For some reason after idling the queue not all fences are signaled.
+  pFenceVulkan->Wait(xiiMath::MaxValue<xiiUInt64>());
+  pFenceVulkan->Reset(uiFenceValue);
+
+  return uiFenceValue;
 }
 
 xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
@@ -130,11 +122,25 @@ void xiiGALCommandQueueVulkan::ResetCommandList(xiiGALCommandListVulkan* pComman
 {
   XII_LOCK(m_QueueMutex);
 
-  XII_VERIFY(m_CommandLists.RemoveAndSwap(pCommandListVulkan), "Invalid command list to reset.");
+  XII_ASSERT_DEV(pCommandListVulkan->GetRecordingState() != xiiGALCommandList::RecordingState::Recording, "Command list has not yet been ended.");
+  XII_ASSERT_DEV(m_CommandLists.Contains(pCommandListVulkan), "Command list not found in allocated command lists.");
 
-  XII_ASSERT_DEV(!m_CommandLists.Contains(pCommandListVulkan), "Command list duplication error.");
+  m_CommandListsToReset.PushBack(CommandListReleaseInfo{.m_pCommandListVulkan = pCommandListVulkan, .m_uiFenceValue = GetNextFenceValue()});
+}
 
-  m_CommandLists.PushFront(pCommandListVulkan);
+void xiiGALCommandQueueVulkan::ReleasePendingCommandListsToReset()
+{
+  XII_LOCK(m_QueueMutex);
+
+  for (auto& commandListInfo : m_CommandListsToReset)
+  {
+    commandListInfo.m_pCommandListVulkan->ResetInternal();
+
+    XII_VERIFY(m_CommandLists.RemoveAndCopy(commandListInfo.m_pCommandListVulkan), "");
+    m_CommandLists.PushFront(commandListInfo.m_pCommandListVulkan);
+  }
+
+  m_CommandListsToReset.Clear();
 }
 
 void xiiGALCommandQueueVulkan::Flush()
@@ -145,26 +151,65 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 {
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
+  xiiGALFenceVulkan*       pFenceVulkan       = static_cast<xiiGALFenceVulkan*>(pDeviceVulkan->GetFence(m_hQueueFence));
 
   if (pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
   {
     pCommandListVulkan->End();
   }
 
+  XII_ASSERT_DEV(!pFenceVulkan->IsTimelineSemaphore(), "The queue fence should be a CPU wait fence only.");
+
+  bool bTimelineSemaphoreInUse = false;
+  for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
+  {
+    if (!fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
+      continue;
+
+    bTimelineSemaphoreInUse = true;
+
+    pCommandListVulkan->m_vkSignalSemaphores.PushBack(fenceInfo.m_pFenceVulkan->GetVulkanTimelineSemaphore());
+    pCommandListVulkan->m_vkSignalSemaphoreValues.PushBack(fenceInfo.m_uiWaitValue);
+  }
+
   vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
 
-  vk::SubmitInfo vkSubmitInformation     = {};
-  vkSubmitInformation.pCommandBuffers    = &vkCommandBuffer;
-  vkSubmitInformation.commandBufferCount = 1U;
+  vk::SubmitInfo vkSubmitInformation       = {};
+  vkSubmitInformation.pNext                = nullptr;
+  vkSubmitInformation.waitSemaphoreCount   = pCommandListVulkan->m_vkWaitSemaphores.GetCount();
+  vkSubmitInformation.pWaitSemaphores      = pCommandListVulkan->m_vkWaitSemaphores.GetData();
+  vkSubmitInformation.pWaitDstStageMask    = pCommandListVulkan->m_vkWaitDestinationStageFlags.GetData();
+  vkSubmitInformation.pCommandBuffers      = &vkCommandBuffer;
+  vkSubmitInformation.commandBufferCount   = 1U;
+  vkSubmitInformation.signalSemaphoreCount = pCommandListVulkan->m_vkSignalSemaphores.GetCount();
+  vkSubmitInformation.pSignalSemaphores    = pCommandListVulkan->m_vkSignalSemaphores.GetData();
 
-  VK_ASSERT_DEV(m_vkQueue.submit(1U, &vkSubmitInformation, VK_NULL_HANDLE, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  vk::TimelineSemaphoreSubmitInfo vkTimelineSemaphoreSubmitInfo = {};
+  if (bTimelineSemaphoreInUse)
+  {
+    vkSubmitInformation.pNext = &vkTimelineSemaphoreSubmitInfo;
+
+    vkTimelineSemaphoreSubmitInfo.pNext                     = nullptr;
+    vkTimelineSemaphoreSubmitInfo.waitSemaphoreValueCount   = vkSubmitInformation.waitSemaphoreCount;
+    vkTimelineSemaphoreSubmitInfo.pWaitSemaphoreValues      = vkSubmitInformation.waitSemaphoreCount > 0 ? pCommandListVulkan->m_vkWaitSemaphoreValues.GetData() : nullptr;
+    vkTimelineSemaphoreSubmitInfo.signalSemaphoreValueCount = vkSubmitInformation.signalSemaphoreCount;
+    vkTimelineSemaphoreSubmitInfo.pSignalSemaphoreValues    = vkSubmitInformation.signalSemaphoreCount > 0 ? pCommandListVulkan->m_vkSignalSemaphoreValues.GetData() : nullptr;
+  }
+
+  // Increment the value before submitting the buffer to be overly safe.
+  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
+  const auto&     syncPoint    = pFenceVulkan->CreateSyncPoint(uiFenceValue);
+
+  VK_ASSERT_DEV(m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  m_LastSyncPoint = syncPoint;
 
   if (bReset)
   {
     pCommandListVulkan->Reset();
   }
 
-  return 0U;
+  return uiFenceValue;
 }
 
 void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)

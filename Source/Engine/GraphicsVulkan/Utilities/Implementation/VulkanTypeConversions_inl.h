@@ -926,6 +926,60 @@ XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineSt
   return pipelineStageFlags;
 }
 
+XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineStageFlags(xiiBitflags<xiiGALResourceStateFlags> e)
+{
+  vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eNone;
+
+  if (e.IsSet(xiiGALResourceStateFlags::Undefined))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTopOfPipe;
+  if (e.IsSet(xiiGALResourceStateFlags::VertexBuffer))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+  if (e.IsSet(xiiGALResourceStateFlags::ConstantBuffer))
+    pipelineStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+  if (e.IsSet(xiiGALResourceStateFlags::IndexBuffer))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+  if (e.IsSet(xiiGALResourceStateFlags::RenderTarget))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+  if (e.IsSet(xiiGALResourceStateFlags::UnorderedAccess))
+    pipelineStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthWrite))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthRead))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+  if (e.IsSet(xiiGALResourceStateFlags::ShaderResource))
+    pipelineStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+  if (e.IsSet(xiiGALResourceStateFlags::IndirectArgument))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eDrawIndirect;
+  if (e.IsSet(xiiGALResourceStateFlags::CopyDestination))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
+  if (e.IsSet(xiiGALResourceStateFlags::CopySource))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveDestination))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveSource))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
+  if (e.IsSet(xiiGALResourceStateFlags::InputAttachment))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
+  if (e.IsSet(xiiGALResourceStateFlags::Present))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eBottomOfPipe;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildAsRead))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildAsWrite))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
+  if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+  if (e.IsSet(xiiGALResourceStateFlags::Common))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eAllCommands;
+  if (e.IsSet(xiiGALResourceStateFlags::ShadingRate))
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentDensityProcessEXT | vk::PipelineStageFlagBits::eFragmentShadingRateAttachmentKHR;
+
+  // No flag to set for the following.
+  // if (e.IsSet(xiiGALResourceStateFlags::StreamOut))
+  //   pipelineStageFlags |= vk::PipelineStageFlagBits::eStreamOutput;
+
+  return pipelineStageFlags;
+}
+
 XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e)
 {
   vk::AccessFlags accessFlags = vk::AccessFlagBits::eNone;
