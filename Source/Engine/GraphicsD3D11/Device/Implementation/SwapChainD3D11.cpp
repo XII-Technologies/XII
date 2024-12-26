@@ -63,6 +63,7 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
   pDeviceD3D11->FlushPendingObjects();
 
   // Call context flush to release resources.
+  pDeviceD3D11->GetImmediateContext()->ClearState();
   pDeviceD3D11->GetImmediateContext()->Flush();
 
   if (m_pSwapChain)
