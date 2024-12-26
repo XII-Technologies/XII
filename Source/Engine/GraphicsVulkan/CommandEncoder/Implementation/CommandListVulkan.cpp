@@ -396,19 +396,14 @@ void xiiGALCommandListVulkan::ResetPlatform()
 
   m_RecordingState = RecordingState::Reset;
 
-  if (xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue()))
-  {
-    pCommandQueueVulkan->ResetCommandList(this);
-  }
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue());
+  pCommandQueueVulkan->ResetCommandList(this);
 }
 
 xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform(bool bReset)
 {
-  if (xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue()))
-  {
-    return pCommandQueueVulkan->SubmitCommandList(this, bReset);
-  }
-  return xiiMath::MaxValue<xiiUInt64>();
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue());
+  return pCommandQueueVulkan->SubmitCommandList(this, bReset);
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
