@@ -445,6 +445,8 @@ public:
       swapChainDesc.m_uiDefaultStencilValue = 0U;
 
       m_hSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
+
+      m_pDevice->GetSwapChain(m_hSwapChain)->SetPresentMode(xiiGALPresentMode::VSync);
     }
     else
     {
