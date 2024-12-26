@@ -167,7 +167,7 @@ public:
         clearValue2.m_ClearColor.r = tanf(fGlobalTime);
         clearValue2.m_ClearColor.g = sinf(fGlobalTime);
         clearValue2.m_ClearColor.b = cosf(fGlobalTime);
-        clearValue2.m_ClearColor.r = 1.0f;
+        clearValue2.m_ClearColor.a = 1.0f;
 
         pCommandList->BeginRenderPass(beginRenderPass);
         pCommandList->EndRenderPass();
@@ -564,6 +564,7 @@ public:
       framebufferDesc.m_Attachments.PushBack(hBackBufferView);
 
       m_hFrameBuffer = m_pDevice->CreateFramebuffer(framebufferDesc);
+      XII_ASSERT_DEV(!m_hFrameBuffer.IsInvalidated(), "Failed to create frame buffer.");
     }
   }
 
