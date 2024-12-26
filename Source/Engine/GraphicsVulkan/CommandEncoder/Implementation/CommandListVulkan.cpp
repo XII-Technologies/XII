@@ -388,6 +388,14 @@ void xiiGALCommandListVulkan::ResetPlatform()
 {
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue());
+  pCommandQueueVulkan->ResetCommandList(this);
+}
+
+void xiiGALCommandListVulkan::ResetInternal()
+{
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   m_vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
@@ -395,9 +403,6 @@ void xiiGALCommandListVulkan::ResetPlatform()
   InvalidateState();
 
   m_RecordingState = RecordingState::Reset;
-
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue());
-  pCommandQueueVulkan->ResetCommandList(this);
 }
 
 xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform(bool bReset)

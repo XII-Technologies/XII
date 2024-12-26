@@ -6,6 +6,8 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
+#include <GraphicsVulkan/Resources/FenceVulkan.h>
+
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
 {
 public:
@@ -14,10 +16,10 @@ public:
 
 public:
   /// \brief This returns the value of the internal fence that will be signaled the next time.
-  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return 0ULL; }
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue.load(); }
 
   /// \brief This returns the last completed value of the internal fence.
-  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return 0ULL; }
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return m_pDevice->GetFence(m_hQueueFence)->GetCompletedValue(); }
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
@@ -36,6 +38,8 @@ public:
 protected:
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
 
+  void ReleasePendingCommandListsToReset();
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -52,14 +56,25 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
+  struct CommandListReleaseInfo
+  {
+    xiiGALCommandListVulkan* m_pCommandListVulkan = nullptr;
+    xiiUInt64                m_uiFenceValue       = 0U;
+  };
+
   xiiMutex m_QueueMutex;
 
   vk::Device m_vkDevice;
   vk::Queue  m_vkQueue;
   xiiUInt32  m_uiQueueFamilyIndex = xiiInvalidIndex;
 
-  vk::CommandPool                    m_vkCommandPool;
-  xiiDeque<xiiGALCommandListVulkan*> m_CommandLists;
-  vk::PipelineStageFlags             m_vkSupportedStageFlags;
-  vk::AccessFlags                    m_vkSupportedAccessFlags;
+  vk::CommandPool                         m_vkCommandPool;
+  xiiDeque<xiiGALCommandListVulkan*>      m_CommandLists;
+  xiiDynamicArray<CommandListReleaseInfo> m_CommandListsToReset;
+  vk::PipelineStageFlags                  m_vkSupportedStageFlags;
+  vk::AccessFlags                         m_vkSupportedAccessFlags;
+
+  xiiGALFenceHandle                m_hQueueFence;
+  std::atomic<xiiUInt64>           m_uiNextFenceValue = 1U;
+  xiiGALFenceVulkan::SyncPointData m_LastSyncPoint;
 };
