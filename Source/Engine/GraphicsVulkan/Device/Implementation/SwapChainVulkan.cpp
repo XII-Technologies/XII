@@ -36,7 +36,9 @@ xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
 
   if (m_vkSwapChain != VK_NULL_HANDLE)
   {
-    // TODO
+    ReleaseSwapChainResources(true);
+
+    XII_ASSERT_DEV(m_vkSwapChain == VK_NULL_HANDLE, "The Vulkan swap chain has not yet been released!");
 
     m_Description.m_pWindow->RemoveReference();
   }
@@ -366,8 +368,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     }
   }
 
-  auto vkOldSwapChain = m_vkSwapChain;
-  m_vkSwapChain       = VK_NULL_HANDLE;
+  vk::SwapchainKHR vkOldSwapChain = m_vkSwapChain;
+  m_vkSwapChain                   = VK_NULL_HANDLE;
 
   vk::SwapchainCreateInfoKHR swapChainCreateInfo = {};
   swapChainCreateInfo.flags                      = {};
@@ -542,6 +544,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, m_SwapChainImages.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiSwapChainImageCount == m_SwapChainImages.GetCount(), "");
 
+  xiiStringBuilder sb;
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
     xiiGALTextureCreationDescription textureCreationDescription;
@@ -560,12 +563,30 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
     XII_ASSERT_RELEASE(!m_SwapChainTextures[i].IsInvalidated(), "Failed to create native backbuffer texture object!");
+
+    sb.SetFormat("Main Back Buffer ({})");
+
+    pDeviceVulkan->GetTexture(m_SwapChainTextures[i])->SetDebugName(sb);
   }
   return XII_SUCCESS;
 }
 
 void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
 {
+  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
+  {
+    if (!m_SwapChainTextures[i].IsInvalidated())
+    {
+      m_pDevice->DestroyTexture(m_SwapChainTextures[i]);
+
+      m_SwapChainTextures[i].Invalidate();
+    }
+  }
+
+  if (m_hBackBufferTexture.IsInvalidated())
+  {
+    m_hBackBufferTexture.Invalidate();
+  }
 }
 
 vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
