@@ -668,11 +668,14 @@ void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
 
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
   {
-    const vk::Fence& vkFence = m_ImageAcquiredFences[i];
-
-    if (vkLogicalDevice.getFenceStatus(vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
+    if (m_ImageAcquiredFenceSubmitted[i])
     {
-      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      const vk::Fence& vkFence = m_ImageAcquiredFences[i];
+
+      if (vkLogicalDevice.getFenceStatus(vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
+      {
+        VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
     }
   }
 }
@@ -693,8 +696,6 @@ void xiiGALSwapChainVulkan::Present()
       pCommandListVulkan->Submit();
     }
   }
-
-  // \todo Execute command queue.
 
   if (!m_bIsMinimized)
   {
