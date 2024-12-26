@@ -21,7 +21,21 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const { return m_ResourceState; }
 
   /// \brief This returns true if the resource is in known state by the engine.
-  [[nodiscard]] XII_ALWAYS_INLINE virtual bool IsInKnownState() const { return m_ResourceState != xiiGALResourceStateFlags::Unknown; }
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsInKnownState() const { return m_ResourceState != xiiGALResourceStateFlags::Unknown; }
+
+  /// \brief This returns true if the given resource state is set.
+  [[nodiscard]] XII_ALWAYS_INLINE bool CheckState(xiiGALResourceStateFlags::Enum resourceState) const
+  {
+    XII_ASSERT_DEV(IsInKnownState(), "Resource state is unknown.");
+    return m_ResourceState.IsSet(resourceState);
+  }
+
+  /// \brief This returns true if any of the given resource state are set.
+  [[nodiscard]] XII_ALWAYS_INLINE bool CheckAnyState(xiiBitflags<xiiGALResourceStateFlags> resourceState) const
+  {
+    XII_ASSERT_DEV(IsInKnownState(), "Resource state is unknown.");
+    return m_ResourceState.IsAnySet(resourceState);
+  }
 
 protected:
   friend class xiiGALDevice;
