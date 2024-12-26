@@ -9,6 +9,51 @@
 
 #include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 
+/// \brief Resource state transition flags.
+struct XII_GRAPHICSVULKAN_DLL xiiGALStateTransitionFlags
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    None           = 0U,         ///< Undefined binding.
+    UpdateState    = XII_BIT(0), ///< A buffer may be bound as a vertex buffer.
+    DiscardContent = XII_BIT(1), ///< A buffer may be bound as an index buffer.
+    Aliasing       = XII_BIT(2), ///< A buffer may be bound as a uniform buffer. Note that this flag may not be combined with any other bind flag.
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType UpdateState : 1;
+    StorageType DiscardContent : 1;
+    StorageType Aliasing : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALStateTransitionFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiGALStateTransitionFlags);
+
+/// \brief This describes the optimized depth-stencil clear value.
+struct XII_GRAPHICSVULKAN_DLL xiiGALStateTransitionDescription : public xiiHashableStruct<xiiGALStateTransitionDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiGALResource*                         m_pResourceBefore   = nullptr;
+  xiiGALResource*                         m_pResource         = nullptr;
+  xiiUInt32                               m_uiFirstMipLevel   = 0;
+  xiiUInt32                               m_uiMipLevelCount   = XII_GAL_REMAINING_MIP_LEVELS;
+  xiiUInt32                               m_uiFirstArraySlice = 0;
+  xiiUInt32                               m_uiArraySliceCount = XII_GAL_REMAINING_ARRAY_SLICES;
+  xiiBitflags<xiiGALResourceStateFlags>   m_OldState          = xiiGALResourceStateFlags::Unknown;
+  xiiBitflags<xiiGALResourceStateFlags>   m_NewState          = xiiGALResourceStateFlags::Unknown;
+  xiiBitflags<xiiGALStateTransitionFlags> m_TransitionFlags   = xiiGALStateTransitionFlags::None;
+
+  /// \todo GraphicsVulkan: Introduce transition type {Immediate (Vulkan, D3D11, D3D12 - Only), Begin, End} for D3D12 if this makes it to the graphics abstraction layer (GAL).
+};
+
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
 public:
@@ -18,7 +63,7 @@ public:
 
   XII_ALWAYS_INLINE vk::AccessFlags GetVulkanCommandBufferSupportedAccessFlags() const { return m_PipelineBarrier.m_vkSupportedAccessFlags; }
 
-  void TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags sourceStageFlags, vk::PipelineStageFlags destinationStageFlags);
+  void TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags);
 
   void MemoryBarrier(vk::AccessFlags vkSourceAccessFlags, vk::AccessFlags vkDestinationAccessFlags, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags);
 
@@ -117,6 +162,15 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+  void TransitionBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, const bool bUpdateBufferState);
+  void BufferMemoryBarrier(xiiGALBufferVulkan* pBufferVulkan, vk::AccessFlags newAccessFlags);
+
+  void TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange = nullptr);
+  void TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout newLayout);
+
+  void TransitionOrVerifyBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::AccessFlagBits expectedAccessFlags, const char* szOperationName, bool bVerifyOnly = false);
+  void TransitionOrVerifyTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::ImageLayout expectedLayout, const char* szOperationName, bool bVerifyOnly = false);
+
 private:
   struct PipelineBarrier
   {
@@ -174,6 +228,19 @@ private:
   PipelineBarrier   m_PipelineBarrier;
 
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
+
+  xiiGALTextureViewVulkan* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  xiiGALTextureViewVulkan* m_pBoundDepthStencilTarget                            = nullptr;
+  xiiUInt32                m_uiBoundRenderTargetCount                            = 0U;
+  xiiUInt32                m_uiFramebufferWidth                                  = 0;
+  xiiUInt32                m_uiFramebufferHeight                                 = 0;
+  xiiUInt32                m_uiFramebufferArraySlices                            = 0;
+  xiiUInt32                m_uiFramebufferSampleCount                            = 0;
+
+  xiiUInt32                                                          m_uiSubpassIndex = 0U;
+  xiiGALRenderPassVulkan*                                            m_pRenderPass    = nullptr;
+  xiiGALFramebufferVulkan*                                           m_pFramebuffer   = nullptr;
+  xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
   struct ContextState
   {

@@ -21,8 +21,9 @@ public:
 
   vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
 
-  void            SetAccessFlags(vk::AccessFlags accessFlags);
-  vk::AccessFlags GetAccessFlags() const;
+  void                   SetAccessFlags(vk::AccessFlags accessFlags);
+  vk::AccessFlags        GetAccessFlags() const;
+  XII_ALWAYS_INLINE bool CheckAccessFlags(vk::AccessFlags accessFlags) const { return (GetAccessFlags() & accessFlags) == accessFlags; }
 
 protected:
   friend class xiiGALDeviceVulkan;

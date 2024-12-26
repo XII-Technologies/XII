@@ -65,6 +65,7 @@ public:
   static xiiBitflags<xiiGALResourceStateFlags> GetResourceState(vk::ImageLayout e);
 
   static vk::PipelineStageFlags                GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e);
+  static vk::PipelineStageFlags                GetPipelineStageFlags(xiiBitflags<xiiGALResourceStateFlags> e);
   static vk::AccessFlags                       GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
   static vk::AccessFlags                       GetAccessFlags(xiiBitflags<xiiGALResourceStateFlags> e);
   static xiiBitflags<xiiGALResourceStateFlags> GetResourceState(vk::AccessFlags e);
