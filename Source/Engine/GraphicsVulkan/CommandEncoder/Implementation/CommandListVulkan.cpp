@@ -312,6 +312,23 @@ void xiiGALCommandListVulkan::CopyImageToBuffer(vk::Image vkSourceImage, vk::Ima
   m_vkCommandBuffer.copyImageToBuffer(vkSourceImage, vkSourceImageLayout, vkDestinationBuffer, pRegions.GetCount(), pRegions.GetPtr(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
+void xiiGALCommandListVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
+{
+  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
+
+  m_vkWaitSemaphores.PushBack(semaphore);
+  m_vkWaitDestinationStageFlags.PushBack(pipelineFlags);
+  m_vkWaitSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
+}
+
+void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore)
+{
+  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
+
+  m_vkSignalSemaphores.PushBack(semaphore);
+  m_vkSignalSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
+}
+
 xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription)
 {
@@ -322,9 +339,6 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulk
   vkCommandBufferAllocateInfo.commandBufferCount            = 1U;
 
   VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-  m_PipelineBarrier.m_vkSupportedStageFlags  = pCommandQueueVulkan->GetSupportedStagesFlags();
-  m_PipelineBarrier.m_vkSupportedAccessFlags = pCommandQueueVulkan->GetSupportedAccessFlags();
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
@@ -337,9 +351,13 @@ xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
 
 void xiiGALCommandListVulkan::BeginPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  m_PipelineBarrier.m_vkSupportedStageFlags  = pCommandQueueVulkan->GetSupportedStagesFlags();
+  m_PipelineBarrier.m_vkSupportedAccessFlags = pCommandQueueVulkan->GetSupportedAccessFlags();
 
   vk::CommandBufferBeginInfo vkCommandBufferBeginInfo = {};
   vkCommandBufferBeginInfo.pNext                      = nullptr;
@@ -350,10 +368,7 @@ void xiiGALCommandListVulkan::BeginPlatform()
 
   m_RecordingState = RecordingState::Recording;
 
-  if (xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue()))
-  {
-    pCommandQueueVulkan->BeginCommandList(this);
-  }
+  pCommandQueueVulkan->BeginCommandList(this);
 }
 
 void xiiGALCommandListVulkan::EndPlatform()
@@ -361,6 +376,8 @@ void xiiGALCommandListVulkan::EndPlatform()
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  FlushBarriers();
 
   m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
@@ -916,6 +933,18 @@ void xiiGALCommandListVulkan::FlushPlatform()
 
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
 {
+  m_CommandListState = {};
+  m_PipelineBarrier  = {};
+
+  m_ImageBarriers.Clear();
+
+  m_vkWaitSemaphores.Clear();
+  m_vkSignalSemaphores.Clear();
+  m_vkWaitDestinationStageFlags.Clear();
+  m_vkWaitSemaphoreValues.Clear();
+  m_vkSignalSemaphoreValues.Clear();
+  m_SignalFences.Clear();
+  m_WaitFences.Clear();
 }
 
 void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)

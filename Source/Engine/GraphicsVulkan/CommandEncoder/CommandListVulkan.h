@@ -67,10 +67,22 @@ public:
 
   void MemoryBarrier(vk::AccessFlags vkSourceAccessFlags, vk::AccessFlags vkDestinationAccessFlags, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags);
 
+  void TransitionBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, const bool bUpdateBufferState);
+  void BufferMemoryBarrier(xiiGALBufferVulkan* pBufferVulkan, vk::AccessFlags newAccessFlags);
+
+  void TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange = nullptr);
+  void TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout newLayout);
+
+  void TransitionOrVerifyBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::AccessFlagBits expectedAccessFlags, const char* szOperationName, bool bVerifyOnly = false);
+  void TransitionOrVerifyTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::ImageLayout expectedLayout, const char* szOperationName, bool bVerifyOnly = false);
+
   void FlushBarriers();
 
   void CopyBufferToImage(vk::Buffer vkSourceBuffer, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::BufferImageCopy> pRegions);
   void CopyImageToBuffer(vk::Image vkSourceImage, vk::ImageLayout vkSourceImageLayout, vk::Buffer vkDestinationBuffer, xiiArrayPtr<const vk::BufferImageCopy> pRegions);
+
+  void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags);
+  void AddSignalSemaphore(vk::Semaphore semaphore);
 
   struct CommandListState
   {
@@ -162,15 +174,6 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-  void TransitionBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, const bool bUpdateBufferState);
-  void BufferMemoryBarrier(xiiGALBufferVulkan* pBufferVulkan, vk::AccessFlags newAccessFlags);
-
-  void TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange = nullptr);
-  void TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout newLayout);
-
-  void TransitionOrVerifyBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::AccessFlagBits expectedAccessFlags, const char* szOperationName, bool bVerifyOnly = false);
-  void TransitionOrVerifyTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::ImageLayout expectedLayout, const char* szOperationName, bool bVerifyOnly = false);
-
 private:
   struct PipelineBarrier
   {
@@ -223,6 +226,13 @@ private:
     VmaAllocationInfo                    m_AllocationInfo;
   };
 
+  struct FenceInfo
+  {
+    xiiGALFenceVulkan* m_pFenceVulkan = nullptr;
+    xiiUInt64          m_uiWaitValue  = 0U;
+    vk::Fence          m_vkFence;
+  };
+
   vk::CommandBuffer m_vkCommandBuffer;
   CommandListState  m_CommandListState;
   PipelineBarrier   m_PipelineBarrier;
@@ -241,6 +251,18 @@ private:
   xiiGALRenderPassVulkan*                                            m_pRenderPass    = nullptr;
   xiiGALFramebufferVulkan*                                           m_pFramebuffer   = nullptr;
   xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
+
+  xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
+  xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;
+  xiiDynamicArray<vk::PipelineStageFlags> m_vkWaitDestinationStageFlags;
+
+  // Can be used only if timeline semaphore extension is enabled.
+  xiiDynamicArray<xiiUInt64> m_vkWaitSemaphoreValues;
+  xiiDynamicArray<xiiUInt64> m_vkSignalSemaphoreValues;
+
+  // List of fences to signal/wait next time the command queue is flushed.
+  xiiDynamicArray<FenceInfo> m_SignalFences;
+  xiiDynamicArray<FenceInfo> m_WaitFences;
 
   struct ContextState
   {

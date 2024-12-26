@@ -3,6 +3,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Resources/FenceVulkan.h>
 
 xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription) :
   xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_CommandLists(pDeviceVulkan->GetAllocator())
@@ -47,27 +48,6 @@ void xiiGALCommandQueueVulkan::DeInitializePlatform()
   m_vkCommandPool = nullptr;
 
   m_vkDevice = nullptr;
-}
-
-void xiiGALCommandQueueVulkan::TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout imageLayout)
-{
-}
-
-void xiiGALCommandQueueVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
-{
-  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
-
-  m_vkWaitSemaphores.PushBack(semaphore);
-  m_vkWaitDestinationStageFlags.PushBack(pipelineFlags);
-  m_vkWaitSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
-}
-
-void xiiGALCommandQueueVulkan::AddSignalSemaphore(vk::Semaphore semaphore)
-{
-  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
-
-  m_vkSignalSemaphores.PushBack(semaphore);
-  m_vkSignalSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
 }
 
 xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
@@ -151,11 +131,41 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
     pCommandListVulkan->End();
   }
 
+  bool bTimelineSemaphoreInUse = false;
+  for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
+  {
+    if (!fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
+      continue;
+
+    bTimelineSemaphoreInUse = true;
+
+    pCommandListVulkan->m_vkSignalSemaphores.PushBack(fenceInfo.m_pFenceVulkan->GetVulkanSemaphore());
+    pCommandListVulkan->m_vkSignalSemaphoreValues.PushBack(fenceInfo.m_uiWaitValue);
+  }
+
   vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
 
-  vk::SubmitInfo vkSubmitInformation     = {};
-  vkSubmitInformation.pCommandBuffers    = &vkCommandBuffer;
-  vkSubmitInformation.commandBufferCount = 1U;
+  vk::SubmitInfo vkSubmitInformation       = {};
+  vkSubmitInformation.pNext                = nullptr;
+  vkSubmitInformation.waitSemaphoreCount   = pCommandListVulkan->m_vkWaitSemaphores.GetCount();
+  vkSubmitInformation.pWaitSemaphores      = pCommandListVulkan->m_vkWaitSemaphores.GetData();
+  vkSubmitInformation.pWaitDstStageMask    = pCommandListVulkan->m_vkWaitDestinationStageFlags.GetData();
+  vkSubmitInformation.pCommandBuffers      = &vkCommandBuffer;
+  vkSubmitInformation.commandBufferCount   = 1U;
+  vkSubmitInformation.signalSemaphoreCount = pCommandListVulkan->m_vkSignalSemaphores.GetCount();
+  vkSubmitInformation.pSignalSemaphores    = pCommandListVulkan->m_vkSignalSemaphores.GetData();
+
+  vk::TimelineSemaphoreSubmitInfo vkTimelineSemaphoreSubmitInfo = {};
+  if (bTimelineSemaphoreInUse)
+  {
+    vkSubmitInformation.pNext = &vkTimelineSemaphoreSubmitInfo;
+
+    vkTimelineSemaphoreSubmitInfo.pNext                     = nullptr;
+    vkTimelineSemaphoreSubmitInfo.waitSemaphoreValueCount   = vkSubmitInformation.waitSemaphoreCount;
+    vkTimelineSemaphoreSubmitInfo.pWaitSemaphoreValues      = vkSubmitInformation.waitSemaphoreCount > 0 ? pCommandListVulkan->m_vkWaitSemaphoreValues.GetData() : nullptr;
+    vkTimelineSemaphoreSubmitInfo.signalSemaphoreValueCount = vkSubmitInformation.signalSemaphoreCount;
+    vkTimelineSemaphoreSubmitInfo.pSignalSemaphoreValues    = vkSubmitInformation.signalSemaphoreCount > 0 ? pCommandListVulkan->m_vkSignalSemaphoreValues.GetData() : nullptr;
+  }
 
   VK_ASSERT_DEV(m_vkQueue.submit(1U, &vkSubmitInformation, VK_NULL_HANDLE, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
