@@ -23,6 +23,9 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
   XII_SUCCEED_OR_RETURN(CreateBackBufferInternal());
   VK_SUCCEED_OR_RETURN_XII_FAILURE(AcquireNextImage());
 
+  // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
+  m_Description.m_pWindow->AddReference();
+
   return XII_SUCCESS;
 }
 
@@ -34,6 +37,8 @@ xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
   if (m_vkSwapChain != VK_NULL_HANDLE)
   {
     // TODO
+
+    m_Description.m_pWindow->RemoveReference();
   }
 
   if (m_vkSurface != VK_NULL_HANDLE)
