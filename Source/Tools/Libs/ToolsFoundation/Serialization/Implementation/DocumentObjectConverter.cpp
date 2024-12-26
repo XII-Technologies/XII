@@ -118,8 +118,8 @@ void xiiDocumentObjectConverterWriter::AddProperty(xiiAbstractObjectNode* pNode,
     case xiiPropertyCategory::Constant:
       // Nothing to do here.
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
