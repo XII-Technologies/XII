@@ -518,6 +518,13 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   }
   m_ImageAcquiredFences.Clear();
   m_ImageAcquiredFenceSubmitted.Clear();
+
+  if (bReleaseSwapChain)
+  {
+    vkLogicalDevice.destroySwapchainKHR(m_vkSwapChain, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_vkSwapChain = VK_NULL_HANDLE;
+  }
 }
 
 xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
