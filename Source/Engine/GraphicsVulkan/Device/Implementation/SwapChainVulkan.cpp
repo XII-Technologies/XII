@@ -129,7 +129,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
     xiiGALDeviceVulkan::QueueInformation graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
     vk::Bool32                           bHasPresentSupport       = vk::False;
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     if (bHasPresentSupport == vk::False)
     {

@@ -208,7 +208,7 @@ xiiGALSparseBufferProperties xiiGALBufferVulkan::GetSparseProperties() const
   XII_ASSERT_DEV(m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse, "xiiGALBuffer::GetSparseProperties() must be used for sparse buffer.");
 
   xiiGALDeviceVulkan*    pDeviceVulkan        = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::MemoryRequirements vkMemoryRequirements = pDeviceVulkan->GetVulkanLogicalDevice().getBufferMemoryRequirements(GetVulkanBuffer());
+  vk::MemoryRequirements vkMemoryRequirements = pDeviceVulkan->GetVulkanLogicalDevice().getBufferMemoryRequirements(GetVulkanBuffer(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   xiiGALSparseBufferProperties sparseBufferProperties = {};
   sparseBufferProperties.m_uiAddressSpaceSize         = vkMemoryRequirements.size;

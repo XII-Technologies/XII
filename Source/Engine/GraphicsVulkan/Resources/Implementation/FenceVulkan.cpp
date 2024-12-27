@@ -109,7 +109,7 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
   {
     SyncPointData& syncData = m_SyncPoints.PeekFront();
 
-    vk::Result status = vkLogicalDevice.getFenceStatus(syncData.m_vkFence);
+    vk::Result status = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
     if (status == vk::Result::eSuccess)
     {
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
@@ -215,7 +215,7 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
       if (syncData.m_uiValue > uiValue)
         break;
 
-      vk::Result status = vkLogicalDevice.getFenceStatus(syncData.m_vkFence);
+      vk::Result status = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
       if (status == vk::Result::eNotReady)
       {
         status = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());

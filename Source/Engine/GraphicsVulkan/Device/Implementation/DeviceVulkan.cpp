@@ -310,7 +310,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       if (m_InstanceDispatchLoader.vkEnumerateInstanceVersion != nullptr)
       {
         // If the implementation is available, this call must return vk::Result::eSuccess.
-        m_uiVulkanVersion = vk::enumerateInstanceVersion();
+        m_uiVulkanVersion = vk::enumerateInstanceVersion(m_InstanceDispatchLoader);
 
         // Remove the patch version.
         m_uiVulkanVersion &= ~VK_MAKE_VERSION(0, 0, VK_API_VERSION_PATCH(~0U));
@@ -402,9 +402,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     m_PhysicalDevice = SelectPhysicalDevice(m_Description.m_uiAdapterID);
 
-    m_PhysicalDeviceProperties       = m_PhysicalDevice.getProperties();
-    m_PhysicalDeviceFeatures         = m_PhysicalDevice.getFeatures();
-    m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties();
+    m_PhysicalDeviceProperties       = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
+    m_PhysicalDeviceFeatures         = m_PhysicalDevice.getFeatures(m_InstanceDispatchLoader);
+    m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties(m_InstanceDispatchLoader);
 
     xiiUInt32 uiQueueFamilyCount = 0U;
     m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, m_InstanceDispatchLoader);
@@ -418,7 +418,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     // Get list of supported extensions.
     xiiUInt32 uiExtensionCount = 0U;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, nullptr));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, nullptr, m_InstanceDispatchLoader));
 
     if (uiExtensionCount > 0U)
     {
@@ -443,7 +443,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     if (m_PhysicalDevice != VK_NULL_HANDLE)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties();
+      const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
 
       xiiLog::Info("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
                    VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
@@ -1585,7 +1585,7 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
   if (xiiGALCommandQueueVulkan* pTransferQueue = m_pTransferCommandQueue.Borrow())
     pTransferQueue->WaitForIdle();
 
-  m_LogicalDevice.waitIdle();
+  m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
 
   FlushPendingObjects();
 }
@@ -1915,7 +1915,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       };
 
       vk::FormatProperties formatProperties = {};
-      m_PhysicalDevice.getFormatProperties(vkShadingRateResourceFormat, &formatProperties);
+      m_PhysicalDevice.getFormatProperties(vkShadingRateResourceFormat, &formatProperties, m_InstanceDispatchLoader);
       XII_ASSERT_DEV(formatProperties.optimalTilingFeatures & (vk::FormatFeatureFlagBits::eFragmentShadingRateAttachmentKHR | vk::FormatFeatureFlagBits::eFragmentDensityMapEXT), "");
 
       m_AdapterDescription.m_ShadingRateProperties.m_BindFlags = xiiGALBindFlags::ShadingRate;
@@ -2090,16 +2090,16 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
 vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
 {
-  const auto IsGraphicsAndComputeQueueSupported = [](const vk::PhysicalDevice& physicalDevice) -> bool {
+  const auto IsGraphicsAndComputeQueueSupported = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> bool {
     xiiUInt32 uiQueueFamilyCount = 0U;
-    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr);
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, instanceDispatchLoader);
 
     XII_ASSERT_DEV(uiQueueFamilyCount > 0, "");
 
     xiiHybridArray<vk::QueueFamilyProperties, 2U> queueFamilyProperties;
     queueFamilyProperties.SetCount(uiQueueFamilyCount);
 
-    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData());
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData(), instanceDispatchLoader);
     XII_ASSERT_DEV(queueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
 
     // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
@@ -2128,7 +2128,7 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
   {
     for (const vk::PhysicalDevice& physicalDevice : m_PhysicalDevices)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = physicalDevice.getProperties();
+      const vk::PhysicalDeviceProperties& deviceProperties = physicalDevice.getProperties(m_InstanceDispatchLoader);
 
       if (IsGraphicsAndComputeQueueSupported(physicalDevice))
       {
