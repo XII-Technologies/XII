@@ -50,6 +50,8 @@ public:
   virtual xiiSizeU32 GetClientAreaSize() const override { return xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight); }
   virtual void       OnResize(const xiiSizeU32& newWindowSize) override
   {
+    xiiWindow::OnResize(newWindowSize);
+
     if (g_uiWindowWidth != newWindowSize.width || g_uiWindowHeight != newWindowSize.height)
     {
       g_uiWindowWidth  = newWindowSize.width;
@@ -85,6 +87,12 @@ public:
   virtual Execution Run() override
   {
     m_pWindow->ProcessWindowMessages();
+
+    if (!m_pWindow->IsVisible())
+    {
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(16));
+      return Execution::Continue;
+    }
 
     if (g_bWindowResized)
     {

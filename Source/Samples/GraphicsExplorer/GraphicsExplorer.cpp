@@ -31,6 +31,8 @@ static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
 static bool      g_bWindowResized = false;
 
+#define USE_RENDER_PASS_AND_FRAMEBUFFER 0
+
 class xiiGraphicsExplorerWindow : public xiiWindow
 {
 public:
@@ -44,6 +46,8 @@ public:
   virtual xiiSizeU32 GetClientAreaSize() const override { return xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight); }
   virtual void       OnResize(const xiiSizeU32& newWindowSize) override
   {
+    xiiWindow::OnResize(newWindowSize);
+
     if (g_uiWindowWidth != newWindowSize.width || g_uiWindowHeight != newWindowSize.height)
     {
       g_uiWindowWidth  = newWindowSize.width;
@@ -68,6 +72,12 @@ public:
   virtual Execution Run() override
   {
     m_pWindow->ProcessWindowMessages();
+
+    if (!m_pWindow->IsVisible())
+    {
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(16));
+      return Execution::Continue;
+    }
 
     if (g_bWindowResized)
     {
@@ -153,6 +163,7 @@ public:
 
       if (auto pCommandList = pGraphicsQueue->BeginCommandList())
       {
+#if USE_RENDER_PASS_AND_FRAMEBUFFER
         xiiGALBeginRenderPassDescription beginRenderPass{
           .m_hRenderPass  = m_hRenderPass,
           .m_hFramebuffer = m_hFrameBuffer,
@@ -171,6 +182,19 @@ public:
 
         pCommandList->BeginRenderPass(beginRenderPass);
         pCommandList->EndRenderPass();
+#else
+        auto pSwapChain  = m_pDevice->GetSwapChain(m_hSwapChain);
+        auto pBackbuffer = m_pDevice->GetTexture(pSwapChain->GetBackBufferTexture());
+
+        float    fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+        xiiColor clearColor  = xiiColor::Black;
+        clearColor.r         = tanf(fGlobalTime);
+        clearColor.g         = sinf(fGlobalTime);
+        clearColor.b         = cosf(fGlobalTime);
+        clearColor.a         = 1.0f;
+
+        pCommandList->ClearRenderTargetView(pBackbuffer->GetDefaultView(xiiGALTextureViewType::RenderTarget), clearColor);
+#endif
         pCommandList->Submit();
       }
 
@@ -402,14 +426,13 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+#if USE_RENDER_PASS_AND_FRAMEBUFFER
     m_pDevice->DestroyFramebuffer(m_hFrameBuffer);
     m_hFrameBuffer.Invalidate();
 
     m_pDevice->DestroyRenderPass(m_hRenderPass);
     m_hRenderPass.Invalidate();
-
-    m_pDevice->DestroyTexture(m_hDepthStencilTexture);
-    m_hDepthStencilTexture.Invalidate();
+#endif
 
     m_pDevice->DestroySwapChain(m_hSwapChain);
     m_hSwapChain.Invalidate();
@@ -459,28 +482,7 @@ public:
       }
     }
 
-    // Do not destroy the texture if the swapchain is minimized
-    if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated() && m_pWindow->GetClientAreaSize().HasNonZeroArea())
-    {
-      m_pDevice->DestroyTexture(m_hDepthStencilTexture);
-
-      m_hDepthStencilTexture.Invalidate();
-    }
-
-    // Create depth texture
-    if (m_pWindow->GetClientAreaSize().HasNonZeroArea())
-    {
-      xiiGALTextureCreationDescription texDesc;
-      texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
-      texDesc.m_Size.width  = g_uiWindowWidth;
-      texDesc.m_Size.height = g_uiWindowHeight;
-      texDesc.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
-      texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
-
-      m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
-      m_pDevice->GetTexture(m_hDepthStencilTexture)->SetDebugName("Depth Stencil");
-    }
-
+#if USE_RENDER_PASS_AND_FRAMEBUFFER
     // Create render pass
     {
       if (!m_hRenderPass.IsInvalidated())
@@ -566,6 +568,7 @@ public:
       m_hFrameBuffer = m_pDevice->CreateFramebuffer(framebufferDesc);
       XII_ASSERT_DEV(!m_hFrameBuffer.IsInvalidated(), "Failed to create frame buffer.");
     }
+#endif
   }
 
 private:
@@ -574,10 +577,11 @@ private:
   xiiGALDevice* m_pDevice = nullptr;
 
   xiiGALSwapChainHandle m_hSwapChain;
-  xiiGALTextureHandle   m_hDepthStencilTexture;
 
+#if USE_RENDER_PASS_AND_FRAMEBUFFER
   xiiGALRenderPassHandle  m_hRenderPass;
   xiiGALFramebufferHandle m_hFrameBuffer;
+#endif
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiGraphicsExplorerApp);
