@@ -5,6 +5,8 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
@@ -425,20 +427,14 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   m_DrawCompleteSemaphores.SetCount(uiSwapChainImageCount);
   m_ImageAcquiredFences.SetCount(uiSwapChainImageCount);
 
+  auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
+  auto pFencePool     = pDeviceVulkan->GetVulkanFencePool();
+
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
-    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
-    vkSemaphoreCreateInfo.flags                   = {};
-    vkSemaphoreCreateInfo.pNext                   = nullptr;
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_ImageAcquiredSemaphores[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_DrawCompleteSemaphores[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-    vk::FenceCreateInfo vkFenceCreateInfo = {};
-    vkFenceCreateInfo.flags               = {};
-    vkFenceCreateInfo.pNext               = nullptr;
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createFence(&vkFenceCreateInfo, nullptr, &m_ImageAcquiredFences[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    m_ImageAcquiredSemaphores[i] = pSemaphorePool->RequestSemaphore();
+    m_DrawCompleteSemaphores[i]  = pSemaphorePool->RequestSemaphore();
+    m_ImageAcquiredFences[i]     = pFencePool->RequestFence();
   }
 
   return XII_SUCCESS;
@@ -519,10 +515,26 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   // We must wait until GPU is idled before destroying the fences as they are destroyed immediately.
   // The semaphores are managed and will be kept alive by the command queue they are submitted to.
   // \todo: submit semaphores to semaphore pool.
+  m_uiSemaphoreIndex = 0U;
 
+  auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
+
+  for (xiiUInt32 i = 0; i < m_DrawCompleteSemaphores.GetCount(); ++i)
+  {
+    pSemaphorePool->ReclaimSemaphore(m_DrawCompleteSemaphores[i]);
+  }
+  m_DrawCompleteSemaphores.Clear();
+
+  for (xiiUInt32 i = 0; i < m_ImageAcquiredSemaphores.GetCount(); ++i)
+  {
+    pSemaphorePool->ReclaimSemaphore(m_ImageAcquiredSemaphores[i]);
+  }
+  m_ImageAcquiredSemaphores.Clear();
+
+  auto pFencePool = pDeviceVulkan->GetVulkanFencePool();
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
   {
-    vkLogicalDevice.destroyFence(m_ImageAcquiredFences[i], nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    pFencePool->ReclaimFence(m_ImageAcquiredFences[i]);
 
     m_ImageAcquiredFences[i] = VK_NULL_HANDLE;
   }
