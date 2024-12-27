@@ -12,6 +12,8 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -1055,6 +1057,12 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
   }
 
+  // Create pools.
+  {
+    m_FencePool     = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
+    m_SemaphorePool = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+  }
+
   // Create command queues.
   {
     {
@@ -1113,6 +1121,11 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
 
     m_pGraphicsCommandQueue->DeInitializePlatform();
     m_pGraphicsCommandQueue.Clear();
+  }
+
+  {
+    m_FencePool.Clear();
+    m_SemaphorePool.Clear();
   }
 
   vmaDestroyAllocator(m_vkVmaAllocator);
@@ -1587,7 +1600,7 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
   m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
 
-  FlushPendingObjects();
+  /// \todo: Flush objects in the release queue.
 }
 
 xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()

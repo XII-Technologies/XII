@@ -93,3 +93,5 @@ class xiiGALRasterizerStateVulkan;
 class xiiGALPipelineStateVulkan;
 class xiiGALPipelineResourceSignatureVulkan;
 class xiiGALShaderResourceVariableVulkan;
+class xiiGALFencePoolVulkan;
+class xiiGALSemaphorePoolVulkan;
