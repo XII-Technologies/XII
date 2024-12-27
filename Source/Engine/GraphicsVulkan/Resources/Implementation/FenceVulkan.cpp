@@ -2,6 +2,7 @@
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 
 xiiGALFenceVulkan::xiiGALFenceVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription) :
   xiiGALFence(pDeviceVulkan, creationDescription)
@@ -114,7 +115,7 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
     {
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
 
-      vkLogicalDevice.destroyFence(syncData.m_vkFence, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(syncData.m_vkFence);
 
       m_SyncPoints.PopFront();
     }
@@ -182,16 +183,8 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
     InternalGetCompletedValue();
   }
 
-  /// \todo GraphicsVulkan: Use a pool to recycle sync fences.
-  vk::FenceCreateInfo vkFenceCreateInfo = {};
-  vkFenceCreateInfo.pNext               = nullptr;
-  vkFenceCreateInfo.flags               = {};
-
-  vk::Fence vkFence = {};
-  VK_ASSERT_DEV(vkLogicalDevice.createFence(&vkFenceCreateInfo, nullptr, &vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
   xiiGALFenceVulkan::SyncPointData& syncPoint = m_SyncPoints.ExpandAndGetRef();
-  syncPoint.m_vkFence                         = vkFence;
+  syncPoint.m_vkFence                         = pDeviceVulkan->GetVulkanFencePool()->RequestFence();
   syncPoint.m_uiValue                         = uiFenceValue;
 
   return syncPoint;
@@ -234,7 +227,7 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
 
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
 
-      pDeviceVulkan->SafeReleaseDeviceObject(std::move(syncData.m_vkFence));
+      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(syncData.m_vkFence);
 
       m_SyncPoints.PopFront();
     }
