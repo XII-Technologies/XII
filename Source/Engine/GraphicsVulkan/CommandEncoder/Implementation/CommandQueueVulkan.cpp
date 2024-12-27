@@ -44,7 +44,10 @@ void xiiGALCommandQueueVulkan::DeInitializePlatform()
 
     XII_DELETE(pDeviceVulkan->GetAllocator(), pCommandList);
   }
+
   m_CommandLists.Clear();
+  m_QueuedCommandLists.Clear();
+  m_CommandListsToReset.Clear();
 
   pDeviceVulkan->DestroyFenceInternal(m_pQueueFence);
 
@@ -79,44 +82,53 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 
   XII_LOCK(m_QueueMutex);
 
-  xiiGALCommandListVulkan* pCommandListVulkan = nullptr;
-  if (!m_CommandLists.IsEmpty() && m_CommandLists.PeekFront()->GetRecordingState() == xiiGALCommandList::RecordingState::Reset)
+  // Reset completed command lists.
   {
-    pCommandListVulkan = m_CommandLists.PeekFront();
+    xiiUInt64 uiCompletedValue = m_pQueueFence->GetCompletedValue();
+
+    for (xiiUInt32 i = 0; i < m_CommandListsToReset.GetCount() && m_CommandListsToReset.PeekFront().m_uiFenceValue < uiCompletedValue; ++i)
+    {
+      auto& commandListInfo = m_CommandListsToReset.PeekFront();
+
+      commandListInfo.m_pCommandListVulkan->ResetInternal();
+
+      XII_ASSERT_DEV(commandListInfo.m_pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Reset, "Command list is not reset.");
+      XII_ASSERT_DEV(!m_QueuedCommandLists.Contains(commandListInfo.m_pCommandListVulkan), "Implementation error.");
+
+      m_QueuedCommandLists.PushBack(commandListInfo.m_pCommandListVulkan);
+
+      m_CommandListsToReset.PopFront();
+
+      i = 0;
+    }
   }
 
-  XII_ASSERT_DEV(!(pCommandListVulkan != nullptr && pCommandListVulkan->GetRecordingState() != xiiGALCommandList::RecordingState::Reset), "The retrieved command list is not reset.");
-
-  if (pCommandListVulkan == nullptr)
+  if (m_QueuedCommandLists.IsEmpty())
   {
     // Allocate a new command list.
     xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
     xiiGALDeviceVulkan*                  pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-    pCommandListVulkan                                          = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCommandListVulkan, pDeviceVulkan, this, commandListDescription);
+    xiiGALCommandListVulkan*             pCommandListVulkan     = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCommandListVulkan, pDeviceVulkan, this, commandListDescription);
 
     m_CommandLists.PushBack(pCommandListVulkan);
+    m_QueuedCommandLists.PushBack(pCommandListVulkan);
 
     xiiStringBuilder sb;
     sb.SetFormat("Command List {}", m_CommandLists.GetCount());
     pCommandListVulkan->SetDebugName(sb);
   }
 
+  xiiGALCommandListVulkan* pCommandListVulkan = m_QueuedCommandLists.PeekFront();
+
+  m_QueuedCommandLists.PopFront();
+
+  XII_ASSERT_DEV(pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Reset, "Command list is not reset.");
+
   pCommandListVulkan->Begin();
 
   XII_ASSERT_DEV(pCommandListVulkan != nullptr && pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Recording, "The retrieved command list is not begun.");
 
   return pCommandListVulkan;
-}
-
-void xiiGALCommandQueueVulkan::BeginCommandList(xiiGALCommandListVulkan* pCommandListVulkan)
-{
-  XII_LOCK(m_QueueMutex);
-
-  XII_VERIFY(m_CommandLists.RemoveAndSwap(pCommandListVulkan), "Invalid command list to reset.");
-
-  XII_ASSERT_DEV(!m_CommandLists.Contains(pCommandListVulkan), "Command list duplication error.");
-
-  m_CommandLists.PushBack(pCommandListVulkan);
 }
 
 void xiiGALCommandQueueVulkan::ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan)
@@ -127,21 +139,6 @@ void xiiGALCommandQueueVulkan::ResetCommandList(xiiGALCommandListVulkan* pComman
   XII_ASSERT_DEV(m_CommandLists.Contains(pCommandListVulkan), "Command list not found in allocated command lists.");
 
   m_CommandListsToReset.PushBack(CommandListReleaseInfo{.m_pCommandListVulkan = pCommandListVulkan, .m_uiFenceValue = GetNextFenceValue()});
-}
-
-void xiiGALCommandQueueVulkan::ReleasePendingCommandListsToReset()
-{
-  XII_LOCK(m_QueueMutex);
-
-  for (auto& commandListInfo : m_CommandListsToReset)
-  {
-    commandListInfo.m_pCommandListVulkan->ResetInternal();
-
-    XII_VERIFY(m_CommandLists.RemoveAndCopy(commandListInfo.m_pCommandListVulkan), "");
-    m_CommandLists.PushFront(commandListInfo.m_pCommandListVulkan);
-  }
-
-  m_CommandListsToReset.Clear();
 }
 
 void xiiGALCommandQueueVulkan::Flush()

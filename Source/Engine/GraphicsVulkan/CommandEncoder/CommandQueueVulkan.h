@@ -23,8 +23,6 @@ public:
   virtual xiiUInt64 WaitForIdle() override final;
 
   virtual xiiGALCommandList* BeginCommandList() override final;
-
-  void BeginCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
   void ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
 
   XII_ALWAYS_INLINE xiiUInt32 GetVulkanQueueFamilyIndex() const { return m_uiQueueFamilyIndex; };
@@ -35,8 +33,6 @@ public:
 
 protected:
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
-
-  void ReleasePendingCommandListsToReset();
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -66,11 +62,12 @@ protected:
   vk::Queue  m_vkQueue;
   xiiUInt32  m_uiQueueFamilyIndex = xiiInvalidIndex;
 
-  vk::CommandPool                         m_vkCommandPool;
-  xiiDeque<xiiGALCommandListVulkan*>      m_CommandLists;
-  xiiDynamicArray<CommandListReleaseInfo> m_CommandListsToReset;
-  vk::PipelineStageFlags                  m_vkSupportedStageFlags;
-  vk::AccessFlags                         m_vkSupportedAccessFlags;
+  vk::CommandPool                           m_vkCommandPool;
+  xiiDynamicArray<xiiGALCommandListVulkan*> m_CommandLists;
+  xiiDeque<xiiGALCommandListVulkan*>        m_QueuedCommandLists;
+  xiiDeque<CommandListReleaseInfo>          m_CommandListsToReset;
+  vk::PipelineStageFlags                    m_vkSupportedStageFlags;
+  vk::AccessFlags                           m_vkSupportedAccessFlags;
 
   xiiGALFenceVulkan*               m_pQueueFence;
   std::atomic<xiiUInt64>           m_uiNextFenceValue = 1U;

@@ -367,8 +367,6 @@ void xiiGALCommandListVulkan::BeginPlatform()
   VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_RecordingState = RecordingState::Recording;
-
-  pCommandQueueVulkan->BeginCommandList(this);
 }
 
 void xiiGALCommandListVulkan::EndPlatform()
