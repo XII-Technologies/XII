@@ -499,16 +499,26 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   // All references to the swap chain must be released before it can be destroyed.
   for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
   {
-    pDeviceVulkan->DestroyTexture(m_SwapChainTextures[i]);
+    if (!m_SwapChainTextures[i].IsInvalidated())
+    {
+      pDeviceVulkan->DestroyTexture(m_SwapChainTextures[i]);
 
-    m_SwapChainTextures[i].Invalidate();
+      m_SwapChainTextures[i].Invalidate();
+    }
   }
-  m_SwapChainImagesInitialized.Clear();
 
+  if (m_hBackBufferTexture.IsInvalidated())
+  {
+    m_hBackBufferTexture.Invalidate();
+  }
+
+  m_SwapChainImages.Clear();
+  m_SwapChainTextures.Clear();
+  m_SwapChainImagesInitialized.Clear();
 
   // We must wait until GPU is idled before destroying the fences as they are destroyed immediately.
   // The semaphores are managed and will be kept alive by the command queue they are submitted to.
-  // \todo: submit to the device for safe deletion.
+  // \todo: submit semaphores to semaphore pool.
 
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
   {
@@ -576,24 +586,6 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     pDeviceVulkan->GetTexture(m_SwapChainTextures[i])->SetDebugName(sb);
   }
   return XII_SUCCESS;
-}
-
-void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
-{
-  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
-  {
-    if (!m_SwapChainTextures[i].IsInvalidated())
-    {
-      m_pDevice->DestroyTexture(m_SwapChainTextures[i]);
-
-      m_SwapChainTextures[i].Invalidate();
-    }
-  }
-
-  if (m_hBackBufferTexture.IsInvalidated())
-  {
-    m_hBackBufferTexture.Invalidate();
-  }
 }
 
 vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
@@ -836,7 +828,7 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
     }
   }
 
-  m_bIsMinimized = !newSize.HasNonZeroArea();
+  m_bIsMinimized = (newSize.width == 0 && newSize.height == 0);
 
   return XII_FAILURE;
 }
