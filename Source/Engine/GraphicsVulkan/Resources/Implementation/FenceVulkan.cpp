@@ -114,6 +114,8 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
     {
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
 
+      vkLogicalDevice.destroyFence(syncData.m_vkFence, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
       m_SyncPoints.PopFront();
     }
     else
@@ -172,6 +174,13 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
 {
   xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  // If fence is used only for synchronization between queues it will accumulate many more sync points.
+  // We need to check VkFence and remove already reached sync points.
+  if (m_SyncPoints.GetCount() > s_uiRequiredArraySize)
+  {
+    InternalGetCompletedValue();
+  }
 
   /// \todo GraphicsVulkan: Use a pool to recycle sync fences.
   vk::FenceCreateInfo vkFenceCreateInfo = {};
