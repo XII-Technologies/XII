@@ -2,8 +2,6 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
-#include <Foundation/Types/UniquePtr.h>
-
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
@@ -19,7 +17,7 @@ public:
   XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue.load(); }
 
   /// \brief This returns the last completed value of the internal fence.
-  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return m_pDevice->GetFence(m_hQueueFence)->GetCompletedValue(); }
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return m_pQueueFence->GetCompletedValue(); }
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
@@ -74,7 +72,7 @@ protected:
   vk::PipelineStageFlags                  m_vkSupportedStageFlags;
   vk::AccessFlags                         m_vkSupportedAccessFlags;
 
-  xiiGALFenceHandle                m_hQueueFence;
+  xiiGALFenceVulkan*               m_pQueueFence;
   std::atomic<xiiUInt64>           m_uiNextFenceValue = 1U;
   xiiGALFenceVulkan::SyncPointData m_LastSyncPoint;
 };

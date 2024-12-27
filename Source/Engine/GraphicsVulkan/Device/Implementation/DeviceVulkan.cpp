@@ -1440,6 +1440,16 @@ void xiiGALDeviceVulkan::DestroyQueryPlatform(xiiGALQuery* pQuery)
   XII_DELETE(&m_Allocator, pQueryVulkan);
 }
 
+xiiGALFenceVulkan* xiiGALDeviceVulkan::CreateFenceInternal(const xiiGALFenceCreationDescription& description)
+{
+  return static_cast<xiiGALFenceVulkan*>(CreateFencePlatform(description));
+}
+
+void xiiGALDeviceVulkan::DestroyFenceInternal(xiiGALFence* pFence)
+{
+  DestroyFencePlatform(pFence);
+}
+
 xiiGALFence* xiiGALDeviceVulkan::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
   xiiGALFenceVulkan* pFenceVulkan = XII_NEW(&m_Allocator, xiiGALFenceVulkan, this, description);

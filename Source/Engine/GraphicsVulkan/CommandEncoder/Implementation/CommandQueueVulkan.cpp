@@ -31,7 +31,7 @@ void xiiGALCommandQueueVulkan::InitializePlatform(xiiUInt32 uiQueueFamilyIndex, 
   m_vkSupportedAccessFlags = pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(uiQueueFamilyIndex);
 
   xiiGALFenceCreationDescription fenceDescription = {.m_Type = xiiGALFenceType::CpuWaitOnly};
-  m_hQueueFence                                   = pDeviceVulkan->CreateFence(fenceDescription);
+  m_pQueueFence                                   = pDeviceVulkan->CreateFenceInternal(fenceDescription);
 }
 
 void xiiGALCommandQueueVulkan::DeInitializePlatform()
@@ -46,6 +46,8 @@ void xiiGALCommandQueueVulkan::DeInitializePlatform()
   }
   m_CommandLists.Clear();
 
+  pDeviceVulkan->DestroyFenceInternal(m_pQueueFence);
+
   m_vkDevice.destroyCommandPool(m_vkCommandPool, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
   m_vkCommandPool = nullptr;
 
@@ -57,7 +59,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
   XII_LOCK(m_QueueMutex);
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALFenceVulkan*  pFenceVulkan  = static_cast<xiiGALFenceVulkan*>(pDeviceVulkan->GetFence(m_hQueueFence));
 
   // Update last completed fence value to unlock all waiting events.
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
@@ -65,8 +66,8 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
   m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   // TODO (VERIFY): For some reason after idling the queue not all fences are signaled.
-  pFenceVulkan->Wait(xiiMath::MaxValue<xiiUInt64>());
-  pFenceVulkan->Reset(uiFenceValue);
+  m_pQueueFence->Wait(xiiMath::MaxValue<xiiUInt64>());
+  m_pQueueFence->Reset(uiFenceValue);
 
   return uiFenceValue;
 }
@@ -151,14 +152,13 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 {
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
-  xiiGALFenceVulkan*       pFenceVulkan       = static_cast<xiiGALFenceVulkan*>(pDeviceVulkan->GetFence(m_hQueueFence));
 
   if (pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
   {
     pCommandListVulkan->End();
   }
 
-  XII_ASSERT_DEV(!pFenceVulkan->IsTimelineSemaphore(), "The queue fence should be a CPU wait fence only.");
+  XII_ASSERT_DEV(!m_pQueueFence->IsTimelineSemaphore(), "The queue fence should be a CPU wait fence only.");
 
   bool bTimelineSemaphoreInUse = false;
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
@@ -198,7 +198,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 
   // Increment the value before submitting the buffer to be overly safe.
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
-  const auto&     syncPoint    = pFenceVulkan->CreateSyncPoint(uiFenceValue);
+  const auto&     syncPoint    = m_pQueueFence->CreateSyncPoint(uiFenceValue);
 
   VK_ASSERT_DEV(m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 

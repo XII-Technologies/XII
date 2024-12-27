@@ -167,6 +167,9 @@ public:
   XII_ALWAYS_INLINE xiiGALFencePoolVulkan* GetVulkanFencePool() const { return m_FencePool.Borrow(); }
   XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_SemaphorePool.Borrow(); }
 
+  xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
+  void DestroyFenceInternal(xiiGALFence* pFence);
+
   void FlushPendingObjects();
 
   // These functions are implemented by a graphics API implementation.
