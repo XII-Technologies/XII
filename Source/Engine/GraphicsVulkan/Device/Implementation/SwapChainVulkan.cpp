@@ -321,7 +321,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
     for (const vk::PresentModeKHR& preferredMode : preferredPresentModes)
     {
-      if (preferredPresentModes.Contains(preferredMode))
+      if (presentModes.Contains(preferredMode))
       {
         presentMode = preferredMode;
         break;
