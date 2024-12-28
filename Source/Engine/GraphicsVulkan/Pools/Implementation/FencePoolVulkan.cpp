@@ -62,17 +62,9 @@ void xiiGALFencePoolVulkan::ReclaimFence(vk::Fence& vkFence)
 
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
 
-  vk::Result status = vkLogicalDevice.getFenceStatus(vkFence, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-  if (status == vk::Result::eSuccess)
-  {
-    VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &vkFence, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &vkFence, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-    m_QueuedFences.PushBack(vkFence);
-  }
-  else
-  {
-    m_pDeviceVulkan->ReclaimPoolFenceLater(vkFence);
-  }
+  m_QueuedFences.PushBack(vkFence);
 }
 
 vk::Fence xiiGALFencePoolVulkan::CreateVulkanFence()
