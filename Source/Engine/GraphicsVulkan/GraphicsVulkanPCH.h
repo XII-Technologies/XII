@@ -25,6 +25,8 @@
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+
 #include <vulkan/vulkan.hpp>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)

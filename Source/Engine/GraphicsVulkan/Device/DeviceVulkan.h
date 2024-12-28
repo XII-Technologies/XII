@@ -72,6 +72,8 @@ public:
 
   struct QueueInformation
   {
+    XII_DECLARE_POD_TYPE();
+
     vk::Queue m_vkQueue;
     xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
     xiiUInt32 m_uiQueueIndex       = 0U;
@@ -109,15 +111,21 @@ public:
 #endif
   }
 
-  template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
-  void SafeReleaseDeviceObject(ObjectType&& object, VmaAllocation vmaAlloaction)
+  template <typename T>
+  void SafeReleaseDeviceObject(T& vkObject, VmaAllocation vmaAlloaction)
   {
+    SafeReleaseDeviceObjectInternal(vkObject.objectType, (void*)vkObject, vmaAlloaction);
   }
 
-  template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
-  void SafeReleaseDeviceObject(ObjectType&& object)
+  template <typename T>
+  void SafeReleaseDeviceObject(T& vkObject)
   {
+    SafeReleaseDeviceObjectInternal(vkObject.objectType, (void*)vkObject, nullptr);
   }
+
+  void ReclaimPoolFenceLater(vk::Fence& vkFence);
+
+  void ReclaimPoolSemaphoreLater(vk::Semaphore& vkSemaphore);
 
   // Internal objects retrieval.
 
@@ -128,27 +136,27 @@ public:
   XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
   XII_ALWAYS_INLINE const vk::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
 
-  XII_ALWAYS_INLINE xiiArrayPtr<vk::LayerProperties> GetVulkanInstanceLayers() { return m_Layers; }
-  XII_ALWAYS_INLINE xiiArrayPtr<vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() { return m_Extensions; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const char*> GetVulkanInstanceEnabledExtensions() { return m_EnabledExtensions; }
-  XII_ALWAYS_INLINE xiiArrayPtr<vk::PhysicalDevice> GetVulkanPhysicalDevices() { return m_PhysicalDevices; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::LayerProperties> GetVulkanInstanceLayers() const { return m_Layers; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() const { return m_Extensions; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const char* const> GetVulkanInstanceEnabledExtensions() const { return m_EnabledExtensions; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::PhysicalDevice> GetVulkanPhysicalDevices() const { return m_PhysicalDevices; }
 
   XII_ALWAYS_INLINE vk::PhysicalDevice GetVulkanPhysicalDevice() const { return m_PhysicalDevice; }
   XII_ALWAYS_INLINE const vk::PhysicalDeviceProperties& GetVulkanPhysicalDeviceProperties() const { return m_PhysicalDeviceProperties; }
   XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanPhysicalDeviceFeatures() const { return m_PhysicalDeviceFeatures; }
   XII_ALWAYS_INLINE const vk::PhysicalDeviceMemoryProperties& GetVulkanPhysicalDeviceMemoryProperties() const { return m_PhysicalDeviceMemoryProperties; }
-  XII_ALWAYS_INLINE xiiArrayPtr<vk::QueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties() { return m_PhysicalDeviceQueueFamilyProperties; }
-  XII_ALWAYS_INLINE xiiArrayPtr<vk::ExtensionProperties> GetPhysicalDeviceSupportedExtensions() { return m_PhysicalDeviceSupportedExtensions; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::QueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties() const { return m_PhysicalDeviceQueueFamilyProperties; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetPhysicalDeviceSupportedExtensions() const { return m_PhysicalDeviceSupportedExtensions; }
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetPhysicalDeviceExtensionFeatures() const { return m_PhysicalDeviceExtensionFeatures; }
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionProperties& GetPhysicalDeviceExtensionProperties() const { return m_PhysicalDeviceExtensionProperties; }
 
   XII_ALWAYS_INLINE vk::Device GetVulkanLogicalDevice() const { return m_LogicalDevice; }
   XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanLogicalDeviceFeatures() const { return m_LogicalDeviceFeatures; }
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetVulkanLogicalDeviceExtensionFeatures() const { return m_LogicalDeviceExtensionFeatures; }
-  XII_ALWAYS_INLINE xiiArrayPtr<vk::PipelineStageFlags> GetVulkanLogicalDeviceSupportedStagesFlags() { return m_LogicalDeviceSupportedStagesFlags; }
-  XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanLogicalDeviceSupportedStagesFlags(xiiUInt32 uiQueueFamilyIndex) { return m_LogicalDeviceSupportedStagesFlags[uiQueueFamilyIndex]; }
-  XII_ALWAYS_INLINE xiiArrayPtr<vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() { return m_LogicalDeviceSupportedAccessFlags; }
-  XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::PipelineStageFlags> GetVulkanLogicalDeviceSupportedStagesFlags() const { return m_LogicalDeviceSupportedStagesFlags; }
+  XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanLogicalDeviceSupportedStagesFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedStagesFlags[uiQueueFamilyIndex]; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() const { return m_LogicalDeviceSupportedAccessFlags; }
+  XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
 
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }
@@ -156,7 +164,13 @@ public:
 
   XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
 
-  void FlushPendingObjects();
+  XII_ALWAYS_INLINE xiiGALFencePoolVulkan* GetVulkanFencePool() const { return m_FencePool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_SemaphorePool.Borrow(); }
+
+  xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
+  void               DestroyFenceInternal(xiiGALFence* pFence);
+
+  void ReleasePerFrameResources(xiiUInt64 uiCompletedValue);
 
   // These functions are implemented by a graphics API implementation.
 protected:
@@ -228,6 +242,8 @@ protected:
 
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
+  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+
 private:
   enum class VulkanObjectType : xiiUInt32
   {
@@ -254,6 +270,31 @@ private:
     QueryPool,
     AccelerationStructureKHR,
     PipelineCache
+  };
+
+  struct SafeReleaseDescription
+  {
+    XII_DECLARE_POD_TYPE();
+
+    vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
+    void*          m_pObject       = nullptr;
+    VmaAllocation  m_VmaAllocation = {};
+  };
+
+  struct SafeReclaimResource
+  {
+    XII_DECLARE_POD_TYPE();
+
+    vk::ObjectType m_vkObjectType = vk::ObjectType::eUnknown;
+    void*          m_pObject      = nullptr;
+  };
+
+  struct PerFrameData
+  {
+    xiiUInt64 m_uiFrameNumber = xiiInvalidIndex;
+
+    xiiDeque<SafeReleaseDescription> m_SafeReleaseDescriptions;
+    xiiDeque<SafeReclaimResource>    m_SafeReclaimResources;
   };
 
   // Vulkan Instance Information.
@@ -290,7 +331,7 @@ private:
   vk::DebugReportCallbackEXT m_DebugCallback;
 
   // Vulkan Memory Allocation.
-  VmaAllocator m_vkVmaAllocator;
+  VmaAllocator m_vkVmaAllocator = VK_NULL_HANDLE;
 
   // Graphics Queue Information.
   QueueInformation                       m_GraphicsQueueInformation;
@@ -303,6 +344,15 @@ private:
   // Graph Queue Information.
   QueueInformation                       m_TransferQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
+
+  // Pools.
+  xiiUniquePtr<xiiGALFencePoolVulkan>     m_FencePool;
+  xiiUniquePtr<xiiGALSemaphorePoolVulkan> m_SemaphorePool;
+
+  // Per Frame Data.
+  xiiUInt32              m_uiFrameCounter = 0U;
+  xiiGALFenceVulkan*     m_pFrameFence    = nullptr;
+  xiiDeque<PerFrameData> m_PerFrameData;
 
 private:
   vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;

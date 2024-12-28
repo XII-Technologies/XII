@@ -12,6 +12,8 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -310,7 +312,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       if (m_InstanceDispatchLoader.vkEnumerateInstanceVersion != nullptr)
       {
         // If the implementation is available, this call must return vk::Result::eSuccess.
-        m_uiVulkanVersion = vk::enumerateInstanceVersion();
+        m_uiVulkanVersion = vk::enumerateInstanceVersion(m_InstanceDispatchLoader);
 
         // Remove the patch version.
         m_uiVulkanVersion &= ~VK_MAKE_VERSION(0, 0, VK_API_VERSION_PATCH(~0U));
@@ -402,9 +404,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     m_PhysicalDevice = SelectPhysicalDevice(m_Description.m_uiAdapterID);
 
-    m_PhysicalDeviceProperties       = m_PhysicalDevice.getProperties();
-    m_PhysicalDeviceFeatures         = m_PhysicalDevice.getFeatures();
-    m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties();
+    m_PhysicalDeviceProperties       = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
+    m_PhysicalDeviceFeatures         = m_PhysicalDevice.getFeatures(m_InstanceDispatchLoader);
+    m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties(m_InstanceDispatchLoader);
 
     xiiUInt32 uiQueueFamilyCount = 0U;
     m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, m_InstanceDispatchLoader);
@@ -418,7 +420,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     // Get list of supported extensions.
     xiiUInt32 uiExtensionCount = 0U;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, nullptr));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, nullptr, m_InstanceDispatchLoader));
 
     if (uiExtensionCount > 0U)
     {
@@ -443,7 +445,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     if (m_PhysicalDevice != VK_NULL_HANDLE)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties();
+      const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
 
       xiiLog::Info("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
                    VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
@@ -1055,8 +1057,21 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
   }
 
+  // Create pools.
+  {
+    m_FencePool     = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
+    m_SemaphorePool = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+  }
+
   // Create command queues.
   {
+    // Create per-frame fence.
+    {
+      xiiGALFenceCreationDescription fenceDescription = {.m_Type = xiiGALFenceType::General};
+
+      m_pFrameFence = CreateFenceInternal(fenceDescription);
+    }
+
     {
       m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
@@ -1098,6 +1113,22 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
 xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
 {
+  FlushDestroyedObjects();
+
+  if (m_pFrameFence != nullptr)
+  {
+    DestroyFenceInternal(m_pFrameFence);
+
+    m_pFrameFence = nullptr;
+  }
+
+  WaitIdlePlatform();
+
+  XII_ASSERT_DEV(m_PerFrameData.IsEmpty(), "There should be no pending per-frame data.");
+
+  m_PerFrameData.Clear();
+  m_PerFrameData.Compact();
+
   {
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
@@ -1115,11 +1146,22 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
     m_pGraphicsCommandQueue.Clear();
   }
 
-  vmaDestroyAllocator(m_vkVmaAllocator);
+  {
+    m_FencePool.Clear();
+    m_SemaphorePool.Clear();
+  }
 
-  m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
+  if (m_vkVmaAllocator != VK_NULL_HANDLE)
+  {
+    vmaDestroyAllocator(m_vkVmaAllocator);
+  }
 
-  if (m_DebugMode != DebugMode::Disabled)
+  if (m_LogicalDevice != VK_NULL_HANDLE)
+  {
+    m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
+  }
+
+  if (m_DebugMode != DebugMode::Disabled && m_Instance != VK_NULL_HANDLE)
   {
     if (m_DebugMessenger != VK_NULL_HANDLE)
     {
@@ -1132,14 +1174,191 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
     }
   }
 
-  m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
+  if (m_Instance != VK_NULL_HANDLE)
+  {
+    m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
+  }
 
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::FlushPendingObjects()
+void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
 {
-  FlushDestroyedObjects();
+  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
+
+  perFrameData.m_uiFrameNumber = m_uiFrameCounter;
+
+  auto& safeRelease           = perFrameData.m_SafeReleaseDescriptions.ExpandAndGetRef();
+  safeRelease.m_vkObjectType  = vkObjectType;
+  safeRelease.m_pObject       = pObject;
+  safeRelease.m_VmaAllocation = vmaAllocation;
+}
+
+void xiiGALDeviceVulkan::ReclaimPoolFenceLater(vk::Fence& vkFence)
+{
+  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
+
+  perFrameData.m_uiFrameNumber = m_uiFrameCounter;
+
+  auto& safeReclaim          = perFrameData.m_SafeReclaimResources.ExpandAndGetRef();
+  safeReclaim.m_vkObjectType = vkFence.objectType;
+  safeReclaim.m_pObject      = (void*)vkFence;
+}
+
+void xiiGALDeviceVulkan::ReclaimPoolSemaphoreLater(vk::Semaphore& vkSemaphore)
+{
+  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
+
+  perFrameData.m_uiFrameNumber = m_uiFrameCounter;
+
+  auto& safeReclaim          = perFrameData.m_SafeReclaimResources.ExpandAndGetRef();
+  safeReclaim.m_vkObjectType = vkSemaphore.objectType;
+  safeReclaim.m_pObject      = (void*)vkSemaphore;
+}
+
+void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
+{
+  while (!m_PerFrameData.IsEmpty() && (m_PerFrameData.PeekFront().m_uiFrameNumber <= uiCompletedValue))
+  {
+    auto& perFrameData = m_PerFrameData.PeekFront();
+
+    for (SafeReleaseDescription& safeReleaseDescription : perFrameData.m_SafeReleaseDescriptions)
+    {
+      switch (safeReleaseDescription.m_vkObjectType)
+      {
+        case vk::ObjectType::eSemaphore:
+        {
+          m_LogicalDevice.destroySemaphore(reinterpret_cast<vk::Semaphore&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eFence:
+        {
+          m_LogicalDevice.destroyFence(reinterpret_cast<vk::Fence&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eBuffer:
+        {
+          if (safeReleaseDescription.m_VmaAllocation != VK_NULL_HANDLE)
+          {
+            vmaDestroyBuffer(m_vkVmaAllocator, reinterpret_cast<vk::Buffer&>(safeReleaseDescription.m_pObject), safeReleaseDescription.m_VmaAllocation);
+          }
+          else
+          {
+            m_LogicalDevice.destroyBuffer(reinterpret_cast<vk::Buffer&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+          }
+        }
+        break;
+        case vk::ObjectType::eImage:
+        {
+          if (safeReleaseDescription.m_VmaAllocation != VK_NULL_HANDLE)
+          {
+            vmaDestroyImage(m_vkVmaAllocator, reinterpret_cast<vk::Image&>(safeReleaseDescription.m_pObject), safeReleaseDescription.m_VmaAllocation);
+          }
+          else
+          {
+            m_LogicalDevice.destroyImage(reinterpret_cast<vk::Image&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+          }
+        }
+        break;
+        case vk::ObjectType::eEvent:
+        {
+          m_LogicalDevice.destroyEvent(reinterpret_cast<vk::Event&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eQueryPool:
+        {
+          m_LogicalDevice.destroyQueryPool(reinterpret_cast<vk::QueryPool&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eBufferView:
+        {
+          m_LogicalDevice.destroyBufferView(reinterpret_cast<vk::BufferView&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eImageView:
+        {
+          m_LogicalDevice.destroyImageView(reinterpret_cast<vk::ImageView&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eShaderModule:
+        {
+          m_LogicalDevice.destroyShaderModule(reinterpret_cast<vk::ShaderModule&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::ePipelineCache:
+        {
+          m_LogicalDevice.destroyPipelineCache(reinterpret_cast<vk::PipelineCache&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::ePipelineLayout:
+        {
+          m_LogicalDevice.destroyPipelineLayout(reinterpret_cast<vk::PipelineLayout&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eRenderPass:
+        {
+          m_LogicalDevice.destroyRenderPass(reinterpret_cast<vk::RenderPass&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::ePipeline:
+        {
+          m_LogicalDevice.destroyPipeline(reinterpret_cast<vk::Pipeline&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eDescriptorSetLayout:
+        {
+          m_LogicalDevice.destroyDescriptorSetLayout(reinterpret_cast<vk::DescriptorSetLayout&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eSampler:
+        {
+          m_LogicalDevice.destroySampler(reinterpret_cast<vk::Sampler&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eDescriptorPool:
+        {
+          m_LogicalDevice.destroyDescriptorPool(reinterpret_cast<vk::DescriptorPool&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eFramebuffer:
+        {
+          m_LogicalDevice.destroyFramebuffer(reinterpret_cast<vk::Framebuffer&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+        case vk::ObjectType::eCommandPool:
+        {
+          m_LogicalDevice.destroyCommandPool(reinterpret_cast<vk::CommandPool&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
+        }
+        break;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+
+    for (SafeReclaimResource& safeReclameResource : perFrameData.m_SafeReclaimResources)
+    {
+      switch (safeReclameResource.m_vkObjectType)
+      {
+        case vk::ObjectType::eSemaphore:
+        {
+          m_SemaphorePool->ReclaimSemaphore(reinterpret_cast<vk::Semaphore&>(safeReclameResource.m_pObject));
+        }
+        break;
+        case vk::ObjectType::eFence:
+        {
+          m_FencePool->ReclaimFence(reinterpret_cast<vk::Fence&>(safeReclameResource.m_pObject));
+        }
+        break;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+
+    perFrameData.m_SafeReleaseDescriptions.Clear();
+    perFrameData.m_SafeReclaimResources.Clear();
+
+    m_PerFrameData.PopFront();
+  }
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
@@ -1152,6 +1371,10 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchai
   {
     pSwapChain->Present();
   }
+
+  ReleasePerFrameResources(m_pFrameFence->GetCompletedValue());
+
+  m_pFrameFence->Signal(++m_uiFrameCounter);
 }
 
 xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const
@@ -1427,6 +1650,16 @@ void xiiGALDeviceVulkan::DestroyQueryPlatform(xiiGALQuery* pQuery)
   XII_DELETE(&m_Allocator, pQueryVulkan);
 }
 
+xiiGALFenceVulkan* xiiGALDeviceVulkan::CreateFenceInternal(const xiiGALFenceCreationDescription& description)
+{
+  return static_cast<xiiGALFenceVulkan*>(CreateFencePlatform(description));
+}
+
+void xiiGALDeviceVulkan::DestroyFenceInternal(xiiGALFence* pFence)
+{
+  DestroyFencePlatform(pFence);
+}
+
 xiiGALFence* xiiGALDeviceVulkan::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
   xiiGALFenceVulkan* pFenceVulkan = XII_NEW(&m_Allocator, xiiGALFenceVulkan, this, description);
@@ -1585,9 +1818,22 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
   if (xiiGALCommandQueueVulkan* pTransferQueue = m_pTransferCommandQueue.Borrow())
     pTransferQueue->WaitForIdle();
 
-  m_LogicalDevice.waitIdle();
+  m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
 
-  FlushPendingObjects();
+  xiiUInt64 uiCompletedValue = xiiMath::MaxValue<xiiUInt64>();
+
+  if (m_pFrameFence != nullptr)
+  {
+    m_pFrameFence->Wait(m_uiFrameCounter);
+
+    uiCompletedValue = m_pFrameFence->GetCompletedValue();
+
+    XII_ASSERT_DEV(uiCompletedValue != xiiMath::MaxValue<xiiUInt64>(), "The completed fence value is invalid!");
+  }
+
+  FlushDestroyedObjects();
+
+  ReleasePerFrameResources(uiCompletedValue);
 }
 
 xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
@@ -1915,7 +2161,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       };
 
       vk::FormatProperties formatProperties = {};
-      m_PhysicalDevice.getFormatProperties(vkShadingRateResourceFormat, &formatProperties);
+      m_PhysicalDevice.getFormatProperties(vkShadingRateResourceFormat, &formatProperties, m_InstanceDispatchLoader);
       XII_ASSERT_DEV(formatProperties.optimalTilingFeatures & (vk::FormatFeatureFlagBits::eFragmentShadingRateAttachmentKHR | vk::FormatFeatureFlagBits::eFragmentDensityMapEXT), "");
 
       m_AdapterDescription.m_ShadingRateProperties.m_BindFlags = xiiGALBindFlags::ShadingRate;
@@ -2090,16 +2336,16 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
 vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
 {
-  const auto IsGraphicsAndComputeQueueSupported = [](const vk::PhysicalDevice& physicalDevice) -> bool {
+  const auto IsGraphicsAndComputeQueueSupported = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> bool {
     xiiUInt32 uiQueueFamilyCount = 0U;
-    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr);
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, instanceDispatchLoader);
 
     XII_ASSERT_DEV(uiQueueFamilyCount > 0, "");
 
     xiiHybridArray<vk::QueueFamilyProperties, 2U> queueFamilyProperties;
     queueFamilyProperties.SetCount(uiQueueFamilyCount);
 
-    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData());
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData(), instanceDispatchLoader);
     XII_ASSERT_DEV(queueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
 
     // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
@@ -2128,7 +2374,7 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
   {
     for (const vk::PhysicalDevice& physicalDevice : m_PhysicalDevices)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = physicalDevice.getProperties();
+      const vk::PhysicalDeviceProperties& deviceProperties = physicalDevice.getProperties(m_InstanceDispatchLoader);
 
       if (IsGraphicsAndComputeQueueSupported(physicalDevice))
       {

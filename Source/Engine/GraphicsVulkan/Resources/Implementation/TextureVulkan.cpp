@@ -120,7 +120,7 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
 
   if (m_vkStagingBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer), m_StagingBufferMemoryAllocation);
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer, m_StagingBufferMemoryAllocation);
 
     m_StagingBufferMemoryAllocation = {};
   }
@@ -129,7 +129,7 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
   // Prevent releasing the native object.
   if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), m_ImageMemoryAllocation);
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkImage, m_ImageMemoryAllocation);
 
     m_ImageMemoryAllocation = {};
   }
@@ -382,7 +382,7 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDe
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     {
       vk::PhysicalDevice   vkPhysicalDevice   = pDeviceVulkan->GetVulkanPhysicalDevice();
-      vk::FormatProperties vkFormatProperties = vkPhysicalDevice.getFormatProperties(ref_vkImageCreateInfo.format);
+      vk::FormatProperties vkFormatProperties = vkPhysicalDevice.getFormatProperties(ref_vkImageCreateInfo.format, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
       XII_ASSERT_DEV((vkFormatProperties.optimalTilingFeatures & (vk::FormatFeatureFlagBits::eBlitSrc | vk::FormatFeatureFlagBits::eBlitDst)) == (vk::FormatFeatureFlagBits::eBlitSrc | vk::FormatFeatureFlagBits::eBlitDst), "Automatic mipmap generation is not supported for {} as the format does not support blitting.", internalTextureFormat);
       XII_ASSERT_DEV((vkFormatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear), "Automatic mipmap generation is not supported for {} as the format does not support linear filtering.", internalTextureFormat);
@@ -575,7 +575,9 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 
       pCommandListVulkan->Submit();
 
-      pDeviceVulkan->SafeReleaseDeviceObject(std::move(vkStagingBuffer), stagingBufferAllocation);
+      pDeviceVulkan->SafeReleaseDeviceObject(vkStagingBuffer, stagingBufferAllocation);
+
+      vkStagingBuffer = VK_NULL_HANDLE;
     }
     else
     {

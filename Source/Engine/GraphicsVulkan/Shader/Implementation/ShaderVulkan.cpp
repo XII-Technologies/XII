@@ -32,7 +32,7 @@ xiiResult xiiGALShaderVulkan::DeInitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkShaderModule));
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkShaderModule);
 
   return XII_SUCCESS;
 }

@@ -50,7 +50,6 @@ protected:
   void      ReleaseSwapChainResources(bool bReleaseSwapChain);
 
   xiiResult CreateBackBufferInternal();
-  void      DestroyBackBufferInternal();
 
   vk::Result AcquireNextImage();
 

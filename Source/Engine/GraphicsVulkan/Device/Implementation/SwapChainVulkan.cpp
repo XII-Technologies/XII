@@ -5,6 +5,8 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
@@ -129,7 +131,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
     xiiGALDeviceVulkan::QueueInformation graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
     vk::Bool32                           bHasPresentSupport       = vk::False;
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     if (bHasPresentSupport == vk::False)
     {
@@ -321,7 +323,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
     for (const vk::PresentModeKHR& preferredMode : preferredPresentModes)
     {
-      if (preferredPresentModes.Contains(preferredMode))
+      if (presentModes.Contains(preferredMode))
       {
         presentMode = preferredMode;
         break;
@@ -425,20 +427,14 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   m_DrawCompleteSemaphores.SetCount(uiSwapChainImageCount);
   m_ImageAcquiredFences.SetCount(uiSwapChainImageCount);
 
+  auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
+  auto pFencePool     = pDeviceVulkan->GetVulkanFencePool();
+
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
-    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
-    vkSemaphoreCreateInfo.flags                   = {};
-    vkSemaphoreCreateInfo.pNext                   = nullptr;
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_ImageAcquiredSemaphores[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_DrawCompleteSemaphores[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-    vk::FenceCreateInfo vkFenceCreateInfo = {};
-    vkFenceCreateInfo.flags               = {};
-    vkFenceCreateInfo.pNext               = nullptr;
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createFence(&vkFenceCreateInfo, nullptr, &m_ImageAcquiredFences[i], pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    m_ImageAcquiredSemaphores[i] = pSemaphorePool->RequestSemaphore();
+    m_DrawCompleteSemaphores[i]  = pSemaphorePool->RequestSemaphore();
+    m_ImageAcquiredFences[i]     = pFencePool->RequestFence();
   }
 
   return XII_SUCCESS;
@@ -482,42 +478,70 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   if (m_vkSwapChain == VK_NULL_HANDLE)
     return;
 
-  xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device                vkLogicalDevice     = pDeviceVulkan->GetVulkanLogicalDevice();
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
-  // Flush to submit all pending commands and semaphores to the queue.
-  pCommandQueueVulkan->Flush();
+  // VERIFY: Flush to submit all pending commands and semaphores to the queue.
 
-  pDeviceVulkan->WaitIdle();
+  // All references to the swap chain must be released before it can be destroyed.
+  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
+  {
+    if (!m_SwapChainTextures[i].IsInvalidated())
+    {
+      pDeviceVulkan->DestroyTexture(m_SwapChainTextures[i]);
+
+      m_SwapChainTextures[i].Invalidate();
+    }
+  }
+
+  if (!m_hBackBufferTexture.IsInvalidated())
+  {
+    m_hBackBufferTexture.Invalidate();
+  }
 
   // We need to explicitly wait for all submitted Image Acquired Fences to signal.
   // Just idling the GPU is not enough and results in validation warnings.
   // As a matter of fact, it is only required to check the fence status.
   WaitForImageAcquiredFences();
 
-  // All references to the swap chain must be released before it can be destroyed.
-  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
-  {
-    pDeviceVulkan->DestroyTexture(m_SwapChainTextures[i]);
-
-    m_SwapChainTextures[i].Invalidate();
-  }
+  m_SwapChainImages.Clear();
+  m_SwapChainTextures.Clear();
   m_SwapChainImagesInitialized.Clear();
-
 
   // We must wait until GPU is idled before destroying the fences as they are destroyed immediately.
   // The semaphores are managed and will be kept alive by the command queue they are submitted to.
-  // \todo: submit to the device for safe deletion.
+  m_uiSemaphoreIndex = 0U;
 
+  auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
+
+  for (xiiUInt32 i = 0; i < m_DrawCompleteSemaphores.GetCount(); ++i)
+  {
+    pSemaphorePool->ReclaimSemaphore(m_DrawCompleteSemaphores[i]);
+  }
+  m_DrawCompleteSemaphores.Clear();
+
+  for (xiiUInt32 i = 0; i < m_ImageAcquiredSemaphores.GetCount(); ++i)
+  {
+    pSemaphorePool->ReclaimSemaphore(m_ImageAcquiredSemaphores[i]);
+  }
+  m_ImageAcquiredSemaphores.Clear();
+
+  auto pFencePool = pDeviceVulkan->GetVulkanFencePool();
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
   {
-    vkLogicalDevice.destroyFence(m_ImageAcquiredFences[i], nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    pFencePool->ReclaimFence(m_ImageAcquiredFences[i]);
 
     m_ImageAcquiredFences[i] = VK_NULL_HANDLE;
   }
   m_ImageAcquiredFences.Clear();
   m_ImageAcquiredFenceSubmitted.Clear();
+
+  if (bReleaseSwapChain)
+  {
+    vkLogicalDevice.destroySwapchainKHR(m_vkSwapChain, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_vkSwapChain = VK_NULL_HANDLE;
+  }
 }
 
 xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
@@ -569,24 +593,6 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     pDeviceVulkan->GetTexture(m_SwapChainTextures[i])->SetDebugName(sb);
   }
   return XII_SUCCESS;
-}
-
-void xiiGALSwapChainVulkan::DestroyBackBufferInternal()
-{
-  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
-  {
-    if (!m_SwapChainTextures[i].IsInvalidated())
-    {
-      m_pDevice->DestroyTexture(m_SwapChainTextures[i]);
-
-      m_SwapChainTextures[i].Invalidate();
-    }
-  }
-
-  if (m_hBackBufferTexture.IsInvalidated())
-  {
-    m_hBackBufferTexture.Invalidate();
-  }
 }
 
 vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
@@ -829,7 +835,7 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
     }
   }
 
-  m_bIsMinimized = !newSize.HasNonZeroArea();
+  m_bIsMinimized = (newSize.width == 0 && newSize.height == 0);
 
   return XII_FAILURE;
 }

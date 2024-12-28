@@ -319,6 +319,8 @@ void xiiGPUTestingEnvironmentVulkan::Shutdown()
   if (m_pDevice != nullptr)
   {
     m_pDevice->Shutdown().IgnoreResult();
+
+    XII_DEFAULT_DELETE(m_pDevice);
   }
 }
 
@@ -391,6 +393,7 @@ void xiiGPUTestingEnvironmentVulkan::DestroyWindow()
   if (m_pWindow)
   {
     m_pWindow->Destroy().IgnoreResult();
+
     XII_DEFAULT_DELETE(m_pWindow);
   }
 }

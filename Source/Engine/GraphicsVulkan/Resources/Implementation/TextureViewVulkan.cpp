@@ -243,7 +243,9 @@ xiiResult xiiGALTextureViewVulkan::DeInitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImageView));
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkImageView);
+
+  m_vkImageView = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }

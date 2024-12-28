@@ -42,7 +42,9 @@ xiiResult xiiGALBufferViewVulkan::DeInitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBufferView));
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkBufferView);
+
+  m_vkBufferView = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }

@@ -160,11 +160,15 @@ xiiResult xiiGALBufferVulkan::DeInitPlatform()
 
   if (m_vkStagingBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer));
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer);
+
+    m_vkStagingBuffer = VK_NULL_HANDLE;
   }
   if (m_vkBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBuffer));
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkBuffer);
+
+    m_vkBuffer = VK_NULL_HANDLE;
   }
   return XII_SUCCESS;
 }
@@ -208,7 +212,7 @@ xiiGALSparseBufferProperties xiiGALBufferVulkan::GetSparseProperties() const
   XII_ASSERT_DEV(m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse, "xiiGALBuffer::GetSparseProperties() must be used for sparse buffer.");
 
   xiiGALDeviceVulkan*    pDeviceVulkan        = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::MemoryRequirements vkMemoryRequirements = pDeviceVulkan->GetVulkanLogicalDevice().getBufferMemoryRequirements(GetVulkanBuffer());
+  vk::MemoryRequirements vkMemoryRequirements = pDeviceVulkan->GetVulkanLogicalDevice().getBufferMemoryRequirements(GetVulkanBuffer(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   xiiGALSparseBufferProperties sparseBufferProperties = {};
   sparseBufferProperties.m_uiAddressSpaceSize         = vkMemoryRequirements.size;
