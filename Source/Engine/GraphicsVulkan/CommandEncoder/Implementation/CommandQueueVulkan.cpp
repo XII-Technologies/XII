@@ -86,7 +86,7 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
   {
     xiiUInt64 uiCompletedValue = m_pQueueFence->GetCompletedValue();
 
-    for (xiiUInt32 i = 0; i < m_CommandListsToReset.GetCount() && m_CommandListsToReset.PeekFront().m_uiFenceValue < uiCompletedValue; ++i)
+    while (!m_CommandListsToReset.IsEmpty() && (m_CommandListsToReset.PeekFront().m_uiFenceValue <= uiCompletedValue))
     {
       auto& commandListInfo = m_CommandListsToReset.PeekFront();
 
@@ -98,8 +98,6 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
       m_QueuedCommandLists.PushBack(commandListInfo.m_pCommandListVulkan);
 
       m_CommandListsToReset.PopFront();
-
-      i = 0;
     }
   }
 
