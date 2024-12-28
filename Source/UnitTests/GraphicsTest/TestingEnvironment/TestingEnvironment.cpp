@@ -320,7 +320,7 @@ void xiiGPUTestingEnvironmentVulkan::Shutdown()
   {
     m_pDevice->Shutdown().IgnoreResult();
 
-        XII_DEFAULT_DELETE(m_pDevice);
+    XII_DEFAULT_DELETE(m_pDevice);
   }
 }
 
