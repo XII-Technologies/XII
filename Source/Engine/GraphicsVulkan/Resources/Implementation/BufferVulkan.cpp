@@ -160,11 +160,15 @@ xiiResult xiiGALBufferVulkan::DeInitPlatform()
 
   if (m_vkStagingBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer));
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer);
+
+    m_vkStagingBuffer = VK_NULL_HANDLE;
   }
   if (m_vkBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBuffer));
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkBuffer);
+
+    m_vkBuffer = VK_NULL_HANDLE;
   }
   return XII_SUCCESS;
 }

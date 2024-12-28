@@ -1,8 +1,8 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/FenceVulkan.h>
 #include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Resources/FenceVulkan.h>
 
 xiiGALFenceVulkan::xiiGALFenceVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription) :
   xiiGALFence(pDeviceVulkan, creationDescription)
@@ -39,7 +39,7 @@ xiiResult xiiGALFenceVulkan::DeInitPlatform()
   {
     XII_ASSERT_DEV(m_SyncPoints.IsEmpty(), "Sync points are not permitted with timeline semaphores.");
 
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkTimelineSemaphore));
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkTimelineSemaphore);
   }
   else if (!m_SyncPoints.IsEmpty())
   {
@@ -72,9 +72,9 @@ void xiiGALFenceVulkan::ReleaseResourcesImmediately()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkTimelineSemaphore));
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkTimelineSemaphore);
 
-  m_vkTimelineSemaphore = nullptr;
+  m_vkTimelineSemaphore = VK_NULL_HANDLE;
 }
 
 xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()

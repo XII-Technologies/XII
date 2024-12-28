@@ -59,7 +59,9 @@ xiiResult xiiGALRenderPassVulkan::DeInitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkRenderPass));
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkRenderPass);
+
+  m_vkRenderPass = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }

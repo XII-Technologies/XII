@@ -120,7 +120,7 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
 
   if (m_vkStagingBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer), m_StagingBufferMemoryAllocation);
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer, m_StagingBufferMemoryAllocation);
 
     m_StagingBufferMemoryAllocation = {};
   }
@@ -129,7 +129,7 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
   // Prevent releasing the native object.
   if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), m_ImageMemoryAllocation);
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkImage, m_ImageMemoryAllocation);
 
     m_ImageMemoryAllocation = {};
   }
@@ -575,7 +575,9 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 
       pCommandListVulkan->Submit();
 
-      pDeviceVulkan->SafeReleaseDeviceObject(std::move(vkStagingBuffer), stagingBufferAllocation);
+      pDeviceVulkan->SafeReleaseDeviceObject(vkStagingBuffer, stagingBufferAllocation);
+
+      vkStagingBuffer = VK_NULL_HANDLE;
     }
     else
     {

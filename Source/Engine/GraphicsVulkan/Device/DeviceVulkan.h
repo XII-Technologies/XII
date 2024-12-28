@@ -72,6 +72,8 @@ public:
 
   struct QueueInformation
   {
+    XII_DECLARE_POD_TYPE();
+
     vk::Queue m_vkQueue;
     xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
     xiiUInt32 m_uiQueueIndex       = 0U;
@@ -109,23 +111,21 @@ public:
 #endif
   }
 
-  template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
-  void SafeReleaseDeviceObject(ObjectType&& object, VmaAllocation vmaAlloaction)
+  template <typename T>
+  void SafeReleaseDeviceObject(T& vkObject, VmaAllocation vmaAlloaction)
   {
+    SafeReleaseDeviceObjectInternal(vkObject.objectType, (void*)vkObject, vmaAlloaction);
   }
 
-  template <typename ObjectType, typename = typename std::enable_if<std::is_object<ObjectType>::value>::type>
-  void SafeReleaseDeviceObject(ObjectType&& object)
+  template <typename T>
+  void SafeReleaseDeviceObject(T& vkObject)
   {
+    SafeReleaseDeviceObjectInternal(vkObject.objectType, (void*)vkObject, nullptr);
   }
 
-  void ReclaimPoolFenceLater(vk::Fence& vkFence)
-  {
-  }
+  void ReclaimPoolFenceLater(vk::Fence& vkFence);
 
-  void ReclaimPoolSemaphoreLater(vk::Semaphore& vkSemaphore)
-  {
-  }
+  void ReclaimPoolSemaphoreLater(vk::Semaphore& vkSemaphore);
 
   // Internal objects retrieval.
 
@@ -168,9 +168,10 @@ public:
   XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_SemaphorePool.Borrow(); }
 
   xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
-  void DestroyFenceInternal(xiiGALFence* pFence);
+  void               DestroyFenceInternal(xiiGALFence* pFence);
 
   void FlushPendingObjects();
+  void ReleasePerFrameResources(xiiUInt64 uiCompletedValue);
 
   // These functions are implemented by a graphics API implementation.
 protected:
@@ -242,6 +243,8 @@ protected:
 
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
+  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+
 private:
   enum class VulkanObjectType : xiiUInt32
   {
@@ -268,6 +271,31 @@ private:
     QueryPool,
     AccelerationStructureKHR,
     PipelineCache
+  };
+
+  struct SafeReleaseDescription
+  {
+    XII_DECLARE_POD_TYPE();
+
+    vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
+    void*          m_pObject       = nullptr;
+    VmaAllocation  m_VmaAllocation = {};
+  };
+
+  struct SafeReclaimResource
+  {
+    XII_DECLARE_POD_TYPE();
+
+    vk::ObjectType m_vkObjectType = vk::ObjectType::eUnknown;
+    void*          m_pObject      = nullptr;
+  };
+
+  struct PerFrameData
+  {
+    xiiUInt64 m_uiFrameNumber = xiiInvalidIndex;
+
+    xiiDeque<SafeReleaseDescription> m_SafeReleaseDescriptions;
+    xiiDeque<SafeReclaimResource>    m_SafeReclaimResources;
   };
 
   // Vulkan Instance Information.
@@ -304,7 +332,7 @@ private:
   vk::DebugReportCallbackEXT m_DebugCallback;
 
   // Vulkan Memory Allocation.
-  VmaAllocator m_vkVmaAllocator;
+  VmaAllocator m_vkVmaAllocator = VK_NULL_HANDLE;
 
   // Graphics Queue Information.
   QueueInformation                       m_GraphicsQueueInformation;
@@ -318,9 +346,14 @@ private:
   QueueInformation                       m_TransferQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
 
-  // Pools
+  // Pools.
   xiiUniquePtr<xiiGALFencePoolVulkan>     m_FencePool;
   xiiUniquePtr<xiiGALSemaphorePoolVulkan> m_SemaphorePool;
+
+  // Per Frame Data.
+  xiiUInt32              m_uiFrameCounter = 0U;
+  xiiGALFenceVulkan*     m_pFrameFence    = nullptr;
+  xiiDeque<PerFrameData> m_PerFrameData;
 
 private:
   vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;

@@ -61,7 +61,9 @@ xiiResult xiiGALSamplerVulkan::DeInitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkSampler));
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkSampler);
+
+  m_vkSampler = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }
