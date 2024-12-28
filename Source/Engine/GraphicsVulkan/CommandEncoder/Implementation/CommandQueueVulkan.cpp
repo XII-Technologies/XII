@@ -139,10 +139,6 @@ void xiiGALCommandQueueVulkan::ResetCommandList(xiiGALCommandListVulkan* pComman
   m_CommandListsToReset.PushBack(CommandListReleaseInfo{.m_pCommandListVulkan = pCommandListVulkan, .m_uiFenceValue = GetNextFenceValue()});
 }
 
-void xiiGALCommandQueueVulkan::Flush()
-{
-}
-
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset)
 {
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);

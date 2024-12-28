@@ -478,19 +478,10 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   if (m_vkSwapChain == VK_NULL_HANDLE)
     return;
 
-  xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device                vkLogicalDevice     = pDeviceVulkan->GetVulkanLogicalDevice();
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
-  // Flush to submit all pending commands and semaphores to the queue.
-  pCommandQueueVulkan->Flush();
-
-  pDeviceVulkan->WaitIdle();
-
-  // We need to explicitly wait for all submitted Image Acquired Fences to signal.
-  // Just idling the GPU is not enough and results in validation warnings.
-  // As a matter of fact, it is only required to check the fence status.
-  WaitForImageAcquiredFences();
+  // VERIFY: Flush to submit all pending commands and semaphores to the queue.
 
   // All references to the swap chain must be released before it can be destroyed.
   for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
@@ -503,10 +494,15 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
     }
   }
 
-  if (m_hBackBufferTexture.IsInvalidated())
+  if (!m_hBackBufferTexture.IsInvalidated())
   {
     m_hBackBufferTexture.Invalidate();
   }
+
+  // We need to explicitly wait for all submitted Image Acquired Fences to signal.
+  // Just idling the GPU is not enough and results in validation warnings.
+  // As a matter of fact, it is only required to check the fence status.
+  WaitForImageAcquiredFences();
 
   m_SwapChainImages.Clear();
   m_SwapChainTextures.Clear();
@@ -514,7 +510,6 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
   // We must wait until GPU is idled before destroying the fences as they are destroyed immediately.
   // The semaphores are managed and will be kept alive by the command queue they are submitted to.
-  // \todo: submit semaphores to semaphore pool.
   m_uiSemaphoreIndex = 0U;
 
   auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();

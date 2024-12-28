@@ -1182,11 +1182,6 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::FlushPendingObjects()
-{
-  FlushDestroyedObjects();
-}
-
 void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
 {
   auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
@@ -1835,6 +1830,8 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
     XII_ASSERT_DEV(uiCompletedValue != xiiMath::MaxValue<xiiUInt64>(), "The completed fence value is invalid!");
   }
+
+  FlushDestroyedObjects();
 
   ReleasePerFrameResources(uiCompletedValue);
 }

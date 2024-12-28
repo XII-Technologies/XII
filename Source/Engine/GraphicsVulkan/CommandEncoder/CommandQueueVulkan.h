@@ -29,8 +29,6 @@ public:
   XII_ALWAYS_INLINE vk::Queue GetVulkanQueue() const { return m_vkQueue; };
   XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
 
-  void Flush();
-
 protected:
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
 

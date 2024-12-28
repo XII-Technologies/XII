@@ -170,7 +170,6 @@ public:
   xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
   void               DestroyFenceInternal(xiiGALFence* pFence);
 
-  void FlushPendingObjects();
   void ReleasePerFrameResources(xiiUInt64 uiCompletedValue);
 
   // These functions are implemented by a graphics API implementation.
