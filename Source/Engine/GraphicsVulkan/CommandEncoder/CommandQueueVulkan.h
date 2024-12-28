@@ -50,6 +50,8 @@ protected:
 protected:
   struct CommandListReleaseInfo
   {
+    XII_DECLARE_POD_TYPE();
+
     xiiGALCommandListVulkan* m_pCommandListVulkan = nullptr;
     xiiUInt64                m_uiFenceValue       = 0U;
   };

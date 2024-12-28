@@ -5,9 +5,8 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 
 xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription) :
-  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_CommandLists(pDeviceVulkan->GetAllocator())
+  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_CommandLists(pDeviceVulkan->GetAllocator()), m_QueuedCommandLists(pDeviceVulkan->GetAllocator()), m_CommandListsToReset(pDeviceVulkan->GetAllocator())
 {
-  /// \todo GraphicsVulkan: Allocate arrays with xiiGALDeviceVulkan memory allocator.
 }
 
 xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
