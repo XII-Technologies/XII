@@ -37,7 +37,7 @@ xiiResult xiiGALFenceVulkan::DeInitPlatform()
 
   if (IsTimelineSemaphore())
   {
-    XII_ASSERT_DEV(m_SyncPoints.IsEmpty(), "");
+    XII_ASSERT_DEV(m_SyncPoints.IsEmpty(), "Sync points are not permitted with timeline semaphores.");
 
     pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkTimelineSemaphore));
   }
@@ -86,7 +86,7 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 
     // GetSemaphoreCounter() is thread safe.
 
-    xiiUInt64 uiSemaphoreCounter = xiiInvalidIndex;
+    xiiUInt64 uiSemaphoreCounter = xiiMath::MaxValue<xiiUInt64>();
     VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, &uiSemaphoreCounter, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     return uiSemaphoreCounter;
