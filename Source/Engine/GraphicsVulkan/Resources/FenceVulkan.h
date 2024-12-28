@@ -12,6 +12,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALFenceVulkan final : public xiiGALFence
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALFenceVulkan, xiiGALFence);
+
 public:
   struct SyncPointData
   {

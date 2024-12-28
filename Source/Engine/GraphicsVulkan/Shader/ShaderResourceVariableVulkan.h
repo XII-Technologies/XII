@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALShaderResourceVariableVulkan final : public xiiGALShaderResourceVariable
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderResourceVariableVulkan, xiiGALShaderResourceVariable);
+
 public:
   virtual void Set(xiiGALResource* pResource, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) override final;
 

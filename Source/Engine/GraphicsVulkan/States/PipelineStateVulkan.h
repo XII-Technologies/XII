@@ -11,6 +11,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALPipelineStateVulkan final : public xiiGALPipelineState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineStateVulkan, xiiGALPipelineState);
+
 public:
   XII_ALWAYS_INLINE vk::Pipeline GetVulkanPipeline() const { return m_vkPipeline; }
 

@@ -3,6 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/SamplerVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALSamplerVulkan::xiiGALSamplerVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSamplerCreationDescription& creationDescription) :
   xiiGALSampler(pDeviceVulkan, creationDescription)
 {

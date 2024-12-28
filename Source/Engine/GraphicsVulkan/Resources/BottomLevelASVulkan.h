@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALBottomLevelASVulkan final : public xiiGALBottomLevelAS
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelASVulkan, xiiGALBottomLevelAS);
+
 public:
   virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const override final;
 

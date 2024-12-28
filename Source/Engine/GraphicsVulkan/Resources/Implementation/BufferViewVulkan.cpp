@@ -4,6 +4,11 @@
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferViewVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALBufferViewVulkan::xiiGALBufferViewVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pDeviceVulkan, pBuffer, creationDescription)
 {

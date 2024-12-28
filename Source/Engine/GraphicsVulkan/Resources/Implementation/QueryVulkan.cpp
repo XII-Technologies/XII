@@ -3,6 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/QueryVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQueryVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALQueryVulkan::xiiGALQueryVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALQueryCreationDescription& creationDescription) :
   xiiGALQuery(pDeviceVulkan, creationDescription)
 {

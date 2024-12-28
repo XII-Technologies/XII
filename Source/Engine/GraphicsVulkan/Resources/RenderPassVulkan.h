@@ -11,6 +11,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALRenderPassVulkan final : public xiiGALRenderPass
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRenderPassVulkan, xiiGALRenderPass);
+
 public:
   XII_ALWAYS_INLINE vk::RenderPass GetVulkanRenderPass() const { return m_vkRenderPass; }
 

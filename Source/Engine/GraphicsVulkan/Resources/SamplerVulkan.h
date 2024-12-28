@@ -11,6 +11,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALSamplerVulkan final : public xiiGALSampler
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSamplerVulkan, xiiGALSampler);
+
 public:
   XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_vkSampler; }
 

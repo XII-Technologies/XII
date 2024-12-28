@@ -19,6 +19,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALSwapChainVulkan final : public xiiGALSwapChain
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSwapChainVulkan, xiiGALSwapChain);
+
 public:
   virtual void Present() override final;
 

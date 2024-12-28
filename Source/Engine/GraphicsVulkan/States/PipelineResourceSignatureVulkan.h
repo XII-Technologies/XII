@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : public xiiGALPipelineResourceSignature
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignatureVulkan, xiiGALPipelineResourceSignature);
+
 public:
   XII_ALWAYS_INLINE virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final { return false; }
 

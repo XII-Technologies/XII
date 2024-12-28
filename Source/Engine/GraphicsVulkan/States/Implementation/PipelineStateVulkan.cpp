@@ -10,6 +10,11 @@
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineStateVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALPipelineStateVulkan::xiiGALPipelineStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineStateCreationDescription& creationDescription) :
   xiiGALPipelineState(pDeviceVulkan, creationDescription)
 {

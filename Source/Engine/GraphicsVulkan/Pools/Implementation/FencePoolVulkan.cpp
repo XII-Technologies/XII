@@ -82,3 +82,5 @@ vk::Fence xiiGALFencePoolVulkan::CreateVulkanFence()
 
   return vkFence;
 }
+
+XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_FencePoolVulkan);

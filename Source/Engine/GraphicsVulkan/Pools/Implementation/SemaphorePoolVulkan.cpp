@@ -73,3 +73,5 @@ vk::Semaphore xiiGALSemaphorePoolVulkan::CreateVulkanSemaphore()
 
   return vkSemaphore;
 }
+
+XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_SemaphorePoolVulkan);

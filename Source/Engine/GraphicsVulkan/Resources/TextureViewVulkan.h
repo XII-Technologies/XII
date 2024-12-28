@@ -11,6 +11,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALTextureViewVulkan final : public xiiGALTextureView
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureViewVulkan, xiiGALTextureView);
+
 public:
   XII_ALWAYS_INLINE vk::ImageView GetVulkanImageView() const { return m_vkImageView; }
 

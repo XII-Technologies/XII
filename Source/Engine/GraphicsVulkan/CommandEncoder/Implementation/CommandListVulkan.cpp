@@ -26,6 +26,9 @@
 
 
 // clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALStateTransitionFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::UpdateState),

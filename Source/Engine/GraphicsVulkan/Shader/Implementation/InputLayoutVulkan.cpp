@@ -4,6 +4,11 @@
 #include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALInputLayoutVulkan::xiiGALInputLayoutVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALInputLayoutCreationDescription& creationDescription) :
   xiiGALInputLayout(pDeviceVulkan, creationDescription), m_vkVertexAttributes(pDeviceVulkan->GetAllocator()), m_vkVertexInputBindings(pDeviceVulkan->GetAllocator())
 {

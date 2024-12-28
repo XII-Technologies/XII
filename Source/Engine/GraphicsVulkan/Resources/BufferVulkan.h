@@ -11,6 +11,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALBufferVulkan final : public xiiGALBuffer
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferVulkan, xiiGALBuffer);
+
 public:
   virtual void                         FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
   virtual void                         InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;

@@ -5,6 +5,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
   xiiGALDeviceVulkan* pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);

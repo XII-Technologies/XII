@@ -2,6 +2,11 @@
 
 #include <GraphicsVulkan/Shader/ShaderResourceVariableVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderResourceVariableVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALShaderResourceVariableVulkan::xiiGALShaderResourceVariableVulkan() :
   xiiGALShaderResourceVariable()
 {

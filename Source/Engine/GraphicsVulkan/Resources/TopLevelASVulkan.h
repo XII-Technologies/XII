@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALTopLevelASVulkan final : public xiiGALTopLevelAS
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTopLevelASVulkan, xiiGALTopLevelAS);
+
 public:
   virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const override final;
 
