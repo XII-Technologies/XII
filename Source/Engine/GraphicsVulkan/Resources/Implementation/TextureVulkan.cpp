@@ -68,7 +68,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     vk::ImageCreateInfo vkImageCreateInfo = {};
     ComputeVkImageCreateInfo(pDeviceVulkan, m_Description, vkImageCreateInfo);
 
-    /// \todo GraphicsVulkan: Selectively utilize vk::SharingMode::eConcurrent for multiple queue family's ownership of the vulkan image.
+    /// \todo GraphicsVulkan: Selectively utilize vk::SharingMode::eConcurrent for multiple queue family's ownership of the Vulkan image.
 
     // initialLayout must be either VK_IMAGE_LAYOUT_UNDEFINED or VK_IMAGE_LAYOUT_PREINITIALIZED (11.4).
     // If it is VK_IMAGE_LAYOUT_PREINITIALIZED, then the image data can be preinitialized by the host while using this layout, and the transition away from this layout will preserve that data.
@@ -80,7 +80,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -92,7 +92,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       vmaAllocationCreateInfo.requiredFlags           = bIsMemoryLess ? VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
 
       if (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty())
       {
@@ -208,7 +208,7 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
 
   vk::Buffer        vkStagingBuffer;
   VmaAllocationInfo stagingBufferAllocationInfo;
-  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
+  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
 
   XII_ASSERT_DEV(stagingBufferAllocationInfo.pMappedData != nullptr, "");
 
