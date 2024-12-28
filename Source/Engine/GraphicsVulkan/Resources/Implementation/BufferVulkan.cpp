@@ -96,6 +96,8 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     }
   }
 
+  /// \todo GraphicsVulkan: Selectively utilize vk::SharingMode::eConcurrent for multiple queue family's ownership of the Vulkan buffer.
+#if 0
   xiiHybridArray<xiiUInt32, 3U> queueFamilies;
   queueFamilies.PushBack(pDeviceVulkan->GetGraphicsQueueInformation().m_uiQueueFamilyIndex);
   if (pDeviceVulkan->GetComputeQueueInformation().m_uiQueueFamilyIndex != xiiInvalidIndex && !queueFamilies.Contains(pDeviceVulkan->GetComputeQueueInformation().m_uiQueueFamilyIndex))
@@ -114,6 +116,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     vkBufferCreateInfo.pQueueFamilyIndices   = queueFamilies.GetData();
     vkBufferCreateInfo.queueFamilyIndexCount = queueFamilies.GetCount();
   }
+#endif
 
   constexpr vk::BufferUsageFlags usageFlagsThatRequireBackingBuffer = vk::BufferUsageFlagBits::eStorageTexelBuffer | vk::BufferUsageFlagBits::eUniformTexelBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
   const bool                     bRequiresBackingBuffer             = (vkBufferCreateInfo.usage & usageFlagsThatRequireBackingBuffer) ||
@@ -125,7 +128,11 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
   {
     vkBufferCreateInfo.flags = vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency | (m_Description.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias) ? vk::BufferCreateFlagBits::eSparseAliased : static_cast<vk::BufferCreateFlagBits>(0U));
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createBuffer(&vkBufferCreateInfo, nullptr, &m_vkBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
+    vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+    vmaAllocationCreateInfo.flags                   = {}; // TODO
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
 
     SetResourceState(xiiGALResourceStateFlags::Undefined);
   }
@@ -146,6 +153,12 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     }
 #endif
 
+    VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
+    vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+    vmaAllocationCreateInfo.requiredFlags           = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
+
     // Dynamic buffer memory is always host-coherent.
     m_MemoryPropertyFlags = xiiGALMemoryPropertyFlags::HostCoherent;
   }
@@ -153,27 +166,26 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
   {
     XII_ASSERT_DEV(m_Description.m_ResourceUsage != xiiGALResourceUsage::Dynamic && xiiMath::CountBits(m_Description.m_uiCommandQueueMask) <= 1U, "The command queue mask must contain a single set bit, this error should have been caught in buffer validation.");
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createBuffer(&vkBufferCreateInfo, nullptr, &m_vkBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
+    vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+    vmaAllocationCreateInfo.requiredFlags           = {}; // TODO
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
   }
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALBufferVulkan::DeInitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  if (m_vkStagingBuffer != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer);
-
-    m_vkStagingBuffer = VK_NULL_HANDLE;
-  }
   if (m_vkBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkBuffer);
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkBuffer, m_BufferMemoryAllocation);
 
-    m_vkBuffer = VK_NULL_HANDLE;
+    m_vkBuffer               = VK_NULL_HANDLE;
+    m_BufferMemoryAllocation = VK_NULL_HANDLE;
   }
   return XII_SUCCESS;
 }
@@ -188,28 +200,26 @@ void xiiGALBufferVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 void xiiGALBufferVulkan::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
+  if (m_vkBuffer == VK_NULL_HANDLE)
+    return;
+
   VerifyInvalidateMappedRangeArguments(uiStartOffset, uiSize);
 
-  vk::MappedMemoryRange vkMappedRange = {};
-  vkMappedRange.memory                = vk::DeviceMemory{}; // TODO.
-  vkMappedRange.offset                = {};                 // TODO.
-  vkMappedRange.size                  = {};                 // TODO.
-
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().flushMappedMemoryRanges(1, &vkMappedRange, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), m_BufferMemoryAllocation, uiStartOffset, uiSize));
 }
 
 void xiiGALBufferVulkan::InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
+  if (m_vkBuffer == VK_NULL_HANDLE)
+    return;
+
   VerifyInvalidateMappedRangeArguments(uiStartOffset, uiSize);
 
-  vk::MappedMemoryRange vkMappedRange = {};
-  vkMappedRange.memory                = vk::DeviceMemory{}; // TODO.
-  vkMappedRange.offset                = {};                 // TODO.
-  vkMappedRange.size                  = {};                 // TODO.
-
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().invalidateMappedMemoryRanges(1, &vkMappedRange, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), m_BufferMemoryAllocation, uiStartOffset, uiSize));
 }
 
 xiiGALSparseBufferProperties xiiGALBufferVulkan::GetSparseProperties() const
@@ -231,7 +241,7 @@ vk::DeviceAddress xiiGALBufferVulkan::GetVulkanBufferDeviceAddress() const
   xiiBitflags<xiiGALBindFlags> deviceAddressFlags = xiiGALBindFlags::RayTracing;
 
   if (m_vkBuffer == VK_NULL_HANDLE || !m_Description.m_BindFlags.IsAnySet(deviceAddressFlags))
-    return 0;
+    return 0U;
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 

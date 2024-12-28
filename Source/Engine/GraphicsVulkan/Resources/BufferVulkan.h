@@ -19,9 +19,7 @@ public:
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
   XII_ALWAYS_INLINE vk::Buffer GetVulkanBuffer() const { return m_vkBuffer; }
-  XII_ALWAYS_INLINE vk::Buffer GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
-
-  vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
+  vk::DeviceAddress            GetVulkanBufferDeviceAddress() const;
 
   void                   SetAccessFlags(vk::AccessFlags accessFlags);
   vk::AccessFlags        GetAccessFlags() const;
@@ -42,6 +40,6 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
-  vk::Buffer m_vkBuffer;
-  vk::Buffer m_vkStagingBuffer;
+  vk::Buffer    m_vkBuffer               = VK_NULL_HANDLE;
+  VmaAllocation m_BufferMemoryAllocation = {};
 };
