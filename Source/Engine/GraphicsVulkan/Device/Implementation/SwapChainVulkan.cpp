@@ -9,6 +9,11 @@
 #include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(pDeviceVulkan, creationDescription), m_ImageAcquiredSemaphores(pDeviceVulkan->GetAllocator()), m_DrawCompleteSemaphores(pDeviceVulkan->GetAllocator()), m_ImageAcquiredFences(pDeviceVulkan->GetAllocator()), m_SwapChainImages(pDeviceVulkan->GetAllocator()), m_SwapChainTextures(pDeviceVulkan->GetAllocator()), m_SwapChainImagesInitialized(pDeviceVulkan->GetAllocator()), m_ImageAcquiredFenceSubmitted(pDeviceVulkan->GetAllocator())
 {

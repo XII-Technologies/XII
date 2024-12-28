@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALFramebufferVulkan final : public xiiGALFramebuffer
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALFramebufferVulkan, xiiGALFramebuffer);
+
 public:
 protected:
   friend class xiiGALDeviceVulkan;

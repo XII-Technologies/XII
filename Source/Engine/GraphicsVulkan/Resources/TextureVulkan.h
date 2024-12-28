@@ -12,6 +12,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALTextureVulkan final : public xiiGALTexture
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureVulkan, xiiGALTexture);
+
 public:
   XII_ALWAYS_INLINE virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final { return m_SparseTextureProperties; }
 

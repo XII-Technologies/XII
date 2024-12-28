@@ -3,6 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelASVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALBottomLevelASVulkan::xiiGALBottomLevelASVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBottomLevelASCreationDescription& creationDescription) :
   xiiGALBottomLevelAS(pDeviceVulkan, creationDescription)
 {

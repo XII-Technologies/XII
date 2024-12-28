@@ -4,6 +4,11 @@
 #include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALFenceVulkan::xiiGALFenceVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription) :
   xiiGALFence(pDeviceVulkan, creationDescription)
 {

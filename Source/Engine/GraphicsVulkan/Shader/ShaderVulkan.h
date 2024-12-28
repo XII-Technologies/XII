@@ -12,6 +12,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALShaderVulkan final : public xiiGALShader
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderVulkan, xiiGALShader);
+
 public:
   XII_ALWAYS_INLINE vk::ShaderModule GetVulkanShaderModule() const { return m_vkShaderModule; }
 

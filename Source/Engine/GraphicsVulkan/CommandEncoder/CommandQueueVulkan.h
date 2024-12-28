@@ -8,6 +8,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueueVulkan, xiiGALCommandQueue);
+
 public:
   vk::PipelineStageFlags GetSupportedStagesFlags() const { return m_vkSupportedStageFlags; }
   vk::AccessFlags        GetSupportedAccessFlags() const { return m_vkSupportedAccessFlags; }
@@ -23,7 +25,7 @@ public:
   virtual xiiUInt64 WaitForIdle() override final;
 
   virtual xiiGALCommandList* BeginCommandList() override final;
-  void ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
+  void                       ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
 
   XII_ALWAYS_INLINE xiiUInt32 GetVulkanQueueFamilyIndex() const { return m_uiQueueFamilyIndex; };
   XII_ALWAYS_INLINE vk::Queue GetVulkanQueue() const { return m_vkQueue; };
@@ -50,6 +52,8 @@ protected:
 protected:
   struct CommandListReleaseInfo
   {
+    XII_DECLARE_POD_TYPE();
+
     xiiGALCommandListVulkan* m_pCommandListVulkan = nullptr;
     xiiUInt64                m_uiFenceValue       = 0U;
   };
@@ -67,7 +71,7 @@ protected:
   vk::PipelineStageFlags                    m_vkSupportedStageFlags;
   vk::AccessFlags                           m_vkSupportedAccessFlags;
 
-  xiiGALFenceVulkan*               m_pQueueFence;
+  xiiGALFenceVulkan*               m_pQueueFence      = nullptr;
   std::atomic<xiiUInt64>           m_uiNextFenceValue = 1U;
   xiiGALFenceVulkan::SyncPointData m_LastSyncPoint;
 };

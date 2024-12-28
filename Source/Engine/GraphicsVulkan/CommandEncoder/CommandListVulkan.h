@@ -56,6 +56,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALStateTransitionDescription : public xiiHasha
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListVulkan, xiiGALCommandList);
+
 public:
   XII_ALWAYS_INLINE vk::CommandBuffer GetVulkanCommandBuffer() const { return m_vkCommandBuffer; }
 

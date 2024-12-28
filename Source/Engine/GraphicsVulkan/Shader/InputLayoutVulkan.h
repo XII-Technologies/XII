@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALInputLayoutVulkan final : public xiiGALInputLayout
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayoutVulkan, xiiGALInputLayout);
+
 public:
   XII_ALWAYS_INLINE xiiArrayPtr<const vk::VertexInputAttributeDescription> GetVulkanVertexAttributes() const { return m_vkVertexAttributes; }
   XII_ALWAYS_INLINE xiiArrayPtr<const vk::VertexInputBindingDescription> GetVulkanVertexInputBindings() const { return m_vkVertexInputBindings; }

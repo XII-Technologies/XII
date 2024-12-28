@@ -4,10 +4,14 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueueVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription) :
-  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_CommandLists(pDeviceVulkan->GetAllocator())
+  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_CommandLists(pDeviceVulkan->GetAllocator()), m_QueuedCommandLists(pDeviceVulkan->GetAllocator()), m_CommandListsToReset(pDeviceVulkan->GetAllocator())
 {
-  /// \todo GraphicsVulkan: Allocate arrays with xiiGALDeviceVulkan memory allocator.
 }
 
 xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;

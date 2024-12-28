@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALQueryVulkan final : public xiiGALQuery
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALQueryVulkan, xiiGALQuery);
+
 public:
   virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) override final;
 

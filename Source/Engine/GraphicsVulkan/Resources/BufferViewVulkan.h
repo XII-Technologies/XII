@@ -11,6 +11,8 @@ namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALBufferViewVulkan final : public xiiGALBufferView
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferViewVulkan, xiiGALBufferView);
+
 public:
   XII_ALWAYS_INLINE const vk::BufferView GetVulkanBufferView() const { return m_vkBufferView; }
 
