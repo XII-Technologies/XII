@@ -139,9 +139,9 @@ class XII_GRAPHICSCORE_DLL xiiMeshBufferResource : public xiiResource
 public:
   xiiMeshBufferResource() :
     xiiResource(DoUpdate::OnAnyThread, 1)
-
   {
   }
+
   ~xiiMeshBufferResource();
 
   XII_ALWAYS_INLINE xiiUInt32 GetPrimitiveCount() const { return m_uiPrimitiveCount; }
