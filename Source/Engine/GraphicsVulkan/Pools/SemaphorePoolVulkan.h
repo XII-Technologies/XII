@@ -18,7 +18,7 @@ private:
 
   xiiGALDeviceVulkan* m_pDeviceVulkan;
 
-  xiiMutex                   m_PoolMutex;
+  xiiMutex                       m_PoolMutex;
   xiiDynamicArray<vk::Semaphore> m_Semaphores;
   xiiDeque<vk::Semaphore>        m_QueuedSemaphores;
 };

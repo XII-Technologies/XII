@@ -44,7 +44,7 @@ xiiResult xiiGALBufferViewVulkan::DeInitPlatform()
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkBufferView);
 
- m_vkBufferView  = VK_NULL_HANDLE;
+  m_vkBufferView = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }
