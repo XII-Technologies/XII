@@ -207,7 +207,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     attachmentDescription.m_StoreOperation        = m_AttachmentStoreOperation;
     attachmentDescription.m_StencilLoadOperation  = m_AttachmentStencilLoadOperation;
     attachmentDescription.m_StencilStoreOperation = m_AttachmentStencilStoreOperation;
-    attachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+    attachmentDescription.m_InitialStateFlags     = bIsDepthAttachment ? xiiGALResourceStateFlags::DepthWrite : xiiGALResourceStateFlags::RenderTarget;
     attachmentDescription.m_FinalStateFlags       = bIsDepthAttachment ? xiiGALResourceStateFlags::DepthWrite : xiiGALResourceStateFlags::RenderTarget;
 
     if (bIsDepthAttachment)
