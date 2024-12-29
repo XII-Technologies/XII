@@ -1123,6 +1123,7 @@ void xiiGALCommandListVulkan::FlushPlatform()
 
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
 {
+  m_ContextState     = {};
   m_CommandListState = {};
   m_PipelineBarrier  = {};
 
