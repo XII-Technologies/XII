@@ -524,7 +524,7 @@ public:
 
       depthAttachmentDesc.m_Format                = depthTextureDesc.m_Format;
       depthAttachmentDesc.m_uiSampleCount         = static_cast<xiiUInt8>(depthTextureDesc.m_uiSampleCount);
-      depthAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+      depthAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::DepthWrite;
       depthAttachmentDesc.m_FinalStateFlags       = xiiGALResourceStateFlags::DepthWrite;
       depthAttachmentDesc.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
       depthAttachmentDesc.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
@@ -535,7 +535,7 @@ public:
 
       colorAttachmentDesc.m_Format                = backBufferTextureDesc.m_Format;
       colorAttachmentDesc.m_uiSampleCount         = static_cast<xiiUInt8>(backBufferTextureDesc.m_uiSampleCount);
-      colorAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+      colorAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::RenderTarget;
       colorAttachmentDesc.m_FinalStateFlags       = xiiGALResourceStateFlags::RenderTarget;
       colorAttachmentDesc.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
       colorAttachmentDesc.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
