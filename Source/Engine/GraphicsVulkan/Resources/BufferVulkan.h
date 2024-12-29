@@ -25,6 +25,8 @@ public:
   vk::AccessFlags        GetAccessFlags() const;
   XII_ALWAYS_INLINE bool CheckAccessFlags(vk::AccessFlags accessFlags) const { return (GetAccessFlags() & accessFlags) == accessFlags; }
 
+  XII_ALWAYS_INLINE xiiEnum<xiiGALValueType> GetIndexFormat() const { return m_IndexFormat; };
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -42,4 +44,6 @@ protected:
 protected:
   vk::Buffer    m_vkBuffer               = VK_NULL_HANDLE;
   VmaAllocation m_BufferMemoryAllocation = {};
+
+  xiiEnum<xiiGALValueType> m_IndexFormat = xiiGALValueType::Undefined; // Strictly index buffers.
 };

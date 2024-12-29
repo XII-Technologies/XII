@@ -173,6 +173,12 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
   }
 
+  // Set the index format for index buffers.
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer))
+  {
+    m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? xiiGALValueType::UInt16 : xiiGALValueType::UInt32;
+  }
+
   return XII_SUCCESS;
 }
 
@@ -187,6 +193,9 @@ xiiResult xiiGALBufferVulkan::DeInitPlatform()
     m_vkBuffer               = VK_NULL_HANDLE;
     m_BufferMemoryAllocation = VK_NULL_HANDLE;
   }
+
+  m_IndexFormat = xiiGALValueType::UInt16;
+
   return XII_SUCCESS;
 }
 
