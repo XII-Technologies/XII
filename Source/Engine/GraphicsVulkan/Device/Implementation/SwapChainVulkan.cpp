@@ -593,7 +593,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
     XII_ASSERT_RELEASE(!m_SwapChainTextures[i].IsInvalidated(), "Failed to create native backbuffer texture object!");
 
-    sb.SetFormat("Main Back Buffer ({})");
+    sb.SetFormat("Main Back Buffer ({})", m_SwapChainTextures.GetCount());
 
     pDeviceVulkan->GetTexture(m_SwapChainTextures[i])->SetDebugName(sb);
   }
