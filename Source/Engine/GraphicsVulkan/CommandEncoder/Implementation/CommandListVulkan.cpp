@@ -676,14 +676,112 @@ void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* p
 
 void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
 {
+  xiiGALDeviceVulkan*      pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALRenderPassVulkan*  pRenderPassVulkan      = static_cast<xiiGALRenderPassVulkan*>(pRenderPass);
+  xiiGALFramebufferVulkan* pFramebufferVulkan     = static_cast<xiiGALFramebufferVulkan*>(pFramebuffer);
+  const auto&              renderPassDescription  = pRenderPassVulkan->GetDescription();
+  const auto&              framebufferDescription = pFramebufferVulkan->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "Current render pass has not yet been ended.");
+
+  if (m_CommandListState.m_vkRenderPass != pRenderPassVulkan->GetVulkanRenderPass() || m_CommandListState.m_vkFramebuffer != pFramebufferVulkan->GetVulkanFramebuffer())
+  {
+    for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
+    {
+      const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
+      const auto& attachmentView        = framebufferDescription.m_Attachments[i];
+
+      xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTextureView(attachmentView)->GetTexture());
+
+      if (pTextureVulkan->IsInKnownState() && !pTextureVulkan->CheckState((xiiGALResourceStateFlags::Enum)attachmentDescription.m_InitialStateFlags.GetValue()))
+      {
+        TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, attachmentDescription.m_InitialStateFlags, xiiGALStateTransitionFlags::UpdateState);
+      }
+    }
+
+    FlushBarriers();
+
+    xiiHybridArray<vk::ClearValue, 8U> clearColorValues;
+
+    for (xiiUInt32 i = 0; i < xiiMath::Min(renderPassDescription.m_Attachments.GetCount(), pOptimizedClearValues.GetCount()); ++i)
+    {
+      const auto&    clearValue   = pOptimizedClearValues[i];
+      vk::ClearValue vkClearValue = {};
+
+      const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(renderPassDescription.m_Attachments[i].m_Format);
+
+      if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+      {
+        vkClearValue.depthStencil.depth   = clearValue.m_DepthStencil.m_fDepth;
+        vkClearValue.depthStencil.stencil = clearValue.m_DepthStencil.m_uiStencil;
+      }
+      else
+      {
+        vkClearValue.color.float32[0] = clearValue.m_ClearColor.r;
+        vkClearValue.color.float32[1] = clearValue.m_ClearColor.g;
+        vkClearValue.color.float32[2] = clearValue.m_ClearColor.b;
+        vkClearValue.color.float32[3] = clearValue.m_ClearColor.a;
+      }
+
+      clearColorValues.PushBack(vkClearValue);
+    }
+
+    vk::RenderPassBeginInfo vkRenderPassBeginInfo = {};
+    vkRenderPassBeginInfo.pNext                   = nullptr;
+    vkRenderPassBeginInfo.renderPass              = pRenderPassVulkan->GetVulkanRenderPass();
+    vkRenderPassBeginInfo.framebuffer             = pFramebufferVulkan->GetVulkanFramebuffer();
+    vkRenderPassBeginInfo.renderArea              = vk::Rect2D{{0, 0}, {framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height}}; // The render area MUST be contained within the framebuffer dimensions (7.4)
+    vkRenderPassBeginInfo.clearValueCount         = clearColorValues.GetCount();
+    vkRenderPassBeginInfo.pClearValues            = clearColorValues.GetData(); // An array of VkClearValue structures that contains clear values for each attachment, if the attachment uses a loadOp value of VK_ATTACHMENT_LOAD_OP_CLEAR
+                                                                                // or if the attachment has a depth/stencil format and uses a stencilLoadOp value of VK_ATTACHMENT_LOAD_OP_CLEAR. The array is indexed by attachment number. Only elements
+                                                                                // corresponding to cleared attachments are used. Other elements of pClearValues are  ignored (7.4)
+
+    // The contents of the subpass will be recorded inline in the primary command buffer, and secondary command buffers must not be executed within the subpass.
+    m_vkCommandBuffer.beginRenderPass(&vkRenderPassBeginInfo, vk::SubpassContents::eInline, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_CommandListState.m_vkRenderPass        = pRenderPassVulkan->GetVulkanRenderPass();
+    m_CommandListState.m_vkFramebuffer       = pFramebufferVulkan->GetVulkanFramebuffer();
+    m_CommandListState.m_uiFramebufferWidth  = framebufferDescription.m_FramebufferSize.width;
+    m_CommandListState.m_uiFramebufferHeight = framebufferDescription.m_FramebufferSize.height;
+  }
+
+  // Set viewport to match frame buffer size.
+  xiiGALViewport viewport = {.m_fTopLeftX = 0.0f, .m_fTopLeftY = 0.0f, .m_fWidth = (float)framebufferDescription.m_FramebufferSize.width, .m_fHeight = (float)framebufferDescription.m_FramebufferSize.height};
+  SetViewports(xiiMakeArrayPtr(&viewport, 1U), framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
+
+  // m_bShadingRateIsSet = false;
 }
 
 void xiiGALCommandListVulkan::NextSubpassPlatform()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "Render pass has not yet been started.");
+
+  m_vkCommandBuffer.nextSubpass(vk::SubpassContents::eInline, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::EndRenderPassPlatform()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "Render pass has not yet been started.");
+
+  m_vkCommandBuffer.endRenderPass(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  m_CommandListState.m_vkRenderPass        = VK_NULL_HANDLE;
+  m_CommandListState.m_vkFramebuffer       = VK_NULL_HANDLE;
+  m_CommandListState.m_uiFramebufferWidth  = 0U;
+  m_CommandListState.m_uiFramebufferHeight = 0U;
+
+  if (m_CommandListState.m_uiInsidePassQueries != 0)
+  {
+    xiiLog::Error("Ending render pass while there are outstanding queries that have been started inside the pass, but have not been ended. Vulkan requires that a query must either begin and end inside the same "
+                  "subpass of a render pass instance, or must both begin and end outside of a render pass instance (i.e. contain entire render pass instances). (17.2)");
+  }
 }
 
 xiiResult xiiGALCommandListVulkan::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -1028,7 +1126,7 @@ void xiiGALCommandListVulkan::BufferMemoryBarrier(xiiGALBufferVulkan* pBufferVul
   }
 }
 
-void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange)
+void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange /*= nullptr*/)
 {
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
 
