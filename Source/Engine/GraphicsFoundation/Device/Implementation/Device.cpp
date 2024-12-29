@@ -2369,12 +2369,21 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
       usedResourceShaderStages.Insert(resource.m_sName, set);
     }
 
-    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Disabled), "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", i);
-    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Disabled), "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
-    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages != xiiGALShaderType::Pixel), "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
+    if (resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
+    {
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", i);
+    }
+    if (resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure)
+    {
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
+    }
+    if (resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment)
+    {
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages == xiiGALShaderType::Pixel, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
+    }
 
     xiiBitflags<xiiGALPipelineResourceFlags> allowedResourceFlags = xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_ResourceType);
-    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_PipelineResourceFlags.IsStrictlyAnySet(allowedResourceFlags), "The pipeline resource at index '{0}' contains flags that are not allowed for the shader resource type.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_PipelineResourceFlags.IsStrictlyAnySet(allowedResourceFlags) || resource.m_PipelineResourceFlags.IsNoFlagSet(), "The pipeline resource at index '{0}' contains flags that are not allowed for the shader resource type.", i);
 
     if (m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Direct3D12 || m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Direct3D11 || m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Metal)
     {
