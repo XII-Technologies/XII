@@ -278,6 +278,11 @@ private:
     vk::PipelineBindPoint m_vkPipelineBindPoint = static_cast<vk::PipelineBindPoint>(VK_PIPELINE_BIND_POINT_MAX_ENUM); ///< The type of pipeline bound to the command buffer.
   } m_ContextState;
 
+  vk::Buffer            m_CommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]       = {};
+  xiiUInt64             m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiUInt64             m_CommittedVertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_CommittedVertexBuffersRange;
+
   // Graphics/Mesh, Compute, Ray Tracing.
   static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;
   static constexpr xiiUInt32 s_MaxDescriptorSetPerSignature = 2U;

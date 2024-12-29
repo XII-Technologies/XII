@@ -495,10 +495,101 @@ void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pR
 
 void xiiGALCommandListVulkan::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pIndexBuffer);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyBufferState(pBufferVulkan, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Binding buffer as index buffer  (xiiGALCommandList::SetIndexBuffer)");
+
+  if (m_CommandListState.m_vkIndexBuffer != pBufferVulkan->GetVulkanBuffer() || m_CommandListState.m_vkIndexBufferOffset != uiByteOffset || m_CommandListState.m_vkIndexType != m_CommandListState.m_vkIndexType)
+  {
+    const auto indexFormat = pBufferVulkan->GetIndexFormat();
+
+    XII_VERIFY_COMMAND_LIST(indexFormat == xiiGALValueType::UInt16 || indexFormat == xiiGALValueType::UInt32, "Unsupported index format, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
+
+    vk::IndexType vkIndexType = vk::IndexType::eUint16;
+    if (indexFormat == xiiGALValueType::UInt32)
+    {
+      vkIndexType = vk::IndexType::eUint32;
+    }
+
+    m_vkCommandBuffer.bindIndexBuffer(pBufferVulkan->GetVulkanBuffer(), uiByteOffset, vkIndexType, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_CommandListState.m_vkIndexBuffer       = pBufferVulkan->GetVulkanBuffer();
+    m_CommandListState.m_vkIndexBufferOffset = uiByteOffset;
+    m_CommandListState.m_vkIndexType         = vkIndexType;
+
+    m_ContextState.m_bCommittedIndexBuffersUpToDate = true;
+  }
 }
 
 void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST((uiStartSlot + pVertexBuffers.GetCount()) <= XII_GAL_MAX_VERTEX_BUFFER_COUNT, "The number of vertex buffers to set, exceeds the maximum amount.");
+
+  if (flags.IsSet(xiiGALSetVertexBufferFlags::Reset))
+  {
+    m_CommittedVertexBuffersRange.Reset();
+
+    // Reset only the buffer slots that are not being set.
+    for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
+    {
+      m_CommittedVertexBuffers[i]       = VK_NULL_HANDLE;
+      m_CommittedVertexBufferOffsets[i] = 0U;
+      m_CommittedVertexBufferStrides[i] = 0U;
+
+      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
+    }
+
+    if (uiStartSlot > 0)
+    {
+      m_vkCommandBuffer.bindVertexBuffers(0, uiStartSlot, m_CommittedVertexBuffers, m_CommittedVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+
+    for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
+    {
+      m_CommittedVertexBuffers[i]       = VK_NULL_HANDLE;
+      m_CommittedVertexBufferOffsets[i] = 0U;
+      m_CommittedVertexBufferStrides[i] = 0U;
+
+      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
+    }
+
+    if ((XII_GAL_MAX_VERTEX_BUFFER_COUNT - (uiStartSlot + pVertexBuffers.GetCount())) > 0)
+    {
+      xiiUInt32 uiFirstBinding = uiStartSlot + pVertexBuffers.GetCount();
+      xiiUInt32 uiBindingCount = (XII_GAL_MAX_VERTEX_BUFFER_COUNT - (uiStartSlot + pVertexBuffers.GetCount()));
+
+      m_vkCommandBuffer.bindVertexBuffers(uiFirstBinding, uiBindingCount, m_CommittedVertexBuffers, m_CommittedVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+  }
+
+  for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
+  {
+    xiiGALBufferVulkan* pVertexBufferVulkan = static_cast<xiiGALBufferVulkan*>(pVertexBuffers[i]);
+    xiiUInt32           uiVertexBufferSlot  = i + uiStartSlot;
+
+    if (m_CommittedVertexBuffers[uiVertexBufferSlot] != pVertexBufferVulkan->GetVulkanBuffer() || m_CommittedVertexBufferOffsets[uiVertexBufferSlot] != pByteOffsets[i])
+    {
+      m_CommittedVertexBuffers[uiVertexBufferSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
+      m_CommittedVertexBufferOffsets[uiVertexBufferSlot] = pByteOffsets[i];
+      m_CommittedVertexBufferStrides[i]                  = pVertexBufferVulkan ? pVertexBufferVulkan->GetDescription().m_uiElementByteStride : 0U;
+
+      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
+    }
+
+    m_CommittedVertexBuffersRange.SetToIncludeValue(uiVertexBufferSlot);
+  }
+
+  if (!m_ContextState.m_bCommittedVertexBuffersUpToDate)
+  {
+    m_vkCommandBuffer.bindVertexBuffers(uiStartSlot, m_CommittedVertexBuffersRange.GetCount(), m_CommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_ContextState.m_bCommittedVertexBuffersUpToDate = true;
+  }
 }
 
 [[nodiscard]] vk::ClearColorValue ClearValueToVulkanClearValue(const void* pClearValues, xiiGALResourceFormat::Enum textureFormat)
