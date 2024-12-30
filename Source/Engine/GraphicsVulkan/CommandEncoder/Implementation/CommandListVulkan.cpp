@@ -208,7 +208,6 @@ void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::Image
   // Should we end render pass automatically?
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
-  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   XII_VERIFY_COMMAND_LIST((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
   XII_VERIFY_COMMAND_LIST((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
@@ -1110,10 +1109,46 @@ void xiiGALCommandListVulkan::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer
 
 void xiiGALCommandListVulkan::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pSourceBufferVulkan      = static_cast<xiiGALBufferVulkan*>(pSourceBuffer);
+  xiiGALBufferVulkan* pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestinationBuffer);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  TransitionOrVerifyBufferState(pSourceBufferVulkan, xiiGALResourceStateFlags::CopySource, vk::AccessFlagBits::eTransferRead, "Using buffer as copy source");
+  TransitionOrVerifyBufferState(pDestinationBufferVulkan, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Using buffer as copy destination");
+
+  vk::BufferCopy vkBufferCopyRegion = {};
+  vkBufferCopyRegion.srcOffset      = 0;
+  vkBufferCopyRegion.dstOffset      = 0;
+  vkBufferCopyRegion.size           = pSourceBufferVulkan->GetSize();
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.copyBuffer(pSourceBufferVulkan->GetVulkanBuffer(), pDestinationBufferVulkan->GetVulkanBuffer(), 1U, &vkBufferCopyRegion, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pSourceBufferVulkan      = static_cast<xiiGALBufferVulkan*>(pSourceBuffer);
+  xiiGALBufferVulkan* pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestinationBuffer);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  TransitionOrVerifyBufferState(pSourceBufferVulkan, xiiGALResourceStateFlags::CopySource, vk::AccessFlagBits::eTransferRead, "Using buffer as copy source");
+  TransitionOrVerifyBufferState(pDestinationBufferVulkan, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Using buffer as copy destination");
+
+  vk::BufferCopy vkBufferCopyRegion = {};
+  vkBufferCopyRegion.srcOffset      = uiSourceOffset;
+  vkBufferCopyRegion.dstOffset      = uiDestinationOffset;
+  vkBufferCopyRegion.size           = uiSize;
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.copyBuffer(pSourceBufferVulkan->GetVulkanBuffer(), pDestinationBufferVulkan->GetVulkanBuffer(), 1U, &vkBufferCopyRegion, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
