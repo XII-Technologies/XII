@@ -156,6 +156,53 @@ bool CheckLineSectionOverlap(T min0, T max0, T min1, T max1)
   }
 }
 
+[[nodiscard]] vk::BufferImageCopy GetBufferImageCopyInfo(xiiUInt64 uiBufferOffset, xiiUInt32 uiBufferRowStrideInTexels, const xiiGALTextureCreationDescription& textureDescription, const xiiBoundingBoxU32& region, xiiUInt32 uiMipLevel, xiiUInt32 uiArraySlice)
+{
+  vk::BufferImageCopy vkBufferImageCopyRegion = {};
+
+  XII_ASSERT_DEV((uiBufferOffset % 4) == 0, "Source buffer offset must be multiple of 4 (18.4)");
+  vkBufferImageCopyRegion.bufferOffset = uiBufferOffset; // must be a multiple of 4 (18.4)
+
+  // bufferRowLength and bufferImageHeight specify the data in buffer memory as a subregion of a larger two- or three-dimensional image, and control the addressing calculations of data in buffer memory.
+  // If either of these values is zero, that aspect of the buffer memory is considered to be tightly packed according to the imageExtent (18.4).
+  vkBufferImageCopyRegion.bufferRowLength   = uiBufferRowStrideInTexels;
+  vkBufferImageCopyRegion.bufferImageHeight = 0;
+
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
+  {
+    // The aspectMask member of imageSubresource must only have a single bit set (18.4)
+
+    vkBufferImageCopyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eDepth;
+  }
+  else if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+  {
+    // When copying to or from a depth or stencil aspect, the data in buffer memory uses a layout that is a (mostly) tightly packed representation of the depth or stencil data.
+    // To copy both the depth and stencil aspects of a depth/stencil format, two entries in pRegions can be used, where one specifies the depth aspect in imageSubresource, and the other specifies the stencil aspect (18.4)
+    XII_REPORT_FAILURE("Updating depth-stencil texture is not currently supported");
+  }
+  else
+  {
+    vkBufferImageCopyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+  }
+
+  vkBufferImageCopyRegion.imageSubresource.baseArrayLayer = uiArraySlice;
+  vkBufferImageCopyRegion.imageSubresource.layerCount     = 1;
+  vkBufferImageCopyRegion.imageSubresource.mipLevel       = uiMipLevel;
+
+  // - imageOffset.x and (imageExtent.width + imageOffset.x) must both be greater than or equal to 0 and less than or equal to the image subresource width (18.4)
+  // - imageOffset.y and (imageExtent.height + imageOffset.y) must both be greater than or equal to 0 and less than or equal to the image subresource height (18.4)
+  vkBufferImageCopyRegion.imageOffset = vk::Offset3D{static_cast<int32_t>(region.m_vMin.x), static_cast<int32_t>(region.m_vMin.y), static_cast<int32_t>(region.m_vMin.z)};
+
+  XII_ASSERT_DEV(region.IsValid(), "[{} .. {}) x [{} .. {}) x [{} .. {}) is not a valid region.", region.m_vMin.x, region.m_vMax.x, region.m_vMin.y, region.m_vMax.y, region.m_vMin.z, region.m_vMax.z);
+
+  auto extents                        = region.GetExtents();
+  vkBufferImageCopyRegion.imageExtent = vk::Extent3D{extents.x, extents.y, extents.z};
+
+  return vkBufferImageCopyRegion;
+}
+
 void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags)
 {
   // Should we end render pass automatically?
@@ -281,17 +328,40 @@ void xiiGALCommandListVulkan::FlushBarriers()
   // Do not clear SupportedStagesMask and SupportedAccessMask.
 }
 
+void xiiGALCommandListVulkan::CopyBufferToTexture(vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceBufferOffset, xiiUInt32 uiSourceBufferRowStrideInTexels, xiiGALTextureVulkan* pDestinationTextureVulkan, const xiiBoundingBoxU32& destinationRegion, xiiUInt32 uiDestinationMipLevel, xiiUInt32 uiDestinationArraySlice, bool bVerifyOnly /*= false*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyTextureState(pDestinationTextureVulkan, xiiGALResourceStateFlags::CopyDestination, vk::ImageLayout::eTransferDstOptimal, "Using texture as transfer destination (xiiGALCommandList::CopyTexture)");
+
+  const auto& textureDescription = pDestinationTextureVulkan->GetDescription();
+
+  vk::BufferImageCopy vkBufferImageCopy = GetBufferImageCopyInfo(uiSourceBufferOffset, uiSourceBufferRowStrideInTexels, textureDescription, destinationRegion, uiDestinationMipLevel, uiDestinationArraySlice);
+
+  CopyBufferToImage(vkSourceBuffer, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, xiiMakeArrayPtr(&vkBufferImageCopy, 1U));
+}
+
+void xiiGALCommandListVulkan::CopyTextureToBuffer(xiiGALTextureVulkan* pSourceTextureVulkan, const xiiBoundingBoxU32& sourceRegion, xiiUInt32 uiSourceMipLevel, xiiUInt32 uiSourceArraySlice, vk::Buffer vkDestinationBuffer, xiiUInt64 uiDestinationBufferOffset, xiiUInt32 uiDestinationBufferRowStrideInTexels, bool bVerifyOnly /*= false*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyTextureState(pSourceTextureVulkan, xiiGALResourceStateFlags::CopySource, vk::ImageLayout::eTransferSrcOptimal, "Using texture as transfer source (xiiGALCommandList::CopyTexture)");
+
+  const auto& textureDescription = pSourceTextureVulkan->GetDescription();
+
+  vk::BufferImageCopy vkBufferImageCopy = GetBufferImageCopyInfo(uiDestinationBufferOffset, uiDestinationBufferRowStrideInTexels, textureDescription, sourceRegion, uiSourceMipLevel, uiSourceArraySlice);
+
+  CopyImageToBuffer(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, vkDestinationBuffer, xiiMakeArrayPtr(&vkBufferImageCopy, 1U));
+}
+
 void xiiGALCommandListVulkan::CopyBufferToImage(vk::Buffer vkSourceBuffer, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::BufferImageCopy> pRegions)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-
-  // Copy operations must be performed outside of render pass.
-  if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
-  {
-    EndRenderPassPlatform();
-  }
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
 
   FlushBarriers();
 
@@ -303,16 +373,36 @@ void xiiGALCommandListVulkan::CopyImageToBuffer(vk::Image vkSourceImage, vk::Ima
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-
-  // Copy operations must be performed outside of render pass.
-  if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
-  {
-    EndRenderPassPlatform();
-  }
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
 
   FlushBarriers();
 
   m_vkCommandBuffer.copyImageToBuffer(vkSourceImage, vkSourceImageLayout, vkDestinationBuffer, pRegions.GetCount(), pRegions.GetPtr(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
+void xiiGALCommandListVulkan::CopyImage(vk::Image vkSourceImage, vk::ImageLayout vkSourceImageLayout, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::ImageCopy> pRegions)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.copyImage(vkSourceImage, vkSourceImageLayout, vkDestinationImage, vkDestinationImageLayout, pRegions.GetCount(), pRegions.GetPtr(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
+void xiiGALCommandListVulkan::CopyTextureRegion(xiiGALTextureVulkan* pSourceTextureVulkan, xiiGALTextureVulkan* pDestinationTextureVulkan, const vk::ImageCopy& copyRegion)
+{
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyTextureState(pSourceTextureVulkan, xiiGALResourceStateFlags::CopySource, vk::ImageLayout::eTransferSrcOptimal, "Using texture as transfer source (xiiGALCommandList::CopyTextureRegion)");
+  TransitionOrVerifyTextureState(pDestinationTextureVulkan, xiiGALResourceStateFlags::CopyDestination, vk::ImageLayout::eTransferDstOptimal, "Using texture as transfer destination (xiiGALCommandList::CopyTextureRegion)");
+
+  // srcImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL
+  // dstImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.3)
+  CopyImage(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, xiiMakeArrayPtr(&copyRegion, 1U));
 }
 
 void xiiGALCommandListVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
@@ -1046,10 +1136,193 @@ void xiiGALCommandListVulkan::UpdateTextureExtendedPlatform(xiiGALTexture* pText
 
 void xiiGALCommandListVulkan::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan             = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
+  xiiGALTextureVulkan* pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestinationTexture);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  const auto& sourceTextureDescription      = pSourceTextureVulkan->GetDescription();
+  const auto& destinationTextureDescription = pDestinationTextureVulkan->GetDescription();
+  auto        sourceMipLevelProperties      = xiiGALTextureUtilities::GetMipLevelProperties(sourceTextureDescription, 0);
+
+  if (sourceTextureDescription.m_Usage != xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    vk::ImageCopy vkImageCopyRegion = {};
+    vkImageCopyRegion.extent.width  = sourceMipLevelProperties.m_LogicalSize.width;
+    vkImageCopyRegion.extent.height = xiiMath::Max(sourceMipLevelProperties.m_LogicalSize.height, 1U);
+    vkImageCopyRegion.extent.depth  = xiiMath::Max(sourceMipLevelProperties.m_uiDepth, 1U);
+
+    auto GetAspectFlags = [](xiiGALResourceFormat::Enum format) -> vk::ImageAspectFlags {
+      const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+
+      switch (formatProperties.m_ComponentType)
+      {
+        case xiiGALResourceFormatComponentType::Depth:
+          return vk::ImageAspectFlagBits::eDepth;
+        case xiiGALResourceFormatComponentType::DepthStencil:
+          return vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+        default:
+          return vk::ImageAspectFlagBits::eColor;
+      }
+    };
+
+    vk::ImageAspectFlags vkAspectFlags = GetAspectFlags(sourceTextureDescription.m_Format);
+    XII_VERIFY_COMMAND_LIST(vkAspectFlags == GetAspectFlags(destinationTextureDescription.m_Format), "The Vulkan specification requires that the destination and source aspect flags are equivalent.");
+
+    vkImageCopyRegion.srcSubresource.baseArrayLayer = 0;
+    vkImageCopyRegion.srcSubresource.layerCount     = 1;
+    vkImageCopyRegion.srcSubresource.mipLevel       = 0;
+    vkImageCopyRegion.srcSubresource.aspectMask     = vkAspectFlags;
+    vkImageCopyRegion.srcOffset.x                   = 0;
+    vkImageCopyRegion.srcOffset.y                   = 0;
+    vkImageCopyRegion.srcOffset.x                   = 0;
+
+    vkImageCopyRegion.dstSubresource.baseArrayLayer = 0;
+    vkImageCopyRegion.dstSubresource.layerCount     = 1;
+    vkImageCopyRegion.dstSubresource.mipLevel       = 0;
+    vkImageCopyRegion.dstSubresource.aspectMask     = vkAspectFlags;
+    vkImageCopyRegion.dstOffset.x                   = 0;
+    vkImageCopyRegion.dstOffset.y                   = 0;
+    vkImageCopyRegion.dstOffset.x                   = 0;
+
+    CopyTextureRegion(pSourceTextureVulkan, pDestinationTextureVulkan, vkImageCopyRegion);
+  }
+  else if (sourceTextureDescription.m_Usage == xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_COMMAND_LIST(sourceTextureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Attempting to copy from staging texture that was not created with the xiiGALCPUAccessFlag::Write flag.");
+    XII_VERIFY_COMMAND_LIST(pSourceTextureVulkan->GetResourceState() == xiiGALResourceStateFlags::CopySource, "Source staging texture must permanently be in xiiGALResourceStateFlags::CopySource resources state.");
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+
+    // bufferOffset must be a multiple of 4 (18.4)
+    // If the calling command's VkImage parameter is a compressed image, bufferOffset must be a multiple of the compressed texel block size in bytes (18.4).
+    // This is automatically guaranteed as MipWidth and MipHeight are rounded to block size.
+
+    const xiiUInt64 uiSourceBufferOffset = xiiGALTextureUtilities::GetStagingTextureLocationOffset(sourceTextureDescription, 0, 0, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment, 0, 0, 0);
+
+    xiiBoundingBoxU32 destinationBox = xiiBoundingBoxU32::MakeZero();
+    destinationBox.m_vMax.x          = sourceMipLevelProperties.m_LogicalSize.width;
+    destinationBox.m_vMax.y          = sourceMipLevelProperties.m_LogicalSize.height;
+    destinationBox.m_vMax.x          = sourceMipLevelProperties.m_uiDepth;
+
+    // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
+    CopyBufferToTexture(pSourceTextureVulkan->GetVulkanStagingBuffer(), uiSourceBufferOffset, sourceMipLevelProperties.m_StorageSize.width, pDestinationTextureVulkan, destinationBox, 0, 0);
+  }
+  else if (sourceTextureDescription.m_Usage != xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_COMMAND_LIST(destinationTextureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Attempting to copy from staging texture that was not created with the xiiGALCPUAccessFlag::Read flag.");
+    XII_VERIFY_COMMAND_LIST(pDestinationTextureVulkan->GetResourceState() == xiiGALResourceStateFlags::CopyDestination, "Destination staging texture must permanently be in xiiGALResourceStateFlags::CopyDestination resources state.");
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+    const xiiUInt64 uiDestinationBufferOffset = xiiGALTextureUtilities::GetStagingTextureLocationOffset(destinationTextureDescription, 0, 0, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment, 0, 0, 0);
+
+    const auto destinationMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(destinationTextureDescription, 0);
+
+    xiiBoundingBoxU32 sourceBox = xiiBoundingBoxU32::MakeZero();
+    sourceBox.m_vMax.x          = sourceMipLevelProperties.m_LogicalSize.width;
+    sourceBox.m_vMax.y          = sourceMipLevelProperties.m_LogicalSize.height;
+    sourceBox.m_vMax.x          = sourceMipLevelProperties.m_uiDepth;
+
+    // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
+    CopyTextureToBuffer(pSourceTextureVulkan, sourceBox, 0, 0, pDestinationTextureVulkan->GetVulkanStagingBuffer(), uiDestinationBufferOffset, destinationMipLevelProperties.m_StorageSize.width);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(false, "Copying data between staging textures is not supported and is likely not want you really want to do.");
+  }
 }
 
 void xiiGALCommandListVulkan::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan             = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
+  xiiGALTextureVulkan* pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestinationTexture);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  const auto& sourceTextureDescription      = pSourceTextureVulkan->GetDescription();
+  const auto& destinationTextureDescription = pDestinationTextureVulkan->GetDescription();
+
+  if (sourceTextureDescription.m_Usage != xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    auto boxExtents = box.GetExtents();
+
+    vk::ImageCopy vkImageCopyRegion = {};
+    vkImageCopyRegion.extent.width  = boxExtents.x;
+    vkImageCopyRegion.extent.height = xiiMath::Max(boxExtents.y, 1U);
+    vkImageCopyRegion.extent.depth  = xiiMath::Max(boxExtents.z, 1U);
+
+    auto GetAspectFlags = [](xiiGALResourceFormat::Enum format) -> vk::ImageAspectFlags {
+      const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+
+      switch (formatProperties.m_ComponentType)
+      {
+        case xiiGALResourceFormatComponentType::Depth:
+          return vk::ImageAspectFlagBits::eDepth;
+        case xiiGALResourceFormatComponentType::DepthStencil:
+          return vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+        default:
+          return vk::ImageAspectFlagBits::eColor;
+      }
+    };
+
+    vk::ImageAspectFlags vkAspectFlags = GetAspectFlags(sourceTextureDescription.m_Format);
+    XII_VERIFY_COMMAND_LIST(vkAspectFlags == GetAspectFlags(destinationTextureDescription.m_Format), "The Vulkan specification requires that the destination and source aspect flags are equivalent.");
+
+    vkImageCopyRegion.srcSubresource.baseArrayLayer = sourceMipLevelData.m_uiArraySlice;
+    vkImageCopyRegion.srcSubresource.layerCount     = 1;
+    vkImageCopyRegion.srcSubresource.mipLevel       = sourceMipLevelData.m_uiMipLevel;
+    vkImageCopyRegion.srcSubresource.aspectMask     = vkAspectFlags;
+    vkImageCopyRegion.srcOffset.x                   = box.m_vMin.x;
+    vkImageCopyRegion.srcOffset.y                   = box.m_vMin.y;
+    vkImageCopyRegion.srcOffset.x                   = box.m_vMin.z;
+
+    vkImageCopyRegion.dstSubresource.baseArrayLayer = destinationMipLevelData.m_uiArraySlice;
+    vkImageCopyRegion.dstSubresource.layerCount     = 1;
+    vkImageCopyRegion.dstSubresource.mipLevel       = destinationMipLevelData.m_uiMipLevel;
+    vkImageCopyRegion.dstSubresource.aspectMask     = vkAspectFlags;
+    vkImageCopyRegion.dstOffset.x                   = box.m_vMax.x;
+    vkImageCopyRegion.dstOffset.y                   = box.m_vMax.y;
+    vkImageCopyRegion.dstOffset.x                   = box.m_vMax.z;
+
+    CopyTextureRegion(pSourceTextureVulkan, pDestinationTextureVulkan, vkImageCopyRegion);
+  }
+  else if (sourceTextureDescription.m_Usage == xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_COMMAND_LIST(sourceTextureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Attempting to copy from staging texture that was not created with the xiiGALCPUAccessFlag::Write flag.");
+    XII_VERIFY_COMMAND_LIST(pSourceTextureVulkan->GetResourceState() == xiiGALResourceStateFlags::CopySource, "Source staging texture must permanently be in xiiGALResourceStateFlags::CopySource resources state.");
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+
+    // bufferOffset must be a multiple of 4 (18.4)
+    // If the calling command's VkImage parameter is a compressed image, bufferOffset must be a multiple of the compressed texel block size in bytes (18.4).
+    // This is automatically guaranteed as MipWidth and MipHeight are rounded to block size.
+
+    const xiiUInt64 uiSourceBufferOffset     = xiiGALTextureUtilities::GetStagingTextureLocationOffset(sourceTextureDescription, sourceMipLevelData.m_uiArraySlice, sourceMipLevelData.m_uiMipLevel, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment, box.m_vMin.x, box.m_vMin.y, box.m_vMin.z);
+    const auto      sourceMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(sourceTextureDescription, sourceMipLevelData.m_uiMipLevel);
+
+    xiiBoundingBoxU32 destinationBox = xiiBoundingBoxU32::MakeFromMinMax(vDestinationPoint, box.GetExtents());
+
+    // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
+    CopyBufferToTexture(pSourceTextureVulkan->GetVulkanStagingBuffer(), uiSourceBufferOffset, sourceMipLevelProperties.m_StorageSize.width, pDestinationTextureVulkan, destinationBox, destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice);
+  }
+  else if (sourceTextureDescription.m_Usage != xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_COMMAND_LIST(destinationTextureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Attempting to copy from staging texture that was not created with the xiiGALCPUAccessFlag::Read flag.");
+    XII_VERIFY_COMMAND_LIST(pDestinationTextureVulkan->GetResourceState() == xiiGALResourceStateFlags::CopyDestination, "Destination staging texture must permanently be in xiiGALResourceStateFlags::CopyDestination resources state.");
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+    const xiiUInt64 uiDestinationBufferOffset     = xiiGALTextureUtilities::GetStagingTextureLocationOffset(destinationTextureDescription, destinationMipLevelData.m_uiArraySlice, destinationMipLevelData.m_uiMipLevel, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment, vDestinationPoint.x, vDestinationPoint.y, vDestinationPoint.z);
+    const auto      destinationMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(destinationTextureDescription, destinationMipLevelData.m_uiMipLevel);
+
+    // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
+    CopyTextureToBuffer(pSourceTextureVulkan, box, sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pDestinationTextureVulkan->GetVulkanStagingBuffer(), uiDestinationBufferOffset, destinationMipLevelProperties.m_StorageSize.width);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(false, "Copying data between staging textures is not supported and is likely not want you really want to do.");
+  }
 }
 
 void xiiGALCommandListVulkan::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
