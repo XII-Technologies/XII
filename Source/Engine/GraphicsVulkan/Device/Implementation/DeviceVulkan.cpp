@@ -974,6 +974,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   {
     m_LogicalDeviceFeatures          = vkEnabledFeatures;
     m_LogicalDeviceExtensionFeatures = enabledExtensionFeatures;
+    m_LogicalDeviceEnabledExtensions = deviceExtensions;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.createDevice(&deviceCreationDescription, nullptr, &m_LogicalDevice, m_InstanceDispatchLoader));
 
@@ -1057,7 +1058,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
     vmaAllocatorCreateInfo.device                 = m_LogicalDevice;
     vmaAllocatorCreateInfo.pVulkanFunctions       = &vmaVulkanFunctions;
-    vmaAllocatorCreateInfo.flags                  = VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT; // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION is required by our implementation.
+    vmaAllocatorCreateInfo.flags                  = {};
+
+    if (IsLogicalDeviceExtensionEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+    {
+      // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION is required by our implementation for ray tracing.
+      vmaAllocatorCreateInfo.flags |= VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    }
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
   }
@@ -2701,6 +2708,18 @@ bool xiiGALDeviceVulkan::IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionPro
 bool xiiGALDeviceVulkan::IsExtensionEnabled(const char* szExtensionName) const
 {
   for (const auto* szEnabledExtension : m_EnabledExtensions)
+  {
+    if (strcmp(szExtensionName, szEnabledExtension) == 0)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool xiiGALDeviceVulkan::IsLogicalDeviceExtensionEnabled(const char* szExtensionName) const
+{
+  for (const auto* szEnabledExtension : m_LogicalDeviceEnabledExtensions)
   {
     if (strcmp(szExtensionName, szEnabledExtension) == 0)
     {
