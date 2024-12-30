@@ -1136,7 +1136,6 @@ void xiiGALCommandListVulkan::UpdateTextureExtendedPlatform(xiiGALTexture* pText
 
 void xiiGALCommandListVulkan::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
-  xiiGALDeviceVulkan*  pDeviceVulkan             = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
   xiiGALTextureVulkan* pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestinationTexture);
 
@@ -1235,7 +1234,6 @@ void xiiGALCommandListVulkan::CopyTexturePlatform(xiiGALTexture* pSourceTexture,
 
 void xiiGALCommandListVulkan::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
-  xiiGALDeviceVulkan*  pDeviceVulkan             = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
   xiiGALTextureVulkan* pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestinationTexture);
 
@@ -1327,6 +1325,51 @@ void xiiGALCommandListVulkan::CopyTextureRegionPlatform(xiiGALTexture* pSourceTe
 
 void xiiGALCommandListVulkan::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan             = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
+  xiiGALTextureVulkan* pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestinationTexture);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  const auto& sourceTextureDescription = pSourceTextureVulkan->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(sourceTextureDescription.m_Format == pDestinationTextureVulkan->GetDescription().m_Format, "Vulkan requires that source and destination textures of a resolve operation have the same format. (18.6)");
+
+  // srcImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.6)
+  TransitionOrVerifyTextureState(pSourceTextureVulkan, xiiGALResourceStateFlags::ResolveSource, vk::ImageLayout::eTransferSrcOptimal, "Resolving multi-sampled texture (xiiGALCommandList::ResolveTextureSubResource)");
+
+  // dstImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.6)
+  TransitionOrVerifyTextureState(pDestinationTextureVulkan, xiiGALResourceStateFlags::ResolveDestination, vk::ImageLayout::eTransferDstOptimal, "Resolving multi-sampled texture (xiiGALCommandList::ResolveTextureSubResource)");
+
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(sourceTextureDescription.m_Format);
+
+  XII_VERIFY_COMMAND_LIST(formatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Depth && formatProperties.m_ComponentType != xiiGALResourceFormatComponentType::DepthStencil, "Vulkan only permits the resolve operation for colour formats.");
+
+  XII_IGNORE_UNUSED(formatProperties);
+
+  // The aspectMask member of srcSubresource and dstSubresource must only contain VK_IMAGE_ASPECT_COLOR_BIT (18.6)
+  vk::ImageAspectFlags vkImageAspectFlags = vk::ImageAspectFlagBits::eColor;
+
+  vk::ImageResolve vkImageResolveRegion              = {};
+  vkImageResolveRegion.srcSubresource.baseArrayLayer = sourceMipLevelData.m_uiArraySlice;
+  vkImageResolveRegion.srcSubresource.layerCount     = 1;
+  vkImageResolveRegion.srcSubresource.mipLevel       = sourceMipLevelData.m_uiMipLevel;
+  vkImageResolveRegion.srcSubresource.aspectMask     = vkImageAspectFlags;
+
+  vkImageResolveRegion.dstSubresource.baseArrayLayer = destinationMipLevelData.m_uiArraySlice;
+  vkImageResolveRegion.dstSubresource.layerCount     = 1;
+  vkImageResolveRegion.dstSubresource.mipLevel       = destinationMipLevelData.m_uiMipLevel;
+  vkImageResolveRegion.dstSubresource.aspectMask     = vkImageAspectFlags;
+
+  vkImageResolveRegion.srcOffset = vk::Offset3D{};
+  vkImageResolveRegion.dstOffset = vk::Offset3D{};
+
+  const auto& sourceMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(sourceTextureDescription, sourceMipLevelData.m_uiMipLevel);
+  vkImageResolveRegion.extent          = vk::Extent3D{sourceMipLevelProperties.m_LogicalSize.width, sourceMipLevelProperties.m_LogicalSize.height, sourceMipLevelProperties.m_uiDepth};
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.resolveImage(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, 1U, &vkImageResolveRegion, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
