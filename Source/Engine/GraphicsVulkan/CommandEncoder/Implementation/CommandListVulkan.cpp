@@ -207,8 +207,8 @@ void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::Image
 {
   // Should we end render pass automatically?
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
-  XII_ASSERT_DEV(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   XII_VERIFY_COMMAND_LIST((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
   XII_VERIFY_COMMAND_LIST((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
@@ -275,7 +275,7 @@ void xiiGALCommandListVulkan::MemoryBarrier(vk::AccessFlags vkSourceAccessFlags,
 {
   // Should we end render pass automatically?
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   XII_VERIFY_COMMAND_LIST((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
   XII_VERIFY_COMMAND_LIST((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
@@ -1378,7 +1378,7 @@ void xiiGALCommandListVulkan::GenerateMipsPlatform(xiiGALTextureView* pTextureVi
   xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureView->GetTexture());
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "Mip generation is not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "Mip generation is not permitted while a render pass is active.");
 
   if (!pTextureVulkan->IsInKnownState())
   {
@@ -1595,7 +1595,7 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 void xiiGALCommandListVulkan::TransitionBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, const bool bUpdateBufferState)
 {
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   if (oldState == xiiGALResourceStateFlags::Unknown)
   {
@@ -1658,7 +1658,7 @@ void xiiGALCommandListVulkan::BufferMemoryBarrier(xiiGALBufferVulkan* pBufferVul
 
 void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange /*= nullptr*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   if (oldState == xiiGALResourceStateFlags::Unknown)
   {
@@ -1741,7 +1741,7 @@ void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextu
 void xiiGALCommandListVulkan::TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout newLayout)
 {
   XII_VERIFY_COMMAND_LIST(pTextureVulkan != nullptr, "");
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   if (!pTextureVulkan->IsInKnownState())
   {
@@ -1760,7 +1760,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiGALBufferVulkan* 
 {
   if (!bVerifyOnly)
   {
-    XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+    XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
     if (pBufferVulkan->IsInKnownState())
     {
@@ -1779,7 +1779,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyTextureState(xiiGALTextureVulkan
 {
   if (!bVerifyOnly)
   {
-    XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+    XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
     if (pTextureVulkan->IsInKnownState())
     {
