@@ -97,7 +97,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief This returns the buffer size.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetSize() const { return m_Description.m_uiSize; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetSize() const { return m_Description.m_uiSize; }
 
   /// \brief This returns the handle of the default view.
   ///
