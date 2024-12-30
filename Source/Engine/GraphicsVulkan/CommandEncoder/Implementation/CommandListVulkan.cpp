@@ -1374,6 +1374,128 @@ void xiiGALCommandListVulkan::ResolveTextureSubResourcePlatform(xiiGALTexture* p
 
 void xiiGALCommandListVulkan::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureView->GetTexture());
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "Mip generation is not permitted while a render pass is active.");
+
+  if (!pTextureVulkan->IsInKnownState())
+  {
+    xiiLog::Error("Unable to generate mips for texture '{}' because the texture state is unknown.", pTextureVulkan->GetDebugName());
+    return;
+  }
+
+  const auto& textureDescription = pTextureVulkan->GetDescription();
+  const auto& viewDescription    = pTextureView->GetDescription();
+  const auto  originalState      = pTextureVulkan->GetResourceState();
+  const auto  vkOriginalLayout   = pTextureVulkan->GetVulkanImageLayout();
+  const auto  vkOldPipelineStage = xiiVulkanTypeConversions::GetPipelineStageFlags(originalState);
+
+  XII_VERIFY_COMMAND_LIST(viewDescription.m_uiMipLevelCount > 1, "Number of mip levels in the view must be greater than 1.");
+  XII_VERIFY_COMMAND_LIST(originalState != xiiGALResourceStateFlags::Undefined, "Attempting to generate mipmaps for texture '{}' which is in xiiGALResourceStateFlags::Undefined state. This is not expected in Vulkan backend as textures are transitioned to a defined state when created.", pTextureVulkan->GetDebugName());
+
+  vk::ImageSubresourceRange vkImageSubresourceRange = {};
+
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(viewDescription.m_Format);
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
+  {
+    vkImageSubresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+  }
+  else if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+  {
+    // If image has a depth / stencil format with both depth and stencil components, then the aspectMask member of subresourceRange must include both VK_IMAGE_ASPECT_DEPTH_BIT and VK_IMAGE_ASPECT_STENCIL_BIT (6.7.3)
+
+    vkImageSubresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+  }
+  else
+  {
+    vkImageSubresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  }
+
+  vkImageSubresourceRange.baseArrayLayer = viewDescription.m_uiFirstArrayOrDepthSlice;
+  vkImageSubresourceRange.layerCount     = viewDescription.m_uiArrayOrDepthSlicesCount;
+  vkImageSubresourceRange.baseMipLevel   = viewDescription.m_uiMostDetailedMip;
+  vkImageSubresourceRange.levelCount     = 1;
+
+  vk::ImageBlit vkImageBlitRegion                 = {};
+  vkImageBlitRegion.srcSubresource.baseArrayLayer = viewDescription.m_uiFirstArrayOrDepthSlice;
+  vkImageBlitRegion.srcSubresource.layerCount     = viewDescription.m_uiArrayOrDepthSlicesCount;
+  vkImageBlitRegion.srcSubresource.aspectMask     = vkImageSubresourceRange.aspectMask;
+  vkImageBlitRegion.dstSubresource.baseArrayLayer = vkImageBlitRegion.srcSubresource.baseArrayLayer;
+  vkImageBlitRegion.dstSubresource.layerCount     = vkImageBlitRegion.srcSubresource.layerCount;
+  vkImageBlitRegion.dstSubresource.aspectMask     = vkImageBlitRegion.srcSubresource.aspectMask;
+  vkImageBlitRegion.srcOffsets[0]                 = vk::Offset3D{0, 0, 0};
+  vkImageBlitRegion.dstOffsets[0]                 = vk::Offset3D{0, 0, 0};
+
+  vkImageSubresourceRange.baseMipLevel = viewDescription.m_uiMostDetailedMip;
+  vkImageSubresourceRange.levelCount   = 1;
+
+  if (originalState != xiiGALResourceStateFlags::CopySource)
+  {
+    TransitionImageLayout(pTextureVulkan->GetVulkanImage(), vkOriginalLayout, vk::ImageLayout::eTransferSrcOptimal, vkImageSubresourceRange, vkOldPipelineStage, vk::PipelineStageFlagBits::eTransfer);
+  }
+
+  for (xiiUInt32 uiMip = viewDescription.m_uiMostDetailedMip + 1; uiMip < viewDescription.m_uiMostDetailedMip + viewDescription.m_uiMipLevelCount; ++uiMip)
+  {
+    vkImageBlitRegion.srcSubresource.mipLevel = uiMip - 1;
+    vkImageBlitRegion.dstSubresource.mipLevel = uiMip;
+
+    vkImageBlitRegion.srcOffsets[1] = vk::Offset3D{static_cast<xiiInt32>(xiiMath::Max(textureDescription.m_Size.width >> (uiMip - 1U), 1U)), static_cast<xiiInt32>(xiiMath::Max(textureDescription.m_Size.height >> (uiMip - 1U), 1U)), 1};
+    vkImageBlitRegion.dstOffsets[1] = vk::Offset3D{static_cast<xiiInt32>(xiiMath::Max(textureDescription.m_Size.width >> uiMip, 1U)), static_cast<xiiInt32>(xiiMath::Max(textureDescription.m_Size.height >> uiMip, 1U)), 1};
+
+    if (textureDescription.m_Type == xiiGALResourceDimension::Texture3D)
+    {
+      vkImageBlitRegion.srcOffsets[1].z = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> (uiMip - 1U), 1U);
+      vkImageBlitRegion.dstOffsets[1].z = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> uiMip, 1U);
+    }
+
+    vkImageSubresourceRange.baseMipLevel = uiMip;
+
+    if (vkOriginalLayout != vk::ImageLayout::eTransferDstOptimal)
+    {
+      TransitionImageLayout(pTextureVulkan->GetVulkanImage(), vkOriginalLayout, vk::ImageLayout::eTransferDstOptimal, vkImageSubresourceRange, vkOldPipelineStage, vk::PipelineStageFlagBits::eTransfer);
+    }
+
+    FlushBarriers();
+
+    // For sRGB source formats, nonlinear RGB values are converted to linear representation prior to filtering.
+    // In case of sRGB destination format, linear RGB values are converted to nonlinear representation before writing the pixel to the image.
+    // Source must be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL
+    // Destination must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL
+    m_vkCommandBuffer.blitImage(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, 1U, &vkImageBlitRegion, vk::Filter::eLinear, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    TransitionImageLayout(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, vkImageSubresourceRange, vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer);
+  }
+
+  const auto vkAffectedMipLevelLayout = vk::ImageLayout::eTransferSrcOptimal;
+
+  // All affected mip levels are now in VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL state.
+  if (vkAffectedMipLevelLayout != vkOriginalLayout)
+  {
+    bool bIsAllSlices = (textureDescription.m_Type != xiiGALResourceDimension::Texture1DArray && textureDescription.m_Type != xiiGALResourceDimension::Texture2DArray && textureDescription.m_Type != xiiGALResourceDimension::TextureCubeArray) || textureDescription.m_uiArraySizeOrDepth == viewDescription.m_uiArrayOrDepthSlicesCount;
+    bool bIsAllMips   = viewDescription.m_uiMipLevelCount == textureDescription.m_uiMipLevels;
+
+    if (bIsAllSlices && bIsAllMips)
+    {
+      pTextureVulkan->SetVulkanImageLayout(vkAffectedMipLevelLayout);
+    }
+    else
+    {
+      XII_ASSERT_DEV(vkOriginalLayout != vk::ImageLayout::eUndefined, "Original layout must not be undefined.");
+
+      vkImageSubresourceRange.baseMipLevel = viewDescription.m_uiMostDetailedMip;
+      vkImageSubresourceRange.levelCount   = viewDescription.m_uiMipLevelCount;
+
+      // Transition all affected subresources back to original layout.
+      FlushBarriers();
+
+      TransitionImageLayout(pTextureVulkan->GetVulkanImage(), vkAffectedMipLevelLayout, vkOriginalLayout, vkImageSubresourceRange, vk::PipelineStageFlagBits::eTransfer, vkOldPipelineStage);
+
+      XII_ASSERT_DEV(pTextureVulkan->GetVulkanImageLayout() == vkOriginalLayout, "");
+    }
+  }
 }
 
 xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
