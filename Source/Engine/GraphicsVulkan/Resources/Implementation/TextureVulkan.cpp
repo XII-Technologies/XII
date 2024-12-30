@@ -525,8 +525,8 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
       // VK_MEMORY_PROPERTY_HOST_COHERENT_BIT bit specifies that the host cache management commands vkFlushMappedMemoryRanges
       // and vkInvalidateMappedMemoryRanges are NOT needed to flush host writes to the device or make device writes visible to the host (10.2)
       VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-      vmaAllocationCreateInfo.requiredFlags           = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+      vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
       vk::Buffer        vkStagingBuffer;
       VmaAllocation     stagingBufferAllocation;
@@ -544,7 +544,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
         for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
         {
           const auto& subresourceData  = pInitialData->m_SubResources[uiSubresourceIndex];
-          auto&       vkCopyRegion     = bufferImageCopyRegions[uiSubresourceIndex];
+          const auto& vkCopyRegion     = bufferImageCopyRegions[uiSubresourceIndex];
           auto        mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
 
           XII_ASSERT_DEV(mipLevelProperty.m_LogicalSize.width == vkCopyRegion.imageExtent.width, "");
@@ -555,13 +555,13 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
           // For compressed-block formats, mipLevelProperty.m_uiRowSize is the size of one row of blocks.
           XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride >= ((mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight) * mipLevelProperty.m_uiRowSize), "Depth stride is too small.");
 
-          for (xiiUInt32 uiZ = 0; mipLevelProperty.m_uiDepth; ++uiZ)
+          for (xiiUInt32 uiZ = 0; uiZ < mipLevelProperty.m_uiDepth; ++uiZ)
           {
-            for (xiiUInt32 uiY = 0; uiY < mipLevelProperty.m_StorageSize.height; ++uiY)
+            for (xiiUInt32 uiY = 0; uiY < mipLevelProperty.m_StorageSize.height; uiY += formatProperties.m_uiBlockHeight)
             {
               // The subresourceData.m_uiStride must be the stride of one row of compressed blocks.
-              memcpy(xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, vkCopyRegion.bufferOffset + ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / formatProperties.m_uiBlockHeight) * mipLevelProperty.m_uiRowSize),
-                     xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), (uiY / formatProperties.m_uiBlockHeight) * subresourceData.m_uiStride + uiZ * subresourceData.m_uiDepthStride),
+              memcpy(xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, vkCopyRegion.bufferOffset + ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / xiiUInt32{formatProperties.m_uiBlockHeight}) * mipLevelProperty.m_uiRowSize),
+                     xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), (uiY / xiiUInt32{formatProperties.m_uiBlockHeight}) * subresourceData.m_uiStride + uiZ * subresourceData.m_uiDepthStride),
                      mipLevelProperty.m_uiRowSize);
             }
           }

@@ -552,13 +552,13 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
     // For block-compression formats, all parameters are still specified in texels rather than compressed texel blocks (18.4.1).
     mipLevelProperties.m_StorageSize.width  = xiiMemoryUtils::AlignSize(mipLevelProperties.m_LogicalSize.width, xiiUInt32{formatProperties.m_uiBlockWidth});
     mipLevelProperties.m_StorageSize.height = xiiMemoryUtils::AlignSize(mipLevelProperties.m_LogicalSize.height, xiiUInt32{formatProperties.m_uiBlockHeight});
-    mipLevelProperties.m_uiRowSize          = xiiUInt64{mipLevelProperties.m_StorageSize.width} / formatProperties.m_uiBlockWidth * formatProperties.m_uiComponentSize; // Component size is the block size.
+    mipLevelProperties.m_uiRowSize          = xiiUInt64{mipLevelProperties.m_StorageSize.width} / xiiUInt32{formatProperties.m_uiBlockWidth} * xiiUInt32{formatProperties.m_uiComponentSize}; // Component size is the block size.
     mipLevelProperties.m_uiDepthSliceSize   = mipLevelProperties.m_StorageSize.height / xiiUInt32{formatProperties.m_uiBlockHeight} * mipLevelProperties.m_uiRowSize;
   }
   else
   {
     mipLevelProperties.m_StorageSize      = mipLevelProperties.m_LogicalSize;
-    mipLevelProperties.m_uiRowSize        = xiiUInt64{mipLevelProperties.m_StorageSize.width} * formatProperties.m_uiComponentSize * formatProperties.m_uiComponentCount;
+    mipLevelProperties.m_uiRowSize        = xiiUInt64{mipLevelProperties.m_StorageSize.width} * xiiUInt32{formatProperties.m_uiComponentSize} * xiiUInt32{formatProperties.m_uiComponentCount};
     mipLevelProperties.m_uiDepthSliceSize = mipLevelProperties.m_uiRowSize * mipLevelProperties.m_StorageSize.height;
     mipLevelProperties.m_uiMipSize        = mipLevelProperties.m_uiDepthSliceSize * mipLevelProperties.m_uiDepth;
   }
