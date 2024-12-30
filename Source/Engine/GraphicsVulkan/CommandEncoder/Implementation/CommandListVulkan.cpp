@@ -1590,10 +1590,6 @@ void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, cons
   m_vkCommandBuffer.insertDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
-void xiiGALCommandListVulkan::FlushPlatform()
-{
-}
-
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
 {
   m_ContextState     = {};

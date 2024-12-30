@@ -177,8 +177,6 @@ protected:
   virtual void EndDebugGroupPlatform() override final;
   virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color) override final;
 
-  virtual void FlushPlatform() override final;
-
   virtual void InvalidateStatePlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;

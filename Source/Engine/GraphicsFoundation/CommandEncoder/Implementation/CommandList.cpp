@@ -521,11 +521,6 @@ void xiiGALCommandList::InsertDebugLabel(xiiStringView sName, const xiiColor& co
   InsertDebugLabelPlatform(sName, color);
 }
 
-void xiiGALCommandList::Flush()
-{
-  FlushPlatform();
-}
-
 void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
   /// \todo GraphicsFoundation: Check alignment.

@@ -302,10 +302,6 @@ void xiiGALCommandListD3D12::InsertDebugLabelPlatform(xiiStringView sName, const
 {
 }
 
-void xiiGALCommandListD3D12::FlushPlatform()
-{
-}
-
 void xiiGALCommandListD3D12::InvalidateStatePlatform()
 {
 }

@@ -905,12 +905,6 @@ void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const
   }
 }
 
-void xiiGALCommandListD3D11::FlushPlatform()
-{
-  // Though D3D11 does not care about render passes, we call flush when we unset resource views that are set as render targets.
-  // XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "Flushing commandlist inside an active render pass is not allowed.");
-}
-
 void xiiGALCommandListD3D11::InvalidateStatePlatform()
 {
   m_pCommandList->ClearState();
@@ -1027,7 +1021,6 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
     if (bFlushNeeded)
     {
       FlushDeferredStateChanges().IgnoreResult();
-      FlushPlatform();
     }
   }
 
