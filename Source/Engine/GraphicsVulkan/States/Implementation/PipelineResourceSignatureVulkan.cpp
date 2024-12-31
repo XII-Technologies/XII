@@ -8,6 +8,40 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineResourceSignatureVulkan, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
+vk::DescriptorType GetDescriptorType(const xiiGALPipelineResourceDescription& resourceDescription)
+{
+  XII_ASSERT_DEV(resourceDescription.m_PipelineResourceFlags.IsStrictlyAnySet(xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resourceDescription.m_ResourceType)) || resourceDescription.m_PipelineResourceFlags.IsNoFlagSet(), "Invalid resource flags, implementation error!");
+
+  const bool bWithDynamicOffset = !resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers);
+  const bool bCombinedSampler   = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::CombinedSampler);
+  const bool bUseTexelBuffer    = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::Formattedbuffer);
+  const bool bGeneralInputAtt   = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment);
+
+  switch (resourceDescription.m_ResourceType)
+  {
+    case xiiGALShaderResourceType::ConstantBuffer:
+      return bWithDynamicOffset ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eUniformBuffer;
+    case xiiGALShaderResourceType::TextureSRV:
+      return bCombinedSampler ? vk::DescriptorType::eCombinedImageSampler : vk::DescriptorType::eSampledImage;
+    case xiiGALShaderResourceType::BufferSRV:
+      return bUseTexelBuffer ? vk::DescriptorType::eUniformTexelBuffer : vk::DescriptorType::eStorageBuffer;
+    case xiiGALShaderResourceType::TextureUAV:
+      return vk::DescriptorType::eStorageImage;
+    case xiiGALShaderResourceType::BufferUAV:
+      return bUseTexelBuffer ? vk::DescriptorType::eStorageTexelBuffer : (bWithDynamicOffset ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eStorageBuffer);
+    case xiiGALShaderResourceType::Sampler:
+      return vk::DescriptorType::eSampler;
+    case xiiGALShaderResourceType::InputAttachment:
+      return vk::DescriptorType::eInputAttachment;
+    case xiiGALShaderResourceType::AccelerationStructure:
+      return vk::DescriptorType::eAccelerationStructureKHR;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return vk::DescriptorType::eSampler;
+}
+
 xiiGALPipelineResourceSignatureVulkan::xiiGALPipelineResourceSignatureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
   xiiGALPipelineResourceSignature(pDeviceVulkan, creationDescription)
 {
@@ -17,16 +51,88 @@ xiiGALPipelineResourceSignatureVulkan::~xiiGALPipelineResourceSignatureVulkan() 
 
 xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  return XII_FAILURE;
+  vk::DescriptorSetLayoutCreateInfo vkDescriptorSetLayoutCreateInfo = {};
+  vkDescriptorSetLayoutCreateInfo.pNext                             = nullptr;
+  vkDescriptorSetLayoutCreateInfo.flags                             = {};
+
+  xiiDynamicArray<vk::DescriptorSetLayoutBinding> vkDescriptorSetLayoutBindings(pDeviceVulkan->GetAllocator());
+
+  for (xiiUInt32 uiResource = 0; uiResource < m_Description.m_Resources.GetCount(); ++uiResource)
+  {
+    const auto& resource                  = m_Description.m_Resources[uiResource];
+    auto&       vkDescriptorLayoutBinding = vkDescriptorSetLayoutBindings.ExpandAndGetRef();
+
+    vkDescriptorLayoutBinding.binding            = resource.m_uiBindSlot;
+    vkDescriptorLayoutBinding.descriptorType     = GetDescriptorType(resource);
+    vkDescriptorLayoutBinding.descriptorCount    = resource.m_uiArraySize;
+    vkDescriptorLayoutBinding.stageFlags         = xiiVulkanTypeConversions::GetShaderStageFlags(resource.m_ShaderStages);
+    vkDescriptorLayoutBinding.pImmutableSamplers = {};
+
+    // \todo GraphicsVulkan: Implement immutable samplers.
+  }
+
+  vkDescriptorSetLayoutCreateInfo.pBindings    = vkDescriptorSetLayoutBindings.GetData();
+  vkDescriptorSetLayoutCreateInfo.bindingCount = vkDescriptorSetLayoutBindings.GetCount();
+
+  vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createDescriptorSetLayout(&vkDescriptorSetLayoutCreateInfo, nullptr, &m_vkDescriptorSetLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALPipelineResourceSignatureVulkan::DeInitPlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  if (m_vkDescriptorSetLayout != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkDescriptorSetLayout);
+
+    m_vkDescriptorSetLayout = VK_NULL_HANDLE;
+  }
 
   return XII_SUCCESS;
+}
+
+void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_vkDescriptorSetLayout == VK_NULL_HANDLE)
+    return;
+
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiStringBuilder    tmp;
+
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkDescriptorSetLayout, sName.GetData(tmp));
+}
+
+bool xiiGALPipelineResourceSignatureVulkan::IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const
+{
+  const xiiGALPipelineResourceSignatureVulkan* pPipelineResourceSignatureVulkan = static_cast<const xiiGALPipelineResourceSignatureVulkan*>(pPipelineResourceSignature);
+
+  if (pPipelineResourceSignature == this)
+    return true;
+
+  const auto& sourceDescription  = GetDescription();
+  const auto& compareDescription = pPipelineResourceSignature->GetDescription();
+
+  if (sourceDescription.m_bUseCombinedTextureSamplers != compareDescription.m_bUseCombinedTextureSamplers)
+    return false;
+
+  for (const auto& resource : compareDescription.m_Resources)
+  {
+    if (!sourceDescription.m_Resources.Contains(resource))
+      return false;
+  }
+
+  for (const auto& immutableSampler : compareDescription.m_ImmutableSamplers)
+  {
+    if (!sourceDescription.m_ImmutableSamplers.Contains(immutableSampler))
+      return false;
+  }
+
+  return false;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_States_Implementation_PipelineResourceSignatureVulkan);
