@@ -31,8 +31,6 @@ static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
 static bool      g_bWindowResized = false;
 
-#define USE_RENDER_PASS_AND_FRAMEBUFFER 0
-
 class xiiGraphicsExplorerWindow : public xiiWindow
 {
 public:
@@ -159,14 +157,15 @@ public:
       m_pDevice->EnqueueFrameSwapChain(m_hSwapChain);
       m_pDevice->BeginFrame();
 
+      EnsureRenderPassAndFramebuffer();
+
       auto pGraphicsQueue = m_pDevice->GetDefaultCommandQueue();
 
       if (auto pCommandList = pGraphicsQueue->BeginCommandList())
       {
-#if USE_RENDER_PASS_AND_FRAMEBUFFER
         xiiGALBeginRenderPassDescription beginRenderPass{
-          .m_hRenderPass  = m_hRenderPass,
-          .m_hFramebuffer = m_hFrameBuffer,
+          .m_hRenderPass  = m_hCurrentRenderPass,
+          .m_hFramebuffer = m_hCurrentFramebuffer,
         };
 
         auto& clearValue1                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
@@ -182,19 +181,7 @@ public:
 
         pCommandList->BeginRenderPass(beginRenderPass);
         pCommandList->EndRenderPass();
-#else
-        auto pSwapChain  = m_pDevice->GetSwapChain(m_hSwapChain);
-        auto pBackbuffer = m_pDevice->GetTexture(pSwapChain->GetBackBufferTexture());
 
-        float    fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-        xiiColor clearColor  = xiiColor::Black;
-        clearColor.r         = tanf(fGlobalTime);
-        clearColor.g         = sinf(fGlobalTime);
-        clearColor.b         = cosf(fGlobalTime);
-        clearColor.a         = 1.0f;
-
-        pCommandList->ClearRenderTargetView(pBackbuffer->GetDefaultView(xiiGALTextureViewType::RenderTarget), clearColor);
-#endif
         pCommandList->Submit();
       }
 
@@ -416,6 +403,8 @@ public:
 
   virtual void BeforeCoreSystemsShutdown() override
   {
+    xiiPlugin::UnloadAllPlugins();
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
     // Shut down telemetry if it was set up.
     xiiTelemetry::CloseConnection();
@@ -426,13 +415,13 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
-#if USE_RENDER_PASS_AND_FRAMEBUFFER
-    m_pDevice->DestroyFramebuffer(m_hFrameBuffer);
-    m_hFrameBuffer.Invalidate();
+    FreeCachedRenderPasses();
 
-    m_pDevice->DestroyRenderPass(m_hRenderPass);
-    m_hRenderPass.Invalidate();
-#endif
+    if (!m_hDepthStencilTexture.IsInvalidated())
+    {
+      m_pDevice->DestroyTexture(m_hDepthStencilTexture);
+      m_hDepthStencilTexture.Invalidate();
+    }
 
     m_pDevice->DestroySwapChain(m_hSwapChain);
     m_hSwapChain.Invalidate();
@@ -453,6 +442,8 @@ public:
 
   void UpdateSwapChain()
   {
+    bool bRecreateDepthTexture = false;
+
     // Create a Swapchain
     if (m_hSwapChain.IsInvalidated())
     {
@@ -478,20 +469,54 @@ public:
 
       if (pSwapChain->GetCurrentSize() != currentSize)
       {
+        bRecreateDepthTexture = true;
+
         pSwapChain->Resize(currentSize).IgnoreResult();
       }
     }
 
-#if USE_RENDER_PASS_AND_FRAMEBUFFER
-    // Create render pass
+    if (bRecreateDepthTexture)
     {
-      if (!m_hRenderPass.IsInvalidated())
+      m_pDevice->DestroyTexture(m_hDepthStencilTexture);
+      m_hDepthStencilTexture.Invalidate();
+    }
+
+    if (m_hDepthStencilTexture.IsInvalidated())
+    {
+      xiiGALTextureCreationDescription texDesc;
+      texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
+      texDesc.m_Size.width  = g_uiWindowWidth;
+      texDesc.m_Size.height = g_uiWindowHeight;
+      texDesc.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
+      texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
+
+      m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
+      m_pDevice->GetTexture(m_hDepthStencilTexture)->SetDebugName("Depth Stencil");
+    }
+  }
+
+  void EnsureRenderPassAndFramebuffer()
+  {
+    xiiGALTextureHandle hBackBuffer           = m_pDevice->GetSwapChain(m_hSwapChain)->GetBackBufferTexture();
+    const auto&         backBufferTextureDesc = m_pDevice->GetTexture(hBackBuffer)->GetDescription();
+
+    xiiGALRenderPassHandle hRenderPass;
+    bool                   bNeedsNewRenderPass = true;
+    for (xiiUInt32 i = 0; i < m_RenderPasses.GetCount() && bNeedsNewRenderPass; ++i)
+    {
+      xiiGALRenderPass* pRenderPass           = m_pDevice->GetRenderPass(m_RenderPasses[i]);
+      const auto&       renderPassDescription = pRenderPass->GetDescription();
+      const auto&       backbufferAttachment  = renderPassDescription.m_Attachments[1];
+
+      if (backbufferAttachment.m_Format == backBufferTextureDesc.m_Format && backbufferAttachment.m_uiSampleCount == backBufferTextureDesc.m_uiSampleCount)
       {
-        m_pDevice->DestroyRenderPass(m_hRenderPass);
-
-        m_hRenderPass.Invalidate();
+        hRenderPass         = m_RenderPasses[i];
+        bNeedsNewRenderPass = false;
       }
+    }
 
+    if (bNeedsNewRenderPass)
+    {
       xiiGALRenderPassCreationDescription renderPassDesc;
 
       const auto& depthTextureDesc    = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDescription();
@@ -499,20 +524,18 @@ public:
 
       depthAttachmentDesc.m_Format                = depthTextureDesc.m_Format;
       depthAttachmentDesc.m_uiSampleCount         = static_cast<xiiUInt8>(depthTextureDesc.m_uiSampleCount);
-      depthAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+      depthAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::DepthWrite;
       depthAttachmentDesc.m_FinalStateFlags       = xiiGALResourceStateFlags::DepthWrite;
       depthAttachmentDesc.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
       depthAttachmentDesc.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
       depthAttachmentDesc.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Clear;
       depthAttachmentDesc.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
 
-      const auto& hBackBuffer           = m_pDevice->GetSwapChain(m_hSwapChain)->GetBackBufferTexture();
-      const auto& backBufferTextureDesc = m_pDevice->GetTexture(hBackBuffer)->GetDescription();
-      auto&       colorAttachmentDesc   = renderPassDesc.m_Attachments.ExpandAndGetRef();
+      auto& colorAttachmentDesc = renderPassDesc.m_Attachments.ExpandAndGetRef();
 
       colorAttachmentDesc.m_Format                = backBufferTextureDesc.m_Format;
       colorAttachmentDesc.m_uiSampleCount         = static_cast<xiiUInt8>(backBufferTextureDesc.m_uiSampleCount);
-      colorAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+      colorAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::RenderTarget;
       colorAttachmentDesc.m_FinalStateFlags       = xiiGALResourceStateFlags::RenderTarget;
       colorAttachmentDesc.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
       colorAttachmentDesc.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
@@ -537,38 +560,68 @@ public:
       dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
       dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::DepthStencilWrite | xiiGALAccessFlags::RenderTargetWrite;
 
-      m_hRenderPass = m_pDevice->CreateRenderPass(renderPassDesc);
-      XII_ASSERT_DEV(!m_hRenderPass.IsInvalidated(), "Failed to create render pass.");
+      hRenderPass = m_pDevice->CreateRenderPass(renderPassDesc);
+      XII_ASSERT_DEV(!hRenderPass.IsInvalidated(), "Failed to create render pass.");
+
+      m_RenderPasses.PushBack(hRenderPass);
     }
 
-    // Create frame buffer
+    xiiGALFramebufferHandle hFramebuffer;
+    bool                    bNeedsNewFramebuffer = true;
+    for (xiiUInt32 i = 0; i < m_Framebuffers.GetCount() && bNeedsNewFramebuffer; ++i)
     {
-      if (!m_hFrameBuffer.IsInvalidated())
+      xiiGALFramebuffer* pFramebuffer           = m_pDevice->GetFramebuffer(m_Framebuffers[i]);
+      const auto&        framebufferDescription = pFramebuffer->GetDescription();
+      auto               hBackBufferView        = m_pDevice->GetTexture(hBackBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+
+      if (framebufferDescription.m_hRenderPass == hRenderPass && framebufferDescription.m_Attachments[1] == hBackBufferView)
       {
-        m_pDevice->DestroyFramebuffer(m_hFrameBuffer);
-
-        m_hFrameBuffer.Invalidate();
+        hFramebuffer         = m_Framebuffers[i];
+        bNeedsNewFramebuffer = false;
       }
+    }
 
-      const auto& hBackBuffer           = m_pDevice->GetSwapChain(m_hSwapChain)->GetBackBufferTexture();
-      const auto& hBackBufferView       = m_pDevice->GetTexture(hBackBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-      const auto& hDepthStencilView     = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
-      const auto& backBufferTextureDesc = m_pDevice->GetTexture(hBackBuffer)->GetDescription();
-      const auto& backBufferViewDesc    = m_pDevice->GetTextureView(hBackBufferView)->GetDescription();
+    if (bNeedsNewFramebuffer)
+    {
+      auto        hBackBufferView    = m_pDevice->GetTexture(hBackBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+      auto        hDepthStencilView  = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
+      const auto& backBufferViewDesc = m_pDevice->GetTextureView(hBackBufferView)->GetDescription();
+
 
       xiiVec3U32 vSize = xiiGALTextureUtilities::GetMipLevelSize(backBufferViewDesc.m_uiMostDetailedMip, backBufferTextureDesc);
 
       xiiGALFramebufferCreationDescription framebufferDesc;
-      framebufferDesc.m_hRenderPass       = m_hRenderPass;
+      framebufferDesc.m_hRenderPass       = hRenderPass;
       framebufferDesc.m_FramebufferSize   = {vSize.x, vSize.y};
       framebufferDesc.m_uiArraySliceCount = backBufferTextureDesc.GetArraySize();
       framebufferDesc.m_Attachments.PushBack(hDepthStencilView);
       framebufferDesc.m_Attachments.PushBack(hBackBufferView);
 
-      m_hFrameBuffer = m_pDevice->CreateFramebuffer(framebufferDesc);
-      XII_ASSERT_DEV(!m_hFrameBuffer.IsInvalidated(), "Failed to create frame buffer.");
+      hFramebuffer = m_pDevice->CreateFramebuffer(framebufferDesc);
+      XII_ASSERT_DEV(!hFramebuffer.IsInvalidated(), "Failed to create frame buffer.");
+
+      m_Framebuffers.PushBack(hFramebuffer);
     }
-#endif
+
+    m_hCurrentRenderPass  = hRenderPass;
+    m_hCurrentFramebuffer = hFramebuffer;
+  }
+
+  void FreeCachedRenderPasses()
+  {
+    for (xiiUInt32 i = 0; i < m_Framebuffers.GetCount(); ++i)
+    {
+      m_pDevice->DestroyFramebuffer(m_Framebuffers[i]);
+      m_Framebuffers[i].Invalidate();
+    }
+    m_Framebuffers.Clear();
+
+    for (xiiUInt32 i = 0; i < m_RenderPasses.GetCount(); ++i)
+    {
+      m_pDevice->DestroyRenderPass(m_RenderPasses[i]);
+      m_RenderPasses[i].Invalidate();
+    }
+    m_RenderPasses.Clear();
   }
 
 private:
@@ -576,12 +629,12 @@ private:
 
   xiiGALDevice* m_pDevice = nullptr;
 
-  xiiGALSwapChainHandle m_hSwapChain;
-
-#if USE_RENDER_PASS_AND_FRAMEBUFFER
-  xiiGALRenderPassHandle  m_hRenderPass;
-  xiiGALFramebufferHandle m_hFrameBuffer;
-#endif
+  xiiGALSwapChainHandle                       m_hSwapChain;
+  xiiGALTextureHandle                         m_hDepthStencilTexture;
+  xiiGALRenderPassHandle                      m_hCurrentRenderPass;
+  xiiGALFramebufferHandle                     m_hCurrentFramebuffer;
+  xiiHybridArray<xiiGALRenderPassHandle, 2U>  m_RenderPasses;
+  xiiHybridArray<xiiGALFramebufferHandle, 2U> m_Framebuffers;
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiGraphicsExplorerApp);

@@ -147,7 +147,7 @@ public:
   /// \brief Returns whether there are strictly any of the given flags set.
   XII_ALWAYS_INLINE bool IsStrictlyAnySet(const xiiBitflags<T>& rhs) const
   {
-    return (m_Value & ~rhs.m_Value) == 0;
+    return ((m_Value & rhs.m_Value) != 0) && ((m_Value & ~rhs.m_Value) == 0);
   }
 
   /// \brief Sets the given flag.

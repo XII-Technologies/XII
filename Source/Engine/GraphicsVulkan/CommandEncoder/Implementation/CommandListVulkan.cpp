@@ -156,12 +156,58 @@ bool CheckLineSectionOverlap(T min0, T max0, T min1, T max1)
   }
 }
 
+[[nodiscard]] vk::BufferImageCopy GetBufferImageCopyInfo(xiiUInt64 uiBufferOffset, xiiUInt32 uiBufferRowStrideInTexels, const xiiGALTextureCreationDescription& textureDescription, const xiiBoundingBoxU32& region, xiiUInt32 uiMipLevel, xiiUInt32 uiArraySlice)
+{
+  vk::BufferImageCopy vkBufferImageCopyRegion = {};
+
+  XII_ASSERT_DEV((uiBufferOffset % 4) == 0, "Source buffer offset must be multiple of 4 (18.4)");
+  vkBufferImageCopyRegion.bufferOffset = uiBufferOffset; // must be a multiple of 4 (18.4)
+
+  // bufferRowLength and bufferImageHeight specify the data in buffer memory as a subregion of a larger two- or three-dimensional image, and control the addressing calculations of data in buffer memory.
+  // If either of these values is zero, that aspect of the buffer memory is considered to be tightly packed according to the imageExtent (18.4).
+  vkBufferImageCopyRegion.bufferRowLength   = uiBufferRowStrideInTexels;
+  vkBufferImageCopyRegion.bufferImageHeight = 0;
+
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
+  {
+    // The aspectMask member of imageSubresource must only have a single bit set (18.4)
+
+    vkBufferImageCopyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eDepth;
+  }
+  else if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+  {
+    // When copying to or from a depth or stencil aspect, the data in buffer memory uses a layout that is a (mostly) tightly packed representation of the depth or stencil data.
+    // To copy both the depth and stencil aspects of a depth/stencil format, two entries in pRegions can be used, where one specifies the depth aspect in imageSubresource, and the other specifies the stencil aspect (18.4)
+    XII_REPORT_FAILURE("Updating depth-stencil texture is not currently supported");
+  }
+  else
+  {
+    vkBufferImageCopyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+  }
+
+  vkBufferImageCopyRegion.imageSubresource.baseArrayLayer = uiArraySlice;
+  vkBufferImageCopyRegion.imageSubresource.layerCount     = 1;
+  vkBufferImageCopyRegion.imageSubresource.mipLevel       = uiMipLevel;
+
+  // - imageOffset.x and (imageExtent.width + imageOffset.x) must both be greater than or equal to 0 and less than or equal to the image subresource width (18.4)
+  // - imageOffset.y and (imageExtent.height + imageOffset.y) must both be greater than or equal to 0 and less than or equal to the image subresource height (18.4)
+  vkBufferImageCopyRegion.imageOffset = vk::Offset3D{static_cast<int32_t>(region.m_vMin.x), static_cast<int32_t>(region.m_vMin.y), static_cast<int32_t>(region.m_vMin.z)};
+
+  XII_ASSERT_DEV(region.IsValid(), "[{} .. {}) x [{} .. {}) x [{} .. {}) is not a valid region.", region.m_vMin.x, region.m_vMax.x, region.m_vMin.y, region.m_vMax.y, region.m_vMin.z, region.m_vMax.z);
+
+  auto extents                        = region.GetExtents();
+  vkBufferImageCopyRegion.imageExtent = vk::Extent3D{extents.x, extents.y, extents.z};
+
+  return vkBufferImageCopyRegion;
+}
+
 void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags)
 {
   // Should we end render pass automatically?
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
-  XII_ASSERT_DEV(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   XII_VERIFY_COMMAND_LIST((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
   XII_VERIFY_COMMAND_LIST((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
@@ -228,7 +274,7 @@ void xiiGALCommandListVulkan::MemoryBarrier(vk::AccessFlags vkSourceAccessFlags,
 {
   // Should we end render pass automatically?
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   XII_VERIFY_COMMAND_LIST((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
   XII_VERIFY_COMMAND_LIST((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
@@ -281,17 +327,40 @@ void xiiGALCommandListVulkan::FlushBarriers()
   // Do not clear SupportedStagesMask and SupportedAccessMask.
 }
 
+void xiiGALCommandListVulkan::CopyBufferToTexture(vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceBufferOffset, xiiUInt32 uiSourceBufferRowStrideInTexels, xiiGALTextureVulkan* pDestinationTextureVulkan, const xiiBoundingBoxU32& destinationRegion, xiiUInt32 uiDestinationMipLevel, xiiUInt32 uiDestinationArraySlice, bool bVerifyOnly /*= false*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyTextureState(pDestinationTextureVulkan, xiiGALResourceStateFlags::CopyDestination, vk::ImageLayout::eTransferDstOptimal, "Using texture as transfer destination (xiiGALCommandList::CopyTexture)");
+
+  const auto& textureDescription = pDestinationTextureVulkan->GetDescription();
+
+  vk::BufferImageCopy vkBufferImageCopy = GetBufferImageCopyInfo(uiSourceBufferOffset, uiSourceBufferRowStrideInTexels, textureDescription, destinationRegion, uiDestinationMipLevel, uiDestinationArraySlice);
+
+  CopyBufferToImage(vkSourceBuffer, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, xiiMakeArrayPtr(&vkBufferImageCopy, 1U));
+}
+
+void xiiGALCommandListVulkan::CopyTextureToBuffer(xiiGALTextureVulkan* pSourceTextureVulkan, const xiiBoundingBoxU32& sourceRegion, xiiUInt32 uiSourceMipLevel, xiiUInt32 uiSourceArraySlice, vk::Buffer vkDestinationBuffer, xiiUInt64 uiDestinationBufferOffset, xiiUInt32 uiDestinationBufferRowStrideInTexels, bool bVerifyOnly /*= false*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyTextureState(pSourceTextureVulkan, xiiGALResourceStateFlags::CopySource, vk::ImageLayout::eTransferSrcOptimal, "Using texture as transfer source (xiiGALCommandList::CopyTexture)");
+
+  const auto& textureDescription = pSourceTextureVulkan->GetDescription();
+
+  vk::BufferImageCopy vkBufferImageCopy = GetBufferImageCopyInfo(uiDestinationBufferOffset, uiDestinationBufferRowStrideInTexels, textureDescription, sourceRegion, uiSourceMipLevel, uiSourceArraySlice);
+
+  CopyImageToBuffer(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, vkDestinationBuffer, xiiMakeArrayPtr(&vkBufferImageCopy, 1U));
+}
+
 void xiiGALCommandListVulkan::CopyBufferToImage(vk::Buffer vkSourceBuffer, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::BufferImageCopy> pRegions)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-
-  // Copy operations must be performed outside of render pass.
-  if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
-  {
-    EndRenderPassPlatform();
-  }
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
 
   FlushBarriers();
 
@@ -303,16 +372,36 @@ void xiiGALCommandListVulkan::CopyImageToBuffer(vk::Image vkSourceImage, vk::Ima
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-
-  // Copy operations must be performed outside of render pass.
-  if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
-  {
-    EndRenderPassPlatform();
-  }
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
 
   FlushBarriers();
 
   m_vkCommandBuffer.copyImageToBuffer(vkSourceImage, vkSourceImageLayout, vkDestinationBuffer, pRegions.GetCount(), pRegions.GetPtr(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
+void xiiGALCommandListVulkan::CopyImage(vk::Image vkSourceImage, vk::ImageLayout vkSourceImageLayout, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::ImageCopy> pRegions)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.copyImage(vkSourceImage, vkSourceImageLayout, vkDestinationImage, vkDestinationImageLayout, pRegions.GetCount(), pRegions.GetPtr(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
+void xiiGALCommandListVulkan::CopyTextureRegion(xiiGALTextureVulkan* pSourceTextureVulkan, xiiGALTextureVulkan* pDestinationTextureVulkan, const vk::ImageCopy& copyRegion)
+{
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyTextureState(pSourceTextureVulkan, xiiGALResourceStateFlags::CopySource, vk::ImageLayout::eTransferSrcOptimal, "Using texture as transfer source (xiiGALCommandList::CopyTextureRegion)");
+  TransitionOrVerifyTextureState(pDestinationTextureVulkan, xiiGALResourceStateFlags::CopyDestination, vk::ImageLayout::eTransferDstOptimal, "Using texture as transfer destination (xiiGALCommandList::CopyTextureRegion)");
+
+  // srcImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL
+  // dstImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.3)
+  CopyImage(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, xiiMakeArrayPtr(&copyRegion, 1U));
 }
 
 void xiiGALCommandListVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
@@ -495,10 +584,101 @@ void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pR
 
 void xiiGALCommandListVulkan::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pIndexBuffer);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyBufferState(pBufferVulkan, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Binding buffer as index buffer  (xiiGALCommandList::SetIndexBuffer)");
+
+  if (m_CommandListState.m_vkIndexBuffer != pBufferVulkan->GetVulkanBuffer() || m_CommandListState.m_vkIndexBufferOffset != uiByteOffset || m_CommandListState.m_vkIndexType != m_CommandListState.m_vkIndexType)
+  {
+    const auto indexFormat = pBufferVulkan->GetIndexFormat();
+
+    XII_VERIFY_COMMAND_LIST(indexFormat == xiiGALValueType::UInt16 || indexFormat == xiiGALValueType::UInt32, "Unsupported index format, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
+
+    vk::IndexType vkIndexType = vk::IndexType::eUint16;
+    if (indexFormat == xiiGALValueType::UInt32)
+    {
+      vkIndexType = vk::IndexType::eUint32;
+    }
+
+    m_vkCommandBuffer.bindIndexBuffer(pBufferVulkan->GetVulkanBuffer(), uiByteOffset, vkIndexType, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_CommandListState.m_vkIndexBuffer       = pBufferVulkan->GetVulkanBuffer();
+    m_CommandListState.m_vkIndexBufferOffset = uiByteOffset;
+    m_CommandListState.m_vkIndexType         = vkIndexType;
+
+    m_ContextState.m_bCommittedIndexBuffersUpToDate = true;
+  }
 }
 
 void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST((uiStartSlot + pVertexBuffers.GetCount()) <= XII_GAL_MAX_VERTEX_BUFFER_COUNT, "The number of vertex buffers to set, exceeds the maximum amount.");
+
+  if (flags.IsSet(xiiGALSetVertexBufferFlags::Reset))
+  {
+    m_CommittedVertexBuffersRange.Reset();
+
+    // Reset only the buffer slots that are not being set.
+    for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
+    {
+      m_CommittedVertexBuffers[i]       = VK_NULL_HANDLE;
+      m_CommittedVertexBufferOffsets[i] = 0U;
+      m_CommittedVertexBufferStrides[i] = 0U;
+
+      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
+    }
+
+    if (uiStartSlot > 0)
+    {
+      m_vkCommandBuffer.bindVertexBuffers(0, uiStartSlot, m_CommittedVertexBuffers, m_CommittedVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+
+    for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
+    {
+      m_CommittedVertexBuffers[i]       = VK_NULL_HANDLE;
+      m_CommittedVertexBufferOffsets[i] = 0U;
+      m_CommittedVertexBufferStrides[i] = 0U;
+
+      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
+    }
+
+    if ((XII_GAL_MAX_VERTEX_BUFFER_COUNT - (uiStartSlot + pVertexBuffers.GetCount())) > 0)
+    {
+      xiiUInt32 uiFirstBinding = uiStartSlot + pVertexBuffers.GetCount();
+      xiiUInt32 uiBindingCount = (XII_GAL_MAX_VERTEX_BUFFER_COUNT - (uiStartSlot + pVertexBuffers.GetCount()));
+
+      m_vkCommandBuffer.bindVertexBuffers(uiFirstBinding, uiBindingCount, m_CommittedVertexBuffers, m_CommittedVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+  }
+
+  for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
+  {
+    xiiGALBufferVulkan* pVertexBufferVulkan = static_cast<xiiGALBufferVulkan*>(pVertexBuffers[i]);
+    xiiUInt32           uiVertexBufferSlot  = i + uiStartSlot;
+
+    if (m_CommittedVertexBuffers[uiVertexBufferSlot] != pVertexBufferVulkan->GetVulkanBuffer() || m_CommittedVertexBufferOffsets[uiVertexBufferSlot] != pByteOffsets[i])
+    {
+      m_CommittedVertexBuffers[uiVertexBufferSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
+      m_CommittedVertexBufferOffsets[uiVertexBufferSlot] = pByteOffsets[i];
+      m_CommittedVertexBufferStrides[i]                  = pVertexBufferVulkan ? pVertexBufferVulkan->GetDescription().m_uiElementByteStride : 0U;
+
+      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
+    }
+
+    m_CommittedVertexBuffersRange.SetToIncludeValue(uiVertexBufferSlot);
+  }
+
+  if (!m_ContextState.m_bCommittedVertexBuffersUpToDate)
+  {
+    m_vkCommandBuffer.bindVertexBuffers(uiStartSlot, m_CommittedVertexBuffersRange.GetCount(), m_CommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_ContextState.m_bCommittedVertexBuffersUpToDate = true;
+  }
 }
 
 [[nodiscard]] vk::ClearColorValue ClearValueToVulkanClearValue(const void* pClearValues, xiiGALResourceFormat::Enum textureFormat)
@@ -676,14 +856,112 @@ void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* p
 
 void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
 {
+  xiiGALDeviceVulkan*      pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALRenderPassVulkan*  pRenderPassVulkan      = static_cast<xiiGALRenderPassVulkan*>(pRenderPass);
+  xiiGALFramebufferVulkan* pFramebufferVulkan     = static_cast<xiiGALFramebufferVulkan*>(pFramebuffer);
+  const auto&              renderPassDescription  = pRenderPassVulkan->GetDescription();
+  const auto&              framebufferDescription = pFramebufferVulkan->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "Current render pass has not yet been ended.");
+
+  if (m_CommandListState.m_vkRenderPass != pRenderPassVulkan->GetVulkanRenderPass() || m_CommandListState.m_vkFramebuffer != pFramebufferVulkan->GetVulkanFramebuffer())
+  {
+    for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
+    {
+      const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
+      const auto& attachmentView        = framebufferDescription.m_Attachments[i];
+
+      xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTextureView(attachmentView)->GetTexture());
+
+      if (pTextureVulkan->IsInKnownState() && !pTextureVulkan->CheckState((xiiGALResourceStateFlags::Enum)attachmentDescription.m_InitialStateFlags.GetValue()))
+      {
+        TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, attachmentDescription.m_InitialStateFlags, xiiGALStateTransitionFlags::UpdateState);
+      }
+    }
+
+    FlushBarriers();
+
+    xiiHybridArray<vk::ClearValue, 8U> clearColorValues;
+
+    for (xiiUInt32 i = 0; i < xiiMath::Min(renderPassDescription.m_Attachments.GetCount(), pOptimizedClearValues.GetCount()); ++i)
+    {
+      const auto&    clearValue   = pOptimizedClearValues[i];
+      vk::ClearValue vkClearValue = {};
+
+      const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(renderPassDescription.m_Attachments[i].m_Format);
+
+      if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+      {
+        vkClearValue.depthStencil.depth   = clearValue.m_DepthStencil.m_fDepth;
+        vkClearValue.depthStencil.stencil = clearValue.m_DepthStencil.m_uiStencil;
+      }
+      else
+      {
+        vkClearValue.color.float32[0] = clearValue.m_ClearColor.r;
+        vkClearValue.color.float32[1] = clearValue.m_ClearColor.g;
+        vkClearValue.color.float32[2] = clearValue.m_ClearColor.b;
+        vkClearValue.color.float32[3] = clearValue.m_ClearColor.a;
+      }
+
+      clearColorValues.PushBack(vkClearValue);
+    }
+
+    vk::RenderPassBeginInfo vkRenderPassBeginInfo = {};
+    vkRenderPassBeginInfo.pNext                   = nullptr;
+    vkRenderPassBeginInfo.renderPass              = pRenderPassVulkan->GetVulkanRenderPass();
+    vkRenderPassBeginInfo.framebuffer             = pFramebufferVulkan->GetVulkanFramebuffer();
+    vkRenderPassBeginInfo.renderArea              = vk::Rect2D{{0, 0}, {framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height}}; // The render area MUST be contained within the framebuffer dimensions (7.4)
+    vkRenderPassBeginInfo.clearValueCount         = clearColorValues.GetCount();
+    vkRenderPassBeginInfo.pClearValues            = clearColorValues.GetData(); // An array of VkClearValue structures that contains clear values for each attachment, if the attachment uses a loadOp value of VK_ATTACHMENT_LOAD_OP_CLEAR
+                                                                                // or if the attachment has a depth/stencil format and uses a stencilLoadOp value of VK_ATTACHMENT_LOAD_OP_CLEAR. The array is indexed by attachment number. Only elements
+                                                                                // corresponding to cleared attachments are used. Other elements of pClearValues are  ignored (7.4)
+
+    // The contents of the subpass will be recorded inline in the primary command buffer, and secondary command buffers must not be executed within the subpass.
+    m_vkCommandBuffer.beginRenderPass(&vkRenderPassBeginInfo, vk::SubpassContents::eInline, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_CommandListState.m_vkRenderPass        = pRenderPassVulkan->GetVulkanRenderPass();
+    m_CommandListState.m_vkFramebuffer       = pFramebufferVulkan->GetVulkanFramebuffer();
+    m_CommandListState.m_uiFramebufferWidth  = framebufferDescription.m_FramebufferSize.width;
+    m_CommandListState.m_uiFramebufferHeight = framebufferDescription.m_FramebufferSize.height;
+  }
+
+  // Set viewport to match frame buffer size.
+  xiiGALViewport viewport = {.m_fTopLeftX = 0.0f, .m_fTopLeftY = 0.0f, .m_fWidth = (float)framebufferDescription.m_FramebufferSize.width, .m_fHeight = (float)framebufferDescription.m_FramebufferSize.height};
+  SetViewports(xiiMakeArrayPtr(&viewport, 1U), framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
+
+  // m_bShadingRateIsSet = false;
 }
 
 void xiiGALCommandListVulkan::NextSubpassPlatform()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "Render pass has not yet been started.");
+
+  m_vkCommandBuffer.nextSubpass(vk::SubpassContents::eInline, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::EndRenderPassPlatform()
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "Render pass has not yet been started.");
+
+  m_vkCommandBuffer.endRenderPass(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  m_CommandListState.m_vkRenderPass        = VK_NULL_HANDLE;
+  m_CommandListState.m_vkFramebuffer       = VK_NULL_HANDLE;
+  m_CommandListState.m_uiFramebufferWidth  = 0U;
+  m_CommandListState.m_uiFramebufferHeight = 0U;
+
+  if (m_CommandListState.m_uiInsidePassQueries != 0)
+  {
+    xiiLog::Error("Ending render pass while there are outstanding queries that have been started inside the pass, but have not been ended. Vulkan requires that a query must either begin and end inside the same "
+                  "subpass of a render pass instance, or must both begin and end outside of a render pass instance (i.e. contain entire render pass instances). (17.2)");
+  }
 }
 
 xiiResult xiiGALCommandListVulkan::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -831,10 +1109,46 @@ void xiiGALCommandListVulkan::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer
 
 void xiiGALCommandListVulkan::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pSourceBufferVulkan      = static_cast<xiiGALBufferVulkan*>(pSourceBuffer);
+  xiiGALBufferVulkan* pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestinationBuffer);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  TransitionOrVerifyBufferState(pSourceBufferVulkan, xiiGALResourceStateFlags::CopySource, vk::AccessFlagBits::eTransferRead, "Using buffer as copy source");
+  TransitionOrVerifyBufferState(pDestinationBufferVulkan, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Using buffer as copy destination");
+
+  vk::BufferCopy vkBufferCopyRegion = {};
+  vkBufferCopyRegion.srcOffset      = 0;
+  vkBufferCopyRegion.dstOffset      = 0;
+  vkBufferCopyRegion.size           = pSourceBufferVulkan->GetSize();
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.copyBuffer(pSourceBufferVulkan->GetVulkanBuffer(), pDestinationBufferVulkan->GetVulkanBuffer(), 1U, &vkBufferCopyRegion, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pSourceBufferVulkan      = static_cast<xiiGALBufferVulkan*>(pSourceBuffer);
+  xiiGALBufferVulkan* pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestinationBuffer);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  TransitionOrVerifyBufferState(pSourceBufferVulkan, xiiGALResourceStateFlags::CopySource, vk::AccessFlagBits::eTransferRead, "Using buffer as copy source");
+  TransitionOrVerifyBufferState(pDestinationBufferVulkan, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Using buffer as copy destination");
+
+  vk::BufferCopy vkBufferCopyRegion = {};
+  vkBufferCopyRegion.srcOffset      = uiSourceOffset;
+  vkBufferCopyRegion.dstOffset      = uiDestinationOffset;
+  vkBufferCopyRegion.size           = uiSize;
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.copyBuffer(pSourceBufferVulkan->GetVulkanBuffer(), pDestinationBufferVulkan->GetVulkanBuffer(), 1U, &vkBufferCopyRegion, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
@@ -857,18 +1171,366 @@ void xiiGALCommandListVulkan::UpdateTextureExtendedPlatform(xiiGALTexture* pText
 
 void xiiGALCommandListVulkan::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
+  xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
+  xiiGALTextureVulkan* pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestinationTexture);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  const auto& sourceTextureDescription      = pSourceTextureVulkan->GetDescription();
+  const auto& destinationTextureDescription = pDestinationTextureVulkan->GetDescription();
+  auto        sourceMipLevelProperties      = xiiGALTextureUtilities::GetMipLevelProperties(sourceTextureDescription, 0);
+
+  if (sourceTextureDescription.m_Usage != xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    vk::ImageCopy vkImageCopyRegion = {};
+    vkImageCopyRegion.extent.width  = sourceMipLevelProperties.m_LogicalSize.width;
+    vkImageCopyRegion.extent.height = xiiMath::Max(sourceMipLevelProperties.m_LogicalSize.height, 1U);
+    vkImageCopyRegion.extent.depth  = xiiMath::Max(sourceMipLevelProperties.m_uiDepth, 1U);
+
+    auto GetAspectFlags = [](xiiGALResourceFormat::Enum format) -> vk::ImageAspectFlags {
+      const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+
+      switch (formatProperties.m_ComponentType)
+      {
+        case xiiGALResourceFormatComponentType::Depth:
+          return vk::ImageAspectFlagBits::eDepth;
+        case xiiGALResourceFormatComponentType::DepthStencil:
+          return vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+        default:
+          return vk::ImageAspectFlagBits::eColor;
+      }
+    };
+
+    vk::ImageAspectFlags vkAspectFlags = GetAspectFlags(sourceTextureDescription.m_Format);
+    XII_VERIFY_COMMAND_LIST(vkAspectFlags == GetAspectFlags(destinationTextureDescription.m_Format), "The Vulkan specification requires that the destination and source aspect flags are equivalent.");
+
+    vkImageCopyRegion.srcSubresource.baseArrayLayer = 0;
+    vkImageCopyRegion.srcSubresource.layerCount     = 1;
+    vkImageCopyRegion.srcSubresource.mipLevel       = 0;
+    vkImageCopyRegion.srcSubresource.aspectMask     = vkAspectFlags;
+    vkImageCopyRegion.srcOffset.x                   = 0;
+    vkImageCopyRegion.srcOffset.y                   = 0;
+    vkImageCopyRegion.srcOffset.x                   = 0;
+
+    vkImageCopyRegion.dstSubresource.baseArrayLayer = 0;
+    vkImageCopyRegion.dstSubresource.layerCount     = 1;
+    vkImageCopyRegion.dstSubresource.mipLevel       = 0;
+    vkImageCopyRegion.dstSubresource.aspectMask     = vkAspectFlags;
+    vkImageCopyRegion.dstOffset.x                   = 0;
+    vkImageCopyRegion.dstOffset.y                   = 0;
+    vkImageCopyRegion.dstOffset.x                   = 0;
+
+    CopyTextureRegion(pSourceTextureVulkan, pDestinationTextureVulkan, vkImageCopyRegion);
+  }
+  else if (sourceTextureDescription.m_Usage == xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_COMMAND_LIST(sourceTextureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Attempting to copy from staging texture that was not created with the xiiGALCPUAccessFlag::Write flag.");
+    XII_VERIFY_COMMAND_LIST(pSourceTextureVulkan->GetResourceState() == xiiGALResourceStateFlags::CopySource, "Source staging texture must permanently be in xiiGALResourceStateFlags::CopySource resources state.");
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+
+    // bufferOffset must be a multiple of 4 (18.4)
+    // If the calling command's VkImage parameter is a compressed image, bufferOffset must be a multiple of the compressed texel block size in bytes (18.4).
+    // This is automatically guaranteed as MipWidth and MipHeight are rounded to block size.
+
+    const xiiUInt64 uiSourceBufferOffset = xiiGALTextureUtilities::GetStagingTextureLocationOffset(sourceTextureDescription, 0, 0, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment, 0, 0, 0);
+
+    xiiBoundingBoxU32 destinationBox = xiiBoundingBoxU32::MakeZero();
+    destinationBox.m_vMax.x          = sourceMipLevelProperties.m_LogicalSize.width;
+    destinationBox.m_vMax.y          = sourceMipLevelProperties.m_LogicalSize.height;
+    destinationBox.m_vMax.x          = sourceMipLevelProperties.m_uiDepth;
+
+    // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
+    CopyBufferToTexture(pSourceTextureVulkan->GetVulkanStagingBuffer(), uiSourceBufferOffset, sourceMipLevelProperties.m_StorageSize.width, pDestinationTextureVulkan, destinationBox, 0, 0);
+  }
+  else if (sourceTextureDescription.m_Usage != xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_COMMAND_LIST(destinationTextureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Attempting to copy from staging texture that was not created with the xiiGALCPUAccessFlag::Read flag.");
+    XII_VERIFY_COMMAND_LIST(pDestinationTextureVulkan->GetResourceState() == xiiGALResourceStateFlags::CopyDestination, "Destination staging texture must permanently be in xiiGALResourceStateFlags::CopyDestination resources state.");
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+    const xiiUInt64 uiDestinationBufferOffset = xiiGALTextureUtilities::GetStagingTextureLocationOffset(destinationTextureDescription, 0, 0, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment, 0, 0, 0);
+
+    const auto destinationMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(destinationTextureDescription, 0);
+
+    xiiBoundingBoxU32 sourceBox = xiiBoundingBoxU32::MakeZero();
+    sourceBox.m_vMax.x          = sourceMipLevelProperties.m_LogicalSize.width;
+    sourceBox.m_vMax.y          = sourceMipLevelProperties.m_LogicalSize.height;
+    sourceBox.m_vMax.x          = sourceMipLevelProperties.m_uiDepth;
+
+    // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
+    CopyTextureToBuffer(pSourceTextureVulkan, sourceBox, 0, 0, pDestinationTextureVulkan->GetVulkanStagingBuffer(), uiDestinationBufferOffset, destinationMipLevelProperties.m_StorageSize.width);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(false, "Copying data between staging textures is not supported and is likely not want you really want to do.");
+  }
 }
 
 void xiiGALCommandListVulkan::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
+  xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
+  xiiGALTextureVulkan* pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestinationTexture);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  const auto& sourceTextureDescription      = pSourceTextureVulkan->GetDescription();
+  const auto& destinationTextureDescription = pDestinationTextureVulkan->GetDescription();
+
+  if (sourceTextureDescription.m_Usage != xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    auto boxExtents = box.GetExtents();
+
+    vk::ImageCopy vkImageCopyRegion = {};
+    vkImageCopyRegion.extent.width  = boxExtents.x;
+    vkImageCopyRegion.extent.height = xiiMath::Max(boxExtents.y, 1U);
+    vkImageCopyRegion.extent.depth  = xiiMath::Max(boxExtents.z, 1U);
+
+    auto GetAspectFlags = [](xiiGALResourceFormat::Enum format) -> vk::ImageAspectFlags {
+      const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+
+      switch (formatProperties.m_ComponentType)
+      {
+        case xiiGALResourceFormatComponentType::Depth:
+          return vk::ImageAspectFlagBits::eDepth;
+        case xiiGALResourceFormatComponentType::DepthStencil:
+          return vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+        default:
+          return vk::ImageAspectFlagBits::eColor;
+      }
+    };
+
+    vk::ImageAspectFlags vkAspectFlags = GetAspectFlags(sourceTextureDescription.m_Format);
+    XII_VERIFY_COMMAND_LIST(vkAspectFlags == GetAspectFlags(destinationTextureDescription.m_Format), "The Vulkan specification requires that the destination and source aspect flags are equivalent.");
+
+    vkImageCopyRegion.srcSubresource.baseArrayLayer = sourceMipLevelData.m_uiArraySlice;
+    vkImageCopyRegion.srcSubresource.layerCount     = 1;
+    vkImageCopyRegion.srcSubresource.mipLevel       = sourceMipLevelData.m_uiMipLevel;
+    vkImageCopyRegion.srcSubresource.aspectMask     = vkAspectFlags;
+    vkImageCopyRegion.srcOffset.x                   = box.m_vMin.x;
+    vkImageCopyRegion.srcOffset.y                   = box.m_vMin.y;
+    vkImageCopyRegion.srcOffset.x                   = box.m_vMin.z;
+
+    vkImageCopyRegion.dstSubresource.baseArrayLayer = destinationMipLevelData.m_uiArraySlice;
+    vkImageCopyRegion.dstSubresource.layerCount     = 1;
+    vkImageCopyRegion.dstSubresource.mipLevel       = destinationMipLevelData.m_uiMipLevel;
+    vkImageCopyRegion.dstSubresource.aspectMask     = vkAspectFlags;
+    vkImageCopyRegion.dstOffset.x                   = box.m_vMax.x;
+    vkImageCopyRegion.dstOffset.y                   = box.m_vMax.y;
+    vkImageCopyRegion.dstOffset.x                   = box.m_vMax.z;
+
+    CopyTextureRegion(pSourceTextureVulkan, pDestinationTextureVulkan, vkImageCopyRegion);
+  }
+  else if (sourceTextureDescription.m_Usage == xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_COMMAND_LIST(sourceTextureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Attempting to copy from staging texture that was not created with the xiiGALCPUAccessFlag::Write flag.");
+    XII_VERIFY_COMMAND_LIST(pSourceTextureVulkan->GetResourceState() == xiiGALResourceStateFlags::CopySource, "Source staging texture must permanently be in xiiGALResourceStateFlags::CopySource resources state.");
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+
+    // bufferOffset must be a multiple of 4 (18.4)
+    // If the calling command's VkImage parameter is a compressed image, bufferOffset must be a multiple of the compressed texel block size in bytes (18.4).
+    // This is automatically guaranteed as MipWidth and MipHeight are rounded to block size.
+
+    const xiiUInt64 uiSourceBufferOffset     = xiiGALTextureUtilities::GetStagingTextureLocationOffset(sourceTextureDescription, sourceMipLevelData.m_uiArraySlice, sourceMipLevelData.m_uiMipLevel, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment, box.m_vMin.x, box.m_vMin.y, box.m_vMin.z);
+    const auto      sourceMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(sourceTextureDescription, sourceMipLevelData.m_uiMipLevel);
+
+    xiiBoundingBoxU32 destinationBox = xiiBoundingBoxU32::MakeFromMinMax(vDestinationPoint, box.GetExtents());
+
+    // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
+    CopyBufferToTexture(pSourceTextureVulkan->GetVulkanStagingBuffer(), uiSourceBufferOffset, sourceMipLevelProperties.m_StorageSize.width, pDestinationTextureVulkan, destinationBox, destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice);
+  }
+  else if (sourceTextureDescription.m_Usage != xiiGALResourceUsage::Staging && destinationTextureDescription.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_COMMAND_LIST(destinationTextureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Attempting to copy from staging texture that was not created with the xiiGALCPUAccessFlag::Read flag.");
+    XII_VERIFY_COMMAND_LIST(pDestinationTextureVulkan->GetResourceState() == xiiGALResourceStateFlags::CopyDestination, "Destination staging texture must permanently be in xiiGALResourceStateFlags::CopyDestination resources state.");
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+    const xiiUInt64 uiDestinationBufferOffset     = xiiGALTextureUtilities::GetStagingTextureLocationOffset(destinationTextureDescription, destinationMipLevelData.m_uiArraySlice, destinationMipLevelData.m_uiMipLevel, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment, vDestinationPoint.x, vDestinationPoint.y, vDestinationPoint.z);
+    const auto      destinationMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(destinationTextureDescription, destinationMipLevelData.m_uiMipLevel);
+
+    // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
+    CopyTextureToBuffer(pSourceTextureVulkan, box, sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pDestinationTextureVulkan->GetVulkanStagingBuffer(), uiDestinationBufferOffset, destinationMipLevelProperties.m_StorageSize.width);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(false, "Copying data between staging textures is not supported and is likely not want you really want to do.");
+  }
 }
 
 void xiiGALCommandListVulkan::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan             = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
+  xiiGALTextureVulkan* pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestinationTexture);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  const auto& sourceTextureDescription = pSourceTextureVulkan->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(sourceTextureDescription.m_Format == pDestinationTextureVulkan->GetDescription().m_Format, "Vulkan requires that source and destination textures of a resolve operation have the same format. (18.6)");
+
+  // srcImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.6)
+  TransitionOrVerifyTextureState(pSourceTextureVulkan, xiiGALResourceStateFlags::ResolveSource, vk::ImageLayout::eTransferSrcOptimal, "Resolving multi-sampled texture (xiiGALCommandList::ResolveTextureSubResource)");
+
+  // dstImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.6)
+  TransitionOrVerifyTextureState(pDestinationTextureVulkan, xiiGALResourceStateFlags::ResolveDestination, vk::ImageLayout::eTransferDstOptimal, "Resolving multi-sampled texture (xiiGALCommandList::ResolveTextureSubResource)");
+
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(sourceTextureDescription.m_Format);
+
+  XII_VERIFY_COMMAND_LIST(formatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Depth && formatProperties.m_ComponentType != xiiGALResourceFormatComponentType::DepthStencil, "Vulkan only permits the resolve operation for colour formats.");
+
+  XII_IGNORE_UNUSED(formatProperties);
+
+  // The aspectMask member of srcSubresource and dstSubresource must only contain VK_IMAGE_ASPECT_COLOR_BIT (18.6)
+  vk::ImageAspectFlags vkImageAspectFlags = vk::ImageAspectFlagBits::eColor;
+
+  vk::ImageResolve vkImageResolveRegion              = {};
+  vkImageResolveRegion.srcSubresource.baseArrayLayer = sourceMipLevelData.m_uiArraySlice;
+  vkImageResolveRegion.srcSubresource.layerCount     = 1;
+  vkImageResolveRegion.srcSubresource.mipLevel       = sourceMipLevelData.m_uiMipLevel;
+  vkImageResolveRegion.srcSubresource.aspectMask     = vkImageAspectFlags;
+
+  vkImageResolveRegion.dstSubresource.baseArrayLayer = destinationMipLevelData.m_uiArraySlice;
+  vkImageResolveRegion.dstSubresource.layerCount     = 1;
+  vkImageResolveRegion.dstSubresource.mipLevel       = destinationMipLevelData.m_uiMipLevel;
+  vkImageResolveRegion.dstSubresource.aspectMask     = vkImageAspectFlags;
+
+  vkImageResolveRegion.srcOffset = vk::Offset3D{};
+  vkImageResolveRegion.dstOffset = vk::Offset3D{};
+
+  const auto& sourceMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(sourceTextureDescription, sourceMipLevelData.m_uiMipLevel);
+  vkImageResolveRegion.extent          = vk::Extent3D{sourceMipLevelProperties.m_LogicalSize.width, sourceMipLevelProperties.m_LogicalSize.height, sourceMipLevelProperties.m_uiDepth};
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.resolveImage(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, 1U, &vkImageResolveRegion, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureView->GetTexture());
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "Mip generation is not permitted while a render pass is active.");
+
+  if (!pTextureVulkan->IsInKnownState())
+  {
+    xiiLog::Error("Unable to generate mips for texture '{}' because the texture state is unknown.", pTextureVulkan->GetDebugName());
+    return;
+  }
+
+  const auto& textureDescription = pTextureVulkan->GetDescription();
+  const auto& viewDescription    = pTextureView->GetDescription();
+  const auto  originalState      = pTextureVulkan->GetResourceState();
+  const auto  vkOriginalLayout   = pTextureVulkan->GetVulkanImageLayout();
+  const auto  vkOldPipelineStage = xiiVulkanTypeConversions::GetPipelineStageFlags(originalState);
+
+  XII_VERIFY_COMMAND_LIST(viewDescription.m_uiMipLevelCount > 1, "Number of mip levels in the view must be greater than 1.");
+  XII_VERIFY_COMMAND_LIST(originalState != xiiGALResourceStateFlags::Undefined, "Attempting to generate mipmaps for texture '{}' which is in xiiGALResourceStateFlags::Undefined state. This is not expected in Vulkan backend as textures are transitioned to a defined state when created.", pTextureVulkan->GetDebugName());
+
+  vk::ImageSubresourceRange vkImageSubresourceRange = {};
+
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(viewDescription.m_Format);
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
+  {
+    vkImageSubresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+  }
+  else if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+  {
+    // If image has a depth / stencil format with both depth and stencil components, then the aspectMask member of subresourceRange must include both VK_IMAGE_ASPECT_DEPTH_BIT and VK_IMAGE_ASPECT_STENCIL_BIT (6.7.3)
+
+    vkImageSubresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+  }
+  else
+  {
+    vkImageSubresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  }
+
+  vkImageSubresourceRange.baseArrayLayer = viewDescription.m_uiFirstArrayOrDepthSlice;
+  vkImageSubresourceRange.layerCount     = viewDescription.m_uiArrayOrDepthSlicesCount;
+  vkImageSubresourceRange.baseMipLevel   = viewDescription.m_uiMostDetailedMip;
+  vkImageSubresourceRange.levelCount     = 1;
+
+  vk::ImageBlit vkImageBlitRegion                 = {};
+  vkImageBlitRegion.srcSubresource.baseArrayLayer = viewDescription.m_uiFirstArrayOrDepthSlice;
+  vkImageBlitRegion.srcSubresource.layerCount     = viewDescription.m_uiArrayOrDepthSlicesCount;
+  vkImageBlitRegion.srcSubresource.aspectMask     = vkImageSubresourceRange.aspectMask;
+  vkImageBlitRegion.dstSubresource.baseArrayLayer = vkImageBlitRegion.srcSubresource.baseArrayLayer;
+  vkImageBlitRegion.dstSubresource.layerCount     = vkImageBlitRegion.srcSubresource.layerCount;
+  vkImageBlitRegion.dstSubresource.aspectMask     = vkImageBlitRegion.srcSubresource.aspectMask;
+  vkImageBlitRegion.srcOffsets[0]                 = vk::Offset3D{0, 0, 0};
+  vkImageBlitRegion.dstOffsets[0]                 = vk::Offset3D{0, 0, 0};
+
+  vkImageSubresourceRange.baseMipLevel = viewDescription.m_uiMostDetailedMip;
+  vkImageSubresourceRange.levelCount   = 1;
+
+  if (originalState != xiiGALResourceStateFlags::CopySource)
+  {
+    TransitionImageLayout(pTextureVulkan->GetVulkanImage(), vkOriginalLayout, vk::ImageLayout::eTransferSrcOptimal, vkImageSubresourceRange, vkOldPipelineStage, vk::PipelineStageFlagBits::eTransfer);
+  }
+
+  for (xiiUInt32 uiMip = viewDescription.m_uiMostDetailedMip + 1; uiMip < viewDescription.m_uiMostDetailedMip + viewDescription.m_uiMipLevelCount; ++uiMip)
+  {
+    vkImageBlitRegion.srcSubresource.mipLevel = uiMip - 1;
+    vkImageBlitRegion.dstSubresource.mipLevel = uiMip;
+
+    vkImageBlitRegion.srcOffsets[1] = vk::Offset3D{static_cast<xiiInt32>(xiiMath::Max(textureDescription.m_Size.width >> (uiMip - 1U), 1U)), static_cast<xiiInt32>(xiiMath::Max(textureDescription.m_Size.height >> (uiMip - 1U), 1U)), 1};
+    vkImageBlitRegion.dstOffsets[1] = vk::Offset3D{static_cast<xiiInt32>(xiiMath::Max(textureDescription.m_Size.width >> uiMip, 1U)), static_cast<xiiInt32>(xiiMath::Max(textureDescription.m_Size.height >> uiMip, 1U)), 1};
+
+    if (textureDescription.m_Type == xiiGALResourceDimension::Texture3D)
+    {
+      vkImageBlitRegion.srcOffsets[1].z = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> (uiMip - 1U), 1U);
+      vkImageBlitRegion.dstOffsets[1].z = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> uiMip, 1U);
+    }
+
+    vkImageSubresourceRange.baseMipLevel = uiMip;
+
+    if (vkOriginalLayout != vk::ImageLayout::eTransferDstOptimal)
+    {
+      TransitionImageLayout(pTextureVulkan->GetVulkanImage(), vkOriginalLayout, vk::ImageLayout::eTransferDstOptimal, vkImageSubresourceRange, vkOldPipelineStage, vk::PipelineStageFlagBits::eTransfer);
+    }
+
+    FlushBarriers();
+
+    // For sRGB source formats, nonlinear RGB values are converted to linear representation prior to filtering.
+    // In case of sRGB destination format, linear RGB values are converted to nonlinear representation before writing the pixel to the image.
+    // Source must be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL
+    // Destination must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL
+    m_vkCommandBuffer.blitImage(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, 1U, &vkImageBlitRegion, vk::Filter::eLinear, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    TransitionImageLayout(pTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, vkImageSubresourceRange, vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer);
+  }
+
+  const auto vkAffectedMipLevelLayout = vk::ImageLayout::eTransferSrcOptimal;
+
+  // All affected mip levels are now in VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL state.
+  if (vkAffectedMipLevelLayout != vkOriginalLayout)
+  {
+    bool bIsAllSlices = (textureDescription.m_Type != xiiGALResourceDimension::Texture1DArray && textureDescription.m_Type != xiiGALResourceDimension::Texture2DArray && textureDescription.m_Type != xiiGALResourceDimension::TextureCubeArray) || textureDescription.m_uiArraySizeOrDepth == viewDescription.m_uiArrayOrDepthSlicesCount;
+    bool bIsAllMips   = viewDescription.m_uiMipLevelCount == textureDescription.m_uiMipLevels;
+
+    if (bIsAllSlices && bIsAllMips)
+    {
+      pTextureVulkan->SetVulkanImageLayout(vkAffectedMipLevelLayout);
+    }
+    else
+    {
+      XII_ASSERT_DEV(vkOriginalLayout != vk::ImageLayout::eUndefined, "Original layout must not be undefined.");
+
+      vkImageSubresourceRange.baseMipLevel = viewDescription.m_uiMostDetailedMip;
+      vkImageSubresourceRange.levelCount   = viewDescription.m_uiMipLevelCount;
+
+      // Transition all affected subresources back to original layout.
+      FlushBarriers();
+
+      TransitionImageLayout(pTextureVulkan->GetVulkanImage(), vkAffectedMipLevelLayout, vkOriginalLayout, vkImageSubresourceRange, vk::PipelineStageFlagBits::eTransfer, vkOldPipelineStage);
+
+      XII_ASSERT_DEV(pTextureVulkan->GetVulkanImageLayout() == vkOriginalLayout, "");
+    }
+  }
 }
 
 xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
@@ -928,12 +1590,9 @@ void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, cons
   m_vkCommandBuffer.insertDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
-void xiiGALCommandListVulkan::FlushPlatform()
-{
-}
-
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
 {
+  m_ContextState     = {};
   m_CommandListState = {};
   m_PipelineBarrier  = {};
 
@@ -967,7 +1626,7 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 void xiiGALCommandListVulkan::TransitionBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, const bool bUpdateBufferState)
 {
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   if (oldState == xiiGALResourceStateFlags::Unknown)
   {
@@ -1028,9 +1687,9 @@ void xiiGALCommandListVulkan::BufferMemoryBarrier(xiiGALBufferVulkan* pBufferVul
   }
 }
 
-void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange)
+void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange /*= nullptr*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   if (oldState == xiiGALResourceStateFlags::Unknown)
   {
@@ -1113,7 +1772,7 @@ void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextu
 void xiiGALCommandListVulkan::TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout newLayout)
 {
   XII_VERIFY_COMMAND_LIST(pTextureVulkan != nullptr, "");
-  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   if (!pTextureVulkan->IsInKnownState())
   {
@@ -1132,7 +1791,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiGALBufferVulkan* 
 {
   if (!bVerifyOnly)
   {
-    XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+    XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
     if (pBufferVulkan->IsInKnownState())
     {
@@ -1151,7 +1810,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyTextureState(xiiGALTextureVulkan
 {
   if (!bVerifyOnly)
   {
-    XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "State transitions are not permitted while a render pass is active.");
+    XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
     if (pTextureVulkan->IsInKnownState())
     {

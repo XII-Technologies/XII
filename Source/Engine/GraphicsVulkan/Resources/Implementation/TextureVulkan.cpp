@@ -68,7 +68,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     vk::ImageCreateInfo vkImageCreateInfo = {};
     ComputeVkImageCreateInfo(pDeviceVulkan, m_Description, vkImageCreateInfo);
 
-    /// \todo GraphicsVulkan: Selectively utilize vk::SharingMode::eConcurrent for multiple queue family's ownership of the vulkan image.
+    /// \todo GraphicsVulkan: Selectively utilize vk::SharingMode::eConcurrent for multiple queue family's ownership of the Vulkan image.
 
     // initialLayout must be either VK_IMAGE_LAYOUT_UNDEFINED or VK_IMAGE_LAYOUT_PREINITIALIZED (11.4).
     // If it is VK_IMAGE_LAYOUT_PREINITIALIZED, then the image data can be preinitialized by the host while using this layout, and the transition away from this layout will preserve that data.
@@ -80,7 +80,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -92,7 +92,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       vmaAllocationCreateInfo.requiredFlags           = bIsMemoryLess ? VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
 
       if (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty())
       {
@@ -127,18 +127,18 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
   {
     pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer, m_StagingBufferMemoryAllocation);
 
+    m_vkStagingBuffer               = VK_NULL_HANDLE;
     m_StagingBufferMemoryAllocation = {};
   }
-  m_vkStagingBuffer = VK_NULL_HANDLE;
 
   // Prevent releasing the native object.
   if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
   {
     pDeviceVulkan->SafeReleaseDeviceObject(m_vkImage, m_ImageMemoryAllocation);
 
+    m_vkImage               = VK_NULL_HANDLE;
     m_ImageMemoryAllocation = {};
   }
-  m_vkImage = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }
@@ -208,7 +208,7 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
 
   vk::Buffer        vkStagingBuffer;
   VmaAllocationInfo stagingBufferAllocationInfo;
-  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
+  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
 
   XII_ASSERT_DEV(stagingBufferAllocationInfo.pMappedData != nullptr, "");
 
@@ -525,8 +525,8 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
       // VK_MEMORY_PROPERTY_HOST_COHERENT_BIT bit specifies that the host cache management commands vkFlushMappedMemoryRanges
       // and vkInvalidateMappedMemoryRanges are NOT needed to flush host writes to the device or make device writes visible to the host (10.2)
       VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-      vmaAllocationCreateInfo.requiredFlags           = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
       vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+      vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
       vk::Buffer        vkStagingBuffer;
       VmaAllocation     stagingBufferAllocation;
@@ -544,7 +544,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
         for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
         {
           const auto& subresourceData  = pInitialData->m_SubResources[uiSubresourceIndex];
-          auto&       vkCopyRegion     = bufferImageCopyRegions[uiSubresourceIndex];
+          const auto& vkCopyRegion     = bufferImageCopyRegions[uiSubresourceIndex];
           auto        mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
 
           XII_ASSERT_DEV(mipLevelProperty.m_LogicalSize.width == vkCopyRegion.imageExtent.width, "");
@@ -555,13 +555,13 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
           // For compressed-block formats, mipLevelProperty.m_uiRowSize is the size of one row of blocks.
           XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride >= ((mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight) * mipLevelProperty.m_uiRowSize), "Depth stride is too small.");
 
-          for (xiiUInt32 uiZ = 0; mipLevelProperty.m_uiDepth; ++uiZ)
+          for (xiiUInt32 uiZ = 0; uiZ < mipLevelProperty.m_uiDepth; ++uiZ)
           {
-            for (xiiUInt32 uiY = 0; uiY < mipLevelProperty.m_StorageSize.height; ++uiY)
+            for (xiiUInt32 uiY = 0; uiY < mipLevelProperty.m_StorageSize.height; uiY += formatProperties.m_uiBlockHeight)
             {
               // The subresourceData.m_uiStride must be the stride of one row of compressed blocks.
-              memcpy(xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, vkCopyRegion.bufferOffset + ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / formatProperties.m_uiBlockHeight) * mipLevelProperty.m_uiRowSize),
-                     xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), (uiY / formatProperties.m_uiBlockHeight) * subresourceData.m_uiStride + uiZ * subresourceData.m_uiDepthStride),
+              memcpy(xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, vkCopyRegion.bufferOffset + ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / xiiUInt32{formatProperties.m_uiBlockHeight}) * mipLevelProperty.m_uiRowSize),
+                     xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), (uiY / xiiUInt32{formatProperties.m_uiBlockHeight}) * subresourceData.m_uiStride + uiZ * subresourceData.m_uiDepthStride),
                      mipLevelProperty.m_uiRowSize);
             }
           }

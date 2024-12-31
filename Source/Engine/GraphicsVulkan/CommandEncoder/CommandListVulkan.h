@@ -80,8 +80,14 @@ public:
 
   void FlushBarriers();
 
+  void CopyBufferToTexture(vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceBufferOffset, xiiUInt32 uiSourceBufferRowStrideInTexels, xiiGALTextureVulkan* pDestinationTextureVulkan, const xiiBoundingBoxU32& destinationRegion, xiiUInt32 uiDestinationMipLevel, xiiUInt32 uiDestinationArraySlice, bool bVerifyOnly = false);
+  void CopyTextureToBuffer(xiiGALTextureVulkan* pSourceTextureVulkan, const xiiBoundingBoxU32& sourceRegion, xiiUInt32 uiSourceMipLevel, xiiUInt32 uiSourceArraySlice, vk::Buffer vkDestinationBuffer, xiiUInt64 uiDestinationBufferOffset, xiiUInt32 uiDestinationBufferRowStrideInTexels, bool bVerifyOnly = false);
+
   void CopyBufferToImage(vk::Buffer vkSourceBuffer, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::BufferImageCopy> pRegions);
   void CopyImageToBuffer(vk::Image vkSourceImage, vk::ImageLayout vkSourceImageLayout, vk::Buffer vkDestinationBuffer, xiiArrayPtr<const vk::BufferImageCopy> pRegions);
+  void CopyImage(vk::Image vkSourceImage, vk::ImageLayout vkSourceImageLayout, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::ImageCopy> pRegions);
+
+  void CopyTextureRegion(xiiGALTextureVulkan* pSourceTextureVulkan, xiiGALTextureVulkan* pDestinationTextureVulkan, const vk::ImageCopy& copyRegion);
 
   void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags);
   void AddSignalSemaphore(vk::Semaphore semaphore);
@@ -170,8 +176,6 @@ protected:
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color) override final;
   virtual void EndDebugGroupPlatform() override final;
   virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color) override final;
-
-  virtual void FlushPlatform() override final;
 
   virtual void InvalidateStatePlatform() override final;
 
@@ -277,6 +281,11 @@ private:
 
     vk::PipelineBindPoint m_vkPipelineBindPoint = static_cast<vk::PipelineBindPoint>(VK_PIPELINE_BIND_POINT_MAX_ENUM); ///< The type of pipeline bound to the command buffer.
   } m_ContextState;
+
+  vk::Buffer            m_CommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]       = {};
+  xiiUInt64             m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiUInt64             m_CommittedVertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_CommittedVertexBuffersRange;
 
   // Graphics/Mesh, Compute, Ray Tracing.
   static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;

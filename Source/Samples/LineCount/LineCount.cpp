@@ -231,6 +231,8 @@ public:
 
   virtual void BeforeCoreSystemsShutdown() override
   {
+    xiiPlugin::UnloadAllPlugins();
+
     // Close the HTML log, from now on no more log messages are written to the file
     g_HtmlLog.EndLog();
   }

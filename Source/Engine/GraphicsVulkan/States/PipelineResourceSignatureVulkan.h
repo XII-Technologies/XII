@@ -9,7 +9,9 @@ class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : publi
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignatureVulkan, xiiGALPipelineResourceSignature);
 
 public:
-  XII_ALWAYS_INLINE virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final { return false; }
+  virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final;
+
+  XII_ALWAYS_INLINE vk::DescriptorSetLayout GetVulkanDescriptorSetLayout() const { return m_vkDescriptorSetLayout; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -23,5 +25,8 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
+  vk::DescriptorSetLayout m_vkDescriptorSetLayout = VK_NULL_HANDLE;
 };

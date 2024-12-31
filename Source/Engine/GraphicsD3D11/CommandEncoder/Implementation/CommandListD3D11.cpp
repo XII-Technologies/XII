@@ -219,7 +219,7 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
 
     if (pIndexBufferD3D11 != nullptr)
     {
-      const auto& indexFormat = pIndexBufferD3D11->GetIndexFormat();
+      const auto indexFormat = pIndexBufferD3D11->GetIndexFormat();
 
       DXGI_FORMAT d3d11IndexFormat = DXGI_FORMAT_UNKNOWN;
       if (indexFormat == xiiGALValueType::UInt32)
@@ -263,7 +263,7 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
     }
   }
 
-  for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < pVertexBuffers.GetCount(); ++i)
   {
     auto pVertexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pVertexBuffers[i]);
 
@@ -271,14 +271,15 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
     xiiUInt32     uiVertexBufferOffset = pByteOffsets.IsEmpty() ? 0U : static_cast<xiiUInt32>(pByteOffsets[i]);
     xiiUInt32     uiVertexBufferStride = pVertexBufferD3D11 ? pVertexBufferD3D11->GetDescription().m_uiElementByteStride : 0U;
 
-    if (m_pCommittedVertexBuffers[i] != pD3D11VertexBuffer || m_CommittedVertexBufferOffsets[i] != uiVertexBufferOffset || m_CommittedVertexBufferStrides[i] != uiVertexBufferStride)
+    xiiUInt32 uiVertexBufferSlot = i + uiStartSlot;
+    if (m_pCommittedVertexBuffers[uiVertexBufferSlot] != pD3D11VertexBuffer || m_CommittedVertexBufferOffsets[uiVertexBufferSlot] != uiVertexBufferOffset || m_CommittedVertexBufferStrides[uiVertexBufferSlot] != uiVertexBufferStride)
     {
-      m_pCommittedVertexBuffers[i]      = pD3D11VertexBuffer;
-      m_CommittedVertexBufferOffsets[i] = uiVertexBufferOffset;
-      m_CommittedVertexBufferStrides[i] = uiVertexBufferStride;
-
-      m_CommittedVertexBuffersRange.SetToIncludeValue(i);
+      m_pCommittedVertexBuffers[uiVertexBufferSlot]      = pD3D11VertexBuffer;
+      m_CommittedVertexBufferOffsets[uiVertexBufferSlot] = uiVertexBufferOffset;
+      m_CommittedVertexBufferStrides[uiVertexBufferSlot] = uiVertexBufferStride;
     }
+
+    m_CommittedVertexBuffersRange.SetToIncludeValue(uiVertexBufferSlot);
   }
 }
 
@@ -904,12 +905,6 @@ void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const
   }
 }
 
-void xiiGALCommandListD3D11::FlushPlatform()
-{
-  // Though D3D11 does not care about render passes, we call flush when we unset resource views that are set as render targets.
-  // XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "Flushing commandlist inside an active render pass is not allowed.");
-}
-
 void xiiGALCommandListD3D11::InvalidateStatePlatform()
 {
   m_pCommandList->ClearState();
@@ -1026,7 +1021,6 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
     if (bFlushNeeded)
     {
       FlushDeferredStateChanges().IgnoreResult();
-      FlushPlatform();
     }
   }
 

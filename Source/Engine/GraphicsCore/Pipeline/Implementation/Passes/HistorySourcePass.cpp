@@ -142,7 +142,7 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
       auto& depthAttachmentDescription                   = renderPassDescription.m_Attachments.ExpandAndGetRef();
       depthAttachmentDescription.m_Format                = attachmentDescription.m_Format;
       depthAttachmentDescription.m_uiSampleCount         = static_cast<xiiUInt8>(attachmentDescription.m_uiSampleCount);
-      depthAttachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+      depthAttachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::DepthWrite;
       depthAttachmentDescription.m_FinalStateFlags       = xiiGALResourceStateFlags::DepthWrite;
       depthAttachmentDescription.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
       depthAttachmentDescription.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
@@ -163,7 +163,7 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
       auto& colorAttachmentDescription                   = renderPassDescription.m_Attachments.ExpandAndGetRef();
       colorAttachmentDescription.m_Format                = attachmentDescription.m_Format;
       colorAttachmentDescription.m_uiSampleCount         = attachmentDescription.m_uiSampleCount;
-      colorAttachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+      colorAttachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::RenderTarget;
       colorAttachmentDescription.m_FinalStateFlags       = xiiGALResourceStateFlags::RenderTarget;
       colorAttachmentDescription.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
       colorAttachmentDescription.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;

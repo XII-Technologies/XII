@@ -9,6 +9,8 @@ class XII_GRAPHICSVULKAN_DLL xiiGALFramebufferVulkan final : public xiiGALFrameb
   XII_ADD_DYNAMIC_REFLECTION(xiiGALFramebufferVulkan, xiiGALFramebuffer);
 
 public:
+  XII_ALWAYS_INLINE vk::Framebuffer GetVulkanFramebuffer() const { return m_vkFramebuffer; }
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;

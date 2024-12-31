@@ -201,10 +201,6 @@ void xiiGALCommandListNull::InsertDebugLabelPlatform(xiiStringView sName, const 
 {
 }
 
-void xiiGALCommandListNull::FlushPlatform()
-{
-}
-
 void xiiGALCommandListNull::InvalidateStatePlatform()
 {
 }

@@ -264,6 +264,8 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
 
 void xiiSampleWindowApp::BeforeCoreSystemsShutdown()
 {
+  xiiPlugin::UnloadAllPlugins();
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
   // Shut down telemetry if it was set up.
   xiiTelemetry::CloseConnection();

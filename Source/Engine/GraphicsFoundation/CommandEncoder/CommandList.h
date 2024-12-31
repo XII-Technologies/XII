@@ -388,9 +388,6 @@ public:
   /// \param color - The color associated with the debug label.
   void InsertDebugLabel(xiiStringView sName, const xiiColor& color = xiiColor::Black);
 
-  /// \brief Flushes the command list. It ensures that all commands that have been sent to the command list are completed.
-  void Flush();
-
   /// \brief Invalidates the current state of the command list. It is typically called when the command list is reset or when the pipeline state is changed.
   void InvalidateState();
 
@@ -477,8 +474,6 @@ protected:
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)  = 0;
   virtual void EndDebugGroupPlatform()                                              = 0;
   virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color) = 0;
-
-  virtual void FlushPlatform() = 0;
 
   virtual void InvalidateStatePlatform() = 0;
 
