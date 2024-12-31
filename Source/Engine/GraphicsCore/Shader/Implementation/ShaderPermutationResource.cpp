@@ -113,7 +113,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
   }
 
   xiiGALPipelineResourceSignatureCreationDescription resourceSignatureDescription;
-  resourceSignatureDescription.m_bUseCombinedTextureSamplers = true;
+  resourceSignatureDescription.m_bUseCombinedTextureSamplers = false;
   resourceSignatureDescription.m_sCombinedSamplerSuffix      = "_AutoSampler";
 
   // iterate over all shader stages, add them to the descriptor
