@@ -9,7 +9,6 @@ XII_IMPLEMENT_SINGLETON(xiiToolsProject);
 xiiEvent<const xiiToolsProjectEvent&> xiiToolsProject::s_Events;
 xiiEvent<xiiToolsProjectRequest&>     xiiToolsProject::s_Requests;
 
-
 xiiToolsProjectRequest::xiiToolsProjectRequest()
 {
   m_Type                             = Type::CanCloseProject;
@@ -31,8 +30,8 @@ xiiToolsProject::~xiiToolsProject() = default;
 xiiStatus xiiToolsProject::Create()
 {
   {
-    xiiOSFile ProjectFile;
-    if (ProjectFile.Open(m_sProjectPath, xiiFileOpenMode::Write).Failed())
+    xiiOSFile projectFile;
+    if (projectFile.Open(m_sProjectPath, xiiFileOpenMode::Write).Failed())
     {
       return xiiStatus(xiiFmt("Could not open/create the project file for writing: '{0}'", m_sProjectPath));
     }
@@ -40,8 +39,8 @@ xiiStatus xiiToolsProject::Create()
     {
       xiiStringView szToken = "xiiEditor Project File";
 
-      XII_SUCCEED_OR_RETURN(ProjectFile.Write(szToken.GetStartPointer(), szToken.GetElementCount() + 1));
-      ProjectFile.Close();
+      XII_SUCCEED_OR_RETURN(projectFile.Write(szToken.GetStartPointer(), szToken.GetElementCount() + 1));
+      projectFile.Close();
     }
   }
 
@@ -55,13 +54,13 @@ xiiStatus xiiToolsProject::Create()
 
 xiiStatus xiiToolsProject::Open()
 {
-  xiiOSFile ProjectFile;
-  if (ProjectFile.Open(m_sProjectPath, xiiFileOpenMode::Read).Failed())
+  xiiOSFile projectFile;
+  if (projectFile.Open(m_sProjectPath, xiiFileOpenMode::Read).Failed())
   {
     return xiiStatus(xiiFmt("Could not open the project file for reading: '{0}'", m_sProjectPath));
   }
 
-  ProjectFile.Close();
+  projectFile.Close();
 
   xiiToolsProjectEvent e;
   e.m_pProject = this;
