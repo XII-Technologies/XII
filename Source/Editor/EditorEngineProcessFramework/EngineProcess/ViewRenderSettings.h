@@ -24,21 +24,13 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_EDITORENGINEPROCESSFRAMEWORK_DLL, xiiSceneViewP
 
 struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewConfig
 {
-  xiiEngineViewConfig()
-  {
-    m_RenderMode        = xiiViewRenderMode::Default;
-    m_Perspective       = xiiSceneViewPerspective::Default;
-    m_CameraUsageHint   = xiiCameraUsageHint::EditorView;
-    m_pLinkedViewConfig = nullptr;
-  }
-
-  xiiViewRenderMode::Enum       m_RenderMode;
-  xiiSceneViewPerspective::Enum m_Perspective;
-  xiiCameraUsageHint::Enum      m_CameraUsageHint;
+  xiiViewRenderMode::Enum       m_RenderMode                  = xiiViewRenderMode::Default;
+  xiiSceneViewPerspective::Enum m_Perspective                 = xiiSceneViewPerspective::Default;
+  xiiCameraUsageHint::Enum      m_CameraUsageHint             = xiiCameraUsageHint::EditorView;
   bool                          m_bUseCameraTransformOnDevice = true;
 
   xiiCamera            m_Camera;
-  xiiEngineViewConfig* m_pLinkedViewConfig; // used to store which other view config this is linked to, for resetting values when switching views
+  xiiEngineViewConfig* m_pLinkedViewConfig = nullptr; // This is used to store which other view config this is linked to, for resetting values when switching views.
 
   void ApplyPerspectiveSetting(float fFov = 0.0f, float fNearPlane = 0.1f, float fFarPlane = 1000.0f);
 };
