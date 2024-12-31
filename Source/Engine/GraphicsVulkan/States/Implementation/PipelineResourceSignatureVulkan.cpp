@@ -8,40 +8,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineResourceSignatureVulkan, 1, xiiRT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-vk::DescriptorType GetDescriptorType(const xiiGALPipelineResourceDescription& resourceDescription)
-{
-  XII_ASSERT_DEV(resourceDescription.m_PipelineResourceFlags.IsStrictlyAnySet(xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resourceDescription.m_ResourceType)) || resourceDescription.m_PipelineResourceFlags.IsNoFlagSet(), "Invalid resource flags, implementation error!");
-
-  const bool bWithDynamicOffset = !resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers);
-  const bool bCombinedSampler   = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::CombinedSampler);
-  const bool bUseTexelBuffer    = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::Formattedbuffer);
-  const bool bGeneralInputAtt   = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment);
-
-  switch (resourceDescription.m_ResourceType)
-  {
-    case xiiGALShaderResourceType::ConstantBuffer:
-      return bWithDynamicOffset ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eUniformBuffer;
-    case xiiGALShaderResourceType::TextureSRV:
-      return bCombinedSampler ? vk::DescriptorType::eCombinedImageSampler : vk::DescriptorType::eSampledImage;
-    case xiiGALShaderResourceType::BufferSRV:
-      return bUseTexelBuffer ? vk::DescriptorType::eUniformTexelBuffer : vk::DescriptorType::eStorageBuffer;
-    case xiiGALShaderResourceType::TextureUAV:
-      return vk::DescriptorType::eStorageImage;
-    case xiiGALShaderResourceType::BufferUAV:
-      return bUseTexelBuffer ? vk::DescriptorType::eStorageTexelBuffer : (bWithDynamicOffset ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eStorageBuffer);
-    case xiiGALShaderResourceType::Sampler:
-      return vk::DescriptorType::eSampler;
-    case xiiGALShaderResourceType::InputAttachment:
-      return vk::DescriptorType::eInputAttachment;
-    case xiiGALShaderResourceType::AccelerationStructure:
-      return vk::DescriptorType::eAccelerationStructureKHR;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-
-  return vk::DescriptorType::eSampler;
-}
-
 xiiGALPipelineResourceSignatureVulkan::xiiGALPipelineResourceSignatureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
   xiiGALPipelineResourceSignature(pDeviceVulkan, creationDescription)
 {
@@ -65,7 +31,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
     auto&       vkDescriptorLayoutBinding = vkDescriptorSetLayoutBindings.ExpandAndGetRef();
 
     vkDescriptorLayoutBinding.binding            = resource.m_uiBindSlot;
-    vkDescriptorLayoutBinding.descriptorType     = GetDescriptorType(resource);
+    vkDescriptorLayoutBinding.descriptorType     = xiiVulkanTypeConversions::GetDescriptorType(resource);
     vkDescriptorLayoutBinding.descriptorCount    = resource.m_uiArraySize;
     vkDescriptorLayoutBinding.stageFlags         = xiiVulkanTypeConversions::GetShaderStageFlags(resource.m_ShaderStages);
     vkDescriptorLayoutBinding.pImmutableSamplers = {};

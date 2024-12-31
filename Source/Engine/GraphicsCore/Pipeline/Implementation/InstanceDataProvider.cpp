@@ -91,7 +91,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInstanceDataProvider, 1, xiiRTTIDefaultAlloc
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiInstanceDataProvider::xiiInstanceDataProvider() = default;
+xiiInstanceDataProvider::xiiInstanceDataProvider()
+{
+}
 
 xiiInstanceDataProvider::~xiiInstanceDataProvider() = default;
 
