@@ -24,20 +24,29 @@ xiiGALPipelineStateVulkan::~xiiGALPipelineStateVulkan() = default;
 
 xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALPipelineStateVulkan::DeInitPlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  if (m_vkPipeline != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipeline);
+
+    m_vkPipeline = VK_NULL_HANDLE;
+  }
   return XII_SUCCESS;
 }
 
 void xiiGALPipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
+  if (m_vkPipeline == VK_NULL_HANDLE)
+    return;
+
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
 
