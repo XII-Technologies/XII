@@ -84,8 +84,8 @@ namespace
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGALDevice*                      xiiGALDevice::s_pDefaultDevice = nullptr;
-xiiEvent<const xiiGALDeviceEvent&> xiiGALDevice::s_Events;
+xiiGALDevice*                                xiiGALDevice::s_pDefaultDevice = nullptr;
+xiiEvent<const xiiGALDeviceEvent&, xiiMutex> xiiGALDevice::s_Events;
 
 xiiGALDevice::xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription) :
   xiiGALObject(), m_Description(creationDescription), m_Allocator("GALDevice", xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator)
