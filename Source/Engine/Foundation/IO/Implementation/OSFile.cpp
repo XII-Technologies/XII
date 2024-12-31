@@ -37,7 +37,9 @@ xiiResult xiiOSFile::Open(xiiStringView sFile, xiiFileOpenMode::Enum openMode, x
   XII_ASSERT_DEV(openMode >= xiiFileOpenMode::Read && openMode <= xiiFileOpenMode::Append, "Invalid Mode");
   XII_ASSERT_DEV(!IsOpen(), "The file has already been opened.");
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   m_sFileName = sFile;
   m_sFileName.MakeCleanPath();
@@ -46,7 +48,7 @@ xiiResult xiiOSFile::Open(xiiStringView sFile, xiiFileOpenMode::Enum openMode, x
   xiiResult Res = XII_FAILURE;
 
   if (!m_sFileName.IsAbsolutePath())
-    goto done;
+    goto Completed;
 
   {
     xiiStringBuilder sFolder = m_sFileName.GetFileDirectory();
@@ -61,16 +63,20 @@ xiiResult xiiOSFile::Open(xiiStringView sFile, xiiFileOpenMode::Enum openMode, x
   {
     m_FileMode = openMode;
     Res        = XII_SUCCESS;
-    goto done;
+    goto Completed;
   }
 
   m_sFileName.Clear();
   m_FileMode = xiiFileOpenMode::None;
-  goto done;
+  goto Completed;
 
-done:
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+Completed:
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess  = Res == XII_SUCCESS;
@@ -95,12 +101,17 @@ void xiiOSFile::Close()
   if (!IsOpen())
     return;
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   InternalClose();
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess  = true;
@@ -123,12 +134,17 @@ xiiResult xiiOSFile::Write(const void* pBuffer, xiiUInt64 uiBytes)
   XII_ASSERT_DEV((m_FileMode == xiiFileOpenMode::Write) || (m_FileMode == xiiFileOpenMode::Append), "The file is not opened for writing.");
   XII_ASSERT_DEV(pBuffer != nullptr, "pBuffer must not be nullptr.");
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   const xiiResult Res = InternalWrite(pBuffer, uiBytes);
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess        = Res == XII_SUCCESS;
@@ -148,12 +164,17 @@ xiiUInt64 xiiOSFile::Read(void* pBuffer, xiiUInt64 uiBytes)
   XII_ASSERT_DEV(m_FileMode == xiiFileOpenMode::Read, "The file is not opened for reading.");
   XII_ASSERT_DEV(pBuffer != nullptr, "pBuffer must not be nullptr.");
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   const xiiUInt64 Res = InternalRead(pBuffer, uiBytes);
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess        = (Res == uiBytes);
@@ -231,7 +252,9 @@ const xiiString xiiOSFile::MakePathAbsoluteWithCWD(xiiStringView sPath)
 
 bool xiiOSFile::ExistsFile(xiiStringView sFile)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   xiiStringBuilder s(sFile);
   s.MakeCleanPath();
@@ -239,9 +262,11 @@ bool xiiOSFile::ExistsFile(xiiStringView sFile)
 
   const bool bRes = InternalExistsFile(s);
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
-
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess  = bRes;
@@ -257,7 +282,9 @@ bool xiiOSFile::ExistsFile(xiiStringView sFile)
 
 bool xiiOSFile::ExistsDirectory(xiiStringView sDirectory)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   xiiStringBuilder s(sDirectory);
   s.MakeCleanPath();
@@ -267,9 +294,11 @@ bool xiiOSFile::ExistsDirectory(xiiStringView sDirectory)
 
   const bool bRes = InternalExistsDirectory(s);
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
-
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess  = bRes;
@@ -309,7 +338,9 @@ void xiiOSFile::FindFreeFilename(xiiStringBuilder& inout_sPath, xiiStringView sS
 
 xiiResult xiiOSFile::DeleteFile(xiiStringView sFile)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   xiiStringBuilder s(sFile);
   s.MakeCleanPath();
@@ -317,8 +348,11 @@ xiiResult xiiOSFile::DeleteFile(xiiStringView sFile)
 
   const xiiResult Res = InternalDeleteFile(s.GetData());
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess  = Res == XII_SUCCESS;
@@ -346,7 +380,9 @@ xiiStringView xiiOSFile::GetApplicationDirectory()
 
 xiiResult xiiOSFile::CreateDirectoryStructure(xiiStringView sDirectory)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   xiiStringBuilder s(sDirectory);
   s.MakeCleanPath();
@@ -378,8 +414,11 @@ xiiResult xiiOSFile::CreateDirectoryStructure(xiiStringView sDirectory)
     }
   }
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess  = Res == XII_SUCCESS;
@@ -408,18 +447,20 @@ xiiResult xiiOSFile::MoveFileOrDirectory(xiiStringView sDirectoryFrom, xiiString
 
 xiiResult xiiOSFile::CopyFile(xiiStringView sSource, xiiStringView sDestination)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#endif
 
   xiiOSFile SrcFile, DstFile;
 
   xiiResult Res = XII_FAILURE;
 
   if (SrcFile.Open(sSource, xiiFileOpenMode::Read) == XII_FAILURE)
-    goto done;
+    goto Completed;
 
   DstFile.m_bRetryOnSharingViolation = false;
   if (DstFile.Open(sDestination, xiiFileOpenMode::Write) == XII_FAILURE)
-    goto done;
+    goto Completed;
 
   {
     const xiiUInt32 uiTempSize = 1024 * 1024 * 8; // 8 MB
@@ -436,16 +477,19 @@ xiiResult xiiOSFile::CopyFile(xiiStringView sSource, xiiStringView sDestination)
         break;
 
       if (DstFile.Write(&TempBuffer[0], uiRead) == XII_FAILURE)
-        goto done;
+        goto Completed;
     }
   }
 
   Res = XII_SUCCESS;
 
-done:
+Completed:
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#endif
 
   EventData e;
   e.m_bSuccess  = Res == XII_SUCCESS;
@@ -464,7 +508,9 @@ done:
 
 xiiResult xiiOSFile::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_stats)
 {
+#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#  endif
 
   xiiStringBuilder s = sFileOrFolder;
   s.MakeCleanPath();
@@ -474,8 +520,11 @@ xiiResult xiiOSFile::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out
 
   const xiiResult Res = InternalGetFileStats(s.GetData(), out_stats);
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#  else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#  endif
 
   EventData e;
   e.m_bSuccess  = Res == XII_SUCCESS;
@@ -492,9 +541,11 @@ xiiResult xiiOSFile::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out
 #  if XII_ENABLED(XII_SUPPORTS_CASE_INSENSITIVE_PATHS) && XII_ENABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
 xiiResult xiiOSFile::GetFileCasing(xiiStringView sFileOrFolder, xiiStringBuilder& out_sCorrectSpelling)
 {
-  /// \todo We should implement this also on xiiFileSystem, to be able to support stats through virtual filesystems
+  /// \todo Core: We should implement this also on xiiFileSystem, to be able to support stats through virtual filesystems.
 
+#    if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiTime t0 = xiiTime::Now();
+#    endif
 
   xiiStringBuilder s(sFileOrFolder);
   s.MakeCleanPath();
@@ -533,8 +584,11 @@ xiiResult xiiOSFile::GetFileCasing(xiiStringView sFileOrFolder, xiiStringBuilder
     ++it;
   }
 
-  const xiiTime t1    = xiiTime::Now();
-  const xiiTime tdiff = t1 - t0;
+#    if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiTime tdiff = xiiTime::Now() - t0;
+#    else
+  const xiiTime tdiff = xiiTime::MakeZero();
+#    endif
 
   EventData e;
   e.m_bSuccess  = Res == XII_SUCCESS;

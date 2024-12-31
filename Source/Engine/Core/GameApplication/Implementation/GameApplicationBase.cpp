@@ -542,8 +542,10 @@ void xiiGameApplicationBase::Run_FinishFrame()
   xiiFrameAllocator::Swap();
   xiiProfilingSystem::StartNewFrame();
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   // If many messages have been logged, ensure they get written to disk.
   xiiLog::Flush(100, xiiTime::MakeFromSeconds(10));
+#endif
 
   // Reset this state.
   m_bTakeScreenshot = false;

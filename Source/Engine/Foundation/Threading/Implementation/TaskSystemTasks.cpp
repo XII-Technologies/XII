@@ -385,6 +385,7 @@ void xiiTaskSystem::FinishFrameTasks()
 
   // Update the thread utilization
   {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     const xiiTime  tNow              = xiiTime::Now();
     static xiiTime s_LastFrameUpdate = tNow;
     const xiiTime  tDiff             = tNow - s_LastFrameUpdate;
@@ -404,6 +405,7 @@ void xiiTaskSystem::FinishFrameTasks()
         }
       }
     }
+#endif
   }
 }
 
