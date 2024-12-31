@@ -349,17 +349,17 @@ public:
 
   /// \brief Tries to find a component of the given base type in the objects components list and returns the first match.
   template <typename T>
-  bool TryGetComponentOfBaseType(T*& out_pComponent);
+  [[nodiscard]] bool TryGetComponentOfBaseType(T*& out_pComponent);
 
   /// \brief Tries to find a component of the given base type in the objects components list and returns the first match.
   template <typename T>
-  bool TryGetComponentOfBaseType(const T*& out_pComponent) const;
+  [[nodiscard]] bool TryGetComponentOfBaseType(const T*& out_pComponent) const;
 
   /// \brief Tries to find a component of the given base type in the objects components list and returns the first match.
-  bool TryGetComponentOfBaseType(const xiiRTTI* pType, xiiComponent*& out_pComponent);
+  [[nodiscard]] bool TryGetComponentOfBaseType(const xiiRTTI* pType, xiiComponent*& out_pComponent);
 
   /// \brief Tries to find a component of the given base type in the objects components list and returns the first match.
-  bool TryGetComponentOfBaseType(const xiiRTTI* pType, const xiiComponent*& out_pComponent) const;
+  [[nodiscard]] bool TryGetComponentOfBaseType(const xiiRTTI* pType, const xiiComponent*& out_pComponent) const;
 
   /// \brief Tries to find components of the given base type in the objects components list and returns all matches.
   template <typename T>
