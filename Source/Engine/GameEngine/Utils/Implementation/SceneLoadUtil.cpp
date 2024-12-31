@@ -93,6 +93,8 @@ void xiiSceneLoadUtility::TickSceneLoading()
       break;
   }
 
+  XII_PROFILE_SCOPE("TickSceneLoading");
+
   // update our current loading progress
   {
     m_fLoadingProgress = fCollectionPreloadPiece;

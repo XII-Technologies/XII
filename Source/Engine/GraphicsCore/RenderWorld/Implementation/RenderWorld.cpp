@@ -528,7 +528,12 @@ void xiiRenderWorld::ExtractMainViews()
 
 void xiiRenderWorld::Render(xiiRenderContext* pRenderContext)
 {
-  XII_PROFILE_SCOPE("xiiRenderWorld::Render");
+  const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
+
+  xiiStringBuilder sb;
+  sb.SetFormat("RENDER FRAME {}", uiRenderFrame);
+
+  XII_PROFILE_SCOPE(sb.GetData());
 
   xiiRenderWorldRenderEvent renderEvent;
   renderEvent.m_Type           = xiiRenderWorldRenderEvent::Type::BeginRender;
@@ -598,11 +603,6 @@ void xiiRenderWorld::BeginFrame()
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  // On most platforms it doesn't matter that much how early this happens.
-  // But on HoloLens this executes something that needs to be done at the right time,
-  // for the reprojection to work properly.
-  const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
-
   auto& filteredRenderPipelines = s_FilteredRenderPipelines[GetDataIndexForRendering()];
   for (auto& pRenderPipeline : filteredRenderPipelines)
   {
@@ -612,6 +612,9 @@ void xiiRenderWorld::BeginFrame()
       pDevice->EnqueueFrameSwapChain(hSwapChain);
     }
   }
+
+  const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
+
   pDevice->BeginFrame(uiRenderFrame);
 }
 
