@@ -42,6 +42,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_SCRIPT_FUNCTION_PROPERTY(WasCreatedByPrefab),
 
     XII_SCRIPT_FUNCTION_PROPERTY(HasName, In, "Name"),
+    XII_SCRIPT_FUNCTION_PROPERTY(HasTag, In, "TagName"),
 
     XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetParent),
     XII_SCRIPT_FUNCTION_PROPERTY(FindChildByName, In, "Name", In, "Recursive")->AddFlags(xiiPropertyFlags::Const),

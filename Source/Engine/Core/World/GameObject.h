@@ -460,6 +460,9 @@ public:
   /// \brief Removes the given tag from the object's tags.
   void RemoveTag(const xiiTag& tag);
 
+  /// \brief Checks whether this object has the given tag.
+  bool HasTag(const xiiTempHashedString& sTagName) const;
+
   /// \brief Returns the 'team ID' that was given during creation (/see xiiGameObjectDesc)
   ///
   /// It is automatically passed on to objects created by this object.

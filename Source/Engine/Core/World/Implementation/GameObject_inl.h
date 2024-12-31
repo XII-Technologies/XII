@@ -543,6 +543,11 @@ XII_ALWAYS_INLINE const xiiTagSet& xiiGameObject::GetTags() const
   return m_Tags;
 }
 
+XII_ALWAYS_INLINE bool xiiGameObject::HasTag(const xiiTempHashedString& sTagName) const
+{
+  return m_Tags.IsSetByName(sTagName);
+}
+
 XII_ALWAYS_INLINE xiiUInt32 xiiGameObject::GetStableRandomSeed() const
 {
   return m_pTransformationData->m_uiStableRandomSeed;
