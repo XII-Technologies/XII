@@ -1599,6 +1599,18 @@ void xiiGALDeviceVulkan::DestroyTextureViewPlatform(xiiGALTextureView* pTextureV
   XII_DELETE(&m_Allocator, pTextureViewVulkan);
 }
 
+xiiGALSamplerVulkan* xiiGALDeviceVulkan::CreateSamplerInternal(const xiiGALSamplerCreationDescription& description)
+{
+  return static_cast<xiiGALSamplerVulkan*>(CreateSamplerPlatform(description));
+}
+
+void xiiGALDeviceVulkan::DestroySamplerInternal(xiiGALSampler* pSampler)
+{
+  XII_ASSERT_DEV(pSampler != nullptr, "Sampler is nullptr.");
+
+  DestroySamplerPlatform(pSampler);
+}
+
 xiiGALSampler* xiiGALDeviceVulkan::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
 {
   xiiGALSamplerVulkan* pSamplerVulkan = XII_NEW(&m_Allocator, xiiGALSamplerVulkan, this, description);
@@ -1669,6 +1681,8 @@ xiiGALFenceVulkan* xiiGALDeviceVulkan::CreateFenceInternal(const xiiGALFenceCrea
 
 void xiiGALDeviceVulkan::DestroyFenceInternal(xiiGALFence* pFence)
 {
+  XII_ASSERT_DEV(pFence != nullptr, "Fence is nullptr.");
+
   DestroyFencePlatform(pFence);
 }
 
