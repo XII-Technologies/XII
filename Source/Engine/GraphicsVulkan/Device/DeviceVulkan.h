@@ -172,6 +172,9 @@ public:
   xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
   void               DestroyFenceInternal(xiiGALFence* pFence);
 
+  xiiGALSamplerVulkan* CreateSamplerInternal(const xiiGALSamplerCreationDescription& description);
+  void                 DestroySamplerInternal(xiiGALSampler* pSampler);
+
   void ReleasePerFrameResources(xiiUInt64 uiCompletedValue);
 
   // These functions are implemented by a graphics API implementation.

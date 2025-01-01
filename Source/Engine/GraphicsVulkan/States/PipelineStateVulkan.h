@@ -15,6 +15,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALPipelineStateVulkan final : public xiiGALPipe
 
 public:
   XII_ALWAYS_INLINE vk::Pipeline GetVulkanPipeline() const { return m_vkPipeline; }
+  XII_ALWAYS_INLINE vk::PipelineCache GetVulkanPipelineCache() const { return m_vkPipelineCache; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -39,5 +40,6 @@ protected:
   virtual void ResetBoundResources() override final;
 
 protected:
-  vk::Pipeline m_vkPipeline;
+  vk::Pipeline      m_vkPipeline;
+  vk::PipelineCache m_vkPipelineCache;
 };

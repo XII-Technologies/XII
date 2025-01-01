@@ -13,6 +13,21 @@ public:
 
   XII_ALWAYS_INLINE vk::DescriptorSetLayout GetVulkanDescriptorSetLayout() const { return m_vkDescriptorSetLayout; }
 
+  struct ImmutableSamplerStorage
+  {
+    XII_DECLARE_POD_TYPE();
+
+    void Initialize(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription);
+    void DeInitialize(xiiGALDeviceVulkan* pDeviceVulkan);
+
+    XII_ALWAYS_INLINE explicit operator bool() const { return m_pSamplerVulkan != nullptr; }
+
+    XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_pSamplerVulkan->GetVulkanSampler(); }
+
+  private:
+    xiiGALSamplerVulkan* m_pSamplerVulkan = nullptr;
+  };
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -29,4 +44,6 @@ protected:
 
 protected:
   vk::DescriptorSetLayout m_vkDescriptorSetLayout = VK_NULL_HANDLE;
+
+  xiiDynamicArray<ImmutableSamplerStorage> m_ImmutableSamplers;
 };
