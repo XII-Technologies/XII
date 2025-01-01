@@ -34,10 +34,10 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     case xiiGALPipelineType::Mesh:
     {
       vk::GraphicsPipelineCreateInfo vkGraphicsPipelineCreateInfo = {};
-      vkGraphicsPipelineCreateInfo.pNext                         = nullptr;
-      vkGraphicsPipelineCreateInfo.flags                         = {};
-      vkGraphicsPipelineCreateInfo.basePipelineHandle            = nullptr; // A pipeline to derive from.
-      vkGraphicsPipelineCreateInfo.basePipelineIndex             = -1;      // An index into the pCreateInfos parameter to use as a pipeline to derive from.
+      vkGraphicsPipelineCreateInfo.pNext                          = nullptr;
+      vkGraphicsPipelineCreateInfo.flags                          = {};
+      vkGraphicsPipelineCreateInfo.basePipelineHandle             = nullptr; // A pipeline to derive from.
+      vkGraphicsPipelineCreateInfo.basePipelineIndex              = -1;      // An index into the pCreateInfos parameter to use as a pipeline to derive from.
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
       vkGraphicsPipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
@@ -64,10 +64,10 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     case xiiGALPipelineType::RayTracing:
     {
       vk::RayTracingPipelineCreateInfoKHR vkRayTracingPipelineCreateInfo = {};
-      vkRayTracingPipelineCreateInfo.pNext                         = nullptr;
-      vkRayTracingPipelineCreateInfo.flags                         = {};
-      vkRayTracingPipelineCreateInfo.basePipelineHandle            = nullptr; // A pipeline to derive from.
-      vkRayTracingPipelineCreateInfo.basePipelineIndex             = -1;      // An index into the pCreateInfos parameter to use as a pipeline to derive from.
+      vkRayTracingPipelineCreateInfo.pNext                               = nullptr;
+      vkRayTracingPipelineCreateInfo.flags                               = {};
+      vkRayTracingPipelineCreateInfo.basePipelineHandle                  = nullptr; // A pipeline to derive from.
+      vkRayTracingPipelineCreateInfo.basePipelineIndex                   = -1;      // An index into the pCreateInfos parameter to use as a pipeline to derive from.
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
       vkRayTracingPipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
