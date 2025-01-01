@@ -172,25 +172,45 @@ void xiiImgui::BeginFrame(const xiiViewHandle& hView)
     xiiUnicodeUtils::EncodeUtf32ToUtf8(xiiInputManager::RetrieveLastCharacter(false), pChar);
     cfg.AddInputCharactersUTF8(szUtf8);
 
-    float mousex, mousey;
-    xiiInputManager::GetInputSlotState(xiiInputSlot_MousePositionX, &mousex);
-    xiiInputManager::GetInputSlotState(xiiInputSlot_MousePositionY, &mousey);
-    cfg.MousePos.x   = cfg.DisplaySize.x * mousex;
-    cfg.MousePos.y   = cfg.DisplaySize.y * mousey;
-    cfg.MouseDown[0] = xiiInputManager::GetInputSlotState(xiiInputSlot_MouseButton0) >= xiiKeyState::Pressed;
-    cfg.MouseDown[1] = xiiInputManager::GetInputSlotState(xiiInputSlot_MouseButton1) >= xiiKeyState::Pressed;
-    cfg.MouseDown[2] = xiiInputManager::GetInputSlotState(xiiInputSlot_MouseButton2) >= xiiKeyState::Pressed;
+    float fMouseX, fMouseY;
+    if (xiiInputManager::GetInputSlotState(xiiInputSlot_TouchPoint0) != xiiKeyState::Up)
+    {
+      xiiInputManager::GetInputSlotState(xiiInputSlot_TouchPoint0_PositionX, &fMouseX);
+      xiiInputManager::GetInputSlotState(xiiInputSlot_TouchPoint0_PositionY, &fMouseY);
+      cfg.AddMousePosEvent(cfg.DisplaySize.x * fMouseX, cfg.DisplaySize.y * fMouseY);
+      cfg.AddMouseButtonEvent(0, xiiInputManager::GetInputSlotState(xiiInputSlot_TouchPoint0) >= xiiKeyState::Pressed);
+      cfg.AddMouseButtonEvent(1, false);
+      cfg.AddMouseButtonEvent(2, false);
+    }
+    else
+    {
+      xiiInputManager::GetInputSlotState(xiiInputSlot_MousePositionX, &fMouseX);
+      xiiInputManager::GetInputSlotState(xiiInputSlot_MousePositionY, &fMouseY);
+      cfg.AddMousePosEvent(cfg.DisplaySize.x * fMouseX, cfg.DisplaySize.y * fMouseY);
+      cfg.AddMouseButtonEvent(0, xiiInputManager::GetInputSlotState(xiiInputSlot_MouseButton0) >= xiiKeyState::Pressed);
+      cfg.AddMouseButtonEvent(1, xiiInputManager::GetInputSlotState(xiiInputSlot_MouseButton1) >= xiiKeyState::Pressed);
+      cfg.AddMouseButtonEvent(2, xiiInputManager::GetInputSlotState(xiiInputSlot_MouseButton2) >= xiiKeyState::Pressed);
+    }
 
-    cfg.MouseWheel = 0;
+    float fMouseWheelY = 0.0f;
     if (xiiInputManager::GetInputSlotState(xiiInputSlot_MouseWheelDown) == xiiKeyState::Pressed)
-      cfg.MouseWheel = -1;
+    {
+      fMouseWheelY = -1.0f;
+    }
     if (xiiInputManager::GetInputSlotState(xiiInputSlot_MouseWheelUp) == xiiKeyState::Pressed)
-      cfg.MouseWheel = +1;
+    {
+      fMouseWheelY = +1.0f;
+    }
+    cfg.AddMouseWheelEvent(0.0f, fMouseWheelY);
 
-    cfg.KeyAlt   = xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftAlt) >= xiiKeyState::Pressed || xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightAlt) >= xiiKeyState::Pressed;
-    cfg.KeyCtrl  = xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftCtrl) >= xiiKeyState::Pressed || xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightCtrl) >= xiiKeyState::Pressed;
-    cfg.KeyShift = xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftShift) >= xiiKeyState::Pressed || xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightShift) >= xiiKeyState::Pressed;
-    cfg.KeySuper = xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftWin) >= xiiKeyState::Pressed || xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightWin) >= xiiKeyState::Pressed;
+    cfg.AddKeyEvent(ImGuiKey_LeftAlt, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftAlt) >= xiiKeyState::Pressed);
+    cfg.AddKeyEvent(ImGuiKey_RightAlt, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightAlt) >= xiiKeyState::Pressed);
+    cfg.AddKeyEvent(ImGuiKey_LeftCtrl, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftCtrl) >= xiiKeyState::Pressed);
+    cfg.AddKeyEvent(ImGuiKey_RightCtrl, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightCtrl) >= xiiKeyState::Pressed);
+    cfg.AddKeyEvent(ImGuiKey_LeftShift, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftShift) >= xiiKeyState::Pressed);
+    cfg.AddKeyEvent(ImGuiKey_RightShift, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightShift) >= xiiKeyState::Pressed);
+    cfg.AddKeyEvent(ImGuiKey_LeftSuper, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeftWin) >= xiiKeyState::Pressed);
+    cfg.AddKeyEvent(ImGuiKey_RightSuper, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyRightWin) >= xiiKeyState::Pressed);
 
     cfg.AddKeyEvent(ImGuiKey_Tab, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyTab) >= xiiKeyState::Pressed);
     cfg.AddKeyEvent(ImGuiKey_LeftArrow, xiiInputManager::GetInputSlotState(xiiInputSlot_KeyLeft) >= xiiKeyState::Pressed);
@@ -215,21 +235,7 @@ void xiiImgui::BeginFrame(const xiiViewHandle& hView)
   }
   else
   {
-    cfg.ClearInputCharacters();
-
-    cfg.MousePos.x = -1;
-    cfg.MousePos.y = -1;
-
-    cfg.MouseDown[0] = false;
-    cfg.MouseDown[1] = false;
-    cfg.MouseDown[2] = false;
-
-    cfg.MouseWheel = 0;
-
-    cfg.KeyAlt   = false;
-    cfg.KeyCtrl  = false;
-    cfg.KeyShift = false;
-    cfg.KeySuper = false;
+    cfg.ClearInputKeys();
   }
 
   ImGui::NewFrame();

@@ -459,7 +459,7 @@ xiiResult xiiProfilingSystem::ProfilingData::Write(xiiStreamWriter& ref_outputSt
         const xiiTime t0 = m_FrameStartTimes[i - 1];
         const xiiTime t1 = m_FrameStartTimes[i];
 
-        const xiiUInt64 localFrameID = uiNumFrames - i - 1;
+        const xiiUInt64 localFrameID = uiNumFrames - i + 1;
         sFrameName.SetFormat("Frame {}", m_uiFrameCount - localFrameID);
 
         writer.BeginObject();

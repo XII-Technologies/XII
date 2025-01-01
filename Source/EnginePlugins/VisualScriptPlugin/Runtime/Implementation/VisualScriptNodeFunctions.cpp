@@ -1126,8 +1126,10 @@ namespace
     }
 
     xiiComponent* pComponent = nullptr;
-    static_cast<xiiGameObject*>(p.m_pObject)->TryGetComponentOfBaseType(userData.m_pType, pComponent);
-    inout_context.SetPointerData(node.GetOutputDataOffset(0), pComponent);
+    if (static_cast<xiiGameObject*>(p.m_pObject)->TryGetComponentOfBaseType(userData.m_pType, pComponent))
+    {
+      inout_context.SetPointerData(node.GetOutputDataOffset(0), pComponent);
+    }
 
     return ExecResult::RunNext(0);
   }

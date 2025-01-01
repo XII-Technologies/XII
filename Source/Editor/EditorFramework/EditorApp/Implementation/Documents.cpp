@@ -50,10 +50,10 @@ xiiDocument* xiiQtEditorApp::OpenDocument(xiiStringView sDocument, xiiBitflags<x
     if (pDocument->GetUnknownObjectTypeInstances() > 0)
     {
       xiiStringBuilder s;
-      s.SetFormat("The document contained {0} objects of an unknown type. Necessary plugins may be missing.\n\n\
+      s.SetFormat("The document '{}' contained {} objects of an unknown type. Necessary plugins may be missing.\n\n\
 If you save this document, all data for these objects is lost permanently!\n\n\
 The following types are missing:\n",
-                  pDocument->GetUnknownObjectTypeInstances());
+                  pDocument, pDocument->GetUnknownObjectTypeInstances());
 
       for (auto it = pDocument->GetUnknownObjectTypes().GetIterator(); it.IsValid(); ++it)
       {

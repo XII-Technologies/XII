@@ -200,7 +200,7 @@ void xiiGameApplication::Run_FinishFrame()
 void xiiGameApplication::UpdateWorldsAndExtractViews()
 {
   xiiStringBuilder sb;
-  sb.SetFormat("FRAME {}", xiiRenderWorld::GetFrameCounter());
+  sb.SetFormat("UPDATE FRAME {}", xiiRenderWorld::GetFrameCounter());
   XII_PROFILE_SCOPE(sb.GetData());
 
   Run_BeforeWorldUpdate();

@@ -376,6 +376,16 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::IsSetByName(xiiStringView sTag) c
   return false;
 }
 
+template <typename BlockStorageAllocator /*= xiiDefaultAllocatorWrapper*/>
+bool xiiTagSetTemplate<BlockStorageAllocator>::IsSetByName(const xiiTempHashedString& sTag) const
+{
+  if (const xiiTag* tag = xiiTagRegistry::GetGlobalRegistry().GetTagByName(sTag))
+  {
+    return IsSet(*tag);
+  }
+  return false;
+}
+
 template <typename BlockStorageAllocator>
 XII_ALWAYS_INLINE bool xiiTagSetTemplate<BlockStorageAllocator>::IsTagInAllocatedRange(const xiiTag& Tag) const
 {

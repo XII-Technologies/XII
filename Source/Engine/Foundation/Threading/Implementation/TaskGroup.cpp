@@ -38,6 +38,7 @@ void xiiTaskGroup::DebugCheckTaskGroup(xiiTaskGroupID groupID, xiiMutex& mutex)
   XII_LOCK(mutex);
 
   const xiiTaskGroup* pGroup = groupID.m_pTaskGroup;
+  XII_IGNORE_UNUSED(pGroup);
 
   XII_ASSERT_DEV(pGroup != nullptr, "TaskGroupID is invalid.");
   XII_ASSERT_DEV(pGroup->m_uiGroupCounter == groupID.m_uiGroupCounter, "The given TaskGroupID is not valid anymore.");

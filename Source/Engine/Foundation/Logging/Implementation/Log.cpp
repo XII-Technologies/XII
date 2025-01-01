@@ -424,13 +424,15 @@ bool xiiLog::Flush(xiiUInt32 uiNumNewMsgThreshold, xiiTime timeIntervalThreshold
   if (pInterface == nullptr || pInterface->m_uiLoggedMsgsSinceFlush == 0) // if really nothing was logged, don't execute a flush
     return false;
 
-  if (pInterface->m_uiLoggedMsgsSinceFlush <= uiNumNewMsgThreshold && xiiTime::Now() - pInterface->m_LastFlushTime < timeIntervalThreshold)
+  const xiiTime tNow = xiiTime::Now();
+
+  if (pInterface->m_uiLoggedMsgsSinceFlush <= uiNumNewMsgThreshold && tNow - pInterface->m_LastFlushTime < timeIntervalThreshold)
     return false;
 
   BroadcastLoggingEvent(pInterface, xiiLogMsgType::Flush, nullptr);
 
   pInterface->m_uiLoggedMsgsSinceFlush = 0;
-  pInterface->m_LastFlushTime          = xiiTime::Now();
+  pInterface->m_LastFlushTime          = tNow;
 
   return true;
 }

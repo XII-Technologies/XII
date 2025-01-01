@@ -118,7 +118,7 @@ public:
   xiiUniquePtr<InstantiationContextBase> InstantiatePrefab(xiiWorld& ref_world, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
 
   /// \brief Gives access to the stream of data. Use this inside component deserialization functions to read data.
-  xiiStreamReader& GetStream() const { return *m_pStream; }
+  xiiStreamReader& GetStream() const;
 
   /// \brief Used during component deserialization to read a handle to a game object.
   xiiGameObjectHandle ReadGameObjectHandle();
@@ -166,26 +166,23 @@ private:
     xiiUInt32         m_uiParentHandleIdx;
   };
 
-  void                                   ReadGameObjectDesc(GameObjectToCreate& godesc);
-  void                                   ReadComponentTypeInfo(xiiUInt32 uiComponentTypeIdx);
-  void                                   ReadComponentDataToMemStream(bool warningOnUnknownSkip = true);
-  void                                   ClearHandles();
+  void ReadGameObjectDesc(GameObjectToCreate& godesc);
+  void ReadComponentTypeInfo(xiiUInt32 uiComponentTypeIdx);
+  void ReadComponentDataToMemStream(bool warningOnUnknownSkip = true);
+
   xiiUniquePtr<InstantiationContextBase> Instantiate(xiiWorld& world, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
 
-  xiiStreamReader* m_pStream = nullptr;
-  xiiWorld*        m_pWorld  = nullptr;
-
-  xiiUInt8                             m_uiVersion = 0;
-  xiiDynamicArray<xiiGameObjectHandle> m_IndexToGameObjectHandle;
+  xiiStreamReader* m_pReadStream = nullptr;
+  xiiUInt8         m_uiVersion   = 0;
 
   xiiDynamicArray<GameObjectToCreate> m_RootObjectsToCreate;
   xiiDynamicArray<GameObjectToCreate> m_ChildObjectsToCreate;
 
   struct ComponentTypeInfo
   {
-    const xiiRTTI*                      m_pRtti = nullptr;
-    xiiDynamicArray<xiiComponentHandle> m_ComponentIndexToHandle;
-    xiiUInt32                           m_uiNumComponents = 0;
+    const xiiRTTI* m_pRtti               = nullptr;
+    xiiUInt32      m_uiNumComponents     = 0;
+    xiiUInt32      m_uiComponentDataSize = 0;
   };
 
   xiiDynamicArray<ComponentTypeInfo>      m_ComponentTypes;
@@ -199,7 +196,7 @@ private:
   class InstantiationContext : public InstantiationContextBase
   {
   public:
-    InstantiationContext(xiiWorldReader& ref_worldReader, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
+    InstantiationContext(xiiWorldReader& ref_worldReader, xiiWorld* pWorld, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
     ~InstantiationContext();
 
     virtual StepResult Step() override;
@@ -222,10 +219,21 @@ private:
     friend class xiiWorldReader;
     xiiWorldReader& m_WorldReader;
 
+    xiiWorld* m_pWorld = nullptr;
+
     bool         m_bUseTransform = false;
     xiiTransform m_RootTransform;
 
     xiiPrefabInstantiationOptions m_Options;
+
+    struct ComponentTypeState
+    {
+      xiiUInt64                           m_uiDataReadOffset = 0;
+      xiiDynamicArray<xiiComponentHandle> m_ComponentIndexToHandle;
+    };
+
+    xiiDynamicArray<xiiGameObjectHandle> m_IndexToGameObjectHandle;
+    xiiDynamicArray<ComponentTypeState>  m_ComponentTypeStates;
 
     xiiComponentInitBatchHandle m_hComponentInitBatch;
 
