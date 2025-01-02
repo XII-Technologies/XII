@@ -98,8 +98,6 @@ private:
   xiiRttiConverterContext* m_pContext = nullptr;
   xiiAbstractObjectGraph*  m_pGraph   = nullptr;
   FilterFunction           m_Filter;
-  bool                     m_bSerializeReadOnly  = false;
-  bool                     m_bSerializeOwnerPtrs = false;
 };
 
 class XII_FOUNDATION_DLL xiiRttiConverterReader

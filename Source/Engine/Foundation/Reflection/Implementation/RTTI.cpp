@@ -52,7 +52,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 xiiRTTI::xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<const xiiAbstractProperty*> properties, xiiArrayPtr<const xiiAbstractFunctionProperty*> functions, xiiArrayPtr<const xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
-  m_sTypeName(sName), m_pAllocator(pAllocator), m_Properties(properties), m_Functions(functions), m_Attributes(attributes), m_MessageHandlers(messageHandlers), m_MessageSenders(messageSenders), m_VerifyParent(fnVerifyParent)
+  m_sTypeName(sName), m_Properties(properties), m_Functions(functions), m_Attributes(attributes), m_pAllocator(pAllocator), m_VerifyParent(fnVerifyParent), m_MessageHandlers(messageHandlers), m_MessageSenders(messageSenders)
 {
   UpdateType(pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags);
 

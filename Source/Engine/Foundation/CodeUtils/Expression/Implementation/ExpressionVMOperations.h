@@ -8,57 +8,46 @@ namespace
 {
   struct ExecutionContext
   {
-    xiiExpression::Register*                  m_pRegisters          = nullptr;
-    xiiUInt32                                 m_uiNumInstances      = 0;
-    xiiUInt32                                 m_uiNumSimd4Instances = 0;
-    xiiArrayPtr<const xiiProcessingStream*>   m_Inputs;
-    xiiArrayPtr<xiiProcessingStream*>         m_Outputs;
+    xiiExpression::Register* m_pRegisters = nullptr;
+    xiiUInt32 m_uiNumInstances = 0;
+    xiiUInt32 m_uiNumSimd4Instances = 0;
+    xiiArrayPtr<const xiiProcessingStream*> m_Inputs;
+    xiiArrayPtr<xiiProcessingStream*> m_Outputs;
     xiiArrayPtr<const xiiExpressionFunction*> m_Functions;
-    const xiiExpression::GlobalData*          m_pGlobalData = nullptr;
+    const xiiExpression::GlobalData* m_pGlobalData = nullptr;
   };
 
   using ByteCodeType = xiiExpressionByteCode::StorageType;
-  using OpFunc       = void (*)(const ByteCodeType*& pByteCode, ExecutionContext& context);
+  using OpFunc = void (*)(const ByteCodeType*& pByteCode, ExecutionContext& context);
 
-#define DEFINE_TARGET_REGISTER()                                                                                                           \
-  xiiExpression::Register* r  = context.m_pRegisters + xiiExpressionByteCode::GetRegisterIndex(pByteCode) * context.m_uiNumSimd4Instances; \
-  xiiExpression::Register* re = r + context.m_uiNumSimd4Instances;
+#define DEFINE_TARGET_REGISTER()                                                                                                        \
+  xiiExpression::Register* r = context.m_pRegisters + xiiExpressionByteCode::GetRegisterIndex(pByteCode) * context.m_uiNumSimd4Instances; \
+  xiiExpression::Register* re = r + context.m_uiNumSimd4Instances;                                                                       \
+  XII_IGNORE_UNUSED(re);
 
 #define DEFINE_OP_REGISTER(name) \
   const xiiExpression::Register* name = context.m_pRegisters + xiiExpressionByteCode::GetRegisterIndex(pByteCode) * context.m_uiNumSimd4Instances;
 
-#define DEFINE_CONSTANT(name)                                                                              \
-  const xiiUInt32                XII_PP_CONCAT(name, Raw) = *pByteCode;                                    \
-  const xiiExpression::Register  tmp                      = xiiExpressionByteCode::GetConstant(pByteCode); \
-  const xiiExpression::Register* name                     = &tmp;
+#define DEFINE_CONSTANT(name)                                                      \
+  const xiiUInt32 XII_PP_CONCAT(name, Raw) = *pByteCode;                             \
+  const xiiExpression::Register tmp = xiiExpressionByteCode::GetConstant(pByteCode); \
+  const xiiExpression::Register* name = &tmp;  \
+  XII_IGNORE_UNUSED(XII_PP_CONCAT(name, Raw));                                       
 
 #define UNARY_OP_INNER_LOOP(code) \
   code;                           \
   ++r;                            \
   ++a;
 
-#define DEFINE_UNARY_OP(name, code)                                                        \
-  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)  \
-  {                                                                                        \
-    DEFINE_TARGET_REGISTER();                                                              \
-    DEFINE_OP_REGISTER(a);                                                                 \
-    while (r != re)                                                                        \
-    {                                                                                      \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-    }                                                                                      \
-  }                                                                                        \
-                                                                                           \
-  void XII_PP_CONCAT(name, _16)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
-  {                                                                                        \
-    DEFINE_TARGET_REGISTER();                                                              \
-    DEFINE_OP_REGISTER(a);                                                                 \
-    while (r != re)                                                                        \
-    {                                                                                      \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-    }                                                                                      \
+#define DEFINE_UNARY_OP(name, code)                                                      \
+  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
+  {                                                                                      \
+    DEFINE_TARGET_REGISTER();                                                            \
+    DEFINE_OP_REGISTER(a);                                                               \
+    while (r != re)                                                                      \
+    {                                                                                    \
+      UNARY_OP_INNER_LOOP(code)                                                          \
+    }                                                                                    \
   }
 
 #define BINARY_OP_INNER_LOOP(code)        \
@@ -70,31 +59,31 @@ namespace
     ++b;                                  \
   }
 
-#define DEFINE_BINARY_OP(name, code)                                                                                 \
-  template <bool RightIsConstant>                                                                                    \
+#define DEFINE_BINARY_OP(name, code)                                                                                \
+  template <bool RightIsConstant>                                                                                   \
   void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)                            \
-  {                                                                                                                  \
-    DEFINE_TARGET_REGISTER();                                                                                        \
-    DEFINE_OP_REGISTER(a);                                                                                           \
+  {                                                                                                                 \
+    DEFINE_TARGET_REGISTER();                                                                                       \
+    DEFINE_OP_REGISTER(a);                                                                                          \
     xiiUInt32 bRaw;                                                                                                  \
     XII_IGNORE_UNUSED(bRaw);                                                                                         \
-    xiiExpression::Register        bConstant;                                                                        \
+    xiiExpression::Register bConstant;                                                                               \
     const xiiExpression::Register* b;                                                                                \
     XII_IGNORE_UNUSED(b);                                                                                            \
-    if constexpr (RightIsConstant)                                                                                   \
-    {                                                                                                                \
-      bRaw      = *pByteCode;                                                                                        \
+    if constexpr (RightIsConstant)                                                                                  \
+    {                                                                                                               \
+      bRaw = *pByteCode;                                                                                            \
       bConstant = xiiExpressionByteCode::GetConstant(pByteCode);                                                     \
-      b         = &bConstant;                                                                                        \
-    }                                                                                                                \
-    else                                                                                                             \
-    {                                                                                                                \
+      b = &bConstant;                                                                                               \
+    }                                                                                                               \
+    else                                                                                                            \
+    {                                                                                                               \
       b = context.m_pRegisters + xiiExpressionByteCode::GetRegisterIndex(pByteCode) * context.m_uiNumSimd4Instances; \
-    }                                                                                                                \
-    while (r != re)                                                                                                  \
-    {                                                                                                                \
-      BINARY_OP_INNER_LOOP(code)                                                                                     \
-    }                                                                                                                \
+    }                                                                                                               \
+    while (r != re)                                                                                                 \
+    {                                                                                                               \
+      BINARY_OP_INNER_LOOP(code)                                                                                    \
+    }                                                                                                               \
   }
 
 #define TERNARY_OP_INNER_LOOP(code) \
@@ -104,17 +93,17 @@ namespace
   ++b;                              \
   ++c;
 
-#define DEFINE_TERNARY_OP(name, code)                                                     \
+#define DEFINE_TERNARY_OP(name, code)                                                    \
   void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
-  {                                                                                       \
-    DEFINE_TARGET_REGISTER();                                                             \
-    DEFINE_OP_REGISTER(a);                                                                \
-    DEFINE_OP_REGISTER(b);                                                                \
-    DEFINE_OP_REGISTER(c);                                                                \
-    while (r != re)                                                                       \
-    {                                                                                     \
-      TERNARY_OP_INNER_LOOP(code)                                                         \
-    }                                                                                     \
+  {                                                                                      \
+    DEFINE_TARGET_REGISTER();                                                            \
+    DEFINE_OP_REGISTER(a);                                                               \
+    DEFINE_OP_REGISTER(b);                                                               \
+    DEFINE_OP_REGISTER(c);                                                               \
+    while (r != re)                                                                      \
+    {                                                                                    \
+      TERNARY_OP_INNER_LOOP(code)                                                        \
+    }                                                                                    \
   }
 
   DEFINE_UNARY_OP(AbsF, r->f = a->f.Abs());
@@ -239,7 +228,7 @@ namespace
   template <typename RegisterType, typename ValueType, typename StreamType>
   void LoadInput(RegisterType* r, RegisterType* pRe, const xiiProcessingStream& input, xiiUInt32 uiNumRemainderInstances)
   {
-    const xiiUInt8* pInputData   = input.GetData<xiiUInt8>();
+    const xiiUInt8* pInputData = input.GetData<xiiUInt8>();
     const xiiUInt32 uiByteStride = input.GetElementStride();
 
     if (uiByteStride == sizeof(ValueType) && std::is_same<ValueType, StreamType>::value)
@@ -289,7 +278,7 @@ namespace
   template <typename RegisterType, typename ValueType, typename StreamType>
   void StoreOutput(RegisterType* r, RegisterType* pRe, xiiProcessingStream& ref_output, xiiUInt32 uiNumRemainderInstances)
   {
-    xiiUInt8*       pOutputData  = ref_output.GetWritableData<xiiUInt8>();
+    xiiUInt8* pOutputData = ref_output.GetWritableData<xiiUInt8>();
     const xiiUInt32 uiByteStride = ref_output.GetElementStride();
 
     if (uiByteStride == sizeof(ValueType) && std::is_same<ValueType, StreamType>::value)
@@ -339,7 +328,7 @@ namespace
       --re;
 
     const xiiUInt32 uiInputIndex = xiiExpressionByteCode::GetRegisterIndex(pByteCode);
-    auto&           input        = *context.m_Inputs[uiInputIndex];
+    auto& input = *context.m_Inputs[uiInputIndex];
 
     if (input.GetDataType() == xiiProcessingStream::DataType::Float)
     {
@@ -361,20 +350,20 @@ namespace
       --re;
 
     const xiiUInt32 uiInputIndex = xiiExpressionByteCode::GetRegisterIndex(pByteCode);
-    auto&           input        = *context.m_Inputs[uiInputIndex];
+    auto& input = *context.m_Inputs[uiInputIndex];
 
     if (input.GetDataType() == xiiProcessingStream::DataType::Int)
     {
-      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt32>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, int, int>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
     else if (input.GetDataType() == xiiProcessingStream::DataType::Short)
     {
-      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, int, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
     else
     {
       XII_ASSERT_DEBUG(input.GetDataType() == xiiProcessingStream::DataType::Byte, "Unsupported input type '{}' for LoadI instruction", xiiProcessingStream::GetDataTypeName(input.GetDataType()));
-      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, int, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
   }
 
@@ -383,7 +372,7 @@ namespace
     const xiiUInt32 uiNumRemainderInstances = context.m_uiNumInstances & 0x3;
 
     xiiUInt32 uiOutputIndex = xiiExpressionByteCode::GetRegisterIndex(pByteCode);
-    auto&     output        = *context.m_Outputs[uiOutputIndex];
+    auto& output = *context.m_Outputs[uiOutputIndex];
 
     // actually not target register but operand register in the is case, but we need something to loop over so we use the target register macro here.
     DEFINE_TARGET_REGISTER();
@@ -406,7 +395,7 @@ namespace
     const xiiUInt32 uiNumRemainderInstances = context.m_uiNumInstances & 0x3;
 
     xiiUInt32 uiOutputIndex = xiiExpressionByteCode::GetRegisterIndex(pByteCode);
-    auto&     output        = *context.m_Outputs[uiOutputIndex];
+    auto& output = *context.m_Outputs[uiOutputIndex];
 
     // actually not target register but operand register in the is case, but we need something to loop over so we use the target register macro here.
     DEFINE_TARGET_REGISTER();
@@ -415,16 +404,16 @@ namespace
 
     if (output.GetDataType() == xiiProcessingStream::DataType::Int)
     {
-      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt32>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, int, int>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
     else if (output.GetDataType() == xiiProcessingStream::DataType::Short)
     {
-      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, int, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
     else
     {
       XII_ASSERT_DEBUG(output.GetDataType() == xiiProcessingStream::DataType::Byte, "Unsupported input type '{}' for StoreI instruction", xiiProcessingStream::GetDataTypeName(output.GetDataType()));
-      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, int, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
   }
 
@@ -434,7 +423,7 @@ namespace
     XII_WARNING_DISABLE_MSVC(4189)
 
     xiiUInt32 uiFunctionIndex = xiiExpressionByteCode::GetRegisterIndex(pByteCode);
-    auto&     function        = *context.m_Functions[uiFunctionIndex];
+    auto& function = *context.m_Functions[uiFunctionIndex];
 
     DEFINE_TARGET_REGISTER();
     xiiUInt32 uiNumArgs = xiiExpressionByteCode::GetFunctionArgCount(pByteCode);
@@ -455,110 +444,110 @@ namespace
   }
 
   static constexpr OpFunc s_Simd4Funcs[] = {
-    nullptr, // Nop,
+    nullptr,         // Nop,
 
-    nullptr, // FirstUnary,
+    nullptr,         // FirstUnary,
 
-    &AbsF_4,  // AbsF_R,
-    &AbsI_4,  // AbsI_R,
-    &SqrtF_4, // SqrtF_R,
+    &AbsF_4,         // AbsF_R,
+    &AbsI_4,         // AbsI_R,
+    &SqrtF_4,        // SqrtF_R,
 
-    &ExpF_4,   // ExpF_R,
-    &LnF_4,    // LnF_R,
-    &Log2F_4,  // Log2F_R,
-    &Log2I_4,  // Log2I_R,
-    &Log10F_4, // Log10F_R,
-    &Pow2F_4,  // Pow2F_R,
+    &ExpF_4,         // ExpF_R,
+    &LnF_4,          // LnF_R,
+    &Log2F_4,        // Log2F_R,
+    &Log2I_4,        // Log2I_R,
+    &Log10F_4,       // Log10F_R,
+    &Pow2F_4,        // Pow2F_R,
 
-    &SinF_4, // SinF_R,
-    &CosF_4, // CosF_R,
-    &TanF_4, // TanF_R,
+    &SinF_4,         // SinF_R,
+    &CosF_4,         // CosF_R,
+    &TanF_4,         // TanF_R,
 
-    &ASinF_4, // ASinF_R,
-    &ACosF_4, // ACosF_R,
-    &ATanF_4, // ATanF_R,
+    &ASinF_4,        // ASinF_R,
+    &ACosF_4,        // ACosF_R,
+    &ATanF_4,        // ATanF_R,
 
-    &RoundF_4, // RoundF_R,
-    &FloorF_4, // FloorF_R,
-    &CeilF_4,  // CeilF_R,
-    &TruncF_4, // TruncF_R,
+    &RoundF_4,       // RoundF_R,
+    &FloorF_4,       // FloorF_R,
+    &CeilF_4,        // CeilF_R,
+    &TruncF_4,       // TruncF_R,
 
-    &NotI_4, // NotI_R,
-    &NotB_4, // NotB_R,
+    &NotI_4,         // NotI_R,
+    &NotB_4,         // NotB_R,
 
-    &IToF_4, // IToF_R,
-    &FToI_4, // FToI_R,
+    &IToF_4,         // IToF_R,
+    &FToI_4,         // FToI_R,
 
-    nullptr, // LastUnary,
-    nullptr, // FirstBinary,
+    nullptr,         // LastUnary,
+    nullptr,         // FirstBinary,
 
-    &AddF_4<false>, // AddF_RR,
-    &AddI_4<false>, // AddI_RR,
+    &AddF_4<false>,  // AddF_RR,
+    &AddI_4<false>,  // AddI_RR,
 
-    &SubF_4<false>, // SubF_RR,
-    &SubI_4<false>, // SubI_RR,
+    &SubF_4<false>,  // SubF_RR,
+    &SubI_4<false>,  // SubI_RR,
 
-    &MulF_4<false>, // MulF_RR,
-    &MulI_4<false>, // MulI_RR,
+    &MulF_4<false>,  // MulF_RR,
+    &MulI_4<false>,  // MulI_RR,
 
-    &DivF_4<false>, // DivF_RR,
-    &DivI_4<false>, // DivI_RR,
+    &DivF_4<false>,  // DivF_RR,
+    &DivI_4<false>,  // DivI_RR,
 
-    &MinF_4<false>, // MinF_RR,
-    &MinI_4<false>, // MinI_RR,
+    &MinF_4<false>,  // MinF_RR,
+    &MinI_4<false>,  // MinI_RR,
 
-    &MaxF_4<false>, // MaxF_RR,
-    &MaxI_4<false>, // MaxI_RR,
+    &MaxF_4<false>,  // MaxF_RR,
+    &MaxI_4<false>,  // MaxI_RR,
 
-    &ShlI_4<false>, // ShlI_RR,
-    &ShrI_4<false>, // ShrI_RR,
-    &AndI_4<false>, // AndI_RR,
-    &XorI_4<false>, // XorI_RR,
-    &OrI_4<false>,  // OrI_RR,
+    &ShlI_4<false>,  // ShlI_RR,
+    &ShrI_4<false>,  // ShrI_RR,
+    &AndI_4<false>,  // AndI_RR,
+    &XorI_4<false>,  // XorI_RR,
+    &OrI_4<false>,   // OrI_RR,
 
-    &EqF_4<false>, // EqF_RR,
-    &EqI_4<false>, // EqI_RR,
-    &EqB_4<false>, // EqB_RR,
+    &EqF_4<false>,   // EqF_RR,
+    &EqI_4<false>,   // EqI_RR,
+    &EqB_4<false>,   // EqB_RR,
 
-    &NEqF_4<false>, // NEqF_RR,
-    &NEqI_4<false>, // NEqI_RR,
-    &NEqB_4<false>, // NEqB_RR,
+    &NEqF_4<false>,  // NEqF_RR,
+    &NEqI_4<false>,  // NEqI_RR,
+    &NEqB_4<false>,  // NEqB_RR,
 
-    &LtF_4<false>, // LtF_RR,
-    &LtI_4<false>, // LtI_RR,
+    &LtF_4<false>,   // LtF_RR,
+    &LtI_4<false>,   // LtI_RR,
 
-    &LEqF_4<false>, // LEqF_RR,
-    &LEqI_4<false>, // LEqI_RR,
+    &LEqF_4<false>,  // LEqF_RR,
+    &LEqI_4<false>,  // LEqI_RR,
 
-    &GtF_4<false>, // GtF_RR,
-    &GtI_4<false>, // GtI_RR,
+    &GtF_4<false>,   // GtF_RR,
+    &GtI_4<false>,   // GtI_RR,
 
-    &GEqF_4<false>, // GEqF_RR,
-    &GEqI_4<false>, // GEqI_RR,
+    &GEqF_4<false>,  // GEqF_RR,
+    &GEqI_4<false>,  // GEqI_RR,
 
-    &AndB_4<false>, // AndB_RR,
-    &OrB_4<false>,  // OrB_RR,
+    &AndB_4<false>,  // AndB_RR,
+    &OrB_4<false>,   // OrB_RR,
 
-    nullptr, // LastBinary,
-    nullptr, // FirstBinaryWithConstant,
+    nullptr,         // LastBinary,
+    nullptr,         // FirstBinaryWithConstant,
 
-    &AddF_4<true>, // AddF_RC,
-    &AddI_4<true>, // AddI_RC,
+    &AddF_4<true>,   // AddF_RC,
+    &AddI_4<true>,   // AddI_RC,
 
-    &SubF_4<true>, // SubF_RC,
-    &SubI_4<true>, // SubI_RC,
+    &SubF_4<true>,   // SubF_RC,
+    &SubI_4<true>,   // SubI_RC,
 
-    &MulF_4<true>, // MulF_RC,
-    &MulI_4<true>, // MulI_RC,
+    &MulF_4<true>,   // MulF_RC,
+    &MulI_4<true>,   // MulI_RC,
 
-    &DivF_4<true>, // DivF_RC,
-    &DivI_4<true>, // DivI_RC,
+    &DivF_4<true>,   // DivF_RC,
+    &DivI_4<true>,   // DivI_RC,
 
-    &MinF_4<true>, // MinF_RC,
-    &MinI_4<true>, // MinI_RC,
+    &MinF_4<true>,   // MinF_RC,
+    &MinI_4<true>,   // MinI_RC,
 
-    &MaxF_4<true>, // MaxF_RC,
-    &MaxI_4<true>, // MaxI_RC,
+    &MaxF_4<true>,   // MaxF_RC,
+    &MaxI_4<true>,   // MaxI_RC,
 
     &ShlI_C_4<true>, // ShlI_RC,
     &ShrI_C_4<true>, // ShrI_RC,
@@ -566,49 +555,49 @@ namespace
     &XorI_4<true>,   // XorI_RC,
     &OrI_4<true>,    // OrI_RC,
 
-    &EqF_4<true>, // EqF_RC,
-    &EqI_4<true>, // EqI_RC,
-    &EqB_4<true>, // EqB_RC
+    &EqF_4<true>,    // EqF_RC,
+    &EqI_4<true>,    // EqI_RC,
+    &EqB_4<true>,    // EqB_RC
 
-    &NEqF_4<true>, // NEqF_RC,
-    &NEqI_4<true>, // NEqI_RC,
-    &NEqB_4<true>, // NEqB_RC
+    &NEqF_4<true>,   // NEqF_RC,
+    &NEqI_4<true>,   // NEqI_RC,
+    &NEqB_4<true>,   // NEqB_RC
 
-    &LtF_4<true>, // LtF_RC,
-    &LtI_4<true>, // LtI_RC
+    &LtF_4<true>,    // LtF_RC,
+    &LtI_4<true>,    // LtI_RC
 
-    &LEqF_4<true>, // LEqF_RC,
-    &LEqI_4<true>, // LEqI_RC
+    &LEqF_4<true>,   // LEqF_RC,
+    &LEqI_4<true>,   // LEqI_RC
 
-    &GtF_4<true>, // GtF_RC,
-    &GtI_4<true>, // GtI_RC
+    &GtF_4<true>,    // GtF_RC,
+    &GtI_4<true>,    // GtI_RC
 
-    &GEqF_4<true>, // GEqF_RC,
-    &GEqI_4<true>, // GEqI_RC
+    &GEqF_4<true>,   // GEqF_RC,
+    &GEqI_4<true>,   // GEqI_RC
 
-    &AndB_4<true>, // AndB_RC,
-    &OrB_4<true>,  // OrB_RC,
+    &AndB_4<true>,   // AndB_RC,
+    &OrB_4<true>,    // OrB_RC,
 
-    nullptr, // LastBinaryWithConstant,
-    nullptr, // FirstTernary,
+    nullptr,         // LastBinaryWithConstant,
+    nullptr,         // FirstTernary,
 
-    &SelF_4, // SelF_RRR,
-    &SelI_4, // SelI_RRR,
-    &SelB_4, // SelB_RRR,
+    &SelF_4,         // SelF_RRR,
+    &SelI_4,         // SelI_RRR,
+    &SelB_4,         // SelB_RRR,
 
-    nullptr, // LastTernary,
-    nullptr, // FirstSpecial,
+    nullptr,         // LastTernary,
+    nullptr,         // FirstSpecial,
 
-    &VM_MovX_R_4, // MovX_R,
-    &VM_MovX_C_4, // MovX_C,
-    &VM_LoadF_4,  // LoadF,
-    &VM_LoadI_4,  // LoadI,
-    &VM_StoreF_4, // StoreF,
-    &VM_StoreI_4, // StoreI,
+    &VM_MovX_R_4,    // MovX_R,
+    &VM_MovX_C_4,    // MovX_C,
+    &VM_LoadF_4,     // LoadF,
+    &VM_LoadI_4,     // LoadI,
+    &VM_StoreF_4,    // StoreF,
+    &VM_StoreI_4,    // StoreI,
 
-    &VM_Call, // Call,
+    &VM_Call,        // Call,
 
-    nullptr, // LastSpecial,
+    nullptr,         // LastSpecial,
   };
 
   static_assert(XII_ARRAY_SIZE(s_Simd4Funcs) == xiiExpressionByteCode::OpCode::Count);

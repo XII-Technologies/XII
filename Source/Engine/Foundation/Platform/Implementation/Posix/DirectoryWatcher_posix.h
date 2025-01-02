@@ -10,7 +10,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #  include <poll.h>
 #  include <sys/inotify.h>
 
-#  include <Foundation/IO/Implementation/Shared/FileSystemMirror.h>
+#  include <Foundation/IO/Implementation/FileSystemMirror.h>
 #  include <Foundation/IO/OSFile.h>
 #  include <Foundation/Logging/Log.h>
 
@@ -197,7 +197,6 @@ xiiDirectoryWatcher::xiiDirectoryWatcher() :
 
 xiiDirectoryWatcher::~xiiDirectoryWatcher()
 {
-  const xiiInt32 inotifyFd = m_pImpl->m_inotifyFd;
   CloseDirectory();
   XII_DEFAULT_DELETE(m_pImpl);
 }

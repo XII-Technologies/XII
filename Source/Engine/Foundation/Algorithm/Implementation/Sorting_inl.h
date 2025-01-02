@@ -440,7 +440,6 @@ void xiiSorting::SelectionSortStable(Container& container, xiiUInt32 uiStartInde
   for (xiiUInt32 i = uiStartIndex; i <= uiEndIndex; ++i)
   {
     xiiUInt32 uiMinIndex  = i;
-    xiiUInt32 uiHoleIndex = i;
 
     // Find Minimum
     for (xiiUInt32 j = i + 1; j <= uiEndIndex; ++j)
@@ -473,7 +472,6 @@ void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStart
   for (xiiUInt32 i = uiStartIndex; i <= uiEndIndex; ++i)
   {
     xiiUInt32 uiMinIndex  = i;
-    xiiUInt32 uiHoleIndex = i;
 
     // Find Minimum
     for (xiiUInt32 j = i + 1; j <= uiEndIndex; ++j)

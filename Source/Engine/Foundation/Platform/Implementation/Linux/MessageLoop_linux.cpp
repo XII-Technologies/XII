@@ -2,9 +2,9 @@
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
 
-#  include <Foundation/Communication/Implementation/Linux/MessageLoop_linux.h>
+#  include <Foundation/Platform/Implementation/Linux/MessageLoop_linux.h>
 
-#  include <Foundation/Communication/Implementation/Linux/PipeChannel_linux.h>
+#  include <Foundation/Platform/Implementation/Linux/PipeChannel_linux.h>
 #  include <Foundation/Logging/Log.h>
 
 #  include <fcntl.h>
@@ -57,6 +57,7 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
     {
       xiiUInt8 wakeupByte;
       auto     readResult    = read(m_wakeupPipeReadEndFd, &wakeupByte, sizeof(wakeupByte));
+      XII_IGNORE_UNUSED(readResult);
       m_pollInfos[0].revents = 0;
       return true;
     }
@@ -156,6 +157,9 @@ void xiiMessageLoop_linux::WakeUp()
 {
   xiiUInt8 wakeupByte  = 0;
   xiiInt32 writeResult = write(m_wakeupPipeWriteEndFd, &wakeupByte, sizeof(wakeupByte));
+
+  XII_IGNORE_UNUSED(wakeupByte);
+  XII_IGNORE_UNUSED(writeResult);
 }
 
 #endif
