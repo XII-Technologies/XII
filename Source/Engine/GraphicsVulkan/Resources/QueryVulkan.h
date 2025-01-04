@@ -34,15 +34,13 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
-
 private:
   bool AllocateQueries();
-  bool DiscardQueries();
+  void DiscardQueries();
 
   xiiStaticArray<xiiUInt32, 2U> m_QueryPoolIndex;
 
-  xiiUInt64 m_uiQueryEndFenceValue = xiiMath::MaxValue<xiiUInt64>();
+  xiiUInt64 m_uiQueryEndFenceValue = xiiInvalidIndex;
 
   xiiGALQueryPoolVulkan* m_pQueryPoolVulkan = nullptr;
 };

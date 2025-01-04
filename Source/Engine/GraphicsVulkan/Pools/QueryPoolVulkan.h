@@ -8,6 +8,7 @@ public:
   [[nodiscard]] xiiUInt32 AllocateQuery(xiiGALQueryType::Enum queryType);
   void                    DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex);
 
+  XII_ALWAYS_INLINE [[nodiscard]] xiiGALCommandQueueVulkan*            GetCommandQueue() const { return m_pCommandQueueVulkan; }
   XII_ALWAYS_INLINE [[nodiscard]] vk::QueryPool                        GetQueryPool(xiiGALQueryType::Enum queryType) const { return m_QueryPools[queryType]->GetQueryPool(); }
   XII_ALWAYS_INLINE [[nodiscard]] xiiUInt64                            GetCounterFrequency() const { return m_uiCounterFrequency; }
   XII_ALWAYS_INLINE [[nodiscard]] xiiGALDeviceVulkan::QueueInformation GetQueueInformation() const { return m_CommandQueueInformation; }
@@ -53,10 +54,11 @@ private:
     xiiDynamicArray<xiiUInt32> m_StaleQueries;
   };
 
-  xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALDeviceVulkan::QueueInformation queueInformation);
+  xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALDeviceVulkan::QueueInformation queueInformation);
   ~xiiGALQueryPoolVulkan();
 
   xiiGALDeviceVulkan*                                                             m_pDeviceVulkan;
+  xiiGALCommandQueueVulkan*                                                       m_pCommandQueueVulkan;
   xiiStaticArray<xiiUniquePtr<QueryPoolInformation>, xiiGALQueryType::ENUM_COUNT> m_QueryPools;
   xiiGALDeviceVulkan::QueueInformation                                            m_CommandQueueInformation;
   xiiUInt64                                                                       m_uiCounterFrequency = 0ULL;

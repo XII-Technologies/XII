@@ -722,7 +722,7 @@ void xiiGALSwapChainVulkan::Present()
     vkPresentInformation.pWaitSemaphores    = &m_DrawCompleteSemaphores[m_uiSemaphoreIndex];
     vkPresentInformation.waitSemaphoreCount = 1U;
 
-    vk::Queue vkQueue = pGraphicsQueueVulkan->GetVulkanQueue();
+    vk::Queue vkQueue = pGraphicsQueueVulkan->GetQueueInformation().m_vkQueue;
     VK_ASSERT_DEV(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)

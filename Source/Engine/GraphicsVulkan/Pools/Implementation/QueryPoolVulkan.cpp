@@ -3,8 +3,8 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 
-xiiGALQueryPoolVulkan::xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALDeviceVulkan::QueueInformation queueInformation) :
-  m_pDeviceVulkan(pDeviceVulkan), m_CommandQueueInformation(queueInformation)
+xiiGALQueryPoolVulkan::xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALDeviceVulkan::QueueInformation queueInformation) :
+  m_pDeviceVulkan(pDeviceVulkan), m_pCommandQueueVulkan(pCommandQueueVulkan), m_CommandQueueInformation(queueInformation)
 {
   float fTimeStampPeriod = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits.timestampPeriod;
   m_uiCounterFrequency   = static_cast<xiiUInt64>(1000000000.0 / fTimeStampPeriod);

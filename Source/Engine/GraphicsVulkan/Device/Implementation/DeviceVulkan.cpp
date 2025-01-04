@@ -1091,9 +1091,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
 
-      m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_vkQueue);
+      m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation);
 
-      m_pGraphicsCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_GraphicsQueueInformation);
+      m_pGraphicsCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1103,9 +1103,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
       m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
 
-      m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_vkQueue);
+      m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation);
 
-      m_pComputeCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_ComputeQueueInformation);
+      m_pComputeCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
     }
 
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1115,9 +1115,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
       m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
 
-      m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_vkQueue);
+      m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation);
 
-      m_pTransferCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_TransferQueueInformation);
+      m_pTransferCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
     }
   }
 

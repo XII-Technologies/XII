@@ -10,8 +10,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataOcclusion : public xiiHashableS
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALQueryType> m_Type         = xiiGALQueryType::Occlusion; ///< Query type.
-  xiiUInt64                m_uiNumSamples = 0U;                         ///< The number of samples that passed the depth and stencil tests in between begin / end query.
+  xiiEnum<xiiGALQueryType> m_Type          = xiiGALQueryType::Occlusion; ///< Query type.
+  xiiUInt64                m_uiSampleCount = 0U;                         ///< The number of samples that passed the depth and stencil tests in between begin / end query.
 };
 
 /// \brief This describes the binary occlusion query data.
