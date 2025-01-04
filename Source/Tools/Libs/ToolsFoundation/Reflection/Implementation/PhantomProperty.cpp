@@ -23,6 +23,8 @@ xiiPhantomConstantProperty::~xiiPhantomConstantProperty()
   {
     pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
   }
+
+  m_Attributes.Clear();
 }
 
 const xiiRTTI* xiiPhantomConstantProperty::GetSpecificType() const
@@ -56,6 +58,8 @@ xiiPhantomMemberProperty::~xiiPhantomMemberProperty()
   {
     pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
   }
+
+  m_Attributes.Clear();
 }
 
 const xiiRTTI* xiiPhantomMemberProperty::GetSpecificType() const
@@ -80,14 +84,14 @@ xiiPhantomFunctionProperty::xiiPhantomFunctionProperty(xiiReflectedFunctionDescr
   m_Arguments.Swap(pDesc->m_Arguments);
 }
 
-
-
 xiiPhantomFunctionProperty::~xiiPhantomFunctionProperty()
 {
   for (auto pAttr : m_Attributes)
   {
     pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
   }
+
+  m_Attributes.Clear();
 }
 
 xiiFunctionType::Enum xiiPhantomFunctionProperty::GetFunctionType() const
@@ -125,6 +129,7 @@ void xiiPhantomFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVariant
   XII_ASSERT_NOT_IMPLEMENTED;
 }
 
+
 xiiPhantomArrayProperty::xiiPhantomArrayProperty(const xiiReflectedPropertyDescriptor* pDesc) :
   xiiAbstractArrayProperty(nullptr)
 {
@@ -144,12 +149,15 @@ xiiPhantomArrayProperty::~xiiPhantomArrayProperty()
   {
     pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
   }
+
+  m_Attributes.Clear();
 }
 
 const xiiRTTI* xiiPhantomArrayProperty::GetSpecificType() const
 {
   return m_pPropertyType;
 }
+
 
 xiiPhantomSetProperty::xiiPhantomSetProperty(const xiiReflectedPropertyDescriptor* pDesc) :
   xiiAbstractSetProperty(nullptr)
@@ -170,12 +178,15 @@ xiiPhantomSetProperty::~xiiPhantomSetProperty()
   {
     pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
   }
+
+  m_Attributes.Clear();
 }
 
 const xiiRTTI* xiiPhantomSetProperty::GetSpecificType() const
 {
   return m_pPropertyType;
 }
+
 
 xiiPhantomMapProperty::xiiPhantomMapProperty(const xiiReflectedPropertyDescriptor* pDesc) :
   xiiAbstractMapProperty(nullptr)
@@ -196,6 +207,8 @@ xiiPhantomMapProperty::~xiiPhantomMapProperty()
   {
     pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
   }
+
+  m_Attributes.Clear();
 }
 
 const xiiRTTI* xiiPhantomMapProperty::GetSpecificType() const

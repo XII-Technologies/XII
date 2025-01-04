@@ -56,9 +56,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddProperties(
   }
 }
 
-void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesRecursive(
-  const xiiRTTI*                    pType,
-  xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
+void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesRecursive(const xiiRTTI* pType, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
 {
   // Parse parent class
   const xiiRTTI* pParent = pType->GetParentType();
@@ -92,10 +90,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesR
   }
 }
 
-void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::UpdateInstances(
-  xiiUInt32                         uiIndex,
-  const xiiAbstractProperty*        pProperty,
-  xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
+void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::UpdateInstances(xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
 {
   for (auto it = m_Instances.GetIterator(); it.IsValid(); ++it)
   {
@@ -283,12 +278,16 @@ xiiVariantType::Enum xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping
 
 void xiiReflectedTypeStorageManager::Startup()
 {
+  xiiPlugin::Events().AddEventHandler(xiiReflectedTypeStorageManager::PluginEventHandler);
+
   xiiPhantomRttiManager::s_Events.AddEventHandler(TypeEventHandler);
 }
 
 void xiiReflectedTypeStorageManager::Shutdown()
 {
   xiiPhantomRttiManager::s_Events.RemoveEventHandler(TypeEventHandler);
+
+  xiiPlugin::Events().RemoveEventHandler(xiiReflectedTypeStorageManager::PluginEventHandler);
 
   for (auto it = s_ReflectedTypeToStorageMapping.GetIterator(); it.IsValid(); ++it)
   {
@@ -389,5 +388,33 @@ void xiiReflectedTypeStorageManager::TypeEventHandler(const xiiPhantomRttiManage
       XII_DEFAULT_DELETE(pMapping);
     }
     break;
+  }
+}
+
+void xiiReflectedTypeStorageManager::PluginEventHandler(const xiiPluginEvent& eventData)
+{
+  switch (eventData.m_EventType)
+  {
+    case xiiPluginEvent::BeforeUnloading:
+    {
+      for (auto it = s_ReflectedTypeToStorageMapping.GetIterator(); it.IsValid();)
+      {
+        if (it.Key()->GetPluginName() == eventData.m_sPluginBinary)
+        {
+          ReflectedTypeStorageMapping* pMapping = it.Value();
+          XII_ASSERT_DEV(pMapping->m_Instances.IsEmpty(), "A type was removed which still has instances using the type!");
+          it = s_ReflectedTypeToStorageMapping.Remove(it);
+          XII_DEFAULT_DELETE(pMapping);
+        }
+        else
+        {
+          ++it;
+        }
+      }
+    }
+    break;
+
+    default:
+      break;
   }
 }

@@ -5,7 +5,7 @@
 
 struct FunctionTest
 {
-  int StandardTypeFunction(int v, const xiiVec2 vCv, xiiVec3& ref_vRv, const xiiVec4& vCrv, xiiVec2U32* pPv, const xiiVec3U32* pCpv)
+  xiiInt32 StandardTypeFunction(xiiInt32 v, const xiiVec2 vCv, xiiVec3& ref_vRv, const xiiVec4& vCrv, xiiVec2U32* pPv, const xiiVec3U32* pCpv)
   {
     XII_TEST_BOOL(m_values[0] == v);
     XII_TEST_BOOL(m_values[1] == vCv);
@@ -45,12 +45,12 @@ struct FunctionTest
       XII_TEST_BOOL(m_values[4] == *pPv);
       XII_TEST_BOOL(m_values[5] == *pCpv);
     }
-    ref_rv = {2.0f, xiiAngle::MakeFromDegree(200.0f)};
+    ref_rv = xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(200.0f), 2.0f);
     if (pPv)
     {
-      *pPv = {4.0f, xiiAngle::MakeFromDegree(400.0f)};
+      *pPv = xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(400.0f), 4.0f);
     }
-    return {0.6f, xiiAngle::MakeFromDegree(60.0f)};
+    return xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(60.0f), 0.6f);
   }
 
   xiiVarianceTypeAngled CustomTypeFunctionAngleDouble(xiiVarianceTypeAngled v, const xiiVarianceTypeAngled cv, xiiVarianceTypeAngled& ref_rv, const xiiVarianceTypeAngled& crv, xiiVarianceTypeAngled* pPv, const xiiVarianceTypeAngled* pCpv)
@@ -69,12 +69,12 @@ struct FunctionTest
       XII_TEST_BOOL(m_values[4] == *pPv);
       XII_TEST_BOOL(m_values[5] == *pCpv);
     }
-    ref_rv = {2.0, xiiAngled::MakeFromDegree(200.0)};
+    ref_rv = xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(200.0), 2.0);
     if (pPv)
     {
-      *pPv = {4.0, xiiAngled::MakeFromDegree(400.0)};
+      *pPv = xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(400.0), 4.0);
     }
-    return {0.6, xiiAngled::MakeFromDegree(60.0)};
+    return xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(60.0), 0.6);
   }
 
   xiiVarianceTypeAngle CustomTypeFunctionAngleFloat2(xiiVarianceTypeAngle v, const xiiVarianceTypeAngle cv, xiiVarianceTypeAngle& ref_rv, const xiiVarianceTypeAngle& crv, xiiVarianceTypeAngle* pPv, const xiiVarianceTypeAngle* pCpv)
@@ -93,12 +93,12 @@ struct FunctionTest
       XII_TEST_BOOL(*m_values[4].Get<xiiVarianceTypeAngle*>() == *pPv);
       XII_TEST_BOOL(*m_values[5].Get<xiiVarianceTypeAngle*>() == *pCpv);
     }
-    ref_rv = {2.0f, xiiAngle::MakeFromDegree(200.0f)};
+    ref_rv = xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(200.0f), 2.0f);
     if (pPv)
     {
-      *pPv = {4.0f, xiiAngle::MakeFromDegree(400.0f)};
+      *pPv = xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(400.0f), 4.0f);
     }
-    return {0.6f, xiiAngle::MakeFromDegree(60.0f)};
+    return xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(60.0f), 0.6f);
   }
 
   xiiVarianceTypeAngled CustomTypeFunctionAngleDouble2(xiiVarianceTypeAngled v, const xiiVarianceTypeAngled cv, xiiVarianceTypeAngled& ref_rv, const xiiVarianceTypeAngled& crv, xiiVarianceTypeAngled* pPv, const xiiVarianceTypeAngled* pCpv)
@@ -117,12 +117,12 @@ struct FunctionTest
       XII_TEST_BOOL(*m_values[4].Get<xiiVarianceTypeAngled*>() == *pPv);
       XII_TEST_BOOL(*m_values[5].Get<xiiVarianceTypeAngled*>() == *pCpv);
     }
-    ref_rv = {2.0, xiiAngled::MakeFromDegree(200.0)};
+    ref_rv = xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(200.0), 2.0);
     if (pPv)
     {
-      *pPv = {4.0, xiiAngled::MakeFromDegree(400.0)};
+      *pPv = xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(400.0), 4.0);
     }
-    return {0.6, xiiAngled::MakeFromDegree(60.0)};
+    return xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(60.0), 0.6);
   }
 
   const char* StringTypeFunction(const char* szString, xiiString& ref_sString, xiiStringView sView)
@@ -409,19 +409,19 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
 
       {
         FunctionTest test;
-        test.m_values.PushBack(xiiVarianceTypeAngle{0.0f, xiiAngle::MakeFromDegree(0.0f)});
-        test.m_values.PushBack(xiiVarianceTypeAngle{0.1f, xiiAngle::MakeFromDegree(10.0f)});
-        test.m_values.PushBack(xiiVarianceTypeAngle{0.2f, xiiAngle::MakeFromDegree(20.0f)});
-        test.m_values.PushBack(xiiVarianceTypeAngle{0.3f, xiiAngle::MakeFromDegree(30.0f)});
-        test.m_values.PushBack(xiiVarianceTypeAngle{0.4f, xiiAngle::MakeFromDegree(40.0f)});
-        test.m_values.PushBack(xiiVarianceTypeAngle{0.5f, xiiAngle::MakeFromDegree(50.0f)});
+        test.m_values.PushBack(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(0.0f), 0.0f));
+        test.m_values.PushBack(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(10.0f), 0.1f));
+        test.m_values.PushBack(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(20.0f), 0.2f));
+        test.m_values.PushBack(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(30.0f), 0.3f));
+        test.m_values.PushBack(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(40.0f), 0.4f));
+        test.m_values.PushBack(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(50.0f), 0.5f));
 
         xiiVariant ret;
         funccall.Execute(&test, test.m_values, ret);
         XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedObject);
-        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngle{0.6f, xiiAngle::MakeFromDegree(60.0f)}));
-        XII_TEST_BOOL(test.m_values[2] == xiiVariant(xiiVarianceTypeAngle{2.0f, xiiAngle::MakeFromDegree(200.0f)}));
-        XII_TEST_BOOL(test.m_values[4] == xiiVariant(xiiVarianceTypeAngle{4.0f, xiiAngle::MakeFromDegree(400.0f)}));
+        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(60.0f), 0.6f)));
+        XII_TEST_BOOL(test.m_values[2] == xiiVariant(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(200.0f), 2.0f)));
+        XII_TEST_BOOL(test.m_values[4] == xiiVariant(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(400.0f), 4.0f)));
 
         test.m_bPtrAreNull = true;
         test.m_values[4]   = xiiVariant();
@@ -429,19 +429,19 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
         ret                = xiiVariant();
         funccall.Execute(&test, test.m_values, ret);
         XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedObject);
-        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngle{0.6f, xiiAngle::MakeFromDegree(60.0f)}));
+        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(60.0f), 0.6f)));
       }
 
       {
         xiiFunctionProperty<decltype(&FunctionTest::CustomTypeFunctionAngleFloat2)> funccall2("", &FunctionTest::CustomTypeFunctionAngleFloat2);
 
         FunctionTest         test;
-        xiiVarianceTypeAngle v0{0.0f, xiiAngle::MakeFromDegree(0.0f)};
-        xiiVarianceTypeAngle v1{0.1f, xiiAngle::MakeFromDegree(10.0f)};
-        xiiVarianceTypeAngle v2{0.2f, xiiAngle::MakeFromDegree(20.0f)};
-        xiiVarianceTypeAngle v3{0.3f, xiiAngle::MakeFromDegree(30.0f)};
-        xiiVarianceTypeAngle v4{0.4f, xiiAngle::MakeFromDegree(40.0f)};
-        xiiVarianceTypeAngle v5{0.5f, xiiAngle::MakeFromDegree(50.0f)};
+        xiiVarianceTypeAngle v0(xiiAngle::MakeFromDegree(0.0f), 0.0f);
+        xiiVarianceTypeAngle v1(xiiAngle::MakeFromDegree(10.0f), 0.1f);
+        xiiVarianceTypeAngle v2(xiiAngle::MakeFromDegree(20.0f), 0.2f);
+        xiiVarianceTypeAngle v3(xiiAngle::MakeFromDegree(30.0f), 0.3f);
+        xiiVarianceTypeAngle v4(xiiAngle::MakeFromDegree(40.0f), 0.4f);
+        xiiVarianceTypeAngle v5(xiiAngle::MakeFromDegree(50.0f), 0.5f);
         test.m_values.PushBack(&v0);
         test.m_values.PushBack(&v1);
         test.m_values.PushBack(&v2);
@@ -452,9 +452,9 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
         xiiVariant ret;
         funccall2.Execute(&test, test.m_values, ret);
         XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedObject);
-        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngle{0.6f, xiiAngle::MakeFromDegree(60.0f)}));
-        XII_TEST_BOOL((*test.m_values[2].Get<xiiVarianceTypeAngle*>() == xiiVarianceTypeAngle{2.0f, xiiAngle::MakeFromDegree(200.0f)}));
-        XII_TEST_BOOL((*test.m_values[4].Get<xiiVarianceTypeAngle*>() == xiiVarianceTypeAngle{4.0f, xiiAngle::MakeFromDegree(400.0f)}));
+        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(60.0f), 0.6f)));
+        XII_TEST_BOOL((*test.m_values[2].Get<xiiVarianceTypeAngle*>() == xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(200.0f), 2.0f)));
+        XII_TEST_BOOL((*test.m_values[4].Get<xiiVarianceTypeAngle*>() == xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(400.0f), 4.0f)));
 
         test.m_bPtrAreNull = true;
         test.m_values[4]   = xiiVariant();
@@ -462,7 +462,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
         ret                = xiiVariant();
         funccall2.Execute(&test, test.m_values, ret);
         XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedObject);
-        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngle{0.6f, xiiAngle::MakeFromDegree(60.0f)}));
+        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(60.0f), 0.6f)));
       }
     }
 
@@ -482,19 +482,19 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
 
       {
         FunctionTest test;
-        test.m_values.PushBack(xiiVarianceTypeAngled{0.0, xiiAngled::MakeFromDegree(0.0)});
-        test.m_values.PushBack(xiiVarianceTypeAngled{0.1, xiiAngled::MakeFromDegree(10.0)});
-        test.m_values.PushBack(xiiVarianceTypeAngled{0.2, xiiAngled::MakeFromDegree(20.0)});
-        test.m_values.PushBack(xiiVarianceTypeAngled{0.3, xiiAngled::MakeFromDegree(30.0)});
-        test.m_values.PushBack(xiiVarianceTypeAngled{0.4, xiiAngled::MakeFromDegree(40.0)});
-        test.m_values.PushBack(xiiVarianceTypeAngled{0.5, xiiAngled::MakeFromDegree(50.0)});
+        test.m_values.PushBack(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(0.0), 0.0));
+        test.m_values.PushBack(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(10.0), 0.1));
+        test.m_values.PushBack(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(20.0), 0.2));
+        test.m_values.PushBack(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(30.0), 0.3));
+        test.m_values.PushBack(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(40.0), 0.4));
+        test.m_values.PushBack(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(50.0), 0.5));
 
         xiiVariant ret;
         funccall.Execute(&test, test.m_values, ret);
         XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedObject);
-        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngled{0.6, xiiAngled::MakeFromDegree(60.0)}));
-        XII_TEST_BOOL(test.m_values[2] == xiiVariant(xiiVarianceTypeAngled{2.0, xiiAngled::MakeFromDegree(200.0)}));
-        XII_TEST_BOOL(test.m_values[4] == xiiVariant(xiiVarianceTypeAngled{4.0, xiiAngled::MakeFromDegree(400.0)}));
+        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(60.0), 0.6)));
+        XII_TEST_BOOL(test.m_values[2] == xiiVariant(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(200.0), 2.0)));
+        XII_TEST_BOOL(test.m_values[4] == xiiVariant(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(400.0), 4.0)));
 
         test.m_bPtrAreNull = true;
         test.m_values[4]   = xiiVariant();
@@ -502,19 +502,19 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
         ret                = xiiVariant();
         funccall.Execute(&test, test.m_values, ret);
         XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedObject);
-        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngled{0.6, xiiAngled::MakeFromDegree(60.0)}));
+        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(60.0), 0.6)));
       }
 
       {
         xiiFunctionProperty<decltype(&FunctionTest::CustomTypeFunctionAngleDouble2)> funccall2("", &FunctionTest::CustomTypeFunctionAngleDouble2);
 
         FunctionTest          test;
-        xiiVarianceTypeAngled v0{0.0, xiiAngled::MakeFromDegree(0.0)};
-        xiiVarianceTypeAngled v1{0.1, xiiAngled::MakeFromDegree(10.0)};
-        xiiVarianceTypeAngled v2{0.2, xiiAngled::MakeFromDegree(20.0)};
-        xiiVarianceTypeAngled v3{0.3, xiiAngled::MakeFromDegree(30.0)};
-        xiiVarianceTypeAngled v4{0.4, xiiAngled::MakeFromDegree(40.0)};
-        xiiVarianceTypeAngled v5{0.5, xiiAngled::MakeFromDegree(50.0)};
+        xiiVarianceTypeAngled v0(xiiAngled::MakeFromDegree(0.0), 0.0);
+        xiiVarianceTypeAngled v1(xiiAngled::MakeFromDegree(10.0), 0.1);
+        xiiVarianceTypeAngled v2(xiiAngled::MakeFromDegree(20.0), 0.2);
+        xiiVarianceTypeAngled v3(xiiAngled::MakeFromDegree(30.0), 0.3);
+        xiiVarianceTypeAngled v4(xiiAngled::MakeFromDegree(40.0), 0.4);
+        xiiVarianceTypeAngled v5(xiiAngled::MakeFromDegree(50.0), 0.5);
         test.m_values.PushBack(&v0);
         test.m_values.PushBack(&v1);
         test.m_values.PushBack(&v2);
@@ -525,9 +525,9 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
         xiiVariant ret;
         funccall2.Execute(&test, test.m_values, ret);
         XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedObject);
-        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngled{0.6, xiiAngled::MakeFromDegree(60.0)}));
-        XII_TEST_BOOL((*test.m_values[2].Get<xiiVarianceTypeAngled*>() == xiiVarianceTypeAngled{2.0, xiiAngled::MakeFromDegree(200.0)}));
-        XII_TEST_BOOL((*test.m_values[4].Get<xiiVarianceTypeAngled*>() == xiiVarianceTypeAngled{4.0, xiiAngled::MakeFromDegree(400.0)}));
+        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(60.0), 0.6)));
+        XII_TEST_BOOL((*test.m_values[2].Get<xiiVarianceTypeAngled*>() == xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(200.0), 2.0)));
+        XII_TEST_BOOL((*test.m_values[4].Get<xiiVarianceTypeAngled*>() == xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(400.0), 4.0)));
 
         test.m_bPtrAreNull = true;
         test.m_values[4]   = xiiVariant();
@@ -535,7 +535,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
         ret                = xiiVariant();
         funccall2.Execute(&test, test.m_values, ret);
         XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedObject);
-        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngled{0.6, xiiAngled::MakeFromDegree(60.0)}));
+        XII_TEST_BOOL(ret == xiiVariant(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(60.0), 0.6)));
       }
     }
   }

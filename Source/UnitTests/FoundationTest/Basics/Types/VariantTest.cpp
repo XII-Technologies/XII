@@ -1621,8 +1621,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     // xiiVarianceTypeAngle
     {
       // xiiAngle::MakeFromDegree(90.0f) was replaced with radian as release builds generate a different float then debug.
-      xiiVarianceTypeAngle value  = {0.1f, xiiAngle::MakeFromRadian(1.57079637f)};
-      xiiVarianceTypeAngle value2 = {0.2f, xiiAngle::MakeFromRadian(1.57079637f)};
+      xiiVarianceTypeAngle value(xiiAngle::MakeFromRadian(1.57079637f), 0.1f);
+      xiiVarianceTypeAngle value2(xiiAngle::MakeFromRadian(1.57079637f), 0.2f);
 
       xiiVariant v(value);
       TestVariant<xiiVarianceTypeAngle>(v, xiiVariantType::TypedObject);
@@ -1645,7 +1645,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
       xiiUInt64 uiHash = v.ComputeHash(0);
       XII_TEST_INT(uiHash, 8527525522777555267UL);
 
-      xiiVarianceTypeAngle* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngle, {0.1f, xiiAngle::MakeFromRadian(1.57079637f)});
+      xiiVarianceTypeAngle* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngle, xiiAngle::MakeFromRadian(1.57079637f), 0.1f);
       xiiVariant            copy;
       copy.CopyTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngle>());
       xiiVariant move;
@@ -1656,8 +1656,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     // xiiVarianceTypeAngled
     {
-      xiiVarianceTypeAngled value  = {0.1, xiiAngled::MakeFromRadian(1.57079637)};
-      xiiVarianceTypeAngled value2 = {0.2, xiiAngled::MakeFromRadian(1.57079637)};
+      xiiVarianceTypeAngled value(xiiAngled::MakeFromRadian(1.57079637), 0.1);
+      xiiVarianceTypeAngled value2(xiiAngled::MakeFromRadian(1.57079637), 0.2);
 
       xiiVariant v(value);
       TestVariant<xiiVarianceTypeAngled>(v, xiiVariantType::TypedObject);
@@ -1680,7 +1680,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
       xiiUInt64 uiHash = v.ComputeHash(0);
       XII_TEST_INT(uiHash, 5230335272281280496UL);
 
-      xiiVarianceTypeAngled* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngled, {0.1, xiiAngled::MakeFromRadian(1.57079637)});
+      xiiVarianceTypeAngled* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngled, xiiAngled::MakeFromRadian(1.57079637), 0.1);
       xiiVariant             copy;
       copy.CopyTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngled>());
       xiiVariant move;

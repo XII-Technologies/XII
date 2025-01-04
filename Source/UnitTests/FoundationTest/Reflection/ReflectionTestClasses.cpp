@@ -35,8 +35,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTestStruct, xiiNoBase, 7, xiiRTTIDefaultAlloc
     XII_MEMBER_PROPERTY("Angled", m_Angled)->AddAttributes(new xiiDefaultValueAttribute(xiiAngled::MakeFromDegree(0.5))),
     XII_MEMBER_PROPERTY("DataBuffer", m_DataBuffer)->AddAttributes(new xiiDefaultValueAttribute(xiiTestStruct::GetDefaultDataBuffer())),
     XII_MEMBER_PROPERTY("vVec3I", m_vVec3I)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3I32(1,2,3))),
-    XII_MEMBER_PROPERTY("VarianceAngle", m_VarianceAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngle{0.5f, xiiAngle::MakeFromDegree(90.0f)})),
-    XII_MEMBER_PROPERTY("VarianceAngled", m_VarianceAngled)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngled{0.5, xiiAngled::MakeFromDegree(90.0)})),
+    XII_MEMBER_PROPERTY("VarianceAngle", m_VarianceAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(90.0f), 0.5f))),
+    XII_MEMBER_PROPERTY("VarianceAngled", m_VarianceAngled)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(90.0), 0.5))),
   }
   XII_END_PROPERTIES;
 }

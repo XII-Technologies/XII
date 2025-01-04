@@ -80,6 +80,29 @@ xiiRTTI::~xiiRTTI()
   {
     UnregisterType();
   }
+
+   // To ensure unloading plugins does not leak any heap allocated attributes etc, we need to properly clean up the RTTI members.
+   // The assumption is that anything that is deleted here was created using global 'new' when declaring the reflection information inside XII_BEGIN_PROPERTIES etc.
+   // Thus, any derived xiiRTTI class must make sure these arrays are cleared out before this destructor is called.
+  if (m_sPluginName != "Static")
+  {
+    // We only delete plugin types. For statically created types we can't ensure a proper destruction order so it's better to just leak the data and the the OS clean it up.
+    for (auto pProp : m_Properties)
+    {
+      auto pPropNonConst = const_cast<xiiAbstractProperty*>(pProp);
+      delete pPropNonConst;
+    }
+    for (auto pFunc : m_Functions)
+    {
+      auto pFuncNonConst = const_cast<xiiAbstractFunctionProperty*>(pFunc);
+      delete pFuncNonConst;
+    }
+    for (auto pAttrib : m_Attributes)
+    {
+      auto pAttribNonConst = const_cast<xiiPropertyAttribute*>(pAttrib);
+      delete pAttribNonConst;
+    }
+  }
 }
 
 void xiiRTTI::GatherDynamicMessageHandlers()

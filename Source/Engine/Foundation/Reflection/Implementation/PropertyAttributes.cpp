@@ -647,7 +647,7 @@ xiiBoxVisualizerAttribute::xiiBoxVisualizerAttribute() :
 }
 
 xiiBoxVisualizerAttribute::xiiBoxVisualizerAttribute(xiiStringView sSizeProperty, float fSizeScale, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::MakeZero*/, xiiStringView sOffsetProperty /*= nullptr*/, xiiStringView sRotationProperty /*= nullptr*/) :
-  xiiVisualizerAttribute(sSizeProperty, sColorProperty, sOffsetProperty, sRotationProperty),  m_fSizeScale(fSizeScale), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale)
+  xiiVisualizerAttribute(sSizeProperty, sColorProperty, sOffsetProperty, sRotationProperty), m_fSizeScale(fSizeScale), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale)
 {
   m_Anchor = anchor;
 }
@@ -985,6 +985,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiFunctionArgumentAttributes::xiiFunctionArgumentAttributes(xiiUInt32 uiArgIndex, const xiiPropertyAttribute* pAttribute1, const xiiPropertyAttribute* pAttribute2 /*= nullptr*/, const xiiPropertyAttribute* pAttribute3 /*= nullptr*/, const xiiPropertyAttribute* pAttribute4 /*= nullptr*/) :
   m_uiArgIndex(uiArgIndex)
 {
+  m_bUsesGlobalNew = true;
   {
     if (pAttribute1 == nullptr)
       return;
@@ -1008,6 +1009,23 @@ xiiFunctionArgumentAttributes::xiiFunctionArgumentAttributes(xiiUInt32 uiArgInde
       return;
 
     m_ArgAttributes.PushBack(pAttribute4);
+  }
+}
+
+xiiFunctionArgumentAttributes::~xiiFunctionArgumentAttributes()
+{
+  for (auto pAttribute : m_ArgAttributes)
+  {
+    auto pAttributeNonConst = const_cast<xiiPropertyAttribute*>(pAttribute);
+
+    if (m_bUsesGlobalNew)
+    {
+      delete pAttributeNonConst;
+    }
+    else
+    {
+      XII_DEFAULT_DELETE(pAttributeNonConst);
+    }
   }
 }
 
