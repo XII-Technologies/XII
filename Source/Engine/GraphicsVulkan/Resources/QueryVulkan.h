@@ -28,4 +28,7 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
+  xiiStaticArray<xiiUInt32, 2U> m_QueryPoolIndex;
+
+  xiiUInt64 m_uiQueryEndFenceValue = xiiMath::MaxValue<xiiUInt64>();
 };

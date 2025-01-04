@@ -35,6 +35,8 @@ void xiiGALQueryVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
 {
+  CheckQueryDataPtr(pData, uiDataSize);
+
   return false;
 }
 
