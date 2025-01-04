@@ -17,7 +17,7 @@ public:
   {
     m_DisjointQuery.Clear();
 
-    m_QueryState = QueryState::Inactive;
+    xiiGALQuery::Invalidate();
   }
 
   XII_ALWAYS_INLINE ID3D11Query* GetQuery(xiiUInt32 uiQueryID) const
