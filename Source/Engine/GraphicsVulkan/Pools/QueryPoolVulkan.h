@@ -8,7 +8,7 @@ public:
   [[nodiscard]] xiiUInt32 AllocateQuery(xiiGALQueryType::Enum queryType);
   void                    DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex);
 
-  XII_ALWAYS_INLINE [[nodiscard]] vk::QueryPool                        GetQueryPool(xiiGALQueryType::Enum queryType) const { return m_QueryPools[queryType].GetQueryPool(); }
+  XII_ALWAYS_INLINE [[nodiscard]] vk::QueryPool                        GetQueryPool(xiiGALQueryType::Enum queryType) const { return m_QueryPools[queryType]->GetQueryPool(); }
   XII_ALWAYS_INLINE [[nodiscard]] xiiUInt64                            GetCounterFrequency() const { return m_uiCounterFrequency; }
   XII_ALWAYS_INLINE [[nodiscard]] xiiGALDeviceVulkan::QueueInformation GetQueueInformation() const { return m_CommandQueueInformation; }
 
@@ -40,8 +40,6 @@ private:
     XII_ALWAYS_INLINE [[nodiscard]] bool                  IsInvalidated() const { return m_vkQueryPool == VK_NULL_HANDLE; }
 
   private:
-    friend class xiiMemoryUtils;
-
     xiiGALDeviceVulkan* m_pDeviceVulkan;
 
     vk::QueryPool m_vkQueryPool = VK_NULL_HANDLE;
@@ -58,8 +56,8 @@ private:
   xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALDeviceVulkan::QueueInformation queueInformation);
   ~xiiGALQueryPoolVulkan();
 
-  xiiGALDeviceVulkan*                  m_pDeviceVulkan;
-  QueryPoolInformation                 m_QueryPools[xiiGALQueryType::ENUM_COUNT];
-  xiiGALDeviceVulkan::QueueInformation m_CommandQueueInformation;
-  xiiUInt64                            m_uiCounterFrequency = 0ULL;
+  xiiGALDeviceVulkan*                                                             m_pDeviceVulkan;
+  xiiStaticArray<xiiUniquePtr<QueryPoolInformation>, xiiGALQueryType::ENUM_COUNT> m_QueryPools;
+  xiiGALDeviceVulkan::QueueInformation                                            m_CommandQueueInformation;
+  xiiUInt64                                                                       m_uiCounterFrequency = 0ULL;
 };

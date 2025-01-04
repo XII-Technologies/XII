@@ -16,9 +16,11 @@ xiiGALQueryPoolVulkan::xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, 
   const bool  bIsTransferQueue        = (queueFlags & (vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eGraphics)) == (vk::QueueFlagBits)0;
   const bool  bQueueSupportsTimestamp = pDeviceVulkan->GetPhysicalDeviceQueueFamilyProperties()[m_CommandQueueInformation.m_uiQueueFamilyIndex].timestampValidBits > 0;
 
+  m_QueryPools.PushBack(XII_NEW(pDeviceVulkan->GetAllocator(), QueryPoolInformation, pDeviceVulkan));
+
   for (xiiUInt32 uiQueryType = xiiGALQueryType::Undefined + 1; uiQueryType < xiiGALQueryType::ENUM_COUNT; ++uiQueryType)
   {
-    m_QueryPools.PushBack(QueryPoolInformation(pDeviceVulkan));
+    m_QueryPools.PushBack(XII_NEW(pDeviceVulkan->GetAllocator(), QueryPoolInformation, pDeviceVulkan));
 
     xiiGALQueryType::Enum queryType = static_cast<xiiGALQueryType::Enum>(uiQueryType);
 
@@ -98,9 +100,9 @@ xiiGALQueryPoolVulkan::xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, 
 
     auto& queryPoolInfo = m_QueryPools[queryType];
 
-    queryPoolInfo.Initialize(vkQueryPoolCreateInfo, queryType);
+    queryPoolInfo->Initialize(vkQueryPoolCreateInfo, queryType);
 
-    XII_ASSERT_DEV(!queryPoolInfo.IsInvalidated() && queryPoolInfo.GetQueryCount() == vkQueryPoolCreateInfo.queryCount && queryPoolInfo.GetQueryType() == queryType, "");
+    XII_ASSERT_DEV(!queryPoolInfo->IsInvalidated() && queryPoolInfo->GetQueryCount() == vkQueryPoolCreateInfo.queryCount && queryPoolInfo->GetQueryType() == queryType, "");
   }
 }
 
@@ -113,24 +115,24 @@ xiiGALQueryPoolVulkan::~xiiGALQueryPoolVulkan()
   {
     auto& queryPoolInformation = m_QueryPools[uiQueryType];
 
-    if (queryPoolInformation.IsInvalidated())
+    if (queryPoolInformation->IsInvalidated())
       continue;
 
-    xiiLog::Info("Query Type {} : {} / {}", uiQueryType, queryPoolInformation.GetMaxAllocatedQueries(), queryPoolInformation.GetQueryCount());
+    xiiLog::Info("Query Type {} : {} / {}", uiQueryType, queryPoolInformation->GetMaxAllocatedQueries(), queryPoolInformation->GetQueryCount());
 
-    queryPoolInformation.DeInitialize();
+    queryPoolInformation->DeInitialize();
   }
 #endif
 }
 
 xiiUInt32 xiiGALQueryPoolVulkan::AllocateQuery(xiiGALQueryType::Enum queryType)
 {
-  return m_QueryPools[queryType].Allocate();
+  return m_QueryPools[queryType]->Allocate();
 }
 
 void xiiGALQueryPoolVulkan::DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex)
 {
-  m_QueryPools[queryType].Discard(uiIndex);
+  m_QueryPools[queryType]->Discard(uiIndex);
 }
 
 xiiUInt32 xiiGALQueryPoolVulkan::ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer)
@@ -139,7 +141,7 @@ xiiUInt32 xiiGALQueryPoolVulkan::ResetStaleQueries(const vk::CommandBuffer& vkCo
 
   for (auto& queryPoolInfo : m_QueryPools)
   {
-    uiResetQueryCount += queryPoolInfo.ResetStaleQueries(vkCommandBuffer);
+    uiResetQueryCount += queryPoolInfo->ResetStaleQueries(vkCommandBuffer);
   }
 
   return uiResetQueryCount;
