@@ -123,6 +123,8 @@ xiiGALQueryPoolVulkan::~xiiGALQueryPoolVulkan()
     queryPoolInformation->DeInitialize();
   }
 #endif
+
+  m_QueryPools.Clear();
 }
 
 xiiUInt32 xiiGALQueryPoolVulkan::AllocateQuery(xiiGALQueryType::Enum queryType)
@@ -163,7 +165,9 @@ xiiGALQueryPoolVulkan::QueryPoolInformation::~QueryPoolInformation()
     xiiLog::Error("There are '{}' pending queries of type {}.", uiPendingQueries, m_QueryType.GetValue());
   }
 
-  m_pDeviceVulkan->SafeReleaseDeviceObject(m_vkQueryPool);
+  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+
+  vkLogicalDevice.destroyQueryPool(m_vkQueryPool, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALQueryPoolVulkan::QueryPoolInformation::Initialize(const vk::QueryPoolCreateInfo& vkQueryPoolCreateInfo, xiiGALQueryType::Enum queryType)

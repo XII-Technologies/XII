@@ -1153,16 +1153,22 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
     {
       m_pTransferCommandQueue->DeInitializePlatform();
       m_pTransferCommandQueue.Clear();
+
+      m_pTransferCommandQueueQueryPool.Clear();
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
       m_pComputeCommandQueue->DeInitializePlatform();
       m_pComputeCommandQueue.Clear();
+
+      m_pComputeCommandQueueQueryPool.Clear();
     }
 
     m_pGraphicsCommandQueue->DeInitializePlatform();
     m_pGraphicsCommandQueue.Clear();
+
+    m_pGraphicsCommandQueueQueryPool.Clear();
   }
 
   {
