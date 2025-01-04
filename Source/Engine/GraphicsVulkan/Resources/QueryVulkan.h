@@ -13,6 +13,15 @@ public:
 
   virtual void Invalidate() override final;
 
+  XII_ALWAYS_INLINE [[nodiscard]] xiiUInt32 GetQueryPoolIndex(xiiUInt32 uiQueryID) const
+  {
+    XII_ASSERT_DEV(uiQueryID == 0 || (uiQueryID == xiiGALQueryType::Duration && uiQueryID == 1), "");
+    return m_QueryPoolIndex[uiQueryID];
+  }
+
+  bool OnBeginQuery(xiiGALCommandListVulkan* pCommandListVulkan);
+  bool OnEndQuery(xiiGALCommandListVulkan* pCommandListVulkan);
+
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
@@ -27,8 +36,13 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
+  bool AllocateQueries();
+  bool DiscardQueries();
+
   xiiStaticArray<xiiUInt32, 2U> m_QueryPoolIndex;
 
   xiiUInt64 m_uiQueryEndFenceValue = xiiMath::MaxValue<xiiUInt64>();
+
+  xiiGALQueryPoolVulkan* m_pQueryPoolVulkan = nullptr;
 };

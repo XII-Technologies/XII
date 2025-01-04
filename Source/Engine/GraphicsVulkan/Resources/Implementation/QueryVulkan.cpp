@@ -1,5 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/QueryVulkan.h>
 
@@ -42,6 +43,33 @@ bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInv
 
 void xiiGALQueryVulkan::Invalidate()
 {
+  DiscardQueries();
+
+  xiiGALQuery::Invalidate();
+}
+
+bool xiiGALQueryVulkan::OnBeginQuery(xiiGALCommandListVulkan* pCommandListVulkan)
+{
+  xiiGALQuery::OnBeginQuery(pCommandListVulkan);
+
+  return AllocateQueries();
+}
+
+bool xiiGALQueryVulkan::OnEndQuery(xiiGALCommandListVulkan* pCommandListVulkan)
+{
+  xiiGALQuery::OnEndQuery(pCommandListVulkan);
+
+  return false;
+}
+
+bool xiiGALQueryVulkan::AllocateQueries()
+{
+  return false;
+}
+
+bool xiiGALQueryVulkan::DiscardQueries()
+{
+  return false;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_QueryVulkan);
