@@ -95,3 +95,4 @@ class xiiGALPipelineResourceSignatureVulkan;
 class xiiGALShaderResourceVariableVulkan;
 class xiiGALFencePoolVulkan;
 class xiiGALSemaphorePoolVulkan;
+class xiiGALQueryPoolVulkan;

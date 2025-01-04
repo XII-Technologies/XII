@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 
+#include <GraphicsVulkan/Resources/SamplerVulkan.h>
+
 class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : public xiiGALPipelineResourceSignature
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignatureVulkan, xiiGALPipelineResourceSignature);

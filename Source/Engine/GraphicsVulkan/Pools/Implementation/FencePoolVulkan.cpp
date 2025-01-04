@@ -24,13 +24,6 @@ xiiGALFencePoolVulkan::~xiiGALFencePoolVulkan()
   {
     vk::Fence& vkFence = m_Fences[i];
 
-#if 0
-    if (!m_QueuedFences.Contains(vkFence))
-    {
-      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-    }
-#endif
-
     vkLogicalDevice.destroyFence(vkFence, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
   }
 

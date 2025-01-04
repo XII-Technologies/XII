@@ -1,7 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/SamplerVulkan.h>
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 
 // clang-format off

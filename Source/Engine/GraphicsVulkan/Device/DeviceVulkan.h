@@ -76,7 +76,7 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    vk::Queue m_vkQueue;
+    vk::Queue m_vkQueue            = VK_NULL_HANDLE;
     xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
     xiiUInt32 m_uiQueueIndex       = 0U;
   };
@@ -168,6 +168,9 @@ public:
 
   XII_ALWAYS_INLINE xiiGALFencePoolVulkan* GetVulkanFencePool() const { return m_FencePool.Borrow(); }
   XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_SemaphorePool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanGraphicsCommandQueueQueryPool() const { return m_pGraphicsCommandQueueQueryPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanComputeCommandQueueQueryPool() const { return m_pComputeCommandQueueQueryPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanTransferCommandQueueQueryPool() const { return m_pTransferCommandQueueQueryPool.Borrow(); }
 
   xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
   void               DestroyFenceInternal(xiiGALFence* pFence);
@@ -354,6 +357,9 @@ private:
   // Pools.
   xiiUniquePtr<xiiGALFencePoolVulkan>     m_FencePool;
   xiiUniquePtr<xiiGALSemaphorePoolVulkan> m_SemaphorePool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>     m_pGraphicsCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>     m_pComputeCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>     m_pTransferCommandQueueQueryPool;
 
   // Per Frame Data.
   xiiUInt32              m_uiFrameCounter = 0U;
