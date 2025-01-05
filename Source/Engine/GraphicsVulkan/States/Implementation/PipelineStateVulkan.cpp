@@ -118,6 +118,50 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       }
       vkGraphicsPipelineCreateInfo.pColorBlendState = &vkPipelineColorBlendStateCreateInfo;
 
+      vk::PipelineDynamicStateCreateInfo   vkPipelineDynamicStateCreateInfo = {};
+      xiiStaticArray<vk::DynamicState, 5U> dynamicStates;
+      {
+        vkPipelineDynamicStateCreateInfo.pNext = nullptr;
+        vkPipelineDynamicStateCreateInfo.flags = {};
+
+        // pViewports state in VkPipelineViewportStateCreateInfo will be ignored and must be set dynamically with vkCmdSetViewport before any draw commands.
+        // The number of viewports used by a pipeline is still specified by the viewportCount member of VkPipelineViewportStateCreateInfo.
+        dynamicStates.PushBack(vk::DynamicState::eViewport);
+
+        // blendConstants state in VkPipelineColorBlendStateCreateInfo will be ignored and must be set dynamically with vkCmdSetBlendConstants.
+        dynamicStates.PushBack(vk::DynamicState::eBlendConstants);
+
+        // Specifies that the reference state in VkPipelineDepthStencilStateCreateInfo for both front and back will be ignored and must be set dynamically with vkCmdSetStencilReference.
+        dynamicStates.PushBack(vk::DynamicState::eStencilReference);
+
+        if (bScissorEnabled)
+        {
+          // pScissors state in VkPipelineViewportStateCreateInfo will be ignored and must be set
+          // dynamically with vkCmdSetScissor before any draw commands. The number of scissor rectangles
+          // used by a pipeline is still specified by the scissorCount member of
+          // VkPipelineViewportStateCreateInfo.
+          dynamicStates.PushBack(vk::DynamicState::eScissor);
+        }
+
+        if (graphicsPipeline.m_ShadingRateFlags.IsAnyFlagSet() && pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_ShadingRate.attachmentFragmentShadingRate != vk::False)
+        {
+          // VkPipelineFragmentShadingRateStateCreateInfoKHR will be ignored and must be set dynamically with vkCmdSetFragmentShadingRateKHR before any drawing commands.
+          dynamicStates.PushBack(vk::DynamicState::eFragmentShadingRateKHR);
+        }
+
+        vkPipelineDynamicStateCreateInfo.dynamicStateCount = dynamicStates.GetCount();
+        vkPipelineDynamicStateCreateInfo.pDynamicStates    = dynamicStates.GetData();
+      }
+      vkGraphicsPipelineCreateInfo.pDynamicState = &vkPipelineDynamicStateCreateInfo;
+
+      if (xiiGALRenderPassVulkan* pRenderPassVulkan = static_cast<xiiGALRenderPassVulkan*>(pDeviceVulkan->GetRenderPass(graphicsPipeline.m_hRenderPass)))
+      {
+        vkGraphicsPipelineCreateInfo.renderPass = pRenderPassVulkan->GetVulkanRenderPass();
+        vkGraphicsPipelineCreateInfo.subpass    = graphicsPipeline.m_uiSubpassIndex;
+      }
+
+      XII_ASSERT_DEV(vkGraphicsPipelineCreateInfo.renderPass != VK_NULL_HANDLE, "");
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
       vkGraphicsPipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
 #endif
