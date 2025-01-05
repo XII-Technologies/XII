@@ -25,7 +25,7 @@ public:
 
   virtual xiiArrayPtr<xiiGALResource*> Get(xiiUInt32 uiIndex = 0U) const override final;
 
-protected:
+private:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 

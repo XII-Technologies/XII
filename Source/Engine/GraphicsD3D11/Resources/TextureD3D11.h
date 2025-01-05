@@ -32,6 +32,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+private:
   xiiResult CreateFromNativeObject(void* pNativeObject);
   xiiResult CreateTexture1D(ID3D11Texture1D** ppTexture1D, const xiiGALTextureData* pInitialData);
   xiiResult CreateTexture2D(ID3D11Texture2D** ppTexture2D, const xiiGALTextureData* pInitialData);
@@ -41,7 +42,6 @@ protected:
 
   void InitializeSparseTextureProperties();
 
-protected:
   ID3D11Resource*               m_pTexture = nullptr;
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 };

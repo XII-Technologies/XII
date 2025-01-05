@@ -46,7 +46,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   ID3D11Query* m_pQueryD3D11[2] = {nullptr, nullptr};
 
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> m_DisjointQuery;

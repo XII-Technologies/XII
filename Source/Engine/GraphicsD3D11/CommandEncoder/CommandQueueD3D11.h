@@ -42,7 +42,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   xiiMutex m_QueueMutex;
 
   ID3D11DeviceContext4*             m_pImmediateContext = nullptr;

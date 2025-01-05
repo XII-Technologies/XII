@@ -27,6 +27,6 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   ID3D11DepthStencilState* m_pDepthStencilState = nullptr;
 };

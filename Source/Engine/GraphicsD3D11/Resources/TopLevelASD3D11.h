@@ -15,7 +15,7 @@ public:
 
   virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
 
-protected:
+private:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 

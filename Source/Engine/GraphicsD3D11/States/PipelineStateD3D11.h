@@ -80,7 +80,7 @@ protected:
   virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
   virtual void ResetBoundResources() override final;
 
-protected:
+private:
   xiiGALShaderD3D11*            m_pVertexShaderD3D11      = nullptr;
   xiiGALShaderD3D11*            m_pPixelShaderD3D11       = nullptr;
   xiiGALShaderD3D11*            m_pDomainShaderD3D11      = nullptr;

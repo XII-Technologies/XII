@@ -68,6 +68,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+private:
   xiiResult CreateDXGISwapChain();
 
   xiiResult UpdateSwapChain(bool bCreateNew);
@@ -76,7 +77,6 @@ protected:
 
   void DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11);
 
-protected:
   IDXGISwapChain4* m_pSwapChain = nullptr;
 
   xiiGALTextureHandle m_hActualBackBufferTexture;

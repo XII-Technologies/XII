@@ -96,12 +96,12 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> BeginDisjointQuery();
 
   xiiResult FlushDeferredStateChanges();
 
-protected:
+private:
   xiiEventSubscriptionID m_GALSwapChainD3D11EventSubscriptionID;
 
   xiiGALCommandQueueD3D11* m_pCommandQueueD3D11 = nullptr;
