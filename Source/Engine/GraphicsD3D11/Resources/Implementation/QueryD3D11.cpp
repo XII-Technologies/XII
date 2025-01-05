@@ -74,7 +74,7 @@ bool xiiGALQueryD3D11::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInva
       {
         xiiGALQueryDataOcclusion& occlusionData = *reinterpret_cast<xiiGALQueryDataOcclusion*>(pData);
         occlusionData.m_Type                    = xiiGALQueryType::Occlusion;
-        occlusionData.m_uiNumSamples            = uiSampleCount;
+        occlusionData.m_uiSampleCount           = uiSampleCount;
       }
     }
     break;
