@@ -4,7 +4,6 @@
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
-#include <GraphicsFoundation/Shader/ShaderResourceVariable.h>
 
 /// \brief This describes the shader variable property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableFlags
@@ -101,7 +100,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : publ
 
   xiiStringView                             m_sName;                                                   ///< The shader variable name.
   xiiBitflags<xiiGALShaderType>             m_ShaderStages = xiiGALShaderType::Unknown;                ///< The shader stages this resources variable applies to. If more than one shader stage is specified, the variable will be shared between these stages. Shader stages used by different variables with the same name must not overlap.
-  xiiEnum<xiiGALShaderResourceVariableType> m_Type         = xiiGALShaderResourceVariableType::Static; ///< The shader variable type.
   xiiBitflags<xiiGALShaderVariableFlags>    m_Flags        = xiiGALShaderVariableFlags::None;          ///< The shader variable flags.
 };
 

@@ -247,7 +247,6 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineResourceSignatureCreati
     writer << resource.m_ShaderStages;
     writer << resource.m_uiArraySize;
     writer << resource.m_ResourceType;
-    writer << resource.m_ResourceVariableType;
     writer << resource.m_PipelineResourceFlags;
   }
 

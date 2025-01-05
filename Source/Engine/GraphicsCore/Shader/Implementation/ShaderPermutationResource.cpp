@@ -167,7 +167,6 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
         resourceSignature.m_uiArraySize           = resource.m_uiArraySize;
         resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
         resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
-        resourceSignature.m_ResourceVariableType  = xiiGALShaderResourceVariableType::Mutable;
         resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
       }
     }

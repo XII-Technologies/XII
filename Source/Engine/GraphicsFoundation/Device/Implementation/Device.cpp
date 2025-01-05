@@ -2373,13 +2373,13 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
     {
       XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", i);
     }
-    if (resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure)
+    if (resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure)
     {
-      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
     }
-    if (resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment)
+    if (resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment)
     {
-      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages == xiiGALShaderType::Pixel, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages == xiiGALShaderType::Pixel, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
     }
 
     xiiBitflags<xiiGALPipelineResourceFlags> allowedResourceFlags = xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_ResourceType);
