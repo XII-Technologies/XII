@@ -1152,3 +1152,54 @@ XII_ALWAYS_INLINE vk::DescriptorType xiiVulkanTypeConversions::GetDescriptorType
 
   return vk::DescriptorType::eSampler;
 }
+
+XII_ALWAYS_INLINE void xiiVulkanTypeConversions::GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints)
+{
+  out_uiPatchControlPoints = 0U;
+
+  switch (e)
+  {
+    case xiiGALPrimitiveTopology::Undefined:
+    {
+      XII_REPORT_FAILURE("Unexpected primitive topology undefined.");
+
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eTriangleList;
+      return;
+    }
+    case xiiGALPrimitiveTopology::PointList:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::ePointList;
+      return;
+    case xiiGALPrimitiveTopology::LineList:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eLineList;
+      return;
+    case xiiGALPrimitiveTopology::TriangleList:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eTriangleList;
+      return;
+    case xiiGALPrimitiveTopology::TriangleStrip:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eTriangleStrip;
+      return;
+    case xiiGALPrimitiveTopology::LineStrip:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eLineStrip;
+      return;
+    case xiiGALPrimitiveTopology::TriangleListAdjacent:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eTriangleListWithAdjacency;
+      return;
+    case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eTriangleStripWithAdjacency;
+      return;
+    case xiiGALPrimitiveTopology::LineListAdjacent:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eLineListWithAdjacency;
+      return;
+    case xiiGALPrimitiveTopology::LineStripAdjacent:
+      out_vkPrimitiveTopology = vk::PrimitiveTopology::eLineStripWithAdjacency;
+      return;
+    default:
+    {
+      XII_ASSERT_DEV(e >= xiiGALPrimitiveTopology::ControlPointPatchList1 && e <= xiiGALPrimitiveTopology::ControlPointPatchList32, "");
+
+      out_vkPrimitiveTopology  = vk::PrimitiveTopology::ePatchList;
+      out_uiPatchControlPoints = static_cast<xiiUInt32>(e) - static_cast<xiiUInt32>(xiiGALPrimitiveTopology::ControlPointPatchList1) + 1U;
+      return;
+    }
+  }
+}

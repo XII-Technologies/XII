@@ -41,6 +41,37 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       vkGraphicsPipelineCreateInfo.basePipelineHandle             = nullptr; // A pipeline to derive from.
       vkGraphicsPipelineCreateInfo.basePipelineIndex              = {};      // An index into the pCreateInfos parameter to use as a pipeline to derive from.
 
+      vk::PipelineInputAssemblyStateCreateInfo vkPipelineInputAssemblyStateCreateInfo = {};
+      {
+        vkPipelineInputAssemblyStateCreateInfo.pNext                  = nullptr;
+        vkPipelineInputAssemblyStateCreateInfo.flags                  = {};
+        vkPipelineInputAssemblyStateCreateInfo.primitiveRestartEnable = (graphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::TriangleStrip || graphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::TriangleStripAdjacent || graphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::LineStrip || graphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::LineStripAdjacent) ? vk::True : vk::False;
+      }
+      vkGraphicsPipelineCreateInfo.pInputAssemblyState = &vkPipelineInputAssemblyStateCreateInfo;
+
+      vk::PipelineTessellationStateCreateInfo vkPipelineTessellationStateCreateInfo = {};
+      {
+        vkPipelineTessellationStateCreateInfo.pNext = nullptr;
+        vkPipelineTessellationStateCreateInfo.flags = {};
+
+        if (m_Description.m_PipelineType == xiiGALPipelineType::Mesh)
+        {
+          // Input assembly is not used in the mesh pipeline, so topology may contain any value.
+          // Validation layers may generate a warning if point_list topology is used, so use MAX_ENUM value.
+          vkPipelineInputAssemblyStateCreateInfo.topology = (vk::PrimitiveTopology)VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+
+          // Vertex input state and tessellation state are ignored in a mesh pipeline and should be null, but there is a bug in validation layers that makes them crash.
+          // vkGraphicsPipelineCreateInfo.pVertexInputState = nullptr;
+          vkGraphicsPipelineCreateInfo.pTessellationState = nullptr;
+        }
+        else
+        {
+          xiiVulkanTypeConversions::GetPrimitiveTopologyAndControlPatchPointsCount(graphicsPipeline.m_PrimitiveTopology, vkPipelineInputAssemblyStateCreateInfo.topology, vkPipelineTessellationStateCreateInfo.patchControlPoints);
+
+          vkGraphicsPipelineCreateInfo.pTessellationState = &vkPipelineTessellationStateCreateInfo;
+        }
+      }
+
       bool bScissorEnabled = false;
       if (xiiGALRasterizerStateVulkan* pRasterizerStateVulkan = static_cast<xiiGALRasterizerStateVulkan*>(pDeviceVulkan->GetRasterizerState(graphicsPipeline.m_hRasterizerState)))
       {
