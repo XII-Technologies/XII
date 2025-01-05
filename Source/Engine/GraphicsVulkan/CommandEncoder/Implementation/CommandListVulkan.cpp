@@ -3,9 +3,11 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 #include <GraphicsVulkan/Resources/FramebufferVulkan.h>
+#include <GraphicsVulkan/Resources/QueryVulkan.h>
 #include <GraphicsVulkan/Resources/RenderPassVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
@@ -1093,10 +1095,121 @@ xiiResult xiiGALCommandListVulkan::DispatchIndirectPlatform(xiiGALBuffer* pIndir
 
 void xiiGALCommandListVulkan::BeginQueryPlatform(xiiGALQuery* pQuery)
 {
+  xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
+  xiiGALQueryPoolVulkan*    pQueryPoolVulkan    = pDeviceVulkan->GetQueryPoolForCommandQueue(pCommandQueueVulkan);
+  xiiGALQueryVulkan*        pQueryVulkan        = static_cast<xiiGALQueryVulkan*>(pQuery);
+  xiiGALQueryType::Enum     queryType           = pQueryVulkan->GetDescription().m_Type;
+  vk::QueryPool             vkQueryPool         = pQueryPoolVulkan->GetQueryPool(queryType);
+  xiiUInt32                 uiIndex             = pQueryVulkan->GetQueryPoolIndex(0);
+
+  XII_VERIFY_COMMAND_LIST(vkQueryPool != VK_NULL_HANDLE, "Query pool is not initialized for query type.");
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  if (queryType == xiiGALQueryType::Timestamp)
+  {
+    xiiLog::Error("BeginQuery() is not supported for timestamp queries.");
+  }
+  else if (queryType == xiiGALQueryType::Duration)
+  {
+    m_vkCommandBuffer.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, vkQueryPool, uiIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
+  else
+  {
+    if ((m_CommandListState.m_uiInsidePassQueries | m_CommandListState.m_uiOutsidePassQueries) & XII_BIT(queryType))
+    {
+      xiiLog::Error("Another query of type ({}) is currently active. Overlapping queries are not supported in Vulkan. End the first query before beginning another.", queryType);
+      return;
+    }
+
+    // A query must either begin and end inside the same subpass of a render pass instance, or must both begin and end outside of a render pass instance (i.e. contain entire render pass instances). (17.2)
+
+    ++m_uiActiveQueriesCounter;
+
+    // If flags does not contain VK_QUERY_CONTROL_PRECISE_BIT an implementation may generate any non-zero result value for the query if the count of passing samples is non-zero (17.3).
+
+    // Query pool must have been created with a queryType that differs from that of any queries that are active within commandBuffer (17.2).
+    // In other words, only one query of given type can be active in the command buffer.
+
+    if ((m_CommandListState.m_uiInsidePassQueries | m_CommandListState.m_uiOutsidePassQueries) & XII_BIT(queryType))
+    {
+      xiiLog::Error("Another query of type ({}) is currently active. Overlapping queries are not supported in Vulkan. End the first query before beginning another.", queryType);
+      return;
+    }
+
+    // A query must either begin and end inside the same subpass of a render pass instance, or must both begin and end outside a render pass instance (i.e. contain entire render pass instances) (17.2).
+
+    m_vkCommandBuffer.beginQuery(vkQueryPool, uiIndex, (queryType == xiiGALQueryType::Occlusion ? vk::QueryControlFlagBits::ePrecise : vk::QueryControlFlags{}), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
+    {
+      m_CommandListState.m_uiInsidePassQueries |= XII_BIT(queryType);
+    }
+    else
+    {
+      m_CommandListState.m_uiOutsidePassQueries |= XII_BIT(queryType);
+    }
+  }
 }
 
 void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
 {
+  xiiGALDeviceVulkan*       pDeviceVulkan       = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
+  xiiGALQueryPoolVulkan*    pQueryPoolVulkan    = pDeviceVulkan->GetQueryPoolForCommandQueue(pCommandQueueVulkan);
+  xiiGALQueryVulkan*        pQueryVulkan        = static_cast<xiiGALQueryVulkan*>(pQuery);
+  xiiGALQueryType::Enum     queryType           = pQueryVulkan->GetDescription().m_Type;
+  vk::QueryPool             vkQueryPool         = pQueryPoolVulkan->GetQueryPool(queryType);
+  xiiUInt32                 uiIndex             = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);
+
+  XII_VERIFY_COMMAND_LIST(vkQueryPool != VK_NULL_HANDLE, "Query pool is not initialized for query type.");
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+
+  if (queryType == xiiGALQueryType::Timestamp || queryType == xiiGALQueryType::Duration)
+  {
+    m_vkCommandBuffer.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, vkQueryPool, uiIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
+  else
+  {
+    XII_ASSERT_DEV(m_uiActiveQueriesCounter > 0, "Active query counter is 0 which means there was a mismatch between BeginQuery() / EndQuery() calls");
+
+    // A query must either begin and end inside the same subpass of a render pass instance, or must both begin and end outside of a render pass instance (i.e. contain entire render pass instances). (17.2)
+
+    XII_ASSERT_DEV((m_CommandListState.m_uiInsidePassQueries | m_CommandListState.m_uiOutsidePassQueries) & XII_BIT(queryType), "No query flag is set which indicates there was no matching BeginQuery call or there was an error while beginning the query.");
+
+    if (m_CommandListState.m_uiOutsidePassQueries & XII_BIT(queryType))
+    {
+      if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
+      {
+        // TODO: Verify that this is a requirement.
+        EndRenderPass();
+      }
+    }
+    else
+    {
+      if (m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE)
+      {
+        xiiLog::Error("The query was started inside render pass, but is being ended outside of render pass. Vulkan requires that a query must either begin and end inside the same subpass of a render pass instance, or must both begin and end outside of a render pass instance (i.e. contain entire render pass instances). (17.2)");
+      }
+    }
+
+    --m_uiActiveQueriesCounter;
+
+    m_vkCommandBuffer.endQuery(vkQueryPool, uiIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
+    {
+      XII_ASSERT_DEV((m_CommandListState.m_uiInsidePassQueries & XII_BIT(queryType)) != 0, "No active inside-pass queries were found.");
+
+      m_CommandListState.m_uiInsidePassQueries &= ~XII_BIT(queryType);
+    }
+    else
+    {
+      XII_ASSERT_DEV((m_CommandListState.m_uiOutsidePassQueries & XII_BIT(queryType)) != 0, "No active outside-pass queries were found.");
+
+      m_CommandListState.m_uiOutsidePassQueries &= ~XII_BIT(queryType);
+    }
+  }
 }
 
 void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)

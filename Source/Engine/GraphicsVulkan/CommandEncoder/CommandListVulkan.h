@@ -292,4 +292,6 @@ private:
   static constexpr xiiUInt32 s_MaxDescriptorSetPerSignature = 2U;
 
   xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
+
+  xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };

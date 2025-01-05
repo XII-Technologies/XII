@@ -77,19 +77,9 @@ bool xiiGALQueryVulkan::AllocateQueries()
   XII_ASSERT_DEV(m_pQueryPoolVulkan != nullptr, "");
   XII_ASSERT_DEV(m_pCommandList != nullptr, "");
 
-  const auto& queueDescription = m_pCommandList->GetCommandQueue()->GetDescription();
-  if (queueDescription.m_QueueType == xiiGALCommandQueueType::Graphics)
-  {
-    m_pQueryPoolVulkan = pDeviceVulkan->GetVulkanGraphicsCommandQueueQueryPool();
-  }
-  else if (queueDescription.m_QueueType == xiiGALCommandQueueType::Compute)
-  {
-    m_pQueryPoolVulkan = pDeviceVulkan->GetVulkanGraphicsCommandQueueQueryPool();
-  }
-  else if (queueDescription.m_QueueType == xiiGALCommandQueueType::Transfer)
-  {
-    m_pQueryPoolVulkan = pDeviceVulkan->GetVulkanGraphicsCommandQueueQueryPool();
-  }
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandList->GetCommandQueue());
+  m_pQueryPoolVulkan                            = pDeviceVulkan->GetQueryPoolForCommandQueue(pCommandQueueVulkan);
+
   XII_ASSERT_DEV(m_pQueryPoolVulkan != nullptr, "");
 
   for (xiiUInt32 i = 0; i < (m_Description.m_Type == xiiGALQueryType::Duration ? 1U : 2U); ++i)

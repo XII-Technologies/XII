@@ -171,6 +171,19 @@ public:
   XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanGraphicsCommandQueueQueryPool() const { return m_pGraphicsCommandQueueQueryPool.Borrow(); }
   XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanComputeCommandQueueQueryPool() const { return m_pComputeCommandQueueQueryPool.Borrow(); }
   XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanTransferCommandQueueQueryPool() const { return m_pTransferCommandQueueQueryPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetQueryPoolForCommandQueue(xiiGALCommandQueueVulkan* pCommandQueueVulkan) const
+  {
+    if (m_pGraphicsCommandQueue == pCommandQueueVulkan)
+      return m_pGraphicsCommandQueueQueryPool.Borrow();
+
+    if (m_pComputeCommandQueue == pCommandQueueVulkan)
+      return m_pComputeCommandQueueQueryPool ? m_pComputeCommandQueueQueryPool.Borrow() : nullptr;
+
+    if (m_pTransferCommandQueue == pCommandQueueVulkan)
+      return m_pTransferCommandQueueQueryPool ? m_pTransferCommandQueueQueryPool.Borrow() : nullptr;
+
+    return nullptr;
+  }
 
   xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
   void               DestroyFenceInternal(xiiGALFence* pFence);

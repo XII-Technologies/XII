@@ -587,7 +587,6 @@ public:
       auto        hDepthStencilView  = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
       const auto& backBufferViewDesc = m_pDevice->GetTextureView(hBackBufferView)->GetDescription();
 
-
       xiiVec3U32 vSize = xiiGALTextureUtilities::GetMipLevelSize(backBufferViewDesc.m_uiMostDetailedMip, backBufferTextureDesc);
 
       xiiGALFramebufferCreationDescription framebufferDesc;
