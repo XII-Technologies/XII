@@ -424,6 +424,18 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     XII_ASSERT_DEV(m_PhysicalDeviceQueueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
 
+    {
+      xiiStringBuilder sb;
+      sb.SetFormat("Device '{}' Queue Families", m_PhysicalDeviceProperties.deviceName);
+
+      XII_LOG_BLOCK(sb);
+
+      for (const auto& queueFamilyProperty : m_PhysicalDeviceQueueFamilyProperties)
+      {
+        xiiLog::Info("Queue Count: {},  Flags: {}", queueFamilyProperty.queueCount, vk::to_string(queueFamilyProperty.queueFlags).data());
+      }
+    }
+
     // Get list of supported extensions.
     xiiUInt32 uiExtensionCount = 0U;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, nullptr, m_InstanceDispatchLoader));
