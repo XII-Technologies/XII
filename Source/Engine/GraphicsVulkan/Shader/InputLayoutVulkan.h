@@ -24,7 +24,7 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
-protected:
+private:
   xiiHybridArray<vk::VertexInputAttributeDescription, XII_GAL_MAX_VERTEX_BUFFER_COUNT> m_vkVertexAttributes;
   xiiHybridArray<vk::VertexInputBindingDescription, XII_GAL_MAX_VERTEX_BUFFER_COUNT>   m_vkVertexInputBindings;
 };

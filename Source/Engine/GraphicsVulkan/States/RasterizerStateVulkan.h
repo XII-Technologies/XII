@@ -28,6 +28,6 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
-protected:
+private:
   vk::PipelineRasterizationStateCreateInfo m_RasterizerState = {};
 };

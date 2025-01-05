@@ -41,7 +41,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   vk::Buffer    m_vkBuffer               = VK_NULL_HANDLE;
   VmaAllocation m_BufferMemoryAllocation = {};
 

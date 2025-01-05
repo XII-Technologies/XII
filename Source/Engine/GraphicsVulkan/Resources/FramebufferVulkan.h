@@ -25,6 +25,6 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   vk::Framebuffer m_vkFramebuffer;
 };

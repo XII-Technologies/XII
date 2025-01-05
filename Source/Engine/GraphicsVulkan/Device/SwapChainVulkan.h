@@ -32,7 +32,7 @@ public:
 
   virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) override final;
 
-protected:
+private:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
   friend class xiiGALTexture;
@@ -57,7 +57,7 @@ protected:
 
   void WaitForImageAcquiredFences();
 
-protected:
+private:
   vk::SurfaceKHR   m_vkSurface;
   vk::SwapchainKHR m_vkSwapChain;
   vk::Format       m_vkColorFormat = vk::Format::eUndefined;

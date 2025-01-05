@@ -28,6 +28,6 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
-protected:
+private:
   vk::PipelineDepthStencilStateCreateInfo m_DepthStencilState = {};
 };

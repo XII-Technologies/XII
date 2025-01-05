@@ -16,6 +16,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALBlendStateVulkan final : public xiiGALBlendSt
 
 public:
   XII_ALWAYS_INLINE const vk::PipelineColorBlendStateCreateInfo* GetBlendState() const { return &m_BlendState; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::PipelineColorBlendAttachmentState> GetBlendAttachmentStates() const { return m_BlendAttachmentState; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -29,7 +30,7 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
-protected:
+private:
   vk::PipelineColorBlendStateCreateInfo                                                 m_BlendState = {};
   xiiStaticArray<vk::PipelineColorBlendAttachmentState, XII_GAL_MAX_RENDERTARGET_COUNT> m_BlendAttachmentState;
 };

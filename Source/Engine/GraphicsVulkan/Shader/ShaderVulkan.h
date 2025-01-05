@@ -31,6 +31,6 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   vk::ShaderModule m_vkShaderModule;
 };

@@ -33,11 +33,90 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     case xiiGALPipelineType::Graphics:
     case xiiGALPipelineType::Mesh:
     {
+      const auto& graphicsPipeline = m_Description.m_GraphicsPipeline;
+
       vk::GraphicsPipelineCreateInfo vkGraphicsPipelineCreateInfo = {};
       vkGraphicsPipelineCreateInfo.pNext                          = nullptr;
       vkGraphicsPipelineCreateInfo.flags                          = {};
       vkGraphicsPipelineCreateInfo.basePipelineHandle             = nullptr; // A pipeline to derive from.
-      vkGraphicsPipelineCreateInfo.basePipelineIndex              = -1;      // An index into the pCreateInfos parameter to use as a pipeline to derive from.
+      vkGraphicsPipelineCreateInfo.basePipelineIndex              = {};      // An index into the pCreateInfos parameter to use as a pipeline to derive from.
+
+      bool bScissorEnabled = false;
+      if (xiiGALRasterizerStateVulkan* pRasterizerStateVulkan = static_cast<xiiGALRasterizerStateVulkan*>(pDeviceVulkan->GetRasterizerState(graphicsPipeline.m_hRasterizerState)))
+      {
+        vkGraphicsPipelineCreateInfo.pRasterizationState = pRasterizerStateVulkan->GetRasterizerState();
+        bScissorEnabled                                  = pRasterizerStateVulkan->GetDescription().m_bScissorEnable;
+      }
+
+      vk::PipelineViewportStateCreateInfo vkPipelineViewportStateCreateInfo = {};
+      vk::Rect2D                          vkScissorRect                     = {};
+      {
+        vkPipelineViewportStateCreateInfo.pNext         = {};
+        vkPipelineViewportStateCreateInfo.flags         = {};
+        vkPipelineViewportStateCreateInfo.viewportCount = graphicsPipeline.m_uiViewportCount; // Even though we use dynamic viewports, the number of viewports used by the pipeline is still specified by the viewportCount member (23.5)
+        vkPipelineViewportStateCreateInfo.pViewports    = nullptr;                            // We will be using dynamic viewport & scissor states.
+        vkPipelineViewportStateCreateInfo.scissorCount  = graphicsPipeline.m_uiViewportCount; // the number of scissors must match the number of viewports (23.5)
+
+        if (bScissorEnabled)
+        {
+          vkPipelineViewportStateCreateInfo.pScissors = nullptr; // Ignored if the scissor state is dynamic.
+        }
+        else
+        {
+          const vk::PhysicalDeviceProperties& physicalDeviceProperties = pDeviceVulkan->GetVulkanPhysicalDeviceProperties();
+
+          // There are limitations on the viewport width and height (23.5), but it is not clear if there are limitations on the scissor rect width and height.
+          vkScissorRect.extent.width                  = physicalDeviceProperties.limits.maxViewportDimensions[0];
+          vkScissorRect.extent.height                 = physicalDeviceProperties.limits.maxViewportDimensions[1];
+          vkPipelineViewportStateCreateInfo.pScissors = &vkScissorRect;
+        }
+      }
+      vkGraphicsPipelineCreateInfo.pViewportState = &vkPipelineViewportStateCreateInfo;
+
+      vk::PipelineMultisampleStateCreateInfo vkPipelineMultisampleStateCreateInfo = {};
+      xiiUInt32                              sampleMask[]                         = {graphicsPipeline.m_uiSampleMask, 0U}; // Vulkan spec allows up to 64 samples.
+      {
+        // If subpass uses color and/or depth/stencil attachments, then the rasterizationSamples member of pMultisampleState must be the same as the sample count for those subpass attachments.
+
+        vkPipelineMultisampleStateCreateInfo.pNext                 = nullptr;
+        vkPipelineMultisampleStateCreateInfo.flags                 = {};
+        vkPipelineMultisampleStateCreateInfo.rasterizationSamples  = static_cast<vk::SampleCountFlagBits>(graphicsPipeline.m_SampleDescription.m_uiCount);
+        vkPipelineMultisampleStateCreateInfo.sampleShadingEnable   = vk::False;
+        vkPipelineMultisampleStateCreateInfo.minSampleShading      = 0U;         // A minimum fraction of sample shading if sampleShadingEnable is set to VK_TRUE.
+        vkPipelineMultisampleStateCreateInfo.pSampleMask           = sampleMask; // An array of static coverage information that is ANDed with the coverage information generated during rasterization (25.3)
+        vkPipelineMultisampleStateCreateInfo.alphaToCoverageEnable = vk::False;  // Whether a temporary coverage value is generated based on the alpha component of the fragment's first color output.
+        vkPipelineMultisampleStateCreateInfo.alphaToOneEnable      = vk::False;  // Whether the alpha component of the fragment's first color output is replaced with one.
+      }
+      vkGraphicsPipelineCreateInfo.pMultisampleState = &vkPipelineMultisampleStateCreateInfo;
+
+      if (xiiGALDepthStencilStateVulkan* pDepthStencilStateVulkan = static_cast<xiiGALDepthStencilStateVulkan*>(pDeviceVulkan->GetDepthStencilState(graphicsPipeline.m_hDepthStencilState)))
+      {
+        vkGraphicsPipelineCreateInfo.pDepthStencilState = pDepthStencilStateVulkan->GetDepthStencilState();
+      }
+
+      vk::PipelineColorBlendStateCreateInfo vkPipelineColorBlendStateCreateInfo = {};
+      {
+        xiiArrayPtr<const vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+        if (xiiGALBlendStateVulkan* pBlendStateVulkan = static_cast<xiiGALBlendStateVulkan*>(pDeviceVulkan->GetBlendState(graphicsPipeline.m_hBlendState)))
+        {
+          vkPipelineColorBlendStateCreateInfo = *pBlendStateVulkan->GetBlendState();
+          colorBlendAttachmentStates          = pBlendStateVulkan->GetBlendAttachmentStates();
+        }
+
+        xiiGALRenderPassVulkan* pRenderPassVulkan     = static_cast<xiiGALRenderPassVulkan*>(pDeviceVulkan->GetRenderPass(graphicsPipeline.m_hRenderPass));
+        const auto&             renderPassDescription = pRenderPassVulkan->GetDescription();
+
+        vkPipelineColorBlendStateCreateInfo.attachmentCount = renderPassDescription.m_SubPasses[graphicsPipeline.m_uiSubpassIndex].m_RenderTargetAttachments.GetCount();
+        vkPipelineColorBlendStateCreateInfo.pAttachments    = nullptr;
+
+        if (vkPipelineColorBlendStateCreateInfo.attachmentCount > 0)
+        {
+          XII_ASSERT_DEV(colorBlendAttachmentStates.GetCount() >= vkPipelineColorBlendStateCreateInfo.attachmentCount, "");
+
+          vkPipelineColorBlendStateCreateInfo.pAttachments = colorBlendAttachmentStates.GetPtr();
+        }
+      }
+      vkGraphicsPipelineCreateInfo.pColorBlendState = &vkPipelineColorBlendStateCreateInfo;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
       vkGraphicsPipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
@@ -106,6 +185,12 @@ xiiResult xiiGALPipelineStateVulkan::DeInitPlatform()
     pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipeline);
 
     m_vkPipeline = VK_NULL_HANDLE;
+  }
+  if (m_vkPipelineLayout != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipelineLayout);
+
+    m_vkPipelineLayout = VK_NULL_HANDLE;
   }
   return XII_SUCCESS;
 }

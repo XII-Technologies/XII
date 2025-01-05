@@ -23,7 +23,6 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform()
   if (m_Description.m_RenderTargets.IsEmpty())
     return XII_SUCCESS;
 
-  m_BlendState.sType             = vk::StructureType::ePipelineColorBlendStateCreateInfo;
   m_BlendState.pNext             = nullptr;
   m_BlendState.flags             = {};
   m_BlendState.logicOpEnable     = VK_BOOL(m_Description.m_LogicOperationEnable);

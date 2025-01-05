@@ -31,5 +31,5 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
 };

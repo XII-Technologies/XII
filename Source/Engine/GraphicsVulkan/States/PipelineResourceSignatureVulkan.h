@@ -44,7 +44,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   vk::DescriptorSetLayout m_vkDescriptorSetLayout = VK_NULL_HANDLE;
 
   xiiDynamicArray<ImmutableSamplerStorage> m_ImmutableSamplers;

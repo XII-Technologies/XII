@@ -39,7 +39,8 @@ protected:
   virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
   virtual void ResetBoundResources() override final;
 
-protected:
-  vk::Pipeline      m_vkPipeline;
-  vk::PipelineCache m_vkPipelineCache;
+private:
+  vk::Pipeline       m_vkPipeline;
+  vk::PipelineCache  m_vkPipelineCache;
+  vk::PipelineLayout m_vkPipelineLayout;
 };

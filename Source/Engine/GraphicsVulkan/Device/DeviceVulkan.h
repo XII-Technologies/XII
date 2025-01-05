@@ -263,9 +263,9 @@ protected:
 
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
+private:
   void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
 
-private:
   enum class VulkanObjectType : xiiUInt32
   {
     CommandPool,
