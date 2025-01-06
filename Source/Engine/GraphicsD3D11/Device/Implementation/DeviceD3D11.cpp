@@ -267,18 +267,6 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
     m_pGraphicsCommandQueue.Clear();
   }
 
-  if (m_pComputeCommandQueue != nullptr)
-  {
-    m_pComputeCommandQueue->DeInitializePlatform();
-    m_pComputeCommandQueue.Clear();
-  }
-
-  if (m_pTransferCommandQueue != nullptr)
-  {
-    m_pTransferCommandQueue->DeInitializePlatform();
-    m_pTransferCommandQueue.Clear();
-  }
-
   for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
   {
     for (auto it = m_FreeTempResources[type].GetIterator(); it.IsValid(); ++it)
@@ -337,15 +325,9 @@ xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
           m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
           pCommandQueueD3D11      = m_pGraphicsCommandQueue.Borrow();
         }
-        else if (queueType == xiiGALCommandQueueType::Compute)
+        else
         {
-          m_pComputeCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
-          pCommandQueueD3D11     = m_pComputeCommandQueue.Borrow();
-        }
-        else if (queueType == xiiGALCommandQueueType::Transfer)
-        {
-          m_pTransferCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
-          pCommandQueueD3D11      = m_pTransferCommandQueue.Borrow();
+          XII_REPORT_FAILURE("Unsupported queue type.");
         }
 
         if (pCommandQueueD3D11 != nullptr)
@@ -367,9 +349,6 @@ xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
 
   if (!CreateCommandQueue(xiiGALCommandQueueType::Graphics, "Default Graphics", m_Description.m_uiAdapterID))
     return XII_FAILURE;
-
-  CreateCommandQueue(xiiGALCommandQueueType::Transfer, "Default Transfer", m_Description.m_uiAdapterID);
-  CreateCommandQueue(xiiGALCommandQueueType::Compute, "Default Compute", m_Description.m_uiAdapterID);
 
   return XII_SUCCESS;
 }
@@ -803,18 +782,9 @@ void xiiGALDeviceD3D11::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipel
 
 void xiiGALDeviceD3D11::WaitIdlePlatform()
 {
-  if (m_pGraphicsCommandQueue)
-    m_pGraphicsCommandQueue->WaitForIdle();
-
-  if (m_pComputeCommandQueue)
-    m_pComputeCommandQueue->WaitForIdle();
-
-  if (m_pTransferCommandQueue)
-    m_pTransferCommandQueue->WaitForIdle();
+  m_pGraphicsCommandQueue->WaitForIdle();
 
   FlushPendingObjects();
-
-  ///\todo Release stale resources.
 }
 
 xiiResult xiiGALDeviceD3D11::FillCapabilitiesPlatform()

@@ -15,8 +15,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandL
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D11, xiiGALCommandList);
 
 public:
-  XII_ALWAYS_INLINE ID3D11CommandList* GetD3D11CommandList() const { return m_pSubmittedCommandList; }
-  XII_ALWAYS_INLINE ID3D11DeviceContext1* GetD3D11DeferredContext() const { return m_pCommandList; }
+  XII_ALWAYS_INLINE ID3D11DeviceContext4* GetD3D11Context() const { return m_pImmediateContext; }
 
 protected:
   void GALSwapChainD3D11EventHandler(const xiiGALSwapChainD3D11Event& e);
@@ -106,8 +105,7 @@ private:
 
   xiiGALCommandQueueD3D11* m_pCommandQueueD3D11 = nullptr;
 
-  ID3D11DeviceContext1* m_pCommandList          = nullptr;
-  ID3D11CommandList*    m_pSubmittedCommandList = nullptr;
+  ID3D11DeviceContext4* m_pImmediateContext = nullptr;
 
   xiiGALPipelineStateD3D11* m_pPipelineState = nullptr;
 
@@ -136,8 +134,8 @@ private:
   xiiGALFramebuffer*                                                            m_pFramebuffer   = nullptr;
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
-  xiiMap<xiiGALBufferD3D11*, ID3D11DeviceContext*>  m_MappedBuffers;
-  xiiMap<xiiGALTextureD3D11*, ID3D11DeviceContext*> m_MappedTextureSubresources;
+  xiiMap<xiiGALBufferD3D11*, ID3D11DeviceContext4*>  m_MappedBuffers;
+  xiiMap<xiiGALTextureD3D11*, ID3D11DeviceContext4*> m_MappedTextureSubresources;
 
   xiiDisjointQueryPool                                     m_DisjointQueryPool;
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> m_pActiveDisjointQuery;

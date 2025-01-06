@@ -313,7 +313,7 @@ static void SetSamplers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11
 
 xiiResult xiiGALPipelineStateD3D11::CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11)
 {
-  auto pContext = pCommandListD3D11->GetD3D11DeferredContext();
+  auto pContext = pCommandListD3D11->GetD3D11Context();
 
   // Set shaders.
   if (m_Description.IsAnyGraphicsPipeline())
