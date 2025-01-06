@@ -1001,8 +1001,6 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
     }
     pCommandList->EndDebugGroup();
     pCommandList->Submit();
-
-    pGraphicsQueue->WaitForIdle();
   }
 }
 

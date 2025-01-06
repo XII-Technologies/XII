@@ -85,7 +85,11 @@ void xiiRenderContext::Statistics::Reset()
 xiiRenderContext* xiiRenderContext::GetDefaultInstance()
 {
   if (s_pDefaultInstance == nullptr)
+  {
     s_pDefaultInstance = CreateInstance();
+  }
+
+  XII_ASSERT_DEBUG(s_pDefaultInstance != nullptr, "Default instance should have been created during device creation.");
 
   return s_pDefaultInstance;
 }
@@ -119,12 +123,6 @@ xiiRenderContext::xiiRenderContext()
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  // Retrive a command list that we record all commands in the render context with.
-  xiiGALCommandQueue* pCommandQueue = pDevice->GetDefaultCommandQueue();
-  m_pPersistentCommandList          = pCommandQueue->BeginCommandList();
-  // No commands to record, so we end the command list immediately.
-  m_pPersistentCommandList->End();
-
   ResetContextState();
 }
 
@@ -156,7 +154,9 @@ xiiRenderContext::~xiiRenderContext()
   DeleteConstantBufferStorage(m_hGlobalConstantBufferStorage);
 
   if (s_pDefaultInstance == this)
+  {
     s_pDefaultInstance = nullptr;
+  }
 
   s_Instances.RemoveAndSwap(this);
 }
@@ -172,7 +172,7 @@ xiiRenderContext::Statistics xiiRenderContext::GetAndResetStatistics()
 void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
 {
   XII_ASSERT_DEV(m_bIsRendering == false && m_bIsCompute == false, "Already in a scope.");
-  XII_ASSERT_DEV(m_pCommandList == nullptr, "Already in a scope.");
+  XII_ASSERT_DEV(m_pCommandList != nullptr, "Command list has not been set.");
 
   m_CurrentRenderingSetup = renderingSetup;
   m_bIsRendering          = true;
@@ -215,20 +215,12 @@ void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup
     gc.NumMsaaSamples = uiSampleCount;
   }
 
-  m_pCommandList = (m_pScopedCommandList != nullptr) ? m_pScopedCommandList : m_pPersistentCommandList;
   {
-    if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
-    {
-      m_pCommandList->Begin();
-    }
+    m_bHasActiveScope = !sName.IsEmpty();
 
-    if (!sName.IsEmpty())
+    if (m_bHasActiveScope)
     {
       m_pCommandList->BeginDebugGroup(sName);
-
-      m_bHasScopedCommandListLabel = (m_pCommandList == m_pScopedCommandList) && (m_pScopedCommandList != nullptr);
-
-      ++m_uiActiveScopeCount;
     }
   }
 
@@ -261,34 +253,17 @@ void xiiRenderContext::EndRendering()
 
   EndRenderPass();
 
-  if (m_uiActiveScopeCount > 0)
+  if (m_bHasActiveScope)
   {
-    if (m_bHasScopedCommandListLabel)
-    {
-      m_pScopedCommandList->EndDebugGroup();
+    m_pCommandList->EndDebugGroup();
 
-      m_bHasScopedCommandListLabel = false;
-    }
-    else
-    {
-      m_pPersistentCommandList->EndDebugGroup();
-    }
-
-    --m_uiActiveScopeCount;
+    m_bHasActiveScope = false;
   }
-  if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
-  {
-    m_pCommandList->End();
-  }
-  m_pCommandList->Submit();
 
-  m_pCommandList        = nullptr;
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
   m_hCurrentRenderPass  = xiiGALRenderPassHandle();
   m_bStereoRendering    = false;
   m_bIsRendering        = false;
-
-  XII_ASSERT_DEBUG(!m_bHasScopedCommandListLabel, "");
 
   // TODO: The render context needs to reset its state after every encoding block if we want to record to separate command buffers.
   // Although this is currently not possible since a lot of high level code binds stuff only once per frame on the render context.
@@ -299,54 +274,29 @@ void xiiRenderContext::EndRendering()
 void xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
 {
   XII_ASSERT_DEV(m_bIsRendering == false && m_bIsCompute == false, "Already in a scope.");
-  XII_ASSERT_DEV(m_pCommandList == nullptr, "Already in a scope.");
+  XII_ASSERT_DEV(m_pCommandList != nullptr, "Command list has not been set.");
 
-  m_bIsCompute   = true;
-  m_pCommandList = (m_pScopedCommandList != nullptr) ? m_pScopedCommandList : m_pPersistentCommandList;
+  m_bIsCompute = true;
   {
-    if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
-    {
-      m_pCommandList->Begin();
-    }
+    m_bHasActiveScope = !sName.IsEmpty();
 
-    if (!sName.IsEmpty())
+    if (m_bHasActiveScope)
     {
       m_pCommandList->BeginDebugGroup(sName);
-
-      m_bHasScopedCommandListLabel = (m_pCommandList == m_pScopedCommandList) && (m_pScopedCommandList != nullptr);
-
-      ++m_uiActiveScopeCount;
     }
   }
 }
 
 void xiiRenderContext::EndCompute()
 {
-  if (m_uiActiveScopeCount > 0)
+  if (m_bHasActiveScope)
   {
-    if (m_bHasScopedCommandListLabel)
-    {
-      m_pScopedCommandList->EndDebugGroup();
+    m_pCommandList->EndDebugGroup();
 
-      m_bHasScopedCommandListLabel = false;
-    }
-    else
-    {
-      m_pPersistentCommandList->EndDebugGroup();
-    }
-
-    --m_uiActiveScopeCount;
+    m_bHasActiveScope = false;
   }
-  if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
-  {
-    m_pCommandList->End();
-  }
-  m_pCommandList->Submit();
 
-  m_pCommandList = nullptr;
-  m_bIsCompute   = false;
-
-  XII_ASSERT_DEBUG(!m_bHasScopedCommandListLabel, "");
+  m_bIsCompute = false;
 
   // TODO: See EndRendering
   // ResetContextState();
@@ -951,15 +901,6 @@ void xiiRenderContext::ResetContextState()
   m_CurrentRenderingSetup = {};
   m_hCurrentFramebuffer   = xiiGALFramebufferHandle();
   m_hCurrentRenderPass    = xiiGALRenderPassHandle();
-
-  if (m_pScopedCommandList != nullptr)
-  {
-    m_pScopedCommandList->Reset();
-  }
-  if (m_pPersistentCommandList != nullptr)
-  {
-    m_pPersistentCommandList->Reset();
-  }
 
   m_hActiveShader.Invalidate();
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hActiveGALShaders); ++i)

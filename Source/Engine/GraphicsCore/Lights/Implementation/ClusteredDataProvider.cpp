@@ -181,38 +181,34 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
     m_Data.m_uiSkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
     m_Data.m_cameraUsageHint      = pData->m_cameraUsageHint;
 
-    if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+    auto pCommandList = renderViewContext.m_pRenderContext->GetCommandList();
+
+    pCommandList->BeginDebugGroup("xiiClusteredDataProvider Update");
     {
-      auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
-
-      pCommandList->BeginDebugGroup("xiiClusteredDataProvider Update");
+      // Update buffer
+      if (!pData->m_ClusterItemList.IsEmpty())
       {
-        // Update buffer
-        if (!pData->m_ClusterItemList.IsEmpty())
+        if (!pData->m_LightData.IsEmpty())
         {
-          if (!pData->m_LightData.IsEmpty())
-          {
-            pCommandList->UpdateBufferExtended(m_Data.m_hLightDataBuffer, 0, pData->m_LightData.ToByteArray());
-          }
-
-          if (!pData->m_DecalData.IsEmpty())
-          {
-            pCommandList->UpdateBufferExtended(m_Data.m_hDecalDataBuffer, 0, pData->m_DecalData.ToByteArray());
-          }
-
-          if (!pData->m_ReflectionProbeData.IsEmpty())
-          {
-            pCommandList->UpdateBufferExtended(m_Data.m_hReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray());
-          }
-
-          pCommandList->UpdateBufferExtended(m_Data.m_hClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray());
+          pCommandList->UpdateBufferExtended(m_Data.m_hLightDataBuffer, 0, pData->m_LightData.ToByteArray());
         }
 
-        pCommandList->UpdateBufferExtended(m_Data.m_hClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray());
+        if (!pData->m_DecalData.IsEmpty())
+        {
+          pCommandList->UpdateBufferExtended(m_Data.m_hDecalDataBuffer, 0, pData->m_DecalData.ToByteArray());
+        }
+
+        if (!pData->m_ReflectionProbeData.IsEmpty())
+        {
+          pCommandList->UpdateBufferExtended(m_Data.m_hReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray());
+        }
+
+        pCommandList->UpdateBufferExtended(m_Data.m_hClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray());
       }
-      pCommandList->EndDebugGroup();
-      pCommandList->Submit();
+
+      pCommandList->UpdateBufferExtended(m_Data.m_hClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray());
     }
+    pCommandList->EndDebugGroup();
 
     // Update Constants
     const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;

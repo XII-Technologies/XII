@@ -93,26 +93,22 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   }
   else
   {
-    if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
-    {
-      auto pCommandList = pGraphicsQueue->BeginCommandList();
+    auto pCommandList = renderViewContext.m_pRenderContext->GetCommandList();
 
-      pCommandList->BeginDebugGroup(GetName());
+    pCommandList->BeginDebugGroup(GetName());
+    {
+      xiiGALTextureMipLevelData mipLevelData{.m_uiMipLevel = 0U, .m_uiArraySlice = 0U};
+
+      pCommandList->ResolveTextureSubResource(pInput->m_TextureHandle, mipLevelData, pOutput->m_TextureHandle, mipLevelData);
+
+      if (renderViewContext.m_pCamera->IsStereoscopic())
       {
-        xiiGALTextureMipLevelData mipLevelData{.m_uiMipLevel = 0U, .m_uiArraySlice = 0U};
+        mipLevelData.m_uiArraySlice = 1U;
 
         pCommandList->ResolveTextureSubResource(pInput->m_TextureHandle, mipLevelData, pOutput->m_TextureHandle, mipLevelData);
-
-        if (renderViewContext.m_pCamera->IsStereoscopic())
-        {
-          mipLevelData.m_uiArraySlice = 1U;
-
-          pCommandList->ResolveTextureSubResource(pInput->m_TextureHandle, mipLevelData, pOutput->m_TextureHandle, mipLevelData);
-        }
       }
-      pCommandList->EndDebugGroup();
-      pCommandList->Submit();
     }
+    pCommandList->EndDebugGroup();
   }
 }
 

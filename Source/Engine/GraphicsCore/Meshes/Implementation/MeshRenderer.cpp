@@ -90,17 +90,13 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       if (uiFilteredCount > 0) // Instance data might be empty if all render data was filtered.
       {
-        if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
-        {
-          auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
+        auto pCommandList = pContext->GetCommandList();
 
-          pCommandList->BeginDebugGroup("xiiInstanceData Update");
-          {
-            pInstanceData->UpdateInstanceData(pCommandList, uiFilteredCount);
-          }
-          pCommandList->EndDebugGroup();
-          pCommandList->Submit();
+        pCommandList->BeginDebugGroup("xiiInstanceData Update");
+        {
+          pInstanceData->UpdateInstanceData(pCommandList, uiFilteredCount);
         }
+        pCommandList->EndDebugGroup();
 
         const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];
 
