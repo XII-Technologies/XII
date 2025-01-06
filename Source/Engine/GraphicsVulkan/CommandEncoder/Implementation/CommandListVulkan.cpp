@@ -497,10 +497,13 @@ void xiiGALCommandListVulkan::ResetInternal()
   m_RecordingState = RecordingState::Reset;
 }
 
-xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform(bool bReset)
+xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform()
 {
   xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue());
-  return pCommandQueueVulkan->SubmitCommandList(this, bReset);
+
+  m_RecordingState = RecordingState::Submitted;
+
+  return pCommandQueueVulkan->SubmitCommandList(this);
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)

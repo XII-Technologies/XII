@@ -123,7 +123,7 @@ protected:
   virtual void ResetPlatform() override final;
   void         ResetInternal();
 
-  virtual xiiUInt64 SubmitPlatform(bool bReset) override final;
+  virtual xiiUInt64 SubmitPlatform() override final;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 

@@ -58,13 +58,11 @@ public:
 
   /// \brief After GetRenderTargetDescriptions was called successfully for each pass, this function is called
   /// with the inputs and outputs for review. Disconnected pins have a nullptr value in the passed in arrays.
-  /// This is the time to create additional resources that are not covered by the pins automatically, e.g. a picking texture or eye
-  /// adaptation buffer.
+  /// This is the time to create additional resources that are not covered by the pins automatically, e.g. a picking texture or eye adaptation buffer.
   virtual void InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs);
 
   /// \brief Render into outputs. Both inputs and outputs are passed in with actual texture handles.
-  /// Disconnected pins have a nullptr value in the passed in arrays. You can now create views and render target setups on the fly and
-  /// fill the output targets with data.
+  /// Disconnected pins have a nullptr value in the passed in arrays. You can now create views and render target setups on the fly and fill the output targets with data.
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) = 0;
 
   virtual void ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs);

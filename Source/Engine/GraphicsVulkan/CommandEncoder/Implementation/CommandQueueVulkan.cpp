@@ -140,7 +140,7 @@ void xiiGALCommandQueueVulkan::ResetCommandList(xiiGALCommandListVulkan* pComman
   m_CommandListsToReset.PushBack(CommandListReleaseInfo{.m_pCommandListVulkan = pCommandListVulkan, .m_uiFenceValue = GetNextFenceValue()});
 }
 
-xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList)
 {
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
@@ -196,10 +196,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 
   m_LastSyncPoint = syncPoint;
 
-  if (bReset)
-  {
-    pCommandListVulkan->Reset();
-  }
+  pCommandListVulkan->ResetPlatform();
 
   return uiFenceValue;
 }

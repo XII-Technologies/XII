@@ -32,7 +32,7 @@ public:
   XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
 
 private:
-  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
+  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
 
 protected:
   friend class xiiGALDeviceVulkan;

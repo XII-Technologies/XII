@@ -23,9 +23,9 @@ void xiiGALCommandListNull::ResetPlatform()
 {
 }
 
-xiiUInt64 xiiGALCommandListNull::SubmitPlatform(bool bReset)
+xiiUInt64 xiiGALCommandListNull::SubmitPlatform()
 {
-  return static_cast<xiiGALCommandQueueNull*>(m_pCommandQueue)->Submit(this, bReset);
+  return static_cast<xiiGALCommandQueueNull*>(m_pCommandQueue)->Submit(this);
 }
 
 void xiiGALCommandListNull::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)

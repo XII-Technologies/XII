@@ -188,9 +188,10 @@ public:
       renderingSetup.m_bClearDepth             = true;
       renderingSetup.m_bClearStencil           = true;
 
-      xiiRenderContext::GetDefaultInstance()->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+      xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
+      pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
 
-      auto& gc = xiiRenderContext::GetDefaultInstance()->WriteGlobalConstants();
+      auto& gc = pRenderContext->WriteGlobalConstants();
       xiiMemoryUtils::ZeroFill(&gc, 1);
 
       xiiMat4 m0, m1;
@@ -205,14 +206,14 @@ public:
       gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
       gc.WorldTime  = gc.GlobalTime;
 
-      xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
-      xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
-      xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
-      xiiRenderContext::GetDefaultInstance()->EndRendering();
+      pRenderContext->BindMaterial(m_hMaterial);
+      pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
+      pRenderContext->DrawMeshBuffer().IgnoreResult();
+      pRenderContext->EndRendering();
 
       m_pDevice->EndFrame();
 
-      xiiRenderContext::GetDefaultInstance()->ResetContextState();
+      pRenderContext->ResetContextState();
     }
 
     // Make sure telemetry is sent out regularly.

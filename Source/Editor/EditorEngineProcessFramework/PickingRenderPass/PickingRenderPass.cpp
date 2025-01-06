@@ -149,9 +149,6 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     pCommandList->CopyTexture(GetPickingDepthRT(), m_hPickingDepthRTStaging);
     pCommandList->CopyTexture(GetPickingIdRT(), m_hPickingIdRTStaging);
 
-    // Submit immediately, so that the data is available when reading back the result from the staging texture.
-    pCommandList->Submit(false);
-
     xiiMat4 mProj;
     renderViewContext.m_pCamera->GetProjectionMatrix((float)m_uiWindowWidth / m_uiWindowHeight, mProj);
     xiiMat4 mView = renderViewContext.m_pCamera->GetViewMatrix();
@@ -257,7 +254,6 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
       }
     }
     pCommandList->EndDebugGroup();
-    pCommandList->Submit(false);
   }
 }
 

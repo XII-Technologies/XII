@@ -280,7 +280,7 @@ void xiiRenderContext::EndRendering()
   {
     m_pCommandList->End();
   }
-  m_pCommandList->Submit(false);
+  m_pCommandList->Submit();
 
   m_pCommandList        = nullptr;
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
@@ -341,7 +341,7 @@ void xiiRenderContext::EndCompute()
   {
     m_pCommandList->End();
   }
-  m_pCommandList->Submit(false);
+  m_pCommandList->Submit();
 
   m_pCommandList = nullptr;
   m_bIsCompute   = false;

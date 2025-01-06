@@ -111,11 +111,11 @@ void xiiGALCommandListD3D11::ResetPlatform()
   }
 }
 
-xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform(bool bReset)
+xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform()
 {
   if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
   {
-    return pCommandQueueD3D11->SubmitCommandList(this, bReset);
+    return pCommandQueueD3D11->SubmitCommandList(this);
   }
   return xiiMath::MaxValue<xiiUInt64>();
 }

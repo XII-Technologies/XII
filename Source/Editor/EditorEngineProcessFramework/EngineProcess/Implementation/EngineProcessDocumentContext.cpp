@@ -453,8 +453,6 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         pGALCommandList->BeginDebugGroup("Thumbnail Readback");
         pGALCommandList->CopyTexture(m_hThumbnailColorRT, m_hThumbnailColorRTStaging);
 
-        // Submit this before attempting to download thumbnail image from staging texture.
-        pGALCommandList->Submit(false);
         pGALCommandList->EndDebugGroup();
 
         const xiiGALTexture*                pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);

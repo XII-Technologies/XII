@@ -38,28 +38,24 @@ xiiGALCommandList::~xiiGALCommandList() = default;
 
 void xiiGALCommandList::Begin()
 {
-  XII_ASSERT_DEV(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
+  XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
+  XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and is no longer available for recording commands.");
 
-  if (m_RecordingState != RecordingState::Recording)
-  {
-    BeginPlatform();
-  }
+  BeginPlatform();
 }
 
 void xiiGALCommandList::End()
 {
-  XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
-  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "The command list has not begun.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
+  XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Recording, "The command list has not begun.");
 
-  if (m_RecordingState == RecordingState::Recording)
-  {
-    EndPlatform();
-  }
+  EndPlatform();
 }
 
 void xiiGALCommandList::Reset()
 {
-  XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
+  XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and cannot be resetted until after queue execution.");
 
   if (m_RecordingState == RecordingState::Recording)
   {
@@ -71,16 +67,21 @@ void xiiGALCommandList::Reset()
   }
 }
 
-xiiUInt64 xiiGALCommandList::Submit(bool bReset)
+xiiUInt64 xiiGALCommandList::Submit()
 {
   XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
   XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Commandlist is already reset.");
+  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Submitted, "Commandlist is already submitted!");
 
   if (m_RecordingState == xiiGALCommandList::RecordingState::Recording)
   {
     End();
   }
-  return SubmitPlatform(bReset);
+  if (m_RecordingState == xiiGALCommandList::RecordingState::Ended)
+  {
+    SubmitPlatform();
+  }
+  return xiiMath::MaxValue<xiiUInt64>();
 }
 
 void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineState)

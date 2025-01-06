@@ -49,7 +49,7 @@ void xiiGALCommandListD3D12::ResetPlatform()
 {
 }
 
-xiiUInt64 xiiGALCommandListD3D12::SubmitPlatform(bool bReset)
+xiiUInt64 xiiGALCommandListD3D12::SubmitPlatform()
 {
   return xiiUInt64();
 }

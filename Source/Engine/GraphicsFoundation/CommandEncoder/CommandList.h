@@ -97,14 +97,14 @@ public:
   void End();
 
   /// \brief Resets the command list. This method is used to clear all commands that have been recorded in the command list.
+  ///
+  /// \remarks This method can be called only if the command list has not yet been submitted for execution.
   void Reset();
 
-  /// \brief Submits a command list for execution. If bReset is true, the command list is reset after submission.
-  ///
-  /// \param bReset - Calls Reset() to reset the command list after submission.
+  /// \brief Submits a command list to the command queue for execution. The command list is reset after the execution on the command queue.
   ///
   /// \return The current internal fence value.
-  xiiUInt64 Submit(bool bReset = true);
+  xiiUInt64 Submit();
 
   // State functions.
 
@@ -397,7 +397,8 @@ public:
   {
     Recording, ///< The command list is currently being recorded.
     Ended,     ///< The recording of the command list has ended.
-    Reset      ///< The command list has been reset and is ready to be recorded again.
+    Reset,     ///< The command list has been reset and is ready to be recorded again.
+    Submitted  ///< The command list has been submitted and is no longer available for recording commands. A new command list has to be requested for recording more commands.
   };
 
   XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };
@@ -421,7 +422,7 @@ protected:
   virtual void EndPlatform()   = 0;
   virtual void ResetPlatform() = 0;
 
-  virtual xiiUInt64 SubmitPlatform(bool bReset) = 0;
+  virtual xiiUInt64 SubmitPlatform() = 0;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
 

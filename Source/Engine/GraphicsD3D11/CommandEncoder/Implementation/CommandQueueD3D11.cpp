@@ -140,7 +140,7 @@ void xiiGALCommandQueueD3D11::ResetCommandList(xiiGALCommandListD3D11* pCommandL
   m_CommandLists.PushFront(pCommandListD3D11);
 }
 
-xiiUInt64 xiiGALCommandQueueD3D11::SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueD3D11::SubmitCommandList(xiiGALCommandList* pCommandList)
 {
   XII_LOCK(m_QueueMutex);
 
@@ -157,10 +157,8 @@ xiiUInt64 xiiGALCommandQueueD3D11::SubmitCommandList(xiiGALCommandList* pCommand
   // Signal the fence. This must be done atomically with command list submission.
   m_pImmediateContext->Signal(m_pD3D11DFence, uiFenceValue);
 
-  if (bReset)
-  {
-    pCommandListD3D11->Reset();
-  }
+  pCommandListD3D11->Reset();
+
   return uiFenceValue;
 }
 
