@@ -25,7 +25,7 @@ public:
   void ResetCommandList(xiiGALCommandListD3D11* pCommandListD3D11);
 
 protected:
-  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
+  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
 
 protected:
   friend class xiiGALDeviceD3D11;
