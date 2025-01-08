@@ -5,8 +5,6 @@
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
-namespace
-{
   xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSwapChainHandle& value)
   {
     ref_stream << reinterpret_cast<const xiiUInt32&>(value);
@@ -117,7 +115,6 @@ namespace
     ref_stream << reinterpret_cast<const xiiUInt32&>(value);
     return ref_stream;
   }
-} // namespace
 
 xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescription& description)
 {

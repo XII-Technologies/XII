@@ -30,7 +30,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   } while (false)
 
 xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_pCommandQueue(pCommandQueue), m_Description(creationDescription)
+  xiiGALDeviceObject(pDevice), m_Description(creationDescription), m_pCommandQueue(pCommandQueue)
 {
 }
 
@@ -665,7 +665,6 @@ xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xii
   XII_VERIFY_COMMAND_LIST_RESULT(!hBuffer.IsInvalidated(), "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
 
   xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
-  const auto&   bufferDescription = pBuffer->GetDescription();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiUInt32 uiKey = reinterpret_cast<const xiiUInt32&>(hBuffer);
