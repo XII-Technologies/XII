@@ -41,6 +41,54 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       vkGraphicsPipelineCreateInfo.basePipelineHandle             = nullptr; // A pipeline to derive from.
       vkGraphicsPipelineCreateInfo.basePipelineIndex              = {};      // An index into the pCreateInfos parameter to use as a pipeline to derive from.
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+      vkGraphicsPipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
+#endif
+
+      xiiDynamicArray<vk::PipelineShaderStageCreateInfo> vkShaderStages(pDeviceVulkan->GetAllocator());
+      {
+#define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                                                 \
+  if (xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pDeviceVulkan->GetShader(graphicsPipeline.m_h##shaderType))) \
+  {                                                                                                                                     \
+    vk::PipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};                                                             \
+    vkPipelineShaderStageCreateInfo.pNext                             = nullptr;                                                        \
+    vkPipelineShaderStageCreateInfo.flags                             = {};                                                             \
+    vkPipelineShaderStageCreateInfo.stage                             = shaderStageFlagBits;                                            \
+    vkPipelineShaderStageCreateInfo.pName                             = "main";                                                         \
+    vkPipelineShaderStageCreateInfo.module                            = pShaderVulkan->GetVulkanShaderModule();                         \
+    vkPipelineShaderStageCreateInfo.pSpecializationInfo               = nullptr;                                                        \
+                                                                                                                                        \
+    vkShaderStages.PushBack(vkPipelineShaderStageCreateInfo);                                                                           \
+  }
+
+        DEFINE_VULKAN_SHADER_IF_EXISTS(VertexShader, vk::ShaderStageFlagBits::eVertex);
+        DEFINE_VULKAN_SHADER_IF_EXISTS(PixelShader, vk::ShaderStageFlagBits::eFragment);
+        DEFINE_VULKAN_SHADER_IF_EXISTS(DomainShader, vk::ShaderStageFlagBits::eTessellationEvaluation);
+        DEFINE_VULKAN_SHADER_IF_EXISTS(HullShader, vk::ShaderStageFlagBits::eTessellationControl);
+        DEFINE_VULKAN_SHADER_IF_EXISTS(GeometryShader, vk::ShaderStageFlagBits::eGeometry);
+        DEFINE_VULKAN_SHADER_IF_EXISTS(AmplificationShader, vk::ShaderStageFlagBits::eTaskEXT);
+        DEFINE_VULKAN_SHADER_IF_EXISTS(MeshShader, vk::ShaderStageFlagBits::eMeshEXT);
+
+#undef DEFINE_VULKAN_SHADER_IF_EXISTS
+      }
+      vkGraphicsPipelineCreateInfo.stageCount = vkShaderStages.GetCount();
+      vkGraphicsPipelineCreateInfo.pStages    = vkShaderStages.IsEmpty() ? nullptr : vkShaderStages.GetData();
+
+      vk::PipelineVertexInputStateCreateInfo vkPipelineVertexInputStateCreateInfo = {};
+      if (xiiGALInputLayoutVulkan* pInputLayoutVulkan = static_cast<xiiGALInputLayoutVulkan*>(pDeviceVulkan->GetInputLayout(graphicsPipeline.m_hInputLayout)))
+      {
+        auto pVertexAttributes = pInputLayoutVulkan->GetVulkanVertexAttributes();
+        auto pInputBindings    = pInputLayoutVulkan->GetVulkanVertexInputBindings();
+
+        vkPipelineVertexInputStateCreateInfo.pNext                           = nullptr;
+        vkPipelineVertexInputStateCreateInfo.flags                           = {};
+        vkPipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = pVertexAttributes.GetCount();
+        vkPipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions    = pVertexAttributes.GetPtr();
+        vkPipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount   = pInputBindings.GetCount();
+        vkPipelineVertexInputStateCreateInfo.pVertexBindingDescriptions      = pInputBindings.GetPtr();
+      }
+      vkGraphicsPipelineCreateInfo.pVertexInputState = &vkPipelineVertexInputStateCreateInfo;
+
       vk::PipelineInputAssemblyStateCreateInfo vkPipelineInputAssemblyStateCreateInfo = {};
       {
         vkPipelineInputAssemblyStateCreateInfo.pNext                  = nullptr;
@@ -192,10 +240,6 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       }
 
       XII_ASSERT_DEV(vkGraphicsPipelineCreateInfo.renderPass != VK_NULL_HANDLE, "");
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-      vkGraphicsPipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
-#endif
 
       VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createGraphicsPipelines(m_vkPipelineCache, 1U, &vkGraphicsPipelineCreateInfo, nullptr, &m_vkPipeline, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     }
