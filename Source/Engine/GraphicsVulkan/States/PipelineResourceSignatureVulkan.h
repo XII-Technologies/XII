@@ -13,7 +13,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : publi
 public:
   virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final;
 
-  XII_ALWAYS_INLINE vk::DescriptorSetLayout GetVulkanDescriptorSetLayout() const { return m_vkDescriptorSetLayout; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const vk::DescriptorSetLayout> GetVulkanDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
 
   struct ImmutableSamplerStorage
   {
@@ -45,7 +45,7 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
-  vk::DescriptorSetLayout m_vkDescriptorSetLayout = VK_NULL_HANDLE;
+  xiiHybridArray<vk::DescriptorSetLayout, 1U> m_DescriptorSetLayouts;
 
   xiiDynamicArray<ImmutableSamplerStorage> m_ImmutableSamplers;
 };
