@@ -1106,6 +1106,10 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation);
 
       m_pGraphicsCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
+
+      m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
+
+      xiiLog::Info("Created {}", m_pGraphicsCommandQueue->GetDebugName());
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1118,6 +1122,10 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation);
 
       m_pComputeCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
+
+      m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
+
+      xiiLog::Info("Created {}", m_pComputeCommandQueue->GetDebugName());
     }
 
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1130,6 +1138,10 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation);
 
       m_pTransferCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
+
+      m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
+
+      xiiLog::Info("Created {}", m_pTransferCommandQueue->GetDebugName());
     }
   }
 
