@@ -261,7 +261,7 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     break;
     case xiiGALPipelineType::Compute:
     {
-      XII_ASSERT_NOT_IMPLEMENTED;
+      const auto& computePipeline = m_Description.m_ComputePipeline;
 
       vk::ComputePipelineCreateInfo vkComputePipelineCreateInfo = {};
       vkComputePipelineCreateInfo.pNext                         = nullptr;
@@ -272,6 +272,45 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
       vkComputePipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
 #endif
+
+      xiiHybridArray<vk::PipelineShaderStageCreateInfo, 1U> vkShaderStages(pDeviceVulkan->GetAllocator());
+      {
+#define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                                                \
+  if (xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pDeviceVulkan->GetShader(computePipeline.m_h##shaderType))) \
+  {                                                                                                                                    \
+    vk::PipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};                                                            \
+    vkPipelineShaderStageCreateInfo.pNext                             = nullptr;                                                       \
+    vkPipelineShaderStageCreateInfo.flags                             = {};                                                            \
+    vkPipelineShaderStageCreateInfo.stage                             = shaderStageFlagBits;                                           \
+    vkPipelineShaderStageCreateInfo.pName                             = "main";                                                        \
+    vkPipelineShaderStageCreateInfo.module                            = pShaderVulkan->GetVulkanShaderModule();                        \
+    vkPipelineShaderStageCreateInfo.pSpecializationInfo               = nullptr;                                                       \
+                                                                                                                                       \
+    vkShaderStages.PushBack(vkPipelineShaderStageCreateInfo);                                                                          \
+  }
+
+        DEFINE_VULKAN_SHADER_IF_EXISTS(ComputeShader, vk::ShaderStageFlagBits::eCompute);
+
+#undef DEFINE_VULKAN_SHADER_IF_EXISTS
+
+        XII_ASSERT_DEV(!vkShaderStages.IsEmpty(), "");
+      }
+      vkComputePipelineCreateInfo.stage = vkShaderStages.PeekBack();
+
+      vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo = {};
+      {
+        auto pDescriptorSetLayouts = pPipelineResourceSignatureVulkan->GetVulkanDescriptorSetLayouts();
+
+        vkPipelineLayoutCreateInfo.pNext                  = nullptr;
+        vkPipelineLayoutCreateInfo.flags                  = {};
+        vkPipelineLayoutCreateInfo.setLayoutCount         = pDescriptorSetLayouts.GetCount();
+        vkPipelineLayoutCreateInfo.pSetLayouts            = pDescriptorSetLayouts.GetPtr();
+        vkPipelineLayoutCreateInfo.pushConstantRangeCount = 0;       // TODO.
+        vkPipelineLayoutCreateInfo.pPushConstantRanges    = nullptr; // TODO.
+
+        VK_ASSERT_DEV(vkLogicalDevice.createPipelineLayout(&vkPipelineLayoutCreateInfo, nullptr, &m_vkPipelineLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
+      vkComputePipelineCreateInfo.layout = m_vkPipelineLayout;
 
       VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createComputePipelines(m_vkPipelineCache, 1U, &vkComputePipelineCreateInfo, nullptr, &m_vkPipeline, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     }

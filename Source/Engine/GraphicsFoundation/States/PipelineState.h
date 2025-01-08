@@ -133,7 +133,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputePipelineDescription : public xiiH
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALShaderHandle hComputeShader; ///< The compute shader to be used with the pipeline.
+  xiiGALShaderHandle m_hComputeShader; ///< The compute shader to be used with the pipeline.
 };
 
 /// \brief This describes the ray tracing general shader group information.

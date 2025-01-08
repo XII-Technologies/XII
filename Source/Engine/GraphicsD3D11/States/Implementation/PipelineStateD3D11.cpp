@@ -55,7 +55,7 @@ xiiResult xiiGALPipelineStateD3D11::InitPlatform()
 
   if (m_Description.IsComputePipeline())
   {
-    m_pComputeShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_ComputePipeline.hComputeShader));
+    m_pComputeShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_ComputePipeline.m_hComputeShader));
   }
 
   m_pPipelineResourceSignatureD3D11 = static_cast<xiiGALPipelineResourceSignatureD3D11*>(pDeviceD3D11->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature));

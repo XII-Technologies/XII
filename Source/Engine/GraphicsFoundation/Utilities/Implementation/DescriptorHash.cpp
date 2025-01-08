@@ -160,7 +160,7 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
     {
       const auto& computePipeline = description.m_ComputePipeline;
 
-      writer << computePipeline.hComputeShader;
+      writer << computePipeline.m_hComputeShader;
     }
     break;
     case xiiGALPipelineType::RayTracing:
