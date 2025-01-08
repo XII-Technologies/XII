@@ -817,7 +817,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       }
       else if (pipelineDescription.IsComputePipeline())
       {
-        pipelineDescription.m_ComputePipeline.hComputeShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
+        pipelineDescription.m_ComputePipeline.m_hComputeShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
       }
 
       if (!m_bIsCompute && (pShaderPermutation != nullptr))
