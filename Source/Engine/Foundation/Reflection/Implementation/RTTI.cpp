@@ -81,9 +81,9 @@ xiiRTTI::~xiiRTTI()
     UnregisterType();
   }
 
-   // To ensure unloading plugins does not leak any heap allocated attributes etc, we need to properly clean up the RTTI members.
-   // The assumption is that anything that is deleted here was created using global 'new' when declaring the reflection information inside XII_BEGIN_PROPERTIES etc.
-   // Thus, any derived xiiRTTI class must make sure these arrays are cleared out before this destructor is called.
+  // To ensure unloading plugins does not leak any heap allocated attributes etc, we need to properly clean up the RTTI members.
+  // The assumption is that anything that is deleted here was created using global 'new' when declaring the reflection information inside XII_BEGIN_PROPERTIES etc.
+  // Thus, any derived xiiRTTI class must make sure these arrays are cleared out before this destructor is called.
   if (m_sPluginName != "Static")
   {
     // We only delete plugin types. For statically created types we can't ensure a proper destruction order so it's better to just leak the data and the the OS clean it up.
@@ -171,9 +171,7 @@ void xiiRTTI::VerifyCorrectness() const
 {
   if (m_VerifyParent != nullptr)
   {
-    XII_ASSERT_DEV(m_VerifyParent() == m_pParentType, "Type '{0}': The given parent type '{1}' does not match the actual parent type '{2}'",
-                   m_sTypeName, (m_pParentType != nullptr) ? m_pParentType->GetTypeName() : "null",
-                   (m_VerifyParent() != nullptr) ? m_VerifyParent()->GetTypeName() : "null");
+    XII_ASSERT_DEV(m_VerifyParent() == m_pParentType, "Type '{0}': The given parent type '{1}' does not match the actual parent type '{2}'", m_sTypeName, (m_pParentType != nullptr) ? m_pParentType->GetTypeName() : "null", (m_VerifyParent() != nullptr) ? m_VerifyParent()->GetTypeName() : "null");
   }
 
   {
@@ -188,6 +186,7 @@ void xiiRTTI::VerifyCorrectness() const
         const bool bNewProperty = !Known.Find(pInstance->m_Properties[i]->GetPropertyName()).IsValid();
         Known.Insert(pInstance->m_Properties[i]->GetPropertyName());
 
+        XII_IGNORE_UNUSED(bNewProperty);
         XII_ASSERT_DEV(bNewProperty, "{0}: The property with name '{1}' is already defined in type '{2}'.", m_sTypeName, pInstance->m_Properties[i]->GetPropertyName(), pInstance->GetTypeName());
       }
 
@@ -198,6 +197,7 @@ void xiiRTTI::VerifyCorrectness() const
   {
     for (const xiiAbstractProperty* pFunc : m_Functions)
     {
+      XII_IGNORE_UNUSED(pFunc);
       XII_ASSERT_DEV(pFunc->GetCategory() == xiiPropertyCategory::Function, "Invalid function property '{}'", pFunc->GetPropertyName());
     }
   }
@@ -250,8 +250,9 @@ void xiiRTTI::GetAllProperties(xiiDynamicArray<const xiiAbstractProperty*>& out_
   out_properties.Clear();
 
   if (m_pParentType)
+  {
     m_pParentType->GetAllProperties(out_properties);
-
+  }
   out_properties.PushBackRange(GetProperties());
 }
 
@@ -432,10 +433,7 @@ void xiiRTTI::AssignPlugin(xiiStringView sPluginName)
   }
 }
 
-// Warning C4505: 'IsValidIdentifierName': unreferenced function with internal linkage has been removed
-// This happens in Release builds, because the function is only used in a debug assert
-XII_WARNING_PUSH()
-XII_WARNING_DISABLE_MSVC(4505)
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
 
 static bool IsValidIdentifierName(xiiStringView sIdentifier)
 {
@@ -469,7 +467,7 @@ static bool IsValidIdentifierName(xiiStringView sIdentifier)
   return true;
 }
 
-XII_WARNING_POP()
+#endif
 
 void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 {
@@ -481,16 +479,6 @@ void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 
     XII_ASSERT_DEBUG(IsValidIdentifierName(pProp->GetPropertyName()), "Property name is invalid: '{0}'", pProp->GetPropertyName());
 
-#if 0
-    if (!IsValidIdentifierName(pProp->GetPropertyName()))
-    {
-      xiiStringBuilder s;
-      s.SetFormat("RTTI: {0}\n", pProp->GetPropertyName());
-
-      xiiLog::Print(s.GetData());
-    }
-#endif
-
     if (pProp->GetCategory() != xiiPropertyCategory::Function)
     {
       XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) + pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) + pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) + pProp->GetFlags().IsSet(xiiPropertyFlags::Class) <= 1, "Types are mutually exclusive!");
@@ -500,6 +488,7 @@ void xiiRTTI::SanityCheckType(xiiRTTI* pType)
     {
       case xiiPropertyCategory::Constant:
       {
+        XII_IGNORE_UNUSED(pSpecificType);
         XII_ASSERT_DEV(pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType), "Only standard type constants are supported!");
       }
       break;

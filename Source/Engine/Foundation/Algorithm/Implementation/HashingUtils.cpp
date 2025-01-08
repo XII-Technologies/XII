@@ -197,8 +197,13 @@ xiiUInt32 xiiHashingUtils::CRC32Hash(const void* pKey, size_t uiSizeInBytes)
   return static_cast<xiiUInt32>(uiCRC32 ^ 0xFFFFFFFF);
 }
 
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_CLANG("-Wunused-function")
+
 #define XXH_INLINE_ALL
 #include <Foundation/ThirdParty/xxHash/xxhash.h>
+
+XII_WARNING_POP()
 
 // static
 xiiUInt32 xiiHashingUtils::xxHash32(const void* pKey, size_t uiSizeInByte, xiiUInt32 uiSeed /*= 0*/)

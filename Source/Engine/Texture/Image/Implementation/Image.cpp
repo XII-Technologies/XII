@@ -33,10 +33,10 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiImageHeader& header, xii
 {
   static_cast<xiiImageHeader&>(*this) = header;
 
-  xiiUInt64 dataSize = ComputeLayout();
+  xiiUInt64 uiDataSize = ComputeLayout();
 
-  XII_IGNORE_UNUSED(dataSize);
-  XII_ASSERT_DEV(imageData.GetCount() == dataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)", imageData.GetCount(), dataSize);
+  XII_IGNORE_UNUSED(uiDataSize);
+  XII_ASSERT_DEV(imageData.GetCount() == uiDataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)", imageData.GetCount(), uiDataSize);
 
   // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage
   m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), imageData.GetCount());

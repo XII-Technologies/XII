@@ -58,6 +58,7 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
       xiiUInt8 wakeupByte;
       auto     readResult    = read(m_wakeupPipeReadEndFd, &wakeupByte, sizeof(wakeupByte));
       XII_IGNORE_UNUSED(readResult);
+      XII_ASSERT_DEV(readResult == sizeof(wakeupByte), "Wakeup byte not read");
       m_pollInfos[0].revents = 0;
       return true;
     }
@@ -158,8 +159,8 @@ void xiiMessageLoop_linux::WakeUp()
   xiiUInt8 wakeupByte  = 0;
   xiiInt32 writeResult = write(m_wakeupPipeWriteEndFd, &wakeupByte, sizeof(wakeupByte));
 
-  XII_IGNORE_UNUSED(wakeupByte);
   XII_IGNORE_UNUSED(writeResult);
+  XII_ASSERT_DEV(writeResult == sizeof(wakeupByte), "Wakeup byte not written");
 }
 
 #endif

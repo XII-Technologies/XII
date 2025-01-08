@@ -2,8 +2,13 @@
 
 #include <Foundation/Algorithm/HashStream.h>
 
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_CLANG("-Wunused-function")
+
 #define XXH_INLINE_ALL
 #include <Foundation/ThirdParty/xxHash/xxhash.h>
+
+XII_WARNING_POP()
 
 xiiHashStreamWriter32::xiiHashStreamWriter32(xiiUInt32 uiSeed)
 {
