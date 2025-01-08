@@ -1018,7 +1018,7 @@ class XII_FOUNDATION_DLL xiiFunctionArgumentAttributes : public xiiPropertyAttri
 
 private:
   // Not pretty, but the values in the array are either created using 'new' when using this class as a reflection decoration, or created using 'XII_DEFAULT_NEW' when serialized and sent to the editor so in the dtor we need to know where these came from.
-  xiiUInt32                                      m_uiArgIndex = 0;
+  xiiUInt32                                      m_uiArgIndex     = 0;
   bool                                           m_bUsesGlobalNew = false;
   xiiHybridArray<const xiiPropertyAttribute*, 4> m_ArgAttributes;
 };

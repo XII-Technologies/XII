@@ -4,8 +4,8 @@
 
 #  include <Foundation/Platform/Implementation/Linux/MessageLoop_linux.h>
 
-#  include <Foundation/Platform/Implementation/Linux/PipeChannel_linux.h>
 #  include <Foundation/Logging/Log.h>
+#  include <Foundation/Platform/Implementation/Linux/PipeChannel_linux.h>
 
 #  include <fcntl.h>
 #  include <poll.h>
@@ -56,7 +56,7 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
     if (m_pollInfos[0].revents != 0)
     {
       xiiUInt8 wakeupByte;
-      auto     readResult    = read(m_wakeupPipeReadEndFd, &wakeupByte, sizeof(wakeupByte));
+      auto     readResult = read(m_wakeupPipeReadEndFd, &wakeupByte, sizeof(wakeupByte));
       XII_IGNORE_UNUSED(readResult);
       XII_ASSERT_DEV(readResult == sizeof(wakeupByte), "Wakeup byte not read");
       m_pollInfos[0].revents = 0;

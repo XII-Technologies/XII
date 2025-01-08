@@ -418,9 +418,9 @@ private: // Per Renderer States
   xiiGALRenderPassHandle  m_hCurrentRenderPass;
   xiiGALRenderingSetup    m_CurrentRenderingSetup = {};
 
-  xiiGALCommandList* m_pCommandList = nullptr;
-  bool               m_bIsRendering = false;
-  bool               m_bIsCompute   = false;
+  xiiGALCommandList* m_pCommandList    = nullptr;
+  bool               m_bIsRendering    = false;
+  bool               m_bIsCompute      = false;
   bool               m_bHasActiveScope = false;
 
   // Member Functions

@@ -98,9 +98,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : publ
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiStringView                             m_sName;                                                   ///< The shader variable name.
-  xiiBitflags<xiiGALShaderType>             m_ShaderStages = xiiGALShaderType::Unknown;                ///< The shader stages this resources variable applies to. If more than one shader stage is specified, the variable will be shared between these stages. Shader stages used by different variables with the same name must not overlap.
-  xiiBitflags<xiiGALShaderVariableFlags>    m_Flags        = xiiGALShaderVariableFlags::None;          ///< The shader variable flags.
+  xiiStringView                          m_sName;                                          ///< The shader variable name.
+  xiiBitflags<xiiGALShaderType>          m_ShaderStages = xiiGALShaderType::Unknown;       ///< The shader stages this resources variable applies to. If more than one shader stage is specified, the variable will be shared between these stages. Shader stages used by different variables with the same name must not overlap.
+  xiiBitflags<xiiGALShaderVariableFlags> m_Flags        = xiiGALShaderVariableFlags::None; ///< The shader variable flags.
 };
 
 /// \brief This describes graphics pipeline information.

@@ -664,7 +664,7 @@ xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xii
 {
   XII_VERIFY_COMMAND_LIST_RESULT(!hBuffer.IsInvalidated(), "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
 
-  xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
+  xiiGALBuffer* pBuffer = m_pDevice->GetBuffer(hBuffer);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiUInt32 uiKey = reinterpret_cast<const xiiUInt32&>(hBuffer);

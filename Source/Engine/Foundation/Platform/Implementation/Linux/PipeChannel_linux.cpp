@@ -4,9 +4,9 @@
 #if XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Linux/PipeChannel_linux.h>
 
-#  include <Foundation/Platform/Implementation/Linux/MessageLoop_linux.h>
 #  include <Foundation/IO/OSFile.h>
 #  include <Foundation/Logging/Log.h>
+#  include <Foundation/Platform/Implementation/Linux/MessageLoop_linux.h>
 
 #  include <fcntl.h>
 #  include <sys/socket.h>

@@ -2,12 +2,12 @@
 namespace xiiMemoryPolicies
 {
   xiiGuardedAllocation::xiiGuardedAllocation(xiiAllocatorBase* pParent)
-   {
-     XII_ASSERT_NOT_IMPLEMENTED;
-     XII_IGNORE_UNUSED(m_Mutex);
-     XII_IGNORE_UNUSED(m_uiPageSize);
-     XII_IGNORE_UNUSED(m_AllocationsToFreeLater);
-      }
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+    XII_IGNORE_UNUSED(m_Mutex);
+    XII_IGNORE_UNUSED(m_uiPageSize);
+    XII_IGNORE_UNUSED(m_AllocationsToFreeLater);
+  }
 
   void* xiiGuardedAllocation::Allocate(size_t uiSize, size_t uiAlign)
   {
