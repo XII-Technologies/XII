@@ -215,10 +215,8 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 
         if (bScissorEnabled)
         {
-          // pScissors state in VkPipelineViewportStateCreateInfo will be ignored and must be set
-          // dynamically with vkCmdSetScissor before any draw commands. The number of scissor rectangles
-          // used by a pipeline is still specified by the scissorCount member of
-          // VkPipelineViewportStateCreateInfo.
+          // pScissors state in VkPipelineViewportStateCreateInfo will be ignored and must be set dynamically with vkCmdSetScissor before any draw commands.
+          // The number of scissor rectangles used by a pipeline is still specified by the scissorCount member of VkPipelineViewportStateCreateInfo.
           dynamicStates.PushBack(vk::DynamicState::eScissor);
         }
 
