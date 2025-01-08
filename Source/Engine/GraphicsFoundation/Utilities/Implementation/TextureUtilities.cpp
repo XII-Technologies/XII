@@ -183,18 +183,18 @@ public:
   {
     m_ViewFormats.SetCount(xiiGALResourceFormat::ENUM_COUNT);
 
-    // clang-format off
-#define INIT_TEX_VIEW_FORMAT_INFO(textureFormat, SRVFormat, RTVFormat, DSVFormat, UAVFormat) \
-    {\
-      m_ViewFormats[textureFormat].SetCount(xiiGALTextureViewType::ENUM_COUNT);                                     \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::ShaderResource]       = xiiGALResourceFormat::##SRVFormat; \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::RenderTarget]         = xiiGALResourceFormat::##RTVFormat; \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::DepthStencil]         = xiiGALResourceFormat::##DSVFormat; \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::ReadOnlyDepthStencil] = xiiGALResourceFormat::##DSVFormat; \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::UnorderedAccess]      = xiiGALResourceFormat::##UAVFormat; \
-    }
+#define INIT_TEX_VIEW_FORMAT_INFO(textureFormat, SRVFormat, RTVFormat, DSVFormat, UAVFormat)                     \
+  {                                                                                                              \
+    m_ViewFormats[textureFormat].SetCount(xiiGALTextureViewType::ENUM_COUNT);                                    \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::ShaderResource]       = xiiGALResourceFormat::SRVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::RenderTarget]         = xiiGALResourceFormat::RTVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::DepthStencil]         = xiiGALResourceFormat::DSVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::ReadOnlyDepthStencil] = xiiGALResourceFormat::DSVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::UnorderedAccess]      = xiiGALResourceFormat::UAVFormat; \
+  }
     static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type above, if necessary");
 
+    // clang-format off
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::Unknown,                  Unknown, Unknown, Unknown, Unknown);
 
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::RGBA32Typeless,           RGBA32Float, RGBA32Float, Unknown, RGBA32Float);
@@ -315,8 +315,8 @@ public:
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC7Typeless,              BC7UNormalizedSRGB, Unknown, Unknown, Unknown);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalized,           BC7UNormalized,     Unknown, Unknown, Unknown);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalizedSRGB,       BC7UNormalizedSRGB, Unknown, Unknown, Unknown);
-#undef INIT_TVIEW_FORMAT_INFO
     // clang-format on
+#undef INIT_TVIEW_FORMAT_INFO
 
     m_ViewFormats[xiiGALResourceFormat::R8UInt][xiiGALTextureViewType::ShadingRate]         = xiiGALResourceFormat::R8UInt;
     m_ViewFormats[xiiGALResourceFormat::RG8UNormalized][xiiGALTextureViewType::ShadingRate] = xiiGALResourceFormat::RG8UNormalized;
