@@ -975,7 +975,6 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
       FlushDeferredStateChanges().IgnoreResult();
     }
   }
-  FlushDeferredStateChanges().IgnoreResult(); // TODO: Why figure out another strategy that utilizes the flush needed on the pipeline state.
 
   m_pImmediateContext->OMSetRenderTargets(xiiMath::Max(boundRenderTargetsRange.GetCount(), uiOldRenderTargetCount), m_pCommittedRenderTargets, m_pCommittedDepthStencilTarget);
 
