@@ -98,7 +98,7 @@ public:
   [[nodiscard]] virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) = 0;
 
   /// \brief This invalidates the query and releases the associated resources.
-  [[nodiscard]] virtual void Invalidate();
+  virtual void Invalidate();
 
   /// \brief This retrieves the current query state.
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQuery::QueryState GetQueryState() const { return m_QueryState; }

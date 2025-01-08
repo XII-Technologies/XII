@@ -375,7 +375,7 @@ public:
   /// \brief Sets a default graphics device.
   ///
   /// \remarks This does not increase the reference count on the device.
-  [[nodiscard]] static void SetDefaultDevice(xiiGALDevice* pDefaultDevice);
+  static void SetDefaultDevice(xiiGALDevice* pDefaultDevice);
 
   /// \brief Retrieves the default device. This will be nullptr if none is set.
   [[nodiscard]] static xiiGALDevice* GetDefaultDevice();

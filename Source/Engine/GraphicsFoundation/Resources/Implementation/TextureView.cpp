@@ -32,7 +32,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALTextureView::xiiGALTextureView(xiiGALDevice* pDevice, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
-  xiiGALResourceView(pDevice), m_Description(creationDescription), m_pTexture(pTexture)
+  xiiGALResourceView(pDevice), m_pTexture(pTexture), m_Description(creationDescription)
 {
   XII_ASSERT_DEV(m_pTexture != nullptr, "The given texture must not be nullptr.");
 }

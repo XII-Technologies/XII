@@ -92,7 +92,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALPipelineResourceSignatureCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief Returns true if this pipeline resource signature is compatible with the given pipeline resource signature.
-  virtual [[nodiscard]] bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const = 0;
+  [[nodiscard]] virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const = 0;
 
 protected:
   friend class xiiGALDevice;

@@ -161,8 +161,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
       case xiiGALShaderPrimitiveType::Min16Int:
       case xiiGALShaderPrimitiveType::Min16UInt:
         return true;
+      
+      default:
+        return false;
     }
-    return false;
   }
 };
 
