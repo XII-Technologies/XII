@@ -24,9 +24,9 @@ xiiGALPipelineStateVulkan::~xiiGALPipelineStateVulkan() = default;
 
 xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan*                    pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device                             vkLogicalDevice          = pDeviceVulkan->GetVulkanLogicalDevice();
-  xiiGALPipelineResourceSignatureVulkan* pResourceSignatureVulkan = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature));
+  xiiGALDeviceVulkan*                    pDeviceVulkan                    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device                             vkLogicalDevice                  = pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiGALPipelineResourceSignatureVulkan* pPipelineResourceSignatureVulkan = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature));
 
   switch (m_Description.m_PipelineType)
   {
@@ -233,6 +233,21 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       }
       vkGraphicsPipelineCreateInfo.pDynamicState = &vkPipelineDynamicStateCreateInfo;
 
+      vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo = {};
+      {
+        auto pDescriptorSetLayouts = pPipelineResourceSignatureVulkan->GetVulkanDescriptorSetLayouts();
+
+        vkPipelineLayoutCreateInfo.pNext                  = nullptr;
+        vkPipelineLayoutCreateInfo.flags                  = {};
+        vkPipelineLayoutCreateInfo.setLayoutCount         = pDescriptorSetLayouts.GetCount();
+        vkPipelineLayoutCreateInfo.pSetLayouts            = pDescriptorSetLayouts.GetPtr();
+        vkPipelineLayoutCreateInfo.pushConstantRangeCount = 0;       // TODO.
+        vkPipelineLayoutCreateInfo.pPushConstantRanges    = nullptr; // TODO.
+
+        VK_ASSERT_DEV(vkLogicalDevice.createPipelineLayout(&vkPipelineLayoutCreateInfo, nullptr, &m_vkPipelineLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
+      vkGraphicsPipelineCreateInfo.layout = m_vkPipelineLayout;
+
       if (xiiGALRenderPassVulkan* pRenderPassVulkan = static_cast<xiiGALRenderPassVulkan*>(pDeviceVulkan->GetRenderPass(graphicsPipeline.m_hRenderPass)))
       {
         vkGraphicsPipelineCreateInfo.renderPass = pRenderPassVulkan->GetVulkanRenderPass();
@@ -246,6 +261,8 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     break;
     case xiiGALPipelineType::Compute:
     {
+      XII_ASSERT_NOT_IMPLEMENTED;
+
       vk::ComputePipelineCreateInfo vkComputePipelineCreateInfo = {};
       vkComputePipelineCreateInfo.pNext                         = nullptr;
       vkComputePipelineCreateInfo.flags                         = {};
@@ -261,6 +278,8 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     break;
     case xiiGALPipelineType::RayTracing:
     {
+      XII_ASSERT_NOT_IMPLEMENTED;
+
       vk::RayTracingPipelineCreateInfoKHR vkRayTracingPipelineCreateInfo = {};
       vkRayTracingPipelineCreateInfo.pNext                               = nullptr;
       vkRayTracingPipelineCreateInfo.flags                               = {};
