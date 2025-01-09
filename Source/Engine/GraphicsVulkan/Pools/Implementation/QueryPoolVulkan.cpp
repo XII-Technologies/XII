@@ -179,7 +179,7 @@ void xiiGALQueryPoolVulkan::QueryPoolInformation::Initialize(const vk::QueryPool
 
   VK_ASSERT_DEV(vkLogicalDevice.createQueryPool(&vkQueryPoolCreateInfo, nullptr, &m_vkQueryPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-  m_StaleQueries.SetCount(m_uiQueryCount);
+  m_StaleQueries.SetCountUninitialized(m_uiQueryCount);
 
   for (xiiUInt32 i = 0; i < m_uiQueryCount; ++i)
   {
@@ -257,7 +257,7 @@ xiiUInt32 xiiGALQueryPoolVulkan::QueryPoolInformation::ResetStaleQueries(const v
   {
     ResetQueries(0, m_uiQueryCount);
 
-    m_AvailableQueries.SetCount(m_uiQueryCount);
+    m_AvailableQueries.SetCountUninitialized(m_uiQueryCount);
 
     for (xiiUInt32 i = 0; i < m_uiQueryCount; ++i)
     {

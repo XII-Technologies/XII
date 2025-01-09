@@ -59,5 +59,14 @@ namespace VulkanUtilities
 
 XII_DEFINE_AS_POD_TYPE(vk::Format);
 XII_DEFINE_AS_POD_TYPE(vk::PresentModeKHR);
+XII_DEFINE_AS_POD_TYPE(vk::SurfaceFormatKHR);
+XII_DEFINE_AS_POD_TYPE(vk::LayerProperties);
+XII_DEFINE_AS_POD_TYPE(vk::Semaphore);
+XII_DEFINE_AS_POD_TYPE(vk::ExtensionProperties);
+XII_DEFINE_AS_POD_TYPE(vk::Fence);
+XII_DEFINE_AS_POD_TYPE(vk::PhysicalDevice);
+XII_DEFINE_AS_POD_TYPE(vk::Image);
+XII_DEFINE_AS_POD_TYPE(vk::QueueFamilyProperties);
+XII_DEFINE_AS_POD_TYPE(vk::PhysicalDeviceFragmentShadingRateKHR);
 
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>

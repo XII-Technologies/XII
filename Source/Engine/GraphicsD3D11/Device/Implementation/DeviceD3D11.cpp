@@ -1238,7 +1238,7 @@ void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
   {
     // Retireve the display mode descriptions.
     xiiDynamicArray<DXGI_MODE_DESC> dxgiDisplayModes;
-    dxgiDisplayModes.SetCount(uiModeCount);
+    dxgiDisplayModes.SetCountUninitialized(uiModeCount);
 
     if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, dxgiDisplayModes.GetData())))
     {

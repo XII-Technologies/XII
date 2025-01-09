@@ -181,16 +181,16 @@ class ResourceFormatToViewFormatConverter
 public:
   ResourceFormatToViewFormatConverter()
   {
-    m_ViewFormats.SetCount(xiiGALResourceFormat::ENUM_COUNT);
+    m_ViewFormats.SetCountUninitialized(xiiGALResourceFormat::ENUM_COUNT);
 
 #define INIT_TEX_VIEW_FORMAT_INFO(textureFormat, SRVFormat, RTVFormat, DSVFormat, UAVFormat)                     \
   {                                                                                                              \
-    m_ViewFormats[textureFormat].SetCount(xiiGALTextureViewType::ENUM_COUNT);                                    \
     m_ViewFormats[textureFormat][xiiGALTextureViewType::ShaderResource]       = xiiGALResourceFormat::SRVFormat; \
     m_ViewFormats[textureFormat][xiiGALTextureViewType::RenderTarget]         = xiiGALResourceFormat::RTVFormat; \
     m_ViewFormats[textureFormat][xiiGALTextureViewType::DepthStencil]         = xiiGALResourceFormat::DSVFormat; \
     m_ViewFormats[textureFormat][xiiGALTextureViewType::ReadOnlyDepthStencil] = xiiGALResourceFormat::DSVFormat; \
     m_ViewFormats[textureFormat][xiiGALTextureViewType::UnorderedAccess]      = xiiGALResourceFormat::UAVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::ShadingRate]          = xiiGALResourceFormat::Unknown;   \
   }
     static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type above, if necessary");
 
@@ -364,7 +364,7 @@ public:
   }
 
 private:
-  xiiStaticArray<xiiStaticArray<xiiGALResourceFormat::Enum, xiiGALTextureViewType::ENUM_COUNT>, xiiGALResourceFormat::ENUM_COUNT> m_ViewFormats;
+  xiiStaticArray<xiiGALResourceFormat::Enum[xiiGALTextureViewType::ENUM_COUNT], xiiGALResourceFormat::ENUM_COUNT> m_ViewFormats;
 };
 
 xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevel, xiiUInt32 uiAlignment, xiiUInt32 uiLocationX, xiiUInt32 uiLocationY, xiiUInt32 uiLocationZ)

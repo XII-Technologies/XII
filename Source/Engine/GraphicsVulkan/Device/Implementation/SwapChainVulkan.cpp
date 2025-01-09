@@ -160,7 +160,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   XII_ASSERT_DEV(uiFormatCount > 0U, "");
 
   xiiDynamicArray<vk::SurfaceFormatKHR> supportedFormats(pDeviceVulkan->GetAllocator());
-  supportedFormats.SetCount(uiFormatCount);
+  supportedFormats.SetCountUninitialized(uiFormatCount);
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceFormatsKHR(m_vkSurface, &uiFormatCount, supportedFormats.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiFormatCount == supportedFormats.GetCount(), "");
 
@@ -230,7 +230,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   XII_ASSERT_DEV(uiPresentModeCount > 0, "");
 
   xiiDynamicArray<vk::PresentModeKHR> presentModes(pDeviceVulkan->GetAllocator());
-  presentModes.SetCount(uiPresentModeCount);
+  presentModes.SetCountUninitialized(uiPresentModeCount);
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfacePresentModesKHR(m_vkSurface, &uiPresentModeCount, presentModes.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiPresentModeCount == presentModes.GetCount(), "");
 
@@ -428,9 +428,9 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     m_Description.m_uiBufferCount = uiSwapChainImageCount;
   }
 
-  m_ImageAcquiredSemaphores.SetCount(uiSwapChainImageCount);
-  m_DrawCompleteSemaphores.SetCount(uiSwapChainImageCount);
-  m_ImageAcquiredFences.SetCount(uiSwapChainImageCount);
+  m_ImageAcquiredSemaphores.SetCountUninitialized(uiSwapChainImageCount);
+  m_DrawCompleteSemaphores.SetCountUninitialized(uiSwapChainImageCount);
+  m_ImageAcquiredFences.SetCountUninitialized(uiSwapChainImageCount);
 
   auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
   auto pFencePool     = pDeviceVulkan->GetVulkanFencePool();
@@ -564,8 +564,8 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   }
 #endif
 
-  m_SwapChainImages.SetCount(m_Description.m_uiBufferCount);
-  m_SwapChainTextures.SetCount(m_Description.m_uiBufferCount);
+  m_SwapChainImages.SetCountUninitialized(m_Description.m_uiBufferCount);
+  m_SwapChainTextures.SetCountUninitialized(m_Description.m_uiBufferCount);
   m_SwapChainImagesInitialized.SetCount(m_Description.m_uiBufferCount, false);
   m_ImageAcquiredFenceSubmitted.SetCount(m_Description.m_uiBufferCount, false);
 

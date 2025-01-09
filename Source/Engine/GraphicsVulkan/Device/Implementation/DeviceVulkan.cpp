@@ -135,10 +135,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   // Enumerate available layers.
   {
     xiiUInt32 uiLayerCount = 0U;
-
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr, m_InstanceDispatchLoader));
 
-    m_Layers.SetCount(uiLayerCount);
+    m_Layers.SetCountUninitialized(uiLayerCount);
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData(), m_InstanceDispatchLoader));
 
@@ -161,7 +160,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     xiiUInt32 uiExtensionCount = 0U;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, nullptr, m_InstanceDispatchLoader));
 
-    m_Extensions.SetCount(uiExtensionCount);
+    m_Extensions.SetCountUninitialized(uiExtensionCount);
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, m_Extensions.GetData(), m_InstanceDispatchLoader));
 
@@ -399,7 +398,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     XII_ASSERT_ALWAYS(uiPhysicalDeviceCount != 0U, "No physical devices are found on the system.");
 
-    m_PhysicalDevices.SetCount(uiPhysicalDeviceCount);
+    m_PhysicalDevices.SetCountUninitialized(uiPhysicalDeviceCount);
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, m_PhysicalDevices.GetData(), m_InstanceDispatchLoader));
 
@@ -419,7 +418,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "");
 
-    m_PhysicalDeviceQueueFamilyProperties.SetCount(uiQueueFamilyCount);
+    m_PhysicalDeviceQueueFamilyProperties.SetCountUninitialized(uiQueueFamilyCount);
     m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, m_PhysicalDeviceQueueFamilyProperties.GetData(), m_InstanceDispatchLoader);
 
     XII_ASSERT_DEV(m_PhysicalDeviceQueueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
@@ -442,7 +441,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     if (uiExtensionCount > 0U)
     {
-      m_PhysicalDeviceSupportedExtensions.SetCount(uiExtensionCount);
+      m_PhysicalDeviceSupportedExtensions.SetCountUninitialized(uiExtensionCount);
 
       VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, m_PhysicalDeviceSupportedExtensions.GetData(), m_InstanceDispatchLoader));
 
@@ -2123,7 +2122,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         xiiUInt32 uiShadingRateCount = 0U;
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, nullptr, m_InstanceDispatchLoader));
 
-        shadingRates.SetCount(uiShadingRateCount);
+        shadingRates.SetCountUninitialized(uiShadingRateCount);
 
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, shadingRates.GetData(), m_InstanceDispatchLoader));
       }
@@ -2406,7 +2405,7 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
     XII_ASSERT_DEV(uiQueueFamilyCount > 0, "");
 
     xiiHybridArray<vk::QueueFamilyProperties, 2U> queueFamilyProperties;
-    queueFamilyProperties.SetCount(uiQueueFamilyCount);
+    queueFamilyProperties.SetCountUninitialized(uiQueueFamilyCount);
 
     physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData(), instanceDispatchLoader);
     XII_ASSERT_DEV(queueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
@@ -2710,11 +2709,10 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
 bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions)
 {
   xiiUInt32 uiExtensionCount = 0U;
-
   if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, nullptr, m_InstanceDispatchLoader) != vk::Result::eSuccess)
     return false;
 
-  extensions.SetCount(uiExtensionCount);
+  extensions.SetCountUninitialized(uiExtensionCount);
 
   if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, extensions.GetData(), m_InstanceDispatchLoader) != vk::Result::eSuccess)
   {
