@@ -108,3 +108,6 @@
 // Interoperability with other libraries
 #define XII_INTEROP_STL_STRINGS XII_OFF
 #define XII_INTEROP_STL_SPAN    XII_OFF
+
+// Simple Directmedia Layer (SDL) support for window and input
+#define XII_SUPPORTS_SDL XII_OFF

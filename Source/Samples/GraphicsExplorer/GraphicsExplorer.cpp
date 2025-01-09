@@ -8,6 +8,7 @@
 #include <Foundation/Logging/ConsoleWriter.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/VisualStudioWriter.h>
+#include <Foundation/System/Screen.h>
 #include <Foundation/Time/Clock.h>
 
 #include <Core/Graphics/Camera.h>
@@ -227,6 +228,12 @@ public:
     // When you are using xiiApplication, this is done automatically.
     xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 #endif
+
+    {
+      xiiHybridArray<xiiScreenInfo, 2> screens;
+      xiiScreen::EnumerateScreens(screens).IgnoreResult();
+      xiiScreen::PrintScreenInfo(screens);
+    }
 
     // Register Input
     {
