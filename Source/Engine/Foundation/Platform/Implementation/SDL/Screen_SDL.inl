@@ -4,24 +4,6 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_video.h>
 
-namespace
-{
-  xiiResult xiiSDLError(xiiInt32 iReturnCode, const char* file, xiiUInt64 uiLine)
-  {
-    if (iReturnCode >= 0)
-      return XII_SUCCESS;
-
-    xiiLog::Error("SDL error {} ({}): {} - {}", file, uiLine, iReturnCode, SDL_GetError());
-    return XII_FAILURE;
-  }
-} // namespace
-
-#define XII_SDL_RETURN_FAILURE_ON_ERROR(code)                               \
-  do                                                                        \
-  {                                                                         \
-    if (xiiSDLError(code, __FILE__, __LINE__).Failed()) return XII_FAILURE; \
-  } while (false)
-
 xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Screens)
 {
   out_Screens.Clear();
@@ -56,7 +38,6 @@ xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Scre
     }
 
     // SDL reports screen coordinates from top/left to bottom/right.
-    // ie. 0,0 is left/top , resx/resy is right/bottom
     screen.m_iOffsetX     = displayBounds.x;
     screen.m_iOffsetY     = displayBounds.y;
     screen.m_iResolutionX = displayBounds.w;
