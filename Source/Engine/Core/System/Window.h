@@ -12,38 +12,12 @@ class xiiOpenDdlReader;
 class xiiOpenDdlReaderElement;
 
 // Include the proper Input implementation to use
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Core/System/Implementation/Windows/InputDevice_win32.h>
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <Core/Platform/SDL/WindowDeclaration_SDL.h>
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Core/System/Implementation/Android/InputDevice_android.h>
+#  include <Core/Platform/Android/WindowDeclaration_android.h>
 #else
-#  include <Core/System/Implementation/null/InputDevice_null.h>
-#endif
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-
-#  include <Foundation/Basics/Platform/Windows/MinWindows.h>
-using xiiWindowHandle         = xiiMinWindows::HWND;
-using xiiWindowInternalHandle = xiiWindowHandle;
-#  define INVALID_WINDOW_HANDLE_VALUE (xiiWindowHandle)(0)
-
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-
-struct ANativeWindow;
-using xiiWindowHandle         = ANativeWindow*;
-using xiiWindowInternalHandle = xiiWindowHandle;
-#  define INVALID_WINDOW_HANDLE_VALUE nullptr
-
-#else
-
-using xiiWindowHandle         = void*;
-using xiiWindowInternalHandle = xiiWindowHandle;
-#  define INVALID_WINDOW_HANDLE_VALUE nullptr
-
-#endif
-
-#ifndef INVALID_INTERNAL_WINDOW_HANDLE_VALUE
-#  define INVALID_INTERNAL_WINDOW_HANDLE_VALUE INVALID_WINDOW_HANDLE_VALUE
+#  include <Core/Platform/NoImpl/WindowDeclaration_NoImpl.h>
 #endif
 
 /// \brief Base class of all window classes that have a client area and a native window handle.
@@ -76,14 +50,12 @@ struct XII_CORE_DLL xiiWindowMode
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     WindowFixedResolution,                ///< The resolution and size are what the user picked and will not be changed. The window will not be resizable.
     WindowResizable,                      ///< The resolution and size are what the user picked and will not be changed. Allows window resizing by the user.
-    FullscreenBorderlessNativeResolution, ///< A borderless window, the position and resolution are taken from the monitor on which the
-                                          ///< window shall appear.
-    FullscreenFixedResolution,            ///< A fullscreen window using the user provided resolution. Tries to change the monitor resolution
-                                          ///< accordingly.
+    FullscreenBorderlessNativeResolution, ///< A borderless window, the position and resolution are taken from the monitor on which the window shall appear.
+    FullscreenFixedResolution,            ///< A full-screen window using the user provided resolution. Tries to change the monitor resolution accordingly.
 
     Default = WindowFixedResolution
   };

@@ -1,9 +1,13 @@
-#include <Core/System/Implementation/android/InputDevice_android.h>
+#  include <Core/CorePCH.h>
 
-#include <Core/Input/InputManager.h>
-#include <Foundation/Basics/Platform/Android/AndroidUtils.h>
-#include <android/log.h>
-#include <android_native_app_glue.h>
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
+
+#  include <Core/Platform/Android/InputDevice_android.h>
+
+#  include <Core/Input/InputManager.h>
+#  include <Foundation/Basics/Platform/Android/AndroidUtils.h>
+#  include <android/log.h>
+#  include <android_native_app_glue.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStandardInputDevice, 1, xiiRTTINoAllocator)
@@ -13,11 +17,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // Comment in to get verbose output on android input
 // #  define DEBUG_ANDROID_INPUT
 
-#ifdef DEBUG_ANDROID_INPUT
-#  define DEBUG_LOG(...) xiiLog::Debug(__VA_ARGS__)
-#else
-#  define DEBUG_LOG(...)
-#endif
+#  ifdef DEBUG_ANDROID_INPUT
+#    define DEBUG_LOG(...) xiiLog::Debug(__VA_ARGS__)
+#  else
+#    define DEBUG_LOG(...)
+#  endif
 
 xiiStandardInputDevice::xiiStandardInputDevice(xiiUInt32 uiWindowNumber)
 {
@@ -224,3 +228,5 @@ bool xiiStandardInputDevice::AndroidHandleInput(AInputEvent* pEvent)
   }
   return false;
 }
+
+#endif

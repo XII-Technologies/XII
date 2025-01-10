@@ -8,17 +8,6 @@
 #include <Foundation/IO/OpenDdlWriter.h>
 #include <Foundation/System/Screen.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Core/System/Implementation/Windows/InputDevice_win32.inl>
-#  include <Core/System/Implementation/Windows/Window_win32.inl>
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Core/System/Implementation/Android/InputDevice_android.inl>
-#  include <Core/System/Implementation/Android/Window_android.inl>
-#else
-#  include <Core/System/Implementation/null/InputDevice_null.inl>
-#  include <Core/System/Implementation/null/Window_null.inl>
-#endif
-
 xiiUInt8 xiiWindow::s_uiNextUnusedWindowNumber = 0;
 
 xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()

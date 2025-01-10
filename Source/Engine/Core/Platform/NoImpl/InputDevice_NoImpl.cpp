@@ -1,4 +1,8 @@
-#include <Core/System/Implementation/null/InputDevice_null.h>
+#  include <Core/CorePCH.h>
+
+#if XII_DISABLED(XII_SUPPORTS_SDL) && XII_DISABLED(XII_PLATFORM_ANDROID)
+
+#  include <Core/Platform/NoImpl/InputDevice_NoImpl.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStandardInputDevice, 1, xiiRTTINoAllocator)
@@ -25,3 +29,5 @@ xiiMouseCursorClipMode::Enum xiiStandardInputDevice::GetClipMouseCursor() const
 void xiiStandardInputDevice::InitializeDevice() {}
 
 void xiiStandardInputDevice::RegisterInputSlots() {}
+
+#endif

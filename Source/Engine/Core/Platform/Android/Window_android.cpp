@@ -1,11 +1,13 @@
-#include <Core/CorePCH.h>
+#  include <Core/CorePCH.h>
 
-#include <Core/System/Window.h>
-#include <Foundation/Basics.h>
-#include <Foundation/Basics/Platform/Android/AndroidUtils.h>
-#include <Foundation/Logging/Log.h>
-#include <Foundation/Types/UniquePtr.h>
-#include <android_native_app_glue.h>
+#if XII_ENABLED(XII_PLATFORM_ANDROID)
+
+#  include <Core/System/Window.h>
+#  include <Foundation/Basics.h>
+#  include <Foundation/Basics/Platform/Android/AndroidUtils.h>
+#  include <Foundation/Logging/Log.h>
+#  include <Foundation/Types/UniquePtr.h>
+#  include <android_native_app_glue.h>
 
 struct ANativeWindow;
 
@@ -95,3 +97,5 @@ xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 {
   return m_hWindowHandle;
 }
+
+#endif
