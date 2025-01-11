@@ -8,6 +8,7 @@
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 
 /// \brief This describes the pipeline state shading rate flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
@@ -150,6 +151,42 @@ public:
   /// \param pByteOffsets   - The array of offset values; one offset value for each buffer in the vertex-buffer array. Each offset is the number of bytes between the first element of a vertex buffer and the first element that will be used. If this parameter is an empty array, zero offsets for all buffers will be used.
   /// \param flags          - Additional flags for setting vertex buffers. See xiiGALSetVertexBufferFlags for more information.
   void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBufferHandle> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None);
+
+  /// \brief This is used to set the constant (uniform) buffer for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hConstantBuffer    - The handle to the constant (uniform) buffer object to set.
+  void SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferHandle hConstantBuffer);
+
+  /// \brief This is used to set the buffer view for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hBufferView        - The handle to the buffer view object to set.
+  void SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView);
+
+  /// \brief This is used to set the texture view for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hTextureView       - The handle to the texture view object to set.
+  void SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView);
+
+  /// This is used to set the buffer view for an unordered access.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hBufferView        - The handle to the buffer view object to set.
+  void SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView);
+
+  /// \brief This is used to set the texture view for an unordered access.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hTextureView       - The handle to the texture view object to set.
+  void SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView);
+
+  /// \brief This is used to set the sampler for a sampler resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the sampler resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hSampler           - The handle to the sampler object to set.
+  void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSamplerHandle hSampler);
 
   /// \brief This clears the specified render target view to the specified color.
   ///
@@ -434,6 +471,12 @@ protected:
 
   virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)                                                                                                     = 0;
   virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) = 0;
+  virtual void SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)                                                          = 0;
+  virtual void SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)                                                = 0;
+  virtual void SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)                                             = 0;
+  virtual void SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)                                               = 0;
+  virtual void SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)                                            = 0;
+  virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)                                                                       = 0;
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)                                                       = 0;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
