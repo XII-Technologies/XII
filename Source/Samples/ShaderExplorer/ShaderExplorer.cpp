@@ -20,6 +20,8 @@
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -188,32 +190,41 @@ public:
       renderingSetup.m_bClearDepth             = true;
       renderingSetup.m_bClearStencil           = true;
 
-      xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
-      pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+      if (auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue())
+      {
+        xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
 
-      auto& gc = pRenderContext->WriteGlobalConstants();
-      xiiMemoryUtils::ZeroFill(&gc, 1);
+        if (auto pCommandList = pDefaultQueue->BeginCommandList())
+        {
+          pRenderContext->SetCommandList(pCommandList);
+          pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
 
-      xiiMat4 m0, m1;
-      m0                        = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
-      m1                        = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
-      gc.WorldToCameraMatrix[0] = m0;
-      gc.WorldToCameraMatrix[1] = m1;
-      gc.CameraToWorldMatrix[0] = m0.GetInverse();
-      gc.CameraToWorldMatrix[1] = m1.GetInverse();
-      gc.ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
-      // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-      gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-      gc.WorldTime  = gc.GlobalTime;
+          auto& gc = pRenderContext->WriteGlobalConstants();
+          xiiMemoryUtils::ZeroFill(&gc, 1);
 
-      pRenderContext->BindMaterial(m_hMaterial);
-      pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
-      pRenderContext->DrawMeshBuffer().IgnoreResult();
-      pRenderContext->EndRendering();
+          xiiMat4 m0, m1;
+          m0                        = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
+          m1                        = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
+          gc.WorldToCameraMatrix[0] = m0;
+          gc.WorldToCameraMatrix[1] = m1;
+          gc.CameraToWorldMatrix[0] = m0.GetInverse();
+          gc.CameraToWorldMatrix[1] = m1.GetInverse();
+          gc.ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
+          // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
+          gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
+          gc.WorldTime  = gc.GlobalTime;
+
+          pRenderContext->BindMaterial(m_hMaterial);
+          pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
+          pRenderContext->DrawMeshBuffer().IgnoreResult();
+          pRenderContext->EndRendering();
+
+          pCommandList->Submit();
+        }
+        pRenderContext->ResetContextState();
+      }
 
       m_pDevice->EndFrame();
-
-      pRenderContext->ResetContextState();
     }
 
     // Make sure telemetry is sent out regularly.
@@ -361,7 +372,7 @@ public:
       WindowCreationDesc.m_bClipMouseCursor  = false;
       WindowCreationDesc.m_WindowMode        = xiiWindowMode::WindowResizable;
       m_pWindow                              = XII_DEFAULT_NEW(xiiShaderExplorer);
-      m_pWindow->Initialize(WindowCreationDesc).IgnoreResult();
+      m_pWindow->Initialize(WindowCreationDesc).AssertSuccess();
     }
 
     // Create a device
@@ -425,7 +436,7 @@ public:
       XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", sShaderCompiler);
 
       m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
-      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", sGraphicsAPIName);
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
 
       m_pDevice->SetDebugName("Master Graphics Device");

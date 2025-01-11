@@ -319,7 +319,7 @@ public:
       WindowCreationDesc.m_bClipMouseCursor  = false;
       WindowCreationDesc.m_WindowMode        = xiiWindowMode::WindowResizable;
       m_pWindow                              = XII_DEFAULT_NEW(xiiGraphicsExplorerWindow);
-      m_pWindow->Initialize(WindowCreationDesc).IgnoreResult();
+      m_pWindow->Initialize(WindowCreationDesc).AssertSuccess();
     }
 
 #if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
@@ -394,7 +394,7 @@ public:
 #endif
 
       m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
-      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", sGraphicsAPIName);
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
 
       m_pDevice->SetDebugName("Master Graphics Device");
