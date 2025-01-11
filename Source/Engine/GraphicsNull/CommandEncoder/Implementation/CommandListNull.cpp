@@ -48,6 +48,30 @@ void xiiGALCommandListNull::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRec
 {
 }
 
+void xiiGALCommandListNull::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
+{
+}
+
+void xiiGALCommandListNull::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+{
+}
+
+void xiiGALCommandListNull::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+{
+}
+
+void xiiGALCommandListNull::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+{
+}
+
+void xiiGALCommandListNull::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+{
+}
+
+void xiiGALCommandListNull::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
+{
+}
+
 void xiiGALCommandListNull::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
 }

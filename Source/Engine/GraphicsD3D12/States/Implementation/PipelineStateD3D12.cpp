@@ -36,32 +36,4 @@ xiiResult xiiGALPipelineStateD3D12::DeInitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALPipelineStateD3D12::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
-{
-}
-
-void xiiGALPipelineStateD3D12::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
-{
-}
-
-void xiiGALPipelineStateD3D12::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
-{
-}
-
-void xiiGALPipelineStateD3D12::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
-{
-}
-
-void xiiGALPipelineStateD3D12::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
-{
-}
-
-void xiiGALPipelineStateD3D12::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
-{
-}
-
-void xiiGALPipelineStateD3D12::ResetBoundResources()
-{
-}
-
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_States_Implementation_PipelineStateD3D12);

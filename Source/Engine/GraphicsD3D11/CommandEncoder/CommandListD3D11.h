@@ -5,6 +5,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 #include <GraphicsD3D11/Resources/DisjointQueryPool.h>
+#include <GraphicsD3D11/States/PipelineStateD3D11.h>
 
 struct ID3D11DeviceContext;
 struct ID3D11CommandList;
@@ -36,6 +37,12 @@ protected:
 
   virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset) override final;
   virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;
+  virtual void SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer) override final;
+  virtual void SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor) override final;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override final;
@@ -83,6 +90,11 @@ protected:
 
   void CommitRenderTargets();
   void ResetRenderTargets();
+
+  xiiResult CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11);
+  bool UnsetResourceViews(const xiiGALResource* pResource);
+  bool UnsetUnorderedAccessViews(const xiiGALResource* pResource);
+  void ResetBoundResources();
 
 protected:
   friend class xiiGALCommandQueueD3D11;
@@ -133,6 +145,20 @@ private:
   xiiGALRenderPass*                                                             m_pRenderPass    = nullptr;
   xiiGALFramebuffer*                                                            m_pFramebuffer   = nullptr;
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
+
+  ID3D11Buffer*         m_pBoundConstantBuffers[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT][XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
+
+  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT] = {};
+  xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
+  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
+
+  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnoderedAccessViews;
+  xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
+  xiiGAL::ModifiedRange                          m_BoundUnoderedAccessViewsRange;
+
+  ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
 
   xiiMap<xiiGALBufferD3D11*, ID3D11DeviceContext4*>  m_MappedBuffers;
   xiiMap<xiiGALTextureD3D11*, ID3D11DeviceContext4*> m_MappedTextureSubresources;

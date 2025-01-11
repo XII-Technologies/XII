@@ -1628,25 +1628,25 @@ void xiiRenderContext::ApplyConstantBufferBindings(xiiGALPipelineState* pPipelin
       {
         xiiLog::Error("No resource is bound for constant buffer slot '{0}'", binding.m_sName);
       }
-      pPipelineState->SetConstantBuffer(binding, xiiGALBufferHandle());
+      m_pCommandList->SetConstantBuffer(binding, xiiGALBufferHandle());
       continue;
     }
 
     if (!boundConstantBuffer.m_hConstantBuffer.IsInvalidated())
     {
-      pPipelineState->SetConstantBuffer(binding, boundConstantBuffer.m_hConstantBuffer);
+      m_pCommandList->SetConstantBuffer(binding, boundConstantBuffer.m_hConstantBuffer);
     }
     else
     {
       xiiConstantBufferStorageBase* pConstantBufferStorage = nullptr;
       if (TryGetConstantBufferStorage(boundConstantBuffer.m_hConstantBufferStorage, pConstantBufferStorage))
       {
-        pPipelineState->SetConstantBuffer(binding, pConstantBufferStorage->GetGALBufferHandle());
+        m_pCommandList->SetConstantBuffer(binding, pConstantBufferStorage->GetGALBufferHandle());
       }
       else
       {
         xiiLog::Error("Invalid constant buffer storage is bound for slot '{0}'", binding.m_sName);
-        pPipelineState->SetConstantBuffer(binding, xiiGALBufferHandle());
+        m_pCommandList->SetConstantBuffer(binding, xiiGALBufferHandle());
       }
     }
   }
@@ -1667,12 +1667,12 @@ void xiiRenderContext::ApplyResourceViewBindings(xiiGALPipelineState* pPipelineS
     if (binding.m_ResourceType == xiiGALShaderResourceType::BufferSRV && binding.m_ResourceType == type)
     {
       m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
-      pPipelineState->SetShaderResourceBufferView(binding, resourceBinding.m_hBufferView);
+      m_pCommandList->SetShaderResourceBufferView(binding, resourceBinding.m_hBufferView);
     }
     else if (binding.m_ResourceType == xiiGALShaderResourceType::TextureSRV && binding.m_ResourceType == type)
     {
       m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
-      pPipelineState->SetShaderResourceTextureView(binding, resourceBinding.m_hTextureView);
+      m_pCommandList->SetShaderResourceTextureView(binding, resourceBinding.m_hTextureView);
     }
   }
 }
@@ -1690,12 +1690,12 @@ void xiiRenderContext::ApplyUnorderedAccessViewBindings(xiiGALPipelineState* pPi
     if (binding.m_ResourceType == xiiGALShaderResourceType::BufferUAV)
     {
       m_BoundUAVs.TryGetValue(uiResourceHash, resourceBinding);
-      pPipelineState->SetUnorderedAccessBufferView(binding, resourceBinding.m_hBufferView);
+      m_pCommandList->SetUnorderedAccessBufferView(binding, resourceBinding.m_hBufferView);
     }
     else if (binding.m_ResourceType == xiiGALShaderResourceType::TextureUAV)
     {
       m_BoundUAVs.TryGetValue(uiResourceHash, resourceBinding);
-      pPipelineState->SetUnorderedAccessTextureView(binding, resourceBinding.m_hTextureView);
+      m_pCommandList->SetUnorderedAccessTextureView(binding, resourceBinding.m_hTextureView);
     }
   }
 }
@@ -1718,7 +1718,7 @@ void xiiRenderContext::ApplySamplerBindings(xiiGALPipelineState* pPipelineState)
       hSampler = GetDefaultSampler(xiiDefaultSamplerFlags::LinearFiltering); // Bind a default state to avoid DX11 errors.
     }
 
-    pPipelineState->SetSampler(binding, hSampler);
+    m_pCommandList->SetSampler(binding, hSampler);
   }
 }
 
