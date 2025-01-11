@@ -965,6 +965,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       *pNextExtension = &enabledExtensionFeatures.m_ShaderDrawParameters;
       pNextExtension  = &enabledExtensionFeatures.m_ShaderDrawParameters.pNext;
     }
+
+    // Ensure that the last next is null
+    *pNextExtension = nullptr;
   }
   else
   {
@@ -2662,10 +2665,49 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   *pNextFeature  = nullptr;
   *pNextProperty = nullptr;
 
-  // Initialize device extension features by current physical device feaetures.
+  // Initialize device extension features by current physical device features.
   // Some flags may not be supported by the hardware.
   m_PhysicalDevice.getFeatures2KHR(&features2, m_InstanceDispatchLoader);
   m_PhysicalDevice.getProperties2KHR(&properties2, m_InstanceDispatchLoader);
+
+  // Clear next pointer.
+  {
+    m_PhysicalDeviceExtensionFeatures.m_MeshShader.pNext             = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_Storage16Bit.pNext           = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_Storage8Bit.pNext            = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_ShaderFloat16Int8.pNext      = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_AccelerationStructure.pNext  = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.pNext     = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_RayQuery.pNext               = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress.pNext    = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing.pNext     = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset.pNext      = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_VertexAttributeDivisor.pNext = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_TimelineSemaphore.pNext      = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_HostQueryReset.pNext         = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pNext            = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.pNext     = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2.pNext    = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_Multiview.pNext              = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_MultiDraw.pNext              = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_ShaderDrawParameters.pNext   = nullptr;
+
+
+    m_PhysicalDeviceExtensionProperties.m_MeshShader.pNext             = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.pNext  = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.pNext     = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_DescriptorIndexing.pNext     = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_PortabilitySubset.pNext      = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_Subgroup.pNext               = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_VertexAttributeDivisor.pNext = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_TimelineSemaphore.pNext      = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_ShadingRate.pNext            = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.pNext     = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_Multiview.pNext              = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_Maintenance3.pNext           = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap2.pNext    = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_MultiDraw.pNext              = nullptr;
+  }
 
   // Check shading rate texture formats.
   {
