@@ -19,8 +19,6 @@ public:
   XII_ALWAYS_INLINE ID3D11DeviceContext4* GetD3D11Context() const { return m_pImmediateContext; }
 
 protected:
-  void GALSwapChainD3D11EventHandler(const xiiGALSwapChainD3D11Event& e);
-
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
@@ -86,15 +84,6 @@ protected:
   virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color) override final;
 
   virtual void InvalidateStatePlatform() override final;
-  void         InvalidateResources();
-
-  void CommitRenderTargets();
-  void ResetRenderTargets();
-
-  xiiResult CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11);
-  bool UnsetResourceViews(const xiiGALResource* pResource);
-  bool UnsetUnorderedAccessViews(const xiiGALResource* pResource);
-  void ResetBoundResources();
 
 protected:
   friend class xiiGALCommandQueueD3D11;
@@ -108,6 +97,18 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
+  void GALSwapChainD3D11EventHandler(const xiiGALSwapChainD3D11Event& e);
+
+  void InvalidateResources();
+
+  void CommitRenderTargets();
+  void ResetRenderTargets();
+
+  xiiResult CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11);
+  bool      UnsetResourceViews(const xiiGALResource* pResource);
+  bool      UnsetUnorderedAccessViews(const xiiGALResource* pResource);
+  void      ResetBoundResources();
+
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> BeginDisjointQuery();
 
   xiiResult FlushDeferredStateChanges();

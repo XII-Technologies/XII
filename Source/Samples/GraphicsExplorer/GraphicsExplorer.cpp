@@ -368,7 +368,7 @@ public:
       deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray         = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_WaveOperation                      = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate               = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Enabled;
       deviceCreationDescription.m_DeviceFeatures.m_TileShaders                        = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries      = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_VariableRateShading                = xiiGALDeviceFeatureState::Disabled;
@@ -376,6 +376,7 @@ public:
       deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch            = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle            = xiiGALDeviceFeatureState::Optional;
       deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_NativeMultiDraw                    = xiiGALDeviceFeatureState::Disabled;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;

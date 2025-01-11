@@ -125,9 +125,11 @@ public:
     SafeReleaseDeviceObjectInternal(vkObject.objectType, (void*)vkObject, nullptr);
   }
 
-  void ReclaimPoolFenceLater(vk::Fence& vkFence);
-
-  void ReclaimPoolSemaphoreLater(vk::Semaphore& vkSemaphore);
+  template <typename T>
+  void ReclaimLater(T& vkObject)
+  {
+    ReclaimLaterInternal(vkObject.objectType, (void*)vkObject);
+  }
 
   // Internal objects retrieval.
 
@@ -168,6 +170,8 @@ public:
 
   XII_ALWAYS_INLINE xiiGALFencePoolVulkan* GetVulkanFencePool() const { return m_FencePool.Borrow(); }
   XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_SemaphorePool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALDescriptorSetPoolVulkan* GetVulkanDescriptorSetPool() const { return m_DescriptorSetPool.Borrow(); }
+
   XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanGraphicsCommandQueueQueryPool() const { return m_pGraphicsCommandQueueQueryPool.Borrow(); }
   XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanComputeCommandQueueQueryPool() const { return m_pComputeCommandQueueQueryPool.Borrow(); }
   XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanTransferCommandQueueQueryPool() const { return m_pTransferCommandQueueQueryPool.Borrow(); }
@@ -265,6 +269,7 @@ protected:
 
 private:
   void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+  void ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject);
 
   enum class VulkanObjectType : xiiUInt32
   {
@@ -368,11 +373,12 @@ private:
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
 
   // Pools.
-  xiiUniquePtr<xiiGALFencePoolVulkan>     m_FencePool;
-  xiiUniquePtr<xiiGALSemaphorePoolVulkan> m_SemaphorePool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>     m_pGraphicsCommandQueueQueryPool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>     m_pComputeCommandQueueQueryPool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>     m_pTransferCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALFencePoolVulkan>         m_FencePool;
+  xiiUniquePtr<xiiGALSemaphorePoolVulkan>     m_SemaphorePool;
+  xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_DescriptorSetPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pGraphicsCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pComputeCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pTransferCommandQueueQueryPool;
 
   // Per Frame Data.
   xiiUInt32              m_uiFrameCounter = 0U;

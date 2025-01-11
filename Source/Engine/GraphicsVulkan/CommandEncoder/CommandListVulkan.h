@@ -246,6 +246,16 @@ private:
     vk::Fence          m_vkFence;
   };
 
+  struct ResourceSetBindings
+  {
+    xiiDynamicArray<const xiiGALBufferVulkan*>      m_pBoundConstantBuffers;
+    xiiDynamicArray<const xiiGALBufferViewVulkan*>  m_pBoundBufferResourceViews;
+    xiiDynamicArray<const xiiGALTextureViewVulkan*> m_pBoundTextureResourceViews;
+    xiiDynamicArray<const xiiGALBufferViewVulkan*>  m_pBoundUnorderedAccessBufferResourceViews;
+    xiiDynamicArray<const xiiGALTextureViewVulkan*> m_pBoundUnorderedAccessTextureResourceViews;
+    xiiDynamicArray<const xiiGALSamplerVulkan*>     m_pBoundSamplerStates;
+  };
+
   vk::CommandBuffer m_vkCommandBuffer;
   CommandListState  m_CommandListState;
   PipelineBarrier   m_PipelineBarrier;
@@ -264,6 +274,8 @@ private:
   xiiGALRenderPassVulkan*                                            m_pRenderPass    = nullptr;
   xiiGALFramebufferVulkan*                                           m_pFramebuffer   = nullptr;
   xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
+
+  xiiHybridArray<ResourceSetBindings, 1U> m_CommittedResources;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;

@@ -12,6 +12,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
 #include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 #include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
@@ -1083,8 +1084,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   // Create pools.
   {
-    m_FencePool     = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
-    m_SemaphorePool = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+    m_FencePool         = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
+    m_SemaphorePool     = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+    m_DescriptorSetPool = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
   }
 
   // Create command queues.
@@ -1195,6 +1197,7 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
   }
 
   {
+    m_DescriptorSetPool.Clear();
     m_FencePool.Clear();
     m_SemaphorePool.Clear();
   }
@@ -1242,26 +1245,15 @@ void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObject
   safeRelease.m_VmaAllocation = vmaAllocation;
 }
 
-void xiiGALDeviceVulkan::ReclaimPoolFenceLater(vk::Fence& vkFence)
+void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject)
 {
   auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
 
   perFrameData.m_uiFrameNumber = m_uiFrameCounter;
 
   auto& safeReclaim          = perFrameData.m_SafeReclaimResources.ExpandAndGetRef();
-  safeReclaim.m_vkObjectType = vkFence.objectType;
-  safeReclaim.m_pObject      = (void*)vkFence;
-}
-
-void xiiGALDeviceVulkan::ReclaimPoolSemaphoreLater(vk::Semaphore& vkSemaphore)
-{
-  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
-
-  perFrameData.m_uiFrameNumber = m_uiFrameCounter;
-
-  auto& safeReclaim          = perFrameData.m_SafeReclaimResources.ExpandAndGetRef();
-  safeReclaim.m_vkObjectType = vkSemaphore.objectType;
-  safeReclaim.m_pObject      = (void*)vkSemaphore;
+  safeReclaim.m_vkObjectType = vkObjectType;
+  safeReclaim.m_pObject      = pObject;
 }
 
 void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
@@ -1395,6 +1387,11 @@ void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
         case vk::ObjectType::eFence:
         {
           m_FencePool->ReclaimFence(reinterpret_cast<vk::Fence&>(safeReclameResource.m_pObject));
+        }
+        break;
+        case vk::ObjectType::eDescriptorPool:
+        {
+          m_DescriptorSetPool->ReclaimDescriptorPool(reinterpret_cast<vk::DescriptorPool&>(safeReclameResource.m_pObject));
         }
         break;
 
