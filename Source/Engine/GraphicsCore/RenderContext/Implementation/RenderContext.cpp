@@ -841,31 +841,31 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       XII_ASSERT_DEV(!m_hCurrentPipelineState.IsInvalidated(), "");
     }
 
-    xiiGALPipelineState* pPipelineState = pDevice->GetPipelineState(m_hCurrentPipelineState);
+    m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
 
     if (bIsModified)
     {
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::UAVBindingChanged))
       {
-        ApplyUnorderedAccessViewBindings(pPipelineState);
+        ApplyUnorderedAccessViewBindings();
         m_StateFlags.Remove(xiiRenderContextFlags::UAVBindingChanged);
       }
 
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureBindingChanged))
       {
-        ApplyResourceViewBindings(pPipelineState, xiiGALShaderResourceType::TextureSRV);
+        ApplyResourceViewBindings(xiiGALShaderResourceType::TextureSRV);
         m_StateFlags.Remove(xiiRenderContextFlags::TextureBindingChanged);
       }
 
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::SamplerBindingChanged))
       {
-        ApplySamplerBindings(pPipelineState);
+        ApplySamplerBindings();
         m_StateFlags.Remove(xiiRenderContextFlags::SamplerBindingChanged);
       }
 
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferBindingChanged))
       {
-        ApplyResourceViewBindings(pPipelineState, xiiGALShaderResourceType::BufferSRV);
+        ApplyResourceViewBindings(xiiGALShaderResourceType::BufferSRV);
         m_StateFlags.Remove(xiiRenderContextFlags::BufferBindingChanged);
       }
     }
@@ -883,12 +883,10 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     {
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ConstantBufferBindingChanged))
       {
-        ApplyConstantBufferBindings(pPipelineState);
+        ApplyConstantBufferBindings();
         m_StateFlags.Remove(xiiRenderContextFlags::ConstantBufferBindingChanged);
       }
     }
-
-    m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
   }
 
   return XII_SUCCESS;
@@ -1607,9 +1605,10 @@ xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
   return nullptr;
 }
 
-void xiiRenderContext::ApplyConstantBufferBindings(xiiGALPipelineState* pPipelineState)
+void xiiRenderContext::ApplyConstantBufferBindings()
 {
   xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiGALPipelineState*             pPipelineState     = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
   for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
@@ -1652,11 +1651,12 @@ void xiiRenderContext::ApplyConstantBufferBindings(xiiGALPipelineState* pPipelin
   }
 }
 
-void xiiRenderContext::ApplyResourceViewBindings(xiiGALPipelineState* pPipelineState, xiiEnum<xiiGALShaderResourceType> type)
+void xiiRenderContext::ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceType> type)
 {
   XII_ASSERT_DEV(type == xiiGALShaderResourceType::BufferSRV || type == xiiGALShaderResourceType::TextureSRV, "");
 
   xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiGALPipelineState* pPipelineState = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
   for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
@@ -1677,9 +1677,10 @@ void xiiRenderContext::ApplyResourceViewBindings(xiiGALPipelineState* pPipelineS
   }
 }
 
-void xiiRenderContext::ApplyUnorderedAccessViewBindings(xiiGALPipelineState* pPipelineState)
+void xiiRenderContext::ApplyUnorderedAccessViewBindings()
 {
   xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiGALPipelineState* pPipelineState = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
   for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
@@ -1700,9 +1701,10 @@ void xiiRenderContext::ApplyUnorderedAccessViewBindings(xiiGALPipelineState* pPi
   }
 }
 
-void xiiRenderContext::ApplySamplerBindings(xiiGALPipelineState* pPipelineState)
+void xiiRenderContext::ApplySamplerBindings()
 {
   xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiGALPipelineState*             pPipelineState     = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
   for (const auto& binding : pResourceSignature->GetDescription().m_Resources)

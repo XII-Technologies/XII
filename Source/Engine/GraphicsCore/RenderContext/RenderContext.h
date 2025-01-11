@@ -430,8 +430,8 @@ private: // Per Renderer States
   void                          BindShaderInternal(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags);
   xiiShaderPermutationResource* ApplyShaderState();
   xiiMaterialResource*          ApplyMaterialState();
-  void                          ApplyConstantBufferBindings(xiiGALPipelineState* pPipelineState);
-  void                          ApplyResourceViewBindings(xiiGALPipelineState* pPipelineState, xiiEnum<xiiGALShaderResourceType> type);
-  void                          ApplyUnorderedAccessViewBindings(xiiGALPipelineState* pPipelineState);
-  void                          ApplySamplerBindings(xiiGALPipelineState* pPipelineState);
+  void                          ApplyConstantBufferBindings();
+  void                          ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceType> type);
+  void                          ApplyUnorderedAccessViewBindings();
+  void                          ApplySamplerBindings();
 };
