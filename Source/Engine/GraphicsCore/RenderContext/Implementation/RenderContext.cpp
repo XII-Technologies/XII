@@ -790,6 +790,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     }
 
     xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
     if (pShaderPermutation != nullptr)
     {
       if (!m_hCurrentPipelineState.IsInvalidated())

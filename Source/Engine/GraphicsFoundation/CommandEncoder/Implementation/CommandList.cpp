@@ -234,7 +234,7 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiG
 void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferHandle hConstantBuffer)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(m_hPipelineState.IsInvalidated(), "SetConstantBuffer requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetConstantBuffer requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
@@ -264,7 +264,7 @@ void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescriptio
 void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(m_hPipelineState.IsInvalidated(), "SetShaderResourceBufferView requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetShaderResourceBufferView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
@@ -294,7 +294,7 @@ void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResource
 void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(m_hPipelineState.IsInvalidated(), "SetShaderResourceTextureView requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetShaderResourceTextureView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
@@ -324,7 +324,7 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
 void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(m_hPipelineState.IsInvalidated(), "SetUnorderedAccessBufferView requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetUnorderedAccessBufferView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
@@ -354,7 +354,7 @@ void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourc
 void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(m_hPipelineState.IsInvalidated(), "SetUnorderedAccessTextureView requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetUnorderedAccessTextureView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
@@ -384,7 +384,7 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
 void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSamplerHandle hSampler)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(m_hPipelineState.IsInvalidated(), "SetSampler requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetSampler requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
