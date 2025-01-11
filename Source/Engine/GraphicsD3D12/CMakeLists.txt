@@ -21,3 +21,11 @@ target_link_libraries(${PROJECT_NAME}
 if("${XII_CMAKE_WINDOWS_SDK_VERSION}" VERSION_GREATER_EQUAL "10.0.19041.0")
   target_compile_definitions(${PROJECT_NAME} PRIVATE D3D12_H_HAS_MESH_SHADER=1)
 endif()
+
+if (XII_3RDPARTY_SDL_SUPPORT)
+  if(XII_COMPILE_ENGINE_AS_DLL)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-shared)
+  else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-static)
+  endif()
+endif()

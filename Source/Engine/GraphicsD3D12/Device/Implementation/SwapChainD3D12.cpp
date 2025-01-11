@@ -7,6 +7,11 @@
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <SDL3/SDL_properties.h>
+#  include <SDL3/SDL_video.h>
+#endif
+
 #include <VersionHelpers.h>
 #include <dxgi1_4.h>
 
@@ -81,7 +86,12 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   m_DesiredSurfaceTransform    = xiiGALSurfaceTransform::Optimal;
   m_Description.m_PreTransform = xiiGALSurfaceTransform::Identity;
 
-  HWND hNativeWindow = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
+ HWND hNativeWindow = 0U;
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+  hNativeWindow = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+#else
+#  error "No platform implementation provided for the native window handle."
+#endif
 
   if (!m_Description.m_Resolution.HasNonZeroArea())
   {

@@ -9,6 +9,11 @@
 #include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <SDL3/SDL_properties.h>
+#  include <SDL3/SDL_video.h>
+#endif
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -79,11 +84,18 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 
   // Create OS-Specific surface.
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
+  HWND hNativeWindow = 0U;
+#  if XII_ENABLED(XII_SUPPORTS_SDL)
+  hNativeWindow = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+#  else
+#    error "No platform implementation provided for the native window handle."
+#  endif
+
   vk::Win32SurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                         = nullptr;
   vkSurfaceCreateInfo.flags                         = {};
   vkSurfaceCreateInfo.hinstance                     = GetModuleHandle(NULL);
-  vkSurfaceCreateInfo.hwnd                          = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
+  vkSurfaceCreateInfo.hwnd                          = hNativeWindow;
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWin32SurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)

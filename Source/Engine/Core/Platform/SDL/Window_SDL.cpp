@@ -50,7 +50,7 @@ xiiResult xiiWindow::Initialize()
   // Initialize the video subsystem if not initialized.
   if (!SDL_WasInit(SDL_INIT_VIDEO))
   {
-    if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
     {
       xiiLog::Error("Failed to initialize the SDL Video Subsystem with error '{0}'.", SDL_GetError());
       return XII_FAILURE;
@@ -60,7 +60,7 @@ xiiResult xiiWindow::Initialize()
   // Initialize the event subsystem if not initialized.
   if (!SDL_WasInit(SDL_INIT_EVENTS))
   {
-    if (SDL_InitSubSystem(SDL_INIT_EVENTS) != 0)
+    if (!SDL_InitSubSystem(SDL_INIT_EVENTS))
     {
       xiiLog::Error("Failed to initialize the SDL Event Subsystem with error '{0}'.", SDL_GetError());
       return XII_FAILURE;

@@ -11,6 +11,11 @@
 
 #include <Foundation/Basics/Platform/Windows/HResultUtils.h>
 
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#include <SDL3/SDL_video.h>
+#include <SDL3/SDL_properties.h>
+#endif
+
 #include <VersionHelpers.h>
 #include <dxgi1_4.h>
 
@@ -111,7 +116,12 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
 
   m_uiMaximumFrameLatency = m_Description.m_uiBufferCount;
 
-  HWND hNativeWindow = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
+  HWND hNativeWindow = 0U;
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+  hNativeWindow = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+#else
+#  error "No platform implementation provided for the native window handle."
+#endif
 
   if (!m_Description.m_Resolution.HasNonZeroArea())
   {
