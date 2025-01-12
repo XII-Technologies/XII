@@ -356,6 +356,26 @@ void xiiGALCommandListVulkan::CopyTextureToBuffer(xiiGALTextureVulkan* pSourceTe
   CopyImageToBuffer(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, vkDestinationBuffer, xiiMakeArrayPtr(&vkBufferImageCopy, 1U));
 }
 
+void xiiGALCommandListVulkan::UpdateBufferRegion(xiiGALBufferVulkan* pBufferVulkan, vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceOffset, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSizeInBytes)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  XII_VERIFY_COMMAND_LIST((uiDestinationOffset + uiSizeInBytes) <= pBufferVulkan->GetDescription().m_uiSize, "Update region is out of buffer range which will result in undefined behavior.");
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
+
+  TransitionOrVerifyBufferState(pBufferVulkan, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Updating buffer (xiiGALCommandListVulkan::UpdateBufferRegion)");
+
+  vk::BufferCopy vkBufferCopyRegion = {};
+  vkBufferCopyRegion.srcOffset      = uiSourceOffset;
+  vkBufferCopyRegion.dstOffset      = uiDestinationOffset;
+  vkBufferCopyRegion.size           = uiSizeInBytes;
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.copyBuffer(vkSourceBuffer, pBufferVulkan->GetVulkanBuffer(), 1U, &vkBufferCopyRegion, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
 void xiiGALCommandListVulkan::CopyBufferToImage(vk::Buffer vkSourceBuffer, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::BufferImageCopy> pRegions)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
