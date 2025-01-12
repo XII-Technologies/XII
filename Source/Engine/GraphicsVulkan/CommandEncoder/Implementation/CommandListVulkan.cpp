@@ -26,7 +26,6 @@
     if (!(expression)) { return XII_FAILURE; }          \
   } while (false)
 
-
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -1293,11 +1292,95 @@ void xiiGALCommandListVulkan::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuff
 
 xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBuffer);
+
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  const auto& bufferDescription = pBufferVulkan->GetDescription();
+
+  if (mapType == xiiGALMapType::Read)
+  {
+    XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "The buffer must be created with resource usage xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified to be mapped for reading.");
+
+    if (!mapFlags.IsSet(xiiGALMapFlags::DoNotWait))
+    {
+      xiiLog::Warning("Vulkan backend never waits for GPU when mapping staging buffers for reading. Applications must use fences or other synchronization methods to explicitly synchronize access and use xiiGALMapFlags::DoNotWait flag.");
+    }
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), &pMappedData));
+    VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+  }
+  else if (mapType == xiiGALMapType::Write)
+  {
+    if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
+    {
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), &pMappedData));
+      VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+    }
+    else if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic)
+    {
+      XII_VERIFY_COMMAND_LIST_RESULT(mapFlags.IsAnySet(xiiGALMapFlags::Discard | xiiGALMapFlags::NoOverWrite), "Failed to map buffer '{}': Vulkan buffer must be mapped for writing with xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.", pBufferVulkan->GetDebugName());
+
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), &pMappedData));
+      VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+    }
+    else
+    {
+      xiiLog::Error("Only xiiGALResourceUsage::Dynamic, xiiGALResourceUsage::Staging, and xiiGALResourceUsage::Unified Vulkan buffers can be mapped for writing.");
+    }
+  }
+  else if (mapType == xiiGALMapType::ReadWrite)
+  {
+    xiiLog::Error("xiiGALMapType::ReadWrite is not supported in the Vulkan backend.");
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST_RESULT(false, "Unknown map type.");
+  }
+
+  if (pMappedData == nullptr)
+    return XII_FAILURE;
+
+  XII_VERIFY(!m_MappedBuffers.Insert(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mapType), "");
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBuffer);
+
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  const auto& bufferDescription = pBufferVulkan->GetDescription();
+
+  if (mapType == xiiGALMapType::Read)
+  {
+    if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
+    {
+      vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
+    }
+  }
+  else if (mapType == xiiGALMapType::Write)
+  {
+    if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
+    {
+      vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
+    }
+    else if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic)
+    {
+      vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
+    }
+  }
+
+  xiiEnum<xiiGALMapType> correspondingMapType;
+  XII_VERIFY(m_MappedBuffers.Remove(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, &correspondingMapType), "");
+  XII_ASSERT_DEV(correspondingMapType == mapType, "Map type mismatch for mapped buffer.");
+
   return XII_SUCCESS;
 }
 
@@ -1745,6 +1828,9 @@ void xiiGALCommandListVulkan::InvalidateStatePlatform()
   m_vkSignalSemaphoreValues.Clear();
   m_SignalFences.Clear();
   m_WaitFences.Clear();
+
+  XII_ASSERT_DEV(m_MappedBuffers.IsEmpty(), "There are outstanding buffers that have not been unmapped.");
+  XII_ASSERT_DEV(m_MappedTextures.IsEmpty(), "There are outstanding textures that have not been unmapped.");
 }
 
 void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)

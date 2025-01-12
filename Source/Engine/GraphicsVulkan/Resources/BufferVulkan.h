@@ -18,8 +18,9 @@ public:
   virtual void                         InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
-  XII_ALWAYS_INLINE vk::Buffer GetVulkanBuffer() const { return m_vkBuffer; }
-  vk::DeviceAddress            GetVulkanBufferDeviceAddress() const;
+  XII_ALWAYS_INLINE vk::Buffer    GetVulkanBuffer() const { return m_vkBuffer; }
+  XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
+  vk::DeviceAddress               GetVulkanBufferDeviceAddress() const;
 
   void                   SetAccessFlags(vk::AccessFlags accessFlags);
   vk::AccessFlags        GetAccessFlags() const;

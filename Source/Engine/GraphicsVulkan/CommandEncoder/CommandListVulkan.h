@@ -239,6 +239,35 @@ private:
     VmaAllocationInfo                    m_AllocationInfo;
   };
 
+  struct MappedBufferKey
+  {
+    xiiGALBufferVulkan* const m_pBufferVulkan = nullptr;
+    xiiEnum<xiiGALMapType>    m_MapType;
+
+    constexpr bool operator==(const MappedBufferKey& rhs) const
+    {
+      return m_pBufferVulkan == rhs.m_pBufferVulkan && m_MapType == rhs.m_MapType;
+    }
+
+    struct Hasher
+    {
+      static xiiUInt32 Hash(const MappedBufferKey& key)
+      {
+        xiiHashStreamWriter32 writer;
+
+        writer << key.m_pBufferVulkan;
+        writer << key.m_MapType;
+
+        return writer.GetHashValue();
+      }
+
+      static bool Equal(const MappedBufferKey& a, const MappedBufferKey& b)
+      {
+        return a == b;
+      }
+    };
+  };
+
   struct FenceInfo
   {
     xiiGALFenceVulkan* m_pFenceVulkan = nullptr;
@@ -275,7 +304,9 @@ private:
   xiiGALFramebufferVulkan*                                           m_pFramebuffer   = nullptr;
   xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
-  xiiHybridArray<ResourceSetBindings, 1U> m_CommittedResources;
+  xiiHybridArray<ResourceSetBindings, 1U>     m_CommittedResources;
+  xiiHybridArray<vk::DescriptorSet, 4U>       m_DescriptorSets;
+  xiiHybridArray<vk::WriteDescriptorSet, 16U> m_DescriptorWrites;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;
@@ -309,7 +340,8 @@ private:
   static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;
   static constexpr xiiUInt32 s_MaxDescriptorSetPerSignature = 2U;
 
-  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
+  xiiHashTable<MappedBufferKey, xiiEnum<xiiGALMapType>, MappedBufferKey::Hasher> m_MappedBuffers;
+  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher>        m_MappedTextures;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };
