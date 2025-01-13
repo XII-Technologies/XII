@@ -96,3 +96,4 @@ class xiiGALFencePoolVulkan;
 class xiiGALSemaphorePoolVulkan;
 class xiiGALQueryPoolVulkan;
 class xiiGALDescriptorSetPoolVulkan;
+class xiiGALStagingBufferPoolVulkan;
