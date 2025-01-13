@@ -39,6 +39,8 @@ void xiiCollectionComponent::DeserializeComponent(xiiWorldReader& ref_stream)
   SUPER::DeserializeComponent(ref_stream);
   const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = ref_stream.GetStream();
+  
+  XII_IGNORE_UNUSED(uiVersion);
 
   s >> m_hCollection;
   s >> m_bRegisterNames;

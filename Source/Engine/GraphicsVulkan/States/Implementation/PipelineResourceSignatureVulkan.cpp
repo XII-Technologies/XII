@@ -144,11 +144,11 @@ bool xiiGALPipelineResourceSignatureVulkan::IsCompatibleWith(const xiiGALPipelin
 {
   const xiiGALPipelineResourceSignatureVulkan* pPipelineResourceSignatureVulkan = static_cast<const xiiGALPipelineResourceSignatureVulkan*>(pPipelineResourceSignature);
 
-  if (pPipelineResourceSignature == this)
+  if (pPipelineResourceSignatureVulkan == this)
     return true;
 
   const auto& sourceDescription  = GetDescription();
-  const auto& compareDescription = pPipelineResourceSignature->GetDescription();
+  const auto& compareDescription = pPipelineResourceSignatureVulkan->GetDescription();
 
   if (sourceDescription.m_bUseCombinedTextureSamplers != compareDescription.m_bUseCombinedTextureSamplers)
     return false;

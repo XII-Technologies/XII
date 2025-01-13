@@ -495,6 +495,8 @@ void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mod
       float                fRelativeMouseX, fRelativeMouseY;
       SDL_MouseButtonFlags mouseButtonFlags = SDL_GetMouseState(&fRelativeMouseX, &fRelativeMouseY);
 
+      XII_IGNORE_UNUSED(mouseButtonFlags);
+
       SDL_SetWindowMouseGrab(m_pWindow, true);
       SDL_WarpMouseInWindow(m_pWindow, fRelativeMouseX, fRelativeMouseY);
     }

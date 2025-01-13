@@ -68,6 +68,8 @@ void xiiEventMessageHandlerComponent::DeserializeComponent(xiiWorldReader& ref_s
   const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = ref_stream.GetStream();
 
+  XII_IGNORE_UNUSED(uiVersion);
+
   {
     bool bGlobalEH;
     s >> bGlobalEH;

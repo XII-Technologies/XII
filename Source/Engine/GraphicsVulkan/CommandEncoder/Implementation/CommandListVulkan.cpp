@@ -763,8 +763,8 @@ void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* p
 {
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALTextureViewVulkan* pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pRenderTargetView);
-  xiiGALTextureVulkan*     pTextureVulkan     = static_cast<xiiGALTextureVulkan*>(pRenderTargetView->GetTexture());
-  const auto&              viewDescription    = pRenderTargetView->GetDescription();
+  xiiGALTextureVulkan*     pTextureVulkan     = static_cast<xiiGALTextureVulkan*>(pTextureViewVulkan->GetTexture());
+  const auto&              viewDescription    = pTextureViewVulkan->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
@@ -772,7 +772,7 @@ void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* p
   xiiUInt32 uiAttachmentIndex = xiiInvalidIndex;
   for (xiiUInt32 i = 0; i < m_uiBoundRenderTargetCount; ++i)
   {
-    if (m_pBoundRenderTargets[i] == pRenderTargetView)
+    if (m_pBoundRenderTargets[i] == pTextureViewVulkan)
     {
       uiAttachmentIndex = i;
       break;

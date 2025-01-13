@@ -12,7 +12,7 @@ if(MSVC)
 endif()
 
 if(XII_CMAKE_COMPILER_CLANG)
-  target_compile_options(${PROJECT_NAME} PRIVATE -Wno-unknown-pragmas -Wno-unused-const-variable)
+  target_compile_options(${PROJECT_NAME} PRIVATE -Wno-defaulted-function-deleted -Wno-unknown-pragmas -Wno-unused-const-variable)
 endif()
 
 target_link_libraries(${PROJECT_NAME}
