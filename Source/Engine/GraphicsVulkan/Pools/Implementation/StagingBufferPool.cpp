@@ -72,9 +72,12 @@ xiiGALStagingBufferPoolVulkan::Allocation xiiGALStagingBufferPoolVulkan::Allocat
   {
     CreateLargeBuffer(uiSize);
 
+    const auto& largeAllocation = m_LargeAllocations.PeekBack();
+
     xiiGALStagingBufferPoolVulkan::Allocation stagingBufferAllocation;
-    stagingBufferAllocation.m_vkBuffer = m_LargeAllocations.PeekBack().m_vkBuffer;
-    stagingBufferAllocation.m_uiOffset = 0;
+    stagingBufferAllocation.m_vkBuffer      = largeAllocation.m_vkBuffer;
+    stagingBufferAllocation.m_VmaAllocation = largeAllocation.m_VmaAllocation;
+    stagingBufferAllocation.m_uiOffset      = 0;
 
     return stagingBufferAllocation;
   }
@@ -102,8 +105,9 @@ xiiGALStagingBufferPoolVulkan::Allocation xiiGALStagingBufferPoolVulkan::Allocat
 
   // Sub allocate from current page.
   xiiGALStagingBufferPoolVulkan::Allocation stagingBufferAllocation;
-  stagingBufferAllocation.m_vkBuffer = m_StagingBufferPages[uiBufferID].m_vkBuffer;
-  stagingBufferAllocation.m_uiOffset = uiBufferAllocationOffset;
+  stagingBufferAllocation.m_vkBuffer      = m_StagingBufferPages[uiBufferID].m_vkBuffer;
+  stagingBufferAllocation.m_VmaAllocation = m_StagingBufferPages[uiBufferID].m_VmaAllocation;
+  stagingBufferAllocation.m_uiOffset      = uiBufferAllocationOffset;
 
   m_uiPageAllocationCounter   = uiBufferID;
   m_uiOffsetAllocationCounter = uiBufferAllocationOffset + uiSize;
@@ -118,7 +122,7 @@ void xiiGALStagingBufferPoolVulkan::Reset()
 
   for (const auto& largeAllocation : m_LargeAllocations)
   {
-    m_pDeviceVulkan->SafeReleaseDeviceObject(largeAllocation.m_vkBuffer);
+    m_pDeviceVulkan->SafeReleaseDeviceObject(largeAllocation.m_vkBuffer, largeAllocation.m_VmaAllocation);
   }
   m_LargeAllocations.Clear();
 }

@@ -2,7 +2,7 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
-class xiiGALStagingBufferPoolVulkan
+class XII_GRAPHICSVULKAN_DLL xiiGALStagingBufferPoolVulkan
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALStagingBufferPoolVulkan);
 
@@ -16,15 +16,16 @@ public:
 
   struct Allocation
   {
-    vk::Buffer m_vkBuffer;
-    xiiUInt64  m_uiOffset;
+    vk::Buffer    m_vkBuffer;
+    VmaAllocation m_VmaAllocation;
+    xiiUInt64     m_uiOffset;
   };
 
   void CreateStagingBufferPage();
 
   void CreateLargeBuffer(xiiUInt64 uiSize);
 
-  xiiGALStagingBufferPoolVulkan::Allocation Allocate(xiiUInt64 uiSize, bool bForceLargePage);
+  xiiGALStagingBufferPoolVulkan::Allocation Allocate(xiiUInt64 uiSize, bool bForceLargePage = false);
 
   void Reset();
 

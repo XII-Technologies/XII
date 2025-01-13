@@ -16,6 +16,7 @@
 #include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 #include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPool.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -1087,9 +1088,10 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   // Create pools.
   {
-    m_FencePool         = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
-    m_SemaphorePool     = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
-    m_DescriptorSetPool = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
+    m_pFencePool               = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
+    m_pSemaphorePool           = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+    m_pDescriptorSetPool       = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
+    m_pUploadStagingBufferPool = XII_NEW(&m_Allocator, xiiGALStagingBufferPoolVulkan, this, 16, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
   }
 
   // Create command queues.
@@ -1200,9 +1202,10 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
   }
 
   {
-    m_DescriptorSetPool.Clear();
-    m_FencePool.Clear();
-    m_SemaphorePool.Clear();
+    m_pDescriptorSetPool.Clear();
+    m_pFencePool.Clear();
+    m_pSemaphorePool.Clear();
+    m_pUploadStagingBufferPool.Clear();
   }
 
   if (m_vkVmaAllocator != VK_NULL_HANDLE)
@@ -1378,23 +1381,23 @@ void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
       }
     }
 
-    for (SafeReclaimResource& safeReclameResource : perFrameData.m_SafeReclaimResources)
+    for (SafeReclaimResource& safeReclaimResource : perFrameData.m_SafeReclaimResources)
     {
-      switch (safeReclameResource.m_vkObjectType)
+      switch (safeReclaimResource.m_vkObjectType)
       {
         case vk::ObjectType::eSemaphore:
         {
-          m_SemaphorePool->ReclaimSemaphore(reinterpret_cast<vk::Semaphore&>(safeReclameResource.m_pObject));
+          m_pSemaphorePool->ReclaimSemaphore(reinterpret_cast<vk::Semaphore&>(safeReclaimResource.m_pObject));
         }
         break;
         case vk::ObjectType::eFence:
         {
-          m_FencePool->ReclaimFence(reinterpret_cast<vk::Fence&>(safeReclameResource.m_pObject));
+          m_pFencePool->ReclaimFence(reinterpret_cast<vk::Fence&>(safeReclaimResource.m_pObject));
         }
         break;
         case vk::ObjectType::eDescriptorPool:
         {
-          m_DescriptorSetPool->ReclaimDescriptorPool(reinterpret_cast<vk::DescriptorPool&>(safeReclameResource.m_pObject));
+          m_pDescriptorSetPool->ReclaimDescriptorPool(reinterpret_cast<vk::DescriptorPool&>(safeReclaimResource.m_pObject));
         }
         break;
 
@@ -1419,6 +1422,8 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchai
   {
     pSwapChain->Present();
   }
+
+  m_pUploadStagingBufferPool->Reset();
 
   ReleasePerFrameResources(m_pFrameFence->GetCompletedValue());
 

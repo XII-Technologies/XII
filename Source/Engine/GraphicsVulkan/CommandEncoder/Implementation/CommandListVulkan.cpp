@@ -4,6 +4,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPool.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 #include <GraphicsVulkan/Resources/FramebufferVulkan.h>
@@ -1260,6 +1261,21 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
 
 void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBuffer);
+
+  XII_VERIFY_COMMAND_LIST(pBufferVulkan->GetDescription().m_ResourceUsage != xiiGALResourceUsage::Dynamic, "Dynamic buffers must be updated via Map().");
+
+  auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pBuffer->GetSize());
+
+  void* pMappedMemory =nullptr;
+  VK_ASSERT_DEV( vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
+
+  memcpy(pMappedMemory, pSourceData.GetPtr(), pSourceData.GetCount());
+
+  UpdateBufferRegion(pBufferVulkan, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, uiDestinationOffset, pSourceData.GetCount());
+
+  // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
 }
 
 void xiiGALCommandListVulkan::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
