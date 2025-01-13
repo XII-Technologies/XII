@@ -121,13 +121,11 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createMacOSSurfaceMVK(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR) || defined(VK_USE_PLATFORM_XCB_KHR)
 
-  if XII_ENABLED(XII_SUPPORTS_SDL)
-    const char* szCurrentDriver = SDL_GetCurrentVideoDriver();
-
-    int dsdsd = 0;
-  #else
-  #error "No suitable implementation for retrieving window pointer."
-  #endif
+#  if XII_ENABLED(XII_SUPPORTS_SDL)
+  const char* szCurrentDriver = SDL_GetCurrentVideoDriver();
+#  else
+#    error "No suitable implementation for retrieving window pointer."
+#  endif
 
   vk::WaylandSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                           = nullptr;
