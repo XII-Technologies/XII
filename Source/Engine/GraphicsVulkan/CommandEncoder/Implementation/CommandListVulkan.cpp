@@ -1268,12 +1268,14 @@ void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUIn
 
   auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pBuffer->GetSize());
 
-  void* pMappedMemory =nullptr;
-  VK_ASSERT_DEV( vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
+  void* pMappedMemory = nullptr;
+  VK_ASSERT_DEV(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
 
   memcpy(pMappedMemory, pSourceData.GetPtr(), pSourceData.GetCount());
 
   UpdateBufferRegion(pBufferVulkan, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, uiDestinationOffset, pSourceData.GetCount());
+
+  vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
 
   // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
 }
