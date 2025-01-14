@@ -280,7 +280,7 @@ void xiiGALCommandListD3D11::SetShaderResourceBufferViewPlatform(const xiiGALPip
 {
   if (pBufferView != nullptr && UnsetUnorderedAccessViews(pBufferView->GetBuffer()))
   {
-    // Flush context.
+    FlushDeferredStateChanges().IgnoreResult();
   }
 
   ID3D11ShaderResourceView* pD3D11ShaderResourceView = pBufferView != nullptr ? static_cast<ID3D11ShaderResourceView*>(static_cast<xiiGALBufferViewD3D11*>(pBufferView)->GetBufferView()) : nullptr;
@@ -309,7 +309,7 @@ void xiiGALCommandListD3D11::SetShaderResourceTextureViewPlatform(const xiiGALPi
 {
   if (pTextureView != nullptr && UnsetUnorderedAccessViews(pTextureView->GetTexture()))
   {
-    // Flush context.
+    FlushDeferredStateChanges().IgnoreResult();
   }
 
   ID3D11ShaderResourceView* pD3D11ShaderResourceView = pTextureView != nullptr ? static_cast<ID3D11ShaderResourceView*>(static_cast<xiiGALTextureViewD3D11*>(pTextureView)->GetTextureView()) : nullptr;
@@ -338,19 +338,19 @@ void xiiGALCommandListD3D11::SetUnorderedAccessBufferViewPlatform(const xiiGALPi
 {
   if (pBufferView && UnsetResourceViews(pBufferView->GetBuffer()))
   {
-    // Flush context.
+    FlushDeferredStateChanges().IgnoreResult();
   }
 
   ID3D11UnorderedAccessView* pUnorderedAccessViewD3D11 = pBufferView != nullptr ? static_cast<ID3D11UnorderedAccessView*>(static_cast<xiiGALBufferViewD3D11*>(pBufferView)->GetBufferView()) : nullptr;
 
-  m_BoundUnoderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+  m_BoundUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
   m_ResourcesForUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
 
-  if (m_BoundUnoderedAccessViews[bindingInformation.m_uiBindSlot] != pUnorderedAccessViewD3D11)
+  if (m_BoundUnorderedAccessViews[bindingInformation.m_uiBindSlot] != pUnorderedAccessViewD3D11)
   {
-    m_BoundUnoderedAccessViews[bindingInformation.m_uiBindSlot]         = pUnorderedAccessViewD3D11;
+    m_BoundUnorderedAccessViews[bindingInformation.m_uiBindSlot]        = pUnorderedAccessViewD3D11;
     m_ResourcesForUnorderedAccessViews[bindingInformation.m_uiBindSlot] = pBufferView != nullptr ? pBufferView->GetBuffer() : nullptr;
-    m_BoundUnoderedAccessViewsRange.SetToIncludeValue(bindingInformation.m_uiBindSlot);
+    m_BoundUnorderedAccessViewsRange.SetToIncludeValue(bindingInformation.m_uiBindSlot);
   }
 }
 
@@ -358,19 +358,19 @@ void xiiGALCommandListD3D11::SetUnorderedAccessTextureViewPlatform(const xiiGALP
 {
   if (pTextureView && UnsetResourceViews(pTextureView->GetTexture()))
   {
-    // Flush context.
+    FlushDeferredStateChanges().IgnoreResult();
   }
 
   ID3D11UnorderedAccessView* pUnorderedAccessViewD3D11 = pTextureView != nullptr ? static_cast<ID3D11UnorderedAccessView*>(static_cast<xiiGALTextureViewD3D11*>(pTextureView)->GetTextureView()) : nullptr;
 
-  m_BoundUnoderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+  m_BoundUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
   m_ResourcesForUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
 
-  if (m_BoundUnoderedAccessViews[bindingInformation.m_uiBindSlot] != pUnorderedAccessViewD3D11)
+  if (m_BoundUnorderedAccessViews[bindingInformation.m_uiBindSlot] != pUnorderedAccessViewD3D11)
   {
-    m_BoundUnoderedAccessViews[bindingInformation.m_uiBindSlot]         = pUnorderedAccessViewD3D11;
+    m_BoundUnorderedAccessViews[bindingInformation.m_uiBindSlot]        = pUnorderedAccessViewD3D11;
     m_ResourcesForUnorderedAccessViews[bindingInformation.m_uiBindSlot] = pTextureView != nullptr ? pTextureView->GetTexture() : nullptr;
-    m_BoundUnoderedAccessViewsRange.SetToIncludeValue(bindingInformation.m_uiBindSlot);
+    m_BoundUnorderedAccessViewsRange.SetToIncludeValue(bindingInformation.m_uiBindSlot);
   }
 }
 
@@ -954,6 +954,8 @@ void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const
 
 void xiiGALCommandListD3D11::InvalidateStatePlatform()
 {
+  ResetRenderTargets();
+
   m_pImmediateContext->ClearState();
 
   InvalidateResources();
@@ -986,13 +988,6 @@ void xiiGALCommandListD3D11::InvalidateResources()
   m_CommittedBlendFactors       = xiiColor::White;
   m_uiCommittedBlendSampleMask  = 0xFFFFFFFFU;
   m_uiCommittedStencilReference = 0xFFU;
-
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCommittedRenderTargets); ++i)
-  {
-    m_pCommittedRenderTargets[i] = nullptr;
-  }
-  m_uiBoundRenderTargetCount     = 0U;
-  m_pCommittedDepthStencilTarget = nullptr;
 }
 
 void xiiGALCommandListD3D11::CommitRenderTargets()
@@ -1049,7 +1044,7 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
   {
     bool bFlushNeeded = false;
 
-    if (m_pPipelineState != nullptr && pDepthStencilView != nullptr)
+    if (pDepthStencilView != nullptr)
     {
       bFlushNeeded |= UnsetResourceViews(pDepthStencilView->GetTexture());
       bFlushNeeded |= UnsetUnorderedAccessViews(pDepthStencilView->GetTexture());
@@ -1057,7 +1052,7 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
 
     for (xiiUInt32 i = boundRenderTargetsRange.m_uiMin; i < boundRenderTargetsRange.GetCount(); ++i)
     {
-      if (m_pPipelineState != nullptr && pAttachmentViews[i] != nullptr)
+      if (pAttachmentViews[i] != nullptr)
       {
         bFlushNeeded |= UnsetResourceViews(pAttachmentViews[i]->GetTexture());
         bFlushNeeded |= UnsetUnorderedAccessViews(pAttachmentViews[i]->GetTexture());
@@ -1226,11 +1221,12 @@ xiiResult xiiGALCommandListD3D11::CommitShaderResources(xiiGALCommandListD3D11* 
   }
 
   // Set Unordered Access Views (UAVs) before shader resource views (SRVs), since UAVs are outputs that need to be unbound before they need to be potentially rebound as SRVs.
-  if (m_BoundUnoderedAccessViewsRange.IsValid())
+  if (m_BoundUnorderedAccessViewsRange.IsValid())
   {
-    const xiiUInt32 uiStartSlot = m_BoundUnoderedAccessViewsRange.m_uiMin;
-    const xiiUInt32 uiNumSlots  = m_BoundUnoderedAccessViewsRange.GetCount();
-    pContext->CSSetUnorderedAccessViews(uiStartSlot, uiNumSlots, m_BoundUnoderedAccessViews.GetData() + uiStartSlot, nullptr); // Maybe consider unordered access views count reset.
+    const xiiUInt32 uiStartSlot = m_BoundUnorderedAccessViewsRange.m_uiMin;
+    const xiiUInt32 uiNumSlots  = m_BoundUnorderedAccessViewsRange.GetCount();
+
+    pContext->CSSetUnorderedAccessViews(uiStartSlot, uiNumSlots, m_BoundUnorderedAccessViews.GetData() + uiStartSlot, nullptr); // Maybe consider unordered access views count reset.
   }
 
   for (xiiUInt32 uiStage = 0; uiStage < xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT; ++uiStage)
@@ -1243,6 +1239,8 @@ xiiResult xiiGALCommandListD3D11::CommitShaderResources(xiiGALCommandListD3D11* 
 
       SetShaderResources((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStage, pContext, uiStartSlot, uiNumSlots, m_pBoundShaderResourceViews[uiStage].GetData() + uiStartSlot);
     }
+
+    // TODO: We do not need to unset sampler stages of unbound shader stages.
 
     if (m_BoundSamplerStatesRange[uiStage].IsValid())
     {
@@ -1285,8 +1283,8 @@ bool xiiGALCommandListD3D11::UnsetUnorderedAccessViews(const xiiGALResource* pRe
     if (m_ResourcesForUnorderedAccessViews[uiSlot] == pResource)
     {
       m_ResourcesForUnorderedAccessViews[uiSlot] = nullptr;
-      m_BoundUnoderedAccessViews[uiSlot]         = nullptr;
-      m_BoundUnoderedAccessViewsRange.SetToIncludeValue(uiSlot);
+      m_BoundUnorderedAccessViews[uiSlot]        = nullptr;
+      m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
 
       bResult = true;
     }
@@ -1315,9 +1313,9 @@ void xiiGALCommandListD3D11::ResetBoundResources()
     m_BoundSamplerStatesRange[uiStage].Reset();
   }
 
-  m_BoundUnoderedAccessViews.Clear();
+  m_BoundUnorderedAccessViews.Clear();
   m_ResourcesForUnorderedAccessViews.Clear();
-  m_BoundUnoderedAccessViewsRange.Reset();
+  m_BoundUnorderedAccessViewsRange.Reset();
 }
 
 xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()
@@ -1363,57 +1361,6 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
 
     // Commit shader resources.
     XII_SUCCEED_OR_RETURN(CommitShaderResources(this));
-  }
-  else
-  {
-    // Reset render targets and depth stencil
-    ID3D11RenderTargetView* nullRTV[1] = {nullptr};
-    m_pImmediateContext->OMSetRenderTargets(1, nullRTV, nullptr);
-
-    // Reset shader resource views
-    ID3D11ShaderResourceView* nullSRV[16] = {nullptr};
-    m_pImmediateContext->VSSetShaderResources(0, 16, nullSRV);
-    m_pImmediateContext->PSSetShaderResources(0, 16, nullSRV);
-    m_pImmediateContext->GSSetShaderResources(0, 16, nullSRV);
-    m_pImmediateContext->HSSetShaderResources(0, 16, nullSRV);
-    m_pImmediateContext->DSSetShaderResources(0, 16, nullSRV);
-    m_pImmediateContext->CSSetShaderResources(0, 16, nullSRV);
-
-    // Reset samplers
-    ID3D11SamplerState* nullSampler[16] = {nullptr};
-    m_pImmediateContext->VSSetSamplers(0, 16, nullSampler);
-    m_pImmediateContext->PSSetSamplers(0, 16, nullSampler);
-    m_pImmediateContext->GSSetSamplers(0, 16, nullSampler);
-    m_pImmediateContext->HSSetSamplers(0, 16, nullSampler);
-    m_pImmediateContext->DSSetSamplers(0, 16, nullSampler);
-    m_pImmediateContext->CSSetSamplers(0, 16, nullSampler);
-
-    // Reset constant buffers
-    ID3D11Buffer* nullCB[14] = {nullptr};
-    m_pImmediateContext->VSSetConstantBuffers(0, 14, nullCB); // For vertex shader constant buffers
-    m_pImmediateContext->PSSetConstantBuffers(0, 14, nullCB); // For pixel shader constant buffers
-    m_pImmediateContext->CSSetConstantBuffers(0, 14, nullCB); // For compute shader constant buffers
-
-    ID3D11Buffer* nullCB_GHDS[8] = {nullptr};
-    m_pImmediateContext->GSSetConstantBuffers(0, 8, nullCB_GHDS); // For geometry shader constant buffers
-    m_pImmediateContext->HSSetConstantBuffers(0, 8, nullCB_GHDS); // For hull shader constant buffers
-    m_pImmediateContext->DSSetConstantBuffers(0, 8, nullCB_GHDS); // For domain shader constant buffers
-
-
-    // Reset vertex and index buffers
-    ID3D11Buffer* nullVB[1] = {nullptr};
-    UINT          stride    = 0;
-    UINT          offset    = 0;
-    m_pImmediateContext->IASetVertexBuffers(0, 1, nullVB, &stride, &offset);
-    m_pImmediateContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_R32_UINT, 0);
-
-    // Reset shaders
-    m_pImmediateContext->VSSetShader(nullptr, nullptr, 0);
-    m_pImmediateContext->PSSetShader(nullptr, nullptr, 0);
-    m_pImmediateContext->GSSetShader(nullptr, nullptr, 0);
-    m_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
-    m_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
-    m_pImmediateContext->CSSetShader(nullptr, nullptr, 0);
   }
 
   return XII_SUCCESS;

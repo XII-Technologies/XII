@@ -153,9 +153,9 @@ private:
   xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
   xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
 
-  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnoderedAccessViews;
+  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnorderedAccessViews;
   xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
-  xiiGAL::ModifiedRange                          m_BoundUnoderedAccessViewsRange;
+  xiiGAL::ModifiedRange                          m_BoundUnorderedAccessViewsRange;
 
   ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
