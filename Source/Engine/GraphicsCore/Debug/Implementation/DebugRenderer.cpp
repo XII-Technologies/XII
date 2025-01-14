@@ -14,6 +14,7 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
 
@@ -1548,7 +1549,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       {
         const xiiUInt32 uiNumSolidBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumSolidBoxes, BOXES_PER_BATCH);
 
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray()).AssertSuccess();
 
         unsigned int uiRenderedInstances = uiNumSolidBoxesInBatch;
         if (renderViewContext.m_pCamera->IsStereoscopic())
@@ -1578,7 +1579,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
         const xiiUInt32 uiNumTriangleVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumTriangleVertices, TRIANGLE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumTriangleVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumTriangleVerticesInBatch / 3);
 
@@ -1612,7 +1613,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
           const xiiUInt32 uiNumVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
           XII_ASSERT_DEV(uiNumVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-          pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray());
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray()).AssertSuccess();
 
           renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumVerticesInBatch / 3);
 
@@ -1641,7 +1642,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
@@ -1669,7 +1670,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       {
         const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
 
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiNumLineBoxesInBatch).IgnoreResult();
 
@@ -1709,7 +1710,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       {
         const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
 
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
 
@@ -1851,7 +1852,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
@@ -1879,7 +1880,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
         const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TRIANGLE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
@@ -1913,7 +1914,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
           const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
           XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-          pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray());
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
 
           renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
@@ -1949,7 +1950,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       {
         const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
 
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
 

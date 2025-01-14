@@ -12,4 +12,4 @@ using xiiWindowInternalHandle = SDL_Window*;
 #else
 #  error "Platform window handle not implemented."
 #endif
-#define INVALID_WINDOW_HANDLE_VALUE (SDL_Window*)(nullptr)
+#define INVALID_WINDOW_HANDLE_VALUE (xiiWindowHandle)(0)

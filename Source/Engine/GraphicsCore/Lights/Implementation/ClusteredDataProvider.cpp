@@ -13,6 +13,7 @@
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 xiiClusteredDataGPU::xiiClusteredDataGPU()
 {
@@ -190,23 +191,23 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
       {
         if (!pData->m_LightData.IsEmpty())
         {
-          pCommandList->UpdateBufferExtended(m_Data.m_hLightDataBuffer, 0, pData->m_LightData.ToByteArray());
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hLightDataBuffer, 0, pData->m_LightData.ToByteArray()).AssertSuccess();
         }
 
         if (!pData->m_DecalData.IsEmpty())
         {
-          pCommandList->UpdateBufferExtended(m_Data.m_hDecalDataBuffer, 0, pData->m_DecalData.ToByteArray());
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hDecalDataBuffer, 0, pData->m_DecalData.ToByteArray()).AssertSuccess();
         }
 
         if (!pData->m_ReflectionProbeData.IsEmpty())
         {
-          pCommandList->UpdateBufferExtended(m_Data.m_hReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray());
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray()).AssertSuccess();
         }
 
-        pCommandList->UpdateBufferExtended(m_Data.m_hClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray()).AssertSuccess();
       }
 
-      pCommandList->UpdateBufferExtended(m_Data.m_hClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray());
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray()).AssertSuccess();
     }
     pCommandList->EndDebugGroup();
 

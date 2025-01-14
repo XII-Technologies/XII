@@ -182,7 +182,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pGALComman
 
     m_bAccessedVB = false;
 
-    pGALCommandList->UpdateBufferExtended(m_hVertexBuffer, sizeof(xiiDynamicMeshVertex) * uiFirstVertex, m_VertexData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray(), mapFlags);
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, m_hVertexBuffer, sizeof(xiiDynamicMeshVertex) * uiFirstVertex, m_VertexData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray()).AssertSuccess();
   }
 
   if (m_bAccessedCB && uiNumVertices > 0)
@@ -194,7 +194,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pGALComman
 
     m_bAccessedCB = false;
 
-    pGALCommandList->UpdateBufferExtended(m_hColorBuffer, sizeof(xiiColorLinearUB) * uiFirstVertex, m_ColorData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray(), mapFlags);
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, m_hColorBuffer, sizeof(xiiColorLinearUB) * uiFirstVertex, m_ColorData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray()).AssertSuccess();
   }
 
   if (m_bAccessedIB && uiNumIndices > 0 && !m_hIndexBuffer.IsInvalidated())
@@ -210,7 +210,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pGALComman
 
       XII_ASSERT_DEV(uiNumIndices <= m_Index16Data.GetCount(), "Can't upload {} indices, the buffer was allocated to hold a maximum of {} indices.", uiNumIndices, m_Index16Data.GetCount());
 
-      pGALCommandList->UpdateBufferExtended(m_hIndexBuffer, sizeof(xiiUInt16) * uiFirstIndex, m_Index16Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), mapFlags);
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, m_hIndexBuffer, sizeof(xiiUInt16) * uiFirstIndex, m_Index16Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray()).AssertSuccess();
     }
     else if (!m_Index32Data.IsEmpty())
     {
@@ -221,7 +221,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pGALComman
 
       XII_ASSERT_DEV(uiNumIndices <= m_Index32Data.GetCount(), "Can't upload {} indices, the buffer was allocated to hold a maximum of {} indices.", uiNumIndices, m_Index32Data.GetCount());
 
-      pGALCommandList->UpdateBufferExtended(m_hIndexBuffer, sizeof(xiiUInt32) * uiFirstIndex, m_Index32Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), mapFlags);
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, m_hIndexBuffer, sizeof(xiiUInt32) * uiFirstIndex, m_Index32Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray()).AssertSuccess();
     }
   }
 }

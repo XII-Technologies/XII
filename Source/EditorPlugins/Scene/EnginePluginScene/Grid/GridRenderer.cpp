@@ -5,6 +5,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGridRenderData, 1, xiiRTTINoAllocator)
@@ -193,7 +194,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
       const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, s_uiLineVerticesPerBatch);
       XII_ASSERT_DEBUG(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-      pRenderContext->GetCommandList()->UpdateBufferExtended(m_hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(pRenderContext->GetCommandList(), m_hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
       pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
       pRenderContext->DrawMeshBuffer().IgnoreResult();

@@ -10,6 +10,7 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <Shaders/Materials/LensFlareData.h>
 static_assert(sizeof(xiiPerLensFlareData) == 48);
@@ -53,7 +54,7 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
 
   if (m_LensFlareData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    pContext->GetCommandList()->UpdateBufferExtended(hLensFlareData, 0, m_LensFlareData.GetByteArrayPtr());
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pContext->GetCommandList(), hLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
 
     pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();

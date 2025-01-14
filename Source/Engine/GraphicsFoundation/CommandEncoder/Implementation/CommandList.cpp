@@ -364,7 +364,7 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::BufferUAV && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::TextureUAV && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
       {
         bResourceFound = true;
         break;

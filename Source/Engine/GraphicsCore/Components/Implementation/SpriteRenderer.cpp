@@ -10,6 +10,7 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <Shaders/Materials/SpriteData.h>
 static_assert(sizeof(xiiPerSpriteData) == 48);
@@ -60,7 +61,7 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
 
   if (m_SpriteData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    pContext->GetCommandList()->UpdateBufferExtended(hSpriteData, 0, m_SpriteData.GetByteArrayPtr());
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pContext->GetCommandList(),hSpriteData, 0, m_SpriteData.GetByteArrayPtr()).AssertSuccess();
 
     pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
