@@ -580,86 +580,43 @@ void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
 {
   XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
 
-  auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
-  XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
+  XII_ASSERT_DEV(pBufferD3D11 != nullptr, "Invalid resource.");
 
-  D3D11_BOX destinationBox = {};
-  destinationBox.left      = uiDestinationOffset;
-  destinationBox.right     = uiDestinationOffset + pSourceData.GetCount();
-  destinationBox.top       = 0U;
-  destinationBox.bottom    = 1U;
-  destinationBox.front     = 0U;
-  destinationBox.back      = 1U;
+  const auto& bufferDescription = pBufferD3D11->GetDescription();
 
-  D3D11_BOX* pDestinationBox = (uiDestinationOffset == 0 && pSourceData.GetCount() == pDestinationBufferD3D11->GetDescription().m_uiSize) ? nullptr : &destinationBox;
-
-  m_pImmediateContext->UpdateSubresource(pDestinationBufferD3D11->GetBuffer(), 0U, pDestinationBox, pSourceData.GetPtr(), 0U, 0U);
-}
-
-void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
-{
-  XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
-
-  xiiGALDeviceD3D11* pDeviceD3D11            = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  auto               pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
-
-  XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
-
-  const auto& bufferDescription = pDestinationBufferD3D11->GetDescription();
-
-  if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  if (ID3D11Resource* pD3D11TempBuffer = pDeviceD3D11->FindTemporaryBuffer(pSourceData.GetCount()))
   {
-    XII_ASSERT_DEV(uiDestinationOffset == 0 && pSourceData.GetCount() == bufferDescription.m_uiSize, "Constant buffers can't be updated partially (and we don't check for DX11.1)!");
+    D3D11_MAPPED_SUBRESOURCE MapResult;
+    HRESULT                  hRes = m_pImmediateContext->Map(pD3D11TempBuffer, 0, D3D11_MAP_WRITE, 0, &MapResult);
+    XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
+    XII_IGNORE_UNUSED(hRes);
 
-    D3D11_MAPPED_SUBRESOURCE mapResult;
-    if (SUCCEEDED(m_pImmediateContext->Map(pDestinationBufferD3D11->GetBuffer(), 0U, D3D11_MAP_WRITE_DISCARD, 0U, &mapResult)))
-    {
-      memcpy(mapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
+    memcpy(MapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
 
-      m_pImmediateContext->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
-    }
+    m_pImmediateContext->Unmap(pD3D11TempBuffer, 0);
+
+    // Schedule copy command using this command list.
+    D3D11_BOX srcBox = {0, 0, 0, pSourceData.GetCount(), 1, 1};
+    m_pImmediateContext->CopySubresourceRegion(pBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
   }
   else
   {
-    if (bCopyToTemporaryStorage)
-    {
-      if (ID3D11Resource* pD3D11TempBuffer = pDeviceD3D11->FindTemporaryBuffer(pSourceData.GetCount()))
-      {
-        D3D11_MAPPED_SUBRESOURCE MapResult;
-        HRESULT                  hRes = m_pImmediateContext->Map(pD3D11TempBuffer, 0, D3D11_MAP_WRITE, 0, &MapResult);
-        XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
-        XII_IGNORE_UNUSED(hRes);
+    xiiLog::Warning("Could not find a temporary buffer for update. Buffer update will be performed using UpdateSubresource().");
 
-        memcpy(MapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
+    D3D11_BOX destinationBox = {};
+    destinationBox.left      = uiDestinationOffset;
+    destinationBox.right     = uiDestinationOffset + pSourceData.GetCount();
+    destinationBox.top       = 0U;
+    destinationBox.bottom    = 1U;
+    destinationBox.front     = 0U;
+    destinationBox.back      = 1U;
 
-        m_pImmediateContext->Unmap(pD3D11TempBuffer, 0);
+    D3D11_BOX* pDestinationBox = (uiDestinationOffset == 0 && pSourceData.GetCount() == pBufferD3D11->GetDescription().m_uiSize) ? nullptr : &destinationBox;
 
-        // Schedule copy command using this command list.
-        D3D11_BOX srcBox = {0, 0, 0, pSourceData.GetCount(), 1, 1};
-        m_pImmediateContext->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
-      }
-      else
-      {
-        XII_REPORT_FAILURE("Could not find a temp buffer for update.");
-      }
-    }
-    else
-    {
-      D3D11_MAP mapType = (mapFlags == xiiGALMapFlags::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
-
-      D3D11_MAPPED_SUBRESOURCE mapResult;
-      if (SUCCEEDED(m_pImmediateContext->Map(pDestinationBufferD3D11->GetBuffer(), 0, mapType, 0, &mapResult)))
-      {
-        memcpy(xiiMemoryUtils::AddByteOffset(mapResult.pData, uiDestinationOffset), pSourceData.GetPtr(), pSourceData.GetCount());
-
-        m_pImmediateContext->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
-      }
-      else
-      {
-        xiiLog::Error("Could not map buffer to update content.");
-      }
-    }
+    m_pImmediateContext->UpdateSubresource(pBufferD3D11->GetBuffer(), 0U, pDestinationBox, pSourceData.GetPtr(), 0U, 0U);
   }
 }
 
@@ -1238,7 +1195,7 @@ static void SetSamplers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11
 
 xiiResult xiiGALCommandListD3D11::CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11)
 {
-  auto pContext = pCommandListD3D11->GetD3D11Context();
+  auto        pContext            = pCommandListD3D11->GetD3D11Context();
   const auto& pipelineDescription = m_pPipelineState->GetDescription();
 
   if (pipelineDescription.IsAnyGraphicsPipeline())

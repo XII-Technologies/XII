@@ -702,7 +702,7 @@ void xiiGALCommandList::InsertDebugLabel(xiiStringView sName, const xiiColor& co
 
 void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
-  /// \todo GraphicsFoundation: Check alignment.
+  const auto& graphicsAdapterProperties = m_pDevice->GetGraphicsDeviceAdapterProperties();
 
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(!hBuffer.IsInvalidated(), "UpdateBuffer arguments are invalid. The buffer handle has been invalidated.");
@@ -711,28 +711,20 @@ void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDes
   xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
   const auto&   bufferDescription = pBuffer->GetDescription();
 
+  if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  {
+    XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), graphicsAdapterProperties.m_BufferProperties.m_uiConstantBufferAlignment);
+  }
+  if (bufferDescription.m_Mode == xiiGALBufferMode::Structured)
+  {
+    XII_VERIFY_COMMAND_LIST((uiDestinationOffset % graphicsAdapterProperties.m_BufferProperties.m_uiStructuredBufferOffsetAlignment) == 0, "Offset must be aligned to {} bytes.", graphicsAdapterProperties.m_BufferProperties.m_uiStructuredBufferOffsetAlignment);
+  }
+
   XII_VERIFY_COMMAND_LIST(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Default || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Sparse, "UpdateBuffer command arguments are invalid. Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Sparse may be updated with this method.");
   XII_VERIFY_COMMAND_LIST(uiDestinationOffset < bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the destination offset ({1}) exceeds the buffer size ({2}).", pBuffer->GetDebugName(), uiDestinationOffset, bufferDescription.m_uiSize);
   XII_VERIFY_COMMAND_LIST((uiDestinationOffset + pSourceData.GetCount()) <= bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the update region [{1}, {2}) is out of buffer bounds [0, {3}).", pBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + pSourceData.GetCount(), bufferDescription.m_uiSize);
 
   UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData);
-}
-
-void xiiGALCommandList::UpdateBufferExtended(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
-{
-  /// \todo GraphicsFoundation: Check alignment.
-
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
-  XII_VERIFY_COMMAND_LIST(!hBuffer.IsInvalidated(), "UpdateBufferExtended arguments are invalid. The buffer handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateBufferExtended command must be used outside of render pass.");
-
-  xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
-  const auto&   bufferDescription = pBuffer->GetDescription();
-
-  XII_VERIFY_COMMAND_LIST(uiDestinationOffset < bufferDescription.m_uiSize, "UpdateBufferExtended command arguments are invalid. Unable to update buffer '{0}', the destination offset ({1}) exceeds the buffer size ({2}).", pBuffer->GetDebugName(), uiDestinationOffset, bufferDescription.m_uiSize);
-  XII_VERIFY_COMMAND_LIST((uiDestinationOffset + pSourceData.GetCount()) <= bufferDescription.m_uiSize, "UpdateBufferExtended command arguments are invalid. Unable to update buffer '{0}', the update region [{1}, {2}) is out of buffer bounds [0, {3}).", pBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + pSourceData.GetCount(), bufferDescription.m_uiSize);
-
-  UpdateBufferExtendedPlatform(pBuffer, uiDestinationOffset, pSourceData, mapFlags, bCopyToTemporaryStorage || mapFlags == xiiGALMapFlags::NoOverWrite);
 }
 
 void xiiGALCommandList::CopyBuffer(xiiGALBufferHandle hSourceBuffer, xiiGALBufferHandle hDestinationBuffer)

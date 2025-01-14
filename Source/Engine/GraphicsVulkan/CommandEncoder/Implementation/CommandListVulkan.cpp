@@ -1261,27 +1261,27 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
 
 void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
+  XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
+
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBuffer);
 
-  XII_VERIFY_COMMAND_LIST(pBufferVulkan->GetDescription().m_ResourceUsage != xiiGALResourceUsage::Dynamic, "Dynamic buffers must be updated via Map().");
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
-  auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pBuffer->GetSize());
+  auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pBufferVulkan->GetSize());
 
   void* pMappedMemory = nullptr;
-  VK_ASSERT_DEV(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
+  VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
+  VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
 
   memcpy(pMappedMemory, pSourceData.GetPtr(), pSourceData.GetCount());
 
-  UpdateBufferRegion(pBufferVulkan, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, uiDestinationOffset, pSourceData.GetCount());
-
   vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
 
-  // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
-}
+  UpdateBufferRegion(pBufferVulkan, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, uiDestinationOffset, pSourceData.GetCount());
 
-void xiiGALCommandListVulkan::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
-{
+  // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
 }
 
 void xiiGALCommandListVulkan::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)

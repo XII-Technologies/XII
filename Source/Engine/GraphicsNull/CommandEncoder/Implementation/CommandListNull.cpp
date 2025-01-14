@@ -157,10 +157,6 @@ void xiiGALCommandListNull::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt3
 {
 }
 
-void xiiGALCommandListNull::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
-{
-}
-
 void xiiGALCommandListNull::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
 {
 }

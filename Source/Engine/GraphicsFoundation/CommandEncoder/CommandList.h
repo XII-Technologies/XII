@@ -305,15 +305,6 @@ public:
   /// \param pSourceData         - Pointer to the source data.
   void UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData);
 
-  /// \brief Updates a buffer.
-  ///
-  /// \param hBuffer                 - The handle to the buffer object.
-  /// \param uiDestinationOffset     - Byte offset into the buffer where the update should start.
-  /// \param pSourceData             - Pointer to the source data.
-  /// \param mapFlags                - Flags specifying how the buffer should be mapped.
-  /// \param bCopyToTemporaryStorage - Upload to temporary buffer, then buffer to buffer transfer at the current time in the command list.
-  void UpdateBufferExtended(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard, bool bCopyToTemporaryStorage = false);
-
   /// \brief Copies the entire contents of the source buffer to the destination buffer.
   ///
   /// \param hSourceBuffer      - The handle to the source buffer object.
@@ -500,7 +491,6 @@ protected:
   virtual void EndQueryPlatform(xiiGALQuery* pQuery)   = 0;
 
   virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)                                                                             = 0;
-  virtual void      UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage) = 0;
   virtual void      CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                                               = 0;
   virtual void      CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)                              = 0;
   virtual xiiResult MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                                              = 0;
