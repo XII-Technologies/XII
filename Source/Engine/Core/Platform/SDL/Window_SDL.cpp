@@ -263,7 +263,7 @@ void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
 
 xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 {
-  return m_hWindowHandle;
+  return static_cast<xiiWindowHandle>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_hWindowHandle), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
 }
 
 #endif
