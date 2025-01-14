@@ -119,6 +119,11 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   HWND hNativeWindow = 0U;
 #if XII_ENABLED(XII_SUPPORTS_SDL)
   hNativeWindow = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+
+  if (hNativeWindow == NULL && m_Description.m_pWindow->GetNativeWindowHandle() != nullptr)
+  {
+    hNativeWindow = (HWND)m_Description.m_pWindow->GetNativeWindowHandle();
+  }
 #else
 #  error "No platform implementation provided for the native window handle."
 #endif
