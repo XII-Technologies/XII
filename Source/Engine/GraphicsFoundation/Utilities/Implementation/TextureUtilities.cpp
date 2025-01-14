@@ -484,7 +484,6 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
 
 void xiiGALTextureUtilities::CopyTextureSubresource(const xiiGALTextureSubResourceData& sourceSubresource, xiiUInt32 uiRowCount, xiiUInt32 uiDepthSliceCount, xiiUInt64 uiRowSize, void* pDestinationData, xiiUInt64 uiDestinationRowStride, xiiUInt64 uiDestinationDepthStride)
 {
-  XII_ASSERT_DEV(sourceSubresource.m_hSourceBuffer.IsInvalidated() && !sourceSubresource.m_pData.IsEmpty(), "");
   XII_ASSERT_DEV(pDestinationData != nullptr, "");
   XII_ASSERT_DEV(sourceSubresource.m_uiStride >= uiRowSize, "Source data row stride ({}) is smaller than the row size ({}).", sourceSubresource.m_uiStride, uiRowSize);
   XII_ASSERT_DEV(sourceSubresource.m_uiDepthStride >= uiRowSize, "Destination data row stride ({}) is smaller than the row size ({}).", uiDestinationDepthStride, uiRowSize);

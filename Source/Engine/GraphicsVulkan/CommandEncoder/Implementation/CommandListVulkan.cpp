@@ -426,6 +426,46 @@ void xiiGALCommandListVulkan::CopyTextureRegion(xiiGALTextureVulkan* pSourceText
   CopyImage(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, xiiMakeArrayPtr(&copyRegion, 1U));
 }
 
+void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUInt64 uiSourceStride, xiiUInt64 uiSourceDepthStride, xiiGALTextureVulkan* pTextureVulkan, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox)
+{
+  xiiGALDeviceVulkan* pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  const auto&         textureDescription = pTextureVulkan->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(textureDescription.m_uiSampleCount == 1U, "Only single-sample textures can be updated with vkCmdCopyBufferToImage().");
+
+  const auto&                                deviceLimits                   = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits;
+  const xiiGALBufferToTextureCopyDescription bufferToTextureCopyDescription = xiiGALTextureUtilities::GetBufferToTextureCopyDescription(textureDescription.m_Format, destinationBox, static_cast<xiiUInt32>(deviceLimits.optimalBufferCopyRowPitchAlignment));
+  const xiiUInt32                            uiUpdateRegionDepth            = bufferToTextureCopyDescription.m_Region.GetExtents().z;
+
+  // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
+  auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(bufferToTextureCopyDescription.m_uiMemorySize);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  {
+    XII_ASSERT_DEBUG(uiSourceStride >= bufferToTextureCopyDescription.m_uiRowSize, "Source data stride ({}) is below the image row size ({}).", uiSourceStride, bufferToTextureCopyDescription.m_uiRowSize);
+
+    const xiiUInt64 uiPlaneSize = uiSourceStride * xiiUInt64{bufferToTextureCopyDescription.m_uiRowCount};
+    XII_ASSERT_DEBUG(uiUpdateRegionDepth == 1 || uiSourceDepthStride >= uiPlaneSize, "Source data depth stride ({}) is below the image plane size ({}).", uiSourceDepthStride, uiPlaneSize);
+  }
+#endif
+
+  void* pMappedMemory = nullptr;
+  VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
+  VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiMemorySize));
+
+  for (xiiUInt32 uiDepthSlice = 0; uiDepthSlice < uiUpdateRegionDepth; ++uiDepthSlice)
+  {
+    for (xiiUInt32 uiRow = 0; uiRow < bufferToTextureCopyDescription.m_uiRowCount; ++uiRow)
+    {
+      xiiMemoryUtils::RawByteCopy(xiiMemoryUtils::AddByteOffset(reinterpret_cast<xiiUInt8*>(pMappedMemory), uiRow * bufferToTextureCopyDescription.m_uiRowStride + uiDepthSlice * bufferToTextureCopyDescription.m_uiDepthStride), xiiMemoryUtils::AddByteOffset(reinterpret_cast<const xiiUInt8*>(pSourceData), uiRow * uiSourceStride + uiDepthSlice * uiSourceDepthStride), bufferToTextureCopyDescription.m_uiRowSize);
+    }
+  }
+
+  vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
+
+  CopyBufferToTexture(stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiRowStrideInTexels, pTextureVulkan, bufferToTextureCopyDescription.m_Region, uiMipLevel, uiSlice);
+}
+
 void xiiGALCommandListVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
 {
   XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
@@ -1269,19 +1309,18 @@ void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUIn
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
+  // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
   auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pBufferVulkan->GetSize());
 
   void* pMappedMemory = nullptr;
   VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
   VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
 
-  memcpy(pMappedMemory, pSourceData.GetPtr(), pSourceData.GetCount());
+  xiiMemoryUtils::RawByteCopy(pMappedMemory, pSourceData.GetPtr(), pSourceData.GetCount());
 
   vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
 
   UpdateBufferRegion(pBufferVulkan, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, uiDestinationOffset, pSourceData.GetCount());
-
-  // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
 }
 
 void xiiGALCommandListVulkan::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
@@ -1424,10 +1463,18 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xi
 
 void xiiGALCommandListVulkan::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTexture);
+
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  UpdateTextureRegion(subresourceData.m_pData.GetPtr(), subresourceData.m_uiStride, subresourceData.m_uiDepthStride, pTextureVulkan, textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureBox);
 }
 
 void xiiGALCommandListVulkan::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
+  UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
 
 void xiiGALCommandListVulkan::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)

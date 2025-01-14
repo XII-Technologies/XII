@@ -698,12 +698,6 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
 
   XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Default || textureDescription.m_Usage == xiiGALResourceUsage::Sparse, "Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Default textures should be updated with this method.");
 
-  if (!subresourceData.m_hSourceBuffer.IsInvalidated())
-  {
-    xiiLog::Error("Direct3D11 does not support texture updates using texture subresource from GPU buffer");
-    return;
-  }
-
   xiiUInt32 uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1U);
   xiiUInt32 uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1U);
   xiiUInt32 uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1U);
@@ -744,12 +738,6 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
 
   const auto& textureDescription = pTextureD3D11->GetDescription();
-
-  if (!subresourceData.m_hSourceBuffer.IsInvalidated())
-  {
-    xiiLog::Error("Direct3D11 does not support texture updates using texture subresource from GPU buffer");
-    return;
-  }
 
   xiiUInt32                     uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1u);
   xiiUInt32                     uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1u);
