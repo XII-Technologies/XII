@@ -1,5 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
@@ -109,6 +110,36 @@ xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescri
     .m_Usage              = xiiGALResourceUsage::Default,
     .m_MiscFlags          = xiiGALMiscTextureFlags::None,
   };
+}
+
+xiiResult xiiGALDeviceUtilities::MapAndUpdateBuffer(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags /*= xiiGALMapFlags::Discard*/)
+{
+  XII_ASSERT_DEV(pCommandList != nullptr, "Invalid command list.");
+
+  xiiGALDevice* pDevice                   = pCommandList->GetDevice();
+  xiiGALBuffer* pBuffer                   = pDevice->GetBuffer(hBuffer);
+  const auto&   graphicsAdapterProperties = pDevice->GetGraphicsDeviceAdapterProperties();
+  const auto&   bufferDescription         = pBuffer->GetDescription();
+
+  XII_IGNORE_UNUSED(graphicsAdapterProperties);
+
+  if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  {
+    XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), graphicsAdapterProperties.m_BufferProperties.m_uiConstantBufferAlignment);
+  }
+  if (bufferDescription.m_Mode == xiiGALBufferMode::Structured)
+  {
+    XII_ASSERT_DEV((uiDestinationOffset % graphicsAdapterProperties.m_BufferProperties.m_uiStructuredBufferOffsetAlignment) == 0, "Offset must be aligned to {} bytes.", graphicsAdapterProperties.m_BufferProperties.m_uiStructuredBufferOffsetAlignment);
+  }
+
+  void* pMappedData = nullptr;
+  XII_SUCCEED_OR_RETURN(pCommandList->MapBuffer(hBuffer, xiiGALMapType::Write, mapFlags, pMappedData));
+
+  memcpy(xiiMemoryUtils::AddByteOffset(pMappedData, uiDestinationOffset), pSourceData.GetPtr(), pSourceData.GetCount());
+
+  pCommandList->UnmapBuffer(hBuffer, xiiGALMapType::Write).AssertSuccess("Failed to unmap buffer.");
+
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_DeviceUtilities);

@@ -43,10 +43,20 @@ public:
   /// \param uiBufferSize - The size of the buffer in bytes.
   [[nodiscard]] static xiiGALBufferHandle CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize);
 
-  /// \brief Creates a render target description with the given paramters.
+  /// \brief Creates a render target description with the given parameters.
   ///
   /// \param size          - The size (width and height) of the render target.
   /// \param format        - The render target format. See xiiGALResourceFormat for details.
   /// \param uiSampleCount - The number of samples in the render target. The default is xiiGALMSAASampleCount::OneSample.
   [[nodiscard]] static xiiGALTextureCreationDescription CreateRenderTargetDescription(xiiSizeU32 size, xiiGALResourceFormat::Enum format, xiiUInt32 uiSampleCount = xiiGALMSAASampleCount::OneSample);
+
+  /// \brief Maps a buffer and updates it with the provided source data.
+  ///
+  /// \param pCommandList        - Pointer to the command list.
+  /// \param hBuffer             - Handle to the buffer to be updated.
+  /// \param uiDestinationOffset - Offset in the destination buffer where the data should be copied.
+  /// \param pSourceData         - Array pointer to the source data to be copied.
+  /// \param mapFlags            - Flags specifying the mapping behavior. Default is xiiGALMapFlags::Discard.
+  /// \return xiiResult indicating the success or failure of the operation.
+  static xiiResult MapAndUpdateBuffer(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard);
 };
