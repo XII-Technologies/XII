@@ -333,18 +333,22 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
     break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     {
-      const char* szInputSlot = nullptr;
+      const char* szInputSlot         = nullptr;
+      const char* szDblClickInputSlot = nullptr;
 
       switch (event.button.button)
       {
         case SDL_BUTTON_LEFT:
-          szInputSlot = xiiInputSlot_MouseButton0;
+          szInputSlot         = xiiInputSlot_MouseButton0;
+          szDblClickInputSlot = xiiInputSlot_MouseDblClick0;
           break;
         case SDL_BUTTON_RIGHT:
-          szInputSlot = xiiInputSlot_MouseButton1;
+          szInputSlot         = xiiInputSlot_MouseButton1;
+          szDblClickInputSlot = xiiInputSlot_MouseDblClick1;
           break;
         case SDL_BUTTON_MIDDLE:
-          szInputSlot = xiiInputSlot_MouseButton2;
+          szInputSlot         = xiiInputSlot_MouseButton2;
+          szDblClickInputSlot = xiiInputSlot_MouseDblClick2;
           break;
         case SDL_BUTTON_X1:
           szInputSlot = xiiInputSlot_MouseButton3;
@@ -358,22 +362,30 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
       {
         m_InputSlotValues[szInputSlot] = 1.0f;
       }
+      if (szDblClickInputSlot && event.button.clicks > 1)
+      {
+        m_InputSlotValues[szInputSlot] = 1.0f;
+      }
     }
     break;
     case SDL_EVENT_MOUSE_BUTTON_UP:
     {
-      const char* szInputSlot = nullptr;
+      const char* szInputSlot         = nullptr;
+      const char* szDblClickInputSlot = nullptr;
 
       switch (event.button.button)
       {
         case SDL_BUTTON_LEFT:
-          szInputSlot = xiiInputSlot_MouseButton0;
+          szInputSlot         = xiiInputSlot_MouseButton0;
+          szDblClickInputSlot = xiiInputSlot_MouseDblClick0;
           break;
         case SDL_BUTTON_RIGHT:
-          szInputSlot = xiiInputSlot_MouseButton1;
+          szInputSlot         = xiiInputSlot_MouseButton1;
+          szDblClickInputSlot = xiiInputSlot_MouseDblClick1;
           break;
         case SDL_BUTTON_MIDDLE:
-          szInputSlot = xiiInputSlot_MouseButton2;
+          szInputSlot         = xiiInputSlot_MouseButton2;
+          szDblClickInputSlot = xiiInputSlot_MouseDblClick2;
           break;
         case SDL_BUTTON_X1:
           szInputSlot = xiiInputSlot_MouseButton3;
@@ -389,6 +401,10 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
       if (szInputSlot)
       {
         m_InputSlotValues[szInputSlot] = 0.0f;
+      }
+      if (szDblClickInputSlot && event.button.clicks > 1)
+      {
+        m_InputSlotValues[szInputSlot] = 1.0f;
       }
     }
     break;
@@ -527,6 +543,9 @@ void xiiStandardInputDevice::ResetInputSlotValues()
   m_InputSlotValues[xiiInputSlot_MouseMovePosX]  = 0.0f;
   m_InputSlotValues[xiiInputSlot_MouseMoveNegY]  = 0.0f;
   m_InputSlotValues[xiiInputSlot_MouseMovePosY]  = 0.0f;
+  m_InputSlotValues[xiiInputSlot_MouseDblClick0] = 0.0f;
+  m_InputSlotValues[xiiInputSlot_MouseDblClick1] = 0.0f;
+  m_InputSlotValues[xiiInputSlot_MouseDblClick2] = 0.0f;
 }
 
 void xiiStandardInputDevice::UpdateInputSlotValues()
@@ -665,7 +684,6 @@ void xiiStandardInputDevice::RegisterInputSlots()
   RegisterInputSlot(xiiInputSlot_KeyPrint, "Print", xiiInputSlotFlags::IsButton);
   RegisterInputSlot(xiiInputSlot_KeyScroll, "Scroll", xiiInputSlotFlags::IsButton);
   RegisterInputSlot(xiiInputSlot_KeyPause, "Pause", xiiInputSlotFlags::IsButton);
-
   RegisterInputSlot(xiiInputSlot_KeyApps, "Application", xiiInputSlotFlags::IsButton);
 
   RegisterInputSlot(xiiInputSlot_KeyPrevTrack, "Previous Track", xiiInputSlotFlags::IsButton);
@@ -676,8 +694,8 @@ void xiiStandardInputDevice::RegisterInputSlots()
   RegisterInputSlot(xiiInputSlot_KeyVolumeDown, "Volume Down", xiiInputSlotFlags::IsButton);
   RegisterInputSlot(xiiInputSlot_KeyMute, "Mute", xiiInputSlotFlags::IsButton);
 
-  RegisterInputSlot(xiiInputSlot_MousePositionX, "Mouse Position X", xiiInputSlotFlags::IsMouseAxisPosition);
-  RegisterInputSlot(xiiInputSlot_MousePositionY, "Mouse Position Y", xiiInputSlotFlags::IsMouseAxisPosition);
+  RegisterInputSlot(xiiInputSlot_MouseWheelUp, "Mousewheel Up", xiiInputSlotFlags::IsMouseWheel);
+  RegisterInputSlot(xiiInputSlot_MouseWheelDown, "Mousewheel Down", xiiInputSlotFlags::IsMouseWheel);
 
   RegisterInputSlot(xiiInputSlot_MouseMoveNegX, "Mouse Move Left", xiiInputSlotFlags::IsMouseAxisMove);
   RegisterInputSlot(xiiInputSlot_MouseMovePosX, "Mouse Move Right", xiiInputSlotFlags::IsMouseAxisMove);
@@ -690,8 +708,53 @@ void xiiStandardInputDevice::RegisterInputSlots()
   RegisterInputSlot(xiiInputSlot_MouseButton3, "Mousebutton 3", xiiInputSlotFlags::IsButton);
   RegisterInputSlot(xiiInputSlot_MouseButton4, "Mousebutton 4", xiiInputSlotFlags::IsButton);
 
-  RegisterInputSlot(xiiInputSlot_MouseWheelUp, "Mousewheel Up", xiiInputSlotFlags::IsMouseWheel);
-  RegisterInputSlot(xiiInputSlot_MouseWheelDown, "Mousewheel Down", xiiInputSlotFlags::IsMouseWheel);
+  RegisterInputSlot(xiiInputSlot_MouseDblClick0, "Left Double Click", xiiInputSlotFlags::IsDoubleClick);
+  RegisterInputSlot(xiiInputSlot_MouseDblClick1, "Right Double Click", xiiInputSlotFlags::IsDoubleClick);
+  RegisterInputSlot(xiiInputSlot_MouseDblClick2, "Middle Double Click", xiiInputSlotFlags::IsDoubleClick);
+
+  RegisterInputSlot(xiiInputSlot_MousePositionX, "Mouse Position X", xiiInputSlotFlags::IsMouseAxisPosition);
+  RegisterInputSlot(xiiInputSlot_MousePositionY, "Mouse Position Y", xiiInputSlotFlags::IsMouseAxisPosition);
+
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint0, "Touchpoint 0", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionX, "Touchpoint 0 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint0_PositionY, "Touchpoint 0 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint1, "Touchpoint 1", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionX, "Touchpoint 1 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint1_PositionY, "Touchpoint 1 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint2, "Touchpoint 2", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionX, "Touchpoint 2 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint2_PositionY, "Touchpoint 2 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint3, "Touchpoint 3", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionX, "Touchpoint 3 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint3_PositionY, "Touchpoint 3 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint4, "Touchpoint 4", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionX, "Touchpoint 4 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint4_PositionY, "Touchpoint 4 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint5, "Touchpoint 5", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionX, "Touchpoint 5 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint5_PositionY, "Touchpoint 5 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint6, "Touchpoint 6", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionX, "Touchpoint 6 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint6_PositionY, "Touchpoint 6 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint7, "Touchpoint 7", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionX, "Touchpoint 7 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint7_PositionY, "Touchpoint 7 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint8, "Touchpoint 8", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionX, "Touchpoint 8 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint8_PositionY, "Touchpoint 8 Position Y", xiiInputSlotFlags::IsTouchPosition);
+
+  RegisterInputSlot(xiiInputSlot_TouchPoint9, "Touchpoint 9", xiiInputSlotFlags::IsTouchPoint);
+  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionX, "Touchpoint 9 Position X", xiiInputSlotFlags::IsTouchPosition);
+  RegisterInputSlot(xiiInputSlot_TouchPoint9_PositionY, "Touchpoint 9 Position Y", xiiInputSlotFlags::IsTouchPosition);
 }
 
 #endif
