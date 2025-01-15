@@ -730,68 +730,6 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   m_pImmediateContext->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData.GetPtr(), static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
 }
 
-void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
-{
-  xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  auto               pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
-
-  XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
-
-  const auto& textureDescription = pTextureD3D11->GetDescription();
-
-  xiiUInt32                     uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1u);
-  xiiUInt32                     uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1u);
-  xiiUInt32                     uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1u);
-  xiiEnum<xiiGALResourceFormat> format   = pTextureD3D11->GetDescription().m_Format;
-
-  if (ID3D11Resource* pDXTempTexture = pDeviceD3D11->FindTemporaryTexture(uiWidth, uiHeight, uiDepth, format))
-  {
-    D3D11_MAPPED_SUBRESOURCE MapResult;
-    HRESULT                  hRes = m_pImmediateContext->Map(pDXTempTexture, 0, D3D11_MAP_WRITE, 0, &MapResult);
-    XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
-    XII_IGNORE_UNUSED(hRes);
-
-    xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureUtilities::GetResourceFormatProperties(format).GetElementSize();
-    xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
-    XII_ASSERT_DEV(subresourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, subresourceData.m_uiStride);
-    XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}", uiSlicePitch, subresourceData.m_uiDepthStride);
-
-    if (MapResult.RowPitch == uiRowPitch && MapResult.DepthPitch == uiSlicePitch)
-    {
-      memcpy(MapResult.pData, subresourceData.m_pData.GetPtr(), uiSlicePitch * uiDepth);
-    }
-    else
-    {
-      // Copy row by row
-      for (xiiUInt32 z = 0; z < uiDepth; ++z)
-      {
-        const void* pSource      = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), z * uiSlicePitch);
-        void*       pDestination = xiiMemoryUtils::AddByteOffset(MapResult.pData, z * MapResult.DepthPitch);
-
-        for (xiiUInt32 y = 0; y < uiHeight; ++y)
-        {
-          memcpy(pDestination, pSource, uiRowPitch);
-
-          pSource      = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
-          pDestination = xiiMemoryUtils::AddByteOffset(pDestination, MapResult.RowPitch);
-        }
-      }
-    }
-
-    m_pImmediateContext->Unmap(pDXTempTexture, 0);
-
-    xiiUInt32 uiDestinationSubresource = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, pTextureD3D11->GetDescription().m_uiMipLevels);
-
-    // Schedule copy command using this command list.
-    D3D11_BOX srcBox = {0, 0, 0, uiWidth, uiHeight, uiDepth};
-    m_pImmediateContext->CopySubresourceRegion(pTextureD3D11->GetTexture(), uiDestinationSubresource, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, pDXTempTexture, 0, &srcBox);
-  }
-  else
-  {
-    XII_REPORT_FAILURE("Could not find a temp texture for update.");
-  }
-}
-
 void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
   auto pSourceTextureD3D11      = static_cast<xiiGALTextureD3D11*>(pSourceTexture);

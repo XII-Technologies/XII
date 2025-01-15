@@ -427,6 +427,7 @@ void xiiGALSwapChainD3D11::Present()
   }
 
   xiiUInt32 uiSyncInterval = 1U;
+  xiiUInt32 uiPresentFlags = 0U;
   switch (m_PresentMode)
   {
     case xiiGALPresentMode::Immediate:
@@ -441,7 +442,7 @@ void xiiGALSwapChainD3D11::Present()
   // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
   WaitForFrame();
 
-  HRESULT hResult = m_pSwapChain->Present(uiSyncInterval, 0);
+  HRESULT hResult = m_pSwapChain->Present(uiSyncInterval, uiPresentFlags);
   if (FAILED(hResult))
   {
     xiiLog::Error("Failed to present to swap chain: {}", xiiHRESULTtoString(hResult));

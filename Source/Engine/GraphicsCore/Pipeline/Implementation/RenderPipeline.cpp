@@ -1466,7 +1466,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       sourceData.m_pData    = fb.GetByteArrayPtr();
       sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
 
-      pCommandList->UpdateTextureExtended(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+      pCommandList->UpdateTexture(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
     }

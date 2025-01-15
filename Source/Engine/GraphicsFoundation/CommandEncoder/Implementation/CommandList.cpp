@@ -860,19 +860,6 @@ void xiiGALCommandList::UpdateTexture(xiiGALTextureHandle hTexture, const xiiGAL
   UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
 
-void xiiGALCommandList::UpdateTextureExtended(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
-{
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
-  XII_VERIFY_COMMAND_LIST(!hTexture.IsInvalidated(), "UpdateTextureExtended arguments are invalid. The texture handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateTextureExtended command must be used outside of render pass.");
-
-  /// \todo GraphicsFoundation: Validate texture update parameters.
-
-  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
-
-  UpdateTextureExtendedPlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
-}
-
 void xiiGALCommandList::CopyTexture(xiiGALTextureHandle hSourceTexture, xiiGALTextureHandle hDestinationTexture)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");

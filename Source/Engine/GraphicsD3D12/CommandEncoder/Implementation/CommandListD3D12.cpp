@@ -231,10 +231,6 @@ void xiiGALCommandListD3D12::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
 {
 }
 
-void xiiGALCommandListD3D12::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
-{
-}
-
 void xiiGALCommandListD3D12::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
   D3D12_BOX sourceBox = {

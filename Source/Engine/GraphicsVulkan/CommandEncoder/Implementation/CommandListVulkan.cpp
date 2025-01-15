@@ -1472,11 +1472,6 @@ void xiiGALCommandListVulkan::UpdateTexturePlatform(xiiGALTexture* pTexture, con
   UpdateTextureRegion(subresourceData.m_pData.GetPtr(), subresourceData.m_uiStride, subresourceData.m_uiDepthStride, pTextureVulkan, textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureBox);
 }
 
-void xiiGALCommandListVulkan::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
-{
-  UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
-}
-
 void xiiGALCommandListVulkan::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
   xiiGALTextureVulkan* pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSourceTexture);
@@ -1843,7 +1838,7 @@ void xiiGALCommandListVulkan::GenerateMipsPlatform(xiiGALTextureView* pTextureVi
 
 xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
-  return XII_SUCCESS;
+  return XII_FAILURE;
 }
 
 xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)

@@ -179,10 +179,6 @@ void xiiGALCommandListNull::UpdateTexturePlatform(xiiGALTexture* pTexture, const
 {
 }
 
-void xiiGALCommandListNull::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
-{
-}
-
 void xiiGALCommandListNull::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
 }
