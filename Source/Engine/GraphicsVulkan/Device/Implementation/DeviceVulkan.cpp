@@ -320,9 +320,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       {
         // If the implementation is available, this call must return vk::Result::eSuccess.
         m_uiVulkanVersion = vk::enumerateInstanceVersion(m_InstanceDispatchLoader);
-
-        // Remove the patch version.
-        m_uiVulkanVersion &= ~VK_MAKE_VERSION(0, 0, VK_API_VERSION_PATCH(~0U));
       }
       else
       {
@@ -375,7 +372,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     debugMessengerCreateInfo.flags                                = {};
     debugMessengerCreateInfo.messageSeverity                      = messageSeverity;
     debugMessengerCreateInfo.messageType                          = messageType;
-    debugMessengerCreateInfo.pfnUserCallback                      = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
+    debugMessengerCreateInfo.pfnUserCallback                      = reinterpret_cast<vk::PFN_DebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
     debugMessengerCreateInfo.pUserData                            = nullptr;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugUtilsMessengerEXT(&debugMessengerCreateInfo, nullptr, &m_DebugMessenger, m_InstanceDispatchLoader));
@@ -387,7 +384,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     vk::DebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
     debugReportCallbackCreateInfo.pNext                                = nullptr;
     debugReportCallbackCreateInfo.flags                                = reportFlags;
-    debugReportCallbackCreateInfo.pfnCallback                          = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(xiiVulkanDebugReportCallback);
+    debugReportCallbackCreateInfo.pfnCallback                          = reinterpret_cast<vk::PFN_DebugReportCallbackEXT>(xiiVulkanDebugReportCallback);
     debugReportCallbackCreateInfo.pUserData                            = nullptr;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugReportCallbackEXT(&debugReportCallbackCreateInfo, nullptr, &m_DebugCallback, m_InstanceDispatchLoader));
@@ -1063,14 +1060,16 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
-  // Initialize vulkan memory allocator. We prefer dynamically finding the function pointers.
+  // Initialize Vulkan Memory Allocator (VMA). We prefer dynamically finding the function pointers.
   {
+    const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
+
     VmaVulkanFunctions vmaVulkanFunctions    = {};
     vmaVulkanFunctions.vkGetInstanceProcAddr = m_InstanceDispatchLoader.vkGetInstanceProcAddr;
     vmaVulkanFunctions.vkGetDeviceProcAddr   = m_InstanceDispatchLoader.vkGetDeviceProcAddr;
 
     VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
-    vmaAllocatorCreateInfo.vulkanApiVersion       = m_uiVulkanVersion;
+    vmaAllocatorCreateInfo.vulkanApiVersion       = deviceProperties.apiVersion;
     vmaAllocatorCreateInfo.instance               = m_Instance;
     vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
     vmaAllocatorCreateInfo.device                 = m_LogicalDevice;

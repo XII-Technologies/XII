@@ -138,7 +138,7 @@ public:
 
   XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
   XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
-  XII_ALWAYS_INLINE const vk::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
+  XII_ALWAYS_INLINE const vk::detail::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
 
   XII_ALWAYS_INLINE xiiArrayPtr<const vk::LayerProperties> GetVulkanInstanceLayers() const { return m_Layers; }
   XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() const { return m_Extensions; }
@@ -325,9 +325,9 @@ private:
   };
 
   // Vulkan Instance Information.
-  vk::Instance              m_Instance;
-  xiiUInt32                 m_uiVulkanVersion = 0U;
-  vk::DispatchLoaderDynamic m_InstanceDispatchLoader;
+  vk::Instance                      m_Instance;
+  xiiUInt32                         m_uiVulkanVersion = 0U;
+  vk::detail::DispatchLoaderDynamic m_InstanceDispatchLoader;
 
   // Vulkan Instance Objects.
   xiiDynamicArray<vk::LayerProperties>     m_Layers;
