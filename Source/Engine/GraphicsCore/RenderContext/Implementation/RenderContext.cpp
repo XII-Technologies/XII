@@ -9,6 +9,7 @@
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
@@ -808,6 +809,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
       if (pipelineDescription.IsAnyGraphicsPipeline())
       {
+        pipelineDescription.m_GraphicsPipeline.m_hRenderPass          = m_hCurrentRenderPass;
         pipelineDescription.m_GraphicsPipeline.m_hVertexShader        = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
         pipelineDescription.m_GraphicsPipeline.m_hPixelShader         = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)];
         pipelineDescription.m_GraphicsPipeline.m_hDomainShader        = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)];
@@ -1417,7 +1419,6 @@ void xiiRenderContext::EndRenderPass()
   }
 }
 
-// static
 xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hVertexShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration)
 {
   ShaderVertexDecl svd;
@@ -1429,7 +1430,8 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hVertexShader, c
 
   if (!bExisted)
   {
-    const xiiGALShader* pShader = xiiGALDevice::GetDefaultDevice()->GetShader(hVertexShader);
+    xiiGALDevice*       pDevice = xiiGALDevice::GetDefaultDevice();
+    const xiiGALShader* pShader = pDevice->GetShader(hVertexShader);
 
     xiiGALInputLayoutCreationDescription vd;
     vd.m_hVertexShader = hVertexShader;
@@ -1443,13 +1445,14 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hVertexShader, c
       gal.m_Format                 = stream.m_Format;
       gal.m_Semantic               = stream.m_Semantic;
       gal.m_uiRelativeOffset       = stream.m_uiOffset;
+      gal.m_uiStride               = pDevice->GetBuffer(m_hVertexBuffers[stream.m_uiVertexBufferSlot])->GetDescription().m_uiElementByteStride;
       gal.m_uiBufferSlot           = stream.m_uiVertexBufferSlot;
       gal.m_Frequency              = xiiGALInputElementFrequency::PerVertex;
       gal.m_uiInstanceDataStepRate = 0;
       vd.m_LayoutElements.PushBack(gal);
     }
 
-    out_Declaration = xiiGALDevice::GetDefaultDevice()->CreateInputLayout(vd);
+    out_Declaration = pDevice->CreateInputLayout(vd);
 
     if (out_Declaration.IsInvalidated())
     {

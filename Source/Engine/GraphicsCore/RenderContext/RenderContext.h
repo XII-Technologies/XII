@@ -390,7 +390,7 @@ private:
     }
   };
 
-  static xiiResult BuildInputLayout(xiiGALShaderHandle hVertexShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration);
+  xiiResult BuildInputLayout(xiiGALShaderHandle hVertexShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration);
 
   static xiiMap<ShaderVertexDecl, xiiGALInputLayoutHandle> s_GALInputLayouts;
 
