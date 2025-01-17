@@ -16,12 +16,12 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -246,16 +246,14 @@ public:
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/ShaderExplorer";
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
-
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
 
-    xiiFileSystem::AddDataDirectory("", "", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
-    xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiDataDirUsage::AllowWrites).IgnoreResult();                               // writing to the binary directory
-    xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).IgnoreResult();                  // for shader files
-    xiiFileSystem::AddDataDirectory(">user/XII/Projects/ShaderExplorer", "AppData", "appdata", xiiDataDirUsage::AllowWrites).IgnoreResult(); // app user data
+    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
+    m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
 
-    xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
-    xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiDataDirUsage::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
+    xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
+    xiiFileSystem::AddDataDirectory(">project/", "Project", "project").AssertSuccess();
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
@@ -274,9 +272,6 @@ public:
 
     m_pCamera = XII_DEFAULT_NEW(xiiCamera);
     m_pCamera->LookAt(xiiVec3(3, 3, 1.5), xiiVec3(0, 0, 0), xiiVec3(0, 1, 0));
-    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
-
-    XII_VERIFY(m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded(), "Failed to watch project directory.");
 
 #if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "D3D11";
@@ -511,36 +506,38 @@ public:
 
   void CreateScreenQuad()
   {
-    xiiGeometry             geom;
-    xiiGeometry::GeoOptions opt;
-    opt.m_Color = xiiColor::Black;
-    geom.AddRect(xiiVec2(2, 2), 1, 1, opt);
-
-    xiiMeshBufferResourceDescriptor desc;
-    desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
-
-    desc.AllocateStreams(geom.GetVertices().GetCount(), xiiGALPrimitiveTopology::TriangleList, geom.GetPolygons().GetCount() * 2);
-
-    for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
-    {
-      desc.SetVertexData<xiiVec3>(0, v, geom.GetVertices()[v].m_vPosition);
-    }
-
-    xiiUInt32 t = 0;
-    for (xiiUInt32 p = 0; p < geom.GetPolygons().GetCount(); ++p)
-    {
-      for (xiiUInt32 v = 0; v < geom.GetPolygons()[p].m_Vertices.GetCount() - 2; ++v)
-      {
-        desc.SetTriangleIndices(t, geom.GetPolygons()[p].m_Vertices[0], geom.GetPolygons()[p].m_Vertices[v + 1], geom.GetPolygons()[p].m_Vertices[v + 2]);
-
-        ++t;
-      }
-    }
-
     m_hQuadMeshBuffer = xiiResourceManager::GetExistingResource<xiiMeshBufferResource>("{E692442B-9E15-46C5-8A00-1B07C02BF8F7}");
 
     if (!m_hQuadMeshBuffer.IsValid())
+    {
+      xiiGeometry             geom;
+      xiiGeometry::GeoOptions opt;
+      opt.m_Color = xiiColor::Black;
+      geom.AddRect(xiiVec2(2, 2), 1, 1, opt);
+
+      xiiMeshBufferResourceDescriptor desc;
+      desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
+
+      desc.AllocateStreams(geom.GetVertices().GetCount(), xiiGALPrimitiveTopology::TriangleList, geom.GetPolygons().GetCount() * 2);
+
+      for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
+      {
+        desc.SetVertexData<xiiVec3>(0, v, geom.GetVertices()[v].m_vPosition);
+      }
+
+      xiiUInt32 t = 0;
+      for (xiiUInt32 p = 0; p < geom.GetPolygons().GetCount(); ++p)
+      {
+        for (xiiUInt32 v = 0; v < geom.GetPolygons()[p].m_Vertices.GetCount() - 2; ++v)
+        {
+          desc.SetTriangleIndices(t, geom.GetPolygons()[p].m_Vertices[0], geom.GetPolygons()[p].m_Vertices[v + 1], geom.GetPolygons()[p].m_Vertices[v + 2]);
+
+          ++t;
+        }
+      }
+
       m_hQuadMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>("{E692442B-9E15-46C5-8A00-1B07C02BF8F7}", std::move(desc));
+    }
   }
 
   void OnFileChanged(xiiStringView sFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type)
