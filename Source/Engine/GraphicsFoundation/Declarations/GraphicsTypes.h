@@ -855,10 +855,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryPropertyFlags
   enum Enum : StorageType
   {
     Unknown      = 0U,         ///< The memory properties are unknown.
-    HostCoherent = XII_BIT(0), ///< The device (GPU) memory is coherent with the host (CPU), meaning
-                               ///< that CPU writes are automatically available to the GPU and vice versa.
-                               ///< If memory is not coherent, it must be explicitly flushed after
-                               ///< being modified by the CPU, or invalidated before being read by the CPU.
+    HostCoherent = XII_BIT(0), ///< The device (GPU) memory is coherent with the host (CPU), meaning that CPU writes are automatically available to the GPU and vice versa. If memory is not coherent, it must be explicitly flushed after being modified by the CPU, or invalidated before being read by the CPU.
 
     Default = Unknown
   };
@@ -1057,10 +1054,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingCapabilityFlags
 
   enum Enum : StorageType
   {
-    None              = 0U,          ///< No ray tracing capabilities.
-    StandaloneShaders = XII_BIT(0),  ///< The device supports standalone ray tracing shaders (e.g. ray generation, closest hit, any hit, etc.).
-                                     ///< When this feature is disabled, inline ray tracing may still be supported where rays can be traced
-                                     ///< from graphics or compute shaders.
+    None               = 0U,         ///< No ray tracing capabilities.
+    StandaloneShaders  = XII_BIT(0), ///< The device supports standalone ray tracing shaders (e.g. ray generation, closest hit, any hit, etc.). When this feature is disabled, inline ray tracing may still be supported where rays can be traced from graphics or compute shaders.
     InlineRayTracing   = XII_BIT(1), ///< The device supports inline ray tracing in graphics or compute shaders.
     IndirectRayTracing = XII_BIT(2), ///< The device supports indirect ray tracing commands.
 

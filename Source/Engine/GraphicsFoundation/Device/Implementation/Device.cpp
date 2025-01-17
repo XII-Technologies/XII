@@ -2438,6 +2438,11 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
 
   /// \todo GraphicsFoundation: Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.
 
+  // Finally, sort the resources by their ascending set index.
+  description.m_Resources.Sort([](const xiiGALPipelineResourceDescription& lhs, const xiiGALPipelineResourceDescription& rhs) -> bool {
+    return lhs.m_uiBindSet < rhs.m_uiBindSet;
+  });
+
   xiiUInt32 uiHash = xiiGALDescriptorHash::Hash(description);
   {
     xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature;
