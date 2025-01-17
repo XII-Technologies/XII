@@ -156,6 +156,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
     vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
     vmaAllocationCreateInfo.requiredFlags           = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
 
