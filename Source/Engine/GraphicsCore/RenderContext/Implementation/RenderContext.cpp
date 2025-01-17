@@ -774,7 +774,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged))
       {
-        pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&m_hVertexBuffers[0], XII_ARRAY_SIZE(m_hVertexBuffers)), xiiArrayPtr<xiiUInt64>(), xiiGALSetVertexBufferFlags::Reset);
+        pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&m_hVertexBuffers[0], XII_ARRAY_SIZE(m_hVertexBuffers)), xiiArrayPtr<xiiUInt64>());
 
         if (!m_hIndexBuffer.IsInvalidated())
           pCommandList->SetIndexBuffer(m_hIndexBuffer);
