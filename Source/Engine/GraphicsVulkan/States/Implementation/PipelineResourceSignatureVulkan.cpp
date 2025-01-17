@@ -71,17 +71,20 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
     {
       xiiUInt32 uiSourceImmutableSamplerIndex = FindImmutableSampler(m_Description, resource);
 
-      if (!m_ImmutableSamplers[uiSourceImmutableSamplerIndex])
+      if (uiSourceImmutableSamplerIndex != xiiInvalidIndex)
       {
-        const auto& immutableSamplerDescription = m_Description.m_ImmutableSamplers[uiSourceImmutableSamplerIndex].m_SamplerDescription;
+        if (!m_ImmutableSamplers[uiSourceImmutableSamplerIndex])
+        {
+          const auto& immutableSamplerDescription = m_Description.m_ImmutableSamplers[uiSourceImmutableSamplerIndex].m_SamplerDescription;
 
-        m_ImmutableSamplers[uiSourceImmutableSamplerIndex].Initialize(pDeviceVulkan, immutableSamplerDescription);
+          m_ImmutableSamplers[uiSourceImmutableSamplerIndex].Initialize(pDeviceVulkan, immutableSamplerDescription);
+        }
+
+        vkTempSamplerArrayAssignment.PushBack(xiiDynamicArray<vk::Sampler>(pDeviceVulkan->GetAllocator()));
+        vkTempSamplerArrayAssignment.PeekBack().SetCount(resource.m_uiArraySize, m_ImmutableSamplers[uiSourceImmutableSamplerIndex].GetVulkanSampler());
+
+        pVkImmutableSamplers = vkTempSamplerArrayAssignment.PeekBack().GetData();
       }
-
-      vkTempSamplerArrayAssignment.PushBack(xiiDynamicArray<vk::Sampler>(pDeviceVulkan->GetAllocator()));
-      vkTempSamplerArrayAssignment.PeekBack().SetCount(resource.m_uiArraySize, m_ImmutableSamplers[uiSourceImmutableSamplerIndex].GetVulkanSampler());
-
-      pVkImmutableSamplers = vkTempSamplerArrayAssignment.PeekBack().GetData();
     }
 
     vkDescriptorLayoutBinding.binding            = resource.m_uiBindSlot;
