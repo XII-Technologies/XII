@@ -668,26 +668,21 @@ void xiiGALCommandListVulkan::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer,
 
   TransitionOrVerifyBufferState(pBufferVulkan, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Binding buffer as index buffer  (xiiGALCommandList::SetIndexBuffer)");
 
-  if (m_CommandListState.m_vkIndexBuffer != pBufferVulkan->GetVulkanBuffer() || m_CommandListState.m_vkIndexBufferOffset != uiByteOffset || m_CommandListState.m_vkIndexType != m_CommandListState.m_vkIndexType)
+  const auto indexFormat = pBufferVulkan->GetIndexFormat();
+
+  XII_VERIFY_COMMAND_LIST(indexFormat == xiiGALValueType::UInt16 || indexFormat == xiiGALValueType::UInt32, "Unsupported index format, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
+
+  vk::IndexType vkIndexType = vk::IndexType::eUint16;
+  if (indexFormat == xiiGALValueType::UInt32)
   {
-    const auto indexFormat = pBufferVulkan->GetIndexFormat();
-
-    XII_VERIFY_COMMAND_LIST(indexFormat == xiiGALValueType::UInt16 || indexFormat == xiiGALValueType::UInt32, "Unsupported index format, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
-
-    vk::IndexType vkIndexType = vk::IndexType::eUint16;
-    if (indexFormat == xiiGALValueType::UInt32)
-    {
-      vkIndexType = vk::IndexType::eUint32;
-    }
-
-    m_vkCommandBuffer.bindIndexBuffer(pBufferVulkan->GetVulkanBuffer(), uiByteOffset, vkIndexType, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-
-    m_CommandListState.m_vkIndexBuffer       = pBufferVulkan->GetVulkanBuffer();
-    m_CommandListState.m_vkIndexBufferOffset = uiByteOffset;
-    m_CommandListState.m_vkIndexType         = vkIndexType;
-
-    m_ContextState.m_bCommittedIndexBuffersUpToDate = true;
+    vkIndexType = vk::IndexType::eUint32;
   }
+
+  m_vkCommandBuffer.bindIndexBuffer(pBufferVulkan->GetVulkanBuffer(), uiByteOffset, vkIndexType, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  m_CommandListState.m_vkIndexBuffer       = pBufferVulkan->GetVulkanBuffer();
+  m_CommandListState.m_vkIndexBufferOffset = uiByteOffset;
+  m_CommandListState.m_vkIndexType         = vkIndexType;
 }
 
 void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
@@ -698,16 +693,11 @@ void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xi
 
   if (flags.IsSet(xiiGALSetVertexBufferFlags::Reset))
   {
-    m_CommittedVertexBuffersRange.Reset();
-
     // Reset only the buffer slots that are not being set.
     for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
     {
       m_CommittedVertexBuffers[i]       = VK_NULL_HANDLE;
       m_CommittedVertexBufferOffsets[i] = 0U;
-      m_CommittedVertexBufferStrides[i] = 0U;
-
-      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
     }
 
     if (uiStartSlot > 0)
@@ -719,9 +709,6 @@ void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xi
     {
       m_CommittedVertexBuffers[i]       = VK_NULL_HANDLE;
       m_CommittedVertexBufferOffsets[i] = 0U;
-      m_CommittedVertexBufferStrides[i] = 0U;
-
-      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
     }
 
     if ((XII_GAL_MAX_VERTEX_BUFFER_COUNT - (uiStartSlot + pVertexBuffers.GetCount())) > 0)
@@ -738,24 +725,11 @@ void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xi
     xiiGALBufferVulkan* pVertexBufferVulkan = static_cast<xiiGALBufferVulkan*>(pVertexBuffers[i]);
     xiiUInt32           uiVertexBufferSlot  = i + uiStartSlot;
 
-    if (m_CommittedVertexBuffers[uiVertexBufferSlot] != pVertexBufferVulkan->GetVulkanBuffer() || m_CommittedVertexBufferOffsets[uiVertexBufferSlot] != (i < pByteOffsets.GetCount() ? pByteOffsets[i] : 0))
-    {
-      m_CommittedVertexBuffers[uiVertexBufferSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
-      m_CommittedVertexBufferOffsets[uiVertexBufferSlot] = (i < pByteOffsets.GetCount() ? pByteOffsets[i] : 0);
-      m_CommittedVertexBufferStrides[i]                  = pVertexBufferVulkan ? pVertexBufferVulkan->GetDescription().m_uiElementByteStride : 0U;
-
-      m_ContextState.m_bCommittedVertexBuffersUpToDate = false;
-    }
-
-    m_CommittedVertexBuffersRange.SetToIncludeValue(uiVertexBufferSlot);
+    m_CommittedVertexBuffers[uiVertexBufferSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
+    m_CommittedVertexBufferOffsets[uiVertexBufferSlot] = (i < pByteOffsets.GetCount() ? pByteOffsets[i] : 0);
   }
 
-  if (!m_ContextState.m_bCommittedVertexBuffersUpToDate)
-  {
-    m_vkCommandBuffer.bindVertexBuffers(uiStartSlot, m_CommittedVertexBuffersRange.GetCount(), m_CommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-
-    m_ContextState.m_bCommittedVertexBuffersUpToDate = true;
-  }
+  m_vkCommandBuffer.bindVertexBuffers(uiStartSlot, pVertexBuffers.GetCount(), m_CommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
@@ -1997,7 +1971,6 @@ void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, cons
 
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
 {
-  m_ContextState     = {};
   m_CommandListState = {};
   m_PipelineBarrier  = {};
 
@@ -2011,7 +1984,7 @@ void xiiGALCommandListVulkan::InvalidateStatePlatform()
   m_SignalFences.Clear();
   m_WaitFences.Clear();
 
-  m_bDescriptorsModified = false;
+  m_bDescriptorsModified   = false;
   m_bPipelineStateModified = true;
 
   XII_ASSERT_DEV(m_MappedBuffers.IsEmpty(), "There are outstanding buffers that have not been unmapped.");
