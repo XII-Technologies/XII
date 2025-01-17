@@ -180,6 +180,10 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? xiiGALValueType::UInt16 : xiiGALValueType::UInt32;
   }
 
+  m_vkDescriptorBufferInfo.buffer = m_vkBuffer;
+  m_vkDescriptorBufferInfo.offset = 0;
+  m_vkDescriptorBufferInfo.range  = m_Description.m_uiSize;
+
   return XII_SUCCESS;
 }
 
@@ -193,6 +197,7 @@ xiiResult xiiGALBufferVulkan::DeInitPlatform()
 
     m_vkBuffer               = VK_NULL_HANDLE;
     m_BufferMemoryAllocation = VK_NULL_HANDLE;
+    m_vkDescriptorBufferInfo = vk::DescriptorBufferInfo{};
   }
 
   m_IndexFormat = xiiGALValueType::UInt16;

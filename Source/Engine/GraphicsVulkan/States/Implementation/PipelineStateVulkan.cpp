@@ -35,6 +35,8 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     {
       const auto& graphicsPipeline = m_Description.m_GraphicsPipeline;
 
+      m_vkPipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+
       vk::GraphicsPipelineCreateInfo vkGraphicsPipelineCreateInfo = {};
       vkGraphicsPipelineCreateInfo.pNext                          = nullptr;
       vkGraphicsPipelineCreateInfo.flags                          = {};
@@ -261,6 +263,8 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     {
       const auto& computePipeline = m_Description.m_ComputePipeline;
 
+      m_vkPipelineBindPoint = vk::PipelineBindPoint::eCompute;
+
       vk::ComputePipelineCreateInfo vkComputePipelineCreateInfo = {};
       vkComputePipelineCreateInfo.pNext                         = nullptr;
       vkComputePipelineCreateInfo.flags                         = {};
@@ -316,6 +320,8 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
     case xiiGALPipelineType::RayTracing:
     {
       XII_ASSERT_NOT_IMPLEMENTED;
+
+      m_vkPipelineBindPoint = vk::PipelineBindPoint::eRayTracingKHR;
 
       vk::RayTracingPipelineCreateInfoKHR vkRayTracingPipelineCreateInfo = {};
       vkRayTracingPipelineCreateInfo.pNext                               = nullptr;

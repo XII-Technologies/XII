@@ -982,67 +982,106 @@ XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineSt
 
 XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e)
 {
-  vk::AccessFlags accessFlags = vk::AccessFlagBits::eNone;
+  vk::AccessFlags vkAccessFlags = vk::AccessFlagBits::eNone;
 
   if (e.IsSet(xiiGALAccessFlags::IndirectCommandRead))
-    accessFlags |= vk::AccessFlagBits::eIndirectCommandRead;
+    vkAccessFlags |= vk::AccessFlagBits::eIndirectCommandRead;
   if (e.IsSet(xiiGALAccessFlags::IndexRead))
-    accessFlags |= vk::AccessFlagBits::eIndexRead;
+    vkAccessFlags |= vk::AccessFlagBits::eIndexRead;
   if (e.IsSet(xiiGALAccessFlags::VertexRead))
-    accessFlags |= vk::AccessFlagBits::eVertexAttributeRead;
+    vkAccessFlags |= vk::AccessFlagBits::eVertexAttributeRead;
   if (e.IsSet(xiiGALAccessFlags::UniformRead))
-    accessFlags |= vk::AccessFlagBits::eUniformRead;
+    vkAccessFlags |= vk::AccessFlagBits::eUniformRead;
   if (e.IsSet(xiiGALAccessFlags::InputAttachmentRead))
-    accessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
+    vkAccessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
   if (e.IsSet(xiiGALAccessFlags::ShaderRead))
-    accessFlags |= vk::AccessFlagBits::eShaderRead;
+    vkAccessFlags |= vk::AccessFlagBits::eShaderRead;
   if (e.IsSet(xiiGALAccessFlags::ShaderWrite))
-    accessFlags |= vk::AccessFlagBits::eShaderWrite;
+    vkAccessFlags |= vk::AccessFlagBits::eShaderWrite;
   if (e.IsSet(xiiGALAccessFlags::RenderTargetRead))
-    accessFlags |= vk::AccessFlagBits::eColorAttachmentRead;
+    vkAccessFlags |= vk::AccessFlagBits::eColorAttachmentRead;
   if (e.IsSet(xiiGALAccessFlags::RenderTargetWrite))
-    accessFlags |= vk::AccessFlagBits::eColorAttachmentWrite;
+    vkAccessFlags |= vk::AccessFlagBits::eColorAttachmentWrite;
   if (e.IsSet(xiiGALAccessFlags::DepthStencilRead))
-    accessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentRead;
+    vkAccessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentRead;
   if (e.IsSet(xiiGALAccessFlags::DepthStencilWrite))
-    accessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+    vkAccessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
   if (e.IsSet(xiiGALAccessFlags::CopySource))
-    accessFlags |= vk::AccessFlagBits::eTransferRead;
+    vkAccessFlags |= vk::AccessFlagBits::eTransferRead;
   if (e.IsSet(xiiGALAccessFlags::CopyDestination))
-    accessFlags |= vk::AccessFlagBits::eTransferWrite;
+    vkAccessFlags |= vk::AccessFlagBits::eTransferWrite;
   if (e.IsSet(xiiGALAccessFlags::HostRead))
-    accessFlags |= vk::AccessFlagBits::eHostRead;
+    vkAccessFlags |= vk::AccessFlagBits::eHostRead;
   if (e.IsSet(xiiGALAccessFlags::HostWrite))
-    accessFlags |= vk::AccessFlagBits::eHostWrite;
+    vkAccessFlags |= vk::AccessFlagBits::eHostWrite;
   if (e.IsSet(xiiGALAccessFlags::MemoryRead))
-    accessFlags |= vk::AccessFlagBits::eMemoryRead;
+    vkAccessFlags |= vk::AccessFlagBits::eMemoryRead;
   if (e.IsSet(xiiGALAccessFlags::MemoryWrite))
-    accessFlags |= vk::AccessFlagBits::eMemoryWrite;
+    vkAccessFlags |= vk::AccessFlagBits::eMemoryWrite;
   if (e.IsSet(xiiGALAccessFlags::ConditionalRenderingRead))
-    accessFlags |= vk::AccessFlagBits::eConditionalRenderingReadEXT;
+    vkAccessFlags |= vk::AccessFlagBits::eConditionalRenderingReadEXT;
   if (e.IsSet(xiiGALAccessFlags::ShadingRateTextureRead))
-    accessFlags |= vk::AccessFlagBits::eShadingRateImageReadNV;
+    vkAccessFlags |= vk::AccessFlagBits::eShadingRateImageReadNV;
   if (e.IsSet(xiiGALAccessFlags::AccelerationStructureRead))
-    accessFlags |= vk::AccessFlagBits::eAccelerationStructureReadNV;
+    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadNV;
   if (e.IsSet(xiiGALAccessFlags::AccelerationStructureWrite))
-    accessFlags |= vk::AccessFlagBits::eAccelerationStructureWriteNV;
+    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureWriteNV;
   if (e.IsSet(xiiGALAccessFlags::FragmentDensityMapRead))
-    accessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT;
+    vkAccessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT;
 
-  return accessFlags;
+  return vkAccessFlags;
 }
 
 XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBitflags<xiiGALResourceStateFlags> e)
 {
-  vk::AccessFlags accessFlags = vk::AccessFlagBits::eNone;
-  while (e != xiiGALResourceStateFlags::Unknown)
-  {
-    auto bit = xiiMath::FirstBitLow(e.GetValue());
-    accessFlags |= xiiVulkanTypeConversions::GetAccessFlags(static_cast<xiiGALResourceStateFlags::Enum>(bit));
+  vk::AccessFlags vkAccessFlags = vk::AccessFlagBits::eNone;
 
-    e.Remove(static_cast<xiiGALResourceStateFlags::Enum>(bit));
-  }
-  return accessFlags;
+  if (e.IsSet(xiiGALResourceStateFlags::Undefined))
+    vkAccessFlags |= static_cast<vk::AccessFlagBits>(0);
+  if (e.IsSet(xiiGALResourceStateFlags::VertexBuffer))
+    vkAccessFlags |= vk::AccessFlagBits::eVertexAttributeRead;
+  if (e.IsSet(xiiGALResourceStateFlags::ConstantBuffer))
+    vkAccessFlags |= vk::AccessFlagBits::eUniformRead;
+  if (e.IsSet(xiiGALResourceStateFlags::IndexBuffer))
+    vkAccessFlags |= vk::AccessFlagBits::eIndexRead;
+  if (e.IsSet(xiiGALResourceStateFlags::RenderTarget))
+    vkAccessFlags |= vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+  if (e.IsSet(xiiGALResourceStateFlags::UnorderedAccess))
+    vkAccessFlags |= vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthWrite))
+    vkAccessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthRead))
+    vkAccessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentRead;
+  if (e.IsSet(xiiGALResourceStateFlags::ShaderResource))
+    vkAccessFlags |= vk::AccessFlagBits::eShaderRead;
+  if (e.IsSet(xiiGALResourceStateFlags::StreamOut))
+    vkAccessFlags |= vk::AccessFlagBits::eTransformFeedbackCounterWriteEXT;
+  if (e.IsSet(xiiGALResourceStateFlags::IndirectArgument))
+    vkAccessFlags |= vk::AccessFlagBits::eIndirectCommandRead;
+  if (e.IsSet(xiiGALResourceStateFlags::CopyDestination))
+    vkAccessFlags |= vk::AccessFlagBits::eTransferWrite;
+  if (e.IsSet(xiiGALResourceStateFlags::CopySource))
+    vkAccessFlags |= vk::AccessFlagBits::eTransferRead;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveDestination))
+    vkAccessFlags |= vk::AccessFlagBits::eTransferWrite;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveSource))
+    vkAccessFlags |= vk::AccessFlagBits::eTransferRead;
+  if (e.IsSet(xiiGALResourceStateFlags::InputAttachment))
+    vkAccessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
+  if (e.IsSet(xiiGALResourceStateFlags::Present))
+    vkAccessFlags |= static_cast<vk::AccessFlagBits>(0);
+  if (e.IsSet(xiiGALResourceStateFlags::BuildAsRead))
+    vkAccessFlags |= vk::AccessFlagBits::eShaderRead;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildAsWrite))                                                                       // for vertex, index, transform, AABB, instance buffers
+    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR; // for scratch buffer
+  if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
+    vkAccessFlags |= vk::AccessFlagBits::eShaderRead; // for SBT
+  if (e.IsSet(xiiGALResourceStateFlags::Common))
+    vkAccessFlags |= static_cast<vk::AccessFlagBits>(0); // COMMON state must be used for queue to queue transition (like in D3D12), queue to queue synchronization via semaphore creates a memory dependency
+  if (e.IsSet(xiiGALResourceStateFlags::ShadingRate))
+    vkAccessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT | vk::AccessFlagBits::eFragmentShadingRateAttachmentReadKHR;
+
+  return vkAccessFlags;
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceState(vk::AccessFlags e)

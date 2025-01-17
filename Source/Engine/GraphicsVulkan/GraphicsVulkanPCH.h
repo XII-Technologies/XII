@@ -69,5 +69,7 @@ XII_DEFINE_AS_POD_TYPE(vk::Image);
 XII_DEFINE_AS_POD_TYPE(vk::QueueFamilyProperties);
 XII_DEFINE_AS_POD_TYPE(vk::PhysicalDeviceFragmentShadingRateKHR);
 XII_DEFINE_AS_POD_TYPE(vk::DescriptorType);
+XII_DEFINE_AS_POD_TYPE(vk::DescriptorSet);
+XII_DEFINE_AS_POD_TYPE(vk::WriteDescriptorSet);
 
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>

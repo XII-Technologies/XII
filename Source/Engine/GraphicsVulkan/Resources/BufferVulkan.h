@@ -20,7 +20,9 @@ public:
 
   XII_ALWAYS_INLINE vk::Buffer    GetVulkanBuffer() const { return m_vkBuffer; }
   XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
-  vk::DeviceAddress               GetVulkanBufferDeviceAddress() const;
+  XII_ALWAYS_INLINE const vk::DescriptorBufferInfo* GetVulkanDescriptorBufferInfo() const { return &m_vkDescriptorBufferInfo; }
+
+  vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
 
   void                   SetAccessFlags(vk::AccessFlags accessFlags);
   vk::AccessFlags        GetAccessFlags() const;
@@ -45,6 +47,8 @@ protected:
 private:
   vk::Buffer    m_vkBuffer               = VK_NULL_HANDLE;
   VmaAllocation m_BufferMemoryAllocation = {};
+
+  vk::DescriptorBufferInfo m_vkDescriptorBufferInfo = {};
 
   xiiEnum<xiiGALValueType> m_IndexFormat = xiiGALValueType::Undefined; // Strictly index buffers.
 };

@@ -190,6 +190,9 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
+  xiiResult CommitDeferredStateChanges();
+
+private:
   struct PipelineBarrier
   {
     vk::PipelineStageFlags m_vkMemorySourceStages      = {};
@@ -306,9 +309,15 @@ private:
   xiiGALFramebufferVulkan*                                           m_pFramebuffer   = nullptr;
   xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
-  xiiHybridArray<ResourceSetBindings, 1U>     m_CommittedResources;
+  xiiGALPipelineStateVulkan* m_pPipelineStateVulkan   = nullptr;
+  bool                       m_bPipelineStateModified = false;
+
+  xiiHybridArray<ResourceSetBindings, 1U>     m_ResourceSets;
   xiiHybridArray<vk::DescriptorSet, 4U>       m_DescriptorSets;
   xiiHybridArray<vk::WriteDescriptorSet, 16U> m_DescriptorWrites;
+  xiiDeque<vk::DescriptorBufferInfo>          m_DynamicUniformBuffers;
+  xiiHybridArray<xiiUInt32, 6U>               m_DynamicUniformBufferOffsets;
+  bool                                        m_bDescriptorsModified = false;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;

@@ -15,6 +15,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALBufferViewVulkan final : public xiiGALBufferV
 
 public:
   XII_ALWAYS_INLINE const vk::BufferView GetVulkanBufferView() const { return m_vkBufferView; }
+  XII_ALWAYS_INLINE const vk::DescriptorBufferInfo* GetVulkanDescriptorBufferInfo() const { return &m_vkDescriptorBufferInfo; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -32,4 +33,6 @@ protected:
 
 private:
   vk::BufferView m_vkBufferView;
+
+    vk::DescriptorBufferInfo m_vkDescriptorBufferInfo = {};
 };

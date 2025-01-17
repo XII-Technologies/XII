@@ -14,7 +14,8 @@ class XII_GRAPHICSVULKAN_DLL xiiGALSamplerVulkan final : public xiiGALSampler
   XII_ADD_DYNAMIC_REFLECTION(xiiGALSamplerVulkan, xiiGALSampler);
 
 public:
-  XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_vkSampler; }
+  XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_vkDescriptorImageInfo.sampler; }
+  XII_ALWAYS_INLINE const vk::DescriptorImageInfo* GetVulkanDescriptorImageInfo() const { return &m_vkDescriptorImageInfo; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -31,5 +32,5 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
-  vk::Sampler m_vkSampler;
+  vk::DescriptorImageInfo m_vkDescriptorImageInfo = {};
 };
