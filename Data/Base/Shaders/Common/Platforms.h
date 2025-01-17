@@ -9,7 +9,6 @@
 #define PLATFORM_VULKAN XII_OFF
 #define PLATFORM_D3D12  XII_OFF
 #define PLATFORM_D3D11  XII_OFF
-#define PLATFORM_NULL   XII_OFF
 
 #if defined(D3D_SM40_93) || defined(D3D_SM40) || defined(D3D_SM41) || defined(D3D_SM50)
 
@@ -171,36 +170,6 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 {
   float2 sampleOffset = offsets[NumMsaaSamples + SampleIndex - 1] * 0.125f;
   return Attribute + ddx(Attribute) * sampleOffset.x + ddy(Attribute) * sampleOffset.y;
-}
-
-#endif
-
-#if defined(NULL_SM)
-
-#  undef PLATFORM_SHADER
-#  define PLATFORM_SHADER XII_ON
-
-#  undef PLATFORM_NULL
-#  define PLATFORM_NULL XII_ON
-
-float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMsaaSamples)
-{
-  return 0.0f;
-}
-
-float2 xiiEvaluateAttributeAtSample(float2 Attribute, uint SampleIndex, uint NumMsaaSamples)
-{
-  return float2(0.0f, 0.0f);
-}
-
-float3 xiiEvaluateAttributeAtSample(float3 Attribute, uint SampleIndex, uint NumMsaaSamples)
-{
-  return float3(0.0f, 0.0f, 0.0f);
-}
-
-float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint NumMsaaSamples)
-{
-  return float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 #endif

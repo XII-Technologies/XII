@@ -1,4 +1,5 @@
-[PLATFORMS] ALL
+[PLATFORMS]
+ALL
 
 [PERMUTATIONS]
 
@@ -19,7 +20,6 @@ VS_OUT main(VS_IN Input)
 
   return RetVal;
 }
-
 
 [PIXELSHADER]
 
