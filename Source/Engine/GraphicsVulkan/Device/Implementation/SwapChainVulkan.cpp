@@ -624,13 +624,13 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
   xiiUInt32 uiOldestSubmittedImageFenceIndex = (m_uiSemaphoreIndex + 1U) % m_ImageAcquiredFenceSubmitted.GetCount();
   if (m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex])
   {
-    const vk::Fence& oldestSubmittedFence = m_ImageAcquiredFences[uiOldestSubmittedImageFenceIndex];
-    if (vkLogicalDevice.getFenceStatus(oldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
+    const vk::Fence& vkOldestSubmittedFence = m_ImageAcquiredFences[uiOldestSubmittedImageFenceIndex];
+    if (vkLogicalDevice.getFenceStatus(vkOldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
     {
-      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &oldestSubmittedFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkOldestSubmittedFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     }
 
-    VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &oldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &vkOldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex] = false;
   }
 
@@ -658,16 +658,13 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
         if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
         {
           pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+
+          m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
         }
       }
       pCommandListVulkan->EndDebugGroup();
 
       pCommandListVulkan->Submit();
-    }
-
-    if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
-    {
-      m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
     }
   }
 
