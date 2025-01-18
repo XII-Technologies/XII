@@ -452,7 +452,38 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderResou
       continue;
     }
 
-    /// \todo ShaderCompiler: Add member print output.
+    const char* typeNames[] = {
+      "Unknown",
+      "Void",
+      "Bool",
+      "Int8",
+      "Int16",
+      "Int32",
+      "Int64",
+      "UInt8",
+      "UInt16",
+      "UInt32",
+      "UInt64",
+      "Float16",
+      "Float32",
+      "Double",
+      "Min8Float",
+      "Min10Float",
+      "Min16Float",
+      "Min12Int",
+      "Min16Int",
+      "Min16UInt",
+      "String",
+    };
+
+    if (memberDescription.m_uiArraySize > 1)
+    {
+      xiiLog::Debug("{1} {3}[{2}] {0}", memberDescription.m_sName, xiiArgU(memberDescription.m_uiOffset, 3, true), memberDescription.m_uiArraySize, typeNames[memberDescription.m_PrimitiveType]);
+    }
+    else
+    {
+      xiiLog::Debug("{1} {2} {0}", memberDescription.m_sName, xiiArgU(memberDescription.m_uiOffset, 3, true), typeNames[memberDescription.m_PrimitiveType]);
+    }
 
     binding.m_Variables.PushBack(memberDescription);
   }
