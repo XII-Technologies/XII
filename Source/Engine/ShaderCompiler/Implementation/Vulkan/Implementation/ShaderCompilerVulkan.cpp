@@ -33,7 +33,6 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(xiiStringView sFile, xiiStringV
   args.PushBack(L"-T");
   args.PushBack(xiiStringWChar(sProfile));
   args.PushBack(L"-spirv");
-  args.PushBack(L"-fspv-reflect");
   args.PushBack(L"-Zpc"); // Matrices in column-major order
   args.PushBack(L"-fvk-use-dx-position-w");
   args.PushBack(L"-fspv-target-env=vulkan1.1");
@@ -152,7 +151,9 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
     {
       SpvReflectInterfaceVariable* pInputVariable = inputVariables[i];
 
-      xiiStringBuilder sSemanticName = pInputVariable->semantic;
+      xiiStringBuilder sSemanticName = pInputVariable->name;
+
+      XII_IGNORE_UNUSED(sSemanticName.TrimWordStart("in.var."));
 
       if (!sSemanticName.StartsWith_NoCase("SV_"))
       {
