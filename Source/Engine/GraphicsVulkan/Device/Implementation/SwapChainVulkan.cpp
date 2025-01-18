@@ -650,13 +650,17 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 
     if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
     {
-      pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
-
-      // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
-      if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
+      pCommandListVulkan->BeginDebugGroup("Add Swap Chain Wait Semaphore");
       {
-        pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+        pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+
+        // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
+        if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
+        {
+          pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+        }
       }
+      pCommandListVulkan->EndDebugGroup();
 
       pCommandListVulkan->Submit();
     }
