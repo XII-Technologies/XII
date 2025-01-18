@@ -72,7 +72,7 @@ void xiiGALShaderVariableDescription::CopyDataFormVariant(xiiUInt8* pDestination
 
   xiiResult conversionResult = XII_FAILURE;
 
-  XII_ASSERT_DEV(description.m_Class == xiiGALShaderVariableClassType::Scalar || xiiGALShaderVariableClassType::Array || xiiGALShaderVariableClassType::MatrixColumns || xiiGALShaderVariableClassType::MatrixRows, "");
+  XII_ASSERT_DEV(description.m_Class == xiiGALShaderVariableClassType::Scalar || description.m_Class == xiiGALShaderVariableClassType::Array || description.m_Class == xiiGALShaderVariableClassType::MatrixColumns || description.m_Class == xiiGALShaderVariableClassType::MatrixRows, "");
   XII_ASSERT_DEV(xiiGALShaderPrimitiveType::IsNumberType(description.m_PrimitiveType), "Only number types are supported.");
 
   if (pValue != nullptr)

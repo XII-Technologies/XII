@@ -17,7 +17,7 @@ public:
 
   /// \brief Constructs the Uuid from existing values
   XII_ALWAYS_INLINE constexpr xiiUuid(xiiUInt64 uiLow, xiiUInt64 uiHigh) :
-    m_uiLow(uiLow), m_uiHigh(uiHigh)
+    m_uiHigh(uiHigh), m_uiLow(uiLow)
   {
   }
 

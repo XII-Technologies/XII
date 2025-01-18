@@ -2,6 +2,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALSemaphorePoolVulkan
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGALSemaphorePoolVulkan);
+
 public:
   vk::Semaphore RequestSemaphore();
 

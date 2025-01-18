@@ -20,39 +20,29 @@ void xiiGALCommandQueueD3D11::InitializePlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
-  D3D11_FENCE_FLAG fenceFlags = D3D11_FENCE_FLAG_SHARED;
+  D3D11_FENCE_FLAG fenceFlags = D3D11_FENCE_FLAG_NONE;
   XII_HRESULT_TO_ASSERT(pDeviceD3D11->GetD3D11Device()->CreateFence(0U, fenceFlags, IID_PPV_ARGS(&m_pD3D11DFence)));
 
   m_pImmediateContext->Signal(m_pD3D11DFence, 0U);
+
+  // Allocate a single command list.
+  xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
+  m_pCommandListD3D11                                         = XII_NEW(pDeviceD3D11->GetAllocator(), xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
+
+  xiiStringBuilder sb;
+  sb.SetFormat("Main Command List");
+  m_pCommandListD3D11->SetDebugName(sb);
 }
 
 void xiiGALCommandQueueD3D11::DeInitializePlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
-  for (xiiUInt32 i = 0; i < m_CommandLists.GetCount(); ++i)
-  {
-    xiiGALCommandListD3D11* pCommandList = m_CommandLists[i];
-
-    XII_DELETE(pDeviceD3D11->GetAllocator(), pCommandList);
-  }
-  m_CommandLists.Clear();
+  m_pCommandListD3D11.Clear();
 
   CloseHandle(m_WaitForGPUEventHandle);
 
   XII_GAL_D3D11_RELEASE(m_pD3D11DFence);
-}
-
-void xiiGALCommandQueueD3D11::SetDebugNamePlatform(xiiStringView sName)
-{
-  if (m_pImmediateContext != nullptr)
-  {
-    xiiStringBuilder sb;
-    if (FAILED(m_pImmediateContext->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
-    {
-      xiiLog::Error("Failed to set the Direct3D11 immediate device context debug name.");
-    }
-  }
 }
 
 xiiUInt64 xiiGALCommandQueueD3D11::GetCompletedFenceValue()
@@ -70,8 +60,6 @@ xiiUInt64 xiiGALCommandQueueD3D11::GetCompletedFenceValue()
 
 xiiUInt64 xiiGALCommandQueueD3D11::WaitForIdle()
 {
-  XII_LOCK(m_QueueMutex);
-
   xiiUInt64 uiLastSignaledFenceValue = m_NextFenceValue.fetch_add(1);
 
   m_pImmediateContext->Signal(m_pD3D11DFence, uiLastSignaledFenceValue);
@@ -87,80 +75,31 @@ xiiUInt64 xiiGALCommandQueueD3D11::WaitForIdle()
 
 xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 {
-  XII_LOCK(m_QueueMutex);
+  XII_ASSERT_DEV(m_pCommandListD3D11->GetRecordingState() == xiiGALCommandList::RecordingState::Reset || m_pCommandListD3D11->GetRecordingState() == xiiGALCommandList::RecordingState::Ended, "There is an active D3D11 command list. D3D11 backend supports only a single active command list.");
 
-  xiiGALCommandListD3D11* pCommandListD3D11 = nullptr;
-  if (!m_CommandLists.IsEmpty() && m_CommandLists.PeekFront()->GetRecordingState() == xiiGALCommandList::RecordingState::Reset)
-  {
-    pCommandListD3D11 = m_CommandLists.PeekFront();
-  }
+  if (m_pCommandListD3D11->GetRecordingState() != xiiGALCommandList::RecordingState::Reset && m_pCommandListD3D11->GetRecordingState() != xiiGALCommandList::RecordingState::Ended)
+    return nullptr;
 
-  XII_ASSERT_DEV(!(pCommandListD3D11 != nullptr && pCommandListD3D11->GetRecordingState() != xiiGALCommandList::RecordingState::Reset), "The retrieved command list is not reset.");
+  m_pCommandListD3D11->Begin();
 
-  if (pCommandListD3D11 == nullptr)
-  {
-    // Allocate a new command list.
-    xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-    xiiGALDeviceD3D11*                   pDeviceD3D11           = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-    pCommandListD3D11                                           = XII_NEW(pDeviceD3D11->GetAllocator(), xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
+  XII_ASSERT_DEV(m_pCommandListD3D11 != nullptr && m_pCommandListD3D11->GetRecordingState() == xiiGALCommandList::RecordingState::Recording, "The retrieved command list is not begun.");
 
-    m_CommandLists.PushBack(pCommandListD3D11);
-
-    xiiStringBuilder sb;
-    sb.SetFormat("Command List {}", m_CommandLists.GetCount());
-    pCommandListD3D11->SetDebugName(sb);
-  }
-
-  pCommandListD3D11->Begin();
-
-  XII_ASSERT_DEV(pCommandListD3D11 != nullptr && pCommandListD3D11->GetRecordingState() == xiiGALCommandList::RecordingState::Recording, "The retrieved command list is not begun.");
-
-  return pCommandListD3D11;
+  return m_pCommandListD3D11.Borrow();
 }
 
-void xiiGALCommandQueueD3D11::BeginCommandList(xiiGALCommandListD3D11* pCommandListD3D11)
+xiiUInt64 xiiGALCommandQueueD3D11::SubmitCommandList(xiiGALCommandList* pCommandList)
 {
-  XII_LOCK(m_QueueMutex);
-
-  XII_VERIFY(m_CommandLists.RemoveAndSwap(pCommandListD3D11), "Invalid command list to reset.");
-
-  XII_ASSERT_DEV(!m_CommandLists.Contains(pCommandListD3D11), "Command list duplication error.");
-
-  m_CommandLists.PushBack(pCommandListD3D11);
-}
-
-void xiiGALCommandQueueD3D11::ResetCommandList(xiiGALCommandListD3D11* pCommandListD3D11)
-{
-  XII_LOCK(m_QueueMutex);
-
-  XII_VERIFY(m_CommandLists.RemoveAndSwap(pCommandListD3D11), "Invalid command list to reset.");
-
-  XII_ASSERT_DEV(!m_CommandLists.Contains(pCommandListD3D11), "Command list duplication error.");
-
-  m_CommandLists.PushFront(pCommandListD3D11);
-}
-
-xiiUInt64 xiiGALCommandQueueD3D11::SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset)
-{
-  XII_LOCK(m_QueueMutex);
-
   if (pCommandList == nullptr)
     return GetCompletedFenceValue();
 
   // Increment the value before submitting the list
   xiiUInt64 uiFenceValue = m_NextFenceValue.fetch_add(1);
 
-  xiiGALCommandListD3D11* pCommandListD3D11 = static_cast<xiiGALCommandListD3D11*>(pCommandList);
-
-  m_pImmediateContext->ExecuteCommandList(pCommandListD3D11->GetD3D11CommandList(), FALSE);
-
   // Signal the fence. This must be done atomically with command list submission.
   m_pImmediateContext->Signal(m_pD3D11DFence, uiFenceValue);
 
-  if (bReset)
-  {
-    pCommandListD3D11->Reset();
-  }
+  pCommandList->Reset();
+
   return uiFenceValue;
 }
 

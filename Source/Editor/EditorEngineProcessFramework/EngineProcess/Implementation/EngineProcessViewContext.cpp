@@ -67,8 +67,6 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
 
     img.SaveTo(msg->m_sOutputFile).IgnoreResult();
   }
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
-  XII_REPORT_FAILURE("This code path should never be executed on UWP.");
 #else
 #  error "Unsupported platform."
 #endif

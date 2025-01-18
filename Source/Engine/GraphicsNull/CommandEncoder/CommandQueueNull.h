@@ -21,7 +21,7 @@ public:
   virtual xiiGALCommandList* BeginCommandList() override final;
 
 protected:
-  xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
+  xiiUInt64 Submit(xiiGALCommandList* pCommandList);
 
 protected:
   friend class xiiGALDeviceNull;

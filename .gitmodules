@@ -4,3 +4,6 @@
 [submodule "Source/ThirdParty/AssImp"]
 	path = Source/ThirdParty/AssImp
 	url = https://github.com/XII-Technologies/AssImp.git
+[submodule "Source/ThirdParty/SDL"]
+	path = Source/ThirdParty/SDL
+	url = https://github.com/XII-Technologies/SDL.git

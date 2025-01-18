@@ -2,11 +2,11 @@
 #include <Foundation/FoundationPCH.h>
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/Communication/Implementation/Linux/PipeChannel_linux.h>
+#  include <Foundation/Platform/Implementation/Linux/PipeChannel_linux.h>
 
-#  include <Foundation/Communication/Implementation/Linux/MessageLoop_linux.h>
 #  include <Foundation/IO/OSFile.h>
 #  include <Foundation/Logging/Log.h>
+#  include <Foundation/Platform/Implementation/Linux/MessageLoop_linux.h>
 
 #  include <fcntl.h>
 #  include <sys/socket.h>
@@ -123,7 +123,8 @@ void xiiPipeChannel_linux::InternalConnect()
     serverAddress.sun_family         = AF_UNIX;
     strcpy(serverAddress.sun_path, m_serverSocketPath.GetData());
 
-    xiiInt32 connectResult = connect(m_clientSocketFd, (struct sockaddr*)&serverAddress, SUN_LEN(&serverAddress));
+    xiiInt32 iConnectResult = connect(m_clientSocketFd, (struct sockaddr*)&serverAddress, SUN_LEN(&serverAddress));
+    XII_IGNORE_UNUSED(iConnectResult);
 
     static_cast<xiiMessageLoop_linux*>(m_pOwner)->RegisterWait(this, xiiMessageLoop_linux::WaitType::Connect, m_clientSocketFd);
   }

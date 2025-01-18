@@ -27,6 +27,6 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   ID3D11SamplerState* m_pSampler = nullptr;
 };

@@ -39,6 +39,14 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiVarianceTypeBaseDouble);
 struct XII_FOUNDATION_DLL xiiVarianceTypeFloat : public xiiVarianceTypeBaseFloat
 {
   XII_DECLARE_POD_TYPE();
+
+  xiiVarianceTypeFloat() = default;
+  xiiVarianceTypeFloat(float fValue, float fVariance = 0.0f) :
+    m_Value(fValue)
+  {
+    m_fVariance = fVariance;
+  }
+
   bool operator==(const xiiVarianceTypeFloat& rhs) const
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
@@ -53,6 +61,14 @@ XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiVarianceTypeFloat);
 struct XII_FOUNDATION_DLL xiiVarianceTypeDouble : public xiiVarianceTypeBaseDouble
 {
   XII_DECLARE_POD_TYPE();
+
+  xiiVarianceTypeDouble() = default;
+  xiiVarianceTypeDouble(double fValue, double fVariance = 0.0) :
+    m_Value(fValue)
+  {
+    m_fVariance = fVariance;
+  }
+
   bool operator==(const xiiVarianceTypeDouble& rhs) const
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
@@ -67,6 +83,14 @@ XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiVarianceTypeDouble);
 struct XII_FOUNDATION_DLL xiiVarianceTypeTime : public xiiVarianceTypeBaseDouble
 {
   XII_DECLARE_POD_TYPE();
+
+  xiiVarianceTypeTime() = default;
+  xiiVarianceTypeTime(xiiTime value, double fVariance = 0.0) :
+    m_Value(value)
+  {
+    m_fVariance = fVariance;
+  }
+
   bool operator==(const xiiVarianceTypeTime& rhs) const
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
@@ -81,6 +105,14 @@ XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiVarianceTypeTime);
 struct XII_FOUNDATION_DLL xiiVarianceTypeAngle : public xiiVarianceTypeBaseFloat
 {
   XII_DECLARE_POD_TYPE();
+
+  xiiVarianceTypeAngle() = default;
+  xiiVarianceTypeAngle(xiiAngle value, float fVariance = 0.0f) :
+    m_Value(value)
+  {
+    m_fVariance = fVariance;
+  }
+
   bool operator==(const xiiVarianceTypeAngle& rhs) const
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
@@ -95,6 +127,14 @@ XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiVarianceTypeAngle);
 struct XII_FOUNDATION_DLL xiiVarianceTypeAngled : public xiiVarianceTypeBaseDouble
 {
   XII_DECLARE_POD_TYPE();
+
+  xiiVarianceTypeAngled() = default;
+  xiiVarianceTypeAngled(xiiAngled value, double fVariance = 0.0) :
+    m_Value(value)
+  {
+    m_fVariance = fVariance;
+  }
+
   bool operator==(const xiiVarianceTypeAngled& rhs) const
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;

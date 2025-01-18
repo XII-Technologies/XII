@@ -50,6 +50,17 @@
     }                                                                                                                                                                             \
   } while (false)
 
+#define VK_SUCCEED_OR_RETURN(code)                                                                                                                                                \
+  do                                                                                                                                                                              \
+  {                                                                                                                                                                               \
+    auto s = (code);                                                                                                                                                              \
+    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                       \
+    {                                                                                                                                                                             \
+      xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+      return;                                                                                                                                                                     \
+    }                                                                                                                                                                             \
+  } while (false)
+
 #define VK_SUCCEED_OR_RETURN_XII_FAILURE(code)                                                                                                                                    \
   do                                                                                                                                                                              \
   {                                                                                                                                                                               \
@@ -92,6 +103,8 @@ class xiiGALDepthStencilStateVulkan;
 class xiiGALRasterizerStateVulkan;
 class xiiGALPipelineStateVulkan;
 class xiiGALPipelineResourceSignatureVulkan;
-class xiiGALShaderResourceVariableVulkan;
 class xiiGALFencePoolVulkan;
 class xiiGALSemaphorePoolVulkan;
+class xiiGALQueryPoolVulkan;
+class xiiGALDescriptorSetPoolVulkan;
+class xiiGALStagingBufferPoolVulkan;

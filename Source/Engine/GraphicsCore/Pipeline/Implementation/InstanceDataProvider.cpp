@@ -2,10 +2,12 @@
 
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
+
 
 #include <Shaders/Common/ObjectConstants.h>
 
@@ -53,7 +55,7 @@ void xiiInstanceData::UpdateInstanceData(xiiGALCommandList* pCommandList, xiiUIn
   auto                        pSourceData  = m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
   xiiBitflags<xiiGALMapFlags> mapFlags     = (m_uiBufferOffset == 0) ? xiiGALMapFlags::Discard : xiiGALMapFlags::NoOverWrite;
 
-  pCommandList->UpdateBufferExtended(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), mapFlags, true);
+  xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray()).AssertSuccess();
 
   xiiObjectConstants* pConstants = xiiRenderContext::GetConstantBufferData<xiiObjectConstants>(m_hConstantBuffer);
   pConstants->InstanceDataOffset = m_uiBufferOffset;

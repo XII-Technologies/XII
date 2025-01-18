@@ -145,12 +145,6 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   pGALCommandList->CopyTexture(hBackbuffer, m_hBackbufferStagingTexture);
 
-  // Since we are reading data from the backbuffer, we need to ensure that the copy command has completed before mapping the staging texture for reading.
-  // This is mainly a D3D11 deferred context limitation, we will need to update/branch this code path on modern api's like D3D12 and Vulkan.
-  pGALCommandList->Submit(false);
-
-  pGALCommandList->Begin();
-
   const xiiGALTexture*                pBackbuffer = xiiGALDevice::GetDefaultDevice()->GetTexture(hBackbuffer);
   const xiiUInt32                     uiWidth     = pBackbuffer->GetDescription().m_Size.width;
   const xiiUInt32                     uiHeight    = pBackbuffer->GetDescription().m_Size.height;

@@ -90,7 +90,6 @@ class xiiGALTopLevelAS;
 class xiiGALInputLayout;
 class xiiGALShader;
 class xiiGALShaderByteCode;
-class xiiGALShaderResourceVariable;
 class xiiGALBlendState;
 class xiiGALDepthStencilState;
 class xiiGALPipelineResourceSignature;

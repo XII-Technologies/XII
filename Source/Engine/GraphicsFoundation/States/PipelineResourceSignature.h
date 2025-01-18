@@ -5,7 +5,6 @@
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Shader/Shader.h>
-#include <GraphicsFoundation/Shader/ShaderResourceVariable.h>
 
 /// \brief This describes the pipeline resource property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceFlags
@@ -62,22 +61,21 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceDescription : public xii
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiHashedString               m_sName;                                                                         ///< The resource name in the shader.
-  xiiBitflags<xiiGALShaderType> m_ShaderStages = xiiGALShaderType::Unknown;                                      ///< The shader stages that this resource applies to. When multiple shader stages are specified, all stages will share the same resource. The default is xiiGALShaderType::Unknown.
-                                                                                                                 ///
-                                                                                                                 ///  \remarks There may be multiple resources with the same name in different shader stages, but the stages specified for different resources with the same name must not overlap.
-  xiiUInt32                                 m_uiArraySize           = 0U;                                        ///< The resource array size (must be set to 1 for non-array resources). The default is 0.
-  xiiUInt32                                 m_uiBindSet             = 0U;                                        ///< \brief The resource bind set, for descriptor sets.
-  xiiUInt32                                 m_uiBindSlot            = 0U;                                        ///< \brief The resource bind slot in the bind set.
-  xiiEnum<xiiGALShaderResourceType>         m_ResourceType          = xiiGALShaderResourceType::Unknown;         ///< The resource type, see xiiGALShaderResourceType. The default is xiiGALShaderResourceType::Unknown.
-  xiiEnum<xiiGALShaderResourceVariableType> m_ResourceVariableType  = xiiGALShaderResourceVariableType::Mutable; ///< The resource variable type, see xiiGALShaderResourceVariableType. The default is xiiGALShaderResourceVariableType::Mutable.
-  xiiBitflags<xiiGALPipelineResourceFlags>  m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;         ///< Special resource flags, see xiiGALPipelineResourceFlags. The default is xiiGALPipelineResourceFlags::None.
+  xiiHashedString               m_sName;                                                                ///< The resource name in the shader.
+  xiiBitflags<xiiGALShaderType> m_ShaderStages = xiiGALShaderType::Unknown;                             ///< The shader stages that this resource applies to. When multiple shader stages are specified, all stages will share the same resource. The default is xiiGALShaderType::Unknown.
+                                                                                                        ///
+                                                                                                        ///  \remarks There may be multiple resources with the same name in different shader stages, but the stages specified for different resources with the same name must not overlap.
+  xiiUInt32                                m_uiArraySize           = 0U;                                ///< The resource array size (must be set to 1 for non-array resources). The default is 0.
+  xiiUInt32                                m_uiBindSet             = 0U;                                ///< \brief The resource bind set, for descriptor sets.
+  xiiUInt32                                m_uiBindSlot            = 0U;                                ///< \brief The resource bind slot in the bind set.
+  xiiEnum<xiiGALShaderResourceType>        m_ResourceType          = xiiGALShaderResourceType::Unknown; ///< The resource type, see xiiGALShaderResourceType. The default is xiiGALShaderResourceType::Unknown.
+  xiiBitflags<xiiGALPipelineResourceFlags> m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None; ///< Special resource flags, see xiiGALPipelineResourceFlags. The default is xiiGALPipelineResourceFlags::None.
 };
 
 /// \brief This describes the pipeline resource signature creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceSignatureCreationDescription : public xiiHashableStruct<xiiGALPipelineResourceSignatureCreationDescription>
 {
-  xiiUInt8                                              m_uiBindingIndex = 0U;                          ///< The binding index that this resource signature uses. Every resource signature must be assign to one signature slot. The total number of slots is given by XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT constant. All resource signatures used by a pipeline state must be assigned to different slots.
+  xiiUInt32                                             m_uiBindingIndex = 0U;                          ///< The binding index that this resource signature uses. Every resource signature must be assign to one signature slot. The total number of slots is given by XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT constant. All resource signatures used by a pipeline state must be assigned to different slots.
   xiiHybridArray<xiiGALPipelineResourceDescription, 2U> m_Resources;                                    ///< An array of resource descriptions, see xiiGALPipelineResourceDescription for details.
   xiiHybridArray<xiiGALImmutableSamplerDescription, 2U> m_ImmutableSamplers;                            ///< An array of immutable samplers, see xiiGALImmutableSamplerDescription for details.
   bool                                                  m_bUseCombinedTextureSamplers = false;          ///< If set to true, textures will be combined with texture samplers. The CombinedSamplerSuffix member defines the suffix added to the texture variable name to get corresponding sampler name. When using combined samplers, the sampler assigned to the shader resource view is automatically set when the view is bound. Otherwise, samplers need to be explicitly set similar to other shader variables. The default is false.
@@ -94,7 +92,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALPipelineResourceSignatureCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief Returns true if this pipeline resource signature is compatible with the given pipeline resource signature.
-  virtual [[nodiscard]] bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const = 0;
+  [[nodiscard]] virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const = 0;
 
 protected:
   friend class xiiGALDevice;

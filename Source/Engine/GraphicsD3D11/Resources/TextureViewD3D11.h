@@ -27,11 +27,11 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+private:
   xiiResult CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView);
   xiiResult CreateRTV(ID3D11RenderTargetView** ppRenderTargetView);
   xiiResult CreateDSV(ID3D11DepthStencilView** ppDepthStencilView);
   xiiResult CreateUAV(ID3D11UnorderedAccessView** ppUnorderedAccessView);
 
-protected:
   ID3D11View* m_pTextureView = nullptr;
 };

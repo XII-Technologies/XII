@@ -30,6 +30,6 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   ID3D11InputLayout* m_pInputLayout = nullptr;
 };

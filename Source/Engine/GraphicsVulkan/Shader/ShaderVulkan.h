@@ -25,12 +25,12 @@ protected:
 
   virtual ~xiiGALShaderVulkan();
 
-  virtual xiiResult InitPlatform();
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform();
+  virtual xiiResult DeInitPlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   vk::ShaderModule m_vkShaderModule;
 };

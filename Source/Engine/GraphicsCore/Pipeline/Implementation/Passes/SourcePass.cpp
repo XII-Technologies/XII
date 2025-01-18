@@ -266,18 +266,14 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     clearValue.m_ClearColor     = m_ClearColor;
   }
 
-  if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
-  {
-    auto pCommandList = pGraphicsQueue->BeginCommandList();
+  auto pCommandList = renderViewContext.m_pRenderContext->GetCommandList();
 
-    pCommandList->BeginDebugGroup(GetName());
-    {
-      pCommandList->BeginRenderPass(renderPassDescription);
-      pCommandList->EndRenderPass();
-    }
-    pCommandList->EndDebugGroup();
-    pCommandList->Submit();
+  pCommandList->BeginDebugGroup(GetName());
+  {
+    pCommandList->BeginRenderPass(renderPassDescription);
+    pCommandList->EndRenderPass();
   }
+  pCommandList->EndDebugGroup();
 }
 
 xiiResult xiiSourcePass::Serialize(xiiStreamWriter& inout_stream) const

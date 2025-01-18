@@ -1184,6 +1184,10 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     xiiRenderWorld::s_RenderEvent.Broadcast(renderEvent);
   }
 
+  xiiGALCommandQueue* pCommandQueue = pDevice->GetDefaultCommandQueue();
+  xiiGALCommandList*  pCommandList  = pCommandQueue->BeginCommandList();
+
+  pRenderContext->SetCommandList(pCommandList);
   {
     // Update textures from texture providers as these can change every frame (e.g. swap chain textures).
     for (TextureUsageData& textureUsageData : m_TextureUsage)
@@ -1267,6 +1271,9 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     XII_ASSERT_DEV(uiCurrentFirstUsageIdx == m_TextureUsageIdxSortedByFirstUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
     XII_ASSERT_DEV(uiCurrentLastUsageIdx == m_TextureUsageIdxSortedByLastUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
   }
+  pRenderContext->SetCommandList(nullptr);
+
+  pCommandList->Submit();
 
   renderEvent.m_Type = xiiRenderWorldRenderEvent::Type::AfterPipelineExecution;
   {
@@ -1459,7 +1466,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       sourceData.m_pData    = fb.GetByteArrayPtr();
       sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
 
-      pCommandList->UpdateTextureExtended(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+      pCommandList->UpdateTexture(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
     }

@@ -22,7 +22,8 @@ namespace
 
 #define DEFINE_TARGET_REGISTER()                                                                                                           \
   xiiExpression::Register* r  = context.m_pRegisters + xiiExpressionByteCode::GetRegisterIndex(pByteCode) * context.m_uiNumSimd4Instances; \
-  xiiExpression::Register* re = r + context.m_uiNumSimd4Instances;
+  xiiExpression::Register* re = r + context.m_uiNumSimd4Instances;                                                                         \
+  XII_IGNORE_UNUSED(re);
 
 #define DEFINE_OP_REGISTER(name) \
   const xiiExpression::Register* name = context.m_pRegisters + xiiExpressionByteCode::GetRegisterIndex(pByteCode) * context.m_uiNumSimd4Instances;
@@ -30,35 +31,23 @@ namespace
 #define DEFINE_CONSTANT(name)                                                                              \
   const xiiUInt32                XII_PP_CONCAT(name, Raw) = *pByteCode;                                    \
   const xiiExpression::Register  tmp                      = xiiExpressionByteCode::GetConstant(pByteCode); \
-  const xiiExpression::Register* name                     = &tmp;
+  const xiiExpression::Register* name                     = &tmp;                                          \
+  XII_IGNORE_UNUSED(XII_PP_CONCAT(name, Raw));
 
 #define UNARY_OP_INNER_LOOP(code) \
   code;                           \
   ++r;                            \
   ++a;
 
-#define DEFINE_UNARY_OP(name, code)                                                        \
-  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context)  \
-  {                                                                                        \
-    DEFINE_TARGET_REGISTER();                                                              \
-    DEFINE_OP_REGISTER(a);                                                                 \
-    while (r != re)                                                                        \
-    {                                                                                      \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-    }                                                                                      \
-  }                                                                                        \
-                                                                                           \
-  void XII_PP_CONCAT(name, _16)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
-  {                                                                                        \
-    DEFINE_TARGET_REGISTER();                                                              \
-    DEFINE_OP_REGISTER(a);                                                                 \
-    while (r != re)                                                                        \
-    {                                                                                      \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-      UNARY_OP_INNER_LOOP(code)                                                            \
-    }                                                                                      \
+#define DEFINE_UNARY_OP(name, code)                                                       \
+  void XII_PP_CONCAT(name, _4)(const ByteCodeType*& pByteCode, ExecutionContext& context) \
+  {                                                                                       \
+    DEFINE_TARGET_REGISTER();                                                             \
+    DEFINE_OP_REGISTER(a);                                                                \
+    while (r != re)                                                                       \
+    {                                                                                     \
+      UNARY_OP_INNER_LOOP(code)                                                           \
+    }                                                                                     \
   }
 
 #define BINARY_OP_INNER_LOOP(code)        \
@@ -365,16 +354,16 @@ namespace
 
     if (input.GetDataType() == xiiProcessingStream::DataType::Int)
     {
-      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt32>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, int, int>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
     else if (input.GetDataType() == xiiProcessingStream::DataType::Short)
     {
-      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, int, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
     else
     {
       XII_ASSERT_DEBUG(input.GetDataType() == xiiProcessingStream::DataType::Byte, "Unsupported input type '{}' for LoadI instruction", xiiProcessingStream::GetDataTypeName(input.GetDataType()));
-      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, int, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
   }
 
@@ -415,16 +404,16 @@ namespace
 
     if (output.GetDataType() == xiiProcessingStream::DataType::Int)
     {
-      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt32>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, int, int>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
     else if (output.GetDataType() == xiiProcessingStream::DataType::Short)
     {
-      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, int, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
     else
     {
       XII_ASSERT_DEBUG(output.GetDataType() == xiiProcessingStream::DataType::Byte, "Unsupported input type '{}' for StoreI instruction", xiiProcessingStream::GetDataTypeName(output.GetDataType()));
-      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, int, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
   }
 

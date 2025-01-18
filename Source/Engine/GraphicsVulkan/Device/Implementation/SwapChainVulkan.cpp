@@ -107,7 +107,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.pView                         = m_Description.m_pWindow->GetNativeWindowHandle();
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createMacOSSurfaceMVK(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+#elif defined(VK_USE_PLATFORM_WAYLAND_KHR) || defined(VK_USE_PLATFORM_XCB_KHR)
   vk::WaylandSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                           = nullptr;
   vkSurfaceCreateInfo.flags                           = {};
@@ -160,7 +160,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   XII_ASSERT_DEV(uiFormatCount > 0U, "");
 
   xiiDynamicArray<vk::SurfaceFormatKHR> supportedFormats(pDeviceVulkan->GetAllocator());
-  supportedFormats.SetCount(uiFormatCount);
+  supportedFormats.SetCountUninitialized(uiFormatCount);
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceFormatsKHR(m_vkSurface, &uiFormatCount, supportedFormats.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiFormatCount == supportedFormats.GetCount(), "");
 
@@ -230,7 +230,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   XII_ASSERT_DEV(uiPresentModeCount > 0, "");
 
   xiiDynamicArray<vk::PresentModeKHR> presentModes(pDeviceVulkan->GetAllocator());
-  presentModes.SetCount(uiPresentModeCount);
+  presentModes.SetCountUninitialized(uiPresentModeCount);
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfacePresentModesKHR(m_vkSurface, &uiPresentModeCount, presentModes.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiPresentModeCount == presentModes.GetCount(), "");
 
@@ -428,9 +428,9 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     m_Description.m_uiBufferCount = uiSwapChainImageCount;
   }
 
-  m_ImageAcquiredSemaphores.SetCount(uiSwapChainImageCount);
-  m_DrawCompleteSemaphores.SetCount(uiSwapChainImageCount);
-  m_ImageAcquiredFences.SetCount(uiSwapChainImageCount);
+  m_ImageAcquiredSemaphores.SetCountUninitialized(uiSwapChainImageCount);
+  m_DrawCompleteSemaphores.SetCountUninitialized(uiSwapChainImageCount);
+  m_ImageAcquiredFences.SetCountUninitialized(uiSwapChainImageCount);
 
   auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
   auto pFencePool     = pDeviceVulkan->GetVulkanFencePool();
@@ -564,8 +564,8 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   }
 #endif
 
-  m_SwapChainImages.SetCount(m_Description.m_uiBufferCount);
-  m_SwapChainTextures.SetCount(m_Description.m_uiBufferCount);
+  m_SwapChainImages.SetCountUninitialized(m_Description.m_uiBufferCount);
+  m_SwapChainTextures.SetCountUninitialized(m_Description.m_uiBufferCount);
   m_SwapChainImagesInitialized.SetCount(m_Description.m_uiBufferCount, false);
   m_ImageAcquiredFenceSubmitted.SetCount(m_Description.m_uiBufferCount, false);
 
@@ -624,13 +624,13 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
   xiiUInt32 uiOldestSubmittedImageFenceIndex = (m_uiSemaphoreIndex + 1U) % m_ImageAcquiredFenceSubmitted.GetCount();
   if (m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex])
   {
-    const vk::Fence& oldestSubmittedFence = m_ImageAcquiredFences[uiOldestSubmittedImageFenceIndex];
-    if (vkLogicalDevice.getFenceStatus(oldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
+    const vk::Fence& vkOldestSubmittedFence = m_ImageAcquiredFences[uiOldestSubmittedImageFenceIndex];
+    if (vkLogicalDevice.getFenceStatus(vkOldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
     {
-      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &oldestSubmittedFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkOldestSubmittedFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     }
 
-    VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &oldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &vkOldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex] = false;
   }
 
@@ -650,20 +650,21 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 
     if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
     {
-      pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
-
-      // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
-      if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
+      pCommandListVulkan->BeginDebugGroup("Add Swap Chain Wait Semaphore");
       {
-        pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+        pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+
+        // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
+        if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
+        {
+          pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+
+          m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
+        }
       }
+      pCommandListVulkan->EndDebugGroup();
 
       pCommandListVulkan->Submit();
-    }
-
-    if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
-    {
-      m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
     }
   }
 
@@ -693,22 +694,23 @@ void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
 
 void xiiGALSwapChainVulkan::Present()
 {
+  if (m_bIsMinimized)
+    return;
+
   xiiGALDeviceVulkan*       pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALCommandQueueVulkan* pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
   xiiGALTextureVulkan*      pCurrentBackbufferVulkan = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_hBackBufferTexture));
 
-  if (!m_bIsMinimized)
+  if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
   {
-    if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
-    {
-      pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
-      pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+    pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+    pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
 
-      pCommandListVulkan->Submit();
-    }
+    pCommandListVulkan->Submit();
+
+    pGraphicsQueueVulkan->WaitForIdle(); // Suboptimal, but fixes validation errors.
   }
 
-  if (!m_bIsMinimized)
   {
     // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2)
     vk::Result result = vk::Result::eSuccess;
@@ -722,7 +724,7 @@ void xiiGALSwapChainVulkan::Present()
     vkPresentInformation.pWaitSemaphores    = &m_DrawCompleteSemaphores[m_uiSemaphoreIndex];
     vkPresentInformation.waitSemaphoreCount = 1U;
 
-    vk::Queue vkQueue = pGraphicsQueueVulkan->GetVulkanQueue();
+    vk::Queue vkQueue = pGraphicsQueueVulkan->GetQueueInformation().m_vkQueue;
     VK_ASSERT_DEV(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
@@ -737,11 +739,6 @@ void xiiGALSwapChainVulkan::Present()
     }
   }
 
-  // Release stale resources.
-  {
-  }
-
-  if (!m_bIsMinimized)
   {
     ++m_uiSemaphoreIndex;
     if (m_uiSemaphoreIndex >= m_Description.m_uiBufferCount)
@@ -758,6 +755,17 @@ void xiiGALSwapChainVulkan::Present()
       m_uiSemaphoreIndex = m_Description.m_uiBufferCount - 1; // To start with 0 index when acquire next image.
 
       result = AcquireNextImage();
+
+#if XII_ENABLED(XII_PLATFORM_OSX)
+      // For some reason, on MoltenVk we may get VK_SUBOPTIMAL_KHR first time we acquire the image after the swap chain has been recreated.
+      // Recreating it yet again seems to fix the problem.
+      if (result == vk::Result::eSuboptimalKHR)
+      {
+        RecreateVulkanSwapChain().AssertSuccess();
+
+        result = AcquireNextImage();
+      }
+#endif
     }
     XII_ASSERT_DEV(result == vk::Result::eSuccess, "Failed to acquire next swap chain image.");
   }

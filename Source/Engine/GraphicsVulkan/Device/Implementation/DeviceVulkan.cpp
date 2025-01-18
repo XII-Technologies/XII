@@ -12,8 +12,11 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
 #include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPool.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -134,10 +137,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   // Enumerate available layers.
   {
     xiiUInt32 uiLayerCount = 0U;
-
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr, m_InstanceDispatchLoader));
 
-    m_Layers.SetCount(uiLayerCount);
+    m_Layers.SetCountUninitialized(uiLayerCount);
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData(), m_InstanceDispatchLoader));
 
@@ -160,7 +162,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     xiiUInt32 uiExtensionCount = 0U;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, nullptr, m_InstanceDispatchLoader));
 
-    m_Extensions.SetCount(uiExtensionCount);
+    m_Extensions.SetCountUninitialized(uiExtensionCount);
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, m_Extensions.GetData(), m_InstanceDispatchLoader));
 
@@ -318,9 +320,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       {
         // If the implementation is available, this call must return vk::Result::eSuccess.
         m_uiVulkanVersion = vk::enumerateInstanceVersion(m_InstanceDispatchLoader);
-
-        // Remove the patch version.
-        m_uiVulkanVersion &= ~VK_MAKE_VERSION(0, 0, VK_API_VERSION_PATCH(~0U));
       }
       else
       {
@@ -373,7 +372,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     debugMessengerCreateInfo.flags                                = {};
     debugMessengerCreateInfo.messageSeverity                      = messageSeverity;
     debugMessengerCreateInfo.messageType                          = messageType;
-    debugMessengerCreateInfo.pfnUserCallback                      = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
+    debugMessengerCreateInfo.pfnUserCallback                      = reinterpret_cast<vk::PFN_DebugUtilsMessengerCallbackEXT>(xiiVulkanDebugMessengerCallback);
     debugMessengerCreateInfo.pUserData                            = nullptr;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugUtilsMessengerEXT(&debugMessengerCreateInfo, nullptr, &m_DebugMessenger, m_InstanceDispatchLoader));
@@ -385,7 +384,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     vk::DebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
     debugReportCallbackCreateInfo.pNext                                = nullptr;
     debugReportCallbackCreateInfo.flags                                = reportFlags;
-    debugReportCallbackCreateInfo.pfnCallback                          = reinterpret_cast<PFN_vkDebugReportCallbackEXT>(xiiVulkanDebugReportCallback);
+    debugReportCallbackCreateInfo.pfnCallback                          = reinterpret_cast<vk::PFN_DebugReportCallbackEXT>(xiiVulkanDebugReportCallback);
     debugReportCallbackCreateInfo.pUserData                            = nullptr;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugReportCallbackEXT(&debugReportCallbackCreateInfo, nullptr, &m_DebugCallback, m_InstanceDispatchLoader));
@@ -398,7 +397,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     XII_ASSERT_ALWAYS(uiPhysicalDeviceCount != 0U, "No physical devices are found on the system.");
 
-    m_PhysicalDevices.SetCount(uiPhysicalDeviceCount);
+    m_PhysicalDevices.SetCountUninitialized(uiPhysicalDeviceCount);
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, m_PhysicalDevices.GetData(), m_InstanceDispatchLoader));
 
@@ -418,10 +417,22 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "");
 
-    m_PhysicalDeviceQueueFamilyProperties.SetCount(uiQueueFamilyCount);
+    m_PhysicalDeviceQueueFamilyProperties.SetCountUninitialized(uiQueueFamilyCount);
     m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, m_PhysicalDeviceQueueFamilyProperties.GetData(), m_InstanceDispatchLoader);
 
     XII_ASSERT_DEV(m_PhysicalDeviceQueueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
+
+    {
+      xiiStringBuilder sb;
+      sb.SetFormat("Device '{}' Queue Families", m_PhysicalDeviceProperties.deviceName);
+
+      XII_LOG_BLOCK(sb);
+
+      for (const auto& queueFamilyProperty : m_PhysicalDeviceQueueFamilyProperties)
+      {
+        xiiLog::Info("Queue Count: {},  Flags: {}", queueFamilyProperty.queueCount, vk::to_string(queueFamilyProperty.queueFlags).data());
+      }
+    }
 
     // Get list of supported extensions.
     xiiUInt32 uiExtensionCount = 0U;
@@ -429,7 +440,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     if (uiExtensionCount > 0U)
     {
-      m_PhysicalDeviceSupportedExtensions.SetCount(uiExtensionCount);
+      m_PhysicalDeviceSupportedExtensions.SetCountUninitialized(uiExtensionCount);
 
       VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.enumerateDeviceExtensionProperties(nullptr, &uiExtensionCount, m_PhysicalDeviceSupportedExtensions.GetData(), m_InstanceDispatchLoader));
 
@@ -952,6 +963,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       *pNextExtension = &enabledExtensionFeatures.m_ShaderDrawParameters;
       pNextExtension  = &enabledExtensionFeatures.m_ShaderDrawParameters.pNext;
     }
+
+    // Ensure that the last next is null
+    *pNextExtension = nullptr;
   }
   else
   {
@@ -1046,14 +1060,16 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
-  // Initialize vulkan memory allocator. We prefer dynamically finding the function pointers.
+  // Initialize Vulkan Memory Allocator (VMA). We prefer dynamically finding the function pointers.
   {
+    const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
+
     VmaVulkanFunctions vmaVulkanFunctions    = {};
     vmaVulkanFunctions.vkGetInstanceProcAddr = m_InstanceDispatchLoader.vkGetInstanceProcAddr;
     vmaVulkanFunctions.vkGetDeviceProcAddr   = m_InstanceDispatchLoader.vkGetDeviceProcAddr;
 
     VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
-    vmaAllocatorCreateInfo.vulkanApiVersion       = m_uiVulkanVersion;
+    vmaAllocatorCreateInfo.vulkanApiVersion       = deviceProperties.apiVersion;
     vmaAllocatorCreateInfo.instance               = m_Instance;
     vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
     vmaAllocatorCreateInfo.device                 = m_LogicalDevice;
@@ -1071,8 +1087,10 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   // Create pools.
   {
-    m_FencePool     = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
-    m_SemaphorePool = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+    m_pFencePool               = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
+    m_pSemaphorePool           = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+    m_pDescriptorSetPool       = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
+    m_pUploadStagingBufferPool = XII_NEW(&m_Allocator, xiiGALStagingBufferPoolVulkan, this, 16, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
   }
 
   // Create command queues.
@@ -1090,7 +1108,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
 
-      m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_vkQueue);
+      m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation);
+
+      m_pGraphicsCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
+
+      m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
+
+      xiiLog::Info("Created {}", m_pGraphicsCommandQueue->GetDebugName());
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1100,7 +1124,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
       m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
 
-      m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_vkQueue);
+      m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation);
+
+      m_pComputeCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
+
+      m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
+
+      xiiLog::Info("Created {}", m_pComputeCommandQueue->GetDebugName());
     }
 
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1110,7 +1140,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
       m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription);
 
-      m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_vkQueue);
+      m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation);
+
+      m_pTransferCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
+
+      m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
+
+      xiiLog::Info("Created {}", m_pTransferCommandQueue->GetDebugName());
     }
   }
 
@@ -1146,21 +1182,29 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
     {
       m_pTransferCommandQueue->DeInitializePlatform();
       m_pTransferCommandQueue.Clear();
+
+      m_pTransferCommandQueueQueryPool.Clear();
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
       m_pComputeCommandQueue->DeInitializePlatform();
       m_pComputeCommandQueue.Clear();
+
+      m_pComputeCommandQueueQueryPool.Clear();
     }
 
     m_pGraphicsCommandQueue->DeInitializePlatform();
     m_pGraphicsCommandQueue.Clear();
+
+    m_pGraphicsCommandQueueQueryPool.Clear();
   }
 
   {
-    m_FencePool.Clear();
-    m_SemaphorePool.Clear();
+    m_pDescriptorSetPool.Clear();
+    m_pFencePool.Clear();
+    m_pSemaphorePool.Clear();
+    m_pUploadStagingBufferPool.Clear();
   }
 
   if (m_vkVmaAllocator != VK_NULL_HANDLE)
@@ -1206,26 +1250,15 @@ void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObject
   safeRelease.m_VmaAllocation = vmaAllocation;
 }
 
-void xiiGALDeviceVulkan::ReclaimPoolFenceLater(vk::Fence& vkFence)
+void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject)
 {
   auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
 
   perFrameData.m_uiFrameNumber = m_uiFrameCounter;
 
   auto& safeReclaim          = perFrameData.m_SafeReclaimResources.ExpandAndGetRef();
-  safeReclaim.m_vkObjectType = vkFence.objectType;
-  safeReclaim.m_pObject      = (void*)vkFence;
-}
-
-void xiiGALDeviceVulkan::ReclaimPoolSemaphoreLater(vk::Semaphore& vkSemaphore)
-{
-  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
-
-  perFrameData.m_uiFrameNumber = m_uiFrameCounter;
-
-  auto& safeReclaim          = perFrameData.m_SafeReclaimResources.ExpandAndGetRef();
-  safeReclaim.m_vkObjectType = vkSemaphore.objectType;
-  safeReclaim.m_pObject      = (void*)vkSemaphore;
+  safeReclaim.m_vkObjectType = vkObjectType;
+  safeReclaim.m_pObject      = pObject;
 }
 
 void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
@@ -1347,18 +1380,23 @@ void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
       }
     }
 
-    for (SafeReclaimResource& safeReclameResource : perFrameData.m_SafeReclaimResources)
+    for (SafeReclaimResource& safeReclaimResource : perFrameData.m_SafeReclaimResources)
     {
-      switch (safeReclameResource.m_vkObjectType)
+      switch (safeReclaimResource.m_vkObjectType)
       {
         case vk::ObjectType::eSemaphore:
         {
-          m_SemaphorePool->ReclaimSemaphore(reinterpret_cast<vk::Semaphore&>(safeReclameResource.m_pObject));
+          m_pSemaphorePool->ReclaimSemaphore(reinterpret_cast<vk::Semaphore&>(safeReclaimResource.m_pObject));
         }
         break;
         case vk::ObjectType::eFence:
         {
-          m_FencePool->ReclaimFence(reinterpret_cast<vk::Fence&>(safeReclameResource.m_pObject));
+          m_pFencePool->ReclaimFence(reinterpret_cast<vk::Fence&>(safeReclaimResource.m_pObject));
+        }
+        break;
+        case vk::ObjectType::eDescriptorPool:
+        {
+          m_pDescriptorSetPool->ReclaimDescriptorPool(reinterpret_cast<vk::DescriptorPool&>(safeReclaimResource.m_pObject));
         }
         break;
 
@@ -1383,6 +1421,8 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchai
   {
     pSwapChain->Present();
   }
+
+  m_pUploadStagingBufferPool->Reset();
 
   ReleasePerFrameResources(m_pFrameFence->GetCompletedValue());
 
@@ -2086,7 +2126,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         xiiUInt32 uiShadingRateCount = 0U;
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, nullptr, m_InstanceDispatchLoader));
 
-        shadingRates.SetCount(uiShadingRateCount);
+        shadingRates.SetCountUninitialized(uiShadingRateCount);
 
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, shadingRates.GetData(), m_InstanceDispatchLoader));
       }
@@ -2369,7 +2409,7 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
     XII_ASSERT_DEV(uiQueueFamilyCount > 0, "");
 
     xiiHybridArray<vk::QueueFamilyProperties, 2U> queueFamilyProperties;
-    queueFamilyProperties.SetCount(uiQueueFamilyCount);
+    queueFamilyProperties.SetCountUninitialized(uiQueueFamilyCount);
 
     physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData(), instanceDispatchLoader);
     XII_ASSERT_DEV(queueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
@@ -2629,10 +2669,49 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   *pNextFeature  = nullptr;
   *pNextProperty = nullptr;
 
-  // Initialize device extension features by current physical device feaetures.
+  // Initialize device extension features by current physical device features.
   // Some flags may not be supported by the hardware.
   m_PhysicalDevice.getFeatures2KHR(&features2, m_InstanceDispatchLoader);
   m_PhysicalDevice.getProperties2KHR(&properties2, m_InstanceDispatchLoader);
+
+  // Clear next pointer.
+  {
+    m_PhysicalDeviceExtensionFeatures.m_MeshShader.pNext             = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_Storage16Bit.pNext           = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_Storage8Bit.pNext            = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_ShaderFloat16Int8.pNext      = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_AccelerationStructure.pNext  = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.pNext     = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_RayQuery.pNext               = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress.pNext    = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing.pNext     = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_PortabilitySubset.pNext      = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_VertexAttributeDivisor.pNext = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_TimelineSemaphore.pNext      = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_HostQueryReset.pNext         = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pNext            = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.pNext     = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2.pNext    = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_Multiview.pNext              = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_MultiDraw.pNext              = nullptr;
+    m_PhysicalDeviceExtensionFeatures.m_ShaderDrawParameters.pNext   = nullptr;
+
+
+    m_PhysicalDeviceExtensionProperties.m_MeshShader.pNext             = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.pNext  = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.pNext     = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_DescriptorIndexing.pNext     = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_PortabilitySubset.pNext      = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_Subgroup.pNext               = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_VertexAttributeDivisor.pNext = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_TimelineSemaphore.pNext      = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_ShadingRate.pNext            = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap.pNext     = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_Multiview.pNext              = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_Maintenance3.pNext           = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap2.pNext    = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_MultiDraw.pNext              = nullptr;
+  }
 
   // Check shading rate texture formats.
   {
@@ -2673,11 +2752,10 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
 bool xiiGALDeviceVulkan::EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions)
 {
   xiiUInt32 uiExtensionCount = 0U;
-
   if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, nullptr, m_InstanceDispatchLoader) != vk::Result::eSuccess)
     return false;
 
-  extensions.SetCount(uiExtensionCount);
+  extensions.SetCountUninitialized(uiExtensionCount);
 
   if (vk::enumerateInstanceExtensionProperties(szLayerName, &uiExtensionCount, extensions.GetData(), m_InstanceDispatchLoader) != vk::Result::eSuccess)
   {

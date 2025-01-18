@@ -1,0 +1,24 @@
+#include <Foundation/FoundationInternal.h>
+XII_FOUNDATION_INTERNAL_HEADER
+
+namespace xiiMemoryPolicies
+{
+  xiiAllocPolicyGuarding::xiiAllocPolicyGuarding(xiiAllocator* pParent)
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+    XII_IGNORE_UNUSED(m_uiPageSize);
+    XII_IGNORE_UNUSED(m_Mutex);
+    XII_IGNORE_UNUSED(m_AllocationsToFreeLater);
+  }
+
+  void* xiiAllocPolicyGuarding::Allocate(size_t uiSize, size_t uiAlign)
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+    return nullptr;
+  }
+
+  void xiiAllocPolicyGuarding::Deallocate(void* ptr)
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
+} // namespace xiiMemoryPolicies

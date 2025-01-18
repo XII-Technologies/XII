@@ -12,6 +12,12 @@
 #  error "Undefined platform!"
 #endif
 
+#undef XII_SUPPORTS_SDL
+#ifdef BUILDSYSTEM_ENABLE_SDL_SUPPORT
+#  define XII_SUPPORTS_SDL XII_ON
+#else
+#  define XII_SUPPORTS_SDL XII_OFF
+#endif
 
 // Now check that the defines for each feature are set (either to 1 or 0, but they must be defined)
 

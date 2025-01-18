@@ -92,7 +92,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
       if (m_Description.m_ValidationLevel == xiiGALDeviceValidationLevel::All)
       {
         ID3D12Debug1* pDebugController1 = nullptr;
-        if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
+        if (SUCCEEDED(pDebugController->QueryInterface(__uuidof(pDebugController1), reinterpret_cast<void**>(static_cast<ID3D12Debug1**>(&pDebugController1)))))
         {
           pDebugController1->SetEnableGPUBasedValidation(TRUE);
           pDebugController1->SetEnableSynchronizedCommandQueueValidation(TRUE);

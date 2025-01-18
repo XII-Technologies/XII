@@ -1,7 +1,7 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-// THIS IMPLEMENTATION IS UNTESTED (and may not even compile)
+#include <Foundation/Threading/Semaphore.h>
 
 #include <Foundation/Strings/StringBuilder.h>
 
@@ -9,6 +9,10 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <semaphore.h>
 #include <sys/stat.h>
 #include <time.h>
+
+XII_WARNING_PUSH()
+// On OSX sem_destroy and sem_init are deprecated
+XII_WARNING_DISABLE_CLANG("-Wdeprecated-declarations")
 
 xiiSemaphore::xiiSemaphore() = default;
 
@@ -102,3 +106,5 @@ xiiResult xiiSemaphore::TryAcquireToken(xiiTime timeout)
 
   return XII_FAILURE;
 }
+
+XII_WARNING_POP()

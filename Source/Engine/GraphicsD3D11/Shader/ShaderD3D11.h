@@ -28,6 +28,6 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   ID3D11DeviceChild* m_pD3D11Shader = nullptr;
 };

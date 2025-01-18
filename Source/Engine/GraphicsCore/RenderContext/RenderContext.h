@@ -87,10 +87,6 @@ public:
       if (m_pCommandListScope != nullptr)
       {
         m_pCommandListScope->Submit();
-
-        XII_ASSERT_DEV(m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Reset, "Scoped command list is not ended.");
-
-        m_RenderContext.m_pScopedCommandList = nullptr;
       }
     }
 
@@ -103,8 +99,7 @@ public:
     XII_ALWAYS_INLINE CommandListScope(xiiRenderContext& renderContext, xiiGALCommandList* pCommandListScope) :
       m_RenderContext(renderContext), m_pCommandListScope(pCommandListScope)
     {
-      m_pCommandList                     = renderContext.GetCommandList();
-      renderContext.m_pScopedCommandList = nullptr;
+      m_pCommandList = renderContext.GetCommandList();
     }
 
     xiiRenderContext&  m_RenderContext;
@@ -119,7 +114,7 @@ public:
     return RenderingScope(*viewContext.m_pRenderContext, nullptr);
   }
 
-  XII_ALWAYS_INLINE static RenderingScope BeginPassAndRenderingScope(const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, xiiStringView sName, bool bStereoRendering = false)
+  XII_ALWAYS_INLINE static RenderingScope BeginCommandListAndRenderingScope(const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, xiiStringView sName, bool bStereoRendering = false)
   {
     xiiGALCommandQueue* pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
     xiiGALCommandList*  pCommandList  = pCommandQueue->BeginCommandList();
@@ -135,7 +130,7 @@ public:
     return ComputeScope(*viewContext.m_pRenderContext, nullptr);
   }
 
-  XII_ALWAYS_INLINE static ComputeScope BeginPassAndComputeScope(const xiiRenderViewContext& viewContext, xiiStringView sName)
+  XII_ALWAYS_INLINE static ComputeScope BeginCommandListAndComputeScope(const xiiRenderViewContext& viewContext, xiiStringView sName)
   {
     xiiGALCommandQueue* pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
     xiiGALCommandList*  pCommandList  = pCommandQueue->BeginCommandList();
@@ -146,8 +141,13 @@ public:
 
   XII_ALWAYS_INLINE xiiGALCommandList* GetCommandList()
   {
-    XII_ASSERT_DEBUG(m_pCommandList != nullptr, "BeginRendering/Compute has not been called");
+    XII_ASSERT_DEBUG(m_pCommandList != nullptr, "Outside the scope of BeginCommandList/EndCommandList or command list has not yet been set.");
     return m_pCommandList;
+  }
+
+  XII_ALWAYS_INLINE void SetCommandList(xiiGALCommandList* pCommandList)
+  {
+    m_pCommandList = pCommandList;
   }
 
   // Member Functions
@@ -390,7 +390,7 @@ private:
     }
   };
 
-  static xiiResult BuildInputLayout(xiiGALShaderHandle hVertexShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration);
+  xiiResult BuildInputLayout(xiiGALShaderHandle hVertexShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration);
 
   static xiiMap<ShaderVertexDecl, xiiGALInputLayoutHandle> s_GALInputLayouts;
 
@@ -418,13 +418,10 @@ private: // Per Renderer States
   xiiGALRenderPassHandle  m_hCurrentRenderPass;
   xiiGALRenderingSetup    m_CurrentRenderingSetup = {};
 
-  bool               m_bHasScopedCommandListLabel = false;
-  xiiUInt32          m_uiActiveScopeCount         = 0U;
-  xiiGALCommandList* m_pCommandList               = nullptr;
-  xiiGALCommandList* m_pScopedCommandList         = nullptr;
-  xiiGALCommandList* m_pPersistentCommandList     = nullptr;
-  bool               m_bIsRendering               = false;
-  bool               m_bIsCompute                 = false;
+  xiiGALCommandList* m_pCommandList    = nullptr;
+  bool               m_bIsRendering    = false;
+  bool               m_bIsCompute      = false;
+  bool               m_bHasActiveScope = false;
 
   // Member Functions
   void UploadConstants();
@@ -433,8 +430,8 @@ private: // Per Renderer States
   void                          BindShaderInternal(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags);
   xiiShaderPermutationResource* ApplyShaderState();
   xiiMaterialResource*          ApplyMaterialState();
-  void                          ApplyConstantBufferBindings(xiiGALPipelineState* pPipelineState);
-  void                          ApplyResourceViewBindings(xiiGALPipelineState* pPipelineState, xiiEnum<xiiGALShaderResourceType> type);
-  void                          ApplyUnorderedAccessViewBindings(xiiGALPipelineState* pPipelineState);
-  void                          ApplySamplerBindings(xiiGALPipelineState* pPipelineState);
+  void                          ApplyConstantBufferBindings();
+  void                          ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceType> type);
+  void                          ApplyUnorderedAccessViewBindings();
+  void                          ApplySamplerBindings();
 };

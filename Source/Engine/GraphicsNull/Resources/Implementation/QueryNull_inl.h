@@ -7,7 +7,7 @@ XII_ALWAYS_INLINE bool xiiGALQueryNull::GetData(void* pData, xiiUInt32 uiDataSiz
     {
       xiiGALQueryDataOcclusion& occlusionData = *reinterpret_cast<xiiGALQueryDataOcclusion*>(pData);
       occlusionData.m_Type                    = xiiGALQueryType::Occlusion;
-      occlusionData.m_uiNumSamples            = 0U;
+      occlusionData.m_uiSampleCount           = 0U;
 
       return true;
     }

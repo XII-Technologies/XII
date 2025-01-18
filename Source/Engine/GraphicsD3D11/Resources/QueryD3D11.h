@@ -17,7 +17,7 @@ public:
   {
     m_DisjointQuery.Clear();
 
-    m_QueryState = QueryState::Inactive;
+    xiiGALQuery::Invalidate();
   }
 
   XII_ALWAYS_INLINE ID3D11Query* GetQuery(xiiUInt32 uiQueryID) const
@@ -46,7 +46,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   ID3D11Query* m_pQueryD3D11[2] = {nullptr, nullptr};
 
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> m_DisjointQuery;

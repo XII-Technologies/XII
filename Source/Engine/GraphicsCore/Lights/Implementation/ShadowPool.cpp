@@ -996,13 +996,11 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
       {
         XII_PROFILE_SCOPE("Shadow Data Buffer Update");
 
-        pCommandList->UpdateBufferExtended(s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr());
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr()).AssertSuccess();
       }
     }
     pCommandList->EndDebugGroup();
     pCommandList->Submit();
-
-    pGraphicsQueue->WaitForIdle();
   }
 }
 

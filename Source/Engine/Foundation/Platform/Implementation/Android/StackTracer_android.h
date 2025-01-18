@@ -40,6 +40,7 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& trace, void* pContex
   Backtrace backtrace;
   backtrace.trace         = trace;
   _Unwind_Reason_Code res = _Unwind_Backtrace(BacktraceCallback, &backtrace);
+  XII_IGNORE_UNUSED(res);
   return backtrace.uiPos;
 }
 

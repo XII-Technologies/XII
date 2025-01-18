@@ -168,5 +168,5 @@ private:
   xiiUInt32                        m_uiPrimitiveCount = 0;
   xiiGALBufferHandle               m_hVertexBuffer;
   xiiGALBufferHandle               m_hIndexBuffer;
-  xiiEnum<xiiGALPrimitiveTopology> m_Topology = xiiGALPrimitiveTopology::Default;
+  xiiEnum<xiiGALPrimitiveTopology> m_Topology;
 };

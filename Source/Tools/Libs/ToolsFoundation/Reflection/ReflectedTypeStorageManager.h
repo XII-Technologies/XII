@@ -62,6 +62,7 @@ private:
 
   static ReflectedTypeStorageMapping* GetTypeStorageMapping(const xiiRTTI* pType);
   static void                         TypeEventHandler(const xiiPhantomRttiManagerEvent& e);
+  static void                         PluginEventHandler(const xiiPluginEvent& eventData);
 
 private:
   static xiiMap<const xiiRTTI*, ReflectedTypeStorageMapping*> s_ReflectedTypeToStorageMapping;

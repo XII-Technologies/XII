@@ -507,14 +507,14 @@ XII_CREATE_SIMPLE_TEST(Reflection, MemberProperties)
     TestMemberProperty<xiiAngled>("Angled", &data, pRtti, xiiPropertyFlags::StandardType, xiiAngled::MakeFromDegree(0.5), xiiAngled::MakeFromDegree(1.0));
 
     {
-      xiiVarianceTypeAngle expectedVA = {0.5f, xiiAngle::MakeFromDegree(90.0f)};
-      xiiVarianceTypeAngle testVA     = {0.1f, xiiAngle::MakeFromDegree(45.0f)};
+      xiiVarianceTypeAngle expectedVA = xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(90.0f), 0.5f);
+      xiiVarianceTypeAngle testVA     = xiiVarianceTypeAngle(xiiAngle::MakeFromDegree(45.0f), 0.1f);
       TestMemberProperty<xiiVarianceTypeAngle>("VarianceAngle", &data, pRtti, xiiPropertyFlags::Class, expectedVA, testVA);
     }
 
     {
-      xiiVarianceTypeAngled expectedVA = {0.5, xiiAngled::MakeFromDegree(90.0)};
-      xiiVarianceTypeAngled testVA     = {0.1, xiiAngled::MakeFromDegree(45.0)};
+      xiiVarianceTypeAngled expectedVA = xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(90.0), 0.5);
+      xiiVarianceTypeAngled testVA     = xiiVarianceTypeAngled(xiiAngled::MakeFromDegree(45.0), 0.1);
       TestMemberProperty<xiiVarianceTypeAngled>("VarianceAngled", &data, pRtti, xiiPropertyFlags::Class, expectedVA, testVA);
     }
 
@@ -978,7 +978,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
   {
     // xiiVarianceTypeAngle
     {
-      xiiVarianceTypeAngle data{0.1f, xiiAngle::MakeFromDegree(45.0f)};
+      xiiVarianceTypeAngle data(xiiAngle::MakeFromDegree(45.0f), 0.1f);
 
       TestArrayProperty<xiiVarianceTypeAngle>("Custom", &containers, pRtti, data);
       TestArrayProperty<xiiVarianceTypeAngle>("CustomRO", &containers, pRtti, data);
@@ -989,7 +989,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
 
     // xiiVarianceTypeAngled
     {
-      xiiVarianceTypeAngled data{0.1, xiiAngled::MakeFromDegree(45.0)};
+      xiiVarianceTypeAngled data(xiiAngled::MakeFromDegree(45.0), 0.1);
 
       TestArrayProperty<xiiVarianceTypeAngled>("Custom2", &containers, pRtti, data);
       TestArrayProperty<xiiVarianceTypeAngled>("CustomRO2", &containers, pRtti, data);
@@ -1133,28 +1133,28 @@ XII_CREATE_SIMPLE_TEST(Reflection, Sets)
   {
     // xiiVarianceTypeAngle
     {
-      xiiVarianceTypeAngle value1{-0.1f, xiiAngle::MakeFromDegree(-45.0f)};
-      xiiVarianceTypeAngle value2{0.1f, xiiAngle::MakeFromDegree(45.0f)};
+      xiiVarianceTypeAngle value1(xiiAngle::MakeFromDegree(-45.0f), -0.1f);
+      xiiVarianceTypeAngle value2(xiiAngle::MakeFromDegree(45.0f), 0.1f);
 
       TestSetProperty<xiiVarianceTypeAngle>("CustomHashSet", &containers, pRtti, value1, value2);
       TestSetProperty<xiiVarianceTypeAngle>("CustomHashSetRO", &containers, pRtti, value1, value2);
 
-      xiiVarianceTypeAngle value3{-0.2f, xiiAngle::MakeFromDegree(-90.0f)};
-      xiiVarianceTypeAngle value4{0.2f, xiiAngle::MakeFromDegree(90.0f)};
+      xiiVarianceTypeAngle value3(xiiAngle::MakeFromDegree(-90.0f), -0.2f);
+      xiiVarianceTypeAngle value4(xiiAngle::MakeFromDegree(90.0f), 0.2f);
       TestSetProperty<xiiVarianceTypeAngle>("CustomHashAcSet", &containers, pRtti, value3, value4);
       TestSetProperty<xiiVarianceTypeAngle>("CustomHashAcSetRO", &containers, pRtti, value3, value4);
     }
 
     // xiiVarianceTypeAngled
     {
-      xiiVarianceTypeAngled value1{-0.1, xiiAngled::MakeFromDegree(-45.0)};
-      xiiVarianceTypeAngled value2{0.1, xiiAngled::MakeFromDegree(45.0)};
+      xiiVarianceTypeAngled value1(xiiAngled::MakeFromDegree(-45.0), -0.1);
+      xiiVarianceTypeAngled value2(xiiAngled::MakeFromDegree(45.0), 0.1);
 
       TestSetProperty<xiiVarianceTypeAngled>("CustomHashSet2", &containers, pRtti, value1, value2);
       TestSetProperty<xiiVarianceTypeAngled>("CustomHashSetRO2", &containers, pRtti, value1, value2);
 
-      xiiVarianceTypeAngled value3{-0.2, xiiAngled::MakeFromDegree(-90.0)};
-      xiiVarianceTypeAngled value4{0.2, xiiAngled::MakeFromDegree(90.0)};
+      xiiVarianceTypeAngled value3(xiiAngled::MakeFromDegree(-90.0), -0.2);
+      xiiVarianceTypeAngled value4(xiiAngled::MakeFromDegree(90.0), 0.2);
       TestSetProperty<xiiVarianceTypeAngled>("CustomHashAcSet2", &containers, pRtti, value3, value4);
       TestSetProperty<xiiVarianceTypeAngled>("CustomHashAcSetRO2", &containers, pRtti, value3, value4);
     }
@@ -1263,8 +1263,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Maps)
   {
     // xiiVarianceTypeAngle
     {
-      xiiVarianceTypeAngle value1{-0.1f, xiiAngle::MakeFromDegree(-45.0f)};
-      xiiVarianceTypeAngle value2{0.1f, xiiAngle::MakeFromDegree(45.0f)};
+      xiiVarianceTypeAngle value1(xiiAngle::MakeFromDegree(-45.0f), -0.1f);
+      xiiVarianceTypeAngle value2(xiiAngle::MakeFromDegree(45.0f), 0.1f);
 
       TestMapProperty<xiiVarianceTypeAngle>("CustomVariant", &containers, pRtti, value1, value2);
       TestMapProperty<xiiVarianceTypeAngle>("CustomVariantRO", &containers, pRtti, value1, value2);
@@ -1272,8 +1272,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Maps)
 
     // xiiVarianceTypeAngled
     {
-      xiiVarianceTypeAngled value1{-0.1, xiiAngled::MakeFromDegree(-45.0)};
-      xiiVarianceTypeAngled value2{0.1, xiiAngled::MakeFromDegree(45.0)};
+      xiiVarianceTypeAngled value1(xiiAngled::MakeFromDegree(-45.0), -0.1);
+      xiiVarianceTypeAngled value2(xiiAngled::MakeFromDegree(45.0), 0.1);
 
       TestMapProperty<xiiVarianceTypeAngled>("CustomVariant2", &containers, pRtti, value1, value2);
       TestMapProperty<xiiVarianceTypeAngled>("CustomVariantRO2", &containers, pRtti, value1, value2);

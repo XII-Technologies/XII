@@ -55,11 +55,6 @@ public:
   XII_ALWAYS_INLINE ID3D11HullShader* GetD3D11HullShader() const { return m_pHullShaderD3D11 != nullptr ? static_cast<ID3D11HullShader*>(m_pHullShaderD3D11->GetD3D11Shader()) : nullptr; };
   XII_ALWAYS_INLINE ID3D11ComputeShader* GetD3D11ComputeShader() const { return m_pComputeShaderD3D11 != nullptr ? static_cast<ID3D11ComputeShader*>(m_pComputeShaderD3D11->GetD3D11Shader()) : nullptr; };
 
-  xiiResult CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11);
-
-  bool UnsetResourceViews(const xiiGALResource* pResource);
-  bool UnsetUnorderedAccessViews(const xiiGALResource* pResource);
-
 protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
@@ -72,15 +67,7 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
-  virtual void SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer) override final;
-  virtual void SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
-  virtual void SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
-  virtual void SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
-  virtual void SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
-  virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
-  virtual void ResetBoundResources() override final;
-
-protected:
+private:
   xiiGALShaderD3D11*            m_pVertexShaderD3D11      = nullptr;
   xiiGALShaderD3D11*            m_pPixelShaderD3D11       = nullptr;
   xiiGALShaderD3D11*            m_pDomainShaderD3D11      = nullptr;
@@ -94,18 +81,4 @@ protected:
 
   xiiGALRenderPassD3D11*                m_pRenderPassD3D11                = nullptr;
   xiiGALPipelineResourceSignatureD3D11* m_pPipelineResourceSignatureD3D11 = nullptr;
-
-  ID3D11Buffer*         m_pBoundConstantBuffers[ShaderType::ENUM_COUNT][XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[ShaderType::ENUM_COUNT];
-
-  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[ShaderType::ENUM_COUNT] = {};
-  xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[ShaderType::ENUM_COUNT];
-  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[ShaderType::ENUM_COUNT];
-
-  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnoderedAccessViews;
-  xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
-  xiiGAL::ModifiedRange                          m_BoundUnoderedAccessViewsRange;
-
-  ID3D11SamplerState*   m_pBoundSamplerStates[ShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[ShaderType::ENUM_COUNT];
 };

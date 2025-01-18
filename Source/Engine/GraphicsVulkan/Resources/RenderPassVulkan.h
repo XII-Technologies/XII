@@ -30,9 +30,9 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+private:
   template <xiiUInt8 RenderPassVersion>
   vk::Result CreateRenderPassForVersion();
 
-protected:
   vk::RenderPass m_vkRenderPass;
 };

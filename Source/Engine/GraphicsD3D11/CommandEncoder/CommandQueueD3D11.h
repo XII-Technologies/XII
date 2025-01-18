@@ -21,11 +21,8 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
-  void BeginCommandList(xiiGALCommandListD3D11* pCommandListD3D11);
-  void ResetCommandList(xiiGALCommandListD3D11* pCommandListD3D11);
-
 protected:
-  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
+  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -40,13 +37,9 @@ protected:
 
   void DeInitializePlatform();
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
-
-protected:
-  xiiMutex m_QueueMutex;
-
-  ID3D11DeviceContext4*             m_pImmediateContext = nullptr;
-  xiiDeque<xiiGALCommandListD3D11*> m_CommandLists;
+private:
+  ID3D11DeviceContext4*                m_pImmediateContext = nullptr;
+  xiiUniquePtr<xiiGALCommandListD3D11> m_pCommandListD3D11;
 
   // A value that will be signaled by the command queue next.
   std::atomic<xiiUInt64> m_NextFenceValue{1};

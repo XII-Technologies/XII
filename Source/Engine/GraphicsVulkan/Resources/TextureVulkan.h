@@ -45,6 +45,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+private:
   vk::Result CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties);
 
   void InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData);
@@ -52,7 +53,6 @@ protected:
 
   static void ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo);
 
-protected:
   vk::Image     m_vkImage               = VK_NULL_HANDLE;
   VmaAllocation m_ImageMemoryAllocation = {};
 

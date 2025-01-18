@@ -24,7 +24,6 @@ XII_STATICLINK_LIBRARY(GraphicsNull)
   XII_STATICLINK_REFERENCE(GraphicsNull_Resources_Implementation_TopLevelASNull);
   XII_STATICLINK_REFERENCE(GraphicsNull_Shader_Implementation_InputLayoutNull);
   XII_STATICLINK_REFERENCE(GraphicsNull_Shader_Implementation_ShaderNull);
-  XII_STATICLINK_REFERENCE(GraphicsNull_Shader_Implementation_ShaderResourceVariableNull);
   XII_STATICLINK_REFERENCE(GraphicsNull_States_Implementation_BlendStateNull);
   XII_STATICLINK_REFERENCE(GraphicsNull_States_Implementation_DepthStencilStateNull);
   XII_STATICLINK_REFERENCE(GraphicsNull_States_Implementation_PipelineStateNull);

@@ -40,6 +40,10 @@ xiiResult xiiGALBufferViewVulkan::InitPlatform()
     // Structured and raw buffers are mapped to storage buffers.
   }
 
+  m_vkDescriptorBufferInfo.buffer = pBufferVulkan->GetVulkanBuffer();
+  m_vkDescriptorBufferInfo.offset = m_Description.m_uiByteOffset;
+  m_vkDescriptorBufferInfo.range  = m_Description.m_uiByteWidth;
+
   return XII_SUCCESS;
 }
 

@@ -30,6 +30,6 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   vk::ImageView m_vkImageView;
 };

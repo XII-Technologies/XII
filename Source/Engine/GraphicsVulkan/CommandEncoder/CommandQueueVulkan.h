@@ -4,6 +4,7 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
+#include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
@@ -27,12 +28,11 @@ public:
   virtual xiiGALCommandList* BeginCommandList() override final;
   void                       ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
 
-  XII_ALWAYS_INLINE xiiUInt32 GetVulkanQueueFamilyIndex() const { return m_uiQueueFamilyIndex; };
-  XII_ALWAYS_INLINE vk::Queue GetVulkanQueue() const { return m_vkQueue; };
+  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetQueueInformation() const { return m_QueueInformation; };
   XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
 
-protected:
-  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset);
+private:
+  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -43,13 +43,13 @@ protected:
 
   virtual ~xiiGALCommandQueueVulkan();
 
-  void InitializePlatform(xiiUInt32 uiQueueFamilyIndex, vk::Queue vkQueue);
+  void InitializePlatform(const xiiGALDeviceVulkan::QueueInformation& queueInformation);
 
   void DeInitializePlatform();
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   struct CommandListReleaseInfo
   {
     XII_DECLARE_POD_TYPE();
@@ -58,11 +58,8 @@ protected:
     xiiUInt64                m_uiFenceValue       = 0U;
   };
 
-  xiiMutex m_QueueMutex;
-
-  vk::Device m_vkDevice;
-  vk::Queue  m_vkQueue;
-  xiiUInt32  m_uiQueueFamilyIndex = xiiInvalidIndex;
+  xiiMutex                             m_QueueMutex;
+  xiiGALDeviceVulkan::QueueInformation m_QueueInformation;
 
   vk::CommandPool                           m_vkCommandPool;
   xiiDynamicArray<xiiGALCommandListVulkan*> m_CommandLists;

@@ -9,7 +9,7 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/PipeChannel_win.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/Communication/Implementation/Linux/PipeChannel_linux.h>
+#  include <Foundation/Platform/Implementation/Linux/PipeChannel_linux.h>
 #endif
 
 static_assert((xiiInt32)xiiIpcChannel::ConnectionState::Disconnected == (xiiInt32)xiiIpcChannelEvent::Disconnected);

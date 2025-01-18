@@ -30,6 +30,6 @@ protected:
   xiiResult CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView);
   xiiResult CreateUAV(ID3D11UnorderedAccessView** ppUnorderedAccessView);
 
-protected:
+private:
   ID3D11View* m_pBufferView = nullptr;
 };

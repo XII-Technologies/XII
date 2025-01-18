@@ -1,7 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/SamplerVulkan.h>
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 
 // clang-format off
@@ -43,7 +42,7 @@ xiiUInt32 FindImmutableSampler(const xiiGALPipelineResourceSignatureCreationDesc
 }
 
 xiiGALPipelineResourceSignatureVulkan::xiiGALPipelineResourceSignatureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
-  xiiGALPipelineResourceSignature(pDeviceVulkan, creationDescription), m_ImmutableSamplers(pDeviceVulkan->GetAllocator())
+  xiiGALPipelineResourceSignature(pDeviceVulkan, creationDescription), m_DescriptorSetLayouts(pDeviceVulkan->GetAllocator()), m_ImmutableSamplers(pDeviceVulkan->GetAllocator())
 {
 }
 
@@ -64,39 +63,44 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
   for (xiiUInt32 uiResource = 0; uiResource < m_Description.m_Resources.GetCount(); ++uiResource)
   {
-    const auto& resource                  = m_Description.m_Resources[uiResource];
-    auto&       vkDescriptorLayoutBinding = vkDescriptorSetLayoutBindings.ExpandAndGetRef();
+    const auto& resource = m_Description.m_Resources[uiResource];
+
+    auto& vkDescriptorLayoutBinding           = vkDescriptorSetLayoutBindings.ExpandAndGetRef();
+    vkDescriptorLayoutBinding.binding         = resource.m_uiBindSlot;
+    vkDescriptorLayoutBinding.descriptorType  = xiiVulkanTypeConversions::GetDescriptorType(resource);
+    vkDescriptorLayoutBinding.descriptorCount = resource.m_uiArraySize;
+    vkDescriptorLayoutBinding.stageFlags      = xiiVulkanTypeConversions::GetShaderStageFlags(resource.m_ShaderStages);
 
     vk::Sampler* pVkImmutableSamplers = nullptr;
     if (vkDescriptorLayoutBinding.descriptorType == vk::DescriptorType::eCombinedImageSampler || vkDescriptorLayoutBinding.descriptorType == vk::DescriptorType::eSampler)
     {
       xiiUInt32 uiSourceImmutableSamplerIndex = FindImmutableSampler(m_Description, resource);
 
-      if (!m_ImmutableSamplers[uiSourceImmutableSamplerIndex])
+      if (uiSourceImmutableSamplerIndex != xiiInvalidIndex)
       {
-        const auto& immutableSamplerDescription = m_Description.m_ImmutableSamplers[uiSourceImmutableSamplerIndex].m_SamplerDescription;
+        if (!m_ImmutableSamplers[uiSourceImmutableSamplerIndex])
+        {
+          const auto& immutableSamplerDescription = m_Description.m_ImmutableSamplers[uiSourceImmutableSamplerIndex].m_SamplerDescription;
 
-        m_ImmutableSamplers[uiSourceImmutableSamplerIndex].Initialize(pDeviceVulkan, immutableSamplerDescription);
+          m_ImmutableSamplers[uiSourceImmutableSamplerIndex].Initialize(pDeviceVulkan, immutableSamplerDescription);
+        }
+
+        vkTempSamplerArrayAssignment.PushBack(xiiDynamicArray<vk::Sampler>(pDeviceVulkan->GetAllocator()));
+        vkTempSamplerArrayAssignment.PeekBack().SetCount(resource.m_uiArraySize, m_ImmutableSamplers[uiSourceImmutableSamplerIndex].GetVulkanSampler());
+
+        pVkImmutableSamplers = vkTempSamplerArrayAssignment.PeekBack().GetData();
       }
-
-      vkTempSamplerArrayAssignment.PushBack(xiiDynamicArray<vk::Sampler>(pDeviceVulkan->GetAllocator()));
-      vkTempSamplerArrayAssignment.PeekBack().SetCount(resource.m_uiArraySize, m_ImmutableSamplers[uiSourceImmutableSamplerIndex].GetVulkanSampler());
-
-      pVkImmutableSamplers = vkTempSamplerArrayAssignment.PeekBack().GetData();
     }
 
-    vkDescriptorLayoutBinding.binding            = resource.m_uiBindSlot;
-    vkDescriptorLayoutBinding.descriptorType     = xiiVulkanTypeConversions::GetDescriptorType(resource);
-    vkDescriptorLayoutBinding.descriptorCount    = resource.m_uiArraySize;
-    vkDescriptorLayoutBinding.stageFlags         = xiiVulkanTypeConversions::GetShaderStageFlags(resource.m_ShaderStages);
     vkDescriptorLayoutBinding.pImmutableSamplers = pVkImmutableSamplers;
   }
 
   vkDescriptorSetLayoutCreateInfo.pBindings    = vkDescriptorSetLayoutBindings.GetData();
   vkDescriptorSetLayoutCreateInfo.bindingCount = vkDescriptorSetLayoutBindings.GetCount();
 
-  vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createDescriptorSetLayout(&vkDescriptorSetLayoutCreateInfo, nullptr, &m_vkDescriptorSetLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  vk::Device               vkLogicalDevice       = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::DescriptorSetLayout& vkDescriptorSetLayout = m_DescriptorSetLayouts.ExpandAndGetRef();
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createDescriptorSetLayout(&vkDescriptorSetLayoutCreateInfo, nullptr, &vkDescriptorSetLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   return XII_SUCCESS;
 }
@@ -105,12 +109,16 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::DeInitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  if (m_vkDescriptorSetLayout != VK_NULL_HANDLE)
+  for (xiiUInt32 i = 0; i < m_DescriptorSetLayouts.GetCount(); ++i)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkDescriptorSetLayout);
+    if (m_DescriptorSetLayouts[i] != VK_NULL_HANDLE)
+    {
+      pDeviceVulkan->SafeReleaseDeviceObject(m_DescriptorSetLayouts[i]);
 
-    m_vkDescriptorSetLayout = VK_NULL_HANDLE;
+      m_DescriptorSetLayouts[i] = VK_NULL_HANDLE;
+    }
   }
+  m_DescriptorSetLayouts.Clear();
 
   for (xiiUInt32 i = 0; i < m_ImmutableSamplers.GetCount(); ++i)
   {
@@ -125,24 +133,26 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::DeInitPlatform()
 
 void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  if (m_vkDescriptorSetLayout == VK_NULL_HANDLE)
-    return;
-
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiStringBuilder    tmp;
+  xiiStringBuilder    tmp(sName);
 
-  pDeviceVulkan->SetVulkanObjectDebugName(m_vkDescriptorSetLayout, sName.GetData(tmp));
+  for (xiiUInt32 i = 0; i < m_DescriptorSetLayouts.GetCount(); ++i)
+  {
+    XII_ASSERT_DEBUG(m_DescriptorSetLayouts[i] != VK_NULL_HANDLE, "Invalid Vulkan descriptor set layout.");
+
+    pDeviceVulkan->SetVulkanObjectDebugName(m_DescriptorSetLayouts[i], tmp.GetData());
+  }
 }
 
 bool xiiGALPipelineResourceSignatureVulkan::IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const
 {
   const xiiGALPipelineResourceSignatureVulkan* pPipelineResourceSignatureVulkan = static_cast<const xiiGALPipelineResourceSignatureVulkan*>(pPipelineResourceSignature);
 
-  if (pPipelineResourceSignature == this)
+  if (pPipelineResourceSignatureVulkan == this)
     return true;
 
   const auto& sourceDescription  = GetDescription();
-  const auto& compareDescription = pPipelineResourceSignature->GetDescription();
+  const auto& compareDescription = pPipelineResourceSignatureVulkan->GetDescription();
 
   if (sourceDescription.m_bUseCombinedTextureSamplers != compareDescription.m_bUseCombinedTextureSamplers)
     return false;

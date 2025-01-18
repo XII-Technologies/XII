@@ -33,7 +33,7 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-protected:
+private:
   ID3D11Fence* m_pD3D11Fence = nullptr;
 
   const HANDLE m_pFenceCompleteEvent;

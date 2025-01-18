@@ -13,6 +13,7 @@
 #  include <GraphicsFoundation/Device/Device.h>
 #  include <GraphicsFoundation/Resources/Buffer.h>
 #  include <GraphicsFoundation/Shader/InputLayout.h>
+#  include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #  include <Imgui/imgui_internal.h>
 
 // clang-format off
@@ -184,8 +185,8 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
     XII_ASSERT_DEV(pRenderData->m_Vertices.GetCount() < s_uiVertexBufferSize, "GUI has too many elements to render in one drawcall");
     XII_ASSERT_DEV(pRenderData->m_Indices.GetCount() < s_uiIndexBufferSize, "GUI has too many elements to render in one drawcall");
 
-    pCommandList->UpdateBufferExtended(m_hVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray());
-    pCommandList->UpdateBufferExtended(m_hIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray());
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_hVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_hIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray()).AssertSuccess();
 
     pRenderContext->BindMeshBuffer(m_hVertexBuffer, m_hIndexBuffer, &m_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, pRenderData->m_Indices.GetCount() / 3);
 

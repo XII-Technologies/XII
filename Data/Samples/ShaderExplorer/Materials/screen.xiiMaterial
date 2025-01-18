@@ -1,1 +1,1 @@
-string %Shader { "Shaders/aoTest.xiiShader" }
+string %Shader { "Shaders/ShaderExplorer.xiiShader" }

@@ -24,7 +24,6 @@
 #include <GraphicsD3D11/States/BlendStateD3D11.h>
 #include <GraphicsD3D11/States/DepthStencilStateD3D11.h>
 #include <GraphicsD3D11/States/PipelineResourceSignatureD3D11.h>
-#include <GraphicsD3D11/States/PipelineStateD3D11.h>
 #include <GraphicsD3D11/States/RasterizerStateD3D11.h>
 
 #include <d3d11_1.h>
@@ -35,32 +34,23 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D11, pCommandQueueD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11), m_GALSwapChainD3D11EventSubscriptionID(xiiGALSwapChainD3D11::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGALCommandListD3D11::GALSwapChainD3D11EventHandler, this)))
+  xiiGALCommandList(pDeviceD3D11, pCommandQueueD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11), m_pImmediateContext(pDeviceD3D11->GetImmediateContext()), m_GALSwapChainD3D11EventSubscriptionID(xiiGALSwapChainD3D11::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGALCommandListD3D11::GALSwapChainD3D11EventHandler, this)))
 {
-  HRESULT hResult = pDeviceD3D11->GetD3D11Device()->CreateDeferredContext1(0U, &m_pCommandList);
-
-  if (FAILED(hResult))
-  {
-    xiiLog::Error("Failed to create deferred context for recording commands: {}", xiiHRESULTtoString(hResult));
-  }
 }
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
 {
   xiiGALSwapChainD3D11::s_Events.RemoveEventHandler(m_GALSwapChainD3D11EventSubscriptionID);
-
-  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
-  XII_GAL_D3D11_RELEASE(m_pCommandList);
 }
 
 void xiiGALCommandListD3D11::SetDebugNamePlatform(xiiStringView sName)
 {
-  if (m_pCommandList != nullptr)
+  if (m_pImmediateContext != nullptr)
   {
     xiiStringBuilder sb;
-    if (FAILED(m_pCommandList->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    if (FAILED(m_pImmediateContext->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
     {
-      xiiLog::Error("Failed to set the Direct3D11 deferred context debug name.");
+      xiiLog::Error("Failed to set the Direct3D11 immediate context debug name.");
     }
   }
 }
@@ -70,28 +60,17 @@ void xiiGALCommandListD3D11::GALSwapChainD3D11EventHandler(const xiiGALSwapChain
   // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
   if (e.m_pSwapChainD3D11 != nullptr && e.m_Type == xiiGALSwapChainD3D11EventType::BeforeBufferRelease)
   {
-    XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+    // Nothing to do at the moment. We had this callback originally to release active command list objects from deferred contexts.
   }
 }
 
 void xiiGALCommandListD3D11::BeginPlatform()
 {
-  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
-
   m_RecordingState = RecordingState::Recording;
-
-  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
-  {
-    pCommandQueueD3D11->BeginCommandList(this);
-  }
 }
 
 void xiiGALCommandListD3D11::EndPlatform()
 {
-  XII_ASSERT_DEV(m_pSubmittedCommandList == nullptr, "Submitted command list is not null.");
-
-  XII_VERIFY(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
-
   m_RecordingState = RecordingState::Ended;
 }
 
@@ -99,23 +78,16 @@ void xiiGALCommandListD3D11::ResetPlatform()
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Ended, "Command list has not been ended by the GAL!");
 
-  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
-
   InvalidateState();
 
   m_RecordingState = RecordingState::Reset;
-
-  if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
-  {
-    pCommandQueueD3D11->ResetCommandList(this);
-  }
 }
 
-xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform(bool bReset)
+xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform()
 {
   if (xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(GetCommandQueue()))
   {
-    return pCommandQueueD3D11->SubmitCommandList(this, bReset);
+    return pCommandQueueD3D11->SubmitCommandList(this);
   }
   return xiiMath::MaxValue<xiiUInt64>();
 }
@@ -137,7 +109,7 @@ void xiiGALCommandListD3D11::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
 {
   ID3D11DepthStencilState* pD3D11DepthStencilState = m_pPipelineState ? m_pPipelineState->GetD3D11DepthStencilState() : nullptr;
 
-  m_pCommandList->OMSetDepthStencilState(pD3D11DepthStencilState, uiStencilRef);
+  m_pImmediateContext->OMSetDepthStencilState(pD3D11DepthStencilState, uiStencilRef);
 
   m_uiCommittedStencilReference = uiStencilRef;
 }
@@ -159,7 +131,7 @@ void xiiGALCommandListD3D11::SetBlendFactorPlatform(const xiiColor& blendFactor)
   }
   m_CommittedBlendFactors      = blendFactor;
   m_uiCommittedBlendSampleMask = uiSampleMask;
-  m_pCommandList->OMSetBlendState(pD3D11BlendState, blendFactor.GetData(), uiSampleMask);
+  m_pImmediateContext->OMSetBlendState(pD3D11BlendState, blendFactor.GetData(), uiSampleMask);
 }
 
 void xiiGALCommandListD3D11::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
@@ -182,7 +154,7 @@ void xiiGALCommandListD3D11::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pV
 
   // All viewports must be set atomically as one operation.
   // Any viewports not defined by the call are disabled.
-  m_pCommandList->RSSetViewports(pViewports.GetCount(), d3d11Viewports);
+  m_pImmediateContext->RSSetViewports(pViewports.GetCount(), d3d11Viewports);
 }
 
 void xiiGALCommandListD3D11::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
@@ -203,7 +175,7 @@ void xiiGALCommandListD3D11::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRe
 
   // All scissor rects must be set atomically as one operation.
   // Any scissor rects not defined by the call are disabled.
-  m_pCommandList->RSSetScissorRects(pRects.GetCount(), d3d11ScissorRects);
+  m_pImmediateContext->RSSetScissorRects(pRects.GetCount(), d3d11ScissorRects);
 }
 
 void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
@@ -283,6 +255,145 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
   }
 }
 
+void xiiGALCommandListD3D11::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
+{
+  XII_ASSERT_RELEASE(bindingInformation.m_uiBindSet == 0, "In D3D11, Shader resources use a single descriptor set.");
+  XII_ASSERT_RELEASE(bindingInformation.m_uiBindSlot < XII_GAL_MAX_CONSTANT_BUFFER_COUNT, "Constant buffer bind slot ({0}) must be in the range [0, {1})!", bindingInformation.m_uiBindSlot, XII_GAL_MAX_CONSTANT_BUFFER_COUNT);
+
+  ID3D11Buffer* pD3D11Buffer = pConstantBuffer != nullptr ? static_cast<xiiGALBufferD3D11*>(pConstantBuffer)->GetBuffer() : nullptr;
+
+  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::MakeFromMask(bindingInformation.m_ShaderStages.GetValue());
+  for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
+  {
+    // xiiUInt32 uiStageIndex = it.Value();
+    xiiUInt32 uiStageIndex = xiiGALPipelineStateD3D11::ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
+
+    if (m_pBoundConstantBuffers[uiStageIndex][bindingInformation.m_uiBindSlot] != pD3D11Buffer)
+    {
+      m_pBoundConstantBuffers[uiStageIndex][bindingInformation.m_uiBindSlot] = pD3D11Buffer;
+      m_BoundConstantBuffersRange[uiStageIndex].SetToIncludeValue(bindingInformation.m_uiBindSlot);
+    }
+  }
+}
+
+void xiiGALCommandListD3D11::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+{
+  if (pBufferView != nullptr && UnsetUnorderedAccessViews(pBufferView->GetBuffer()))
+  {
+    FlushDeferredStateChanges().IgnoreResult();
+  }
+
+  ID3D11ShaderResourceView* pD3D11ShaderResourceView = pBufferView != nullptr ? static_cast<ID3D11ShaderResourceView*>(static_cast<xiiGALBufferViewD3D11*>(pBufferView)->GetBufferView()) : nullptr;
+
+  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::MakeFromMask(bindingInformation.m_ShaderStages.GetValue());
+  for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiUInt32 uiStageIndex = xiiGALPipelineStateD3D11::ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
+
+    auto& boundShaderResourceViews = m_pBoundShaderResourceViews[uiStageIndex];
+    boundShaderResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+
+    auto& resourcesForResourceViews = m_ResourcesForResourceViews[uiStageIndex];
+    resourcesForResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+
+    if (boundShaderResourceViews[bindingInformation.m_uiBindSlot] != pD3D11ShaderResourceView)
+    {
+      boundShaderResourceViews[bindingInformation.m_uiBindSlot]  = pD3D11ShaderResourceView;
+      resourcesForResourceViews[bindingInformation.m_uiBindSlot] = pBufferView != nullptr ? pBufferView->GetBuffer() : nullptr;
+      m_BoundShaderResourceViewsRange[uiStageIndex].SetToIncludeValue(bindingInformation.m_uiBindSlot);
+    }
+  }
+}
+
+void xiiGALCommandListD3D11::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+{
+  if (pTextureView != nullptr && UnsetUnorderedAccessViews(pTextureView->GetTexture()))
+  {
+    FlushDeferredStateChanges().IgnoreResult();
+  }
+
+  ID3D11ShaderResourceView* pD3D11ShaderResourceView = pTextureView != nullptr ? static_cast<ID3D11ShaderResourceView*>(static_cast<xiiGALTextureViewD3D11*>(pTextureView)->GetTextureView()) : nullptr;
+
+  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::MakeFromMask(bindingInformation.m_ShaderStages.GetValue());
+  for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiUInt32 uiStageIndex = xiiGALPipelineStateD3D11::ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
+
+    auto& boundShaderResourceViews = m_pBoundShaderResourceViews[uiStageIndex];
+    boundShaderResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+
+    auto& resourcesForResourceViews = m_ResourcesForResourceViews[uiStageIndex];
+    resourcesForResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+
+    if (boundShaderResourceViews[bindingInformation.m_uiBindSlot] != pD3D11ShaderResourceView)
+    {
+      boundShaderResourceViews[bindingInformation.m_uiBindSlot]  = pD3D11ShaderResourceView;
+      resourcesForResourceViews[bindingInformation.m_uiBindSlot] = pTextureView != nullptr ? pTextureView->GetTexture() : nullptr;
+      m_BoundShaderResourceViewsRange[uiStageIndex].SetToIncludeValue(bindingInformation.m_uiBindSlot);
+    }
+  }
+}
+
+void xiiGALCommandListD3D11::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+{
+  if (pBufferView && UnsetResourceViews(pBufferView->GetBuffer()))
+  {
+    FlushDeferredStateChanges().IgnoreResult();
+  }
+
+  ID3D11UnorderedAccessView* pUnorderedAccessViewD3D11 = pBufferView != nullptr ? static_cast<ID3D11UnorderedAccessView*>(static_cast<xiiGALBufferViewD3D11*>(pBufferView)->GetBufferView()) : nullptr;
+
+  m_BoundUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+  m_ResourcesForUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+
+  if (m_BoundUnorderedAccessViews[bindingInformation.m_uiBindSlot] != pUnorderedAccessViewD3D11)
+  {
+    m_BoundUnorderedAccessViews[bindingInformation.m_uiBindSlot]        = pUnorderedAccessViewD3D11;
+    m_ResourcesForUnorderedAccessViews[bindingInformation.m_uiBindSlot] = pBufferView != nullptr ? pBufferView->GetBuffer() : nullptr;
+    m_BoundUnorderedAccessViewsRange.SetToIncludeValue(bindingInformation.m_uiBindSlot);
+  }
+}
+
+void xiiGALCommandListD3D11::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+{
+  if (pTextureView && UnsetResourceViews(pTextureView->GetTexture()))
+  {
+    FlushDeferredStateChanges().IgnoreResult();
+  }
+
+  ID3D11UnorderedAccessView* pUnorderedAccessViewD3D11 = pTextureView != nullptr ? static_cast<ID3D11UnorderedAccessView*>(static_cast<xiiGALTextureViewD3D11*>(pTextureView)->GetTextureView()) : nullptr;
+
+  m_BoundUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+  m_ResourcesForUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+
+  if (m_BoundUnorderedAccessViews[bindingInformation.m_uiBindSlot] != pUnorderedAccessViewD3D11)
+  {
+    m_BoundUnorderedAccessViews[bindingInformation.m_uiBindSlot]        = pUnorderedAccessViewD3D11;
+    m_ResourcesForUnorderedAccessViews[bindingInformation.m_uiBindSlot] = pTextureView != nullptr ? pTextureView->GetTexture() : nullptr;
+    m_BoundUnorderedAccessViewsRange.SetToIncludeValue(bindingInformation.m_uiBindSlot);
+  }
+}
+
+void xiiGALCommandListD3D11::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
+{
+  XII_ASSERT_RELEASE(bindingInformation.m_uiBindSet == 0, "In D3D11, Shader resources use a single descriptor set.");
+  XII_ASSERT_RELEASE(bindingInformation.m_uiBindSlot < XII_GAL_MAX_SAMPLER_COUNT, "Sampler bind slot ({0}) must be in the range [0, {1})!", bindingInformation.m_uiBindSlot, XII_GAL_MAX_SAMPLER_COUNT);
+
+  ID3D11SamplerState* pD3D11SamplerState = pSampler != nullptr ? static_cast<xiiGALSamplerD3D11*>(pSampler)->GetSampler() : nullptr;
+
+  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::MakeFromMask(bindingInformation.m_ShaderStages.GetValue());
+  for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiUInt32 uiStageIndex = xiiGALPipelineStateD3D11::ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
+
+    if (m_pBoundSamplerStates[uiStageIndex][bindingInformation.m_uiBindSlot] != pD3D11SamplerState)
+    {
+      m_pBoundSamplerStates[uiStageIndex][bindingInformation.m_uiBindSlot] = pD3D11SamplerState;
+      m_BoundSamplerStatesRange[uiStageIndex].SetToIncludeValue(bindingInformation.m_uiBindSlot);
+    }
+  }
+}
+
 void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
   auto pRenderTargetViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pRenderTargetView);
@@ -290,7 +401,7 @@ void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiGALTextureView* pR
   XII_ASSERT_DEV(pRenderTargetViewD3D11 != nullptr, "Invalid resource.");
 
   // The full extent of the resource view is always cleared. Viewport and scissor settings are not applied.
-  m_pCommandList->ClearRenderTargetView(static_cast<ID3D11RenderTargetView*>(pRenderTargetViewD3D11->GetTextureView()), clearColor.GetData());
+  m_pImmediateContext->ClearRenderTargetView(static_cast<ID3D11RenderTargetView*>(pRenderTargetViewD3D11->GetTextureView()), clearColor.GetData());
 }
 
 void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
@@ -306,7 +417,7 @@ void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiGALTextureView* pD
     uiClearFlags |= D3D11_CLEAR_STENCIL;
 
   // The full extent of the resource view is always cleared. Viewport and scissor settings are not applied.
-  m_pCommandList->ClearDepthStencilView(static_cast<ID3D11DepthStencilView*>(pDepthStencilViewD3D11->GetTextureView()), uiClearFlags, fDepthClear, uiStencilClear);
+  m_pImmediateContext->ClearDepthStencilView(static_cast<ID3D11DepthStencilView*>(pDepthStencilViewD3D11->GetTextureView()), uiClearFlags, fDepthClear, uiStencilClear);
 }
 
 void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
@@ -342,7 +453,7 @@ xiiResult xiiGALCommandListD3D11::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt3
 {
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->Draw(uiVertexCount, uiStartVertex);
+  m_pImmediateContext->Draw(uiVertexCount, uiStartVertex);
 
   return XII_SUCCESS;
 }
@@ -351,7 +462,7 @@ xiiResult xiiGALCommandListD3D11::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xi
 {
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DrawIndexed(uiIndexCount, uiStartIndex, uiBaseVertex);
+  m_pImmediateContext->DrawIndexed(uiIndexCount, uiStartIndex, uiBaseVertex);
 
   return XII_SUCCESS;
 }
@@ -360,7 +471,7 @@ xiiResult xiiGALCommandListD3D11::DrawIndexedInstancedPlatform(xiiUInt32 uiIndex
 {
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DrawIndexedInstanced(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance);
+  m_pImmediateContext->DrawIndexedInstanced(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance);
 
   return XII_SUCCESS;
 }
@@ -373,7 +484,7 @@ xiiResult xiiGALCommandListD3D11::DrawIndexedInstancedIndirectPlatform(xiiGALBuf
 
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DrawIndexedInstancedIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
+  m_pImmediateContext->DrawIndexedInstancedIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
 
   return XII_SUCCESS;
 }
@@ -382,7 +493,7 @@ xiiResult xiiGALCommandListD3D11::DrawInstancedPlatform(xiiUInt32 uiVertexCountP
 {
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DrawInstanced(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance);
+  m_pImmediateContext->DrawInstanced(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance);
 
   return XII_SUCCESS;
 }
@@ -395,7 +506,7 @@ xiiResult xiiGALCommandListD3D11::DrawInstancedIndirectPlatform(xiiGALBuffer* pI
 
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DrawInstancedIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
+  m_pImmediateContext->DrawInstancedIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
 
   return XII_SUCCESS;
 }
@@ -411,7 +522,7 @@ xiiResult xiiGALCommandListD3D11::DispatchPlatform(xiiUInt32 uiThreadGroupCountX
 {
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
+  m_pImmediateContext->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 
   return XII_SUCCESS;
 }
@@ -424,7 +535,7 @@ xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiGALBuffer* pIndire
 
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DispatchIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
+  m_pImmediateContext->DispatchIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
 
   return XII_SUCCESS;
 }
@@ -462,96 +573,50 @@ void xiiGALCommandListD3D11::EndQueryPlatform(xiiGALQuery* pQuery)
   {
     pQueryD3D11->SetDisjointQuery(BeginDisjointQuery());
   }
-  m_pCommandList->End(pQueryD3D11->GetQuery(queryType == xiiGALQueryType::Duration ? 1 : 0));
+  m_pImmediateContext->End(pQueryD3D11->GetQuery(queryType == xiiGALQueryType::Duration ? 1 : 0));
 }
 
 void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
   XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
 
-  auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
-  XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
+  XII_ASSERT_DEV(pBufferD3D11 != nullptr, "Invalid resource.");
 
-  D3D11_BOX destinationBox = {};
-  destinationBox.left      = uiDestinationOffset;
-  destinationBox.right     = uiDestinationOffset + pSourceData.GetCount();
-  destinationBox.top       = 0U;
-  destinationBox.bottom    = 1U;
-  destinationBox.front     = 0U;
-  destinationBox.back      = 1U;
+  const auto& bufferDescription = pBufferD3D11->GetDescription();
 
-  D3D11_BOX* pDestinationBox = (uiDestinationOffset == 0 && pSourceData.GetCount() == pDestinationBufferD3D11->GetDescription().m_uiSize) ? nullptr : &destinationBox;
-
-  m_pCommandList->UpdateSubresource(pDestinationBufferD3D11->GetBuffer(), 0U, pDestinationBox, pSourceData.GetPtr(), 0U, 0U);
-}
-
-void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
-{
-  XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
-
-  xiiGALDeviceD3D11* pDeviceD3D11            = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  auto               pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
-
-  XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
-
-  const auto& bufferDescription = pDestinationBufferD3D11->GetDescription();
-
-  if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  if (ID3D11Resource* pD3D11TempBuffer = pDeviceD3D11->FindTemporaryBuffer(pSourceData.GetCount()))
   {
-    XII_ASSERT_DEV(uiDestinationOffset == 0 && pSourceData.GetCount() == bufferDescription.m_uiSize, "Constant buffers can't be updated partially (and we don't check for DX11.1)!");
+    D3D11_MAPPED_SUBRESOURCE MapResult;
+    HRESULT                  hRes = m_pImmediateContext->Map(pD3D11TempBuffer, 0, D3D11_MAP_WRITE, 0, &MapResult);
+    XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
+    XII_IGNORE_UNUSED(hRes);
 
-    D3D11_MAPPED_SUBRESOURCE mapResult;
-    if (SUCCEEDED(m_pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0U, D3D11_MAP_WRITE_DISCARD, 0U, &mapResult)))
-    {
-      memcpy(mapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
+    memcpy(MapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
 
-      m_pCommandList->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
-    }
+    m_pImmediateContext->Unmap(pD3D11TempBuffer, 0);
+
+    // Schedule copy command using this command list.
+    D3D11_BOX srcBox = {0, 0, 0, pSourceData.GetCount(), 1, 1};
+    m_pImmediateContext->CopySubresourceRegion(pBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
   }
   else
   {
-    if (bCopyToTemporaryStorage)
-    {
-      if (ID3D11Resource* pD3D11TempBuffer = pDeviceD3D11->FindTemporaryBuffer(pSourceData.GetCount()))
-      {
-        auto pImmediateCommandList = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
+    xiiLog::Warning("Could not find a temporary buffer for update. Buffer update will be performed using UpdateSubresource().");
 
-        D3D11_MAPPED_SUBRESOURCE MapResult;
-        HRESULT                  hRes = pImmediateCommandList->Map(pD3D11TempBuffer, 0, D3D11_MAP_WRITE, 0, &MapResult);
-        XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
-        XII_IGNORE_UNUSED(hRes);
+    D3D11_BOX destinationBox = {};
+    destinationBox.left      = uiDestinationOffset;
+    destinationBox.right     = uiDestinationOffset + pSourceData.GetCount();
+    destinationBox.top       = 0U;
+    destinationBox.bottom    = 1U;
+    destinationBox.front     = 0U;
+    destinationBox.back      = 1U;
 
-        memcpy(MapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
+    D3D11_BOX* pDestinationBox = (uiDestinationOffset == 0 && pSourceData.GetCount() == pBufferD3D11->GetDescription().m_uiSize) ? nullptr : &destinationBox;
 
-        pImmediateCommandList->Unmap(pD3D11TempBuffer, 0);
-
-        // Schedule copy command using this command list.
-        D3D11_BOX srcBox = {0, 0, 0, pSourceData.GetCount(), 1, 1};
-        m_pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
-      }
-      else
-      {
-        XII_REPORT_FAILURE("Could not find a temp buffer for update.");
-      }
-    }
-    else
-    {
-      D3D11_MAP mapType      = (mapFlags == xiiGALMapFlags::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
-      auto      pCommandList = (mapFlags == xiiGALMapFlags::Discard) ? m_pCommandList : pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
-
-      D3D11_MAPPED_SUBRESOURCE mapResult;
-      if (SUCCEEDED(pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0, mapType, 0, &mapResult)))
-      {
-        memcpy(xiiMemoryUtils::AddByteOffset(mapResult.pData, uiDestinationOffset), pSourceData.GetPtr(), pSourceData.GetCount());
-
-        pCommandList->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
-      }
-      else
-      {
-        xiiLog::Error("Could not map buffer to update content.");
-      }
-    }
+    m_pImmediateContext->UpdateSubresource(pBufferD3D11->GetBuffer(), 0U, pDestinationBox, pSourceData.GetPtr(), 0U, 0U);
   }
 }
 
@@ -563,7 +628,7 @@ void xiiGALCommandListD3D11::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xii
   XII_ASSERT_DEV(pSourceBufferD3D11 != nullptr, "Invalid resource.");
   XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
 
-  m_pCommandList->CopyResource(pDestinationBufferD3D11->GetBuffer(), pSourceBufferD3D11->GetBuffer());
+  m_pImmediateContext->CopyResource(pDestinationBufferD3D11->GetBuffer(), pSourceBufferD3D11->GetBuffer());
 }
 
 void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
@@ -582,7 +647,7 @@ void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffe
   sourceBox.front     = 0U;
   sourceBox.back      = 1U;
 
-  m_pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, static_cast<xiiUInt32>(uiDestinationOffset), 0, 0, pSourceBufferD3D11->GetBuffer(), 0, &sourceBox);
+  m_pImmediateContext->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, static_cast<xiiUInt32>(uiDestinationOffset), 0, 0, pSourceBufferD3D11->GetBuffer(), 0, &sourceBox);
 }
 
 xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
@@ -595,18 +660,8 @@ xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEn
   xiiUInt32 uiMapFlags    = 0U;
   xiiD3D11TypeConversions::GetMapTypeAndFlags(mapType, mapFlags, bufferMapType, uiMapFlags);
 
-  // We need to use the immediate context to handle other map types.
-  // If you call Map on a deferred context, you can only pass D3D11_MAP_WRITE_DISCARD, D3D11_MAP_WRITE_NO_OVERWRITE, or both to the MapType parameter.
-  // Other D3D11_MAP-typed values are not supported for a deferred context.
-  //
-  // But also, there is an issue with needing to first map the buffer with discard before no overwrite, perhaps we can resolve this later.
-  // D3D11 ERROR: ID3D11DeviceContext::Map: Returning D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD, meaning that MapType must be D3D11_MAP_WRITE_DISCARD when Map is called for the first time with a particular Resource on a Deferred Context. [ RESOURCE_MANIPULATION ERROR #2097216: RESOURCE_MAP_WITHOUT_INITIAL_DISCARD]
-  auto pCommandList = m_pCommandList;
-  if (bufferMapType != D3D11_MAP_WRITE_DISCARD /*&& bufferMapType != D3D11_MAP_WRITE_NO_OVERWRITE*/)
-    pCommandList = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
-
   D3D11_MAPPED_SUBRESOURCE mappedSubresource;
-  if (FAILED(pCommandList->Map(pBufferD3D11->GetBuffer(), 0U, bufferMapType, uiMapFlags, &mappedSubresource)))
+  if (FAILED(m_pImmediateContext->Map(pBufferD3D11->GetBuffer(), 0U, bufferMapType, uiMapFlags, &mappedSubresource)))
   {
     xiiLog::Error("Failed to map buffer '{0}'.", pBufferD3D11->GetDebugName());
     return XII_FAILURE;
@@ -614,7 +669,7 @@ xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEn
 
   pMappedData = mappedSubresource.pData;
 
-  m_MappedBuffers.Insert(pBufferD3D11, pCommandList);
+  m_MappedBuffers.Insert(pBufferD3D11, m_pImmediateContext);
 
   return XII_SUCCESS;
 }
@@ -635,77 +690,22 @@ xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
 
 void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
-  auto pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
+  xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  auto               pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
 
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
 
   const auto& textureDescription = pTextureD3D11->GetDescription();
 
-  XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Default || textureDescription.m_Usage == xiiGALResourceUsage::Sparse, "Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Default textures should be updated with this method.");
+  xiiUInt32                     uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1U);
+  xiiUInt32                     uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1U);
+  xiiUInt32                     uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1U);
+  xiiEnum<xiiGALResourceFormat> format   = textureDescription.m_Format;
 
-  if (!subresourceData.m_hSourceBuffer.IsInvalidated())
-  {
-    xiiLog::Error("Direct3D11 does not support texture updates using texture subresource from GPU buffer");
-    return;
-  }
-
-  xiiUInt32 uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1U);
-  xiiUInt32 uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1U);
-  xiiUInt32 uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1U);
-
-  D3D11_BOX destinationBox = {};
-  destinationBox.left      = textureBox.m_vMin.x;
-  destinationBox.top       = textureBox.m_vMin.y;
-  destinationBox.front     = textureBox.m_vMin.z;
-  destinationBox.right     = textureBox.m_vMax.x;
-  destinationBox.bottom    = textureBox.m_vMax.y;
-  destinationBox.back      = textureBox.m_vMax.z;
-
-  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-
-  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
-  {
-    // Align update region by the compressed block size.
-    XII_ASSERT_DEV((destinationBox.left % formatProperties.m_uiBlockWidth) == 0, "The update region min X coordinate ({0}) must be a multiple of a compressed block width ({1}).", destinationBox.left, formatProperties.m_uiBlockWidth);
-    XII_ASSERT_DEV((formatProperties.m_uiBlockWidth % (formatProperties.m_uiBlockWidth - 1)) == 0, "The compressed block width ({0}) is expected to be a power of 2.", formatProperties.m_uiBlockWidth);
-    destinationBox.right = (destinationBox.right + formatProperties.m_uiBlockWidth - 1) & ~(formatProperties.m_uiBlockHeight - 1);
-
-    XII_ASSERT_DEV((destinationBox.top % formatProperties.m_uiBlockHeight) == 0, "The update region min X coordinate ({0}) must be a multiple of a compressed block height ({1}).", destinationBox.top, formatProperties.m_uiBlockHeight);
-    XII_ASSERT_DEV((formatProperties.m_uiBlockHeight % (formatProperties.m_uiBlockHeight - 1)) == 0, "The compressed block height ({0}) is expected to be a power of 2.", formatProperties.m_uiBlockHeight);
-    destinationBox.bottom = (destinationBox.bottom + formatProperties.m_uiBlockHeight - 1) & ~(formatProperties.m_uiBlockHeight - 1);
-  }
-
-  xiiUInt32 uiDestinationSubresourceIndex = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
-  xiiUInt32 uiCopyFlags                   = D3D11_COPY_DISCARD;
-
-  m_pCommandList->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData.GetPtr(), static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
-}
-
-void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
-{
-  xiiGALDeviceD3D11* pDeviceD3D11          = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  auto               pImmediateCommandList = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
-  auto               pTextureD3D11         = static_cast<xiiGALTextureD3D11*>(pTexture);
-
-  XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
-
-  const auto& textureDescription = pTextureD3D11->GetDescription();
-
-  if (!subresourceData.m_hSourceBuffer.IsInvalidated())
-  {
-    xiiLog::Error("Direct3D11 does not support texture updates using texture subresource from GPU buffer");
-    return;
-  }
-
-  xiiUInt32                     uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1u);
-  xiiUInt32                     uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1u);
-  xiiUInt32                     uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1u);
-  xiiEnum<xiiGALResourceFormat> format   = pTextureD3D11->GetDescription().m_Format;
-
-  if (ID3D11Resource* pDXTempTexture = pDeviceD3D11->FindTemporaryTexture(uiWidth, uiHeight, uiDepth, format))
+  if (ID3D11Resource* pD3D11TransientStagingTexture = pDeviceD3D11->FindTemporaryTexture(uiWidth, uiHeight, uiDepth, format))
   {
     D3D11_MAPPED_SUBRESOURCE MapResult;
-    HRESULT                  hRes = pImmediateCommandList->Map(pDXTempTexture, 0, D3D11_MAP_WRITE, 0, &MapResult);
+    HRESULT                  hRes = m_pImmediateContext->Map(pD3D11TransientStagingTexture, 0, D3D11_MAP_WRITE, 0, &MapResult);
     XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error: {}", xiiHRESULTtoString(hRes));
     XII_IGNORE_UNUSED(hRes);
 
@@ -716,7 +716,7 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
 
     if (MapResult.RowPitch == uiRowPitch && MapResult.DepthPitch == uiSlicePitch)
     {
-      memcpy(MapResult.pData, subresourceData.m_pData.GetPtr(), uiSlicePitch * uiDepth);
+      xiiMemoryUtils::RawByteCopy(MapResult.pData, subresourceData.m_pData.GetPtr(), uiSlicePitch * uiDepth);
     }
     else
     {
@@ -728,7 +728,7 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
 
         for (xiiUInt32 y = 0; y < uiHeight; ++y)
         {
-          memcpy(pDestination, pSource, uiRowPitch);
+          xiiMemoryUtils::RawByteCopy(pDestination, pSource, uiRowPitch);
 
           pSource      = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
           pDestination = xiiMemoryUtils::AddByteOffset(pDestination, MapResult.RowPitch);
@@ -736,17 +736,43 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
       }
     }
 
-    pImmediateCommandList->Unmap(pDXTempTexture, 0);
+    m_pImmediateContext->Unmap(pD3D11TransientStagingTexture, 0);
 
     xiiUInt32 uiDestinationSubresource = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, pTextureD3D11->GetDescription().m_uiMipLevels);
+    D3D11_BOX sourceBox                = {0, 0, 0, uiWidth, uiHeight, uiDepth};
 
-    // Schedule copy command using this command list.
-    D3D11_BOX srcBox = {0, 0, 0, uiWidth, uiHeight, uiDepth};
-    m_pCommandList->CopySubresourceRegion(pTextureD3D11->GetTexture(), uiDestinationSubresource, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, pDXTempTexture, 0, &srcBox);
+    m_pImmediateContext->CopySubresourceRegion(pTextureD3D11->GetTexture(), uiDestinationSubresource, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, pD3D11TransientStagingTexture, 0, &sourceBox);
   }
   else
   {
-    XII_REPORT_FAILURE("Could not find a temp texture for update.");
+    XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Default || textureDescription.m_Usage == xiiGALResourceUsage::Sparse, "Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Default textures should be updated with this method.");
+
+    D3D11_BOX destinationBox = {};
+    destinationBox.left      = textureBox.m_vMin.x;
+    destinationBox.top       = textureBox.m_vMin.y;
+    destinationBox.front     = textureBox.m_vMin.z;
+    destinationBox.right     = textureBox.m_vMax.x;
+    destinationBox.bottom    = textureBox.m_vMax.y;
+    destinationBox.back      = textureBox.m_vMax.z;
+
+    const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+
+    if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+    {
+      // Align update region by the compressed block size.
+      XII_ASSERT_DEV((destinationBox.left % formatProperties.m_uiBlockWidth) == 0, "The update region min X coordinate ({0}) must be a multiple of a compressed block width ({1}).", destinationBox.left, formatProperties.m_uiBlockWidth);
+      XII_ASSERT_DEV((formatProperties.m_uiBlockWidth % (formatProperties.m_uiBlockWidth - 1)) == 0, "The compressed block width ({0}) is expected to be a power of 2.", formatProperties.m_uiBlockWidth);
+      destinationBox.right = (destinationBox.right + formatProperties.m_uiBlockWidth - 1) & ~(formatProperties.m_uiBlockHeight - 1);
+
+      XII_ASSERT_DEV((destinationBox.top % formatProperties.m_uiBlockHeight) == 0, "The update region min X coordinate ({0}) must be a multiple of a compressed block height ({1}).", destinationBox.top, formatProperties.m_uiBlockHeight);
+      XII_ASSERT_DEV((formatProperties.m_uiBlockHeight % (formatProperties.m_uiBlockHeight - 1)) == 0, "The compressed block height ({0}) is expected to be a power of 2.", formatProperties.m_uiBlockHeight);
+      destinationBox.bottom = (destinationBox.bottom + formatProperties.m_uiBlockHeight - 1) & ~(formatProperties.m_uiBlockHeight - 1);
+    }
+
+    xiiUInt32 uiDestinationSubresourceIndex = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
+    xiiUInt32 uiCopyFlags                   = D3D11_COPY_DISCARD;
+
+    m_pImmediateContext->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData.GetPtr(), static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
   }
 }
 
@@ -758,7 +784,7 @@ void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, 
   XII_ASSERT_DEV(pSourceTextureD3D11 != nullptr, "Invalid resource.");
   XII_ASSERT_DEV(pDestinationTextureD3D11 != nullptr, "Invalid resource.");
 
-  m_pCommandList->CopyResource(pDestinationTextureD3D11->GetTexture(), pSourceTextureD3D11->GetTexture());
+  m_pImmediateContext->CopyResource(pDestinationTextureD3D11->GetTexture(), pSourceTextureD3D11->GetTexture());
 }
 
 void xiiGALCommandListD3D11::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
@@ -780,7 +806,7 @@ void xiiGALCommandListD3D11::CopyTextureRegionPlatform(xiiGALTexture* pSourceTex
   xiiUInt32 uiSourceSubresource      = D3D11CalcSubresource(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pSourceTextureD3D11->GetDescription().m_uiMipLevels);
   xiiUInt32 uiDestinationSubresource = D3D11CalcSubresource(destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, pDestinationTextureD3D11->GetDescription().m_uiMipLevels);
 
-  m_pCommandList->CopySubresourceRegion(pDestinationTextureD3D11->GetTexture(), uiDestinationSubresource, vDestinationPoint.x, vDestinationPoint.y, vDestinationPoint.z, pSourceTextureD3D11->GetTexture(), uiSourceSubresource, &sourceBox);
+  m_pImmediateContext->CopySubresourceRegion(pDestinationTextureD3D11->GetTexture(), uiDestinationSubresource, vDestinationPoint.x, vDestinationPoint.y, vDestinationPoint.z, pSourceTextureD3D11->GetTexture(), uiSourceSubresource, &sourceBox);
 }
 
 void xiiGALCommandListD3D11::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
@@ -798,7 +824,7 @@ void xiiGALCommandListD3D11::ResolveTextureSubResourcePlatform(xiiGALTexture* pS
   xiiUInt32   uiSourceSubresourceIndex      = D3D11CalcSubresource(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiMipLevel, sourceTextureDescription.m_uiMipLevels);
   xiiUInt32   uiDestinationSubresourceIndex = D3D11CalcSubresource(destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiMipLevel, destinationTextureDescription.m_uiMipLevels);
 
-  m_pCommandList->ResolveSubresource(pDestinationTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, pSourceTextureD3D11->GetTexture(), uiSourceSubresourceIndex, textureFormat);
+  m_pImmediateContext->ResolveSubresource(pDestinationTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, pSourceTextureD3D11->GetTexture(), uiSourceSubresourceIndex, textureFormat);
 }
 
 void xiiGALCommandListD3D11::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
@@ -807,7 +833,7 @@ void xiiGALCommandListD3D11::GenerateMipsPlatform(xiiGALTextureView* pTextureVie
 
   XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Invalid resource.");
 
-  m_pCommandList->GenerateMips(static_cast<ID3D11ShaderResourceView*>(pTextureViewD3D11->GetTextureView()));
+  m_pImmediateContext->GenerateMips(static_cast<ID3D11ShaderResourceView*>(pTextureViewD3D11->GetTextureView()));
 }
 
 xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
@@ -823,15 +849,8 @@ xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* p
 
   xiiUInt32 uiSubresource = D3D11CalcSubresource(textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
 
-  // We need to use the immediate context to handle other map types.
-  // If you call Map on a deferred context, you can only pass D3D11_MAP_WRITE_DISCARD, D3D11_MAP_WRITE_NO_OVERWRITE, or both to the MapType parameter.
-  // Other D3D11_MAP-typed values are not supported for a deferred context.
-  auto pCommandList = m_pCommandList;
-  if (textureMapType != D3D11_MAP_WRITE_DISCARD && textureMapType != D3D11_MAP_WRITE_NO_OVERWRITE)
-    pCommandList = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
-
   D3D11_MAPPED_SUBRESOURCE mappedSubresource;
-  HRESULT                  hr = pCommandList->Map(pTextureD3D11->GetTexture(), uiSubresource, textureMapType, uiMapFlags, &mappedSubresource);
+  HRESULT                  hr = m_pImmediateContext->Map(pTextureD3D11->GetTexture(), uiSubresource, textureMapType, uiMapFlags, &mappedSubresource);
   if (FAILED(hr))
   {
     // XII_ASSERT_DEV(hResult == DXGI_ERROR_WAS_STILL_DRAWING, "");
@@ -846,7 +865,7 @@ xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* p
   mappedData.m_uiStride      = mappedSubresource.RowPitch;
   mappedData.m_uiDepthStride = mappedSubresource.DepthPitch;
 
-  m_MappedTextureSubresources.Insert(pTextureD3D11, pCommandList);
+  m_MappedTextureSubresources.Insert(pTextureD3D11, m_pImmediateContext);
 
   return XII_SUCCESS;
 }
@@ -873,7 +892,7 @@ void xiiGALCommandListD3D11::BeginDebugGroupPlatform(xiiStringView sName, const 
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
   XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
 
-  if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
+  if (SUCCEEDED(m_pImmediateContext->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     xiiStringBuilder sb;
     xiiStringWChar   wsMarker(sName.GetData(sb));
@@ -886,7 +905,7 @@ void xiiGALCommandListD3D11::EndDebugGroupPlatform()
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
   XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
 
-  if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
+  if (SUCCEEDED(m_pImmediateContext->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     pAnnotationD3D11->EndEvent();
   }
@@ -897,7 +916,7 @@ void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
   XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
 
-  if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
+  if (SUCCEEDED(m_pImmediateContext->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     xiiStringBuilder sb;
     xiiStringWChar   wsMarker(sName.GetData(sb));
@@ -907,7 +926,9 @@ void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const
 
 void xiiGALCommandListD3D11::InvalidateStatePlatform()
 {
-  m_pCommandList->ClearState();
+  ResetRenderTargets();
+
+  m_pImmediateContext->ClearState();
 
   InvalidateResources();
 }
@@ -939,13 +960,6 @@ void xiiGALCommandListD3D11::InvalidateResources()
   m_CommittedBlendFactors       = xiiColor::White;
   m_uiCommittedBlendSampleMask  = 0xFFFFFFFFU;
   m_uiCommittedStencilReference = 0xFFU;
-
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCommittedRenderTargets); ++i)
-  {
-    m_pCommittedRenderTargets[i] = nullptr;
-  }
-  m_uiBoundRenderTargetCount     = 0U;
-  m_pCommittedDepthStencilTarget = nullptr;
 }
 
 void xiiGALCommandListD3D11::CommitRenderTargets()
@@ -997,24 +1011,23 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
   m_uiBoundRenderTargetCount = boundRenderTargetsRange.GetCount();
 
   // Unbind these attachments that will be used for output by the subpass.
-  // There is no need to unbind textures from output as the new subpass attachments
-  // will be committed as render target/depth stencil anyway, so these that can be used for
-  // input will be unbound.
+  // There is no need to unbind textures from output as the new subpass attachments.
+  // will be committed as render target/depth stencil anyway, so these that can be used for input will be unbound.
   {
     bool bFlushNeeded = false;
 
-    if (m_pPipelineState != nullptr && pDepthStencilView != nullptr)
+    if (pDepthStencilView != nullptr)
     {
-      bFlushNeeded |= m_pPipelineState->UnsetResourceViews(pDepthStencilView->GetTexture());
-      bFlushNeeded |= m_pPipelineState->UnsetUnorderedAccessViews(pDepthStencilView->GetTexture());
+      bFlushNeeded |= UnsetResourceViews(pDepthStencilView->GetTexture());
+      bFlushNeeded |= UnsetUnorderedAccessViews(pDepthStencilView->GetTexture());
     }
 
     for (xiiUInt32 i = boundRenderTargetsRange.m_uiMin; i < boundRenderTargetsRange.GetCount(); ++i)
     {
-      if (m_pPipelineState != nullptr && pAttachmentViews[i] != nullptr)
+      if (pAttachmentViews[i] != nullptr)
       {
-        bFlushNeeded |= m_pPipelineState->UnsetResourceViews(pAttachmentViews[i]->GetTexture());
-        bFlushNeeded |= m_pPipelineState->UnsetUnorderedAccessViews(pAttachmentViews[i]->GetTexture());
+        bFlushNeeded |= UnsetResourceViews(pAttachmentViews[i]->GetTexture());
+        bFlushNeeded |= UnsetUnorderedAccessViews(pAttachmentViews[i]->GetTexture());
       }
     }
 
@@ -1024,7 +1037,7 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
     }
   }
 
-  m_pCommandList->OMSetRenderTargets(xiiMath::Max(boundRenderTargetsRange.GetCount(), uiOldRenderTargetCount), m_pCommittedRenderTargets, m_pCommittedDepthStencilTarget);
+  m_pImmediateContext->OMSetRenderTargets(xiiMath::Max(boundRenderTargetsRange.GetCount(), uiOldRenderTargetCount), m_pCommittedRenderTargets, m_pCommittedDepthStencilTarget);
 
   // Clear render targets.
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
@@ -1059,7 +1072,222 @@ void xiiGALCommandListD3D11::ResetRenderTargets()
   m_pCommittedDepthStencilTarget = nullptr;
   m_uiBoundRenderTargetCount     = 0U;
 
-  m_pCommandList->OMSetRenderTargets(0, nullptr, nullptr);
+  m_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+static void SetShaderResources(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11ShaderResourceView** pShaderResourceViews)
+{
+  switch (stage)
+  {
+    case xiiGALPipelineStateD3D11::ShaderType::Vertex:
+      pContext->VSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Hull:
+      pContext->HSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Domain:
+      pContext->DSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Geometry:
+      pContext->GSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Pixel:
+      pContext->PSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Compute:
+      pContext->CSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
+static void SetConstantBuffers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11Buffer** pConstantBuffers)
+{
+  switch (stage)
+  {
+    case xiiGALPipelineStateD3D11::ShaderType::Vertex:
+      pContext->VSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Hull:
+      pContext->HSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Domain:
+      pContext->DSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Geometry:
+      pContext->GSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Pixel:
+      pContext->PSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Compute:
+      pContext->CSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
+static void SetSamplers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11SamplerState** pSamplerStates)
+{
+  switch (stage)
+  {
+    case xiiGALPipelineStateD3D11::ShaderType::Vertex:
+      pContext->VSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Hull:
+      pContext->HSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Domain:
+      pContext->DSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Geometry:
+      pContext->GSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Pixel:
+      pContext->PSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      break;
+    case xiiGALPipelineStateD3D11::ShaderType::Compute:
+      pContext->CSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+xiiResult xiiGALCommandListD3D11::CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11)
+{
+  auto        pContext            = pCommandListD3D11->GetD3D11Context();
+  const auto& pipelineDescription = m_pPipelineState->GetDescription();
+
+  if (pipelineDescription.IsAnyGraphicsPipeline())
+  {
+    pContext->VSSetShader(m_pPipelineState->GetD3D11VertexShader(), nullptr, 0U);
+    pContext->HSSetShader(m_pPipelineState->GetD3D11HullShader(), nullptr, 0U);
+    pContext->DSSetShader(m_pPipelineState->GetD3D11DomainShader(), nullptr, 0U);
+    pContext->GSSetShader(m_pPipelineState->GetD3D11GeometryShader(), nullptr, 0U);
+    pContext->PSSetShader(m_pPipelineState->GetD3D11PixelShader(), nullptr, 0U);
+  }
+  else if (pipelineDescription.IsComputePipeline())
+  {
+    pContext->CSSetShader(m_pPipelineState->GetD3D11ComputeShader(), nullptr, 0U);
+  }
+
+  pContext->IASetInputLayout(m_pPipelineState->GetD3D11InputLayout());
+
+  // Set constant (uniform) buffers.
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT; ++uiStage)
+  {
+    if (m_BoundConstantBuffersRange[uiStage].IsValid())
+    {
+      const xiiUInt32 uiStartSlot = m_BoundConstantBuffersRange[uiStage].m_uiMin;
+      const xiiUInt32 uiNumSlots  = m_BoundConstantBuffersRange[uiStage].GetCount();
+
+      SetConstantBuffers((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStage, pContext, uiStartSlot, uiNumSlots, m_pBoundConstantBuffers[uiStage] + uiStartSlot);
+    }
+  }
+
+  // Set Unordered Access Views (UAVs) before shader resource views (SRVs), since UAVs are outputs that need to be unbound before they need to be potentially rebound as SRVs.
+  if (m_BoundUnorderedAccessViewsRange.IsValid())
+  {
+    const xiiUInt32 uiStartSlot = m_BoundUnorderedAccessViewsRange.m_uiMin;
+    const xiiUInt32 uiNumSlots  = m_BoundUnorderedAccessViewsRange.GetCount();
+
+    pContext->CSSetUnorderedAccessViews(uiStartSlot, uiNumSlots, m_BoundUnorderedAccessViews.GetData() + uiStartSlot, nullptr); // Maybe consider unordered access views count reset.
+  }
+
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT; ++uiStage)
+  {
+    // Need to do bindings even on inactive shader stages since we might miss unbindings otherwise!
+    if (m_BoundShaderResourceViewsRange[uiStage].IsValid())
+    {
+      const xiiUInt32 uiStartSlot = m_BoundShaderResourceViewsRange[uiStage].m_uiMin;
+      const xiiUInt32 uiNumSlots  = m_BoundShaderResourceViewsRange[uiStage].GetCount();
+
+      SetShaderResources((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStage, pContext, uiStartSlot, uiNumSlots, m_pBoundShaderResourceViews[uiStage].GetData() + uiStartSlot);
+    }
+
+    // TODO: We do not need to unset sampler stages of unbound shader stages.
+
+    if (m_BoundSamplerStatesRange[uiStage].IsValid())
+    {
+      const xiiUInt32 uiStartSlot = m_BoundSamplerStatesRange[uiStage].m_uiMin;
+      const xiiUInt32 uiNumSlots  = m_BoundSamplerStatesRange[uiStage].GetCount();
+
+      SetSamplers((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStage, pContext, uiStartSlot, uiNumSlots, m_pBoundSamplerStates[uiStage] + uiStartSlot);
+    }
+  }
+  return XII_SUCCESS;
+}
+
+bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiGALResource* pResource)
+{
+  bool bResult = false;
+
+  for (xiiUInt32 uiStage = 0U; uiStage < xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT; ++uiStage)
+  {
+    for (xiiUInt32 uiSlot = 0U; uiSlot < m_ResourcesForResourceViews[uiStage].GetCount(); ++uiSlot)
+    {
+      if (m_ResourcesForResourceViews[uiStage][uiSlot] == pResource)
+      {
+        m_ResourcesForResourceViews[uiStage][uiSlot] = nullptr;
+        m_pBoundShaderResourceViews[uiStage][uiSlot] = nullptr;
+        m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
+
+        bResult = true;
+      }
+    }
+  }
+  return bResult;
+}
+
+bool xiiGALCommandListD3D11::UnsetUnorderedAccessViews(const xiiGALResource* pResource)
+{
+  bool bResult = false;
+
+  for (xiiUInt32 uiSlot = 0U; uiSlot < m_ResourcesForUnorderedAccessViews.GetCount(); ++uiSlot)
+  {
+    if (m_ResourcesForUnorderedAccessViews[uiSlot] == pResource)
+    {
+      m_ResourcesForUnorderedAccessViews[uiSlot] = nullptr;
+      m_BoundUnorderedAccessViews[uiSlot]        = nullptr;
+      m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
+
+      bResult = true;
+    }
+  }
+  return bResult;
+}
+
+void xiiGALCommandListD3D11::ResetBoundResources()
+{
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT; ++uiStage)
+  {
+    for (xiiUInt32 i = 0; i < XII_GAL_MAX_CONSTANT_BUFFER_COUNT; ++i)
+    {
+      m_pBoundConstantBuffers[uiStage][i] = nullptr;
+    }
+    m_BoundConstantBuffersRange[uiStage].Reset();
+
+    m_pBoundShaderResourceViews[uiStage].Clear();
+    m_ResourcesForResourceViews[uiStage].Clear();
+    m_BoundShaderResourceViewsRange[uiStage].Reset();
+
+    for (xiiUInt32 i = 0; i < XII_GAL_MAX_SAMPLER_COUNT; ++i)
+    {
+      m_pBoundSamplerStates[uiStage][i] = nullptr;
+    }
+    m_BoundSamplerStatesRange[uiStage].Reset();
+  }
+
+  m_BoundUnorderedAccessViews.Clear();
+  m_ResourcesForUnorderedAccessViews.Clear();
+  m_BoundUnorderedAccessViewsRange.Reset();
 }
 
 xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()
@@ -1071,7 +1299,7 @@ xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11:
     m_pActiveDisjointQuery = m_DisjointQueryPool.GetDisjointQuery(pDeviceD3D11->GetD3D11Device());
 
     // Disjoint timestamp queries should be only invoked once per frame or less.
-    m_pCommandList->Begin(m_pActiveDisjointQuery->m_pQueryD3D11);
+    m_pImmediateContext->Begin(m_pActiveDisjointQuery->m_pQueryD3D11);
 
     m_pActiveDisjointQuery->m_bIsEnded = false;
   }
@@ -1081,7 +1309,7 @@ xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11:
 xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
 {
   // Commit primitive topology.
-  m_pCommandList->IASetPrimitiveTopology(m_CommittedPrimitiveTopology);
+  m_pImmediateContext->IASetPrimitiveTopology(m_CommittedPrimitiveTopology);
 
   // Commit vertex buffers.
   if (m_CommittedVertexBuffersRange.IsValid())
@@ -1089,20 +1317,23 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
     const xiiUInt32 uiStartSlot = m_CommittedVertexBuffersRange.m_uiMin;
     const xiiUInt32 uiNumSlots  = m_CommittedVertexBuffersRange.GetCount();
 
-    m_pCommandList->IASetVertexBuffers(uiStartSlot, uiNumSlots, m_pCommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferStrides + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot);
+    m_pImmediateContext->IASetVertexBuffers(uiStartSlot, uiNumSlots, m_pCommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferStrides + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot);
   }
 
   // Commit index buffer
-  m_pCommandList->IASetIndexBuffer(m_pCommittedIndexBuffer, m_CommittedIndexBufferFormat, m_uiCommittedIndexDataStartOffset);
+  m_pImmediateContext->IASetIndexBuffer(m_pCommittedIndexBuffer, m_CommittedIndexBufferFormat, m_uiCommittedIndexDataStartOffset);
 
   // Commit graphics pipeline states.
-  m_pCommandList->IASetInputLayout(m_pPipelineState->GetD3D11InputLayout());
-  m_pCommandList->OMSetBlendState(m_pPipelineState->GetD3D11BlendState(), m_CommittedBlendFactors.GetData(), m_uiCommittedBlendSampleMask);
-  m_pCommandList->RSSetState(m_pPipelineState->GetD3D11RasterizerState());
-  m_pCommandList->OMSetDepthStencilState(m_pPipelineState->GetD3D11DepthStencilState(), m_uiCommittedStencilReference);
+  if (m_pPipelineState != nullptr)
+  {
+    m_pImmediateContext->IASetInputLayout(m_pPipelineState->GetD3D11InputLayout());
+    m_pImmediateContext->OMSetBlendState(m_pPipelineState->GetD3D11BlendState(), m_CommittedBlendFactors.GetData(), m_uiCommittedBlendSampleMask);
+    m_pImmediateContext->RSSetState(m_pPipelineState->GetD3D11RasterizerState());
+    m_pImmediateContext->OMSetDepthStencilState(m_pPipelineState->GetD3D11DepthStencilState(), m_uiCommittedStencilReference);
 
-  // Commit shader resources.
-  XII_SUCCEED_OR_RETURN(m_pPipelineState->CommitShaderResources(this));
+    // Commit shader resources.
+    XII_SUCCEED_OR_RETURN(CommitShaderResources(this));
+  }
 
   return XII_SUCCESS;
 }

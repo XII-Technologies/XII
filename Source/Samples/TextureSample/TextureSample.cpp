@@ -151,6 +151,10 @@ public:
       m_pDevice->EnqueueFrameSwapChain(m_hSwapChain);
       m_pDevice->BeginFrame();
 
+      auto pCommandList = m_pDevice->GetDefaultCommandQueue()->BeginCommandList();
+
+      xiiRenderContext::GetDefaultInstance()->SetCommandList(pCommandList);
+
       // Must always retrieve the current swapchain render target
       const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
       xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
@@ -213,6 +217,10 @@ public:
 
         xiiRenderContext::GetDefaultInstance()->EndRendering();
       }
+
+      xiiRenderContext::GetDefaultInstance()->SetCommandList(nullptr);
+
+      pCommandList->Submit();
 
       m_pDevice->EndFrame();
 

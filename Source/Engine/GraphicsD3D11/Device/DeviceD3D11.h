@@ -34,19 +34,7 @@ public:
   ~xiiGALDeviceD3D11();
 
 public:
-  XII_ALWAYS_INLINE virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final
-  {
-    if (((queueType & xiiGALCommandQueueType::Graphics) == xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
-      return m_pGraphicsCommandQueue.Borrow();
-
-    if (((queueType & xiiGALCommandQueueType::Compute) == xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
-      return m_pComputeCommandQueue.Borrow();
-
-    if (((queueType & xiiGALCommandQueueType::Transfer) == xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
-      return m_pTransferCommandQueue.Borrow();
-
-    return bAllowGraphicsCommandQueueFallback ? GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false) : nullptr;
-  };
+  XII_ALWAYS_INLINE virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final { return m_pGraphicsCommandQueue.Borrow(); };
 
   XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
 
@@ -159,8 +147,6 @@ private:
   xiiUInt64 m_uiFrameCounter = 0U;
 
   xiiUniquePtr<xiiGALCommandQueueD3D11> m_pGraphicsCommandQueue;
-  xiiUniquePtr<xiiGALCommandQueueD3D11> m_pComputeCommandQueue;
-  xiiUniquePtr<xiiGALCommandQueueD3D11> m_pTransferCommandQueue;
 
   struct TemporaryResourceType
   {

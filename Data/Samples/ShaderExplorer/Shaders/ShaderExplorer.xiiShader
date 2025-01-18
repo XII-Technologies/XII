@@ -1,0 +1,107 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[RENDERSTATE]
+
+DepthEnable = false
+CullMode = CullMode_None
+
+[VERTEXSHADER]
+
+#include "Common.h"
+
+VS_OUT main(VS_IN Input)
+{
+  VS_OUT RetVal;
+  RetVal.Position  = float4(Input.Position, 1.0f);
+  RetVal.FragCoord = Input.Position.xy * 0.5f + 0.5f;
+
+  return RetVal;
+}
+
+[PIXELSHADER]
+
+#include "Common.h"
+
+#include <Shaders/Common/GlobalConstants.h>
+
+#define HW_PERFORMANCE 0
+#include "SignedDistanceUtils.h"
+
+float4 main(PS_IN Input) : SV_Target
+{
+  // Camera-to-world transformation.
+  float3 ro = mul(GetCameraToWorldMatrix(), float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
+  // Extract the upper left 3x3 portion (rotation and scaling).
+  float3x3 ca = float3x3(GetCameraToWorldMatrix()[0].xyz, GetCameraToWorldMatrix()[1].xyz, GetCameraToWorldMatrix()[2].xyz);
+
+  float3 finalColor = float3(0.0, 0.0, 0.0);
+
+#if AA > 1
+  for (int m = 0; m < AA; m++)
+  {
+    for (int n = 0; n < AA; n++)
+    {
+      // Pixel coordinates
+      float2 o = float2(float(m), float(n)) / float(AA) - 0.5;
+      float2 p = -1.0 + 2.0 * (Input.FragCoord.xy + o);
+      p.x *= ViewportSize.x / ViewportSize.y;
+
+      // Focal length
+      const float fl = 1.5;
+
+      // Ray direction
+      float3 rd = mul(ca, normalize(float3(p, fl)));
+
+      // Ray differentials
+      float2 px  = (2.0 * (Input.FragCoord.xy + float2(1.0, 0.0)) - ViewportSize.xy) / ViewportSize.y;
+      float2 py  = (2.0 * (Input.FragCoord.xy + float2(0.0, 1.0)) - ViewportSize.xy) / ViewportSize.y;
+      float3 rdx = mul(ca, normalize(float3(px, fl)));
+      float3 rdy = mul(ca, normalize(float3(py, fl)));
+
+      // Render
+      float3 col = render(ro, rd, rdx, rdy);
+
+      // Gain
+      col = col * 3.0 / (2.5 + col);
+
+      // Gamma correction
+      col = pow(max(col, float3(0, 0, 0)), float3(0.4545, 0.4545, 0.4545));
+
+      finalColor += col;
+    }
+  }
+
+  finalColor /= float(AA * AA);
+#else
+  // Pixel coordinates
+  float2 p = -1.0 + 2.0 * Input.FragCoord.xy;
+  p.x *= ViewportSize.x / ViewportSize.y;
+
+  // Focal length
+  const float fl = 1.5;
+
+  // Ray direction
+  float3 rd = mul(ca, normalize(float3(p, fl)));
+
+  // Ray differentials
+  float2 px  = (2.0 * (Input.FragCoord.xy + float2(1.0, 0.0)) - ViewportSize.xy) / ViewportSize.y;
+  float2 py  = (2.0 * (Input.FragCoord.xy + float2(0.0, 1.0)) - ViewportSize.xy) / ViewportSize.y;
+  float3 rdx = mul(ca, normalize(float3(px, fl)));
+  float3 rdy = mul(ca, normalize(float3(py, fl)));
+
+  // Render
+  float3 col = render(ro, rd, rdx, rdy);
+
+  // Gain
+  col = col * 3.0 / (2.5 + col);
+
+  // Gamma correction
+  col = pow(max(col, float3(0, 0, 0)), float3(0.4545, 0.4545, 0.4545));
+  finalColor += col;
+#endif
+
+  return float4(finalColor, 1.0);
+}

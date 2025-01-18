@@ -2,6 +2,8 @@
 
 class XII_GRAPHICSVULKAN_DLL xiiGALFencePoolVulkan
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGALFencePoolVulkan);
+
 public:
   vk::Fence RequestFence();
 

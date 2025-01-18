@@ -76,7 +76,7 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    vk::Queue m_vkQueue;
+    vk::Queue m_vkQueue            = VK_NULL_HANDLE;
     xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
     xiiUInt32 m_uiQueueIndex       = 0U;
   };
@@ -125,9 +125,11 @@ public:
     SafeReleaseDeviceObjectInternal(vkObject.objectType, (void*)vkObject, nullptr);
   }
 
-  void ReclaimPoolFenceLater(vk::Fence& vkFence);
-
-  void ReclaimPoolSemaphoreLater(vk::Semaphore& vkSemaphore);
+  template <typename T>
+  void ReclaimLater(T& vkObject)
+  {
+    ReclaimLaterInternal(vkObject.objectType, (void*)vkObject);
+  }
 
   // Internal objects retrieval.
 
@@ -136,7 +138,7 @@ public:
 
   XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
   XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
-  XII_ALWAYS_INLINE const vk::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
+  XII_ALWAYS_INLINE const vk::detail::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
 
   XII_ALWAYS_INLINE xiiArrayPtr<const vk::LayerProperties> GetVulkanInstanceLayers() const { return m_Layers; }
   XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() const { return m_Extensions; }
@@ -166,8 +168,27 @@ public:
 
   XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
 
-  XII_ALWAYS_INLINE xiiGALFencePoolVulkan* GetVulkanFencePool() const { return m_FencePool.Borrow(); }
-  XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_SemaphorePool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALFencePoolVulkan* GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALDescriptorSetPoolVulkan* GetVulkanDescriptorSetPool() const { return m_pDescriptorSetPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_pUploadStagingBufferPool.Borrow(); }
+
+  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanGraphicsCommandQueueQueryPool() const { return m_pGraphicsCommandQueueQueryPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanComputeCommandQueueQueryPool() const { return m_pComputeCommandQueueQueryPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanTransferCommandQueueQueryPool() const { return m_pTransferCommandQueueQueryPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetQueryPoolForCommandQueue(xiiGALCommandQueueVulkan* pCommandQueueVulkan) const
+  {
+    if (m_pGraphicsCommandQueue == pCommandQueueVulkan)
+      return m_pGraphicsCommandQueueQueryPool.Borrow();
+
+    if (m_pComputeCommandQueue == pCommandQueueVulkan)
+      return m_pComputeCommandQueueQueryPool ? m_pComputeCommandQueueQueryPool.Borrow() : nullptr;
+
+    if (m_pTransferCommandQueue == pCommandQueueVulkan)
+      return m_pTransferCommandQueueQueryPool ? m_pTransferCommandQueueQueryPool.Borrow() : nullptr;
+
+    return nullptr;
+  }
 
   xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
   void               DestroyFenceInternal(xiiGALFence* pFence);
@@ -247,9 +268,10 @@ protected:
 
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
-  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
-
 private:
+  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+  void ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject);
+
   enum class VulkanObjectType : xiiUInt32
   {
     CommandPool,
@@ -303,9 +325,9 @@ private:
   };
 
   // Vulkan Instance Information.
-  vk::Instance              m_Instance;
-  xiiUInt32                 m_uiVulkanVersion = 0U;
-  vk::DispatchLoaderDynamic m_InstanceDispatchLoader;
+  vk::Instance                      m_Instance;
+  xiiUInt32                         m_uiVulkanVersion = 0U;
+  vk::detail::DispatchLoaderDynamic m_InstanceDispatchLoader;
 
   // Vulkan Instance Objects.
   xiiDynamicArray<vk::LayerProperties>     m_Layers;
@@ -352,8 +374,13 @@ private:
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
 
   // Pools.
-  xiiUniquePtr<xiiGALFencePoolVulkan>     m_FencePool;
-  xiiUniquePtr<xiiGALSemaphorePoolVulkan> m_SemaphorePool;
+  xiiUniquePtr<xiiGALFencePoolVulkan>         m_pFencePool;
+  xiiUniquePtr<xiiGALSemaphorePoolVulkan>     m_pSemaphorePool;
+  xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_pDescriptorSetPool;
+  xiiUniquePtr<xiiGALStagingBufferPoolVulkan> m_pUploadStagingBufferPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pGraphicsCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pComputeCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pTransferCommandQueueQueryPool;
 
   // Per Frame Data.
   xiiUInt32              m_uiFrameCounter = 0U;

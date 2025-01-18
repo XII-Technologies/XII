@@ -405,6 +405,7 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     desc.m_Size.width  = 6;
     desc.m_Size.height = 64;
     desc.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    desc.m_Usage       = xiiGALResourceUsage::Default;
 
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
 

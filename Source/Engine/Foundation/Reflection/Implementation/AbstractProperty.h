@@ -153,7 +153,7 @@ public:
   /// \brief The constructor must get the name of the property. The string must be a compile-time constant.
   xiiAbstractProperty(xiiStringView sPropertyName) { m_sPropertyName = sPropertyName; }
 
-  virtual ~xiiAbstractProperty() = default;
+  virtual ~xiiAbstractProperty();
 
   /// \brief Returns the name of the property.
   xiiStringView GetPropertyName() const { return m_sPropertyName; }

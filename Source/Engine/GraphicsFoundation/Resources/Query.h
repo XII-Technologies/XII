@@ -10,8 +10,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataOcclusion : public xiiHashableS
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALQueryType> m_Type         = xiiGALQueryType::Occlusion; ///< Query type.
-  xiiUInt64                m_uiNumSamples = 0U;                         ///< The number of samples that passed the depth and stencil tests in between begin / end query.
+  xiiEnum<xiiGALQueryType> m_Type          = xiiGALQueryType::Occlusion; ///< Query type.
+  xiiUInt64                m_uiSampleCount = 0U;                         ///< The number of samples that passed the depth and stencil tests in between begin / end query.
 };
 
 /// \brief This describes the binary occlusion query data.
@@ -76,6 +76,13 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALQuery : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALQuery, xiiGALDeviceObject);
 
 public:
+  enum class QueryState
+  {
+    Inactive, ///< No query has been initiated yet.
+    Querying, ///< A query is currently in progress.
+    Ended     ///< The query has completed.
+  };
+
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueryCreationDescription& GetDescription() const { return m_Description; }
 
@@ -91,7 +98,10 @@ public:
   [[nodiscard]] virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) = 0;
 
   /// \brief This invalidates the query and releases the associated resources.
-  [[nodiscard]] virtual void Invalidate() = 0;
+  virtual void Invalidate();
+
+  /// \brief This retrieves the current query state.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQuery::QueryState GetQueryState() const { return m_QueryState; }
 
 protected:
   friend class xiiGALDevice;
@@ -105,17 +115,15 @@ protected:
 
   virtual xiiResult DeInitPlatform() = 0;
 
+  void OnBeginQuery(xiiGALCommandList* pCommandList);
+  void OnEndQuery(xiiGALCommandList* pCommandList);
+
   void CheckQueryDataPtr(void* pData, xiiUInt32 uiDataSize);
 
 protected:
-  enum class QueryState
-  {
-    Inactive,
-    Querying,
-    Ended
-  };
-
   xiiGALQueryCreationDescription m_Description;
+
+  xiiGALCommandList* m_pCommandList = nullptr;
 
   QueryState m_QueryState = QueryState::Inactive;
 };

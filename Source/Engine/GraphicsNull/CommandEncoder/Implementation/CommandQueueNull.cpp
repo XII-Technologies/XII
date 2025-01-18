@@ -31,9 +31,9 @@ xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList()
   return m_pDefaultCommandList.Borrow();
 }
 
-xiiUInt64 xiiGALCommandQueueNull::Submit(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueNull::Submit(xiiGALCommandList* pCommandList)
 {
-  if (bReset && pCommandList)
+  if (pCommandList)
   {
     pCommandList->Reset();
   }

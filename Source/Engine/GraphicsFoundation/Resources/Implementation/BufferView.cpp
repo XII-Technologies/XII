@@ -8,7 +8,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALBufferView::xiiGALBufferView(xiiGALDevice* pDevice, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
-  xiiGALResourceView(pDevice), m_Description(creationDescription), m_pBuffer(pBuffer)
+  xiiGALResourceView(pDevice), m_pBuffer(pBuffer), m_Description(creationDescription)
 {
   XII_ASSERT_DEV(m_pBuffer != nullptr, "The given buffer must not be nullptr.");
 }

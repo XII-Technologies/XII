@@ -23,9 +23,9 @@ void xiiGALCommandListNull::ResetPlatform()
 {
 }
 
-xiiUInt64 xiiGALCommandListNull::SubmitPlatform(bool bReset)
+xiiUInt64 xiiGALCommandListNull::SubmitPlatform()
 {
-  return static_cast<xiiGALCommandQueueNull*>(m_pCommandQueue)->Submit(this, bReset);
+  return static_cast<xiiGALCommandQueueNull*>(m_pCommandQueue)->Submit(this);
 }
 
 void xiiGALCommandListNull::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -45,6 +45,30 @@ void xiiGALCommandListNull::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pVi
 }
 
 void xiiGALCommandListNull::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+{
+}
+
+void xiiGALCommandListNull::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
+{
+}
+
+void xiiGALCommandListNull::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+{
+}
+
+void xiiGALCommandListNull::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+{
+}
+
+void xiiGALCommandListNull::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+{
+}
+
+void xiiGALCommandListNull::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+{
+}
+
+void xiiGALCommandListNull::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
 {
 }
 
@@ -133,10 +157,6 @@ void xiiGALCommandListNull::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt3
 {
 }
 
-void xiiGALCommandListNull::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
-{
-}
-
 void xiiGALCommandListNull::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
 {
 }
@@ -156,10 +176,6 @@ xiiResult xiiGALCommandListNull::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
 }
 
 void xiiGALCommandListNull::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
-{
-}
-
-void xiiGALCommandListNull::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
 }
 

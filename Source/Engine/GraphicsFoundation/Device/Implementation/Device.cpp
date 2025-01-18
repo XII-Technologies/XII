@@ -1527,7 +1527,7 @@ xiiGALInputLayoutHandle xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutC
 
   const auto& shaderDescription = pShader->GetDescription();
 
-  XII_VERIFY_INPUT_LAYOUT(pShader->GetDescription().m_ShaderType == xiiGALShaderType::Vertex, "An Input Layout must be created with shaders of type xiiGALShaderType::Vertex.");
+  XII_VERIFY_INPUT_LAYOUT(shaderDescription.m_ShaderType == xiiGALShaderType::Vertex, "An Input Layout must be created with shaders of type xiiGALShaderType::Vertex.");
 
   // Hash description and return any existing one (including increasing the refcount).
   xiiUInt32 uiHash = description.CalculateHash();
@@ -1916,6 +1916,8 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
   {
     const auto& dependency = description.m_Dependencies[uiDependencyIndex];
 
+    XII_IGNORE_UNUSED(dependency);
+
     /// \todo GraphicsFoundation: Check render pass dependency source and destination stage mask is set to the undefined pipeline stage.
   }
 
@@ -1994,7 +1996,7 @@ xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferC
       const bool bHasStencilComponent = xiiGALTextureUtilities::GetResourceFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil;
 
       XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_LoadOperation != xiiGALAttachmentLoadOperation::Load && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Load), "Memoryless attachment {i} is not compatible with xiiGALAttachmentLoadOperation::Load.", uiAttachmentIndex);
-      XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_StencilStoreOperation != xiiGALAttachmentStoreOperation::Store && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentStoreOperation::Store), "Memoryless attachment {i} is not compatible with xiiGALAttachmentStoreOperation::Store.", uiAttachmentIndex);
+      XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_StencilStoreOperation != xiiGALAttachmentStoreOperation::Store && !(bHasStencilComponent && attachmentDescription.m_StencilStoreOperation == xiiGALAttachmentStoreOperation::Store), "Memoryless attachment {i} is not compatible with xiiGALAttachmentStoreOperation::Store.", uiAttachmentIndex);
 
 #if XII_ENABLED(XII_PLATFORM_OSX)
       {
@@ -2373,13 +2375,13 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
     {
       XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", i);
     }
-    if (resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure)
+    if (resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure)
     {
-      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
     }
-    if (resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment)
+    if (resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment)
     {
-      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages == xiiGALShaderType::Pixel, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages == xiiGALShaderType::Pixel, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
     }
 
     xiiBitflags<xiiGALPipelineResourceFlags> allowedResourceFlags = xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_ResourceType);
@@ -2435,6 +2437,11 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
   }
 
   /// \todo GraphicsFoundation: Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.
+
+  // Finally, sort the resources by their ascending set index.
+  description.m_Resources.Sort([](const xiiGALPipelineResourceDescription& lhs, const xiiGALPipelineResourceDescription& rhs) -> bool {
+    return lhs.m_uiBindSet < rhs.m_uiBindSet;
+  });
 
   xiiUInt32 uiHash = xiiGALDescriptorHash::Hash(description);
   {

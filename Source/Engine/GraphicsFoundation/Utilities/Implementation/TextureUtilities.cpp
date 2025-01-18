@@ -181,20 +181,20 @@ class ResourceFormatToViewFormatConverter
 public:
   ResourceFormatToViewFormatConverter()
   {
-    m_ViewFormats.SetCount(xiiGALResourceFormat::ENUM_COUNT);
+    m_ViewFormats.SetCountUninitialized(xiiGALResourceFormat::ENUM_COUNT);
 
-    // clang-format off
-#define INIT_TEX_VIEW_FORMAT_INFO(textureFormat, SRVFormat, RTVFormat, DSVFormat, UAVFormat) \
-    {\
-      m_ViewFormats[textureFormat].SetCount(xiiGALTextureViewType::ENUM_COUNT);                                     \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::ShaderResource]       = xiiGALResourceFormat::##SRVFormat; \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::RenderTarget]         = xiiGALResourceFormat::##RTVFormat; \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::DepthStencil]         = xiiGALResourceFormat::##DSVFormat; \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::ReadOnlyDepthStencil] = xiiGALResourceFormat::##DSVFormat; \
-      m_ViewFormats[textureFormat][xiiGALTextureViewType::UnorderedAccess]      = xiiGALResourceFormat::##UAVFormat; \
-    }
+#define INIT_TEX_VIEW_FORMAT_INFO(textureFormat, SRVFormat, RTVFormat, DSVFormat, UAVFormat)                     \
+  {                                                                                                              \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::ShaderResource]       = xiiGALResourceFormat::SRVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::RenderTarget]         = xiiGALResourceFormat::RTVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::DepthStencil]         = xiiGALResourceFormat::DSVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::ReadOnlyDepthStencil] = xiiGALResourceFormat::DSVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::UnorderedAccess]      = xiiGALResourceFormat::UAVFormat; \
+    m_ViewFormats[textureFormat][xiiGALTextureViewType::ShadingRate]          = xiiGALResourceFormat::Unknown;   \
+  }
     static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type above, if necessary");
 
+    // clang-format off
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::Unknown,                  Unknown, Unknown, Unknown, Unknown);
 
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::RGBA32Typeless,           RGBA32Float, RGBA32Float, Unknown, RGBA32Float);
@@ -315,8 +315,8 @@ public:
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC7Typeless,              BC7UNormalizedSRGB, Unknown, Unknown, Unknown);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalized,           BC7UNormalized,     Unknown, Unknown, Unknown);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalizedSRGB,       BC7UNormalizedSRGB, Unknown, Unknown, Unknown);
-#undef INIT_TVIEW_FORMAT_INFO
     // clang-format on
+#undef INIT_TVIEW_FORMAT_INFO
 
     m_ViewFormats[xiiGALResourceFormat::R8UInt][xiiGALTextureViewType::ShadingRate]         = xiiGALResourceFormat::R8UInt;
     m_ViewFormats[xiiGALResourceFormat::RG8UNormalized][xiiGALTextureViewType::ShadingRate] = xiiGALResourceFormat::RG8UNormalized;
@@ -364,7 +364,7 @@ public:
   }
 
 private:
-  xiiStaticArray<xiiStaticArray<xiiGALResourceFormat::Enum, xiiGALTextureViewType::ENUM_COUNT>, xiiGALResourceFormat::ENUM_COUNT> m_ViewFormats;
+  xiiStaticArray<xiiGALResourceFormat::Enum[xiiGALTextureViewType::ENUM_COUNT], xiiGALResourceFormat::ENUM_COUNT> m_ViewFormats;
 };
 
 xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevel, xiiUInt32 uiAlignment, xiiUInt32 uiLocationX, xiiUInt32 uiLocationY, xiiUInt32 uiLocationZ)
@@ -484,7 +484,6 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
 
 void xiiGALTextureUtilities::CopyTextureSubresource(const xiiGALTextureSubResourceData& sourceSubresource, xiiUInt32 uiRowCount, xiiUInt32 uiDepthSliceCount, xiiUInt64 uiRowSize, void* pDestinationData, xiiUInt64 uiDestinationRowStride, xiiUInt64 uiDestinationDepthStride)
 {
-  XII_ASSERT_DEV(sourceSubresource.m_hSourceBuffer.IsInvalidated() && !sourceSubresource.m_pData.IsEmpty(), "");
   XII_ASSERT_DEV(pDestinationData != nullptr, "");
   XII_ASSERT_DEV(sourceSubresource.m_uiStride >= uiRowSize, "Source data row stride ({}) is smaller than the row size ({}).", sourceSubresource.m_uiStride, uiRowSize);
   XII_ASSERT_DEV(sourceSubresource.m_uiDepthStride >= uiRowSize, "Destination data row stride ({}) is smaller than the row size ({}).", uiDestinationDepthStride, uiRowSize);

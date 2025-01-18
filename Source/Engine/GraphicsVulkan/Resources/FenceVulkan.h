@@ -49,11 +49,11 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+private:
   void ReleaseResourcesImmediately();
 
   xiiUInt64 InternalGetCompletedValue();
 
-protected:
   static constexpr xiiUInt32 s_uiRequiredArraySize = 8U;
 
   vk::Semaphore m_vkTimelineSemaphore;

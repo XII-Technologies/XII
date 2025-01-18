@@ -19,6 +19,9 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueue : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueue, xiiGALDeviceObject);
 
 public:
+  /// \brief This returns the creation description for this object.
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandQueueCreationDescription& GetDescription() const { return m_Description; };
+
   /// \brief This returns the value of the internal fence that will be signaled the next time.
   virtual xiiUInt64 GetNextFenceValue() const = 0;
 

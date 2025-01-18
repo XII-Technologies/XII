@@ -1,6 +1,9 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPool.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 
 // clang-format off
@@ -156,6 +159,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
     vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
     vmaAllocationCreateInfo.requiredFlags           = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
 
@@ -168,9 +172,36 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 
     VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
     vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
-    vmaAllocationCreateInfo.requiredFlags           = {}; // TODO
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
+
+    if (pInitialData != nullptr && pInitialData->m_pData != nullptr && pInitialData->m_uiDataSize > 0)
+    {
+      if (auto pGraphicsQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
+      {
+        if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueue->BeginCommandList()))
+        {
+          // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
+          auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pInitialData->m_uiDataSize);
+
+          void* pMappedMemory = nullptr;
+          VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
+          VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
+
+          pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
+
+          xiiMemoryUtils::RawByteCopy(pMappedMemory, pInitialData->m_pData, pInitialData->m_uiDataSize);
+
+          VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
+
+          vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
+
+          pCommandListVulkan->UpdateBufferRegion(this, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, 0U, pInitialData->m_uiDataSize);
+
+          pCommandListVulkan->Submit();
+        }
+      }
+    }
   }
 
   // Set the index format for index buffers.
@@ -178,6 +209,10 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
   {
     m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? xiiGALValueType::UInt16 : xiiGALValueType::UInt32;
   }
+
+  m_vkDescriptorBufferInfo.buffer = m_vkBuffer;
+  m_vkDescriptorBufferInfo.offset = 0;
+  m_vkDescriptorBufferInfo.range  = m_Description.m_uiSize;
 
   return XII_SUCCESS;
 }
@@ -192,6 +227,7 @@ xiiResult xiiGALBufferVulkan::DeInitPlatform()
 
     m_vkBuffer               = VK_NULL_HANDLE;
     m_BufferMemoryAllocation = VK_NULL_HANDLE;
+    m_vkDescriptorBufferInfo = vk::DescriptorBufferInfo{};
   }
 
   m_IndexFormat = xiiGALValueType::UInt16;

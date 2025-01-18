@@ -83,14 +83,18 @@ public:
   void CopyBufferToTexture(vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceBufferOffset, xiiUInt32 uiSourceBufferRowStrideInTexels, xiiGALTextureVulkan* pDestinationTextureVulkan, const xiiBoundingBoxU32& destinationRegion, xiiUInt32 uiDestinationMipLevel, xiiUInt32 uiDestinationArraySlice, bool bVerifyOnly = false);
   void CopyTextureToBuffer(xiiGALTextureVulkan* pSourceTextureVulkan, const xiiBoundingBoxU32& sourceRegion, xiiUInt32 uiSourceMipLevel, xiiUInt32 uiSourceArraySlice, vk::Buffer vkDestinationBuffer, xiiUInt64 uiDestinationBufferOffset, xiiUInt32 uiDestinationBufferRowStrideInTexels, bool bVerifyOnly = false);
 
+  void UpdateBufferRegion(xiiGALBufferVulkan* pBufferVulkan, vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceOffset, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSizeInBytes);
+
   void CopyBufferToImage(vk::Buffer vkSourceBuffer, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::BufferImageCopy> pRegions);
   void CopyImageToBuffer(vk::Image vkSourceImage, vk::ImageLayout vkSourceImageLayout, vk::Buffer vkDestinationBuffer, xiiArrayPtr<const vk::BufferImageCopy> pRegions);
   void CopyImage(vk::Image vkSourceImage, vk::ImageLayout vkSourceImageLayout, vk::Image vkDestinationImage, vk::ImageLayout vkDestinationImageLayout, xiiArrayPtr<const vk::ImageCopy> pRegions);
 
   void CopyTextureRegion(xiiGALTextureVulkan* pSourceTextureVulkan, xiiGALTextureVulkan* pDestinationTextureVulkan, const vk::ImageCopy& copyRegion);
 
-  void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags);
-  void AddSignalSemaphore(vk::Semaphore semaphore);
+  void UpdateTextureRegion(const void* pSourceData, xiiUInt64 uiSourceStride, xiiUInt64 uiSourceDepthStride, xiiGALTextureVulkan* pTextureVulkan, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox);
+
+  void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
+  void AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue = 0ULL);
 
   struct CommandListState
   {
@@ -123,7 +127,7 @@ protected:
   virtual void ResetPlatform() override final;
   void         ResetInternal();
 
-  virtual xiiUInt64 SubmitPlatform(bool bReset) override final;
+  virtual xiiUInt64 SubmitPlatform() override final;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
@@ -135,6 +139,12 @@ protected:
 
   virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset) override final;
   virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;
+  virtual void SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer) override final;
+  virtual void SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor) override final;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override final;
@@ -158,14 +168,12 @@ protected:
   virtual void EndQueryPlatform(xiiGALQuery* pQuery) override final;
 
   virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData) override final;
-  virtual void      UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage) override final;
   virtual void      CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer) override final;
   virtual void      CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize) override final;
   virtual xiiResult MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData) override final;
   virtual xiiResult UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType) override final;
 
   virtual void      UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData) override final;
-  virtual void      UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData) override final;
   virtual void      CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture) override final;
   virtual void      CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) override final;
   virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData) override final;
@@ -180,6 +188,9 @@ protected:
   virtual void InvalidateStatePlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
+private:
+  xiiResult CommitDeferredStateChanges();
 
 private:
   struct PipelineBarrier
@@ -233,11 +244,50 @@ private:
     VmaAllocationInfo                    m_AllocationInfo;
   };
 
+  struct MappedBufferKey
+  {
+    xiiGALBufferVulkan* const m_pBufferVulkan = nullptr;
+    xiiEnum<xiiGALMapType>    m_MapType;
+
+    constexpr bool operator==(const MappedBufferKey& rhs) const
+    {
+      return m_pBufferVulkan == rhs.m_pBufferVulkan && m_MapType == rhs.m_MapType;
+    }
+
+    struct Hasher
+    {
+      static xiiUInt32 Hash(const MappedBufferKey& key)
+      {
+        xiiHashStreamWriter32 writer;
+
+        writer << key.m_pBufferVulkan;
+        writer << key.m_MapType;
+
+        return writer.GetHashValue();
+      }
+
+      static bool Equal(const MappedBufferKey& a, const MappedBufferKey& b)
+      {
+        return a == b;
+      }
+    };
+  };
+
   struct FenceInfo
   {
     xiiGALFenceVulkan* m_pFenceVulkan = nullptr;
     xiiUInt64          m_uiWaitValue  = 0U;
     vk::Fence          m_vkFence;
+  };
+
+  struct ResourceSetBindings
+  {
+    xiiDynamicArray<const xiiGALBufferVulkan*>      m_pBoundConstantBuffers;
+    xiiDynamicArray<const xiiGALBufferViewVulkan*>  m_pBoundBufferResourceViews;
+    xiiDynamicArray<const xiiGALTextureViewVulkan*> m_pBoundTextureResourceViews;
+    xiiDynamicArray<const xiiGALBufferViewVulkan*>  m_pBoundUnorderedAccessBufferResourceViews;
+    xiiDynamicArray<const xiiGALTextureViewVulkan*> m_pBoundUnorderedAccessTextureResourceViews;
+    xiiDynamicArray<const xiiGALSamplerVulkan*>     m_pBoundSamplerStates;
   };
 
   vk::CommandBuffer m_vkCommandBuffer;
@@ -259,6 +309,16 @@ private:
   xiiGALFramebufferVulkan*                                           m_pFramebuffer   = nullptr;
   xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
+  xiiGALPipelineStateVulkan* m_pPipelineStateVulkan   = nullptr;
+  bool                       m_bPipelineStateModified = false;
+
+  xiiHybridArray<ResourceSetBindings, 1U>     m_ResourceSets;
+  xiiHybridArray<vk::DescriptorSet, 4U>       m_DescriptorSets;
+  xiiHybridArray<vk::WriteDescriptorSet, 16U> m_DescriptorWrites;
+  xiiDeque<vk::DescriptorBufferInfo>          m_DynamicUniformBuffers;
+  xiiHybridArray<xiiUInt32, 6U>               m_DynamicUniformBufferOffsets;
+  bool                                        m_bDescriptorsModified = false;
+
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;
   xiiDynamicArray<vk::PipelineStageFlags> m_vkWaitDestinationStageFlags;
@@ -271,25 +331,15 @@ private:
   xiiDynamicArray<FenceInfo> m_SignalFences;
   xiiDynamicArray<FenceInfo> m_WaitFences;
 
-  struct ContextState
-  {
-    bool      m_bCommittedVertexBuffersUpToDate = false; ///< Flag indicating if currently committed vertex buffers are up to date.
-    bool      m_bCommittedIndexBuffersUpToDate  = false; ///< Flag indicating if currently committed index buffer is up to date.
-    bool      m_bShadingRateIsSet               = false; ///< If pipeline state object was created with shading rate dynamic state, then vkCmdSetFragmentShadingRateKHR must be called before the draw.
-    bool      m_bNullRenderTargets              = false; ///< Current graphics pipeline state object uses no depth/render targets.
-    xiiUInt32 m_uiCommandCount                  = 0U;    ///< Number of commands issued in the current command buffer.
-
-    vk::PipelineBindPoint m_vkPipelineBindPoint = static_cast<vk::PipelineBindPoint>(VK_PIPELINE_BIND_POINT_MAX_ENUM); ///< The type of pipeline bound to the command buffer.
-  } m_ContextState;
-
-  vk::Buffer            m_CommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]       = {};
-  xiiUInt64             m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
-  xiiUInt64             m_CommittedVertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_CommittedVertexBuffersRange;
+  vk::Buffer m_CommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]       = {};
+  xiiUInt64  m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
   // Graphics/Mesh, Compute, Ray Tracing.
   static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;
   static constexpr xiiUInt32 s_MaxDescriptorSetPerSignature = 2U;
 
-  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
+  xiiHashTable<MappedBufferKey, xiiEnum<xiiGALMapType>, MappedBufferKey::Hasher> m_MappedBuffers;
+  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher>        m_MappedTextures;
+
+  xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };

@@ -41,12 +41,12 @@ void xiiOSThread::Start()
     // This means 15 characters and the terminating '\0'
     if (m_sName.GetElementCount() < 16)
     {
-      pthread_setname_np(m_hHandle, m_sName.GetStartPointer());
+      pthread_setname_np(m_hHandle, m_sName.GetData());
     }
     else
     {
       char threadName[16];
-      strncpy(threadName, m_sName.GetStartPointer(), 15);
+      strncpy(threadName, m_sName.GetData(), 15);
       threadName[15] = '\0';
       pthread_setname_np(m_hHandle, threadName);
     }

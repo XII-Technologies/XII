@@ -8,6 +8,7 @@
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 
 /// \brief This describes the pipeline state shading rate flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
@@ -97,14 +98,14 @@ public:
   void End();
 
   /// \brief Resets the command list. This method is used to clear all commands that have been recorded in the command list.
+  ///
+  /// \remarks This method can be called only if the command list has not yet been submitted for execution.
   void Reset();
 
-  /// \brief Submits a command list for execution. If bReset is true, the command list is reset after submission.
-  ///
-  /// \param bReset - Calls Reset() to reset the command list after submission.
+  /// \brief Submits a command list to the command queue for execution. The command list is reset after the execution on the command queue.
   ///
   /// \return The current internal fence value.
-  xiiUInt64 Submit(bool bReset = true);
+  xiiUInt64 Submit();
 
   // State functions.
 
@@ -150,6 +151,42 @@ public:
   /// \param pByteOffsets   - The array of offset values; one offset value for each buffer in the vertex-buffer array. Each offset is the number of bytes between the first element of a vertex buffer and the first element that will be used. If this parameter is an empty array, zero offsets for all buffers will be used.
   /// \param flags          - Additional flags for setting vertex buffers. See xiiGALSetVertexBufferFlags for more information.
   void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBufferHandle> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None);
+
+  /// \brief This is used to set the constant (uniform) buffer for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hConstantBuffer    - The handle to the constant (uniform) buffer object to set.
+  void SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferHandle hConstantBuffer);
+
+  /// \brief This is used to set the buffer view for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hBufferView        - The handle to the buffer view object to set.
+  void SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView);
+
+  /// \brief This is used to set the texture view for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hTextureView       - The handle to the texture view object to set.
+  void SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView);
+
+  /// This is used to set the buffer view for an unordered access.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hBufferView        - The handle to the buffer view object to set.
+  void SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView);
+
+  /// \brief This is used to set the texture view for an unordered access.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hTextureView       - The handle to the texture view object to set.
+  void SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView);
+
+  /// \brief This is used to set the sampler for a sampler resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the sampler resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hSampler           - The handle to the sampler object to set.
+  void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSamplerHandle hSampler);
 
   /// \brief This clears the specified render target view to the specified color.
   ///
@@ -268,15 +305,6 @@ public:
   /// \param pSourceData         - Pointer to the source data.
   void UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData);
 
-  /// \brief Updates a buffer.
-  ///
-  /// \param hBuffer                 - The handle to the buffer object.
-  /// \param uiDestinationOffset     - Byte offset into the buffer where the update should start.
-  /// \param pSourceData             - Pointer to the source data.
-  /// \param mapFlags                - Flags specifying how the buffer should be mapped.
-  /// \param bCopyToTemporaryStorage - Upload to temporary buffer, then buffer to buffer transfer at the current time in the command list.
-  void UpdateBufferExtended(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard, bool bCopyToTemporaryStorage = false);
-
   /// \brief Copies the entire contents of the source buffer to the destination buffer.
   ///
   /// \param hSourceBuffer      - The handle to the source buffer object.
@@ -315,14 +343,6 @@ public:
   /// \param textureBox          - Specifies the region within the subresource to update.
   /// \param subresourceData     - Specifies the new data. See xiiGALTextureSubResourceData for details.
   void UpdateTexture(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData);
-
-  /// \brief Updates a texture.
-  ///
-  /// \param hTexture            - The handle to the texture object.
-  /// \param textureMiplevelData - Specifies the subresource to update. See xiiGALTextureMipLevelData for details.
-  /// \param textureBox          - Specifies the region within the subresource to update.
-  /// \param subresourceData     - Specifies the new data. See xiiGALTextureSubResourceData for details.
-  void UpdateTextureExtended(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData);
 
   /// \brief Copies the entire contents of the source texture to the destination texture.
   ///
@@ -397,7 +417,8 @@ public:
   {
     Recording, ///< The command list is currently being recorded.
     Ended,     ///< The recording of the command list has ended.
-    Reset      ///< The command list has been reset and is ready to be recorded again.
+    Reset,     ///< The command list has been reset and is ready to be recorded again.
+    Submitted  ///< The command list has been submitted and is no longer available for recording commands. A new command list has to be requested for recording more commands.
   };
 
   XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };
@@ -421,7 +442,7 @@ protected:
   virtual void EndPlatform()   = 0;
   virtual void ResetPlatform() = 0;
 
-  virtual xiiUInt64 SubmitPlatform(bool bReset) = 0;
+  virtual xiiUInt64 SubmitPlatform() = 0;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
 
@@ -433,6 +454,12 @@ protected:
 
   virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)                                                                                                     = 0;
   virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) = 0;
+  virtual void SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)                                                          = 0;
+  virtual void SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)                                                = 0;
+  virtual void SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)                                             = 0;
+  virtual void SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)                                               = 0;
+  virtual void SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)                                            = 0;
+  virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)                                                                       = 0;
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)                                                       = 0;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
@@ -456,14 +483,12 @@ protected:
   virtual void EndQueryPlatform(xiiGALQuery* pQuery)   = 0;
 
   virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)                                                                             = 0;
-  virtual void      UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage) = 0;
   virtual void      CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                                               = 0;
   virtual void      CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)                              = 0;
   virtual xiiResult MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                                              = 0;
   virtual xiiResult UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)                                                                                                                      = 0;
 
   virtual void      UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                                 = 0;
-  virtual void      UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                         = 0;
   virtual void      CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)                                                                                                                                                                                         = 0;
   virtual void      CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
   virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;

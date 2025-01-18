@@ -25,15 +25,23 @@ xiiPhantomRTTI::~xiiPhantomRTTI()
   {
     XII_DEFAULT_DELETE(pProp);
   }
+  m_PropertiesStorage.Clear();
+  m_Properties.Clear();
+
   for (auto pFunc : m_FunctionsStorage)
   {
     XII_DEFAULT_DELETE(pFunc);
   }
+  m_FunctionsStorage.Clear();
+  m_Functions.Clear();
+
   for (auto pAttrib : m_AttributesStorage)
   {
     auto pAttribNonConst = const_cast<xiiPropertyAttribute*>(pAttrib);
     XII_DEFAULT_DELETE(pAttribNonConst);
   }
+  m_AttributesStorage.Clear();
+  m_Attributes.Clear();
 }
 
 void xiiPhantomRTTI::SetProperties(xiiDynamicArray<xiiReflectedPropertyDescriptor>& properties)

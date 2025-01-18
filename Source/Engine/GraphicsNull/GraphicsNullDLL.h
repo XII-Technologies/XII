@@ -33,7 +33,6 @@ class xiiGALTextureViewNull;
 class xiiGALTopLevelASNull;
 class xiiGALInputLayoutNull;
 class xiiGALShaderNull;
-class xiiGALShaderResourceVariableNull;
 class xiiGALBlendStateNull;
 class xiiGALDepthStencilStateNull;
 class xiiGALRasterizerStateNull;

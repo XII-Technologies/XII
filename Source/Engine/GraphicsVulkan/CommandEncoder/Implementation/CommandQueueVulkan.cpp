@@ -2,7 +2,6 @@
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
-#include <GraphicsVulkan/Device/DeviceVulkan.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueueVulkan, 1, xiiRTTINoAllocator)
@@ -16,23 +15,22 @@ xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVu
 
 xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
 
-void xiiGALCommandQueueVulkan::InitializePlatform(xiiUInt32 uiQueueFamilyIndex, vk::Queue vkQueue)
+void xiiGALCommandQueueVulkan::InitializePlatform(const xiiGALDeviceVulkan::QueueInformation& queueInformation)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
-  m_vkDevice           = pDeviceVulkan->GetVulkanLogicalDevice();
-  m_uiQueueFamilyIndex = uiQueueFamilyIndex;
-  m_vkQueue            = vkQueue;
+  m_QueueInformation = queueInformation;
 
   vk::CommandPoolCreateInfo commandPoolCreationDescription = {};
   commandPoolCreationDescription.pNext                     = nullptr;
   commandPoolCreationDescription.flags                     = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-  commandPoolCreationDescription.queueFamilyIndex          = m_uiQueueFamilyIndex;
+  commandPoolCreationDescription.queueFamilyIndex          = m_QueueInformation.m_uiQueueFamilyIndex;
 
-  VK_ASSERT_DEV(m_vkDevice.createCommandPool(&commandPoolCreationDescription, nullptr, &m_vkCommandPool, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  VK_ASSERT_DEV(vkLogicalDevice.createCommandPool(&commandPoolCreationDescription, nullptr, &m_vkCommandPool, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-  m_vkSupportedStageFlags  = pDeviceVulkan->GetVulkanLogicalDeviceSupportedStagesFlags(uiQueueFamilyIndex);
-  m_vkSupportedAccessFlags = pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(uiQueueFamilyIndex);
+  m_vkSupportedStageFlags  = pDeviceVulkan->GetVulkanLogicalDeviceSupportedStagesFlags(m_QueueInformation.m_uiQueueFamilyIndex);
+  m_vkSupportedAccessFlags = pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(m_QueueInformation.m_uiQueueFamilyIndex);
 
   xiiGALFenceCreationDescription fenceDescription = {.m_Type = xiiGALFenceType::CpuWaitOnly};
   m_pQueueFence                                   = pDeviceVulkan->CreateFenceInternal(fenceDescription);
@@ -40,7 +38,8 @@ void xiiGALCommandQueueVulkan::InitializePlatform(xiiUInt32 uiQueueFamilyIndex, 
 
 void xiiGALCommandQueueVulkan::DeInitializePlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   for (xiiUInt32 i = 0; i < m_CommandLists.GetCount(); ++i)
   {
@@ -55,10 +54,9 @@ void xiiGALCommandQueueVulkan::DeInitializePlatform()
 
   pDeviceVulkan->DestroyFenceInternal(m_pQueueFence);
 
-  m_vkDevice.destroyCommandPool(m_vkCommandPool, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-  m_vkCommandPool = nullptr;
+  vkLogicalDevice.destroyCommandPool(m_vkCommandPool, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
-  m_vkDevice = nullptr;
+  m_vkCommandPool = VK_NULL_HANDLE;
 }
 
 xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
@@ -70,7 +68,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
   // Update last completed fence value to unlock all waiting events.
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
 
-  m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_QueueInformation.m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   // TODO (VERIFY): For some reason after idling the queue not all fences are signaled.
   m_pQueueFence->Wait(xiiMath::MaxValue<xiiUInt64>());
@@ -81,7 +79,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 
 xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 {
-  XII_ASSERT_DEV(m_vkDevice != nullptr, "");
   XII_ASSERT_DEV(m_vkCommandPool != nullptr, "");
 
   XII_LOCK(m_QueueMutex);
@@ -143,7 +140,7 @@ void xiiGALCommandQueueVulkan::ResetCommandList(xiiGALCommandListVulkan* pComman
   m_CommandListsToReset.PushBack(CommandListReleaseInfo{.m_pCommandListVulkan = pCommandListVulkan, .m_uiFenceValue = GetNextFenceValue()});
 }
 
-xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList)
 {
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
@@ -195,14 +192,11 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
   const auto&     syncPoint    = m_pQueueFence->CreateSyncPoint(uiFenceValue);
 
-  VK_ASSERT_DEV(m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  VK_ASSERT_DEV(m_QueueInformation.m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_LastSyncPoint = syncPoint;
 
-  if (bReset)
-  {
-    pCommandListVulkan->Reset();
-  }
+  pCommandListVulkan->ResetPlatform();
 
   return uiFenceValue;
 }

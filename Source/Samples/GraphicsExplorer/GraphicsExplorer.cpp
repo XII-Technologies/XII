@@ -8,6 +8,7 @@
 #include <Foundation/Logging/ConsoleWriter.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/VisualStudioWriter.h>
+#include <Foundation/System/Screen.h>
 #include <Foundation/Time/Clock.h>
 
 #include <Core/Graphics/Camera.h>
@@ -228,6 +229,12 @@ public:
     xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 #endif
 
+    {
+      xiiHybridArray<xiiScreenInfo, 2> screens;
+      xiiScreen::EnumerateScreens(screens).IgnoreResult();
+      xiiScreen::PrintScreenInfo(screens);
+    }
+
     // Register Input
     {
       xiiInputActionConfig cfg;
@@ -312,7 +319,7 @@ public:
       WindowCreationDesc.m_bClipMouseCursor  = false;
       WindowCreationDesc.m_WindowMode        = xiiWindowMode::WindowResizable;
       m_pWindow                              = XII_DEFAULT_NEW(xiiGraphicsExplorerWindow);
-      m_pWindow->Initialize(WindowCreationDesc).IgnoreResult();
+      m_pWindow->Initialize(WindowCreationDesc).AssertSuccess();
     }
 
 #if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
@@ -361,7 +368,7 @@ public:
       deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray         = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_WaveOperation                      = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate               = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Enabled;
       deviceCreationDescription.m_DeviceFeatures.m_TileShaders                        = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries      = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_VariableRateShading                = xiiGALDeviceFeatureState::Disabled;
@@ -369,6 +376,7 @@ public:
       deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch            = xiiGALDeviceFeatureState::Disabled;
       deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle            = xiiGALDeviceFeatureState::Optional;
       deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_NativeMultiDraw                    = xiiGALDeviceFeatureState::Disabled;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
@@ -387,7 +395,7 @@ public:
 #endif
 
       m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
-      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", sGraphicsAPIName);
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
 
       m_pDevice->SetDebugName("Master Graphics Device");
@@ -586,7 +594,6 @@ public:
       auto        hBackBufferView    = m_pDevice->GetTexture(hBackBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
       auto        hDepthStencilView  = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
       const auto& backBufferViewDesc = m_pDevice->GetTextureView(hBackBufferView)->GetDescription();
-
 
       xiiVec3U32 vSize = xiiGALTextureUtilities::GetMipLevelSize(backBufferViewDesc.m_uiMostDetailedMip, backBufferTextureDesc);
 

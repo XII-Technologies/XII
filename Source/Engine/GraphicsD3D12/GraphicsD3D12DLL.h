@@ -65,4 +65,3 @@ class xiiGALDepthStencilStateD3D12;
 class xiiGALRasterizerStateD3D12;
 class xiiGALPipelineStateD3D12;
 class xiiGALPipelineResourceSignatureD3D12;
-class xiiGALShaderResourceVariableD3D12;

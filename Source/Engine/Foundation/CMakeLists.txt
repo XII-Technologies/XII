@@ -66,3 +66,13 @@ if(XII_3RDPARTY_TRACY_SUPPORT)
   # Tracy has to be linked to all possible targets since it is a multi dll project.
   target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient)
 endif()
+
+if (XII_3RDPARTY_SDL_SUPPORT)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_SDL_SUPPORT)
+
+  if(XII_COMPILE_ENGINE_AS_DLL)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-shared)
+  else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-static)
+  endif()
+endif()

@@ -525,6 +525,7 @@ xiiExpressionAST::TernaryOperator* xiiExpressionAST::CreateTernaryOperator(NodeT
 xiiExpressionAST::Constant* xiiExpressionAST::CreateConstant(const xiiVariant& value, DataType::Enum dataType /*= DataType::Float*/)
 {
   xiiVariantType::Enum variantType = DataType::GetVariantType(dataType);
+  XII_IGNORE_UNUSED(variantType);
   XII_ASSERT_DEV(variantType != xiiVariantType::Invalid, "Invalid constant type '{}'", DataType::GetName(dataType));
 
   auto pConstant          = XII_NEW(&m_Allocator, Constant);

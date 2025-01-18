@@ -65,22 +65,6 @@ namespace
 
 #undef CALL_FUNCTOR
 
-  xiiVariantType::Enum GetDispatchType(const xiiAbstractProperty* pProp)
-  {
-    if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
-    {
-      return xiiVariantType::TypedPointer;
-    }
-    else if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType))
-    {
-      return pProp->GetSpecificType()->GetVariantType();
-    }
-    else
-    {
-      return xiiVariantType::TypedObject;
-    }
-  }
-
   struct GetTypeFromVariantTypeFunc
   {
     template <typename T>
