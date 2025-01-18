@@ -10,15 +10,17 @@ xiiGALStagingBufferPoolVulkan::xiiGALStagingBufferPoolVulkan(xiiGALDeviceVulkan*
 
 xiiGALStagingBufferPoolVulkan::~xiiGALStagingBufferPoolVulkan()
 {
+  // We assume that these resources are not in use when this pool is destroyed.
+
   for (const auto& stagingBufferPages : m_StagingBufferPages)
   {
-    m_pDeviceVulkan->SafeReleaseDeviceObject(stagingBufferPages.m_vkBuffer);
+    vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferPages.m_vkBuffer, stagingBufferPages.m_VmaAllocation);
   }
   m_StagingBufferPages.Clear();
 
   for (const auto& largeAllocation : m_LargeAllocations)
   {
-    m_pDeviceVulkan->SafeReleaseDeviceObject(largeAllocation.m_vkBuffer);
+    vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), largeAllocation.m_vkBuffer, largeAllocation.m_VmaAllocation);
   }
   m_LargeAllocations.Clear();
 }
