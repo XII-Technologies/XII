@@ -63,8 +63,13 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
   for (xiiUInt32 uiResource = 0; uiResource < m_Description.m_Resources.GetCount(); ++uiResource)
   {
-    const auto& resource                  = m_Description.m_Resources[uiResource];
-    auto&       vkDescriptorLayoutBinding = vkDescriptorSetLayoutBindings.ExpandAndGetRef();
+    const auto& resource = m_Description.m_Resources[uiResource];
+
+    auto& vkDescriptorLayoutBinding           = vkDescriptorSetLayoutBindings.ExpandAndGetRef();
+    vkDescriptorLayoutBinding.binding         = resource.m_uiBindSlot;
+    vkDescriptorLayoutBinding.descriptorType  = xiiVulkanTypeConversions::GetDescriptorType(resource);
+    vkDescriptorLayoutBinding.descriptorCount = resource.m_uiArraySize;
+    vkDescriptorLayoutBinding.stageFlags      = xiiVulkanTypeConversions::GetShaderStageFlags(resource.m_ShaderStages);
 
     vk::Sampler* pVkImmutableSamplers = nullptr;
     if (vkDescriptorLayoutBinding.descriptorType == vk::DescriptorType::eCombinedImageSampler || vkDescriptorLayoutBinding.descriptorType == vk::DescriptorType::eSampler)
@@ -87,10 +92,6 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
       }
     }
 
-    vkDescriptorLayoutBinding.binding            = resource.m_uiBindSlot;
-    vkDescriptorLayoutBinding.descriptorType     = xiiVulkanTypeConversions::GetDescriptorType(resource);
-    vkDescriptorLayoutBinding.descriptorCount    = resource.m_uiArraySize;
-    vkDescriptorLayoutBinding.stageFlags         = xiiVulkanTypeConversions::GetShaderStageFlags(resource.m_ShaderStages);
     vkDescriptorLayoutBinding.pImmutableSamplers = pVkImmutableSamplers;
   }
 
