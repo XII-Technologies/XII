@@ -697,22 +697,21 @@ void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
 
 void xiiGALSwapChainVulkan::Present()
 {
+  if (m_bIsMinimized)
+    return;
+
   xiiGALDeviceVulkan*       pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALCommandQueueVulkan* pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
   xiiGALTextureVulkan*      pCurrentBackbufferVulkan = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_hBackBufferTexture));
 
-  if (!m_bIsMinimized)
+  if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
   {
-    if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
-    {
-      pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
-      pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+    pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+    pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
 
-      pCommandListVulkan->Submit();
-    }
+    pCommandListVulkan->Submit();
   }
 
-  if (!m_bIsMinimized)
   {
     // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2)
     vk::Result result = vk::Result::eSuccess;
@@ -741,7 +740,6 @@ void xiiGALSwapChainVulkan::Present()
     }
   }
 
-  if (!m_bIsMinimized)
   {
     ++m_uiSemaphoreIndex;
     if (m_uiSemaphoreIndex >= m_Description.m_uiBufferCount)
@@ -758,6 +756,17 @@ void xiiGALSwapChainVulkan::Present()
       m_uiSemaphoreIndex = m_Description.m_uiBufferCount - 1; // To start with 0 index when acquire next image.
 
       result = AcquireNextImage();
+
+#if XII_ENABLED(XII_PLATFORM_OSX)
+      // For some reason, on MoltenVk we may get VK_SUBOPTIMAL_KHR first time we acquire the image after the swap chain has been recreated.
+      // Recreating it yet again seems to fix the problem.
+      if (result == vk::Result::eSuboptimalKHR)
+      {
+        RecreateVulkanSwapChain().AssertSuccess();
+
+        result = AcquireNextImage();
+      }
+#endif
     }
     XII_ASSERT_DEV(result == vk::Result::eSuccess, "Failed to acquire next swap chain image.");
   }
