@@ -1077,10 +1077,6 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderP
     m_CommandListState.m_uiFramebufferHeight = framebufferDescription.m_FramebufferSize.height;
   }
 
-  // Set viewport to match frame buffer size.
-  xiiGALViewport viewport = {.m_fTopLeftX = 0.0f, .m_fTopLeftY = 0.0f, .m_fWidth = (float)framebufferDescription.m_FramebufferSize.width, .m_fHeight = (float)framebufferDescription.m_FramebufferSize.height};
-  SetViewports(xiiMakeArrayPtr(&viewport, 1U), framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
-
   // m_bShadingRateIsSet = false;
 }
 
