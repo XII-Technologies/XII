@@ -707,6 +707,8 @@ void xiiGALSwapChainVulkan::Present()
     pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
 
     pCommandListVulkan->Submit();
+
+    pGraphicsQueueVulkan->WaitForIdle(); // Suboptimal, but fixes validation errors.
   }
 
   {
