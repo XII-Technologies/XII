@@ -1192,7 +1192,7 @@ XII_ALWAYS_INLINE vk::DescriptorType xiiVulkanTypeConversions::GetDescriptorType
   return vk::DescriptorType::eSampler;
 }
 
-XII_ALWAYS_INLINE void xiiVulkanTypeConversions::GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints)
+XII_ALWAYS_INLINE void xiiVulkanTypeConversions::GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology& out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints)
 {
   out_uiPatchControlPoints = 0U;
 

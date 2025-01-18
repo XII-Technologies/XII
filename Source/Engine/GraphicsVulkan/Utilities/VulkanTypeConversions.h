@@ -80,7 +80,7 @@ public:
 
   static vk::DescriptorType GetDescriptorType(const xiiGALPipelineResourceDescription& resourceDescription);
 
-  static void GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints);
+  static void GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology& out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
