@@ -1,6 +1,9 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPool.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 
 // clang-format off
@@ -172,6 +175,32 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     vmaAllocationCreateInfo.requiredFlags           = {}; // TODO
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
+
+    if (pInitialData != nullptr && pInitialData->m_pData != nullptr && pInitialData->m_uiDataSize > 0)
+    {
+      if (auto pGraphicsQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
+      {
+        if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueue->BeginCommandList()))
+        {
+          // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
+          auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pInitialData->m_uiDataSize);
+
+          void* pMappedMemory = nullptr;
+          VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
+          VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
+
+          xiiMemoryUtils::RawByteCopy(pMappedMemory, pInitialData->m_pData, pInitialData->m_uiDataSize);
+
+          VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
+
+          vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
+
+          pCommandListVulkan->UpdateBufferRegion(this, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, 0U, pInitialData->m_uiDataSize);
+
+          pCommandListVulkan->Submit();
+        }
+      }
+    }
   }
 
   // Set the index format for index buffers.
