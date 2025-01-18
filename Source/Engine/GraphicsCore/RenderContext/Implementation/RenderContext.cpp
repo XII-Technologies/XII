@@ -1293,10 +1293,10 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
         subpassDependency.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
 
         if (!depthAttachmentRefs.IsEmpty())
-          subpassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::DepthStencilWrite;
+          subpassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::DepthStencilWrite | xiiGALAccessFlags::DepthStencilRead;
 
         if (!colorAttachmentRefs.IsEmpty())
-          subpassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::RenderTargetWrite;
+          subpassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::RenderTargetWrite | xiiGALAccessFlags::RenderTargetRead;
       }
 
       hRenderPass = pDevice->CreateRenderPass(renderPassDescription);
