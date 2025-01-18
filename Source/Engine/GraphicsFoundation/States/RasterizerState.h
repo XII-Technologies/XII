@@ -61,7 +61,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerStateCreationDescription : pub
   xiiEnum<xiiGALFillMode> m_FillMode               = xiiGALFillMode::Solid; ///< Determines triangle fill mode. The default is Solid.
   xiiEnum<xiiGALCullMode> m_CullMode               = xiiGALCullMode::Back;  ///< Determines triangle cull mode. The default is Back.
   bool                    m_bFrontCounterClockwise = false;                 ///< Determines if a triangle is front or back facing. If this member is true, a triangle will be considered front-facing if its vertices are counter-clockwise on the render target and considered back-facing if they are clockwise. If this parameter is false, then the opposite is true. The default is false.
-  bool                    m_bDepthClipEnable       = true;                  ///< Enable clipping against near and far clip planes. The default is true.
+  bool                    m_bDepthClipEnable       = false;                 ///< Enable clipping against near and far clip planes. The default is false.
   bool                    m_bScissorEnable         = false;                 ///< Enable scissor-rectangle culling. All pixels outside an active scissor rectangle are culled. The default is false.
   bool                    m_bAntialiasedLineEnable = true;                  ///< Specifies whether to enable line antialiasing. The default is true.
   xiiInt32                m_iDepthBias             = 0;                     ///< Constant value added to the depth of a given pixel. The default is false.
