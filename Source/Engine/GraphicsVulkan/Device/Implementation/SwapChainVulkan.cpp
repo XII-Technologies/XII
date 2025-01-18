@@ -737,10 +737,6 @@ void xiiGALSwapChainVulkan::Present()
     }
   }
 
-  // Release stale resources.
-  {
-  }
-
   if (!m_bIsMinimized)
   {
     ++m_uiSemaphoreIndex;
