@@ -474,21 +474,21 @@ void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUI
   CopyBufferToTexture(stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiRowStrideInTexels, pTextureVulkan, bufferToTextureCopyDescription.m_Region, uiMipLevel, uiSlice);
 }
 
-void xiiGALCommandListVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags)
+void xiiGALCommandListVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue)
 {
   XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
 
   m_vkWaitSemaphores.PushBack(semaphore);
   m_vkWaitDestinationStageFlags.PushBack(pipelineFlags);
-  m_vkWaitSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
+  m_vkWaitSemaphoreValues.PushBack(uiValue); // Ignored for binary semaphore.
 }
 
-void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore)
+void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue)
 {
   XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
 
   m_vkSignalSemaphores.PushBack(semaphore);
-  m_vkSignalSemaphoreValues.PushBack(0); // Ignored for binary semaphore.
+  m_vkSignalSemaphoreValues.PushBack(uiValue); // Ignored for binary semaphore.
 }
 
 xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
