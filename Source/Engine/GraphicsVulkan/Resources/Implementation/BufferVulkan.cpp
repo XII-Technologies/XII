@@ -172,7 +172,6 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 
     VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
     vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
-    vmaAllocationCreateInfo.requiredFlags           = {}; // TODO
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkBuffer), &m_BufferMemoryAllocation, nullptr));
 
@@ -188,6 +187,8 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
           void* pMappedMemory = nullptr;
           VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
           VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
+
+          pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
 
           xiiMemoryUtils::RawByteCopy(pMappedMemory, pInitialData->m_pData, pInitialData->m_uiDataSize);
 

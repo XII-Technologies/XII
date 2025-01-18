@@ -457,6 +457,8 @@ void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUI
   VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
   VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiMemorySize));
 
+  pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
+
   for (xiiUInt32 uiDepthSlice = 0; uiDepthSlice < uiUpdateRegionDepth; ++uiDepthSlice)
   {
     for (xiiUInt32 uiRow = 0; uiRow < bufferToTextureCopyDescription.m_uiRowCount; ++uiRow)
@@ -1393,6 +1395,8 @@ void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUIn
   void* pMappedMemory = nullptr;
   VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
   VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+
+  pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
 
   xiiMemoryUtils::RawByteCopy(pMappedMemory, pSourceData.GetPtr(), pSourceData.GetCount());
 

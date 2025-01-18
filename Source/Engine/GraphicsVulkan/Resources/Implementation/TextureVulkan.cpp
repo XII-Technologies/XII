@@ -487,6 +487,8 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
           VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
           VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, mipLevelProperty.m_uiMipSize));
 
+          pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
+
           // bufferOffset must be a multiple of 4 (18.4)
           vkCopyRegion.bufferOffset = stagingBufferAllocation.m_uiOffset; // offset in bytes from the start of the buffer object.
 
