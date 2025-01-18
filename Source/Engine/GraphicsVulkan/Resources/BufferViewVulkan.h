@@ -34,5 +34,5 @@ protected:
 private:
   vk::BufferView m_vkBufferView;
 
-    vk::DescriptorBufferInfo m_vkDescriptorBufferInfo = {};
+  vk::DescriptorBufferInfo m_vkDescriptorBufferInfo = {};
 };

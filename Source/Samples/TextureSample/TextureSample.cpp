@@ -216,7 +216,6 @@ public:
         }
 
         xiiRenderContext::GetDefaultInstance()->EndRendering();
-
       }
 
       xiiRenderContext::GetDefaultInstance()->SetCommandList(nullptr);

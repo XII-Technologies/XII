@@ -2,7 +2,7 @@
 
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
 
-#include <Core/Input/DeviceTypes/MouseKeyboard.h>
+#  include <Core/Input/DeviceTypes/MouseKeyboard.h>
 
 struct xiiAndroidInputEvent;
 struct AInputEvent;

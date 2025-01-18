@@ -4,12 +4,12 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/BufferView.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
@@ -1660,7 +1660,7 @@ void xiiRenderContext::ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceTyp
   XII_ASSERT_DEV(type == xiiGALShaderResourceType::BufferSRV || type == xiiGALShaderResourceType::TextureSRV, "");
 
   xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
-  xiiGALPipelineState* pPipelineState = pDevice->GetPipelineState(m_hCurrentPipelineState);
+  xiiGALPipelineState*             pPipelineState     = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
   for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
@@ -1684,7 +1684,7 @@ void xiiRenderContext::ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceTyp
 void xiiRenderContext::ApplyUnorderedAccessViewBindings()
 {
   xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
-  xiiGALPipelineState* pPipelineState = pDevice->GetPipelineState(m_hCurrentPipelineState);
+  xiiGALPipelineState*             pPipelineState     = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
   for (const auto& binding : pResourceSignature->GetDescription().m_Resources)

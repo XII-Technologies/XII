@@ -2,7 +2,7 @@
 
 #if XII_DISABLED(XII_SUPPORTS_SDL) && XII_DISABLED(XII_PLATFORM_ANDROID)
 
-#include <Core/System/Window.h>
+#  include <Core/System/Window.h>
 
 xiiResult xiiWindow::Initialize()
 {

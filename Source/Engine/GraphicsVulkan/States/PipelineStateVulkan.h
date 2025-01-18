@@ -34,8 +34,8 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
-  vk::Pipeline       m_vkPipeline;
-  vk::PipelineCache  m_vkPipelineCache;
-  vk::PipelineLayout m_vkPipelineLayout;
+  vk::Pipeline          m_vkPipeline;
+  vk::PipelineCache     m_vkPipelineCache;
+  vk::PipelineLayout    m_vkPipelineLayout;
   vk::PipelineBindPoint m_vkPipelineBindPoint;
 };
