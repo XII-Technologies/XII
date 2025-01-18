@@ -102,13 +102,12 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
 
   if (m_QueuedDescriptorPools.IsEmpty())
   {
-    vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+    vk::Device  vkLogicalDevice   = m_pDeviceVulkan->GetVulkanLogicalDevice();
+    const auto& extensionFeatures = m_pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
     xiiHybridArray<vk::DescriptorPoolSize, 17U> descriptorPoolSizes(m_pDeviceVulkan->GetAllocator());
-    vk::DescriptorType                          descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage,
-                                            vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer, vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic,
-                                            vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR, vk::DescriptorType::eAccelerationStructureNV, vk::DescriptorType::eSampleWeightImageQCOM,
-                                            vk::DescriptorType::eBlockMatchImageQCOM, vk::DescriptorType::eMutableEXT};
+    vk::DescriptorType                          descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage, vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer,
+                                            vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic, vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR};
 
     for (const auto& vkDescriptorType : descriptorTypes)
     {
@@ -116,6 +115,9 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
 
       if (uiDescriptorCount > 0)
       {
+        if (vkDescriptorType == vk::DescriptorType::eAccelerationStructureKHR && extensionFeatures.m_RayTracingPipeline.rayTracingPipeline == vk::False)
+          continue;
+
         descriptorPoolSizes.PushBack({vkDescriptorType, uiDescriptorCount});
       }
     }
@@ -173,21 +175,14 @@ float xiiGALDescriptorSetPoolVulkan::GetDescriptorTypeWeight(vk::DescriptorType 
       return 1.0f;
     case vk::DescriptorType::eInputAttachment:
       return 0.5f;
-    case vk::DescriptorType::eInlineUniformBlock:
-      return 1.0f;
+    case vk::DescriptorType::eInlineUniformBlock: // Unused at the moment.
+      return 0.0;
     case vk::DescriptorType::eAccelerationStructureKHR:
       return 1.0f;
-    case vk::DescriptorType::eAccelerationStructureNV:
-      return 1.0f;
-    case vk::DescriptorType::eSampleWeightImageQCOM:
-      return 1.0f;
-    case vk::DescriptorType::eBlockMatchImageQCOM:
-      return 1.0f;
-    case vk::DescriptorType::eMutableEXT:
-      return 1.0f;
-    default:
-      return 0.0f;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
+  return 0.0f;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_DescriptorSetPoolVulkan);
