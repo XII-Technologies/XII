@@ -38,7 +38,8 @@ void xiiGALStagingBufferPoolVulkan::CreateStagingBufferPage()
   vkBufferCreateInfo.sharingMode          = vk::SharingMode::eExclusive;
 
   VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-  vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_CPU_ONLY;
+  vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+  vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
   VK_ASSERT_DEV(vmaCreateBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&stagingBufferPage.m_vkBuffer), &stagingBufferPage.m_VmaAllocation, nullptr));
 
@@ -59,7 +60,8 @@ void xiiGALStagingBufferPoolVulkan::CreateLargeBuffer(xiiUInt64 uiSize)
   vkBufferCreateInfo.sharingMode          = vk::SharingMode::eExclusive;
 
   VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-  vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_CPU_ONLY;
+  vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+  vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
   VK_ASSERT_DEV(vmaCreateBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&stagingBufferPage.m_vkBuffer), &stagingBufferPage.m_VmaAllocation, nullptr));
 
