@@ -147,6 +147,7 @@ public:
 
   XII_ALWAYS_INLINE void SetCommandList(xiiGALCommandList* pCommandList)
   {
+    m_StateFlags   = xiiRenderContextFlags::AllStatesInvalid;
     m_pCommandList = pCommandList;
   }
 
