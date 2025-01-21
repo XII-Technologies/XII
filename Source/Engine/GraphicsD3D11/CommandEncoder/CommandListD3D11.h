@@ -97,10 +97,7 @@ protected:
 private:
   void GALSwapChainD3D11EventHandler(const xiiGALSwapChainD3D11Event& e);
 
-  void InvalidateResources();
-
   void CommitRenderTargets();
-  void ResetRenderTargets();
 
   bool UnsetResourceViews(const xiiGALResource* pResource);
   bool UnsetUnorderedAccessViews(const xiiGALResource* pResource);

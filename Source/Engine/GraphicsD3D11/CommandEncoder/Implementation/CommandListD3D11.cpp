@@ -562,8 +562,6 @@ void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiGALTextureView* pD
 
 void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
 {
-  ResetRenderTargets();
-
   m_AttachmentClearValues.SetCountUninitialized(pOptimizedClearValues.GetCount());
   m_AttachmentClearValues = pOptimizedClearValues;
 
@@ -586,7 +584,6 @@ void xiiGALCommandListD3D11::NextSubpassPlatform()
 
 void xiiGALCommandListD3D11::EndRenderPassPlatform()
 {
-  ResetRenderTargets();
 }
 
 xiiResult xiiGALCommandListD3D11::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -1134,61 +1131,8 @@ void xiiGALCommandListD3D11::InvalidateStatePlatform()
   m_pImmediateContext->ClearState();
 }
 
-void xiiGALCommandListD3D11::InvalidateResources()
-{
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCommittedVertexBuffers); ++i)
-  {
-    m_pCommittedVertexBuffers[i] = nullptr;
-  }
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_CommittedVertexBufferStrides); ++i)
-  {
-    m_CommittedVertexBufferStrides[i] = 0U;
-  }
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_CommittedVertexBufferOffsets); ++i)
-  {
-    m_CommittedVertexBufferOffsets[i] = 0U;
-  }
-  m_CommittedVertexBuffersRange.Reset();
-
-  m_pCommittedIndexBuffer           = nullptr;
-  m_CommittedIndexBufferFormat      = {};
-  m_uiCommittedIndexDataStartOffset = 0U;
-
-  m_pCommittedPipelineState     = nullptr;
-  m_CommittedPrimitiveTopology  = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
-  m_CommittedBlendFactors       = xiiColor::White;
-  m_uiCommittedBlendSampleMask  = 0xFFFFFFFFU;
-  m_uiCommittedStencilReference = 0xFFU;
-
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_CommittedShaders); ++i)
-  {
-    m_CommittedShaders[i] = nullptr;
-  }
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pBoundShaderResourceViews); ++i)
-  {
-    m_pBoundShaderResourceViews[i].Clear();
-    m_ResourcesForResourceViews[i].Clear();
-  }
-  m_BoundShaderResourceViewsRange->Reset();
-
-  m_BoundUnorderedAccessViews.Clear();
-  m_ResourcesForUnorderedAccessViews.Clear();
-  m_BoundUnorderedAccessViewsRange.Reset();
-
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pBoundSamplerStates); ++i)
-  {
-    xiiMemoryUtils::ZeroFillArray(m_pBoundSamplerStates[i]);
-
-    m_BoundSamplerStatesRange[i].Reset();
-  }
-}
-
 void xiiGALCommandListD3D11::CommitRenderTargets()
 {
-  xiiUInt32 uiOldRenderTargetCount = m_uiBoundRenderTargetCount;
-
-  ResetRenderTargets();
-
   if (!m_pRenderPass || !m_pFramebuffer)
     return;
 
@@ -1196,69 +1140,86 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
   const auto& framebufferDescription = m_pFramebuffer->GetDescription();
   const auto& currentSubpass         = renderPassDescription.m_SubPasses[m_uiSubpassIndex];
 
-  const xiiGALTextureViewD3D11* pDepthStencilView = nullptr;
+  const xiiGALTextureViewD3D11* pAttachmentViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  const xiiGALTextureViewD3D11* pDepthStencilView                                = nullptr;
+  const xiiUInt32               uiRenderTargetCount                              = currentSubpass.m_RenderTargetAttachments.GetCount();
+  bool                          bFlushRequired                                   = false;
+
+  // Unbind these attachments that will be used for output by the subpass.
+  // There is no need to unbind textures from output as the new subpass attachments.
+  // will be committed as render target/depth stencil anyway, so these that can be used for input will be unbound.
+
+  for (xiiUInt32 i = 0; i < currentSubpass.m_RenderTargetAttachments.GetCount(); ++i)
+  {
+    const auto& attachmentDescription = currentSubpass.m_RenderTargetAttachments[i];
+
+    if (attachmentDescription.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+    {
+      auto pRenderTargetView = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex]));
+
+      XII_ASSERT_DEV((pRenderTargetView->GetDescription().m_ViewType == xiiGALTextureViewType::RenderTarget), "Expected xiiGALTextureViewType::RenderTarget at the subpass color attachment render target index.");
+
+      bFlushRequired |= UnsetResourceViews(pRenderTargetView->GetTexture());
+      bFlushRequired |= UnsetUnorderedAccessViews(pRenderTargetView->GetTexture());
+
+      pAttachmentViews[i] = pRenderTargetView;
+    }
+    else
+    {
+      pAttachmentViews[i] = nullptr;
+    }
+  }
+
   if (!currentSubpass.m_DepthStencilAttachment.IsEmpty())
   {
     const auto& attachmentDescription = currentSubpass.m_DepthStencilAttachment.PeekBack();
 
     if (attachmentDescription.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
     {
-      pDepthStencilView              = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex]));
-      m_pCommittedDepthStencilTarget = static_cast<ID3D11DepthStencilView*>(pDepthStencilView->GetTextureView());
+      pDepthStencilView = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex]));
 
       XII_ASSERT_DEV((pDepthStencilView->GetDescription().m_ViewType == xiiGALTextureViewType::DepthStencil || pDepthStencilView->GetDescription().m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil), "Expected xiiGALTextureViewType::DepthStencil or xiiGALTextureViewType::ReadOnlyDepthStencil at the subpass depth attachment render target index.");
+
+      bFlushRequired |= UnsetResourceViews(pDepthStencilView->GetTexture());
+      bFlushRequired |= UnsetUnorderedAccessViews(pDepthStencilView->GetTexture());
     }
   }
 
-  const xiiGALTextureViewD3D11* pAttachmentViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
-  xiiGAL::ModifiedRange         boundRenderTargetsRange;
-
-  for (xiiUInt32 i = 0; i < currentSubpass.m_RenderTargetAttachments.GetCount(); ++i)
+  if (bFlushRequired)
   {
-    const auto& attachmentDescription = currentSubpass.m_RenderTargetAttachments[i];
-
-    if (attachmentDescription.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
-      continue;
-
-    auto pRenderTargetView = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex]));
-
-    XII_ASSERT_DEV((pRenderTargetView->GetDescription().m_ViewType == xiiGALTextureViewType::RenderTarget), "Expected xiiGALTextureViewType::RenderTarget at the subpass color attachment render target index.");
-
-    pAttachmentViews[i]          = pRenderTargetView;
-    m_pCommittedRenderTargets[i] = static_cast<ID3D11RenderTargetView*>(pRenderTargetView->GetTextureView());
-
-    boundRenderTargetsRange.SetToIncludeValue(i);
+    FlushDeferredStateChanges().IgnoreResult();
   }
-  m_uiBoundRenderTargetCount = boundRenderTargetsRange.GetCount();
 
-  // Unbind these attachments that will be used for output by the subpass.
-  // There is no need to unbind textures from output as the new subpass attachments.
-  // will be committed as render target/depth stencil anyway, so these that can be used for input will be unbound.
+  xiiMemoryUtils::ZeroFillArray(m_pCommittedRenderTargets);
+  m_pCommittedDepthStencilTarget = nullptr;
+
+  if (uiRenderTargetCount != 0 || pDepthStencilView != nullptr)
   {
-    bool bFlushNeeded = false;
-
-    if (pDepthStencilView != nullptr)
-    {
-      bFlushNeeded |= UnsetResourceViews(pDepthStencilView->GetTexture());
-      bFlushNeeded |= UnsetUnorderedAccessViews(pDepthStencilView->GetTexture());
-    }
-
-    for (xiiUInt32 i = boundRenderTargetsRange.m_uiMin; i < boundRenderTargetsRange.GetCount(); ++i)
+    for (xiiUInt32 i = 0; i < uiRenderTargetCount; ++i)
     {
       if (pAttachmentViews[i] != nullptr)
       {
-        bFlushNeeded |= UnsetResourceViews(pAttachmentViews[i]->GetTexture());
-        bFlushNeeded |= UnsetUnorderedAccessViews(pAttachmentViews[i]->GetTexture());
+        m_pCommittedRenderTargets[i] = static_cast<ID3D11RenderTargetView*>(pAttachmentViews[i]->GetTextureView());
       }
     }
 
-    if (bFlushNeeded)
+    if (pDepthStencilView != nullptr)
     {
-      FlushDeferredStateChanges().IgnoreResult();
+      m_pCommittedDepthStencilTarget = static_cast<ID3D11DepthStencilView*>(pDepthStencilView->GetTextureView());
     }
-  }
 
-  m_pImmediateContext->OMSetRenderTargets(xiiMath::Max(boundRenderTargetsRange.GetCount(), uiOldRenderTargetCount), m_pCommittedRenderTargets, m_pCommittedDepthStencilTarget);
+    // Bind rendertargets, bind max(new rt count, old rt count) to overwrite bound rts if new count < old count
+    m_pImmediateContext->OMSetRenderTargets(xiiMath::Max(uiRenderTargetCount, m_uiBoundRenderTargetCount), m_pCommittedRenderTargets, m_pCommittedDepthStencilTarget);
+
+    m_uiBoundRenderTargetCount = uiRenderTargetCount;
+  }
+  else
+  {
+    m_pCommittedDepthStencilTarget = nullptr;
+    m_uiBoundRenderTargetCount     = 0U;
+
+    m_pImmediateContext->OMSetRenderTargets(0U, nullptr, nullptr);
+  }
 
   // Clear render targets.
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
@@ -1282,18 +1243,6 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
       }
     }
   }
-}
-
-void xiiGALCommandListD3D11::ResetRenderTargets()
-{
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCommittedRenderTargets); ++i)
-  {
-    m_pCommittedRenderTargets[i] = nullptr;
-  }
-  m_pCommittedDepthStencilTarget = nullptr;
-  m_uiBoundRenderTargetCount     = 0U;
-
-  m_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////
