@@ -145,29 +145,59 @@ void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipe
       m_bPrimitiveTopologyModified = true;
     }
 
-    if (description.IsAnyGraphicsPipeline() && pPipelineStateD3D11->GetD3D11InputLayout() != nullptr)
+    if (description.IsAnyGraphicsPipeline())
     {
-      m_pCommittedInputLayout     = pPipelineStateD3D11->GetD3D11InputLayout();
+      if (pPipelineStateD3D11->GetD3D11InputLayout() != nullptr)
+      {
+        m_pCommittedInputLayout = pPipelineStateD3D11->GetD3D11InputLayout();
+      }
+      else
+      {
+        m_pCommittedInputLayout = nullptr;
+      }
       m_bInputLayoutStateModified = true;
-    }
 
-    if (description.IsAnyGraphicsPipeline() && pPipelineStateD3D11->GetD3D11RasterizerState() != nullptr)
-    {
-      m_pCommittedRasterizerState = pPipelineStateD3D11->GetD3D11RasterizerState();
-      m_bRasterizerStateModified  = true;
-    }
+      if (pPipelineStateD3D11->GetD3D11RasterizerState() != nullptr)
+      {
+        m_pCommittedRasterizerState = pPipelineStateD3D11->GetD3D11RasterizerState();
+      }
+      else
+      {
+        m_pCommittedRasterizerState = nullptr;
+      }
+      m_bRasterizerStateModified = true;
 
-    if (description.IsAnyGraphicsPipeline() && (pPipelineStateD3D11->GetD3D11BlendState() != nullptr || pPipelineStateD3D11->GetDescription().m_GraphicsPipeline.m_uiSampleMask != m_uiCommittedBlendSampleMask))
-    {
-      m_uiCommittedBlendSampleMask = pPipelineStateD3D11->GetDescription().m_GraphicsPipeline.m_uiSampleMask;
-      m_pCommittedBlendState       = pPipelineStateD3D11->GetD3D11BlendState();
-      m_bBlendStateModified        = true;
-    }
+      if (pPipelineStateD3D11->GetD3D11RasterizerState() != nullptr)
+      {
+        m_pCommittedRasterizerState = pPipelineStateD3D11->GetD3D11RasterizerState();
+      }
+      else
+      {
+        m_pCommittedRasterizerState = nullptr;
+      }
+      m_bRasterizerStateModified = true;
 
-    if (description.IsAnyGraphicsPipeline() && pPipelineStateD3D11->GetD3D11DepthStencilState() != nullptr)
-    {
-      m_pCommittedDepthStencilState = pPipelineStateD3D11->GetD3D11DepthStencilState();
-      m_bDepthStencilStateModified  = true;
+      if (pPipelineStateD3D11->GetD3D11BlendState() != nullptr || pPipelineStateD3D11->GetDescription().m_GraphicsPipeline.m_uiSampleMask != m_uiCommittedBlendSampleMask)
+      {
+        m_uiCommittedBlendSampleMask = pPipelineStateD3D11->GetDescription().m_GraphicsPipeline.m_uiSampleMask;
+        m_pCommittedBlendState       = pPipelineStateD3D11->GetD3D11BlendState() != nullptr ? pPipelineStateD3D11->GetD3D11BlendState() : nullptr;
+      }
+      else
+      {
+        m_pCommittedBlendState       = nullptr;
+        m_uiCommittedBlendSampleMask = 0xFFFFFFFFU;
+      }
+      m_bBlendStateModified = true;
+
+      if (pPipelineStateD3D11->GetD3D11DepthStencilState() != nullptr)
+      {
+        m_pCommittedDepthStencilState = pPipelineStateD3D11->GetD3D11DepthStencilState();
+      }
+      else
+      {
+        m_pCommittedDepthStencilState = nullptr;
+      }
+      m_bDepthStencilStateModified = true;
     }
   }
   else
@@ -196,7 +226,6 @@ void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipe
     if (m_pCommittedBlendState != nullptr)
     {
       m_pCommittedBlendState       = nullptr;
-      m_CommittedBlendFactors      = xiiColor::White;
       m_uiCommittedBlendSampleMask = 0xFFFFFFFFU;
       m_bBlendStateModified        = true;
     }
