@@ -1110,20 +1110,21 @@ void xiiGALCommandListD3D11::InvalidateStatePlatform()
   m_pFramebuffer   = nullptr;
   m_AttachmentClearValues.Clear();
 
+  xiiMemoryUtils::ZeroFillArray(m_pBoundConstantBuffers);
+
   for (xiiUInt32 uiStage = 0U; uiStage < xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT; ++uiStage)
   {
     m_CommittedShaders[uiStage]                  = nullptr;
     m_CommittedShaderModificationStates[uiStage] = false;
 
-    m_pBoundConstantBuffers[uiStage] = nullptr;
     m_BoundSamplerStatesRange[uiStage].Reset();
 
     for (xiiUInt32 i = 0; i < m_pBoundShaderResourceViews[uiStage].GetCount(); ++i)
     {
       m_pBoundShaderResourceViews[uiStage][i] = nullptr;
       m_ResourcesForResourceViews[uiStage][i] = nullptr;
-      m_BoundShaderResourceViewsRange[uiStage].Reset();
     }
+    m_BoundShaderResourceViewsRange[uiStage].Reset();
 
     xiiMemoryUtils::ZeroFillArray(m_pBoundSamplerStates[uiStage]);
     m_BoundSamplerStatesRange[uiStage].Reset();
