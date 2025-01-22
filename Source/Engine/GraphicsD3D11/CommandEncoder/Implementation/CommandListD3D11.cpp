@@ -584,6 +584,10 @@ void xiiGALCommandListD3D11::NextSubpassPlatform()
 
 void xiiGALCommandListD3D11::EndRenderPassPlatform()
 {
+  m_pCommittedDepthStencilTarget = nullptr;
+  m_uiBoundRenderTargetCount     = 0U;
+
+  m_pImmediateContext->OMSetRenderTargets(0U, nullptr, nullptr);
 }
 
 xiiResult xiiGALCommandListD3D11::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -657,6 +661,8 @@ xiiResult xiiGALCommandListD3D11::DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX
 
 xiiResult xiiGALCommandListD3D11::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
+  m_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
+
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
   m_pImmediateContext->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
@@ -669,6 +675,8 @@ xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiGALBuffer* pIndire
   auto pIndirectArgumentBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndirectArgumentBuffer);
 
   XII_ASSERT_DEV(pIndirectArgumentBufferD3D11 != nullptr, "Invalid resource.");
+
+  m_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
 
   XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
@@ -1149,7 +1157,7 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
   // There is no need to unbind textures from output as the new subpass attachments.
   // will be committed as render target/depth stencil anyway, so these that can be used for input will be unbound.
 
-  for (xiiUInt32 i = 0; i < currentSubpass.m_RenderTargetAttachments.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < uiRenderTargetCount; ++i)
   {
     const auto& attachmentDescription = currentSubpass.m_RenderTargetAttachments[i];
 
@@ -1247,81 +1255,81 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
 
 //////////////////////////////////////////////////////////////////////////
 
-static void SetShaderResources(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11ShaderResourceView** pShaderResourceViews)
+static void SetShaderResources(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiSlotCount, ID3D11ShaderResourceView** pShaderResourceViews)
 {
   switch (stage)
   {
     case xiiGALPipelineStateD3D11::ShaderType::Vertex:
-      pContext->VSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      pContext->VSSetShaderResources(uiStartSlot, uiSlotCount, pShaderResourceViews);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Hull:
-      pContext->HSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      pContext->HSSetShaderResources(uiStartSlot, uiSlotCount, pShaderResourceViews);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Domain:
-      pContext->DSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      pContext->DSSetShaderResources(uiStartSlot, uiSlotCount, pShaderResourceViews);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Geometry:
-      pContext->GSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      pContext->GSSetShaderResources(uiStartSlot, uiSlotCount, pShaderResourceViews);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Pixel:
-      pContext->PSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      pContext->PSSetShaderResources(uiStartSlot, uiSlotCount, pShaderResourceViews);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Compute:
-      pContext->CSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
+      pContext->CSSetShaderResources(uiStartSlot, uiSlotCount, pShaderResourceViews);
       break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
-static void SetConstantBuffers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11Buffer** pConstantBuffers)
+static void SetConstantBuffers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiSlotCount, ID3D11Buffer** pConstantBuffers)
 {
   switch (stage)
   {
     case xiiGALPipelineStateD3D11::ShaderType::Vertex:
-      pContext->VSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      pContext->VSSetConstantBuffers(uiStartSlot, uiSlotCount, pConstantBuffers);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Hull:
-      pContext->HSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      pContext->HSSetConstantBuffers(uiStartSlot, uiSlotCount, pConstantBuffers);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Domain:
-      pContext->DSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      pContext->DSSetConstantBuffers(uiStartSlot, uiSlotCount, pConstantBuffers);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Geometry:
-      pContext->GSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      pContext->GSSetConstantBuffers(uiStartSlot, uiSlotCount, pConstantBuffers);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Pixel:
-      pContext->PSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      pContext->PSSetConstantBuffers(uiStartSlot, uiSlotCount, pConstantBuffers);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Compute:
-      pContext->CSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
+      pContext->CSSetConstantBuffers(uiStartSlot, uiSlotCount, pConstantBuffers);
       break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
-static void SetSamplers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11SamplerState** pSamplerStates)
+static void SetSamplers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiSlotCount, ID3D11SamplerState** pSamplerStates)
 {
   switch (stage)
   {
     case xiiGALPipelineStateD3D11::ShaderType::Vertex:
-      pContext->VSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      pContext->VSSetSamplers(uiStartSlot, uiSlotCount, pSamplerStates);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Hull:
-      pContext->HSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      pContext->HSSetSamplers(uiStartSlot, uiSlotCount, pSamplerStates);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Domain:
-      pContext->DSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      pContext->DSSetSamplers(uiStartSlot, uiSlotCount, pSamplerStates);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Geometry:
-      pContext->GSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      pContext->GSSetSamplers(uiStartSlot, uiSlotCount, pSamplerStates);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Pixel:
-      pContext->PSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      pContext->PSSetSamplers(uiStartSlot, uiSlotCount, pSamplerStates);
       break;
     case xiiGALPipelineStateD3D11::ShaderType::Compute:
-      pContext->CSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
+      pContext->CSSetSamplers(uiStartSlot, uiSlotCount, pSamplerStates);
       break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -1332,6 +1340,8 @@ static void SetSamplers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11
 
 bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiGALResource* pResource)
 {
+  XII_ASSERT_DEV(pResource != nullptr, "");
+
   bool bResult = false;
 
   for (xiiUInt32 uiStage = 0U; uiStage < xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT; ++uiStage)
@@ -1353,6 +1363,8 @@ bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiGALResource* pResource)
 
 bool xiiGALCommandListD3D11::UnsetUnorderedAccessViews(const xiiGALResource* pResource)
 {
+  XII_ASSERT_DEV(pResource != nullptr, "");
+
   bool bResult = false;
 
   for (xiiUInt32 uiSlot = 0U; uiSlot < m_ResourcesForUnorderedAccessViews.GetCount(); ++uiSlot)
@@ -1432,9 +1444,9 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
   if (m_CommittedVertexBuffersRange.IsValid())
   {
     const xiiUInt32 uiStartSlot = m_CommittedVertexBuffersRange.m_uiMin;
-    const xiiUInt32 uiNumSlots  = m_CommittedVertexBuffersRange.GetCount();
+    const xiiUInt32 uiSlotCount = m_CommittedVertexBuffersRange.GetCount();
 
-    m_pImmediateContext->IASetVertexBuffers(uiStartSlot, uiNumSlots, m_pCommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferStrides + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot);
+    m_pImmediateContext->IASetVertexBuffers(uiStartSlot, uiSlotCount, m_pCommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferStrides + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot);
 
     m_CommittedVertexBuffersRange.Reset();
   }
@@ -1486,9 +1498,9 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
     if (m_CommittedShaders[uiStageIndex] != nullptr && m_BoundConstantBuffersRange[uiStageIndex].IsValid())
     {
       const xiiUInt32 uiStartSlot = m_BoundConstantBuffersRange[uiStageIndex].m_uiMin;
-      const xiiUInt32 uiNumSlots  = m_BoundConstantBuffersRange[uiStageIndex].GetCount();
+      const xiiUInt32 uiSlotCount = m_BoundConstantBuffersRange[uiStageIndex].GetCount();
 
-      SetConstantBuffers((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStageIndex, m_pImmediateContext, uiStartSlot, uiNumSlots, m_pBoundConstantBuffers + uiStartSlot);
+      SetConstantBuffers((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStageIndex, m_pImmediateContext, uiStartSlot, uiSlotCount, m_pBoundConstantBuffers + uiStartSlot);
 
       m_BoundConstantBuffersRange[uiStageIndex].Reset();
     }
@@ -1498,9 +1510,9 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
   if (m_BoundUnorderedAccessViewsRange.IsValid())
   {
     const xiiUInt32 uiStartSlot = m_BoundUnorderedAccessViewsRange.m_uiMin;
-    const xiiUInt32 uiNumSlots  = m_BoundUnorderedAccessViewsRange.GetCount();
+    const xiiUInt32 uiSlotCount = m_BoundUnorderedAccessViewsRange.GetCount();
 
-    m_pImmediateContext->CSSetUnorderedAccessViews(uiStartSlot, uiNumSlots, m_BoundUnorderedAccessViews.GetData() + uiStartSlot, nullptr); // Maybe consider unordered access views count reset.
+    m_pImmediateContext->CSSetUnorderedAccessViews(uiStartSlot, uiSlotCount, m_BoundUnorderedAccessViews.GetData() + uiStartSlot, nullptr); // Maybe consider unordered access views count reset.
 
     m_BoundUnorderedAccessViewsRange.Reset();
   }
@@ -1511,9 +1523,9 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
     if (m_BoundShaderResourceViewsRange[uiStageIndex].IsValid())
     {
       const xiiUInt32 uiStartSlot = m_BoundShaderResourceViewsRange[uiStageIndex].m_uiMin;
-      const xiiUInt32 uiNumSlots  = m_BoundShaderResourceViewsRange[uiStageIndex].GetCount();
+      const xiiUInt32 uiSlotCount = m_BoundShaderResourceViewsRange[uiStageIndex].GetCount();
 
-      SetShaderResources((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStageIndex, m_pImmediateContext, uiStartSlot, uiNumSlots, m_pBoundShaderResourceViews[uiStageIndex].GetData() + uiStartSlot);
+      SetShaderResources((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStageIndex, m_pImmediateContext, uiStartSlot, uiSlotCount, m_pBoundShaderResourceViews[uiStageIndex].GetData() + uiStartSlot);
 
       m_BoundShaderResourceViewsRange[uiStageIndex].Reset();
     }
@@ -1525,9 +1537,9 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
     if (m_BoundSamplerStatesRange[uiStageIndex].IsValid())
     {
       const xiiUInt32 uiStartSlot = m_BoundSamplerStatesRange[uiStageIndex].m_uiMin;
-      const xiiUInt32 uiNumSlots  = m_BoundSamplerStatesRange[uiStageIndex].GetCount();
+      const xiiUInt32 uiSlotCount = m_BoundSamplerStatesRange[uiStageIndex].GetCount();
 
-      SetSamplers((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStageIndex, m_pImmediateContext, uiStartSlot, uiNumSlots, m_pBoundSamplerStates[uiStageIndex] + uiStartSlot);
+      SetSamplers((xiiGALPipelineStateD3D11::ShaderType::Enum)uiStageIndex, m_pImmediateContext, uiStartSlot, uiSlotCount, m_pBoundSamplerStates[uiStageIndex] + uiStartSlot);
 
       m_BoundSamplerStatesRange[uiStageIndex].Reset();
     }
