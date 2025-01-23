@@ -26,7 +26,7 @@ xiiSceneDocumentManager::xiiSceneDocumentManager()
     docTypeDesc.m_pManager          = this;
     docTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Scene");
 
-    docTypeDesc.m_sResourceFileExtension = "xiiObjectGraph";
+    docTypeDesc.m_sResourceFileExtension = "xiiBinScene";
     docTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::OnlyTransformManually | xiiAssetDocumentFlags::SupportsThumbnail;
   }
 
@@ -42,7 +42,7 @@ xiiSceneDocumentManager::xiiSceneDocumentManager()
     docTypeDesc.m_pManager          = this;
     docTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Prefab");
 
-    docTypeDesc.m_sResourceFileExtension = "xiiObjectGraph";
+    docTypeDesc.m_sResourceFileExtension = "xiiBinPrefab";
     docTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave | xiiAssetDocumentFlags::SupportsThumbnail;
   }
 

@@ -25,7 +25,7 @@ xiiMaterialAssetDocumentManager::xiiMaterialAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Material");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiMaterialBin";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinMaterial";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::SupportsThumbnail;
 }
 

@@ -33,7 +33,7 @@ xiiDecalAssetDocumentManager::xiiDecalAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Decal");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiDecalStub";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinDecalStub";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::SupportsThumbnail;
 }
 

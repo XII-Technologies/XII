@@ -25,7 +25,7 @@ xiiLUTAssetDocumentManager::xiiLUTAssetDocumentManager()
   m_DocTypeDesc.m_sAssetCategory         = "Rendering";
   m_DocTypeDesc.m_pDocumentType          = xiiGetStaticRTTI<xiiLUTAssetDocument>();
   m_DocTypeDesc.m_pManager               = this;
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiLUT";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinLUT";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::None;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Texture_3D");
 

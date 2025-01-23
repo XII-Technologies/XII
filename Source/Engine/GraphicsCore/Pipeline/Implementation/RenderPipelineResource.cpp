@@ -102,7 +102,7 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
   xiiStringBuilder sAbsFilePath;
   (*Stream) >> sAbsFilePath;
 
-  if (sAbsFilePath.HasExtension("xiiRenderPipelineBin"))
+  if (sAbsFilePath.HasExtension("xiiBinRenderPipeline"))
   {
     xiiStringBuilder sTemp, sTemp2;
 
@@ -119,7 +119,7 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
       xiiLog::Error("Failed to load old xiiRenderPipelineResource '{}'. Needs re-transform.", sAbsFilePath);
       return res;
     }
-    XII_ASSERT_DEV(uiVersion == 2, "Unknown xiiRenderPipelineBin version {0}", uiVersion);
+    XII_ASSERT_DEV(uiVersion == 2, "Unknown xiiBinRenderPipeline version {0}", uiVersion);
 
     xiiUInt32 uiSize = 0;
     (*Stream) >> uiSize;
@@ -131,7 +131,7 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
   }
   else
   {
-    XII_REPORT_FAILURE("The file '{0}' is unsupported, only '.xiiRenderPipelineBin' files can be loaded as xiiRenderPipelineResource", sAbsFilePath);
+    XII_REPORT_FAILURE("The file '{0}' is unsupported, only '.xiiBinRenderPipeline' files can be loaded as xiiRenderPipelineResource", sAbsFilePath);
   }
 
   return res;

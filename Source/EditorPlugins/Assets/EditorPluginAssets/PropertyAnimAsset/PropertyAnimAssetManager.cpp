@@ -19,7 +19,7 @@ xiiPropertyAnimAssetDocumentManager::xiiPropertyAnimAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Property_Animation");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiPropertyAnim";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinPropertyAnim";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
 
   xiiQtImageCache::GetSingleton()->RegisterTypeImage("PropertyAnim", QPixmap(":/AssetIcons/PropertyAnim.svg"));

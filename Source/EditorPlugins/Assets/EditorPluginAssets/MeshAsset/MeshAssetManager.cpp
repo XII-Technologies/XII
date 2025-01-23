@@ -24,7 +24,7 @@ xiiMeshAssetDocumentManager::xiiMeshAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Mesh_Static");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiMesh";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinMesh";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::SupportsThumbnail;
 }
 
