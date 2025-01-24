@@ -97,6 +97,11 @@ void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipe
 {
   auto pPipelineStateD3D11 = static_cast<xiiGALPipelineStateD3D11*>(pPipelineState);
 
+  if (pPipelineStateD3D11 == m_pCommittedPipelineState)
+    return;
+
+  InvalidateCommittedResources();
+
   if (pPipelineStateD3D11 != nullptr)
   {
     const auto& description = pPipelineStateD3D11->GetDescription();
@@ -1138,6 +1143,47 @@ void xiiGALCommandListD3D11::InvalidateStatePlatform()
   m_BoundUnorderedAccessViewsRange.Reset();
 
   m_pImmediateContext->ClearState();
+}
+
+void xiiGALCommandListD3D11::InvalidateCommittedResources()
+{
+  xiiMemoryUtils::ZeroFillArray(m_pBoundConstantBuffers);
+
+  for (xiiUInt32 uiStage = 0U; uiStage < xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT; ++uiStage)
+  {
+    if (m_CommittedShaders[uiStage] != nullptr)
+    {
+      m_CommittedShaders[uiStage]                  = nullptr;
+      m_CommittedShaderModificationStates[uiStage] = true;
+    }
+
+    // This causes samplers to be unbound and not set, need to figure out why.
+    // for (xiiUInt32 i = 0; i < XII_GAL_MAX_SAMPLER_COUNT; ++i)
+    // {
+    //   if (m_pBoundSamplerStates[uiStage][i] != nullptr)
+    //   {
+    //     m_pBoundSamplerStates[uiStage][i] = nullptr;
+    // 
+    //     m_BoundSamplerStatesRange[uiStage].SetToIncludeValue(i);
+    //   }
+    // }
+
+    for (xiiUInt32 i = 0; i < m_pBoundShaderResourceViews[uiStage].GetCount(); ++i)
+    {
+      m_pBoundShaderResourceViews[uiStage][i] = nullptr;
+      m_ResourcesForResourceViews[uiStage][i] = nullptr;
+      m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(i);
+    }
+  }
+
+  for (xiiUInt32 i = 0; i < m_BoundUnorderedAccessViews.GetCount(); ++i)
+  {
+    m_BoundUnorderedAccessViews[i]        = nullptr;
+    m_ResourcesForUnorderedAccessViews[i] = nullptr;
+    m_BoundUnorderedAccessViewsRange.SetToIncludeValue(i);
+  }
+
+  FlushDeferredStateChanges().IgnoreResult();
 }
 
 void xiiGALCommandListD3D11::CommitRenderTargets()

@@ -846,7 +846,6 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
 
-    bIsModified = true;
     if (bIsModified)
     {
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::UAVBindingChanged))
