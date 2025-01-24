@@ -72,10 +72,7 @@ struct xiiRenderPipelineNodePassThroughPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughPin()
-  {
-    m_Type = Type::PassThrough;
-  }
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughPin() { m_Type = Type::PassThrough; }
 };
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineNode : public xiiReflectedClass

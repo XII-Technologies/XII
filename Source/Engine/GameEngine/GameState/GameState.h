@@ -51,6 +51,12 @@ protected:
 public:
   virtual ~xiiGameState();
 
+  /// \brief Returns the active xiiGameState. Only one xiiGameState is allowed to exist.
+  static xiiGameState* GetActiveGameState();
+
+  /// \brief Returns the xiiWorld that is currently the active one.
+  xiiWorld* GetMainWorld() { return m_pMainWorld; }
+
   /// \brief When a game state was chosen, it gets activated through this function.
   ///
   /// \param pWorld
@@ -72,6 +78,9 @@ public:
 
   /// \brief Gives access to the game state's main camera object.
   xiiCamera* GetMainCamera() { return &m_MainCamera; }
+
+  /// \brief Returns the xiiView that is currently the one used for rendering the main output.
+  xiiView* GetMainView();
 
 protected:
   /// \brief Creates an actor with a default window (xiiGameStateWindow) adds it to the application
@@ -117,6 +126,8 @@ protected:
   /// \brief Configures available input devices, e.g. sets mouse speed, cursor clipping, etc.
   /// Called by CreateActors() with the result of CreateMainWindow().
   virtual void ConfigureMainWindowInputDevices(xiiWindow* pWindow);
+
+    static xiiGameState* s_pActiveGameState;
 
   xiiViewHandle m_hMainView;
 

@@ -202,8 +202,8 @@ void xiiSelectionContext::SendMarqueeMsg(QMouseEvent* e, xiiUInt8 uiWhatToDo)
 
   const xiiVec3 vMousePos(e->pos().x(), e->pos().y(), 0.01f);
 
-  const xiiVec3 vScreenSpacePos0(vMousePos.x, m_vViewport.y - vMousePos.y, vMousePos.z);
-  const xiiVec3 vScreenSpacePos1(m_vMarqueeStartPos.x, m_vViewport.y - m_vMarqueeStartPos.y, m_vMarqueeStartPos.z);
+  const xiiVec3 vScreenSpacePos0(vMousePos.x, vMousePos.y, vMousePos.z);
+  const xiiVec3 vScreenSpacePos1(m_vMarqueeStartPos.x, m_vMarqueeStartPos.y, m_vMarqueeStartPos.z);
 
   xiiVec3 vPosOnNearPlane0, vRayDir0;
   xiiVec3 vPosOnNearPlane1, vRayDir1;

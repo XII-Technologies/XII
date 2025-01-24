@@ -91,14 +91,27 @@ public:
   const xiiSharedPtr<xiiTask>& GetExtractTask();
 
 
-  /// \brief Returns the start position and direction (in world space) of the picking ray through the screen position in this view.
+  /// \brief Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
   ///
-  /// fScreenPosX and fScreenPosY are expected to be in [0; 1] range (normalized pixel coordinates).
-  /// If no ray can be computed, XII_FAILURE is returned.
-  xiiResult ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const;
+  /// fNormalizedScreenPosX and fNormalizedScreenPosY are expected to be in [0; 1] range (normalized screen coordinates).
+  /// If no ray can be computed, EZ_FAILURE is returned.
+  xiiResult ComputePickingRay(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const;
 
-  xiiResult ComputeScreenSpacePos(const xiiVec3& vPoint, xiiVec3& out_vScreenPos) const;
+  /// \brief Calculates the normalized screen-space coordinate ([0; 1] range) that the given world-space point projects to.
+  ///
+  /// Returns EZ_FAILURE, if the point could not be projected into screen-space.
+  xiiResult ComputeScreenSpacePos(const xiiVec3& vWorldPos, xiiVec3& out_vScreenPosNormalized) const;
 
+  /// \brief Calculates the world-space position that the given normalized screen-space coordinate maps to
+  xiiResult ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos) const;
+
+  /// \brief Converts a screen-space position from pixel coordinates to normalized coordinates.
+  void ConvertScreenPixelPosToNormalizedPos(xiiVec3& inout_vPixelPos);
+
+  /// \brief Converts a screen-space position from normalized coordinates to pixel coordinates.
+  void ConvertScreenNormalizedPosToPixelPos(xiiVec3& inout_vNormalizedPos);
+
+  
   /// \brief Returns the current projection matrix.
   const xiiMat4& GetProjectionMatrix(xiiCameraEye eye) const;
 

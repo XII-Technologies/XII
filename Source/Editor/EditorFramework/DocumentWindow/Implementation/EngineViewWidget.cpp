@@ -260,7 +260,7 @@ xiiResult xiiQtEngineViewWidget::PickPlane(xiiUInt16 uiScreenPosX, xiiUInt16 uiS
   xiiMat4 mViewProj    = mProj * mView;
   xiiMat4 mInvViewProj = mViewProj.GetInverse();
 
-  xiiVec3 vScreenPos(uiScreenPosX, height() - uiScreenPosY, 0);
+  xiiVec3 vScreenPos(uiScreenPosX,  uiScreenPosY, 0);
   xiiVec3 vResPos, vResRay;
 
   if (xiiGraphicsUtils::ConvertScreenPosToWorldPos(mInvViewProj, 0, 0, width(), height(), vScreenPos, vResPos, &vResRay).Failed())
