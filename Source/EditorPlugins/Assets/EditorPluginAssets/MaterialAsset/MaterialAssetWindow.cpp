@@ -294,7 +294,7 @@ void xiiQtMaterialAssetDocumentWindow::UpdatePreview()
 
   // Write Path
   xiiStringBuilder sAbsFilePath = GetMaterialDocument()->GetDocumentPath();
-  sAbsFilePath.ChangeFileExtension("xiiMaterialBin");
+  sAbsFilePath.ChangeFileExtension("xiiBinMaterial");
   // Write Header
   memoryWriter << sAbsFilePath;
   const xiiUInt64    uiHash = xiiAssetCurator::GetSingleton()->GetAssetDependencyHash(GetMaterialDocument()->GetGuid());

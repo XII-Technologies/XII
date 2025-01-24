@@ -49,7 +49,11 @@ void xiiSceneLoadUtility::StartSceneLoading(xiiStringView sSceneFile, xiiStringV
 
     // if this is a path to the non-transformed source file, redirect it to the transformed file in the asset cache
     sFinalSceneFile.Prepend("AssetCache/Common/");
-    sFinalSceneFile.ChangeFileExtension("xiiObjectGraph");
+
+    if (sFinalSceneFile.HasExtension("xiiScene"))
+      sFinalSceneFile.ChangeFileExtension("xiiBinScene");
+    else
+      sFinalSceneFile.ChangeFileExtension("xiiBinPrefab");
   }
 
   if (sFinalSceneFile != sSceneFile)

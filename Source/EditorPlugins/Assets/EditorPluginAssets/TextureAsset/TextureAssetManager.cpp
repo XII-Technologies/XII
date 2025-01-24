@@ -111,7 +111,7 @@ xiiString xiiTextureAssetDocumentManager::GetRelativeOutputFileName(const xiiAss
     sRelativePath.MakeRelativeTo(sDataDirectory).IgnoreResult();
     sRelativePath.RemoveFileExtension();
     sRelativePath.Append("-lowres");
-    xiiAssetDocumentManager::GenerateOutputFilename(sRelativePath, pAssetProfile, "xiiTexture2D", true);
+    xiiAssetDocumentManager::GenerateOutputFilename(sRelativePath, pAssetProfile, "xiiBinTexture2D", true);
     return sRelativePath;
   }
 

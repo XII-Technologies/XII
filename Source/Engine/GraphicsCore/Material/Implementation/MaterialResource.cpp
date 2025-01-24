@@ -497,7 +497,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
   xiiStringBuilder sAbsFilePath;
   (*pOuterStream) >> sAbsFilePath;
 
-  if (sAbsFilePath.HasExtension("xiiMaterialBin"))
+  if (sAbsFilePath.HasExtension("xiiBinMaterial"))
   {
     xiiStringBuilder sTemp, sTemp2;
 
@@ -506,7 +506,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
     xiiUInt8 uiVersion = 0;
     (*pOuterStream) >> uiVersion;
-    XII_ASSERT_DEV(uiVersion >= 4 && uiVersion <= 7, "Unknown xiiMaterialBin version {0}", uiVersion);
+    XII_ASSERT_DEV(uiVersion >= 4 && uiVersion <= 7, "Unknown xiiBinMaterial version {0}", uiVersion);
 
     xiiUInt8 uiCompressionMode = 0;
     if (uiVersion >= 6)
@@ -697,8 +697,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       }
     }
   }
-
-  if (sAbsFilePath.HasExtension("xiiMaterial"))
+  else if (sAbsFilePath.HasExtension("xiiMaterial"))
   {
     xiiOpenDdlReader reader;
 
@@ -785,6 +784,10 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
         }
       }
     }
+  }
+  else
+  {
+    xiiLog::Error("Unknown material file type: '{}'", sAbsFilePath);
   }
 
   if (m_mDesc.m_hBaseMaterial.IsValid())

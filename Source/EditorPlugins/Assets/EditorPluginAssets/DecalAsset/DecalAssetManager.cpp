@@ -33,7 +33,7 @@ xiiDecalAssetDocumentManager::xiiDecalAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Decal");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinDecalStub";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinDecal";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::SupportsThumbnail;
 }
 
@@ -50,7 +50,7 @@ void xiiDecalAssetDocumentManager::AddEntriesToAssetTable(xiiStringView sDataDir
 
   if (projectDir.StartsWith_NoCase(sDataDirectory))
   {
-    addEntry("{ ProjectDecalAtlas }", "Default/Decals.xiiTextureAtlas", "Decal Atlas");
+    addEntry("{ ProjectDecalAtlas }", "Default/Decals.ezBinTextureAtlas", "Decal Atlas");
   }
 }
 
@@ -284,7 +284,7 @@ xiiString xiiDecalAssetDocumentManager::GetDecalTexturePath(const xiiPlatformPro
 {
   const xiiPlatformProfile* pAssetProfile = xiiAssetDocumentManager::DetermineFinalTargetProfile(pAssetProfile0);
   xiiStringBuilder          result        = "Decals";
-  GenerateOutputFilename(result, pAssetProfile, "xiiTextureAtlas", true);
+  GenerateOutputFilename(result, pAssetProfile, "ezBinTextureAtlas", true);
 
   return result;
 }

@@ -24,7 +24,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(TypeScript, Resource)
   {
     xiiResourceManager::RegisterResourceForAssetType("VisualScriptClass", xiiGetStaticRTTI<xiiVisualScriptClassResource>());
     xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiVisualScriptClassResource>(), [](const xiiStringBuilder& sResourceID) -> bool  {
-        return sResourceID.HasExtension(".xiiVisualScriptClassBin");
+        return sResourceID.HasExtension(".xiiBinVisualScriptClass");
       });
   }
 

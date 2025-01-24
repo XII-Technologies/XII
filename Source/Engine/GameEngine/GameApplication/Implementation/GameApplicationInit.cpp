@@ -173,7 +173,7 @@ void xiiGameApplication::Init_SetupDefaultResources()
     desc.SetMaterial(0, "");
     desc.ComputeBounds();
 
-    xiiMeshResourceHandle hMissingMesh = xiiResourceManager::GetOrCreateResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh", std::move(desc), pMeshBuffer->GetResourceDescription());
+    xiiMeshResourceHandle hMissingMesh = xiiResourceManager::GetOrCreateResource<xiiMeshResource>("Meshes/MissingMesh.xiiBinMesh", std::move(desc), pMeshBuffer->GetResourceDescription());
     xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
   }
 
@@ -182,7 +182,7 @@ void xiiGameApplication::Init_SetupDefaultResources()
     // xiiPrefabResourceDescriptor emptyPrefab;
     // xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::CreateResource<xiiPrefabResource>("MissingPrefabResource", emptyPrefab, "MissingPrefabResource");
 
-    xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>("Prefabs/MissingPrefab.xiiObjectGraph");
+    xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>("Prefabs/MissingPrefab.xiiBinPrefab");
     xiiResourceManager::SetResourceTypeMissingFallback<xiiPrefabResource>(hMissingPrefab);
   }
 
