@@ -4,6 +4,7 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Pipeline/ViewRenderMode.h>
+#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 /// \brief Holds view data like the viewport, view and projection matrices
@@ -26,6 +27,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
   }
 
   xiiGALRenderTargets         m_RenderTargets;
+  xiiGALRenderTargets         m_SwapChainRenderTargets;
   xiiGALSwapChainHandle       m_hSwapChain;
   xiiRectFloat                m_ViewPortRect;
   xiiEnum<xiiViewRenderMode>  m_ViewRenderMode;
@@ -50,7 +52,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
     vScreenPos.y = fNormalizedScreenPosY;
     vScreenPos.z = 0.0f;
 
-    return xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_InverseViewProjectionMatrix[static_cast<int>(eye)], vScreenPos, out_vRayStartPos, &out_vRayDir);
+    return xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_InverseViewProjectionMatrix[static_cast<xiiInt32>(eye)], vScreenPos, out_vRayStartPos, &out_vRayDir);
   }
 
   /// \brief Calculates the normalized screen-space coordinate ([0; 1] range) that the given world-space point projects to.
@@ -58,13 +60,13 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
   /// Returns XII_FAILURE, if the point could not be projected into screen-space.
   XII_ALWAYS_INLINE xiiResult ComputeScreenSpacePos(const xiiVec3& vWorldPos, xiiVec3& out_vScreenPosNormalized, xiiCameraEye eye = xiiCameraEye::Left) const
   {
-    return xiiGraphicsUtils::ConvertWorldPosToScreenPos(m_ViewProjectionMatrix[static_cast<int>(eye)], vWorldPos, out_vScreenPosNormalized);
+    return xiiGraphicsUtils::ConvertWorldPosToScreenPos(m_ViewProjectionMatrix[static_cast<xiiInt32>(eye)], vWorldPos, out_vScreenPosNormalized);
   }
 
   /// \brief Calculates the world-space position that the given normalized screen-space coordinate maps to
   XII_ALWAYS_INLINE xiiResult ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos, xiiCameraEye eye = xiiCameraEye::Left) const
   {
-    return xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_InverseViewProjectionMatrix[static_cast<int>(eye)], xiiVec3(fNormalizedScreenPosX, fNormalizedScreenPosY, 0.0f), out_vWorldPos);
+    return xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_InverseViewProjectionMatrix[static_cast<xiiInt32>(eye)], xiiVec3(fNormalizedScreenPosX, fNormalizedScreenPosY, 0.0f), out_vWorldPos);
   }
 
   /// \brief Converts a screen-space position from pixel coordinates to normalized coordinates.
