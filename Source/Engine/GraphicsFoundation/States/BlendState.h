@@ -164,8 +164,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xi
 /// \brief This describes the blend state for all render targets in the graphics pipeline.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public xiiHashableStruct<xiiGALBlendStateCreationDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
   bool                                                                               m_bAlphaToCoverage     = false;                       ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target. The default is false.
   bool                                                                               m_bIndependentBlend    = false;                       ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used. The default is false.
   bool                                                                               m_LogicOperationEnable = false;                       ///< Enable or disable a logical operation for this render target. The default is false.

@@ -291,6 +291,14 @@ private:
     xiiGALFramebufferHandle hFrameBuffer;
   };
 
+  struct PipelineStateInfo
+  {
+    XII_DECLARE_POD_TYPE();
+
+    xiiGALPipelineStateHandle             m_hPipelineState;
+    xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;
+  };
+
   struct ResourceCacheHash
   {
     static xiiUInt32 Hash(const xiiGALRenderTargetSetup& renderTargetSetup);
@@ -298,9 +306,13 @@ private:
 
     static xiiUInt32 Hash(const xiiGALRenderingSetup& renderingSetup);
     static bool      Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b);
+
+    static xiiUInt32 Hash(const xiiGALPipelineStateCreationDescription& pipelineCreationDescription);
+    static bool      Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b);
   };
 
   void GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassHandle& out_hRenderPass, xiiGALFramebufferHandle& out_hFramebuffer);
+  void FlushPipelineStateCache();
 
   void BeginRenderPass();
   void EndRenderPass();
@@ -401,8 +413,9 @@ private:
 
   static xiiGALSamplerHandle s_hDefaultSamplers[4];
 
-  xiiHashTable<xiiGALRenderingSetup, xiiGALRenderPassHandle, xiiRenderContext::ResourceCacheHash>    m_RenderPassCache;
-  xiiHashTable<xiiGALRenderingSetup, RenderPassFrameBufferInfo, xiiRenderContext::ResourceCacheHash> m_FramebufferCache;
+  xiiHashTable<xiiGALRenderingSetup, xiiGALRenderPassHandle, xiiRenderContext::ResourceCacheHash>              m_RenderPassCache;
+  xiiHashTable<xiiGALRenderingSetup, RenderPassFrameBufferInfo, xiiRenderContext::ResourceCacheHash>           m_FramebufferCache;
+  xiiHashTable<xiiGALPipelineStateCreationDescription, PipelineStateInfo, xiiRenderContext::ResourceCacheHash> m_PipelineStateCache;
 
 private: // Per Renderer States
   friend RenderingScope;

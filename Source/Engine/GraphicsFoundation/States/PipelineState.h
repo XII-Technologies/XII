@@ -167,10 +167,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescri
 };
 
 /// \brief This describes the ray tracing pipeline information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public xiiHashableStruct<xiiGALRayTracingPipelineDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiHashedString                                                      m_sShaderRecordName;           ///< In Direct3D12, the name of the constant buffer that will be used by the local root signature. This is unused if m_uiShaderRecordSize is zero.
   xiiDynamicArray<xiiGALRayTracingGeneralShaderGroupDescription>       m_GeneralShaders;              ///< An array of xiiGALRayTracingGeneralShaderGroupDescription structures that contain the shader group description.
   xiiDynamicArray<xiiGALRayTracingTriangleHitShaderGroupDescription>   m_TriangleHitShaders;          ///< An array of xiiGALRayTracingTriangleHitShaderGroupDescription structures that contain the shader group description.
@@ -179,6 +177,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public x
   xiiUInt32                                                            m_uiMaximumPayloadSize   = 0U; ///< In Direct3D12, the maximum payload size in bytes. If zero then maximum allowed size will be used.
   xiiUInt16                                                            m_uiShaderRecordSize     = 0U; ///< Size of the additional data passed to the shader. Shader record size plus shader group size (32 bytes) must be aligned to 32 bytes. Shader record size plus shader group size (32 bytes) must not exceed 4096 bytes
   xiiUInt8                                                             m_uiMaxRecursionDepth    = 0U; ///< Number of recursive calls of TraceRay() in HLSL. Zero means no tracing of rays at all, only ray-gen shader will be executed. See Device MaxRayTracingRecursionDepth.
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALRayTracingPipelineDescription& rhs) const = default;
 };
 
 /// \brief This describes the tile pipeline information.
@@ -189,19 +189,17 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription : public xiiHash
 };
 
 /// \brief This describes the pipeline state creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription : public xiiHashableStruct<xiiGALPipelineStateCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiEnum<xiiGALPipelineType>           m_PipelineType = xiiGALPipelineType::Graphics; ///< The pipeline type. The default is xiiGALPipelineType::Graphics.
   xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;                  ///< The pipeline resource signature that contains the shader resource description.
   xiiGALGraphicsPipelineDescription     m_GraphicsPipeline;                            ///< The graphics pipeline description, see xiiGALGraphicsPipelineDescription.
   xiiGALComputePipelineDescription      m_ComputePipeline;                             ///< The compute pipeline description, see xiiGALComputePipelineDescription.
   xiiGALRayTracingPipelineDescription   m_RayTracingPipeline;                          ///< The ray tracing pipeline description, see xiiGALRayTracingPipelineDescription.
   xiiGALTilePipelineDescription         m_TilePipeline;                                ///< The tile pipeline description, see xiiGALTilePipelineDescription.
-  xiiUInt32                             m_uiNodeMask         = 0x0;                    ///< Node mask.
-  xiiUInt64                             m_uiCommandQueueMask = XII_BIT(0);             ///< Defines which command queues are allowed to execute commands that use this texture. The default is the main command queue.
-                                                                                       ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
+  xiiUInt32                             m_uiNodeMask = 0x0;                            ///< Node mask.
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALPipelineStateCreationDescription& rhs) const = default;
 
   /// \brief Returns true if this pipeline state is a graphics pipeline.
   XII_ALWAYS_INLINE constexpr bool IsAnyGraphicsPipeline() const { return m_PipelineType == xiiGALPipelineType::Graphics || m_PipelineType == xiiGALPipelineType::Mesh; }

@@ -113,11 +113,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xi
 };
 
 /// \brief This describes the render pass creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription : public xiiHashableStruct<xiiGALRenderPassCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription
 {
   xiiHybridArray<xiiGALRenderPassAttachmentDescription, 16U> m_Attachments;  ///< An array of sub pass attachments.
   xiiHybridArray<xiiGALSubPassDescription, 16U>              m_SubPasses;    ///< An array of sub pass descriptions.
   xiiHybridArray<xiiGALSubPassDependencyDescription, 16U>    m_Dependencies; ///< An array of sub pass dependencies.
+
+      XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassCreationDescription& rhs) const = default;
 };
 
 /// \brief Interface that defines methods to manipulate a render pass object.
