@@ -33,7 +33,7 @@ xiiResult xiiGALFenceD3D11::InitPlatform()
     return XII_FAILURE;
   }
 
-  D3D11_FENCE_FLAG fenceFlags = D3D11_FENCE_FLAG_SHARED;
+  D3D11_FENCE_FLAG fenceFlags = D3D11_FENCE_FLAG_NONE;
   XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D11->GetD3D11Device()->CreateFence(0U, fenceFlags, IID_PPV_ARGS(&m_pD3D11Fence)));
 
   return XII_SUCCESS;
