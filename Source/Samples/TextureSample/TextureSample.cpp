@@ -220,7 +220,6 @@ public:
           pRenderContext->SetCommandList(nullptr);
 
           pCommandList->Submit();
-          pDefaultQueue->WaitForIdle();
         }
         pRenderContext->ResetContextState();
       }

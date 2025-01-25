@@ -2081,6 +2081,161 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
           vkWriteDescriptorSet.pBufferInfo             = nullptr;
           vkWriteDescriptorSet.pTexelBufferView        = nullptr;
 
+#if 1
+          switch (vkWriteDescriptorSet.descriptorType)
+          {
+            case vk::DescriptorType::eUniformBuffer:
+            case vk::DescriptorType::eUniformBufferDynamic:
+            {
+              if (const xiiGALBufferVulkan* pBufferVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundConstantBuffers.GetCount() ? resources.m_pBoundConstantBuffers[resourceDescription.m_uiBindSlot] : nullptr))
+              {
+                vkWriteDescriptorSet.pBufferInfo = pBufferVulkan->GetVulkanDescriptorBufferInfo();
+              }
+              else
+              {
+                xiiLog::Error("No constant buffer bound at '{}'.", resourceDescription.m_sName.GetView());
+                return XII_FAILURE;
+              }
+
+              // Move offset out and into the separate offset array.
+              auto& bufferInfo = m_DynamicUniformBuffers.ExpandAndGetRef();
+              bufferInfo       = *vkWriteDescriptorSet.pBufferInfo;
+
+              m_DynamicUniformBufferOffsets.PushBack((xiiUInt32)bufferInfo.offset);
+
+              bufferInfo.offset                = 0U;
+              vkWriteDescriptorSet.pBufferInfo = &bufferInfo;
+            }
+            break;
+            case vk::DescriptorType::eCombinedImageSampler:
+            case vk::DescriptorType::eSampledImage:
+            case vk::DescriptorType::eStorageImage:
+            {
+              // Write image descriptor write info. (pImageInfo)
+              // So, vk::DescriptorType::eCombinedImageSampler and vk::DescriptorType::eSampledImage are used as shader resource views, while vk::DescriptorType::eStorageImage is used as an unordered access view.
+              if (vkWriteDescriptorSet.descriptorType == vk::DescriptorType::eCombinedImageSampler || vkWriteDescriptorSet.descriptorType == vk::DescriptorType::eSampledImage)
+              {
+                if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+                {
+                  vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
+                }
+                else
+                {
+                  xiiLog::Error("No texture resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                  return XII_FAILURE;
+                }
+              }
+              else
+              {
+                if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessTextureResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+                {
+                  vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
+                }
+                else
+                {
+                  xiiLog::Error("No unordered access texture resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                  return XII_FAILURE;
+                }
+              }
+            }
+            break;
+            case vk::DescriptorType::eUniformTexelBuffer:
+            case vk::DescriptorType::eStorageTexelBuffer:
+            {
+              // Write buffer view write info (pTexelBufferView)
+              // So, vk::DescriptorType::eUniformTexelBuffer is used as a shader resource view, while vk::DescriptorType::eStorageTexelBuffer is used as an unordered access view.
+              if (vkWriteDescriptorSet.descriptorType == vk::DescriptorType::eUniformTexelBuffer)
+              {
+                if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+                {
+                  auto v                                = pBufferViewVulkan->GetVulkanBufferView();
+                  vkWriteDescriptorSet.pTexelBufferView = &v;
+                }
+                else
+                {
+                  xiiLog::Error("No buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                  return XII_FAILURE;
+                }
+              }
+              else
+              {
+                if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+                {
+                  auto v                                = pBufferViewVulkan->GetVulkanBufferView();
+                  vkWriteDescriptorSet.pTexelBufferView = &v;
+                }
+                else
+                {
+                  xiiLog::Error("No unordered access buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                  return XII_FAILURE;
+                }
+              }
+            }
+            break;
+            case vk::DescriptorType::eStorageBuffer:
+            case vk::DescriptorType::eStorageBufferDynamic:
+            {
+              // Write to pBufferInfo.
+              switch (resourceDescription.m_ResourceType)
+              {
+                case xiiGALShaderResourceType::BufferSRV:
+                {
+                  if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+                  {
+                    vkWriteDescriptorSet.pBufferInfo = pBufferViewVulkan->GetVulkanDescriptorBufferInfo();
+                  }
+                  else
+                  {
+                    xiiLog::Error("No buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                    return XII_FAILURE;
+                  }
+                }
+                break;
+                case xiiGALShaderResourceType::BufferUAV:
+                {
+                  if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+                  {
+                    vkWriteDescriptorSet.pBufferInfo = pBufferViewVulkan->GetVulkanDescriptorBufferInfo();
+                  }
+                  else
+                  {
+                    xiiLog::Error("No unordered access buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                    return XII_FAILURE;
+                  }
+                }
+                break;
+
+                XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+              }
+            }
+            break;
+            case vk::DescriptorType::eSampler:
+            {
+              if (const xiiGALSamplerVulkan* pSamplerVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundSamplerStates.GetCount() ? resources.m_pBoundSamplerStates[resourceDescription.m_uiBindSlot] : nullptr))
+              {
+                vkWriteDescriptorSet.pImageInfo = pSamplerVulkan->GetVulkanDescriptorImageInfo();
+              }
+              else
+              {
+                xiiLog::Error("No sampler bound at '{}'.", resourceDescription.m_sName.GetView());
+                return XII_FAILURE;
+              }
+            }
+            break;
+            case vk::DescriptorType::eInputAttachment:
+            {
+              // Write to pImageInfo.
+              XII_ASSERT_NOT_IMPLEMENTED;
+            }
+            break;
+            case vk::DescriptorType::eAccelerationStructureKHR:
+            {
+              // Write to vk::WriteDescriptorSetAccelerationStructureKHR and attach with pNext.
+              XII_ASSERT_NOT_IMPLEMENTED;
+            }
+            break;
+          }
+#else
           switch (resourceDescription.m_ResourceType)
           {
             case xiiGALShaderResourceType::ConstantBuffer:
@@ -2174,6 +2329,7 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
               XII_ASSERT_NOT_IMPLEMENTED;
               return XII_FAILURE;
           }
+#endif
         }
       }
 
