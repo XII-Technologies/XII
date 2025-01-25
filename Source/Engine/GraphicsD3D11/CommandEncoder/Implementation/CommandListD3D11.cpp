@@ -1163,7 +1163,7 @@ void xiiGALCommandListD3D11::InvalidateCommittedResources()
       if (m_pBoundSamplerStates[uiStage][i] != nullptr)
       {
         m_pBoundSamplerStates[uiStage][i] = nullptr;
-    
+
         m_BoundSamplerStatesRange[uiStage].SetToIncludeValue(i);
       }
     }

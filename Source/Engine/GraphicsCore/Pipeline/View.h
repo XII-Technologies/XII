@@ -111,7 +111,7 @@ public:
   /// \brief Converts a screen-space position from normalized coordinates to pixel coordinates.
   void ConvertScreenNormalizedPosToPixelPos(xiiVec3& inout_vNormalizedPos);
 
-  
+
   /// \brief Returns the current projection matrix.
   const xiiMat4& GetProjectionMatrix(xiiCameraEye eye) const;
 

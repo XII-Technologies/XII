@@ -127,7 +127,7 @@ protected:
   /// Called by CreateActors() with the result of CreateMainWindow().
   virtual void ConfigureMainWindowInputDevices(xiiWindow* pWindow);
 
-    static xiiGameState* s_pActiveGameState;
+  static xiiGameState* s_pActiveGameState;
 
   xiiViewHandle m_hMainView;
 

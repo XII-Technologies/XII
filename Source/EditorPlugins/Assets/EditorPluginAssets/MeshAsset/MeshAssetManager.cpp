@@ -117,7 +117,7 @@ void xiiMeshAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentManage
   }
 }
 
-void xiiMeshAssetDocumentManager::InternalCreateDocument(xiiStringView            sDocumentTypeName,xiiStringView            sPath,bool                     bCreateNewDocument,xiiDocument*&            out_pDocument,const xiiDocumentObject* pOpenContext)
+void xiiMeshAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiMeshAssetDocument(sPath);
 }
