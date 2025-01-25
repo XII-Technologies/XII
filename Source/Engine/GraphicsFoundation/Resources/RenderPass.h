@@ -119,7 +119,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription
   xiiHybridArray<xiiGALSubPassDescription, 16U>              m_SubPasses;    ///< An array of sub pass descriptions.
   xiiHybridArray<xiiGALSubPassDependencyDescription, 16U>    m_Dependencies; ///< An array of sub pass dependencies.
 
-      XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassCreationDescription& rhs) const = default;
+  XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassCreationDescription& rhs) const = default;
 };
 
 /// \brief Interface that defines methods to manipulate a render pass object.

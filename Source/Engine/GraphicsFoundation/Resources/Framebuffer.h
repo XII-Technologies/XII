@@ -14,7 +14,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFramebufferCreationDescription
   xiiSizeU32                                   m_FramebufferSize   = xiiSizeU32(0U, 0U); ///< The size of the frame buffer. The default is (0, 0).
   xiiUInt32                                    m_uiArraySliceCount = 0U;                 ///< The number of array slices in the frame buffer. The default is 0.
 
-    XII_ALWAYS_INLINE bool operator==(const xiiGALFramebufferCreationDescription& rhs) const = default;
+  XII_ALWAYS_INLINE bool operator==(const xiiGALFramebufferCreationDescription& rhs) const = default;
 };
 
 /// \brief Interface that defines methods to manipulate a frame buffer object.
