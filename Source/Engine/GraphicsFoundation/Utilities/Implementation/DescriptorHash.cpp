@@ -122,7 +122,6 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
 
   writer << description.m_PipelineType;
   writer << description.m_uiNodeMask;
-  writer << description.m_uiCommandQueueMask;
 
   // Graphics pipeline state.
   switch (description.m_PipelineType)
@@ -223,7 +222,7 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
 
 bool xiiGALDescriptorHash::Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b)
 {
-  return false;
+  return a == b;
 }
 
 xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineResourceSignatureCreationDescription& description)
@@ -263,7 +262,7 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineResourceSignatureCreati
 
 bool xiiGALDescriptorHash::Equal(const xiiGALPipelineResourceSignatureCreationDescription& a, const xiiGALPipelineResourceSignatureCreationDescription& b)
 {
-  return false;
+  return a == b;
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_DescriptorHash);

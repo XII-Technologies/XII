@@ -27,6 +27,7 @@
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 xiiRenderContext*                    xiiRenderContext::s_pDefaultInstance = nullptr;
 xiiHybridArray<xiiRenderContext*, 4> xiiRenderContext::s_Instances;
@@ -122,8 +123,6 @@ xiiRenderContext::xiiRenderContext()
 
   m_hGlobalConstantBufferStorage = CreateConstantBufferStorage<xiiGlobalConstants>();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   ResetContextState();
 }
 
@@ -151,6 +150,8 @@ xiiRenderContext::~xiiRenderContext()
     pGALDevice->DestroyRenderPass(hRenderPass);
     hRenderPass.Invalidate();
   }
+
+  FlushPipelineStateCache();
 
   DeleteConstantBufferStorage(m_hGlobalConstantBufferStorage);
 
@@ -795,13 +796,6 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     bool bPipelineStateInvalidated = false;
     if (pShaderPermutation != nullptr)
     {
-      if (!m_hCurrentPipelineState.IsInvalidated())
-      {
-        pDevice->DestroyPipelineState(m_hCurrentPipelineState);
-
-        m_hCurrentPipelineState.Invalidate();
-      }
-
       // Set render state from shader.
       // Create pipeline state that is valid for this scope.
       xiiGALPipelineStateCreationDescription pipelineDescription;
@@ -841,13 +835,33 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
         graphicsPipeline.m_hInputLayout      = m_hInputLayout;
       }
 
-      m_hCurrentPipelineState = pDevice->CreatePipelineState(pipelineDescription);
-      XII_ASSERT_DEV(!m_hCurrentPipelineState.IsInvalidated(), "");
+      xiiRenderContext::PipelineStateInfo* pPipelineStateInfo = nullptr;
+      if (!m_PipelineStateCache.TryGetValue(pipelineDescription, pPipelineStateInfo))
+      {
+        m_hCurrentPipelineState = pDevice->CreatePipelineState(pipelineDescription);
 
-      bPipelineStateInvalidated = true;
+        xiiRenderContext::PipelineStateInfo newPipelineStateInfo = {.m_hPipelineState = m_hCurrentPipelineState};
+
+        XII_VERIFY(!m_PipelineStateCache.Insert(pipelineDescription, newPipelineStateInfo), "Overwriting an existing cached pipeline state, this is unexpected behavior.");
+
+        m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
+
+        bPipelineStateInvalidated = true;
+      }
+      else
+      {
+        if (m_hCurrentPipelineState != pPipelineStateInfo->m_hPipelineState)
+        {
+          m_hCurrentPipelineState = pPipelineStateInfo->m_hPipelineState;
+
+          m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
+
+          bPipelineStateInvalidated = true;
+        }
+      }
+
+      XII_ASSERT_DEV(!m_hCurrentPipelineState.IsInvalidated(), "Implementation error!");
     }
-
-    m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
 
     if (bIsModified || bPipelineStateInvalidated)
     {
@@ -941,12 +955,7 @@ void xiiRenderContext::ResetContextState()
 
   m_BoundConstantBuffers.Clear();
 
-  if (!m_hCurrentPipelineState.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyPipelineState(m_hCurrentPipelineState);
-
-    m_hCurrentPipelineState.Invalidate();
-  }
+  m_hCurrentPipelineState = xiiGALPipelineStateHandle();
 }
 
 xiiGlobalConstants& xiiRenderContext::WriteGlobalConstants()
@@ -1363,6 +1372,31 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
 
   out_hRenderPass  = frameBufferInfo.hRenderPass;
   out_hFramebuffer = frameBufferInfo.hFrameBuffer;
+}
+
+void xiiRenderContext::FlushPipelineStateCache()
+{
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
+  for (auto iter : m_PipelineStateCache)
+  {
+    if (!iter.IsValid())
+      continue;
+
+    const auto& pipelineStateInfo = iter.Value();
+
+    if (!pipelineStateInfo.m_hPipelineResourceSignature.IsInvalidated())
+    {
+      pDevice->DestroyPipelineResourceSignature(pipelineStateInfo.m_hPipelineResourceSignature);
+    }
+    if (!pipelineStateInfo.m_hPipelineState.IsInvalidated())
+    {
+      pDevice->DestroyPipelineState(pipelineStateInfo.m_hPipelineState);
+    }
+  }
+
+  m_PipelineStateCache.Clear();
+  m_PipelineStateCache.Compact();
 }
 
 void xiiRenderContext::BeginRenderPass()
@@ -1839,6 +1873,16 @@ xiiUInt32 xiiRenderContext::ResourceCacheHash::Hash(const xiiGALRenderingSetup& 
 bool xiiRenderContext::ResourceCacheHash::Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b)
 {
   return a == b;
+}
+
+xiiUInt32 xiiRenderContext::ResourceCacheHash::Hash(const xiiGALPipelineStateCreationDescription& pipelineCreationDescription)
+{
+  return xiiGALDescriptorHash::Hash(pipelineCreationDescription);
+}
+
+bool xiiRenderContext::ResourceCacheHash::Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b)
+{
+  return xiiGALDescriptorHash::Equal(a, b);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
