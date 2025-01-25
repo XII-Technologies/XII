@@ -15,6 +15,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALTextureViewVulkan final : public xiiGALTextur
 
 public:
   XII_ALWAYS_INLINE vk::ImageView GetVulkanImageView() const { return m_vkImageView; }
+  XII_ALWAYS_INLINE const vk::DescriptorImageInfo* GetVulkanDescriptorImageInfo() const { return &m_vkDescriptorImageInfo; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -32,4 +33,6 @@ protected:
 
 private:
   vk::ImageView m_vkImageView;
+
+  vk::DescriptorImageInfo m_vkDescriptorImageInfo = {};
 };

@@ -2107,7 +2107,15 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             break;
             case xiiGALShaderResourceType::TextureSRV:
             {
-              XII_ASSERT_NOT_IMPLEMENTED;
+              if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+              {
+                vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
+              }
+              else
+              {
+                xiiLog::Error("No texture resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                return XII_FAILURE;
+              }
             }
             break;
             case xiiGALShaderResourceType::BufferSRV:
@@ -2125,7 +2133,15 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             break;
             case xiiGALShaderResourceType::TextureUAV:
             {
-              XII_ASSERT_NOT_IMPLEMENTED;
+              if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessTextureResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+              {
+                vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
+              }
+              else
+              {
+                xiiLog::Error("No unordered access texture resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                return XII_FAILURE;
+              }
             }
             break;
             case xiiGALShaderResourceType::BufferUAV:
@@ -2154,18 +2170,9 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
               }
             }
             break;
-            case xiiGALShaderResourceType::InputAttachment:
-            {
+            default:
               XII_ASSERT_NOT_IMPLEMENTED;
-            }
-            break;
-            case xiiGALShaderResourceType::AccelerationStructure:
-            {
-              XII_ASSERT_NOT_IMPLEMENTED;
-            }
-            break;
-
-              XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+              return XII_FAILURE;
           }
         }
       }

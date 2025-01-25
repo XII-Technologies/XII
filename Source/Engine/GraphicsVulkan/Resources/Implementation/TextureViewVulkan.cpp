@@ -241,6 +241,9 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
   vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImageView(&vkImageViewCreateInfo, nullptr, &m_vkImageView, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
+  m_vkDescriptorImageInfo.imageView = m_vkImageView;
+  m_vkDescriptorImageInfo.imageLayout =vk::ImageLayout::eGeneral; // TODO
+
   return XII_SUCCESS;
 }
 
