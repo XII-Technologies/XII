@@ -14,7 +14,7 @@ xiiMeshAssetDocumentManager::xiiMeshAssetDocumentManager()
   xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiMeshAssetDocumentManager::OnDocumentManagerEvent, this));
 
   // additional whitelist for non-asset files where an asset may be selected
-  xiiAssetFileExtensionWhitelist::AddAssetFileExtension("CompatibleAsset_Mesh_Static", "xiiMesh");
+  xiiAssetFileExtensionWhitelist::AddAssetFileExtension("CompatibleAsset_Mesh_Static", "xiiBinMesh");
 
   m_DocTypeDesc.m_sDocumentTypeName = "Mesh";
   m_DocTypeDesc.m_sFileExtension    = "xiiMeshAsset";
@@ -24,7 +24,7 @@ xiiMeshAssetDocumentManager::xiiMeshAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Mesh_Static");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiMesh";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinMesh";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::SupportsThumbnail;
 }
 
@@ -78,8 +78,7 @@ xiiResult xiiMeshAssetDocumentManager::OpenPickedDocument(const xiiDocumentObjec
 
   // now we need to open the mesh and we cannot wait for it (usually that is queued for GUI reasons)
   // though we do not want a window
-  xiiMeshAssetDocument* pMeshDoc =
-    static_cast<xiiMeshAssetDocument*>(xiiQtEditorApp::GetSingleton()->OpenDocument(pSubAsset->m_pAssetInfo->m_Path.GetAbsolutePath(), xiiDocumentFlags::None));
+  xiiMeshAssetDocument* pMeshDoc = static_cast<xiiMeshAssetDocument*>(xiiQtEditorApp::GetSingleton()->OpenDocument(pSubAsset->m_pAssetInfo->m_Path.GetAbsolutePath(), xiiDocumentFlags::None));
 
   if (!pMeshDoc)
     return XII_FAILURE;
@@ -118,12 +117,7 @@ void xiiMeshAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentManage
   }
 }
 
-void xiiMeshAssetDocumentManager::InternalCreateDocument(
-  xiiStringView            sDocumentTypeName,
-  xiiStringView            sPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiMeshAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiMeshAssetDocument(sPath);
 }

@@ -69,7 +69,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
   }
 
   // check that we don't attempt to open a project from a different repository, due to code changes this often doesn't work too well
-  if (!IsInHeadlessMode())
+  if (!IsInHeadlessMode() && !m_bAnyProjectOpened)
   {
     xiiStringBuilder sdkDirFromProject;
     if (xiiFileSystem::FindFolderWithSubPath(sdkDirFromProject, sFile, "Data/Base", "xiiSdkRoot.txt").Succeeded())

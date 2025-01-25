@@ -50,7 +50,6 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALResourceView : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALResourceView, xiiGALDeviceObject);
 
-public:
 protected:
   friend class xiiGALDevice;
 

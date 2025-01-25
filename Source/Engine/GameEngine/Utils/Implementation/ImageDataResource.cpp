@@ -53,7 +53,7 @@ xiiResourceLoadDesc xiiImageDataResource::UpdateContent(xiiStreamReader* Stream)
 
   xiiImageDataResourceDescriptor desc;
 
-  if (sAbsFilePath.HasExtension("xiiImageData"))
+  if (sAbsFilePath.HasExtension("xiiBinImageData"))
   {
     xiiAssetFileHeader AssetHash;
     if (AssetHash.Read(*Stream).Failed())

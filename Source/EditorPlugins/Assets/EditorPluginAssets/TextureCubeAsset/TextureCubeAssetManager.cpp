@@ -23,7 +23,7 @@ xiiTextureCubeAssetDocumentManager::xiiTextureCubeAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Texture_Cube");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiTextureCube";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinTextureCube";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoThumbnailOnTransform;
 }
 

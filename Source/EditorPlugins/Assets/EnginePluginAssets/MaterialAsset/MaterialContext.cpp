@@ -209,7 +209,7 @@ void xiiMaterialContext::OnInitialize()
   }
 
   {
-    m_hBallMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Editor/Meshes/MaterialBall.xiiMesh");
+    m_hBallMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Editor/Meshes/MaterialBall.xiiBinMesh");
   }
 
   auto pWorld = m_pWorld;

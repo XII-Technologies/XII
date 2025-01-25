@@ -1422,6 +1422,17 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchai
     pSwapChain->Present();
   }
 
+  m_pGraphicsCommandQueue->RecycleCommandLists();
+
+  if (m_pComputeCommandQueue)
+  {
+    m_pComputeCommandQueue->RecycleCommandLists();
+  }
+  if (m_pTransferCommandQueue)
+  {
+    m_pTransferCommandQueue->RecycleCommandLists();
+  }
+
   m_pUploadStagingBufferPool->Reset();
 
   ReleasePerFrameResources(m_pFrameFence->GetCompletedValue());
@@ -1895,6 +1906,17 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
     uiCompletedValue = m_pFrameFence->GetCompletedValue();
 
     XII_ASSERT_DEV(uiCompletedValue != xiiMath::MaxValue<xiiUInt64>(), "The completed fence value is invalid!");
+  }
+
+  m_pGraphicsCommandQueue->RecycleCommandLists();
+
+  if (m_pComputeCommandQueue)
+  {
+    m_pComputeCommandQueue->RecycleCommandLists();
+  }
+  if (m_pTransferCommandQueue)
+  {
+    m_pTransferCommandQueue->RecycleCommandLists();
   }
 
   FlushDestroyedObjects();

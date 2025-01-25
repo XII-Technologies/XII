@@ -28,16 +28,23 @@
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);
 // clang-format on
+
+xiiGameState* xiiGameState::s_pActiveGameState = nullptr;
 
 xiiGameState::xiiGameState() = default;
 
 xiiGameState::~xiiGameState() = default;
 
+xiiGameState* xiiGameState::GetActiveGameState()
+{
+  return s_pActiveGameState;
+}
+
 void xiiGameState::OnActivation(xiiWorld* pWorld, const xiiTransform* pStartPosition)
 {
+  s_pActiveGameState = this;
+
   m_pMainWorld = pWorld;
   {
     ConfigureMainCamera();
@@ -71,11 +78,23 @@ void xiiGameState::OnDeactivation()
   }
 
   xiiRenderWorld::DeleteView(m_hMainView);
+
+  s_pActiveGameState = nullptr;
 }
 
 void xiiGameState::ScheduleRendering()
 {
   xiiRenderWorld::AddMainView(m_hMainView);
+}
+
+xiiView* xiiGameState::GetMainView()
+{
+  xiiView* pView = nullptr;
+  if (xiiRenderWorld::TryGetView(m_hMainView, pView))
+  {
+    return pView;
+  }
+  return nullptr;
 }
 
 xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
@@ -377,3 +396,5 @@ xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiW
 
   return pOutput;
 }
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);

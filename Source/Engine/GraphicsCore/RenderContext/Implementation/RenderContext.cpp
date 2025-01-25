@@ -792,6 +792,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
+    bool bPipelineStateInvalidated = false;
     if (pShaderPermutation != nullptr)
     {
       if (!m_hCurrentPipelineState.IsInvalidated())
@@ -842,31 +843,33 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
       m_hCurrentPipelineState = pDevice->CreatePipelineState(pipelineDescription);
       XII_ASSERT_DEV(!m_hCurrentPipelineState.IsInvalidated(), "");
+
+      bPipelineStateInvalidated = true;
     }
 
     m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
 
-    if (bIsModified)
+    if (bIsModified || bPipelineStateInvalidated)
     {
-      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::UAVBindingChanged))
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::UAVBindingChanged))
       {
         ApplyUnorderedAccessViewBindings();
         m_StateFlags.Remove(xiiRenderContextFlags::UAVBindingChanged);
       }
 
-      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureBindingChanged))
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureBindingChanged))
       {
         ApplyResourceViewBindings(xiiGALShaderResourceType::TextureSRV);
         m_StateFlags.Remove(xiiRenderContextFlags::TextureBindingChanged);
       }
 
-      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::SamplerBindingChanged))
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::SamplerBindingChanged))
       {
         ApplySamplerBindings();
         m_StateFlags.Remove(xiiRenderContextFlags::SamplerBindingChanged);
       }
 
-      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferBindingChanged))
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferBindingChanged))
       {
         ApplyResourceViewBindings(xiiGALShaderResourceType::BufferSRV);
         m_StateFlags.Remove(xiiRenderContextFlags::BufferBindingChanged);
@@ -882,9 +885,9 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     UploadConstants();
 
-    if (bIsModified)
+    if (bIsModified || bPipelineStateInvalidated)
     {
-      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ConstantBufferBindingChanged))
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ConstantBufferBindingChanged))
       {
         ApplyConstantBufferBindings();
         m_StateFlags.Remove(xiiRenderContextFlags::ConstantBufferBindingChanged);
@@ -1310,8 +1313,6 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
       xiiGALFramebufferCreationDescription frameBufferDescription;
       frameBufferDescription.m_hRenderPass = hRenderPass;
 
-      // Framebuffer size and slice count are intentionally left unattended to be filled by the GAL Implementation.
-
       const bool      bHasDepthAttachment    = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
       const xiiUInt32 uiColorAttachmentCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
 
@@ -1543,7 +1544,6 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
     xiiResourceManager::EndAcquireResource(pShaderPermutation);
     return nullptr;
   }
-
 
   xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::MakeFromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
   for (xiiUInt32 uiStageBitIndex : shaderBitfield)

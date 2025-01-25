@@ -19,7 +19,7 @@ xiiSurfaceAssetDocumentManager::xiiSurfaceAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Surface");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiSurface";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinSurface";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
 
   xiiQtImageCache::GetSingleton()->RegisterTypeImage("Surface", QPixmap(":/AssetIcons/Surface.svg"));

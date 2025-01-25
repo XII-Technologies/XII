@@ -19,7 +19,7 @@ xiiStateMachineAssetManager::xiiStateMachineAssetManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_StateMachine");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiStateMachineBin";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinStateMachine";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
 
   xiiQtImageCache::GetSingleton()->RegisterTypeImage("StateMachine", xiiSvgThumbnailToPixmap(":/AssetIcons/StateMachine.svg"));
@@ -48,12 +48,7 @@ void xiiStateMachineAssetManager::OnDocumentManagerEvent(const xiiDocumentManage
   }
 }
 
-void xiiStateMachineAssetManager::InternalCreateDocument(
-  xiiStringView            sDocumentTypeName,
-  xiiStringView            sPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiStateMachineAssetManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiStateMachineAssetDocument(sPath);
 }

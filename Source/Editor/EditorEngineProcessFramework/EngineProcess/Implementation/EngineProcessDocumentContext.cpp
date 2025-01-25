@@ -473,8 +473,6 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
 
         xiiGALTextureMipLevelData sourceSubResource;
 
-        pGALCommandList->Begin();
-
         pGALCommandList->BeginDebugGroup("Thumbnail Readback Download");
 
         xiiGALMappedTextureSubresource mappedSubResource;

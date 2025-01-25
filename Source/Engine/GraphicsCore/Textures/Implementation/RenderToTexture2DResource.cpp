@@ -23,7 +23,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, Texture2D)
   ON_CORESYSTEMS_STARTUP
   {
     xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiRenderToTexture2DResource>(), [](const xiiStringBuilder& sResourceID) -> bool  {
-      return sResourceID.HasExtension(".xiiRenderTarget");
+      return sResourceID.HasExtension(".xiiBinRenderTarget");
     });
   }
 

@@ -19,7 +19,7 @@ xiiBlackboardTemplateAssetDocumentManager::xiiBlackboardTemplateAssetDocumentMan
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_BlackboardTemplate");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiBlackboardTemplate";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinBlackboardTemplate";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
 
   xiiQtImageCache::GetSingleton()->RegisterTypeImage("BlackboardTemplate", QPixmap(":/AssetIcons/BlackboardTemplate.svg"));

@@ -1689,6 +1689,8 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       xiiVec3 screenPos;
       if (renderViewContext.m_pViewData->ComputeScreenSpacePos(textLine.m_position, screenPos).Succeeded() && screenPos.z > 0.0f)
       {
+        renderViewContext.m_pViewData->ConvertScreenNormalizedPosToPixelPos(screenPos);
+
         textLine.m_topLeftCorner.x += xiiMath::Round(screenPos.x);
         textLine.m_topLeftCorner.y += xiiMath::Round(screenPos.y);
 

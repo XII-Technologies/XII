@@ -966,7 +966,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 
   xiiStringBuilder sValue;
 
-  // now generate the .xiiMaterialBin file
+  // now generate the .xiiBinMaterial file
   {
     const xiiUInt8 uiVersion = 7;
 

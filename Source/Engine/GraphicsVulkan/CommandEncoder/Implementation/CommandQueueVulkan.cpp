@@ -81,45 +81,29 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 {
   XII_ASSERT_DEV(m_vkCommandPool != nullptr, "");
 
-  XII_LOCK(m_QueueMutex);
-
-  // Reset completed command lists.
+  xiiGALCommandListVulkan* pCommandListVulkan = nullptr;
   {
-    xiiUInt64 uiCompletedValue = m_pQueueFence->GetCompletedValue();
+    XII_LOCK(m_QueueMutex);
 
-    while (!m_CommandListsToReset.IsEmpty() && (m_CommandListsToReset.PeekFront().m_uiFenceValue <= uiCompletedValue))
+    if (m_QueuedCommandLists.IsEmpty())
     {
-      auto& commandListInfo = m_CommandListsToReset.PeekFront();
+      // Allocate a new command list.
+      xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
+      xiiGALDeviceVulkan*                  pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+      pCommandListVulkan                                          = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCommandListVulkan, pDeviceVulkan, this, commandListDescription);
 
-      commandListInfo.m_pCommandListVulkan->ResetInternal();
+      m_CommandLists.PushBack(pCommandListVulkan);
+      m_QueuedCommandLists.PushBack(pCommandListVulkan);
 
-      XII_ASSERT_DEV(commandListInfo.m_pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Reset, "Command list is not reset.");
-      XII_ASSERT_DEV(!m_QueuedCommandLists.Contains(commandListInfo.m_pCommandListVulkan), "Implementation error.");
-
-      m_QueuedCommandLists.PushBack(commandListInfo.m_pCommandListVulkan);
-
-      m_CommandListsToReset.PopFront();
+      xiiStringBuilder sb;
+      sb.SetFormat("Command List {}", m_CommandLists.GetCount());
+      pCommandListVulkan->SetDebugName(sb);
     }
+
+    pCommandListVulkan = m_QueuedCommandLists.PeekFront();
+
+    m_QueuedCommandLists.PopFront();
   }
-
-  if (m_QueuedCommandLists.IsEmpty())
-  {
-    // Allocate a new command list.
-    xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-    xiiGALDeviceVulkan*                  pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-    xiiGALCommandListVulkan*             pCommandListVulkan     = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCommandListVulkan, pDeviceVulkan, this, commandListDescription);
-
-    m_CommandLists.PushBack(pCommandListVulkan);
-    m_QueuedCommandLists.PushBack(pCommandListVulkan);
-
-    xiiStringBuilder sb;
-    sb.SetFormat("Command List {}", m_CommandLists.GetCount());
-    pCommandListVulkan->SetDebugName(sb);
-  }
-
-  xiiGALCommandListVulkan* pCommandListVulkan = m_QueuedCommandLists.PeekFront();
-
-  m_QueuedCommandLists.PopFront();
 
   XII_ASSERT_DEV(pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Reset, "Command list is not reset.");
 
@@ -138,6 +122,30 @@ void xiiGALCommandQueueVulkan::ResetCommandList(xiiGALCommandListVulkan* pComman
   XII_ASSERT_DEV(m_CommandLists.Contains(pCommandListVulkan), "Command list not found in allocated command lists.");
 
   m_CommandListsToReset.PushBack(CommandListReleaseInfo{.m_pCommandListVulkan = pCommandListVulkan, .m_uiFenceValue = GetNextFenceValue()});
+}
+
+void xiiGALCommandQueueVulkan::RecycleCommandLists()
+{
+  XII_LOCK(m_QueueMutex);
+
+  // Reset completed command lists.
+  xiiUInt64 uiCompletedValue = m_pQueueFence->GetCompletedValue();
+
+  while (!m_CommandListsToReset.IsEmpty() && (m_CommandListsToReset.PeekFront().m_uiFenceValue <= uiCompletedValue))
+  {
+    auto& commandListInfo = m_CommandListsToReset.PeekFront();
+
+    XII_ASSERT_DEV(commandListInfo.m_pCommandListVulkan->GetRecordingState() != xiiGALCommandList::RecordingState::Reset, "Command list is already reset.");
+
+    commandListInfo.m_pCommandListVulkan->ResetInternal();
+
+    XII_ASSERT_DEV(commandListInfo.m_pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Reset, "Command list is not reset.");
+    XII_ASSERT_DEV(!m_QueuedCommandLists.Contains(commandListInfo.m_pCommandListVulkan), "Implementation error.");
+
+    m_QueuedCommandLists.PushBack(commandListInfo.m_pCommandListVulkan);
+
+    m_CommandListsToReset.PopFront();
+  }
 }
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList)

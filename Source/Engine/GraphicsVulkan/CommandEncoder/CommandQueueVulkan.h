@@ -27,6 +27,7 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
   void                       ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
+  void                       RecycleCommandLists();
 
   XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetQueueInformation() const { return m_QueueInformation; };
   XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };

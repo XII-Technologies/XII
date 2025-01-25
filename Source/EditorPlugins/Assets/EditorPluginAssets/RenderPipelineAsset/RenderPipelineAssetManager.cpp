@@ -19,7 +19,7 @@ xiiRenderPipelineAssetManager::xiiRenderPipelineAssetManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_RenderPipeline");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiRenderPipelineBin";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinRenderPipeline";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
 
   xiiQtImageCache::GetSingleton()->RegisterTypeImage("RenderPipeline", QPixmap(":/AssetIcons/RenderPipeline.svg"));

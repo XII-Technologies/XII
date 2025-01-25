@@ -409,13 +409,11 @@ void xiiGALSwapChainD3D11::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-
   if (!m_hActualBackBufferTexture.IsInvalidated())
   {
-    if (auto pGraphicsOrTransferQueue = pDeviceD3D11->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer, true))
+    if (auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue())
     {
-      auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
+      auto pCommandList = pDefaultQueue->BeginCommandList();
 
       pCommandList->BeginDebugGroup("Update Backbuffer");
       {

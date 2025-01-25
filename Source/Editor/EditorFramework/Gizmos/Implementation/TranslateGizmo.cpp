@@ -177,11 +177,11 @@ xiiEditorInput xiiTranslateGizmo::DoMousePressEvent(QMouseEvent* e)
 
   if (m_Mode == TranslateMode::Axis)
   {
-    GetPointOnAxis(e->pos().x(), m_vViewport.y - e->pos().y(), m_vInteractionPivot).IgnoreResult();
+    GetPointOnAxis(e->pos().x(), e->pos().y(), m_vInteractionPivot).IgnoreResult();
   }
   else if (m_Mode == TranslateMode::Plane)
   {
-    GetPointOnPlane(e->pos().x(), m_vViewport.y - e->pos().y(), m_vInteractionPivot).IgnoreResult();
+    GetPointOnPlane(e->pos().x(), e->pos().y(), m_vInteractionPivot).IgnoreResult();
   }
 
   m_fStartScale = (m_vInteractionPivot - m_pCamera->GetPosition()).GetLength() * 0.125;
@@ -275,7 +275,7 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
     if (m_Mode == TranslateMode::Axis)
     {
-      if (GetPointOnAxis(e->pos().x(), m_vViewport.y - e->pos().y(), vCurrentInteractionPoint).Failed())
+      if (GetPointOnAxis(e->pos().x(), e->pos().y(), vCurrentInteractionPoint).Failed())
       {
         m_vLastMousePos = UpdateMouseMode(e);
         return xiiEditorInput::WasExclusivelyHandled;
@@ -283,7 +283,7 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
     }
     else if (m_Mode == TranslateMode::Plane)
     {
-      if (GetPointOnPlane(e->pos().x(), m_vViewport.y - e->pos().y(), vCurrentInteractionPoint).Failed())
+      if (GetPointOnPlane(e->pos().x(), e->pos().y(), vCurrentInteractionPoint).Failed())
       {
         m_vLastMousePos = UpdateMouseMode(e);
         return xiiEditorInput::WasExclusivelyHandled;

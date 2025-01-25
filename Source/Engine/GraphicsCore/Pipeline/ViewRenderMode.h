@@ -7,7 +7,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewRenderMode
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     None,
     WireframeColor,

@@ -40,7 +40,7 @@ xiiTextureAssetDocumentManager::xiiTextureAssetDocumentManager()
   m_DocTypeDesc.m_sAssetCategory         = "Rendering";
   m_DocTypeDesc.m_pDocumentType          = xiiGetStaticRTTI<xiiTextureAssetDocument>();
   m_DocTypeDesc.m_pManager               = this;
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiTexture2D";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinTexture2D";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoThumbnailOnTransform;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Texture_2D");
 
@@ -50,7 +50,7 @@ xiiTextureAssetDocumentManager::xiiTextureAssetDocumentManager()
   m_DocTypeDesc2.m_sAssetCategory         = "Rendering";
   m_DocTypeDesc2.m_pDocumentType          = xiiGetStaticRTTI<xiiTextureAssetDocument>();
   m_DocTypeDesc2.m_pManager               = this;
-  m_DocTypeDesc2.m_sResourceFileExtension = "xiiRenderTarget";
+  m_DocTypeDesc2.m_sResourceFileExtension = "xiiBinRenderTarget";
   m_DocTypeDesc2.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
   m_DocTypeDesc2.m_CompatibleTypes.PushBack("CompatibleAsset_Texture_2D"); // render targets can also be used as 2D textures
   m_DocTypeDesc2.m_CompatibleTypes.PushBack("CompatibleAsset_Texture_Target");
@@ -111,7 +111,7 @@ xiiString xiiTextureAssetDocumentManager::GetRelativeOutputFileName(const xiiAss
     sRelativePath.MakeRelativeTo(sDataDirectory).IgnoreResult();
     sRelativePath.RemoveFileExtension();
     sRelativePath.Append("-lowres");
-    xiiAssetDocumentManager::GenerateOutputFilename(sRelativePath, pAssetProfile, "xiiTexture2D", true);
+    xiiAssetDocumentManager::GenerateOutputFilename(sRelativePath, pAssetProfile, "xiiBinTexture2D", true);
     return sRelativePath;
   }
 

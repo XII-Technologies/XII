@@ -19,7 +19,7 @@ xiiCurve1DAssetDocumentManager::xiiCurve1DAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Data_Curve");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiCurve1D";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinCurve1D";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave | xiiAssetDocumentFlags::SupportsThumbnail;
 }
 

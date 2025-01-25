@@ -97,15 +97,12 @@ protected:
 private:
   void GALSwapChainD3D11EventHandler(const xiiGALSwapChainD3D11Event& e);
 
-  void InvalidateResources();
+  void InvalidateCommittedResources();
 
   void CommitRenderTargets();
-  void ResetRenderTargets();
 
-  xiiResult CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11);
-  bool      UnsetResourceViews(const xiiGALResource* pResource);
-  bool      UnsetUnorderedAccessViews(const xiiGALResource* pResource);
-  void      ResetBoundResources();
+  bool UnsetResourceViews(const xiiGALResource* pResource);
+  bool UnsetUnorderedAccessViews(const xiiGALResource* pResource);
 
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> BeginDisjointQuery();
 
@@ -118,23 +115,36 @@ private:
 
   ID3D11DeviceContext4* m_pImmediateContext = nullptr;
 
-  xiiGALPipelineStateD3D11* m_pPipelineState = nullptr;
+  // Deferred state flushes flags
+  bool m_bIndexBufferModified       = false;
+  bool m_bBlendStateModified        = false;
+  bool m_bInputLayoutStateModified  = false;
+  bool m_bDepthStencilStateModified = false;
+  bool m_bRasterizerStateModified   = false;
+  bool m_bPrimitiveTopologyModified = false;
+
+  // Bound objects for deferred state flushes
+
+  xiiGALPipelineStateD3D11* m_pCommittedPipelineState = nullptr;
 
   ID3D11Buffer*         m_pCommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]      = {};
   xiiUInt32             m_CommittedVertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   xiiUInt32             m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   xiiGAL::ModifiedRange m_CommittedVertexBuffersRange;
 
-  ID3D11InputLayout* m_pCommittedInputLayout = nullptr;
-
   ID3D11Buffer* m_pCommittedIndexBuffer           = nullptr;
-  DXGI_FORMAT   m_CommittedIndexBufferFormat      = DXGI_FORMAT_UNKNOWN;
+  DXGI_FORMAT   m_CommittedIndexBufferFormat      = DXGI_FORMAT_R16_UINT;
   xiiUInt32     m_uiCommittedIndexDataStartOffset = 0;
+
+  ID3D11InputLayout*       m_pCommittedInputLayout       = nullptr;
+  ID3D11RasterizerState*   m_pCommittedRasterizerState   = nullptr;
+  ID3D11BlendState*        m_pCommittedBlendState        = nullptr;
+  ID3D11DepthStencilState* m_pCommittedDepthStencilState = nullptr;
 
   D3D11_PRIMITIVE_TOPOLOGY m_CommittedPrimitiveTopology  = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
   xiiColor                 m_CommittedBlendFactors       = xiiColor::White;
   xiiUInt32                m_uiCommittedBlendSampleMask  = 0xFFFFFFFFU;
-  xiiUInt32                m_uiCommittedStencilReference = 0xFFU;
+  xiiUInt32                m_uiCommittedStencilReference = 0x0;
 
   ID3D11RenderTargetView* m_pCommittedRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
   ID3D11DepthStencilView* m_pCommittedDepthStencilTarget                            = nullptr;
@@ -145,19 +155,22 @@ private:
   xiiGALFramebuffer*                                                            m_pFramebuffer   = nullptr;
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
-  ID3D11Buffer*         m_pBoundConstantBuffers[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT][XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  ID3D11Buffer*         m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
 
   xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT] = {};
-  xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
+  xiiHybridArray<const xiiGALResource*, 16>     m_ResourcesForResourceViews[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
   xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
 
   xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnorderedAccessViews;
-  xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
+  xiiHybridArray<const xiiGALResource*, 16>      m_ResourcesForUnorderedAccessViews;
   xiiGAL::ModifiedRange                          m_BoundUnorderedAccessViewsRange;
 
   ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
+
+  ID3D11DeviceChild* m_CommittedShaders[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT]                  = {};
+  bool               m_CommittedShaderModificationStates[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT] = {};
 
   xiiMap<xiiGALBufferD3D11*, ID3D11DeviceContext4*>  m_MappedBuffers;
   xiiMap<xiiGALTextureD3D11*, ID3D11DeviceContext4*> m_MappedTextureSubresources;

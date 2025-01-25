@@ -20,7 +20,7 @@ xiiAnimatedMeshAssetDocumentManager::xiiAnimatedMeshAssetDocumentManager()
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Mesh_Skinned");
 
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::SupportsThumbnail;
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiAnimatedMesh";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinAnimatedMesh";
 }
 
 xiiAnimatedMeshAssetDocumentManager::~xiiAnimatedMeshAssetDocumentManager()

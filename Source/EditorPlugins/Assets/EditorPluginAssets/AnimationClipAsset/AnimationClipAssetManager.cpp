@@ -22,7 +22,7 @@ xiiAnimationClipAssetDocumentManager::xiiAnimationClipAssetDocumentManager()
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Keyframe_Animation");
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiAnimationClip";
+  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinAnimationClip";
   m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::SupportsThumbnail;
 
   // xiiQtImageCache::GetSingleton()->RegisterTypeImage("Animation Clip", QPixmap(":/AssetIcons/Animation_Clip.svg"));

@@ -89,14 +89,9 @@ void xiiInstanceData::Reset()
 //////////////////////////////////////////////////////////////////////////
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInstanceDataProvider, 1, xiiRTTIDefaultAllocator<xiiInstanceDataProvider>)
-{
-}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiInstanceDataProvider::xiiInstanceDataProvider()
-{
-}
-
+xiiInstanceDataProvider::xiiInstanceDataProvider()  = default;
 xiiInstanceDataProvider::~xiiInstanceDataProvider() = default;
 
 void* xiiInstanceDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)

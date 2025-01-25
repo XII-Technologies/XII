@@ -117,7 +117,7 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
     const xiiStringBuilder sName = xiiPathUtils::GetFileName(sAbsolutePath);
     pData->m_TexFormat.m_bSRGB   = (sName.EndsWith_NoCase("_D") || sName.EndsWith_NoCase("_SRGB") || sName.EndsWith_NoCase("_diff"));
 
-    if (sAbsolutePath.HasExtension("xiiTexture2D") || sAbsolutePath.HasExtension("xiiTexture3D") || sAbsolutePath.HasExtension("xiiTextureCube") || sAbsolutePath.HasExtension("xiiRenderTarget") || sAbsolutePath.HasExtension("xiiLUT"))
+    if (sAbsolutePath.HasExtension("xiiBinTexture2D") || sAbsolutePath.HasExtension("xiiBinTexture3D") || sAbsolutePath.HasExtension("xiiBinTextureCube") || sAbsolutePath.HasExtension("xiiBinRenderTarget") || sAbsolutePath.HasExtension("xiiBinLUT"))
     {
       if (LoadTexFile(File, *pData).Failed())
         return res;
