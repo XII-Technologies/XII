@@ -217,7 +217,9 @@ public:
           pRenderContext->BindMaterial(m_hMaterial);
           pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
           pRenderContext->DrawMeshBuffer().IgnoreResult();
+
           pRenderContext->EndRendering();
+          pRenderContext->SetCommandList(nullptr);
 
           pCommandList->Submit();
         }
