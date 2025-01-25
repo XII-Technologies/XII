@@ -1158,15 +1158,15 @@ void xiiGALCommandListD3D11::InvalidateCommittedResources()
     }
 
     // This causes samplers to be unbound and not set, need to figure out why.
-    // for (xiiUInt32 i = 0; i < XII_GAL_MAX_SAMPLER_COUNT; ++i)
-    // {
-    //   if (m_pBoundSamplerStates[uiStage][i] != nullptr)
-    //   {
-    //     m_pBoundSamplerStates[uiStage][i] = nullptr;
-    // 
-    //     m_BoundSamplerStatesRange[uiStage].SetToIncludeValue(i);
-    //   }
-    // }
+    for (xiiUInt32 i = 0; i < XII_GAL_MAX_SAMPLER_COUNT; ++i)
+    {
+      if (m_pBoundSamplerStates[uiStage][i] != nullptr)
+      {
+        m_pBoundSamplerStates[uiStage][i] = nullptr;
+    
+        m_BoundSamplerStatesRange[uiStage].SetToIncludeValue(i);
+      }
+    }
 
     for (xiiUInt32 i = 0; i < m_pBoundShaderResourceViews[uiStage].GetCount(); ++i)
     {
@@ -1576,10 +1576,6 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
 
       m_BoundShaderResourceViewsRange[uiStageIndex].Reset();
     }
-
-    // Don't need to unset sampler uiStageIndexs for unbound shader uiStageIndexs.
-    if (m_CommittedShaders[uiStageIndex] == nullptr)
-      continue;
 
     if (m_BoundSamplerStatesRange[uiStageIndex].IsValid())
     {
