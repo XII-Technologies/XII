@@ -329,10 +329,6 @@ float2 opU(float2 d1, float2 d2)
 
 //------------------------------------------------------------------
 
-#define ZERO (min(iFrame, 0))
-
-//------------------------------------------------------------------
-
 float2 map(float3 pos)
 {
   float2 res = float2(pos.y, 0.0);
@@ -587,13 +583,4 @@ float3 render(float3 ro, float3 rd, float3 rdx, float3 rdy)
   }
 
   return float3(clamp(col, 0.0, 1.0));
-}
-
-float3x3 setCamera(float3 ro, float3 ta, float cr)
-{
-  float3 cw = normalize(ta - ro);
-  float3 cp = float3(sin(cr), cos(cr), 0.0);
-  float3 cu = normalize(cross(cw, cp));
-  float3 cv = (cross(cu, cw));
-  return float3x3(cu, cv, cw);
 }
