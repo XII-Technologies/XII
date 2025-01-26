@@ -272,6 +272,8 @@ xiiStandardInputDevice::xiiStandardInputDevice(xiiUInt32 uiWindowNumber, SDL_Win
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
   m_DoubleClickTime = xiiTime::MakeFromMilliseconds(GetDoubleClickTime());
 #  endif
+
+  SDL_StartTextInput(m_pWindow);
 }
 
 xiiStandardInputDevice::~xiiStandardInputDevice()
@@ -282,6 +284,8 @@ xiiStandardInputDevice::~xiiStandardInputDevice()
   {
     xiiStandardInputDevice::s_bMainWindowUsed = false;
   }
+
+  SDL_StopTextInput(m_pWindow);
 }
 
 void xiiStandardInputDevice::WindowMessage(void* pMessage)
