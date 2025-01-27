@@ -6,14 +6,27 @@
 
 #include <GraphicsVulkan/Resources/SamplerVulkan.h>
 
+struct xiiGALPipelineResourceDescriptionVulkan : xiiHashableStruct<xiiGALPipelineResourceDescriptionVulkan>
+{
+  xiiHashedString               m_sName;
+  xiiGALDescriporTypeVulkan     m_DescriptorType       = xiiGALDescriporTypeVulkan::ENUM_COUNT;
+  xiiUInt32                     m_uiBindingSet         = xiiInvalidIndex;
+  xiiUInt32                     m_uiBindingIndex       = xiiInvalidIndex;
+  xiiUInt32                     m_uiSamplerIndex       = xiiInvalidIndex;
+  xiiUInt32                     m_uiArraySize          = 0U;
+  xiiBitflags<xiiGALShaderType> m_ShaderStages         = xiiGALShaderType::Unknown;
+  bool                          m_bHasImmutableSampler = false;
+};
+
 class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : public xiiGALPipelineResourceSignature
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignatureVulkan, xiiGALPipelineResourceSignature);
 
 public:
-  virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final;
-
+  XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan> GetPipelineResourceSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_PipelineResourceSetLayouts.GetCount()) ? m_PipelineResourceSetLayouts[uiSet].GetArrayPtr() : xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan>(); }
   XII_ALWAYS_INLINE xiiArrayPtr<const vk::DescriptorSetLayout> GetVulkanDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
+  XII_ALWAYS_INLINE vk::DescriptorSetLayout GetVulkanDescriptorSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_DescriptorSetLayouts.GetCount()) ? m_DescriptorSetLayouts[uiSet] : VK_NULL_HANDLE; }
+  XII_ALWAYS_INLINE xiiUInt32               GetVulkanDescriptorSetLayoutCount() const { return m_DescriptorSetLayouts.GetCount(); }
 
   struct ImmutableSamplerStorage
   {
@@ -45,7 +58,8 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
-  xiiHybridArray<vk::DescriptorSetLayout, 1U> m_DescriptorSetLayouts;
+  xiiHybridArray<xiiHybridArray<xiiGALPipelineResourceDescriptionVulkan, 1U>, 1U> m_PipelineResourceSetLayouts;
+  xiiHybridArray<vk::DescriptorSetLayout, 1U>                                     m_DescriptorSetLayouts;
 
   xiiDynamicArray<ImmutableSamplerStorage> m_ImmutableSamplers;
 };

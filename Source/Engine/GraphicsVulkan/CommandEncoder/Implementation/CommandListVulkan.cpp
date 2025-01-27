@@ -2053,283 +2053,135 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
     {
       const auto& pipelineDescription = m_pPipelineStateVulkan->GetDescription();
 
-      xiiGALPipelineResourceSignatureVulkan*     pResourceSignatureVulkan     = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(pipelineDescription.m_hPipelineResourceSignature));
-      xiiArrayPtr<const vk::DescriptorSetLayout> descriptorSetLayouts         = pResourceSignatureVulkan->GetVulkanDescriptorSetLayouts();
-      const auto&                                resourceSignatureDescription = pResourceSignatureVulkan->GetDescription();
+      xiiGALPipelineResourceSignatureVulkan* pResourceSignatureVulkan = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(pipelineDescription.m_hPipelineResourceSignature));
 
-      m_DescriptorSets.SetCountUninitialized(descriptorSetLayouts.GetCount());
+      m_DescriptorSets.SetCountUninitialized(pResourceSignatureVulkan->GetVulkanDescriptorSetLayoutCount());
 
-      for (xiiUInt32 uiSet = 0; uiSet < descriptorSetLayouts.GetCount(); ++uiSet)
+      for (xiiUInt32 uiSet = 0; uiSet < m_DescriptorSets.GetCount(); ++uiSet)
       {
-        m_DescriptorSets[uiSet] = pDeviceVulkan->GetVulkanDescriptorSetPool()->RequestDescriptorSet(descriptorSetLayouts[uiSet]);
+        m_DescriptorSets[uiSet] = pDeviceVulkan->GetVulkanDescriptorSetPool()->RequestDescriptorSet(pResourceSignatureVulkan->GetVulkanDescriptorSetLayout(uiSet));
 
         auto& resources = m_ResourceSets[uiSet];
 
-        // xiiGALDevice guarantees that set resources are ordered in ascending order by set index.
-        for (xiiUInt32 i = 0; i < resourceSignatureDescription.m_Resources.GetCount(); ++i)
+        const auto pPipelineResourceLayout = pResourceSignatureVulkan->GetPipelineResourceSetLayout(uiSet);
+        for (xiiUInt32 i = 0; i < pPipelineResourceLayout.GetCount(); ++i)
         {
-          const auto& resourceDescription = resourceSignatureDescription.m_Resources[i];
+          const auto& resourceLayout = pPipelineResourceLayout[i];
 
           vk::WriteDescriptorSet& vkWriteDescriptorSet = m_DescriptorWrites.ExpandAndGetRef();
           vkWriteDescriptorSet.pNext                   = nullptr;
           vkWriteDescriptorSet.dstSet                  = m_DescriptorSets[uiSet];
-          vkWriteDescriptorSet.dstBinding              = resourceDescription.m_uiBindSlot;
+          vkWriteDescriptorSet.dstBinding              = resourceLayout.m_uiBindingIndex;
           vkWriteDescriptorSet.dstArrayElement         = 0U; // TODO.
-          vkWriteDescriptorSet.descriptorCount         = resourceDescription.m_uiArraySize;
-          vkWriteDescriptorSet.descriptorType          = xiiVulkanTypeConversions::GetDescriptorType(resourceDescription); // descriptorType must be the same type as that specified in VkDescriptorSetLayoutBinding for dstSet at dstBinding. The type of the descriptor also controls which array the descriptors are taken from. (13.2.4)
+          vkWriteDescriptorSet.descriptorCount         = resourceLayout.m_uiArraySize;
+          vkWriteDescriptorSet.descriptorType          = xiiVulkanTypeConversions::GetDescriptorType(resourceLayout.m_DescriptorType); // descriptorType must be the same type as that specified in VkDescriptorSetLayoutBinding for dstSet at dstBinding. The type of the descriptor also controls which array the descriptors are taken from. (13.2.4)
           vkWriteDescriptorSet.pImageInfo              = nullptr;
           vkWriteDescriptorSet.pBufferInfo             = nullptr;
           vkWriteDescriptorSet.pTexelBufferView        = nullptr;
 
-#if 1
-          switch (vkWriteDescriptorSet.descriptorType)
+          switch (resourceLayout.m_DescriptorType)
           {
-            case vk::DescriptorType::eUniformBuffer:
-            case vk::DescriptorType::eUniformBufferDynamic:
+            case xiiGALDescriporTypeVulkan::UniformBuffer:
+            case xiiGALDescriporTypeVulkan::UniformBufferDynamic:
             {
-              if (const xiiGALBufferVulkan* pBufferVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundConstantBuffers.GetCount() ? resources.m_pBoundConstantBuffers[resourceDescription.m_uiBindSlot] : nullptr))
+              if (const xiiGALBufferVulkan* pBufferVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundConstantBuffers.GetCount() ? resources.m_pBoundConstantBuffers[resourceLayout.m_uiBindingIndex] : nullptr))
               {
                 vkWriteDescriptorSet.pBufferInfo = pBufferVulkan->GetVulkanDescriptorBufferInfo();
               }
               else
               {
-                xiiLog::Error("No constant buffer bound at '{}'.", resourceDescription.m_sName.GetView());
+                xiiLog::Error("No constant buffer bound at '{}'.", resourceLayout.m_sName.GetView());
                 return XII_FAILURE;
               }
 
-              // Move offset out and into the separate offset array.
-              auto& bufferInfo = m_DynamicUniformBuffers.ExpandAndGetRef();
-              bufferInfo       = *vkWriteDescriptorSet.pBufferInfo;
+              if (resourceLayout.m_DescriptorType == xiiGALDescriporTypeVulkan::UniformBufferDynamic)
+              {
+                // Move offset out and into the separate offset array.
+                auto& bufferInfo = m_DynamicUniformBuffers.ExpandAndGetRef();
+                bufferInfo       = *vkWriteDescriptorSet.pBufferInfo;
 
-              m_DynamicUniformBufferOffsets.PushBack((xiiUInt32)bufferInfo.offset);
+                m_DynamicUniformBufferOffsets.PushBack((xiiUInt32)bufferInfo.offset);
 
-              bufferInfo.offset                = 0U;
-              vkWriteDescriptorSet.pBufferInfo = &bufferInfo;
+                bufferInfo.offset                = 0U;
+                vkWriteDescriptorSet.pBufferInfo = &bufferInfo;
+              }
             }
             break;
-            case vk::DescriptorType::eCombinedImageSampler:
-            case vk::DescriptorType::eSampledImage:
-            case vk::DescriptorType::eStorageImage:
+            case xiiGALDescriporTypeVulkan::UniformTexelBuffer:
+            case xiiGALDescriporTypeVulkan::StorageBufferReadOnly:
+            case xiiGALDescriporTypeVulkan::StorageBufferDynamicReadOnly:
             {
-              // Write image descriptor write info. (pImageInfo)
-              // So, vk::DescriptorType::eCombinedImageSampler and vk::DescriptorType::eSampledImage are used as shader resource views, while vk::DescriptorType::eStorageImage is used as an unordered access view.
-              if (vkWriteDescriptorSet.descriptorType == vk::DescriptorType::eCombinedImageSampler || vkWriteDescriptorSet.descriptorType == vk::DescriptorType::eSampledImage)
+              if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
-                {
-                  vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
-                }
-                else
-                {
-                  xiiLog::Error("No texture resource view bound at '{}'.", resourceDescription.m_sName.GetView());
-                  return XII_FAILURE;
-                }
+                vk::BufferView vkBufferView           = pBufferViewVulkan->GetVulkanBufferView();
+                vkWriteDescriptorSet.pTexelBufferView = &vkBufferView;
               }
               else
               {
-                if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessTextureResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
-                {
-                  vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
-                }
-                else
-                {
-                  xiiLog::Error("No unordered access texture resource view bound at '{}'.", resourceDescription.m_sName.GetView());
-                  return XII_FAILURE;
-                }
-              }
-            }
-            break;
-            case vk::DescriptorType::eUniformTexelBuffer:
-            case vk::DescriptorType::eStorageTexelBuffer:
-            {
-              // Write buffer view write info (pTexelBufferView)
-              // So, vk::DescriptorType::eUniformTexelBuffer is used as a shader resource view, while vk::DescriptorType::eStorageTexelBuffer is used as an unordered access view.
-              if (vkWriteDescriptorSet.descriptorType == vk::DescriptorType::eUniformTexelBuffer)
-              {
-                if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
-                {
-                  auto v                                = pBufferViewVulkan->GetVulkanBufferView();
-                  vkWriteDescriptorSet.pTexelBufferView = &v;
-                }
-                else
-                {
-                  xiiLog::Error("No buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
-                  return XII_FAILURE;
-                }
-              }
-              else
-              {
-                if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
-                {
-                  auto v                                = pBufferViewVulkan->GetVulkanBufferView();
-                  vkWriteDescriptorSet.pTexelBufferView = &v;
-                }
-                else
-                {
-                  xiiLog::Error("No unordered access buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
-                  return XII_FAILURE;
-                }
-              }
-            }
-            break;
-            case vk::DescriptorType::eStorageBuffer:
-            case vk::DescriptorType::eStorageBufferDynamic:
-            {
-              // Write to pBufferInfo.
-              switch (resourceDescription.m_ResourceType)
-              {
-                case xiiGALShaderResourceType::BufferSRV:
-                {
-                  if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
-                  {
-                    vkWriteDescriptorSet.pBufferInfo = pBufferViewVulkan->GetVulkanDescriptorBufferInfo();
-                  }
-                  else
-                  {
-                    xiiLog::Error("No buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
-                    return XII_FAILURE;
-                  }
-                }
-                break;
-                case xiiGALShaderResourceType::BufferUAV:
-                {
-                  if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
-                  {
-                    vkWriteDescriptorSet.pBufferInfo = pBufferViewVulkan->GetVulkanDescriptorBufferInfo();
-                  }
-                  else
-                  {
-                    xiiLog::Error("No unordered access buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
-                    return XII_FAILURE;
-                  }
-                }
-                break;
-
-                XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-              }
-            }
-            break;
-            case vk::DescriptorType::eSampler:
-            {
-              if (const xiiGALSamplerVulkan* pSamplerVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundSamplerStates.GetCount() ? resources.m_pBoundSamplerStates[resourceDescription.m_uiBindSlot] : nullptr))
-              {
-                vkWriteDescriptorSet.pImageInfo = pSamplerVulkan->GetVulkanDescriptorImageInfo();
-              }
-              else
-              {
-                xiiLog::Error("No sampler bound at '{}'.", resourceDescription.m_sName.GetView());
+                xiiLog::Error("No buffer resource view bound at '{}'.", resourceLayout.m_sName.GetView());
                 return XII_FAILURE;
               }
             }
             break;
-            case vk::DescriptorType::eInputAttachment:
+            case xiiGALDescriporTypeVulkan::StorageTexelBuffer:
+            case xiiGALDescriporTypeVulkan::StorageBuffer:
+            case xiiGALDescriporTypeVulkan::StorageBufferDynamic:
             {
-              // Write to pImageInfo.
-              XII_ASSERT_NOT_IMPLEMENTED;
-            }
-            break;
-            case vk::DescriptorType::eAccelerationStructureKHR:
-            {
-              // Write to vk::WriteDescriptorSetAccelerationStructureKHR and attach with pNext.
-              XII_ASSERT_NOT_IMPLEMENTED;
-            }
-            break;
-          }
-#else
-          switch (resourceDescription.m_ResourceType)
-          {
-            case xiiGALShaderResourceType::ConstantBuffer:
-            {
-              if (const xiiGALBufferVulkan* pBufferVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundConstantBuffers.GetCount() ? resources.m_pBoundConstantBuffers[resourceDescription.m_uiBindSlot] : nullptr))
+              if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                vkWriteDescriptorSet.pBufferInfo = pBufferVulkan->GetVulkanDescriptorBufferInfo();
+                auto v                                = pBufferViewVulkan->GetVulkanBufferView();
+                vkWriteDescriptorSet.pTexelBufferView = &v;
               }
               else
               {
-                xiiLog::Error("No constant buffer bound at '{}'.", resourceDescription.m_sName.GetView());
+                xiiLog::Error("No unordered access buffer resource view bound at '{}'.", resourceLayout.m_sName.GetView());
                 return XII_FAILURE;
               }
-
-              // Move offset out and into the separate offset array.
-              auto& bufferInfo = m_DynamicUniformBuffers.ExpandAndGetRef();
-              bufferInfo       = *vkWriteDescriptorSet.pBufferInfo;
-
-              m_DynamicUniformBufferOffsets.PushBack((xiiUInt32)bufferInfo.offset);
-
-              bufferInfo.offset                = 0U;
-              vkWriteDescriptorSet.pBufferInfo = &bufferInfo;
             }
             break;
-            case xiiGALShaderResourceType::TextureSRV:
+            case xiiGALDescriporTypeVulkan::CombinedImageSampler:
+            case xiiGALDescriporTypeVulkan::SeparateImage:
             {
-              if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+              if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
                 vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
               }
               else
               {
-                xiiLog::Error("No texture resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                xiiLog::Error("No texture resource view bound at '{}'.", resourceLayout.m_sName.GetView());
                 return XII_FAILURE;
               }
             }
             break;
-            case xiiGALShaderResourceType::BufferSRV:
+            case xiiGALDescriporTypeVulkan::StorageImage:
             {
-              if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
-              {
-                vkWriteDescriptorSet.pBufferInfo = pBufferViewVulkan->GetVulkanDescriptorBufferInfo();
-              }
-              else
-              {
-                xiiLog::Error("No buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
-                return XII_FAILURE;
-              }
-            }
-            break;
-            case xiiGALShaderResourceType::TextureUAV:
-            {
-              if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessTextureResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
+              if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessTextureResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
                 vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
               }
               else
               {
-                xiiLog::Error("No unordered access texture resource view bound at '{}'.", resourceDescription.m_sName.GetView());
+                xiiLog::Error("No unordered access texture resource view bound at '{}'.", resourceLayout.m_sName.GetView());
                 return XII_FAILURE;
               }
             }
             break;
-            case xiiGALShaderResourceType::BufferUAV:
+            case xiiGALDescriporTypeVulkan::Sampler:
             {
-              if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceDescription.m_uiBindSlot] : nullptr))
-              {
-                vkWriteDescriptorSet.pBufferInfo = pBufferViewVulkan->GetVulkanDescriptorBufferInfo();
-              }
-              else
-              {
-                xiiLog::Error("No unordered access buffer resource view bound at '{}'.", resourceDescription.m_sName.GetView());
-                return XII_FAILURE;
-              }
-            }
-            break;
-            case xiiGALShaderResourceType::Sampler:
-            {
-              if (const xiiGALSamplerVulkan* pSamplerVulkan = (resourceDescription.m_uiBindSlot < resources.m_pBoundSamplerStates.GetCount() ? resources.m_pBoundSamplerStates[resourceDescription.m_uiBindSlot] : nullptr))
+              if (const xiiGALSamplerVulkan* pSamplerVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundSamplerStates.GetCount() ? resources.m_pBoundSamplerStates[resourceLayout.m_uiBindingIndex] : nullptr))
               {
                 vkWriteDescriptorSet.pImageInfo = pSamplerVulkan->GetVulkanDescriptorImageInfo();
               }
               else
               {
-                xiiLog::Error("No sampler bound at '{}'.", resourceDescription.m_sName.GetView());
+                xiiLog::Error("No sampler bound at '{}'.", resourceLayout.m_sName.GetView());
                 return XII_FAILURE;
               }
             }
             break;
-            default:
-              XII_ASSERT_NOT_IMPLEMENTED;
-              return XII_FAILURE;
+
+              XII_DEFAULT_CASE_NOT_IMPLEMENTED;
           }
-#endif
         }
       }
 

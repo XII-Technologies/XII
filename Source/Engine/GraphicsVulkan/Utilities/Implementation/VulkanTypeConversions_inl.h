@@ -1158,7 +1158,7 @@ XII_ALWAYS_INLINE vk::ImageUsageFlags xiiVulkanTypeConversions::GetImageUsageFla
   return vkImageUsageFlags;
 }
 
-XII_ALWAYS_INLINE vk::DescriptorType xiiVulkanTypeConversions::GetDescriptorType(const xiiGALPipelineResourceDescription& resourceDescription)
+XII_ALWAYS_INLINE xiiGALDescriporTypeVulkan xiiVulkanTypeConversions::GetDescriptorType(const xiiGALPipelineResourceDescription& resourceDescription)
 {
   XII_ASSERT_DEV(resourceDescription.m_PipelineResourceFlags.IsStrictlyAnySet(xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resourceDescription.m_ResourceType)) || resourceDescription.m_PipelineResourceFlags.IsNoFlagSet(), "Invalid resource flags, implementation error!");
 
@@ -1170,26 +1170,25 @@ XII_ALWAYS_INLINE vk::DescriptorType xiiVulkanTypeConversions::GetDescriptorType
   switch (resourceDescription.m_ResourceType)
   {
     case xiiGALShaderResourceType::ConstantBuffer:
-      return bWithDynamicOffset ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eUniformBuffer;
+      return bWithDynamicOffset ? xiiGALDescriporTypeVulkan::UniformBufferDynamic : xiiGALDescriporTypeVulkan::UniformBuffer;
     case xiiGALShaderResourceType::TextureSRV:
-      return bCombinedSampler ? vk::DescriptorType::eCombinedImageSampler : vk::DescriptorType::eSampledImage;
+      return bCombinedSampler ? xiiGALDescriporTypeVulkan::CombinedImageSampler : xiiGALDescriporTypeVulkan::SeparateImage;
     case xiiGALShaderResourceType::BufferSRV:
-      return bUseTexelBuffer ? vk::DescriptorType::eUniformTexelBuffer : vk::DescriptorType::eStorageBuffer;
+      return bUseTexelBuffer ? xiiGALDescriporTypeVulkan::UniformTexelBuffer : (bWithDynamicOffset ? xiiGALDescriporTypeVulkan::StorageBufferDynamicReadOnly : xiiGALDescriporTypeVulkan::StorageBufferReadOnly);
     case xiiGALShaderResourceType::TextureUAV:
-      return vk::DescriptorType::eStorageImage;
+      return xiiGALDescriporTypeVulkan::StorageImage;
     case xiiGALShaderResourceType::BufferUAV:
-      return bUseTexelBuffer ? vk::DescriptorType::eStorageTexelBuffer : (bWithDynamicOffset ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eStorageBuffer);
+      return bUseTexelBuffer ? xiiGALDescriporTypeVulkan::StorageTexelBuffer : (bWithDynamicOffset ? xiiGALDescriporTypeVulkan::StorageBufferDynamic : xiiGALDescriporTypeVulkan::StorageBuffer);
     case xiiGALShaderResourceType::Sampler:
-      return vk::DescriptorType::eSampler;
+      return xiiGALDescriporTypeVulkan::Sampler;
     case xiiGALShaderResourceType::InputAttachment:
-      return vk::DescriptorType::eInputAttachment;
+      return xiiGALDescriporTypeVulkan::InputAttachment;
     case xiiGALShaderResourceType::AccelerationStructure:
-      return vk::DescriptorType::eAccelerationStructureKHR;
+      return xiiGALDescriporTypeVulkan::AccelerationStructure;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
-  return vk::DescriptorType::eSampler;
+  return xiiGALDescriporTypeVulkan::ENUM_COUNT;
 }
 
 XII_ALWAYS_INLINE void xiiVulkanTypeConversions::GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology& out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints)
@@ -1241,4 +1240,46 @@ XII_ALWAYS_INLINE void xiiVulkanTypeConversions::GetPrimitiveTopologyAndControlP
       return;
     }
   }
+}
+
+XII_ALWAYS_INLINE vk::DescriptorType xiiVulkanTypeConversions::GetDescriptorType(xiiGALDescriporTypeVulkan e)
+{
+  switch (e)
+  {
+    case xiiGALDescriporTypeVulkan::Sampler:
+      return vk::DescriptorType::eSampler;
+    case xiiGALDescriporTypeVulkan::CombinedImageSampler:
+      return vk::DescriptorType::eCombinedImageSampler;
+    case xiiGALDescriporTypeVulkan::SeparateImage:
+      return vk::DescriptorType::eSampledImage;
+    case xiiGALDescriporTypeVulkan::StorageImage:
+      return vk::DescriptorType::eStorageImage;
+    case xiiGALDescriporTypeVulkan::UniformTexelBuffer:
+      return vk::DescriptorType::eUniformTexelBuffer;
+    case xiiGALDescriporTypeVulkan::StorageTexelBuffer:
+      return vk::DescriptorType::eStorageTexelBuffer;
+    case xiiGALDescriporTypeVulkan::StorageTexelBufferReadOnly:
+      return vk::DescriptorType::eStorageTexelBuffer;
+    case xiiGALDescriporTypeVulkan::UniformBuffer:
+      return vk::DescriptorType::eUniformBuffer;
+    case xiiGALDescriporTypeVulkan::UniformBufferDynamic:
+      return vk::DescriptorType::eUniformBufferDynamic;
+    case xiiGALDescriporTypeVulkan::StorageBuffer:
+      return vk::DescriptorType::eStorageBuffer;
+    case xiiGALDescriporTypeVulkan::StorageBufferReadOnly:
+      return vk::DescriptorType::eStorageBuffer;
+    case xiiGALDescriporTypeVulkan::StorageBufferDynamic:
+      return vk::DescriptorType::eStorageBufferDynamic;
+    case xiiGALDescriporTypeVulkan::StorageBufferDynamicReadOnly:
+      return vk::DescriptorType::eStorageBufferDynamic;
+    case xiiGALDescriporTypeVulkan::InputAttachment:
+      return vk::DescriptorType::eInputAttachment;
+    case xiiGALDescriporTypeVulkan::InputAttachmentGeneral:
+      return vk::DescriptorType::eInputAttachment;
+    case xiiGALDescriporTypeVulkan::AccelerationStructure:
+      return vk::DescriptorType::eAccelerationStructureKHR;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return (vk::DescriptorType)VK_DESCRIPTOR_TYPE_MAX_ENUM;
 }
