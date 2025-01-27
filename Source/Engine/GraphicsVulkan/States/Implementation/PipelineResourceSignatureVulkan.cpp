@@ -103,7 +103,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
     }
     if (pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::CombinedImageSampler || pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::Sampler)
     {
-      xiiUInt32 uiImmutableSamplerIndex       = FindImmutableSampler(m_Description, resource) != xiiInvalidIndex;
+      xiiUInt32 uiImmutableSamplerIndex       = FindImmutableSampler(m_Description, resource);
       pipelineResource.m_bHasImmutableSampler = uiImmutableSamplerIndex != xiiInvalidIndex;
 
       if (pipelineResource.m_bHasImmutableSampler)
@@ -163,6 +163,9 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
       vkDescriptorLayoutBinding.pImmutableSamplers = pVkImmutableSamplers;
     }
+
+    vkDescriptorSetLayoutCreateInfo.pBindings    = !vkDescriptorSetLayoutBindings.IsEmpty() ? vkDescriptorSetLayoutBindings.GetData() : nullptr;
+    vkDescriptorSetLayoutCreateInfo.bindingCount = vkDescriptorSetLayoutBindings.GetCount();
 
     vk::DescriptorSetLayout& vkDescriptorSetLayout = m_DescriptorSetLayouts.ExpandAndGetRef();
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createDescriptorSetLayout(&vkDescriptorSetLayoutCreateInfo, nullptr, &vkDescriptorSetLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
