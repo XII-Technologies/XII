@@ -680,6 +680,8 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
   BeginRenderPass();
   XII_SCOPE_EXIT(EndRenderPass());
 
+  XII_SUCCEED_OR_RETURN(pCommandList->CommitShaderResources());
+
   if (uiInstanceCount > 1)
   {
     if (!m_hIndexBuffer.IsInvalidated())

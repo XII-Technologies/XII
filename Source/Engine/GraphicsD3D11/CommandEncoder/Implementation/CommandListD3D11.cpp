@@ -539,6 +539,11 @@ void xiiGALCommandListD3D11::SetSamplerPlatform(const xiiGALPipelineResourceDesc
   }
 }
 
+xiiResult xiiGALCommandListD3D11::CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)
+{
+  return XII_SUCCESS;
+}
+
 void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
   auto pRenderTargetViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pRenderTargetView);
