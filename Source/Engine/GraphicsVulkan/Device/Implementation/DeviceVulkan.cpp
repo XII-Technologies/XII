@@ -225,7 +225,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     for (const auto* szExtensionName : instanceExtensions)
     {
-      XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(m_Extensions, szExtensionName), "Required extension () is not available.", szExtensionName);
+      XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(m_Extensions, szExtensionName), "Required extension ({}) is not available.", szExtensionName);
     }
   }
 
@@ -501,12 +501,11 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   }
 
   xiiDynamicArray<vk::DeviceQueueCreateInfo> queueDescriptions;
+  float                                      fQueuePriorities = 1.0f;
 
   // Setup device queues.
   {
     xiiHybridArray<xiiUInt32, 3U> excludedQueueIndices;
-
-    float fQueuePriorities = 1.0f;
 
     // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
     // must support both graphics and compute operations.

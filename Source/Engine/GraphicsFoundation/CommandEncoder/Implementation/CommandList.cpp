@@ -409,6 +409,11 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
   SetSamplerPlatform(bindingInformation, pSampler);
 }
 
+xiiResult xiiGALCommandList::CommitShaderResources(xiiEnum<xiiGALStateTransitionMode> mode)
+{
+  return CommitShaderResourcesPlatform(mode);
+}
+
 void xiiGALCommandList::ClearRenderTargetView(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ClearRenderTargetView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");

@@ -137,14 +137,15 @@ protected:
   virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight) override final;
   virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight) override final;
 
-  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset) override final;
-  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;
-  virtual void SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer) override final;
-  virtual void SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
-  virtual void SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
-  virtual void SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
-  virtual void SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
-  virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
+  virtual void      SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset) override final;
+  virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;
+  virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer) override final;
+  virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
+  virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode) override final;
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor) override final;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override final;
@@ -188,9 +189,6 @@ protected:
   virtual void InvalidateStatePlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
-
-private:
-  xiiResult CommitDeferredStateChanges();
 
 private:
   struct PipelineBarrier
@@ -282,12 +280,12 @@ private:
 
   struct ResourceSetBindings
   {
-    xiiDynamicArray<const xiiGALBufferVulkan*>      m_pBoundConstantBuffers;
-    xiiDynamicArray<const xiiGALBufferViewVulkan*>  m_pBoundBufferResourceViews;
-    xiiDynamicArray<const xiiGALTextureViewVulkan*> m_pBoundTextureResourceViews;
-    xiiDynamicArray<const xiiGALBufferViewVulkan*>  m_pBoundUnorderedAccessBufferResourceViews;
-    xiiDynamicArray<const xiiGALTextureViewVulkan*> m_pBoundUnorderedAccessTextureResourceViews;
-    xiiDynamicArray<const xiiGALSamplerVulkan*>     m_pBoundSamplerStates;
+    xiiDynamicArray<xiiGALBufferVulkan*>      m_pBoundConstantBuffers;
+    xiiDynamicArray<xiiGALBufferViewVulkan*>  m_pBoundBufferResourceViews;
+    xiiDynamicArray<xiiGALTextureViewVulkan*> m_pBoundTextureResourceViews;
+    xiiDynamicArray<xiiGALBufferViewVulkan*>  m_pBoundUnorderedAccessBufferResourceViews;
+    xiiDynamicArray<xiiGALTextureViewVulkan*> m_pBoundUnorderedAccessTextureResourceViews;
+    xiiDynamicArray<xiiGALSamplerVulkan*>     m_pBoundSamplerStates;
   };
 
   vk::CommandBuffer m_vkCommandBuffer;
@@ -312,12 +310,11 @@ private:
   xiiGALPipelineStateVulkan* m_pPipelineStateVulkan   = nullptr;
   bool                       m_bPipelineStateModified = false;
 
-  xiiHybridArray<ResourceSetBindings, 1U>     m_ResourceSets;
-  xiiHybridArray<vk::DescriptorSet, 4U>       m_DescriptorSets;
-  xiiHybridArray<vk::WriteDescriptorSet, 16U> m_DescriptorWrites;
-  xiiDeque<vk::DescriptorBufferInfo>          m_DynamicUniformBuffers;
-  xiiHybridArray<xiiUInt32, 6U>               m_DynamicUniformBufferOffsets;
-  bool                                        m_bDescriptorsModified = false;
+  xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
+  xiiHybridArray<vk::DescriptorSet, 4U>   m_DescriptorSets;
+  xiiDeque<vk::DescriptorBufferInfo>      m_DynamicUniformBuffers;
+  xiiHybridArray<xiiUInt32, 6U>           m_DynamicUniformBufferOffsets;
+  bool                                    m_bDescriptorsModified = false;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;

@@ -108,6 +108,11 @@ void xiiGALCommandListD3D12::SetSamplerPlatform(const xiiGALPipelineResourceDesc
 {
 }
 
+xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)
+{
+  return XII_SUCCESS;
+}
+
 void xiiGALCommandListD3D12::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
   m_pD3D12CommandList->ClearRenderTargetView({}, clearColor.GetData(), 0, nullptr);

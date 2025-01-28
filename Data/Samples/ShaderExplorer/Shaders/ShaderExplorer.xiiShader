@@ -81,7 +81,7 @@ float4 main(PS_IN Input) : SV_Target
   p.x *= ViewportSize.x / ViewportSize.y;
 
   // Focal length
-  const float fl = 1.5;
+  const float fl = 1.5f;
 
   // Ray direction
   float3 rd = mul(ca, normalize(float3(p, fl)));

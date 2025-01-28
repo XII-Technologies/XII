@@ -72,6 +72,11 @@ void xiiGALCommandListNull::SetSamplerPlatform(const xiiGALPipelineResourceDescr
 {
 }
 
+xiiResult xiiGALCommandListNull::CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)
+{
+  return XII_SUCCESS;
+}
+
 void xiiGALCommandListNull::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
 }

@@ -155,7 +155,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
 
       XII_IGNORE_UNUSED(sSemanticName.TrimWordStart("in.var."));
 
-      if (!sSemanticName.StartsWith_NoCase("SV_"))
+      if (!sSemanticName.IsEmpty() && !sSemanticName.StartsWith_NoCase("SV_"))
       {
         xiiGALVertexInputLayout& attribute = vertexInputLayouts.ExpandAndGetRef();
         attribute.m_uiSemanticIndex        = pInputVariable->location;

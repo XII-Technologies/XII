@@ -25,4 +25,28 @@ xiiGALPipelineResourceSignature::xiiGALPipelineResourceSignature(xiiGALDevice* p
 
 xiiGALPipelineResourceSignature::~xiiGALPipelineResourceSignature() = default;
 
+bool xiiGALPipelineResourceSignature::IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const
+{
+  if (pPipelineResourceSignature == this)
+    return true;
+
+  const auto& sourceDescription  = GetDescription();
+  const auto& compareDescription = pPipelineResourceSignature->GetDescription();
+
+  if (sourceDescription.m_bUseCombinedTextureSamplers != compareDescription.m_bUseCombinedTextureSamplers)
+    return false;
+
+  for (const auto& resource : compareDescription.m_Resources)
+  {
+    if (!sourceDescription.m_Resources.Contains(resource))
+      return false;
+  }
+  for (const auto& immutableSampler : compareDescription.m_ImmutableSamplers)
+  {
+    if (!sourceDescription.m_ImmutableSamplers.Contains(immutableSampler))
+      return false;
+  }
+  return true;
+}
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineResourceSignature);

@@ -9,6 +9,28 @@
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
+enum class xiiGALDescriporTypeVulkan : xiiUInt8
+{
+  Sampler,
+  CombinedImageSampler,
+  SeparateImage,
+  StorageImage,
+  UniformTexelBuffer,
+  StorageTexelBuffer,
+  StorageTexelBufferReadOnly,
+  UniformBuffer,
+  UniformBufferDynamic,
+  StorageBuffer,
+  StorageBufferReadOnly,
+  StorageBufferDynamic,
+  StorageBufferDynamicReadOnly,
+  InputAttachment,
+  InputAttachmentGeneral,
+  AccelerationStructure,
+
+  ENUM_COUNT
+};
+
 class XII_GRAPHICSVULKAN_DLL xiiVulkanTypeConversions
 {
 public:
@@ -78,9 +100,11 @@ public:
 
   static vk::ImageUsageFlags GetImageUsageFlags(xiiBitflags<xiiGALBindFlags> bindFlags, bool bIsMemoryless, bool bFragmentDensityMapInsteadOfShadingRate);
 
-  static vk::DescriptorType GetDescriptorType(const xiiGALPipelineResourceDescription& resourceDescription);
+  static xiiGALDescriporTypeVulkan GetDescriptorType(const xiiGALPipelineResourceDescription& resourceDescription);
 
   static void GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology& out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints);
+
+  static vk::DescriptorType GetDescriptorType(xiiGALDescriporTypeVulkan e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

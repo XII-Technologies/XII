@@ -680,6 +680,8 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
   BeginRenderPass();
   XII_SCOPE_EXIT(EndRenderPass());
 
+  XII_SUCCEED_OR_RETURN(pCommandList->CommitShaderResources());
+
   if (uiInstanceCount > 1)
   {
     if (!m_hIndexBuffer.IsInvalidated())
@@ -812,27 +814,26 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
         pipelineDescription.m_GraphicsPipeline.m_hGeometryShader      = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)];
         pipelineDescription.m_GraphicsPipeline.m_hAmplificationShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Amplification)];
         pipelineDescription.m_GraphicsPipeline.m_hMeshShader          = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Mesh)];
+
+        auto& graphicsPipeline               = pipelineDescription.m_GraphicsPipeline;
+        graphicsPipeline.m_PrimitiveTopology = m_Topology;
+        graphicsPipeline.m_hInputLayout      = m_hInputLayout;
+
+        if (pShaderPermutation != nullptr)
+        {
+          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoBlendState))
+            graphicsPipeline.m_hBlendState = pShaderPermutation->GetBlendState();
+
+          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoRasterizerState))
+            graphicsPipeline.m_hRasterizerState = pShaderPermutation->GetRasterizerState();
+
+          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoDepthStencilState))
+            graphicsPipeline.m_hDepthStencilState = pShaderPermutation->GetDepthStencilState();
+        }
       }
       else if (pipelineDescription.IsComputePipeline())
       {
         pipelineDescription.m_ComputePipeline.m_hComputeShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
-      }
-
-      if (!m_bIsCompute && (pShaderPermutation != nullptr))
-      {
-        auto& graphicsPipeline = pipelineDescription.m_GraphicsPipeline;
-
-        if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoBlendState))
-          graphicsPipeline.m_hBlendState = pShaderPermutation->GetBlendState();
-
-        if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoRasterizerState))
-          graphicsPipeline.m_hRasterizerState = pShaderPermutation->GetRasterizerState();
-
-        if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoDepthStencilState))
-          graphicsPipeline.m_hDepthStencilState = pShaderPermutation->GetDepthStencilState();
-
-        graphicsPipeline.m_PrimitiveTopology = m_Topology;
-        graphicsPipeline.m_hInputLayout      = m_hInputLayout;
       }
 
       xiiRenderContext::PipelineStateInfo* pPipelineStateInfo = nullptr;
@@ -1430,7 +1431,6 @@ void xiiRenderContext::BeginRenderPass()
       depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
       depthClearValue.m_DepthStencil.m_uiStencil = 0U;
     }
-
     for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
     {
       xiiGALOptimizedClearValue& colorClearValue = beginRenderPassDescription.m_ClearValues.ExpandAndGetRef();
