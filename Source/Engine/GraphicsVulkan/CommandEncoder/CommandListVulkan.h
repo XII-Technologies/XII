@@ -312,12 +312,11 @@ private:
   xiiGALPipelineStateVulkan* m_pPipelineStateVulkan   = nullptr;
   bool                       m_bPipelineStateModified = false;
 
-  xiiHybridArray<ResourceSetBindings, 1U>     m_ResourceSets;
-  xiiHybridArray<vk::DescriptorSet, 4U>       m_DescriptorSets;
-  xiiHybridArray<vk::WriteDescriptorSet, 16U> m_DescriptorWrites;
-  xiiDeque<vk::DescriptorBufferInfo>          m_DynamicUniformBuffers;
-  xiiHybridArray<xiiUInt32, 6U>               m_DynamicUniformBufferOffsets;
-  bool                                        m_bDescriptorsModified = false;
+  xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
+  xiiHybridArray<vk::DescriptorSet, 4U>   m_DescriptorSets;
+  xiiDeque<vk::DescriptorBufferInfo>      m_DynamicUniformBuffers;
+  xiiHybridArray<xiiUInt32, 6U>           m_DynamicUniformBufferOffsets;
+  bool                                    m_bDescriptorsModified = false;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;

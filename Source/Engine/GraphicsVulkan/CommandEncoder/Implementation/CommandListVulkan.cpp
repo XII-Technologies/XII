@@ -2045,7 +2045,6 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
 
   if (m_bDescriptorsModified)
   {
-    m_DescriptorWrites.Clear();
     m_DynamicUniformBuffers.Clear();
     m_DynamicUniformBufferOffsets.Clear();
 
@@ -2053,7 +2052,8 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
     {
       const auto& pipelineDescription = m_pPipelineStateVulkan->GetDescription();
 
-      xiiGALPipelineResourceSignatureVulkan* pResourceSignatureVulkan = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(pipelineDescription.m_hPipelineResourceSignature));
+      xiiGALPipelineResourceSignatureVulkan* pResourceSignatureVulkan     = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(pipelineDescription.m_hPipelineResourceSignature));
+      const auto&                            resourceSignatureDescription = pResourceSignatureVulkan->GetDescription();
 
       m_DescriptorSets.SetCountUninitialized(pResourceSignatureVulkan->GetVulkanDescriptorSetLayoutCount());
 
@@ -2068,16 +2068,21 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
         {
           const auto& resourceLayout = pPipelineResourceLayout[i];
 
-          vk::WriteDescriptorSet& vkWriteDescriptorSet = m_DescriptorWrites.ExpandAndGetRef();
-          vkWriteDescriptorSet.pNext                   = nullptr;
-          vkWriteDescriptorSet.dstSet                  = m_DescriptorSets[uiSet];
-          vkWriteDescriptorSet.dstBinding              = resourceLayout.m_uiBindingIndex;
-          vkWriteDescriptorSet.dstArrayElement         = 0U; // TODO.
-          vkWriteDescriptorSet.descriptorCount         = resourceLayout.m_uiArraySize;
-          vkWriteDescriptorSet.descriptorType          = xiiVulkanTypeConversions::GetDescriptorType(resourceLayout.m_DescriptorType); // descriptorType must be the same type as that specified in VkDescriptorSetLayoutBinding for dstSet at dstBinding. The type of the descriptor also controls which array the descriptors are taken from. (13.2.4)
-          vkWriteDescriptorSet.pImageInfo              = nullptr;
-          vkWriteDescriptorSet.pBufferInfo             = nullptr;
-          vkWriteDescriptorSet.pTexelBufferView        = nullptr;
+          vk::WriteDescriptorSet vkWriteDescriptorSet = {};
+          vkWriteDescriptorSet.pNext                  = nullptr;
+          vkWriteDescriptorSet.dstSet                 = m_DescriptorSets[uiSet];
+          vkWriteDescriptorSet.dstBinding             = resourceLayout.m_uiBindingIndex;
+          vkWriteDescriptorSet.dstArrayElement        = 0U; // TODO.
+          vkWriteDescriptorSet.descriptorCount        = resourceLayout.m_uiArraySize;
+          vkWriteDescriptorSet.descriptorType         = xiiVulkanTypeConversions::GetDescriptorType(resourceLayout.m_DescriptorType); // descriptorType must be the same type as that specified in VkDescriptorSetLayoutBinding for dstSet at dstBinding. The type of the descriptor also controls which array the descriptors are taken from. (13.2.4)
+          vkWriteDescriptorSet.pImageInfo             = nullptr;
+          vkWriteDescriptorSet.pBufferInfo            = nullptr;
+          vkWriteDescriptorSet.pTexelBufferView       = nullptr;
+
+          vk::DescriptorImageInfo                        vkDescriptorImageInfo;
+          vk::DescriptorBufferInfo                       vkDescriptorBufferInfo;
+          vk::BufferView                                 vkDescriptorBufferView;
+          vk::WriteDescriptorSetAccelerationStructureKHR vkDescriptorAccelStructInfo;
 
           switch (resourceLayout.m_DescriptorType)
           {
@@ -2086,7 +2091,12 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             {
               if (const xiiGALBufferVulkan* pBufferVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundConstantBuffers.GetCount() ? resources.m_pBoundConstantBuffers[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                vkWriteDescriptorSet.pBufferInfo = pBufferVulkan->GetVulkanDescriptorBufferInfo();
+                vkDescriptorBufferInfo        = vk::DescriptorBufferInfo{};
+                vkDescriptorBufferInfo.buffer = pBufferVulkan->GetVulkanBuffer();
+                vkDescriptorBufferInfo.offset = 0;
+                vkDescriptorBufferInfo.range  = pBufferVulkan->GetSize();
+
+                vkWriteDescriptorSet.pBufferInfo = &vkDescriptorBufferInfo;
               }
               else
               {
@@ -2108,13 +2118,12 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             }
             break;
             case xiiGALDescriporTypeVulkan::UniformTexelBuffer:
-            case xiiGALDescriporTypeVulkan::StorageBufferReadOnly:
-            case xiiGALDescriporTypeVulkan::StorageBufferDynamicReadOnly:
+            case xiiGALDescriporTypeVulkan::StorageTexelBufferReadOnly:
             {
               if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                vk::BufferView vkBufferView           = pBufferViewVulkan->GetVulkanBufferView();
-                vkWriteDescriptorSet.pTexelBufferView = &vkBufferView;
+                vkDescriptorBufferView                = pBufferViewVulkan->GetVulkanBufferView();
+                vkWriteDescriptorSet.pTexelBufferView = &vkDescriptorBufferView;
               }
               else
               {
@@ -2124,13 +2133,53 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             }
             break;
             case xiiGALDescriporTypeVulkan::StorageTexelBuffer:
+            {
+              if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
+              {
+                vkDescriptorBufferView                = pBufferViewVulkan->GetVulkanBufferView();
+                vkWriteDescriptorSet.pTexelBufferView = &vkDescriptorBufferView;
+              }
+              else
+              {
+                xiiLog::Error("No unordered access buffer resource view bound at '{}'.", resourceLayout.m_sName.GetView());
+                return XII_FAILURE;
+              }
+            }
+            break;
+            case xiiGALDescriporTypeVulkan::StorageBufferReadOnly:
+            case xiiGALDescriporTypeVulkan::StorageBufferDynamicReadOnly:
+            {
+              if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
+              {
+                xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBufferViewVulkan->GetBuffer());
+
+                vkDescriptorBufferInfo        = vk::DescriptorBufferInfo{};
+                vkDescriptorBufferInfo.buffer = pBufferVulkan->GetVulkanBuffer();
+                vkDescriptorBufferInfo.offset = 0;
+                vkDescriptorBufferInfo.range  = pBufferVulkan->GetSize();
+
+                vkWriteDescriptorSet.pBufferInfo = &vkDescriptorBufferInfo;
+              }
+              else
+              {
+                xiiLog::Error("No buffer resource view bound at '{}'.", resourceLayout.m_sName.GetView());
+                return XII_FAILURE;
+              }
+            }
+            break;
             case xiiGALDescriporTypeVulkan::StorageBuffer:
             case xiiGALDescriporTypeVulkan::StorageBufferDynamic:
             {
               if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                auto v                                = pBufferViewVulkan->GetVulkanBufferView();
-                vkWriteDescriptorSet.pTexelBufferView = &v;
+                xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBufferViewVulkan->GetBuffer());
+
+                vkDescriptorBufferInfo        = vk::DescriptorBufferInfo{};
+                vkDescriptorBufferInfo.buffer = pBufferVulkan->GetVulkanBuffer();
+                vkDescriptorBufferInfo.offset = 0;
+                vkDescriptorBufferInfo.range  = pBufferVulkan->GetSize();
+
+                vkWriteDescriptorSet.pBufferInfo = &vkDescriptorBufferInfo;
               }
               else
               {
@@ -2140,11 +2189,44 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             }
             break;
             case xiiGALDescriporTypeVulkan::CombinedImageSampler:
+            {
+              if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
+              {
+                vkDescriptorImageInfo             = vk::DescriptorImageInfo{};
+                vkDescriptorImageInfo.imageView   = pTextureViewVulkan->GetVulkanImageView();
+                vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+
+                if (!resourceLayout.m_bHasImmutableSampler)
+                {
+                  if (const xiiGALSamplerVulkan* pSamplerVulkan = (resourceLayout.m_uiSamplerIndex < resources.m_pBoundSamplerStates.GetCount() ? resources.m_pBoundSamplerStates[resourceLayout.m_uiSamplerIndex] : nullptr))
+                  {
+                    vkDescriptorImageInfo.sampler = pSamplerVulkan->GetVulkanSampler();
+                  }
+                  else
+                  {
+                    xiiLog::Error("No combined image sampler bound at '{}' in slot {}.", resourceLayout.m_sName.GetView(), resourceLayout.m_uiSamplerIndex);
+                    return XII_FAILURE;
+                  }
+                }
+
+                vkWriteDescriptorSet.pImageInfo = &vkDescriptorImageInfo;
+              }
+              else
+              {
+                xiiLog::Error("No texture resource view bound at '{}'.", resourceLayout.m_sName.GetView());
+                return XII_FAILURE;
+              }
+            }
+            break;
             case xiiGALDescriporTypeVulkan::SeparateImage:
             {
               if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
+                vkDescriptorImageInfo             = vk::DescriptorImageInfo{};
+                vkDescriptorImageInfo.imageView   = pTextureViewVulkan->GetVulkanImageView();
+                vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+
+                vkWriteDescriptorSet.pImageInfo = &vkDescriptorImageInfo;
               }
               else
               {
@@ -2157,7 +2239,11 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             {
               if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessTextureResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                vkWriteDescriptorSet.pImageInfo = pTextureViewVulkan->GetVulkanDescriptorImageInfo();
+                vkDescriptorImageInfo             = vk::DescriptorImageInfo{};
+                vkDescriptorImageInfo.imageView   = pTextureViewVulkan->GetVulkanImageView();
+                vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+
+                vkWriteDescriptorSet.pImageInfo = &vkDescriptorImageInfo;
               }
               else
               {
@@ -2170,7 +2256,10 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             {
               if (const xiiGALSamplerVulkan* pSamplerVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundSamplerStates.GetCount() ? resources.m_pBoundSamplerStates[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                vkWriteDescriptorSet.pImageInfo = pSamplerVulkan->GetVulkanDescriptorImageInfo();
+                vkDescriptorImageInfo         = vk::DescriptorImageInfo{};
+                vkDescriptorImageInfo.sampler = pSamplerVulkan->GetVulkanSampler();
+
+                vkWriteDescriptorSet.pImageInfo = &vkDescriptorImageInfo;
               }
               else
               {
@@ -2182,12 +2271,9 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
 
               XII_DEFAULT_CASE_NOT_IMPLEMENTED;
           }
-        }
-      }
 
-      if (!m_DescriptorWrites.IsEmpty())
-      {
-        vkLogicalDevice.updateDescriptorSets(m_DescriptorWrites.GetCount(), m_DescriptorWrites.GetData(), 0, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+          vkLogicalDevice.updateDescriptorSets(1U, &vkWriteDescriptorSet, 0, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        }
       }
 
       m_vkCommandBuffer.bindDescriptorSets(m_pPipelineStateVulkan->GetVulkanPipelineBindPoint(), m_pPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_DescriptorSets.GetCount(), m_DescriptorSets.GetData(), m_DynamicUniformBufferOffsets.GetCount(), m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
