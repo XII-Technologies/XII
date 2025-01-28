@@ -1074,8 +1074,8 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               {
                 xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureViewVulkan->GetTexture());
 
-                vkDescriptorImageInfo             = vk::DescriptorImageInfo{};
-                vkDescriptorImageInfo.imageView   = pTextureViewVulkan->GetVulkanImageView();
+                vkDescriptorImageInfo           = vk::DescriptorImageInfo{};
+                vkDescriptorImageInfo.imageView = pTextureViewVulkan->GetVulkanImageView();
 
                 // The image subresources for a storage image must be in the VK_IMAGE_LAYOUT_GENERAL layout in order to access its data in a shader (13.1.1)
                 // The image subresources for a sampled image or a combined image sampler must be in the VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, or VK_IMAGE_LAYOUT_GENERAL layout in order to access its data in a shader (13.1.3, 13.1.4).
