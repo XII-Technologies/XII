@@ -2089,7 +2089,7 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             case xiiGALDescriporTypeVulkan::UniformBuffer:
             case xiiGALDescriporTypeVulkan::UniformBufferDynamic:
             {
-              if (const xiiGALBufferVulkan* pBufferVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundConstantBuffers.GetCount() ? resources.m_pBoundConstantBuffers[resourceLayout.m_uiBindingIndex] : nullptr))
+              if (xiiGALBufferVulkan* pBufferVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundConstantBuffers.GetCount() ? resources.m_pBoundConstantBuffers[resourceLayout.m_uiBindingIndex] : nullptr))
               {
                 vkDescriptorBufferInfo        = vk::DescriptorBufferInfo{};
                 vkDescriptorBufferInfo.buffer = pBufferVulkan->GetVulkanBuffer();
@@ -2097,6 +2097,8 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
                 vkDescriptorBufferInfo.range  = pBufferVulkan->GetSize();
 
                 vkWriteDescriptorSet.pBufferInfo = &vkDescriptorBufferInfo;
+
+                TransitionBufferState(pBufferVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::ConstantBuffer, true);
               }
               else
               {
@@ -2122,8 +2124,12 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             {
               if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundBufferResourceViews.GetCount() ? resources.m_pBoundBufferResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
+                xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBufferViewVulkan->GetBuffer());
+
                 vkDescriptorBufferView                = pBufferViewVulkan->GetVulkanBufferView();
                 vkWriteDescriptorSet.pTexelBufferView = &vkDescriptorBufferView;
+
+                TransitionBufferState(pBufferVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::ShaderResource, true);
               }
               else
               {
@@ -2136,8 +2142,12 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             {
               if (const xiiGALBufferViewVulkan* pBufferViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessBufferResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
+                xiiGALBufferVulkan* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBufferViewVulkan->GetBuffer());
+
                 vkDescriptorBufferView                = pBufferViewVulkan->GetVulkanBufferView();
                 vkWriteDescriptorSet.pTexelBufferView = &vkDescriptorBufferView;
+
+                TransitionBufferState(pBufferVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::UnorderedAccess, true);
               }
               else
               {
@@ -2159,6 +2169,8 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
                 vkDescriptorBufferInfo.range  = pBufferVulkan->GetSize();
 
                 vkWriteDescriptorSet.pBufferInfo = &vkDescriptorBufferInfo;
+
+                TransitionBufferState(pBufferVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::ShaderResource, true);
               }
               else
               {
@@ -2180,6 +2192,8 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
                 vkDescriptorBufferInfo.range  = pBufferVulkan->GetSize();
 
                 vkWriteDescriptorSet.pBufferInfo = &vkDescriptorBufferInfo;
+
+                TransitionBufferState(pBufferVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::UnorderedAccess, true);
               }
               else
               {
@@ -2192,6 +2206,8 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             {
               if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
+                xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureViewVulkan->GetTexture());
+
                 vkDescriptorImageInfo             = vk::DescriptorImageInfo{};
                 vkDescriptorImageInfo.imageView   = pTextureViewVulkan->GetVulkanImageView();
                 vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
@@ -2210,6 +2226,8 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
                 }
 
                 vkWriteDescriptorSet.pImageInfo = &vkDescriptorImageInfo;
+
+                TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::ShaderResource, xiiGALStateTransitionFlags::UpdateState);
               }
               else
               {
@@ -2222,11 +2240,31 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             {
               if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundTextureResourceViews.GetCount() ? resources.m_pBoundTextureResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
-                vkDescriptorImageInfo             = vk::DescriptorImageInfo{};
-                vkDescriptorImageInfo.imageView   = pTextureViewVulkan->GetVulkanImageView();
-                vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+                xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureViewVulkan->GetTexture());
+
+                vkDescriptorImageInfo           = vk::DescriptorImageInfo{};
+                vkDescriptorImageInfo.imageView = pTextureViewVulkan->GetVulkanImageView();
+
+                // The image subresources for a storage image must be in the VK_IMAGE_LAYOUT_GENERAL layout in order to access its data in a shader (13.1.1)
+                // The image subresources for a sampled image or a combined image sampler must be in the VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, or VK_IMAGE_LAYOUT_GENERAL layout in order to access its data in a shader (13.1.3, 13.1.4).
+                if (pTextureVulkan->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+                {
+                  // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL must only be used as a read - only depth / stencil attachment in a VkFramebuffer and/or as a read - only image in a shader (which can be read as a sampled image, combined
+                  // image / sampler and /or input attachment). This layout is valid only for image subresources of images created with the VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT usage bit enabled. (11.4)
+                  vkDescriptorImageInfo.imageLayout = xiiVulkanTypeConversions::GetImageLayout(xiiGALResourceStateFlags::DepthRead);
+
+                  XII_ASSERT_DEV(vkDescriptorImageInfo.imageLayout == vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal, "");
+                }
+                else
+                {
+                  vkDescriptorImageInfo.imageLayout = xiiVulkanTypeConversions::GetImageLayout(xiiGALResourceStateFlags::ShaderResource);
+
+                  XII_ASSERT_DEV(vkDescriptorImageInfo.imageLayout == vk::ImageLayout::eShaderReadOnlyOptimal, "");
+                }
 
                 vkWriteDescriptorSet.pImageInfo = &vkDescriptorImageInfo;
+
+                TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::ShaderResource, xiiGALStateTransitionFlags::UpdateState);
               }
               else
               {
@@ -2239,11 +2277,17 @@ xiiResult xiiGALCommandListVulkan::CommitDeferredStateChanges()
             {
               if (const xiiGALTextureViewVulkan* pTextureViewVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? resources.m_pBoundUnorderedAccessTextureResourceViews[resourceLayout.m_uiBindingIndex] : nullptr))
               {
+                xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureViewVulkan->GetTexture());
+
                 vkDescriptorImageInfo             = vk::DescriptorImageInfo{};
                 vkDescriptorImageInfo.imageView   = pTextureViewVulkan->GetVulkanImageView();
-                vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+                vkDescriptorImageInfo.imageLayout = xiiVulkanTypeConversions::GetImageLayout(xiiGALResourceStateFlags::UnorderedAccess);
+
+                XII_ASSERT_DEV(vkDescriptorImageInfo.imageLayout == vk::ImageLayout::eGeneral, "");
 
                 vkWriteDescriptorSet.pImageInfo = &vkDescriptorImageInfo;
+
+                TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::UnorderedAccess, xiiGALStateTransitionFlags::UpdateState);
               }
               else
               {

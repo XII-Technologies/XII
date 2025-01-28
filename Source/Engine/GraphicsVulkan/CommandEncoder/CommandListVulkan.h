@@ -282,12 +282,12 @@ private:
 
   struct ResourceSetBindings
   {
-    xiiDynamicArray<const xiiGALBufferVulkan*>      m_pBoundConstantBuffers;
-    xiiDynamicArray<const xiiGALBufferViewVulkan*>  m_pBoundBufferResourceViews;
-    xiiDynamicArray<const xiiGALTextureViewVulkan*> m_pBoundTextureResourceViews;
-    xiiDynamicArray<const xiiGALBufferViewVulkan*>  m_pBoundUnorderedAccessBufferResourceViews;
-    xiiDynamicArray<const xiiGALTextureViewVulkan*> m_pBoundUnorderedAccessTextureResourceViews;
-    xiiDynamicArray<const xiiGALSamplerVulkan*>     m_pBoundSamplerStates;
+    xiiDynamicArray<xiiGALBufferVulkan*>      m_pBoundConstantBuffers;
+    xiiDynamicArray<xiiGALBufferViewVulkan*>  m_pBoundBufferResourceViews;
+    xiiDynamicArray<xiiGALTextureViewVulkan*> m_pBoundTextureResourceViews;
+    xiiDynamicArray<xiiGALBufferViewVulkan*>  m_pBoundUnorderedAccessBufferResourceViews;
+    xiiDynamicArray<xiiGALTextureViewVulkan*> m_pBoundUnorderedAccessTextureResourceViews;
+    xiiDynamicArray<xiiGALSamplerVulkan*>     m_pBoundSamplerStates;
   };
 
   vk::CommandBuffer m_vkCommandBuffer;
