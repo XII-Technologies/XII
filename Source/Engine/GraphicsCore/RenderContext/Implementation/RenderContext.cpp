@@ -677,10 +677,10 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
     uiInstanceCount *= 2;
   }
 
+  XII_SUCCEED_OR_RETURN(pCommandList->CommitShaderResources());
+
   BeginRenderPass();
   XII_SCOPE_EXIT(EndRenderPass());
-
-  XII_SUCCEED_OR_RETURN(pCommandList->CommitShaderResources());
 
   if (uiInstanceCount > 1)
   {
