@@ -963,7 +963,18 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       pNextExtension  = &enabledExtensionFeatures.m_ShaderDrawParameters.pNext;
     }
 
-    // Ensure that the last next is null
+    // Custom border color.
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+
+      enabledExtensionFeatures.m_CustomBorderColor = m_PhysicalDeviceExtensionFeatures.m_CustomBorderColor;
+
+      *pNextExtension = &enabledExtensionFeatures.m_CustomBorderColor;
+      pNextExtension  = &enabledExtensionFeatures.m_CustomBorderColor.pNext;
+    }
+
+    // Ensure that the last next is null.
     *pNextExtension = nullptr;
   }
   else
@@ -2686,6 +2697,15 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_MultiDraw.pNext;
   }
 
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
+  {
+    *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_CustomBorderColor;
+    pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_CustomBorderColor.pNext;
+
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_CustomBorderColor;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_CustomBorderColor.pNext;
+  }
+
   // Ensure that last pNext is null
   *pNextFeature  = nullptr;
   *pNextProperty = nullptr;
@@ -2716,7 +2736,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     m_PhysicalDeviceExtensionFeatures.m_Multiview.pNext              = nullptr;
     m_PhysicalDeviceExtensionFeatures.m_MultiDraw.pNext              = nullptr;
     m_PhysicalDeviceExtensionFeatures.m_ShaderDrawParameters.pNext   = nullptr;
-
+    m_PhysicalDeviceExtensionFeatures.m_CustomBorderColor.pNext      = nullptr;
 
     m_PhysicalDeviceExtensionProperties.m_MeshShader.pNext             = nullptr;
     m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.pNext  = nullptr;
@@ -2732,6 +2752,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     m_PhysicalDeviceExtensionProperties.m_Maintenance3.pNext           = nullptr;
     m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap2.pNext    = nullptr;
     m_PhysicalDeviceExtensionProperties.m_MultiDraw.pNext              = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_CustomBorderColor.pNext      = nullptr;
   }
 
   // Check shading rate texture formats.

@@ -237,11 +237,6 @@ void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup
   viewPort.m_fMaxDepth = 0.1f;
 
   m_pCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1U));
-
-  const auto& framebufferDescription = pDevice->GetFramebuffer(m_hCurrentFramebuffer)->GetDescription();
-  auto        scissorRect            = xiiRectU32(framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
-
-  m_pCommandList->SetScissorRects(xiiMakeArrayPtr(&scissorRect, 1U));
 }
 
 void xiiRenderContext::EndRendering()
@@ -677,10 +672,10 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
     uiInstanceCount *= 2;
   }
 
+  XII_SUCCEED_OR_RETURN(pCommandList->CommitShaderResources());
+
   BeginRenderPass();
   XII_SCOPE_EXIT(EndRenderPass());
-
-  XII_SUCCEED_OR_RETURN(pCommandList->CommitShaderResources());
 
   if (uiInstanceCount > 1)
   {
@@ -866,6 +861,25 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     if (bIsModified || bPipelineStateInvalidated)
     {
+      if (bPipelineStateInvalidated)
+      {
+        if (xiiGALPipelineState* pPipelineState = pDevice->GetPipelineState(m_hCurrentPipelineState))
+        {
+          if (pPipelineState->GetDescription().IsAnyGraphicsPipeline() && !pPipelineState->GetDescription().m_GraphicsPipeline.m_hRasterizerState.IsInvalidated())
+          {
+            xiiGALRasterizerState* pRasterizerState = pDevice->GetRasterizerState(pPipelineState->GetDescription().m_GraphicsPipeline.m_hRasterizerState);
+
+            if (pRasterizerState->GetDescription().m_bScissorEnable)
+            {
+              const auto& framebufferDescription = pDevice->GetFramebuffer(m_hCurrentFramebuffer)->GetDescription();
+              auto        scissorRect            = xiiRectU32(framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
+
+              m_pCommandList->SetScissorRects(xiiMakeArrayPtr(&scissorRect, 1U));
+            }
+          }
+        }
+      }
+
       if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::UAVBindingChanged))
       {
         ApplyUnorderedAccessViewBindings();
