@@ -467,18 +467,15 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
         XII_REPORT_FAILURE("Incorrect number of subresources in Vulkan image initialization data. {} expected, while {} provided.", uiExpectedSubresourceCount, pInitialData->m_SubResources.GetCount());
       }
 
-      xiiDynamicArray<vk::BufferImageCopy> bufferImageCopyRegions(pDeviceVulkan->GetAllocator());
-      bufferImageCopyRegions.SetCount(pInitialData->m_SubResources.GetCount());
-
       xiiUInt32 uiSubresourceIndex = 0;
 
       for (xiiUInt32 uiLayer = 0; uiLayer < vkImageCreateInfo.arrayLayers; ++uiLayer)
       {
         for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
         {
-          const auto& subresourceData  = pInitialData->m_SubResources[uiSubresourceIndex];
-          auto&       vkCopyRegion     = bufferImageCopyRegions[uiSubresourceIndex];
-          auto        mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
+          const auto&         subresourceData  = pInitialData->m_SubResources[uiSubresourceIndex];
+          vk::BufferImageCopy vkCopyRegion     = {};
+          auto                mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
 
           // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
           auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(mipLevelProperty.m_uiMipSize);
@@ -515,7 +512,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
             for (xiiUInt32 uiY = 0; uiY < mipLevelProperty.m_StorageSize.height; uiY += formatProperties.m_uiBlockHeight)
             {
               // The subresourceData.m_uiStride must be the stride of one row of compressed blocks.
-              memcpy(xiiMemoryUtils::AddByteOffset(pMappedMemory, vkCopyRegion.bufferOffset + ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / xiiUInt32{formatProperties.m_uiBlockHeight}) * mipLevelProperty.m_uiRowSize),
+              memcpy(xiiMemoryUtils::AddByteOffset(pMappedMemory, ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / xiiUInt32{formatProperties.m_uiBlockHeight}) * mipLevelProperty.m_uiRowSize),
                      xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), (uiY / xiiUInt32{formatProperties.m_uiBlockHeight}) * subresourceData.m_uiStride + uiZ * subresourceData.m_uiDepthStride),
                      mipLevelProperty.m_uiRowSize);
             }
@@ -529,7 +526,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 
           // Copy commands MUST be recorded outside of a render pass instance. This is OK here as copy will be the only command in the command buffer.
           // dstImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.4)
-          pCommandListVulkan->CopyBufferToImage(stagingBufferAllocation.m_vkBuffer, m_vkImage, vkCurrentImageLayout, bufferImageCopyRegions);
+          pCommandListVulkan->CopyBufferToImage(stagingBufferAllocation.m_vkBuffer, m_vkImage, vkCurrentImageLayout, xiiMakeArrayPtr(&vkCopyRegion, 1U));
 
           ++uiSubresourceIndex;
         }
