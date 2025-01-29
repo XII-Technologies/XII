@@ -79,11 +79,12 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 
 xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 {
+  XII_LOCK(m_QueueMutex);
+
   XII_ASSERT_DEV(m_vkCommandPool != nullptr, "");
 
   xiiGALCommandListVulkan* pCommandListVulkan = nullptr;
   {
-    XII_LOCK(m_QueueMutex);
 
     if (m_QueuedCommandLists.IsEmpty())
     {
@@ -150,6 +151,8 @@ void xiiGALCommandQueueVulkan::RecycleCommandLists()
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList)
 {
+  XII_LOCK(m_QueueMutex);
+
   xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
 
