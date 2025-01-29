@@ -79,7 +79,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 
 xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
 {
-    XII_LOCK(m_QueueMutex);
+  XII_LOCK(m_QueueMutex);
 
   XII_ASSERT_DEV(m_vkCommandPool != nullptr, "");
 
