@@ -77,7 +77,6 @@ public:
   static vk::Filter             GetFilter(xiiGALFilterType::Enum e);
   static vk::SamplerMipmapMode  GetSamplerMipMapMode(xiiGALFilterType::Enum e);
   static vk::SamplerAddressMode GetSamplerAddressMode(xiiGALTextureAddressMode::Enum e);
-  static vk::BorderColor        GetBorderColor(const xiiColor& c);
 
   static vk::VertexInputRate GetFrequency(xiiGALInputElementFrequency::Enum e);
 

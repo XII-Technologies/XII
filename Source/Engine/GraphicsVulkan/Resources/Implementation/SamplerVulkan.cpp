@@ -45,8 +45,52 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
   vkSamplerCreateInfo.compareOp               = xiiVulkanTypeConversions::GetCompareOp(m_Description.m_ComparisonFunction);
   vkSamplerCreateInfo.minLod                  = m_Description.m_bUnormalizedCoords ? 0U : m_Description.m_fMinLOD;
   vkSamplerCreateInfo.maxLod                  = m_Description.m_bUnormalizedCoords ? 0U : m_Description.m_fMaxLOD;
-  vkSamplerCreateInfo.borderColor             = xiiVulkanTypeConversions::GetBorderColor(m_Description.m_BorderColor);
+  vkSamplerCreateInfo.borderColor             = vk::BorderColor::eFloatTransparentBlack;
   vkSamplerCreateInfo.unnormalizedCoordinates = m_Description.m_bUnormalizedCoords;
+
+  vk::SamplerCustomBorderColorCreateInfoEXT vkSamplerCustomBorderColor = {};
+  if (vkSamplerCreateInfo.addressModeU == vk::SamplerAddressMode::eClampToBorder || vkSamplerCreateInfo.addressModeV == vk::SamplerAddressMode::eClampToBorder || vkSamplerCreateInfo.addressModeW == vk::SamplerAddressMode::eClampToBorder)
+  {
+    const xiiColor color = m_Description.m_BorderColor;
+
+    if (color == xiiColor(0, 0, 0, 0))
+    {
+      vkSamplerCreateInfo.borderColor = vk::BorderColor::eFloatTransparentBlack;
+    }
+    else if (color == xiiColor(0, 0, 0, 1))
+    {
+      vkSamplerCreateInfo.borderColor = vk::BorderColor::eFloatOpaqueBlack;
+    }
+    else if (color == xiiColor(1, 1, 1, 1))
+    {
+      vkSamplerCreateInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+    }
+    else if (pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_CustomBorderColor.customBorderColors == vk::True)
+    {
+      vkSamplerCustomBorderColor.customBorderColor.float32[0] = color.r;
+      vkSamplerCustomBorderColor.customBorderColor.float32[1] = color.g;
+      vkSamplerCustomBorderColor.customBorderColor.float32[2] = color.b;
+      vkSamplerCustomBorderColor.customBorderColor.float32[3] = color.a;
+
+      vkSamplerCreateInfo.borderColor = vk::BorderColor::eFloatCustomEXT;
+      vkSamplerCreateInfo.pNext       = &vkSamplerCustomBorderColor;
+    }
+    else
+    {
+      // Fallback to close enough.
+      const bool bTransparent = m_Description.m_BorderColor.a == 0.0f;
+      const bool bBlack       = m_Description.m_BorderColor.r == 0.0f;
+
+      if (bBlack)
+      {
+        vkSamplerCreateInfo.borderColor = bTransparent ? vk::BorderColor::eFloatTransparentBlack : vk::BorderColor::eFloatOpaqueBlack;
+      }
+      else
+      {
+        vkSamplerCreateInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+      }
+    }
+  }
 
   if (m_Description.m_Flags.IsSet(xiiGALSamplerFlags::Subsampled))
   {

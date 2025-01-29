@@ -44,6 +44,7 @@ public:
     vk::PhysicalDeviceMultiviewFeaturesKHR              m_Multiview;           // Required for RenderPass2
     vk::PhysicalDeviceMultiDrawFeaturesEXT              m_MultiDraw;
     vk::PhysicalDeviceShaderDrawParametersFeatures      m_ShaderDrawParameters;
+    vk::PhysicalDeviceCustomBorderColorFeaturesEXT      m_CustomBorderColor;
 
     bool m_bSpirv14                  = false; // Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension
     bool m_bSpirv15                  = false; // DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5
@@ -70,6 +71,7 @@ public:
     vk::PhysicalDeviceMaintenance3Properties              m_Maintenance3;
     vk::PhysicalDeviceFragmentDensityMap2PropertiesEXT    m_FragmentDensityMap2;
     vk::PhysicalDeviceMultiDrawPropertiesEXT              m_MultiDraw;
+    vk::PhysicalDeviceCustomBorderColorPropertiesEXT      m_CustomBorderColor;
   };
 
   struct QueueInformation

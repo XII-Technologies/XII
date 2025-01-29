@@ -688,30 +688,6 @@ XII_ALWAYS_INLINE vk::SamplerAddressMode xiiVulkanTypeConversions::GetSamplerAdd
   return vk::SamplerAddressMode::eClampToEdge;
 }
 
-XII_ALWAYS_INLINE vk::BorderColor xiiVulkanTypeConversions::GetBorderColor(const xiiColor& c)
-{
-  vk::BorderColor vkBorderColor = vk::BorderColor::eFloatTransparentBlack;
-
-  if (c.r == 0 && c.g == 0 && c.b == 0 && c.a == 0)
-  {
-    vkBorderColor = vk::BorderColor::eFloatTransparentBlack;
-  }
-  else if (c.r == 0 && c.g == 0 && c.b == 0 && c.a == 1)
-  {
-    vkBorderColor = vk::BorderColor::eFloatOpaqueBlack;
-  }
-  else if (c.r == 1 && c.g == 1 && c.b == 1 && c.a == 1)
-  {
-    vkBorderColor = vk::BorderColor::eFloatOpaqueWhite;
-  }
-  else
-  {
-    xiiLog::Error("Vulkan samplers only allow transparent black (0,0,0,0), opaque black (0,0,0,1) or opaque white (1,1,1,1) as border colors.");
-  }
-
-  return vkBorderColor;
-}
-
 XII_ALWAYS_INLINE vk::VertexInputRate xiiVulkanTypeConversions::GetFrequency(xiiGALInputElementFrequency::Enum e)
 {
   switch (e)
