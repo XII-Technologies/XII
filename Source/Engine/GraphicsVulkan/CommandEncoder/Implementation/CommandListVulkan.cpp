@@ -737,8 +737,6 @@ void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xi
 
 void xiiGALCommandListVulkan::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
 {
-  XII_ASSERT_DEV(bindingInformation.m_uiBindSet == 0, "We assume it was a single descriptor set.");
-
   xiiGALBufferVulkan* pConstantBufferVulkan = static_cast<xiiGALBufferVulkan*>(pConstantBuffer);
 
   m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1);
@@ -753,8 +751,6 @@ void xiiGALCommandListVulkan::SetConstantBufferPlatform(const xiiGALPipelineReso
 
 void xiiGALCommandListVulkan::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
 {
-  XII_ASSERT_DEV(bindingInformation.m_uiBindSet == 0, "We assume it was a single descriptor set.");
-
   xiiGALBufferViewVulkan* pBufferViewVulkan = static_cast<xiiGALBufferViewVulkan*>(pBufferView);
 
   m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1);
@@ -769,8 +765,6 @@ void xiiGALCommandListVulkan::SetShaderResourceBufferViewPlatform(const xiiGALPi
 
 void xiiGALCommandListVulkan::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
-  XII_ASSERT_DEV(bindingInformation.m_uiBindSet == 0, "We assume it was a single descriptor set.");
-
   xiiGALTextureViewVulkan* pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pTextureView);
 
   m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1);
@@ -785,8 +779,6 @@ void xiiGALCommandListVulkan::SetShaderResourceTextureViewPlatform(const xiiGALP
 
 void xiiGALCommandListVulkan::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
 {
-  XII_ASSERT_DEV(bindingInformation.m_uiBindSet == 0, "We assume it was a single descriptor set.");
-
   xiiGALBufferViewVulkan* pBufferViewVulkan = static_cast<xiiGALBufferViewVulkan*>(pBufferView);
 
   m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1);
@@ -801,8 +793,6 @@ void xiiGALCommandListVulkan::SetUnorderedAccessBufferViewPlatform(const xiiGALP
 
 void xiiGALCommandListVulkan::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
-  XII_ASSERT_DEV(bindingInformation.m_uiBindSet == 0, "We assume it was a single descriptor set.");
-
   xiiGALTextureViewVulkan* pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pTextureView);
 
   m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1);
@@ -817,8 +807,6 @@ void xiiGALCommandListVulkan::SetUnorderedAccessTextureViewPlatform(const xiiGAL
 
 void xiiGALCommandListVulkan::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
 {
-  XII_ASSERT_DEV(bindingInformation.m_uiBindSet == 0, "We assume it was a single descriptor set.");
-
   xiiGALSamplerVulkan* pSamplerVulkan = static_cast<xiiGALSamplerVulkan*>(pSampler);
 
   m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1);
