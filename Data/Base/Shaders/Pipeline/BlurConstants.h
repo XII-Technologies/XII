@@ -1,9 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
-#include "../Common/Platforms.h"
+#include "../Common/ShaderResourceMacros.h"
 
-CONSTANT_BUFFER(xiiBlurConstants, 3)
+DECLARE_CONSTANT_BUFFER(xiiBlurConstants, 3, 0)
 {
   INT1(BlurRadius);
 };

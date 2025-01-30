@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
+#include "../Common/ShaderResourceMacros.h"
 
 BEGIN_PUSH_CONSTANTS(xiiBlendConstants)
 {

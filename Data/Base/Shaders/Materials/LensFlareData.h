@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Shaders/Common/ConstantBufferMacros.h>
+#include <Shaders/Common/ShaderResourceMacros.h>
 
 #define LENS_FLARE_INVERSE_TONEMAP (1 << 0)
 #define LENS_FLARE_GREYSCALE_TEXTURE (1 << 1)

@@ -1,7 +1,6 @@
 #pragma once
 
-#include "ConstantBufferMacros.h"
-#include "Platforms.h"
+#include "ShaderResourceMacros.h"
 
 struct XII_SHADER_STRUCT xiiPerInstanceData
 {
@@ -31,7 +30,7 @@ XII_DEFINE_AS_POD_TYPE(xiiPerInstanceData);
 static_assert(sizeof(xiiPerInstanceData) == 128);
 #endif
 
-CONSTANT_BUFFER(xiiObjectConstants, 2)
+DECLARE_CONSTANT_BUFFER(xiiObjectConstants, 2, 0)
 {
   UINT1(InstanceDataOffset);
 };

@@ -37,7 +37,7 @@ TWO_SIDED
 %endif
 
 // SYSTEM permutations:
-// all of these are automatically set by the engine 
+// all of these are automatically set by the engine
 FLIP_WINDING
 RENDER_PASS
 FORWARD_PASS_WRITE_DEPTH
@@ -51,7 +51,7 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 [MATERIALPARAMETER]
 // This section determines which options are shown in the material UI.
 // Permutation options let the user choose the value of a permutation variable.
-// bool / float / int / Color options let the user set a fixed value for a CONSTANT_BUFFER variable.
+// bool / float / int / Color options let the user set a fixed value for a DECLARE_CONSTANT_BUFFER variable.
 // Texture2D options let the user choose a texture for that slot.
 
 %if TEMPLATE_BLEND_MODE == TEMPLATE_BLEND_MODE_SELECTABLE
@@ -139,7 +139,7 @@ Texture2D OrmTexture;
 // The values of the variables in the MATERIALPARAMETER section are written to this constant buffer.
 // The constant buffer is available to all shader stages and these variables
 // can be read anywhere like global variables.
-CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 1)
 {
   COLOR4F(BaseColor);
   COLOR4F(EmissiveColor);
@@ -169,10 +169,10 @@ VS_OUT main(VS_IN Input)
   // Search for USE_OBJECT_POSITION_OFFSET and USE_WORLD_POSITION_OFFSET to inject custom offsets,
   // or manipulate the Input or Output structures directly.
   VS_OUT Output = FillVertexData(Input);
-  
+
 %if TEMPLATE_VERTEX_COLORS == TEMPLATE_VERTEX_COLORS_PROCEDURAL
   // Fetch the procedural vertex colors from the per instance vertex color buffer
-  float4 instanceVertexColor0 = RGBA8ToFloat4(GetInstanceVertexColors(0));  
+  float4 instanceVertexColor0 = RGBA8ToFloat4(GetInstanceVertexColors(0));
   Output.ProcColor = instanceVertexColor0;
 %endif
 
@@ -196,11 +196,11 @@ VS_OUT main(VS_IN Input)
 #define USE_MATERIAL_OCCLUSION    // remove if you don't need occlusion
 #define USE_TWO_SIDED_LIGHTING    // only used if TWO_SIDED == TRUE
 #define USE_DECALS                // whether decals should be applied to this material
-#define USE_FOG                   // whether fog should be applied to this material 
+#define USE_FOG                   // whether fog should be applied to this material
 
 #include <Shaders/Materials/MaterialPixelShader.h>
 
-// if you remove any of these, make sure to also remove them from the MATERIALPARAMETER section and CONSTANT_BUFFER
+// if you remove any of these, make sure to also remove them from the MATERIALPARAMETER section and DECLARE_CONSTANT_BUFFER
 Texture2D BaseTexture;
 SamplerState BaseTexture_AutoSampler;
 

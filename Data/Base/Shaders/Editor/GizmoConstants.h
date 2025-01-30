@@ -1,9 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
-#include "../Common/Platforms.h"
+#include "../Common/ShaderResourceMacros.h"
 
-CONSTANT_BUFFER(xiiGizmoConstants, 2)
+DECLARE_CONSTANT_BUFFER(xiiGizmoConstants, 2, 0)
 {
   MAT4(ObjectToWorldMatrix);
   MAT4(WorldToObjectMatrix);

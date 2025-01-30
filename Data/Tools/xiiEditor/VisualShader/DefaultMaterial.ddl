@@ -63,10 +63,10 @@ VERTEX_SKINNING=FALSE
 #include <Shaders/Materials/MaterialVertexShader.h>
 #include <Shaders/Common/VisualShaderUtil.h>
 
-CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 1)
 {
   FLOAT1(MaskThreshold);
-  
+
   // Insert custom Visual Shader parameters here
   VSE_CONSTANTS
 }
@@ -154,11 +154,11 @@ float MaskThreshold @Default($prop0);
   string %CodePixelSamplers { "" }
   string %CodePixelConstants { "" }
   string %CodePixelBody { "
-  
-CONSTANT_BUFFER(xiiMaterialConstants, 1)
+
+DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 1)
 {
   FLOAT1(MaskThreshold);
-  
+
   // Insert custom Visual Shader parameters here
   VSE_CONSTANTS
 }
@@ -232,7 +232,7 @@ float3 GetSubsurfaceColor()
     string %Type { "float" }
     string %DefaultValue { "0.25" }
   }
-  
+
   Property %ApplyFog
   {
     string %Type { "bool" }
@@ -309,7 +309,7 @@ float3 GetSubsurfaceColor()
     bool %Expose { true }
     string %DefaultValue { "1" }
   }
-  
+
   // Pin 8
   InputPin %RefractionColor
   {

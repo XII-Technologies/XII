@@ -6,8 +6,7 @@
 #  error "Functions in LightData.h are only for NORMAL shading quality. Todo: Split up file"
 #endif
 
-#include "ConstantBufferMacros.h"
-#include "Platforms.h"
+#include "ShaderResourceMacros.h"
 
 #define LIGHT_TYPE_POINT 0
 #define LIGHT_TYPE_SPOT  1
@@ -130,7 +129,7 @@ StructuredBuffer<xiiPerReflectionProbeData> perPerReflectionProbeDataBuffer;
 static_assert(sizeof(xiiPerReflectionProbeData) == 160);
 #endif
 
-CONSTANT_BUFFER(xiiClusteredDataConstants, 3)
+DECLARE_CONSTANT_BUFFER(xiiClusteredDataConstants, 3, 0)
 {
   FLOAT1(DepthSliceScale);
   FLOAT1(DepthSliceBias);

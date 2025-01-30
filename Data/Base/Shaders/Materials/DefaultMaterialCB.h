@@ -1,6 +1,6 @@
 #include <Shaders/Common/GlobalConstants.h>
 
-CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 1, 0)
 {
   COLOR4F(BaseColor);
   COLOR4F(EmissiveColor);

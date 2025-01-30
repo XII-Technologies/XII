@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
+#include "../Common/ShaderResourceMacros.h"
 
-#include "../Common/Platforms.h"
-
-CONSTANT_BUFFER(xiiReflectionFilteredSpecularConstants, 3)
+DECLARE_CONSTANT_BUFFER(xiiReflectionFilteredSpecularConstants, 3, 0)
 {
   UINT1(MipLevel);
   FLOAT1(Intensity);

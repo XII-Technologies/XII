@@ -29,7 +29,7 @@ VS_OUT main(VS_IN Input)
 
 #include <Shaders/Common/GlobalConstants.h>
 
-CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 1, 0)
 {
   INT1(ShowChannelMode);
   FLOAT1(LodLevel);

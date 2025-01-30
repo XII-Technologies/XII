@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
+#include "../Common/ShaderResourceMacros.h"
 
-#include "../Common/Platforms.h"
-
-CONSTANT_BUFFER(xiiSelectionHighlightConstants, 3)
+DECLARE_CONSTANT_BUFFER(xiiSelectionHighlightConstants, 3, 0)
 {
   COLOR4F(HighlightColor);
   FLOAT1(OverlayOpacity);

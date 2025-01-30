@@ -1,6 +1,6 @@
 #include <Shaders/Common/GlobalConstants.h>
 
-CONSTANT_BUFFER(xiiMaterialConstants, 0)
+DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 0, 0)
 {
   MAT4(ViewMatrix);
 };

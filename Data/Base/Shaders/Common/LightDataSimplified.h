@@ -4,11 +4,9 @@
 #  error "Functions in LightDataSimplified.h are only for SIMPLIFIED shading quality. Include LightData.h instead."
 #endif
 
-#include "ConstantBufferMacros.h"
+#include "ShaderResourceMacros.h"
 
-#include "Platforms.h"
-
-CONSTANT_BUFFER(xiiSimplifiedDataConstants, 3)
+DECLARE_CONSTANT_BUFFER(xiiSimplifiedDataConstants, 3, 0)
 {
   UINT1(SkyIrradianceIndex);
 };
