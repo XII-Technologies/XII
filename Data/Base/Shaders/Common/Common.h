@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Platforms.h"
+#include "ShaderResourceMacros.h"
 
 // Common sampler states
 SamplerState LinearSampler;
