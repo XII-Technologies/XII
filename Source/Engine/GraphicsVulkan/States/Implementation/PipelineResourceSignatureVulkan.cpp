@@ -97,7 +97,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
     pipelineResource.m_ShaderStages                           = resource.m_ShaderStages;
     pipelineResource.m_bHasImmutableSampler                   = false;
 
-    if (resource.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
+    if (resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler)
     {
       // TextureAndSampler shader resources will inherit the same bind slot.
       pipelineResource.m_uiSamplerIndex = resource.m_uiBindSlot;
