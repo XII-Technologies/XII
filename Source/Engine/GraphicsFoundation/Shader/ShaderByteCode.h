@@ -20,6 +20,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceType
     Sampler,               ///< Sampler (separate sampler).
     InputAttachment,       ///< Input attachment in a render pass.
     AccelerationStructure, ///< Acceleration structure.
+    TextureAndSampler,     ///< Combined texture and sampler.
 
     ENUM_COUNT,
 

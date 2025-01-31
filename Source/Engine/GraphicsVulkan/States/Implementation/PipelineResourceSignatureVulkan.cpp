@@ -97,18 +97,26 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
     pipelineResource.m_ShaderStages                           = resource.m_ShaderStages;
     pipelineResource.m_bHasImmutableSampler                   = false;
 
-    if (pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::CombinedImageSampler)
+    if (resource.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
     {
-      pipelineResource.m_uiSamplerIndex = FindAssignedSampler(m_Description, resource);
+      // TextureAndSampler shader resources will inherit the same bind slot.
+      pipelineResource.m_uiSamplerIndex = resource.m_uiBindSlot;
     }
-    if (pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::CombinedImageSampler || pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::Sampler)
+    else
     {
-      xiiUInt32 uiImmutableSamplerIndex       = FindImmutableSampler(m_Description, resource);
-      pipelineResource.m_bHasImmutableSampler = uiImmutableSamplerIndex != xiiInvalidIndex;
-
-      if (pipelineResource.m_bHasImmutableSampler)
+      if (pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::CombinedImageSampler)
       {
-        pipelineResource.m_uiSamplerIndex = uiImmutableSamplerIndex;
+        pipelineResource.m_uiSamplerIndex = FindAssignedSampler(m_Description, resource);
+      }
+      if ((pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::CombinedImageSampler || pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::Sampler) && pipelineResource.m_uiSamplerIndex == xiiInvalidIndex)
+      {
+        xiiUInt32 uiImmutableSamplerIndex       = FindImmutableSampler(m_Description, resource);
+        pipelineResource.m_bHasImmutableSampler = uiImmutableSamplerIndex != xiiInvalidIndex;
+
+        if (pipelineResource.m_bHasImmutableSampler)
+        {
+          pipelineResource.m_uiSamplerIndex = uiImmutableSamplerIndex;
+        }
       }
     }
   }

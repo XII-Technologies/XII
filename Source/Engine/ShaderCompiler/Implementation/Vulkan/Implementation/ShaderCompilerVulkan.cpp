@@ -502,9 +502,16 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiGALShaderResourceDe
     }
   }
 
-  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE || info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
   {
-    binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+    if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+    {
+      binding.m_Type = xiiGALShaderResourceType::TextureAndSampler;
+    }
+    else
+    {
+      binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+    }
 
     switch (info.image.dim)
     {
@@ -625,6 +632,11 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiGALShaderResourceDe
 
     xiiLog::Error("Resource '{}': Unsupported texel buffer SRV type.", info.name);
     return XII_FAILURE;
+  }
+
+  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+  {
+    binding.m_Type = xiiGALShaderResourceType::TextureAndSampler;
   }
 
   xiiLog::Error("Resource '{}': Unsupported SRV type.", info.name);

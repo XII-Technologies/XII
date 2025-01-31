@@ -1161,6 +1161,8 @@ XII_ALWAYS_INLINE xiiGALDescriporTypeVulkan xiiVulkanTypeConversions::GetDescrip
       return xiiGALDescriporTypeVulkan::InputAttachment;
     case xiiGALShaderResourceType::AccelerationStructure:
       return xiiGALDescriporTypeVulkan::AccelerationStructure;
+    case xiiGALShaderResourceType::TextureAndSampler:
+      return xiiGALDescriporTypeVulkan::CombinedImageSampler;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }

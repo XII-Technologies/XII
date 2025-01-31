@@ -28,6 +28,7 @@ xiiBitflags<xiiGALPipelineResourceFlags> xiiGALGraphicsUtilities::GetValidPipeli
       pipelineResourceFlags |= xiiGALPipelineResourceFlags::NoDynamicBuffers | xiiGALPipelineResourceFlags::RuntimeArray;
       break;
     case xiiGALShaderResourceType::TextureSRV:
+    case xiiGALShaderResourceType::TextureAndSampler:
       pipelineResourceFlags |= xiiGALPipelineResourceFlags::CombinedSampler | xiiGALPipelineResourceFlags::RuntimeArray;
       break;
     case xiiGALShaderResourceType::BufferSRV:

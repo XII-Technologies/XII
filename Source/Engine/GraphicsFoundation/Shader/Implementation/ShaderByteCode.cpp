@@ -14,6 +14,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderResourceType, 1)
   XII_ENUM_CONSTANT(xiiGALShaderResourceType::Sampler),
   XII_ENUM_CONSTANT(xiiGALShaderResourceType::InputAttachment),
   XII_ENUM_CONSTANT(xiiGALShaderResourceType::AccelerationStructure),
+  XII_ENUM_CONSTANT(xiiGALShaderResourceType::TextureAndSampler),
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderTextureType, 1)

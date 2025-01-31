@@ -304,7 +304,7 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource.m_sName == bindingInformation.m_sName && (resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
       {
         bResourceFound = true;
         break;
@@ -394,7 +394,7 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::Sampler && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource.m_sName == bindingInformation.m_sName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
       {
         bResourceFound = true;
         break;

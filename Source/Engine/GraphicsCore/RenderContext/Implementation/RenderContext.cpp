@@ -1721,7 +1721,7 @@ void xiiRenderContext::ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceTyp
       m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
       m_pCommandList->SetShaderResourceBufferView(binding, resourceBinding.m_hBufferView);
     }
-    else if (binding.m_ResourceType == xiiGALShaderResourceType::TextureSRV && binding.m_ResourceType == type)
+    else if ((binding.m_ResourceType == xiiGALShaderResourceType::TextureSRV || binding.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (type == xiiGALShaderResourceType::TextureSRV || type == xiiGALShaderResourceType::TextureAndSampler))
     {
       m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
       m_pCommandList->SetShaderResourceTextureView(binding, resourceBinding.m_hTextureView);
@@ -1761,7 +1761,7 @@ void xiiRenderContext::ApplySamplerBindings()
 
   for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
   {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::Sampler)
+    if (binding.m_ResourceType != xiiGALShaderResourceType::Sampler && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
       continue;
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
