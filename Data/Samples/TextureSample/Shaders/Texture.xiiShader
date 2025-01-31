@@ -24,8 +24,7 @@ VS_OUT main(VS_IN Input)
 
 #include "Common.h"
 
-Texture2D DiffuseTexture;
-SamplerState DiffuseTexture_AutoSampler;
+DECLARE_COMBINED_IMAGE_SAMPLER(DiffuseTexture, 0, 0);
 
 float4 main(PS_IN Input) : SV_Target
 {
