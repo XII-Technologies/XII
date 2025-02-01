@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiDownscaleDepthConstants, 3, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiDownscaleDepthConstants)
 {
   FLOAT2(PixelSize);
   BOOL1(LinearizeDepth);

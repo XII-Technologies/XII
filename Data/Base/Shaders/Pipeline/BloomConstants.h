@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiBloomConstants, 3, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiBloomConstants)
 {
   FLOAT2(PixelSize);
   FLOAT1(BloomThreshold);

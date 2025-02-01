@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiReflectionIrradianceConstants, 3, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiReflectionIrradianceConstants)
 {
   FLOAT1(LodLevel);
   FLOAT1(Intensity);

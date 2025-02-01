@@ -12,7 +12,7 @@ struct XII_SHADER_STRUCT xiiBaseParticleShaderData
 // this is only defined during shader compilation
 #if XII_ENABLED(PLATFORM_SHADER)
 
-StructuredBuffer<xiiBaseParticleShaderData> particleBaseData;
+DECLARE_STRUCTURED_BUFFER_AUTO(particleBaseData, xiiBaseParticleShaderData);
 
 #else // C++
 

@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiBilateralBlurConstants, 3, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiBilateralBlurConstants)
 {
   UINT1(BlurRadius);
   FLOAT1(GaussianFalloff); // 1 / (2 * sigma * sigma)

@@ -29,7 +29,7 @@ struct XII_SHADER_STRUCT xiiPerLightData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerLightData> perLightDataBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(perLightDataBuffer, xiiPerLightData);
 #else
 static_assert(sizeof(xiiPerLightData) == 48);
 #endif
@@ -65,7 +65,7 @@ struct XII_SHADER_STRUCT xiiDirShadowData
 #define GET_ATLAS_SCALE_OFFSET_INDEX(baseOffset, index)    ((baseOffset) + 13 + (index))
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<float4> shadowDataBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(shadowDataBuffer, float4);
 #endif
 
 #define DECAL_USE_NORMAL             (1 << 0)
@@ -98,7 +98,7 @@ struct XII_SHADER_STRUCT xiiPerDecalData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerDecalData> perDecalDataBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(perDecalDataBuffer, xiiPerDecalData);
 #else // C++
 static_assert(sizeof(xiiPerDecalData) == 96);
 #endif
@@ -124,7 +124,7 @@ struct XII_SHADER_STRUCT xiiPerReflectionProbeData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerReflectionProbeData> perPerReflectionProbeDataBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(perPerReflectionProbeDataBuffer, xiiPerReflectionProbeData);
 #else // C++
 static_assert(sizeof(xiiPerReflectionProbeData) == 160);
 #endif
@@ -172,8 +172,8 @@ struct xiiPerClusterData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerClusterData> perClusterDataBuffer;
-StructuredBuffer<uint>              clusterItemBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(perClusterDataBuffer, xiiPerClusterData);
+DECLARE_STRUCTURED_BUFFER_AUTO(clusterItemBuffer, uint);
 #endif
 
 // clang-format on

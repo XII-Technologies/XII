@@ -1,5 +1,4 @@
 
-
 struct STAGE_TEMPLATE
 {
   float4 Position : SV_Position;

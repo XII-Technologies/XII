@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiTonemapConstants, 3, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiTonemapConstants)
 {
   FLOAT4(AutoExposureParams);
 

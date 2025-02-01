@@ -30,7 +30,7 @@ struct BoxData
   float4 color;
 };
 
-StructuredBuffer<BoxData> boxData;
+DECLARE_STRUCTURED_BUFFER_AUTO(boxData, BoxData);
 
 struct VS_IN_POS_ONLY
 {

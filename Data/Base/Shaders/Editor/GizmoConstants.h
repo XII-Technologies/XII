@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiGizmoConstants, 2, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiGizmoConstants)
 {
   MAT4(ObjectToWorldMatrix);
   MAT4(WorldToObjectMatrix);

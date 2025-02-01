@@ -30,16 +30,31 @@ float3x3 TransformToRotation(Transform t)
 
 #  define XII_SHADER_STRUCT
 
-#  if XII_ENABLED(PLATFORM_VULKAN)
-#    define DECLARE_CONSTANT_BUFFER(Name, Slot, Set)         cbuffer Name : register(b##Slot, space##Set)
-#    define DECLARE_TEXTURE(Name, Slot, Set)                 Texture2D Name : register(t##Slot, space##Set)
-#    define DECLARE_SAMPLER(Name, Slot, Set)                 SamplerState Name : register(s##Slot, space##Set)
-#    define DECLARE_STRUCTURED_BUFFER(Name, Type, Slot, Set) StructuredBuffer<Type> Name : register(u##Slot, space##Set)
+// Automatic Resource Bindings
+#  define DECLARE_CONSTANT_BUFFER_AUTO(Name)            cbuffer Name
+#  define DECLARE_TEXTURE_AUTO(Name, Type)              Type Name
+#  define DECLARE_SAMPLER_AUTO(Name)                    SamplerState Name
+#  define DECLARE_BUFFER_AUTO(Name, Type)               Type Name
+#  define DECLARE_STRUCTURED_BUFFER_AUTO(Name, Type)    StructuredBuffer<Type> Name
+#  define DECLARE_RW_STRUCTURED_BUFFER_AUTO(Name, Type) RWStructuredBuffer<Type> Name
+#  define DECLARE_BYTE_ADDRESS_BUFFER_AUTO(Name)        ByteAddressBuffer Name
+#  define DECLARE_RW_BYTE_ADDRESS_BUFFER_AUTO(Name)     RWByteAddressBuffer Name
+#  define DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(Name, Type) \
+    Type         Name;                                    \
+    SamplerState Name##_AutoSampler
 
+#  if XII_ENABLED(PLATFORM_VULKAN)
+#    define DECLARE_CONSTANT_BUFFER(Name, Slot, Set)            cbuffer Name : register(b##Slot, space##Set)
+#    define DECLARE_TEXTURE(Name, Type, Slot, Set)              Type Name : register(t##Slot, space##Set)
+#    define DECLARE_SAMPLER(Name, Slot, Set)                    SamplerState Name : register(s##Slot, space##Set)
+#    define DECLARE_BUFFER(Name, Type, Slot, Set)               Buffer<Type> Name : register(u##Slot, space##Set)
+#    define DECLARE_STRUCTURED_BUFFER(Name, Type, Slot, Set)    StructuredBuffer<Type> Name : register(u##Slot, space##Set)
+#    define DECLARE_RW_STRUCTURED_BUFFER(Name, Type, Slot, Set) RWStructuredBuffer<Type> Name : register(u##Slot, space##Set)
+#    define DECLARE_BYTE_ADDRESS_BUFFER(Name, Slot, Set)        ByteAddressBuffer Name : register(t##Slot, space##Set)
+#    define DECLARE_RW_BYTE_ADDRESS_BUFFER(Name, Slot, Set)     RWByteAddressBuffer Name : register(u##Slot, space##Set)
 #    define DECLARE_COMBINED_IMAGE_SAMPLER(Name, Type, Slot, Set)                     \
       [[vk::combinedImageSampler]] Type         Name : register(t##Slot, space##Set); \
       [[vk::combinedImageSampler]] SamplerState Name##_AutoSampler : register(s##Slot, space##Set)
-
 #    define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT XII_PP_CONCAT(Name, _PushConstants)
 #    define END_PUSH_CONSTANTS(Name) \
       ;                              \
@@ -49,15 +64,17 @@ float3x3 TransformToRotation(Transform t)
 #  elif XII_ENABLED(PLATFORM_D3D11)
 // D3D11 does not support push constants, so we just emulate them via a normal constant buffer.
 
-#    define DECLARE_CONSTANT_BUFFER(Name, Slot, Set)         cbuffer Name : register(b##Slot)
-#    define DECLARE_TEXTURE(Name, Slot, Set)                 Texture2D Name : register(t##Slot)
-#    define DECLARE_SAMPLER(Name, Slot, Set)                 SamplerState Name : register(s##Slot)
-#    define DECLARE_STRUCTURED_BUFFER(Name, Type, Slot, Set) StructuredBuffer<Type> Name : register(u##Slot)
-
+#    define DECLARE_CONSTANT_BUFFER(Name, Slot, Set)            cbuffer Name : register(b##Slot)
+#    define DECLARE_TEXTURE(Name, Type, Slot, Set)              Type Name : register(t##Slot)
+#    define DECLARE_SAMPLER(Name, Slot, Set)                    SamplerState Name : register(s##Slot)
+#    define DECLARE_BUFFER(Name, Type, Slot, Set)               Type Name : register(u##Slot)
+#    define DECLARE_STRUCTURED_BUFFER(Name, Type, Slot, Set)    StructuredBuffer<Type> Name : register(u##Slot)
+#    define DECLARE_RW_STRUCTURED_BUFFER(Name, Type, Slot, Set) RWStructuredBuffer<Type> Name : register(u##Slot)
+#    define DECLARE_BYTE_ADDRESS_BUFFER(Name, Slot, Set)        ByteAddressBuffer Name : register(t##Slot)
+#    define DECLARE_RW_BYTE_ADDRESS_BUFFER(Name, Slot, Set)     RWByteAddressBuffer Name : register(u##Slot)
 #    define DECLARE_COMBINED_IMAGE_SAMPLER(Name, Type, Slot, Set) \
       Type         Name : register(t##Slot);                      \
       SamplerState Name##_AutoSampler : register(s##Slot)
-
 #    define BEGIN_PUSH_CONSTANTS(Name)        cbuffer Name
 #    define END_PUSH_CONSTANTS(Name)          ;
 #    define GET_PUSH_CONSTANT(Name, Constant) Constant
@@ -97,16 +114,28 @@ float3x3 TransformToRotation(Transform t)
 #  include <Foundation/Basics/Platform/Common.h>
 #  include <GraphicsFoundation/Shader/Types.h>
 
-#  define XII_SHADER_STRUCT alignas(16)
-
+#  define XII_SHADER_STRUCT                        alignas(16)
 #  define DECLARE_CONSTANT_BUFFER(Name, Slot, Set) struct alignas(16) Name
-#  define DECLARE_TEXTURE(Name, Slot, Set)
+#  define DECLARE_TEXTURE(Name, Type, Slot, Set)
 #  define DECLARE_SAMPLER(Name, Slot, Set)
+#  define DECLARE_BUFFER(Name, Type, Slot, Set)
 #  define DECLARE_STRUCTURED_BUFFER(Name, Type, Slot, Set)
+#  define DECLARE_RW_STRUCTURED_BUFFER(Name, Type, Slot, Set)
+#  define DECLARE_BYTE_ADDRESS_BUFFER(Name, Slot, Set)
+#  define DECLARE_RW_BYTE_ADDRESS_BUFFER(Name, Slot, Set)
 #  define DECLARE_COMBINED_IMAGE_SAMPLER(Name, Type, Slot, Set)
-
 #  define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT Name
 #  define END_PUSH_CONSTANTS(Name)   ;
+
+#  define DECLARE_CONSTANT_BUFFER_AUTO(Name) struct alignas(16) Name
+#  define DECLARE_TEXTURE_AUTO(Name, Type)
+#  define DECLARE_SAMPLER_AUTO(Name)
+#  define DECLARE_BUFFER_AUTO(Name, Type)
+#  define DECLARE_STRUCTURED_BUFFER_AUTO(Name, Type)
+#  define DECLARE_RW_STRUCTURED_BUFFER_AUTO(Name, Type)
+#  define DECLARE_BYTE_ADDRESS_BUFFER_AUTO(Name)
+#  define DECLARE_RW_BYTE_ADDRESS_BUFFER_AUTO(Name)
+#  define DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(Name, Type)
 
 #  define FLOAT1(Name)    float Name
 #  define FLOAT2(Name)    xiiVec2 Name

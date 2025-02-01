@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiParticleSystemConstants, 2, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiParticleSystemConstants)
 {
   MAT4(ObjectToWorldMatrix);
 

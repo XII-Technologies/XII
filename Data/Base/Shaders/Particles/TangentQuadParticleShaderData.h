@@ -17,7 +17,7 @@ struct XII_SHADER_STRUCT xiiTangentQuadParticleShaderData
 // this is only defined during shader compilation
 #if XII_ENABLED(PLATFORM_SHADER)
 
-StructuredBuffer<xiiTangentQuadParticleShaderData> particleTangentQuadData;
+DECLARE_STRUCTURED_BUFFER_AUTO(particleTangentQuadData, xiiTangentQuadParticleShaderData);
 
 #else // C++
 

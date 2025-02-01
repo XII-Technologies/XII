@@ -12,7 +12,7 @@ struct XII_SHADER_STRUCT xiiBillboardQuadParticleShaderData
 // this is only defined during shader compilation
 #if XII_ENABLED(PLATFORM_SHADER)
 
-StructuredBuffer<xiiBillboardQuadParticleShaderData> particleBillboardQuadData;
+DECLARE_STRUCTURED_BUFFER_AUTO(particleBillboardQuadData, xiiBillboardQuadParticleShaderData);
 
 #else // C++
 

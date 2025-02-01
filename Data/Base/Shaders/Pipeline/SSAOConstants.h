@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiSSAOConstants, 3, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiSSAOConstants)
 {
   FLOAT2(TexCoordsScale);
   FLOAT2(FadeOutParams);

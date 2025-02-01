@@ -23,10 +23,8 @@ public:
 
   /// \brief Sets the value of the given stat, adds it if it did not exist before.
   ///
-  /// szStatName may contain slashes (but not backslashes) to define groups and subgroups, which can be used by tools such as xiiInspector
-  /// to display the stats in a hierarchical way.
-  /// This function will also send the name and value of the stat through xiiTelemetry, such that tools like xiiInspector will show the
-  /// changed value.
+  /// szStatName may contain slashes (but not backslashes) to define groups and subgroups, which can be used by tools such as xiiInspector to display the stats in a hierarchical way.
+  /// This function will also send the name and value of the stat through xiiTelemetry, such that tools like xiiInspector will show the changed value.
   static void SetStat(xiiStringView sStatName, const xiiVariant& value);
 
   /// \brief Returns the value of the given stat. Returns an invalid xiiVariant, if the stat did not exist before.

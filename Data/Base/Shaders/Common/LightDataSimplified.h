@@ -6,7 +6,7 @@
 
 #include "ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiSimplifiedDataConstants, 3, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiSimplifiedDataConstants)
 {
   UINT1(SkyIrradianceIndex);
 };

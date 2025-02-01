@@ -2,7 +2,7 @@
 
 #include "../Common/ShaderResourceMacros.h"
 
-DECLARE_CONSTANT_BUFFER(xiiVRCompanionViewConstants, 2, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiVRCompanionViewConstants)
 {
   FLOAT2(TargetSize);
 };

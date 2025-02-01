@@ -66,8 +66,7 @@ VS_OUT main(VS_IN Input)
 
 #include <Shaders/Materials/MaterialInterpolator.h>
 
-Texture2D BaseTexture;
-SamplerState BaseTexture_AutoSampler;
+DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(BaseTexture, Texture2D);
 
 float4 main(PS_IN Input) : SV_Target
 {
