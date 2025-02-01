@@ -32,9 +32,9 @@ public:
 private:
   void Initialize();
 
-  xiiResult DefineShaderResourceBindings(const xiiShaderProgramData& data, xiiHashTable<xiiHashedString, xiiShaderResourceBinding>& inout_resourceBinding, xiiLogInterface* pLog);
+  xiiResult DefineShaderResourceBindings(const xiiShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog);
 
-  void CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiShaderResourceBinding& binding, xiiStringBuilder& out_sDeclaration);
+  void CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration);
 
   xiiResult ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderType> Stage);
   xiiResult FillResourceBinding(xiiGALShaderResourceDescription& binding, ID3D11ShaderReflection* pReflector, const D3D11_SHADER_INPUT_BIND_DESC& info);

@@ -618,27 +618,27 @@ void xiiShaderCompilerFXC::Initialize()
   }
 }
 
-xiiResult xiiShaderCompilerFXC::DefineShaderResourceBindings(const xiiShaderProgramData& data, xiiHashTable<xiiHashedString, xiiShaderResourceBinding>& inout_resourceBinding, xiiLogInterface* pLog)
+xiiResult xiiShaderCompilerFXC::DefineShaderResourceBindings(const xiiShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog)
 {
   xiiHybridBitfield<64> indexInUse[DX11ResourceCategory::ENUM_COUNT];
   for (auto it : inout_resourceBinding)
   {
-    const xiiBitflags<DX11ResourceCategory> type = DX11ResourceCategory::MakeFromShaderDescriptorType(it.Value().m_ResourceType);
+    const xiiBitflags<DX11ResourceCategory> type = DX11ResourceCategory::MakeFromShaderDescriptorType(it.Value().m_Type);
     // Convert bit to index. We know that only one bit can be set in DX11 as TextureAndSampler is not supported.
     const xiiUInt32 uiIndex = xiiMath::FirstBitLow((xiiUInt32)type.GetValue());
-    const xiiInt16  iSlot   = it.Value().m_iSlot;
-    if (iSlot != -1)
+    const xiiInt16  iSlot   = it.Value().m_uiBindIndex;
+    if (iSlot != xiiInvalidIndex)
     {
       indexInUse[uiIndex].SetCount(xiiMath::Max(indexInUse[uiIndex].GetCount(), static_cast<xiiUInt32>(iSlot + 1)));
       indexInUse[uiIndex].SetBit(iSlot);
     }
     // DX11: Everything is set 0.
-    it.Value().m_iSet = 0;
+    it.Value().m_uiDescriptorSet = 0;
   }
 
   // Create stable order of resources
   xiiHybridArray<xiiHashedString, 16> order[DX11ResourceCategory::ENUM_COUNT];
-  for (xiiUInt32 stage = xiiGALShaderStage::VertexShader; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderType::Vertex; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     if (data.m_sShaderSource[stage].IsEmpty())
       continue;
@@ -680,12 +680,14 @@ xiiResult xiiShaderCompilerFXC::DefineShaderResourceBindings(const xiiShaderProg
   return XII_SUCCESS;
 }
 
-void xiiShaderCompilerFXC::CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiShaderResourceBinding& binding, xiiStringBuilder& out_sDeclaration)
+void xiiShaderCompilerFXC::CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration)
 {
-  XII_ASSERT_DEBUG(binding.m_iSet == 0, "FXC: error X3721: space is only supported for shader targets 5.1 and higher");
-  const xiiBitflags<DX11ResourceCategory> type = DX11ResourceCategory::MakeFromShaderDescriptorType(binding.m_ResourceType);
-  xiiStringView                           sResourcePrefix;
-  if (binding.m_iSlot == -1)
+  XII_ASSERT_DEBUG(binding.m_uiDescriptorSet == 0, "FXC: error X3721: space is only supported for shader targets 5.1 and higher.");
+
+  const xiiBitflags<DX11ResourceCategory> type = DX11ResourceCategory::MakeFromShaderDescriptorType(binding.m_Type);
+
+  xiiStringView sResourcePrefix;
+  if (binding.m_uiDescriptorSet == xiiInvalidIndex)
   {
     // Let the compiler choose an index.
     out_sDeclaration.SetFormat("{}", sDeclaration);
@@ -706,11 +708,10 @@ void xiiShaderCompilerFXC::CreateNewShaderResourceDeclaration(xiiStringView sPla
     case DX11ResourceCategory::UAV:
       sResourcePrefix = "u"_xiisv;
       break;
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-  out_sDeclaration.SetFormat("{} : register({}{})", sDeclaration, sResourcePrefix, binding.m_iSlot);
+  out_sDeclaration.SetFormat("{} : register({}{})", sDeclaration, sResourcePrefix, binding.m_uiBindIndex);
 }
 
 xiiResult xiiShaderCompilerFXC::ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderType> Stage)
@@ -1121,7 +1122,7 @@ xiiResult xiiShaderCompilerFXC::ReflectConstantBufferLayout(xiiGALShaderResource
         continue;
     }
 
-     const char* typeNames[] = {
+    const char* typeNames[] = {
       "Unknown",
       "Void",
       "Bool",
