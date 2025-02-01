@@ -21,6 +21,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceType
     InputAttachment,       ///< Input attachment in a render pass.
     AccelerationStructure, ///< Acceleration structure.
     TextureAndSampler,     ///< Combined texture and sampler.
+    PushConstants,         ///< Push constants.
 
     ENUM_COUNT,
 
@@ -277,6 +278,7 @@ public:
   xiiDynamicArray<xiiUInt8>                           m_ByteCode;
   xiiHybridArray<xiiGALShaderResourceDescription, 8U> m_ShaderResourceBindings;
   xiiHybridArray<xiiGALVertexInputLayout, 8U>         m_VertexInputLayout;
+  xiiUInt8                                            m_uiTessellationPatchControlPoints = 0U; // Set only in Hull shader.
 
   // Filled by the compiler base library.
 
