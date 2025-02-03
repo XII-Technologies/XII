@@ -20,10 +20,10 @@ class XII_SHADERCOMPILERFXC_DLL xiiShaderCompilerFXC : public xiiShaderProgramCo
 public:
   virtual void GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& out_platforms) override
   {
-    out_platforms.PushBack("D3D_SM40_93");
-    out_platforms.PushBack("D3D_SM40");
-    out_platforms.PushBack("D3D_SM41");
-    out_platforms.PushBack("D3D_SM50");
+    //out_platforms.PushBack("D3D_SM40_93");
+    //out_platforms.PushBack("D3D_SM40");
+    //out_platforms.PushBack("D3D_SM41");
+    //out_platforms.PushBack("D3D_SM50");
   }
 
   virtual xiiResult ModifyShaderSource(xiiShaderProgramData& inout_data, xiiLogInterface* pLog) override;
@@ -33,18 +33,13 @@ private:
   void Initialize();
 
   xiiResult DefineShaderResourceBindings(const xiiShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog);
-
-  void CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration);
+  void      CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration);
 
   xiiResult ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderType> Stage);
   xiiResult FillResourceBinding(xiiGALShaderResourceDescription& binding, ID3D11ShaderReflection* pReflector, const D3D11_SHADER_INPUT_BIND_DESC& info);
   xiiResult FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const D3D11_SHADER_INPUT_BIND_DESC& info);
   xiiResult FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const D3D11_SHADER_INPUT_BIND_DESC& info);
   xiiResult ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, ID3D11ShaderReflectionConstantBuffer* pConstantBufferReflection);
-
-
-  void ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage);
-  xiiShaderConstantBufferLayout* ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, ID3D11ShaderReflectionConstantBuffer* pConstantBufferReflection);
 
 private:
   xiiMap<xiiStringView, xiiGALInputLayoutSemantic::Enum> m_InputLayoutMapping;
