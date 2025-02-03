@@ -61,7 +61,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 ////////// Utility Functions //////////
 
-xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderType> Stage)
+xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderType> shaderType)
 {
   if (sPlatform == "NULL_SM")
     return "null_sm";
@@ -72,222 +72,218 @@ xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, 
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40_93"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_4_0_level_9_3";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_4_0_level_9_3";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_4_0";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_4_0";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_4_0";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_4_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM41"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_4_0";
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_4_1";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_4_1";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_4_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM50"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_5_0";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_5_0";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_5_0";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_5_0";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_5_0";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_5_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM51"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_5_1";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_5_1";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_5_1";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_5_1";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_5_1";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_5_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM60"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_0";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_6_0";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_6_0";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_0";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_0";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_6_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM61"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_1";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_6_1";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_6_1";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_1";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_1";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_6_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM62"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_2";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_6_2";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_6_2";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_2";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_2";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_6_2";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM63"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_3";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_6_3";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_6_3";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_3";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_3";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_6_3";
 
-    if (Stage.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
+    if (shaderType.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
       return "lib_6_3";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM64"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_4";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_6_4";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_6_4";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_4";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_4";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_6_4";
 
-    if (Stage.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
+    if (shaderType.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
       return "lib_6_4";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM65"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_5";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_6_5";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_6_5";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_5";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_5";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_6_5";
 
-    if (Stage.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
+    if (shaderType.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
       return "lib_6_5";
 
-    if (Stage.IsSet(xiiGALShaderType::Amplification))
+    if (shaderType.IsSet(xiiGALShaderType::Amplification))
       return "as_6_5";
 
-    if (Stage.IsSet(xiiGALShaderType::Mesh))
+    if (shaderType.IsSet(xiiGALShaderType::Mesh))
       return "ms_6_5";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM66"))
   {
-    if (Stage.IsSet(xiiGALShaderType::Vertex))
+    if (shaderType.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_6";
-    if (Stage.IsSet(xiiGALShaderType::Hull))
+    if (shaderType.IsSet(xiiGALShaderType::Hull))
       return "hs_6_6";
-    if (Stage.IsSet(xiiGALShaderType::Domain))
+    if (shaderType.IsSet(xiiGALShaderType::Domain))
       return "ds_6_6";
-    if (Stage.IsSet(xiiGALShaderType::Geometry))
+    if (shaderType.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_6";
-    if (Stage.IsSet(xiiGALShaderType::Pixel))
+    if (shaderType.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_6";
-    if (Stage.IsSet(xiiGALShaderType::Compute))
+    if (shaderType.IsSet(xiiGALShaderType::Compute))
       return "cs_6_6";
 
-    if (Stage.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
+    if (shaderType.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
       return "lib_6_6";
 
-    if (Stage.IsSet(xiiGALShaderType::Amplification))
+    if (shaderType.IsSet(xiiGALShaderType::Amplification))
       return "as_6_6";
 
-    if (Stage.IsSet(xiiGALShaderType::Mesh))
+    if (shaderType.IsSet(xiiGALShaderType::Mesh))
       return "ms_6_6";
   }
 
-  XII_REPORT_FAILURE("Unknown (or unsupported) Platform '{0}' or Stage {1}", sPlatform, Stage.GetValue());
+  XII_REPORT_FAILURE("Unknown (or unsupported) Platform '{0}' or Stage {1}.", sPlatform, shaderType.GetValue());
 
   return {};
 }
 
 xiiEnum<xiiGALGraphicsDeviceType> xiiShaderCompilerProgram::GetProfileNameDeviceType(xiiStringView sPlatform, xiiStringView sProfileName)
 {
-  xiiStringBuilder sPlatform0 = sPlatform;
-  xiiStringBuilder sProfile   = sProfileName;
-
-  if (sPlatform0 == "NULL_SM")
+  if (sPlatform == "NULL_SM")
   {
     return xiiGALGraphicsDeviceType::Null;
   }
-
-  if (sPlatform0.FindSubString("D3D_") != nullptr)
+  else if (sPlatform.FindSubString("D3D_") != nullptr)
   {
-    if (sProfile.FindSubString("s_6") != nullptr || sProfile.FindSubString("s_5_1") != nullptr)
+    if (sProfileName.FindSubString("_6_") != nullptr || sProfileName.EndsWith("s_5_1"))
     {
       return xiiGALGraphicsDeviceType::Direct3D12;
     }
@@ -296,15 +292,15 @@ xiiEnum<xiiGALGraphicsDeviceType> xiiShaderCompilerProgram::GetProfileNameDevice
       return xiiGALGraphicsDeviceType::Direct3D11;
     }
   }
-
-  if (sPlatform0.FindSubString("VK_") != nullptr)
+  else if (sPlatform.FindSubString("VK_") != nullptr)
   {
     return xiiGALGraphicsDeviceType::Vulkan;
   }
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiGALGraphicsDeviceType::Undefined;
+  else
+  {
+    xiiLog::Error("Unknown profile name ({}) and device type ({}).", sPlatform, sProfileName);
+    return xiiGALGraphicsDeviceType::Undefined;
+  }
 }
 
 xiiResult xiiShaderCompilerProgram::Initialize(xiiStringView sPlatformName)
@@ -438,5 +434,6 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
       }
     }
   }
+
   return XII_SUCCESS;
 }

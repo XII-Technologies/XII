@@ -4,9 +4,10 @@
 
 struct CreatorFuncInfo
 {
-  xiiGALDeviceFactory::CreatorFunc m_Func;
-  xiiString                        m_sShaderModel;
-  xiiString                        m_sShaderCompiler;
+  xiiGALDeviceFactory::CreatorFunc  m_Func;
+  xiiEnum<xiiGALGraphicsDeviceType> m_APIType = xiiGALGraphicsDeviceType::Undefined;
+  xiiString                         m_sShaderModel;
+  xiiString                         m_sShaderCompiler;
 };
 
 static xiiHashTable<xiiString, CreatorFuncInfo> s_CreatorFunctions;
@@ -42,6 +43,7 @@ void xiiGALDeviceFactory::RegisterImplementation(xiiStringView sImplementationNa
 {
   CreatorFuncInfo info;
   info.m_Func            = func;
+  info.m_APIType         = description.m_APIType;
   info.m_sShaderModel    = description.m_sShaderModel;
   info.m_sShaderCompiler = description.m_sShaderCompiler;
 
