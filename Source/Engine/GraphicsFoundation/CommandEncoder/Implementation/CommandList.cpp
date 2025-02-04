@@ -38,6 +38,57 @@ xiiGALCommandList::~xiiGALCommandList() = default;
 
 void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_VERIFY_COMMAND_LIST(uiMipLevel < textureDescription.m_uiMipLevels, "Mip level ({}) is out of permitted range [0, {}].", uiMipLevel, textureDescription.m_uiMipLevels - 1);
+  XII_VERIFY_COMMAND_LIST(box.IsValid(), "Invalid box range provided.");
+
+  if (textureDescription.IsArray())
+  {
+    XII_VERIFY_COMMAND_LIST(uiSlice < textureDescription.GetArraySize(), "Array slice ({}) is out of permitted range [0, {}].", textureDescription.GetArraySize() - 1);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(uiSlice == 0, "Array slice ({}) must be 0 for non-array textures.", uiSlice);
+  }
+
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+
+  xiiUInt32 uiMipWidth = xiiMath::Max(textureDescription.GetWidth() >> uiMipLevel, 1U);
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  {
+    const xiiUInt32 uiBlockAlignedMipWidth = (uiMipWidth + (formatProperties.m_uiBlockWidth - 1)) & ~(formatProperties.m_uiBlockWidth - 1);
+
+    XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.x <= uiBlockAlignedMipWidth, "Region max X coordinate ({}) is out of allowed range [0, {}].", box.m_vMax.x, uiBlockAlignedMipWidth);
+    XII_VERIFY_COMMAND_LIST((box.m_vMin.x % formatProperties.m_uiBlockWidth) == 0, "For compressed formats, the region min X coordinate ({}) must be a multiple of the block width ({}).", box.m_vMin.x, formatProperties.m_uiBlockWidth);
+    XII_VERIFY_COMMAND_LIST((box.m_vMax.x % formatProperties.m_uiBlockWidth) == 0 || box.m_vMax.x == uiMipWidth, "For compressed formats, the region max X coordinate ({}) must be a multiple of the block width ({}) or equal to the mip level ({}).", box.m_vMax.x, formatProperties.m_uiBlockWidth, uiMipWidth);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.x <= uiMipWidth, "Region max X coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.x, uiMipWidth);
+  }
+
+  if (textureDescription.m_Type != xiiGALResourceDimension::Texture1D && textureDescription.m_Type != xiiGALResourceDimension::Texture1DArray)
+  {
+    if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+    {
+    }
+    else
+    {
+    }
+  }
+  else
+  {
+  }
+
+  if (textureDescription.m_Type == xiiGALResourceDimension::Texture3D)
+  {
+  }
+  else
+  {
+  }
+#endif
 }
 
 void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData)
@@ -59,8 +110,8 @@ void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationD
   if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
     // Align update region size by the block size. This is only necessary when updating coarse mip levels. Otherwise, update region Width/Height should be multiples of the block size.
-    XII_VERIFY_COMMAND_LIST((formatProperties.m_uiBlockWidth & (formatProperties.m_uiBlockWidth - 1)) == 0, "");
-    XII_VERIFY_COMMAND_LIST((formatProperties.m_uiBlockHeight & (formatProperties.m_uiBlockHeight - 1)) == 0, "");
+    XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
+    XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "");
 
     vUpdateRegion.x = (vUpdateRegion.x + (formatProperties.m_uiBlockWidth - 1)) & ~(formatProperties.m_uiBlockWidth - 1);
     vUpdateRegion.y = (vUpdateRegion.y + (formatProperties.m_uiBlockHeight - 1)) & ~(formatProperties.m_uiBlockHeight - 1);
@@ -76,7 +127,7 @@ void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationD
 
   XII_VERIFY_COMMAND_LIST(subresourceData.m_uiStride >= uiRowSize, "Source data stride ({}) is below the image row size ({}).", subresourceData.m_uiStride, uiRowSize);
 
-  const xiiUInt32 uiPlaneSize = subresourceData.m_uiStride * uiRowCount;
+  const xiiUInt64 uiPlaneSize = subresourceData.m_uiStride * uiRowCount;
 
   XII_VERIFY_COMMAND_LIST(vUpdateRegion.z == 1U || subresourceData.m_uiDepthStride >= uiPlaneSize, "Source data depth stride ({}) is below the image plane size ({}).", uiPlaneSize);
 #endif
