@@ -36,6 +36,52 @@ xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, xiiGALCommandQueue* 
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
+void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box)
+{
+}
+
+void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData)
+{
+  XII_VERIFY_COMMAND_LIST(!subresourceData.m_pData.IsEmpty(), "CPU data pointer must not be empty.");
+
+  ValidateTextureRegion(textureDescription, uiMipLevel, uiSlice, destinationBox);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_VERIFY_COMMAND_LIST(textureDescription.m_uiSampleCount == 1, "Only non-multisampled textures can be updated UpdateTexture().");
+  XII_VERIFY_COMMAND_LIST(subresourceData.m_uiStride & 0x03, "Texture data stride ({}) must be at least 32-bit aligned.", subresourceData.m_uiStride);
+  XII_VERIFY_COMMAND_LIST(subresourceData.m_uiDepthStride & 0x03, "Texture data depth stride ({}) must be at least 32-bit aligned.", subresourceData.m_uiDepthStride);
+
+  xiiVec3U32  vUpdateRegion    = destinationBox.GetExtents();
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+  xiiUInt32   uiRowSize        = 0;
+  xiiUInt32   uiRowCount       = 0;
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  {
+    // Align update region size by the block size. This is only necessary when updating coarse mip levels. Otherwise, update region Width/Height should be multiples of the block size.
+    XII_VERIFY_COMMAND_LIST((formatProperties.m_uiBlockWidth & (formatProperties.m_uiBlockWidth - 1)) == 0, "");
+    XII_VERIFY_COMMAND_LIST((formatProperties.m_uiBlockHeight & (formatProperties.m_uiBlockHeight - 1)) == 0, "");
+
+    vUpdateRegion.x = (vUpdateRegion.x + (formatProperties.m_uiBlockWidth - 1)) & ~(formatProperties.m_uiBlockWidth - 1);
+    vUpdateRegion.y = (vUpdateRegion.y + (formatProperties.m_uiBlockHeight - 1)) & ~(formatProperties.m_uiBlockHeight - 1);
+
+    uiRowSize  = vUpdateRegion.x / xiiUInt32{formatProperties.m_uiBlockWidth} * xiiUInt32{formatProperties.m_uiComponentSize};
+    uiRowCount = vUpdateRegion.y / formatProperties.m_uiBlockHeight;
+  }
+  else
+  {
+    uiRowSize  = vUpdateRegion.x * xiiUInt32{formatProperties.m_uiComponentSize} * xiiUInt32{formatProperties.m_uiComponentCount};
+    uiRowCount = vUpdateRegion.y;
+  }
+
+  XII_VERIFY_COMMAND_LIST(subresourceData.m_uiStride >= uiRowSize, "Source data stride ({}) is below the image row size ({}).", subresourceData.m_uiStride, uiRowSize);
+
+  const xiiUInt32 uiPlaneSize = subresourceData.m_uiStride * uiRowCount;
+
+  XII_VERIFY_COMMAND_LIST(vUpdateRegion.z == 1U || subresourceData.m_uiDepthStride >= uiPlaneSize, "Source data depth stride ({}) is below the image plane size ({}).", uiPlaneSize);
+#endif
+}
+
 void xiiGALCommandList::Begin()
 {
   XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
@@ -557,7 +603,7 @@ xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiGALBufferHandle hIn
 
   XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentsBuffer->GetDebugName());
 
-  /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offse/stride, etc.).
+  /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
 
   return DrawIndexedInstancedIndirectPlatform(pIndirectArgumentsBuffer, uiArgumentOffsetInBytes);
 }

@@ -456,6 +456,9 @@ protected:
   // Deactivate Doxygen document generation for the following block. (API abstraction only)
   /// \cond
 
+  void ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box);
+  void ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData);
+
   // These functions need to be implemented by a graphics API abstraction.
 protected:
   virtual void BeginPlatform() = 0;
