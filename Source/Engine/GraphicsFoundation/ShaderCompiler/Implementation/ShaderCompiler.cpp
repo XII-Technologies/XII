@@ -3,7 +3,7 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderProgramCompiler, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderCompiler, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
