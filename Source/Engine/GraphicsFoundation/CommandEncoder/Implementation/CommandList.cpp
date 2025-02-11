@@ -967,9 +967,9 @@ void xiiGALCommandList::UpdateTexture(xiiGALTextureHandle hTexture, const xiiGAL
   XII_VERIFY_COMMAND_LIST(!hTexture.IsInvalidated(), "UpdateTexture arguments are invalid. The texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateTexture command must be used outside of render pass.");
 
-  /// \todo GraphicsFoundation: Validate texture update parameters.
-
   xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+
+  ValidateTextureUpdateRegion(pTexture->GetDescription(), textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureBox, subresourceData);
 
   UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
@@ -981,10 +981,14 @@ void xiiGALCommandList::CopyTexture(xiiGALTextureHandle hSourceTexture, xiiGALTe
   XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "CopyTexture arguments are invalid. The destination texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyTexture command must be used outside of render pass.");
 
-  /// \todo GraphicsFoundation: Validate texture copy parameters.
-
   xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
   xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+
+  xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(pSourceTexture->GetDescription(), 0);
+  xiiBoundingBoxU32        sourceBox          = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), xiiVec3U32(mipLevelProperties.m_LogicalSize.width, mipLevelProperties.m_LogicalSize.height, mipLevelProperties.m_uiDepth));
+
+  ValidateTextureRegion(pSourceTexture->GetDescription(), 0, 0, sourceBox);
+  ValidateTextureRegion(pDestinationTexture->GetDescription(), 0, 0, sourceBox);
 
   CopyTexturePlatform(pSourceTexture, pDestinationTexture);
 }
@@ -996,10 +1000,14 @@ void xiiGALCommandList::CopyTextureRegion(xiiGALTextureHandle hSourceTexture, co
   XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "CopyTextureRegion arguments are invalid. The destination texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyTextureRegion command must be used outside of render pass.");
 
-  /// \todo GraphicsFoundation: Validate texture copy parameters.
-
   xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
   xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+
+  ValidateTextureRegion(pSourceTexture->GetDescription(), destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, box);
+
+  xiiBoundingBoxU32 destinationBox = xiiBoundingBoxU32::MakeFromMinMax(vDestinationPoint, vDestinationPoint + box.GetExtents());
+
+  ValidateTextureRegion(pDestinationTexture->GetDescription(), destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, destinationBox);
 
   CopyTextureRegionPlatform(pSourceTexture, sourceMipLevelData, box, pDestinationTexture, destinationMipLevelData, vDestinationPoint);
 }
