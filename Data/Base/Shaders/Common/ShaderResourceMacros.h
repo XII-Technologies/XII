@@ -34,7 +34,7 @@ float3x3 TransformToRotation(Transform t)
 #  define DECLARE_CONSTANT_BUFFER_AUTO(Name)            cbuffer Name
 #  define DECLARE_TEXTURE_AUTO(Name, Type)              Type Name
 #  define DECLARE_SAMPLER_AUTO(Name)                    SamplerState Name
-#  define DECLARE_BUFFER_AUTO(Name, Type)               Type Name
+#  define DECLARE_BUFFER_AUTO(Name, Type)               Buffer<Type> Name
 #  define DECLARE_STRUCTURED_BUFFER_AUTO(Name, Type)    StructuredBuffer<Type> Name
 #  define DECLARE_RW_STRUCTURED_BUFFER_AUTO(Name, Type) RWStructuredBuffer<Type> Name
 #  define DECLARE_BYTE_ADDRESS_BUFFER_AUTO(Name)        ByteAddressBuffer Name
@@ -67,7 +67,7 @@ float3x3 TransformToRotation(Transform t)
 #    define DECLARE_CONSTANT_BUFFER(Name, Slot, Set)            cbuffer Name : register(b##Slot)
 #    define DECLARE_TEXTURE(Name, Type, Slot, Set)              Type Name : register(t##Slot)
 #    define DECLARE_SAMPLER(Name, Slot, Set)                    SamplerState Name : register(s##Slot)
-#    define DECLARE_BUFFER(Name, Type, Slot, Set)               Type Name : register(u##Slot)
+#    define DECLARE_BUFFER(Name, Type, Slot, Set)               Buffer<Type> Name : register(u##Slot)
 #    define DECLARE_STRUCTURED_BUFFER(Name, Type, Slot, Set)    StructuredBuffer<Type> Name : register(u##Slot)
 #    define DECLARE_RW_STRUCTURED_BUFFER(Name, Type, Slot, Set) RWStructuredBuffer<Type> Name : register(u##Slot)
 #    define DECLARE_BYTE_ADDRESS_BUFFER(Name, Slot, Set)        ByteAddressBuffer Name : register(t##Slot)

@@ -30,7 +30,7 @@ XII_DEFINE_AS_POD_TYPE(xiiPerInstanceData);
 static_assert(sizeof(xiiPerInstanceData) == 128);
 #endif
 
-DECLARE_CONSTANT_BUFFER_AUTO(xiiObjectConstants)
+DECLARE_CONSTANT_BUFFER(xiiObjectConstants, 2, 0)
 {
   UINT1(InstanceDataOffset);
 };
