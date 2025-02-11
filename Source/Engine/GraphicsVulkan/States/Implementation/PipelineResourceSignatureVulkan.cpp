@@ -136,10 +136,6 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
     XII_SCOPE_EXIT(vkDescriptorSetLayoutBindings.Clear(); vkTempSamplerArrayAssignment.Clear(););
 
-    // Note: Vulkan spec requires at least a single descriptor in a descriptor set layout.
-    if (setLayout.IsEmpty())
-      continue;
-
     for (xiiUInt32 uiResourceIndex = 0; uiResourceIndex < setLayout.GetCount(); ++uiResourceIndex)
     {
       const auto& resourceLayout = setLayout[uiResourceIndex];
