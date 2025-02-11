@@ -60,7 +60,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
     const xiiUInt32 uiBlockAlignedMipWidth = (uiMipWidth + (formatProperties.m_uiBlockWidth - 1)) & ~(formatProperties.m_uiBlockWidth - 1);
 
     XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
-    XII_VERIFY_COMMAND_LIST(box.m_vMax.x <= uiBlockAlignedMipWidth, "Region max X coordinate ({}) is out of allowed range [0, {}].", box.m_vMax.x, uiBlockAlignedMipWidth);
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.x <= uiBlockAlignedMipWidth, "Region max X coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.x, uiBlockAlignedMipWidth);
     XII_VERIFY_COMMAND_LIST((box.m_vMin.x % formatProperties.m_uiBlockWidth) == 0, "For compressed formats, the region min X coordinate ({}) must be a multiple of the block width ({}).", box.m_vMin.x, formatProperties.m_uiBlockWidth);
     XII_VERIFY_COMMAND_LIST((box.m_vMax.x % formatProperties.m_uiBlockWidth) == 0 || box.m_vMax.x == uiMipWidth, "For compressed formats, the region max X coordinate ({}) must be a multiple of the block width ({}) or equal to the mip level ({}).", box.m_vMax.x, formatProperties.m_uiBlockWidth, uiMipWidth);
   }
@@ -71,22 +71,34 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
 
   if (textureDescription.m_Type != xiiGALResourceDimension::Texture1D && textureDescription.m_Type != xiiGALResourceDimension::Texture1DArray)
   {
+    const xiiUInt32 uiMipHeight = xiiMath::Max(textureDescription.GetHeight() >> uiMipLevel, 1U);
+
     if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
     {
+      XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "");
+
+      const xiiUInt32 uiBlockAlignedMipHeight = (uiMipHeight + (formatProperties.m_uiBlockHeight - 1)) & ~(formatProperties.m_uiBlockHeight - 1);
+
+      XII_VERIFY_COMMAND_LIST(box.m_vMax.y <= uiBlockAlignedMipHeight, "Region max Y coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.y, uiBlockAlignedMipHeight);
+      XII_VERIFY_COMMAND_LIST((box.m_vMin.y % formatProperties.m_uiBlockHeight) == 0U, "For compressed formats, the region min Y coordinate ({}) must be a multiple of block height ({}).", box.m_vMin.y, formatProperties.m_uiBlockHeight);
+      XII_VERIFY_COMMAND_LIST((box.m_vMax.y % formatProperties.m_uiBlockHeight) == 0U || box.m_vMax.y == uiMipHeight, "For compressed formats, the region max Y coordinate ({}) must be a multiple of block height ({}) or equal the mip level height.", box.m_vMax.y, formatProperties.m_uiBlockHeight, uiMipHeight);
     }
     else
     {
+      XII_VERIFY_COMMAND_LIST(box.m_vMax.y <= uiMipHeight, "Region max Y coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.y, uiMipHeight);
     }
-  }
-  else
-  {
   }
 
   if (textureDescription.m_Type == xiiGALResourceDimension::Texture3D)
   {
+    const xiiUInt32 uiMipDepth = xiiMath::Max(textureDescription.GetDepth() >> uiMipLevel, 1U);
+
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.z <= uiMipDepth, "Region max Z coordinate ({}) is out of permitted range [0, {}].", uiMipDepth);
   }
   else
   {
+    XII_VERIFY_COMMAND_LIST(box.m_vMin.z == 0, "Region min Z ({}) must be 0 for all but 3D textures.", box.m_vMin.z);
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.z == 1, "Region max Z ({}) must be 1 for all but 3D textures.", box.m_vMax.z);
   }
 #endif
 }
