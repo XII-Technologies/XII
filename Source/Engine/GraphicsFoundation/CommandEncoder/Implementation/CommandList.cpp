@@ -1049,9 +1049,24 @@ xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture,
 {
   XII_VERIFY_COMMAND_LIST_RESULT(!hTexture.IsInvalidated(), "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
 
-  /// \todo GraphicsFoundation: Validate map subresource parameters.
+  xiiGALTexture* pTexture           = m_pDevice->GetTexture(hTexture);
+  const auto&    textureDescription = pTexture->GetDescription();
 
-  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+  XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiMipLevel < textureDescription.m_uiMipLevels, "Mip level ({}) is out of permitted range [0, {}].", textureMipLevelData.m_uiMipLevel, textureDescription.m_uiMipLevels - 1);
+
+  if (textureDescription.IsArray())
+  {
+    XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiArraySlice < textureDescription.GetArraySize(), "Array slice ({}) is out of permitted range [0, {}].", textureMipLevelData.m_uiArraySlice, textureDescription.GetArraySize() - 1);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiArraySlice == 0, "Array slice ({}) must be 0 for non-array textures.", textureMipLevelData.m_uiArraySlice);
+  }
+
+  if (pTextureBox != nullptr)
+  {
+    ValidateTextureRegion(textureDescription, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, *pTextureBox);
+  }
 
   return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, pTextureBox, mappedData);
 }
