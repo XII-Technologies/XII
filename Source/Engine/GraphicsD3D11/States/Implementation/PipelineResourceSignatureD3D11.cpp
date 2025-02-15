@@ -25,32 +25,4 @@ xiiResult xiiGALPipelineResourceSignatureD3D11::DeInitPlatform()
   return XII_SUCCESS;
 }
 
-bool xiiGALPipelineResourceSignatureD3D11::IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const
-{
-  const xiiGALPipelineResourceSignatureD3D11* pPipelineResourceSignatureD3D11 = static_cast<const xiiGALPipelineResourceSignatureD3D11*>(pPipelineResourceSignature);
-
-  if (pPipelineResourceSignature == this)
-    return true;
-
-  const auto& sourceDescription  = GetDescription();
-  const auto& compareDescription = pPipelineResourceSignature->GetDescription();
-
-  if (sourceDescription.m_bUseCombinedTextureSamplers != compareDescription.m_bUseCombinedTextureSamplers)
-    return false;
-
-  for (const auto& resource : compareDescription.m_Resources)
-  {
-    if (!sourceDescription.m_Resources.Contains(resource))
-      return false;
-  }
-
-  for (const auto& immutableSampler : compareDescription.m_ImmutableSamplers)
-  {
-    if (!sourceDescription.m_ImmutableSamplers.Contains(immutableSampler))
-      return false;
-  }
-
-  return true;
-}
-
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_States_Implementation_PipelineResourceSignatureD3D11);

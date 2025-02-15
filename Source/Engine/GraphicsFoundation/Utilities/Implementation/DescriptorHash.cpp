@@ -230,8 +230,6 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineResourceSignatureCreati
   xiiHashStreamWriter32 writer;
 
   writer << description.m_uiBindingIndex;
-  writer << description.m_bUseCombinedTextureSamplers;
-  writer << description.m_sCombinedSamplerSuffix;
 
   writer << description.m_Resources.GetCount();
   for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)

@@ -27,7 +27,7 @@ xiiUInt32 FindImmutableSampler(const xiiGALPipelineResourceSignatureCreationDesc
   {
     const auto& immutableSampler = pipelineDescription.m_ImmutableSamplers[i];
 
-    sb.SetFormat("{}{}", immutableSampler.m_SamplerOrTextureName, bPermitSuffix ? pipelineDescription.m_sCombinedSamplerSuffix : "");
+    sb.SetFormat("{}", immutableSampler.m_SamplerOrTextureName);
 
     if (immutableSampler.m_ShaderStages.AreAllSet(resourceDescription.m_ShaderStages) && sb.IsEqual(resourceDescription.m_sName.GetView()))
     {
@@ -36,30 +36,6 @@ xiiUInt32 FindImmutableSampler(const xiiGALPipelineResourceSignatureCreationDesc
   }
 
   return xiiInvalidIndex;
-}
-
-xiiUInt32 FindAssignedSampler(const xiiGALPipelineResourceSignatureCreationDescription& pipelineDescription, const xiiGALPipelineResourceDescription& resourceDescription, xiiUInt32 uiInvalidSamplerIndex = xiiInvalidIndex)
-{
-  XII_ASSERT_DEV(resourceDescription.m_ResourceType == xiiGALShaderResourceType::TextureSRV, "");
-
-  xiiUInt32 uiSamplerIndex = uiInvalidSamplerIndex;
-
-  if (pipelineDescription.m_bUseCombinedTextureSamplers)
-  {
-    xiiStringBuilder sb;
-    sb.SetFormat("{}{}", resourceDescription.m_sName, pipelineDescription.m_sCombinedSamplerSuffix);
-
-    for (xiiUInt32 i = 0; i < pipelineDescription.m_Resources.GetCount(); ++i)
-    {
-      const auto& resource = pipelineDescription.m_Resources[i];
-
-      if (resource.m_ResourceType == xiiGALShaderResourceType::Sampler && resource.m_ShaderStages.AreAllSet(resourceDescription.m_ShaderStages) && sb.IsEqual(resource.m_sName.GetView()))
-      {
-        return i;
-      }
-    }
-  }
-  return uiSamplerIndex;
 }
 
 xiiGALPipelineResourceSignatureVulkan::xiiGALPipelineResourceSignatureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
@@ -78,10 +54,6 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
   for (xiiUInt32 uiResource = 0; uiResource < m_Description.m_Resources.GetCount(); ++uiResource)
   {
     const auto& resource = m_Description.m_Resources[uiResource];
-
-    // Ignore combined sampler resources.
-    if (m_Description.m_bUseCombinedTextureSamplers && resource.m_ResourceType == xiiGALShaderResourceType::Sampler && resource.m_sName.GetView().EndsWith(m_Description.m_sCombinedSamplerSuffix))
-      continue;
 
     m_PipelineResourceSetLayouts.EnsureCount(resource.m_uiBindSet + 1);
 
@@ -104,10 +76,6 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
     }
     else
     {
-      if (pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::CombinedImageSampler)
-      {
-        pipelineResource.m_uiSamplerIndex = FindAssignedSampler(m_Description, resource);
-      }
       if ((pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::CombinedImageSampler || pipelineResource.m_DescriptorType == xiiGALDescriporTypeVulkan::Sampler) && pipelineResource.m_uiSamplerIndex == xiiInvalidIndex)
       {
         xiiUInt32 uiImmutableSamplerIndex       = FindImmutableSampler(m_Description, resource);

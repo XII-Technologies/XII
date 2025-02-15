@@ -75,11 +75,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceDescription : public xii
 /// \brief This describes the pipeline resource signature creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceSignatureCreationDescription
 {
-  xiiUInt32                                             m_uiBindingIndex = 0U;                          ///< The binding index that this resource signature uses. Every resource signature must be assign to one signature slot. The total number of slots is given by XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT constant. All resource signatures used by a pipeline state must be assigned to different slots.
-  xiiHybridArray<xiiGALPipelineResourceDescription, 2U> m_Resources;                                    ///< An array of resource descriptions, see xiiGALPipelineResourceDescription for details.
-  xiiHybridArray<xiiGALImmutableSamplerDescription, 2U> m_ImmutableSamplers;                            ///< An array of immutable samplers, see xiiGALImmutableSamplerDescription for details.
-  bool                                                  m_bUseCombinedTextureSamplers = false;          ///< If set to true, textures will be combined with texture samplers. The CombinedSamplerSuffix member defines the suffix added to the texture variable name to get corresponding sampler name. When using combined samplers, the sampler assigned to the shader resource view is automatically set when the view is bound. Otherwise, samplers need to be explicitly set similar to other shader variables. The default is false.
-  xiiStringView                                         m_sCombinedSamplerSuffix      = "_AutoSampler"; ///< If combined texture sampler usage is enabled, defines the suffix added to the texture variable name to get corresponding sampler name. For example, for default value "_AutoSampler", a texture named "Tex" will be combined with sampler named "Tex_AutoSampler". If UseCombinedTextureSamplers is false, this member is ignored. The default is "_AutoSampler".
+  xiiUInt32                                             m_uiBindingIndex = 0U; ///< The binding index that this resource signature uses. Every resource signature must be assign to one signature slot. The total number of slots is given by XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT constant. All resource signatures used by a pipeline state must be assigned to different slots.
+  xiiHybridArray<xiiGALPipelineResourceDescription, 2U> m_Resources;           ///< An array of resource descriptions, see xiiGALPipelineResourceDescription for details.
+  xiiHybridArray<xiiGALImmutableSamplerDescription, 2U> m_ImmutableSamplers;   ///< An array of immutable samplers, see xiiGALImmutableSamplerDescription for details.
 
   XII_ALWAYS_INLINE bool operator==(const xiiGALPipelineResourceSignatureCreationDescription& rhs) const = default;
 };

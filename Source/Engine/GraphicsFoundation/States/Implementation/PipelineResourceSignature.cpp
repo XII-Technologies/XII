@@ -33,9 +33,6 @@ bool xiiGALPipelineResourceSignature::IsCompatibleWith(const xiiGALPipelineResou
   const auto& sourceDescription  = GetDescription();
   const auto& compareDescription = pPipelineResourceSignature->GetDescription();
 
-  if (sourceDescription.m_bUseCombinedTextureSamplers != compareDescription.m_bUseCombinedTextureSamplers)
-    return false;
-
   for (const auto& resource : compareDescription.m_Resources)
   {
     if (!sourceDescription.m_Resources.Contains(resource))

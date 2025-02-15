@@ -2345,7 +2345,6 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
 
   XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(description.m_uiBindingIndex < XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT, "The pipeline resource signature binding index ({0}) exceeds the maximum allowed value ({1}).", description.m_uiBindingIndex, XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT - 1);
   XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(description.m_uiBindingIndex <= s_uiMaxResourcesInSignature, "The pipeline resource signature resource count ({0}) exceeds the maximum allowed value ({1}).", description.m_Resources.GetCount(), s_uiMaxResourcesInSignature);
-  XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE((description.m_bUseCombinedTextureSamplers && !description.m_sCombinedSamplerSuffix.IsEmpty()) || !description.m_bUseCombinedTextureSamplers, "The pipeline resource signature is set to use combined texture sampplers, but the combined texture sampler is empty.");
 
   // Ensure that shader stages do not conflict for resources with the same name.
 
@@ -2386,11 +2385,6 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
 
     xiiBitflags<xiiGALPipelineResourceFlags> allowedResourceFlags = xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_ResourceType);
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_PipelineResourceFlags.IsStrictlyAnySet(allowedResourceFlags) || resource.m_PipelineResourceFlags.IsNoFlagSet(), "The pipeline resource at index '{0}' contains flags that are not allowed for the shader resource type.", i);
-
-    if (m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Direct3D12 || m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Direct3D11 || m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Metal)
-    {
-      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::CombinedSampler) && !description.m_bUseCombinedTextureSamplers), "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::CombinedSampler flag, but combined sampler usage is disabled. In Direct3D and Metal graphics implementations, the xiiGALPipelineResourceFlags::CombinedSampler flag may only be used when combined sampler usage is enabled.", i);
-    }
 
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment) && m_Description.m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Vulkan), "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::GeneralInputAttachment flag, which is only valid on a Vulkan graphics implementation.", i);
   }
