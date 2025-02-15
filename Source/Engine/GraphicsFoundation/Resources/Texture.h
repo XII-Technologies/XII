@@ -107,8 +107,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureMipLevelData : public xiiHashable
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiMipLevel   = 0U; ///<
-  xiiUInt32 m_uiArraySlice = 0U; ///<
+  xiiUInt32 m_uiMipLevel   = 0U; ///< The texture mip level. Default is 0.
+  xiiUInt32 m_uiArraySlice = 0U; ///< The texture array slice. Default is 0.
 };
 
 /// \brief This describes the sparse texture properties.

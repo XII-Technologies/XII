@@ -239,6 +239,7 @@ private:
   struct MappedTexture
   {
     xiiGALBufferToTextureCopyDescription m_CopyDescription;
+    vk::Buffer                           m_vkBuffer;
     VmaAllocationInfo                    m_AllocationInfo;
   };
 

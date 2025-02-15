@@ -1881,7 +1881,7 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
   if (pMappedData == nullptr)
     return XII_FAILURE;
 
-  XII_VERIFY(!m_MappedBuffers.Insert(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mapType), "");
+  XII_VERIFY(!m_MappedBuffers.Insert(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mapType), "Buffer '{}' has already been mapped.", pBufferVulkan->GetDebugName());
 
   return XII_SUCCESS;
 }
@@ -2305,11 +2305,150 @@ void xiiGALCommandListVulkan::GenerateMipsPlatform(xiiGALTextureView* pTextureVi
 
 xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
-  return XII_FAILURE;
+  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTexture);
+
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  const auto& textureDescription = pTextureVulkan->GetDescription();
+  const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+
+  xiiBoundingBoxU32 fullExtentBox = xiiBoundingBoxU32::MakeZero();
+  if (pTextureBox == nullptr)
+  {
+    xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
+
+    fullExtentBox.m_vMax.x = mipLevelProperties.m_LogicalSize.width;
+    fullExtentBox.m_vMax.y = mipLevelProperties.m_LogicalSize.height;
+    fullExtentBox.m_vMax.z = mipLevelProperties.m_uiDepth;
+
+    pTextureBox = &fullExtentBox;
+  }
+
+  if (textureDescription.m_Usage == xiiGALResourceUsage::Dynamic)
+  {
+    if (mapType != xiiGALMapType::Write)
+    {
+      xiiLog::Error("In Vulkan implementation, dynamic textures can only be mapped for writing.");
+
+      mappedData = xiiGALMappedTextureSubresource();
+
+      return XII_FAILURE;
+    }
+
+    if (mapFlags.IsAnySet(xiiGALMapFlags::Discard | xiiGALMapFlags::NoOverWrite))
+    {
+      xiiLog::Info("In Vulkan implementation, mapping textures with flags xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite has no effect.");
+    }
+
+    const auto&                                vkDeviceLimits  = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits;
+    const xiiGALBufferToTextureCopyDescription copyDescription = xiiGALTextureUtilities::GetBufferToTextureCopyDescription(textureDescription.m_Format, *pTextureBox, static_cast<xiiUInt32>(vkDeviceLimits.optimalBufferCopyRowPitchAlignment));
+
+    void* pMappedData = nullptr;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetAllocationDescription(), &pMappedData));
+    VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetAllocationDescription(), 0U, copyDescription.m_uiMemorySize));
+
+    mappedData.m_pData         = pMappedData;
+    mappedData.m_uiStride      = copyDescription.m_uiRowStride;
+    mappedData.m_uiDepthStride = copyDescription.m_uiDepthStride;
+
+    XII_VERIFY(!m_MappedTextures.Insert(MappedTextureKey{.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice}, MappedTexture{.m_CopyDescription = copyDescription, .m_AllocationInfo = {}}), "Mip level {}, slice {}, of texture '{}' has already been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
+  }
+  else if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
+
+    // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
+    // For compressed-block formats, RowSize is the size of one compressed row.
+    // For non-compressed formats, BlockHeight is 1.
+    // For non-compressed formats, BlockWidth is 1.
+    xiiUInt32 uiMapStartOffset = (pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + pTextureBox->m_vMin.x / formatProperties.m_uiBlockWidth * xiiUInt64{formatProperties.GetElementSize()};
+
+    void* pMappedData = nullptr;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedData));
+
+    mappedData.m_pData         = xiiMemoryUtils::AddByteOffset(pMappedData, uiMapStartOffset);
+    mappedData.m_uiStride      = mipLevelProperties.m_uiRowSize;
+    mappedData.m_uiDepthStride = mipLevelProperties.m_uiDepthSliceSize;
+
+    XII_VERIFY(!m_MappedTextures.Insert(MappedTextureKey{.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice}, MappedTexture{.m_CopyDescription = {}, .m_AllocationInfo = {}}), "Mip level {}, slice {}, of texture '{}' has already been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
+
+    if (mapType == xiiGALMapType::Read)
+    {
+      if (!mapFlags.IsSet(xiiGALMapFlags::DoNotWait))
+      {
+        xiiLog::Warning("Vulkan backend never waits for GPU when mapping staging textures for reading. Applications must use fences or other synchronization methods to explicitly synchronize access and use xiiGALMapFlags::DoNotWait flag.");
+      }
+
+      XII_ASSERT_DEV(textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Texture '{}' was not created with xiiGALCPUAccessFlag::Read and cannot be mapped for reading.");
+
+      // Readback memory is not created with HOST_COHERENT flag, so we have to explicitly invalidate the mapped range to make device writes visible to CPU reads.
+      XII_ASSERT_DEV(pTextureBox->m_vMax.z >= 1 && pTextureBox->m_vMax.y >= 1, "");
+      xiiUInt32 uiBlockAlignedMaxX = xiiMemoryUtils::AlignSize(pTextureBox->m_vMax.x, xiiUInt32{formatProperties.m_uiBlockWidth});
+      xiiUInt32 uiBlockAlignedMaxY = xiiMemoryUtils::AlignSize(pTextureBox->m_vMax.y, xiiUInt32{formatProperties.m_uiBlockHeight});
+      xiiUInt64 uiMapEndOffset     = ((pTextureBox->m_vMax.z - 1) * mipLevelProperties.m_StorageSize.height + (uiBlockAlignedMaxY - formatProperties.m_uiBlockHeight)) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + (uiBlockAlignedMaxX / formatProperties.m_uiBlockWidth) * xiiUInt64{formatProperties.GetElementSize()};
+
+      VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), uiMapStartOffset, uiMapEndOffset - uiMapStartOffset));
+    }
+    else if (mapType == xiiGALMapType::Write)
+    {
+      XII_ASSERT_DEV(textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Texture '{}' was not created with xiiGALCPUAccessFlag::Write flag and cannot be mapped for writing", pTextureVulkan->GetDebugName());
+
+      // Nothing else to do.
+    }
+  }
+  else
+  {
+    XII_REPORT_FAILURE("Texture with usage {} cannot currently be mapped in the Vulkan implementation.", textureDescription.m_Usage);
+  }
+
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
+  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTexture);
+
+  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  const auto& textureDescription = pTextureVulkan->GetDescription();
+
+  if (textureDescription.m_Usage == xiiGALResourceUsage::Dynamic)
+  {
+    MappedTextureKey mappedTextureKey = {.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice};
+    MappedTexture*   mappedTexture    = nullptr;
+
+    if (m_MappedTextures.TryGetValue(mappedTextureKey, mappedTexture))
+    {
+      CopyBufferToTexture(mappedTexture->m_vkBuffer, 0, mappedTexture->m_CopyDescription.m_uiRowStrideInTexels, pTextureVulkan, mappedTexture->m_CopyDescription.m_Region, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);
+
+      XII_VERIFY(m_MappedTextures.Remove(mappedTextureKey), "");
+    }
+    else
+    {
+      xiiLog::Error("Failed to unmap mip level {}, slice {}, of texture {}. The texture has either been unmapped, or has not been mapped.");
+      return XII_FAILURE;
+    }
+  }
+  else if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    if (textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read))
+    {
+      // Nothing needs to be done.
+    }
+    else if (textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
+    {
+      // Nothing needs to be done.
+    }
+  }
+  else
+  {
+    XII_REPORT_FAILURE("Texture with usage {} cannot currently be mapped in the Vulkan implementation.", textureDescription.m_Usage);
+  }
+
   return XII_SUCCESS;
 }
 

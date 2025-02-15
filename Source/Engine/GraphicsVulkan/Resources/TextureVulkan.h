@@ -17,9 +17,13 @@ class XII_GRAPHICSVULKAN_DLL xiiGALTextureVulkan final : public xiiGALTexture
 public:
   XII_ALWAYS_INLINE virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final { return m_SparseTextureProperties; }
 
-  XII_ALWAYS_INLINE vk::Image GetVulkanImage() const { return m_vkImage; }
-  XII_ALWAYS_INLINE vk::Buffer GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
-  XII_ALWAYS_INLINE bool       IsNativeObjectWrapper() const { return m_Description.m_pExisitingNativeObject != nullptr; }
+  XII_ALWAYS_INLINE vk::Image     GetVulkanImage() const { return m_vkImage; }
+  XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_ImageMemoryAllocation; }
+
+  XII_ALWAYS_INLINE vk::Buffer    GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
+  XII_ALWAYS_INLINE VmaAllocation GetStagingBufferAllocationDescription() const { return m_StagingBufferMemoryAllocation; }
+
+  XII_ALWAYS_INLINE bool IsNativeObjectWrapper() const { return m_Description.m_pExisitingNativeObject != nullptr; }
 
   vk::ImageLayout GetVulkanImageLayout() const;
   void            SetVulkanImageLayout(vk::ImageLayout vkImageLayout);
