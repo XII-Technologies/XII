@@ -182,12 +182,12 @@ namespace xiiSimdConversion
 
   XII_ALWAYS_INLINE xiiSimdBBoxSphere ToBBoxSphere(const xiiBoundingBoxSphere& b)
   {
-    return xiiSimdBBoxSphere::MakeFromCenterExtents(ToVec3(b.m_vCenter), ToVec3(b.m_vBoxHalfExtends), b.m_fSphereRadius);
+    return xiiSimdBBoxSphere::MakeFromCenterExtents(ToVec3(b.m_vCenter), ToVec3(b.m_vBoxHalfExtents), b.m_fSphereRadius);
   }
 
   XII_ALWAYS_INLINE xiiSimdBBoxSphered ToBBoxSphere(const xiiBoundingBoxSphered& b)
   {
-    return xiiSimdBBoxSphered::MakeFromCenterExtents(ToVec3(b.m_vCenter), ToVec3(b.m_vBoxHalfExtends), b.m_fSphereRadius);
+    return xiiSimdBBoxSphered::MakeFromCenterExtents(ToVec3(b.m_vCenter), ToVec3(b.m_vBoxHalfExtents), b.m_fSphereRadius);
   }
 
   XII_ALWAYS_INLINE xiiBoundingSphere ToBSphere(const xiiSimdBSphere& s)

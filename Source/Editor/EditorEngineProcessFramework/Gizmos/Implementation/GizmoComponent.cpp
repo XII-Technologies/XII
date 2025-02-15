@@ -47,9 +47,9 @@ xiiResult xiiGizmoComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& 
   xiiResult r = SUPER::GetLocalBounds(bounds, bAlwaysVisible, msg);
 
   // Adjust the bounds to be mirrored and pretty large, to combat the constant size and face camera modes that are implemented by the shader
-  // bounds.m_vBoxHalfExtends = (bounds.m_vCenter + bounds.m_vBoxHalfExtends) * 3.0f;
+  // bounds.m_vBoxHalfExtents = (bounds.m_vCenter + bounds.m_vBoxHalfExtents) * 3.0f;
   // bounds.m_vCenter.SetZero();
-  // bounds.m_fSphereRadius = xiiMath::Max(bounds.m_vBoxHalfExtends.x, bounds.m_vBoxHalfExtends.y, bounds.m_vBoxHalfExtends.z);
+  // bounds.m_fSphereRadius = xiiMath::Max(bounds.m_vBoxHalfExtents.x, bounds.m_vBoxHalfExtents.y, bounds.m_vBoxHalfExtents.z);
 
   // since there is always only a single gizmo on screen, there's no harm in making it always visible
   bAlwaysVisible = true;
