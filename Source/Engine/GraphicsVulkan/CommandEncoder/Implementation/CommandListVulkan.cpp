@@ -2346,24 +2346,25 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* 
     const xiiGALBufferToTextureCopyDescription copyDescription = xiiGALTextureUtilities::GetBufferToTextureCopyDescription(textureDescription.m_Format, *pTextureBox, static_cast<xiiUInt32>(vkDeviceLimits.optimalBufferCopyRowPitchAlignment));
 
     void* pMappedData = nullptr;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetAllocationDescription(), &pMappedData));
-    VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetAllocationDescription(), 0U, copyDescription.m_uiMemorySize));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedData));
+    VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), 0U, vk::WholeSize));
 
     mappedData.m_pData         = pMappedData;
     mappedData.m_uiStride      = copyDescription.m_uiRowStride;
     mappedData.m_uiDepthStride = copyDescription.m_uiDepthStride;
 
-    XII_VERIFY(!m_MappedTextures.Insert(MappedTextureKey{.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice}, MappedTexture{.m_CopyDescription = copyDescription, .m_AllocationInfo = {}}), "Mip level {}, slice {}, of texture '{}' has already been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
+    XII_VERIFY(!m_MappedTextures.Insert(MappedTextureKey{.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice}, MappedTexture{.m_CopyDescription = copyDescription}), "Mip level {}, slice {}, of texture '{}' has already been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
   }
   else if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
   {
-    xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
+    xiiUInt64                uiSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(textureDescription, textureMipLevelData.m_uiArraySlice, textureMipLevelData.m_uiMipLevel, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment);
+    xiiGALMipLevelProperties mipLevelProperties  = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
 
     // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
     // For compressed-block formats, RowSize is the size of one compressed row.
     // For non-compressed formats, BlockHeight is 1.
     // For non-compressed formats, BlockWidth is 1.
-    xiiUInt32 uiMapStartOffset = (pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + pTextureBox->m_vMin.x / formatProperties.m_uiBlockWidth * xiiUInt64{formatProperties.GetElementSize()};
+    xiiUInt32 uiMapStartOffset = uiSubresourceOffset + (pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + pTextureBox->m_vMin.x / formatProperties.m_uiBlockWidth * xiiUInt64{formatProperties.GetElementSize()};
 
     void* pMappedData = nullptr;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedData));
@@ -2372,7 +2373,7 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* 
     mappedData.m_uiStride      = mipLevelProperties.m_uiRowSize;
     mappedData.m_uiDepthStride = mipLevelProperties.m_uiDepthSliceSize;
 
-    XII_VERIFY(!m_MappedTextures.Insert(MappedTextureKey{.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice}, MappedTexture{.m_CopyDescription = {}, .m_AllocationInfo = {}}), "Mip level {}, slice {}, of texture '{}' has already been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
+    XII_VERIFY(!m_MappedTextures.Insert(MappedTextureKey{.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice}, MappedTexture{.m_CopyDescription = {}}), "Mip level {}, slice {}, of texture '{}' has already been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
 
     if (mapType == xiiGALMapType::Read)
     {
@@ -2416,37 +2417,37 @@ xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiGALTexture
 
   const auto& textureDescription = pTextureVulkan->GetDescription();
 
-  if (textureDescription.m_Usage == xiiGALResourceUsage::Dynamic)
+  MappedTextureKey mappedTextureKey = {.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice};
+  MappedTexture*   mappedTexture    = nullptr;
+
+  if (m_MappedTextures.TryGetValue(mappedTextureKey, mappedTexture))
   {
-    MappedTextureKey mappedTextureKey = {.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice};
-    MappedTexture*   mappedTexture    = nullptr;
-
-    if (m_MappedTextures.TryGetValue(mappedTextureKey, mappedTexture))
+    if (textureDescription.m_Usage == xiiGALResourceUsage::Dynamic)
     {
-      CopyBufferToTexture(mappedTexture->m_vkBuffer, 0, mappedTexture->m_CopyDescription.m_uiRowStrideInTexels, pTextureVulkan, mappedTexture->m_CopyDescription.m_Region, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);
-
-      XII_VERIFY(m_MappedTextures.Remove(mappedTextureKey), "");
+      CopyBufferToTexture(pTextureVulkan->GetVulkanStagingBuffer(), 0, mappedTexture->m_CopyDescription.m_uiRowStrideInTexels, pTextureVulkan, mappedTexture->m_CopyDescription.m_Region, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);
+    }
+    else if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
+    {
+      if (textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read))
+      {
+        // Nothing needs to be done.
+      }
+      else if (textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
+      {
+        // Nothing needs to be done.
+      }
     }
     else
     {
-      xiiLog::Error("Failed to unmap mip level {}, slice {}, of texture {}. The texture has either been unmapped, or has not been mapped.");
-      return XII_FAILURE;
+      XII_REPORT_FAILURE("Texture with usage {} cannot currently be mapped in the Vulkan implementation.", textureDescription.m_Usage);
     }
-  }
-  else if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
-  {
-    if (textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read))
-    {
-      // Nothing needs to be done.
-    }
-    else if (textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
-    {
-      // Nothing needs to be done.
-    }
+
+    XII_VERIFY(m_MappedTextures.Remove(mappedTextureKey), "");
   }
   else
   {
-    XII_REPORT_FAILURE("Texture with usage {} cannot currently be mapped in the Vulkan implementation.", textureDescription.m_Usage);
+    xiiLog::Error("Failed to unmap mip level {}, slice {}, of texture {}. The texture has either been unmapped, or has not been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
+    return XII_FAILURE;
   }
 
   return XII_SUCCESS;

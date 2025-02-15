@@ -103,6 +103,12 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       {
         SetResourceState(xiiGALResourceStateFlags::Undefined);
       }
+
+      if (m_Description.m_Usage == xiiGALResourceUsage::Dynamic)
+      {
+        // We will create a matching staging buffer for each dynamic resource until we have a mechanism to dynamically map a buffer when map is requested.
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(CreateVulkanStagingBuffer(nullptr, resourceFormatProperties));
+      }
     }
   }
   else if (m_Description.m_Usage == xiiGALResourceUsage::Staging)
