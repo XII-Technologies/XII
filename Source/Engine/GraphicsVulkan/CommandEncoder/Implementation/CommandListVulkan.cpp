@@ -2364,7 +2364,7 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* 
     // For compressed-block formats, RowSize is the size of one compressed row.
     // For non-compressed formats, BlockHeight is 1.
     // For non-compressed formats, BlockWidth is 1.
-    xiiUInt32 uiMapStartOffset = uiSubresourceOffset + (pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + pTextureBox->m_vMin.x / formatProperties.m_uiBlockWidth * xiiUInt64{formatProperties.GetElementSize()};
+    xiiUInt64 uiMapStartOffset = uiSubresourceOffset + (pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + pTextureBox->m_vMin.x / formatProperties.m_uiBlockWidth * xiiUInt64{formatProperties.GetElementSize()};
 
     void* pMappedData = nullptr;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedData));
