@@ -21,17 +21,6 @@ public:
     out_platforms.PushBack("D3D_SM50");    // Direct3D 11 Shader Model 5.0.
 #endif
 
-#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT && XII_ENABLED(XII_PLATFORM_WINDOWS)
-    out_platforms.PushBack("D3D_SM51"); // Direct3D 12 Shader Model 5.1.
-    out_platforms.PushBack("D3D_SM60"); // Direct3D 12 Shader Model 6.0, includes wave intrinsics and 64-bit integers.
-    out_platforms.PushBack("D3D_SM61"); // Direct3D 12 Shader Model 6.1, includes SV_ViewID and SV_Barycentrics.
-    out_platforms.PushBack("D3D_SM62"); // Direct3D 12 Shader Model 6.2, includes 16-bit types and denorm mode.
-    out_platforms.PushBack("D3D_SM63"); // Direct3D 12 Shader Model 6.3, includes hardware accelerated ray tracing.
-    out_platforms.PushBack("D3D_SM64"); // Direct3D 12 Shader Model 6.4, includes shader integer dot product and SV_ShadingRate.
-    out_platforms.PushBack("D3D_SM65"); // Direct3D 12 Shader Model 6.5, includes DXR1.1 (KHR ray tracing), mesh and amplification shaders, additional wave intrinsics (partial support available).
-    out_platforms.PushBack("D3D_SM66"); // Direct3D 12 Shader Model 6.6, includes VK_NV_compute_shader_derivatives and VK_KHR_shader_atomic_int64 (partial support available).
-#endif
-
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
     // Only supported with Vulkan
     out_platforms.PushBack("VK_SM60"); // Vulkan Shader Model 6.0, includes wave intrinsics and 64-bit integers.

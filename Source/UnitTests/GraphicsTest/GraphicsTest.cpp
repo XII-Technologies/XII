@@ -9,8 +9,8 @@ static xiiUniquePtr<xiiGPUTestingEnvironmentInterface> s_pGPUTestingEnvironment;
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsTest, GPUTestingEnvironment)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation", 
-    "Core"        
+    "Foundation",
+    "Core"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
@@ -30,8 +30,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsTest, GPUTestingEnvironment)
 
   #if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "D3D11";
-  #elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "D3D12";
   #elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "Vulkan";
   #else

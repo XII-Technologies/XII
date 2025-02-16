@@ -7,7 +7,6 @@
 #endif
 
 #define PLATFORM_VULKAN XII_OFF
-#define PLATFORM_D3D12  XII_OFF
 #define PLATFORM_D3D11  XII_OFF
 
 #if defined(D3D_SM40_93) || defined(D3D_SM40) || defined(D3D_SM41) || defined(D3D_SM50)
@@ -50,32 +49,6 @@ float3 select(bool3 condition, float3 yes, float3 no)
 float4 select(bool4 condition, float4 yes, float4 no)
 {
   return float4(condition.x ? yes.x : no.x, condition.y ? yes.y : no.y, condition.z ? yes.z : no.z, condition.w ? yes.w : no.w);
-}
-#endif
-
-#if defined(D3D_SM51) || defined(D3D_SM60) || defined(D3D_SM61) || defined(D3D_SM61) || defined(D3D_SM63) || defined(D3D_SM64) || defined(D3D_SM65) || defined(D3D_SM66) || defined(D3D_SM67)
-
-#  undef PLATFORM_SHADER
-#  define PLATFORM_SHADER XII_ON
-
-#  undef PLATFORM_D3D12
-#  define PLATFORM_D3D12 XII_ON
-
-float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMsaaSamples)
-{
-  return EvaluateAttributeAtSample(Attribute, SampleIndex);
-}
-float2 xiiEvaluateAttributeAtSample(float2 Attribute, uint SampleIndex, uint NumMsaaSamples)
-{
-  return EvaluateAttributeAtSample(Attribute, SampleIndex);
-}
-float3 xiiEvaluateAttributeAtSample(float3 Attribute, uint SampleIndex, uint NumMsaaSamples)
-{
-  return EvaluateAttributeAtSample(Attribute, SampleIndex);
-}
-float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint NumMsaaSamples)
-{
-  return EvaluateAttributeAtSample(Attribute, SampleIndex);
 }
 #endif
 

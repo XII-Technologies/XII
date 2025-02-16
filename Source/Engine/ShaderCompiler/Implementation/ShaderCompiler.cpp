@@ -11,10 +11,6 @@
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D11.h>
 #endif
 
-#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
-#  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
-#endif
-
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
 #  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #endif
@@ -23,7 +19,7 @@
 #  include <d3dcompiler.h>
 #endif
 
-#if (BUILDSYSTEM_ENABLE_D3D12_SUPPORT || BUILDSYSTEM_ENABLE_VULKAN_SUPPORT) && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
 #  include <dxc/dxcapi.h>
 
 xiiComPtr<IDxcUtils>     s_pDxcUtils;
@@ -39,7 +35,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompiler, ShaderCompilerPlugin)
 
   ON_CORESYSTEMS_STARTUP
   {
-    #if (BUILDSYSTEM_ENABLE_D3D12_SUPPORT || BUILDSYSTEM_ENABLE_VULKAN_SUPPORT) && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
+    #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
     DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(s_pDxcUtils.Put()));
     DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(s_pDxcCompiler.Put()));
     #endif
@@ -47,7 +43,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompiler, ShaderCompilerPlugin)
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    #if (BUILDSYSTEM_ENABLE_D3D12_SUPPORT || BUILDSYSTEM_ENABLE_VULKAN_SUPPORT) && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
+    #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
     s_pDxcUtils = {};
     s_pDxcCompiler = {};
     #endif
@@ -391,21 +387,6 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
           if (shaderCompilerD3D11.CompileShader(inout_Data.m_sSourceFile, sShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_sPlatform, stageFlag), "main", inout_Data.m_ByteCode[stage]->m_ByteCode).Succeeded())
           {
             XII_SUCCEED_OR_RETURN(shaderCompilerD3D11.ReflectShaderStage(inout_Data, stageFlag, m_InputLayoutMapping));
-          }
-          else
-          {
-            return XII_FAILURE;
-          }
-        }
-        break;
-#endif
-#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
-        case xiiGALGraphicsDeviceType::Direct3D12:
-        {
-          xiiShaderCompilerD3D12 shaderCompilerD3D12(s_pDxcUtils.RawPtr(), s_pDxcCompiler.RawPtr());
-          if (shaderCompilerD3D12.CompileShader(inout_Data.m_sSourceFile, sShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_sPlatform, stageFlag), "main", inout_Data.m_ByteCode[stage]->m_ByteCode).Succeeded())
-          {
-            XII_SUCCEED_OR_RETURN(shaderCompilerD3D12.ReflectShaderStage(inout_Data, stageFlag, m_InputLayoutMapping));
           }
           else
           {

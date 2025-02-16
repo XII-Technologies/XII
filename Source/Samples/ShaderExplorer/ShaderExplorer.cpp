@@ -279,8 +279,6 @@ public:
     constexpr const char* szDefaultGraphicsAPI = "Vulkan";
 #elif BUILDSYSTEM_ENABLE_D3D11_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "D3D11";
-#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "D3D12";
 #else
     constexpr const char* szDefaultGraphicsAPI = "Null";
 #endif
