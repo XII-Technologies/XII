@@ -111,8 +111,8 @@ void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationD
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_VERIFY_COMMAND_LIST(textureDescription.m_uiSampleCount == 1, "Only non-multisampled textures can be updated UpdateTexture().");
-  XII_VERIFY_COMMAND_LIST(subresourceData.m_uiStride & 0x03, "Texture data stride ({}) must be at least 32-bit aligned.", subresourceData.m_uiStride);
-  XII_VERIFY_COMMAND_LIST(subresourceData.m_uiDepthStride & 0x03, "Texture data depth stride ({}) must be at least 32-bit aligned.", subresourceData.m_uiDepthStride);
+  XII_VERIFY_COMMAND_LIST(xiiMemoryUtils::IsSizeAligned(subresourceData.m_uiStride, 16ULL), "Texture data stride ({}) must be at least 16-bit aligned.", subresourceData.m_uiStride);
+  XII_VERIFY_COMMAND_LIST(xiiMemoryUtils::IsSizeAligned(subresourceData.m_uiDepthStride, 16ULL), "Texture data depth stride ({}) must be at least 16-bit aligned.", subresourceData.m_uiDepthStride);
 
   xiiVec3U32  vUpdateRegion    = destinationBox.GetExtents();
   const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
