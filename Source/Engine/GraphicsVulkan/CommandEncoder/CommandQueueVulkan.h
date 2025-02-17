@@ -60,7 +60,7 @@ private:
   };
 
   xiiMutex                             m_QueueMutex;
-  xiiGALQueueInformationVulkan m_QueueInformation;
+  xiiGALQueueInformationVulkan         m_QueueInformation;
 
   vk::CommandPool                           m_vkCommandPool;
   xiiDynamicArray<xiiGALCommandListVulkan*> m_CommandLists;
