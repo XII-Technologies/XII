@@ -15,7 +15,7 @@ xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVu
 
 xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
 
-void xiiGALCommandQueueVulkan::InitializePlatform(const xiiGALDeviceVulkan::QueueInformation& queueInformation)
+void xiiGALCommandQueueVulkan::InitializePlatform(const xiiGALQueueInformationVulkan& queueInformation)
 {
   xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();

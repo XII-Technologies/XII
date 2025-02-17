@@ -3,7 +3,6 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Pools/StagingBufferPool.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 // clang-format off
@@ -479,9 +478,9 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
       {
         for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
         {
-          const auto&         subresourceData  = pInitialData->m_SubResources[uiSubresourceIndex];
-          vk::BufferImageCopy vkCopyRegion     = {};
-          auto                mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
+          const auto&              subresourceData  = pInitialData->m_SubResources[uiSubresourceIndex];
+          vk::BufferImageCopy      vkCopyRegion     = {};
+          xiiGALMipLevelProperties mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
 
           // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
           auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(mipLevelProperty.m_uiMipSize);

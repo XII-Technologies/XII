@@ -7,8 +7,6 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
-
 /// \brief Resource state transition flags.
 struct XII_GRAPHICSVULKAN_DLL xiiGALStateTransitionFlags
 {

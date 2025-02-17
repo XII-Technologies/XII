@@ -1,7 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Pools/StagingBufferPool.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 
 xiiGALStagingBufferPoolVulkan::xiiGALStagingBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiAlignment, vk::BufferUsageFlags vkBufferUsageFlags) :
   m_pDeviceVulkan(pDeviceVulkan), m_uiAlignment(uiAlignment), m_vkBufferUsageFlags(vkBufferUsageFlags)
@@ -130,3 +130,5 @@ void xiiGALStagingBufferPoolVulkan::Reset()
   }
   m_LargeAllocations.Clear();
 }
+
+XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_StagingBufferPoolVulkan);

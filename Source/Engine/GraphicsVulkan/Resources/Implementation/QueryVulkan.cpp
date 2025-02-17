@@ -3,7 +3,6 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Resources/QueryVulkan.h>
 
 // clang-format off
@@ -248,7 +247,7 @@ namespace
     return bIsDataAvailable;
   }
 
-  inline bool GetStatisticsQueryData(xiiGALDeviceVulkan* pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiGALDeviceVulkan::QueueInformation queueInformation, void* pData, xiiUInt32 uiDataSize)
+  inline bool GetStatisticsQueryData(xiiGALDeviceVulkan* pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiGALQueueInformationVulkan queueInformation, void* pData, xiiUInt32 uiDataSize)
   {
     // Pipeline statistics queries write one integer value for each bit that is enabled in the pipelineStatistics when the pool is created, and the statistics values are written in bit
     // order starting from the least significant bit. (17.2)
@@ -306,7 +305,7 @@ bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInv
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  const xiiGALDeviceVulkan::QueueInformation& queueInformation      = m_pQueryPoolVulkan->GetQueueInformation();
+  const xiiGALQueueInformationVulkan& queueInformation      = m_pQueryPoolVulkan->GetQueueInformation();
   const xiiUInt64                             uiCompletedFenceValue = m_pQueryPoolVulkan->GetCommandQueue()->GetCompletedFenceValue();
   bool                                        bIsDataAvailable      = false;
 

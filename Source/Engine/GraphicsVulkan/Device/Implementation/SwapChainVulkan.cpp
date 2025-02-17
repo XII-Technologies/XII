@@ -5,8 +5,6 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
-#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
-#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 // clang-format off
@@ -133,7 +131,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   // Check present support on the graphics queue.
   {
     vk::PhysicalDevice                   vkPhysicalDevice         = pDeviceVulkan->GetVulkanPhysicalDevice();
-    xiiGALDeviceVulkan::QueueInformation graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
+    xiiGALQueueInformationVulkan graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
     vk::Bool32                           bHasPresentSupport       = vk::False;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));

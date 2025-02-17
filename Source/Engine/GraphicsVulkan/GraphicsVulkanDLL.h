@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Foundation/Basics.h>
+#include <Foundation/Types/UniquePtr.h>
 
 // Configure the DLL Import/Export Define
 #if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
@@ -108,3 +109,12 @@ class xiiGALSemaphorePoolVulkan;
 class xiiGALQueryPoolVulkan;
 class xiiGALDescriptorSetPoolVulkan;
 class xiiGALStagingBufferPoolVulkan;
+
+struct xiiGALQueueInformationVulkan
+{
+  XII_DECLARE_POD_TYPE();
+
+  vk::Queue m_vkQueue            = VK_NULL_HANDLE;
+  xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
+  xiiUInt32 m_uiQueueIndex       = 0U;
+};
