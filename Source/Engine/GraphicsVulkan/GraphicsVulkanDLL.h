@@ -118,3 +118,21 @@ struct xiiGALQueueInformationVulkan
   xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
   xiiUInt32 m_uiQueueIndex       = 0U;
 };
+
+struct xiiGALDynamicBufferAllocationVulkan
+{
+  XII_DECLARE_POD_TYPE();
+
+  vk::Buffer    m_vkBuffer;
+  struct VmaAllocation_T* m_VmaAllocation;
+  xiiUInt64     m_uiOffset;
+};
+
+struct xiiGALStagingBufferAllocationVulkan
+{
+  XII_DECLARE_POD_TYPE();
+
+  vk::Buffer    m_vkBuffer;
+  struct VmaAllocation_T* m_VmaAllocation;
+  xiiUInt64     m_uiOffset;
+};

@@ -494,6 +494,8 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulk
   vkCommandBufferAllocateInfo.commandBufferCount            = 1U;
 
   VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  m_pDynamicBufferPoolVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALDynamicBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
@@ -502,6 +504,8 @@ xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
   xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
 
   pDeviceVulkan->GetVulkanLogicalDevice().freeCommandBuffers(pCommandQueueVulkan->GetVulkanCommandPool(), 1U, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  m_pDynamicBufferPoolVulkan.Clear();
 }
 
 void xiiGALCommandListVulkan::BeginPlatform()
@@ -554,6 +558,8 @@ void xiiGALCommandListVulkan::ResetInternal()
   m_vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   InvalidateState();
+
+  m_pDynamicBufferPoolVulkan->Reset();
 
   m_RecordingState = RecordingState::Reset;
 }
@@ -1835,6 +1841,8 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
 
   const auto& bufferDescription = pBufferVulkan->GetDescription();
 
+  MappedBuffer mappedBuffer = {.m_MapType = mapType, .m_DynamicAllocation = {}};
+
   if (mapType == xiiGALMapType::Read)
   {
     XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "The buffer must be created with resource usage xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified to be mapped for reading.");
@@ -1858,8 +1866,15 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
     {
       XII_VERIFY_COMMAND_LIST_RESULT(mapFlags.IsAnySet(xiiGALMapFlags::Discard | xiiGALMapFlags::NoOverWrite), "Failed to map buffer '{}': Vulkan buffer must be mapped for writing with xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.", pBufferVulkan->GetDebugName());
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), &pMappedData));
-      VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+      auto dynamicBufferAllocation = m_pDynamicBufferPoolVulkan->Allocate(bufferDescription.m_uiSize);
+
+      void* pMappedMemory = nullptr;
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), dynamicBufferAllocation.m_VmaAllocation, &pMappedMemory));
+      VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), dynamicBufferAllocation.m_VmaAllocation, dynamicBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+
+      pMappedData = xiiMemoryUtils::AddByteOffset(pMappedMemory, dynamicBufferAllocation.m_uiOffset);
+
+      mappedBuffer.m_DynamicAllocation = dynamicBufferAllocation;
     }
     else
     {
@@ -1878,7 +1893,7 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
   if (pMappedData == nullptr)
     return XII_FAILURE;
 
-  XII_VERIFY(!m_MappedBuffers.Insert(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mapType), "Buffer '{}' has already been mapped.", pBufferVulkan->GetDebugName());
+  XII_VERIFY(!m_MappedBuffers.Insert(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mappedBuffer), "Buffer '{}' has already been mapped.", pBufferVulkan->GetDebugName());
 
   return XII_SUCCESS;
 }
@@ -1893,34 +1908,47 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xi
 
   const auto& bufferDescription = pBufferVulkan->GetDescription();
 
-  if (mapType == xiiGALMapType::Read)
+  MappedBufferKey mappedBufferKey = {.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType};
+  MappedBuffer*   mappedBuffer = nullptr;
+
+  if (m_MappedBuffers.TryGetValue(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mappedBuffer))
   {
-    if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
-    {
-      VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+    XII_ASSERT_DEV(mappedBuffer->m_MapType == mapType, "Map type mismatch.");
 
-      vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
+    if (mapType == xiiGALMapType::Read)
+    {
+      if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
+      {
+        VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+
+        vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
+      }
     }
+    else if (mapType == xiiGALMapType::Write)
+    {
+      if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
+      {
+        VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+
+        vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
+      }
+      else if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic)
+      {
+        VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), mappedBuffer->m_DynamicAllocation.m_VmaAllocation, mappedBuffer->m_DynamicAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+
+        vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), mappedBuffer->m_DynamicAllocation.m_VmaAllocation);
+
+        UpdateBufferRegion(pBufferVulkan, mappedBuffer->m_DynamicAllocation.m_vkBuffer, mappedBuffer->m_DynamicAllocation.m_uiOffset, 0U, pBufferVulkan->GetSize());
+      }
+    }
+
+    XII_VERIFY(m_MappedBuffers.Remove(mappedBufferKey), "");
   }
-  else if (mapType == xiiGALMapType::Write)
+  else
   {
-    if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
-    {
-      VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
-
-      vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
-    }
-    else if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic)
-    {
-      VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
-
-      vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
-    }
+    xiiLog::Error("Failed to unmap buffer '{}'. The buffer has either been unmapped, or has not been mapped.", pBufferVulkan->GetDebugName());
+    return XII_FAILURE;
   }
-
-  xiiEnum<xiiGALMapType> correspondingMapType;
-  XII_VERIFY(m_MappedBuffers.Remove(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, &correspondingMapType), "");
-  XII_ASSERT_DEV(correspondingMapType == mapType, "Map type mismatch for mapped buffer.");
 
   return XII_SUCCESS;
 }
@@ -2342,15 +2370,19 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* 
     const auto&                                vkDeviceLimits  = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits;
     const xiiGALBufferToTextureCopyDescription copyDescription = xiiGALTextureUtilities::GetBufferToTextureCopyDescription(textureDescription.m_Format, *pTextureBox, static_cast<xiiUInt32>(vkDeviceLimits.optimalBufferCopyRowPitchAlignment));
 
-    void* pMappedData = nullptr;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedData));
-    VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), 0U, vk::WholeSize));
+    auto dynamicBufferAllocation = m_pDynamicBufferPoolVulkan->Allocate(copyDescription.m_uiMemorySize);
 
-    mappedData.m_pData         = pMappedData;
+    void* pMappedMemory = nullptr;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), dynamicBufferAllocation.m_VmaAllocation, &pMappedMemory));
+    VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), dynamicBufferAllocation.m_VmaAllocation, dynamicBufferAllocation.m_uiOffset, copyDescription.m_uiMemorySize));
+
+    pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, dynamicBufferAllocation.m_uiOffset);
+
+    mappedData.m_pData         = pMappedMemory;
     mappedData.m_uiStride      = copyDescription.m_uiRowStride;
     mappedData.m_uiDepthStride = copyDescription.m_uiDepthStride;
 
-    XII_VERIFY(!m_MappedTextures.Insert(MappedTextureKey{.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice}, MappedTexture{.m_CopyDescription = copyDescription}), "Mip level {}, slice {}, of texture '{}' has already been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
+    XII_VERIFY(!m_MappedTextures.Insert(MappedTextureKey{.m_pTextureVulkan = pTextureVulkan, .m_uiMipLevel = textureMipLevelData.m_uiMipLevel, .m_uiArraySlice = textureMipLevelData.m_uiArraySlice}, MappedTexture{.m_CopyDescription = copyDescription, .m_DynamicAllocation = dynamicBufferAllocation}), "Mip level {}, slice {}, of texture '{}' has already been mapped.", textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, pTextureVulkan->GetDebugName());
   }
   else if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
   {
@@ -2421,7 +2453,7 @@ xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiGALTexture
   {
     if (textureDescription.m_Usage == xiiGALResourceUsage::Dynamic)
     {
-      CopyBufferToTexture(pTextureVulkan->GetVulkanStagingBuffer(), 0, mappedTexture->m_CopyDescription.m_uiRowStrideInTexels, pTextureVulkan, mappedTexture->m_CopyDescription.m_Region, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);
+      CopyBufferToTexture(mappedTexture->m_DynamicAllocation.m_vkBuffer, mappedTexture->m_DynamicAllocation.m_uiOffset, mappedTexture->m_CopyDescription.m_uiRowStrideInTexels, pTextureVulkan, mappedTexture->m_CopyDescription.m_Region, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);
     }
     else if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
     {

@@ -1,22 +1,22 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
 
-xiiGALStagingBufferPoolVulkan::xiiGALStagingBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiAlignment, vk::BufferUsageFlags vkBufferUsageFlags) :
+xiiGALDynamicBufferPoolVulkan::xiiGALDynamicBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiAlignment, vk::BufferUsageFlags vkBufferUsageFlags) :
   m_pDeviceVulkan(pDeviceVulkan), m_uiAlignment(uiAlignment), m_vkBufferUsageFlags(vkBufferUsageFlags)
 {
 }
 
-xiiGALStagingBufferPoolVulkan::~xiiGALStagingBufferPoolVulkan()
+xiiGALDynamicBufferPoolVulkan::~xiiGALDynamicBufferPoolVulkan()
 {
   // We assume that these resources are not in use when this pool is destroyed.
 
-  for (const auto& stagingBufferPages : m_StagingBufferPages)
+  for (const auto& stagingBufferPages : m_DynamicBufferPages)
   {
     vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferPages.m_vkBuffer, stagingBufferPages.m_VmaAllocation);
   }
-  m_StagingBufferPages.Clear();
+  m_DynamicBufferPages.Clear();
 
   for (const auto& largeAllocation : m_LargeAllocations)
   {
@@ -25,10 +25,10 @@ xiiGALStagingBufferPoolVulkan::~xiiGALStagingBufferPoolVulkan()
   m_LargeAllocations.Clear();
 }
 
-void xiiGALStagingBufferPoolVulkan::CreateStagingBufferPage()
+void xiiGALDynamicBufferPoolVulkan::CreateDynamicBufferPage()
 {
-  StagingBufferPage stagingBufferPage;
-  xiiUInt64         uiPageSize = s_uiStagingBufferDefaultPageSize;
+  DynamicBufferPage stagingBufferPage;
+  xiiUInt64         uiPageSize = s_uiDynamicBufferDefaultPageSize;
 
   vk::BufferCreateInfo vkBufferCreateInfo = {};
   vkBufferCreateInfo.pNext                = nullptr;
@@ -45,12 +45,12 @@ void xiiGALStagingBufferPoolVulkan::CreateStagingBufferPage()
 
   stagingBufferPage.m_uiSize = uiPageSize;
 
-  m_StagingBufferPages.PushBack(stagingBufferPage);
+  m_DynamicBufferPages.PushBack(stagingBufferPage);
 }
 
-void xiiGALStagingBufferPoolVulkan::CreateLargeBuffer(xiiUInt64 uiSize)
+void xiiGALDynamicBufferPoolVulkan::CreateLargeBuffer(xiiUInt64 uiSize)
 {
-  StagingBufferPage stagingBufferPage;
+  DynamicBufferPage stagingBufferPage;
 
   vk::BufferCreateInfo vkBufferCreateInfo = {};
   vkBufferCreateInfo.pNext                = nullptr;
@@ -70,15 +70,15 @@ void xiiGALStagingBufferPoolVulkan::CreateLargeBuffer(xiiUInt64 uiSize)
   m_LargeAllocations.PushBack(stagingBufferPage);
 }
 
-xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiUInt64 uiSize, bool bForceLargePage)
+xiiGALDynamicBufferAllocationVulkan xiiGALDynamicBufferPoolVulkan::Allocate(xiiUInt64 uiSize, bool bForceLargePage)
 {
-  if (bForceLargePage || uiSize >= (s_uiStagingBufferDefaultPageSize >> 2))
+  if (bForceLargePage || uiSize >= (s_uiDynamicBufferDefaultPageSize >> 2))
   {
     CreateLargeBuffer(uiSize);
 
     const auto& largeAllocation = m_LargeAllocations.PeekBack();
 
-    xiiGALStagingBufferAllocationVulkan stagingBufferAllocation;
+    xiiGALDynamicBufferAllocationVulkan stagingBufferAllocation;
     stagingBufferAllocation.m_vkBuffer      = largeAllocation.m_vkBuffer;
     stagingBufferAllocation.m_VmaAllocation = largeAllocation.m_VmaAllocation;
     stagingBufferAllocation.m_uiOffset      = 0;
@@ -89,9 +89,9 @@ xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiU
   xiiUInt64 uiBufferAllocationOffset = xiiMemoryUtils::AlignSize(m_uiOffsetAllocationCounter, xiiUInt64{m_uiAlignment});
   xiiUInt32 uiBufferID               = xiiInvalidIndex;
 
-  for (xiiUInt32 i = m_uiPageAllocationCounter; i < m_StagingBufferPages.GetCount(); ++i)
+  for (xiiUInt32 i = m_uiPageAllocationCounter; i < m_DynamicBufferPages.GetCount(); ++i)
   {
-    if ((uiBufferAllocationOffset + uiSize) <= m_StagingBufferPages[i].m_uiSize)
+    if ((uiBufferAllocationOffset + uiSize) <= m_DynamicBufferPages[i].m_uiSize)
     {
       uiBufferID = i;
       break;
@@ -102,15 +102,15 @@ xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiU
   // If we cannot find an existing page with sufficient free space, create a new page.
   if (uiBufferID == xiiInvalidIndex)
   {
-    CreateStagingBufferPage();
+    CreateDynamicBufferPage();
 
-    uiBufferID = m_StagingBufferPages.GetCount() - 1;
+    uiBufferID = m_DynamicBufferPages.GetCount() - 1;
   }
 
   // Sub allocate from current page.
-  xiiGALStagingBufferAllocationVulkan stagingBufferAllocation;
-  stagingBufferAllocation.m_vkBuffer      = m_StagingBufferPages[uiBufferID].m_vkBuffer;
-  stagingBufferAllocation.m_VmaAllocation = m_StagingBufferPages[uiBufferID].m_VmaAllocation;
+  xiiGALDynamicBufferAllocationVulkan stagingBufferAllocation;
+  stagingBufferAllocation.m_vkBuffer      = m_DynamicBufferPages[uiBufferID].m_vkBuffer;
+  stagingBufferAllocation.m_VmaAllocation = m_DynamicBufferPages[uiBufferID].m_VmaAllocation;
   stagingBufferAllocation.m_uiOffset      = uiBufferAllocationOffset;
 
   m_uiPageAllocationCounter   = uiBufferID;
@@ -119,7 +119,7 @@ xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiU
   return stagingBufferAllocation;
 }
 
-void xiiGALStagingBufferPoolVulkan::Reset()
+void xiiGALDynamicBufferPoolVulkan::Reset()
 {
   m_uiPageAllocationCounter   = 0;
   m_uiOffsetAllocationCounter = 0;
@@ -131,4 +131,4 @@ void xiiGALStagingBufferPoolVulkan::Reset()
   m_LargeAllocations.Clear();
 }
 
-XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_StagingBufferPoolVulkan);
+XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_DynamicBufferPoolVulkan);
