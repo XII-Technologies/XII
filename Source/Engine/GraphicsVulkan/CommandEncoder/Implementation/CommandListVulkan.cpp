@@ -1909,7 +1909,7 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xi
   const auto& bufferDescription = pBufferVulkan->GetDescription();
 
   MappedBufferKey mappedBufferKey = {.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType};
-  MappedBuffer*   mappedBuffer = nullptr;
+  MappedBuffer*   mappedBuffer    = nullptr;
 
   if (m_MappedBuffers.TryGetValue(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mappedBuffer))
   {
