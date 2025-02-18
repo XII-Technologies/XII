@@ -501,13 +501,27 @@ void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mod
   {
     case xiiMouseCursorClipMode::NoClip:
     {
-      SDL_SetWindowMouseGrab(m_pWindow, false);
+      if (!SDL_SetWindowMouseGrab(m_pWindow, false))
+      {
+        xiiLog::Error("Failed to disable window mouse focus with error: '{}'.", SDL_GetError());
+      }
+      if (!SDL_SetWindowRelativeMouseMode(m_pWindow, false))
+      {
+        xiiLog::Error("Failed to disable window relative mouse mode with error: '{}'.", SDL_GetError());
+      }
     }
     break;
     case xiiMouseCursorClipMode::ClipToWindow:
     case xiiMouseCursorClipMode::ClipToWindowImmediate:
     {
-      SDL_SetWindowMouseGrab(m_pWindow, true);
+      if (!SDL_SetWindowMouseGrab(m_pWindow, true))
+      {
+        xiiLog::Error("Failed to enable window mouse focus with error: '{}'.", SDL_GetError());
+      }
+      if (!SDL_SetWindowRelativeMouseMode(m_pWindow, true))
+      {
+        xiiLog::Error("Failed to enable window relative mouse mode with error: '{}'.", SDL_GetError());
+      }
     }
     break;
     case xiiMouseCursorClipMode::ClipToPosition:
@@ -517,7 +531,14 @@ void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mod
 
       XII_IGNORE_UNUSED(mouseButtonFlags);
 
-      SDL_SetWindowMouseGrab(m_pWindow, true);
+      if (!SDL_SetWindowMouseGrab(m_pWindow, true))
+      {
+        xiiLog::Error("Failed to enable window mouse focus with error: '{}'.", SDL_GetError());
+      }
+      if (!SDL_SetWindowRelativeMouseMode(m_pWindow, true))
+      {
+        xiiLog::Error("Failed to enable window relative mouse mode with error: '{}'.", SDL_GetError());
+      }
       SDL_WarpMouseInWindow(m_pWindow, fRelativeMouseX, fRelativeMouseY);
     }
     break;
