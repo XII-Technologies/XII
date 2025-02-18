@@ -2,9 +2,7 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
-#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
 {
@@ -72,15 +70,6 @@ public:
     vk::PhysicalDeviceFragmentDensityMap2PropertiesEXT    m_FragmentDensityMap2;
     vk::PhysicalDeviceMultiDrawPropertiesEXT              m_MultiDraw;
     vk::PhysicalDeviceCustomBorderColorPropertiesEXT      m_CustomBorderColor;
-  };
-
-  struct QueueInformation
-  {
-    XII_DECLARE_POD_TYPE();
-
-    vk::Queue m_vkQueue            = VK_NULL_HANDLE;
-    xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
-    xiiUInt32 m_uiQueueIndex       = 0U;
   };
 
   ~xiiGALDeviceVulkan();
@@ -164,9 +153,9 @@ public:
   XII_ALWAYS_INLINE xiiArrayPtr<const vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() const { return m_LogicalDeviceSupportedAccessFlags; }
   XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
 
-  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
-  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }
-  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetTransferQueueInformation() const { return m_TransferQueueInformation; }
+  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
+  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }
+  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetTransferQueueInformation() const { return m_TransferQueueInformation; }
 
   XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
 
@@ -364,15 +353,15 @@ private:
   VmaAllocator m_vkVmaAllocator = VK_NULL_HANDLE;
 
   // Graphics Queue Information.
-  QueueInformation                       m_GraphicsQueueInformation;
+  xiiGALQueueInformationVulkan           m_GraphicsQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pGraphicsCommandQueue;
 
   // Compute Queue Information.
-  QueueInformation                       m_ComputeQueueInformation;
+  xiiGALQueueInformationVulkan           m_ComputeQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pComputeCommandQueue;
 
   // Graph Queue Information.
-  QueueInformation                       m_TransferQueueInformation;
+  xiiGALQueueInformationVulkan           m_TransferQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
 
   // Pools.

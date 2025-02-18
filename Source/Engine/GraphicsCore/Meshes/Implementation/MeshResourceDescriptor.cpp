@@ -203,7 +203,7 @@ void xiiMeshResourceDescriptor::Save(xiiStreamWriter& inout_stream)
     }
 
     chunk << m_Bounds.m_vCenter;
-    chunk << m_Bounds.m_vBoxHalfExtends;
+    chunk << m_Bounds.m_vBoxHalfExtents;
     chunk << m_Bounds.m_fSphereRadius;
     // Version 4
     chunk << m_fMaxBoneVertexOffset;
@@ -452,7 +452,7 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
       {
         bCalculateBounds = false;
         chunk >> m_Bounds.m_vCenter;
-        chunk >> m_Bounds.m_vBoxHalfExtends;
+        chunk >> m_Bounds.m_vBoxHalfExtents;
         chunk >> m_Bounds.m_fSphereRadius;
       }
       if (ci.m_uiChunkVersion >= 4)
@@ -513,7 +513,7 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
     ComputeBounds();
 
     auto b = m_Bounds;
-    xiiLog::Info("Calculated Bounds: {0} | {1} | {2} - {3} | {4} | {5}", xiiArgF(b.m_vCenter.x, 2), xiiArgF(b.m_vCenter.y, 2), xiiArgF(b.m_vCenter.z, 2), xiiArgF(b.m_vBoxHalfExtends.x, 2), xiiArgF(b.m_vBoxHalfExtends.y, 2), xiiArgF(b.m_vBoxHalfExtends.z, 2));
+    xiiLog::Info("Calculated Bounds: {0} | {1} | {2} - {3} | {4} | {5}", xiiArgF(b.m_vCenter.x, 2), xiiArgF(b.m_vCenter.y, 2), xiiArgF(b.m_vCenter.z, 2), xiiArgF(b.m_vBoxHalfExtents.x, 2), xiiArgF(b.m_vBoxHalfExtents.y, 2), xiiArgF(b.m_vBoxHalfExtents.z, 2));
   }
 
   return XII_SUCCESS;

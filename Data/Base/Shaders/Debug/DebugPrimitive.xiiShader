@@ -60,7 +60,6 @@ VS_OUT main(VS_IN Input)
 
 #define USE_COLOR0
 
-
 #include <Shaders/Materials/MaterialInterpolator.h>
 #include <Shaders/Common/GlobalConstants.h>
 

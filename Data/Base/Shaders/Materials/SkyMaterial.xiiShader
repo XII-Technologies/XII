@@ -34,7 +34,7 @@ DepthWriteEnable = false
 
 #include <Shaders/Common/GlobalConstants.h>
 
-CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
 {
   COLOR4F(BaseColor);
   FLOAT1(MaskThreshold);

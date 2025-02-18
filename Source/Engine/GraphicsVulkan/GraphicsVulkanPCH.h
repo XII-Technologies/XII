@@ -73,3 +73,12 @@ XII_DEFINE_AS_POD_TYPE(vk::DescriptorSet);
 XII_DEFINE_AS_POD_TYPE(vk::WriteDescriptorSet);
 
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
+
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
+
+#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>

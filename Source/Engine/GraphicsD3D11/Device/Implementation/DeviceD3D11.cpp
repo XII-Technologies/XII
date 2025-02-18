@@ -47,7 +47,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D11, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM50", .m_sShaderCompiler = "xiiShaderCompiler" };
+  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D11, .m_sShaderModel = "D3D_SM50", .m_sShaderCompiler = "xiiShaderCompiler" };
 
   xiiGALDeviceFactory::RegisterImplementation("D3D11", &CreateD3D11Device, implementation);
 }
@@ -238,18 +238,18 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 void xiiGALDeviceD3D11::ReportLiveGPUObjects()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  IDXGIDebug1* dxgiDebug = nullptr;
-  HRESULT      hResult   = DXGIGetDebugInterface1(0U, IID_PPV_ARGS(&dxgiDebug));
+  IDXGIDebug1* pDXGIDebug = nullptr;
+  HRESULT      hResult    = DXGIGetDebugInterface1(0U, IID_PPV_ARGS(&pDXGIDebug));
   if (SUCCEEDED(hResult))
   {
     OutputDebugStringW(L" +++++ Live D3D11 Objects: +++++\n");
 
     // Prints to OutputDebugString
-    dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+    pDXGIDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 
     OutputDebugStringW(L" ----- Live D3D11 Objects: -----\n");
 
-    dxgiDebug->Release();
+    pDXGIDebug->Release();
   }
 #endif
 }

@@ -1,7 +1,8 @@
+#pragma once
+
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 #include <Foundation/Algorithm/HashingUtils.h>
-
 
 template <>
 struct xiiHashHelper<vk::DescriptorType>

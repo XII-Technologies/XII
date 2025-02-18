@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Shaders/Common/ConstantBufferMacros.h>
+#include <Shaders/Common/ShaderResourceMacros.h>
 
 struct XII_SHADER_STRUCT xiiPerSpriteData
 {

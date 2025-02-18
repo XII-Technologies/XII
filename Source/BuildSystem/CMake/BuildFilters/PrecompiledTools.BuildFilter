@@ -9,7 +9,6 @@ set_property(GLOBAL PROPERTY XII_BUILD_FILTER_PrecompiledTools
   GuiFoundation
   GraphicsFoundation
   GraphicsD3D11
-  GraphicsD3D12
   GraphicsVulkan
   GraphicsCore
   ShaderCompiler

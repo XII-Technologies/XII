@@ -426,7 +426,7 @@ private: // Per Renderer States
   xiiGALPipelineStateHandle m_hCurrentPipelineState;
 
   // Renderpass and Framebuffer
-  bool                    m_bClearSubmitted   = false;
+  bool                    m_bNeedsClear       = false;
   bool                    m_bRenderPassActive = false;
   xiiGALFramebufferHandle m_hCurrentFramebuffer;
   xiiGALRenderPassHandle  m_hCurrentRenderPass;

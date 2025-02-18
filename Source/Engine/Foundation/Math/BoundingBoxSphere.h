@@ -80,7 +80,7 @@ public:
 public:
   xiiVec3Template<Type> m_vCenter;
   Type                  m_fSphereRadius;
-  xiiVec3Template<Type> m_vBoxHalfExtends;
+  xiiVec3Template<Type> m_vBoxHalfExtents;
 };
 
 /// \brief Checks whether this bounds and the other are identical.

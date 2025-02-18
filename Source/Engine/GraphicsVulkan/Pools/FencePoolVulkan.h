@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALFencePoolVulkan

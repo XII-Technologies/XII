@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
+#include "../Common/ShaderResourceMacros.h"
 
-#include "../Common/Platforms.h"
-
-CONSTANT_BUFFER(xiiTonemapConstants, 3)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiTonemapConstants)
 {
   FLOAT4(AutoExposureParams);
 

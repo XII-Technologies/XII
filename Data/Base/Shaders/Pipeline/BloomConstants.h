@@ -1,9 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
-#include "../Common/Platforms.h"
+#include "../Common/ShaderResourceMacros.h"
 
-CONSTANT_BUFFER(xiiBloomConstants, 3)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiBloomConstants)
 {
   FLOAT2(PixelSize);
   FLOAT1(BloomThreshold);

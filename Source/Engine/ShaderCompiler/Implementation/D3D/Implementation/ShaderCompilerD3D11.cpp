@@ -44,7 +44,8 @@ xiiResult xiiShaderCompilerD3D11::CompileShader(xiiStringView sFile, xiiStringVi
 
     const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
 
-    xiiLog::Error("Shader Compilation Failed.");
+    XII_LOG_BLOCK("Shader Compilation Failed", sFile);
+
     xiiLog::Error("Could not compile shader '{0}' for profile '{1}'", sFile, sProfile);
     xiiLog::Error("{0}", szError);
 
@@ -55,6 +56,8 @@ xiiResult xiiShaderCompilerD3D11::CompileShader(xiiStringView sFile, xiiStringVi
   if (pErrorBlob != nullptr)
   {
     const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
+
+    XII_LOG_BLOCK("Shader Compilation Error Message", sFile);
 
     xiiLog::SeriousWarning("{0}", szError);
 
@@ -362,7 +365,38 @@ xiiResult xiiShaderCompilerD3D11::ReflectConstantBufferLayout(xiiGALShaderResour
         continue;
     }
 
-    /// \todo ShaderCompiler: Add member print output.
+    const char* typeNames[] = {
+      "Unknown",
+      "Void",
+      "Bool",
+      "Int8",
+      "Int16",
+      "Int32",
+      "Int64",
+      "UInt8",
+      "UInt16",
+      "UInt32",
+      "UInt64",
+      "Float16",
+      "Float32",
+      "Double",
+      "Min8Float",
+      "Min10Float",
+      "Min16Float",
+      "Min12Int",
+      "Min16Int",
+      "Min16UInt",
+      "String",
+    };
+
+    if (memberDescription.m_uiArraySize > 1)
+    {
+      xiiLog::Debug("{1} {3}[{2}] {0}", memberDescription.m_sName, xiiArgU(memberDescription.m_uiOffset, 3, true), memberDescription.m_uiArraySize, typeNames[memberDescription.m_PrimitiveType]);
+    }
+    else
+    {
+      xiiLog::Debug("{1} {2} {0}", memberDescription.m_sName, xiiArgU(memberDescription.m_uiOffset, 3, true), typeNames[memberDescription.m_PrimitiveType]);
+    }
 
     binding.m_Variables.PushBack(memberDescription);
   }

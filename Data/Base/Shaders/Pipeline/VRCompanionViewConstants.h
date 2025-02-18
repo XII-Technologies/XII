@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
+#include "../Common/ShaderResourceMacros.h"
 
-#include "../Common/Platforms.h"
-
-CONSTANT_BUFFER(xiiVRCompanionViewConstants, 2)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiVRCompanionViewConstants)
 {
   FLOAT2(TargetSize);
 };

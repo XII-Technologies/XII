@@ -21,7 +21,7 @@
 /xiiCore.dll
 /xiiGameEngine.dll
 /xiiGraphicsFoundation.dll
-/xiiGraphicsD3D12.dll
+/xiiGraphicsD3D11.dll
 /xiiGraphicsVulkan.dll
 /xiiGraphicsCore.dll
 /xiiShaderCompiler.dll

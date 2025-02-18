@@ -37,7 +37,7 @@ FillMode = FillMode_Solid
 #include <Shaders/Materials/MaterialInterpolator.h>
 #include <Shaders/Materials/SpriteData.h>
 
-StructuredBuffer<xiiPerSpriteData> spriteData;
+DECLARE_STRUCTURED_BUFFER_AUTO(spriteData, xiiPerSpriteData);
 
 VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 {
@@ -127,8 +127,7 @@ struct PS_OUT
   #endif
 };
 
-Texture2D SpriteTexture;
-SamplerState SpriteTexture_AutoSampler;
+DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(SpriteTexture, Texture2D);
 
 float GetOpacity()
 {

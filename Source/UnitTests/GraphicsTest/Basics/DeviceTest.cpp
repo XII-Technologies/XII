@@ -39,8 +39,4 @@ XII_CREATE_SIMPLE_TEST(Basics, DeviceTest)
 
     xiiStartup::ShutdownHighLevelSystems();
   }
-
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "TerminateAll")
-  {
-  }
 }

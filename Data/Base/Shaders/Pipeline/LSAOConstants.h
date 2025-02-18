@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
-
-#include "../Common/Platforms.h"
+#include "../Common/ShaderResourceMacros.h"
 
 // Total number of directions in the sweep pass.
 #define NUM_SWEEP_DIRECTIONS_PER_FRAME 36 // No temporal filtering, so this is also the total number of dirs!
@@ -25,7 +23,7 @@ struct LineInstruction
   UINT1(LineSweepOutputBufferOffset); // Index of the first output sample this line should write to.
 };
 
-CONSTANT_BUFFER(xiiLSAOConstants, 3)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiLSAOConstants)
 {
   DirectionInfo Directions[NUM_SWEEP_DIRECTIONS_PER_FRAME];
   UINT1(LineToLinePixelOffset);

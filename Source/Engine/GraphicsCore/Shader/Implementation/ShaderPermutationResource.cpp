@@ -113,8 +113,6 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
   }
 
   xiiGALPipelineResourceSignatureCreationDescription resourceSignatureDescription;
-  resourceSignatureDescription.m_bUseCombinedTextureSamplers = true;
-  resourceSignatureDescription.m_sCombinedSamplerSuffix      = "_AutoSampler";
 
   // iterate over all shader stages, add them to the descriptor
   for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)

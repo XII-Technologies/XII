@@ -26,7 +26,7 @@ int ReflectionProbeIndex @Default(0);
 #define USE_NORMAL
 #include <Shaders/Common/GlobalConstants.h>
 
-CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
 {
   INT1(MipLevel);
   INT1(ReflectionProbeIndex);

@@ -1,9 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
-#include "../Common/Platforms.h"
+#include "../Common/ShaderResourceMacros.h"
 
-CONSTANT_BUFFER(xiiBilateralBlurConstants, 3)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiBilateralBlurConstants)
 {
   UINT1(BlurRadius);
   FLOAT1(GaussianFalloff); // 1 / (2 * sigma * sigma)

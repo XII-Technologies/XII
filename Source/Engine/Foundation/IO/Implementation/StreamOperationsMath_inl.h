@@ -309,7 +309,7 @@ inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiBoundin
 {
   ref_stream << value.m_vCenter;
   ref_stream << value.m_fSphereRadius;
-  ref_stream << value.m_vBoxHalfExtends;
+  ref_stream << value.m_vBoxHalfExtents;
   return ref_stream;
 }
 
@@ -318,7 +318,7 @@ inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiBoundingBoxSp
 {
   ref_stream >> ref_value.m_vCenter;
   ref_stream >> ref_value.m_fSphereRadius;
-  ref_stream >> ref_value.m_vBoxHalfExtends;
+  ref_stream >> ref_value.m_vBoxHalfExtents;
   return ref_stream;
 }
 

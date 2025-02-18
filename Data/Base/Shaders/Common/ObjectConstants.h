@@ -1,7 +1,6 @@
 #pragma once
 
-#include "ConstantBufferMacros.h"
-#include "Platforms.h"
+#include "ShaderResourceMacros.h"
 
 struct XII_SHADER_STRUCT xiiPerInstanceData
 {
@@ -16,13 +15,13 @@ struct XII_SHADER_STRUCT xiiPerInstanceData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerInstanceData> perInstanceData;
+DECLARE_STRUCTURED_BUFFER_AUTO(perInstanceData, xiiPerInstanceData);
 
 #  if defined(USE_SKINNING)
-StructuredBuffer<Transform> skinningTransforms;
+DECLARE_STRUCTURED_BUFFER_AUTO(skinningTransforms, Transform);
 #  endif
 
-Buffer<uint> perInstanceVertexColors;
+DECLARE_BUFFER_AUTO(perInstanceVertexColors, uint);
 
 #else // C++
 
@@ -31,12 +30,10 @@ XII_DEFINE_AS_POD_TYPE(xiiPerInstanceData);
 static_assert(sizeof(xiiPerInstanceData) == 128);
 #endif
 
-CONSTANT_BUFFER(xiiObjectConstants, 2)
+DECLARE_CONSTANT_BUFFER(xiiObjectConstants, 2, 0)
 {
   UINT1(InstanceDataOffset);
 };
-
-
 
 #if XII_ENABLED(PLATFORM_SHADER)
 

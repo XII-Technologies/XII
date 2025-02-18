@@ -10,10 +10,9 @@ ALL
 #include "LSAOConstants.h"
 #include "Utils.h"
 
-Texture2DArray<float> DepthBuffer : register(t0);
-
-StructuredBuffer<LineInstruction> LineInstructions;
-RWBuffer<uint> LineSweepOutputBuffer;
+DECLARE_TEXTURE_AUTO(DepthBuffer, Texture2DArray<float>);
+DECLARE_STRUCTURED_BUFFER_AUTO(LineInstructions, LineInstruction);
+DECLARE_RW_STRUCTURED_BUFFER_AUTO(LineSweepOutputBuffer, uint);
 
 // Minimum difference in occlusion to pop from the stack.
 #define OCCLUSION_BIAS 0.001f
@@ -26,8 +25,7 @@ static const float tangentPlane = -0.85f; // This is represents an angle of roug
 
 // Computes occlusion from an occluder on a given position
 // As suggested by the original paper we go with the simple "strategy 3" where we assume a fixed tangent plane.
-void computeOccluderProps(float2 occluderPos, float2 currentPos, float2 toCamera,
-                          out float occluderDotCamera, out float occlusion)
+void computeOccluderProps(float2 occluderPos, float2 currentPos, float2 toCamera, out float occluderDotCamera, out float occlusion)
 {
   float2 occluderDir = occluderPos - currentPos;
   float occluderDistSq = dot(occluderDir, occluderDir);

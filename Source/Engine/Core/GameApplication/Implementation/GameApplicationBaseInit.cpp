@@ -126,8 +126,7 @@ void xiiGameApplicationBase::Init_FileSystem_ConfigureDataDirs()
   xiiString sShaderCacheRoot = ">sdk/Output/";
 
 #if XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
-  // On platforms where this is disabled, one can usually only write to the user directory.
-  // e.g. on mobile platforms.
+  // On platforms where this is disabled, one can usually only write to the user directory, e.g., on mobile platforms.
   sWritableBinRoot = sUserDataPath;
 #endif
 

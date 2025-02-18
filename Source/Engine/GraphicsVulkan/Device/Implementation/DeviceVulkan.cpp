@@ -12,11 +12,6 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
-#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
-#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
-#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
-#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
-#include <GraphicsVulkan/Pools/StagingBufferPool.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>

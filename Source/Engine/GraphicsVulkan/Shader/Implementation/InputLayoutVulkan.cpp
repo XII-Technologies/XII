@@ -27,7 +27,10 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform()
     {
       if (vertexInputAttributes[i].m_Semantic == semantic)
       {
-        XII_ASSERT_DEBUG(vertexInputAttributes[i].m_Format == format, "Found matching semantic {}, but with differing formats. {} : {}", semantic, format, vertexInputAttributes[i].m_Format);
+        if (vertexInputAttributes[i].m_Format != format)
+        {
+          xiiLog::Info("Found matching semantic {}, but with differing formats. {} : {}", semantic, format, vertexInputAttributes[i].m_Format);
+        }
 
         xiiUInt32 uiLocation = vertexInputAttributes[i].m_uiSemanticIndex;
         vertexInputAttributes.RemoveAtAndSwap(i);

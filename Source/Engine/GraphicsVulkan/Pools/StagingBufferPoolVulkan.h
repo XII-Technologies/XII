@@ -14,18 +14,11 @@ public:
     xiiUInt64     m_uiSize;
   };
 
-  struct Allocation
-  {
-    vk::Buffer    m_vkBuffer;
-    VmaAllocation m_VmaAllocation;
-    xiiUInt64     m_uiOffset;
-  };
-
   void CreateStagingBufferPage();
 
   void CreateLargeBuffer(xiiUInt64 uiSize);
 
-  xiiGALStagingBufferPoolVulkan::Allocation Allocate(xiiUInt64 uiSize, bool bForceLargePage = false);
+  xiiGALStagingBufferAllocationVulkan Allocate(xiiUInt64 uiSize, bool bForceLargePage = false);
 
   void Reset();
 

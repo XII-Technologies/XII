@@ -1,7 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Pools/StagingBufferPool.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 
 xiiGALStagingBufferPoolVulkan::xiiGALStagingBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiAlignment, vk::BufferUsageFlags vkBufferUsageFlags) :
   m_pDeviceVulkan(pDeviceVulkan), m_uiAlignment(uiAlignment), m_vkBufferUsageFlags(vkBufferUsageFlags)
@@ -70,7 +70,7 @@ void xiiGALStagingBufferPoolVulkan::CreateLargeBuffer(xiiUInt64 uiSize)
   m_LargeAllocations.PushBack(stagingBufferPage);
 }
 
-xiiGALStagingBufferPoolVulkan::Allocation xiiGALStagingBufferPoolVulkan::Allocate(xiiUInt64 uiSize, bool bForceLargePage)
+xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiUInt64 uiSize, bool bForceLargePage)
 {
   if (bForceLargePage || uiSize >= (s_uiStagingBufferDefaultPageSize >> 2))
   {
@@ -78,7 +78,7 @@ xiiGALStagingBufferPoolVulkan::Allocation xiiGALStagingBufferPoolVulkan::Allocat
 
     const auto& largeAllocation = m_LargeAllocations.PeekBack();
 
-    xiiGALStagingBufferPoolVulkan::Allocation stagingBufferAllocation;
+    xiiGALStagingBufferAllocationVulkan stagingBufferAllocation;
     stagingBufferAllocation.m_vkBuffer      = largeAllocation.m_vkBuffer;
     stagingBufferAllocation.m_VmaAllocation = largeAllocation.m_VmaAllocation;
     stagingBufferAllocation.m_uiOffset      = 0;
@@ -108,7 +108,7 @@ xiiGALStagingBufferPoolVulkan::Allocation xiiGALStagingBufferPoolVulkan::Allocat
   }
 
   // Sub allocate from current page.
-  xiiGALStagingBufferPoolVulkan::Allocation stagingBufferAllocation;
+  xiiGALStagingBufferAllocationVulkan stagingBufferAllocation;
   stagingBufferAllocation.m_vkBuffer      = m_StagingBufferPages[uiBufferID].m_vkBuffer;
   stagingBufferAllocation.m_VmaAllocation = m_StagingBufferPages[uiBufferID].m_VmaAllocation;
   stagingBufferAllocation.m_uiOffset      = uiBufferAllocationOffset;
@@ -130,3 +130,5 @@ void xiiGALStagingBufferPoolVulkan::Reset()
   }
   m_LargeAllocations.Clear();
 }
+
+XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_StagingBufferPoolVulkan);

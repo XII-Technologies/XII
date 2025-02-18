@@ -1,8 +1,6 @@
 #pragma once
 
-#include "ConstantBufferMacros.h"
-
-#include "Platforms.h"
+#include "ShaderResourceMacros.h"
 
 #define MIN_PERCEPTUAL_ROUGHNESS 0.045
 #define MIN_ROUGHNESS            0.002025
@@ -31,7 +29,7 @@
 #define EDITOR_RENDER_PASS_STATIC_VS_DYNAMIC   19
 #define EDITOR_RENDER_PASS_BONE_WEIGHTS        20
 
-CONSTANT_BUFFER(xiiGlobalConstants, 0)
+DECLARE_CONSTANT_BUFFER(xiiGlobalConstants, 0, 0)
 {
   // Use functions from CameraConstantsAccess.h to access these and derived camera properties.
   MAT4(CameraToScreenMatrix)

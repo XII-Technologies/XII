@@ -29,7 +29,7 @@ public:
   void                       ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
   void                       RecycleCommandLists();
 
-  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::QueueInformation& GetQueueInformation() const { return m_QueueInformation; };
+  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
   XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
 
 private:
@@ -44,7 +44,7 @@ protected:
 
   virtual ~xiiGALCommandQueueVulkan();
 
-  void InitializePlatform(const xiiGALDeviceVulkan::QueueInformation& queueInformation);
+  void InitializePlatform(const xiiGALQueueInformationVulkan& queueInformation);
 
   void DeInitializePlatform();
 
@@ -60,7 +60,7 @@ private:
   };
 
   xiiMutex                             m_QueueMutex;
-  xiiGALDeviceVulkan::QueueInformation m_QueueInformation;
+  xiiGALQueueInformationVulkan         m_QueueInformation;
 
   vk::CommandPool                           m_vkCommandPool;
   xiiDynamicArray<xiiGALCommandListVulkan*> m_CommandLists;

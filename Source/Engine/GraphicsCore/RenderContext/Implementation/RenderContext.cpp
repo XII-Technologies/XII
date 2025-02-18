@@ -178,7 +178,7 @@ void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup
 
   m_CurrentRenderingSetup = renderingSetup;
   m_bIsRendering          = true;
-  m_bClearSubmitted       = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
+  m_bNeedsClear           = (renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
   m_bStereoRendering      = bStereoSupport;
 
   xiiGALDevice*           pDevice = xiiGALDevice::GetDefaultDevice();
@@ -241,11 +241,11 @@ void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup
 
 void xiiRenderContext::EndRendering()
 {
-  if (!m_bClearSubmitted)
+  if (m_bNeedsClear)
   {
     BeginRenderPass();
 
-    m_bClearSubmitted = true;
+    m_bNeedsClear = false;
   }
 
   EndRenderPass();
@@ -846,7 +846,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       }
       else
       {
-        if (m_hCurrentPipelineState != pPipelineStateInfo->m_hPipelineState)
+        if (m_hCurrentPipelineState != pPipelineStateInfo->m_hPipelineState || m_pCommandList->GetPipelineState() != pPipelineStateInfo->m_hPipelineState)
         {
           m_hCurrentPipelineState = pPipelineStateInfo->m_hPipelineState;
 
@@ -1423,7 +1423,7 @@ void xiiRenderContext::BeginRenderPass()
 
   if (!m_bRenderPassActive && (bHasDepthAttachment || uiColorAttachmentCount > 0))
   {
-    if (m_bClearSubmitted)
+    if (!m_bNeedsClear)
     {
       xiiGALRenderingSetup renderingSetup      = m_CurrentRenderingSetup;
       renderingSetup.m_bClearDepth             = false;
@@ -1454,7 +1454,7 @@ void xiiRenderContext::BeginRenderPass()
     GetCommandList()->BeginRenderPass(beginRenderPassDescription);
 
     m_bRenderPassActive = true;
-    m_bClearSubmitted   = true;
+    m_bNeedsClear       = false;
   }
 }
 
@@ -1721,7 +1721,7 @@ void xiiRenderContext::ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceTyp
       m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
       m_pCommandList->SetShaderResourceBufferView(binding, resourceBinding.m_hBufferView);
     }
-    else if (binding.m_ResourceType == xiiGALShaderResourceType::TextureSRV && binding.m_ResourceType == type)
+    else if ((binding.m_ResourceType == xiiGALShaderResourceType::TextureSRV || binding.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (type == xiiGALShaderResourceType::TextureSRV || type == xiiGALShaderResourceType::TextureAndSampler))
     {
       m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
       m_pCommandList->SetShaderResourceTextureView(binding, resourceBinding.m_hTextureView);
@@ -1761,7 +1761,7 @@ void xiiRenderContext::ApplySamplerBindings()
 
   for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
   {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::Sampler)
+    if (binding.m_ResourceType != xiiGALShaderResourceType::Sampler && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
       continue;
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();

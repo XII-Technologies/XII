@@ -1,9 +1,8 @@
 #pragma once
 
-#include "../Common/ConstantBufferMacros.h"
-#include "../Common/Platforms.h"
+#include "../Common/ShaderResourceMacros.h"
 
-CONSTANT_BUFFER(xiiDownscaleDepthConstants, 3)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiDownscaleDepthConstants)
 {
   FLOAT2(PixelSize);
   BOOL1(LinearizeDepth);

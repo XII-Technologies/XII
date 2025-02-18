@@ -32,22 +32,22 @@ struct XII_SHADER_STRUCT xiiTrailParticlePointsData64
 // this is only defined during shader compilation
 #if XII_ENABLED(PLATFORM_SHADER)
 
-StructuredBuffer<xiiTrailParticleShaderData> particleTrailData;
+DECLARE_STRUCTURED_BUFFER_AUTO(particleTrailData, xiiTrailParticleShaderData);
 
 #  if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT8
-StructuredBuffer<xiiTrailParticlePointsData8> particlePointsData;
+DECLARE_STRUCTURED_BUFFER_AUTO(particlePointsData, xiiTrailParticlePointsData8);
 #  endif
 
 #  if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT16
-StructuredBuffer<xiiTrailParticlePointsData16> particlePointsData;
+DECLARE_STRUCTURED_BUFFER_AUTO(particlePointsData, xiiTrailParticlePointsData16);
 #  endif
 
 #  if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT32
-StructuredBuffer<xiiTrailParticlePointsData32> particlePointsData;
+DECLARE_STRUCTURED_BUFFER_AUTO(particlePointsData, xiiTrailParticlePointsData32);
 #  endif
 
 #  if PARTICLE_TRAIL_POINTS == PARTICLE_TRAIL_POINTS_COUNT64
-StructuredBuffer<xiiTrailParticlePointsData64> particlePointsData;
+DECLARE_STRUCTURED_BUFFER_AUTO(particlePointsData, xiiTrailParticlePointsData64);
 #  endif
 
 #else // C++

@@ -36,6 +36,115 @@ xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, xiiGALCommandQueue* 
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
+void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box)
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_VERIFY_COMMAND_LIST(uiMipLevel < textureDescription.m_uiMipLevels, "Mip level ({}) is out of permitted range [0, {}].", uiMipLevel, textureDescription.m_uiMipLevels - 1);
+  XII_VERIFY_COMMAND_LIST(box.IsValid(), "Invalid box range provided.");
+
+  if (textureDescription.IsArray())
+  {
+    XII_VERIFY_COMMAND_LIST(uiSlice < textureDescription.GetArraySize(), "Array slice ({}) is out of permitted range [0, {}].", textureDescription.GetArraySize() - 1);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(uiSlice == 0, "Array slice ({}) must be 0 for non-array textures.", uiSlice);
+  }
+
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+
+  xiiUInt32 uiMipWidth = xiiMath::Max(textureDescription.GetWidth() >> uiMipLevel, 1U);
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  {
+    const xiiUInt32 uiBlockAlignedMipWidth = (uiMipWidth + (formatProperties.m_uiBlockWidth - 1)) & ~(formatProperties.m_uiBlockWidth - 1);
+
+    XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.x <= uiBlockAlignedMipWidth, "Region max X coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.x, uiBlockAlignedMipWidth);
+    XII_VERIFY_COMMAND_LIST((box.m_vMin.x % formatProperties.m_uiBlockWidth) == 0, "For compressed formats, the region min X coordinate ({}) must be a multiple of the block width ({}).", box.m_vMin.x, formatProperties.m_uiBlockWidth);
+    XII_VERIFY_COMMAND_LIST((box.m_vMax.x % formatProperties.m_uiBlockWidth) == 0 || box.m_vMax.x == uiMipWidth, "For compressed formats, the region max X coordinate ({}) must be a multiple of the block width ({}) or equal to the mip level ({}).", box.m_vMax.x, formatProperties.m_uiBlockWidth, uiMipWidth);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.x <= uiMipWidth, "Region max X coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.x, uiMipWidth);
+  }
+
+  if (textureDescription.m_Type != xiiGALResourceDimension::Texture1D && textureDescription.m_Type != xiiGALResourceDimension::Texture1DArray)
+  {
+    const xiiUInt32 uiMipHeight = xiiMath::Max(textureDescription.GetHeight() >> uiMipLevel, 1U);
+
+    if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+    {
+      XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "");
+
+      const xiiUInt32 uiBlockAlignedMipHeight = (uiMipHeight + (formatProperties.m_uiBlockHeight - 1)) & ~(formatProperties.m_uiBlockHeight - 1);
+
+      XII_VERIFY_COMMAND_LIST(box.m_vMax.y <= uiBlockAlignedMipHeight, "Region max Y coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.y, uiBlockAlignedMipHeight);
+      XII_VERIFY_COMMAND_LIST((box.m_vMin.y % formatProperties.m_uiBlockHeight) == 0U, "For compressed formats, the region min Y coordinate ({}) must be a multiple of block height ({}).", box.m_vMin.y, formatProperties.m_uiBlockHeight);
+      XII_VERIFY_COMMAND_LIST((box.m_vMax.y % formatProperties.m_uiBlockHeight) == 0U || box.m_vMax.y == uiMipHeight, "For compressed formats, the region max Y coordinate ({}) must be a multiple of block height ({}) or equal the mip level height.", box.m_vMax.y, formatProperties.m_uiBlockHeight, uiMipHeight);
+    }
+    else
+    {
+      XII_VERIFY_COMMAND_LIST(box.m_vMax.y <= uiMipHeight, "Region max Y coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.y, uiMipHeight);
+    }
+  }
+
+  if (textureDescription.m_Type == xiiGALResourceDimension::Texture3D)
+  {
+    const xiiUInt32 uiMipDepth = xiiMath::Max(textureDescription.GetDepth() >> uiMipLevel, 1U);
+
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.z <= uiMipDepth, "Region max Z coordinate ({}) is out of permitted range [0, {}].", uiMipDepth);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST(box.m_vMin.z == 0, "Region min Z ({}) must be 0 for all but 3D textures.", box.m_vMin.z);
+    XII_VERIFY_COMMAND_LIST(box.m_vMax.z == 1, "Region max Z ({}) must be 1 for all but 3D textures.", box.m_vMax.z);
+  }
+#endif
+}
+
+void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData)
+{
+  XII_VERIFY_COMMAND_LIST(!subresourceData.m_pData.IsEmpty(), "CPU data pointer must not be empty.");
+
+  ValidateTextureRegion(textureDescription, uiMipLevel, uiSlice, destinationBox);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_VERIFY_COMMAND_LIST(textureDescription.m_uiSampleCount == 1, "Only non-multisampled textures can be updated UpdateTexture().");
+  XII_VERIFY_COMMAND_LIST(xiiMemoryUtils::IsSizeAligned(subresourceData.m_uiStride, 16ULL), "Texture data stride ({}) must be at least 16-bit aligned.", subresourceData.m_uiStride);
+  XII_VERIFY_COMMAND_LIST(xiiMemoryUtils::IsSizeAligned(subresourceData.m_uiDepthStride, 16ULL), "Texture data depth stride ({}) must be at least 16-bit aligned.", subresourceData.m_uiDepthStride);
+
+  xiiVec3U32  vUpdateRegion    = destinationBox.GetExtents();
+  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+  xiiUInt32   uiRowSize        = 0;
+  xiiUInt32   uiRowCount       = 0;
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  {
+    // Align update region size by the block size. This is only necessary when updating coarse mip levels. Otherwise, update region Width/Height should be multiples of the block size.
+    XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
+    XII_VERIFY_COMMAND_LIST(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "");
+
+    vUpdateRegion.x = (vUpdateRegion.x + (formatProperties.m_uiBlockWidth - 1)) & ~(formatProperties.m_uiBlockWidth - 1);
+    vUpdateRegion.y = (vUpdateRegion.y + (formatProperties.m_uiBlockHeight - 1)) & ~(formatProperties.m_uiBlockHeight - 1);
+
+    uiRowSize  = vUpdateRegion.x / xiiUInt32{formatProperties.m_uiBlockWidth} * xiiUInt32{formatProperties.m_uiComponentSize};
+    uiRowCount = vUpdateRegion.y / formatProperties.m_uiBlockHeight;
+  }
+  else
+  {
+    uiRowSize  = vUpdateRegion.x * xiiUInt32{formatProperties.m_uiComponentSize} * xiiUInt32{formatProperties.m_uiComponentCount};
+    uiRowCount = vUpdateRegion.y;
+  }
+
+  XII_VERIFY_COMMAND_LIST(subresourceData.m_uiStride >= uiRowSize, "Source data stride ({}) is below the image row size ({}).", subresourceData.m_uiStride, uiRowSize);
+
+  const xiiUInt64 uiPlaneSize = subresourceData.m_uiStride * uiRowCount;
+
+  XII_VERIFY_COMMAND_LIST(vUpdateRegion.z == 1U || subresourceData.m_uiDepthStride >= uiPlaneSize, "Source data depth stride ({}) is below the image plane size ({}).", uiPlaneSize);
+#endif
+}
+
 void xiiGALCommandList::Begin()
 {
   XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
@@ -304,7 +413,7 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource.m_sName == bindingInformation.m_sName && (resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
       {
         bResourceFound = true;
         break;
@@ -394,7 +503,7 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::Sampler && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource.m_sName == bindingInformation.m_sName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
       {
         bResourceFound = true;
         break;
@@ -557,7 +666,7 @@ xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiGALBufferHandle hIn
 
   XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentsBuffer->GetDebugName());
 
-  /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offse/stride, etc.).
+  /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
 
   return DrawIndexedInstancedIndirectPlatform(pIndirectArgumentsBuffer, uiArgumentOffsetInBytes);
 }
@@ -858,9 +967,9 @@ void xiiGALCommandList::UpdateTexture(xiiGALTextureHandle hTexture, const xiiGAL
   XII_VERIFY_COMMAND_LIST(!hTexture.IsInvalidated(), "UpdateTexture arguments are invalid. The texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateTexture command must be used outside of render pass.");
 
-  /// \todo GraphicsFoundation: Validate texture update parameters.
-
   xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+
+  ValidateTextureUpdateRegion(pTexture->GetDescription(), textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureBox, subresourceData);
 
   UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
@@ -872,10 +981,14 @@ void xiiGALCommandList::CopyTexture(xiiGALTextureHandle hSourceTexture, xiiGALTe
   XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "CopyTexture arguments are invalid. The destination texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyTexture command must be used outside of render pass.");
 
-  /// \todo GraphicsFoundation: Validate texture copy parameters.
-
   xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
   xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+
+  xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(pSourceTexture->GetDescription(), 0);
+  xiiBoundingBoxU32        sourceBox          = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), xiiVec3U32(mipLevelProperties.m_LogicalSize.width, mipLevelProperties.m_LogicalSize.height, mipLevelProperties.m_uiDepth));
+
+  ValidateTextureRegion(pSourceTexture->GetDescription(), 0, 0, sourceBox);
+  ValidateTextureRegion(pDestinationTexture->GetDescription(), 0, 0, sourceBox);
 
   CopyTexturePlatform(pSourceTexture, pDestinationTexture);
 }
@@ -887,10 +1000,14 @@ void xiiGALCommandList::CopyTextureRegion(xiiGALTextureHandle hSourceTexture, co
   XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "CopyTextureRegion arguments are invalid. The destination texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyTextureRegion command must be used outside of render pass.");
 
-  /// \todo GraphicsFoundation: Validate texture copy parameters.
-
   xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
   xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+
+  ValidateTextureRegion(pSourceTexture->GetDescription(), destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, box);
+
+  xiiBoundingBoxU32 destinationBox = xiiBoundingBoxU32::MakeFromMinMax(vDestinationPoint, vDestinationPoint + box.GetExtents());
+
+  ValidateTextureRegion(pDestinationTexture->GetDescription(), destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, destinationBox);
 
   CopyTextureRegionPlatform(pSourceTexture, sourceMipLevelData, box, pDestinationTexture, destinationMipLevelData, vDestinationPoint);
 }
@@ -932,9 +1049,24 @@ xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture,
 {
   XII_VERIFY_COMMAND_LIST_RESULT(!hTexture.IsInvalidated(), "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
 
-  /// \todo GraphicsFoundation: Validate map subresource parameters.
+  xiiGALTexture* pTexture           = m_pDevice->GetTexture(hTexture);
+  const auto&    textureDescription = pTexture->GetDescription();
 
-  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+  XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiMipLevel < textureDescription.m_uiMipLevels, "Mip level ({}) is out of permitted range [0, {}].", textureMipLevelData.m_uiMipLevel, textureDescription.m_uiMipLevels - 1);
+
+  if (textureDescription.IsArray())
+  {
+    XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiArraySlice < textureDescription.GetArraySize(), "Array slice ({}) is out of permitted range [0, {}].", textureMipLevelData.m_uiArraySlice, textureDescription.GetArraySize() - 1);
+  }
+  else
+  {
+    XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiArraySlice == 0, "Array slice ({}) must be 0 for non-array textures.", textureMipLevelData.m_uiArraySlice);
+  }
+
+  if (pTextureBox != nullptr)
+  {
+    ValidateTextureRegion(textureDescription, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, *pTextureBox);
+  }
 
   return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, pTextureBox, mappedData);
 }

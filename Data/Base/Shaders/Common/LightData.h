@@ -6,8 +6,7 @@
 #  error "Functions in LightData.h are only for NORMAL shading quality. Todo: Split up file"
 #endif
 
-#include "ConstantBufferMacros.h"
-#include "Platforms.h"
+#include "ShaderResourceMacros.h"
 
 #define LIGHT_TYPE_POINT 0
 #define LIGHT_TYPE_SPOT  1
@@ -30,7 +29,7 @@ struct XII_SHADER_STRUCT xiiPerLightData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerLightData> perLightDataBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(perLightDataBuffer, xiiPerLightData);
 #else
 static_assert(sizeof(xiiPerLightData) == 48);
 #endif
@@ -66,7 +65,7 @@ struct XII_SHADER_STRUCT xiiDirShadowData
 #define GET_ATLAS_SCALE_OFFSET_INDEX(baseOffset, index)    ((baseOffset) + 13 + (index))
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<float4> shadowDataBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(shadowDataBuffer, float4);
 #endif
 
 #define DECAL_USE_NORMAL             (1 << 0)
@@ -99,7 +98,7 @@ struct XII_SHADER_STRUCT xiiPerDecalData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerDecalData> perDecalDataBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(perDecalDataBuffer, xiiPerDecalData);
 #else // C++
 static_assert(sizeof(xiiPerDecalData) == 96);
 #endif
@@ -125,12 +124,12 @@ struct XII_SHADER_STRUCT xiiPerReflectionProbeData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerReflectionProbeData> perPerReflectionProbeDataBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(perPerReflectionProbeDataBuffer, xiiPerReflectionProbeData);
 #else // C++
 static_assert(sizeof(xiiPerReflectionProbeData) == 160);
 #endif
 
-CONSTANT_BUFFER(xiiClusteredDataConstants, 3)
+DECLARE_CONSTANT_BUFFER(xiiClusteredDataConstants, 3, 0)
 {
   FLOAT1(DepthSliceScale);
   FLOAT1(DepthSliceBias);
@@ -173,8 +172,8 @@ struct xiiPerClusterData
 };
 
 #if XII_ENABLED(PLATFORM_SHADER)
-StructuredBuffer<xiiPerClusterData> perClusterDataBuffer;
-StructuredBuffer<uint>              clusterItemBuffer;
+DECLARE_STRUCTURED_BUFFER_AUTO(perClusterDataBuffer, xiiPerClusterData);
+DECLARE_STRUCTURED_BUFFER_AUTO(clusterItemBuffer, uint);
 #endif
 
 // clang-format on

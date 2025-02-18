@@ -34,7 +34,7 @@ SourceBlendAlpha0 = BlendFactor_Zero
 #include <Shaders/Materials/MaterialInterpolator.h>
 #include <Shaders/Materials/LensFlareData.h>
 
-StructuredBuffer<xiiPerLensFlareData> lensFlareData;
+DECLARE_STRUCTURED_BUFFER_AUTO(lensFlareData, xiiPerLensFlareData);
 
 VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 {

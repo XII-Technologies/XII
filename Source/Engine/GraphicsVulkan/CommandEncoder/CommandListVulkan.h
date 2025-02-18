@@ -7,8 +7,6 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
-
 /// \brief Resource state transition flags.
 struct XII_GRAPHICSVULKAN_DLL xiiGALStateTransitionFlags
 {
@@ -239,7 +237,7 @@ private:
   struct MappedTexture
   {
     xiiGALBufferToTextureCopyDescription m_CopyDescription;
-    VmaAllocationInfo                    m_AllocationInfo;
+    xiiGALDynamicBufferAllocationVulkan  m_DynamicAllocation;
   };
 
   struct MappedBufferKey
@@ -269,6 +267,12 @@ private:
         return a == b;
       }
     };
+  };
+
+  struct MappedBuffer
+  {
+    xiiEnum<xiiGALMapType>              m_MapType = xiiGALMapType::ENUM_COUNT;
+    xiiGALDynamicBufferAllocationVulkan m_DynamicAllocation;
   };
 
   struct FenceInfo
@@ -335,8 +339,10 @@ private:
   static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;
   static constexpr xiiUInt32 s_MaxDescriptorSetPerSignature = 2U;
 
-  xiiHashTable<MappedBufferKey, xiiEnum<xiiGALMapType>, MappedBufferKey::Hasher> m_MappedBuffers;
-  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher>        m_MappedTextures;
+  xiiHashTable<MappedBufferKey, MappedBuffer, MappedBufferKey::Hasher>    m_MappedBuffers;
+  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
+
+  xiiUniquePtr<xiiGALDynamicBufferPoolVulkan> m_pDynamicBufferPoolVulkan;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };

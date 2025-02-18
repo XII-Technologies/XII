@@ -29,7 +29,7 @@ VS_OUT main(VS_IN Input)
 
 #include <Shaders/Common/GlobalConstants.h>
 
-CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
 {
   INT1(ShowChannelMode);
   FLOAT1(LodLevel);
@@ -41,8 +41,7 @@ CONSTANT_BUFFER(xiiMaterialConstants, 1)
 #include <Shaders/Common/GlobalConstants.h>
 #include <Shaders/Materials/MaterialInterpolator.h>
 
-Texture2D BaseTexture;
-SamplerState BaseTexture_AutoSampler;
+DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(BaseTexture, Texture2D);
 
 float4 SampleTexture(PS_IN Input)
 {

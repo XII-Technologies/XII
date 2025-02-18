@@ -451,6 +451,8 @@ void xiiGALCommandListD3D11::SetShaderResourceBufferViewPlatform(const xiiGALPip
 
 void xiiGALCommandListD3D11::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
+  XII_ASSERT_DEV(bindingInformation.m_ResourceType == xiiGALShaderResourceType::TextureSRV, "D3D11 supports only texture shader resource views and not combined image samplers.");
+
   if (pTextureView != nullptr && UnsetUnorderedAccessViews(pTextureView->GetTexture()))
   {
     FlushDeferredStateChanges().IgnoreResult();

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Platforms.h"
+#include "ShaderResourceMacros.h"
 
 // Common sampler states
-SamplerState LinearSampler;
-SamplerState LinearClampSampler;
-SamplerState PointSampler;
-SamplerState PointClampSampler;
+DECLARE_SAMPLER_AUTO(LinearSampler);
+DECLARE_SAMPLER_AUTO(LinearClampSampler);
+DECLARE_SAMPLER_AUTO(PointSampler);
+DECLARE_SAMPLER_AUTO(PointClampSampler);
 
 const static float PI = 3.1415926535897932f;
 
