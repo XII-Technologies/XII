@@ -67,7 +67,7 @@ xiiResult xiiWindow::Initialize()
     }
   }
 
-  SDL_Window* pMonitor      = nullptr;
+  SDL_Window* pWindow      = nullptr;
   xiiUInt32   uiWindowFlags = 0;
 
   switch (m_CreationDescription.m_WindowMode)
@@ -142,13 +142,18 @@ xiiResult xiiWindow::Initialize()
     }
   }
 
-  pMonitor = SDL_CreateWindow(m_CreationDescription.m_Title, m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height, uiWindowFlags);
-  if (pMonitor == nullptr)
+  pWindow = SDL_CreateWindow(m_CreationDescription.m_Title, m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height, uiWindowFlags);
+  if (pWindow == nullptr)
   {
     xiiLog::Error("Failed to initialize SDL Window with error '{}'", SDL_GetError());
     return XII_FAILURE;
   }
-  m_hWindowHandle = pMonitor;
+
+  #if XII_ENABLED(XII_PLATFORM_LINUX)
+m_hWindowHandle.m_pSDLWindow= pWindow;
+  #else
+  m_hWindowHandle = pWindow;
+  #endif
 
   if (m_CreationDescription.m_Position != xiiVec2I32(0x80000000, 0x80000000))
   {
@@ -183,7 +188,7 @@ xiiResult xiiWindow::Destroy()
 
   SDL_DestroyWindow(m_hWindowHandle);
 
-  m_hWindowHandle = nullptr;
+  m_hWindowHandle = INVALID_INTERNAL_WINDOW_HANDLE;
 
   m_bInitialized = false;
 
@@ -263,7 +268,11 @@ void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
 
 xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 {
+  #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   return static_cast<xiiWindowHandle>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_hWindowHandle), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+  #else
+return m_hWindowHandle;
+  #endif
 }
 
 #endif
