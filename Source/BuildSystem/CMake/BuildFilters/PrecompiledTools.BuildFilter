@@ -31,7 +31,6 @@ set_property(GLOBAL PROPERTY XII_BUILD_FILTER_PrecompiledTools
   tinyexr
   DependencyAnalysis
   Lua
-  Duktape
   Imgui
   StaticLinkUtil
   StackResolver

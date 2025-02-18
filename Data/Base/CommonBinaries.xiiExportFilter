@@ -32,7 +32,6 @@
 /ozz.dll
 /zstd.dll
 /zlib.dll
-/Duktape.dll
 /stb.dll
 /enet.dll
 #endif

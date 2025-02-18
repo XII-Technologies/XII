@@ -20,10 +20,6 @@ if (XII_3RDPARTY_LUA_SUPPORT)
   target_link_libraries(${PROJECT_NAME} PUBLIC Lua)
 endif()
 
-if (XII_3RDPARTY_DUKTAPE_SUPPORT)
-  target_link_libraries(${PROJECT_NAME} PUBLIC Duktape)
-endif()
-
 if (XII_3RDPARTY_SDL_SUPPORT)
   if(XII_COMPILE_ENGINE_AS_DLL)
     target_link_libraries(${PROJECT_NAME} PRIVATE SDL3-shared)
