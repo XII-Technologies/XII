@@ -14,7 +14,6 @@
 */DataDirectories.ddl
 *.xiiExportFilter
 */.gitignore
-*/TypeScript/*
 *.ts
 
 [INCLUDE]

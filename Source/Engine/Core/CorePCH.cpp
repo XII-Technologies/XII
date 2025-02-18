@@ -56,9 +56,6 @@ XII_STATICLINK_LIBRARY(Core)
   XII_STATICLINK_REFERENCE(Core_ResourceManager_Implementation_ResourceManager);
   XII_STATICLINK_REFERENCE(Core_ResourceManager_Implementation_ResourceTypeLoader);
   XII_STATICLINK_REFERENCE(Core_ResourceManager_Implementation_WorkerTasks);
-  XII_STATICLINK_REFERENCE(Core_Scripting_Duktape_DuktapeContext);
-  XII_STATICLINK_REFERENCE(Core_Scripting_Duktape_DuktapeFunction);
-  XII_STATICLINK_REFERENCE(Core_Scripting_Duktape_DuktapeHelper);
   XII_STATICLINK_REFERENCE(Core_Scripting_LuaWrapper_CFunctions);
   XII_STATICLINK_REFERENCE(Core_Scripting_LuaWrapper_Initialize);
   XII_STATICLINK_REFERENCE(Core_Scripting_LuaWrapper_Tables);
