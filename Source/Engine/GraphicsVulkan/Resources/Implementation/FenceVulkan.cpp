@@ -90,7 +90,7 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 
     // GetSemaphoreCounter() is thread safe.
 
-    xiiUInt64 uiSemaphoreCounter = xiiMath::MaxValue<xiiUInt64>();
+    uint64_t uiSemaphoreCounter = xiiMath::MaxValue<xiiUInt64>();
     VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, &uiSemaphoreCounter, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     return uiSemaphoreCounter;
@@ -178,7 +178,6 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
 const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const xiiUInt64 uiFenceValue)
 {
   xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // If fence is used only for synchronization between queues it will accumulate many more sync points.
   // We need to check VkFence and remove already reached sync points.
@@ -206,7 +205,7 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
     vkWaitInformation.flags                 = {};
     vkWaitInformation.semaphoreCount        = 1U;
     vkWaitInformation.pSemaphores           = &m_vkTimelineSemaphore;
-    vkWaitInformation.pValues               = &uiValue;
+    vkWaitInformation.pValues               = reinterpret_cast<const uint64_t*>(&uiValue);
 
     VK_ASSERT_DEV(vkLogicalDevice.waitSemaphoresKHR(&vkWaitInformation, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }

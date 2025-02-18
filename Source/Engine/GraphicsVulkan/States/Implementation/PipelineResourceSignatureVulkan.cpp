@@ -20,7 +20,6 @@ xiiUInt32 FindImmutableSampler(const xiiGALPipelineResourceSignatureCreationDesc
     return xiiInvalidIndex;
   }
 
-  const bool       bPermitSuffix = vkDescriptorType == xiiGALDescriporTypeVulkan::Sampler;
   xiiStringBuilder sb;
 
   for (xiiUInt32 i = 0; i < pipelineDescription.m_ImmutableSamplers.GetCount(); ++i)

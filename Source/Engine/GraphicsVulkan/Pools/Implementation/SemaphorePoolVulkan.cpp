@@ -53,8 +53,6 @@ void xiiGALSemaphorePoolVulkan::ReclaimSemaphore(vk::Semaphore& vkSemaphore)
 {
   XII_LOCK(m_PoolMutex);
 
-  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
-
   m_QueuedSemaphores.PushBack(vkSemaphore);
 }
 

@@ -864,7 +864,6 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
       const auto& pipelineDescription = m_pPipelineStateVulkan->GetDescription();
 
       xiiGALPipelineResourceSignatureVulkan* pResourceSignatureVulkan     = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(pipelineDescription.m_hPipelineResourceSignature));
-      const auto&                            resourceSignatureDescription = pResourceSignatureVulkan->GetDescription();
 
       m_DescriptorSets.SetCountUninitialized(pResourceSignatureVulkan->GetVulkanDescriptorSetLayoutCount());
 
@@ -893,7 +892,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
           vk::DescriptorImageInfo                        vkDescriptorImageInfo;
           vk::DescriptorBufferInfo                       vkDescriptorBufferInfo;
           vk::BufferView                                 vkDescriptorBufferView;
-          vk::WriteDescriptorSetAccelerationStructureKHR vkDescriptorAccelStructInfo;
+          // vk::WriteDescriptorSetAccelerationStructureKHR vkDescriptorAccelStructInfo;
 
           switch (resourceLayout.m_DescriptorType)
           {
@@ -1955,7 +1954,6 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xi
 
 void xiiGALCommandListVulkan::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
-  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTexture);
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
@@ -2438,7 +2436,6 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiGALTexture* 
 
 xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
-  xiiGALDeviceVulkan*  pDeviceVulkan  = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTexture);
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");

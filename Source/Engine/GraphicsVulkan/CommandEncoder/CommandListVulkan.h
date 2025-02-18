@@ -325,15 +325,15 @@ private:
   xiiDynamicArray<vk::PipelineStageFlags> m_vkWaitDestinationStageFlags;
 
   // Can be used only if timeline semaphore extension is enabled.
-  xiiDynamicArray<xiiUInt64> m_vkWaitSemaphoreValues;
-  xiiDynamicArray<xiiUInt64> m_vkSignalSemaphoreValues;
+  xiiDynamicArray<vk::DeviceSize> m_vkWaitSemaphoreValues;
+  xiiDynamicArray<vk::DeviceSize> m_vkSignalSemaphoreValues;
 
   // List of fences to signal/wait next time the command queue is flushed.
   xiiDynamicArray<FenceInfo> m_SignalFences;
   xiiDynamicArray<FenceInfo> m_WaitFences;
 
   vk::Buffer m_CommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]       = {};
-  xiiUInt64  m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  vk::DeviceSize  m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
   // Graphics/Mesh, Compute, Ray Tracing.
   static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;

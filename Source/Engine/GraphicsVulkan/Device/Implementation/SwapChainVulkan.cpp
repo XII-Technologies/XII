@@ -7,6 +7,11 @@
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <SDL3/SDL_init.h>
+#  include <SDL3/SDL_video.h>
+#endif
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -22,6 +27,14 @@ xiiGALSwapChainVulkan::~xiiGALSwapChainVulkan() = default;
 xiiResult xiiGALSwapChainVulkan::InitPlatform()
 {
   XII_LOG_BLOCK("xiiGALSwapChainVulkan::InitPlatform");
+
+  #if XII_ENABLED(XII_SUPPORTS_SDL)
+  if (!SDL_Init(SDL_INIT_VIDEO))
+  {
+    xiiLog::Error("Unable to initialize SDL Video: {}", SDL_GetError());
+    return XII_FAILURE;
+  }
+#endif
 
   XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
   XII_SUCCEED_OR_RETURN(CreateVulkanSwapChain());
@@ -105,11 +118,11 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.pView                         = m_Description.m_pWindow->GetNativeWindowHandle();
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createMacOSSurfaceMVK(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR) || defined(VK_USE_PLATFORM_XCB_KHR)
+#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
   vk::WaylandSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                           = nullptr;
   vkSurfaceCreateInfo.flags                           = {};
-  vkSurfaceCreateInfo.display                         = m_Description.m_pWindow->GetNativeWindowHandle();
+  vkSurfaceCreateInfo.display = static_cast<wl_display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr));
   vkSurfaceCreateInfo.surface                         = nullptr;
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWaylandSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
