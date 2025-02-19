@@ -151,9 +151,9 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 
   // Check present support on the graphics queue.
   {
-    vk::PhysicalDevice                   vkPhysicalDevice         = pDeviceVulkan->GetVulkanPhysicalDevice();
-    xiiGALQueueInformationVulkan         graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
-    vk::Bool32                           bHasPresentSupport       = vk::False;
+    vk::PhysicalDevice           vkPhysicalDevice         = pDeviceVulkan->GetVulkanPhysicalDevice();
+    xiiGALQueueInformationVulkan graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
+    vk::Bool32                   bHasPresentSupport       = vk::False;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 

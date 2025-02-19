@@ -863,7 +863,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
     {
       const auto& pipelineDescription = m_pPipelineStateVulkan->GetDescription();
 
-      xiiGALPipelineResourceSignatureVulkan* pResourceSignatureVulkan     = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(pipelineDescription.m_hPipelineResourceSignature));
+      xiiGALPipelineResourceSignatureVulkan* pResourceSignatureVulkan = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(pipelineDescription.m_hPipelineResourceSignature));
 
       m_DescriptorSets.SetCountUninitialized(pResourceSignatureVulkan->GetVulkanDescriptorSetLayoutCount());
 
@@ -889,9 +889,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
           vkWriteDescriptorSet.pBufferInfo            = nullptr;
           vkWriteDescriptorSet.pTexelBufferView       = nullptr;
 
-          vk::DescriptorImageInfo                        vkDescriptorImageInfo;
-          vk::DescriptorBufferInfo                       vkDescriptorBufferInfo;
-          vk::BufferView                                 vkDescriptorBufferView;
+          vk::DescriptorImageInfo  vkDescriptorImageInfo;
+          vk::DescriptorBufferInfo vkDescriptorBufferInfo;
+          vk::BufferView           vkDescriptorBufferView;
           // vk::WriteDescriptorSetAccelerationStructureKHR vkDescriptorAccelStructInfo;
 
           switch (resourceLayout.m_DescriptorType)

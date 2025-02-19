@@ -417,7 +417,7 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDe
 
 void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   // Vulkan validation layers do not like uninitialized memory, so if no initial data is provided, we will clear the memory.
 

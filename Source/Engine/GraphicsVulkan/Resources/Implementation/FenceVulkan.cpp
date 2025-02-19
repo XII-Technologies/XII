@@ -177,7 +177,7 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
 
 const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const xiiUInt64 uiFenceValue)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   // If fence is used only for synchronization between queues it will accumulate many more sync points.
   // We need to check VkFence and remove already reached sync points.

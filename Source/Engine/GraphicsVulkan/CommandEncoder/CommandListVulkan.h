@@ -332,7 +332,7 @@ private:
   xiiDynamicArray<FenceInfo> m_SignalFences;
   xiiDynamicArray<FenceInfo> m_WaitFences;
 
-  vk::Buffer m_CommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]       = {};
+  vk::Buffer     m_CommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]       = {};
   vk::DeviceSize m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
   // Graphics/Mesh, Compute, Ray Tracing.
