@@ -13,11 +13,11 @@
 #endif
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-#include <wayland-client.h>
+#  include <wayland-client.h>
 #endif
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
-#include <xcb/xcb.h>
+#  include <xcb/xcb.h>
 #endif
 
 // clang-format off
@@ -36,7 +36,7 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
 {
   XII_LOG_BLOCK("xiiGALSwapChainVulkan::InitPlatform");
 
-  #if XII_ENABLED(XII_SUPPORTS_SDL)
+#if XII_ENABLED(XII_SUPPORTS_SDL)
   if (!SDL_Init(SDL_INIT_VIDEO))
   {
     xiiLog::Error("Unable to initialize SDL Video: {}", SDL_GetError());
@@ -130,8 +130,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vk::WaylandSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                           = nullptr;
   vkSurfaceCreateInfo.flags                           = {};
-  vkSurfaceCreateInfo.display = static_cast<wl_display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr));
-  vkSurfaceCreateInfo.surface = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
+  vkSurfaceCreateInfo.display                         = static_cast<wl_display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr));
+  vkSurfaceCreateInfo.surface                         = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
 
   XII_ASSERT_DEV(vkSurfaceCreateInfo.display != nullptr, "");
 
@@ -141,8 +141,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vk::XcbSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                       = nullptr;
   vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.window = (xcb_window_t)SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr);
-  vkSurfaceCreateInfo.connection =  XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
+  vkSurfaceCreateInfo.window                      = (xcb_window_t)SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr);
+  vkSurfaceCreateInfo.connection                  = XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXcbSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #else

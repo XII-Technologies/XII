@@ -32,14 +32,14 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <vulkan/vulkan_win32.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
-#include <vulkan/vulkan_wayland.h>
-#endif
-#ifdef VK_USE_PLATFORM_XCB_KHR
-#include <vulkan/vulkan_xcb.h>
-#include <vulkan/vulkan_xlib.h>
-#include <vulkan/vulkan_xlib_xrandr.h>
-#endif
+#  ifdef VK_USE_PLATFORM_WAYLAND_KHR
+#    include <vulkan/vulkan_wayland.h>
+#  endif
+#  ifdef VK_USE_PLATFORM_XCB_KHR
+#    include <vulkan/vulkan_xcb.h>
+#    include <vulkan/vulkan_xlib.h>
+#    include <vulkan/vulkan_xlib_xrandr.h>
+#  endif
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <vulkan/vulkan_android.h>
 #endif

@@ -10,4 +10,3 @@ XII_WARNING_DISABLE_CLANG("-Wunused-private-field")
 #include <VulkanMemoryAllocator/vk_mem_alloc.h>
 
 XII_WARNING_POP()
-

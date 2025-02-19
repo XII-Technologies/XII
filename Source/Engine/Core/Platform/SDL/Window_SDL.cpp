@@ -67,7 +67,7 @@ xiiResult xiiWindow::Initialize()
     }
   }
 
-  SDL_Window* pWindow      = nullptr;
+  SDL_Window* pWindow       = nullptr;
   xiiUInt32   uiWindowFlags = 0;
 
   switch (m_CreationDescription.m_WindowMode)
@@ -149,11 +149,11 @@ xiiResult xiiWindow::Initialize()
     return XII_FAILURE;
   }
 
-  #if XII_ENABLED(XII_PLATFORM_LINUX)
-m_hWindowHandle.m_pSDLWindow= pWindow;
-  #else
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
+  m_hWindowHandle.m_pSDLWindow = pWindow;
+#  else
   m_hWindowHandle = pWindow;
-  #endif
+#  endif
 
   if (m_CreationDescription.m_Position != xiiVec2I32(0x80000000, 0x80000000))
   {
@@ -268,11 +268,11 @@ void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
 
 xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 {
-  #if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
   return static_cast<xiiWindowHandle>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_hWindowHandle), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
-  #else
-return m_hWindowHandle;
-  #endif
+#  else
+  return m_hWindowHandle;
+#  endif
 }
 
 #endif
