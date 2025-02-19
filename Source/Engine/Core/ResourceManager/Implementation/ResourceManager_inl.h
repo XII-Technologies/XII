@@ -3,13 +3,13 @@
 #include <Foundation/Logging/Log.h>
 
 template <typename ResourceType>
-ResourceType* xiiResourceManager::GetResource(xiiStringView sResourceID, bool bIsReloadable)
+XII_FORCE_INLINE ResourceType* xiiResourceManager::GetResource(xiiStringView sResourceID, bool bIsReloadable)
 {
   return static_cast<ResourceType*>(GetResource(xiiGetStaticRTTI<ResourceType>(), sResourceID, bIsReloadable));
 }
 
 template <typename ResourceType>
-xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(xiiStringView sResourceID)
+XII_FORCE_INLINE xiiTypedResourceHandle<ResourceType> xiiResourceManager::LoadResource(xiiStringView sResourceID)
 {
   // The mutex here is necessary to prevent a race between resource unloading and storing the pointer in the handle.
   XII_LOCK(s_ResourceMutex);

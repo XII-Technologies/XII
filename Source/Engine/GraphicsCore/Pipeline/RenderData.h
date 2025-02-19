@@ -21,17 +21,9 @@ public:
     explicit Category(xiiUInt16 uiValue);
 
     bool operator==(const Category& other) const;
+    bool IsValid() const { return m_uiValue != 0xFFFF; }
 
-    xiiUInt16 m_uiValue = 0xFFFFU;
-  };
-
-  struct Caching
-  {
-    enum Enum
-    {
-      Never,
-      IfStatic
-    };
+    xiiUInt16 m_uiValue = 0xFFFF;
   };
 
   /// \brief This function generates a 64bit sorting key for the given render data. Data with lower sorting key is rendered first.
@@ -40,18 +32,31 @@ public:
   static Category RegisterCategory(xiiStringView sCategoryName, SortingKeyFunc sortingKeyFunc);
   static Category FindCategory(xiiTempHashedString sCategoryName);
 
-  static void GetAllCategoryNames(xiiDynamicArray<xiiHashedString>& out_categoryNames);
+  static xiiHashedString GetCategoryName(Category category);
+  static void            GetAllCategoryNames(xiiDynamicArray<xiiHashedString>& out_categoryNames);
 
   static const xiiRenderer* GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType);
 
-  static xiiHashedString GetCategoryName(Category category);
+public:
+  struct Caching
+  {
+    enum Enum
+    {
+      Never = 0,
+      IfStatic
+    };
+  };
 
-  xiiUInt64 GetCategorySortingKey(Category category, const xiiCamera& camera) const;
+  /// \brief Returns the final sorting for this render data with the given category and camera.
+  xiiUInt64 GetFinalSortingKey(Category category, const xiiCamera& camera) const;
+
+  /// \brief Returns whether this render data and the other render data can be batched together, e.g. rendered in one draw call.
+  /// An implementation can assume that the other render data is of the same type as this render data.
+  virtual bool CanBatch(const xiiRenderData& other) const { return false; }
 
   xiiTransform         m_GlobalTransform = xiiTransform::MakeIdentity();
   xiiBoundingBoxSphere m_GlobalBounds;
 
-  xiiUInt32 m_uiBatchId           = 0; ///< BatchId is used to group render data in batches.
   xiiUInt32 m_uiSortingKey        = 0;
   float     m_fSortingDepthOffset = 0.0f;
 

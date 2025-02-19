@@ -36,17 +36,20 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSpriteRenderData, 1, xiiRTTIDefaultAllocator
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSpriteRenderData::FillBatchIdAndSortingKey()
+void xiiSpriteRenderData::FillSortingKey()
 {
   // ignore upper 32 bit of the resource ID hash
   const xiiUInt32 uiTextureIDHash = static_cast<xiiUInt32>(m_hTexture.GetResourceIDHash());
 
-  // Generate batch id from mode and texture
-  xiiUInt32 data[] = {(xiiUInt32)m_BlendMode, uiTextureIDHash};
-  m_uiBatchId      = xiiHashingUtils::xxHash32(data, sizeof(data));
-
   // Sort by mode and then by texture
   m_uiSortingKey = (m_BlendMode << 30) | (uiTextureIDHash & 0x3FFFFFFF);
+}
+
+bool xiiSpriteRenderData::CanBatch(const xiiRenderData& other0) const
+{
+  const auto& other = xiiStaticCast<const xiiSpriteRenderData&>(other0);
+
+  return m_BlendMode == other.m_BlendMode && m_hTexture == other.m_hTexture;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -111,7 +114,7 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
     pRenderData->m_texCoordOffset  = xiiVec2(0.0f);
     pRenderData->m_uiUniqueID      = GetUniqueIdForRendering();
 
-    pRenderData->FillBatchIdAndSortingKey();
+    pRenderData->FillSortingKey();
   }
 
   // Determine render data category.

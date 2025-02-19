@@ -33,6 +33,8 @@ namespace
     xiiMat4 mProj;
     pCamera->GetProjectionMatrix(fAspectRatio, mProj);
 
+    const xiiMat4& mInvView = pCamera->GetViewMatrix().GetInverse();
+
     xiiAngle fFovLeft;
     xiiAngle fFovRight;
     xiiAngle fFovBottom;
@@ -46,11 +48,13 @@ namespace
 
     xiiColor lineColor = xiiColor(1.0f, 1.0f, 1.0f, 0.1f);
 
-    xiiInt32  debugSlice = cvar_RenderingLightingVisClusterDepthSlice;
-    xiiUInt32 maxSlice   = debugSlice < 0 ? NUM_CLUSTERS_Z : debugSlice + 1;
-    xiiUInt32 minSlice   = debugSlice < 0 ? 0 : debugSlice;
+    const xiiInt32  debugSlice    = cvar_RenderingLightingVisClusterDepthSlice;
+    const bool      bOnlyOneSlice = debugSlice >= 0;
+    const xiiUInt32 maxSlice      = bOnlyOneSlice ? debugSlice + 1 : NUM_CLUSTERS_Z;
+    const xiiUInt32 minSlice      = bOnlyOneSlice ? debugSlice : 0;
 
-    bool bDrawBoundingSphere = false;
+    bool             bDrawBoundingSphere = false;
+    xiiStringBuilder sb;
 
     for (xiiUInt32 z = maxSlice; z-- > minSlice;)
     {
@@ -68,56 +72,69 @@ namespace
             if (bDrawBoundingSphere)
             {
               xiiBoundingSphere s = xiiSimdConversion::ToBSphere(boundingSpheres[clusterIndex]);
+              s.TransformFromOrigin(mInvView);
               xiiDebugRenderer::DrawLineSphere(view.GetHandle(), s, lineColor);
             }
+            else
+            {
+              xiiVec3 cc[8];
+              GetClusterCornerPoints(*pCamera, fZf, fZn, fTanLeft, fTanRight, fTanBottom, fTanTop, x, y, z, cc);
 
-            xiiVec3 cc[8];
-            GetClusterCornerPoints(*pCamera, fZf, fZn, fTanLeft, fTanRight, fTanBottom, fTanTop, x, y, z, cc);
+              const float    lightCount = (float)GET_LIGHT_INDEX(clusterData.counts);
+              const float    decalCount = (float)GET_DECAL_INDEX(clusterData.counts);
+              const float    probeCount = (float)GET_PROBE_INDEX(clusterData.counts);
+              const float    r          = xiiMath::Clamp(lightCount / 16.0f, 0.0f, 1.0f);
+              const float    g          = xiiMath::Clamp(decalCount / 16.0f, 0.0f, 1.0f);
+              const float    b          = xiiMath::Clamp(probeCount / 16.0f, 0.0f, 1.0f);
+              const xiiColor color(r, g, b);
 
-            float lightCount = (float)GET_LIGHT_INDEX(clusterData.counts);
-            float decalCount = (float)GET_DECAL_INDEX(clusterData.counts);
-            float r          = xiiMath::Clamp(lightCount / 16.0f, 0.0f, 1.0f);
-            float g          = xiiMath::Clamp(decalCount / 16.0f, 0.0f, 1.0f);
+              xiiDebugRendererTriangle tris[12];
+              // back
+              tris[0] = xiiDebugRendererTriangle(cc[0], cc[2], cc[1]);
+              tris[1] = xiiDebugRendererTriangle(cc[2], cc[3], cc[1]);
+              // front
+              tris[2] = xiiDebugRendererTriangle(cc[4], cc[5], cc[6]);
+              tris[3] = xiiDebugRendererTriangle(cc[6], cc[5], cc[7]);
+              // top
+              tris[4] = xiiDebugRendererTriangle(cc[4], cc[0], cc[5]);
+              tris[5] = xiiDebugRendererTriangle(cc[0], cc[1], cc[5]);
+              // bottom
+              tris[6] = xiiDebugRendererTriangle(cc[6], cc[7], cc[2]);
+              tris[7] = xiiDebugRendererTriangle(cc[2], cc[7], cc[3]);
+              // left
+              tris[8] = xiiDebugRendererTriangle(cc[4], cc[6], cc[0]);
+              tris[9] = xiiDebugRendererTriangle(cc[0], cc[6], cc[2]);
+              // right
+              tris[10] = xiiDebugRendererTriangle(cc[5], cc[1], cc[7]);
+              tris[11] = xiiDebugRendererTriangle(cc[1], cc[3], cc[7]);
 
-            xiiDebugRenderer::Triangle tris[12];
-            // back
-            tris[0] = xiiDebugRenderer::Triangle(cc[0], cc[2], cc[1]);
-            tris[1] = xiiDebugRenderer::Triangle(cc[2], cc[3], cc[1]);
-            // front
-            tris[2] = xiiDebugRenderer::Triangle(cc[4], cc[5], cc[6]);
-            tris[3] = xiiDebugRenderer::Triangle(cc[6], cc[5], cc[7]);
-            // top
-            tris[4] = xiiDebugRenderer::Triangle(cc[4], cc[0], cc[5]);
-            tris[5] = xiiDebugRenderer::Triangle(cc[0], cc[1], cc[5]);
-            // bottom
-            tris[6] = xiiDebugRenderer::Triangle(cc[6], cc[7], cc[2]);
-            tris[7] = xiiDebugRenderer::Triangle(cc[2], cc[7], cc[3]);
-            // left
-            tris[8] = xiiDebugRenderer::Triangle(cc[4], cc[6], cc[0]);
-            tris[9] = xiiDebugRenderer::Triangle(cc[0], cc[6], cc[2]);
-            // right
-            tris[10] = xiiDebugRenderer::Triangle(cc[5], cc[1], cc[7]);
-            tris[11] = xiiDebugRenderer::Triangle(cc[1], cc[3], cc[7]);
+              xiiDebugRenderer::DrawSolidTriangles(view.GetHandle(), tris, color.WithAlpha(0.1f));
 
-            xiiDebugRenderer::DrawSolidTriangles(view.GetHandle(), tris, xiiColor(r, g, 0.0f, 0.1f));
+              xiiDebugRendererLine lines[12];
+              lines[0] = xiiDebugRendererLine(cc[4], cc[5]);
+              lines[1] = xiiDebugRendererLine(cc[5], cc[7]);
+              lines[2] = xiiDebugRendererLine(cc[7], cc[6]);
+              lines[3] = xiiDebugRendererLine(cc[6], cc[4]);
 
-            xiiDebugRenderer::Line lines[12];
-            lines[0] = xiiDebugRenderer::Line(cc[4], cc[5]);
-            lines[1] = xiiDebugRenderer::Line(cc[5], cc[7]);
-            lines[2] = xiiDebugRenderer::Line(cc[7], cc[6]);
-            lines[3] = xiiDebugRenderer::Line(cc[6], cc[4]);
+              lines[4] = xiiDebugRendererLine(cc[0], cc[1]);
+              lines[5] = xiiDebugRendererLine(cc[1], cc[3]);
+              lines[6] = xiiDebugRendererLine(cc[3], cc[2]);
+              lines[7] = xiiDebugRendererLine(cc[2], cc[0]);
 
-            lines[4] = xiiDebugRenderer::Line(cc[0], cc[1]);
-            lines[5] = xiiDebugRenderer::Line(cc[1], cc[3]);
-            lines[6] = xiiDebugRenderer::Line(cc[3], cc[2]);
-            lines[7] = xiiDebugRenderer::Line(cc[2], cc[0]);
+              lines[8]  = xiiDebugRendererLine(cc[4], cc[0]);
+              lines[9]  = xiiDebugRendererLine(cc[5], cc[1]);
+              lines[10] = xiiDebugRendererLine(cc[7], cc[3]);
+              lines[11] = xiiDebugRendererLine(cc[6], cc[2]);
 
-            lines[8]  = xiiDebugRenderer::Line(cc[4], cc[0]);
-            lines[9]  = xiiDebugRenderer::Line(cc[5], cc[1]);
-            lines[10] = xiiDebugRenderer::Line(cc[7], cc[3]);
-            lines[11] = xiiDebugRenderer::Line(cc[6], cc[2]);
+              xiiDebugRenderer::DrawLines(view.GetHandle(), lines, color);
 
-            xiiDebugRenderer::DrawLines(view.GetHandle(), lines, xiiColor(r, g, 0.0f));
+              if (bOnlyOneSlice)
+              {
+                sb.SetFormat("L:{}\nD:{}\nR:{}", (xiiUInt32)lightCount, (xiiUInt32)decalCount, (xiiUInt32)probeCount);
+                xiiVec3 textPos = (cc[0] + cc[1] + cc[2] + cc[3] + cc[4] + cc[5] + cc[6] + cc[7]) / 8.0f;
+                xiiDebugRenderer::Draw3DText(view.GetHandle(), sb, textPos, color * 4.0f, 16u, xiiDebugTextHAlign::Center, xiiDebugTextVAlign::Center);
+              }
+            }
           }
         }
       }
@@ -168,6 +185,11 @@ xiiClusteredDataExtractor::xiiClusteredDataExtractor(xiiStringView sName) :
   m_TempLightsClusters.SetCountUninitialized(NUM_CLUSTERS);
   m_TempDecalsClusters.SetCountUninitialized(NUM_CLUSTERS);
   m_TempReflectionProbeClusters.SetCountUninitialized(NUM_CLUSTERS);
+
+  xiiMemoryUtils::ZeroFill(m_TempLightsClusters.GetData(), NUM_CLUSTERS);
+  xiiMemoryUtils::ZeroFill(m_TempDecalsClusters.GetData(), NUM_CLUSTERS);
+  xiiMemoryUtils::ZeroFill(m_TempReflectionProbeClusters.GetData(), NUM_CLUSTERS);
+
   m_ClusterBoundingSpheres.SetCountUninitialized(NUM_CLUSTERS);
 }
 
@@ -180,7 +202,15 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
   const xiiCamera* pCamera      = view.GetCullingCamera();
   const float      fAspectRatio = view.GetViewport().width / view.GetViewport().height;
 
-  FillClusterBoundingSpheres(*pCamera, fAspectRatio, m_ClusterBoundingSpheres);
+  xiiMat4 mProj;
+  pCamera->GetProjectionMatrix(fAspectRatio, mProj);
+  if (m_mProjection != mProj)
+  {
+    m_mProjection = mProj;
+
+    FillClusterBoundingSpheres(*pCamera, mProj, m_ClusterBoundingSpheres);
+  }
+
   xiiClusteredDataCPU* pData = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), xiiClusteredDataCPU);
   pData->m_ClusterData       = XII_NEW_ARRAY(xiiFrameAllocator::GetCurrentAllocator(), xiiPerClusterData, NUM_CLUSTERS);
 
@@ -190,13 +220,13 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
   pCamera->GetProjectionMatrix(fAspectRatio, tmp);
   xiiSimdMat4f projectionMatrix = xiiSimdConversion::ToMat4(tmp);
 
+  xiiSimdMat4f invViewMatrix        = viewMatrix.GetInverse();
   xiiSimdMat4f viewProjectionMatrix = projectionMatrix * viewMatrix;
 
   // Lights
   {
     XII_PROFILE_SCOPE("Lights");
     m_TempLightData.Clear();
-    xiiMemoryUtils::ZeroFill(m_TempLightsClusters.GetData(), NUM_CLUSTERS);
 
     auto            batchList    = ref_extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Light);
     const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
@@ -223,11 +253,12 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
 
           if (false)
           {
-            xiiSimdBBox ssb  = GetScreenSpaceBounds(pointLightSphere, viewMatrix, projectionMatrix);
-            float       minX = ((float)ssb.m_Min.x() * 0.5f + 0.5f) * view.GetViewport().width;
-            float       maxX = ((float)ssb.m_Max.x() * 0.5f + 0.5f) * view.GetViewport().width;
-            float       minY = ((float)ssb.m_Max.y() * -0.5f + 0.5f) * view.GetViewport().height;
-            float       maxY = ((float)ssb.m_Min.y() * -0.5f + 0.5f) * view.GetViewport().height;
+            xiiSimdBSphere viewSpaceSphere(viewMatrix.TransformPosition(pointLightSphere.GetCenter()), pointLightSphere.GetRadius());
+            xiiSimdBBox    ssb  = GetScreenSpaceBounds(viewSpaceSphere, projectionMatrix);
+            float          minX = ((float)ssb.m_Min.x() * 0.5f + 0.5f) * view.GetViewport().width;
+            float          maxX = ((float)ssb.m_Max.x() * 0.5f + 0.5f) * view.GetViewport().width;
+            float          minY = ((float)ssb.m_Max.y() * -0.5f + 0.5f) * view.GetViewport().height;
+            float          maxY = ((float)ssb.m_Min.y() * -0.5f + 0.5f) * view.GetViewport().height;
 
             xiiRectFloat rect(minX, minY, maxX - minX, maxY - minY);
             xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rect, 0.0f, xiiColor::Blue.WithAlpha(0.3f));
@@ -289,7 +320,6 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
   {
     XII_PROFILE_SCOPE("Decals");
     m_TempDecalData.Clear();
-    xiiMemoryUtils::ZeroFill(m_TempDecalsClusters.GetData(), NUM_CLUSTERS);
 
     auto            batchList    = ref_extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Decal);
     const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
@@ -311,7 +341,7 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
         {
           FillDecalData(m_TempDecalData.ExpandAndGetRef(), pDecalRenderData);
 
-          RasterizeBox(pDecalRenderData->m_GlobalTransform, uiDecalIndex, viewProjectionMatrix, m_TempDecalsClusters.GetData(), m_ClusterBoundingSpheres.GetData());
+          RasterizeBox(pDecalRenderData->m_GlobalTransform, uiDecalIndex, invViewMatrix, viewProjectionMatrix, m_TempDecalsClusters.GetData(), m_ClusterBoundingSpheres.GetData());
         }
         else
         {
@@ -328,7 +358,6 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
   {
     XII_PROFILE_SCOPE("Probes");
     m_TempReflectionProbeData.Clear();
-    xiiMemoryUtils::ZeroFill(m_TempReflectionProbeClusters.GetData(), NUM_CLUSTERS);
 
     auto            batchList    = ref_extractedRenderData.GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::ReflectionProbe);
     const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
@@ -369,8 +398,10 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
 
           if (bRasterizeSphere)
           {
-            xiiSimdBSphere pointLightSphere = xiiSimdBSphere(xiiSimdConversion::ToVec3(pReflectionProbeRenderData->m_GlobalTransform.m_vPosition), fMaxRadius);
-            RasterizeSphere(pointLightSphere, uiProbeIndex, viewMatrix, projectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
+            xiiSimdBSphere pointLightSphere =
+              xiiSimdBSphere(xiiSimdConversion::ToVec3(pReflectionProbeRenderData->m_GlobalTransform.m_vPosition), fMaxRadius);
+            RasterizeSphere(
+              pointLightSphere, uiProbeIndex, viewMatrix, projectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
           }
           else
           {
@@ -381,7 +412,7 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
             // const xiiBoundingBox aabb(xiiVec3(-1.0f), xiiVec3(1.0f));
             // xiiDebugRenderer::DrawLineBox(view.GetHandle(), aabb, xiiColor::DarkBlue, transform);
 
-            RasterizeBox(transform, uiProbeIndex, viewProjectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
+            RasterizeBox(transform, uiProbeIndex, invViewMatrix, viewProjectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
           }
         }
         else
@@ -420,9 +451,15 @@ xiiResult xiiClusteredDataExtractor::Deserialize(xiiStreamReader& inout_stream)
 
 namespace
 {
-  xiiUInt32 PackIndex(xiiUInt32 uiLightIndex, xiiUInt32 uiDecalIndex) { return uiDecalIndex << 10 | uiLightIndex; }
+  XII_FORCE_INLINE xiiUInt32 MakeDecalIndex(xiiUInt32 uiDecalIndex)
+  {
+    return uiDecalIndex << DECAL_SHIFT;
+  }
 
-  xiiUInt32 PackReflectionProbeIndex(xiiUInt32 uiData, xiiUInt32 uiReflectionProbeIndex) { return uiReflectionProbeIndex << 20 | uiData; }
+  XII_FORCE_INLINE xiiUInt32 MakeProbeIndex(xiiUInt32 uiReflectionProbeIndex)
+  {
+    return uiReflectionProbeIndex << PROBE_SHIFT;
+  }
 } // namespace
 
 void xiiClusteredDataExtractor::FillItemListAndClusterData(xiiClusteredDataCPU* pData)
@@ -459,12 +496,14 @@ void xiiClusteredDataExtractor::FillItemListAndClusterData(xiiClusteredDataCPU* 
         while (mask > 0)
         {
           xiiUInt32 uiLightIndex = xiiMath::FirstBitLow(mask);
-          mask &= ~(1 << uiLightIndex);
+          mask &= mask - 1;
 
           uiLightIndex += uiBlockIndex * 32;
           pTempClusterItemListRange[uiLightCount] = uiLightIndex;
           ++uiLightCount;
         }
+
+        tempCluster.m_BitMask[uiBlockIndex] = 0;
       }
     }
 
@@ -480,22 +519,17 @@ void xiiClusteredDataExtractor::FillItemListAndClusterData(xiiClusteredDataCPU* 
         while (mask > 0)
         {
           xiiUInt32 uiDecalIndex = xiiMath::FirstBitLow(mask);
-          mask &= ~(1 << uiDecalIndex);
+          mask &= mask - 1;
 
           uiDecalIndex += uiBlockIndex * 32;
 
-          if (uiDecalCount < uiLightCount)
-          {
-            auto& item = pTempClusterItemListRange[uiDecalCount];
-            item       = PackIndex(item, uiDecalIndex);
-          }
-          else
-          {
-            pTempClusterItemListRange[uiDecalCount] = PackIndex(0, uiDecalIndex);
-          }
+          const xiiUInt32 item                    = pTempClusterItemListRange[uiDecalCount];
+          pTempClusterItemListRange[uiDecalCount] = (uiDecalCount < uiLightCount ? item : 0) | MakeDecalIndex(uiDecalIndex);
 
           ++uiDecalCount;
         }
+
+        tempCluster.m_BitMask[uiBlockIndex] = 0;
       }
     }
 
@@ -511,22 +545,17 @@ void xiiClusteredDataExtractor::FillItemListAndClusterData(xiiClusteredDataCPU* 
         while (mask > 0)
         {
           xiiUInt32 uiReflectionProbeIndex = xiiMath::FirstBitLow(mask);
-          mask &= ~(1 << uiReflectionProbeIndex);
+          mask &= mask - 1;
 
           uiReflectionProbeIndex += uiBlockIndex * 32;
 
-          if (uiReflectionProbeCount < uiMaxUsed)
-          {
-            auto& item = pTempClusterItemListRange[uiReflectionProbeCount];
-            item       = PackReflectionProbeIndex(item, uiReflectionProbeIndex);
-          }
-          else
-          {
-            pTempClusterItemListRange[uiReflectionProbeCount] = PackReflectionProbeIndex(0, uiReflectionProbeIndex);
-          }
+          const xiiUInt32 item                              = pTempClusterItemListRange[uiReflectionProbeCount];
+          pTempClusterItemListRange[uiReflectionProbeCount] = (uiReflectionProbeCount < uiMaxUsed ? item : 0) | MakeProbeIndex(uiReflectionProbeIndex);
 
           ++uiReflectionProbeCount;
         }
+
+        tempCluster.m_BitMask[uiBlockIndex] = 0;
       }
     }
 
@@ -536,7 +565,7 @@ void xiiClusteredDataExtractor::FillItemListAndClusterData(xiiClusteredDataCPU* 
 
     auto& clusterData  = pData->m_ClusterData[i];
     clusterData.offset = uiOffset;
-    clusterData.counts = PackReflectionProbeIndex(PackIndex(uiLightCount, uiDecalCount), uiReflectionProbeCount);
+    clusterData.counts = uiLightCount | MakeDecalIndex(uiDecalCount) | MakeProbeIndex(uiReflectionProbeCount);
   }
 
   pData->m_ClusterItemList = XII_NEW_ARRAY(xiiFrameAllocator::GetCurrentAllocator(), xiiUInt32, m_TempClusterItemList.GetCount());

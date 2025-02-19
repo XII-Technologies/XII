@@ -16,8 +16,6 @@ void xiiResourceManager::InternalPreloadResource(xiiResource* pResource, bool bH
   if (s_pState->m_bShutdown)
     return;
 
-  XII_PROFILE_SCOPE("InternalPreloadResource");
-
   XII_LOCK(s_ResourceMutex);
 
   // if there is nothing else that could be loaded, just return right away
@@ -29,7 +27,9 @@ void xiiResourceManager::InternalPreloadResource(xiiResource* pResource, bool bH
     return;
   }
 
-  XII_ASSERT_DEV(!s_pState->m_bExportMode, "Resources should not be loaded in export mode");
+  XII_PROFILE_SCOPE("InternalPreloadResource");
+
+  XII_ASSERT_DEV(!s_pState->m_bExportMode, "Resources should not be loaded in export mode.");
 
   // if we are already loading this resource, early out
   if (IsQueuedForLoading(pResource))

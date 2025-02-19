@@ -13,11 +13,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderData, 1, xiiRTTIDefaultAllo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSkinnedMeshRenderData::FillBatchIdAndSortingKey()
-{
-  FillBatchIdAndSortingKeyInternal(m_hSkinningTransforms.GetInternalID().m_Data);
-}
-
 xiiSkinningState::xiiSkinningState() = default;
 
 xiiSkinningState::~xiiSkinningState()

@@ -316,7 +316,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
       pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(this, 0);
       pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
 
-      pRenderData->FillBatchIdAndSortingKey();
+      pRenderData->FillSortingKey();
     }
 
     ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::SimpleOpaque, caching);

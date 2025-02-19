@@ -97,7 +97,8 @@ class XII_GRAPHICSCORE_DLL xiiCustomMeshRenderData : public xiiRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiCustomMeshRenderData, xiiRenderData);
 
 public:
-  virtual void FillBatchIdAndSortingKey();
+  void         FillSortingKey();
+  virtual bool CanBatch(const xiiRenderData& other) const override;
 
   xiiDynamicMeshBufferResourceHandle m_hMesh;
   xiiMaterialResourceHandle          m_hMaterial;

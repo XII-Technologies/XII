@@ -263,8 +263,7 @@ void xiiClothSheetComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
   pRenderData->m_uiUniqueID      = GetUniqueIdForRendering();
   pRenderData->m_Color           = m_Color;
   pRenderData->m_GlobalTransform = GetOwner()->GetGlobalTransform();
-  pRenderData->m_uiBatchId       = xiiHashingUtils::StringHashTo32(m_hMaterial.GetResourceIDHash());
-  pRenderData->m_uiSortingKey    = pRenderData->m_uiBatchId;
+  pRenderData->m_uiSortingKey    = xiiHashingUtils::StringHashTo32(m_hMaterial.GetResourceIDHash());
   pRenderData->m_GlobalBounds    = GetOwner()->GetGlobalBounds();
   pRenderData->m_hMaterial       = m_hMaterial;
 
@@ -332,7 +331,6 @@ void xiiClothSheetComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
     }
   }
 
-  // TODO: render pass category (plus cache this)
   xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitOpaque;
 
   if (m_hMaterial.IsValid())
@@ -451,6 +449,8 @@ void xiiClothSheetComponent::Update()
     }
   }
 }
+
+////////////////////////////////////////////////////////////////////////
 
 xiiClothSheetRenderer::xiiClothSheetRenderer()
 {

@@ -74,4 +74,5 @@ private:
   xiiDynamicArray<xiiUInt32>                                                   m_TempClusterItemList;
 
   xiiDynamicArray<xiiSimdBSphere, xiiAlignedAllocatorWrapper> m_ClusterBoundingSpheres;
+  xiiMat4                                                     m_mProjection = xiiMat4::MakeZero();
 };

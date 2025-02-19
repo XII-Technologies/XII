@@ -83,16 +83,13 @@ namespace
     out_pCorners[7] = out_pCorners[6] + dirRight * fStepXn;
   }
 
-  void FillClusterBoundingSpheres(const xiiCamera& camera, float fAspectRatio, xiiArrayPtr<xiiSimdBSphere> clusterBoundingSpheres)
+  void FillClusterBoundingSpheres(const xiiCamera& camera, const xiiMat4& mProj, xiiArrayPtr<xiiSimdBSphere> clusterBoundingSpheres)
   {
     XII_PROFILE_SCOPE("FillClusterBoundingSpheres");
 
     ///\todo proper implementation for orthographic views
     if (camera.IsOrthographic())
       return;
-
-    xiiMat4 mProj;
-    camera.GetProjectionMatrix(fAspectRatio, mProj);
 
     xiiSimdVec4f stepScale;
     xiiSimdVec4f tanLBLB;
@@ -115,11 +112,9 @@ namespace
       tanLBLB   = xiiSimdVec4f(fTanLeft, fTanBottom, fTanLeft, fTanBottom);
     }
 
-    xiiSimdVec4f pos        = xiiSimdConversion::ToVec3(camera.GetPosition());
-    xiiSimdVec4f dirForward = xiiSimdConversion::ToVec3(camera.GetDirForwards());
-    xiiSimdVec4f dirRight   = xiiSimdConversion::ToVec3(camera.GetDirRight());
-    xiiSimdVec4f dirUp      = xiiSimdConversion::ToVec3(camera.GetDirUp());
-
+    const xiiSimdVec4f dirForward = xiiSimdVec4f(0, 0, 1, 0);
+    const xiiSimdVec4f dirRight   = xiiSimdVec4f(1, 0, 0, 0);
+    const xiiSimdVec4f dirUp      = xiiSimdVec4f(0, 1, 0, 0);
 
     xiiSimdVec4f fZn = xiiSimdVec4f::MakeZero();
     xiiSimdVec4f cc[8];
@@ -130,8 +125,8 @@ namespace
       xiiSimdVec4f zff_znn = fZf.GetCombined<xiiSwizzle::XXXX>(fZn);
       xiiSimdVec4f steps   = zff_znn.CompMul(stepScale);
 
-      xiiSimdVec4f depthF = pos + dirForward * fZf.x();
-      xiiSimdVec4f depthN = pos + dirForward * fZn.x();
+      xiiSimdVec4f depthF = dirForward * fZf.x();
+      xiiSimdVec4f depthN = dirForward * fZn.x();
 
       xiiSimdVec4f startLBLB = zff_znn.CompMul(tanLBLB);
 
@@ -258,11 +253,11 @@ namespace
   }
 
 
-  XII_FORCE_INLINE xiiSimdBBox GetScreenSpaceBounds(const xiiSimdBSphere& sphere, const xiiSimdMat4f& mViewMatrix, const xiiSimdMat4f& mProjectionMatrix)
+  XII_FORCE_INLINE xiiSimdBBox GetScreenSpaceBounds(const xiiSimdBSphere& viewSpaceSphere, const xiiSimdMat4f& mProjectionMatrix)
   {
-    xiiSimdVec4f viewSpaceCenter = mViewMatrix.TransformPosition(sphere.GetCenter());
+    xiiSimdVec4f viewSpaceCenter = viewSpaceSphere.GetCenter();
     xiiSimdFloat depth           = viewSpaceCenter.z();
-    xiiSimdFloat radius          = sphere.GetRadius();
+    xiiSimdFloat radius          = viewSpaceSphere.GetRadius();
 
     xiiSimdVec4f mi;
     xiiSimdVec4f ma;
@@ -341,12 +336,14 @@ namespace
   template <typename Cluster>
   void RasterizeSphere(const xiiSimdBSphere& pointLightSphere, xiiUInt32 uiLightIndex, const xiiSimdMat4f& mViewMatrix, const xiiSimdMat4f& mProjectionMatrix, Cluster* pClusters, xiiSimdBSphere* pClusterBoundingSpheres)
   {
-    xiiSimdBBox screenSpaceBounds = GetScreenSpaceBounds(pointLightSphere, mViewMatrix, mProjectionMatrix);
+    xiiSimdBSphere viewSpaceSphere(mViewMatrix.TransformPosition(pointLightSphere.GetCenter()), pointLightSphere.GetRadius());
+
+    xiiSimdBBox screenSpaceBounds = GetScreenSpaceBounds(viewSpaceSphere, mProjectionMatrix);
 
     const xiiUInt32 uiBlockIndex = uiLightIndex / 32;
     const xiiUInt32 uiMask       = 1 << (uiLightIndex - uiBlockIndex * 32);
 
-    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [&](xiiUInt32 uiClusterIndex) { return pointLightSphere.Overlaps(pClusterBoundingSpheres[uiClusterIndex]); });
+    FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [&](xiiUInt32 uiClusterIndex) { return viewSpaceSphere.Overlaps(pClusterBoundingSpheres[uiClusterIndex]); });
   }
 
   struct BoundingCone
@@ -360,9 +357,9 @@ namespace
   template <typename Cluster>
   void RasterizeSpotLight(const BoundingCone& spotLightCone, xiiUInt32 uiLightIndex, const xiiSimdMat4f& mViewMatrix, const xiiSimdMat4f& mProjectionMatrix, Cluster* pClusters, xiiSimdBSphere* pClusterBoundingSpheres)
   {
-    xiiSimdVec4f position   = spotLightCone.m_PositionAndRange;
+    xiiSimdVec4f position   = mViewMatrix.TransformPosition(spotLightCone.m_PositionAndRange);
     xiiSimdFloat range      = spotLightCone.m_PositionAndRange.w();
-    xiiSimdVec4f forwardDir = spotLightCone.m_ForwardDir;
+    xiiSimdVec4f forwardDir = mViewMatrix.TransformDirection(spotLightCone.m_ForwardDir);
     xiiSimdFloat sinAngle   = spotLightCone.m_SinCosAngle.x();
     xiiSimdFloat cosAngle   = spotLightCone.m_SinCosAngle.y();
 
@@ -381,7 +378,7 @@ namespace
     }
 
     xiiSimdBSphere spotLightSphere(bSphereCenter, bSphereRadius);
-    xiiSimdBBox    screenSpaceBounds = GetScreenSpaceBounds(spotLightSphere, mViewMatrix, mProjectionMatrix);
+    xiiSimdBBox    screenSpaceBounds = GetScreenSpaceBounds(spotLightSphere, mProjectionMatrix);
 
     const xiiUInt32 uiBlockIndex = uiLightIndex / 32;
     const xiiUInt32 uiMask       = 1 << (uiLightIndex - uiBlockIndex * 32);
@@ -416,15 +413,15 @@ namespace
   }
 
   template <typename Cluster>
-  void RasterizeBox(const xiiTransform& transform, xiiUInt32 uiDecalIndex, const xiiSimdMat4f& mViewProjectionMatrix, Cluster* pClusters, xiiSimdBSphere* pClusterBoundingSpheres)
+  void RasterizeBox(const xiiTransform& transform, xiiUInt32 uiDecalIndex, const xiiSimdMat4f& mInvView, const xiiSimdMat4f& mViewProjection, Cluster* pClusters, xiiSimdBSphere* pClusterBoundingSpheres)
   {
-    xiiSimdMat4f decalToWorld = xiiSimdConversion::ToTransform(transform).GetAsMat4();
-    xiiSimdMat4f worldToDecal = decalToWorld.GetInverse();
+    xiiSimdMat4f boxToWorld = xiiSimdConversion::ToTransform(transform).GetAsMat4();
+    xiiSimdMat4f viewToBox  = boxToWorld.GetInverse() * mInvView;
 
     xiiVec3 corners[8];
     xiiBoundingBox(xiiVec3(-1), xiiVec3(1)).GetCorners(corners);
 
-    xiiSimdMat4f decalToScreen     = mViewProjectionMatrix * decalToWorld;
+    xiiSimdMat4f decalToScreen     = mViewProjection * boxToWorld;
     bool         bInsideBox        = false;
     xiiSimdBBox  screenSpaceBounds = xiiSimdBBox::MakeInvalid();
 
@@ -456,7 +453,7 @@ namespace
 
     FillCluster(screenSpaceBounds, uiBlockIndex, uiMask, pClusters, [&](xiiUInt32 uiClusterIndex) {
       xiiSimdBSphere clusterSphere = pClusterBoundingSpheres[uiClusterIndex];
-      clusterSphere.Transform(worldToDecal);
+      clusterSphere.Transform(viewToBox);
 
       return localDecalBounds.Overlaps(clusterSphere);
     });

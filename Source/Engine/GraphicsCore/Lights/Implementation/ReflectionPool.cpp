@@ -143,7 +143,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       pRenderData->m_uiSubMeshIndex = 0;
       pRenderData->m_uiUniqueID     = xiiRenderComponent::GetUniqueIdForRendering(pComponent, 0);
 
-      pRenderData->FillBatchIdAndSortingKey();
+      pRenderData->FillSortingKey();
       ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitOpaque, xiiRenderData::Caching::Never);
     }
   }

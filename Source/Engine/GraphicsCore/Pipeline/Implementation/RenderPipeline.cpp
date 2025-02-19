@@ -1019,8 +1019,6 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
   if (pRasterizer != nullptr && pRasterizer->HasRasterizedAnyOccluders())
   {
-    XII_PROFILE_SCOPE("Occlusion::FindVisibleObjects");
-
     auto IsOccluded = [=](const xiiSimdBBox& aabb) {
       // grow the bbox by some percent to counter the lower precision of the occlusion buffer
 
@@ -1358,13 +1356,13 @@ xiiRasterizerView* xiiRenderPipeline::PrepareOcclusionCulling(const xiiFrustum& 
   xiiRasterizerView* pRasterizer = nullptr;
 
   // Extract all occlusion geometry from the scene.
-  XII_PROFILE_SCOPE("Occlusion::RasterizeView");
+  XII_PROFILE_SCOPE("PrepareOcclusionCulling");
 
   pRasterizer = g_pRasterizerViewPool->GetRasterizerView(static_cast<xiiUInt32>(view.GetViewport().width / 2), static_cast<xiiUInt32>(view.GetViewport().height / 2), (float)view.GetViewport().width / (float)view.GetViewport().height);
   pRasterizer->SetCamera(view.GetCullingCamera());
 
   {
-    XII_PROFILE_SCOPE("Occlusion::FindOccluders");
+    XII_PROFILE_SCOPE("FindOccluders");
 
     xiiSpatialSystem::QueryParams queryParams;
     queryParams.m_uiCategoryBitmask = xiiDefaultSpatialDataCategories::OcclusionStatic.GetBitmask() | xiiDefaultSpatialDataCategories::OcclusionDynamic.GetBitmask();
@@ -1377,14 +1375,18 @@ xiiRasterizerView* xiiRenderPipeline::PrepareOcclusionCulling(const xiiFrustum& 
 
   pRasterizer->BeginScene();
 
-  for (const xiiGameObject* pObj : m_VisibleObjects)
   {
-    xiiMsgExtractOccluderData msg;
-    pObj->SendMessage(msg);
+    XII_PROFILE_SCOPE("ExtractOccluders");
 
-    for (const auto& ed : msg.m_ExtractedOccluderData)
+    for (const xiiGameObject* pObj : m_VisibleObjects)
     {
-      pRasterizer->AddObject(ed.m_pObject, ed.m_Transform);
+      xiiMsgExtractOccluderData msg;
+      pObj->SendMessage(msg);
+
+      for (const auto& ed : msg.m_ExtractedOccluderData)
+      {
+        pRasterizer->AddObject(ed.m_pObject, ed.m_Transform);
+      }
     }
   }
 

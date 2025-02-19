@@ -123,7 +123,7 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
 
     m_SkinningState.FillSkinnedMeshRenderData(*pRenderData);
 
-    pRenderData->FillBatchIdAndSortingKey();
+    pRenderData->FillSortingKey();
   }
 
   // Determine render data category.

@@ -34,7 +34,8 @@ class XII_GRAPHICSCORE_DLL xiiSpriteRenderData : public xiiRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiSpriteRenderData, xiiRenderData);
 
 public:
-  void FillBatchIdAndSortingKey();
+  void         FillSortingKey();
+  virtual bool CanBatch(const xiiRenderData& other) const override;
 
   xiiTexture2DResourceHandle m_hTexture;
 

@@ -11,7 +11,8 @@ class XII_GRAPHICSCORE_DLL xiiSkinnedMeshRenderData : public xiiMeshRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiSkinnedMeshRenderData, xiiMeshRenderData);
 
 public:
-  virtual void                FillBatchIdAndSortingKey() override;
+  virtual bool CanBatch(const xiiRenderData& other) const override { return false; }
+
   xiiGALBufferHandle          m_hSkinningTransforms;
   xiiArrayPtr<const xiiUInt8> m_pNewSkinningTransformData;
   std::shared_ptr<bool>       m_bTransformsUpdated;

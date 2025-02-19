@@ -195,7 +195,7 @@ void xiiCustomMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
     pRenderData->m_uiFirstPrimitive = xiiMath::Min(m_uiFirstPrimitive, pMesh->GetDescriptor().m_uiMaxPrimitives);
     pRenderData->m_uiNumPrimitives  = xiiMath::Min(m_uiNumPrimitives, pMesh->GetDescriptor().m_uiMaxPrimitives - pRenderData->m_uiFirstPrimitive);
 
-    pRenderData->FillBatchIdAndSortingKey();
+    pRenderData->FillSortingKey();
   }
 
   xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
@@ -254,22 +254,23 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 
-void xiiCustomMeshRenderData::FillBatchIdAndSortingKey()
+void xiiCustomMeshRenderData::FillSortingKey()
 {
-  const xiiUInt32 uiAdditionalBatchData = 0;
-
   m_uiFlipWinding  = m_GlobalTransform.ContainsNegativeScale() ? 1 : 0;
   m_uiUniformScale = m_GlobalTransform.ContainsUniformScale() ? 1 : 0;
 
   const xiiUInt32 uiMeshIDHash     = xiiHashingUtils::StringHashTo32(m_hMesh.GetResourceIDHash());
   const xiiUInt32 uiMaterialIDHash = m_hMaterial.IsValid() ? xiiHashingUtils::StringHashTo32(m_hMaterial.GetResourceIDHash()) : 0;
 
-  // Generate batch id from mesh, material and part index.
-  xiiUInt32 data[] = {uiMeshIDHash, uiMaterialIDHash, 0 /*m_uiSubMeshIndex*/, m_uiFlipWinding, uiAdditionalBatchData};
-  m_uiBatchId      = xiiHashingUtils::xxHash32(data, sizeof(data));
-
   // Sort by material and then by mesh
-  m_uiSortingKey = (uiMaterialIDHash << 16) | ((uiMeshIDHash + 0 /*m_uiSubMeshIndex*/) & 0xFFFE) | m_uiFlipWinding;
+  m_uiSortingKey = (uiMaterialIDHash << 16) | (uiMeshIDHash & 0xFFFE) | m_uiFlipWinding;
+}
+
+bool xiiCustomMeshRenderData::CanBatch(const xiiRenderData& other0) const
+{
+  const auto& other = xiiStaticCast<const xiiCustomMeshRenderData&>(other0);
+
+  return m_hMesh == other.m_hMesh && m_hMaterial == other.m_hMaterial && m_uiFlipWinding == other.m_uiFlipWinding;
 }
 
 //////////////////////////////////////////////////////////////////////////

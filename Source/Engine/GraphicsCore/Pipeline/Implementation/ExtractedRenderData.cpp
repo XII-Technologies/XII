@@ -11,7 +11,7 @@ void xiiExtractedRenderData::AddRenderData(const xiiRenderData* pRenderData, xii
 
   auto& sortableRenderData          = m_DataPerCategory[category.m_uiValue].m_SortableRenderData.ExpandAndGetRef();
   sortableRenderData.m_pRenderData  = pRenderData;
-  sortableRenderData.m_uiSortingKey = pRenderData->GetCategorySortingKey(category, m_Camera);
+  sortableRenderData.m_uiSortingKey = pRenderData->GetFinalSortingKey(category, m_Camera);
 }
 
 void xiiExtractedRenderData::AddFrameData(const xiiRenderData* pFrameData)
@@ -27,12 +27,12 @@ void xiiExtractedRenderData::SortAndBatch()
   {
     XII_FORCE_INLINE bool Less(const xiiRenderDataBatch::SortableRenderData& a, const xiiRenderDataBatch::SortableRenderData& b) const
     {
-      if (a.m_uiSortingKey == b.m_uiSortingKey)
+      if (a.m_uiSortingKey != b.m_uiSortingKey)
       {
-        return a.m_pRenderData->m_uiBatchId < b.m_pRenderData->m_uiBatchId;
+        return a.m_uiSortingKey < b.m_uiSortingKey;
       }
 
-      return a.m_uiSortingKey < b.m_uiSortingKey;
+      return a.m_pRenderData->m_hOwner < b.m_pRenderData->m_hOwner;
     }
   };
 
@@ -47,21 +47,21 @@ void xiiExtractedRenderData::SortAndBatch()
     data.Sort(RenderDataComparer());
 
     // Find batches
-    xiiUInt32      uiCurrentBatchId         = data[0].m_pRenderData->m_uiBatchId;
-    xiiUInt32      uiCurrentBatchStartIndex = 0;
-    const xiiRTTI* pCurrentBatchType        = data[0].m_pRenderData->GetDynamicRTTI();
+    const xiiRenderData* pCurrentBatchRenderData  = data[0].m_pRenderData;
+    const xiiRTTI*       pCurrentBatchType        = pCurrentBatchRenderData->GetDynamicRTTI();
+    xiiUInt32            uiCurrentBatchStartIndex = 0;
 
     for (xiiUInt32 i = 1; i < data.GetCount(); ++i)
     {
       auto pRenderData = data[i].m_pRenderData;
 
-      if (pRenderData->m_uiBatchId != uiCurrentBatchId || pRenderData->GetDynamicRTTI() != pCurrentBatchType)
+      if (pRenderData->GetDynamicRTTI() != pCurrentBatchType || pRenderData->CanBatch(*pCurrentBatchRenderData) == false)
       {
         dataPerCategory.m_Batches.ExpandAndGetRef().m_Data = xiiMakeArrayPtr(&data[uiCurrentBatchStartIndex], i - uiCurrentBatchStartIndex);
 
-        uiCurrentBatchId         = pRenderData->m_uiBatchId;
-        uiCurrentBatchStartIndex = i;
+        pCurrentBatchRenderData  = pRenderData;
         pCurrentBatchType        = pRenderData->GetDynamicRTTI();
+        uiCurrentBatchStartIndex = i;
       }
     }
 
@@ -78,8 +78,6 @@ void xiiExtractedRenderData::Clear()
   }
 
   m_FrameData.Clear();
-
-  // TODO: intelligent compact
 }
 
 xiiRenderDataBatchList xiiExtractedRenderData::GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter) const
