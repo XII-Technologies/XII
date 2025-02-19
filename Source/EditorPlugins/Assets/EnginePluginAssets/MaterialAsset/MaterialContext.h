@@ -29,7 +29,6 @@ protected:
 
 private:
   xiiMaterialResourceHandle m_hMaterial;
-  xiiMeshResourceHandle     m_hBallMesh;
   xiiMeshResourceHandle     m_hSphereMesh;
   xiiMeshResourceHandle     m_hBoxMesh;
   xiiMeshResourceHandle     m_hPlaneMesh;
@@ -37,11 +36,10 @@ private:
 
   enum class PreviewModel : xiiUInt8
   {
-    Ball,
-    Sphere,
+    Sphere = 0,
     Box,
     Plane,
   };
 
-  PreviewModel m_PreviewModel = PreviewModel::Ball;
+  PreviewModel m_PreviewModel = PreviewModel::Sphere;
 };
