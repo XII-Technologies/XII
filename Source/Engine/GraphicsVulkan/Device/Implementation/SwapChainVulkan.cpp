@@ -232,7 +232,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
         xiiLog::Info("Requested color buffer format '{}' is not supported by the surface and will be replaced with '{}'.", vk::to_string(m_vkColorFormat).data(), vk::to_string(vkReplacementColorFormat).data());
 
         m_vkColorFormat                   = vkReplacementColorFormat;
-        m_Description.m_ColorBufferFormat = xiiVulkanTypeConversions::GetGALFormat(vkReplacementColorFormat);
+        m_Description.m_ColorBufferFormat = xiiVulkanTypeConversions::GetGALResourceFormat(vkReplacementColorFormat);
       }
       else
       {
