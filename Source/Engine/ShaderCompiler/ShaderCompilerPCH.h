@@ -48,12 +48,12 @@ public:
     return &m_pObject;
   }
 
-  bool operator==(nullptr_t)
+  bool operator==(std::nullptr_t)
   {
     return m_pObject == nullptr;
   }
 
-  bool operator!=(nullptr_t)
+  bool operator!=(std::nullptr_t)
   {
     return m_pObject != nullptr;
   }

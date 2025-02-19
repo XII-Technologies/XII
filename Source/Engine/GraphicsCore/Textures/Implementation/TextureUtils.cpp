@@ -371,6 +371,8 @@ xiiEnum<xiiGALTextureAddressMode> xiiTextureUtils::GALTextureAddressMode(xiiEnum
       return xiiGALTextureAddressMode::Border;
     case xiiImageAddressMode::Mirror:
       return xiiGALTextureAddressMode::Mirror;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return xiiEnum<xiiGALTextureAddressMode>();
 }
