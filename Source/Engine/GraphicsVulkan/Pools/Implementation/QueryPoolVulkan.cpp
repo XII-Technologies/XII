@@ -191,7 +191,7 @@ void xiiGALQueryPoolVulkan::QueryPoolInformation::DeInitialize()
 {
   if (!IsInvalidated())
   {
-    vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+    // Nothing todo.
   }
 }
 

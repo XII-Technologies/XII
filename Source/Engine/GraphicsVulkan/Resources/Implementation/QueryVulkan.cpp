@@ -305,9 +305,9 @@ bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInv
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
-  const xiiGALQueueInformationVulkan&         queueInformation      = m_pQueryPoolVulkan->GetQueueInformation();
-  const xiiUInt64                             uiCompletedFenceValue = m_pQueryPoolVulkan->GetCommandQueue()->GetCompletedFenceValue();
-  bool                                        bIsDataAvailable      = false;
+  const xiiGALQueueInformationVulkan& queueInformation      = m_pQueryPoolVulkan->GetQueueInformation();
+  const xiiUInt64                     uiCompletedFenceValue = m_pQueryPoolVulkan->GetCommandQueue()->GetCompletedFenceValue();
+  bool                                bIsDataAvailable      = false;
 
   if (uiCompletedFenceValue >= m_uiQueryEndFenceValue)
   {

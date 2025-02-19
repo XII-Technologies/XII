@@ -10,10 +10,10 @@ public:
   [[nodiscard]] xiiUInt32 AllocateQuery(xiiGALQueryType::Enum queryType);
   void                    DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex);
 
-  XII_ALWAYS_INLINE [[nodiscard]] xiiGALCommandQueueVulkan*    GetCommandQueue() const { return m_pCommandQueueVulkan; }
-  XII_ALWAYS_INLINE [[nodiscard]] vk::QueryPool                GetQueryPool(xiiGALQueryType::Enum queryType) const { return m_QueryPools[queryType]->GetQueryPool(); }
-  XII_ALWAYS_INLINE [[nodiscard]] xiiUInt64                    GetCounterFrequency() const { return m_uiCounterFrequency; }
-  XII_ALWAYS_INLINE [[nodiscard]] xiiGALQueueInformationVulkan GetQueueInformation() const { return m_CommandQueueInformation; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueueVulkan* GetCommandQueue() const { return m_pCommandQueueVulkan; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::QueryPool                GetQueryPool(xiiGALQueryType::Enum queryType) const { return m_QueryPools[queryType]->GetQueryPool(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64                    GetCounterFrequency() const { return m_uiCounterFrequency; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueueInformationVulkan GetQueueInformation() const { return m_CommandQueueInformation; }
 
   [[nodiscard]] xiiUInt32 ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer);
 
@@ -23,7 +23,7 @@ private:
 
   class QueryPoolInformation
   {
-    XII_DISALLOW_COPY_AND_ASSIGN(xiiGALQueryPoolVulkan::QueryPoolInformation);
+    XII_DISALLOW_COPY_AND_ASSIGN(QueryPoolInformation);
 
   public:
     QueryPoolInformation(xiiGALDeviceVulkan* pDeviceVulkan);
@@ -36,11 +36,11 @@ private:
     void                    Discard(xiiUInt32 uiIndex);
     [[nodiscard]] xiiUInt32 ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer);
 
-    XII_ALWAYS_INLINE [[nodiscard]] xiiGALQueryType::Enum GetQueryType() const { return m_QueryType; }
-    XII_ALWAYS_INLINE [[nodiscard]] vk::QueryPool         GetQueryPool() const { return m_vkQueryPool; }
-    XII_ALWAYS_INLINE [[nodiscard]] xiiUInt32             GetQueryCount() const { return m_uiQueryCount; }
-    XII_ALWAYS_INLINE [[nodiscard]] xiiUInt32             GetMaxAllocatedQueries() const { return m_uiMaxAllocatedQueries; }
-    XII_ALWAYS_INLINE [[nodiscard]] bool                  IsInvalidated() const { return m_vkQueryPool == VK_NULL_HANDLE; }
+    [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryType::Enum GetQueryType() const { return m_QueryType; }
+    [[nodiscard]] XII_ALWAYS_INLINE vk::QueryPool GetQueryPool() const { return m_vkQueryPool; }
+    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32     GetQueryCount() const { return m_uiQueryCount; }
+    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32     GetMaxAllocatedQueries() const { return m_uiMaxAllocatedQueries; }
+    [[nodiscard]] XII_ALWAYS_INLINE bool          IsInvalidated() const { return m_vkQueryPool == VK_NULL_HANDLE; }
 
   private:
     xiiGALDeviceVulkan* m_pDeviceVulkan;

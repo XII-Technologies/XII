@@ -423,9 +423,172 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALResourceF
   return vk::Format::eUndefined;
 }
 
-XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiVulkanTypeConversions::GetGALFormat(vk::Format e)
+XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiVulkanTypeConversions::GetGALResourceFormat(vk::Format e)
 {
-  return xiiGALResourceFormat::Enum();
+  switch (e)
+  {
+    case vk::Format::eUndefined:
+      return xiiGALResourceFormat::Unknown;
+
+    case vk::Format::eR32G32B32A32Sfloat:
+      return xiiGALResourceFormat::RGBA32Typeless;
+    case vk::Format::eR32G32B32A32Uint:
+      return xiiGALResourceFormat::RGBA32UInt;
+    case vk::Format::eR32G32B32A32Sint:
+      return xiiGALResourceFormat::RGBA32SInt;
+
+    case vk::Format::eR32G32B32Sfloat:
+      return xiiGALResourceFormat::RGB32Typeless;
+    case vk::Format::eR32G32B32Uint:
+      return xiiGALResourceFormat::RGB32UInt;
+    case vk::Format::eR32G32B32Sint:
+      return xiiGALResourceFormat::RGB32SInt;
+
+    case vk::Format::eR16G16B16A16Sfloat:
+      return xiiGALResourceFormat::RGBA16Typeless;
+    case vk::Format::eR16G16B16A16Unorm:
+      return xiiGALResourceFormat::RGBA16UNormalized;
+    case vk::Format::eR16G16B16A16Uint:
+      return xiiGALResourceFormat::RGBA16UInt;
+    case vk::Format::eR16G16B16A16Snorm:
+      return xiiGALResourceFormat::RGBA16SNormalized;
+    case vk::Format::eR16G16B16A16Sint:
+      return xiiGALResourceFormat::RGBA16SInt;
+
+    case vk::Format::eR32G32Sfloat:
+      return xiiGALResourceFormat::RG32Typeless;
+    case vk::Format::eR32G32Uint:
+      return xiiGALResourceFormat::RG32UInt;
+    case vk::Format::eR32G32Sint:
+      return xiiGALResourceFormat::RG32SInt;
+
+    case vk::Format::eD32SfloatS8Uint:
+      return xiiGALResourceFormat::R32G8X24Typeless;
+
+    case vk::Format::eA2R10G10B10UnormPack32:
+      return xiiGALResourceFormat::RGB10A2UNormalized;
+    case vk::Format::eA2R10G10B10UintPack32:
+      return xiiGALResourceFormat::RGB10A2UInt;
+    case vk::Format::eB10G11R11UfloatPack32:
+      return xiiGALResourceFormat::RG11B10Float;
+
+    case vk::Format::eR8G8B8A8Unorm:
+      return xiiGALResourceFormat::RGBA8UNormalized;
+    case vk::Format::eR8G8B8A8Srgb:
+      return xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+    case vk::Format::eR8G8B8A8Uint:
+      return xiiGALResourceFormat::RGBA8UInt;
+    case vk::Format::eR8G8B8A8Snorm:
+      return xiiGALResourceFormat::RGBA8SNormalized;
+    case vk::Format::eR8G8B8A8Sint:
+      return xiiGALResourceFormat::RGBA8SInt;
+
+    case vk::Format::eR16G16Sfloat:
+      return xiiGALResourceFormat::RG16Typeless;
+    case vk::Format::eR16G16Unorm:
+      return xiiGALResourceFormat::RG16UNormalized;
+    case vk::Format::eR16G16Uint:
+      return xiiGALResourceFormat::RG16UInt;
+    case vk::Format::eR16G16Snorm:
+      return xiiGALResourceFormat::RG16SNormalized;
+    case vk::Format::eR16G16Sint:
+      return xiiGALResourceFormat::RG16SInt;
+
+    case vk::Format::eR32Sfloat:
+      return xiiGALResourceFormat::R32Typeless;
+    case vk::Format::eD32Sfloat:
+      return xiiGALResourceFormat::D32Float;
+    case vk::Format::eR32Uint:
+      return xiiGALResourceFormat::R32UInt;
+    case vk::Format::eR32Sint:
+      return xiiGALResourceFormat::R32SInt;
+
+    case vk::Format::eD24UnormS8Uint:
+      return xiiGALResourceFormat::R24G8Typeless;
+
+    case vk::Format::eR8G8Unorm:
+      return xiiGALResourceFormat::RG8UNormalized;
+    case vk::Format::eR8G8Uint:
+      return xiiGALResourceFormat::RG8UInt;
+    case vk::Format::eR8G8Snorm:
+      return xiiGALResourceFormat::RG8SNormalized;
+    case vk::Format::eR8G8Sint:
+      return xiiGALResourceFormat::RG8SInt;
+
+    case vk::Format::eR16Sfloat:
+      return xiiGALResourceFormat::R16Typeless;
+    case vk::Format::eD16Unorm:
+      return xiiGALResourceFormat::D16UNormalized;
+    case vk::Format::eR16Unorm:
+      return xiiGALResourceFormat::R16UNormalized;
+    case vk::Format::eR16Uint:
+      return xiiGALResourceFormat::R16UInt;
+    case vk::Format::eR16Snorm:
+      return xiiGALResourceFormat::R16SNormalized;
+    case vk::Format::eR16Sint:
+      return xiiGALResourceFormat::R16SInt;
+
+    case vk::Format::eR8Unorm:
+      return xiiGALResourceFormat::R8UNormalized;
+    case vk::Format::eR8Uint:
+      return xiiGALResourceFormat::R8UInt;
+    case vk::Format::eR8Snorm:
+      return xiiGALResourceFormat::R8SNormalized;
+    case vk::Format::eR8Sint:
+      return xiiGALResourceFormat::R8SInt;
+    case vk::Format::eA8UnormKHR:
+      return xiiGALResourceFormat::A8UNormalized;
+
+    case vk::Format::eE5B9G9R9UfloatPack32:
+      return xiiGALResourceFormat::RGB9E5SharedExponent;
+
+    case vk::Format::eBc1RgbUnormBlock:
+      return xiiGALResourceFormat::BC1UNormalized;
+    case vk::Format::eBc1RgbSrgbBlock:
+      return xiiGALResourceFormat::BC1UNormalizedSRGB;
+
+    case vk::Format::eBc2UnormBlock:
+      return xiiGALResourceFormat::BC2UNormalized;
+    case vk::Format::eBc2SrgbBlock:
+      return xiiGALResourceFormat::BC2UNormalizedSRGB;
+
+    case vk::Format::eBc3UnormBlock:
+      return xiiGALResourceFormat::BC3UNormalized;
+    case vk::Format::eBc3SrgbBlock:
+      return xiiGALResourceFormat::BC3UNormalizedSRGB;
+
+    case vk::Format::eBc4UnormBlock:
+      return xiiGALResourceFormat::BC4UNormalized;
+    case vk::Format::eBc4SnormBlock:
+      return xiiGALResourceFormat::BC4SNormalized;
+
+    case vk::Format::eBc5UnormBlock:
+      return xiiGALResourceFormat::BC5UNormalized;
+    case vk::Format::eBc5SnormBlock:
+      return xiiGALResourceFormat::BC5SNormalized;
+
+    case vk::Format::eB5G6R5UnormPack16:
+      return xiiGALResourceFormat::B5G6R5UNormalized;
+    case vk::Format::eB5G5R5A1UnormPack16:
+      return xiiGALResourceFormat::B5G5R5A1UNormalized;
+    case vk::Format::eB8G8R8A8Unorm:
+      return xiiGALResourceFormat::BGRA8UNormalized;
+    case vk::Format::eB8G8R8A8Srgb:
+      return xiiGALResourceFormat::BGRA8UNormalizedSRGB;
+
+    case vk::Format::eBc6HUfloatBlock:
+      return xiiGALResourceFormat::BC6HUF16;
+    case vk::Format::eBc6HSfloatBlock:
+      return xiiGALResourceFormat::BC6HSF16;
+
+    case vk::Format::eBc7UnormBlock:
+      return xiiGALResourceFormat::BC7UNormalized;
+    case vk::Format::eBc7SrgbBlock:
+      return xiiGALResourceFormat::BC7UNormalizedSRGB;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALResourceFormat::Unknown;
 }
 
 XII_ALWAYS_INLINE vk::ShaderStageFlags xiiVulkanTypeConversions::GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e)

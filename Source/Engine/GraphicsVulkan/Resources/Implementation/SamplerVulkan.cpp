@@ -18,7 +18,6 @@ xiiGALSamplerVulkan::~xiiGALSamplerVulkan() = default;
 xiiResult xiiGALSamplerVulkan::InitPlatform()
 {
   xiiGALDeviceVulkan*                 pDeviceVulkan              = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::PhysicalDevice                  vkPhysicalDevice           = pDeviceVulkan->GetVulkanPhysicalDevice();
   vk::Device                          vkLogicalDevice            = pDeviceVulkan->GetVulkanLogicalDevice();
   const vk::PhysicalDeviceProperties& vkPhysicalDeviceProperties = pDeviceVulkan->GetVulkanPhysicalDeviceProperties();
 

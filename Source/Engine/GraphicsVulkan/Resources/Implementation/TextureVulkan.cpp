@@ -52,7 +52,6 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     return XII_FAILURE;
   }
 
-  vk::Device  vkLogicalDevice          = pDeviceVulkan->GetVulkanLogicalDevice();
   const auto& resourceFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
 
   if (m_Description.m_pExisitingNativeObject != nullptr)
@@ -154,7 +153,6 @@ void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
 vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties)
 {
   xiiGALDeviceVulkan* pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice    = pDeviceVulkan->GetVulkanLogicalDevice();
   const bool          bInitializeTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
 
   vk::BufferCreateInfo vkStagingBufferCreateInfo = {};
@@ -419,8 +417,7 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDe
 
 void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   // Vulkan validation layers do not like uninitialized memory, so if no initial data is provided, we will clear the memory.
 

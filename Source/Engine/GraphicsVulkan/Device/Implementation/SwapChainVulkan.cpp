@@ -7,6 +7,19 @@
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+#  include <SDL3/SDL_init.h>
+#  include <SDL3/SDL_video.h>
+#endif
+
+#ifdef VK_USE_PLATFORM_WAYLAND_KHR
+#  include <wayland-client.h>
+#endif
+
+#ifdef VK_USE_PLATFORM_XCB_KHR
+#  include <xcb/xcb.h>
+#endif
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -22,6 +35,14 @@ xiiGALSwapChainVulkan::~xiiGALSwapChainVulkan() = default;
 xiiResult xiiGALSwapChainVulkan::InitPlatform()
 {
   XII_LOG_BLOCK("xiiGALSwapChainVulkan::InitPlatform");
+
+#if XII_ENABLED(XII_SUPPORTS_SDL)
+  if (!SDL_Init(SDL_INIT_VIDEO))
+  {
+    xiiLog::Error("Unable to initialize SDL Video: {}", SDL_GetError());
+    return XII_FAILURE;
+  }
+#endif
 
   XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
   XII_SUCCEED_OR_RETURN(CreateVulkanSwapChain());
@@ -105,23 +126,23 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.pView                         = m_Description.m_pWindow->GetNativeWindowHandle();
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createMacOSSurfaceMVK(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR) || defined(VK_USE_PLATFORM_XCB_KHR)
+#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
   vk::WaylandSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                           = nullptr;
   vkSurfaceCreateInfo.flags                           = {};
-  vkSurfaceCreateInfo.display                         = m_Description.m_pWindow->GetNativeWindowHandle();
-  vkSurfaceCreateInfo.surface                         = nullptr;
+  vkSurfaceCreateInfo.display                         = static_cast<wl_display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr));
+  vkSurfaceCreateInfo.surface                         = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
+
+  XII_ASSERT_DEV(vkSurfaceCreateInfo.display != nullptr, "");
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWaylandSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #elif defined(VK_USE_PLATFORM_XCB_KHR)
-  xiiWindowHandle windowHandle = m_Description.m_pWindow->GetNativeWindowHandle();
-  XII_ASSERT_DEV(windowHandle.xcbWindow.m_uiWindowID != 0 && windowHandle.xcbWindow.m_pConnection != nullptr, "");
 
   vk::XcbSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                       = nullptr;
   vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.window                      = windowHandle.xcbWindow.m_uiWindowID;
-  vkSurfaceCreateInfo.connection                  = windowHandle.xcbWindow.m_pConnection;
+  vkSurfaceCreateInfo.window                      = (xcb_window_t)SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr);
+  vkSurfaceCreateInfo.connection                  = XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXcbSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #else
@@ -130,9 +151,9 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 
   // Check present support on the graphics queue.
   {
-    vk::PhysicalDevice                   vkPhysicalDevice         = pDeviceVulkan->GetVulkanPhysicalDevice();
-    xiiGALQueueInformationVulkan         graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
-    vk::Bool32                           bHasPresentSupport       = vk::False;
+    vk::PhysicalDevice           vkPhysicalDevice         = pDeviceVulkan->GetVulkanPhysicalDevice();
+    xiiGALQueueInformationVulkan graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
+    vk::Bool32                   bHasPresentSupport       = vk::False;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
@@ -211,7 +232,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
         xiiLog::Info("Requested color buffer format '{}' is not supported by the surface and will be replaced with '{}'.", vk::to_string(m_vkColorFormat).data(), vk::to_string(vkReplacementColorFormat).data());
 
         m_vkColorFormat                   = vkReplacementColorFormat;
-        m_Description.m_ColorBufferFormat = xiiVulkanTypeConversions::GetGALFormat(vkReplacementColorFormat);
+        m_Description.m_ColorBufferFormat = xiiVulkanTypeConversions::GetGALResourceFormat(vkReplacementColorFormat);
       }
       else
       {

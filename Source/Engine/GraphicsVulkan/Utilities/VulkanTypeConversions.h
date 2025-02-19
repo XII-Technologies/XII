@@ -61,7 +61,7 @@ public:
   static vk::ColorComponentFlags GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
 
   static vk::Format                 GetFormat(xiiGALResourceFormat::Enum e);
-  static xiiGALResourceFormat::Enum GetGALFormat(vk::Format e);
+  static xiiGALResourceFormat::Enum GetGALResourceFormat(vk::Format e);
 
   static vk::ShaderStageFlags          GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e);
   static xiiBitflags<xiiGALShaderType> GetGALShaderStageFlags(vk::ShaderStageFlags e);

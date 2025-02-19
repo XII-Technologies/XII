@@ -59,8 +59,8 @@ private:
     xiiUInt64                m_uiFenceValue       = 0U;
   };
 
-  xiiMutex                             m_QueueMutex;
-  xiiGALQueueInformationVulkan         m_QueueInformation;
+  xiiMutex                     m_QueueMutex;
+  xiiGALQueueInformationVulkan m_QueueInformation;
 
   vk::CommandPool                           m_vkCommandPool;
   xiiDynamicArray<xiiGALCommandListVulkan*> m_CommandLists;

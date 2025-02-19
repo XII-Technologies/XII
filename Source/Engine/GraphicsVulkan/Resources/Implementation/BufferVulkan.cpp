@@ -19,10 +19,7 @@ xiiGALBufferVulkan::~xiiGALBufferVulkan() = default;
 
 xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 {
-  xiiGALDeviceVulkan*                 pDeviceVulkan              = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::PhysicalDevice                  vkPhysicalDevice           = pDeviceVulkan->GetVulkanPhysicalDevice();
-  vk::Device                          vkLogicalDevice            = pDeviceVulkan->GetVulkanLogicalDevice();
-  const vk::PhysicalDeviceProperties& vkPhysicalDeviceProperties = pDeviceVulkan->GetVulkanPhysicalDeviceProperties();
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   vk::BufferCreateInfo vkBufferCreateInfo  = {};
   vkBufferCreateInfo.pNext                 = nullptr;
