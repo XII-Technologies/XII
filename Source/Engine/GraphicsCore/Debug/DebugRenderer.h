@@ -71,6 +71,41 @@ struct xiiDebugTextPlacement
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextPlacement);
 
+struct XII_GRAPHICSCORE_DLL xiiDebugRendererLine
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiDebugRendererLine();
+  xiiDebugRendererLine(const xiiVec3& vStart, const xiiVec3& vEnd);
+  xiiDebugRendererLine(const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& color);
+
+  xiiVec3 m_vStart;
+  xiiVec3 m_vEnd;
+
+  xiiColor m_StartColor = xiiColor::White;
+  xiiColor m_EndColor   = xiiColor::White;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiDebugRendererTriangle
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiDebugRendererTriangle();
+  xiiDebugRendererTriangle(const xiiVec3& v0, const xiiVec3& v1, const xiiVec3& v2);
+
+  xiiVec3  m_vPosition[3];
+  xiiColor m_Color = xiiColor::White;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiDebugRendererTexturedTriangle
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiVec3  m_vPosition[3];
+  xiiVec2  m_vTexCoord[3];
+  xiiColor m_Color = xiiColor::White;
+};
+
 /// \brief Draws simple shapes into the scene or view.
 ///
 /// Shapes can be rendered for a single frame, or 'persistent' for a certain duration.
@@ -79,46 +114,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextPlacement);
 class XII_GRAPHICSCORE_DLL xiiDebugRenderer
 {
 public:
-  struct Line
-  {
-    XII_DECLARE_POD_TYPE();
-
-    Line();
-    Line(const xiiVec3& vStart, const xiiVec3& vEnd);
-    Line(const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& color);
-
-    xiiVec3 m_start;
-    xiiVec3 m_end;
-
-    xiiColor m_startColor = xiiColor::White;
-    xiiColor m_endColor   = xiiColor::White;
-  };
-
-  struct Triangle
-  {
-    XII_DECLARE_POD_TYPE();
-
-    Triangle();
-    Triangle(const xiiVec3& v0, const xiiVec3& v1, const xiiVec3& v2);
-
-    xiiVec3  m_position[3];
-    xiiColor m_color = xiiColor::White;
-  };
-
-  struct TexturedTriangle
-  {
-    XII_DECLARE_POD_TYPE();
-
-    xiiVec3  m_position[3];
-    xiiVec2  m_texcoord[3];
-    xiiColor m_color = xiiColor::White;
-  };
-
   /// \brief Renders the given set of lines for one frame.
-  static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders the given set of lines in 2D (screen-space) for one frame.
-  static void Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color);
+  static void Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color);
 
   /// \brief Renders a cross for one frame.
   static void DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
@@ -145,10 +145,10 @@ public:
   static void DrawSolidBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders the set of filled triangles for one frame.
-  static void DrawSolidTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<Triangle> triangles, const xiiColor& color);
+  static void DrawSolidTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<xiiDebugRendererTriangle> triangles, const xiiColor& color);
 
   /// \brief Renders the set of textured triangles for one frame.
-  static void DrawTexturedTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<TexturedTriangle> triangles, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture);
+  static void DrawTexturedTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<xiiDebugRendererTexturedTriangle> triangles, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture);
 
   /// \brief Renders a filled 2D rectangle in screen-space for one frame.
   static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color);
@@ -203,7 +203,7 @@ public:
   static void AddPersistentLineBox(const xiiDebugRendererContext& context, const xiiVec3& vHalfSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
 
   /// \brief Renders lines at the given location for as many frames until \a duration has passed.
-  static void AddPersistentLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
+  static void AddPersistentLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
 
   /// \brief Renders a solid 2D cone in a plane with a given angle.
   ///
@@ -261,6 +261,9 @@ private:
 class XII_GRAPHICSCORE_DLL xiiScriptExtensionClass_Debug
 {
 public:
+  /// \brief Returns the resolution of the first main view that it can find.
+  static xiiVec2 GetResolution();
+
   static void DrawCross(const xiiWorld* pWorld, const xiiVec3& vPosition, float fSize, const xiiColor& color, const xiiTransform& transform);
   static void DrawLineBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform);
   static void DrawLineSphere(const xiiWorld* pWorld, const xiiVec3& vPosition, float fRadius, const xiiColor& color, const xiiTransform& transform);
@@ -274,6 +277,10 @@ public:
   static void AddPersistentCross(const xiiWorld* pWorld, const xiiVec3& vPosition, float fSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
   static void AddPersistentLineBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
   static void AddPersistentLineSphere(const xiiWorld* pWorld, const xiiVec3& vPosition, float fRadius, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
+
+  static void DrawLine(const xiiWorld* pWorld, const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& startColor, const xiiColor& endColor);
+
+  static void Draw2DLine(const xiiWorld* pWorld, const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& startColor, const xiiColor& endColor);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiScriptExtensionClass_Debug);

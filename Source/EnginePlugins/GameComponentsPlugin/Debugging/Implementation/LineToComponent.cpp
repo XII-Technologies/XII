@@ -40,11 +40,11 @@ void xiiLineToComponent::Update()
     return;
   }
 
-  xiiDynamicArray<xiiDebugRenderer::Line> lines;
+  xiiDynamicArray<xiiDebugRendererLine> lines;
 
-  auto& line   = lines.ExpandAndGetRef();
-  line.m_start = GetOwner()->GetGlobalPosition();
-  line.m_end   = pTarget->GetGlobalPosition();
+  auto& line    = lines.ExpandAndGetRef();
+  line.m_vStart = GetOwner()->GetGlobalPosition();
+  line.m_vEnd   = pTarget->GetGlobalPosition();
 
   xiiDebugRenderer::DrawLines(GetWorld(), lines, m_LineColor);
 }

@@ -15,6 +15,16 @@ XII_ALWAYS_INLINE bool xiiRenderData::Category::operator==(const Category& other
 //////////////////////////////////////////////////////////////////////////
 
 // static
+XII_FORCE_INLINE xiiHashedString xiiRenderData::GetCategoryName(Category category)
+{
+  if (category.m_uiValue < s_CategoryData.GetCount())
+  {
+    return s_CategoryData[category.m_uiValue].m_sName;
+  }
+  return xiiHashedString();
+}
+
+// static
 XII_FORCE_INLINE const xiiRenderer* xiiRenderData::GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType)
 {
   if (s_bRendererInstancesDirty)
@@ -33,18 +43,7 @@ XII_FORCE_INLINE const xiiRenderer* xiiRenderData::GetCategoryRenderer(Category 
   return nullptr;
 }
 
-// static
-XII_FORCE_INLINE xiiHashedString xiiRenderData::GetCategoryName(Category category)
-{
-  if (category.m_uiValue < s_CategoryData.GetCount())
-  {
-    return s_CategoryData[category.m_uiValue].m_sName;
-  }
-
-  return xiiHashedString();
-}
-
-XII_FORCE_INLINE xiiUInt64 xiiRenderData::GetCategorySortingKey(Category category, const xiiCamera& camera) const
+XII_FORCE_INLINE xiiUInt64 xiiRenderData::GetFinalSortingKey(Category category, const xiiCamera& camera) const
 {
   return s_CategoryData[category.m_uiValue].m_SortingKeyFunc(this, camera);
 }

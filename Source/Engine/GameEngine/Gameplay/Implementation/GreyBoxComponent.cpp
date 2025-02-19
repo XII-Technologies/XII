@@ -192,7 +192,7 @@ void xiiGreyBoxComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) c
 
       pRenderData->m_uiUniqueID = GetUniqueIdForRendering(uiMaterialIndex);
 
-      pRenderData->FillBatchIdAndSortingKey();
+      pRenderData->FillSortingKey();
     }
 
     bool bDontCacheYet = false;

@@ -697,7 +697,6 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView
 
   XII_ASSERT_DEBUG(pRtti->GetAllocator() != nullptr && pRtti->GetAllocator()->CanAllocate(), "There is no RTTI allocator available for the given resource type '{0}'", XII_PP_STRINGIFY(ResourceType));
 
-  xiiResource*        pResource = nullptr;
   xiiTempHashedString sHashedResourceID(sResourceID);
 
   xiiHashedString* redirection;
@@ -709,17 +708,16 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView
 
   LoadedResources& lr = s_pState->m_LoadedResources[pRtti];
 
-  if (lr.m_Resources.TryGetValue(sHashedResourceID, pResource))
+  xiiResource*& pResource = lr.m_Resources[sHashedResourceID];
+  if (pResource != nullptr)
     return pResource;
 
-  xiiResource* pNewResource = pRtti->GetAllocator()->Allocate<xiiResource>();
-  pNewResource->m_Priority  = s_pState->m_ResourceTypePriorities.GetValueOrDefault(pRtti, xiiResourcePriority::Medium);
-  pNewResource->SetUniqueID(sResourceID, bIsReloadable);
-  pNewResource->m_Flags.AddOrRemove(xiiResourceFlags::ResourceHasTypeFallback, pNewResource->HasResourceTypeLoadingFallback());
+  pResource             = pRtti->GetAllocator()->Allocate<xiiResource>();
+  pResource->m_Priority = s_pState->m_ResourceTypePriorities.GetValueOrDefault(pRtti, xiiResourcePriority::Medium);
+  pResource->SetUniqueID(sResourceID, bIsReloadable);
+  pResource->m_Flags.AddOrRemove(xiiResourceFlags::ResourceHasTypeFallback, pResource->HasResourceTypeLoadingFallback());
 
-  lr.m_Resources.Insert(sHashedResourceID, pNewResource);
-
-  return pNewResource;
+  return pResource;
 }
 
 void xiiResourceManager::RegisterResourceOverrideType(const xiiRTTI* pDerivedTypeToUse, xiiDelegate<bool(const xiiStringBuilder&)> overrideDecider)

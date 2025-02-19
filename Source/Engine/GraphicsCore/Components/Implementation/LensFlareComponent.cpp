@@ -15,14 +15,20 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLensFlareRenderData, 1, xiiRTTIDefaultAlloca
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiLensFlareRenderData::FillBatchIdAndSortingKey()
+void xiiLensFlareRenderData::FillSortingKey()
 {
   // ignore upper 32 bit of the resource ID hash
   const xiiUInt32 uiTextureIDHash = static_cast<xiiUInt32>(m_hTexture.GetResourceIDHash());
 
-  // Batch and sort by texture
-  m_uiBatchId    = uiTextureIDHash;
+  // Sort by texture
   m_uiSortingKey = uiTextureIDHash;
+}
+
+bool xiiLensFlareRenderData::CanBatch(const xiiRenderData& other0) const
+{
+  const auto& other = xiiStaticCast<const xiiLensFlareRenderData&>(other0);
+
+  return m_hTexture == other.m_hTexture;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -327,7 +333,7 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
       pRenderData->m_bGreyscaleTexture      = element.m_bGreyscaleTexture;
       pRenderData->m_bApplyFog              = m_bApplyFog;
 
-      pRenderData->FillBatchIdAndSortingKey();
+      pRenderData->FillSortingKey();
     }
 
     msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitTransparent, pLightComponent != nullptr ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);

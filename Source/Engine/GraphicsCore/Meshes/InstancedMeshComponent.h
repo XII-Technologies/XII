@@ -38,7 +38,7 @@ class XII_GRAPHICSCORE_DLL xiiInstancedMeshRenderData : public xiiMeshRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiInstancedMeshRenderData, xiiMeshRenderData);
 
 public:
-  virtual void FillBatchIdAndSortingKey() override;
+  virtual bool CanBatch(const xiiRenderData& other) const override { return false; }
 
   xiiInstanceData* m_pExplicitInstanceData   = nullptr;
   xiiUInt32        m_uiExplicitInstanceCount = 0;

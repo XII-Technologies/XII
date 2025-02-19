@@ -495,8 +495,8 @@ void xiiSensorConeComponent::DebugDrawSensorShape() const
   constexpr xiiUInt32 CIRCLE_SEGMENTS = MAX_SEGMENTS * 2;
   constexpr xiiUInt32 NUM_LINES       = MAX_SEGMENTS * 4 + CIRCLE_SEGMENTS * 2 + 4;
 
-  xiiDebugRenderer::Line lines[NUM_LINES];
-  xiiUInt32              curLine = 0;
+  xiiDebugRendererLine lines[NUM_LINES];
+  xiiUInt32            curLine = 0;
 
   const xiiUInt32 numSegments     = xiiMath::Clamp(static_cast<xiiUInt32>(m_Angle / xiiAngle::MakeFromDegree(180) * MAX_SEGMENTS), MIN_SEGMENTS, MAX_SEGMENTS);
   const xiiAngle  stepAngle       = m_Angle / static_cast<float>(numSegments);
@@ -538,24 +538,24 @@ void xiiSensorConeComponent::DebugDrawSensorShape() const
       const xiiVec3 p1 = q * xiiVec3(fCos1, fSin1, 0.0f);
       const xiiVec3 p2 = q * xiiVec3(fCos2, fSin2, 0.0f);
 
-      lines[curLine].m_start = p1 * m_fNearDistance;
-      lines[curLine].m_end   = p2 * m_fNearDistance;
+      lines[curLine].m_vStart = p1 * m_fNearDistance;
+      lines[curLine].m_vEnd   = p2 * m_fNearDistance;
       ++curLine;
 
-      lines[curLine].m_start = p1 * m_fFarDistance;
-      lines[curLine].m_end   = p2 * m_fFarDistance;
+      lines[curLine].m_vStart = p1 * m_fFarDistance;
+      lines[curLine].m_vEnd   = p2 * m_fFarDistance;
       ++curLine;
 
       if (s == 0)
       {
-        lines[curLine].m_start = p1 * m_fNearDistance;
-        lines[curLine].m_end   = p1 * m_fFarDistance;
+        lines[curLine].m_vStart = p1 * m_fNearDistance;
+        lines[curLine].m_vEnd   = p1 * m_fFarDistance;
         ++curLine;
       }
       else if (s == numSegments - 1)
       {
-        lines[curLine].m_start = p2 * m_fNearDistance;
-        lines[curLine].m_end   = p2 * m_fFarDistance;
+        lines[curLine].m_vStart = p2 * m_fNearDistance;
+        lines[curLine].m_vEnd   = p2 * m_fFarDistance;
         ++curLine;
       }
     }
@@ -576,8 +576,8 @@ void xiiSensorConeComponent::DebugDrawSensorShape() const
       const xiiVec3 p1 = xiiVec3(fX, fCos1 * fCircleRadius, fSin1 * fCircleRadius);
       const xiiVec3 p2 = xiiVec3(fX, fCos2 * fCircleRadius, fSin2 * fCircleRadius);
 
-      lines[curLine].m_start = p1;
-      lines[curLine].m_end   = p2;
+      lines[curLine].m_vStart = p1;
+      lines[curLine].m_vEnd   = p2;
       ++curLine;
     }
   }
@@ -664,8 +664,8 @@ void xiiSensorWorldModule::UpdateSensors(const xiiWorldModule::UpdateContext& co
 
 void xiiSensorWorldModule::DebugDrawSensors(const xiiWorldModule::UpdateContext& context)
 {
-  xiiHybridArray<xiiDebugRenderer::Line, 256> lines;
-  const xiiWorld*                             pWorld = GetWorld();
+  xiiHybridArray<xiiDebugRendererLine, 256> lines;
+  const xiiWorld*                           pWorld = GetWorld();
 
   for (xiiComponentHandle hComponent : m_DebugComponents)
   {

@@ -16,7 +16,8 @@ class XII_GRAPHICSCORE_DLL xiiLensFlareRenderData : public xiiRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiLensFlareRenderData, xiiRenderData);
 
 public:
-  void FillBatchIdAndSortingKey();
+  void         FillSortingKey();
+  virtual bool CanBatch(const xiiRenderData& other) const override;
 
   xiiTexture2DResourceHandle m_hTexture;
   xiiFloat16Vec4             m_Color;

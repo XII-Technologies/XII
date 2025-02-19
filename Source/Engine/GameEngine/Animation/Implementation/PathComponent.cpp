@@ -312,7 +312,7 @@ void xiiPathComponent::DrawDebugVisualizations()
   if (m_LinearizedRepresentation.IsEmpty())
     return;
 
-  xiiHybridArray<xiiDebugRenderer::Line, 32> lines;
+  xiiHybridArray<xiiDebugRendererLine, 32> lines;
 
   xiiUInt32 uiPrev = 0;
   xiiUInt32 uiNext = 1;
@@ -325,19 +325,19 @@ void xiiPathComponent::DrawDebugVisualizations()
     if (bVisPath)
     {
       auto& line        = lines.ExpandAndGetRef();
-      line.m_start      = n0.m_vPosition;
-      line.m_end        = n1.m_vPosition;
-      line.m_startColor = xiiColor::DarkRed;
-      line.m_endColor   = xiiColor::DarkRed;
+      line.m_vStart     = n0.m_vPosition;
+      line.m_vEnd       = n1.m_vPosition;
+      line.m_StartColor = xiiColor::DarkRed;
+      line.m_EndColor   = xiiColor::DarkRed;
     }
 
     if (bVisUp)
     {
       auto& line        = lines.ExpandAndGetRef();
-      line.m_start      = n0.m_vPosition;
-      line.m_end        = n0.m_vPosition + n0.m_vUpDirection * 0.25f;
-      line.m_startColor = xiiColor::Black;
-      line.m_endColor   = xiiColor::LightBlue;
+      line.m_vStart     = n0.m_vPosition;
+      line.m_vEnd       = n0.m_vPosition + n0.m_vUpDirection * 0.25f;
+      line.m_StartColor = xiiColor::Black;
+      line.m_EndColor   = xiiColor::LightBlue;
     }
 
     uiPrev = uiNext;

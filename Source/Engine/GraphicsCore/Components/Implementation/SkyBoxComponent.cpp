@@ -103,7 +103,7 @@ void xiiSkyBoxComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
     pRenderData->m_uiSubMeshIndex = 0;
     pRenderData->m_uiUniqueID     = GetUniqueIdForRendering();
 
-    pRenderData->FillBatchIdAndSortingKey();
+    pRenderData->FillSortingKey();
   }
 
   msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Sky, xiiRenderData::Caching::Never);

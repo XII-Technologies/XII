@@ -66,9 +66,23 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderData, 1, xiiRTTIDefaultAllocator<x
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiMeshRenderData::FillBatchIdAndSortingKey()
+void xiiMeshRenderData::FillSortingKey()
 {
-  FillBatchIdAndSortingKeyInternal(0);
+  m_uiFlipWinding  = m_GlobalTransform.ContainsNegativeScale() ? 1 : 0;
+  m_uiUniformScale = m_GlobalTransform.ContainsUniformScale() ? 1 : 0;
+
+  const xiiUInt32 uiMeshIDHash     = xiiHashingUtils::StringHashTo32(m_hMesh.GetResourceIDHash());
+  const xiiUInt32 uiMaterialIDHash = m_hMaterial.IsValid() ? xiiHashingUtils::StringHashTo32(m_hMaterial.GetResourceIDHash()) : 0;
+
+  // Sort by material and then by mesh
+  m_uiSortingKey = (uiMaterialIDHash << 16) | ((uiMeshIDHash + m_uiSubMeshIndex) & 0xFFFE) | m_uiFlipWinding;
+}
+
+bool xiiMeshRenderData::CanBatch(const xiiRenderData& other0) const
+{
+  const auto& other = xiiStaticCast<const xiiMeshRenderData&>(other0);
+
+  return m_hMesh == other.m_hMesh && m_uiSubMeshIndex == other.m_uiSubMeshIndex && m_hMaterial == other.m_hMaterial && m_uiFlipWinding == other.m_uiFlipWinding;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -188,7 +202,7 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) 
       pRenderData->m_uiSubMeshIndex      = uiPartIndex;
       pRenderData->m_uiUniqueID          = GetUniqueIdForRendering(uiMaterialIndex);
 
-      pRenderData->FillBatchIdAndSortingKey();
+      pRenderData->FillSortingKey();
     }
 
     bool bDontCacheYet = false;

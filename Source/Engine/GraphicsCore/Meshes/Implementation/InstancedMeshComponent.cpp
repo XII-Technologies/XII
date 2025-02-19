@@ -90,11 +90,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInstancedMeshRenderData, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiInstancedMeshRenderData::FillBatchIdAndSortingKey()
-{
-  FillBatchIdAndSortingKeyInternal(m_pExplicitInstanceData->m_hInstanceDataBuffer.GetInternalID().m_Data);
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 
 xiiInstancedMeshComponentManager::xiiInstancedMeshComponentManager(xiiWorld* pWorld) :

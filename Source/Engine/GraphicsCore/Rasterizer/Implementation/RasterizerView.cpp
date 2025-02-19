@@ -36,7 +36,7 @@ void xiiRasterizerView::BeginScene()
 {
   XII_ASSERT_DEV(m_pRasterizer != nullptr, "Call SetResolution() first.");
 
-  XII_PROFILE_SCOPE("Occlusion::Clear");
+  XII_PROFILE_SCOPE("Clear");
 
   m_pRasterizer->clear();
   m_bAnyOccludersRasterized = false;
@@ -57,7 +57,7 @@ void xiiRasterizerView::EndScene()
   if (m_Instances.IsEmpty())
     return;
 
-  XII_PROFILE_SCOPE("Occlusion::RasterizeScene");
+  XII_PROFILE_SCOPE("RasterizeScene");
 
   SortObjectsFrontToBack();
 
@@ -75,7 +75,7 @@ void xiiRasterizerView::RasterizeObjects(xiiUInt32 uiMaxObjects)
 {
 #if XII_ENABLED(XII_RASTERIZER_SUPPORTED)
 
-  XII_PROFILE_SCOPE("Occlusion::RasterizeObjects");
+  XII_PROFILE_SCOPE("RasterizeObjects");
 
   for (const Instance& inst : m_Instances)
   {
@@ -123,7 +123,7 @@ void xiiRasterizerView::ApplyModelViewProjectionMatrix(const xiiTransform& model
 void xiiRasterizerView::SortObjectsFrontToBack()
 {
 #if XII_ENABLED(XII_RASTERIZER_SUPPORTED)
-  XII_PROFILE_SCOPE("Occlusion::SortObjects");
+  XII_PROFILE_SCOPE("SortObjects");
 
   const xiiVec3 camPos = m_pCamera->GetCenterPosition();
 
@@ -140,8 +140,6 @@ bool xiiRasterizerView::IsVisible(const xiiSimdBBox& aabb) const
 #if XII_ENABLED(XII_RASTERIZER_SUPPORTED)
   if (!m_bAnyOccludersRasterized)
     return true; // assume that people already do frustum culling anyway
-
-  XII_PROFILE_SCOPE("Occlusion::IsVisible");
 
   xiiSimdVec4f vmin = aabb.m_Min;
   xiiSimdVec4f vmax = aabb.m_Max;
@@ -222,6 +220,5 @@ void xiiRasterizerViewPool::ReturnRasterizerView(xiiRasterizerView* pView)
 
   XII_ASSERT_NOT_IMPLEMENTED;
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Rasterizer_Implementation_RasterizerView);

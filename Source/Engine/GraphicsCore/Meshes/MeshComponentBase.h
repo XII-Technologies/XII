@@ -14,7 +14,8 @@ class XII_GRAPHICSCORE_DLL xiiMeshRenderData : public xiiRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshRenderData, xiiRenderData);
 
 public:
-  virtual void FillBatchIdAndSortingKey();
+  void         FillSortingKey();
+  virtual bool CanBatch(const xiiRenderData& other) const override;
 
   xiiMeshResourceHandle     m_hMesh;
   xiiMaterialResourceHandle m_hMaterial;
@@ -25,23 +26,6 @@ public:
   xiiUInt32 m_uiUniformScale : 1;
 
   xiiUInt32 m_uiUniqueID = 0;
-
-protected:
-  XII_FORCE_INLINE void FillBatchIdAndSortingKeyInternal(xiiUInt32 uiAdditionalBatchData)
-  {
-    m_uiFlipWinding  = m_GlobalTransform.ContainsNegativeScale() ? 1 : 0;
-    m_uiUniformScale = m_GlobalTransform.ContainsUniformScale() ? 1 : 0;
-
-    const xiiUInt32 uiMeshIDHash     = xiiHashingUtils::StringHashTo32(m_hMesh.GetResourceIDHash());
-    const xiiUInt32 uiMaterialIDHash = m_hMaterial.IsValid() ? xiiHashingUtils::StringHashTo32(m_hMaterial.GetResourceIDHash()) : 0;
-
-    // Generate batch id from mesh, material and part index.
-    xiiUInt32 data[] = {uiMeshIDHash, uiMaterialIDHash, m_uiSubMeshIndex, m_uiFlipWinding, uiAdditionalBatchData};
-    m_uiBatchId      = xiiHashingUtils::xxHash32(data, sizeof(data));
-
-    // Sort by material and then by mesh
-    m_uiSortingKey = (uiMaterialIDHash << 16) | ((uiMeshIDHash + m_uiSubMeshIndex) & 0xFFFE) | m_uiFlipWinding;
-  }
 };
 
 struct XII_GRAPHICSCORE_DLL xiiMsgSetMeshMaterial : public xiiMessage

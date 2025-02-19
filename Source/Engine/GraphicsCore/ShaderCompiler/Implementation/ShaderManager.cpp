@@ -105,7 +105,7 @@ namespace
     return false;
   }
 
-  static xiiHashTable<xiiUInt64, xiiString> s_PermutationPaths;
+  static xiiHashTable<xiiUInt64, xiiUntrackedString> s_PermutationPaths;
 } // namespace
 
 //////////////////////////////////////////////////////////////////////////
@@ -330,8 +330,8 @@ xiiShaderPermutationResourceHandle xiiShaderManager::PreloadSinglePermutationInt
 {
   const xiiUInt64 uiPermutationKey = (xiiUInt64)xiiHashingUtils::StringHashTo32(uiResourceIdHash) << 32 | uiPermutationHash;
 
-  xiiString* pPermutationPath = &s_PermutationPaths[uiPermutationKey];
-  if (pPermutationPath->IsEmpty())
+  xiiUntrackedString& permutationPath = s_PermutationPaths[uiPermutationKey];
+  if (permutationPath.IsEmpty())
   {
     xiiStringBuilder sShaderFile = GetCacheDirectory();
     sShaderFile.AppendPath(GetActivePlatform().GetData());
@@ -341,10 +341,10 @@ xiiShaderPermutationResourceHandle xiiShaderManager::PreloadSinglePermutationInt
       sShaderFile.Shrink(0, 1);
     sShaderFile.AppendFormat("_{0}.xiiPermutation", xiiArgU(uiPermutationHash, 8, true, 16, true));
 
-    *pPermutationPath = sShaderFile;
+    permutationPath = sShaderFile;
   }
 
-  xiiShaderPermutationResourceHandle hShaderPermutation = xiiResourceManager::LoadResource<xiiShaderPermutationResource>(pPermutationPath->GetData());
+  xiiShaderPermutationResourceHandle hShaderPermutation = xiiResourceManager::LoadResource<xiiShaderPermutationResource>(permutationPath);
 
   {
     xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::PointerOnly);

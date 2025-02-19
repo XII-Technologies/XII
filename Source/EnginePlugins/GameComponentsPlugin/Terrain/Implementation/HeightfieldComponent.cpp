@@ -162,7 +162,7 @@ void xiiHeightfieldComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ms
 
       pRenderData->m_uiUniqueID = GetUniqueIdForRendering(uiMaterialIndex);
 
-      pRenderData->FillBatchIdAndSortingKey();
+      pRenderData->FillSortingKey();
     }
 
     bool bDontCacheYet = false;
