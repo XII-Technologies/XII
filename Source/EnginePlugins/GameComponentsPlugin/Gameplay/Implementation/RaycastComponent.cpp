@@ -234,7 +234,7 @@ void xiiRaycastComponent::Update()
 
   if (false)
   {
-    xiiDebugRenderer::Line lines[] = {{rayStartPosition, rayStartPosition + rayDir * fHitDistance}};
+    xiiDebugRendererLine lines[] = {{rayStartPosition, rayStartPosition + rayDir * fHitDistance}};
     xiiDebugRenderer::DrawLines(GetWorld(), lines, xiiColor::GreenYellow);
   }
 

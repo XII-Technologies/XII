@@ -139,7 +139,7 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
 
   if (cvar_FeatureRopesVisBones)
   {
-    xiiHybridArray<xiiDebugRenderer::Line, 128> lines(xiiFrameAllocator::GetCurrentAllocator());
+    xiiHybridArray<xiiDebugRendererLine, 128> lines(xiiFrameAllocator::GetCurrentAllocator());
     lines.Reserve(m_SkinningState.m_Transforms.GetCount() * 3);
 
     xiiMat4 offsetMat;
@@ -153,22 +153,22 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
       xiiVec3 pos = skinningMat.GetTranslationVector();
 
       auto& x        = lines.ExpandAndGetRef();
-      x.m_start      = pos;
-      x.m_end        = x.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisX());
-      x.m_startColor = xiiColor::Red;
-      x.m_endColor   = xiiColor::Red;
+      x.m_vStart     = pos;
+      x.m_vEnd       = x.m_vStart + skinningMat.TransformDirection(xiiVec3::MakeAxisX());
+      x.m_StartColor = xiiColor::Red;
+      x.m_EndColor   = xiiColor::Red;
 
       auto& y        = lines.ExpandAndGetRef();
-      y.m_start      = pos;
-      y.m_end        = y.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisY() * 2.0f);
-      y.m_startColor = xiiColor::Green;
-      y.m_endColor   = xiiColor::Green;
+      y.m_vStart     = pos;
+      y.m_vEnd       = y.m_vStart + skinningMat.TransformDirection(xiiVec3::MakeAxisY() * 2.0f);
+      y.m_StartColor = xiiColor::Green;
+      y.m_EndColor   = xiiColor::Green;
 
       auto& z        = lines.ExpandAndGetRef();
-      z.m_start      = pos;
-      z.m_end        = z.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisZ() * 2.0f);
-      z.m_startColor = xiiColor::Blue;
-      z.m_endColor   = xiiColor::Blue;
+      z.m_vStart     = pos;
+      z.m_vEnd       = z.m_vStart + skinningMat.TransformDirection(xiiVec3::MakeAxisZ() * 2.0f);
+      z.m_StartColor = xiiColor::Blue;
+      z.m_EndColor   = xiiColor::Blue;
     }
 
     xiiDebugRenderer::DrawLines(msg.m_pView->GetHandle(), lines, xiiColor::White, GetOwner()->GetGlobalTransform());

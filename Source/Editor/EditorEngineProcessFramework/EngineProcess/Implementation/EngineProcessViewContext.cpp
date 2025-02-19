@@ -324,7 +324,7 @@ xiiRenderPipelineResourceHandle xiiEngineProcessViewContext::CreateDebugRenderPi
 
 void xiiEngineProcessViewContext::DrawSimpleGrid() const
 {
-  xiiDynamicArray<xiiDebugRenderer::Line> lines;
+  xiiDynamicArray<xiiDebugRendererLine> lines;
   lines.Reserve(2 * (10 + 1 + 10) + 4);
 
   const xiiColor xAxisColor = xiiColorScheme::LightUI(xiiColorScheme::Red) * 0.7f;
@@ -337,34 +337,34 @@ void xiiEngineProcessViewContext::DrawSimpleGrid() const
 
   {
     auto& l = lines.ExpandAndGetRef();
-    l.m_start.Set(f, 0.0f, 0.0f);
-    l.m_end.Set(f - 0.25f, 0.25f, 0.0f);
-    l.m_startColor = xAxisColor;
-    l.m_endColor   = xAxisColor;
+    l.m_vStart.Set(f, 0.0f, 0.0f);
+    l.m_vEnd.Set(f - 0.25f, 0.25f, 0.0f);
+    l.m_StartColor = xAxisColor;
+    l.m_EndColor   = xAxisColor;
   }
 
   {
     auto& l = lines.ExpandAndGetRef();
-    l.m_start.Set(f, 0.0f, 0.0f);
-    l.m_end.Set(f - 0.25f, -0.25f, 0.0f);
-    l.m_startColor = xAxisColor;
-    l.m_endColor   = xAxisColor;
+    l.m_vStart.Set(f, 0.0f, 0.0f);
+    l.m_vEnd.Set(f - 0.25f, -0.25f, 0.0f);
+    l.m_StartColor = xAxisColor;
+    l.m_EndColor   = xAxisColor;
   }
 
   {
     auto& l = lines.ExpandAndGetRef();
-    l.m_start.Set(0.0f, f, 0.0f);
-    l.m_end.Set(0.25f, f - 0.25f, 0.0f);
-    l.m_startColor = yAxisColor;
-    l.m_endColor   = yAxisColor;
+    l.m_vStart.Set(0.0f, f, 0.0f);
+    l.m_vEnd.Set(0.25f, f - 0.25f, 0.0f);
+    l.m_StartColor = yAxisColor;
+    l.m_EndColor   = yAxisColor;
   }
 
   {
     auto& l = lines.ExpandAndGetRef();
-    l.m_start.Set(0.0f, f, 0.0f);
-    l.m_end.Set(-0.25f, f - 0.25f, 0.0f);
-    l.m_startColor = yAxisColor;
-    l.m_endColor   = yAxisColor;
+    l.m_vStart.Set(0.0f, f, 0.0f);
+    l.m_vEnd.Set(-0.25f, f - 0.25f, 0.0f);
+    l.m_StartColor = yAxisColor;
+    l.m_EndColor   = yAxisColor;
   }
 
   {
@@ -374,19 +374,19 @@ void xiiEngineProcessViewContext::DrawSimpleGrid() const
     {
       auto& line = lines.ExpandAndGetRef();
 
-      line.m_start.Set((float)-x, (float)y, 0.0f);
-      line.m_end.Set((float)+x, (float)y, 0.0f);
+      line.m_vStart.Set((float)-x, (float)y, 0.0f);
+      line.m_vEnd.Set((float)+x, (float)y, 0.0f);
 
       if (y == 0)
       {
-        line.m_startColor = xAxisColor;
+        line.m_StartColor = xAxisColor;
       }
       else
       {
-        line.m_startColor = gridColor;
+        line.m_StartColor = gridColor;
       }
 
-      line.m_endColor = line.m_startColor;
+      line.m_EndColor = line.m_StartColor;
     }
   }
 
@@ -397,19 +397,19 @@ void xiiEngineProcessViewContext::DrawSimpleGrid() const
     {
       auto& line = lines.ExpandAndGetRef();
 
-      line.m_start.Set((float)x, (float)-y, 0.0f);
-      line.m_end.Set((float)x, (float)+y, 0.0f);
+      line.m_vStart.Set((float)x, (float)-y, 0.0f);
+      line.m_vEnd.Set((float)x, (float)+y, 0.0f);
 
       if (x == 0)
       {
-        line.m_startColor = yAxisColor;
+        line.m_StartColor = yAxisColor;
       }
       else
       {
-        line.m_startColor = gridColor;
+        line.m_StartColor = gridColor;
       }
 
-      line.m_endColor = line.m_startColor;
+      line.m_EndColor = line.m_StartColor;
     }
   }
 

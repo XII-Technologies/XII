@@ -134,11 +134,11 @@ namespace
         xiiVec3 p2       = depthFar + leftWidth + bottomHeight;
         xiiVec3 p3       = depthFar + leftWidth + topHeight;
 
-        xiiDebugRenderer::Line lines[4];
-        lines[0] = xiiDebugRenderer::Line(p0, p1);
-        lines[1] = xiiDebugRenderer::Line(p1, p2);
-        lines[2] = xiiDebugRenderer::Line(p2, p3);
-        lines[3] = xiiDebugRenderer::Line(p3, p0);
+        xiiDebugRendererLine lines[4];
+        lines[0] = xiiDebugRendererLine(p0, p1);
+        lines[1] = xiiDebugRendererLine(p1, p2);
+        lines[2] = xiiDebugRendererLine(p2, p3);
+        lines[3] = xiiDebugRendererLine(p3, p0);
 
         xiiDebugRenderer::DrawLines(view.GetHandle(), lines, lineColor);
       }

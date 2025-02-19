@@ -62,16 +62,16 @@ protected:
   void BuildColliderVisualization(xiiMsgAnimationPoseUpdated& msg);
   void BuildJointVisualization(xiiMsgAnimationPoseUpdated& msg);
 
-  void                    OnQueryAnimationSkeleton(xiiMsgQueryAnimationSkeleton& msg);
-  xiiDebugRenderer::Line& AddLine(const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& color);
+  void                  OnQueryAnimationSkeleton(xiiMsgQueryAnimationSkeleton& msg);
+  xiiDebugRendererLine& AddLine(const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& color);
 
   xiiSkeletonResourceHandle m_hSkeleton;
   xiiTransform              m_RootTransform           = xiiTransform::MakeIdentity();
   xiiUInt32                 m_uiSkeletonChangeCounter = 0;
   xiiString                 m_sBonesToHighlight;
 
-  xiiBoundingBox                          m_MaxBounds;
-  xiiDynamicArray<xiiDebugRenderer::Line> m_LinesSkeleton;
+  xiiBoundingBox                        m_MaxBounds;
+  xiiDynamicArray<xiiDebugRendererLine> m_LinesSkeleton;
 
   struct SphereShape
   {

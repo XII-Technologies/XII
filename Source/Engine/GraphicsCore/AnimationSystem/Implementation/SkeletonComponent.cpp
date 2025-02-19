@@ -335,9 +335,9 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
       xiiVec3 v0 = bone.pos;
       xiiVec3 v1 = bone.pos + bone.dir * len;
 
-      m_LinesSkeleton.PushBack(xiiDebugRenderer::Line(v0, v1));
-      m_LinesSkeleton.PeekBack().m_startColor = xiiColor::DarkCyan;
-      m_LinesSkeleton.PeekBack().m_endColor   = xiiColor::DarkCyan;
+      m_LinesSkeleton.PushBack(xiiDebugRendererLine(v0, v1));
+      m_LinesSkeleton.PeekBack().m_StartColor = xiiColor::DarkCyan;
+      m_LinesSkeleton.PeekBack().m_EndColor   = xiiColor::DarkCyan;
     }
   }
 
@@ -374,19 +374,19 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
       s[2] = v0 - vO1 * len * 0.1f + bone.dir * len * 0.1f;
       s[3] = v0 - vO2 * len * 0.1f + bone.dir * len * 0.1f;
 
-      m_LinesSkeleton.PushBack(xiiDebugRenderer::Line(v0, v1));
-      m_LinesSkeleton.PeekBack().m_startColor = xiiColor::DarkCyan;
-      m_LinesSkeleton.PeekBack().m_endColor   = xiiColor::DarkCyan;
+      m_LinesSkeleton.PushBack(xiiDebugRendererLine(v0, v1));
+      m_LinesSkeleton.PeekBack().m_StartColor = xiiColor::DarkCyan;
+      m_LinesSkeleton.PeekBack().m_EndColor   = xiiColor::DarkCyan;
 
       for (xiiUInt32 si = 0; si < 4; ++si)
       {
-        m_LinesSkeleton.PushBack(xiiDebugRenderer::Line(v0, s[si]));
-        m_LinesSkeleton.PeekBack().m_startColor = xiiColor::Chartreuse;
-        m_LinesSkeleton.PeekBack().m_endColor   = xiiColor::Chartreuse;
+        m_LinesSkeleton.PushBack(xiiDebugRendererLine(v0, s[si]));
+        m_LinesSkeleton.PeekBack().m_StartColor = xiiColor::Chartreuse;
+        m_LinesSkeleton.PeekBack().m_EndColor   = xiiColor::Chartreuse;
 
-        m_LinesSkeleton.PushBack(xiiDebugRenderer::Line(s[si], v1));
-        m_LinesSkeleton.PeekBack().m_startColor = xiiColor::Chartreuse;
-        m_LinesSkeleton.PeekBack().m_endColor   = xiiColor::Chartreuse;
+        m_LinesSkeleton.PushBack(xiiDebugRendererLine(s[si], v1));
+        m_LinesSkeleton.PeekBack().m_StartColor = xiiColor::Chartreuse;
+        m_LinesSkeleton.PeekBack().m_EndColor   = xiiColor::Chartreuse;
       }
     }
   }
@@ -482,21 +482,21 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
 
         {
           auto& l        = m_LinesSkeleton.ExpandAndGetRef();
-          l.m_startColor = l.m_endColor = hlS;
-          l.m_start                     = st * geo.m_VertexPositions[i0];
-          l.m_end                       = st * geo.m_VertexPositions[i1];
+          l.m_StartColor = l.m_EndColor = hlS;
+          l.m_vStart                    = st * geo.m_VertexPositions[i0];
+          l.m_vEnd                      = st * geo.m_VertexPositions[i1];
         }
         {
           auto& l        = m_LinesSkeleton.ExpandAndGetRef();
-          l.m_startColor = l.m_endColor = hlS;
-          l.m_start                     = st * geo.m_VertexPositions[i1];
-          l.m_end                       = st * geo.m_VertexPositions[i2];
+          l.m_StartColor = l.m_EndColor = hlS;
+          l.m_vStart                    = st * geo.m_VertexPositions[i1];
+          l.m_vEnd                      = st * geo.m_VertexPositions[i2];
         }
         {
           auto& l        = m_LinesSkeleton.ExpandAndGetRef();
-          l.m_startColor = l.m_endColor = hlS;
-          l.m_start                     = st * geo.m_VertexPositions[i2];
-          l.m_end                       = st * geo.m_VertexPositions[i0];
+          l.m_StartColor = l.m_EndColor = hlS;
+          l.m_vStart                    = st * geo.m_VertexPositions[i2];
+          l.m_vEnd                      = st * geo.m_VertexPositions[i0];
         }
       }
     }
@@ -695,13 +695,13 @@ void xiiSkeletonComponent::VisualizeSkeletonDefaultState()
   TriggerLocalBoundsUpdate();
 }
 
-xiiDebugRenderer::Line& xiiSkeletonComponent::AddLine(const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& color)
+xiiDebugRendererLine& xiiSkeletonComponent::AddLine(const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& color)
 {
   auto& line        = m_LinesSkeleton.ExpandAndGetRef();
-  line.m_start      = vStart;
-  line.m_end        = vEnd;
-  line.m_startColor = color;
-  line.m_endColor   = color;
+  line.m_vStart     = vStart;
+  line.m_vEnd       = vEnd;
+  line.m_StartColor = color;
+  line.m_EndColor   = color;
   return line;
 }
 
