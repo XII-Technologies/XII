@@ -12,6 +12,14 @@
 #  include <SDL3/SDL_video.h>
 #endif
 
+#ifdef VK_USE_PLATFORM_WAYLAND_KHR
+#include <wayland-client.h>
+#endif
+
+#ifdef VK_USE_PLATFORM_XCB_KHR
+#include <xcb/xcb.h>
+#endif
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -125,16 +133,16 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.display = static_cast<wl_display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr));
   vkSurfaceCreateInfo.surface                         = nullptr;
 
+  XII_ASSERT_DEV(vkSurfaceCreateInfo.display != nullptr, "");
+
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWaylandSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #elif defined(VK_USE_PLATFORM_XCB_KHR)
-  xiiWindowHandle windowHandle = m_Description.m_pWindow->GetNativeWindowHandle();
-  XII_ASSERT_DEV(windowHandle.xcbWindow.m_uiWindowID != 0 && windowHandle.xcbWindow.m_pConnection != nullptr, "");
 
   vk::XcbSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                       = nullptr;
   vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.window                      = windowHandle.xcbWindow.m_uiWindowID;
-  vkSurfaceCreateInfo.connection                  = windowHandle.xcbWindow.m_pConnection;
+  vkSurfaceCreateInfo.window = (xcb_window_t)SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr);
+  vkSurfaceCreateInfo.connection =  XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXcbSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #else
