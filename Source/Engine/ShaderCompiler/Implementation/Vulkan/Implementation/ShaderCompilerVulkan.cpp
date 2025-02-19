@@ -607,6 +607,8 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiGALShaderResourceDe
       case SpvDim::SpvDimMax:
         XII_ASSERT_DEV(false, "Invalid enum value");
         break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
 
     if (info.image.ms > 0)

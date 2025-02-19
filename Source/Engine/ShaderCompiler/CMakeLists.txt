@@ -22,6 +22,10 @@ if (XII_BUILD_VULKAN)
     "${CMAKE_SOURCE_DIR}/Source/ThirdParty/DirectXShaderCompiler"
   )
 
+  if(XII_CMAKE_COMPILER_CLANG)
+    target_compile_options(${PROJECT_NAME} PRIVATE -fms-extensions)
+  endif()
+
   xii_requires_vulkan()
   xii_link_target_dxc(${PROJECT_NAME})
   xii_sources_target_spirv_reflect(${PROJECT_NAME})
