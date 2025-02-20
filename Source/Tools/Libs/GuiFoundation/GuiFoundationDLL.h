@@ -102,10 +102,10 @@ void operator>>(QDataStream& inout_stream, xiiDynamicArray<T>& rhs)
 template <typename T>
 void operator<<(QDataStream& inout_stream, xiiDynamicArray<T>& rhs)
 {
-  xiiUInt32 iIndices = rhs.GetCount();
-  inout_stream << iIndices;
+  xiiUInt32 uiIndices = rhs.GetCount();
+  inout_stream << uiIndices;
 
-  for (xiiUInt32 i = 0; i < iIndices; ++i)
+  for (xiiUInt32 i = 0; i < uiIndices; ++i)
   {
     inout_stream << rhs[i];
   }
