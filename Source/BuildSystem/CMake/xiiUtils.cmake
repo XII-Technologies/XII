@@ -263,10 +263,18 @@ function(xii_add_output_xii_prefix TARGET_NAME)
 endfunction()
 
 # #####################################
-# ## xii_make_winmain_executable(<target>)
+# ## xii_make_windowapp(<target>)
+# 
+# Turns the target application from a 'console app' into a 'window app', which means it doesn't
+# show a command prompt with the log output on systems that differentiate between the these app types.
 # #####################################
-function(xii_make_winmain_executable TARGET_NAME)
+function(xii_make_windowapp TARGET_NAME)
   set_property(TARGET ${TARGET_NAME} PROPERTY WIN32_EXECUTABLE ON)
+  target_compile_definitions(${TARGET_NAME} PRIVATE EZ_WINDOWAPP=1)
+
+  if (COMMAND xii_platformhook_make_windowapp)
+    xii_platformhook_make_windowapp(${TARGET_NAME})
+  endif()	
 endfunction()
 
 # #####################################
