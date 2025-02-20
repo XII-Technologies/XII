@@ -180,6 +180,7 @@ void xiiDocumentManager::EnsureWindowRequested(xiiDocument* pDocument, const xii
 
 xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView sDocumentTypeName, xiiStringView sPath2, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext /*= nullptr*/)
 {
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
   xiiFileStats     fs;
   xiiStringBuilder sPath = sPath2;
   sPath.MakeCleanPath();
@@ -293,6 +294,10 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
 
   XII_REPORT_FAILURE("This document manager does not support the document type '{0}'", sDocumentTypeName);
   return status;
+#else
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiStatus("Not implemented");
+#endif
 }
 
 xiiStatus xiiDocumentManager::CreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext)

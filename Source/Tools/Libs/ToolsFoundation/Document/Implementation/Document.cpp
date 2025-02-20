@@ -399,7 +399,8 @@ void xiiDocument::BroadcastInterDocumentMessage(xiiReflectedClass* pMessage, xii
 
 void xiiDocument::DeleteSelectedObjects() const
 {
-  auto objects = GetSelectionManager()->GetTopLevelSelection();
+  xiiHybridArray<xiiSelectionEntry, 64> objects;
+  GetSelectionManager()->GetTopLevelSelection(objects);
 
   // make sure the whole selection is cleared, otherwise each delete command would reduce the selection one by one
   GetSelectionManager()->Clear();
@@ -409,9 +410,9 @@ void xiiDocument::DeleteSelectedObjects() const
 
   xiiRemoveObjectCommand cmd;
 
-  for (const xiiDocumentObject* pObject : objects)
+  for (const xiiSelectionEntry& entry : objects)
   {
-    cmd.m_Object = pObject->GetGuid();
+    cmd.m_Object = entry.m_pObject->GetGuid();
 
     if (history->AddCommand(cmd).m_Result.Failed())
     {
@@ -434,7 +435,6 @@ void xiiDocument::ShowDocumentStatus(const xiiFormatString& msg) const
 
   m_EventsOne.Broadcast(e);
 }
-
 
 xiiResult xiiDocument::ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_result) const
 {

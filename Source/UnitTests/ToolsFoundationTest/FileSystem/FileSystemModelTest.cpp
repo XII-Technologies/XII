@@ -302,6 +302,92 @@ void FileSystemModelTest()
     XII_TEST_BOOL(it.Value() == xiiFileStatus::Status::Valid);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "git")
+  {
+    xiiStringBuilder sIndex(sOutputFolder);
+    sIndex.AppendPath("index");
+    xiiStringBuilder sLock(sOutputFolder);
+    sLock.AppendPath("index.lock");
+
+    XII_TEST_RESULT(xiitCreateFile(sIndex));
+
+    for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
+    {
+      xiiFileSystemModel::GetSingleton()->MainThreadTick();
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
+      XII_LOCK(fileEventLock);
+      if (fileEvents.GetCount() > 0)
+        break;
+    }
+    {
+      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(MakePath(sIndex), {}, xiiFileChangedEvent::Type::FileAdded)};
+      CompareFiles(xiiMakeArrayPtr(expected));
+      ClearFiles();
+    }
+
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
+    // EXT3 filesystem only support second resolution so we won't detect the modification if it is done within the same second.
+    // As we intend to swap the index and index.lock files later, we need to make sure the two files have sufficiently different modification dates so that the swap of the files is detected as a change to the original file.
+    xiiThreadUtils::Sleep(xiiTime::MakeFromSeconds(1.0));
+#  endif
+
+    XII_TEST_RESULT(xiitCreateFile(sLock));
+
+    for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
+    {
+      xiiFileSystemModel::GetSingleton()->MainThreadTick();
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
+      XII_LOCK(fileEventLock);
+      if (fileEvents.GetCount() > 0)
+        break;
+    }
+    {
+      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(MakePath(sLock), {}, xiiFileChangedEvent::Type::FileAdded)};
+      CompareFiles(xiiMakeArrayPtr(expected));
+      ClearFiles();
+    }
+
+    XII_TEST_RESULT(xiiOSFile::DeleteFile(sIndex));
+    XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(sLock, sIndex));
+
+    for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
+    {
+      xiiFileSystemModel::GetSingleton()->MainThreadTick();
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
+      XII_LOCK(fileEventLock);
+      if (fileEvents.GetCount() >= 2)
+        break;
+    }
+
+    xiiFileChangedEvent expected[] = {
+      xiiFileChangedEvent(MakePath(sIndex), {}, xiiFileChangedEvent::Type::FileChanged),
+      xiiFileChangedEvent(MakePath(sLock), {}, xiiFileChangedEvent::Type::FileRemoved)};
+    CompareFiles(xiiMakeArrayPtr(expected));
+    ClearFiles();
+    CompareFolders({});
+
+    XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFiles()->GetCount(), 1);
+    XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 1);
+
+    // Cleanup test
+    XII_TEST_RESULT(xiiOSFile::DeleteFile(sIndex));
+
+    for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
+    {
+      xiiFileSystemModel::GetSingleton()->MainThreadTick();
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
+      XII_LOCK(fileEventLock);
+      if (fileEvents.GetCount() > 0)
+        break;
+    }
+    ClearFiles();
+    ClearFolders();
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Add file")
   {
     xiiStringBuilder sFilePath(sOutputFolder);

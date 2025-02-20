@@ -698,6 +698,15 @@ xiiStatus xiiSetObjectPropertyCommand::DoInternal(bool bRedo)
 
   if (!bRedo)
   {
+    // if this assert triggers because of a stringview, check the caller and make sure to copy the stringview into a string first
+    // something like this:
+    // const xiiVariantType::Enum storageType = xiiToolsReflectionUtils::GetStorageType(pProp);
+    // if (op.m_Value.GetType() != storageType)
+    // {
+    //   op.m_Value = op.m_Value.ConvertTo(storageType);
+    // }
+    XII_ASSERT_DEBUG(m_NewValue.GetType() != xiiVariantType::StringView && m_NewValue.GetType() != xiiVariantType::TypedPointer, "Variants that are stored in the command history must hold ownership of their value.");
+
     if (m_Object.IsValid())
     {
       m_pObject = pDocument->GetObjectManager()->GetObject(m_Object);
@@ -830,7 +839,7 @@ xiiStatus xiiInsertObjectPropertyCommand::DoInternal(bool bRedo)
     if (m_Index.CanConvertTo<xiiInt32>() && m_Index.ConvertTo<xiiInt32>() == -1)
     {
       xiiIReflectedTypeAccessor& accessor = m_pObject->GetTypeAccessor();
-      m_Index                             = accessor.GetCount(m_sProperty.GetView());
+      m_Index                             = accessor.GetCount(m_sProperty);
     }
   }
 

@@ -290,7 +290,7 @@ void RecursiveModifyObject(const xiiDocumentObject* pObject, xiiObjectAccessorBa
 {
   xiiHybridArray<const xiiAbstractProperty*, 32> properties;
   pObject->GetTypeAccessor().GetType()->GetAllProperties(properties);
-  for (auto pProp : properties)
+  for (const auto* pProp : properties)
   {
     RecursiveModifyProperty(pObject, pProp, pAccessor);
   }

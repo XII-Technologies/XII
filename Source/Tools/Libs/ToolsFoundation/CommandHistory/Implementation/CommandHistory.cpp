@@ -92,7 +92,6 @@ bool xiiCommandHistory::InTemporaryTransaction() const
   return m_bTemporaryMode;
 }
 
-
 void xiiCommandHistory::SuspendTemporaryTransaction()
 {
   m_iPreSuspendTemporaryDepth = (xiiInt32)m_pHistoryStorage->m_TransactionStack.GetCount();
@@ -235,7 +234,6 @@ bool xiiCommandHistory::CanRedo() const
   return !m_pHistoryStorage->m_RedoHistory.IsEmpty();
 }
 
-
 xiiStringView xiiCommandHistory::GetUndoDisplayString() const
 {
   if (m_pHistoryStorage->m_UndoHistory.IsEmpty())
@@ -243,7 +241,6 @@ xiiStringView xiiCommandHistory::GetUndoDisplayString() const
 
   return m_pHistoryStorage->m_UndoHistory.PeekBack()->m_sDisplayString;
 }
-
 
 xiiStringView xiiCommandHistory::GetRedoDisplayString() const
 {
@@ -370,13 +367,11 @@ xiiStatus xiiCommandHistory::AddCommand(xiiCommand& ref_command)
 
   auto res = m_pHistoryStorage->m_ActiveCommandStack.PeekBack()->AddSubCommand(ref_command);
 
-// Error handling should be on the caller side.
-#if 0
-  if (res.Failed() && !res.m_sMessage.IsEmpty())
-  {
-    xiiLog::Error("Command failed: '{0}'", res.m_sMessage);
-  }
-#endif
+  // Error handling should be on the caller side.
+  // if (res.Failed() && !res.m_sMessage.IsEmpty())
+  // {
+  //   xiiLog::Error("Command failed: '{0}'", res.m_sMessage);
+  // }
 
   return res;
 }

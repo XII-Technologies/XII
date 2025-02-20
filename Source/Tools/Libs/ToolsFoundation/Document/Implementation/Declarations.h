@@ -12,12 +12,11 @@ struct xiiDocumentFlags
   enum Enum
   {
     None                 = 0,
-    RequestWindow        = XII_BIT(0), ///< Open the document visibly (not only internally)
-    AddToRecentFilesList = XII_BIT(1), ///< Add the document path to the recently used list for users.
+    RequestWindow        = XII_BIT(0), ///< Open the document visibly (not just internally)
+    AddToRecentFilesList = XII_BIT(1), ///< Add the document path to the recently used list for users
     AsyncSave            = XII_BIT(2), ///<
-    EmptyDocument        = XII_BIT(3), ///< Do not populate the new document with default state (Eg. templates, etcetera).
-
-    Default = None,
+    EmptyDocument        = XII_BIT(3), ///< Don't populate a new document with default state (templates etc)
+    Default              = None,
   };
 
   struct Bits

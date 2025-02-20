@@ -78,6 +78,8 @@ void xiiPrefabCache::LoadGraph(xiiAbstractObjectGraph& out_graph, xiiStringView 
 xiiPrefabCache::PrefabData& xiiPrefabCache::GetOrCreatePrefabCache(const xiiUuid& documentGuid)
 {
   auto it = m_PrefabData.Find(documentGuid);
+
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
   if (it.IsValid())
   {
     xiiFileStats Stats;
@@ -101,12 +103,16 @@ xiiPrefabCache::PrefabData& xiiPrefabCache::GetOrCreatePrefabCache(const xiiUuid
     else
       UpdatePrefabData(*it.Value().Borrow());
   }
+#else
+  XII_ASSERT_NOT_IMPLEMENTED;
+#endif
 
   return *it.Value().Borrow();
 }
 
 void xiiPrefabCache::UpdatePrefabData(PrefabData& data)
 {
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
   if (data.m_sAbsPath.IsEmpty())
   {
     data.m_sAbsPath = xiiToolsProject::GetSingleton()->GetPathForDocumentGuid(data.m_documentGuid);
@@ -136,4 +142,7 @@ void xiiPrefabCache::UpdatePrefabData(PrefabData& data)
   data.m_fileModifiedTime = Stats.m_LastModificationTime;
   data.m_Graph.Clear();
   xiiPrefabUtils::LoadGraph(data.m_Graph, data.m_sDocContent);
+#else
+  XII_ASSERT_NOT_IMPLEMENTED;
+#endif
 }

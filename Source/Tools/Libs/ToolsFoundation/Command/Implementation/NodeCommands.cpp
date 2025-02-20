@@ -278,25 +278,45 @@ xiiStatus xiiDisconnectNodePinsCommand::UndoInternal(bool bFireEvents)
 // static
 xiiStatus xiiNodeCommands::AddAndConnectCommand(xiiCommandHistory* pHistory, const xiiRTTI* pConnectionType, const xiiPin& sourcePin, const xiiPin& targetPin)
 {
-  xiiAddObjectCommand cmd;
-  cmd.m_pType         = pConnectionType;
-  cmd.m_NewObjectGuid = xiiUuid::MakeUuid();
-  cmd.m_Index         = -1;
+  xiiAddObjectCommand addCmd;
+  addCmd.m_pType         = pConnectionType;
+  addCmd.m_NewObjectGuid = xiiUuid::MakeUuid();
+  addCmd.m_Index         = -1;
 
-  xiiStatus res = pHistory->AddCommand(cmd);
-  if (res.m_Result.Succeeded())
+  XII_SUCCEED_OR_RETURN(pHistory->AddCommand(addCmd));
+
+  constexpr xiiStringView propertyNames[] = {
+    "Source"_xiisv,
+    "Target"_xiisv,
+    "SourcePin"_xiisv,
+    "TargetPin"_xiisv,
+  };
+  xiiVariant propertyValues[] = {
+    sourcePin.GetParent()->GetGuid(),
+    targetPin.GetParent()->GetGuid(),
+    sourcePin.GetName(),
+    targetPin.GetName(),
+  };
+  static_assert(XII_ARRAY_SIZE(propertyNames) == XII_ARRAY_SIZE(propertyValues));
+
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(propertyNames); ++i)
   {
-    xiiConnectNodePinsCommand connect;
-    connect.m_ConnectionObject = cmd.m_NewObjectGuid;
-    connect.m_ObjectSource     = sourcePin.GetParent()->GetGuid();
-    connect.m_ObjectTarget     = targetPin.GetParent()->GetGuid();
-    connect.m_sSourcePin       = sourcePin.GetName();
-    connect.m_sTargetPin       = targetPin.GetName();
+    xiiSetObjectPropertyCommand propCmd;
+    propCmd.m_Object    = addCmd.m_NewObjectGuid;
+    propCmd.m_sProperty = propertyNames[i];
+    propCmd.m_NewValue  = propertyValues[i];
 
-    res = pHistory->AddCommand(connect);
+    XII_SUCCEED_OR_RETURN(pHistory->AddCommand(propCmd));
   }
 
-  return res;
+  xiiConnectNodePinsCommand connectCmd;
+  connectCmd.m_ConnectionObject = addCmd.m_NewObjectGuid;
+  connectCmd.m_ObjectSource     = sourcePin.GetParent()->GetGuid();
+  connectCmd.m_ObjectTarget     = targetPin.GetParent()->GetGuid();
+  connectCmd.m_sSourcePin       = sourcePin.GetName();
+  connectCmd.m_sTargetPin       = targetPin.GetName();
+
+  return pHistory->AddCommand(connectCmd);
 }
 
 // static
