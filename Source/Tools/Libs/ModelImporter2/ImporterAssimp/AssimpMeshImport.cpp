@@ -8,6 +8,7 @@
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
 #include <assimp/scene.h>
+#include <meshoptimizer/meshoptimizer.h>
 #include <mikktspace/mikktspace.h>
 
 namespace xiiModelImporter2
@@ -25,10 +26,136 @@ namespace xiiModelImporter2
     xiiUInt32 uiColor1    = xiiInvalidIndex;
   };
 
+  void ImporterAssimp::SimplifyAiMesh(aiMesh* pMesh)
+  {
+    if (m_Options.m_uiMeshSimplification == 0)
+      return;
+
+    // already processed
+    if (m_OptimizedMeshes.Contains(pMesh))
+      return;
+
+    m_OptimizedMeshes.Insert(pMesh);
+
+    xiiUInt32 numIndices = pMesh->mNumFaces * 3;
+
+    xiiDynamicArray<xiiUInt32> indices;
+    indices.Reserve(numIndices);
+
+    xiiDynamicArray<xiiUInt32> simplifiedIndices;
+    simplifiedIndices.SetCountUninitialized(numIndices);
+
+    for (xiiUInt32 face = 0; face < pMesh->mNumFaces; ++face)
+    {
+      indices.PushBack(pMesh->mFaces[face].mIndices[0]);
+      indices.PushBack(pMesh->mFaces[face].mIndices[1]);
+      indices.PushBack(pMesh->mFaces[face].mIndices[2]);
+    }
+
+    const float  fTargetError     = xiiMath::Clamp<xiiUInt32>(m_Options.m_uiMaxSimplificationError, 1, 99) / 100.0f;
+    const size_t numTargetIndices = static_cast<size_t>((numIndices * (100 - xiiMath::Min<xiiUInt32>(m_Options.m_uiMeshSimplification, 99))) / 100.0f);
+
+    float  err;
+    size_t numNewIndices = 0;
+
+    if (m_Options.m_bAggressiveSimplification)
+    {
+      numNewIndices = meshopt_simplifySloppy(simplifiedIndices.GetData(), indices.GetData(), numIndices, &pMesh->mVertices[0].x, pMesh->mNumVertices, sizeof(aiVector3D), numTargetIndices, fTargetError, &err);
+    }
+    else
+    {
+      numNewIndices = meshopt_simplify(simplifiedIndices.GetData(), indices.GetData(), numIndices, &pMesh->mVertices[0].x, pMesh->mNumVertices, sizeof(aiVector3D), numTargetIndices, fTargetError, 0, &err);
+      simplifiedIndices.SetCount(static_cast<xiiUInt32>(numNewIndices));
+    }
+
+    xiiDynamicArray<xiiUInt32> remapTable;
+    remapTable.SetCountUninitialized(pMesh->mNumVertices);
+    const size_t numUniqueVerts = meshopt_optimizeVertexFetchRemap(remapTable.GetData(), simplifiedIndices.GetData(), numNewIndices, pMesh->mNumVertices);
+
+    meshopt_remapVertexBuffer(pMesh->mVertices, pMesh->mVertices, pMesh->mNumVertices, sizeof(aiVector3D), remapTable.GetData());
+
+    if (pMesh->HasNormals())
+    {
+      meshopt_remapVertexBuffer(pMesh->mNormals, pMesh->mNormals, pMesh->mNumVertices, sizeof(aiVector3D), remapTable.GetData());
+    }
+    if (pMesh->HasTextureCoords(0))
+    {
+      meshopt_remapVertexBuffer(pMesh->mTextureCoords[0], pMesh->mTextureCoords[0], pMesh->mNumVertices, sizeof(aiVector3D), remapTable.GetData());
+    }
+    if (pMesh->HasTextureCoords(1))
+    {
+      meshopt_remapVertexBuffer(pMesh->mTextureCoords[1], pMesh->mTextureCoords[1], pMesh->mNumVertices, sizeof(aiVector3D), remapTable.GetData());
+    }
+    if (pMesh->HasVertexColors(0))
+    {
+      meshopt_remapVertexBuffer(pMesh->mColors[0], pMesh->mColors[0], pMesh->mNumVertices, sizeof(aiColor4D), remapTable.GetData());
+    }
+    if (pMesh->HasVertexColors(1))
+    {
+      meshopt_remapVertexBuffer(pMesh->mColors[1], pMesh->mColors[1], pMesh->mNumVertices, sizeof(aiColor4D), remapTable.GetData());
+    }
+    if (pMesh->HasTangentsAndBitangents())
+    {
+      meshopt_remapVertexBuffer(pMesh->mTangents, pMesh->mTangents, pMesh->mNumVertices, sizeof(aiVector3D), remapTable.GetData());
+      meshopt_remapVertexBuffer(pMesh->mBitangents, pMesh->mBitangents, pMesh->mNumVertices, sizeof(aiVector3D), remapTable.GetData());
+    }
+    if (pMesh->HasBones() && m_Options.m_bImportSkinningData)
+    {
+      for (xiiUInt32 b = 0; b < pMesh->mNumBones; ++b)
+      {
+        auto& bone = pMesh->mBones[b];
+
+        for (xiiUInt32 w = 0; w < bone->mNumWeights;)
+        {
+          auto&           weight   = bone->mWeights[w];
+          const xiiUInt32 uiNewIdx = remapTable[weight.mVertexId];
+
+          if (uiNewIdx == ~0u)
+          {
+            // this vertex got removed -> swap it with the last weight
+            bone->mWeights[w] = bone->mWeights[bone->mNumWeights - 1];
+            --bone->mNumWeights;
+          }
+          else
+          {
+            bone->mWeights[w].mVertexId = uiNewIdx;
+            ++w;
+          }
+        }
+      }
+    }
+
+    pMesh->mNumVertices = static_cast<xiiUInt32>(numUniqueVerts);
+
+    xiiDynamicArray<xiiUInt32> newIndices;
+    newIndices.SetCountUninitialized(static_cast<xiiUInt32>(numNewIndices));
+
+    meshopt_remapIndexBuffer(newIndices.GetData(), simplifiedIndices.GetData(), numNewIndices, remapTable.GetData());
+
+    pMesh->mNumFaces = static_cast<xiiUInt32>(numNewIndices / 3);
+
+    xiiUInt32 nextIdx = 0;
+    for (xiiUInt32 face = 0; face < pMesh->mNumFaces; ++face)
+    {
+      pMesh->mFaces[face].mIndices[0] = newIndices[nextIdx++];
+      pMesh->mFaces[face].mIndices[1] = newIndices[nextIdx++];
+      pMesh->mFaces[face].mIndices[2] = newIndices[nextIdx++];
+    }
+  }
+
   xiiResult ImporterAssimp::ProcessAiMesh(aiMesh* pMesh, const xiiMat4& transform)
   {
     if ((pMesh->mPrimitiveTypes & aiPrimitiveType::aiPrimitiveType_TRIANGLE) == 0) // no triangles in there ?
       return XII_SUCCESS;
+
+    if (m_Options.m_bImportSkinningData && !pMesh->HasBones())
+    {
+      xiiLog::Warning("Mesh contains an unskinned part ('{}' - {} triangles)", pMesh->mName.C_Str(), pMesh->mNumFaces);
+      return XII_SUCCESS;
+    }
+
+    // if enabled, the aiMesh is modified in-place to have less detail
+    SimplifyAiMesh(pMesh);
 
     {
       auto& mi             = m_MeshInstances[pMesh->mMaterialIndex].ExpandAndGetRef();
@@ -128,6 +255,11 @@ namespace xiiModelImporter2
         }
       }
     }
+  }
+
+  static void CheckBoneWeights(xiiMeshBufferResourceDescriptor& ref_mb, xiiMeshResourceDescriptor& ref_mrd, float& inout_fMaxBoneOffset, const StreamIndices& streams, bool b8BitBoneIndices, xiiMeshBoneWeigthPrecision::Enum weightsPrecision, bool bNormalizeWeights)
+  {
+    xiiUInt32 uiZeroWeights = 0;
 
     for (xiiUInt32 vtx = 0; vtx < ref_mb.GetVertexCount(); ++vtx)
     {
@@ -136,20 +268,19 @@ namespace xiiModelImporter2
       xiiVec4 wgt;
       xiiMeshBufferUtils::DecodeToVec4(pBoneWeights, xiiMeshBoneWeigthPrecision::ToResourceFormat(weightsPrecision), wgt).AssertSuccess();
 
-      // normalize the bone weights
-      if (bNormalizeWeights)
+      if (wgt.IsZero(0.001f))
+      {
+        ++uiZeroWeights;
+      }
+      else if (bNormalizeWeights)
       {
         // NOTE: This is absolutely crucial for some meshes to work right
         // On the other hand, it is also possible that some meshes don't like this
-        // if we come across meshes where normalization breaks them, we may need to add a user-option to select whether bone weights should be normalized
 
-        const float len = wgt.x + wgt.y + wgt.z + wgt.w;
-        if (len > 1.0f)
-        {
-          wgt /= len;
+        const float summedWeights = wgt.x + wgt.y + wgt.z + wgt.w;
 
-          xiiMeshBufferUtils::EncodeBoneWeights(wgt, pBoneWeights, weightsPrecision).AssertSuccess();
-        }
+        wgt /= summedWeights;
+        xiiMeshBufferUtils::EncodeBoneWeights(wgt, pBoneWeights, weightsPrecision).AssertSuccess();
       }
 
       const xiiVec3    vVertexPos     = *reinterpret_cast<const xiiVec3*>(ref_mb.GetVertexData(streams.uiPositions, vtx).GetPtr());
@@ -200,9 +331,14 @@ namespace xiiModelImporter2
         }
       }
     }
+
+    if (uiZeroWeights > 0)
+    {
+      xiiLog::Error("Mesh has {} vertices with bone weights that are zero. These will not show up!", uiZeroWeights);
+    }
   }
 
-  static void SetMeshVertexData(xiiMeshBufferResourceDescriptor& ref_mb, const aiMesh* pMesh, const xiiMat4& mGlobalTransform, xiiUInt32 uiVertexIndexOffset, const StreamIndices& streams, xiiEnum<xiiMeshNormalPrecision> meshNormalsPrecision, xiiEnum<xiiMeshTexCoordPrecision> meshTexCoordsPrecision)
+  static void SetMeshVertexData(xiiMeshBufferResourceDescriptor& ref_mb, const aiMesh* pMesh, const xiiMat4& mGlobalTransform, xiiUInt32 uiVertexIndexOffset, const StreamIndices& streams, xiiEnum<xiiMeshNormalPrecision> meshNormalsPrecision, xiiEnum<xiiMeshTexCoordPrecision> meshTexCoordsPrecision, xiiEnum<xiiMeshVertexColorConversion> meshVertexColorConversion)
   {
     xiiMat3 normalsTransform = mGlobalTransform.GetRotationalPart();
     if (normalsTransform.Invert(0.0f).Failed())
@@ -244,14 +380,16 @@ namespace xiiModelImporter2
 
       if (streams.uiColor0 != xiiInvalidIndex && pMesh->HasVertexColors(0))
       {
-        const xiiColorLinearUB color = ConvertAssimpType(pMesh->mColors[0][vertIdx]);
-        ref_mb.SetVertexData(streams.uiColor0, finalVertIdx, color);
+        const xiiColor color = ConvertAssimpType(pMesh->mColors[0][vertIdx]);
+
+        xiiMeshBufferUtils::EncodeColor(color.GetAsVec4(), ref_mb.GetVertexData(streams.uiColor0, finalVertIdx), meshVertexColorConversion).IgnoreResult();
       }
 
       if (streams.uiColor1 != xiiInvalidIndex && pMesh->HasVertexColors(1))
       {
-        const xiiColorLinearUB color = ConvertAssimpType(pMesh->mColors[1][vertIdx]);
-        ref_mb.SetVertexData(streams.uiColor1, finalVertIdx, color);
+        const xiiColor color = ConvertAssimpType(pMesh->mColors[1][vertIdx]);
+
+        xiiMeshBufferUtils::EncodeColor(color.GetAsVec4(), ref_mb.GetVertexData(streams.uiColor1, finalVertIdx), meshVertexColorConversion).IgnoreResult();
       }
 
       if (streams.uiTangents != xiiInvalidIndex && pMesh->HasTangentsAndBitangents())
@@ -449,6 +587,9 @@ namespace xiiModelImporter2
   {
     auto& md = m_Options.m_pMeshOutput->MeshBufferDesc();
 
+    if (!md.HasIndexBuffer())
+      return XII_FAILURE;
+
     MikkData mikkd;
     mikkd.m_pMeshBuffer  = &md;
     mikkd.m_uiVertexSize = md.GetVertexDataSize();
@@ -541,8 +682,6 @@ namespace xiiModelImporter2
 
     const bool b8BitBoneIndices = m_Options.m_pMeshOutput->m_Bones.GetCount() <= 255;
 
-    // TODO: m_uiTotalMeshTriangles and m_uiTotalMeshVertices are too high if we skip non-skinned meshes
-
     StreamIndices streams;
     AllocateMeshStreams(mb, xiiArrayPtr<aiMesh*>(m_pScene->mMeshes, m_pScene->mNumMeshes), streams, m_uiTotalMeshVertices, m_uiTotalMeshTriangles, m_Options.m_MeshNormalsPrecision, m_Options.m_MeshTexCoordsPrecision, m_Options.m_bImportSkinningData, b8BitBoneIndices, m_Options.m_MeshBoneWeightPrecision);
 
@@ -565,7 +704,7 @@ namespace xiiModelImporter2
           continue;
         }
 
-        SetMeshVertexData(mb, mi.m_pMesh, mi.m_GlobalTransform, uiMeshCurVertexIdx, streams, m_Options.m_MeshNormalsPrecision, m_Options.m_MeshTexCoordsPrecision);
+        SetMeshVertexData(mb, mi.m_pMesh, mi.m_GlobalTransform, uiMeshCurVertexIdx, streams, m_Options.m_MeshNormalsPrecision, m_Options.m_MeshTexCoordsPrecision, m_Options.m_MeshVertexColorConversion);
 
         if (m_Options.m_bImportSkinningData)
         {
@@ -598,6 +737,11 @@ namespace xiiModelImporter2
 
       uiMeshPrevTriangleIdx = uiMeshCurTriangleIdx;
       ++uiMeshCurSubmeshIdx;
+    }
+
+    if (m_Options.m_bImportSkinningData)
+    {
+      CheckBoneWeights(mb, *m_Options.m_pMeshOutput, m_Options.m_pMeshOutput->m_fMaxBoneVertexOffset, streams, b8BitBoneIndices, m_Options.m_MeshBoneWeightPrecision, m_Options.m_bNormalizeWeights);
     }
 
     m_Options.m_pMeshOutput->ComputeBounds();

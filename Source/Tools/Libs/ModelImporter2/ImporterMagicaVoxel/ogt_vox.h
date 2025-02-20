@@ -1760,19 +1760,9 @@ struct _vox_scene_node_
 };
 
 static void generate_instances_for_node(
-  const _vox_array<_vox_scene_node_>& nodes,
-  uint32_t                            node_index,
-  const _vox_array<uint32_t>&         child_id_array,
-  uint32_t                            layer_index,
-  const ogt_vox_transform&            transform,
-  const _vox_array<ogt_vox_model*>&   model_ptrs,
-  const char*                         szTransform_last_name,
-  bool                                bTransform_last_hidden,
-  _vox_array<ogt_vox_instance>&       ref_instances,
-  _vox_array<char>&                   ref_string_data,
-  _vox_array<ogt_vox_group>&          ref_groups,
-  uint32_t                            group_index,
-  bool                                bGenerate_groups)
+  const _vox_array<_vox_scene_node_>& nodes, uint32_t node_index, const _vox_array<uint32_t>& child_id_array, uint32_t layer_index,
+  const ogt_vox_transform& transform, const _vox_array<ogt_vox_model*>& model_ptrs, const char* szTransform_last_name, bool bTransform_last_hidden,
+  _vox_array<ogt_vox_instance>& ref_instances, _vox_array<char>& ref_string_data, _vox_array<ogt_vox_group>& ref_groups, uint32_t group_index, bool bGenerate_groups)
 {
   const _vox_scene_node_* node = &nodes[node_index];
   assert(node);

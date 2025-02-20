@@ -18,7 +18,6 @@
 #define OGT_VOXEL_MESHIFY_IMPLEMENTATION
 #include <ModelImporter2/ImporterMagicaVoxel/ogt_voxel_meshify.h>
 
-
 namespace xiiModelImporter2
 {
   ImporterMagicaVoxel::ImporterMagicaVoxel()  = default;
@@ -126,7 +125,7 @@ namespace xiiModelImporter2
     xiiMeshBufferResourceDescriptor& mb = m_Options.m_pMeshOutput->MeshBufferDesc();
 
     const xiiUInt32 uiPosStream = mb.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
-    const xiiUInt32 uiNrmStream = mb.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_16Bit));
+    const xiiUInt32 uiNrmStream = mb.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_10Bit));
     const xiiUInt32 uiColStream = mb.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
 
     mb.AllocateStreams(positions.GetCount(), xiiGALPrimitiveTopology::TriangleList, indices.GetCount() / 3);
@@ -142,7 +141,7 @@ namespace xiiModelImporter2
     {
       mb.SetVertexData(uiPosStream, i, positions[i]);
 
-      xiiMeshBufferUtils::EncodeNormal(normals[i], mb.GetVertexData(uiNrmStream, i), xiiMeshNormalPrecision::_8Bit).IgnoreResult();
+      xiiMeshBufferUtils::EncodeNormal(normals[i], mb.GetVertexData(uiNrmStream, i), xiiMeshNormalPrecision::_10Bit).IgnoreResult();
 
       mb.SetVertexData(uiColStream, i, colors[i]);
     }

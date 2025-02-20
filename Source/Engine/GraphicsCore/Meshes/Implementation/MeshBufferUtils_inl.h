@@ -1,3 +1,4 @@
+#include "MeshBufferUtils.h"
 
 // static
 XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> xiiMeshNormalPrecision::ToResourceFormatNormal(Enum value)
@@ -100,6 +101,26 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTexCoord(const xiiVec2& vT
 XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeBoneWeights(const xiiVec4& vWeights, xiiArrayPtr<xiiUInt8> dest, xiiMeshBoneWeigthPrecision::Enum precision)
 {
   return EncodeBoneWeights(vWeights, dest, xiiMeshBoneWeigthPrecision::ToResourceFormat(precision));
+}
+
+// static
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeColor(const xiiVec4& vColor, xiiArrayPtr<xiiUInt8> dest, xiiMeshVertexColorConversion::Enum conversion)
+{
+  xiiVec4 finalColor;
+  if (conversion == xiiMeshVertexColorConversion::LinearToSrgb)
+  {
+    finalColor = xiiColor::LinearToGamma(vColor.GetAsVec3()).GetAsVec4(vColor.w);
+  }
+  else if (conversion == xiiMeshVertexColorConversion::SrgbToLinear)
+  {
+    finalColor = xiiColor::GammaToLinear(vColor.GetAsVec3()).GetAsVec4(vColor.w);
+  }
+  else
+  {
+    finalColor = vColor;
+  }
+
+  return EncodeFromVec4(finalColor, dest, xiiGALResourceFormat::RGBAUByteNormalized);
 }
 
 // static

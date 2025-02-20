@@ -248,22 +248,10 @@ inline ogt_mesh_vec3 _transform_vector(const ogt_mesh_transform& transform, cons
 }
 
 inline ogt_mesh_transform _make_transform(
-  float f00,
-  float f01,
-  float f02,
-  float f03,
-  float f10,
-  float f11,
-  float f12,
-  float f13,
-  float f20,
-  float f21,
-  float f22,
-  float f23,
-  float f30,
-  float f31,
-  float f32,
-  float f33)
+  float f00, float f01, float f02, float f03,
+  float f10, float f11, float f12, float f13,
+  float f20, float f21, float f22, float f23,
+  float f30, float f31, float f32, float f33)
 {
   ogt_mesh_transform ret;
   ret.m00 = f00;
@@ -622,11 +610,7 @@ uint32_t ogt_face_count_from_paletted_voxels_simple(const uint8_t* pVoxels, uint
 // constructs and returns a mesh from the specified voxel grid with no optimization to the geometry.
 ogt_mesh* ogt_mesh_from_paletted_voxels_simple(
   const ogt_voxel_meshify_context* pCtx,
-  const uint8_t*                   pVoxels,
-  uint32_t                         size_x,
-  uint32_t                         size_y,
-  uint32_t                         size_z,
-  const ogt_mesh_rgba*             pPalette)
+  const uint8_t* pVoxels, uint32_t size_x, uint32_t size_y, uint32_t size_z, const ogt_mesh_rgba* pPalette)
 {
   uint32_t max_face_count   = _count_voxel_sized_faces(pVoxels, size_x, size_y, size_z);
   uint32_t max_vertex_count = max_face_count * 4;
@@ -651,13 +635,8 @@ ogt_mesh* ogt_mesh_from_paletted_voxels_simple(
 
 // streams geometry for each voxel at a time to a specified user function.
 void ogt_stream_from_paletted_voxels_simple(
-  const uint8_t*               pVoxels,
-  uint32_t                     size_x,
-  uint32_t                     size_y,
-  uint32_t                     size_z,
-  const ogt_mesh_rgba*         pPalette,
-  ogt_voxel_simple_stream_func stream_func,
-  void*                        pStream_func_data)
+  const uint8_t* pVoxels, uint32_t size_x, uint32_t size_y, uint32_t size_z, const ogt_mesh_rgba* pPalette,
+  ogt_voxel_simple_stream_func stream_func, void* pStream_func_data)
 {
   assert(stream_func);
   const int32_t k_stride_x = 1;
@@ -836,15 +815,11 @@ void ogt_stream_from_paletted_voxels_simple(
 // covered by the rectangle as having been polygonized, and continue on the search through
 // the rest of the slice.
 void _greedy_meshify_voxels_in_face_direction(
-  const uint8_t*            pVoxels,
-  const ogt_mesh_rgba*      pPalette,
-  int32_t                   size_x,
-  int32_t                   size_y,
-  int32_t                   size_z, // how many voxels in each of X,Y,Z dimensions
-  int32_t                   k_stride_x,
-  int32_t                   k_stride_y,
-  int32_t                   k_stride_z, // the memory stride for each of those X,Y,Z dimensions within the voxel data.
-  const ogt_mesh_transform& transform,  // transform to convert from X,Y,Z to "objectSpace"
+  const uint8_t*       pVoxels,
+  const ogt_mesh_rgba* pPalette,
+  int32_t size_x, int32_t size_y, int32_t size_z,             // how many voxels in each of X,Y,Z dimensions
+  int32_t k_stride_x, int32_t k_stride_y, int32_t k_stride_z, // the memory stride for each of those X,Y,Z dimensions within the voxel data.
+  const ogt_mesh_transform& transform,                        // transform to convert from X,Y,Z to "objectSpace"
   ogt_mesh*                 out_pMesh)
 {
 
@@ -991,11 +966,7 @@ void _greedy_meshify_voxels_in_face_direction(
 
 ogt_mesh* ogt_mesh_from_paletted_voxels_greedy(
   const ogt_voxel_meshify_context* pCtx,
-  const uint8_t*                   pVoxels,
-  uint32_t                         size_x,
-  uint32_t                         size_y,
-  uint32_t                         size_z,
-  const ogt_mesh_rgba*             pPalette)
+  const uint8_t* pVoxels, uint32_t size_x, uint32_t size_y, uint32_t size_z, const ogt_mesh_rgba* pPalette)
 {
   uint32_t max_face_count   = _count_voxel_sized_faces(pVoxels, size_x, size_y, size_z);
   uint32_t max_vertex_count = max_face_count * 4;
@@ -1306,7 +1277,8 @@ ogt_mesh_vec2i get_edge_bias(const ogt_mesh_vec2i& edge_vert0, const ogt_mesh_ve
   }
 }
 
-uint32_t _tessellate_edge(ogt_mesh_vec2i* pTess, uint32_t max_tess, const ogt_mesh_vec2i& edge_vert0, const ogt_mesh_vec2i& edge_vert1, const uint8_t* pSlice_colors, int32_t size_x, int32_t size_y)
+uint32_t _tessellate_edge(ogt_mesh_vec2i* pTess, uint32_t max_tess, const ogt_mesh_vec2i& edge_vert0, const ogt_mesh_vec2i& edge_vert1,
+                          const uint8_t* pSlice_colors, int32_t size_x, int32_t size_y)
 {
 
   uint32_t       num_tess  = 0;
@@ -1680,15 +1652,11 @@ int32_t _construct_polygon_for_slice(ogt_mesh_vec2i* pVerts, uint32_t max_verts,
 }
 
 void _polygon_meshify_voxels_in_face_direction(
-  const uint8_t*            pVoxels,
-  const ogt_mesh_rgba*      pPalette,
-  int32_t                   size_x,
-  int32_t                   size_y,
-  int32_t                   size_z, // how many voxels in each of X,Y,Z dimensions
-  int32_t                   k_stride_x,
-  int32_t                   k_stride_y,
-  int32_t                   k_stride_z, // the memory stride for each of those X,Y,Z dimensions within the voxel data.
-  const ogt_mesh_transform& transform,  // transform to convert from X,Y,Z to "objectSpace"
+  const uint8_t*       pVoxels,
+  const ogt_mesh_rgba* pPalette,
+  int32_t size_x, int32_t size_y, int32_t size_z,             // how many voxels in each of X,Y,Z dimensions
+  int32_t k_stride_x, int32_t k_stride_y, int32_t k_stride_z, // the memory stride for each of those X,Y,Z dimensions within the voxel data.
+  const ogt_mesh_transform& transform,                        // transform to convert from X,Y,Z to "objectSpace"
   ogt_mesh*                 pMesh)
 {
   // enable aggressive voxel optimization for now.
@@ -1761,7 +1729,7 @@ void _polygon_meshify_voxels_in_face_direction(
         // we always start polygon rasterization with any lower-left corner in (i,j)
         // space and fill outward from there. So skip any coords that don't match this
         // criteria.
-        //if ((i > 0 && slice_colors[index_in_slice-1] == color_index) ||
+        // if ((i > 0 && slice_colors[index_in_slice-1] == color_index) ||
         //  (j > 0 && slice_colors[index_in_slice-size_x] == color_index))
         //  continue;
 
@@ -1824,11 +1792,7 @@ void _polygon_meshify_voxels_in_face_direction(
 //        triangulate the output polygon.
 ogt_mesh* ogt_mesh_from_paletted_voxels_polygon(
   const ogt_voxel_meshify_context* pCtx,
-  const uint8_t*                   pVoxels,
-  uint32_t                         size_x,
-  uint32_t                         size_y,
-  uint32_t                         size_z,
-  const ogt_mesh_rgba*             pPalette)
+  const uint8_t* pVoxels, uint32_t size_x, uint32_t size_y, uint32_t size_z, const ogt_mesh_rgba* pPalette)
 {
   uint32_t max_face_count   = _count_voxel_sized_faces(pVoxels, size_x, size_y, size_z);
   uint32_t max_vertex_count = max_face_count * 4;

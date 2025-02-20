@@ -669,9 +669,9 @@ namespace SourceBSP
     // Add vertices and triangles
     xiiHybridArray<xiiModelImporter::VertexDataStream*, 3> streams;
 
-    auto positionDataStream = pMesh->GetDataStream(xiiGALVertexAttributeSemantic::Position);
-    auto normalDataStream = pMesh->GetDataStream(xiiGALVertexAttributeSemantic::Normal);
-    auto texCoordDataStream = pMesh->GetDataStream(xiiGALVertexAttributeSemantic::TexCoord0);
+    auto positionDataStream = pMesh->GetDataStream(xiiGALInputLayoutSemantic::Position);
+    auto normalDataStream = pMesh->GetDataStream(xiiGALInputLayoutSemantic::Normal);
+    auto texCoordDataStream = pMesh->GetDataStream(xiiGALInputLayoutSemantic::TexCoord0);
 
     streams.PushBack(positionDataStream);
     streams.PushBack(normalDataStream);
@@ -756,9 +756,9 @@ namespace xiiModelImporter2
     xiiUniquePtr<Mesh> mesh(XII_DEFAULT_NEW(Mesh));
     mesh->m_Name = "BSP Geometry";
 
-    mesh->AddDataStream(xiiGALVertexAttributeSemantic::Position, 3, VertexElementType::FLOAT);
-    mesh->AddDataStream(xiiGALVertexAttributeSemantic::Normal, 3, VertexElementType::FLOAT);
-    mesh->AddDataStream(xiiGALVertexAttributeSemantic::TexCoord0, 2, VertexElementType::FLOAT);
+    mesh->AddDataStream(xiiGALInputLayoutSemantic::Position, 3, VertexElementType::FLOAT);
+    mesh->AddDataStream(xiiGALInputLayoutSemantic::Normal, 3, VertexElementType::FLOAT);
+    mesh->AddDataStream(xiiGALInputLayoutSemantic::TexCoord0, 2, VertexElementType::FLOAT);
 
     if (SourceBSP::ConvertBSPGeometryToMesh(bspFile, mesh.Borrow(), outScene.Borrow()).Failed())
     {
