@@ -170,7 +170,6 @@ namespace
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialAssetPreview, 1)
-  XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Ball),
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Sphere),
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Box),
   XII_ENUM_CONSTANT(xiiMaterialAssetPreview::Plane),

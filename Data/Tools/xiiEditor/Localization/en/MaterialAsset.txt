@@ -8,7 +8,6 @@ xiiMaterialShaderMode::File;From File
 xiiMaterialShaderMode::Custom;Visual Shader
 xiiMaterialShaderMode::BaseMaterial;From Base Material
 
-xiiMaterialAssetPreview::Ball;Ball
 xiiMaterialAssetPreview::Sphere;Sphere
 xiiMaterialAssetPreview::Box;Box
 xiiMaterialAssetPreview::Plane;Plane
