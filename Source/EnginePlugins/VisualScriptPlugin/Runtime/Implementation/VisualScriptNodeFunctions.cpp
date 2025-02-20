@@ -167,11 +167,17 @@ namespace
       }
       else
       {
-        XII_ASSERT_DEBUG(pProperty->GetSpecificType() == xiiGetStaticRTTI<T>(), "");
-
-        T value;
-        pMemberProperty->GetValuePtr(pInstance.m_pObject, &value);
-        inout_context.SetData(node.GetOutputDataOffset(0), value);
+        if (pProperty->GetSpecificType() == xiiGetStaticRTTI<T>())
+        {
+          T value;
+          pMemberProperty->GetValuePtr(pInstance.m_pObject, &value);
+          inout_context.SetData(node.GetOutputDataOffset(0), value);
+        }
+        else
+        {
+          xiiVariant value = xiiReflectionUtils::GetMemberPropertyValue(pMemberProperty, pInstance.m_pObject);
+          inout_context.SetDataFromVariant(node.GetOutputDataOffset(0), value);
+        }
       }
     }
     else
@@ -217,10 +223,16 @@ namespace
       }
       else
       {
-        XII_ASSERT_DEBUG(pProperty->GetSpecificType() == xiiGetStaticRTTI<T>(), "");
-
-        const T& value = inout_context.GetData<T>(node.GetInputDataOffset(1));
-        pMemberProperty->SetValuePtr(pInstance.m_pObject, &value);
+        if (pProperty->GetSpecificType() == xiiGetStaticRTTI<T>())
+        {
+          const T& value = inout_context.GetData<T>(node.GetInputDataOffset(1));
+          pMemberProperty->SetValuePtr(pInstance.m_pObject, &value);
+        }
+        else
+        {
+          xiiVariant value = inout_context.GetDataAsVariant(node.GetInputDataOffset(1), pProperty->GetSpecificType());
+          xiiReflectionUtils::SetMemberPropertyValue(pMemberProperty, pInstance.m_pObject, value);
+        }
       }
     }
     else
@@ -317,7 +329,7 @@ namespace
 
     const xiiUInt32 uiStartSlot = 4;
 
-    xiiUniquePtr<xiiMessage> pMessage = userData.m_pType->GetAllocator()->Allocate<xiiMessage>();
+    xiiUniquePtr<xiiMessage> pMessage = userData.m_pType->GetAllocator()->Allocate<xiiMessage>(xiiFrameAllocator::GetCurrentAllocator());
     for (xiiUInt32 i = 0; i < userData.m_uiNumProperties; ++i)
     {
       auto           pProp     = userData.m_Properties[i];
@@ -658,6 +670,29 @@ namespace
 
   MAKE_EXEC_FUNC_GETTER(NodeFunction_Builtin_IsValid);
 
+  template <typename T>
+  static ExecResult NodeFunction_Builtin_Select(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    bool bCondition = inout_context.GetData<bool>(node.GetInputDataOffset(0));
+
+    if constexpr (std::is_same_v<T, xiiTypedPointer>)
+    {
+      xiiTypedPointer a   = inout_context.GetPointerData(node.GetInputDataOffset(1));
+      xiiTypedPointer b   = inout_context.GetPointerData(node.GetInputDataOffset(2));
+      xiiTypedPointer res = bCondition ? a : b;
+      inout_context.SetPointerData(node.GetOutputDataOffset(0), res.m_pObject, res.m_pType);
+    }
+    else
+    {
+      const T& a = inout_context.GetData<T>(node.GetInputDataOffset(1));
+      const T& b = inout_context.GetData<T>(node.GetInputDataOffset(2));
+      inout_context.SetData(node.GetOutputDataOffset(0), bCondition ? a : b);
+    }
+    return ExecResult::RunNext(0);
+  }
+
+  MAKE_EXEC_FUNC_GETTER(NodeFunction_Builtin_Select);
+
   //////////////////////////////////////////////////////////////////////////
 
   template <typename T>
@@ -833,6 +868,58 @@ namespace
 
   MAKE_EXEC_FUNC_GETTER(NodeFunction_Builtin_Div);
 
+  static ExecResult NodeFunction_Builtin_Expression(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    auto pModule = GetScriptModule(inout_context);
+    if (pModule == nullptr)
+      return ExecResult::Error();
+
+    static xiiHashedString sStream = xiiMakeHashedString("VsStream");
+
+    int                                    iDummy = 0;
+    xiiHybridArray<xiiProcessingStream, 8> inputStreams;
+    for (xiiUInt32 i = 0; i < node.m_NumInputDataOffsets; ++i)
+    {
+      auto dataOffset = node.GetInputDataOffset(i);
+
+      xiiTypedPointer ptr;
+      if (dataOffset.IsConstant())
+      {
+        ptr.m_pObject = &iDummy;
+      }
+      else
+      {
+        ptr = inout_context.GetPointerData(dataOffset);
+      }
+
+      const xiiUInt32 uiDataSize     = xiiVisualScriptDataType::GetStorageSize(dataOffset.GetType());
+      auto            streamDataType = xiiVisualScriptDataType::GetStreamDataType(dataOffset.GetType());
+
+      inputStreams.PushBack(xiiProcessingStream(sStream, xiiMakeArrayPtr(static_cast<xiiUInt8*>(ptr.m_pObject), uiDataSize), streamDataType));
+    }
+
+    xiiHybridArray<xiiProcessingStream, 8> outputStreams;
+    for (xiiUInt32 i = 0; i < node.m_NumOutputDataOffsets; ++i)
+    {
+      auto            dataOffset = node.GetOutputDataOffset(i);
+      xiiTypedPointer ptr        = inout_context.GetPointerData(dataOffset);
+
+      const xiiUInt32 uiDataSize     = xiiVisualScriptDataType::GetStorageSize(dataOffset.GetType());
+      auto            streamDataType = xiiVisualScriptDataType::GetStreamDataType(dataOffset.GetType());
+
+      outputStreams.PushBack(xiiProcessingStream(sStream, xiiMakeArrayPtr(static_cast<xiiUInt8*>(ptr.m_pObject), uiDataSize), streamDataType));
+    }
+
+    auto& userData = node.GetUserData<NodeUserData_Expression>();
+    if (pModule->GetSharedExpressionVM().Execute(userData.m_ByteCode, inputStreams, outputStreams, 1, xiiExpression::GlobalData(), xiiExpressionVM::Flags::ScalarizeStreams).Failed())
+    {
+      xiiLog::Error("Visual script expression execution failed");
+      return ExecResult::Error();
+    }
+
+    return ExecResult::RunNext(0);
+  }
+
   //////////////////////////////////////////////////////////////////////////
 
   template <typename T>
@@ -882,7 +969,7 @@ namespace
     NumberType res = 0;
     if constexpr (std::is_same_v<T, bool>)
     {
-      res = inout_context.GetData<T>(dataOffset) ? 1 : 0;
+      res = inout_context.GetData<T>(dataOffset) ? NumberType(1) : NumberType(0);
     }
     else if constexpr (std::is_same_v<T, xiiUInt8> ||
                        std::is_same_v<T, xiiInt32> ||
@@ -954,14 +1041,13 @@ namespace
 
   static ExecResult NodeFunction_Builtin_String_Format(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    auto& sText  = inout_context.GetData<xiiString>(node.GetInputDataOffset(0));
-    auto& params = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(1));
+    auto& sText = inout_context.GetData<xiiString>(node.GetInputDataOffset(0));
 
     xiiHybridArray<xiiString, 12> stringStorage;
-    stringStorage.Reserve(params.GetCount());
-    for (auto& param : params)
+    stringStorage.Reserve(node.m_NumInputDataOffsets - 1);
+    for (xiiUInt32 i = 1; i < node.m_NumInputDataOffsets; ++i)
     {
-      stringStorage.PushBack(param.ConvertTo<xiiString>());
+      stringStorage.PushBack(inout_context.GetDataAsVariant(node.GetInputDataOffset(i), nullptr).ConvertTo<xiiString>());
     }
 
     xiiHybridArray<xiiStringView, 12> stringViews;
@@ -982,28 +1068,35 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_ToHashedString(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
+    auto dataOffset = node.GetInputDataOffset(0);
+
     xiiStringBuilder sb;
     xiiStringView    s;
     if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
                   std::is_same_v<T, xiiComponentHandle> ||
                   std::is_same_v<T, xiiTypedPointer>)
     {
-      xiiTypedPointer p = inout_context.GetPointerData(node.GetInputDataOffset(0));
+      xiiTypedPointer p = inout_context.GetPointerData(dataOffset);
       sb.SetFormat("{} {}", p.m_pType->GetTypeName(), xiiArgP(p.m_pObject));
       s = sb;
     }
     else if constexpr (std::is_same_v<T, xiiString>)
     {
-      s = inout_context.GetData<xiiString>(node.GetInputDataOffset(0));
+      s = inout_context.GetData<xiiString>(dataOffset);
     }
     else if constexpr (std::is_same_v<T, xiiHashedString>)
     {
-      inout_context.SetData(node.GetOutputDataOffset(0), inout_context.GetData<xiiHashedString>(node.GetInputDataOffset(0)));
+      inout_context.SetData(node.GetOutputDataOffset(0), inout_context.GetData<xiiHashedString>(dataOffset));
+      return ExecResult::RunNext(0);
+    }
+    else if constexpr (std::is_same_v<T, xiiVariant>)
+    {
+      inout_context.SetData(node.GetOutputDataOffset(0), inout_context.GetData<xiiVariant>(dataOffset).ConvertTo<xiiHashedString>());
       return ExecResult::RunNext(0);
     }
     else
     {
-      s = xiiConversionUtils::ToString(inout_context.GetData<T>(node.GetInputDataOffset(0)), sb);
+      s = xiiConversionUtils::ToString(inout_context.GetData<T>(dataOffset), sb);
     }
 
     xiiHashedString sHashed;
@@ -1091,11 +1184,32 @@ namespace
 
   static ExecResult NodeFunction_Builtin_Array_GetElement(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    const xiiVariantArray& a       = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(0));
-    xiiUInt32              uiIndex = inout_context.GetData<int>(node.GetInputDataOffset(1));
-    inout_context.SetData(node.GetOutputDataOffset(0), a[uiIndex]);
+    const xiiVariantArray& a      = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(0));
+    int                    iIndex = inout_context.GetData<int>(node.GetInputDataOffset(1));
+    if (iIndex >= 0 && iIndex < int(a.GetCount()))
+    {
+      inout_context.SetData(node.GetOutputDataOffset(0), a[iIndex]);
+    }
+    else
+    {
+      inout_context.SetData(node.GetOutputDataOffset(0), xiiVariant());
+    }
 
     return ExecResult::RunNext(0);
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_SetElement(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    xiiVariantArray& a      = inout_context.GetWritableData<xiiVariantArray>(node.GetInputDataOffset(0));
+    int              iIndex = inout_context.GetData<int>(node.GetInputDataOffset(1));
+    if (iIndex >= 0 && iIndex < int(a.GetCount()))
+    {
+      a[iIndex] = inout_context.GetDataAsVariant(node.GetInputDataOffset(2), nullptr);
+      return ExecResult::RunNext(0);
+    }
+
+    xiiLog::Error("Visual script Array::SetElement: Index '{}' is out of bounds. Valid range is [0, {}).", iIndex, a.GetCount());
+    return ExecResult::Error();
   }
 
   static ExecResult NodeFunction_Builtin_Array_GetCount(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
@@ -1104,6 +1218,90 @@ namespace
     inout_context.SetData<int>(node.GetOutputDataOffset(0), a.GetCount());
 
     return ExecResult::RunNext(0);
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_Clear(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    xiiVariantArray& a = inout_context.GetWritableData<xiiVariantArray>(node.GetInputDataOffset(0));
+    a.Clear();
+
+    return ExecResult::RunNext(0);
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_IsEmpty(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    const xiiVariantArray& a = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(0));
+    inout_context.SetData<bool>(node.GetOutputDataOffset(0), a.IsEmpty());
+
+    return ExecResult::RunNext(0);
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_Contains(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    const xiiVariantArray& a       = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(0));
+    const xiiVariant&      element = inout_context.GetDataAsVariant(node.GetInputDataOffset(1), nullptr);
+    inout_context.SetData<bool>(node.GetOutputDataOffset(0), a.Contains(element));
+
+    return ExecResult::RunNext(0);
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_IndexOf(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    const xiiVariantArray& a            = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(0));
+    const xiiVariant&      element      = inout_context.GetDataAsVariant(node.GetInputDataOffset(1), nullptr);
+    xiiUInt32              uiStartIndex = inout_context.GetData<int>(node.GetInputDataOffset(2));
+
+    xiiUInt32 uiIndex = a.IndexOf(element, uiStartIndex);
+    inout_context.SetData<int>(node.GetOutputDataOffset(0), uiIndex == xiiInvalidIndex ? -1 : int(uiIndex));
+
+    return ExecResult::RunNext(0);
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_Insert(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    xiiVariantArray&  a       = inout_context.GetWritableData<xiiVariantArray>(node.GetInputDataOffset(0));
+    const xiiVariant& element = inout_context.GetDataAsVariant(node.GetInputDataOffset(1), nullptr);
+    int               iIndex  = inout_context.GetData<int>(node.GetInputDataOffset(2));
+    if (iIndex >= 0 && iIndex <= int(a.GetCount()))
+    {
+      a.InsertAt(iIndex, element);
+      return ExecResult::RunNext(0);
+    }
+
+    xiiLog::Error("Visual script Array::Insert: Index '{}' is out of bounds. Valid range is [0, {}].", iIndex, a.GetCount());
+    return ExecResult::Error();
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_PushBack(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    xiiVariantArray&  a       = inout_context.GetWritableData<xiiVariantArray>(node.GetInputDataOffset(0));
+    const xiiVariant& element = inout_context.GetDataAsVariant(node.GetInputDataOffset(1), nullptr);
+    a.PushBack(element);
+
+    return ExecResult::RunNext(0);
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_Remove(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    xiiVariantArray&  a       = inout_context.GetWritableData<xiiVariantArray>(node.GetInputDataOffset(0));
+    const xiiVariant& element = inout_context.GetDataAsVariant(node.GetInputDataOffset(1), nullptr);
+    a.RemoveAndCopy(element);
+
+    return ExecResult::RunNext(0);
+  }
+
+  static ExecResult NodeFunction_Builtin_Array_RemoveAt(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    xiiVariantArray& a      = inout_context.GetWritableData<xiiVariantArray>(node.GetInputDataOffset(0));
+    int              iIndex = inout_context.GetData<int>(node.GetInputDataOffset(1));
+    if (iIndex >= 0 && iIndex < int(a.GetCount()))
+    {
+      a.RemoveAtAndCopy(iIndex);
+      return ExecResult::RunNext(0);
+    }
+
+    xiiLog::Error("Visual script Array::RemoveAt: Index '{}' is out of bounds. Valid range is [0, {}).", iIndex, a.GetCount());
+    return ExecResult::Error();
   }
 
   //////////////////////////////////////////////////////////////////////////
@@ -1267,6 +1465,7 @@ namespace
     {nullptr, &NodeFunction_Builtin_SetVariable_Getter}, // Builtin_SetVariable,
     {nullptr, &NodeFunction_Builtin_IncVariable_Getter}, // Builtin_IncVariable,
     {nullptr, &NodeFunction_Builtin_DecVariable_Getter}, // Builtin_DecVariable,
+    {nullptr, &NodeFunction_Builtin_SetVariable_Getter}, // Builtin_TempVariable,
 
     {&NodeFunction_Builtin_Branch},                 // Builtin_Branch,
     {nullptr, &NodeFunction_Builtin_Switch_Getter}, // Builtin_Switch,
@@ -1283,13 +1482,13 @@ namespace
     {nullptr, &NodeFunction_Builtin_Compare_Getter}, // Builtin_Compare,
     {},                                              // Builtin_CompareExec,
     {nullptr, &NodeFunction_Builtin_IsValid_Getter}, // Builtin_IsValid,
-    {},                                              // Builtin_Select,
+    {nullptr, &NodeFunction_Builtin_Select_Getter},  // Builtin_Select,
 
     {nullptr, &NodeFunction_Builtin_Add_Getter}, // Builtin_Add,
     {nullptr, &NodeFunction_Builtin_Sub_Getter}, // Builtin_Subtract,
     {nullptr, &NodeFunction_Builtin_Mul_Getter}, // Builtin_Multiply,
     {nullptr, &NodeFunction_Builtin_Div_Getter}, // Builtin_Divide,
-    {},                                          // Builtin_Expression,
+    {&NodeFunction_Builtin_Expression},          // Builtin_Expression,
 
     {nullptr, &NodeFunction_Builtin_ToBool_Getter},            // Builtin_ToBool,
     {nullptr, &NodeFunction_Builtin_ToByte_Getter},            // Builtin_ToByte,
@@ -1305,16 +1504,16 @@ namespace
 
     {&NodeFunction_Builtin_MakeArray},        // Builtin_MakeArray
     {&NodeFunction_Builtin_Array_GetElement}, // Builtin_Array_GetElement,
-    {},                                       // Builtin_Array_SetElement,
+    {&NodeFunction_Builtin_Array_SetElement}, // Builtin_Array_SetElement,
     {&NodeFunction_Builtin_Array_GetCount},   // Builtin_Array_GetCount,
-    {},                                       // Builtin_Array_IsEmpty,
-    {},                                       // Builtin_Array_Clear,
-    {},                                       // Builtin_Array_Contains,
-    {},                                       // Builtin_Array_IndexOf,
-    {},                                       // Builtin_Array_Insert,
-    {},                                       // Builtin_Array_PushBack,
-    {},                                       // Builtin_Array_Remove,
-    {},                                       // Builtin_Array_RemoveAt,
+    {&NodeFunction_Builtin_Array_IsEmpty},    // Builtin_Array_IsEmpty,
+    {&NodeFunction_Builtin_Array_Clear},      // Builtin_Array_Clear,
+    {&NodeFunction_Builtin_Array_Contains},   // Builtin_Array_Contains,
+    {&NodeFunction_Builtin_Array_IndexOf},    // Builtin_Array_IndexOf,
+    {&NodeFunction_Builtin_Array_Insert},     // Builtin_Array_Insert,
+    {&NodeFunction_Builtin_Array_PushBack},   // Builtin_Array_PushBack,
+    {&NodeFunction_Builtin_Array_Remove},     // Builtin_Array_Remove,
+    {&NodeFunction_Builtin_Array_RemoveAt},   // Builtin_Array_RemoveAt,
 
     {&NodeFunction_Builtin_TryGetComponentOfBaseType}, // Builtin_TryGetComponentOfBaseType
 
@@ -1333,7 +1532,7 @@ namespace
 
 xiiVisualScriptGraphDescription::ExecuteFunction GetExecuteFunction(xiiVisualScriptNodeDescription::Type::Enum nodeType, xiiVisualScriptDataType::Enum dataType)
 {
-  XII_ASSERT_DEBUG(nodeType >= 0 && nodeType < XII_ARRAY_SIZE(s_TypeToExecuteFunctions), "Out of bounds access");
+  XII_ASSERT_DEBUG(nodeType >= 0 && static_cast<xiiUInt32>(nodeType) < XII_ARRAY_SIZE(s_TypeToExecuteFunctions), "Out of bounds access");
   auto& context = s_TypeToExecuteFunctions[nodeType];
   if (context.m_Func != nullptr)
   {

@@ -4,7 +4,7 @@
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 
 xiiVisualScriptCoroutine::xiiVisualScriptCoroutine(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
-  m_LocalDataStorage(pDesc->GetLocalDataDesc()), m_Context(pDesc)
+  m_Context(pDesc, xiiScriptAllocator::GetAllocator())
 {
 }
 
@@ -12,10 +12,8 @@ xiiVisualScriptCoroutine::~xiiVisualScriptCoroutine() = default;
 
 void xiiVisualScriptCoroutine::StartWithVarArgs(xiiArrayPtr<xiiVariant> arguments)
 {
-  m_LocalDataStorage.AllocateStorage();
-
   auto pVisualScriptInstance = static_cast<xiiVisualScriptInstance*>(GetScriptInstance());
-  m_Context.Initialize(*pVisualScriptInstance, m_LocalDataStorage, arguments);
+  m_Context.Initialize(*pVisualScriptInstance, arguments);
 }
 
 void xiiVisualScriptCoroutine::Stop()

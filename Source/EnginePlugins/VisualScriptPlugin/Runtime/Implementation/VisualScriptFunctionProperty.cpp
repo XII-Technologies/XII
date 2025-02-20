@@ -6,11 +6,9 @@
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 
 xiiVisualScriptFunctionProperty::xiiVisualScriptFunctionProperty(xiiStringView sName, const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
-  xiiScriptFunctionProperty(sName), m_pDesc(pDesc), m_LocalDataStorage(pDesc->GetLocalDataDesc())
+  xiiScriptFunctionProperty(sName), m_pDesc(pDesc)
 {
   XII_ASSERT_DEBUG(m_pDesc->IsCoroutine() == false, "Must not be a coroutine");
-
-  m_LocalDataStorage.AllocateStorage();
 }
 
 xiiVisualScriptFunctionProperty::~xiiVisualScriptFunctionProperty() = default;
@@ -20,8 +18,8 @@ void xiiVisualScriptFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVa
   XII_ASSERT_DEBUG(pInstance != nullptr, "Invalid instance");
   auto pVisualScriptInstance = static_cast<xiiVisualScriptInstance*>(pInstance);
 
-  xiiVisualScriptExecutionContext context(m_pDesc);
-  context.Initialize(*pVisualScriptInstance, m_LocalDataStorage, arguments);
+  xiiVisualScriptExecutionContext context(m_pDesc, xiiFrameAllocator::GetCurrentAllocator());
+  context.Initialize(*pVisualScriptInstance, arguments);
 
   auto result = context.Execute(xiiTime::MakeZero());
   XII_ASSERT_DEBUG(result.m_NextExecAndState != xiiVisualScriptExecutionContext::ExecResult::State::ContinueLater, "A non-coroutine function must not return 'ContinueLater'");
@@ -32,12 +30,11 @@ void xiiVisualScriptFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVa
 //////////////////////////////////////////////////////////////////////////
 
 xiiVisualScriptMessageHandler::xiiVisualScriptMessageHandler(const xiiScriptMessageDesc& desc, const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
-  xiiScriptMessageHandler(desc), m_pDesc(pDesc), m_LocalDataStorage(pDesc->GetLocalDataDesc())
+  xiiScriptMessageHandler(desc), m_pDesc(pDesc)
 {
   XII_ASSERT_DEBUG(m_pDesc->IsCoroutine() == false, "Must not be a coroutine");
 
   m_DispatchFunc = &Dispatch;
-  m_LocalDataStorage.AllocateStorage();
 }
 
 xiiVisualScriptMessageHandler::~xiiVisualScriptMessageHandler() = default;
@@ -52,8 +49,8 @@ void xiiVisualScriptMessageHandler::Dispatch(xiiAbstractMessageHandler* pSelf, v
   xiiHybridArray<xiiVariant, 8> arguments;
   pHandler->FillMessagePropertyValues(ref_msg, arguments);
 
-  xiiVisualScriptExecutionContext context(pHandler->m_pDesc);
-  context.Initialize(*pVisualScriptInstance, pHandler->m_LocalDataStorage, arguments);
+  xiiVisualScriptExecutionContext context(pHandler->m_pDesc, xiiFrameAllocator::GetCurrentAllocator());
+  context.Initialize(*pVisualScriptInstance, arguments);
 
   auto result = context.Execute(xiiTime::MakeZero());
   XII_ASSERT_DEBUG(result.m_NextExecAndState != xiiVisualScriptExecutionContext::ExecResult::State::ContinueLater, "A non-coroutine function must not return 'ContinueLater'");

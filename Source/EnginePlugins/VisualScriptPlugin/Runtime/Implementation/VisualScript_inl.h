@@ -5,7 +5,7 @@ void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditi
 {
   if (a.GetCount() > Size)
   {
-    inout_uiAdditionalDataSize = xiiMemoryUtils::AlignSize<xiiUInt32>(inout_uiAdditionalDataSize, XII_ALIGNMENT_OF(T));
+    inout_uiAdditionalDataSize = xiiMemoryUtils::AlignSize<xiiUInt32>(inout_uiAdditionalDataSize, alignof(T));
     inout_uiAdditionalDataSize += a.GetCount() * sizeof(T);
   }
 }
@@ -22,14 +22,14 @@ void xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::AddAdditi
 }
 
 template <typename T, xiiUInt32 Size>
-T* xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::Init(xiiUInt8 uiCount, xiiUInt8*& inout_pAdditionalData)
+T* xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::Init(xiiUInt8 uiCount, xiiUInt32 uiAlignment, xiiUInt8*& inout_pAdditionalData)
 {
   if (uiCount <= Size)
   {
     return m_Embedded;
   }
 
-  inout_pAdditionalData = xiiMemoryUtils::AlignForwards(inout_pAdditionalData, XII_ALIGNMENT_OF(T));
+  inout_pAdditionalData = xiiMemoryUtils::AlignForwards(inout_pAdditionalData, uiAlignment);
   m_Ptr                 = reinterpret_cast<T*>(inout_pAdditionalData);
   inout_pAdditionalData += uiCount * sizeof(T);
   return m_Ptr;
@@ -47,7 +47,7 @@ xiiResult xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::Read
   }
   out_uiCount = static_cast<xiiUInt8>(uiCount);
 
-  T*              pTargetPtr       = Init(out_uiCount, inout_pAdditionalData);
+  T*              pTargetPtr       = Init(out_uiCount, alignof(T), inout_pAdditionalData);
   const xiiUInt64 uiNumBytesToRead = uiCount * sizeof(T);
   if (inout_stream.ReadBytes(pTargetPtr, uiNumBytesToRead) != uiNumBytesToRead)
     return XII_FAILURE;
@@ -87,6 +87,24 @@ XII_ALWAYS_INLINE xiiVisualScriptGraphDescription::DataOffset xiiVisualScriptGra
   return {};
 }
 
+XII_ALWAYS_INLINE xiiVisualScriptGraphDescription::DataOffset* xiiVisualScriptGraphDescription::Node::GetInputDataOffsets()
+{
+  return m_NumInputDataOffsets <= XII_ARRAY_SIZE(m_InputDataOffsets.m_Embedded) ? m_InputDataOffsets.m_Embedded : m_InputDataOffsets.m_Ptr;
+}
+
+XII_ALWAYS_INLINE xiiVisualScriptGraphDescription::DataOffset* xiiVisualScriptGraphDescription::Node::GetOutputDataOffsets()
+{
+  return m_NumOutputDataOffsets <= XII_ARRAY_SIZE(m_OutputDataOffsets.m_Embedded) ? m_OutputDataOffsets.m_Embedded : m_OutputDataOffsets.m_Ptr;
+}
+
+// static
+template <typename T>
+XII_ALWAYS_INLINE constexpr xiiUInt32 xiiVisualScriptGraphDescription::Node::GetUserDataAlignment()
+{
+  // Ensures at least 8 byte alignment, thus making it compatible between 32 and 64 bit platforms.
+  return xiiMath::Max<xiiUInt32>(alignof(T), 8u);
+}
+
 template <typename T>
 XII_ALWAYS_INLINE const T& xiiVisualScriptGraphDescription::Node::GetUserData() const
 {
@@ -95,11 +113,13 @@ XII_ALWAYS_INLINE const T& xiiVisualScriptGraphDescription::Node::GetUserData() 
 }
 
 template <typename T>
-T& xiiVisualScriptGraphDescription::Node::InitUserData(xiiUInt8*& inout_pAdditionalData, xiiUInt32 uiByteSize /*= sizeof(T)*/)
+T& xiiVisualScriptGraphDescription::Node::InitUserData(xiiUInt8*& inout_pAdditionalData, xiiUInt32 uiByteSize /*= sizeof(T)*/, xiiUInt32 uiAlignment /*= GetUserDataAlignment<T>()*/)
 {
-  m_UserDataByteSize = uiByteSize;
-  auto pUserData     = m_UserData.Init(uiByteSize / sizeof(xiiUInt32), inout_pAdditionalData);
-  XII_CHECK_ALIGNMENT(pUserData, XII_ALIGNMENT_OF(T));
+  m_UserDataByteSize              = uiByteSize;
+  const xiiUInt32 uiUserDataCount = uiByteSize / sizeof(xiiUInt32);
+  XII_ASSERT_DEBUG(uiUserDataCount <= xiiMath::MaxValue<xiiUInt8>(), "User data is too big");
+  auto pUserData = m_UserData.Init(static_cast<xiiUInt8>(uiUserDataCount), uiAlignment, inout_pAdditionalData);
+  XII_CHECK_ALIGNMENT(pUserData, uiAlignment);
   return *reinterpret_cast<T*>(pUserData);
 }
 

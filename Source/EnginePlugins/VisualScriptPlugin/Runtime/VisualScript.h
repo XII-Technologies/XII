@@ -35,6 +35,7 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptNodeDescription
       Builtin_SetVariable,
       Builtin_IncVariable,
       Builtin_DecVariable,
+      Builtin_TempVariable,
 
       Builtin_Branch,
       Builtin_Switch,
@@ -51,13 +52,13 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptNodeDescription
       Builtin_Compare,
       Builtin_CompareExec, // Editor only
       Builtin_IsValid,
-      Builtin_Select, // TODO
+      Builtin_Select,
 
       Builtin_Add,
       Builtin_Subtract,
       Builtin_Multiply,
       Builtin_Divide,
-      Builtin_Expression, // TODO
+      Builtin_Expression,
 
       Builtin_ToBool,
       Builtin_ToByte,
@@ -72,17 +73,17 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptNodeDescription
       Builtin_Variant_ConvertTo,
 
       Builtin_MakeArray,
-      Builtin_Array_GetElement, // TODO
-      Builtin_Array_SetElement, // TODO
-      Builtin_Array_GetCount,   // TODO
-      Builtin_Array_IsEmpty,    // TODO
-      Builtin_Array_Clear,      // TODO
-      Builtin_Array_Contains,   // TODO
-      Builtin_Array_IndexOf,    // TODO
-      Builtin_Array_Insert,     // TODO
-      Builtin_Array_PushBack,   // TODO
-      Builtin_Array_Remove,     // TODO
-      Builtin_Array_RemoveAt,   // TODO
+      Builtin_Array_GetElement,
+      Builtin_Array_SetElement,
+      Builtin_Array_GetCount,
+      Builtin_Array_IsEmpty,
+      Builtin_Array_Clear,
+      Builtin_Array_Contains,
+      Builtin_Array_IndexOf,
+      Builtin_Array_Insert,
+      Builtin_Array_PushBack,
+      Builtin_Array_Remove,
+      Builtin_Array_RemoveAt,
 
       Builtin_TryGetComponentOfBaseType,
 
@@ -135,7 +136,7 @@ public:
   ~xiiVisualScriptGraphDescription();
 
   static xiiResult Serialize(xiiArrayPtr<const xiiVisualScriptNodeDescription> nodes, const xiiVisualScriptDataDescription& localDataDesc, xiiStreamWriter& inout_stream);
-  xiiResult        Deserialize(xiiStreamReader& inout_stream);
+  xiiResult        Deserialize(xiiStreamReader& inout_stream, const xiiVisualScriptDataDescription& instanceDataDesc, const xiiVisualScriptDataDescription& constantDataDesc);
 
   template <typename T, xiiUInt32 Size>
   struct EmbeddedArrayOrPointer
@@ -149,7 +150,7 @@ public:
     static void AddAdditionalDataSize(xiiArrayPtr<const T> a, xiiUInt32& inout_uiAdditionalDataSize);
     static void AddAdditionalDataSize(xiiUInt32 uiSize, xiiUInt32 uiAlignment, xiiUInt32& inout_uiAdditionalDataSize);
 
-    T*        Init(xiiUInt8 uiCount, xiiUInt8*& inout_pAdditionalData);
+    T*        Init(xiiUInt8 uiCount, xiiUInt32 uiAlignment, xiiUInt8*& inout_pAdditionalData);
     xiiResult ReadFromStream(xiiUInt8& out_uiCount, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData);
   };
 
@@ -208,11 +209,17 @@ public:
     DataOffset GetInputDataOffset(xiiUInt32 uiSlot) const;
     DataOffset GetOutputDataOffset(xiiUInt32 uiSlot) const;
 
+    DataOffset* GetInputDataOffsets();
+    DataOffset* GetOutputDataOffsets();
+
+    template <typename T>
+    static constexpr xiiUInt32 GetUserDataAlignment();
+
     template <typename T>
     const T& GetUserData() const;
 
     template <typename T>
-    T& InitUserData(xiiUInt8*& inout_pAdditionalData, xiiUInt32 uiByteSize = sizeof(T));
+    T& InitUserData(xiiUInt8*& inout_pAdditionalData, xiiUInt32 uiByteSize = sizeof(T), xiiUInt32 uiAlignment = GetUserDataAlignment<T>());
   };
 
   const Node* GetNode(xiiUInt32 uiIndex) const;
@@ -233,10 +240,10 @@ private:
 class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptExecutionContext
 {
 public:
-  xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc);
+  xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc, xiiAllocatorBase* pAllocator);
   ~xiiVisualScriptExecutionContext();
 
-  void Initialize(xiiVisualScriptInstance& inout_instance, xiiVisualScriptDataStorage& inout_localDataStorage, xiiArrayPtr<xiiVariant> arguments);
+  void Initialize(xiiVisualScriptInstance& inout_instance, xiiArrayPtr<xiiVariant> arguments);
   void Deinitialize();
 
   using ExecResult = xiiVisualScriptGraphDescription::ExecResult;
@@ -275,6 +282,7 @@ private:
   xiiUInt32                                           m_uiExecutionCounter = 0;
   xiiTime                                             m_DeltaTimeSinceLastExecution;
 
+  xiiVisualScriptDataStorage  m_LocalDataStorage;
   xiiVisualScriptDataStorage* m_DataStorage[DataOffset::Source::Count] = {};
 
   xiiScriptCoroutine* m_pCurrentCoroutine = nullptr;

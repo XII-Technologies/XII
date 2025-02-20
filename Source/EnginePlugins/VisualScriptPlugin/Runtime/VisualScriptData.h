@@ -48,7 +48,8 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataDescription : public xiiRef
 
     XII_ALWAYS_INLINE bool IsValid() const
     {
-      return m_uiByteOffset != INVALID_BYTE_OFFSET && m_uiType != xiiVisualScriptDataType::Invalid;
+      return m_uiByteOffset != INVALID_BYTE_OFFSET &&
+        m_uiType != xiiVisualScriptDataType::Invalid;
     }
 
     XII_ALWAYS_INLINE xiiVisualScriptDataType::Enum GetType() const { return static_cast<xiiVisualScriptDataType::Enum>(m_uiType); }
@@ -92,12 +93,14 @@ public:
   xiiVisualScriptDataStorage(const xiiSharedPtr<const xiiVisualScriptDataDescription>& pDesc);
   ~xiiVisualScriptDataStorage();
 
+  const xiiVisualScriptDataDescription& GetDesc() const;
+
   bool IsAllocated() const;
-  void AllocateStorage();
+  void AllocateStorage(xiiAllocatorBase* pAllocator);
   void DeallocateStorage();
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
+  xiiResult Deserialize(xiiStreamReader& inout_stream, xiiAllocatorBase* pAllocator);
 
   using DataOffset = xiiVisualScriptDataDescription::DataOffset;
 
@@ -120,7 +123,8 @@ public:
 
 private:
   xiiSharedPtr<const xiiVisualScriptDataDescription> m_pDesc;
-  xiiBlob                                            m_Storage;
+  xiiByteArrayPtr                                    m_Storage;
+  xiiAllocatorBase*                                      m_pAllocator = nullptr;
 };
 
 struct xiiVisualScriptInstanceData

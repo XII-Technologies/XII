@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/World/GameObject.h>
+#include <Foundation/DataProcessing/Stream/ProcessingStream.h>
 #include <VisualScriptPlugin/VisualScriptPluginDLL.h>
 
 /// \brief Data types that are available in visual script. These are a subset of xiiVariantType.
@@ -11,7 +12,7 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataType
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     Invalid = 0,
 
@@ -40,6 +41,7 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataType
     Count,
 
     EnumValue,
+    BitflagValue,
 
     ExtendedCount,
 
@@ -54,6 +56,8 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataType
 
   static xiiVariantType::Enum GetVariantType(Enum dataType);
   static Enum                 FromVariantType(xiiVariantType::Enum variantType);
+
+  static xiiProcessingStream::DataType GetStreamDataType(Enum dataType);
 
   static const xiiRTTI* GetRtti(Enum dataType);
   static Enum           FromRtti(const xiiRTTI* pRtti);

@@ -710,3 +710,17 @@ function(xii_get_export_location DST_VAR)
     endif()
   endif()
 endfunction()
+
+# #####################################
+# ## xii_copy_plugin_bundle(TARGET_NAME FILE_NAME)
+# #####################################
+#
+# Copies the given file with the .xiiPluginBundle extension from the current source directory into the target directory.
+#
+# #####################################
+function(xii_copy_plugin_bundle TARGET_NAME FILE_NAME)
+  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_NAME}.xiiPluginBundle" $<TARGET_FILE_DIR:${TARGET_NAME}>
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
+endfunction()
