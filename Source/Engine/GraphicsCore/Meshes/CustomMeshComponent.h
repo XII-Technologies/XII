@@ -65,8 +65,7 @@ public:
   /// \brief Returns the material that is used for rendering.
   xiiMaterialResourceHandle GetMaterial() const;
 
-  void        SetMaterialFile(const char* szMaterial); // [ property ]
-  const char* GetMaterialFile() const;                 // [ property ]
+  XII_ADD_RESOURCEHANDLE_ACCESSORS(Material, m_hMaterial);
 
   /// \brief Sets the mesh instance color.
   void SetColor(const xiiColor& color); // [ property ]
@@ -80,7 +79,7 @@ public:
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;
 
-  xiiMaterialResourceHandle m_hMaterial;
+  xiiMaterialResourceHandle m_hMaterial; // [ property ]
   xiiColor                  m_Color            = xiiColor::White;
   xiiUInt32                 m_uiFirstPrimitive = 0;
   xiiUInt32                 m_uiNumPrimitives  = 0xFFFFFFFF;

@@ -21,7 +21,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiRopeRenderComponent, 2, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Material", GetMaterialFile, SetMaterialFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Material", GetMaterial, SetMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
     XII_MEMBER_PROPERTY("Color", m_Color)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::White), new xiiExposeColorAlphaAttribute()),
     XII_ACCESSOR_PROPERTY("Thickness", GetThickness, SetThickness)->AddAttributes(new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_ACCESSOR_PROPERTY("Detail", GetDetail, SetDetail)->AddAttributes(new xiiDefaultValueAttribute(6), new xiiClampValueAttribute(3, 16)),
@@ -173,26 +173,6 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
 
     xiiDebugRenderer::DrawLines(msg.m_pView->GetHandle(), lines, xiiColor::White, GetOwner()->GetGlobalTransform());
   }
-}
-
-void xiiRopeRenderComponent::SetMaterialFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(szFile);
-  }
-  else
-  {
-    m_hMaterial.Invalidate();
-  }
-}
-
-const char* xiiRopeRenderComponent::GetMaterialFile() const
-{
-  if (!m_hMaterial.IsValid())
-    return "";
-
-  return m_hMaterial.GetResourceID();
 }
 
 void xiiRopeRenderComponent::SetThickness(float fThickness)

@@ -59,8 +59,8 @@ public:
   void     SetOuterSpotAngle(xiiAngle spotAngle); // [ property ]
   xiiAngle GetOuterSpotAngle() const;             // [ property ]
 
-  void        SetProjectedTextureFile(const char* szFile); // [ property ]
-  const char* GetProjectedTextureFile() const;             // [ property ]
+  void          SetProjectedTextureFile(xiiStringView sFile); // [ property ]
+  xiiStringView GetProjectedTextureFile() const;              // [ property ]
 
   void                              SetProjectedTexture(const xiiTexture2DResourceHandle& hProjectedTexture);
   const xiiTexture2DResourceHandle& GetProjectedTexture() const;
@@ -85,7 +85,7 @@ class XII_GRAPHICSCORE_DLL xiiSpotLightVisualizerAttribute : public xiiVisualize
 
 public:
   xiiSpotLightVisualizerAttribute();
-  xiiSpotLightVisualizerAttribute(const char* szAngleProperty, const char* szRangeProperty, const char* szIntensityProperty, const char* szColorProperty);
+  xiiSpotLightVisualizerAttribute(xiiStringView sAngleProperty, xiiStringView sRangeProperty, xiiStringView sIntensityProperty, xiiStringView sColorProperty);
 
   const xiiUntrackedString& GetAngleProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRangeProperty() const { return m_sProperty2; }

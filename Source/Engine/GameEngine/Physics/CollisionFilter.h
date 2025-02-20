@@ -1,14 +1,16 @@
 #pragma once
 
+#include <GameEngine/GameEngineDLL.h>
+
 #include <Foundation/Containers/StaticArray.h>
 #include <Foundation/Strings/String.h>
-#include <GameEngine/GameEngineDLL.h>
 
 /// \brief A 32x32 matrix of named filters that can be configured to enable or disable collisions
 class XII_GAMEENGINE_DLL xiiCollisionFilterConfig
 {
 public:
   xiiCollisionFilterConfig();
+  ~xiiCollisionFilterConfig();
 
   void SetGroupName(xiiUInt32 uiGroup, xiiStringView sName);
 
@@ -23,8 +25,7 @@ public:
   /// \brief Returns how many groups have non-empty names
   xiiUInt32 GetNumNamedGroups() const;
 
-  /// \brief Returns the index of the n-th group that has a non-empty name (ie. maps index '3' to index '5' if there are two unnamed groups in
-  /// between)
+  /// \brief Returns the index of the n-th group that has a non-empty name (ie. maps index '3' to index '5' if there are two unnamed groups in between).
   xiiUInt32 GetNamedGroupIndex(xiiUInt32 uiGroup) const;
 
   /// \brief Returns xiiInvalidIndex if no group with the given name exists.
@@ -41,8 +42,7 @@ public:
   xiiResult Save(xiiStringView sFile = s_sConfigFile) const;
   xiiResult Load(xiiStringView sFile = s_sConfigFile);
 
-
 private:
   xiiUInt32 m_GroupMasks[32];
-  char      m_GroupNames[32][32];
+  xiiString m_GroupNames[32];
 };

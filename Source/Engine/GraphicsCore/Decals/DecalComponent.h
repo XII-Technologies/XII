@@ -115,11 +115,11 @@ public:
   void                SetApplyOnlyTo(xiiGameObjectHandle hObject);
   xiiGameObjectHandle GetApplyOnlyTo() const;
 
-  xiiUInt32   DecalFile_GetCount() const;                              // [ property ]
-  const char* DecalFile_Get(xiiUInt32 uiIndex) const;                  // [ property ]
-  void        DecalFile_Set(xiiUInt32 uiIndex, const char* szFile);    // [ property ]
-  void        DecalFile_Insert(xiiUInt32 uiIndex, const char* szFile); // [ property ]
-  void        DecalFile_Remove(xiiUInt32 uiIndex);                     // [ property ]
+  xiiUInt32     DecalFile_GetCount() const;                               // [ property ]
+  xiiStringView DecalFile_Get(xiiUInt32 uiIndex) const;                   // [ property ]
+  void          DecalFile_Set(xiiUInt32 uiIndex, xiiStringView sFile);    // [ property ]
+  void          DecalFile_Insert(xiiUInt32 uiIndex, xiiStringView sFile); // [ property ]
+  void          DecalFile_Remove(xiiUInt32 uiIndex);                      // [ property ]
 
 
 protected:

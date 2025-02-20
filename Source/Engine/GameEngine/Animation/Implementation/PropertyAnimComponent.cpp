@@ -13,7 +13,7 @@
 XII_BEGIN_COMPONENT_TYPE(xiiPropertyAnimComponent, 3, xiiComponentMode::Dynamic)
 {
   XII_BEGIN_PROPERTIES{
-    XII_ACCESSOR_PROPERTY("Animation", GetPropertyAnimFile, SetPropertyAnimFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Property_Animation")),
+    XII_RESOURCE_MEMBER_PROPERTY("Animation", m_hPropertyAnim)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Property_Animation")),
     XII_MEMBER_PROPERTY("Playing", m_bPlaying)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("Mode", xiiPropertyAnimMode, m_AnimationMode),
     XII_MEMBER_PROPERTY("RandomOffset", m_RandomOffset)->AddAttributes(new xiiClampValueAttribute(xiiTime::MakeFromSeconds(0), xiiVariant())),
@@ -85,26 +85,6 @@ void xiiPropertyAnimComponent::DeserializeComponent(xiiWorldReader& inout_stream
   {
     s >> m_bPlaying;
   }
-}
-
-void xiiPropertyAnimComponent::SetPropertyAnimFile(const char* szFile)
-{
-  xiiPropertyAnimResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiPropertyAnimResource>(szFile);
-  }
-
-  SetPropertyAnim(hResource);
-}
-
-const char* xiiPropertyAnimComponent::GetPropertyAnimFile() const
-{
-  if (!m_hPropertyAnim.IsValid())
-    return "";
-
-  return m_hPropertyAnim.GetResourceID();
 }
 
 void xiiPropertyAnimComponent::SetPropertyAnim(const xiiPropertyAnimResourceHandle& hPropertyAnim)

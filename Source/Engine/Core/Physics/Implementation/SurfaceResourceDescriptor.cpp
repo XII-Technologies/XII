@@ -15,7 +15,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSurfaceInteraction, xiiNoBase, 1, xiiRTTIDefa
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Type", m_sInteractionType)->AddAttributes(new xiiDynamicStringEnumAttribute("SurfaceInteractionTypeEnum")),
-    XII_ACCESSOR_PROPERTY("Prefab", GetPrefab, SetPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("Prefab", m_hPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("Prefab")),
     XII_ENUM_MEMBER_PROPERTY("Alignment", xiiSurfaceInteractionAlignment, m_Alignment),
     XII_MEMBER_PROPERTY("Deviation", m_Deviation)->AddAttributes(new xiiClampValueAttribute(xiiVariant(xiiAngle::MakeFromDegree(0.0f)), xiiVariant(xiiAngle::MakeFromDegree(90.0f)))),
@@ -30,7 +30,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResourceDescriptor, 1, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BaseSurface", GetBaseSurfaceFile, SetBaseSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")), // Package + Thumbnail So that circular dependencies are caught.
+    XII_RESOURCE_MEMBER_PROPERTY("BaseSurface", m_hBaseSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")), // Package + Thumbnail So that circular dependencies are caught.
     XII_MEMBER_PROPERTY("Restitution", m_fPhysicsRestitution)->AddAttributes(new xiiDefaultValueAttribute(0.25f)),
     XII_MEMBER_PROPERTY("StaticFriction", m_fPhysicsFrictionStatic)->AddAttributes(new xiiDefaultValueAttribute(0.6f)),
     XII_MEMBER_PROPERTY("DynamicFriction", m_fPhysicsFrictionDynamic)->AddAttributes(new xiiDefaultValueAttribute(0.4f)),
@@ -43,26 +43,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResourceDescriptor, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-
-void xiiSurfaceInteraction::SetPrefab(xiiStringView sPrefab)
-{
-  xiiPrefabResourceHandle hPrefab;
-
-  if (!sPrefab.IsEmpty())
-  {
-    hPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>(sPrefab);
-  }
-
-  m_hPrefab = hPrefab;
-}
-
-xiiStringView xiiSurfaceInteraction::GetPrefab() const
-{
-  if (!m_hPrefab.IsValid())
-    return {};
-
-  return m_hPrefab.GetResourceID();
-}
 
 const xiiRangeView<xiiStringView, xiiUInt32> xiiSurfaceInteraction::GetParameters() const
 {
@@ -187,26 +167,6 @@ void xiiSurfaceResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
       ref_stream << ia.m_Parameters.GetValue(i);
     }
   }
-}
-
-void xiiSurfaceResourceDescriptor::SetBaseSurfaceFile(xiiStringView sFile)
-{
-  xiiSurfaceResourceHandle hResource;
-
-  if (!sFile.IsEmpty())
-  {
-    hResource = xiiResourceManager::LoadResource<xiiSurfaceResource>(sFile);
-  }
-
-  m_hBaseSurface = hResource;
-}
-
-xiiStringView xiiSurfaceResourceDescriptor::GetBaseSurfaceFile() const
-{
-  if (!m_hBaseSurface.IsValid())
-    return {};
-
-  return m_hBaseSurface.GetResourceID();
 }
 
 void xiiSurfaceResourceDescriptor::SetCollisionInteraction(xiiStringView sName)

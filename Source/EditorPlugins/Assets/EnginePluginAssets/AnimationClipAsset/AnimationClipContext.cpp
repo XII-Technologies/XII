@@ -89,9 +89,9 @@ void xiiAnimationClipContext::HandleMessage(const xiiEditorEngineDocumentMsg* pM
     xiiSimpleAnimationComponent* pAnimController;
     if (pWorld->TryGetComponent(m_hAnimControllerComponent, pAnimController))
     {
-      if (pAnimController->GetAnimationClip().IsValid())
+      if (pAnimController->m_hAnimationClip.IsValid())
       {
-        xiiResourceLock<xiiAnimationClipResource> pResource(pAnimController->GetAnimationClip(), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+        xiiResourceLock<xiiAnimationClipResource> pResource(pAnimController->m_hAnimationClip, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
 
         if (pResource.GetAcquireResult() == xiiResourceAcquireResult::Final)
         {

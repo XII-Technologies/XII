@@ -298,7 +298,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
 
   {
     xiiFileReader File;
-    if (File.Open(pResource->GetResourceID().GetData()).Failed())
+    if (File.Open(pResource->GetResourceID()).Failed())
     {
       xiiLog::Debug("Shader Permutation '{0}' does not exist, triggering recompile.", pResource->GetResourceID());
 
@@ -307,7 +307,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
         return res;
 
       // try again
-      if (File.Open(pResource->GetResourceID().GetData()).Failed())
+      if (File.Open(pResource->GetResourceID()).Failed())
       {
         xiiLog::Debug("Shader Permutation '{0}' still does not exist after recompile.", pResource->GetResourceID());
         return res;
@@ -345,7 +345,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
 
     xiiFileReader File;
 
-    if (File.Open(pResource->GetResourceID().GetData()).Failed())
+    if (File.Open(pResource->GetResourceID()).Failed())
     {
       xiiLog::Error("Shader Permutation '{0}': Failed to open the file", pResource->GetResourceID());
       return res;

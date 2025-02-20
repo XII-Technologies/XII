@@ -13,7 +13,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiVolumeComponent, 1)
   {
     XII_ACCESSOR_PROPERTY("Type", GetVolumeType, SetVolumeType)->AddAttributes(new xiiDynamicStringEnumAttribute("SpatialDataCategoryEnum"), new xiiDefaultValueAttribute("GenericVolume")),
     XII_ACCESSOR_PROPERTY("SortOrder", GetSortOrder, SetSortOrder)->AddAttributes(new xiiClampValueAttribute(-64.0f, 64.0f)),
-    XII_ACCESSOR_PROPERTY("Template", GetTemplateFile, SetTemplateFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_BlackboardTemplate")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Template", GetTemplate, SetTemplate)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_BlackboardTemplate")),
     XII_MAP_ACCESSOR_PROPERTY("Values", Reflection_GetKeys, Reflection_GetValue, Reflection_InsertValue, Reflection_RemoveValue),
   }
   XII_END_PROPERTIES;
@@ -53,26 +53,6 @@ void xiiVolumeComponent::OnDeactivated()
   RemoveReloadFunction();
 
   GetOwner()->UpdateLocalBounds();
-}
-
-void xiiVolumeComponent::SetTemplateFile(const char* szFile)
-{
-  xiiBlackboardTemplateResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiBlackboardTemplateResource>(szFile);
-  }
-
-  SetTemplate(hResource);
-}
-
-const char* xiiVolumeComponent::GetTemplateFile() const
-{
-  if (!m_hTemplateResource.IsValid())
-    return "";
-
-  return m_hTemplateResource.GetResourceID();
 }
 
 void xiiVolumeComponent::SetTemplate(const xiiBlackboardTemplateResourceHandle& hResource)

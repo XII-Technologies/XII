@@ -59,7 +59,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSpriteComponent, 3, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Texture", GetTextureFile, SetTextureFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Texture", GetTexture, SetTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
     XII_ENUM_MEMBER_PROPERTY("BlendMode", xiiSpriteBlendMode, m_BlendMode),
     XII_ACCESSOR_PROPERTY("Color", GetColor, SetColor)->AddAttributes(new xiiExposeColorAlphaAttribute()),
     XII_ACCESSOR_PROPERTY("Size", GetSize, SetSize)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(1.0f), new xiiSuffixAttribute(" m")),
@@ -177,26 +177,6 @@ void xiiSpriteComponent::SetTexture(const xiiTexture2DResourceHandle& hTexture)
 const xiiTexture2DResourceHandle& xiiSpriteComponent::GetTexture() const
 {
   return m_hTexture;
-}
-
-void xiiSpriteComponent::SetTextureFile(const char* szFile)
-{
-  xiiTexture2DResourceHandle hTexture;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(szFile);
-  }
-
-  SetTexture(hTexture);
-}
-
-const char* xiiSpriteComponent::GetTextureFile() const
-{
-  if (!m_hTexture.IsValid())
-    return "";
-
-  return m_hTexture.GetResourceID();
 }
 
 void xiiSpriteComponent::SetColor(xiiColor color)

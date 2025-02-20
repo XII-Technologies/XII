@@ -16,7 +16,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiAnimationControllerComponent, 2, xiiComponentMode::S
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("AnimGraph", GetAnimGraphFile, SetAnimGraphFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Graph")),
+    XII_RESOURCE_MEMBER_PROPERTY("AnimGraph", m_hAnimGraph)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Graph")),
 
     XII_ENUM_MEMBER_PROPERTY("RootMotionMode", xiiRootMotionMode, m_RootMotionMode),
     XII_ENUM_MEMBER_PROPERTY("InvisibleUpdateRate", xiiAnimationInvisibleUpdateRate, m_InvisibleUpdateRate),
@@ -58,27 +58,6 @@ void xiiAnimationControllerComponent::DeserializeComponent(xiiWorldReader& inout
   {
     s >> m_InvisibleUpdateRate;
   }
-}
-
-void xiiAnimationControllerComponent::SetAnimGraphFile(const char* szFile)
-{
-  xiiAnimGraphResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiAnimGraphResource>(szFile);
-  }
-
-  m_hAnimGraph = hResource;
-}
-
-
-const char* xiiAnimationControllerComponent::GetAnimGraphFile() const
-{
-  if (!m_hAnimGraph.IsValid())
-    return "";
-
-  return m_hAnimGraph.GetResourceID();
 }
 
 void xiiAnimationControllerComponent::OnSimulationStarted()

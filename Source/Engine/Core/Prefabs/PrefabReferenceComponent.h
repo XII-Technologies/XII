@@ -59,9 +59,6 @@ public:
   xiiPrefabReferenceComponent();
   ~xiiPrefabReferenceComponent();
 
-  void          SetPrefabFile(xiiStringView sFile); // [ property ]
-  xiiStringView GetPrefabFile() const;              // [ property ]
-
   void                    SetPrefab(const xiiPrefabResourceHandle& hPrefab);               // [ property ]
   XII_ALWAYS_INLINE const xiiPrefabResourceHandle& GetPrefab() const { return m_hPrefab; } // [ property ]
 

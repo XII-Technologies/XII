@@ -15,7 +15,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiTimedDeathComponent, 2, xiiComponentMode::Static)
   {
     XII_MEMBER_PROPERTY("MinDelay", m_MinDelay)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant()), new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1.0))),
     XII_MEMBER_PROPERTY("DelayRange", m_DelayRange)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant())),
-    XII_ACCESSOR_PROPERTY("TimeoutPrefab", GetTimeoutPrefab, SetTimeoutPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("TimeoutPrefab", m_hTimeoutPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
@@ -93,28 +93,6 @@ void xiiTimedDeathComponent::OnTriggered(xiiMsgComponentInternalTrigger& msg)
   GetWorld()->DeleteObjectDelayed(GetOwner()->GetHandle());
 }
 
-void xiiTimedDeathComponent::SetTimeoutPrefab(const char* szPrefab)
-{
-  xiiPrefabResourceHandle hPrefab;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szPrefab))
-  {
-    hPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>(szPrefab);
-  }
-
-  m_hTimeoutPrefab = hPrefab;
-}
-
-
-const char* xiiTimedDeathComponent::GetTimeoutPrefab() const
-{
-  if (!m_hTimeoutPrefab.IsValid())
-    return "";
-
-  return m_hTimeoutPrefab.GetResourceID();
-}
-
-
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -138,7 +116,5 @@ public:
 };
 
 xiiTimedDeathComponentPatch_1_2 g_xiiTimedDeathComponentPatch_1_2;
-
-
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_TimedDeathComponent);

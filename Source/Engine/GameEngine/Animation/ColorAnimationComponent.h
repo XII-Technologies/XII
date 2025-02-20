@@ -38,11 +38,8 @@ public:
 
   xiiTime m_Duration; // [ property ]
 
-  void        SetColorGradientFile(const char* szFile); // [ property ]
-  const char* GetColorGradientFile() const;             // [ property ]
-
-  void                    SetColorGradient(const xiiColorGradientResourceHandle& hResource);
-  XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; }
+  void                    SetColorGradient(const xiiColorGradientResourceHandle& hResource);               // [ property ]
+  XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; } // [ property ]
 
   xiiEnum<xiiPropertyAnimMode> m_AnimationMode; // [ property ]
   xiiEnum<xiiSetColorMode>     m_SetColorMode;  // [ property ]

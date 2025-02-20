@@ -77,23 +77,20 @@ const xiiTextureCubeResourceHandle& xiiPointLightComponent::GetProjectedTexture(
   return m_hProjectedTexture;
 }
 
-void xiiPointLightComponent::SetProjectedTextureFile(const char* szFile)
+void xiiPointLightComponent::SetProjectedTextureFile(xiiStringView sFile)
 {
   xiiTextureCubeResourceHandle hProjectedTexture;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hProjectedTexture = xiiResourceManager::LoadResource<xiiTextureCubeResource>(szFile);
+    hProjectedTexture = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sFile);
   }
 
   SetProjectedTexture(hProjectedTexture);
 }
 
-const char* xiiPointLightComponent::GetProjectedTextureFile() const
+xiiStringView xiiPointLightComponent::GetProjectedTextureFile() const
 {
-  if (!m_hProjectedTexture.IsValid())
-    return "";
-
   return m_hProjectedTexture.GetResourceID();
 }
 
@@ -155,8 +152,8 @@ xiiPointLightVisualizerAttribute::xiiPointLightVisualizerAttribute() :
 {
 }
 
-xiiPointLightVisualizerAttribute::xiiPointLightVisualizerAttribute(const char* szRangeProperty, const char* szIntensityProperty, const char* szColorProperty) :
-  xiiVisualizerAttribute(szRangeProperty, szIntensityProperty, szColorProperty)
+xiiPointLightVisualizerAttribute::xiiPointLightVisualizerAttribute(xiiStringView sRangeProperty, xiiStringView sIntensityProperty, xiiStringView sColorProperty) :
+  xiiVisualizerAttribute(sRangeProperty, sIntensityProperty, sColorProperty)
 {
 }
 

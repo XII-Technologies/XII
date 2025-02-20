@@ -22,7 +22,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiProjectileSurfaceInteraction, xiiNoBase, 3, x
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Surface", GetSurface, SetSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("Surface", m_hSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_ENUM_MEMBER_PROPERTY("Reaction", xiiProjectileReaction, m_Reaction),
     XII_MEMBER_PROPERTY("Interaction", m_sInteraction)->AddAttributes(new xiiDynamicStringEnumAttribute("SurfaceInteractionTypeEnum")),
     XII_MEMBER_PROPERTY("Impulse", m_fImpulse),
@@ -40,7 +40,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiProjectileComponent, 6, xiiComponentMode::Dynamic)
     XII_MEMBER_PROPERTY("GravityMultiplier", m_fGravityMultiplier),
     XII_MEMBER_PROPERTY("MaxLifetime", m_MaxLifetime)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant())),
     XII_MEMBER_PROPERTY("SpawnPrefabOnStatic", m_bSpawnPrefabOnStatic),
-    XII_ACCESSOR_PROPERTY("OnDeathPrefab", GetDeathPrefab, SetDeathPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("OnDeathPrefab", m_hDeathPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
     XII_BITFLAGS_MEMBER_PROPERTY("ShapeTypesToHit", xiiPhysicsShapeType, m_ShapeTypesToHit)->AddAttributes(new xiiDefaultValueAttribute(xiiVariant(xiiPhysicsShapeType::Default & ~(xiiPhysicsShapeType::Trigger)))),
     XII_ACCESSOR_PROPERTY("FallbackSurface", GetFallbackSurfaceFile, SetFallbackSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
@@ -61,26 +61,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiProjectileComponent, 6, xiiComponentMode::Dynamic)
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-
-void xiiProjectileSurfaceInteraction::SetSurface(const char* szSurface)
-{
-  xiiSurfaceResourceHandle hSurface;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szSurface))
-  {
-    hSurface = xiiResourceManager::LoadResource<xiiSurfaceResource>(szSurface);
-  }
-
-  m_hSurface = hSurface;
-}
-
-const char* xiiProjectileSurfaceInteraction::GetSurface() const
-{
-  if (!m_hSurface.IsValid())
-    return "";
-
-  return m_hSurface.GetResourceID();
-}
 
 xiiProjectileComponent::xiiProjectileComponent()
 {
@@ -379,10 +359,10 @@ xiiInt32 xiiProjectileComponent::FindSurfaceInteraction(const xiiSurfaceResource
 }
 
 
-void xiiProjectileComponent::TriggerSurfaceInteraction(const xiiSurfaceResourceHandle& hSurface, xiiGameObjectHandle hObject, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec3& vDirection, const char* szInteraction)
+void xiiProjectileComponent::TriggerSurfaceInteraction(const xiiSurfaceResourceHandle& hSurface, xiiGameObjectHandle hObject, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec3& vDirection, xiiStringView sInteraction)
 {
   xiiResourceLock<xiiSurfaceResource> pSurface(hSurface, xiiResourceAcquireMode::BlockTillLoaded);
-  pSurface->InteractWithSurface(GetWorld(), hObject, vPos, vNormal, vDirection, xiiTempHashedString(szInteraction), &GetOwner()->GetTeamID());
+  pSurface->InteractWithSurface(GetWorld(), hObject, vPos, vNormal, vDirection, xiiTempHashedString(sInteraction), &GetOwner()->GetTeamID());
 }
 
 static xiiHashedString s_sSuicide = xiiMakeHashedString("Suicide");
@@ -432,41 +412,25 @@ void xiiProjectileComponent::OnTriggered(xiiMsgComponentInternalTrigger& msg)
   GetWorld()->DeleteObjectDelayed(GetOwner()->GetHandle());
 }
 
-
-void xiiProjectileComponent::SetDeathPrefab(const char* szPrefab)
+void xiiProjectileComponent::SetFallbackSurfaceFile(xiiStringView sFile)
 {
-  xiiPrefabResourceHandle hPrefab;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szPrefab))
+  if (!sFile.IsEmpty())
   {
-    hPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>(szPrefab);
+    m_hFallbackSurface = xiiResourceManager::LoadResource<xiiSurfaceResource>(sFile);
+  }
+  else
+  {
+    m_hFallbackSurface = {};
   }
 
-  m_hDeathPrefab = hPrefab;
-}
-
-const char* xiiProjectileComponent::GetDeathPrefab() const
-{
-  if (!m_hDeathPrefab.IsValid())
-    return "";
-
-  return m_hDeathPrefab.GetResourceID();
-}
-
-void xiiProjectileComponent::SetFallbackSurfaceFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hFallbackSurface = xiiResourceManager::LoadResource<xiiSurfaceResource>(szFile);
-  }
   if (m_hFallbackSurface.IsValid())
     xiiResourceManager::PreloadResource(m_hFallbackSurface);
 }
 
-const char* xiiProjectileComponent::GetFallbackSurfaceFile() const
+xiiStringView xiiProjectileComponent::GetFallbackSurfaceFile() const
 {
   if (!m_hFallbackSurface.IsValid())
-    return "";
+    return {};
 
   return m_hFallbackSurface.GetResourceID();
 }

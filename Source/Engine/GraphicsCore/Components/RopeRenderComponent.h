@@ -45,11 +45,8 @@ public:
 
   xiiColor m_Color = xiiColor::White; // [ property ]
 
-  void        SetMaterialFile(const char* szFile); // [ property ]
-  const char* GetMaterialFile() const;             // [ property ]
-
-  void                      SetMaterial(const xiiMaterialResourceHandle& hMaterial) { m_hMaterial = hMaterial; }
-  xiiMaterialResourceHandle GetMaterial() const { return m_hMaterial; }
+  void                             SetMaterial(const xiiMaterialResourceHandle& hMaterial) { m_hMaterial = hMaterial; } // [ property ]
+  const xiiMaterialResourceHandle& GetMaterial() const { return m_hMaterial; }                                          // [ property ]
 
   void  SetThickness(float fThickness);               // [ property ]
   float GetThickness() const { return m_fThickness; } // [ property ]

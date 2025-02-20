@@ -18,7 +18,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonPoseComponent, 4, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Skeleton", GetSkeletonFile, SetSkeletonFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skeleton")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skeleton")),
     XII_ENUM_ACCESSOR_PROPERTY("Mode", xiiSkeletonPoseMode, GetPoseMode, SetPoseMode),
     XII_MEMBER_PROPERTY("EditBones", m_fDummy),
     XII_MAP_ACCESSOR_PROPERTY("Bones", GetBones, GetBone, SetBone, RemoveBone)->AddAttributes(new xiiExposedParametersAttribute("Skeleton"), new xiiContainerAttribute(false, true, false)),
@@ -123,26 +123,6 @@ void xiiSkeletonPoseComponent::OnSimulationStarted()
   SUPER::OnSimulationStarted();
 
   ResendPose();
-}
-
-void xiiSkeletonPoseComponent::SetSkeletonFile(xiiStringView sFile)
-{
-  xiiSkeletonResourceHandle hResource;
-
-  if (!sFile.IsEmpty())
-  {
-    hResource = xiiResourceManager::LoadResource<xiiSkeletonResource>(sFile);
-  }
-
-  SetSkeleton(hResource);
-}
-
-xiiStringView xiiSkeletonPoseComponent::GetSkeletonFile() const
-{
-  if (!m_hSkeleton.IsValid())
-    return {};
-
-  return m_hSkeleton.GetResourceID();
 }
 
 void xiiSkeletonPoseComponent::SetSkeleton(const xiiSkeletonResourceHandle& hResource)

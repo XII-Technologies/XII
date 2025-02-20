@@ -12,7 +12,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkyBoxComponent, 4, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("CubeMap", GetCubeMapFile, SetCubeMapFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Cube")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("CubeMap", GetCubeMap, SetCubeMap)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Cube")),
     XII_ACCESSOR_PROPERTY("ExposureBias", GetExposureBias, SetExposureBias)->AddAttributes(new xiiClampValueAttribute(-32.0f, 32.0f)),
     XII_ACCESSOR_PROPERTY("InverseTonemap", GetInverseTonemap, SetInverseTonemap),
     XII_ACCESSOR_PROPERTY("UseFog", GetUseFog, SetUseFog)->AddAttributes(new xiiDefaultValueAttribute(true)),
@@ -177,22 +177,6 @@ void xiiSkyBoxComponent::SetVirtualDistance(float fVirtualDistance)
   m_fVirtualDistance = fVirtualDistance;
 
   UpdateMaterials();
-}
-
-void xiiSkyBoxComponent::SetCubeMapFile(const char* szFile)
-{
-  xiiTextureCubeResourceHandle hCubeMap;
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(szFile);
-  }
-
-  SetCubeMap(hCubeMap);
-}
-
-const char* xiiSkyBoxComponent::GetCubeMapFile() const
-{
-  return m_hCubeMap.IsValid() ? m_hCubeMap.GetResourceID().GetData() : "";
 }
 
 void xiiSkyBoxComponent::SetCubeMap(const xiiTextureCubeResourceHandle& hCubeMap)

@@ -38,7 +38,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLensFlareElement, xiiNoBase, 1, xiiRTTIDefaul
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Texture", GetTextureFile, SetTextureFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("Texture", m_hTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
     XII_MEMBER_PROPERTY("GreyscaleTexture", m_bGreyscaleTexture),
     XII_MEMBER_PROPERTY("Color", m_Color)->AddAttributes(new xiiExposeColorAlphaAttribute()),
     XII_MEMBER_PROPERTY("ModulateByLightColor", m_bModulateByLightColor)->AddAttributes(new xiiDefaultValueAttribute(true)),
@@ -52,26 +52,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLensFlareElement, xiiNoBase, 1, xiiRTTIDefaul
 }
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
-
-void xiiLensFlareElement::SetTextureFile(const char* szFile)
-{
-  xiiTexture2DResourceHandle hTexture;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(szFile);
-  }
-
-  m_hTexture = hTexture;
-}
-
-const char* xiiLensFlareElement::GetTextureFile() const
-{
-  if (!m_hTexture.IsValid())
-    return "";
-
-  return m_hTexture.GetResourceID();
-}
 
 xiiResult xiiLensFlareElement::Serialize(xiiStreamWriter& inout_stream) const
 {

@@ -21,7 +21,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiGreyBoxComponent, 5, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ENUM_ACCESSOR_PROPERTY("Shape", xiiGreyBoxShape, GetShape, SetShape),
-    XII_ACCESSOR_PROPERTY("Material", GetMaterialFile, SetMaterialFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
+    XII_RESOURCE_MEMBER_PROPERTY("Material", m_hMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
     XII_MEMBER_PROPERTY("Color", m_Color)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::White), new xiiExposeColorAlphaAttribute()),
     XII_ACCESSOR_PROPERTY("SizeNegX", GetSizeNegX, SetSizeNegX)->AddAttributes(new xiiGroupAttribute("Size", "Size")),//->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_ACCESSOR_PROPERTY("SizePosX", GetSizePosX, SetSizePosX),//->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
@@ -218,26 +218,6 @@ void xiiGreyBoxComponent::SetShape(xiiEnum<xiiGreyBoxShape> shape)
 {
   m_Shape = shape;
   InvalidateMesh();
-}
-
-void xiiGreyBoxComponent::SetMaterialFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(szFile);
-  }
-  else
-  {
-    m_hMaterial.Invalidate();
-  }
-}
-
-const char* xiiGreyBoxComponent::GetMaterialFile() const
-{
-  if (!m_hMaterial.IsValid())
-    return "";
-
-  return m_hMaterial.GetResourceID();
 }
 
 void xiiGreyBoxComponent::SetSizeNegX(float f)

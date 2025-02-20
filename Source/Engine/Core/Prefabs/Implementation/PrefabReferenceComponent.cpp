@@ -8,7 +8,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPrefabReferenceComponent, 4, xiiComponentMode::Stati
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Prefab", GetPrefabFile, SetPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Prefab", GetPrefab, SetPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab")),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("Prefab")),
   }
   XII_END_PROPERTIES;
@@ -209,27 +209,6 @@ void xiiPrefabReferenceComponent::DeserializeComponent(xiiWorldReader& ref_strea
   }
 
   xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, ref_stream);
-}
-
-void xiiPrefabReferenceComponent::SetPrefabFile(xiiStringView sFile)
-{
-  xiiPrefabResourceHandle hResource;
-
-  if (!sFile.IsEmpty())
-  {
-    hResource = xiiResourceManager::LoadResource<xiiPrefabResource>(sFile);
-    xiiResourceManager::PreloadResource(hResource);
-  }
-
-  SetPrefab(hResource);
-}
-
-xiiStringView xiiPrefabReferenceComponent::GetPrefabFile() const
-{
-  if (!m_hPrefab.IsValid())
-    return {};
-
-  return m_hPrefab.GetResourceID();
 }
 
 void xiiPrefabReferenceComponent::SetPrefab(const xiiPrefabResourceHandle& hPrefab)

@@ -24,9 +24,6 @@ struct XII_GRAPHICSCORE_DLL xiiAnimationClipMapping : public xiiReflectedClass
 
   const char* GetClipName() const { return m_sClipName.GetData(); }
   void        SetClipName(const char* szName) { m_sClipName.Assign(szName); }
-
-  const char* GetClip() const;
-  void        SetClip(const char* szName);
 };
 
 class XII_GRAPHICSCORE_DLL xiiAnimGraphResource : public xiiResource

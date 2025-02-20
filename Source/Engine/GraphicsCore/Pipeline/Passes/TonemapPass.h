@@ -25,14 +25,10 @@ protected:
   xiiRenderPipelineNodeInputPin  m_PinBloomInput;
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  void        SetVignettingTextureFile(const char* szFile);
-  const char* GetVignettingTextureFile() const;
-
-  void        SetLUT1TextureFile(const char* szFile);
-  const char* GetLUT1TextureFile() const;
-
-  void        SetLUT2TextureFile(const char* szFile);
-  const char* GetLUT2TextureFile() const;
+  // used internally
+  XII_ADD_RESOURCEHANDLE_ACCESSORS(VignettingTexture, m_hVignettingTexture);
+  XII_ADD_RESOURCEHANDLE_ACCESSORS(LUT1Texture, m_hLUT1);
+  XII_ADD_RESOURCEHANDLE_ACCESSORS(LUT2Texture, m_hLUT2);
 
   xiiTexture2DResourceHandle m_hVignettingTexture;
   xiiTexture2DResourceHandle m_hNoiseTexture;

@@ -13,7 +13,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSpawnComponent, 3, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Prefab", GetPrefabFile, SetPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("Prefab", m_hPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("Prefab")),
     XII_ACCESSOR_PROPERTY("AttachAsChild", GetAttachAsChild, SetAttachAsChild),
     XII_ACCESSOR_PROPERTY("SpawnAtStart", GetSpawnAtStart, SetSpawnAtStart),
@@ -199,26 +199,6 @@ bool xiiSpawnComponent::TriggerManualSpawn(bool bIgnoreSpawnDelay /*= false*/, c
   return SpawnOnce(vLocalOffset);
 }
 
-void xiiSpawnComponent::SetPrefabFile(const char* szFile)
-{
-  xiiPrefabResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiPrefabResource>(szFile);
-  }
-
-  SetPrefab(hResource);
-}
-
-const char* xiiSpawnComponent::GetPrefabFile() const
-{
-  if (!m_hPrefab.IsValid())
-    return "";
-
-  return m_hPrefab.GetResourceID();
-}
-
 bool xiiSpawnComponent::GetSpawnAtStart() const
 {
   return m_SpawnFlags.IsAnySet(xiiSpawnComponentFlags::SpawnAtStart);
@@ -247,11 +227,6 @@ bool xiiSpawnComponent::GetAttachAsChild() const
 void xiiSpawnComponent::SetAttachAsChild(bool b)
 {
   m_SpawnFlags.AddOrRemove(xiiSpawnComponentFlags::AttachAsChild, b);
-}
-
-void xiiSpawnComponent::SetPrefab(const xiiPrefabResourceHandle& hPrefab)
-{
-  m_hPrefab = hPrefab;
 }
 
 void xiiSpawnComponent::OnTriggered(xiiMsgComponentInternalTrigger& msg)

@@ -38,9 +38,6 @@ public:
   xiiPropertyAnimComponent();
   ~xiiPropertyAnimComponent();
 
-  void        SetPropertyAnimFile(const char* szFile); // [ property ]
-  const char* GetPropertyAnimFile() const;             // [ property ]
-
   void                    SetPropertyAnim(const xiiPropertyAnimResourceHandle& hResource);                   // [ property ]
   XII_ALWAYS_INLINE const xiiPropertyAnimResourceHandle& GetPropertyAnim() const { return m_hPropertyAnim; } // [ property ]
 

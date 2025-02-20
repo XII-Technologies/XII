@@ -53,7 +53,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiClothSheetComponent, 1, xiiComponentMode::Static)
       XII_MEMBER_PROPERTY("Damping", m_fDamping)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
       XII_MEMBER_PROPERTY("WindInfluence", m_fWindInfluence)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 10.0f)),
       XII_BITFLAGS_ACCESSOR_PROPERTY("Flags", xiiClothSheetFlags, GetFlags, SetFlags),
-      XII_ACCESSOR_PROPERTY("Material", GetMaterialFile, SetMaterialFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
+      XII_RESOURCE_MEMBER_PROPERTY("Material", m_hMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
       XII_MEMBER_PROPERTY("Color", m_Color)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::White)),
     }
     XII_END_PROPERTIES;
@@ -346,26 +346,6 @@ void xiiClothSheetComponent::SetFlags(xiiBitflags<xiiClothSheetFlags> flags)
 {
   m_Flags = flags;
   SetupCloth();
-}
-
-void xiiClothSheetComponent::SetMaterialFile(const char* szFile)
-{
-  xiiMaterialResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiMaterialResource>(szFile);
-  }
-
-  m_hMaterial = hResource;
-}
-
-const char* xiiClothSheetComponent::GetMaterialFile() const
-{
-  if (m_hMaterial.IsValid())
-    return m_hMaterial.GetResourceID();
-
-  return "";
 }
 
 void xiiClothSheetComponent::Update()

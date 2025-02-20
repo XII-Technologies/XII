@@ -218,7 +218,7 @@ xiiResourceLoadData xiiConfigFileResourceLoader::OpenDataStream(const xiiResourc
   // used to gather all the transitive file dependencies
   preprop.SetFileLocatorFunction(xiiMakeDelegate(&xiiConfigFileResourceLoader::LoadedData::PrePropFileLocator, pData));
 
-  if (xiiStringUtils::IsEqual(pResource->GetResourceID(), "Empty.xiiConfig"))
+  if (pResource->GetResourceID() == "Empty.xiiConfig")
   {
     // do nothing
   }

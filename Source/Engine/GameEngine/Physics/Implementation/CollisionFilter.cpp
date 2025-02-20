@@ -5,20 +5,12 @@
 #include <GameEngine/Physics/CollisionFilter.h>
 
 
-xiiCollisionFilterConfig::xiiCollisionFilterConfig()
-{
-  for (int i = 0; i < 32; ++i)
-  {
-    xiiMemoryUtils::ZeroFill<char>(m_GroupNames[i], 32);
-
-    m_GroupMasks[i] = 0xFFFFFFFF; // collide with everything
-  }
-}
+xiiCollisionFilterConfig::xiiCollisionFilterConfig()  = default;
+xiiCollisionFilterConfig::~xiiCollisionFilterConfig() = default;
 
 void xiiCollisionFilterConfig::SetGroupName(xiiUInt32 uiGroup, xiiStringView sName)
 {
-  xiiStringBuilder tmp;
-  xiiStringUtils::Copy(m_GroupNames[uiGroup], 32, sName.GetData(tmp));
+  m_GroupNames[uiGroup] = sName;
 }
 
 xiiStringView xiiCollisionFilterConfig::GetGroupName(xiiUInt32 uiGroup) const
@@ -51,7 +43,7 @@ xiiUInt32 xiiCollisionFilterConfig::GetNumNamedGroups() const
 
   for (xiiUInt32 i = 0; i < 32; ++i)
   {
-    if (!xiiStringUtils::IsNullOrEmpty(m_GroupNames[i]))
+    if (!m_GroupNames[i].IsEmpty())
       ++count;
   }
 
@@ -62,7 +54,7 @@ xiiUInt32 xiiCollisionFilterConfig::GetNamedGroupIndex(xiiUInt32 uiGroup) const
 {
   for (xiiUInt32 i = 0; i < 32; ++i)
   {
-    if (!xiiStringUtils::IsNullOrEmpty(m_GroupNames[i]))
+    if (!m_GroupNames[i].IsEmpty())
     {
       if (uiGroup == 0)
         return i;
@@ -90,7 +82,7 @@ xiiUInt32 xiiCollisionFilterConfig::FindUnnamedGroup() const
 {
   for (xiiUInt32 i = 0; i < 32; ++i)
   {
-    if (xiiStringUtils::IsNullOrEmpty(m_GroupNames[i]))
+    if (m_GroupNames[i].IsEmpty())
       return i;
   }
 
@@ -124,10 +116,13 @@ void xiiCollisionFilterConfig::Save(xiiStreamWriter& inout_stream) const
 
   inout_stream << uiVersion;
 
-  inout_stream.WriteBytes(m_GroupMasks, sizeof(xiiUInt32) * 32).IgnoreResult();
-  inout_stream.WriteBytes(m_GroupNames, sizeof(char) * 32 * 32).IgnoreResult();
-}
+  inout_stream.WriteBytes(m_GroupMasks, sizeof(xiiUInt32) * 32).AssertSuccess();
 
+  for (xiiUInt32 i = 0; i < 32; ++i)
+  {
+    inout_stream << m_GroupNames[i];
+  }
+}
 
 void xiiCollisionFilterConfig::Load(xiiStreamReader& inout_stream)
 {
@@ -138,9 +133,11 @@ void xiiCollisionFilterConfig::Load(xiiStreamReader& inout_stream)
   XII_ASSERT_DEV(uiVersion == 1, "Invalid version {0} for xiiCollisionFilterConfig file", uiVersion);
 
   inout_stream.ReadBytes(m_GroupMasks, sizeof(xiiUInt32) * 32);
-  inout_stream.ReadBytes(m_GroupNames, sizeof(char) * 32 * 32);
+
+  for (xiiUInt32 i = 0; i < 32; ++i)
+  {
+    inout_stream >> m_GroupNames[i];
+  }
 }
-
-
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Physics_Implementation_CollisionFilter);

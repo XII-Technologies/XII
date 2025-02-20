@@ -38,7 +38,7 @@ public:
 /// \brief Represents an individual element of a lens flare.
 struct xiiLensFlareElement
 {
-  xiiTexture2DResourceHandle m_hTexture;
+  xiiTexture2DResourceHandle m_hTexture; // [ property ]
   xiiColor                   m_Color                 = xiiColor::White;
   float                      m_fSize                 = 10000.0f; ///< World space size
   float                      m_fMaxScreenSize        = 1.0f;     ///< Relative screen space size in 0..1 range
@@ -47,9 +47,6 @@ struct xiiLensFlareElement
   bool                       m_bGreyscaleTexture     = false;    ///< Whether the given texture is a greyscale or color texture.
   bool                       m_bModulateByLightColor = true;     ///< Modulate the element's color by the light color and intensity if the lens flare component is linked to a light component.
   bool                       m_bInverseTonemap       = false;    ///< Apply an inverse tonemapping operation on the final color. This can be useful if the lens flare is not linked to a light or does not use an hdr color since lens flares are rendered before tonemapping and can look washed out in this case.
-
-  void        SetTextureFile(const char* szFile); // [ property ]
-  const char* GetTextureFile() const;             // [ property ]
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);

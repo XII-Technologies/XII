@@ -70,8 +70,6 @@ public:
 
   void                     SetShape(xiiEnum<xiiGreyBoxShape> shape);           // [ property ]
   xiiEnum<xiiGreyBoxShape> GetShape() const { return m_Shape; }                // [ property ]
-  void                     SetMaterialFile(const char* szFile);                // [ property ]
-  const char*              GetMaterialFile() const;                            // [ property ]
   void                     SetSizeNegX(float f);                               // [ property ]
   float                    GetSizeNegX() const { return m_fSizeNegX; }         // [ property ]
   void                     SetSizePosX(float f);                               // [ property ]

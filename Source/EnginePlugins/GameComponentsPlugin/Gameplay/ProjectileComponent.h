@@ -31,9 +31,6 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GAMECOMPONENTS_DLL, xiiProjectileReaction);
 /// \brief Holds the information about how a projectile interacts with a specific surface type
 struct XII_GAMECOMPONENTS_DLL xiiProjectileSurfaceInteraction
 {
-  void        SetSurface(const char* szSurface);
-  const char* GetSurface() const;
-
   /// \brief The surface type (and derived ones) for which this interaction is used
   xiiSurfaceResourceHandle m_hSurface;
 
@@ -103,11 +100,11 @@ public:
   xiiHybridArray<xiiProjectileSurfaceInteraction, 12> m_SurfaceInteractions; // [ property ]
 
   /// \brief If the projectile reaches its maximum lifetime it can spawn this prefab.
-  void        SetDeathPrefab(const char* szPrefab); // [ property ]
-  const char* GetDeathPrefab() const;               // [ property ]
+  xiiPrefabResourceHandle m_hDeathPrefab;
 
-  void        SetFallbackSurfaceFile(const char* szFile); // [ property ]
-  const char* GetFallbackSurfaceFile() const;             // [ property ]
+  /// \brief If the projectile reaches its maximum lifetime it can spawn this prefab.
+  void          SetFallbackSurfaceFile(xiiStringView sFile); // [ property ]
+  xiiStringView GetFallbackSurfaceFile() const;              // [ property ]
 
 private:
   void Update();
@@ -115,12 +112,10 @@ private:
 
   void SpawnDeathPrefab();
 
-  xiiPrefabResourceHandle m_hDeathPrefab; ///< Spawned when the projectile is killed due to m_MaxLifetime coming to an end
-
   /// \brief If an unknown surface type is hit, the projectile will just delete itself without further interaction
   xiiInt32 FindSurfaceInteraction(const xiiSurfaceResourceHandle& hSurface) const;
 
-  void TriggerSurfaceInteraction(const xiiSurfaceResourceHandle& hSurface, xiiGameObjectHandle hObject, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec3& vDirection, const char* szInteraction);
+  void TriggerSurfaceInteraction(const xiiSurfaceResourceHandle& hSurface, xiiGameObjectHandle hObject, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec3& vDirection, xiiStringView sInteraction);
 
   xiiVec3 m_vVelocity;
 };

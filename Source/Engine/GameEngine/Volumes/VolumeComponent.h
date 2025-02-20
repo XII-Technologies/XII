@@ -25,11 +25,8 @@ public:
   virtual void OnActivated() override;
   virtual void OnDeactivated() override;
 
-  void        SetTemplateFile(const char* szFile); // [ property ]
-  const char* GetTemplateFile() const;             // [ property ]
-
-  void                                SetTemplate(const xiiBlackboardTemplateResourceHandle& hResource);
-  xiiBlackboardTemplateResourceHandle GetTemplate() const { return m_hTemplateResource; }
+  void                                       SetTemplate(const xiiBlackboardTemplateResourceHandle& hResource); // [ property ]
+  const xiiBlackboardTemplateResourceHandle& GetTemplate() const { return m_hTemplateResource; }                // [ property ]
 
   /// @brief In case two volumes overlap, the one with a higher sort order value has precedence.
   void  SetSortOrder(float fOrder);                   // [ property ]

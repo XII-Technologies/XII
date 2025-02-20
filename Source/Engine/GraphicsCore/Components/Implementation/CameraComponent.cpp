@@ -369,13 +369,13 @@ void xiiCameraComponent::SetUsageHint(xiiEnum<xiiCameraUsageHint> val)
   MarkAsModified();
 }
 
-void xiiCameraComponent::SetRenderTargetFile(const char* szFile)
+void xiiCameraComponent::SetRenderTargetFile(xiiStringView sFile)
 {
   DeactivateRenderToTexture();
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    m_hRenderTarget = xiiResourceManager::LoadResource<xiiRenderToTexture2DResource>(szFile);
+    m_hRenderTarget = xiiResourceManager::LoadResource<xiiRenderToTexture2DResource>(sFile);
   }
   else
   {
@@ -387,11 +387,8 @@ void xiiCameraComponent::SetRenderTargetFile(const char* szFile)
   MarkAsModified();
 }
 
-const char* xiiCameraComponent::GetRenderTargetFile() const
+xiiStringView xiiCameraComponent::GetRenderTargetFile() const
 {
-  if (!m_hRenderTarget.IsValid())
-    return "";
-
   return m_hRenderTarget.GetResourceID();
 }
 
@@ -474,16 +471,16 @@ xiiViewHandle xiiCameraComponent::GetRenderTargetView() const
   return m_hRenderTargetView;
 }
 
-const char* xiiCameraComponent::GetRenderPipelineEnum() const
+xiiStringView xiiCameraComponent::GetRenderPipelineEnum() const
 {
-  return m_sRenderPipeline.GetData();
+  return m_sRenderPipeline.GetView();
 }
 
-void xiiCameraComponent::SetRenderPipelineEnum(const char* szFile)
+void xiiCameraComponent::SetRenderPipelineEnum(xiiStringView sFile)
 {
   DeactivateRenderToTexture();
 
-  m_sRenderPipeline.Assign(szFile);
+  m_sRenderPipeline.Assign(sFile);
 
   ActivateRenderToTexture();
 

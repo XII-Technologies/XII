@@ -20,7 +20,7 @@ struct xiiSurfaceResourceEvent
   };
 
   Type                m_Type;
-  xiiSurfaceResource* m_pSurface;
+  xiiSurfaceResource* m_pSurface = nullptr;
 };
 
 class XII_CORE_DLL xiiSurfaceResource : public xiiResource

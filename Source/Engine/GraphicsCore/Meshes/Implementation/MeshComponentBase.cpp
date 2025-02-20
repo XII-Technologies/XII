@@ -15,33 +15,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetMeshMaterial, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Material", GetMaterialFile, SetMaterialFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
+    XII_RESOURCE_MEMBER_PROPERTY("Material", m_hMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
     XII_MEMBER_PROPERTY("MaterialSlot", m_uiMaterialSlot),
   }
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-
-void xiiMsgSetMeshMaterial::SetMaterialFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(szFile);
-  }
-  else
-  {
-    m_hMaterial.Invalidate();
-  }
-}
-
-const char* xiiMsgSetMeshMaterial::GetMaterialFile() const
-{
-  if (!m_hMaterial.IsValid())
-    return "";
-
-  return m_hMaterial.GetResourceID();
-}
 
 void xiiMsgSetMeshMaterial::Serialize(xiiStreamWriter& inout_stream) const
 {
@@ -254,26 +234,6 @@ xiiMaterialResourceHandle xiiMeshComponentBase::GetMaterial(xiiUInt32 uiIndex) c
   return m_Materials[uiIndex];
 }
 
-void xiiMeshComponentBase::SetMeshFile(const char* szFile)
-{
-  xiiMeshResourceHandle hMesh;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hMesh = xiiResourceManager::LoadResource<xiiMeshResource>(szFile);
-  }
-
-  SetMesh(hMesh);
-}
-
-const char* xiiMeshComponentBase::GetMeshFile() const
-{
-  if (!m_hMesh.IsValid())
-    return "";
-
-  return m_hMesh.GetResourceID();
-}
-
 void xiiMeshComponentBase::SetColor(const xiiColor& color)
 {
   m_Color = color;
@@ -320,41 +280,35 @@ xiiUInt32 xiiMeshComponentBase::Materials_GetCount() const
   return m_Materials.GetCount();
 }
 
-const char* xiiMeshComponentBase::Materials_GetValue(xiiUInt32 uiIndex) const
+xiiStringView xiiMeshComponentBase::Materials_GetValue(xiiUInt32 uiIndex) const
 {
-  auto hMat = GetMaterial(uiIndex);
-
-  if (!hMat.IsValid())
-    return "";
-
-  return hMat.GetResourceID();
+  return GetMaterial(uiIndex).GetResourceID();
 }
 
-
-void xiiMeshComponentBase::Materials_SetValue(xiiUInt32 uiIndex, const char* value)
+void xiiMeshComponentBase::Materials_SetValue(xiiUInt32 uiIndex, xiiStringView sValue)
 {
-  if (xiiStringUtils::IsNullOrEmpty(value))
+  if (sValue.IsEmpty())
+  {
     SetMaterial(uiIndex, xiiMaterialResourceHandle());
+  }
   else
   {
-    auto hMat = xiiResourceManager::LoadResource<xiiMaterialResource>(value);
+    auto hMat = xiiResourceManager::LoadResource<xiiMaterialResource>(sValue);
     SetMaterial(uiIndex, hMat);
   }
 }
 
-
-void xiiMeshComponentBase::Materials_Insert(xiiUInt32 uiIndex, const char* value)
+void xiiMeshComponentBase::Materials_Insert(xiiUInt32 uiIndex, xiiStringView sValue)
 {
   xiiMaterialResourceHandle hMat;
 
-  if (!xiiStringUtils::IsNullOrEmpty(value))
-    hMat = xiiResourceManager::LoadResource<xiiMaterialResource>(value);
+  if (!sValue.IsEmpty())
+    hMat = xiiResourceManager::LoadResource<xiiMaterialResource>(sValue);
 
   m_Materials.InsertAt(uiIndex, hMat);
 
   InvalidateCachedRenderData();
 }
-
 
 void xiiMeshComponentBase::Materials_Remove(xiiUInt32 uiIndex)
 {
@@ -362,7 +316,5 @@ void xiiMeshComponentBase::Materials_Remove(xiiUInt32 uiIndex)
 
   InvalidateCachedRenderData();
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_MeshComponentBase);
