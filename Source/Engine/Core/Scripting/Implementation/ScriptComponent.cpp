@@ -11,7 +11,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiScriptComponent, 1, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("UpdateInterval", GetUpdateInterval, SetUpdateInterval)->AddAttributes(new xiiClampValueAttribute(xiiTime::MakeZero(), xiiVariant())),
-    XII_ACCESSOR_PROPERTY("ScriptClass", GetScriptClassFile, SetScriptClassFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_ScriptClass")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("ScriptClass", GetScriptClass, SetScriptClass)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_ScriptClass", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("ScriptClass")),
   }
   XII_END_PROPERTIES;
@@ -19,6 +19,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiScriptComponent, 1, xiiComponentMode::Static)
   {
     XII_SCRIPT_FUNCTION_PROPERTY(SetScriptVariable, In, "Name", In, "Value"),
     XII_SCRIPT_FUNCTION_PROPERTY(GetScriptVariable, In, "Name"),
+    XII_SCRIPT_FUNCTION_PROPERTY(SetUpdateInterval, In, "interval"),
   }
   XII_END_FUNCTIONS;
   XII_BEGIN_ATTRIBUTES
@@ -153,27 +154,6 @@ void xiiScriptComponent::SetScriptClass(const xiiScriptClassResourceHandle& hScr
   }
 }
 
-void xiiScriptComponent::SetScriptClassFile(xiiStringView sFile)
-{
-  xiiScriptClassResourceHandle hScript;
-
-  if (!sFile.IsEmpty())
-  {
-    hScript = xiiResourceManager::LoadResource<xiiScriptClassResource>(sFile);
-  }
-
-  SetScriptClass(hScript);
-}
-
-xiiStringView xiiScriptComponent::GetScriptClassFile() const
-{
-  if (m_hScriptClass.IsValid())
-  {
-    return m_hScriptClass.GetResourceID();
-  }
-  return {};
-}
-
 void xiiScriptComponent::SetUpdateInterval(xiiTime interval)
 {
   m_UpdateInterval = interval;
@@ -186,12 +166,30 @@ xiiTime xiiScriptComponent::GetUpdateInterval() const
   return m_UpdateInterval;
 }
 
+void xiiScriptComponent::BroadcastEventMsg(xiiEventMessage& ref_msg)
+{
+  const xiiRTTI* pType = ref_msg.GetDynamicRTTI();
+
+  for (auto& sender : m_EventSenders)
+  {
+    if (sender.m_pMsgType == pType)
+    {
+      sender.m_Sender.SendEventMessage(ref_msg, this, GetOwner()->GetParent());
+      return;
+    }
+  }
+
+  auto& sender      = m_EventSenders.ExpandAndGetRef();
+  sender.m_pMsgType = pType;
+  sender.m_Sender.SendEventMessage(ref_msg, this, GetOwner()->GetParent());
+}
+
 const xiiRangeView<xiiStringView, xiiUInt32> xiiScriptComponent::GetParameters() const
 {
   return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                                 [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
                                                 [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
+                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString().GetView(); });
 }
 
 void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
@@ -240,7 +238,7 @@ void xiiScriptComponent::InstantiateScript(bool bActivate)
   xiiResourceLock<xiiScriptClassResource> pScript(m_hScriptClass, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (pScript.GetAcquireResult() != xiiResourceAcquireResult::Final)
   {
-    xiiLog::Error("Failed to load script '{}'", GetScriptClassFile());
+    xiiLog::Error("Failed to load script '{}'", GetScriptClass().GetResourceIdOrDescription());
     return;
   }
 

@@ -31,14 +31,13 @@ public:
   void       SetScriptVariable(const xiiHashedString& sName, const xiiVariant& value); // [ scriptable ]
   xiiVariant GetScriptVariable(const xiiHashedString& sName) const;                    // [ scriptable ]
 
-  void                                SetScriptClass(const xiiScriptClassResourceHandle& hScript);
-  const xiiScriptClassResourceHandle& GetScriptClass() const { return m_hScriptClass; }
-
-  void          SetScriptClassFile(xiiStringView sFile); // [ property ]
-  xiiStringView GetScriptClassFile() const;              // [ property ]
+  void                                SetScriptClass(const xiiScriptClassResourceHandle& hScript); // [ property ]
+  const xiiScriptClassResourceHandle& GetScriptClass() const { return m_hScriptClass; }            // [ property ]
 
   void    SetUpdateInterval(xiiTime interval); // [ property ]
   xiiTime GetUpdateInterval() const;           // [ property ]
+
+  void BroadcastEventMsg(xiiEventMessage& ref_msg);
 
   //////////////////////////////////////////////////////////////////////////
   // Exposed Parameters
@@ -67,4 +66,13 @@ private:
 
   xiiSharedPtr<xiiScriptRTTI>     m_pScriptType;
   xiiUniquePtr<xiiScriptInstance> m_pInstance;
+
+private:
+  struct EventSender
+  {
+    const xiiRTTI*                         m_pMsgType = nullptr;
+    xiiEventMessageSender<xiiEventMessage> m_Sender;
+  };
+
+  xiiSmallArray<EventSender, 1> m_EventSenders;
 };

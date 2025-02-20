@@ -319,8 +319,8 @@ xiiString xiiToolsProject::GetProjectDirectory() const
 
 xiiString xiiToolsProject::GetProjectDataFolder() const
 {
-  xiiStringBuilder s = GetProjectFile();
-  s.Append("_data");
+  xiiStringBuilder s = GetProjectDirectory();
+  s.AppendPath("Editor");
 
   return s;
 }
