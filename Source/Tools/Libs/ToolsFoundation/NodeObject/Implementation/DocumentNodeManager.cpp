@@ -903,7 +903,7 @@ void xiiDocumentNodeManager::ObjectHandler(const xiiDocumentObjectEvent& e)
     }
     break;
 
-    XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
