@@ -253,6 +253,12 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
     {
       if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags) || bIsValueType)
       {
+        const xiiVariantType::Enum memberType = xiiToolsReflectionUtils::GetStorageType(pProp);
+        if (bIsValueType && op.m_Value.GetType() != memberType)
+        {
+          op.m_Value = op.m_Value.ConvertTo(memberType);
+        }
+
         pObjectAccessor->SetValue(pObject, pProp, op.m_Value).IgnoreResult();
       }
       else if (pProp->GetFlags().IsSet(xiiPropertyFlags::Class))
@@ -414,16 +420,19 @@ void xiiDocumentObjectConverterReader::ApplyProperty(xiiDocumentObject* pObject,
       {
         if (pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
         {
-          const xiiUuid guid = pSource->m_Value.Get<xiiUuid>();
-          if (guid.IsValid())
+          if (pSource->m_Value.IsA<xiiUuid>())
           {
-            auto* pSubNode = m_pGraph->GetNode(guid);
-            XII_ASSERT_DEV(pSubNode != nullptr, "invalid document");
-
-            if (auto* pSubObject = CreateObjectFromNode(pSubNode))
+            const xiiUuid guid = pSource->m_Value.Get<xiiUuid>();
+            if (guid.IsValid())
             {
-              ApplyPropertiesToObject(pSubNode, pSubObject);
-              AddObject(pSubObject, pObject, pProp->GetPropertyName(), xiiVariant());
+              auto* pSubNode = m_pGraph->GetNode(guid);
+              XII_ASSERT_DEV(pSubNode != nullptr, "invalid document");
+
+              if (auto* pSubObject = CreateObjectFromNode(pSubNode))
+              {
+                ApplyPropertiesToObject(pSubNode, pSubObject);
+                AddObject(pSubObject, pObject, pProp->GetPropertyName(), xiiVariant());
+              }
             }
           }
         }
@@ -438,17 +447,19 @@ void xiiDocumentObjectConverterReader::ApplyProperty(xiiDocumentObject* pObject,
         {
           pObject->GetTypeAccessor().SetValue(pProp->GetPropertyName(), pSource->m_Value);
         }
-        else // xiiPropertyFlags::Class
+        else if (pSource->m_Value.IsA<xiiUuid>()) // xiiPropertyFlags::Class
         {
           const xiiUuid& nodeGuid = pSource->m_Value.Get<xiiUuid>();
+          if (nodeGuid.IsValid())
+          {
+            const xiiUuid      subObjectGuid        = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName()).Get<xiiUuid>();
+            xiiDocumentObject* pEmbeddedClassObject = pObject->GetChild(subObjectGuid);
+            XII_ASSERT_DEV(pEmbeddedClassObject != nullptr, "CreateObject should have created all embedded classes!");
+            auto* pSubNode = m_pGraph->GetNode(nodeGuid);
+            XII_ASSERT_DEV(pSubNode != nullptr, "invalid document");
 
-          const xiiUuid      subObjectGuid        = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName()).Get<xiiUuid>();
-          xiiDocumentObject* pEmbeddedClassObject = pObject->GetChild(subObjectGuid);
-          XII_ASSERT_DEV(pEmbeddedClassObject != nullptr, "CreateObject should have created all embedded classes!");
-          auto* pSubNode = m_pGraph->GetNode(nodeGuid);
-          XII_ASSERT_DEV(pSubNode != nullptr, "invalid document");
-
-          ApplyPropertiesToObject(pSubNode, pEmbeddedClassObject);
+            ApplyPropertiesToObject(pSubNode, pEmbeddedClassObject);
+          }
         }
       }
       break;

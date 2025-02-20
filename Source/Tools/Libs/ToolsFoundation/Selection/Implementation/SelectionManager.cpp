@@ -149,6 +149,7 @@ void xiiSelectionManager::SetSelection(const xiiDeque<const xiiDocumentObject*>&
 
   for (xiiUInt32 i = 0; i < selection.GetCount(); ++i)
   {
+    // actually == nullptr should never happen, unless we have an error somewhere else
     if (selection[i] != nullptr)
     {
       XII_ASSERT_DEV(selection[i]->GetDocumentObjectManager() == m_pSelectionStorage->m_pObjectManager, "Passed in object does not belong to same object manager.");
@@ -158,9 +159,12 @@ void xiiSelectionManager::SetSelection(const xiiDeque<const xiiDocumentObject*>&
         xiiLog::Error("{0}", res.m_sMessage);
         continue;
       }
-      // actually == nullptr should never happen, unless we have an error somewhere else
-      m_pSelectionStorage->m_SelectionList.PushBack(selection[i]);
-      m_pSelectionStorage->m_SelectionSet.Insert(selection[i]->GetGuid());
+
+      if (!m_pSelectionStorage->m_SelectionSet.Contains(selection[i]->GetGuid()))
+      {
+        m_pSelectionStorage->m_SelectionList.PushBack(selection[i]);
+        m_pSelectionStorage->m_SelectionSet.Insert(selection[i]->GetGuid());
+      }
     }
   }
 
@@ -182,9 +186,38 @@ void xiiSelectionManager::ToggleObject(const xiiDocumentObject* pObject)
     AddObject(pObject);
 }
 
+void xiiSelectionManager::SetRuntimeOverrideSelection(const xiiDeque<const xiiDocumentObject*>& selection)
+{
+  if (m_RuntimeOverrideSelection == selection)
+    return;
+
+  m_RuntimeOverrideSelection.Clear();
+  m_RuntimeOverrideSelection.Reserve(selection.GetCount());
+
+  for (xiiUInt32 i = 0; i < selection.GetCount(); ++i)
+  {
+    // actually == nullptr should never happen, unless we have an error somewhere else
+    if (selection[i] != nullptr)
+    {
+      if (!m_RuntimeOverrideSelection.Contains(selection[i]))
+      {
+        m_RuntimeOverrideSelection.PushBack(selection[i]);
+      }
+    }
+  }
+
+  {
+    xiiSelectionManagerEvent e;
+    e.m_pDocument = GetDocument();
+    e.m_pObject   = nullptr;
+    e.m_Type      = xiiSelectionManagerEvent::Type::ChangedRuntimeOverrideSelection;
+    m_pSelectionStorage->m_Events.Broadcast(e);
+  }
+}
+
 const xiiDocumentObject* xiiSelectionManager::GetCurrentObject() const
 {
-  return m_pSelectionStorage->m_SelectionList.IsEmpty() ? nullptr : m_pSelectionStorage->m_SelectionList[m_pSelectionStorage->m_SelectionList.GetCount() - 1];
+  return m_pSelectionStorage->m_SelectionList.IsEmpty() ? nullptr : m_pSelectionStorage->m_SelectionList.PeekBack();
 }
 
 bool xiiSelectionManager::IsSelected(const xiiDocumentObject* pObject) const
@@ -232,10 +265,13 @@ xiiSharedPtr<xiiSelectionManager::Storage> xiiSelectionManager::SwapStorage(xiiS
 struct xiiObjectHierarchyComparor
 {
   using Tree = xiiHybridArray<const xiiDocumentObject*, 4>;
-  xiiObjectHierarchyComparor(xiiDeque<const xiiDocumentObject*>& ref_items)
+
+  xiiObjectHierarchyComparor(xiiArrayPtr<xiiSelectionEntry> items)
   {
-    for (const xiiDocumentObject* pObject : ref_items)
+    for (const xiiSelectionEntry& e : items)
     {
+      const xiiDocumentObject* pObject = e.m_pObject;
+
       Tree& tree = lookup[pObject];
       while (pObject)
       {
@@ -246,10 +282,10 @@ struct xiiObjectHierarchyComparor
     }
   }
 
-  XII_ALWAYS_INLINE bool Less(const xiiDocumentObject* lhs, const xiiDocumentObject* rhs) const
+  XII_ALWAYS_INLINE bool Less(const xiiSelectionEntry& lhs, const xiiSelectionEntry& rhs) const
   {
-    const Tree& A = *lookup.GetValue(lhs);
-    const Tree& B = *lookup.GetValue(rhs);
+    const Tree& A = *lookup.GetValue(lhs.m_pObject);
+    const Tree& B = *lookup.GetValue(rhs.m_pObject);
 
     const xiiUInt32 minSize = xiiMath::Min(A.GetCount(), B.GetCount());
     for (xiiUInt32 i = 0; i < minSize; i++)
@@ -266,32 +302,38 @@ struct xiiObjectHierarchyComparor
     return A.GetCount() < B.GetCount();
   }
 
-  XII_ALWAYS_INLINE bool Equal(const xiiDocumentObject* lhs, const xiiDocumentObject* rhs) const { return lhs == rhs; }
+  XII_ALWAYS_INLINE bool Equal(const xiiSelectionEntry& lhs, const xiiSelectionEntry& rhs) const { return lhs.m_pObject == rhs.m_pObject; }
 
   xiiMap<const xiiDocumentObject*, Tree> lookup;
 };
 
-const xiiDeque<const xiiDocumentObject*> xiiSelectionManager::GetTopLevelSelection() const
+void xiiSelectionManager::GetTopLevelSelection(xiiDynamicArray<xiiSelectionEntry>& out_entries) const
 {
-  xiiDeque<const xiiDocumentObject*> items;
+  out_entries.Clear();
+  out_entries.Reserve(m_pSelectionStorage->m_SelectionList.GetCount());
+
+  xiiUInt32 order = 0;
 
   for (const auto* pObj : m_pSelectionStorage->m_SelectionList)
   {
     if (!IsParentSelected(pObj))
     {
-      items.PushBack(pObj);
+      auto& e              = out_entries.ExpandAndGetRef();
+      e.m_pObject          = pObj;
+      e.m_uiSelectionOrder = order++;
     }
   }
 
-  xiiObjectHierarchyComparor c(items);
-  items.Sort(c);
-
-  return items;
+  xiiObjectHierarchyComparor c(out_entries);
+  out_entries.Sort(c);
 }
 
-const xiiDeque<const xiiDocumentObject*> xiiSelectionManager::GetTopLevelSelection(const xiiRTTI* pBase) const
+void xiiSelectionManager::GetTopLevelSelectionOfType(const xiiRTTI* pBase, xiiDynamicArray<xiiSelectionEntry>& out_entries) const
 {
-  xiiDeque<const xiiDocumentObject*> items;
+  out_entries.Clear();
+  out_entries.Reserve(m_pSelectionStorage->m_SelectionList.GetCount());
+
+  xiiUInt32 order = 0;
 
   for (const auto* pObj : m_pSelectionStorage->m_SelectionList)
   {
@@ -300,12 +342,12 @@ const xiiDeque<const xiiDocumentObject*> xiiSelectionManager::GetTopLevelSelecti
 
     if (!IsParentSelected(pObj))
     {
-      items.PushBack(pObj);
+      auto& e              = out_entries.ExpandAndGetRef();
+      e.m_pObject          = pObj;
+      e.m_uiSelectionOrder = order++;
     }
   }
 
-  xiiObjectHierarchyComparor c(items);
-  items.Sort(c);
-
-  return items;
+  xiiObjectHierarchyComparor c(out_entries);
+  out_entries.Sort(c);
 }

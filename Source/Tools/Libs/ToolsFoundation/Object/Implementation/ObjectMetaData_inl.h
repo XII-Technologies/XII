@@ -100,18 +100,18 @@ void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObj
 
   XII_LOCK(m_pMetaStorage->m_Mutex);
 
-  xiiHashTable<xiiStringView, xiiVariant> DefaultValues;
+  xiiHashTable<xiiStringView, xiiVariant> defaultValues;
 
   // store the default values in an easily accessible hash map, to be able to compare against them
   {
-    DefaultValues.Reserve(m_DefaultValue.GetDynamicRTTI()->GetProperties().GetCount());
+    defaultValues.Reserve(m_DefaultValue.GetDynamicRTTI()->GetProperties().GetCount());
 
     for (const auto& pProp : m_DefaultValue.GetDynamicRTTI()->GetProperties())
     {
       if (pProp->GetCategory() != xiiPropertyCategory::Member)
         continue;
 
-      DefaultValues[pProp->GetPropertyName()] = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), &m_DefaultValue);
+      defaultValues[pProp->GetPropertyName()] = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), &m_DefaultValue);
     }
   }
 
@@ -135,7 +135,7 @@ void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObj
 
         value = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), pMeta);
 
-        if (value.IsValid() && DefaultValues[pProp->GetPropertyName()] != value)
+        if (value.IsValid() && defaultValues[pProp->GetPropertyName()] != value)
         {
           pNode->AddProperty(pProp->GetPropertyName(), value);
         }

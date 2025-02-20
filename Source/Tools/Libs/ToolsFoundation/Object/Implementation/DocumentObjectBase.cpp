@@ -22,8 +22,7 @@ void xiiDocumentObject::InsertSubObject(xiiDocumentObject* pObject, xiiStringVie
 
   const xiiRTTI* pType = accessor.GetType();
   auto*          pProp = pType->FindPropertyByName(sProperty);
-  XII_ASSERT_DEV(pProp && pProp->GetFlags().IsSet(xiiPropertyFlags::Class) && (!pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) || pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner)),
-                 "Only class type or pointer to class type that own the object can be inserted, everything else is handled by value.");
+  XII_ASSERT_DEV(pProp && pProp->GetFlags().IsSet(xiiPropertyFlags::Class) && (!pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) || pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner)), "Only class type or pointer to class type that own the object can be inserted, everything else is handled by value.");
 
   if (pProp->GetCategory() == xiiPropertyCategory::Array || pProp->GetCategory() == xiiPropertyCategory::Set)
   {

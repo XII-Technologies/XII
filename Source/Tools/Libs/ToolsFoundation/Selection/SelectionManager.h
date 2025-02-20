@@ -14,11 +14,18 @@ struct xiiSelectionManagerEvent
     SelectionSet,
     ObjectAdded,
     ObjectRemoved,
+    ChangedRuntimeOverrideSelection, ///< Broadcast by SetRuntimeOverrideSelection().
   };
 
   Type                     m_Type;
   const xiiDocument*       m_pDocument;
   const xiiDocumentObject* m_pObject;
+};
+
+struct xiiSelectionEntry
+{
+  const xiiDocumentObject* m_pObject;
+  xiiUInt32                m_uiSelectionOrder = 0; // the index at which this item was in the selection
 };
 
 /// \brief Selection Manager stores a set of selected document objects.
@@ -48,6 +55,21 @@ public:
   void SetSelection(const xiiDeque<const xiiDocumentObject*>& selection);
   void ToggleObject(const xiiDocumentObject* pObject);
 
+  /// \brief Sets a separate selection (temporarily), which is sent to the engine but not propagated to the editor.
+  ///
+  /// This is used for cases where temporarily the engine should use a different selection than the editor.
+  /// Currently this is used during drag-and-drop, to already show the dragged object as selected and especially to exclude it from picking,
+  /// but not yet show the new object as selected in the property grids, such that users can interact with the previously selected object.
+  ///
+  /// To clear a runtime override selection, simply set an empty selection.
+  void SetRuntimeOverrideSelection(const xiiDeque<const xiiDocumentObject*>& selection);
+
+  /// \brief Returns the current runtime override selection.
+  ///
+  /// Valid, if the selection is non-empty.
+  /// See SetRuntimeOverrideSelection() for details.
+  const xiiDeque<const xiiDocumentObject*>& GetRuntimeOverrideSelection() const { return m_RuntimeOverrideSelection; }
+
   /// \brief Returns the last selected object in the selection or null if empty.
   const xiiDocumentObject* GetCurrentObject() const;
 
@@ -56,11 +78,15 @@ public:
 
   bool IsSelectionEmpty() const { return m_pSelectionStorage->m_SelectionList.IsEmpty(); }
 
-  /// \brief Returns the subset of selected items which have no parent selected. I.e. if an object is selected and one of its ancestors is selected, it is culled from the list. Items are returned in the order of appearance in an expanded scene tree.
-  const xiiDeque<const xiiDocumentObject*> GetTopLevelSelection() const;
+  /// \brief Returns the subset of selected items which have no parent selected.
+  ///
+  /// I.e. if an object is selected and one of its ancestors is selected, it is culled from the list.
+  /// Items are returned in the order of appearance in an expanded scene tree.
+  /// Their order in the selection is returned through xiiSelectionEntry.
+  void GetTopLevelSelection(xiiDynamicArray<xiiSelectionEntry>& out_entries) const;
 
   /// \brief Same as GetTopLevelSelection() but additionally requires that all objects are derived from type pBase.
-  const xiiDeque<const xiiDocumentObject*> GetTopLevelSelection(const xiiRTTI* pBase) const;
+  void GetTopLevelSelectionOfType(const xiiRTTI* pBase, xiiDynamicArray<xiiSelectionEntry>& out_entries) const;
 
   bool IsSelected(const xiiDocumentObject* pObject) const;
   bool IsParentSelected(const xiiDocumentObject* pObject) const;
@@ -77,6 +103,7 @@ private:
   friend class xiiDocument;
 
   xiiSharedPtr<xiiSelectionManager::Storage> m_pSelectionStorage;
+  xiiDeque<const xiiDocumentObject*>         m_RuntimeOverrideSelection;
 
   xiiCopyOnBroadcastEvent<const xiiDocumentObjectStructureEvent&>::Unsubscriber m_ObjectStructureUnsubscriber;
   xiiCopyOnBroadcastEvent<const xiiSelectionManagerEvent&>::Unsubscriber        m_EventsUnsubscriber;

@@ -124,7 +124,7 @@ public:
 private:
   xiiSharedPtr<const xiiVisualScriptDataDescription> m_pDesc;
   xiiByteArrayPtr                                    m_Storage;
-  xiiAllocatorBase*                                      m_pAllocator = nullptr;
+  xiiAllocatorBase*                                  m_pAllocator = nullptr;
 };
 
 struct xiiVisualScriptInstanceData

@@ -445,6 +445,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiObjectChange& change)
     xiiLog::Error("Failed to init property path on object of type '{0}'.", object.m_pType->GetTypeName());
     return;
   }
+
   propPath.WriteToLeafObject(object.m_pObject, object.m_pType, [this, &change](void* pLeaf, const xiiRTTI& type) { ApplyOp(xiiRttiConverterObject(&type, pLeaf), change); }).IgnoreResult();
 }
 

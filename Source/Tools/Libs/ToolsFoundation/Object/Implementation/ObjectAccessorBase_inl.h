@@ -11,10 +11,10 @@ T xiiObjectAccessorBase::Get(const xiiDocumentObject* pObject, const xiiAbstract
 }
 
 template <typename T>
-T xiiObjectAccessorBase::Get(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index /*= xiiVariant()*/)
+T xiiObjectAccessorBase::GetByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index /*= xiiVariant()*/)
 {
   xiiVariant value;
-  xiiStatus  res = GetValue(pObject, sProp, value, index);
+  xiiStatus  res = GetValueByName(pObject, sProp, value, index);
   if (res.m_Result.Failed())
     xiiLog::Error("GetValue failed: {0}", res.m_sMessage);
   return value.ConvertTo<T>();
@@ -29,10 +29,10 @@ inline xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject
   return iCount;
 }
 
-inline xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, xiiStringView sProp)
+inline xiiInt32 xiiObjectAccessorBase::GetCountByName(const xiiDocumentObject* pObject, xiiStringView sProp)
 {
   xiiInt32  iCount = 0;
-  xiiStatus res    = GetCount(pObject, sProp, iCount);
+  xiiStatus res    = GetCountByName(pObject, sProp, iCount);
   if (res.m_Result.Failed())
     xiiLog::Error("GetCount failed: {0}", res.m_sMessage);
   return iCount;

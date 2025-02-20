@@ -13,6 +13,9 @@ class xiiAbstractObjectGraph;
 class XII_TOOLSFOUNDATION_DLL xiiToolsReflectionUtils
 {
 public:
+  /// \brief Returns the type under which the property is stored on the editor side.
+  static xiiVariantType::Enum GetStorageType(const xiiAbstractProperty* pProperty);
+
   /// \brief Returns the default value for the entire property as it is stored on the editor side.
   static xiiVariant GetStorageDefault(const xiiAbstractProperty* pProperty);
 

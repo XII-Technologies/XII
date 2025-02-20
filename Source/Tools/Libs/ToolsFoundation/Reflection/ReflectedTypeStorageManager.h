@@ -45,8 +45,6 @@ private:
     void UpdateInstances(xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass);
     void AddPropertyToInstances(xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass);
 
-    xiiVariantType::Enum GetStorageType(const xiiAbstractProperty* pProperty);
-
     xiiSet<xiiReflectedTypeStorageAccessor*> m_Instances;
     xiiHashTable<xiiString, StorageInfo>     m_PathToStorageInfoTable;
   };

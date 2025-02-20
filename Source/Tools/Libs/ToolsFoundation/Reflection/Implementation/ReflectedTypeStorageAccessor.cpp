@@ -130,14 +130,7 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
         if (value.IsA<xiiString>() && pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
         {
           xiiInt64 iValue;
-          xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiString>().GetView(), iValue);
-          m_Data[storageInfo->m_uiIndex] = xiiVariant(iValue).ConvertTo(storageInfo->m_Type);
-          return true;
-        }
-        else if (value.IsA<xiiStringView>() && pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
-        {
-          xiiInt64 iValue;
-          xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiStringView>(), iValue);
+          xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiString>(), iValue);
           m_Data[storageInfo->m_uiIndex] = xiiVariant(iValue).ConvertTo(storageInfo->m_Type);
           return true;
         }
@@ -150,7 +143,7 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
         {
           // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
           // that may have a different type now as someone reloaded the type information and replaced a type.
-          m_Data[storageInfo->m_uiIndex] = value.ConvertTo(storageInfo->m_Type != xiiVariantType::StringView ? (xiiVariantType::Enum)storageInfo->m_Type : value.GetType());
+          m_Data[storageInfo->m_uiIndex] = value.ConvertTo(storageInfo->m_Type);
           return true;
         }
       }
@@ -182,7 +175,7 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
               {
                 // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
                 // that may have a different type now as someone reloaded the type information and replaced a type.
-                changedValues[uiIndex]         = value.ConvertTo(SpecVarType != xiiVariantType::StringView ? SpecVarType : value.GetType());
+                changedValues[uiIndex]         = value.ConvertTo(SpecVarType);
                 m_Data[storageInfo->m_uiIndex] = changedValues;
                 return true;
               }
@@ -210,7 +203,7 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
             {
               // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
               // that may have a different type now as someone reloaded the type information and replaced a type.
-              changedValues[sIndex]          = value.ConvertTo(SpecVarType != xiiVariantType::StringView ? SpecVarType : value.GetType());
+              changedValues[sIndex]          = value.ConvertTo(SpecVarType);
               m_Data[storageInfo->m_uiIndex] = changedValues;
               return true;
             }

@@ -55,5 +55,5 @@ struct XII_TOOLSFOUNDATION_DLL xiiPathPatternFilter
   /// If the text matches any include pattern, it passes the filter.
   /// Otherwise, if it matches any exclude pattern, it does not pass the filter.
   /// Otherwise, if it doesn't match any include or exclude pattern, it passes the filter, since it isn't explicitely ruled out.
-  bool PassesFilters(xiiStringView sText) const;
+  bool PassesFilters(xiiStringView sText, xiiStringBuilder* pMatchingFilter = nullptr) const;
 };

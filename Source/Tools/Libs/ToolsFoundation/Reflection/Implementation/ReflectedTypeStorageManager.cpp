@@ -75,7 +75,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesR
     if (m_PathToStorageInfoTable.TryGetValue(path, storageInfo))
     {
       // Value already present, update type and instances
-      storageInfo->m_Type         = GetStorageType(pProperty);
+      storageInfo->m_Type         = xiiToolsReflectionUtils::GetStorageType(pProperty);
       storageInfo->m_DefaultValue = xiiToolsReflectionUtils::GetStorageDefault(pProperty);
       UpdateInstances(storageInfo->m_uiIndex, pProperty, ref_requiresPatchingEmbeddedClass);
     }
@@ -84,7 +84,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertiesR
       const xiiUInt16 uiIndex = (xiiUInt16)m_PathToStorageInfoTable.GetCount();
 
       // Add value, new entries are appended
-      m_PathToStorageInfoTable.Insert(path, StorageInfo(uiIndex, GetStorageType(pProperty), xiiToolsReflectionUtils::GetStorageDefault(pProperty)));
+      m_PathToStorageInfoTable.Insert(path, StorageInfo(uiIndex, xiiToolsReflectionUtils::GetStorageType(pProperty), xiiToolsReflectionUtils::GetStorageDefault(pProperty)));
       AddPropertyToInstances(uiIndex, pProperty, ref_requiresPatchingEmbeddedClass);
     }
   }
@@ -98,7 +98,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::UpdateInstance
     XII_ASSERT_DEV(uiIndex < data.GetCount(), "xiiReflectedTypeStorageAccessor found with fewer properties that is should have!");
     xiiVariant& value = data[uiIndex];
 
-    const auto SpecVarType = GetStorageType(pProperty);
+    const auto SpecVarType = xiiToolsReflectionUtils::GetStorageType(pProperty);
 
     switch (pProperty->GetCategory())
     {
@@ -218,9 +218,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::UpdateInstance
 }
 
 void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertyToInstances(
-  xiiUInt32                         uiIndex,
-  const xiiAbstractProperty*        pProperty,
-  xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
+  xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
 {
   if (pProperty->GetCategory() != xiiPropertyCategory::Member)
     return;
@@ -237,41 +235,6 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertyToI
   }
 }
 
-
-xiiVariantType::Enum xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::GetStorageType(const xiiAbstractProperty* pProperty)
-{
-  xiiVariantType::Enum type = xiiVariantType::Uuid;
-
-  const bool bIsValueType = xiiReflectionUtils::IsValueType(pProperty);
-
-  switch (pProperty->GetCategory())
-  {
-    case xiiPropertyCategory::Member:
-    {
-      if (bIsValueType)
-        type = pProperty->GetSpecificType()->GetVariantType();
-      else if (pProperty->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
-        type = xiiVariantType::Int64;
-    }
-    break;
-    case xiiPropertyCategory::Array:
-    case xiiPropertyCategory::Set:
-    {
-      type = xiiVariantType::VariantArray;
-    }
-    break;
-    case xiiPropertyCategory::Map:
-    {
-      type = xiiVariantType::VariantDictionary;
-    }
-    break;
-    default:
-      break;
-  }
-
-  return type;
-}
-
 ////////////////////////////////////////////////////////////////////////
 // xiiReflectedTypeStorageManager private functions
 ////////////////////////////////////////////////////////////////////////
@@ -279,14 +242,12 @@ xiiVariantType::Enum xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping
 void xiiReflectedTypeStorageManager::Startup()
 {
   xiiPlugin::Events().AddEventHandler(xiiReflectedTypeStorageManager::PluginEventHandler);
-
   xiiPhantomRttiManager::s_Events.AddEventHandler(TypeEventHandler);
 }
 
 void xiiReflectedTypeStorageManager::Shutdown()
 {
   xiiPhantomRttiManager::s_Events.RemoveEventHandler(TypeEventHandler);
-
   xiiPlugin::Events().RemoveEventHandler(xiiReflectedTypeStorageManager::PluginEventHandler);
 
   for (auto it = s_ReflectedTypeToStorageMapping.GetIterator(); it.IsValid(); ++it)

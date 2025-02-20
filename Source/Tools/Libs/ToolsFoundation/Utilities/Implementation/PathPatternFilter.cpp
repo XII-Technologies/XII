@@ -45,20 +45,50 @@ bool xiiPathPattern::Matches(const xiiStringView sText) const
 
 //////////////////////////////////////////////////////////////////////////
 
-bool xiiPathPatternFilter::PassesFilters(xiiStringView sText) const
+bool xiiPathPatternFilter::PassesFilters(xiiStringView sText, xiiStringBuilder* pMatchingFilter) const
 {
   for (const auto& filter : m_IncludePatterns)
   {
     // if any include pattern matches, that overrides the exclude patterns
     if (filter.Matches(sText))
+    {
+      if (pMatchingFilter)
+      {
+        pMatchingFilter->Clear();
+
+        if (filter.m_MatchType == xiiPathPattern::EndsWith || filter.m_MatchType == xiiPathPattern::Contains)
+          pMatchingFilter->Append("*");
+
+        pMatchingFilter->Append(filter.m_sString);
+
+        if (filter.m_MatchType == xiiPathPattern::StartsWith || filter.m_MatchType == xiiPathPattern::Contains)
+          pMatchingFilter->Append("*");
+      }
+
       return true;
+    }
   }
 
   for (const auto& filter : m_ExcludePatterns)
   {
     // no include pattern matched, but any exclude pattern matches -> filter out
     if (filter.Matches(sText))
+    {
+      if (pMatchingFilter)
+      {
+        pMatchingFilter->Clear();
+
+        if (filter.m_MatchType == xiiPathPattern::EndsWith || filter.m_MatchType == xiiPathPattern::Contains)
+          pMatchingFilter->Append("*");
+
+        pMatchingFilter->Append(filter.m_sString);
+
+        if (filter.m_MatchType == xiiPathPattern::StartsWith || filter.m_MatchType == xiiPathPattern::Contains)
+          pMatchingFilter->Append("*");
+      }
+
       return false;
+    }
   }
 
   // no filter matches at all -> include by default

@@ -43,28 +43,30 @@ public:
   /// \name Object Access Convenience Functions
   ///@{
 
-  xiiStatus GetValue(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant& out_value, xiiVariant index = xiiVariant());
-  xiiStatus SetValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index = xiiVariant());
-  xiiStatus InsertValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index = xiiVariant());
-  xiiStatus RemoveValue(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index = xiiVariant());
-  xiiStatus MoveValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& oldIndex, const xiiVariant& newIndex);
-  xiiStatus GetCount(const xiiDocumentObject* pObject, xiiStringView sProp, xiiInt32& out_iCount);
+  xiiStatus GetValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant& out_value, xiiVariant index = xiiVariant());
+  xiiStatus SetValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index = xiiVariant());
+  xiiStatus InsertValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index = xiiVariant());
+  xiiStatus RemoveValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index = xiiVariant());
+  xiiStatus MoveValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& oldIndex, const xiiVariant& newIndex);
+  xiiStatus GetCountByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiInt32& out_iCount);
 
-  xiiStatus AddObject(const xiiDocumentObject* pParent, xiiStringView sParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid);
-  xiiStatus MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProp, const xiiVariant& index);
+  xiiStatus AddObjectByName(const xiiDocumentObject* pParent, xiiStringView sParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid);
+  xiiStatus MoveObjectByName(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProp, const xiiVariant& index);
 
-  xiiStatus                GetKeys(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_keys);
-  xiiStatus                GetValues(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_values);
-  const xiiDocumentObject* GetChildObject(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index);
+  xiiStatus                GetKeysByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_keys);
+  xiiStatus                GetValuesByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_values);
+  const xiiDocumentObject* GetChildObjectByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index);
 
-  xiiStatus Clear(const xiiDocumentObject* pObject, xiiStringView sProp);
+  xiiStatus ClearByName(const xiiDocumentObject* pObject, xiiStringView sProp);
+
+  const xiiAbstractProperty* FindPropertyByName(const xiiDocumentObject* pObject, xiiStringView sProp);
 
   template <typename T>
   T Get(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index = xiiVariant());
   template <typename T>
-  T        Get(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index = xiiVariant());
+  T        GetByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index = xiiVariant());
   xiiInt32 GetCount(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp);
-  xiiInt32 GetCount(const xiiDocumentObject* pObject, xiiStringView sProp);
+  xiiInt32 GetCountByName(const xiiDocumentObject* pObject, xiiStringView sProp);
 
   ///@}
 
