@@ -120,7 +120,7 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeColor(const xiiVec4& vColo
     finalColor = vColor;
   }
 
-  return EncodeFromVec4(finalColor, dest, xiiGALResourceFormat::RGBAUByteNormalized);
+  return EncodeFromVec4(finalColor, dest, xiiGALResourceFormat::RGBA8UNormalized);
 }
 
 // static
