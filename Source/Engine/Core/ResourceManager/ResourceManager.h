@@ -507,5 +507,6 @@ private:
   static const xiiRTTI* FindResourceTypeOverride(const xiiRTTI* pRtti, xiiStringView sResourceID);
 };
 
+#include <Core/ResourceManager/Implementation/ResourceHandleReflection.h>
 #include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Core/ResourceManager/Implementation/ResourceManager_inl.h>

@@ -1,4 +1,5 @@
 #include <Core/CorePCH.h>
+#include <Foundation/Time/Clock.h>
 
 #include <Core/ResourceManager/Implementation/ResourceManagerState.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -6,7 +7,6 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Profiling/Profiling.h>
-#include <Foundation/Time/Clock.h>
 
 /// \todo Do not unload resources while they are acquired
 /// \todo Resource Type Memory Thresholds

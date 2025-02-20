@@ -10,13 +10,17 @@ class XII_CORE_DLL xiiResource : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiResource, xiiReflectedClass);
 
-protected:
+public:
   enum class DoUpdate
   {
     OnMainThread,
-    OnAnyThread
+    OnAnyThread,
+    OnGraphicsResourceThreads ///< If set, the setting from UpdateGraphicsResource is used. This must be configured by the active renderer.
   };
 
+  static DoUpdate UpdateGraphicsResource /*= DoUpdate::OnAnyThread*/;
+
+protected:
   enum class Unload
   {
     AllQualityLevels,
@@ -44,7 +48,7 @@ public:
 
   /// \brief Returns the unique ID that identifies this resource. On a file resource this might be a path. Can also be a GUID or any other
   /// scheme that uniquely identifies the resource.
-  XII_ALWAYS_INLINE const xiiString& GetResourceID() const { return m_sUniqueID; }
+  XII_ALWAYS_INLINE xiiStringView GetResourceID() const { return m_sUniqueID; }
 
   /// \brief Returns the hash of the unique ID.
   XII_ALWAYS_INLINE xiiUInt64 GetResourceIDHash() const { return m_uiUniqueIDHash; }
@@ -133,7 +137,6 @@ public:
   /// Otherwise the function does nothing.
   void PrintHandleStackTraces();
 
-
   mutable xiiEvent<const xiiResourceEvent&, xiiMutex> m_ResourceEvents;
 
 private:
@@ -172,7 +175,6 @@ private:
 
   xiiUInt8 m_uiQualityLevelsDiscardable = 0;
   xiiUInt8 m_uiQualityLevelsLoadable    = 0;
-
 
 protected:
   /// \brief Non-const version for resources that want to write this variable directly.
@@ -251,50 +253,50 @@ private:
 
 #include <Core/ResourceManager/ResourceManager.h>
 
-#define XII_RESOURCE_DECLARE_COMMON_CODE(SELF)                                                                                                 \
-  friend class ::xiiResourceManager;                                                                                                           \
-                                                                                                                                               \
-public:                                                                                                                                        \
+#define XII_RESOURCE_DECLARE_COMMON_CODE(SELF)                                                                                                  \
+  friend class ::xiiResourceManager;                                                                                                            \
+                                                                                                                                                \
+public:                                                                                                                                         \
   /*                                                                                                                                     \ \ \
   /// \brief Unfortunately this has to be called manually from within dynamic plugins during core engine shutdown.                       \ \ \
   ///                                                                                                                                    \ \ \
   /// Without this, the dynamic plugin might still be referenced by the core engine during later shutdown phases and will crash, because \ \ \
   /// memory and code is still referenced, that is already unloaded.                                                                     \ \ \
   */ \
-  static void CleanupDynamicPluginReferences();                                                                                                \
-                                                                                                                                               \
+  static void CleanupDynamicPluginReferences();                                                                                                 \
+                                                                                                                                                \
   /*                                                                                                                                     \ \ \
   /// \brief Returns a typed resource handle to this resource                                                                            \ \ \
   */ \
-  xiiTypedResourceHandle<SELF> GetResourceHandle() const;                                                                                      \
-                                                                                                                                               \
+  xiiTypedResourceHandle<SELF> GetResourceHandle() const;                                                                                       \
+                                                                                                                                                \
   /*                                                                                                                                     \ \ \
   /// \brief Sets the fallback resource that can be used while this resource is not yet loaded.                                          \ \ \
   ///                                                                                                                                    \ \ \
   /// By default there is no fallback resource, so all resource will block the application when requested for the first time.            \ \ \
   */ \
-  void SetLoadingFallbackResource(const xiiTypedResourceHandle<SELF>& hResource);                                                              \
-                                                                                                                                               \
-private:                                                                                                                                       \
-  /* These functions are needed to access the static members, such that they get DLL exported, otherwise you get unresolved symbols */         \
-  static void                                SetResourceTypeLoadingFallback(const xiiTypedResourceHandle<SELF>& hResource);                    \
-  static void                                SetResourceTypeMissingFallback(const xiiTypedResourceHandle<SELF>& hResource);                    \
-  static const xiiTypedResourceHandle<SELF>& GetResourceTypeLoadingFallback()                                                                  \
-  {                                                                                                                                            \
-    return s_TypeLoadingFallback;                                                                                                              \
-  }                                                                                                                                            \
-  static const xiiTypedResourceHandle<SELF>& GetResourceTypeMissingFallback()                                                                  \
-  {                                                                                                                                            \
-    return s_TypeMissingFallback;                                                                                                              \
-  }                                                                                                                                            \
-  virtual bool HasResourceTypeLoadingFallback() const override                                                                                 \
-  {                                                                                                                                            \
-    return s_TypeLoadingFallback.IsValid();                                                                                                    \
-  }                                                                                                                                            \
-                                                                                                                                               \
-  static xiiTypedResourceHandle<SELF> s_TypeLoadingFallback;                                                                                   \
-  static xiiTypedResourceHandle<SELF> s_TypeMissingFallback;                                                                                   \
-                                                                                                                                               \
+  void SetLoadingFallbackResource(const xiiTypedResourceHandle<SELF>& hResource);                                                               \
+                                                                                                                                                \
+private:                                                                                                                                        \
+  /* These functions are needed to access the static members, such that they get DLL exported, otherwise you get unresolved symbols */          \
+  static void                                SetResourceTypeLoadingFallback(const xiiTypedResourceHandle<SELF>& hResource);                     \
+  static void                                SetResourceTypeMissingFallback(const xiiTypedResourceHandle<SELF>& hResource);                     \
+  static const xiiTypedResourceHandle<SELF>& GetResourceTypeLoadingFallback()                                                                   \
+  {                                                                                                                                             \
+    return s_TypeLoadingFallback;                                                                                                               \
+  }                                                                                                                                             \
+  static const xiiTypedResourceHandle<SELF>& GetResourceTypeMissingFallback()                                                                   \
+  {                                                                                                                                             \
+    return s_TypeMissingFallback;                                                                                                               \
+  }                                                                                                                                             \
+  virtual bool HasResourceTypeLoadingFallback() const override                                                                                  \
+  {                                                                                                                                             \
+    return s_TypeLoadingFallback.IsValid();                                                                                                     \
+  }                                                                                                                                             \
+                                                                                                                                                \
+  static xiiTypedResourceHandle<SELF> s_TypeLoadingFallback;                                                                                    \
+  static xiiTypedResourceHandle<SELF> s_TypeMissingFallback;                                                                                    \
+                                                                                                                                                \
   xiiTypedResourceHandle<SELF> m_hLoadingFallback;
 
 
