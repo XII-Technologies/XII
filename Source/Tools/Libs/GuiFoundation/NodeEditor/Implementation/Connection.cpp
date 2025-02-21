@@ -207,7 +207,7 @@ void xiiQtConnection::DrawSubwayPath(QPainterPath& path, const QPointF& startPoi
   const float diffX = fabs(endPoint.x() - startPoint.x());
   float       diffY = fabs(endPoint.y() - startPoint.y());
 
-  const qreal bxiiierOffset   = 5;
+  const qreal bezierOffset    = 5;
   const qreal nodeCableOffset = 20;
 
   if (!isStartLeftOfTarget)
@@ -217,7 +217,7 @@ void xiiQtConnection::DrawSubwayPath(QPainterPath& path, const QPointF& startPoi
       diffY += nodeCableOffset;
     }
 
-    float step = diffY / 4 - bxiiierOffset;
+    float step = diffY / 4 - bezierOffset;
     step       = step < nodeCableOffset ? step : nodeCableOffset;
 
     const float yDistance = fabs(diffY - step * 4) / 2;
