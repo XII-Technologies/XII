@@ -245,7 +245,6 @@ xiiVariant xiiDefaultContainerState::GetDefaultContainer(xiiUInt32 uiSelectionIn
 
 //////////////////////////////////////////////////////////////////////////
 
-
 bool xiiDefaultStateProvider::IsDefaultValue(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index)
 {
   const xiiVariant def = GetDefaultValue(superPtr, pAccessor, pObject, pProp, index);
@@ -255,7 +254,7 @@ bool xiiDefaultStateProvider::IsDefaultValue(SuperArray superPtr, xiiObjectAcces
   const bool bIsValueType = xiiReflectionUtils::IsValueType(pProp) || pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags);
   if (index.IsValid() && !bIsValueType)
   {
-    //#TODO we do not support reverting entire objects just yet.
+    // #TODO we do not support reverting entire objects just yet.
     return true;
   }
 
