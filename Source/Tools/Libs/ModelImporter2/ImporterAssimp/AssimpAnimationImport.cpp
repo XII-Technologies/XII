@@ -1,9 +1,9 @@
 #include <ModelImporter2/ModelImporterPCH.h>
 
 #include <Foundation/Logging/Log.h>
-#include <ModelImporter2/ImporterAssimp/ImporterAssimp.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
+#include <ModelImporter2/ImporterAssimp/ImporterAssimp.h>
 #include <assimp/anim.h>
 #include <assimp/scene.h>
 #include <ozz/animation/offline/additive_animation_builder.h>

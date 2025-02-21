@@ -63,6 +63,11 @@ void xiiQtCVarWidget::UpdateCVarUI(const xiiMap<xiiString, xiiCVarWidgetData>& c
 {
   int row = 0;
 
+  if (CVarsView->isPersistentEditorOpen(CVarsView->currentIndex()))
+  {
+    CVarsView->closePersistentEditor(CVarsView->currentIndex());
+  }
+
   m_pItemModel->BeginResetModel();
 
   for (auto it = cvars.GetIterator(); it.IsValid(); ++it, ++row)
@@ -313,7 +318,7 @@ QVariant xiiQtCVarModel::data(const QModelIndex& index, int iRole) const
   {
     if (e->m_Value.IsValid())
     {
-      return xiiQtUiServices::GetCachedIconResource(":/GuiFoundation/Icons/CVar.png");
+      return xiiQtUiServices::GetCachedIconResource(":/GuiFoundation/Icons/CVar.svg");
     }
   }
 

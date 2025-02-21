@@ -60,6 +60,9 @@ public:
   xiiVariant GetCommonValue(const xiiHybridArray<xiiPropertySelection, 8>& items, const xiiAbstractProperty* pProperty);
   void       PrepareToDie();
 
+  /// \brief By default disables the widget, but can be overridden to make a widget more interactable (for example to be able to copy text from it).
+  virtual void SetReadOnly(bool bReadOnly = true);
+
 public:
   static const xiiRTTI* GetCommonBaseType(const xiiHybridArray<xiiPropertySelection, 8>& items);
   static QColor         SetPaletteBackgroundColor(xiiColorGammaUB inputColor, QPalette& ref_palette);
@@ -184,9 +187,9 @@ protected:
   virtual void DoPrepareToDie() override;
 
 protected:
-  QHBoxLayout*       m_pLayout;
+  QVBoxLayout*       m_pLayout;
   xiiQtGroupBoxBase* m_pGroup;
-  QHBoxLayout*       m_pGroupLayout;
+  QVBoxLayout*       m_pGroupLayout;
   xiiQtTypeWidget*   m_pTypeWidget;
 };
 

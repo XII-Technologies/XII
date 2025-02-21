@@ -30,7 +30,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshVertexColorConversion, 1)
   XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::LinearToSrgb),
   XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::SrgbToLinear),
 XII_END_STATIC_REFLECTED_ENUM;
-  // clang-format on
+// clang-format on
 
 namespace
 {

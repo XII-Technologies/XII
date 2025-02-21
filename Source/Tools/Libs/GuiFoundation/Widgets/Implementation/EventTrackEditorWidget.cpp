@@ -17,6 +17,9 @@ xiiQtEventTrackEditorWidget::xiiQtEventTrackEditorWidget(QWidget* pParent) :
 
   EventTrackEdit->SetGridBarWidget(GridBarWidget);
 
+  // make sure the track is visible and not completely squashed
+  EventTrackEdit->setMinimumHeight(50);
+
   connect(EventTrackEdit, &xiiQtEventTrackWidget::DeleteControlPointsEvent, this, &xiiQtEventTrackEditorWidget::onDeleteControlPoints);
   connect(EventTrackEdit, &xiiQtEventTrackWidget::DoubleClickEvent, this, &xiiQtEventTrackEditorWidget::onDoubleClick);
   connect(EventTrackEdit, &xiiQtEventTrackWidget::MoveControlPointsEvent, this, &xiiQtEventTrackEditorWidget::onMoveControlPoints);
@@ -76,6 +79,14 @@ void xiiQtEventTrackEditorWidget::on_AddEventButton_clicked()
 
     FillEventComboBox(name.toUtf8().data());
   }
+}
+
+void xiiQtEventTrackEditorWidget::on_InsertEventButton_clicked()
+{
+  int    curveIdx = 0, cpIdx = 0;
+  double posX = xiiMath::Max(EventTrackEdit->GetScrubberPosition(), 0.0);
+
+  Q_EMIT InsertCpEvent(m_pData->TickFromTime(xiiTime::MakeFromSeconds(posX)), ComboType->currentText().toUtf8().data());
 }
 
 void xiiQtEventTrackEditorWidget::onDeleteControlPoints()
@@ -262,7 +273,7 @@ void xiiQtEventTrackEditorWidget::DetermineAvailableEvents()
 void xiiQtEventTrackEditorWidget::FillEventComboBox(xiiStringView sCurrent)
 {
   xiiStringBuilder tmp;
-  QString          prev = sCurrent.GetData(tmp);
+  QString prev = sCurrent.GetData(tmp);
 
   if (prev.isEmpty())
     prev = ComboType->currentText();

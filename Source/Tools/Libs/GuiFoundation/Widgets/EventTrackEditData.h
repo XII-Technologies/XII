@@ -12,10 +12,10 @@ class XII_GUIFOUNDATION_DLL xiiEventTrackControlPointData : public xiiReflectedC
   XII_ADD_DYNAMIC_REFLECTION(xiiEventTrackControlPointData, xiiReflectedClass);
 
 public:
-  xiiTime       GetTickAsTime() const { return xiiTime::MakeFromSeconds(m_iTick / 4800.0); }
-  void          SetTickFromTime(xiiTime time, xiiInt64 iFps);
-  xiiStringView GetEventName() const { return m_sEvent.GetData(); }
-  void          SetEventName(xiiStringView sSz) { m_sEvent.Assign(sSz); }
+  xiiTime     GetTickAsTime() const { return xiiTime::MakeFromSeconds(m_iTick / 4800.0); }
+  void        SetTickFromTime(xiiTime time, xiiInt64 iFps);
+  xiiStringView GetEventName() const { return m_sEvent.GetView(); }
+  void        SetEventName(xiiStringView sSz) { m_sEvent.Assign(sSz); }
 
   xiiInt64        m_iTick; // 4800 ticks per second
   xiiHashedString m_sEvent;

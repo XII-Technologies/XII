@@ -32,12 +32,12 @@ public:
   void MirrorVertically(xiiUInt32 uiActiveCurve);
 
 Q_SIGNALS:
-  void CpMovedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx, xiiInt64 iTickX, double fNewPosY);
-  void CpDeletedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx);
-  void TangentMovedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx, float fNewPosX, float fNewPosY, bool bRightTangent);
+  void CpMovedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiIdx, xiiInt64 iTickX, double fNewPosY);
+  void CpDeletedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiIdx);
+  void TangentMovedEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiIdx, float fNewPosX, float fNewPosY, bool bRightTangent);
   void InsertCpEvent(xiiUInt32 uiCurveIdx, xiiInt64 iTickX, double value);
-  void TangentLinkEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx, bool bLink);
-  void CpTangentModeEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiCpIdx, bool bRightTangent, int iMode); // xiiCurveTangentMode
+  void TangentLinkEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiIdx, bool bLink);
+  void CpTangentModeEvent(xiiUInt32 uiCurveIdx, xiiUInt32 uiIdx, bool bRightTangent, int iMode); // xiiCurveTangentMode
 
   void BeginCpChangesEvent(QString sName);
   void EndCpChangesEvent();

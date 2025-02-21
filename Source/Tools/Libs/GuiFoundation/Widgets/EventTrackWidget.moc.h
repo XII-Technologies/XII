@@ -30,7 +30,8 @@ public:
   void SetData(const xiiEventTrackData* pData, double fMinCurveLength);
   void SetGridBarWidget(xiiQGridBarWidget* pGridBar) { m_pGridBar = pGridBar; }
 
-  void SetScrubberPosition(double fPosition);
+  void   SetScrubberPosition(double fPosition);
+  double GetScrubberPosition() const { return m_fScrubberPosition; }
 
   void FrameCurve();
 

@@ -21,8 +21,8 @@ public:
   void FrameCurve();
 
 Q_SIGNALS:
-  void CpMovedEvent(xiiUInt32 uiCpIdx, xiiInt64 iTickX);
-  void CpDeletedEvent(xiiUInt32 uiCpIdx);
+  void CpMovedEvent(xiiUInt32 uiIdx, xiiInt64 iTickX);
+  void CpDeletedEvent(xiiUInt32 uiIdx);
   void InsertCpEvent(xiiInt64 iTickX, const char* value);
 
   void BeginCpChangesEvent(QString sName);
@@ -34,6 +34,7 @@ Q_SIGNALS:
 private Q_SLOTS:
   void on_LinePosition_editingFinished();
   void on_AddEventButton_clicked();
+  void on_InsertEventButton_clicked();
   void onDeleteControlPoints();
   void onDoubleClick(double scenePosX, double epsilon);
   void onMoveControlPoints(double x);

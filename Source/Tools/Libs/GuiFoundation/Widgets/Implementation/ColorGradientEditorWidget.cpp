@@ -37,9 +37,7 @@ xiiQtColorGradientEditorWidget::xiiQtColorGradientEditorWidget(QWidget* pParent)
   connect(GradientWidget, &xiiQtColorGradientWidget::triggerPickColor, this, [this]() { on_ButtonColor_clicked(); });
 }
 
-
 xiiQtColorGradientEditorWidget::~xiiQtColorGradientEditorWidget() = default;
-
 
 void xiiQtColorGradientEditorWidget::SetColorGradient(const xiiColorGradient& gradient)
 {

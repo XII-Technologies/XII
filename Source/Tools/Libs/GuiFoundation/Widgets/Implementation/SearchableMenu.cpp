@@ -153,7 +153,7 @@ void xiiQtSearchableMenu::AddItem(xiiStringView sDisplayName, xiiStringView sInt
 {
   QStandardItem* pParent = m_pItemModel->invisibleRootItem();
 
-  const char* szLastCat = sInternalPath.FindLastSubString("/");
+  const char*   szLastCat = sInternalPath.FindLastSubString("/");
   if (szLastCat != nullptr)
   {
     xiiStringView sCategory(sInternalPath.GetStartPointer(), szLastCat);
@@ -162,7 +162,7 @@ void xiiQtSearchableMenu::AddItem(xiiStringView sDisplayName, xiiStringView sInt
   }
 
   xiiStringBuilder tmp;
-  QStandardItem*   pThisItem = new QStandardItem(xiiMakeQString(sDisplayName));
+  QStandardItem* pThisItem = new QStandardItem(xiiMakeQString(sDisplayName));
   pThisItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable);
   pThisItem->setData(sInternalPath.GetData(tmp), InternalPathRole);
   pThisItem->setData(variant, VariantRole);
@@ -235,6 +235,19 @@ void xiiQtSearchableMenu::OnSearchChanged(const QString& text)
 
 void xiiQtSearchableMenu::OnShow()
 {
+  if (m_pFilterModel->rowCount() > 0)
+  {
+    QModelIndex idx = m_pFilterModel->index(0, 0);
+
+    // hacky convention, if the first item name starts with a whitespace,
+    // that is to move it to the top of the list, which is currently used for the 'RECENT' section
+    // and we want that to always be expanded
+    if (m_pFilterModel->data(idx, Qt::DisplayRole).toString().startsWith(' '))
+    {
+      m_pTreeView->expandRecursively(idx);
+    }
+  }
+
   m_pSearch->setFocus();
   m_pSearch->selectAll();
 }

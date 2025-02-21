@@ -14,10 +14,6 @@
 #include <QSettings>
 #include <QUrl>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <ShlObj_core.h>
-#endif
-
 XII_IMPLEMENT_SINGLETON(xiiQtUiServices);
 
 xiiEvent<const xiiQtUiServices::Event&>     xiiQtUiServices::s_Events;
@@ -118,9 +114,18 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, x
       const xiiColorGammaUB color8 = svgTintColor;
 
       xiiStringBuilder rep;
-      rep.SetFormat("#{}{}{}", xiiArgI((int)color8.r, 2, true, 16), xiiArgI((int)color8.g, 2, true, 16), xiiArgI((int)color8.b, 2, true, 16));
+      rep.SetFormat("#{}{}{}", xiiArgU(color8.r, 2, true, 16), xiiArgU(color8.g, 2, true, 16), xiiArgU(color8.b, 2, true, 16));
 
       sContent.ReplaceAll_NoCase("#ffffff", rep);
+
+      rep.Append(";");
+      sContent.ReplaceAll_NoCase("#fff;", rep);
+      sContent.ReplaceAll_NoCase("white;", rep);
+      rep.Shrink(0, 1);
+
+      rep.Prepend("\"");
+      rep.Append("\"");
+      sContent.ReplaceAll_NoCase("\"#fff\"", rep);
     }
 
     // hash the content AFTER the color replacement, so it includes the custom color change
@@ -187,7 +192,8 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, x
 
 const QImage& xiiQtUiServices::GetCachedImageResource(xiiStringView sIdentifier)
 {
-  auto& map = s_ImagesCache;
+  const xiiString sIdentifier = sIdentifier;
+  auto&           map         = s_ImagesCache;
 
   auto it = map.Find(sIdentifier);
 
@@ -201,7 +207,8 @@ const QImage& xiiQtUiServices::GetCachedImageResource(xiiStringView sIdentifier)
 
 const QPixmap& xiiQtUiServices::GetCachedPixmapResource(xiiStringView sIdentifier)
 {
-  auto& map = s_PixmapsCache;
+  const xiiString sIdentifier = sIdentifier;
+  auto&           map         = s_PixmapsCache;
 
   auto it = map.Find(sIdentifier);
 
@@ -348,86 +355,7 @@ void xiiQtUiServices::ShowGlobalStatusBarMessage(const xiiFormatString& msg)
   s_Events.Broadcast(e);
 }
 
-
 bool xiiQtUiServices::OpenFileInDefaultProgram(xiiStringView sPath)
 {
   return QDesktopServices::openUrl(QUrl::fromLocalFile(xiiMakeQString(sPath)));
-}
-
-void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
-{
-  QStringList args;
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  if (bIsFile)
-    args << "/select,";
-
-  args << QDir::toNativeSeparators(xiiMakeQString(sPath));
-
-  QProcess::startDetached("explorer", args);
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-  xiiStringBuilder parentDir;
-
-  if (bIsFile)
-  {
-    parentDir = sPath;
-    parentDir = parentDir.GetFileDirectory();
-    sPath     = parentDir.GetView();
-  }
-  args << QDir::toNativeSeparators(sPath);
-
-  QProcess::startDetached("xdg-open", args);
-#else
-  XII_ASSERT_NOT_IMPLEMENTED
-#endif
-}
-
-void xiiQtUiServices::OpenWith(xiiStringView sPath)
-{
-  xiiStringBuilder sPathBuilder = sPath;
-  sPathBuilder.MakeCleanPath();
-  sPathBuilder.MakePathSeparatorsNative();
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  xiiStringWChar wpath(sPathBuilder);
-  OPENASINFO     oi;
-  oi.pcszFile    = wpath.GetData();
-  oi.pcszClass   = NULL;
-  oi.oaifInFlags = OAIF_EXEC;
-  SHOpenWithDialog(NULL, &oi);
-#else
-  XII_ASSERT_NOT_IMPLEMENTED
-#endif
-}
-
-xiiStatus xiiQtUiServices::OpenInVsCode(const QStringList& arguments)
-{
-  QString sVsCodeExe =
-    QStandardPaths::locate(QStandardPaths::GenericDataLocation, "Programs/Microsoft VS Code/Code.exe", QStandardPaths::LocateOption::LocateFile);
-
-  if (!QFile().exists(sVsCodeExe))
-  {
-    QSettings settings("\\HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\Applications\\Code.exe\\shell\\open\\command", QSettings::NativeFormat);
-    QString   sVsCodeExeKey = settings.value(".", "").value<QString>();
-
-    if (sVsCodeExeKey.length() > 5)
-    {
-      // Remove shell parameter and normalize QT Compatible path, QFile expects the file separator to be '/' regardless of operating system
-      sVsCodeExe = sVsCodeExeKey.left(sVsCodeExeKey.length() - 5).replace("\\", "/").replace("\"", "");
-    }
-  }
-
-  if (!QFile().exists(sVsCodeExe))
-  {
-    return xiiStatus("Installation of Visual Studio Code could not be located.\n"
-                     "Please visit 'https://code.visualstudio.com/download' to download the 'User Installer' of Visual Studio Code.");
-  }
-
-  QProcess proc;
-  if (proc.startDetached(sVsCodeExe, arguments) == false)
-  {
-    return xiiStatus("Failed to launch Visual Studio Code.");
-  }
-
-  return xiiStatus(XII_SUCCESS);
 }
