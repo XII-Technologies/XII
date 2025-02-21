@@ -3,11 +3,7 @@
 #include <GuiFoundation/PropertyGrid/Implementation/TagSetPropertyWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
-#include <QCheckBox>
-#include <QHBoxLayout>
-#include <QMenu>
-#include <QPushButton>
-#include <QWidgetAction>
+
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Settings/ToolsTagRegistry.h>
@@ -62,26 +58,25 @@ void xiiQtPropertyEditorTagSetWidget::OnInit()
   xiiHybridArray<const xiiToolsTag*, 16> tags;
   xiiToolsTagRegistry::GetTagsByCategory(categories, tags);
 
-  const char* szCurrentCategory = "";
+  xiiStringView sCurrentCategory = {};
 
   // Add valid tags to menu.
   for (const xiiToolsTag* pTag : tags)
   {
-    if (!pTag->m_sCategory.IsEqual(szCurrentCategory))
+    if (!pTag->m_sCategory.IsEqual(sCurrentCategory))
     {
-      /*QAction* pCategory = */ m_pMenu->addSection(xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/Tag.svg"),
-                                                    QLatin1String("[") + QString(pTag->m_sCategory.GetData()) + QLatin1String("]"));
+      /*QAction* pCategory = */ m_pMenu->addSection(xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/Tag.svg"), QLatin1String("[") + QString(pTag->m_sCategory.GetData()) + QLatin1String("]"));
 
-      szCurrentCategory = pTag->m_sCategory;
+      sCurrentCategory = pTag->m_sCategory;
 
       // remove category from list, as it was added once
 
       /// \todo xiiStringView is POD? -> array<stringview>::Remove(stringview) fails, because of memcmp
-      // categories.Remove(szCurrentCategory);
+      // categories.Remove(sCurrentCategory);
 
       for (xiiUInt32 i = 0; i < categories.GetCount(); ++i)
       {
-        if (categories[i] == szCurrentCategory)
+        if (categories[i] == sCurrentCategory)
         {
           categories.RemoveAtAndCopy(i);
           break;
@@ -107,8 +102,7 @@ void xiiQtPropertyEditorTagSetWidget::OnInit()
   // therefore, for every empty category, add an entry
   for (const auto& catname : categories)
   {
-    /*QAction* pCategory = */ m_pMenu->addSection(xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/Tag.svg"),
-                                                  QLatin1String("[") + QString(catname.GetData(tmp)) + QLatin1String("]"));
+    /*QAction* pCategory = */ m_pMenu->addSection(xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/Tag.svg"), QLatin1String("[") + QString(catname.GetData(tmp)) + QLatin1String("]"));
   }
 }
 
@@ -156,7 +150,6 @@ void xiiQtPropertyEditorTagSetWidget::InternalUpdateValue()
       sText = "<Multiple Values>|"; // string is shrunk by one character (see below), so | is a dummy
     }
   }
-
 
   xiiQtScopedBlockSignals b(m_pWidget);
   if (!sText.isEmpty())

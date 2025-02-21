@@ -48,7 +48,30 @@ protected:
   QCheckBox*   m_pWidget;
 };
 
+/// *** FLOAT SPINBOX ***
 
+class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorFloatSpinboxWidget : public xiiQtStandardPropertyWidget
+{
+  Q_OBJECT
+
+public:
+  xiiQtPropertyEditorFloatSpinboxWidget(xiiInt8 iNumComponents);
+
+private Q_SLOTS:
+  void on_EditingFinished_triggered();
+  void SlotValueChanged();
+
+protected:
+  virtual void OnInit() override;
+  virtual void InternalSetValue(const xiiVariant& value) override;
+
+  bool                    m_bUseTemporaryTransaction = false;
+  bool                    m_bTemporaryCommand        = false;
+  xiiInt8                 m_iNumComponents           = 0;
+  xiiEnum<xiiVariantType> m_OriginalType;
+  QHBoxLayout*            m_pLayout    = nullptr;
+  xiiQtDoubleSpinBox*     m_pWidget[4] = {};
+};
 
 /// *** DOUBLE SPINBOX ***
 
@@ -97,14 +120,36 @@ protected:
   xiiQtDoubleSpinBox* m_pWidget;
 };
 
-/// *** ANGLE SPINBOX ***
+/// *** FLOAT ANGLE SPINBOX ***
 
-class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorAngleWidget : public xiiQtStandardPropertyWidget
+class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorFloatAngleWidget : public xiiQtStandardPropertyWidget
 {
   Q_OBJECT
 
 public:
-  xiiQtPropertyEditorAngleWidget();
+  xiiQtPropertyEditorFloatAngleWidget();
+
+private Q_SLOTS:
+  void on_EditingFinished_triggered();
+  void SlotValueChanged();
+
+protected:
+  virtual void OnInit() override;
+  virtual void InternalSetValue(const xiiVariant& value) override;
+
+  bool                m_bTemporaryCommand;
+  QHBoxLayout*        m_pLayout;
+  xiiQtDoubleSpinBox* m_pWidget;
+};
+
+/// *** DOUBLE ANGLE SPINBOX ***
+
+class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorDoubleAngleWidget : public xiiQtStandardPropertyWidget
+{
+  Q_OBJECT
+
+public:
+  xiiQtPropertyEditorDoubleAngleWidget();
 
 private Q_SLOTS:
   void on_EditingFinished_triggered();
@@ -127,13 +172,16 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorIntSpinboxWidget : public xiiQtSt
 
 public:
   xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt32 iMinValue, xiiInt32 iMaxValue);
-  xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt64 iMinValue, xiiInt64 iMaxValue);
   ~xiiQtPropertyEditorIntSpinboxWidget();
+
+  void SetReadOnly(bool bReadOnly = true) override;
 
 private Q_SLOTS:
   void SlotValueChanged();
   void SlotSliderValueChanged(int value);
   void on_EditingFinished_triggered();
+  void onBeginTemporary();
+  void onEndTemporary();
 
 protected:
   virtual void OnInit() override;
@@ -148,14 +196,108 @@ protected:
   QSlider*                m_pSlider    = nullptr;
 };
 
-/// *** QUATERNION ***
+/// *** UINT SPINBOX ***
 
-class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorQuaternionWidget : public xiiQtStandardPropertyWidget
+class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorUIntSpinboxWidget : public xiiQtStandardPropertyWidget
 {
   Q_OBJECT
 
 public:
-  xiiQtPropertyEditorQuaternionWidget();
+  xiiQtPropertyEditorUIntSpinboxWidget(xiiInt8 iNumComponents, xiiUInt32 uiMinValue, xiiUInt32 uiMaxValue);
+  ~xiiQtPropertyEditorUIntSpinboxWidget();
+
+  void SetReadOnly(bool bReadOnly = true) override;
+
+private Q_SLOTS:
+  void SlotValueChanged();
+  void SlotSliderValueChanged(int value);
+  void on_EditingFinished_triggered();
+  void onBeginTemporary();
+  void onEndTemporary();
+
+protected:
+  virtual void OnInit() override;
+  virtual void InternalSetValue(const xiiVariant& value) override;
+
+  bool                    m_bUseTemporaryTransaction = false;
+  bool                    m_bTemporaryCommand        = false;
+  xiiInt8                 m_iNumComponents           = 0;
+  xiiEnum<xiiVariantType> m_OriginalType;
+  QHBoxLayout*            m_pLayout    = nullptr;
+  xiiQtDoubleSpinBox*     m_pWidget[4] = {};
+  QSlider*                m_pSlider    = nullptr;
+};
+
+/// *** SLIDER ***
+
+class XII_GUIFOUNDATION_DLL xiiQtImageSliderWidget : public QWidget
+{
+  Q_OBJECT
+public:
+  using ImageGeneratorFunc = QImage (*)(xiiUInt32 uiWidth, xiiUInt32 uiHeight, double fMinValue, double fMaxValue);
+
+  xiiQtImageSliderWidget(ImageGeneratorFunc generator, double fMinValue, double fMaxValue, QWidget* pParent);
+
+  static xiiMap<xiiString, ImageGeneratorFunc> s_ImageGenerators;
+
+  double GetValue() const { return m_fValue; }
+  void   SetValue(double fValue);
+
+Q_SIGNALS:
+  void valueChanged(double x);
+  void sliderPressed();
+  void sliderReleased();
+
+protected:
+  virtual void paintEvent(QPaintEvent*) override;
+  virtual void mouseMoveEvent(QMouseEvent*) override;
+  virtual void mousePressEvent(QMouseEvent*) override;
+  virtual void mouseReleaseEvent(QMouseEvent*) override;
+
+  void UpdateImage();
+
+  ImageGeneratorFunc m_Generator = nullptr;
+  QImage             m_Image;
+  double             m_fValue    = 0;
+  double             m_fMinValue = 0;
+  double             m_fMaxValue = 0;
+};
+
+class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorSliderWidget : public xiiQtStandardPropertyWidget
+{
+  Q_OBJECT
+
+public:
+  xiiQtPropertyEditorSliderWidget();
+  ~xiiQtPropertyEditorSliderWidget();
+
+private Q_SLOTS:
+  void SlotSliderValueChanged(double fValue);
+  void on_EditingFinished_triggered();
+  void onBeginTemporary();
+  void onEndTemporary();
+
+protected:
+  virtual void OnInit() override;
+  virtual void InternalSetValue(const xiiVariant& value) override;
+
+  bool                    m_bTemporaryCommand = false;
+  xiiEnum<xiiVariantType> m_OriginalType;
+  QHBoxLayout*            m_pLayout = nullptr;
+  xiiQtImageSliderWidget* m_pSlider = nullptr;
+
+  double m_fMinValue = 0;
+  double m_fMaxValue = 0;
+};
+
+/// *** FLOAT QUATERNION ***
+
+class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorFloatQuaternionWidget : public xiiQtStandardPropertyWidget
+{
+  Q_OBJECT
+
+public:
+  xiiQtPropertyEditorFloatQuaternionWidget();
 
 private Q_SLOTS:
   void on_EditingFinished_triggered();
@@ -171,6 +313,28 @@ protected:
   xiiQtDoubleSpinBox* m_pWidget[3];
 };
 
+/// *** DOUBLE QUATERNION ***
+
+class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorDoubleQuaternionWidget : public xiiQtStandardPropertyWidget
+{
+  Q_OBJECT
+
+public:
+  xiiQtPropertyEditorDoubleQuaternionWidget();
+
+private Q_SLOTS:
+  void on_EditingFinished_triggered();
+  void SlotValueChanged();
+
+protected:
+  virtual void OnInit() override;
+  virtual void InternalSetValue(const xiiVariant& value) override;
+
+protected:
+  bool                m_bTemporaryCommand;
+  QHBoxLayout*        m_pLayout;
+  xiiQtDoubleSpinBox* m_pWidget[3];
+};
 
 /// *** LINEEDIT ***
 
@@ -181,6 +345,8 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorLineEditWidget : public xiiQtStan
 public:
   xiiQtPropertyEditorLineEditWidget();
 
+  void SetReadOnly(bool bReadOnly = true) override;
+
 protected Q_SLOTS:
   void on_TextChanged_triggered(const QString& value);
   void on_TextFinished_triggered();
@@ -190,8 +356,8 @@ protected:
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  QHBoxLayout*            m_pLayout = nullptr;
-  QLineEdit*              m_pWidget = nullptr;
+  QHBoxLayout*            m_pLayout;
+  QLineEdit*              m_pWidget;
   xiiEnum<xiiVariantType> m_OriginalType;
 };
 
@@ -238,7 +404,8 @@ protected:
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  bool                    m_bExposeAlpha;
+  bool                    m_bExposeAlpha = false;
+  bool                    m_bIsHDR       = false;
   QHBoxLayout*            m_pLayout;
   xiiQtColorButtonWidget* m_pWidget;
   xiiVariant              m_OriginalValue;
@@ -256,15 +423,17 @@ public:
 
 private Q_SLOTS:
   void on_CurrentEnum_changed(int iEnum);
+  void on_ButtonClicked_changed(bool checked);
 
 protected:
   virtual void OnInit() override;
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  QHBoxLayout* m_pLayout;
-  QComboBox*   m_pWidget;
-  xiiInt64     m_iCurrentEnum;
+  QHBoxLayout* m_pLayout      = nullptr;
+  QComboBox*   m_pWidget      = nullptr;
+  xiiInt64     m_iCurrentEnum = 0;
+  QPushButton* m_pButtons[2]  = {nullptr, nullptr};
 };
 
 

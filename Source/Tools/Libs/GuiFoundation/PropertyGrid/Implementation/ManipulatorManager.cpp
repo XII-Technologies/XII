@@ -42,9 +42,7 @@ xiiManipulatorManager::~xiiManipulatorManager()
   xiiDocumentManager::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiManipulatorManager::DocumentManagerEventHandler, this));
 }
 
-const xiiManipulatorAttribute* xiiManipulatorManager::GetActiveManipulator(
-  const xiiDocument*                              pDoc,
-  const xiiHybridArray<xiiPropertySelection, 8>*& out_pSelection) const
+const xiiManipulatorAttribute* xiiManipulatorManager::GetActiveManipulator(const xiiDocument* pDoc, const xiiHybridArray<xiiPropertySelection, 8>*& out_pSelection) const
 {
   out_pSelection = nullptr;
   auto it        = m_ActiveManipulator.Find(pDoc);
@@ -88,7 +86,6 @@ void xiiManipulatorManager::InternalSetActiveManipulator(const xiiDocument* pDoc
 
   m_Events.Broadcast(e);
 }
-
 
 void xiiManipulatorManager::SetActiveManipulator(const xiiDocument* pDoc, const xiiManipulatorAttribute* pManipulator, const xiiHybridArray<xiiPropertySelection, 8>& selection)
 {

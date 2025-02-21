@@ -1,21 +1,23 @@
 #include <GuiFoundation/GuiFoundationPCH.h>
 
-#include <Foundation/Algorithm/HashingUtils.h>
-#include <Foundation/Configuration/Startup.h>
-#include <Foundation/Types/VarianceTypes.h>
-#include <Foundation/Types/VariantTypeRegistry.h>
+#include <GuiFoundation/PropertyGrid/Implementation/ExpressionPropertyWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/Implementation/TagSetPropertyWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/Implementation/VarianceWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/Widgets/CollapsibleGroupBox.moc.h>
+#include <GuiFoundation/Widgets/CurveEditData.h>
+
 #include <ToolsFoundation/Document/Document.h>
 
+#include <Foundation/Algorithm/HashingUtils.h>
+#include <Foundation/CodeUtils/Expression/ExpressionDeclarations.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Profiling/Profiling.h>
-#include <GuiFoundation/Widgets/CurveEditData.h>
-#include <QLayout>
-#include <QScrollArea>
+#include <Foundation/Types/VarianceTypes.h>
+#include <Foundation/Types/VariantTypeRegistry.h>
+
 
 xiiRttiMappedObjectFactory<xiiQtPropertyWidget> xiiQtPropertyGridWidget::s_Factory;
 
@@ -37,18 +39,22 @@ static xiiQtPropertyWidget* StandardTypeCreator(const xiiRTTI* pRtti)
       return new xiiQtPropertyEditorTimeWidget();
 
     case xiiVariant::Type::Float:
+      return new xiiQtPropertyEditorFloatSpinboxWidget(1);
     case xiiVariant::Type::Double:
       return new xiiQtPropertyEditorDoubleSpinboxWidget(1);
 
     case xiiVariant::Type::Vector2:
+      return new xiiQtPropertyEditorFloatSpinboxWidget(2);
     case xiiVariant::Type::Vector2d:
       return new xiiQtPropertyEditorDoubleSpinboxWidget(2);
 
     case xiiVariant::Type::Vector3:
+      return new xiiQtPropertyEditorFloatSpinboxWidget(3);
     case xiiVariant::Type::Vector3d:
       return new xiiQtPropertyEditorDoubleSpinboxWidget(3);
 
     case xiiVariant::Type::Vector4:
+      return new xiiQtPropertyEditorFloatSpinboxWidget(4);
     case xiiVariant::Type::Vector4d:
       return new xiiQtPropertyEditorDoubleSpinboxWidget(4);
 
@@ -62,59 +68,42 @@ static xiiQtPropertyWidget* StandardTypeCreator(const xiiRTTI* pRtti)
       return new xiiQtPropertyEditorIntSpinboxWidget(4, xiiMath::MinValue<xiiInt32>(), xiiMath::MaxValue<xiiInt32>());
 
     case xiiVariant::Type::Vector2U:
-      return new xiiQtPropertyEditorIntSpinboxWidget(2, 0LL, xiiMath::MaxValue<xiiUInt32>());
+      return new xiiQtPropertyEditorUIntSpinboxWidget(2, xiiMath::MinValue<xiiUInt32>(), xiiMath::MaxValue<xiiUInt32>());
 
     case xiiVariant::Type::Vector3U:
-      return new xiiQtPropertyEditorIntSpinboxWidget(3, 0LL, xiiMath::MaxValue<xiiUInt32>());
+      return new xiiQtPropertyEditorUIntSpinboxWidget(3, xiiMath::MinValue<xiiUInt32>(), xiiMath::MaxValue<xiiUInt32>());
 
     case xiiVariant::Type::Vector4U:
-      return new xiiQtPropertyEditorIntSpinboxWidget(4, 0LL, xiiMath::MaxValue<xiiUInt32>());
-
-    case xiiVariant::Type::Vector2I64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(2, xiiMath::MinValue<xiiInt64>(), xiiMath::MaxValue<xiiInt64>());
-
-    case xiiVariant::Type::Vector3I64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(3, xiiMath::MinValue<xiiInt64>(), xiiMath::MaxValue<xiiInt64>());
-
-    case xiiVariant::Type::Vector4I64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(4, xiiMath::MinValue<xiiInt64>(), xiiMath::MaxValue<xiiInt64>());
-
-    case xiiVariant::Type::Vector2U64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(2, 0LL, xiiMath::MaxValue<xiiUInt64>());
-
-    case xiiVariant::Type::Vector3U64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(3, 0LL, xiiMath::MaxValue<xiiUInt64>());
-
-    case xiiVariant::Type::Vector4U64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(4, 0LL, xiiMath::MaxValue<xiiUInt64>());
+      return new xiiQtPropertyEditorUIntSpinboxWidget(4, xiiMath::MinValue<xiiUInt32>(), xiiMath::MaxValue<xiiUInt32>());
 
     case xiiVariant::Type::Quaternion:
+      return new xiiQtPropertyEditorFloatQuaternionWidget();
     case xiiVariant::Type::Quaterniond:
-      return new xiiQtPropertyEditorQuaternionWidget();
+      return new xiiQtPropertyEditorDoubleQuaternionWidget();
 
     case xiiVariant::Type::Int8:
       return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiInt8>(), xiiMath::MaxValue<xiiInt8>());
 
     case xiiVariant::Type::UInt8:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0, xiiMath::MaxValue<xiiInt8>());
+      return new xiiQtPropertyEditorUIntSpinboxWidget(1, xiiMath::MinValue<xiiUInt8>(), xiiMath::MaxValue<xiiUInt8>());
 
     case xiiVariant::Type::Int16:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiUInt16>(), xiiMath::MaxValue<xiiUInt16>());
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiInt16>(), xiiMath::MaxValue<xiiInt16>());
 
     case xiiVariant::Type::UInt16:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0, xiiMath::MaxValue<xiiUInt16>());
+      return new xiiQtPropertyEditorUIntSpinboxWidget(1, xiiMath::MinValue<xiiUInt16>(), xiiMath::MaxValue<xiiUInt16>());
 
     case xiiVariant::Type::Int32:
       return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiInt32>(), xiiMath::MaxValue<xiiInt32>());
 
+    case xiiVariant::Type::UInt32:
+      return new xiiQtPropertyEditorUIntSpinboxWidget(1, xiiMath::MinValue<xiiUInt32>(), xiiMath::MaxValue<xiiUInt32>());
+
     case xiiVariant::Type::Int64:
       return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiInt64>(), xiiMath::MaxValue<xiiInt64>());
 
-    case xiiVariant::Type::UInt32:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0LL, xiiMath::MaxValue<xiiUInt32>());
-
     case xiiVariant::Type::UInt64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0LL, xiiMath::MaxValue<xiiUInt64>());
+      return new xiiQtPropertyEditorUIntSpinboxWidget(1, xiiMath::MinValue<xiiUInt64>(), xiiMath::MaxValue<xiiUInt64>());
 
     case xiiVariant::Type::String:
     case xiiVariant::Type::StringView:
@@ -126,8 +115,9 @@ static xiiQtPropertyWidget* StandardTypeCreator(const xiiRTTI* pRtti)
       return new xiiQtPropertyEditorColorWidget();
 
     case xiiVariant::Type::Angle:
+      return new xiiQtPropertyEditorFloatAngleWidget();
     case xiiVariant::Type::Angled:
-      return new xiiQtPropertyEditorAngleWidget();
+      return new xiiQtPropertyEditorDoubleAngleWidget();
 
     default:
       XII_REPORT_FAILURE("No default property widget available for type: {0}", pRtti->GetTypeName());
@@ -160,11 +150,17 @@ static xiiQtPropertyWidget* Curve1DTypeCreator(const xiiRTTI* pRtti)
   return new xiiQtPropertyEditorCurve1DWidget();
 }
 
+static xiiQtPropertyWidget* ExpressionTypeCreator(const xiiRTTI* pRtti)
+{
+  return new xiiQtPropertyEditorExpressionWidget();
+}
+
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-  "ToolsFoundation", "PropertyMetaState"
+    "ToolsFoundation",
+    "PropertyMetaState"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
@@ -173,8 +169,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<float>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<double>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec2>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec2d>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec3>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec3d>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec4>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec4d>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec2I32>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec3I32>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec4I32>(), StandardTypeCreator);
@@ -208,7 +207,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiAngled>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVariant>(), StandardTypeCreator);
 
-    // \todo GUIFoundation: Double precision variants for vectors and angles.
     // \todo GUIFoundation: xiiMat3, xiiMat4, xiiTransform, xiiUuid, xiiVariant
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiEnumBase>(), EnumCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiBitflagsBase>(), BitflagsCreator);
@@ -217,6 +215,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBaseFloat>(), VarianceTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBaseDouble>(), VarianceTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiSingleCurveData>(), Curve1DTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiExpressionWidgetAttribute>(), ExpressionTypeCreator);
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -225,8 +224,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<float>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<double>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec2>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec2d>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec3>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec3d>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec4>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec4d>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec2I32>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec3I32>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec4I32>());
@@ -265,6 +267,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBaseFloat>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVarianceTypeBaseDouble>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiSingleCurveData>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiExpressionWidgetAttribute>());
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -278,24 +281,28 @@ xiiRttiMappedObjectFactory<xiiQtPropertyWidget>& xiiQtPropertyGridWidget::GetFac
 xiiQtPropertyGridWidget::xiiQtPropertyGridWidget(QWidget* pParent, xiiDocument* pDocument, bool bBindToSelectionManager) :
   QWidget(pParent)
 {
+  setObjectName("xiiQtPropertyGridWidget");
+
   m_pDocument = nullptr;
 
   m_pScroll = new QScrollArea(this);
+  m_pScroll->setObjectName("QScrollArea1");
   m_pScroll->setContentsMargins(0, 0, 0, 0);
 
   m_pLayout = new QVBoxLayout(this);
+  m_pLayout->setObjectName("QVBoxLayout1");
   m_pLayout->setSpacing(0);
   m_pLayout->setContentsMargins(0, 0, 0, 0);
   setLayout(m_pLayout);
   m_pLayout->addWidget(m_pScroll);
 
   m_pContent = new QWidget(this);
+  m_pContent->setObjectName("MainQWidget");
   m_pScroll->setWidget(m_pContent);
   m_pScroll->setWidgetResizable(true);
-  m_pContent->setBackgroundRole(QPalette::ColorRole::Window);
-  m_pContent->setAutoFillBackground(true);
 
   m_pContentLayout = new QVBoxLayout(m_pContent);
+  m_pContentLayout->setObjectName("QVBoxLayout2");
   m_pContentLayout->setSpacing(1);
   m_pContentLayout->setContentsMargins(0, 0, 0, 0);
   m_pContent->setLayout(m_pContentLayout);
@@ -553,6 +560,10 @@ void xiiQtPropertyGridWidget::SelectionEventHandler(const xiiSelectionManagerEve
       SetSelection(m_pDocument->GetSelectionManager()->GetSelection());
     }
     break;
+
+    case xiiSelectionManagerEvent::Type::ChangedRuntimeOverrideSelection:
+      // ignore
+      break;
   }
 }
 

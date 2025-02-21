@@ -59,7 +59,9 @@ void xiiQtPropertyWidget::Init(xiiQtPropertyGridWidget* pGrid, xiiObjectAccessor
   XII_ASSERT_DEBUG(m_pGrid && m_pObjectAccessor && m_pType && m_pProp, "");
 
   if (pProp->GetAttributeByType<xiiReadOnlyAttribute>() != nullptr || pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
-    setEnabled(false);
+  {
+    SetReadOnly();
+  }
 
   OnInit();
 }
@@ -252,7 +254,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
           const xiiVariantArray& values = content.m_Value.Get<xiiVariantArray>();
           for (const xiiPropertySelection& sel : m_Items)
           {
-            if (m_pObjectAccessor->Clear(sel.m_pObject, m_pProp->GetPropertyName()).Failed())
+            if (m_pObjectAccessor->ClearByName(sel.m_pObject, m_pProp->GetPropertyName()).Failed())
             {
               m_pObjectAccessor->CancelTransaction();
               return;
@@ -287,20 +289,19 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
   // copy internal name
   {
     auto lambda = [this]() {
-      xiiStringBuilder tmp;
-      QClipboard*      clipboard = QApplication::clipboard();
-      QMimeData*       mimeData  = new QMimeData();
-      mimeData->setText(m_pProp->GetPropertyName().GetData(tmp));
+      QClipboard* clipboard = QApplication::clipboard();
+      QMimeData*  mimeData  = new QMimeData();
+      mimeData->setText(xiiMakeQString(m_pProp->GetPropertyName()));
       clipboard->setMimeData(mimeData);
 
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::MakeFromSeconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
+        xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::MakeFromSeconds(5));
     };
 
     QAction* pAction = m.addAction("Copy Internal Property Name:");
     connect(pAction, &QAction::triggered, this, lambda);
 
-    xiiStringBuilder tmp;
-    QAction*         pAction2 = m.addAction(m_pProp->GetPropertyName().GetData(tmp));
+    QAction* pAction2 = m.addAction(xiiMakeQString(m_pProp->GetPropertyName()));
     connect(pAction2, &QAction::triggered, this, lambda);
   }
 }
@@ -401,7 +402,7 @@ xiiVariant xiiQtPropertyWidget::GetCommonValue(const xiiHybridArray<xiiPropertyS
     {
       if (!value.IsValid())
       {
-        m_pObjectAccessor->GetValue(item.m_pObject, pProperty, value, item.m_Index).AssertSuccess();
+        m_pObjectAccessor->GetValue(item.m_pObject, pProperty, value, item.m_Index).IgnoreResult();
       }
       else
       {
@@ -427,6 +428,10 @@ void xiiQtPropertyWidget::PrepareToDie()
   DoPrepareToDie();
 }
 
+void xiiQtPropertyWidget::SetReadOnly(bool bReadOnly /*= true*/)
+{
+  setDisabled(bReadOnly);
+}
 
 void xiiQtPropertyWidget::OnCustomContextMenu(const QPoint& pt)
 {
@@ -452,14 +457,13 @@ void xiiQtPropertyWidget::PropertyChangedHandler(const xiiPropertyEvent& ed)
   if (m_bUndead)
     return;
 
-  xiiStringBuilder tmp;
 
   switch (ed.m_Type)
   {
     case xiiPropertyEvent::Type::SingleValueChanged:
     {
       xiiStringBuilder sTemp;
-      sTemp.SetFormat("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName().GetData(tmp)));
+      sTemp.SetFormat("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName()));
       m_pObjectAccessor->StartTransaction(sTemp);
 
       xiiStatus res;
@@ -482,7 +486,7 @@ void xiiQtPropertyWidget::PropertyChangedHandler(const xiiPropertyEvent& ed)
     case xiiPropertyEvent::Type::BeginTemporary:
     {
       xiiStringBuilder sTemp;
-      sTemp.SetFormat("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName().GetData(tmp)));
+      sTemp.SetFormat("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName()));
       m_pObjectAccessor->BeginTemporaryCommands(sTemp);
     }
     break;
@@ -533,12 +537,19 @@ xiiQtUnsupportedPropertyWidget::xiiQtUnsupportedPropertyWidget(xiiStringView sMe
 
 void xiiQtUnsupportedPropertyWidget::OnInit()
 {
-  xiiStringBuilder        tmp;
   xiiQtScopedBlockSignals bs(m_pWidget);
 
-  QString sMessage = QStringLiteral("Unsupported Type: ") % QString::fromUtf8(m_pProp->GetSpecificType()->GetTypeName().GetData(tmp));
+  QString sMessage;
   if (!m_sMessage.IsEmpty())
-    sMessage += QStringLiteral(" (") % QString::fromUtf8(m_sMessage, m_sMessage.GetElementCount()) % QStringLiteral(")");
+  {
+    sMessage = m_sMessage;
+  }
+  else
+  {
+    xiiStringBuilder tmp;
+    sMessage = QStringLiteral("Unsupported Type: ") % QString::fromUtf8(m_pProp->GetSpecificType()->GetTypeName().GetData(tmp));
+  }
+
   m_pWidget->setText(sMessage);
   m_pWidget->setToolTip(sMessage);
 }
@@ -637,7 +648,6 @@ void xiiQtPropertyPointerWidget::SetSelection(const xiiHybridArray<xiiPropertySe
     m_pTypeWidget = nullptr;
   }
 
-
   xiiHybridArray<xiiPropertySelection, 8> emptyItems;
   xiiHybridArray<xiiPropertySelection, 8> subItems;
   for (const auto& item : m_Items)
@@ -692,10 +702,10 @@ void xiiQtPropertyPointerWidget::DoPrepareToDie()
 
 void xiiQtPropertyPointerWidget::UpdateTitle(const xiiRTTI* pType /*= nullptr*/)
 {
-  xiiStringBuilder tmp;
-  xiiStringBuilder sb = xiiTranslate(m_pProp->GetPropertyName().GetData(tmp));
+  xiiStringBuilder sb = xiiTranslate(m_pProp->GetPropertyName());
   if (pType != nullptr)
   {
+    xiiStringBuilder tmp;
     sb.Append(": ", xiiTranslate(pType->GetTypeName().GetData(tmp)));
   }
   m_pGroup->SetTitle(sb);
@@ -865,7 +875,7 @@ void xiiQtEmbeddedClassPropertyWidget::FlushQueuedChanges()
 xiiQtPropertyTypeWidget::xiiQtPropertyTypeWidget(bool bAddCollapsibleGroup) :
   xiiQtPropertyWidget()
 {
-  m_pLayout = new QHBoxLayout(this);
+  m_pLayout = new QVBoxLayout(this);
   m_pLayout->setContentsMargins(0, 0, 0, 0);
   setLayout(m_pLayout);
   m_pGroup       = nullptr;
@@ -874,7 +884,7 @@ xiiQtPropertyTypeWidget::xiiQtPropertyTypeWidget(bool bAddCollapsibleGroup) :
   if (bAddCollapsibleGroup)
   {
     m_pGroup       = new xiiQtCollapsibleGroupBox(this);
-    m_pGroupLayout = new QHBoxLayout(nullptr);
+    m_pGroupLayout = new QVBoxLayout(nullptr);
     m_pGroupLayout->setSpacing(1);
     m_pGroupLayout->setContentsMargins(5, 0, 0, 0);
     m_pGroup->GetContent()->setLayout(m_pGroupLayout);
@@ -890,8 +900,7 @@ void xiiQtPropertyTypeWidget::OnInit()
 {
   if (m_pGroup)
   {
-    xiiStringBuilder tmp;
-    m_pGroup->SetTitle(xiiTranslate(m_pProp->GetPropertyName().GetData(tmp)));
+    m_pGroup->SetTitle(xiiTranslate(m_pProp->GetPropertyName()));
     m_pGrid->SetCollapseState(m_pGroup);
     connect(m_pGroup, &xiiQtGroupBoxBase::CollapseStateChanged, m_pGrid, &xiiQtPropertyGridWidget::OnCollapseStateChanged);
   }
@@ -903,7 +912,7 @@ void xiiQtPropertyTypeWidget::SetSelection(const xiiHybridArray<xiiPropertySelec
 
   xiiQtPropertyWidget::SetSelection(items);
 
-  QHBoxLayout* pLayout = m_pGroup != nullptr ? m_pGroupLayout : m_pLayout;
+  QVBoxLayout* pLayout = m_pGroup != nullptr ? m_pGroupLayout : m_pLayout;
   QWidget*     pOwner  = m_pGroup != nullptr ? m_pGroup->GetContent() : this;
   if (m_pTypeWidget)
   {
@@ -1383,7 +1392,7 @@ void xiiQtPropertyContainerWidget::UpdatePropertyMetaState()
     if (element.m_pWidget)
     {
       element.m_pWidget->setVisible(state != xiiPropertyUiState::Invisible);
-      element.m_pSubGroup->setEnabled(!bReadOnly && state != xiiPropertyUiState::Disabled);
+      element.m_pWidget->SetReadOnly(bReadOnly || state == xiiPropertyUiState::Disabled);
       element.m_pWidget->SetIsDefault(bIsDefault);
     }
   }
@@ -1656,9 +1665,7 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
       if (!url.isEmpty())
       {
         elem.m_pHelpButton->setVisible(true);
-        connect(elem.m_pHelpButton, &QToolButton::clicked, this, [=]() {
-          QDesktopServices::openUrl(QUrl(url));
-        });
+        connect(elem.m_pHelpButton, &QToolButton::clicked, this, [=]() { QDesktopServices::openUrl(QUrl(url)); });
       }
       else
       {
@@ -1732,6 +1739,7 @@ xiiQtVariantPropertyWidget::xiiQtVariantPropertyWidget()
   setLayout(m_pLayout);
 
   m_pTypeList = new QComboBox(this);
+  m_pTypeList->installEventFilter(this);
   m_pTypeList->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
   m_pLayout->addWidget(m_pTypeList);
 }
@@ -1772,8 +1780,11 @@ void xiiQtVariantPropertyWidget::InternalSetValue(const xiiVariant& value)
     if (pNewtSubType)
     {
       m_pWidget = xiiQtPropertyGridWidget::GetFactory().CreateObject(pNewtSubType);
+
       if (!m_pWidget)
-        m_pWidget = new xiiQtUnsupportedPropertyWidget("Unsupported type");
+      {
+        m_pWidget = new xiiQtUnsupportedPropertyWidget("<Unsupported Type>");
+      }
     }
     else if (!sameType)
     {
@@ -1781,8 +1792,9 @@ void xiiQtVariantPropertyWidget::InternalSetValue(const xiiVariant& value)
     }
     else
     {
-      m_pWidget = new xiiQtUnsupportedPropertyWidget("<Invalid>");
+      m_pWidget = new xiiQtUnsupportedPropertyWidget("<Invalid Type>");
     }
+
     m_pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     m_pWidget->setParent(this);
     m_pLayout->addWidget(m_pWidget);
