@@ -87,7 +87,7 @@ void xiiQtMenuActionMapView::CreateView()
 {
   ClearView();
 
-  auto pObject = m_pActionMap->GetRootObject();
+  auto pObject = m_pActionMap->BuildActionTree();
 
   AddDocumentObjectToMenu(m_Proxies, m_Context, m_pActionMap, this, pObject);
 }

@@ -19,7 +19,7 @@ xiiQtApplicationPanel::xiiQtApplicationPanel(xiiStringView sPanelName) :
 {
   xiiStringBuilder sPanel("AppPanel_", sPanelName);
 
-  setObjectName(xiiMakeQString(sPanel.GetData()));
+  setObjectName(xiiMakeQString(sPanel.GetView()));
   setWindowTitle(xiiMakeQString(xiiTranslate(sPanelName)));
 
   s_AllApplicationPanels.PushBack(this);

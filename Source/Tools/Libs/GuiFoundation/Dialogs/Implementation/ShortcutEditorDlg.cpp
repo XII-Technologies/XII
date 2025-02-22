@@ -81,7 +81,7 @@ xiiQtShortcutEditorDlg::xiiQtShortcutEditorDlg(QWidget* pParent) :
 
         sTemp.Set("Default: ", item->m_sDefaultShortcut.IsEmpty() ? "<none>" : item->m_sDefaultShortcut.GetData());
 
-        pItem->setToolTip(2, xiiMakeQString(sTemp));
+        pItem->setToolTip(2, xiiMakeQString(sTemp.GetView()));
       }
     }
 

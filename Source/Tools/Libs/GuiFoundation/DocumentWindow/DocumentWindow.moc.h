@@ -8,6 +8,7 @@
 #include <ToolsFoundation/Document/DocumentManager.h>
 
 #include <QMainWindow>
+#include <ads/DockManager.h>
 
 class xiiQtContainerWindow;
 class xiiDocument;
@@ -41,6 +42,8 @@ public:
   xiiQtDocumentWindow(xiiDocument* pDocument);
   xiiQtDocumentWindow(xiiStringView sUniqueName);
   virtual ~xiiQtDocumentWindow();
+
+  ads::CDockManager* m_pDockManager = nullptr;
 
   void EnsureVisible();
 
@@ -114,6 +117,7 @@ private:
 
   void SetVisibleInContainer(bool bVisible);
 
+  bool                  m_bWindowRestored              = false;
   bool                  m_bIsVisibleInContainer        = false;
   bool                  m_bRedrawIsTriggered           = false;
   bool                  m_bIsDrawingATM                = false;

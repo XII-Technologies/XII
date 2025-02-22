@@ -2,30 +2,22 @@
 
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/DockPanels/DocumentPanel.moc.h>
-#include <QCloseEvent>
-
-xiiDynamicArray<xiiQtDocumentPanel*> xiiQtDocumentPanel::s_AllDocumentPanels;
 
 xiiQtDocumentPanel::xiiQtDocumentPanel(QWidget* pParent, xiiDocument* pDocument) :
-  QDockWidget(pParent)
+  ads::CDockWidget("xiiQtDocumentPanel", pParent)
 {
   m_pDocument = pDocument;
-  s_AllDocumentPanels.PushBack(this);
 
-  setBackgroundRole(QPalette::ColorRole::Highlight);
+  setMinimumWidth(300);
+  setMinimumHeight(200);
 
-  setFeatures(DockWidgetFeature::DockWidgetFloatable | DockWidgetFeature::DockWidgetMovable);
+  setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetClosable, false);
+  setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetFloatable, true);
+  setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetMovable, true);
+  setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetFocusable, true);
 }
 
-xiiQtDocumentPanel::~xiiQtDocumentPanel()
-{
-  s_AllDocumentPanels.RemoveAndSwap(this);
-}
-
-void xiiQtDocumentPanel::closeEvent(QCloseEvent* e)
-{
-  e->ignore();
-}
+xiiQtDocumentPanel::~xiiQtDocumentPanel() = default;
 
 bool xiiQtDocumentPanel::event(QEvent* pEvent)
 {
@@ -35,5 +27,6 @@ bool xiiQtDocumentPanel::event(QEvent* pEvent)
     if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent, pEvent->type() == QEvent::ShortcutOverride))
       return true;
   }
-  return QDockWidget::event(pEvent);
+
+  return CDockWidget::event(pEvent);
 }

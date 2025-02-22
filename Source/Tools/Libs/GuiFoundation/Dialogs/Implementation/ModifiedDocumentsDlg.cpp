@@ -16,16 +16,16 @@ xiiQtModifiedDocumentsDlg::xiiQtModifiedDocumentsDlg(QWidget* pParent, const xii
 
   TableDocuments->setRowCount(m_ModifiedDocs.GetCount());
 
-  QStringList Headers;
-  Headers.append(" Type ");
-  Headers.append(" Document ");
-  Headers.append("");
+  QStringList headers;
+  headers.append(" Type ");
+  headers.append(" Document ");
+  headers.append("");
 
-  TableDocuments->setColumnCount(static_cast<xiiInt32>(Headers.size()));
+  TableDocuments->setColumnCount(static_cast<xiiInt32>(headers.size()));
 
   TableDocuments->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
   TableDocuments->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
-  TableDocuments->setHorizontalHeaderLabels(Headers);
+  TableDocuments->setHorizontalHeaderLabels(headers);
   TableDocuments->horizontalHeader()->show();
   TableDocuments->setSortingEnabled(true);
   TableDocuments->horizontalHeader()->setStretchLastSection(false);
