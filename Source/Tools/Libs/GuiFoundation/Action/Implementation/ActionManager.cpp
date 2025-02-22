@@ -137,9 +137,7 @@ xiiString xiiActionManager::FindActionCategory(xiiStringView sActionName)
 
 xiiResult xiiActionManager::ExecuteAction(xiiStringView sCategory, xiiStringView sActionName, const xiiActionContext& context, const xiiVariant& value /*= xiiVariant()*/)
 {
-  xiiString sCategory = sCategory;
-
-  if (sCategory == nullptr)
+  if (sCategory.IsEmpty())
   {
     sCategory = FindActionCategory(sActionName);
   }

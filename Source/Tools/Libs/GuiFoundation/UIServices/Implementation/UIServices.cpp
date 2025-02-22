@@ -192,8 +192,7 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, x
 
 const QImage& xiiQtUiServices::GetCachedImageResource(xiiStringView sIdentifier)
 {
-  const xiiString sIdentifier = sIdentifier;
-  auto&           map         = s_ImagesCache;
+  auto& map = s_ImagesCache;
 
   auto it = map.Find(sIdentifier);
 
@@ -207,8 +206,7 @@ const QImage& xiiQtUiServices::GetCachedImageResource(xiiStringView sIdentifier)
 
 const QPixmap& xiiQtUiServices::GetCachedPixmapResource(xiiStringView sIdentifier)
 {
-  const xiiString sIdentifier = sIdentifier;
-  auto&           map         = s_PixmapsCache;
+  auto& map = s_PixmapsCache;
 
   auto it = map.Find(sIdentifier);
 

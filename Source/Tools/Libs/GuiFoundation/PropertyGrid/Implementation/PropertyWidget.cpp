@@ -100,7 +100,7 @@ xiiQtPropertyEditorFloatSpinboxWidget::xiiQtPropertyEditorFloatSpinboxWidget(xii
 
     if (m_iNumComponents > 1)
     {
-      QLabel*  pLabel  = new QLabel(sLabels[c]);
+      QLabel*  pLabel  = new QLabel(xiiMakeQString(sLabels[c]));
       QPalette palette = pLabel->palette();
       palette.setColor(pLabel->foregroundRole(), QColor(labelColors[c].r, labelColors[c].g, labelColors[c].b));
       pLabel->setPalette(palette);
@@ -395,7 +395,7 @@ xiiQtPropertyEditorDoubleSpinboxWidget::xiiQtPropertyEditorDoubleSpinboxWidget(x
 
     if (m_iNumComponents > 1)
     {
-      QLabel*  pLabel  = new QLabel(sLabels[c]);
+      QLabel*  pLabel  = new QLabel(xiiMakeQString(sLabels[c]));
       QPalette palette = pLabel->palette();
       palette.setColor(pLabel->foregroundRole(), QColor(labelColors[c].r, labelColors[c].g, labelColors[c].b));
       pLabel->setPalette(palette);
