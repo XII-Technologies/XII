@@ -106,7 +106,7 @@ public:
     xiiMenuAction(context, sName, sIconPath)
   {
   }
-  virtual void GetEntries(xiiHybridArray<Item, 16>& out_entries) = 0;
+  virtual void GetEntries(xiiDynamicArray<Item>& out_entries) = 0;
 };
 
 ///
@@ -146,7 +146,7 @@ class XII_GUIFOUNDATION_DLL xiiEnumerationMenuAction : public xiiDynamicMenuActi
 public:
   xiiEnumerationMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath);
   void             InitEnumerationType(const xiiRTTI* pEnumerationType);
-  virtual void     GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
+  virtual void     GetEntries(xiiDynamicArray<Item>& out_entries) override;
   virtual xiiInt64 GetValue() const = 0;
 
 protected:

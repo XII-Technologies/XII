@@ -3,27 +3,27 @@
 #include <Foundation/Basics.h>
 #include <GuiFoundation/Action/Action.h>
 
-/// \brief Registers an xiiAction whose constructor takes no arguments.
+/// \brief Registers a xiiAction whose constructor takes no arguments.
 #define XII_REGISTER_ACTION_0(ActionName, Scope, CategoryName, ShortCut, ActionClass)                                    \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::Action, Scope, ActionName, CategoryName, ShortCut, \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName); }));
 
-/// \brief Registers an xiiAction whose constructor takes one argument.
+/// \brief Registers a xiiAction whose constructor takes one argument.
 #define XII_REGISTER_ACTION_1(ActionName, Scope, CategoryName, ShortCut, ActionClass, Param1)                            \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::Action, Scope, ActionName, CategoryName, ShortCut, \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName, Param1); }));
 
-/// \brief Registers an xiiAction whose constructor takes two arguments.
+/// \brief Registers a xiiAction whose constructor takes two arguments.
 #define XII_REGISTER_ACTION_2(ActionName, Scope, CategoryName, ShortCut, ActionClass, Param1, Param2)                    \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::Action, Scope, ActionName, CategoryName, ShortCut, \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName, Param1, Param2); }));
 
-/// \brief Registers an xiiDynamicMenuAction
+/// \brief Registers a xiiDynamicMenuAction
 #define XII_REGISTER_DYNAMIC_MENU(ActionName, ActionClass, IconPath)                                                     \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::Menu, xiiActionScope::Default, ActionName, "", "", \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName, IconPath); }));
 
-/// \brief Registers an xiiDynamicActionAndMenuAction.
+/// \brief Registers a xiiDynamicActionAndMenuAction.
 #define XII_REGISTER_ACTION_AND_DYNAMIC_MENU_1(ActionName, Scope, CategoryName, ShortCut, ActionClass, Param1)                  \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::ActionAndMenu, Scope, ActionName, CategoryName, ShortCut, \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName, Param1); }));
@@ -62,27 +62,27 @@ public:
   static xiiActionDescriptorHandle  RegisterAction(const xiiActionDescriptor& desc);
   static bool                       UnregisterAction(xiiActionDescriptorHandle& ref_hAction);
   static const xiiActionDescriptor* GetActionDescriptor(xiiActionDescriptorHandle hAction);
-  static xiiActionDescriptorHandle  GetActionHandle(const char* szCategory, const char* szActionName);
+  static xiiActionDescriptorHandle  GetActionHandle(xiiStringView sCategory, xiiStringView sActionName);
 
   /// \brief Searches all action categories for the given action name. Returns the category name in which the action name was found, or an empty
   /// string.
-  static xiiString FindActionCategory(const char* szActionName);
+  static xiiString FindActionCategory(xiiStringView sActionName);
 
   /// \brief Quick way to execute an action from code
   ///
   /// The use case is mostly for unit tests, which need to execute actions directly and without a link dependency on
   /// the code that registered the action.
   ///
-  /// \param szCategory The category of the action, ie. under which name the action appears in the Shortcut binding dialog.
+  /// \param sCategory The category of the action, ie. under which name the action appears in the Shortcut binding dialog.
   ///        For example "Scene", "Scene - Cameras", "Scene - Selection", "Assets" etc.
-  ///        This parameter may be nullptr in which case FindActionCategory(szActionName) is used to try to detect the category automatically.
-  /// \param szActionName The name (not mapped path) under which the action was registered.
+  ///        This parameter may be nullptr in which case FindActionCategory(sActionName) is used to try to detect the category automatically.
+  /// \param sActionName The name (not mapped path) under which the action was registered.
   ///        For example "Selection.Copy", "Prefabs.ConvertToEngine", "Scene.Camera.SnapObjectToCamera"
   /// \param context The context in which to execute the action. Depending on the xiiActionScope of the target action,
   ///        some members are optional. E.g. for document actions, only the m_pDocument member must be specified.
   /// \param value Optional value passed through to the xiiAction::Execute() call. Some actions use it, most don't.
   /// \return Returns failure in case the action could not be found.
-  static xiiResult ExecuteAction(const char* szCategory, const char* szActionName, const xiiActionContext& context, const xiiVariant& value = xiiVariant());
+  static xiiResult ExecuteAction(xiiStringView sCategory, xiiStringView sActionName, const xiiActionContext& context, const xiiVariant& value = xiiVariant());
 
   static void SaveShortcutAssignment();
   static void LoadShortcutAssignment();

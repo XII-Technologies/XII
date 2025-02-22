@@ -1075,7 +1075,7 @@ public:
 
 /// \brief Displays the value range as an image, allowing users to pick a value like on a slider.
 ///
-/// This attribute always has to be combined with an xiiClampValueAttribute to define the min and max value range.
+/// This attribute always has to be combined with a xiiClampValueAttribute to define the min and max value range.
 /// The constructor takes the name of an image generator. The generator is used to build the QImage used for the slider background.
 ///
 /// Image generators are registered through xiiQtImageSliderWidget::s_ImageGenerators. Search the codebase for that variable

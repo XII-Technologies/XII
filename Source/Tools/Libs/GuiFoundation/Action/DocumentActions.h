@@ -48,7 +48,7 @@ public:
     UpdatePrefabs,
     CopyAssetGuid,
   };
-  xiiDocumentAction(const xiiActionContext& context, const char* szName, ButtonType button);
+  xiiDocumentAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
   ~xiiDocumentAction();
 
   virtual void Execute(const xiiVariant& value) override;

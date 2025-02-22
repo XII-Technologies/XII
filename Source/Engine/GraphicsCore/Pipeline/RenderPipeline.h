@@ -131,7 +131,7 @@ private: // Member data
     xiiHybridArray<xiiRenderPipelinePassConnection*, 4> m_UsedBy;                     ///< All the connections that use this texture. Due to passthrough pins, this can be larger than 1.
     xiiUInt16                                           m_uiFirstUsageIdx;            ///< Used to decide when to acquire a temp texture.
     xiiUInt16                                           m_uiLastUsageIdx;             ///< Used to decide when to return a temp texture.
-    const xiiRenderPipelineNodePin*                     m_pTextureProvider = nullptr; ///< If set, this node and parent pass provide an external texture to the pipeline. This could be a render target from an xiiTargetPass or a history buffer that is preserved across frames. At the start of every frame the parent pass will be asked for the current value of the texture a this pin.
+    const xiiRenderPipelineNodePin*                     m_pTextureProvider = nullptr; ///< If set, this node and parent pass provide an external texture to the pipeline. This could be a render target from a xiiTargetPass or a history buffer that is preserved across frames. At the start of every frame the parent pass will be asked for the current value of the texture a this pin.
   };
   xiiDynamicArray<TextureUsageData> m_TextureUsage;                      ///< All unique textures used during the pipeline run.
   xiiDynamicArray<xiiUInt16>        m_TextureUsageIdxSortedByFirstUsage; ///< Indices map into m_TextureUsage

@@ -5,7 +5,7 @@
 
 /// \brief Allows to access data from a previous frame. Always comes in a pair with a xiiHistoryTargetPass.
 /// To preserve textures across the next frame you need to create this node to define the type of texture and initial state. This node's output pin will give access to the previous frame's content.
-/// Next, create an xiiHistoryTargetPass. It's input pin exposes the same texture as provided by the source node but allows you to write to by connecting the input pin to another pass that produces the image that you want to carry to the next frame. To connect an xiiHistoryTargetPass to its counterpart you need to set it's "SourcePassName" property to the name of the xiiHistorySourcePass you want to match.
+/// Next, create a xiiHistoryTargetPass. It's input pin exposes the same texture as provided by the source node but allows you to write to by connecting the input pin to another pass that produces the image that you want to carry to the next frame. To connect a xiiHistoryTargetPass to its counterpart you need to set it's "SourcePassName" property to the name of the xiiHistorySourcePass you want to match.
 /// As both nodes expose the same texture, special care has to be taken that it's not used as input and output of another pass at the same time. In those cases, add a xiiCopyTexturePass to break up invalid state.
 class XII_GRAPHICSCORE_DLL xiiHistorySourcePass : public xiiRenderPipelinePass
 {

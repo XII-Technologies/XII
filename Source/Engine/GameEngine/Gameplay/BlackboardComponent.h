@@ -39,7 +39,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief This base component represents an xiiBlackboard, which can be used to share state between multiple components and objects.
+/// \brief This base component represents a xiiBlackboard, which can be used to share state between multiple components and objects.
 ///
 /// The derived implementations may either create their own blackboards or reference other blackboards.
 class XII_GAMEENGINE_DLL xiiBlackboardComponent : public xiiComponent

@@ -96,8 +96,8 @@ void xiiEditActions::MapViewContextMenuActions(xiiStringView sMapping)
 // xiiEditAction
 ////////////////////////////////////////////////////////////////////////
 
-xiiEditAction::xiiEditAction(const xiiActionContext& context, const char* szName, ButtonType button) :
-  xiiButtonAction(context, szName, false, "")
+xiiEditAction::xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
+  xiiButtonAction(context, sName, false, "")
 {
   m_ButtonType = button;
 
@@ -110,7 +110,7 @@ xiiEditAction::xiiEditAction(const xiiActionContext& context, const char* szName
       SetIconPath(":/GuiFoundation/Icons/Paste.svg");
       break;
     case xiiEditAction::ButtonType::PasteAsChild:
-      SetIconPath(":/GuiFoundation/Icons/Paste.svg"); /// \todo Icon
+      SetIconPath(":/GuiFoundation/Icons/Paste.svg"); /// TODO Icon
       break;
     case xiiEditAction::ButtonType::PasteAtOriginalLocation:
       SetIconPath(":/GuiFoundation/Icons/Paste.svg");
@@ -198,12 +198,21 @@ void xiiEditAction::Execute(const xiiVariant& value)
       QByteArray ba          = mimedata->data(MimeTypes[iFormat].GetData());
       cmd.m_sGraphTextFormat = ba.data();
 
-      if (m_ButtonType == ButtonType::PasteAsChild)
+      const xiiDocumentObject* pNewParent = m_Context.m_pDocument->GetSelectionManager()->GetCurrentObject();
+      if (pNewParent && m_ButtonType != ButtonType::PasteAsChild)
       {
-        if (!m_Context.m_pDocument->GetSelectionManager()->IsSelectionEmpty())
-          cmd.m_Parent = m_Context.m_pDocument->GetSelectionManager()->GetSelection().PeekBack()->GetGuid();
+        // default behavior copied from Unity: paste as a sibling of the currently selected item
+        // this way if you just select and object and copy/paste it, the new object has the same parent (the clone becomes a sibling of the original)
+        // but you can also select any other object as the reference, and clone as a sibling to that one
+        pNewParent = pNewParent->GetParent();
       }
-      else if (m_ButtonType == ButtonType::PasteAtOriginalLocation)
+
+      if (pNewParent)
+      {
+        cmd.m_Parent = pNewParent->GetGuid();
+      }
+
+      if (m_ButtonType == ButtonType::PasteAtOriginalLocation)
       {
         cmd.m_bAllowPickedPosition = false;
       }

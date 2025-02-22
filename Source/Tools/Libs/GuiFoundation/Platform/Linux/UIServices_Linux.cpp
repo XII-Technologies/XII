@@ -13,7 +13,7 @@ void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
   {
     parentDir = sPath;
     parentDir = parentDir.GetFileDirectory();
-    sPath    = parentDir.GetView();
+    sPath     = parentDir.GetView();
   }
   args << QDir::toNativeSeparators(xiiMakeQString(sPath));
 

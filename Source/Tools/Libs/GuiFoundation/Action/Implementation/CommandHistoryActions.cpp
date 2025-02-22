@@ -36,8 +36,8 @@ void xiiCommandHistoryActions::MapActions(xiiStringView sMapping, xiiStringView 
   pMap->MapAction(s_hRedo, sTargetMenu, "CmdHistoryCategory", 2.0f);
 }
 
-xiiCommandHistoryAction::xiiCommandHistoryAction(const xiiActionContext& context, const char* szName, ButtonType button) :
-  xiiDynamicActionAndMenuAction(context, szName, "")
+xiiCommandHistoryAction::xiiCommandHistoryAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
+  xiiDynamicActionAndMenuAction(context, sName, "")
 {
   m_ButtonType = button;
 
@@ -61,7 +61,7 @@ xiiCommandHistoryAction::~xiiCommandHistoryAction()
   m_Context.m_pDocument->GetCommandHistory()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiCommandHistoryAction::CommandHistoryEventHandler, this));
 }
 
-void xiiCommandHistoryAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
+void xiiCommandHistoryAction::GetEntries(xiiDynamicArray<Item>& out_entries)
 {
   out_entries.Clear();
 

@@ -30,25 +30,19 @@ XII_END_SUBSYSTEM_DECLARATION;
 // xiiActionMapManager public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiResult xiiActionMapManager::RegisterActionMap(xiiStringView sMapping)
+void xiiActionMapManager::RegisterActionMap(xiiStringView sMapping, xiiStringView sParentMapping)
 {
   auto it = s_Mappings.Find(sMapping);
-  if (it.IsValid())
-    return XII_FAILURE;
-
-  s_Mappings.Insert(sMapping, XII_DEFAULT_NEW(xiiActionMap));
-  return XII_SUCCESS;
+  XII_ASSERT_ALWAYS(!it.IsValid(), "Mapping '{}' already exists", sMapping);
+  s_Mappings.Insert(sMapping, XII_DEFAULT_NEW(xiiActionMap, sParentMapping));
 }
 
-xiiResult xiiActionMapManager::UnregisterActionMap(xiiStringView sMapping)
+void xiiActionMapManager::UnregisterActionMap(xiiStringView sMapping)
 {
   auto it = s_Mappings.Find(sMapping);
-  if (!it.IsValid())
-    return XII_FAILURE;
-
+  XII_ASSERT_ALWAYS(it.IsValid(), "Mapping '{}' not found", sMapping);
   XII_DEFAULT_DELETE(it.Value());
   s_Mappings.Remove(it);
-  return XII_SUCCESS;
 }
 
 xiiActionMap* xiiActionMapManager::GetActionMap(xiiStringView sMapping)
@@ -67,18 +61,16 @@ xiiActionMap* xiiActionMapManager::GetActionMap(xiiStringView sMapping)
 
 void xiiActionMapManager::Startup()
 {
-  xiiActionMapManager::RegisterActionMap("DocumentWindowTabMenu").IgnoreResult();
+  xiiActionMapManager::RegisterActionMap("DocumentWindowTabMenu");
   xiiDocumentActions::MapMenuActions("DocumentWindowTabMenu", "");
 }
 
 void xiiActionMapManager::Shutdown()
 {
-  xiiActionMapManager::UnregisterActionMap("DocumentWindowTabMenu").IgnoreResult();
+  xiiActionMapManager::UnregisterActionMap("DocumentWindowTabMenu");
 
   while (!s_Mappings.IsEmpty())
   {
-    xiiResult res = UnregisterActionMap(s_Mappings.GetIterator().Key());
-    XII_ASSERT_DEV(res == XII_SUCCESS, "Failed to call UnregisterActionMap successfully!");
-    res.IgnoreResult();
+    UnregisterActionMap(s_Mappings.GetIterator().Key());
   }
 }

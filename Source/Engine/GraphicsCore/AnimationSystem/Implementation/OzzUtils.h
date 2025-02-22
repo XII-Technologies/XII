@@ -30,7 +30,7 @@ public:
   xiiDefaultMemoryStreamStorage m_Storage;
 };
 
-/// \brief Implements the ozz::io::Stream interface for reading. The data has to be present in an xiiOzzArchiveData object.
+/// \brief Implements the ozz::io::Stream interface for reading. The data has to be present in a xiiOzzArchiveData object.
 ///
 /// The class is implemented inline and not DLL exported because ozz is only available as a static library.
 class XII_GRAPHICSCORE_DLL xiiOzzStreamReader : public ozz::io::Stream
@@ -54,7 +54,7 @@ private:
   xiiMemoryStreamReader m_Reader;
 };
 
-/// \brief Implements the ozz::io::Stream interface for writing. The data is gathered in an xiiOzzArchiveData object.
+/// \brief Implements the ozz::io::Stream interface for writing. The data is gathered in a xiiOzzArchiveData object.
 ///
 /// The class is implemented inline and not DLL exported because ozz is only available as a static library.
 class XII_GRAPHICSCORE_DLL xiiOzzStreamWriter : public ozz::io::Stream

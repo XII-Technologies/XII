@@ -101,7 +101,7 @@ class XII_GUIFOUNDATION_DLL xiiActionMap
 {
 public:
   using TreeNode = xiiTreeNode<xiiActionMapDescriptor>;
-  xiiActionMap();
+  xiiActionMap(xiiStringView sParentMapping);
   ~xiiActionMap();
 
   /// \brief Adds the given action to into the category or menu identified by sPath.
@@ -132,22 +132,35 @@ public:
   /// Afterwards sSubPath is appended and the result is forwarded to MapAction() as a single path string.
   void MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, xiiStringView sSubPath, float fOrder);
 
-  /// \brief Removes the named action from the action map. The same rules for 'global' names apply as for MapAction().
-  xiiResult UnmapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath);
+  /// \brief Hides an action from the action map. The same rules for 'global' names apply as for MapAction().
+  /// If the target action is in this mapping, prefer not calling MapAction in the first place. Use this for actions to be removed that might be in a parent mapping and thus can't be modified directly.
+  void HideAction(xiiActionDescriptorHandle hAction, xiiStringView sPath);
+
+  /// \brief Builds an action tree out of all mapped actions of this and any parent mappings.
+  const TreeNode*               BuildActionTree();
+  const xiiActionMapDescriptor* GetDescriptor(const xiiTreeNode<xiiActionMapDescriptor>* pObject) const;
+
+private:
+  struct TempActionMapDescriptor
+  {
+    xiiActionDescriptorHandle m_hAction;
+    xiiString                 m_sPath;
+    xiiString                 m_sSubPath;
+    float                     m_fOrder;
+  };
 
   /// \brief Searches for an action with the given name and returns the full path to it.
   ///
   /// This is mainly meant to be used with (unique) names to categories (or menus).
   xiiResult SearchPathForAction(xiiStringView sUniqueName, xiiStringBuilder& out_sPath) const;
 
-  const TreeNode* GetRootObject() const { return &m_Root; }
+  void      MapActionInternal(xiiActionDescriptorHandle hAction, xiiStringView sPath, float fOrder);
+  void      MapActionInternal(xiiActionDescriptorHandle hAction, xiiStringView sPath, xiiStringView sSubPath, float fOrder);
+  xiiResult UnmapActionInternal(xiiActionDescriptorHandle hAction, xiiStringView sPath);
 
-  const xiiActionMapDescriptor* GetDescriptor(const xiiTreeNode<xiiActionMapDescriptor>* pObject) const;
-
-private:
-  xiiUuid   MapAction(const xiiActionMapDescriptor& desc);
-  xiiResult UnmapAction(const xiiActionMapDescriptor& desc);
-  xiiResult UnmapAction(const xiiUuid& guid);
+  xiiUuid   MapActionInternal(const xiiActionMapDescriptor& desc);
+  xiiResult UnmapActionInternal(const xiiActionMapDescriptor& desc);
+  xiiResult UnmapActionInternal(const xiiUuid& guid);
 
   const xiiActionMapDescriptor* GetDescriptor(const xiiUuid& guid) const;
 
@@ -155,6 +168,13 @@ private:
   bool                                       FindObjectPathByName(const xiiTreeNode<xiiActionMapDescriptor>* pObject, xiiStringView sName, xiiStringBuilder& out_sPath) const;
   const xiiTreeNode<xiiActionMapDescriptor>* GetChildByName(const xiiTreeNode<xiiActionMapDescriptor>* pObject, xiiStringView sName) const;
 
-  TreeNode                                              m_Root;
-  xiiMap<xiiUuid, xiiTreeNode<xiiActionMapDescriptor>*> m_Descriptors;
+private:
+  xiiString                                m_sParentMapping;
+  xiiDynamicArray<TempActionMapDescriptor> m_TempActions;
+  xiiDynamicArray<TempActionMapDescriptor> m_TempHiddenActions;
+  xiiUInt32                                m_uiEditCounter = 0;
+
+  mutable xiiUInt32                                             m_uiTransitiveEditCounterOfRoot = 0;
+  mutable TreeNode                                              m_Root;
+  mutable xiiMap<xiiUuid, xiiTreeNode<xiiActionMapDescriptor>*> m_Descriptors;
 };

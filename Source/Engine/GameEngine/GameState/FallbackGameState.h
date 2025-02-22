@@ -9,7 +9,7 @@ class xiiCameraComponent;
 
 using xiiCollectionResourceHandle = xiiTypedResourceHandle<class xiiCollectionResource>;
 
-/// \brief xiiFallbackGameState is an xiiGameState that can handle existing worlds when no other game state is available.
+/// \brief xiiFallbackGameState is a xiiGameState that can handle existing worlds when no other game state is available.
 ///
 /// This game state returns a priority of 'Fallback' in DeterminePriority() and therefore only takes over when
 /// no other game state is available.

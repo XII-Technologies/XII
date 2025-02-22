@@ -71,7 +71,6 @@ void xiiDocumentActions::MapMenuActions(xiiStringView sMapping, xiiStringView sT
   pMap->MapAction(s_hCloseAll, sTargetMenu, 9.0f);
   pMap->MapAction(s_hCloseAllButThis, sTargetMenu, 10.0f);
   pMap->MapAction(s_hOpenContainingFolder, sTargetMenu, 11.0f);
-
   pMap->MapAction(s_hCopyAssetGuid, sTargetMenu, 12.0f);
 }
 
@@ -100,8 +99,8 @@ void xiiDocumentActions::MapToolsActions(xiiStringView sMapping)
 // xiiDocumentAction
 ////////////////////////////////////////////////////////////////////////
 
-xiiDocumentAction::xiiDocumentAction(const xiiActionContext& context, const char* szName, ButtonType button) :
-  xiiButtonAction(context, szName, false, "")
+xiiDocumentAction::xiiDocumentAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
+  xiiButtonAction(context, sName, false, {})
 {
   m_ButtonType = button;
 
@@ -111,19 +110,19 @@ xiiDocumentAction::xiiDocumentAction(const xiiActionContext& context, const char
       SetIconPath(":/GuiFoundation/Icons/Save.svg");
       break;
     case xiiDocumentAction::ButtonType::SaveAs:
-      SetIconPath("");
+      SetIconPath({});
       break;
     case xiiDocumentAction::ButtonType::SaveAll:
       SetIconPath(":/GuiFoundation/Icons/SaveAll.svg");
       break;
     case xiiDocumentAction::ButtonType::Close:
-      SetIconPath("");
+      SetIconPath({});
       break;
     case xiiDocumentAction::ButtonType::CloseAll:
-      SetIconPath("");
+      SetIconPath({});
       break;
     case xiiDocumentAction::ButtonType::CloseAllButThis:
-      SetIconPath("");
+      SetIconPath({});
       break;
     case xiiDocumentAction::ButtonType::OpenContainingFolder:
       SetIconPath(":/GuiFoundation/Icons/OpenFolder.svg");
@@ -185,9 +184,6 @@ void xiiDocumentAction::DocumentEventHandler(const xiiDocumentEvent& e)
 
 void xiiDocumentAction::Execute(const xiiVariant& value)
 {
-  if (!m_Context.m_pDocument)
-    return;
-
   switch (m_ButtonType)
   {
     case xiiDocumentAction::ButtonType::Save:
@@ -206,7 +202,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
         xiiStringBuilder sAllFilters;
         sAllFilters.Append(desc->m_sDocumentTypeName, " (*.", desc->m_sFileExtension, ")");
         QString   sSelectedExt;
-        xiiString sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Document"), xiiMakeQString(m_Context.m_pDocument->GetDocumentPath()), xiiMakeQString(sAllFilters), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks).toUtf8().data();
+        xiiString sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Document"), xiiMakeQString(m_Context.m_pDocument->GetDocumentPath()), xiiMakeQString(sAllFilters.GetView()), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks).toUtf8().data();
 
         if (!sFile.IsEmpty())
         {
@@ -244,10 +240,6 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
       xiiQtDocumentWindow* pWindow = xiiQtDocumentWindow::FindWindowByDocument(m_Context.m_pDocument);
 
       if (!pWindow->CanCloseWindow())
-        return;
-
-      // Prevent closing the document root window.
-      if (pWindow->GetUniqueName().Compare("Settings") == 0)
         return;
 
       pWindow->CloseDocumentWindow();

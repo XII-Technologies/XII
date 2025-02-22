@@ -31,11 +31,11 @@ public:
     Redo,
   };
 
-  xiiCommandHistoryAction(const xiiActionContext& context, const char* szName, ButtonType button);
+  xiiCommandHistoryAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
   ~xiiCommandHistoryAction();
 
   virtual void Execute(const xiiVariant& value) override;
-  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
+  virtual void GetEntries(xiiDynamicArray<Item>& out_entries) override;
 
 private:
   void UpdateState();

@@ -79,7 +79,7 @@ XII_WARNING_POP()
 
 /// \brief A marker that can be placed in CPP files to enforce that the StaticLinkUtil doesn't skip this file.
 ///
-/// Needed when a CPP file contains a global variable that's used for registering something (for example an xiiEnumerable),
+/// Needed when a CPP file contains a global variable that's used for registering something (for example a xiiEnumerable),
 /// and there is no other indication for the StaticLinkUtil to consider the file.
 #  define XII_STATICLINK_FORCE
 
@@ -141,7 +141,7 @@ struct XII_FOUNDATION_DLL xiiPluginRegister
 
 /// \brief A marker that can be placed in CPP files to enforce that the StaticLinkUtil doesn't skip this file.
 ///
-/// Needed when a CPP file contains a global variable that's used for registering something (for example an xiiEnumerable),
+/// Needed when a CPP file contains a global variable that's used for registering something (for example a xiiEnumerable),
 /// and there is no other indication for the StaticLinkUtil to consider the file.
 #  define XII_STATICLINK_FORCE
 

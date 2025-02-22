@@ -22,7 +22,7 @@ using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPi
 
 /// \brief xiiGameState is the base class to build custom game logic upon. It works closely together with xiiGameApplication.
 ///
-/// In a typical game there is always exactly one instance of an xiiGameState derived class active.
+/// In a typical game there is always exactly one instance of a xiiGameState derived class active.
 /// The game state handles custom game logic, which must be handled outside xiiWorld, custom components and scripts.
 ///
 /// For example a custom implementation of xiiGameState may handle how to show a menu, when to switch to

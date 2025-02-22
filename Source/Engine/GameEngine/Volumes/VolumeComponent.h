@@ -12,8 +12,8 @@ using xiiBlackboardTemplateResourceHandle = xiiTypedResourceHandle<class xiiBlac
 
 /// \brief A volume component can hold generic values either from a blackboard template or set directly on the component.
 ///
-/// The values can be sampled with an xiiVolumeSampler and then used for things like e.g. post-processing, reverb etc.
-/// They can also be used to represent knowledge in a scene, like e.g. smell or threat, and can be detected by an xiiSensorComponent and then processed by AI.
+/// The values can be sampled with a xiiVolumeSampler and then used for things like e.g. post-processing, reverb etc.
+/// They can also be used to represent knowledge in a scene, like e.g. smell or threat, and can be detected by a xiiSensorComponent and then processed by AI.
 class XII_GAMEENGINE_DLL xiiVolumeComponent : public xiiComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiVolumeComponent, xiiComponent);
