@@ -4,19 +4,29 @@
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptTypeDeduction.h>
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptVariable.moc.h>
 
+#include <GuiFoundation/UIServices/DynamicStringEnum.h>
+#include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
+
 #include <Core/Messages/EventMessage.h>
 #include <Core/Scripting/ScriptAttributes.h>
 #include <Core/Scripting/ScriptCoroutine.h>
+#include <Foundation/CodeUtils/Expression/ExpressionDeclarations.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/SimdMath/SimdRandom.h>
-#include <GuiFoundation/UIServices/DynamicStringEnum.h>
 
 namespace
 {
-  constexpr const char* szPluginName           = "EditorPluginVisualScript";
-  constexpr const char* szEventHandlerCategory = "Add Event Handler/";
-  constexpr const char* szCoroutinesCategory   = "Coroutines";
-  constexpr const char* szEnumsCategory        = "Enums";
+  constexpr const char*  szPluginName            = "EditorPluginVisualScript";
+  static xiiHashedString sEventHandlerCategory   = xiiMakeHashedString("Add Event Handler/");
+  static xiiHashedString sCoroutinesCategory     = xiiMakeHashedString("Coroutines");
+  static xiiHashedString sPropertiesCategory     = xiiMakeHashedString("Properties");
+  static xiiHashedString sVariablesCategory      = xiiMakeHashedString("Variables");
+  static xiiHashedString sLogicCategory          = xiiMakeHashedString("Logic");
+  static xiiHashedString sMathCategory           = xiiMakeHashedString("Math");
+  static xiiHashedString sTypeConversionCategory = xiiMakeHashedString("Type Conversion");
+  static xiiHashedString sArrayCategory          = xiiMakeHashedString("Array");
+  static xiiHashedString sMessagesCategory       = xiiMakeHashedString("Messages");
+  static xiiHashedString sEnumsCategory          = xiiMakeHashedString("Enums");
 
   const xiiRTTI* FindTopMostBaseClass(const xiiRTTI* pRtti)
   {
@@ -58,9 +68,21 @@ namespace
       propDesc.m_sType    = pRtti->GetTypeName();
       propDesc.m_Flags    = xiiPropertyFlags::IsEnum;
     }
+    else if (pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags))
+    {
+      propDesc.m_Category = xiiPropertyCategory::Member;
+      propDesc.m_sType    = pRtti->GetTypeName();
+      propDesc.m_Flags    = xiiPropertyFlags::Bitflags;
+    }
     else
     {
-      if (scriptDataType == xiiVisualScriptDataType::Variant)
+      if (scriptDataType == xiiVisualScriptDataType::Color)
+      {
+        propDesc.m_Category = xiiPropertyCategory::Member;
+        propDesc.m_sType    = pRtti->GetTypeName();
+        propDesc.m_Attributes.PushBack(XII_DEFAULT_NEW(xiiExposeColorAlphaAttribute));
+      }
+      else if (scriptDataType == xiiVisualScriptDataType::Variant)
       {
         propDesc.m_Category = xiiPropertyCategory::Member;
         propDesc.m_sType    = xiiGetStaticRTTI<xiiVariant>()->GetTypeName();
@@ -149,7 +171,7 @@ static_assert(XII_ARRAY_SIZE(s_scriptDataTypeToPinColor) == xiiVisualScriptDataT
 // static
 xiiColor xiiVisualScriptNodeRegistry::PinDesc::GetColorForScriptDataType(xiiVisualScriptDataType::Enum dataType)
 {
-  if (dataType == xiiVisualScriptDataType::EnumValue)
+  if (dataType == xiiVisualScriptDataType::EnumValue || dataType == xiiVisualScriptDataType::BitflagValue)
   {
     return xiiColorScheme::DarkUI(xiiColorScheme::Teal);
   }
@@ -170,7 +192,7 @@ xiiColor xiiVisualScriptNodeRegistry::PinDesc::GetColor() const
     return GetColorForScriptDataType(m_ScriptDataType);
   }
 
-  if (m_ScriptDataType == xiiVisualScriptDataType::EnumValue)
+  if (m_ScriptDataType == xiiVisualScriptDataType::EnumValue || m_ScriptDataType == xiiVisualScriptDataType::BitflagValue)
   {
     return xiiColorScheme::DarkUI(xiiColorScheme::Teal);
   }
@@ -211,7 +233,7 @@ void xiiVisualScriptNodeRegistry::NodeDesc::AddOutputExecutionPin(xiiStringView 
   m_bImplicitExecution = false;
 }
 
-void AddDataPin(xiiVisualScriptNodeRegistry::NodeDesc& inout_nodeDesc, xiiStringView sName, const xiiRTTI* pDataType, xiiVisualScriptDataType::Enum scriptDataType, bool bRequired, xiiHashedString sDynamicPinProperty, xiiVisualScriptNodeRegistry::PinDesc::DeductTypeFunc deductTypeFunc, xiiSmallArray<xiiVisualScriptNodeRegistry::PinDesc, 4>& inout_pins)
+void AddDataPin(xiiVisualScriptNodeRegistry::NodeDesc& inout_nodeDesc, xiiStringView sName, const xiiRTTI* pDataType, xiiVisualScriptDataType::Enum scriptDataType, bool bRequired, xiiHashedString sDynamicPinProperty, xiiVisualScriptNodeRegistry::PinDesc::DeductTypeFunc deductTypeFunc, bool bReplaceWithArray, xiiSmallArray<xiiVisualScriptNodeRegistry::PinDesc, 4>& inout_pins)
 {
   if ((scriptDataType == xiiVisualScriptDataType::AnyPointer || scriptDataType == xiiVisualScriptDataType::Any) && deductTypeFunc == nullptr)
   {
@@ -225,18 +247,19 @@ void AddDataPin(xiiVisualScriptNodeRegistry::NodeDesc& inout_nodeDesc, xiiString
   pin.m_pDataType           = pDataType;
   pin.m_ScriptDataType      = scriptDataType;
   pin.m_bRequired           = bRequired;
+  pin.m_bReplaceWithArray   = bReplaceWithArray;
 
   inout_nodeDesc.m_bHasDynamicPins |= (sDynamicPinProperty.IsEmpty() == false);
 }
 
-void xiiVisualScriptNodeRegistry::NodeDesc::AddInputDataPin(xiiStringView sName, const xiiRTTI* pDataType, xiiVisualScriptDataType::Enum scriptDataType, bool bRequired, const xiiHashedString& sDynamicPinProperty /*= xiiHashedString()*/, PinDesc::DeductTypeFunc deductTypeFunc /*= nullptr*/)
+void xiiVisualScriptNodeRegistry::NodeDesc::AddInputDataPin(xiiStringView sName, const xiiRTTI* pDataType, xiiVisualScriptDataType::Enum scriptDataType, bool bRequired, const xiiHashedString& sDynamicPinProperty /*= xiiHashedString()*/, PinDesc::DeductTypeFunc deductTypeFunc /*= nullptr*/, bool bReplaceWithArray /*= false*/)
 {
-  AddDataPin(*this, sName, pDataType, scriptDataType, bRequired, sDynamicPinProperty, deductTypeFunc, m_InputPins);
+  AddDataPin(*this, sName, pDataType, scriptDataType, bRequired, sDynamicPinProperty, deductTypeFunc, bReplaceWithArray, m_InputPins);
 }
 
 void xiiVisualScriptNodeRegistry::NodeDesc::AddOutputDataPin(xiiStringView sName, const xiiRTTI* pDataType, xiiVisualScriptDataType::Enum scriptDataType, const xiiHashedString& sDynamicPinProperty /*= xiiHashedString()*/, PinDesc::DeductTypeFunc deductTypeFunc /*= nullptr*/)
 {
-  AddDataPin(*this, sName, pDataType, scriptDataType, false, sDynamicPinProperty, deductTypeFunc, m_OutputPins);
+  AddDataPin(*this, sName, pDataType, scriptDataType, false, sDynamicPinProperty, deductTypeFunc, false, m_OutputPins);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -290,22 +313,19 @@ void xiiVisualScriptNodeRegistry::UpdateNodeTypes()
     m_bBuiltinTypesCreated = true;
   }
 
-  auto& componentTypesDynEnum    = xiiDynamicStringEnum::CreateDynamicEnum("ComponentTypes");
   auto& scriptBaseClassesDynEnum = xiiDynamicStringEnum::CreateDynamicEnum("ScriptBaseClasses");
 
   xiiRTTI::ForEachType([this](const xiiRTTI* pRtti) { UpdateNodeType(pRtti); });
 }
 
-void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti)
+void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti, bool bForceExpose /*= false*/)
 {
+  static xiiHashedString sType     = xiiMakeHashedString("Type");
+  static xiiHashedString sProperty = xiiMakeHashedString("Property");
+  static xiiHashedString sValue    = xiiMakeHashedString("Value");
+
   if (pRtti->GetAttributeByType<xiiHiddenAttribute>() != nullptr || pRtti->GetAttributeByType<xiiExcludeFromScript>() != nullptr)
     return;
-
-  if (pRtti->IsDerivedFrom<xiiComponent>())
-  {
-    auto& componentTypesDynEnum = xiiDynamicStringEnum::GetDynamicEnum("ComponentTypes");
-    componentTypesDynEnum.AddValidValue(pRtti->GetTypeName(), true);
-  }
 
   if (pRtti->IsDerivedFrom<xiiScriptCoroutine>())
   {
@@ -319,8 +339,26 @@ void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti)
   {
     // expose reflected functions and properties to visual scripts
     {
-      bool bExposeToVisualScript  = false;
+      // All components should be exposed to visual scripts, furthermore all classes that have script-able functions are also exposed
+      bool bExposeToVisualScript  = pRtti->IsDerivedFrom<xiiComponent>() || bForceExpose;
       bool bHasBaseClassFunctions = false;
+
+      xiiStringBuilder sCategory;
+      {
+        xiiStringView  sTypeName  = GetTypeName(pRtti);
+        const xiiRTTI* pBaseClass = FindTopMostBaseClass(pRtti);
+        if (pBaseClass != pRtti)
+        {
+          sCategory.Set(StripTypeName(pBaseClass->GetTypeName()), "/", sTypeName);
+        }
+        else
+        {
+          sCategory = sTypeName;
+        }
+      }
+
+      xiiHashedString sCategoryHashed;
+      sCategoryHashed.Assign(sCategory);
 
       for (const xiiAbstractFunctionProperty* pFuncProp : pRtti->GetFunctions())
       {
@@ -336,13 +374,54 @@ void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti)
           bHasBaseClassFunctions = true;
         }
 
-        CreateFunctionCallNodeType(pRtti, pFuncProp, pScriptableFunctionAttribute, bIsBaseClassFunction);
+        CreateFunctionCallNodeType(pRtti, bIsBaseClassFunction ? sEventHandlerCategory : sCategoryHashed, pFuncProp, pScriptableFunctionAttribute, bIsBaseClassFunction);
       }
 
       if (bExposeToVisualScript)
       {
+        xiiStringBuilder sPropertyNodeTypeName;
+
         for (const xiiAbstractProperty* pProp : pRtti->GetProperties())
         {
+          if (pProp->GetCategory() != xiiPropertyCategory::Member)
+            continue;
+
+          const xiiRTTI* pPropRtti = pProp->GetSpecificType();
+          if (pPropRtti->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum))
+          {
+            CreateEnumNodeTypes(pPropRtti);
+          }
+
+          xiiUInt32 uiStart = m_PropertyValues.GetCount();
+          m_PropertyValues.PushBack({sType, pRtti->GetTypeName()});
+          m_PropertyValues.PushBack({sProperty, pProp->GetPropertyName()});
+          m_PropertyValues.PushBack({sValue, xiiReflectionUtils::GetDefaultValue(pProp)});
+
+          // Setter
+          {
+            sPropertyNodeTypeName.Set("Set", pProp->GetPropertyName());
+            m_PropertyNodeTypeNames.PushBack(sPropertyNodeTypeName);
+
+            auto& nodeTemplate                   = m_NodeCreationTemplates.ExpandAndGetRef();
+            nodeTemplate.m_pType                 = m_pSetPropertyType;
+            nodeTemplate.m_sTypeName             = m_PropertyNodeTypeNames.PeekBack();
+            nodeTemplate.m_sCategory             = sCategoryHashed;
+            nodeTemplate.m_uiPropertyValuesStart = uiStart;
+            nodeTemplate.m_uiPropertyValuesCount = 3;
+          }
+
+          // Getter
+          {
+            sPropertyNodeTypeName.Set("Get", pProp->GetPropertyName());
+            m_PropertyNodeTypeNames.PushBack(sPropertyNodeTypeName);
+
+            auto& nodeTemplate                   = m_NodeCreationTemplates.ExpandAndGetRef();
+            nodeTemplate.m_pType                 = m_pGetPropertyType;
+            nodeTemplate.m_sTypeName             = m_PropertyNodeTypeNames.PeekBack();
+            nodeTemplate.m_sCategory             = sCategoryHashed;
+            nodeTemplate.m_uiPropertyValuesStart = uiStart;
+            nodeTemplate.m_uiPropertyValuesCount = 2;
+          }
         }
       }
 
@@ -380,7 +459,7 @@ xiiVisualScriptDataType::Enum xiiVisualScriptNodeRegistry::GetScriptDataType(con
   if (pProp->GetCategory() == xiiPropertyCategory::Member)
   {
     xiiVisualScriptDataType::Enum result = xiiVisualScriptDataType::Invalid;
-    GetScriptDataType(pProp->GetSpecificType(), result).IgnoreResult();
+    GetScriptDataType(pProp->GetSpecificType(), result, "Member", pProp->GetPropertyName()).IgnoreResult();
     return result;
   }
   else if (pProp->GetCategory() == xiiPropertyCategory::Array)
@@ -439,10 +518,11 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
   const xiiColorGammaUB variantColor    = PinDesc::GetColorForScriptDataType(xiiVisualScriptDataType::Variant);
   const xiiColorGammaUB coroutineColor  = PinDesc::GetColorForScriptDataType(xiiVisualScriptDataType::Coroutine);
 
+  xiiReflectedTypeDescriptor typeDesc;
+
   // GetReflectedProperty
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "GetProperty", "Properties", logicColor);
+    FillDesc(typeDesc, "GetProperty", logicColor);
 
     AddInputProperty(typeDesc, "Type", xiiGetStaticRTTI<xiiString>(), xiiVisualScriptDataType::String);
     AddInputProperty(typeDesc, "Property", xiiGetStaticRTTI<xiiString>(), xiiVisualScriptDataType::String);
@@ -456,13 +536,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputDataPin("Object", nullptr, xiiVisualScriptDataType::AnyPointer, true, xiiHashedString(), &xiiVisualScriptTypeDeduction::DeductFromTypeProperty);
     nodeDesc.AddOutputDataPin("Value", nullptr, xiiVisualScriptDataType::Any);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    m_pGetPropertyType = RegisterNodeType(typeDesc, std::move(nodeDesc), sPropertiesCategory);
   }
 
   // SetReflectedProperty
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "SetProperty", "Properties", logicColor);
+    FillDesc(typeDesc, "SetProperty", logicColor);
 
     AddInputProperty(typeDesc, "Type", xiiGetStaticRTTI<xiiString>(), xiiVisualScriptDataType::String);
     AddInputProperty(typeDesc, "Property", xiiGetStaticRTTI<xiiString>(), xiiVisualScriptDataType::String);
@@ -478,13 +557,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputDataPin("Object", nullptr, xiiVisualScriptDataType::AnyPointer, true, xiiHashedString(), &xiiVisualScriptTypeDeduction::DeductFromTypeProperty);
     AddInputDataPin_Any(typeDesc, nodeDesc, "Value", false, true);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    m_pSetPropertyType = RegisterNodeType(typeDesc, std::move(nodeDesc), sPropertiesCategory);
   }
 
   // Builtin_GetVariable
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_GetVariable", "Variables", logicColor);
+    FillDesc(typeDesc, "Builtin_GetVariable", logicColor);
 
     AddInputProperty(typeDesc, "Name", xiiGetStaticRTTI<xiiString>(), xiiVisualScriptDataType::String);
 
@@ -496,13 +574,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.m_DeductTypeFunc = &xiiVisualScriptTypeDeduction::DeductFromVariableNameProperty;
     nodeDesc.AddOutputDataPin("Value", nullptr, xiiVisualScriptDataType::Any);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    m_pGetVariableType = RegisterNodeType(typeDesc, std::move(nodeDesc), sVariablesCategory);
   }
 
   // Builtin_SetVariable
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_SetVariable", "Variables", logicColor);
+    FillDesc(typeDesc, "Builtin_SetVariable", logicColor);
 
     AddInputProperty(typeDesc, "Name", xiiGetStaticRTTI<xiiString>(), xiiVisualScriptDataType::String);
 
@@ -517,7 +594,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddInputDataPin_Any(typeDesc, nodeDesc, "Value", false, true);
     nodeDesc.AddOutputDataPin("Value", nullptr, xiiVisualScriptDataType::Any);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    m_pSetVariableType = RegisterNodeType(typeDesc, std::move(nodeDesc), sVariablesCategory);
   }
 
   // Builtin_IncVariable, Builtin_DecVariable
@@ -536,8 +613,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
 
     for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(nodeTypes); ++i)
     {
-      xiiReflectedTypeDescriptor typeDesc;
-      FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(nodeTypes[i]), "Variables", logicColor);
+      FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(nodeTypes[i]), logicColor);
 
       AddInputProperty(typeDesc, "Name", xiiGetStaticRTTI<xiiString>(), xiiVisualScriptDataType::String);
 
@@ -551,14 +627,28 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
       nodeDesc.AddOutputExecutionPin("");
       nodeDesc.AddOutputDataPin("Value", nullptr, xiiVisualScriptDataType::Any);
 
-      m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+      RegisterNodeType(typeDesc, std::move(nodeDesc), sVariablesCategory);
     }
+  }
+
+  // Builtin_TempVariable
+  {
+    FillDesc(typeDesc, "Builtin_TempVariable", logicColor);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type           = xiiVisualScriptNodeDescription::Type::Builtin_TempVariable;
+    nodeDesc.m_DeductTypeFunc = &xiiVisualScriptTypeDeduction::DeductFromAllInputPins;
+    nodeDesc.AddInputExecutionPin("");
+    nodeDesc.AddOutputExecutionPin("");
+    AddInputDataPin_Any(typeDesc, nodeDesc, "Value", false, true);
+    nodeDesc.AddOutputDataPin("Value", nullptr, xiiVisualScriptDataType::Any);
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sVariablesCategory);
   }
 
   // Builtin_Branch
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_Branch", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_Branch", logicColor);
 
     NodeDesc nodeDesc;
     nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Branch;
@@ -568,7 +658,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
 
     AddInputDataPin<bool>(typeDesc, nodeDesc, "Condition");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_Switch
@@ -595,8 +685,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     {
       const xiiRTTI* pValueType = xiiVisualScriptDataType::GetRtti(switchDataTypes[i]);
 
-      xiiReflectedTypeDescriptor typeDesc;
-      FillDesc(typeDesc, szSwitchTypeNames[i], "Logic", logicColor);
+      FillDesc(typeDesc, szSwitchTypeNames[i], logicColor);
 
       {
         auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
@@ -623,14 +712,13 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
 
       nodeDesc.AddInputDataPin("Value", pValueType, switchDataTypes[i], true);
 
-      m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+      RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
     }
   }
 
   // Builtin_WhileLoop
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_WhileLoop", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_WhileLoop", logicColor);
 
     NodeDesc nodeDesc;
     nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_WhileLoop;
@@ -640,13 +728,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
 
     AddInputDataPin<bool>(typeDesc, nodeDesc, "Condition");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_ForLoop
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_ForLoop", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_ForLoop", logicColor);
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "ForLoop [{FirstIndex}..{LastIndex}]");
     typeDesc.m_Attributes.PushBack(pAttr);
@@ -661,13 +748,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddOutputDataPin<int>(nodeDesc, "Index");
     nodeDesc.AddOutputExecutionPin("Completed");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_ForEachLoop
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_ForEachLoop", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_ForEachLoop", logicColor);
 
     NodeDesc nodeDesc;
     nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_ForEachLoop;
@@ -679,13 +765,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddOutputDataPin<int>(nodeDesc, "Index");
     nodeDesc.AddOutputExecutionPin("Completed");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_ReverseForEachLoop
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_ReverseForEachLoop", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_ReverseForEachLoop", logicColor);
 
     NodeDesc nodeDesc;
     nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_ReverseForEachLoop;
@@ -697,25 +782,23 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddOutputDataPin<int>(nodeDesc, "Index");
     nodeDesc.AddOutputExecutionPin("Completed");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_Break
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_Break", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_Break", logicColor);
 
     NodeDesc nodeDesc;
     nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Break;
     nodeDesc.AddInputExecutionPin("");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_And
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_And", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_And", logicColor);
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "{A} AND {B}");
     typeDesc.m_Attributes.PushBack(pAttr);
@@ -727,13 +810,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddInputDataPin<bool>(typeDesc, nodeDesc, "B");
     AddOutputDataPin<bool>(nodeDesc, "");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_Or
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_Or", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_Or", logicColor);
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "{A} OR {B}");
     typeDesc.m_Attributes.PushBack(pAttr);
@@ -745,13 +827,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddInputDataPin<bool>(typeDesc, nodeDesc, "B");
     AddOutputDataPin<bool>(nodeDesc, "");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_Not
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_Not", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_Not", logicColor);
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "NOT {A}");
     typeDesc.m_Attributes.PushBack(pAttr);
@@ -762,13 +843,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddInputDataPin<bool>(typeDesc, nodeDesc, "A");
     AddOutputDataPin<bool>(nodeDesc, "");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_Compare
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_Compare", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_Compare", logicColor);
 
     AddInputProperty(typeDesc, "Operator", xiiGetStaticRTTI<xiiComparisonOperator>(), xiiVisualScriptDataType::Int64);
 
@@ -783,13 +863,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddInputDataPin_Any(typeDesc, nodeDesc, "B", false, true);
     AddOutputDataPin<bool>(nodeDesc, "");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_CompareExec
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_CompareExec", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_CompareExec", logicColor);
 
     AddInputProperty(typeDesc, "Operator", xiiGetStaticRTTI<xiiComparisonOperator>(), xiiVisualScriptDataType::Int64);
 
@@ -806,13 +885,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddInputDataPin_Any(typeDesc, nodeDesc, "A", false, true);
     AddInputDataPin_Any(typeDesc, nodeDesc, "B", false, true);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_IsValid
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_IsValid", "Logic", logicColor);
+    FillDesc(typeDesc, "Builtin_IsValid", logicColor);
 
     NodeDesc nodeDesc;
     nodeDesc.m_Type           = xiiVisualScriptNodeDescription::Type::Builtin_IsValid;
@@ -821,7 +899,26 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddInputDataPin_Any(typeDesc, nodeDesc, "", true);
     AddOutputDataPin<bool>(nodeDesc, "");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
+  }
+
+  // Builtin_Select
+  {
+    FillDesc(typeDesc, "Builtin_Select", logicColor);
+
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "{Condition} ? {A} : {B}");
+    typeDesc.m_Attributes.PushBack(pAttr);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type           = xiiVisualScriptNodeDescription::Type::Builtin_Select;
+    nodeDesc.m_DeductTypeFunc = &xiiVisualScriptTypeDeduction::DeductFromAllInputPins;
+
+    AddInputDataPin<bool>(typeDesc, nodeDesc, "Condition");
+    AddInputDataPin_Any(typeDesc, nodeDesc, "A", false, true);
+    AddInputDataPin_Any(typeDesc, nodeDesc, "B", false, true);
+    nodeDesc.AddOutputDataPin("", nullptr, xiiVisualScriptDataType::Any);
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sLogicCategory);
   }
 
   // Builtin_Add, Builtin_Sub, Builtin_Mul, Builtin_Div
@@ -844,8 +941,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
 
     for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(mathNodeTypes); ++i)
     {
-      xiiReflectedTypeDescriptor typeDesc;
-      FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(mathNodeTypes[i]), "Math", mathColor);
+      FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(mathNodeTypes[i]), mathColor);
 
       auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, szMathNodeTitles[i]);
       typeDesc.m_Attributes.PushBack(pAttr);
@@ -858,36 +954,84 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
       AddInputDataPin_Any(typeDesc, nodeDesc, "B", false, true);
       nodeDesc.AddOutputDataPin("", nullptr, xiiVisualScriptDataType::Any);
 
-      m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+      RegisterNodeType(typeDesc, std::move(nodeDesc), sMathCategory);
     }
+  }
+
+  // Builtin_Expression
+  {
+    FillDesc(typeDesc, "Builtin_Expression", mathColor);
+
+    {
+      auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
+      propDesc.m_Category = xiiPropertyCategory::Member;
+      propDesc.m_sName    = "Expression";
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiString>()->GetTypeName();
+      propDesc.m_Flags    = xiiPropertyFlags::StandardType;
+
+      auto pExpressionWidgetAttr = XII_DEFAULT_NEW(xiiExpressionWidgetAttribute, "Inputs", "Outputs");
+      propDesc.m_Attributes.PushBack(pExpressionWidgetAttr);
+    }
+
+    {
+      auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
+      propDesc.m_Category = xiiPropertyCategory::Array;
+      propDesc.m_sName    = "Inputs";
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiVisualScriptExpressionVariable>()->GetTypeName();
+      propDesc.m_Flags    = xiiPropertyFlags::Class;
+
+      auto pMaxSizeAttr = XII_DEFAULT_NEW(xiiMaxArraySizeAttribute, 16);
+      propDesc.m_Attributes.PushBack(pMaxSizeAttr);
+    }
+
+    {
+      auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
+      propDesc.m_Category = xiiPropertyCategory::Array;
+      propDesc.m_sName    = "Outputs";
+      propDesc.m_sType    = xiiGetStaticRTTI<xiiVisualScriptExpressionVariable>()->GetTypeName();
+      propDesc.m_Flags    = xiiPropertyFlags::Class;
+
+      auto pMaxSizeAttr = XII_DEFAULT_NEW(xiiMaxArraySizeAttribute, 16);
+      propDesc.m_Attributes.PushBack(pMaxSizeAttr);
+    }
+
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "Expression::{Expression}");
+    typeDesc.m_Attributes.PushBack(pAttr);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type           = xiiVisualScriptNodeDescription::Type::Builtin_Expression;
+    nodeDesc.m_DeductTypeFunc = &xiiVisualScriptTypeDeduction::DeductDummy;
+
+    nodeDesc.AddInputDataPin("Input", nullptr, xiiVisualScriptDataType::Any, false, xiiMakeHashedString("Inputs"), &xiiVisualScriptTypeDeduction::DeductFromExpressionInput);
+    nodeDesc.AddOutputDataPin("Output", nullptr, xiiVisualScriptDataType::Any, xiiMakeHashedString("Outputs"), &xiiVisualScriptTypeDeduction::DeductFromExpressionOutput);
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sMathCategory);
   }
 
   // Builtin_ToBool, Builtin_ToByte, Builtin_ToInt, Builtin_ToInt64, Builtin_ToFloat, Builtin_ToDouble, Builtin_ToString, Builtin_ToVariant,
   {
     struct ConversionNodeDesc
     {
-      const char*                   m_szCategory;
       xiiColorGammaUB               m_Color;
       xiiVisualScriptDataType::Enum m_DataType;
     };
 
     ConversionNodeDesc conversionNodeDescs[] = {
-      {"Type Conversion", logicColor, xiiVisualScriptDataType::Bool},
-      {"Type Conversion", mathColor, xiiVisualScriptDataType::Byte},
-      {"Type Conversion", mathColor, xiiVisualScriptDataType::Int},
-      {"Type Conversion", mathColor, xiiVisualScriptDataType::Int64},
-      {"Type Conversion", mathColor, xiiVisualScriptDataType::Float},
-      {"Type Conversion", mathColor, xiiVisualScriptDataType::Double},
-      {"Type Conversion", stringColor, xiiVisualScriptDataType::String},
-      {"Type Conversion", variantColor, xiiVisualScriptDataType::Variant},
+      {logicColor, xiiVisualScriptDataType::Bool},
+      {mathColor, xiiVisualScriptDataType::Byte},
+      {mathColor, xiiVisualScriptDataType::Int},
+      {mathColor, xiiVisualScriptDataType::Int64},
+      {mathColor, xiiVisualScriptDataType::Float},
+      {mathColor, xiiVisualScriptDataType::Double},
+      {stringColor, xiiVisualScriptDataType::String},
+      {variantColor, xiiVisualScriptDataType::Variant},
     };
 
     for (auto& conversionNodeDesc : conversionNodeDescs)
     {
       auto nodeType = xiiVisualScriptNodeDescription::Type::GetConversionType(conversionNodeDesc.m_DataType);
 
-      xiiReflectedTypeDescriptor typeDesc;
-      FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(nodeType), conversionNodeDesc.m_szCategory, conversionNodeDesc.m_Color);
+      FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(nodeType), conversionNodeDesc.m_Color);
 
       NodeDesc nodeDesc;
       nodeDesc.m_Type           = nodeType;
@@ -896,14 +1040,13 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
       AddInputDataPin_Any(typeDesc, nodeDesc, "", true);
       nodeDesc.AddOutputDataPin("", xiiVisualScriptDataType::GetRtti(conversionNodeDesc.m_DataType), conversionNodeDesc.m_DataType);
 
-      m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+      RegisterNodeType(typeDesc, std::move(nodeDesc), sTypeConversionCategory);
     }
   }
 
-  // Builtin_String_Format,
+  // Builtin_String_Format
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_String_Format", "String", stringColor);
+    FillDesc(typeDesc, "Builtin_String_Format", stringColor);
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "String::Format {Text}");
     typeDesc.m_Attributes.PushBack(pAttr);
@@ -916,13 +1059,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputDataPin("Params", xiiGetStaticRTTI<xiiVariant>(), xiiVisualScriptDataType::Variant, false, xiiMakeHashedString("Params"));
     AddOutputDataPin<xiiString>(nodeDesc, "");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), xiiMakeHashedString("String"));
   }
 
   // Builtin_Variant_ConvertTo
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_Variant_ConvertTo", "Type Conversion", variantColor);
+    FillDesc(typeDesc, "Builtin_Variant_ConvertTo", variantColor);
 
     {
       auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
@@ -948,13 +1090,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputDataPin("Variant", xiiGetStaticRTTI<xiiVariant>(), xiiVisualScriptDataType::Variant, true);
     nodeDesc.AddOutputDataPin("Result", nullptr, xiiVisualScriptDataType::Any);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sTypeConversionCategory);
   }
 
   // Builtin_MakeArray
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_MakeArray", "Array", variantColor);
+    FillDesc(typeDesc, "Builtin_MakeArray", variantColor);
 
     xiiHashedString sElements = xiiMakeHashedString("Elements");
     AddInputProperty(typeDesc, sElements, xiiGetStaticRTTI<xiiVariant>(), xiiVisualScriptDataType::Array);
@@ -967,13 +1108,190 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputDataPin(sElements, xiiGetStaticRTTI<xiiVariant>(), xiiVisualScriptDataType::Variant, false, sElements);
     nodeDesc.AddOutputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_GetElement
+  {
+    FillDesc(typeDesc, "Builtin_Array_GetElement", variantColor);
+
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "Array::GetElement[{Index}]");
+    typeDesc.m_Attributes.PushBack(pAttr);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_GetElement;
+
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddInputDataPin<int>(typeDesc, nodeDesc, "Index");
+    AddOutputDataPin<xiiVariant>(nodeDesc, "Element");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_SetElement
+  {
+    FillDesc(typeDesc, "Builtin_Array_SetElement", variantColor);
+
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "Array::SetElement[{Index}]");
+    typeDesc.m_Attributes.PushBack(pAttr);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_SetElement;
+
+    nodeDesc.AddInputExecutionPin("");
+    nodeDesc.AddOutputExecutionPin("");
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddInputDataPin<int>(typeDesc, nodeDesc, "Index");
+    AddInputDataPin<xiiVariant>(typeDesc, nodeDesc, "Element");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_GetCount
+  {
+    FillDesc(typeDesc, "Builtin_Array::GetCount", variantColor);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_GetCount;
+
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddOutputDataPin<int>(nodeDesc, "");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_IsEmpty
+  {
+    FillDesc(typeDesc, "Builtin_Array::IsEmpty", variantColor);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_IsEmpty;
+
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddOutputDataPin<bool>(nodeDesc, "");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_Clear
+  {
+    FillDesc(typeDesc, "Builtin_Array::Clear", variantColor);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_Clear;
+
+    nodeDesc.AddInputExecutionPin("");
+    nodeDesc.AddOutputExecutionPin("");
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_Contains
+  {
+    FillDesc(typeDesc, "Builtin_Array_Contains", variantColor);
+
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "Array::Contains {Element}");
+    typeDesc.m_Attributes.PushBack(pAttr);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_Contains;
+
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddInputDataPin<xiiVariant>(typeDesc, nodeDesc, "Element");
+    AddOutputDataPin<bool>(nodeDesc, "");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_IndexOf
+  {
+    FillDesc(typeDesc, "Builtin_Array_IndexOf", variantColor);
+
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "Array::IndexOf {Element}");
+    typeDesc.m_Attributes.PushBack(pAttr);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_IndexOf;
+
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddInputDataPin<xiiVariant>(typeDesc, nodeDesc, "Element");
+    AddInputDataPin<int>(typeDesc, nodeDesc, "StartIndex");
+    AddOutputDataPin<int>(nodeDesc, "");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_Insert
+  {
+    FillDesc(typeDesc, "Builtin_Array::Insert", variantColor);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_Insert;
+
+    nodeDesc.AddInputExecutionPin("");
+    nodeDesc.AddOutputExecutionPin("");
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddInputDataPin<xiiVariant>(typeDesc, nodeDesc, "Element");
+    AddInputDataPin<int>(typeDesc, nodeDesc, "Index");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_PushBack
+  {
+    FillDesc(typeDesc, "Builtin_Array::PushBack", variantColor);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_PushBack;
+
+    nodeDesc.AddInputExecutionPin("");
+    nodeDesc.AddOutputExecutionPin("");
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddInputDataPin<xiiVariant>(typeDesc, nodeDesc, "Element");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_Remove
+  {
+    FillDesc(typeDesc, "Builtin_Array_Remove", variantColor);
+
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "Array::Remove {Element}");
+    typeDesc.m_Attributes.PushBack(pAttr);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_Remove;
+
+    nodeDesc.AddInputExecutionPin("");
+    nodeDesc.AddOutputExecutionPin("");
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddInputDataPin<xiiVariant>(typeDesc, nodeDesc, "Element");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
+  // Builtin_Array_RemoveAt
+  {
+    FillDesc(typeDesc, "Builtin_Array_RemoveAt", variantColor);
+
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "Array::RemoveAt {Index}");
+    typeDesc.m_Attributes.PushBack(pAttr);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_RemoveAt;
+
+    nodeDesc.AddInputExecutionPin("");
+    nodeDesc.AddOutputExecutionPin("");
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    AddInputDataPin<int>(typeDesc, nodeDesc, "Index");
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
   }
 
   // Builtin_TryGetComponentOfBaseType
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_TryGetComponentOfBaseType", "GameObject", gameObjectColor);
+    FillDesc(typeDesc, "Builtin_TryGetComponentOfBaseType", gameObjectColor);
 
     {
       auto& propDesc      = typeDesc.m_Properties.ExpandAndGetRef();
@@ -982,11 +1300,11 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
       propDesc.m_sType    = xiiGetStaticRTTI<xiiString>()->GetTypeName();
       propDesc.m_Flags    = xiiPropertyFlags::StandardType;
 
-      auto pAttr = XII_DEFAULT_NEW(xiiDynamicStringEnumAttribute, "ComponentTypes");
+      auto pAttr = XII_DEFAULT_NEW(xiiRttiTypeStringAttribute, "xiiComponent");
       propDesc.m_Attributes.PushBack(pAttr);
     }
 
-    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "GameObject::TryGetComponentOfBaseType {TypeName}");
+    auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "GameObject::TryGet {TypeName}");
     typeDesc.m_Attributes.PushBack(pAttr);
 
     NodeDesc nodeDesc;
@@ -995,13 +1313,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputDataPin("GameObject", xiiGetStaticRTTI<xiiGameObject>(), xiiVisualScriptDataType::GameObject, false);
     AddOutputDataPin<xiiComponent>(nodeDesc, "Component");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), xiiMakeHashedString("GameObject"));
   }
 
   // Builtin_StartCoroutine
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_StartCoroutine", szCoroutinesCategory, coroutineColor);
+    FillDesc(typeDesc, "Builtin_StartCoroutine", coroutineColor);
 
     AddInputProperty(typeDesc, "CoroutineMode", xiiGetStaticRTTI<xiiScriptCoroutineCreationMode>(), xiiVisualScriptDataType::Int64);
 
@@ -1017,13 +1334,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     AddInputDataPin<xiiString>(typeDesc, nodeDesc, "Name");
     nodeDesc.AddOutputDataPin("CoroutineID", xiiGetStaticRTTI<xiiScriptCoroutineHandle>(), xiiVisualScriptDataType::Coroutine);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sCoroutinesCategory);
   }
 
   // Builtin_StopCoroutine
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_StopCoroutine", szCoroutinesCategory, coroutineColor);
+    FillDesc(typeDesc, "Builtin_StopCoroutine", coroutineColor);
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, "StopCoroutine {Name}");
     typeDesc.m_Attributes.PushBack(pAttr);
@@ -1036,13 +1352,12 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputDataPin("CoroutineID", xiiGetStaticRTTI<xiiScriptCoroutineHandle>(), xiiVisualScriptDataType::Coroutine, false);
     AddInputDataPin<xiiString>(typeDesc, nodeDesc, "Name");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sCoroutinesCategory);
   }
 
   // Builtin_StopAllCoroutines
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_StopAllCoroutines", szCoroutinesCategory, coroutineColor);
+    FillDesc(typeDesc, "Builtin_StopAllCoroutines", coroutineColor);
 
     NodeDesc nodeDesc;
     nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_StopAllCoroutines;
@@ -1050,7 +1365,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputExecutionPin("");
     nodeDesc.AddOutputExecutionPin("");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sCoroutinesCategory);
   }
 
   // Builtin_WaitForAll
@@ -1062,8 +1377,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
 
     for (auto waitType : waitTypes)
     {
-      xiiReflectedTypeDescriptor typeDesc;
-      FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(waitType), szCoroutinesCategory, coroutineColor);
+      FillDesc(typeDesc, xiiVisualScriptNodeDescription::Type::GetName(waitType), coroutineColor);
 
       xiiHashedString sCount = xiiMakeHashedString("Count");
       {
@@ -1090,14 +1404,13 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
       nodeDesc.AddOutputExecutionPin("");
       nodeDesc.AddInputDataPin("", xiiGetStaticRTTI<xiiScriptCoroutineHandle>(), xiiVisualScriptDataType::Coroutine, false, sCount);
 
-      m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+      RegisterNodeType(typeDesc, std::move(nodeDesc), sCoroutinesCategory);
     }
   }
 
   // Builtin_Yield
   {
-    xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, "Builtin_Yield", szCoroutinesCategory, coroutineColor);
+    FillDesc(typeDesc, "Builtin_Yield", coroutineColor);
 
     NodeDesc nodeDesc;
     nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Yield;
@@ -1105,7 +1418,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.AddInputExecutionPin("");
     nodeDesc.AddOutputExecutionPin("");
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sCoroutinesCategory);
   }
 }
 
@@ -1118,12 +1431,9 @@ void xiiVisualScriptNodeRegistry::CreateGetOwnerNodeType(const xiiRTTI* pRtti)
     xiiStringBuilder sTypeName;
     sTypeName.Set(sBaseClass, "::GetScriptOwner");
 
-    xiiStringBuilder sCategory;
-    sCategory.Set(sBaseClass);
-
     xiiColorGammaUB color = NiceColorFromName(sBaseClass);
 
-    FillDesc(typeDesc, sTypeName, sCategory, color);
+    FillDesc(typeDesc, sTypeName, color);
   }
 
   NodeDesc nodeDesc;
@@ -1147,10 +1457,13 @@ void xiiVisualScriptNodeRegistry::CreateGetOwnerNodeType(const xiiRTTI* pRtti)
     nodeDesc.AddOutputDataPin("Owner", pRtti, scriptDataType);
   }
 
-  m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+  xiiHashedString sBaseClassHashed;
+  sBaseClassHashed.Assign(sBaseClass);
+
+  RegisterNodeType(typeDesc, std::move(nodeDesc), sBaseClassHashed);
 }
 
-void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtti, const xiiAbstractFunctionProperty* pFunction, const xiiScriptableFunctionAttribute* pScriptableFunctionAttribute, bool bIsEntryFunction)
+void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtti, const xiiHashedString& sCategory, const xiiAbstractFunctionProperty* pFunction, const xiiScriptableFunctionAttribute* pScriptableFunctionAttribute, bool bIsEntryFunction)
 {
   xiiHashSet<xiiStringView> dynamicPins;
   for (auto pAttribute : pFunction->GetAttributes())
@@ -1174,12 +1487,9 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
   {
     if (bIsEntryFunction)
     {
-      xiiStringBuilder sCategory;
-      sCategory.Set(szEventHandlerCategory, sTypeName);
-
       xiiColorGammaUB color = NiceColorFromName(sTypeName);
 
-      FillDesc(typeDesc, pRtti, sCategory, &color);
+      FillDesc(typeDesc, pRtti, &color);
     }
     else
     {
@@ -1244,9 +1554,14 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
           return;
         }
 
+        if (m_ExposedTypes.Insert(pReturnRtti) == false)
+          UpdateNodeType(pReturnRtti, true);
+
         nodeDesc.AddOutputDataPin("Result", pReturnRtti, scriptDataType);
       }
     }
+
+    XII_ASSERT_ALWAYS(pFunction->GetArgumentCount() == pScriptableFunctionAttribute->GetArgumentCount(), "The function reflection for '{}::{}' does not match the actual signature. Num arguments: {}, reflected arguments: {}.", sTypeName, sFunctionName, pFunction->GetArgumentCount(), pScriptableFunctionAttribute->GetArgumentCount());
 
     xiiUInt32 titleArgIdx = xiiInvalidIndex;
 
@@ -1273,12 +1588,16 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
         return;
       }
 
-      xiiVisualScriptDataType::Enum pinScriptDataType = scriptDataType;
-      if (bIsDynamicPinProperty && scriptDataType == xiiVisualScriptDataType::Array)
+      xiiVisualScriptDataType::Enum pinScriptDataType          = scriptDataType;
+      const bool                    bIsArrayDynamicPinProperty = bIsDynamicPinProperty && scriptDataType == xiiVisualScriptDataType::Array;
+      if (bIsArrayDynamicPinProperty)
       {
         pArgRtti          = xiiGetStaticRTTI<xiiVariant>();
         pinScriptDataType = xiiVisualScriptDataType::Variant;
       }
+
+      if (m_ExposedTypes.Insert(pArgRtti) == false)
+        UpdateNodeType(pArgRtti, true);
 
       if (bIsEntryFunction)
       {
@@ -1299,7 +1618,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
             AddInputProperty(typeDesc, sArgName, pArgRtti, scriptDataType, attributes);
           }
 
-          nodeDesc.AddInputDataPin(sArgName, pArgRtti, pinScriptDataType, false, sDynamicPinProperty);
+          nodeDesc.AddInputDataPin(sArgName, pArgRtti, pinScriptDataType, false, sDynamicPinProperty, nullptr, bIsArrayDynamicPinProperty);
 
           if (titleArgIdx == xiiInvalidIndex &&
               (pinScriptDataType == xiiVisualScriptDataType::String || pinScriptDataType == xiiVisualScriptDataType::HashedString))
@@ -1309,7 +1628,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
         }
         else if (argType == xiiScriptableFunctionAttribute::Out || argType == xiiScriptableFunctionAttribute::Inout)
         {
-          xiiLog::Error("Script function out parameter are not yet supported");
+          // xiiLog::Error("Script function out parameter are not yet supported");
           return;
 
 #if 0
@@ -1342,7 +1661,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
     }
   }
 
-  m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+  RegisterNodeType(typeDesc, std::move(nodeDesc), sCategory);
 }
 
 void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
@@ -1374,7 +1693,7 @@ void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
   xiiReflectedTypeDescriptor typeDesc;
   {
     const xiiColorGammaUB coroutineColor = PinDesc::GetColorForScriptDataType(xiiVisualScriptDataType::Coroutine);
-    FillDesc(typeDesc, pRtti, szCoroutinesCategory, &coroutineColor);
+    FillDesc(typeDesc, pRtti, &coroutineColor);
 
     xiiStringBuilder temp;
     temp.Set("Coroutine::", typeDesc.m_sTypeName);
@@ -1407,7 +1726,7 @@ void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
     auto argType  = pScriptableFuncAttribute->GetArgumentType(argIdx);
     if (argType != xiiScriptableFunctionAttribute::In)
     {
-      xiiLog::Error("Script function out parameter are not yet supported");
+      // xiiLog::Error("Script function out parameter are not yet supported");
       return;
     }
 
@@ -1425,7 +1744,7 @@ void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
     nodeDesc.AddInputDataPin(sArgName, pArgRtti, scriptDataType, false);
   }
 
-  m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+  RegisterNodeType(typeDesc, std::move(nodeDesc), sCoroutinesCategory);
 }
 
 void xiiVisualScriptNodeRegistry::CreateMessageNodeTypes(const xiiRTTI* pRtti)
@@ -1433,14 +1752,16 @@ void xiiVisualScriptNodeRegistry::CreateMessageNodeTypes(const xiiRTTI* pRtti)
   if (pRtti == xiiGetStaticRTTI<xiiMessage>() || pRtti == xiiGetStaticRTTI<xiiEventMessage>() || pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
     return;
 
+  xiiStringView sTypeName = GetTypeName(pRtti);
+
   // Message Handler
   {
     xiiReflectedTypeDescriptor typeDesc;
     {
-      FillDesc(typeDesc, pRtti, szEventHandlerCategory);
+      FillDesc(typeDesc, pRtti);
 
       xiiStringBuilder temp;
-      temp.Set(s_szTypeNamePrefix, "On", GetTypeName(pRtti));
+      temp.Set(s_szTypeNamePrefix, "On", sTypeName);
       typeDesc.m_sTypeName = temp;
 
       AddInputProperty(typeDesc, "CoroutineMode", xiiGetStaticRTTI<xiiScriptCoroutineCreationMode>(), xiiVisualScriptDataType::Int64);
@@ -1468,20 +1789,20 @@ void xiiVisualScriptNodeRegistry::CreateMessageNodeTypes(const xiiRTTI* pRtti)
 
     nodeDesc.AddOutputDataPin("CoroutineID", xiiGetStaticRTTI<xiiScriptCoroutineHandle>(), xiiVisualScriptDataType::Coroutine);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sEventHandlerCategory);
   }
 
   // Message Sender
   {
     xiiReflectedTypeDescriptor typeDesc;
     {
-      FillDesc(typeDesc, pRtti, "Messages");
+      FillDesc(typeDesc, pRtti);
 
       xiiStringBuilder temp;
-      temp.Set(s_szTypeNamePrefix, "Send", GetTypeName(pRtti));
+      temp.Set(s_szTypeNamePrefix, "Send", sTypeName);
       typeDesc.m_sTypeName = temp;
 
-      temp.Set("Send{?SendMode}", GetTypeName(pRtti), " {Delay}");
+      temp.Set("Send{?SendMode}", sTypeName, " {Delay}");
       auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, temp);
       typeDesc.m_Attributes.PushBack(pAttr);
     }
@@ -1521,13 +1842,13 @@ void xiiVisualScriptNodeRegistry::CreateMessageNodeTypes(const xiiRTTI* pRtti)
       nodeDesc.m_TargetProperties.PushBack(pProp);
     }
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sMessagesCategory);
   }
 }
 
 void xiiVisualScriptNodeRegistry::CreateEnumNodeTypes(const xiiRTTI* pRtti)
 {
-  if (m_EnumTypes.Insert(pRtti))
+  if (m_ExposedTypes.Insert(pRtti))
     return;
 
   xiiStringView   sTypeName = GetTypeName(pRtti);
@@ -1539,11 +1860,11 @@ void xiiVisualScriptNodeRegistry::CreateEnumNodeTypes(const xiiRTTI* pRtti)
     sFullTypeName.Set(sTypeName, "Value");
 
     xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, sFullTypeName, szEnumsCategory, enumColor);
+    FillDesc(typeDesc, sFullTypeName, enumColor);
     AddInputProperty(typeDesc, "Value", pRtti, xiiVisualScriptDataType::EnumValue);
 
     xiiStringBuilder sTitle;
-    sTitle.Set(GetTypeName(pRtti), "::{Value}");
+    sTitle.Set(sTypeName, "::{Value}");
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, sTitle);
     typeDesc.m_Attributes.PushBack(pAttr);
@@ -1553,7 +1874,7 @@ void xiiVisualScriptNodeRegistry::CreateEnumNodeTypes(const xiiRTTI* pRtti)
     nodeDesc.m_Type        = xiiVisualScriptNodeDescription::Type::Builtin_Constant;
     nodeDesc.AddOutputDataPin("Value", pRtti, xiiVisualScriptDataType::EnumValue);
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sEnumsCategory);
   }
 
   // Switch
@@ -1562,10 +1883,10 @@ void xiiVisualScriptNodeRegistry::CreateEnumNodeTypes(const xiiRTTI* pRtti)
     sFullTypeName.Set(sTypeName, "Switch");
 
     xiiReflectedTypeDescriptor typeDesc;
-    FillDesc(typeDesc, sFullTypeName, szEnumsCategory, enumColor);
+    FillDesc(typeDesc, sFullTypeName, enumColor);
 
     xiiStringBuilder sTitle;
-    sTitle.Set(GetTypeName(pRtti), "::Switch");
+    sTitle.Set(sTypeName, "::Switch");
 
     auto pAttr = XII_DEFAULT_NEW(xiiTitleAttribute, sTitle);
     typeDesc.m_Attributes.PushBack(pAttr);
@@ -1583,31 +1904,14 @@ void xiiVisualScriptNodeRegistry::CreateEnumNodeTypes(const xiiRTTI* pRtti)
       nodeDesc.AddOutputExecutionPin(keyAndValue.m_sKey);
     }
 
-    m_TypeToNodeDescs.Insert(xiiPhantomRttiManager::RegisterType(typeDesc), std::move(nodeDesc));
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sEnumsCategory);
   }
 }
 
-void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, const xiiRTTI* pRtti, xiiStringView sCategoryOverride /*= xiiStringView()*/, const xiiColorGammaUB* pColorOverride /*= nullptr */)
+void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, const xiiRTTI* pRtti, const xiiColorGammaUB* pColorOverride /*= nullptr */)
 {
   xiiStringBuilder sTypeName  = GetTypeName(pRtti);
   const xiiRTTI*   pBaseClass = FindTopMostBaseClass(pRtti);
-
-  xiiStringBuilder sCategory;
-  if (sCategoryOverride.IsEmpty())
-  {
-    if (pBaseClass != pRtti)
-    {
-      sCategory.Set(StripTypeName(pBaseClass->GetTypeName()), "/", sTypeName);
-    }
-    else
-    {
-      sCategory = sTypeName;
-    }
-  }
-  else
-  {
-    sCategory = sCategoryOverride;
-  }
 
   xiiColorGammaUB color;
   if (pColorOverride == nullptr)
@@ -1636,29 +1940,35 @@ void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, con
     color = *pColorOverride;
   }
 
-  FillDesc(desc, sTypeName, sCategory, color);
+  FillDesc(desc, sTypeName, color);
 }
 
-void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, xiiStringView sTypeName, xiiStringView sCategory, const xiiColorGammaUB& color)
+void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, xiiStringView sTypeName, const xiiColorGammaUB& color)
 {
   xiiStringBuilder sTypeNameFull;
   sTypeNameFull.Set(s_szTypeNamePrefix, sTypeName);
 
+  desc                   = {};
   desc.m_sTypeName       = sTypeNameFull;
   desc.m_sPluginName     = szPluginName;
   desc.m_sParentTypeName = m_pBaseType->GetTypeName();
   desc.m_Flags           = xiiTypeFlags::Phantom | xiiTypeFlags::Class;
-
-  // Category
-  {
-    xiiStringBuilder tmp;
-    auto             pAttr = XII_DEFAULT_NEW(xiiCategoryAttribute, sCategory.GetData(tmp));
-    desc.m_Attributes.PushBack(pAttr);
-  }
 
   // Color
   {
     auto pAttr = XII_DEFAULT_NEW(xiiColorAttribute, color);
     desc.m_Attributes.PushBack(pAttr);
   }
+}
+
+const xiiRTTI* xiiVisualScriptNodeRegistry::RegisterNodeType(xiiReflectedTypeDescriptor& typeDesc, NodeDesc&& nodeDesc, const xiiHashedString& sCategory)
+{
+  const xiiRTTI* pRtti = xiiPhantomRttiManager::RegisterType(typeDesc);
+  m_TypeToNodeDescs.Insert(pRtti, std::move(nodeDesc));
+
+  auto& nodeTemplate       = m_NodeCreationTemplates.ExpandAndGetRef();
+  nodeTemplate.m_pType     = pRtti;
+  nodeTemplate.m_sCategory = sCategory;
+
+  return pRtti;
 }

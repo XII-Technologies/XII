@@ -16,7 +16,7 @@ public:
 
 class xiiVisualScriptClassAssetDocument : public xiiSimpleAssetDocument<xiiVisualScriptClassAssetProperties>
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiVisualScriptClassAssetDocument, xiiAssetDocument);
+  XII_ADD_DYNAMIC_REFLECTION(xiiVisualScriptClassAssetDocument, xiiSimpleAssetDocument<xiiVisualScriptClassAssetProperties>);
 
 public:
   xiiVisualScriptClassAssetDocument(xiiStringView sDocumentPath);

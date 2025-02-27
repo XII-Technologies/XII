@@ -20,7 +20,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassAssetProperties, 1, xiiRTTI
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassAssetDocument, 4, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassAssetDocument, 7, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 

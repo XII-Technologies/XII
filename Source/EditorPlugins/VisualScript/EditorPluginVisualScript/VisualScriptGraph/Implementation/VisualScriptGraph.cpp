@@ -9,8 +9,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptPin, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiVisualScriptPin::xiiVisualScriptPin(Type type, xiiStringView sName, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, const xiiDocumentObject* pObject, xiiUInt32 uiDataPinIndex) :
-  xiiPin(type, sName, pinDesc.GetColor(), pObject), m_pDataType(pinDesc.m_pDataType), m_DeductTypeFunc(pinDesc.m_DeductTypeFunc), m_uiDataPinIndex(uiDataPinIndex), m_ScriptDataType(pinDesc.m_ScriptDataType), m_bRequired(pinDesc.m_bRequired), m_bHasDynamicPinProperty(pinDesc.m_sDynamicPinProperty.IsEmpty() == false), m_bSplitExecution(pinDesc.m_bSplitExecution)
+xiiVisualScriptPin::xiiVisualScriptPin(Type type, xiiStringView sName, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, const xiiDocumentObject* pObject, xiiUInt32 uiDataPinIndex, xiiUInt32 uiElementIndex) :
+  xiiPin(type, sName, pinDesc.GetColor(), pObject), m_pDesc(&pinDesc), m_uiDataPinIndex(uiDataPinIndex), m_uiElementIndex(uiElementIndex)
 {
   if (pinDesc.IsExecutionPin())
   {
@@ -30,13 +30,14 @@ xiiVisualScriptPin::~xiiVisualScriptPin()
 
 xiiVisualScriptDataType::Enum xiiVisualScriptPin::GetResolvedScriptDataType() const
 {
-  if (m_ScriptDataType == xiiVisualScriptDataType::AnyPointer || m_ScriptDataType == xiiVisualScriptDataType::Any)
+  auto scriptDataType = GetScriptDataType();
+  if (scriptDataType == xiiVisualScriptDataType::AnyPointer || scriptDataType == xiiVisualScriptDataType::Any)
   {
     auto pManager = static_cast<const xiiVisualScriptNodeManager*>(GetParent()->GetDocumentObjectManager());
     return pManager->GetDeductedType(*this);
   }
 
-  return m_ScriptDataType;
+  return scriptDataType;
 }
 
 xiiStringView xiiVisualScriptPin::GetDataTypeName() const
@@ -44,12 +45,12 @@ xiiStringView xiiVisualScriptPin::GetDataTypeName() const
   xiiVisualScriptDataType::Enum resolvedDataType = GetResolvedScriptDataType();
   if (resolvedDataType == xiiVisualScriptDataType::Invalid)
   {
-    return xiiVisualScriptDataType::GetName(m_ScriptDataType);
+    return xiiVisualScriptDataType::GetName(GetScriptDataType());
   }
 
-  if ((resolvedDataType == xiiVisualScriptDataType::TypedPointer || resolvedDataType == xiiVisualScriptDataType::EnumValue) && m_pDataType != nullptr)
+  if ((resolvedDataType == xiiVisualScriptDataType::TypedPointer || resolvedDataType == xiiVisualScriptDataType::EnumValue || resolvedDataType == xiiVisualScriptDataType::BitflagValue) && GetDataType() != nullptr)
   {
-    return m_pDataType->GetTypeName();
+    return GetDataType()->GetTypeName();
   }
 
   return xiiVisualScriptDataType::GetName(resolvedDataType);
@@ -60,7 +61,7 @@ bool xiiVisualScriptPin::CanConvertTo(const xiiVisualScriptPin& targetPin, bool 
   xiiVisualScriptDataType::Enum sourceScriptDataType = bUseResolvedDataTypes ? GetResolvedScriptDataType() : GetScriptDataType();
   xiiVisualScriptDataType::Enum targetScriptDataType = bUseResolvedDataTypes ? targetPin.GetResolvedScriptDataType() : targetPin.GetScriptDataType();
 
-  const xiiRTTI* pSourceDataType = m_pDataType;
+  const xiiRTTI* pSourceDataType = GetDataType();
   const xiiRTTI* pTargetDataType = targetPin.GetDataType();
 
   if (xiiVisualScriptDataType::IsPointer(sourceScriptDataType) && targetScriptDataType == xiiVisualScriptDataType::AnyPointer)
@@ -70,6 +71,9 @@ bool xiiVisualScriptPin::CanConvertTo(const xiiVisualScriptPin& targetPin, bool 
     return pSourceDataType->IsDerivedFrom(pTargetDataType);
 
   if (sourceScriptDataType == xiiVisualScriptDataType::EnumValue && pSourceDataType != nullptr && targetScriptDataType == xiiVisualScriptDataType::EnumValue && pTargetDataType != nullptr)
+    return pSourceDataType == pTargetDataType;
+
+  if (sourceScriptDataType == xiiVisualScriptDataType::BitflagValue && pSourceDataType != nullptr && targetScriptDataType == xiiVisualScriptDataType::BitflagValue && pTargetDataType != nullptr)
     return pSourceDataType == pTargetDataType;
 
   if (sourceScriptDataType == xiiVisualScriptDataType::Any || targetScriptDataType == xiiVisualScriptDataType::Any)
@@ -418,7 +422,7 @@ void xiiVisualScriptNodeManager::InternalCreatePins(const xiiDocumentObject* pOb
         ++inout_dataPinIndex;
       }
 
-      auto pPin = XII_DEFAULT_NEW(xiiVisualScriptPin, type, dynamicPinNames[i], pinDesc, pObject, uiDataPinIndex);
+      auto pPin = XII_DEFAULT_NEW(xiiVisualScriptPin, type, dynamicPinNames[i], pinDesc, pObject, uiDataPinIndex, i);
       out_pins.PushBack(pPin);
     }
   };
@@ -436,18 +440,84 @@ void xiiVisualScriptNodeManager::InternalCreatePins(const xiiDocumentObject* pOb
   }
 }
 
-void xiiVisualScriptNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& Types) const
+void xiiVisualScriptNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const
 {
-  xiiHashedString sBaseClass = GetScriptBaseClass();
+  auto            pRegistry      = xiiVisualScriptNodeRegistry::GetSingleton();
+  auto            propertyValues = pRegistry->GetPropertyValues();
+  xiiHashedString sBaseClass     = GetScriptBaseClass();
 
-  for (auto it : xiiVisualScriptNodeRegistry::GetSingleton()->GetAllNodeTypes())
+  for (auto& nodeTemplate : pRegistry->GetNodeCreationTemplates())
   {
-    if (IsFilteredByBaseClass(it.Key(), it.Value(), sBaseClass))
+    const xiiRTTI* pNodeType = nodeTemplate.m_pType;
+
+    if (IsFilteredByBaseClass(pNodeType, *pRegistry->GetNodeDescForType(pNodeType), sBaseClass))
       continue;
 
-    if (!it.Key()->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
+    if (!pNodeType->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
     {
-      Types.PushBack(it.Key());
+      auto& temp            = out_templates.ExpandAndGetRef();
+      temp.m_pType          = pNodeType;
+      temp.m_sTypeName      = nodeTemplate.m_sTypeName;
+      temp.m_sCategory      = nodeTemplate.m_sCategory;
+      temp.m_PropertyValues = propertyValues.GetSubArray(nodeTemplate.m_uiPropertyValuesStart, nodeTemplate.m_uiPropertyValuesCount);
+    }
+  }
+
+  // Getter and setter templates for variables
+  if (GetRootObject()->GetChildren().IsEmpty() == false)
+  {
+    static xiiHashedString sVariables = xiiMakeHashedString("Variables");
+    static xiiHashedString sName      = xiiMakeHashedString("Name");
+
+    m_PropertyValues.Clear();
+    m_VariableNodeTypeNames.Clear();
+
+    xiiStringBuilder sNodeTypeName;
+
+    auto&           typeAccessor   = GetRootObject()->GetChildren()[0]->GetTypeAccessor();
+    const xiiUInt32 uiNumVariables = typeAccessor.GetCount(sVariables.GetView());
+    for (xiiUInt32 i = 0; i < uiNumVariables; ++i)
+    {
+      xiiVariant variableUuid = typeAccessor.GetValue(sVariables.GetView(), i);
+      if (variableUuid.IsA<xiiUuid>() == false)
+        continue;
+
+      auto pVariableObject = GetObject(variableUuid.Get<xiiUuid>());
+      if (pVariableObject == nullptr)
+        continue;
+
+      xiiVariant nameVar = pVariableObject->GetTypeAccessor().GetValue(sName.GetView());
+      if (nameVar.IsA<xiiHashedString>() == false)
+        continue;
+
+      xiiHashedString sVariableName = nameVar.Get<xiiHashedString>();
+
+      xiiUInt32 uiStart = m_PropertyValues.GetCount();
+      m_PropertyValues.PushBack({sName, nameVar});
+
+      // Setter
+      {
+        sNodeTypeName.Set("Set", sVariableName);
+        m_VariableNodeTypeNames.PushBack(sNodeTypeName);
+
+        auto& temp            = out_templates.ExpandAndGetRef();
+        temp.m_pType          = pRegistry->GetVariableSetterType();
+        temp.m_sTypeName      = m_VariableNodeTypeNames.PeekBack();
+        temp.m_sCategory      = sVariables;
+        temp.m_PropertyValues = m_PropertyValues.GetArrayPtr().GetSubArray(uiStart, 1);
+      }
+
+      // Getter
+      {
+        sNodeTypeName.Set("Get", sVariableName);
+        m_VariableNodeTypeNames.PushBack(sNodeTypeName);
+
+        auto& temp            = out_templates.ExpandAndGetRef();
+        temp.m_pType          = pRegistry->GetVariableGetterType();
+        temp.m_sTypeName      = m_VariableNodeTypeNames.PeekBack();
+        temp.m_sCategory      = sVariables;
+        temp.m_PropertyValues = m_PropertyValues.GetArrayPtr().GetSubArray(uiStart, 1);
+      }
     }
   }
 }

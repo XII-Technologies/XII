@@ -8,34 +8,33 @@ class xiiVisualScriptPin : public xiiPin
   XII_ADD_DYNAMIC_REFLECTION(xiiVisualScriptPin, xiiPin);
 
 public:
-  xiiVisualScriptPin(Type type, xiiStringView sName, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, const xiiDocumentObject* pObject, xiiUInt32 uiDataPinIndex);
+  xiiVisualScriptPin(Type type, xiiStringView sName, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, const xiiDocumentObject* pObject, xiiUInt32 uiDataPinIndex, xiiUInt32 uiElementIndex);
   ~xiiVisualScriptPin();
 
-  XII_ALWAYS_INLINE bool IsExecutionPin() const { return m_ScriptDataType == xiiVisualScriptDataType::Invalid; }
-  XII_ALWAYS_INLINE bool IsDataPin() const { return m_ScriptDataType != xiiVisualScriptDataType::Invalid; }
+  XII_ALWAYS_INLINE bool IsExecutionPin() const { return m_pDesc->IsExecutionPin(); }
+  XII_ALWAYS_INLINE bool IsDataPin() const { return m_pDesc->IsDataPin(); }
 
-  XII_ALWAYS_INLINE const xiiRTTI* GetDataType() const { return m_pDataType; }
-  XII_ALWAYS_INLINE xiiVisualScriptDataType::Enum GetScriptDataType() const { return m_ScriptDataType; }
+  XII_ALWAYS_INLINE const xiiRTTI* GetDataType() const { return m_pDesc->m_pDataType; }
+  XII_ALWAYS_INLINE xiiVisualScriptDataType::Enum GetScriptDataType() const { return m_pDesc->m_ScriptDataType; }
   xiiVisualScriptDataType::Enum                   GetResolvedScriptDataType() const;
   xiiStringView                                   GetDataTypeName() const;
   XII_ALWAYS_INLINE xiiUInt32                     GetDataPinIndex() const { return m_uiDataPinIndex; }
-  XII_ALWAYS_INLINE bool                          IsRequired() const { return m_bRequired; }
-  XII_ALWAYS_INLINE bool                          HasDynamicPinProperty() const { return m_bHasDynamicPinProperty; }
-  XII_ALWAYS_INLINE bool                          SplitExecution() const { return m_bSplitExecution; }
-  XII_ALWAYS_INLINE bool                          NeedsTypeDeduction() const { return m_DeductTypeFunc != nullptr; }
+  XII_ALWAYS_INLINE xiiUInt32                     GetElementIndex() const { return m_uiElementIndex; }
+  XII_ALWAYS_INLINE bool                          IsRequired() const { return m_pDesc->m_bRequired; }
+  XII_ALWAYS_INLINE bool                          HasDynamicPinProperty() const { return m_pDesc->m_sDynamicPinProperty.IsEmpty() == false; }
+  XII_ALWAYS_INLINE bool                          SplitExecution() const { return m_pDesc->m_bSplitExecution; }
+  XII_ALWAYS_INLINE bool                          ReplaceWithArray() const { return m_pDesc->m_bReplaceWithArray; }
+  XII_ALWAYS_INLINE bool                          NeedsTypeDeduction() const { return m_pDesc->m_DeductTypeFunc != nullptr; }
 
-  XII_ALWAYS_INLINE xiiVisualScriptNodeRegistry::PinDesc::DeductTypeFunc GetDeductTypeFunc() const { return m_DeductTypeFunc; }
+  XII_ALWAYS_INLINE const xiiHashedString& GetDynamicPinProperty() const { return m_pDesc->m_sDynamicPinProperty; }
+  XII_ALWAYS_INLINE xiiVisualScriptNodeRegistry::PinDesc::DeductTypeFunc GetDeductTypeFunc() const { return m_pDesc->m_DeductTypeFunc; }
 
   bool CanConvertTo(const xiiVisualScriptPin& targetPin, bool bUseResolvedDataTypes = true) const;
 
 private:
-  const xiiRTTI*                                       m_pDataType      = nullptr;
-  xiiVisualScriptNodeRegistry::PinDesc::DeductTypeFunc m_DeductTypeFunc = nullptr;
-  xiiUInt32                                            m_uiDataPinIndex = 0;
-  xiiEnum<xiiVisualScriptDataType>                     m_ScriptDataType;
-  bool                                                 m_bRequired              = false;
-  bool                                                 m_bHasDynamicPinProperty = false;
-  bool                                                 m_bSplitExecution        = false;
+  const xiiVisualScriptNodeRegistry::PinDesc* m_pDesc          = nullptr;
+  xiiUInt32                                   m_uiDataPinIndex = 0;
+  xiiUInt32                                   m_uiElementIndex = 0;
 };
 
 class xiiVisualScriptNodeManager : public xiiDocumentNodeManager
@@ -76,7 +75,7 @@ private:
 
   virtual void InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& node) override;
 
-  virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& Types) const override;
+  virtual void GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
 
   void NodeEventsHandler(const xiiDocumentNodeManagerEvent& e);
   void PropertyEventsHandler(const xiiDocumentObjectPropertyEvent& e);
@@ -90,4 +89,7 @@ private:
   xiiHashTable<const xiiDocumentObject*, xiiEnum<xiiVisualScriptDataType>>  m_ObjectToDeductedType;
   xiiHashTable<const xiiVisualScriptPin*, xiiEnum<xiiVisualScriptDataType>> m_PinToDeductedType;
   xiiHashSet<const xiiDocumentObject*>                                      m_CoroutineObjects;
+
+  mutable xiiDynamicArray<xiiNodePropertyValue> m_PropertyValues;
+  mutable xiiDeque<xiiString>                   m_VariableNodeTypeNames;
 };

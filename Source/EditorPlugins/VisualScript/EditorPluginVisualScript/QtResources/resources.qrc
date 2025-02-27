@@ -6,5 +6,8 @@
     <file>Coroutine.svg</file>
     <file>Loop.svg</file>
   </qresource>
+  <qresource prefix="TypeIcons">
+  <file>xiiScriptComponent.svg</file>
+  </qresource>
 </RCC>
 

@@ -70,10 +70,14 @@ public:
     xiiHashedString m_sTargetTypeName;
     xiiVariant      m_Value;
 
-    xiiSmallArray<AstNode*, 8>   m_Next;
-    xiiSmallArray<DataInput, 4>  m_Inputs;
-    xiiSmallArray<DataOutput, 4> m_Outputs;
+    xiiSmallArray<AstNode*, 4>   m_Next;
+    xiiSmallArray<DataInput, 5>  m_Inputs;
+    xiiSmallArray<DataOutput, 2> m_Outputs;
   };
+
+#if XII_ENABLED(XII_PLATFORM_64BIT)
+  static_assert(sizeof(AstNode) == 272);
+#endif
 
 private:
   using DataOffset = xiiVisualScriptDataDescription::DataOffset;
@@ -122,10 +126,10 @@ private:
 
   struct Connection
   {
-    AstNode*             m_pPrev          = nullptr;
-    AstNode*             m_pCurrent       = nullptr;
-    ConnectionType::Enum m_Type           = ConnectionType::Execution;
-    xiiUInt32            m_uiPrevPinIndex = 0;
+    AstNode*             m_pSource          = nullptr;
+    AstNode*             m_pTarget          = nullptr;
+    ConnectionType::Enum m_Type             = ConnectionType::Execution;
+    xiiUInt32            m_uiSourcePinIndex = 0;
   };
 
   AstNode*  BuildAST(const xiiDocumentObject* pEntryNode);
@@ -160,7 +164,6 @@ private:
   xiiResult TraverseDataConnections(AstNode* pEntryAstNode, AstNodeVisitorFunc func, bool bDeduplicate = true, bool bClearReportedConnections = true);
   xiiResult TraverseAllConnections(AstNode* pEntryAstNode, AstNodeVisitorFunc func, bool bDeduplicate = true);
 
-  xiiResult FinalizeDataOffsets();
   xiiResult FinalizeConstantData();
 
   void DumpAST(AstNode* pEntryAstNode, xiiStringView sOutputPath, xiiStringView sFunctionName, xiiStringView sSuffix);
