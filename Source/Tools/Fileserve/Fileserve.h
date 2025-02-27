@@ -32,6 +32,8 @@ public:
   void                              FileserverEventHandlerConsole(const xiiFileserverEvent& e);
   void                              FileserverEventHandler(const xiiFileserverEvent& e);
 
+  void ShaderMessageHandler(xiiFileserveClientContext& ref_ctxt, xiiRemoteMessage& ref_msg, xiiRemoteInterface& ref_clientChannel, xiiDelegate<void(const char*)> logActivity);
+
   void SetStyleSheet();
 
   xiiUInt32 m_uiSleepCounter = 0;

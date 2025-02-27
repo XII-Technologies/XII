@@ -1,5 +1,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Interfaces/RemoteToolingInterface.h>
+#include <Foundation/Communication/RemoteInterface.h>
+#include <Foundation/Configuration/Singleton.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
@@ -175,6 +178,40 @@ xiiResult xiiShaderCompiler::FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArr
 
 xiiResult xiiShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiPermutationVar>& permutationVars, xiiLogInterface* pLog, xiiStringView sPlatform)
 {
+  if (xiiRemoteToolingInterface* pTooling = xiiSingletonRegistry::GetSingletonInstance<xiiRemoteToolingInterface>())
+  {
+    auto pNet = pTooling->GetRemoteInterface();
+
+    if (pNet && pNet->IsConnectedToServer())
+    {
+      m_bCompileShaderRemotely = true;
+
+      pNet->SetMessageHandler('SHDR', xiiMakeDelegate(&xiiShaderCompiler::ShaderCompileMsg, this));
+
+      xiiRemoteMessage msg('SHDR', 'CMPL');
+      msg.GetWriter() << sFile;
+      msg.GetWriter() << sPlatform;
+      msg.GetWriter() << permutationVars.GetCount();
+      for (auto& pv : permutationVars)
+      {
+        msg.GetWriter() << pv.m_sName;
+        msg.GetWriter() << pv.m_sValue;
+      }
+
+      pNet->Send(xiiRemoteTransmitMode::Reliable, msg);
+
+      while (m_bCompileShaderRemotely)
+      {
+        pNet->UpdateRemoteInterface();
+        pNet->ExecuteAllMessageHandlers();
+      }
+
+      pNet->SetMessageHandler('SHDR', {});
+
+      return m_RemoteShaderCompileResult;
+    }
+  }
+
   xiiStringBuilder sFileContent, sTemp;
 
   {
@@ -491,7 +528,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
 
       if (spd.m_uiSourceHash[stage] != 0)
       {
-        xiiShaderStageBinary* pBinary = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), spd.m_uiSourceHash[stage]);
+        xiiShaderStageBinary* pBinary = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), spd.m_uiSourceHash[stage], sPlatform);
 
         if (pBinary)
         {
@@ -530,7 +567,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
         bin.m_uiSourceHash = spd.m_uiSourceHash[stage];
         bin.m_pGALByteCode = spd.m_ByteCode[stage];
 
-        if (bin.WriteStageBinary(pLog).Failed())
+        if (bin.WriteStageBinary(pLog, sPlatform).Failed())
         {
           xiiLog::Error(pLog, "Writing stage {0} binary failed", stage);
           return XII_FAILURE;
@@ -590,6 +627,27 @@ void xiiShaderCompiler::WriteFailedShaderSource(xiiShaderProgramData& spd, xiiLo
         StageFileOut.WriteBytes(spd.m_sShaderSource[stage].GetData(), spd.m_sShaderSource[stage].GetElementCount()).AssertSuccess();
         xiiLog::Info(pLog, "Failed shader source written to '{0}'", sShaderStageFile);
       }
+    }
+  }
+}
+
+void xiiShaderCompiler::ShaderCompileMsg(xiiRemoteMessage& msg)
+{
+  if (msg.GetMessageID() == 'CRES')
+  {
+    m_bCompileShaderRemotely    = false;
+    m_RemoteShaderCompileResult = XII_SUCCESS;
+
+    bool success = false;
+    msg.GetReader() >> success;
+    m_RemoteShaderCompileResult = success ? XII_SUCCESS : XII_FAILURE;
+
+    xiiStringBuilder sLog;
+    msg.GetReader() >> sLog;
+
+    if (!success)
+    {
+      xiiLog::Error("Shader compilation failed:\n{}", sLog);
     }
   }
 }

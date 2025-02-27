@@ -78,7 +78,7 @@ xiiQtFileserveWidget::xiiQtFileserveWidget(QWidget* pParent /*= nullptr*/)
 
   UpdateSpecialDirectoryUI();
 
-  if (xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-fs_start"))
+  if (!xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-fs_nostart"))
   {
     QTimer::singleShot(100, this, &xiiQtFileserveWidget::on_StartServerButton_clicked);
   }
@@ -398,6 +398,12 @@ void xiiQtFileserveWidget::FileserverEventHandler(const xiiFileserverEvent& e)
     case xiiFileserverEvent::Type::AreYouThereRequest:
     {
       LogActivity("Client searching for Server", xiiFileserveActivityType::Other);
+    }
+    break;
+
+    case xiiFileserverEvent::Type::LogCustomActivity:
+    {
+      LogActivity(e.m_szName, xiiFileserveActivityType::Other);
     }
     break;
   }

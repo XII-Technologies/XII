@@ -216,15 +216,15 @@ xiiSharedPtr<const xiiGALShaderByteCode> xiiShaderStageBinary::GetByteCode() con
   return m_pGALByteCode;
 }
 
-xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
+xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog, xiiStringView sPlatform) const
 {
   xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
-  sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform().GetData());
+  sShaderStageFile.AppendPath(sPlatform);
   sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)m_pGALByteCode->m_ShaderStage.GetValue())], xiiArgU(m_uiSourceHash, 8, true, 16, true));
 
   xiiFileWriter StageFileOut;
-  if (StageFileOut.Open(sShaderStageFile.GetData()).Failed())
+  if (StageFileOut.Open(sShaderStageFile).Failed())
   {
     xiiLog::Error(pLog, "Could not open shader stage file '{0}' for writing", sShaderStageFile);
     return XII_FAILURE;
@@ -240,7 +240,7 @@ xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
 }
 
 // static
-xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::Enum Stage, xiiUInt32 uiHash)
+xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::Enum Stage, xiiUInt32 uiHash, xiiStringView sPlatform)
 {
   auto itStage = s_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(Stage)].Find(uiHash);
 
@@ -248,7 +248,7 @@ xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::En
   {
     xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
-    sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform().GetData());
+    sShaderStageFile.AppendPath(sPlatform);
     sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex(Stage)], xiiArgU(uiHash, 8, true, 16, true));
 
     xiiFileReader StageFileIn;

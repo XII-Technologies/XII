@@ -122,7 +122,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     if (uiStageHash == 0) // not used
       continue;
 
-    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash);
+    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash, xiiShaderManager::GetActivePlatform());
 
     if (pStageBin == nullptr)
     {
@@ -377,7 +377,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
         continue;
 
       // this is where the preloading happens
-      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash);
+      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash, xiiShaderManager::GetActivePlatform());
     }
   }
 

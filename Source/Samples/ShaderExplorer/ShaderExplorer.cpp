@@ -1,4 +1,5 @@
 #include <Foundation/Application/Application.h>
+#include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/DirectoryWatcher.h>
@@ -28,6 +29,29 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+
+// Define this to force usage of fileserve functionality.
+// #define USE_FILESERVE XII_ON
+
+// To use fileserve, run the xiiFileServe application with a command line that tells it where the ":project"
+// data directory is located on the PC, for example:
+//
+// xiiFileServe.exe -fs_start -specialdirs project "C:\XII\Data\Samples\ShaderExplorer"
+
+#if !defined(USE_FILESERVE)
+#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
+// on sandboxed platforms, we can only load data through fileserve, so enforce use of this plugin
+#    define USE_FILESERVE XII_ON
+#  else
+#    define USE_FILESERVE XII_OFF
+#  endif
+#endif
+
+#if XII_DISABLED(USE_FILESERVE) && XII_ENABLED(XII_SUPPORTS_DIRECTORY_WATCHER)
+#  define USE_DIRECTORY_WATCHER XII_ON
+#else
+#  define USE_DIRECTORY_WATCHER XII_OFF
+#endif
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -163,6 +187,7 @@ public:
     }
 
     // Reload resources if modified
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
     {
       m_bFileModified = false;
       m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiShaderExplorerApp::OnFileChanged, this));
@@ -172,6 +197,7 @@ public:
         xiiResourceManager::ReloadAllResources(false);
       }
     }
+#endif
 
     // Perform rendering
     {
@@ -240,18 +266,27 @@ public:
     // uploading GPU data etc.
     xiiTaskSystem::FinishFrameTasks();
 
+    // For plugins (like FileServe) that need to hook into the game update.
+    XII_BROADCAST_EVENT(GameApp_UpdatePlugins);
+
     return xiiApplication::Execution::Continue;
   }
 
   virtual void AfterCoreSystemsStartup() override
   {
+#if XII_ENABLED(USE_FILESERVE)
+    xuuPlugin::LoadPlugin("xuuFileservePlugin").AssertSuccess("Failed to load FileServe plugin.");
+#endif
+
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/ShaderExplorer";
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
 
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
     m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
     m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
+#endif
 
     xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
@@ -540,6 +575,7 @@ public:
     }
   }
 
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
   void OnFileChanged(xiiStringView sFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type)
   {
     if (action == xiiDirectoryWatcherAction::Modified && type == xiiDirectoryWatcherType::File)
@@ -548,10 +584,14 @@ public:
       m_bFileModified = true;
     }
   }
+#endif
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
     m_pDirectoryWatcher->CloseDirectory();
+    m_pDirectoryWatcher.Clear();
+#endif
 
     m_pDevice->DestroyTexture(m_hDepthStencilTexture);
     m_hDepthStencilTexture.Invalidate();
@@ -574,7 +614,6 @@ public:
     XII_DEFAULT_DELETE(m_pWindow);
 
     m_pCamera.Clear();
-    m_pDirectoryWatcher.Clear();
   }
 
   virtual void BeforeCoreSystemsShutdown() override
@@ -600,8 +639,11 @@ private:
   xiiMaterialResourceHandle   m_hMaterial;
   xiiMeshBufferResourceHandle m_hQuadMeshBuffer;
 
-  xiiUniquePtr<xiiCamera>           m_pCamera;
+  xiiUniquePtr<xiiCamera> m_pCamera;
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
   xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
+#endif
 
   bool m_bFileModified = false;
 };
