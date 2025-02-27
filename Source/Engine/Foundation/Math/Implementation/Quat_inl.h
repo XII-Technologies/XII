@@ -480,13 +480,13 @@ void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiA
 
   if (fSingularityTest > fSingularityThreshold) // singularity at north pole
   {
-    yaw   = -2.0f * xiiMath::ATan2(x, w);
+    yaw   = -static_cast<Type>(2) * xiiMath::ATan2(x, w);
     pitch = xiiAngleTemplate<Type>::MakeFromDegree(90.0f);
     roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0f);
   }
   else if (fSingularityTest < -fSingularityThreshold) // singularity at south pole
   {
-    yaw   = 2.0f * xiiMath::ATan2(x, w);
+    yaw   = static_cast<Type>(2) * xiiMath::ATan2(x, w);
     pitch = xiiAngleTemplate<Type>::MakeFromDegree(-90.0f);
     roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0f);
   }
@@ -498,7 +498,7 @@ void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiA
     yaw               = xiiMath::ATan2((Type)siny, (Type)cosy);
 
     // pitch (y-axis rotation)
-    pitch = xiiMath::ASin(2.0f * (Type)fSingularityTest);
+    pitch = xiiMath::ASin(static_cast<Type>(2) * (Type)fSingularityTest);
 
     // roll (x-axis rotation)
     const double sinr = 2.0 * (w * x + y * z);

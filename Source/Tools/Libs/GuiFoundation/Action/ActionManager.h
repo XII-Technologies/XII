@@ -114,8 +114,8 @@ private:
 
   struct CategoryData
   {
-    xiiSet<xiiActionDescriptorHandle>                    m_Actions;
-    xiiHashTable<const char*, xiiActionDescriptorHandle> m_ActionNameToHandle;
+    xiiSet<xiiActionDescriptorHandle>                      m_Actions;
+    xiiHashTable<xiiStringView, xiiActionDescriptorHandle> m_ActionNameToHandle;
   };
 
 private:
