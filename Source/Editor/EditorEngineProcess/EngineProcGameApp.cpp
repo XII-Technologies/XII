@@ -46,6 +46,7 @@ xiiEngineProcessGameApplication::~xiiEngineProcessGameApplication() = default;
 xiiResult xiiEngineProcessGameApplication::BeforeCoreSystemsStartup()
 {
   m_pApp = CreateEngineProcessApp();
+
   xiiStartup::AddApplicationTag("editorengineprocess");
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
@@ -87,7 +88,7 @@ void xiiEngineProcessGameApplication::AfterCoreSystemsStartup()
 
 void xiiEngineProcessGameApplication::ConnectToHost()
 {
-  XII_VERIFY(m_IPC.ConnectToHostProcess().Succeeded(), "Could not connect to host");
+  XII_VERIFY(m_IPC.ConnectToHostProcess().Succeeded(), "Failed to connect to host.");
 
   m_IPC.m_Events.AddEventHandler(xiiMakeDelegate(&xiiEngineProcessGameApplication::EventHandlerIPC, this));
 
@@ -111,7 +112,7 @@ void xiiEngineProcessGameApplication::WaitForDebugger()
   {
     while (!xiiSystemInformation::IsDebuggerAttached())
     {
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(16));
     }
   }
 }
@@ -119,6 +120,7 @@ void xiiEngineProcessGameApplication::WaitForDebugger()
 bool xiiEngineProcessGameApplication::EditorAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg)
 {
   xiiLog::Error("*** Assertion ***:\nFile: \"{}\",\nLine: \"{}\",\nFunction: \"{}\",\nExpression: \"{}\",\nMessage: \"{}\"", szSourceFile, uiLine, szFunction, szExpression, szAssertMsg);
+
   // Wait for flush of IPC messages
   xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(500));
 
@@ -131,12 +133,14 @@ bool xiiEngineProcessGameApplication::EditorAssertHandler(const char* szSourceFi
 void xiiEngineProcessGameApplication::AddEditorAssertHandler()
 {
   g_PreviousAssertHandler = xiiGetAssertHandler();
+
   xiiSetAssertHandler(EditorAssertHandler);
 }
 
 void xiiEngineProcessGameApplication::RemoveEditorAssertHandler()
 {
   xiiSetAssertHandler(g_PreviousAssertHandler);
+
   g_PreviousAssertHandler = nullptr;
 }
 
@@ -159,6 +163,7 @@ xiiApplication::Execution xiiEngineProcessGameApplication::Run()
   do
   {
     bPendingOpInProgress = xiiEngineProcessDocumentContext::PendingOperationsInProgress();
+
     if (ProcessIPCMessages(bPendingOpInProgress))
     {
       xiiEngineProcessDocumentContext::UpdateDocumentContexts();
@@ -272,6 +277,10 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 {
   if (const auto* pMsg = xiiDynamicCast<const xiiSyncWithProcessMsgToEngine*>(e.m_pMessage))
   {
+    xiiStringBuilder sRedrawScope;
+    sRedrawScope.SetFormat("Redraw {}", pMsg->m_uiRedrawCount);
+    XII_PROFILE_SCOPE(sRedrawScope.GetView());
+
     xiiSyncWithProcessMsgToEditor msg;
     msg.m_uiRedrawCount     = pMsg->m_uiRedrawCount;
     m_uiRedrawCountReceived = msg.m_uiRedrawCount;
