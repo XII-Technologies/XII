@@ -234,9 +234,9 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
   float            fDensity = m_pSceneContext->GetGridDensity();
 
   xiiGridRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiGridRenderData>(nullptr);
+  pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
   pRenderData->m_bOrthoMode      = cam->IsOrthographic();
   pRenderData->m_bGlobal         = m_pSceneContext->IsGridInGlobalSpace();
-  pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
 
   if (cam->IsOrthographic())
   {

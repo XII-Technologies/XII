@@ -183,6 +183,17 @@ void xiiSceneViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
         xiiVec3              vUp       = pOwner->GetGlobalDirUp();
 
         m_CullingCamera.LookAt(vPosition, vPosition + vForward, vUp);
+
+        auto  cameraMode = pCameraComponent->GetCameraMode();
+        float fFovOrDim  = pCameraComponent->GetFieldOfView();
+        if (cameraMode == xiiCameraMode::OrthoFixedWidth || cameraMode == xiiCameraMode::OrthoFixedHeight)
+        {
+          fFovOrDim = pCameraComponent->GetOrthoDimension();
+        }
+
+        const float fNearPlane = pCameraComponent->GetNearPlane();
+        const float fFarPlane  = pCameraComponent->GetFarPlane();
+        m_CullingCamera.SetCameraMode(cameraMode, fFovOrDim, fNearPlane, xiiMath::Max(fNearPlane + 0.00001f, fFarPlane));
       }
     }
   }

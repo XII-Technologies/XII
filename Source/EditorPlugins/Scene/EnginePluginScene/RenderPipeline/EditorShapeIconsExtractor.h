@@ -35,9 +35,9 @@ private:
   struct ShapeIconInfo
   {
     xiiTexture2DResourceHandle                     m_hTexture;
-    const xiiTypedMemberProperty<xiiColor>*        m_pColorProperty      = nullptr;
-    const xiiTypedMemberProperty<xiiColorGammaUB>* m_pColorGammaProperty = nullptr;
-    xiiColor                                       m_FallbackColor       = xiiColor::White;
+    const xiiTypedMemberProperty<xiiColor>*        m_pColorProperty;
+    const xiiTypedMemberProperty<xiiColorGammaUB>* m_pColorGammaProperty;
+    xiiColor                                       m_FallbackColor = xiiColor::White;
   };
 
   xiiHashTable<const xiiRTTI*, ShapeIconInfo> m_ShapeIconInfos;
