@@ -9,6 +9,8 @@
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Editor/GizmoConstants.h>
 
+#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGizmoRenderer, 1, xiiRTTIDefaultAllocator<xiiGizmoRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -32,6 +34,18 @@ void xiiGizmoRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRender
 
 void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  // special Windows specific hack:
+  // When ALT is down, the editor shouldn't show any gizmos, because this is used for the orbit camera mode
+  // in general the ALT key is problematic and shouldn't be used as a modifier in gizmos
+  // so to indicate to users that ALT has a very different effect, and to discourage programmers from using ALT as a modifier,
+  // we just hide all gizmos when ALT is down
+  // however, detecting the ALT key is only possible with a direct OS check, since Qt doesn't report this as an individual key press
+  // and the xii input system is not active at all times
+  if (GetKeyState(VK_MENU) & 0x8000)
+    return;
+#endif
+
   bool bOnlyPickable = false;
 
   if (auto pPickingRenderPass = xiiDynamicCast<const xiiPickingRenderPass*>(pPass))

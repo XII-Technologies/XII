@@ -1,6 +1,6 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/LongOps/Implementation/LongOpManager.h>
+#include <EditorEngineProcessFramework/LongOps/LongOpManager.h>
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Threading/Implementation/TaskSystemDeclarations.h>

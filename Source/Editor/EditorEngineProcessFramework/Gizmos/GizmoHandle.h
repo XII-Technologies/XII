@@ -1,9 +1,10 @@
 #pragma once
 
+#include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
+
 #include <Core/World/GameObject.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <Foundation/Math/Mat4.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 class xiiWorld;
 class xiiGizmoComponent;
@@ -35,7 +36,6 @@ private:
   xiiGizmo* m_pParentGizmo = nullptr;
 };
 
-
 enum xiiEngineGizmoHandleType
 {
   Arrow,
@@ -61,7 +61,7 @@ struct xiiGizmoFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     Default = 0,
 

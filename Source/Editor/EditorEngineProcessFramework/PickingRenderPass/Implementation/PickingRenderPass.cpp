@@ -4,7 +4,8 @@
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocator<xiiPickingRenderPass>)
@@ -31,6 +32,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiPickingRenderPass::xiiPickingRenderPass() :
   xiiRenderPipelinePass("EditorPickingRenderPass")
 {
+  m_pGridRenderDataType = xiiRTTI::FindTypeByName("xiiGridRenderData");
+  XII_ASSERT_DEV(m_pGridRenderDataType != nullptr, "xiiGridRenderData type not found. Type renamed?");
 }
 
 xiiPickingRenderPass::~xiiPickingRenderPass()
@@ -105,7 +108,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   }
 
   // filter out all selected objects
-  xiiRenderDataBatch::Filter filter([&](const xiiRenderData* pRenderData) { return m_SelectionSet.Contains(pRenderData->m_hOwner); });
+  xiiRenderDataBatch::Filter filter([&](const xiiRenderData* pRenderData) { return m_SelectionSet.Contains(pRenderData->m_hOwner) || pRenderData->IsInstanceOf(m_pGridRenderDataType); });
 
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque, filter);
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked, filter);
@@ -273,7 +276,7 @@ void xiiPickingRenderPass::CreateTarget()
   tcd.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
   tcd.m_Size.width  = (xiiUInt32)m_TargetRect.width;
   tcd.m_Size.height = (xiiUInt32)m_TargetRect.height;
-  tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+  tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget;
 
   m_hPickingIdRT = pDevice->CreateTexture(tcd);
 
@@ -284,7 +287,7 @@ void xiiPickingRenderPass::CreateTarget()
   m_hPickingIdRTStaging = pDevice->CreateTexture(tcd);
 
   tcd.m_Format         = xiiGALResourceFormat::D32Float;
-  tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+  tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
   tcd.m_Usage          = xiiGALResourceUsage::Default;
 
@@ -383,7 +386,7 @@ void xiiPickingRenderPass::ReadBackPropertiesSinglePick(xiiView* pView)
         uiPickID = m_PickingResultsID[idxt];
 
         if (uiPickID != 0)
-          goto done;
+          goto Done;
       }
 
       for (xiiInt32 xt = left; xt <= right; ++xt)
@@ -393,11 +396,11 @@ void xiiPickingRenderPass::ReadBackPropertiesSinglePick(xiiView* pView)
         uiPickID = m_PickingResultsID[idxt];
 
         if (uiPickID != 0)
-          goto done;
+          goto Done;
       }
     }
 
-  done:;
+  Done:;
   }
 
   pView->SetRenderPassReadBackProperty(GetName(), "PickedMatrix", m_mPickingInverseViewProjectionMatrix);

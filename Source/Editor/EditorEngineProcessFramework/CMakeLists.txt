@@ -13,7 +13,3 @@ target_link_libraries(${PROJECT_NAME}
   GameEngine
   Utilities
 )
-
-if(XII_CMAKE_PLATFORM_LINUX)
-  target_link_libraries(${PROJECT_NAME} PRIVATE xcb)
-endif()

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/LongOps/Implementation/LongOpManager.h>
+#include <EditorEngineProcessFramework/LongOps/LongOpManager.h>
 
 class xiiLongOpProxy;
 
@@ -52,11 +52,11 @@ public:
   /// \brief Events about the state of all available long ops.
   xiiEvent<const xiiLongOpControllerEvent&> m_Events;
 
-  /// \brief Typically called by xiiLongOpsAdapter when a component that has an xiiLongOpAttribute is added to a scene
-  void RegisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, const char* szLongOpType);
+  /// \brief Typically called by xiiLongOpsAdapter when a component that has a xiiLongOpAttribute is added to a scene
+  void RegisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, xiiStringView sLongOpType);
 
-  /// \brief Typically called by xiiLongOpsAdapter when a component that has an xiiLongOpAttribute is removed from a scene
-  void UnregisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, const char* szLongOpType);
+  /// \brief Typically called by xiiLongOpsAdapter when a component that has a xiiLongOpAttribute is removed from a scene
+  void UnregisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, xiiStringView sLongOpType);
 
   /// \brief Starts executing the given long op. Typically called by the xiiQtLongOpsPanel.
   void StartOperation(xiiUuid opGuid);

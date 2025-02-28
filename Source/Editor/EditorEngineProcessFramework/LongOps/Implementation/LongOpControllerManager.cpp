@@ -104,12 +104,12 @@ void xiiLongOpControllerManager::RemoveOperation(xiiUuid opGuid)
   }
 }
 
-void xiiLongOpControllerManager::RegisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, const char* szLongOpType)
+void xiiLongOpControllerManager::RegisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, xiiStringView sLongOpType)
 {
-  const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(szLongOpType);
+  const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sLongOpType);
   if (pRtti == nullptr)
   {
-    xiiLog::Error("Can't register long op of unknown type '{}'", szLongOpType);
+    xiiLog::Error("Can't register long op of unknown type '{}'", sLongOpType);
     return;
   }
 
@@ -130,14 +130,13 @@ void xiiLongOpControllerManager::RegisterLongOp(const xiiUuid& documentGuid, con
   m_Events.Broadcast(e);
 }
 
-void xiiLongOpControllerManager::UnregisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, const char* szLongOpType)
+void xiiLongOpControllerManager::UnregisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, xiiStringView sLongOpType)
 {
   for (xiiUInt32 i = 0; i < m_ProxyOps.GetCount(); ++i)
   {
     auto& opInfoPtr = m_ProxyOps[i];
 
-    if (opInfoPtr->m_ComponentGuid == componentGuid && opInfoPtr->m_DocumentGuid == documentGuid &&
-        opInfoPtr->m_pProxyOp->GetDynamicRTTI()->GetTypeName() == szLongOpType)
+    if (opInfoPtr->m_ComponentGuid == componentGuid && opInfoPtr->m_DocumentGuid == documentGuid && opInfoPtr->m_pProxyOp->GetDynamicRTTI()->GetTypeName() == sLongOpType)
     {
       RemoveOperation(opInfoPtr->m_OperationGuid);
       return;
@@ -241,51 +240,49 @@ void xiiLongOpControllerManager::BroadcastProgress(ProxyOpInfo& opInfo)
   m_Events.Broadcast(e);
 }
 
-#if 0
-void xiiLongOpManager::AddLongOperation(xiiUniquePtr<xiiLongOp>&& pOperation, const xiiUuid& documentGuid)
-{
-  XII_LOCK(m_Mutex);
 
-  auto& opInfoPtr = m_Operations.ExpandAndGetRef();
-  opInfoPtr       = XII_DEFAULT_NEW(LongOpInfo);
-
-  auto& opInfo        = *opInfoPtr;
-  opInfo.m_pOperation = std::move(pOperation);
-  opInfo.m_OperationGuid = xiiUuid::MakeUuid();
-  opInfo.m_DocumentGuid         = documentGuid;
-  opInfo.m_StartOrDuration      = xiiTime::Now();
-  opInfo.m_Progress.m_pUserData = opInfo.m_pOperation.Borrow();
-  opInfo.m_Progress.m_Events.AddEventHandler(
-    xiiMakeDelegate(&xiiLongOpManager::ProgressBarEventHandler, this), opInfo.m_ProgressSubscription);
-
-  xiiLongOp* pNewOp = opInfo.m_pOperation.Borrow();
-
-  if (m_Mode == Mode::Processor || xiiDynamicCast<xiiLongOpProxy*>(pNewOp) != nullptr)
-  {
-    xiiStringBuilder replType;
-
-    xiiLongOpReplicationMsg msg;
-
-    xiiMemoryStreamContainerWrapperStorage<xiiDataBuffer> storage(&msg.m_ReplicationData);
-    xiiMemoryStreamWriter                                 writer(&storage);
-
-    pNewOp->GetReplicationInfo(replType, writer);
-
-    msg.m_sReplicationType = replType;
-    msg.m_DocumentGuid     = opInfo.m_DocumentGuid;
-    msg.m_OperationGuid    = opInfo.m_OperationGuid;
-    msg.m_sDisplayName     = pNewOp->GetDisplayName();
-
-    m_pCommunicationChannel->SendMessage(&msg);
-  }
-
-  LaunchWorkerOperation(opInfo);
-
-  {
-    xiiLongOpManagerEvent e;
-    e.m_Type             = xiiLongOpManagerEvent::Type::OpAdded;
-    e.m_uiOperationIndex = m_Operations.GetCount() - 1;
-    m_Events.Broadcast(e);
-  }
-}
-#endif
+// void xiiLongOpManager::AddLongOperation(xiiUniquePtr<xiiLongOp>&& pOperation, const xiiUuid& documentGuid)
+//{
+//  XII_LOCK(m_Mutex);
+//
+//  auto& opInfoPtr = m_Operations.ExpandAndGetRef();
+//  opInfoPtr = XII_DEFAULT_NEW(LongOpInfo);
+//
+//  auto& opInfo = *opInfoPtr;
+//  opInfo.m_pOperation = std::move(pOperation);
+//  opInfo.m_OperationGuid.CreateNewUuid();
+//  opInfo.m_DocumentGuid = documentGuid;
+//  opInfo.m_StartOrDuration = xiiTime::Now();
+//  opInfo.m_Progress.m_pUserData = opInfo.m_pOperation.Borrow();
+//  opInfo.m_Progress.m_Events.AddEventHandler(xiiMakeDelegate(&xiiLongOpManager::ProgressBarEventHandler, this), opInfo.m_ProgressSubscription);
+//
+//  xiiLongOp* pNewOp = opInfo.m_pOperation.Borrow();
+//
+//  if (m_Mode == Mode::Processor || xiiDynamicCast<xiiLongOpProxy*>(pNewOp) != nullptr)
+//  {
+//    xiiStringBuilder replType;
+//
+//    xiiLongOpReplicationMsg msg;
+//
+//    xiiMemoryStreamContainerWrapperStorage<xiiDataBuffer> storage(&msg.m_ReplicationData);
+//    xiiMemoryStreamWriter writer(&storage);
+//
+//    pNewOp->GetReplicationInfo(replType, writer);
+//
+//    msg.m_sReplicationType = replType;
+//    msg.m_DocumentGuid = opInfo.m_DocumentGuid;
+//    msg.m_OperationGuid = opInfo.m_OperationGuid;
+//    msg.m_sDisplayName = pNewOp->GetDisplayName();
+//
+//    m_pCommunicationChannel->SendMessage(&msg);
+//  }
+//
+//  LaunchWorkerOperation(opInfo);
+//
+//  {
+//    xiiLongOpManagerEvent e;
+//    e.m_Type = xiiLongOpManagerEvent::Type::OpAdded;
+//    e.m_uiOperationIndex = m_Operations.GetCount() - 1;
+//    m_Events.Broadcast(e);
+//  }
+//}

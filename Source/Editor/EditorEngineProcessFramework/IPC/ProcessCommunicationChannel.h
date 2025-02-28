@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
+
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
@@ -23,6 +24,7 @@ public:
   using WaitForMessageCallback = xiiDelegate<bool(xiiProcessMessage*)>;
   xiiResult WaitForMessage(const xiiRTTI* pMessageType, xiiTime timeout, WaitForMessageCallback* pMessageCallack = nullptr);
   xiiResult WaitForConnection(xiiTime timeout);
+  bool      IsConnected() const;
 
   /// \brief Returns true if any message was processed
   bool ProcessMessages();
