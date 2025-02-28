@@ -15,25 +15,18 @@
 #include <GuiFoundation/Action/ActionManager.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
-// clang-format off
 xiiCommandLineOptionPath   opt_OutputDir("_EditorProcessor", "-outputDir", "Output directory", "");
 xiiCommandLineOptionBool   opt_SaveProfilingData("_EditorProcessor", "-profiling", "Saves performance profiling information into the output folder.", false);
 xiiCommandLineOptionPath   opt_Project("_EditorProcessor", "-project", "Path to the project folder.", "");
 xiiCommandLineOptionBool   opt_Resave("_EditorProcessor", "-resave", "If specified, assets will be resaved.", false);
-xiiCommandLineOptionString opt_Transform("_EditorProcessor", "-transform", "If specified, assets will be transformed for the given platform profile.\n\
-\n\
-Example:\n\
-  -transform Default\n\
-",
-"");
-// clang-format on
+xiiCommandLineOptionString opt_Transform("_EditorProcessor", "-transform", "If specified, assets will be transformed for the given platform profile.\n\nExample:\n  -transform Default\n", "");
 
-class xiiEditorApplication : public xiiApplication
+class xiiEditorProcessorApplication : public xiiApplication
 {
 public:
   using SUPER = xiiApplication;
 
-  xiiEditorApplication() :
+  xiiEditorProcessorApplication() :
     xiiApplication("xiiEditor")
   {
     EnableMemoryLeakReporting(true);
@@ -90,8 +83,9 @@ public:
         }
         else
         {
-          xiiUInt64 uiAssetHash = 0;
-          xiiUInt64 uiThumbHash = 0;
+          xiiUInt64 uiAssetHash   = 0;
+          xiiUInt64 uiThumbHash   = 0;
+          xiiUInt64 uiPackageHash = 0;
 
           // TODO: there is currently no 'nice' way to switch the active platform for the asset processors it is also not clear whether this is actually safe to execute here
           xiiAssetCurator::GetSingleton()->SetActiveAssetProfileByIndex(uiPlatform);
@@ -114,11 +108,11 @@ public:
           xiiAssetCurator::GetSingleton()->NotifyOfFileChange(pMsg->m_sAssetPath);
 
           // Next, we force checking that the asset is up to date. This EditorProcessor instance might not have observed the generation of the output files of various dependencies yet and incorrectly assume that some dependencies still need to be transformed. To prevent this, we force checking the asset and all its dependencies via the filesystem, ignoring the caching.
-          xiiAssetInfo::TransformState state = xiiAssetCurator::GetSingleton()->IsAssetUpToDate(pMsg->m_AssetGuid, xiiAssetCurator::GetSingleton()->GetAssetProfile(uiPlatform), nullptr, uiAssetHash, uiThumbHash, true);
+          xiiAssetInfo::TransformState state = xiiAssetCurator::GetSingleton()->IsAssetUpToDate(pMsg->m_AssetGuid, xiiAssetCurator::GetSingleton()->GetAssetProfile(uiPlatform), nullptr, uiAssetHash, uiThumbHash, uiPackageHash, true);
 
-          if (uiAssetHash != pMsg->m_AssetHash || uiThumbHash != pMsg->m_ThumbHash)
+          if ((uiAssetHash != pMsg->m_AssetHash) || (uiThumbHash != pMsg->m_ThumbHash) || (uiPackageHash != pMsg->m_PackageHash))
           {
-            xiiLog::Warning("Asset '{}' of state '{}' in processor with hashes '{}{}' differs from the state in the editor with hashes '{}{}'", pMsg->m_sAssetPath, (int)state, uiAssetHash, uiThumbHash, pMsg->m_AssetHash, pMsg->m_ThumbHash);
+            xiiLog::Warning("Asset '{}' of state '{}' in processor with hashes '{}|{}|{}' differs from the state in the editor with hashes '{}|{}|{}'.", pMsg->m_sAssetPath, (int)state, uiAssetHash, uiThumbHash, uiPackageHash, pMsg->m_AssetHash, pMsg->m_ThumbHash, pMsg->m_PackageHash);
           }
 
           if (state == xiiAssetInfo::NeedsThumbnail || state == xiiAssetInfo::NeedsTransform)
@@ -238,7 +232,7 @@ public:
       xiiQtEditorApp::GetSingleton()->OpenProject(sProject).IgnoreResult();
 
       xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
-        xiiAssetCurator::GetSingleton()->ResaveAllAssets();
+        xiiAssetCurator::GetSingleton()->ResaveAllAssets({});
 
         if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
         {
@@ -258,7 +252,7 @@ public:
       xiiResult res = m_IPC.ConnectToHostProcess();
       if (res.Succeeded())
       {
-        m_IPC.m_Events.AddEventHandler(xiiMakeDelegate(&xiiEditorApplication::EventHandlerIPC, this));
+        m_IPC.m_Events.AddEventHandler(xiiMakeDelegate(&xiiEditorProcessorApplication::EventHandlerIPC, this));
 
         xiiQtEditorApp::GetSingleton()->OpenProject(sProject).IgnoreResult();
         xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
@@ -295,4 +289,4 @@ private:
   xiiUniquePtr<xiiEditorEngineProcessApp> m_pEditorEngineProcessAppDummy;
 };
 
-XII_APPLICATION_ENTRY_POINT(xiiEditorApplication);
+XII_APPLICATION_ENTRY_POINT(xiiEditorProcessorApplication);
