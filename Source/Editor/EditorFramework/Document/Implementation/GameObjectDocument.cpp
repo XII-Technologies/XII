@@ -82,8 +82,11 @@ void xiiGameObjectDocument::GameObjectDocumentEventHandler(const xiiGameObjectDo
       auto pEditorPrefsUser = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
       if (pEditorPrefsUser && pEditorPrefsUser->m_bClearEditorLogsOnPlay)
       {
+        xiiQtLogPanel::GetSingleton()->CombinedLog->GetLog()->Clear();
+
         // on play, the engine log has a lot of activity, so makes sense to clear that first
         xiiQtLogPanel::GetSingleton()->EngineLog->GetLog()->Clear();
+
         // but I think we usually want to keep the editor log around
         // xiiQtLogPanel::GetSingleton()->EditorLog->GetLog()->Clear();
       }
@@ -201,6 +204,24 @@ void xiiGameObjectDocument::SetPickTransparent(bool b)
   }
 }
 
+void xiiGameObjectDocument::SetActiveParent(xiiUuid object)
+{
+  if (m_ActiveParent != object)
+  {
+    if (auto pMeta = m_DocumentObjectMetaData->BeginModifyMetaData(m_ActiveParent))
+    {
+      m_DocumentObjectMetaData->EndModifyMetaData(xiiDocumentObjectMetaData::ActiveParentFlag);
+    }
+
+    m_ActiveParent = object;
+
+    if (auto pMeta = m_DocumentObjectMetaData->BeginModifyMetaData(m_ActiveParent))
+    {
+      m_DocumentObjectMetaData->EndModifyMetaData(xiiDocumentObjectMetaData::ActiveParentFlag);
+    }
+  }
+}
+
 void xiiGameObjectDocument::SetGizmoWorldSpace(bool bWorldSpace)
 {
   if (m_bGizmoWorldSpace == bWorldSpace)
@@ -306,9 +327,11 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
 
     for (auto pProperty : properties)
     {
+      const auto type = pProperty->GetSpecificType();
+
       // search for string properties that also have an asset browser property -> they reference an asset, so this is most likely the most
       // relevant property
-      if ((pProperty->GetSpecificType() == xiiGetStaticRTTI<const char*>() || pProperty->GetSpecificType() == xiiGetStaticRTTI<xiiString>()) && pProperty->GetAttributeByType<xiiAssetBrowserAttribute>() != nullptr)
+      if ((type == xiiGetStaticRTTI<const char*>() || type == xiiGetStaticRTTI<xiiString>() || type == xiiGetStaticRTTI<xiiStringView>()) && pProperty->GetAttributeByType<xiiAssetBrowserAttribute>() != nullptr)
       {
         xiiStringBuilder sValue;
         if (pProperty->GetCategory() == xiiPropertyCategory::Member)
@@ -473,25 +496,25 @@ void xiiGameObjectDocument::SetGlobalTransform(const xiiDocumentObject* pObject,
   // if (pObject->GetTypeAccessor().GetValue("LocalPosition").ConvertTo<xiiVec3>() != vLocalPos)
   if ((uiTransformationChanges & TransformationChanges::Translation) != 0)
   {
-    pAccessor->SetValue(pObject, "LocalPosition", vLocalPos).LogFailure();
+    pAccessor->SetValueByName(pObject, "LocalPosition", vLocalPos).LogFailure();
   }
 
   // if (pObject->GetTypeAccessor().GetValue("LocalRotation").ConvertTo<xiiQuat>() != qLocalRot)
   if ((uiTransformationChanges & TransformationChanges::Rotation) != 0)
   {
-    pAccessor->SetValue(pObject, "LocalRotation", qLocalRot).LogFailure();
+    pAccessor->SetValueByName(pObject, "LocalRotation", qLocalRot).LogFailure();
   }
 
   // if (pObject->GetTypeAccessor().GetValue("LocalScaling").ConvertTo<xiiVec3>() != vLocalScale)
   if ((uiTransformationChanges & TransformationChanges::Scale) != 0)
   {
-    pAccessor->SetValue(pObject, "LocalScaling", vLocalScale).LogFailure();
+    pAccessor->SetValueByName(pObject, "LocalScaling", vLocalScale).LogFailure();
   }
 
   // if (pObject->GetTypeAccessor().GetValue("LocalUniformScaling").ConvertTo<float>() != fUniformScale)
   if ((uiTransformationChanges & TransformationChanges::UniformScale) != 0)
   {
-    pAccessor->SetValue(pObject, "LocalUniformScaling", fUniformScale).LogFailure();
+    pAccessor->SetValueByName(pObject, "LocalUniformScaling", fUniformScale).LogFailure();
   }
 
   // will be recomputed the next time it is queried
@@ -718,74 +741,6 @@ void xiiGameObjectDocument::MoveCameraHere()
   ctxt.m_pLastHoveredViewWidget->InterpolateCameraTo(vPos, vCamDir, pCamera->GetFovOrDim(), &vCamUp);
 }
 
-xiiStatus xiiGameObjectDocument::CreateGameObjectHere()
-{
-  const auto& ctxt = xiiQtEngineViewWidget::GetInteractionContext();
-  const bool  bCanCreate =
-    ctxt.m_pLastHoveredViewWidget != nullptr && ctxt.m_pLastPickingResult && !ctxt.m_pLastPickingResult->m_vPickedPosition.IsNaN();
-
-  if (!bCanCreate)
-    return xiiStatus(XII_FAILURE);
-
-  auto history = GetCommandHistory();
-
-  history->StartTransaction("Create Node");
-
-  xiiAddObjectCommand cmdAdd;
-  cmdAdd.m_pType           = xiiGetStaticRTTI<xiiGameObject>();
-  cmdAdd.m_sParentProperty = "Children";
-  cmdAdd.m_Index           = -1;
-
-  xiiUuid NewNode;
-
-  const auto& Sel = GetSelectionManager()->GetSelection();
-
-  if (true)
-  {
-    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
-    NewNode                = cmdAdd.m_NewObjectGuid;
-
-    auto res = history->AddCommand(cmdAdd);
-    if (res.Failed())
-    {
-      history->CancelTransaction();
-      return res;
-    }
-  }
-
-  xiiVec3 vCreatePos = ctxt.m_pLastPickingResult->m_vPickedPosition;
-  xiiSnapProvider::SnapTranslation(vCreatePos);
-
-  xiiSetObjectPropertyCommand cmdSet;
-  cmdSet.m_NewValue  = vCreatePos;
-  cmdSet.m_Object    = NewNode;
-  cmdSet.m_sProperty = "LocalPosition";
-
-  auto res = history->AddCommand(cmdSet);
-  if (res.Failed())
-  {
-    history->CancelTransaction();
-    return res;
-  }
-
-  // Add a dummy shape icon component, which enables picking
-  {
-    xiiAddObjectCommand cmdAdd2;
-    cmdAdd2.m_pType           = xiiRTTI::FindTypeByName("xiiShapeIconComponent");
-    cmdAdd2.m_sParentProperty = "Components";
-    cmdAdd2.m_Index           = -1;
-    cmdAdd2.m_Parent          = NewNode;
-
-    auto result = history->AddCommand(cmdAdd2);
-  }
-
-  history->FinishTransaction();
-
-  GetSelectionManager()->SetSelection(GetObjectManager()->GetObject(NewNode));
-
-  return xiiStatus(XII_SUCCESS);
-}
-
 void xiiGameObjectDocument::ScheduleSendObjectSelection()
 {
   m_iResendSelection = 2;
@@ -976,7 +931,7 @@ void xiiGameObjectDocument::SendObjectSelection()
 
   --m_iResendSelection;
 
-  const auto& sel = GetSelectionManager()->GetSelection();
+  const auto& sel = GetSelectionManager()->GetRuntimeOverrideSelection().IsEmpty() ? GetSelectionManager()->GetSelection() : GetSelectionManager()->GetRuntimeOverrideSelection();
 
   xiiObjectSelectionMsgToEngine msg;
   xiiStringBuilder              sTemp;

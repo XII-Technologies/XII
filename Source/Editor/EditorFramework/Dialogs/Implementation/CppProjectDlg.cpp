@@ -1,6 +1,5 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include "Foundation/Logging/Log.h"
 #include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/CodeGen/CppSettings.h>
 #include <EditorFramework/Dialogs/CppProjectDlg.moc.h>
@@ -8,6 +7,8 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Logging/Log.h>
+#include <Foundation/System/Process.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
 xiiQtCppProjectDlg::xiiQtCppProjectDlg(QWidget* pParent) :
@@ -24,16 +25,12 @@ xiiQtCppProjectDlg::xiiQtCppProjectDlg(QWidget* pParent) :
     PluginName->setText(m_CppSettings.m_sPluginName.GetData());
   }
 
+  if (xiiStatus compilerTestResult = xiiCppProject::TestCompiler(); compilerTestResult.Failed())
   {
-    xiiQtScopedBlockSignals _1(Generator);
-    Generator->addItem("None");
-    Generator->addItem("Visual Studio 2022");
-    Generator->setCurrentIndex(0);
-
-    if (m_CppSettings.m_Compiler == xiiCppSettings::Compiler::Vs2022)
-    {
-      Generator->setCurrentIndex(1);
-    }
+    // TODO: how do I color the ErrorText label in Red (or whatever error color is configured?)
+    xiiStringBuilder fmt;
+    ErrorText->setText(xiiMakeQString(xiiFmt("<html><b>Error:</b> {}<br>Please go to preferences and configure the C & C++ compiler.", compilerTestResult.m_sMessage).GetText(fmt)));
+    GenerateSolution->setDisabled(true);
   }
 
   UpdateUI();
@@ -54,26 +51,11 @@ void xiiQtCppProjectDlg::on_OpenBuildFolder_clicked()
   xiiQtUiServices::OpenInExplorer(BuildFolder->text().toUtf8().data(), false);
 }
 
-void xiiQtCppProjectDlg::on_Generator_currentIndexChanged(int)
-{
-  switch (Generator->currentIndex())
-  {
-    case 0:
-      m_CppSettings.m_Compiler = xiiCppSettings::Compiler::None;
-      break;
-    case 1:
-      m_CppSettings.m_Compiler = xiiCppSettings::Compiler::Vs2022;
-      break;
-  }
-
-  UpdateUI();
-}
-
 void xiiQtCppProjectDlg::on_OpenSolution_clicked()
 {
-  if (!xiiQtUiServices::OpenFileInDefaultProgram(xiiCppProject::GetSolutionPath(m_CppSettings)))
+  if (auto result = xiiCppProject::OpenSolution(m_CppSettings); result.Failed())
   {
-    xiiQtUiServices::GetSingleton()->MessageBoxWarning("Opening the solution failed.");
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning(result.m_sMessage.GetView());
   }
 }
 
@@ -96,7 +78,6 @@ void xiiQtCppProjectDlg::UpdateUI()
   PluginLocation->setText(xiiCppProject::GetTargetSourceDir().GetData());
   BuildFolder->setText(xiiCppProject::GetBuildDir(m_CppSettings).GetData());
 
-  GenerateSolution->setEnabled(m_CppSettings.m_Compiler != xiiCppSettings::Compiler::None);
   OpenPluginLocation->setEnabled(xiiOSFile::ExistsDirectory(PluginLocation->text().toUtf8().data()));
   OpenBuildFolder->setEnabled(xiiOSFile::ExistsDirectory(BuildFolder->text().toUtf8().data()));
   OpenSolution->setEnabled(xiiCppProject::ExistsSolution(m_CppSettings));
@@ -172,10 +153,12 @@ void xiiQtCppProjectDlg::on_GenerateSolution_clicked()
 
   m_OldCppSettings.Load().IgnoreResult();
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   if (xiiSystemInformation::IsDebuggerAttached())
   {
     xiiQtUiServices::GetSingleton()->MessageBoxWarning("When a debugger is attached, CMake usually fails with the error that no C/C++ compiler can be found.\n\nDetach the debugger now, then press OK to continue.");
   }
+#endif
 
   OutputLog->clear();
 

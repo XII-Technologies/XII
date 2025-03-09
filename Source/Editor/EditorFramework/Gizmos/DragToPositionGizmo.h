@@ -3,7 +3,6 @@
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Gizmos/GizmoBase.h>
 #include <Foundation/Math/Quat.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 class XII_EDITORFRAMEWORK_DLL xiiDragToPositionGizmo : public xiiGizmo
 {

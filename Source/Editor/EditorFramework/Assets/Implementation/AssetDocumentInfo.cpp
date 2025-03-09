@@ -13,6 +13,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetDocumentInfo, 2, xiiRTTIDefaultAllocato
     XII_SET_MEMBER_PROPERTY("Outputs", m_Outputs),
     XII_MEMBER_PROPERTY("Hash", m_uiSettingsHash),
     XII_ACCESSOR_PROPERTY("AssetType", GetAssetsDocumentTypeName, SetAssetsDocumentTypeName),
+    XII_ACCESSOR_PROPERTY("Tags", GetAssetsDocumentTags, SetAssetsDocumentTags),
     XII_ARRAY_MEMBER_PROPERTY("MetaInfo", m_MetaInfo)->AddFlags(xiiPropertyFlags::PointerOwner),
   }
   XII_END_PROPERTIES;
@@ -43,6 +44,7 @@ void xiiAssetDocumentInfo::operator=(xiiAssetDocumentInfo&& rhs)
   m_PackageDependencies     = rhs.m_PackageDependencies;
   m_Outputs                 = rhs.m_Outputs;
   m_sAssetsDocumentTypeName = rhs.m_sAssetsDocumentTypeName;
+  m_sAssetsDocumentTags     = rhs.m_sAssetsDocumentTags;
   m_MetaInfo                = std::move(rhs.m_MetaInfo);
 }
 
@@ -54,6 +56,7 @@ void xiiAssetDocumentInfo::CreateShallowClone(xiiAssetDocumentInfo& rhs) const
   rhs.m_PackageDependencies     = m_PackageDependencies;
   rhs.m_Outputs                 = m_Outputs;
   rhs.m_sAssetsDocumentTypeName = m_sAssetsDocumentTypeName;
+  rhs.m_sAssetsDocumentTags     = m_sAssetsDocumentTags;
   rhs.m_MetaInfo.Clear();
 }
 
@@ -71,9 +74,19 @@ const char* xiiAssetDocumentInfo::GetAssetsDocumentTypeName() const
   return m_sAssetsDocumentTypeName.GetData();
 }
 
+const xiiString& xiiAssetDocumentInfo::GetAssetsDocumentTags() const
+{
+  return m_sAssetsDocumentTags;
+}
+
 void xiiAssetDocumentInfo::SetAssetsDocumentTypeName(const char* szSz)
 {
   m_sAssetsDocumentTypeName.Assign(szSz);
+}
+
+void xiiAssetDocumentInfo::SetAssetsDocumentTags(const xiiString& sTags)
+{
+  m_sAssetsDocumentTags = sTags;
 }
 
 const xiiReflectedClass* xiiAssetDocumentInfo::GetMetaInfo(const xiiRTTI* pType) const

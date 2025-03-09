@@ -1,14 +1,14 @@
 #pragma once
 
-#include <EditorFramework/EditorFrameworkDLL.h>
-
 #include <Core/Graphics/Camera.h>
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
+#include <EditorFramework/EditorFrameworkDLL.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Math/Size.h>
 
 #include <QWidget>
+#include <ads/DockWidget.h>
 
 class xiiQtEngineDocumentWindow;
 class xiiEditorInputContext;
@@ -140,7 +140,7 @@ protected:
   bool                       m_bPickTransparent = true;
   bool                       m_bInDragAndDropOperation;
   xiiUInt32                  m_uiViewID;
-  xiiQtEngineDocumentWindow* m_pDocumentWindow = nullptr;
+  xiiQtEngineDocumentWindow* m_pDocumentWindow;
 
   static xiiUInt32 s_uiNextViewID;
 
@@ -155,8 +155,8 @@ protected:
   xiiVec3 m_vCameraUp;
   xiiTime m_LastCameraUpdate;
 
-  QHBoxLayout* m_pRestartButtonLayout = nullptr;
-  QPushButton* m_pRestartButton       = nullptr;
+  QHBoxLayout* m_pRestartButtonLayout;
+  QPushButton* m_pRestartButton;
 
   mutable xiiObjectPickingResult m_LastPickingResult;
 
@@ -164,18 +164,18 @@ protected:
 };
 
 /// \brief Wraps and decorates a view widget with a toolbar and layout.
-class XII_EDITORFRAMEWORK_DLL xiiQtViewWidgetContainer : public QWidget
+class XII_EDITORFRAMEWORK_DLL xiiQtViewWidgetContainer : public ads::CDockWidget
 {
   Q_OBJECT
 
 public:
-  xiiQtViewWidgetContainer(QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, const char* szToolBarMapping);
+  xiiQtViewWidgetContainer(QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, xiiStringView sToolBarMapping);
   ~xiiQtViewWidgetContainer();
 
   xiiQtEngineViewWidget* GetViewWidget() const { return m_pViewWidget; }
   QVBoxLayout*           GetLayout() const { return m_pLayout; }
 
 private:
-  xiiQtEngineViewWidget* m_pViewWidget = nullptr;
-  QVBoxLayout*           m_pLayout     = nullptr;
+  xiiQtEngineViewWidget* m_pViewWidget;
+  QVBoxLayout*           m_pLayout;
 };

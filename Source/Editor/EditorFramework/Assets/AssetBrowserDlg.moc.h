@@ -5,12 +5,12 @@
 #include <EditorFramework/ui_AssetBrowserDlg.h>
 #include <QDialog>
 
-class xiiQtAssetBrowserDlg : public QDialog, public Ui_AssetBrowserDlg
+class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserDlg : public QDialog, public Ui_AssetBrowserDlg
 {
   Q_OBJECT
 
 public:
-  xiiQtAssetBrowserDlg(QWidget* pParent, const xiiUuid& preselectedAsset, xiiStringView sVisibleFilters);
+  xiiQtAssetBrowserDlg(QWidget* pParent, const xiiUuid& preselectedAsset, xiiStringView sVisibleFilters, xiiStringView sWindowTitle = {}, xiiStringView sRequiredTag = {});
   xiiQtAssetBrowserDlg(QWidget* pParent, xiiStringView sWindowTitle, xiiStringView sPreselectedFileAbs, xiiStringView sFileExtensions);
   ~xiiQtAssetBrowserDlg();
 
@@ -31,6 +31,7 @@ private:
   xiiString m_sSelectedAssetPathAbsolute;
   xiiUuid   m_SelectedAssetGuid;
   xiiString m_sVisibleFilters;
+  xiiString m_sRequiredTag;
 
   static bool                         s_bShowItemsInSubFolder;
   static bool                         s_bShowItemsInHiddenFolder;

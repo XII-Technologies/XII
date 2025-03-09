@@ -39,10 +39,10 @@ struct XII_EDITORFRAMEWORK_DLL xiiPluginBundle
   xiiResult ReadBundleFromDDL(xiiOpenDdlReader& ref_ddl);
 
   /// \brief Writes only the bundle's state to a DDL file.
-  void WriteStateToDDL(xiiOpenDdlWriter& ref_ddl, const char* szOwnName) const;
+  void WriteStateToDDL(xiiOpenDdlWriter& ref_ddl, xiiStringView sOwnName) const;
 
   /// \brief Reads only the bundle's state from a DDL file.
-  void ReadStateFromDDL(xiiOpenDdlReader& ref_ddl, const char* szOwnName);
+  void ReadStateFromDDL(xiiOpenDdlReader& ref_ddl, xiiStringView sOwnName);
 
   /// \brief Checks whether two bundles have the same state.
   bool IsStateEqual(const xiiPluginBundle& rhs) const
@@ -55,6 +55,8 @@ struct XII_EDITORFRAMEWORK_DLL xiiPluginBundle
 struct XII_EDITORFRAMEWORK_DLL xiiPluginBundleSet
 {
   xiiMap<xiiString, xiiPluginBundle, xiiCompareString_NoCase> m_Plugins;
+
+  void SetFromTemplate(xiiStringView sTemplateName);
 
   /// \brief Writes the state of all bundles to a DDL file.
   void WriteStateToDDL(xiiOpenDdlWriter& ref_ddl) const;

@@ -33,6 +33,6 @@ private:
   void PropertyChangedEventHandler(const xiiDocumentObjectPropertyEvent& e);
   void ApplyAllChanges();
 
-  xiiPreferencesDocument*             m_pDocument = nullptr;
+  xiiPreferencesDocument*             m_pDocument;
   xiiMap<xiiUuid, const xiiDocument*> m_DocumentBinding;
 };

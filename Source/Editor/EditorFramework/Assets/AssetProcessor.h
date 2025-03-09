@@ -2,6 +2,7 @@
 
 #include <EditorFramework/EditorFrameworkDLL.h>
 
+#include <EditorFramework/Assets/Declarations.h>
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Logging/Log.h>
@@ -54,35 +55,46 @@ public:
 class xiiProcessTask
 {
 public:
+  enum class State
+  {
+    LookingForWork,
+    WaitingForConnection,
+    Ready,
+    Processing,
+    ReportResult
+  };
+
+public:
   xiiProcessTask();
   ~xiiProcessTask();
 
-  xiiAtomicInteger32 m_bDidWork = true;
-  xiiUInt32          m_uiProcessorID;
+  xiiUInt32 m_uiProcessorID;
 
-  bool BeginExecute();
+  bool Tick(bool bStartNewWork); // returns false, if all processing is done, otherwise call Tick again.
 
-  bool FinishExecute();
+  bool IsConnected();
+
+  bool HasProcessCrashed();
+
+  xiiResult StartProcess();
 
   void ShutdownProcess();
 
 private:
-  void StartProcess();
   void EventHandlerIPC(const xiiProcessCommunicationChannel::Event& e);
 
   bool GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_guid, xiiDataDirPath& out_path);
   bool GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& out_path);
-  void OnProcessCrashed();
+  void OnProcessCrashed(xiiStringView message);
 
-
+  State                                 m_State = State::LookingForWork;
   xiiUuid                               m_AssetGuid;
-  xiiUInt64                             m_uiAssetHash = 0;
-  xiiUInt64                             m_uiThumbHash = 0;
+  xiiUInt64                             m_uiAssetHash   = 0;
+  xiiUInt64                             m_uiThumbHash   = 0;
+  xiiUInt64                             m_uiPackageHash = 0;
   xiiDataDirPath                        m_AssetPath;
-  xiiEditorProcessCommunicationChannel* m_pIPC                    = nullptr;
+  xiiEditorProcessCommunicationChannel* m_pIPC;
   bool                                  m_bProcessShouldBeRunning = false;
-  bool                                  m_bProcessCrashed         = false;
-  bool                                  m_bWaiting                = false;
   xiiTransformStatus                    m_Status;
   xiiDynamicArray<xiiLogEntry>          m_LogEntries;
   xiiDynamicArray<xiiString>            m_TransitiveHull;
@@ -138,6 +150,5 @@ private:
   std::atomic<ProcessTaskState> m_ProcessTaskState = ProcessTaskState::Stopped;
 
   // Data owned by the process thread.
-  xiiDynamicArray<bool>           m_ProcessRunning;
   xiiDynamicArray<xiiProcessTask> m_ProcessTasks;
 };

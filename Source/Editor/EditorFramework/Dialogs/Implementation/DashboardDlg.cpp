@@ -17,7 +17,7 @@ xiiQtDashboardDlg::xiiQtDashboardDlg(QWidget* pParent, DashboardTab activeTab) :
   SamplesTab->setFlat(true);
   DocumentationTab->setFlat(true);
 
-  if (xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>())
+  if (xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>())
   {
     LoadLastProject->setChecked(pPreferences->m_bLoadLastProjectAtStartup);
   }
@@ -243,7 +243,7 @@ void xiiQtDashboardDlg::on_OpenSample_clicked()
 
 void xiiQtDashboardDlg::on_LoadLastProject_stateChanged(int)
 {
-  if (xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>())
+  if (xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>())
   {
     pPreferences->m_bLoadLastProjectAtStartup = LoadLastProject->isChecked();
   }

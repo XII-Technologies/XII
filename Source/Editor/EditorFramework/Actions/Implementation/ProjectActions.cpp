@@ -63,6 +63,7 @@ xiiActionDescriptorHandle xiiProjectActions::s_hReloadResources;
 xiiActionDescriptorHandle xiiProjectActions::s_hReloadEngine;
 xiiActionDescriptorHandle xiiProjectActions::s_hLaunchFileserve;
 xiiActionDescriptorHandle xiiProjectActions::s_hLaunchInspector;
+xiiActionDescriptorHandle xiiProjectActions::s_hLaunchTracy;
 xiiActionDescriptorHandle xiiProjectActions::s_hSaveProfiling;
 xiiActionDescriptorHandle xiiProjectActions::s_hOpenVsCode;
 
@@ -85,9 +86,12 @@ void xiiProjectActions::RegisterActions()
   s_hCatFileSpecial  = XII_REGISTER_CATEGORY("G.File.Special");
   s_hCatAssetDoc     = XII_REGISTER_CATEGORY("G.AssetDoc");
 
-  s_hOpenDashboard  = XII_REGISTER_ACTION_1("Editor.OpenDashboard", xiiActionScope::Global, "Editor", "Ctrl+Shift+D", xiiProjectAction, xiiProjectAction::ButtonType::OpenDashboard);
-  s_hCreateProject  = XII_REGISTER_ACTION_1("Project.Create", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::CreateProject);
-  s_hOpenProject    = XII_REGISTER_ACTION_1("Project.Open", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::OpenProject);
+  s_hOpenDashboard = XII_REGISTER_ACTION_1("Editor.OpenDashboard", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::OpenDashboard);
+
+  s_hCreateProject = XII_REGISTER_ACTION_1("Project.Create", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::CreateProject);
+
+  s_hOpenProject = XII_REGISTER_ACTION_1("Project.Open", xiiActionScope::Global, "Project", "Ctrl+Shift+D", xiiProjectAction, xiiProjectAction::ButtonType::OpenProject);
+
   s_hRecentProjects = XII_REGISTER_DYNAMIC_MENU("Project.RecentProjects.Menu", xiiRecentProjectsMenuAction, "");
   s_hCloseProject   = XII_REGISTER_ACTION_1("Project.Close", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::CloseProject);
 
@@ -118,7 +122,7 @@ void xiiProjectActions::RegisterActions()
   //////////////////////////////////////////////////////////////////////////
 
   s_hCreateDocument  = XII_REGISTER_ACTION_1("Document.Create", xiiActionScope::Global, "Project", "Ctrl+N", xiiProjectAction, xiiProjectAction::ButtonType::CreateDocument);
-  s_hOpenDocument    = XII_REGISTER_ACTION_1("Document.Open", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::OpenDocument);
+  s_hOpenDocument    = XII_REGISTER_ACTION_1("Document.Open", xiiActionScope::Global, "Project", "Ctrl+O", xiiProjectAction, xiiProjectAction::ButtonType::OpenDocument);
   s_hRecentDocuments = XII_REGISTER_DYNAMIC_MENU("Project.RecentDocuments.Menu", xiiRecentDocumentsMenuAction, "");
 
   s_hShortcutEditor = XII_REGISTER_ACTION_1("Editor.Shortcuts", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::Shortcuts);
@@ -132,6 +136,7 @@ void xiiProjectActions::RegisterActions()
   s_hReloadEngine    = XII_REGISTER_ACTION_1("Engine.ReloadEngine", xiiActionScope::Global, "Engine", "Ctrl+Shift+F4", xiiProjectAction, xiiProjectAction::ButtonType::ReloadEngine);
   s_hLaunchFileserve = XII_REGISTER_ACTION_1("Editor.LaunchFileserve", xiiActionScope::Global, "Engine", "", xiiProjectAction, xiiProjectAction::ButtonType::LaunchFileserve);
   s_hLaunchInspector = XII_REGISTER_ACTION_1("Editor.LaunchInspector", xiiActionScope::Global, "Engine", "", xiiProjectAction, xiiProjectAction::ButtonType::LaunchInspector);
+  s_hLaunchTracy     = XII_REGISTER_ACTION_1("Editor.LaunchTracy", xiiActionScope::Global, "Engine", "", xiiProjectAction, xiiProjectAction::ButtonType::LaunchTracy);
   s_hSaveProfiling   = XII_REGISTER_ACTION_1("Editor.SaveProfiling", xiiActionScope::Global, "Engine", "Ctrl+Alt+P", xiiProjectAction, xiiProjectAction::ButtonType::SaveProfiling);
   s_hOpenVsCode      = XII_REGISTER_ACTION_1("Editor.OpenVsCode", xiiActionScope::Global, "Project", "Ctrl+Alt+O", xiiProjectAction, xiiProjectAction::ButtonType::OpenVsCode);
 
@@ -169,6 +174,7 @@ void xiiProjectActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hReloadEngine);
   xiiActionManager::UnregisterAction(s_hLaunchFileserve);
   xiiActionManager::UnregisterAction(s_hLaunchInspector);
+  xiiActionManager::UnregisterAction(s_hLaunchTracy);
   xiiActionManager::UnregisterAction(s_hSaveProfiling);
   xiiActionManager::UnregisterAction(s_hOpenVsCode);
   xiiActionManager::UnregisterAction(s_hShortcutEditor);
@@ -189,12 +195,10 @@ void xiiProjectActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hPluginSelection);
 }
 
-void xiiProjectActions::MapActions(xiiStringView sMapping)
+void xiiProjectActions::MapActions(xiiStringView sMapping, const xiiBitflags<xiiStandardMenuTypes> menus)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the actions failed!", sMapping);
-
-  xiiStringBuilder sPath;
 
   // Add categories
   pMap->MapAction(s_hCatProjectGeneral, "G.Project", 1.0f);
@@ -210,18 +214,18 @@ void xiiProjectActions::MapActions(xiiStringView sMapping)
   pMap->MapAction(s_hCatProjectSettings, "G.Project.Config", 1.0f);
   pMap->MapAction(s_hCatPluginSettings, "G.Project.Config", 1.0f);
 
-  if (pMap->SearchPathForAction("G.File", sPath).Succeeded())
+  if (menus.IsSet(xiiStandardMenuTypes::File))
   {
-    pMap->MapAction(s_hCatFilesGeneral, sPath, 1.0f);
-    pMap->MapAction(s_hCatFileCommon, sPath, 2.0f);
-    pMap->MapAction(s_hCatAssetDoc, sPath, 3.0f);
-    pMap->MapAction(s_hCatFileSpecial, sPath, 4.0f);
+    pMap->MapAction(s_hCatFilesGeneral, "G.File", 1.0f);
+    pMap->MapAction(s_hCatFileCommon, "G.File", 2.0f);
+    pMap->MapAction(s_hCatAssetDoc, "G.File", 3.0f);
+    pMap->MapAction(s_hCatFileSpecial, "G.File", 4.0f);
   }
 
   // Add actions
-  pMap->MapAction(s_hOpenDashboard, "G.Project.General", 1.0f);
-  // pMap->MapAction(s_hCreateProject, "G.Project.General", 2.0f); // use dashboard
-  // pMap->MapAction(s_hOpenProject, "G.Project.General", 3.0f);   // use dashboard
+  // pMap->MapAction(s_hOpenDashboard, "G.Project.General", 1.0f);
+  pMap->MapAction(s_hOpenProject, "G.Project.General", 2.0f);   // use dashboard
+  pMap->MapAction(s_hCreateProject, "G.Project.General", 3.0f); // use dashboard
   // pMap->MapAction(s_hRecentProjects, "G.Project.General", 4.0f);// use dashboard
   pMap->MapAction(s_hCloseProject, "G.Project.General", 5.0f);
 
@@ -245,7 +249,8 @@ void xiiProjectActions::MapActions(xiiStringView sMapping)
 
   pMap->MapAction(s_hOpenVsCode, "G.Tools.External", 1.0f);
   pMap->MapAction(s_hLaunchInspector, "G.Tools.External", 2.0f);
-  pMap->MapAction(s_hLaunchFileserve, "G.Tools.External", 3.0f);
+  pMap->MapAction(s_hLaunchTracy, "G.Tools.External", 3.0f);
+  pMap->MapAction(s_hLaunchFileserve, "G.Tools.External", 4.0f);
 
   pMap->MapAction(s_hReloadResources, "G.Tools.Editor", 1.0f);
   pMap->MapAction(s_hReloadEngine, "G.Tools.Editor", 2.0f);
@@ -254,16 +259,16 @@ void xiiProjectActions::MapActions(xiiStringView sMapping)
   pMap->MapAction(s_hShortcutEditor, "G.Editor.Settings", 1.0f);
   pMap->MapAction(s_hPreferencesDlg, "G.Editor.Settings", 2.0f);
 
-  if (pMap->SearchPathForAction("G.Help", sPath).Succeeded())
+  if (menus.IsSet(xiiStandardMenuTypes::Help))
   {
-    pMap->MapAction(s_hDocsAndCommunity, sPath, 0.0f);
+    pMap->MapAction(s_hDocsAndCommunity, "G.Help", 0.0f);
   }
 
-  if (pMap->SearchPathForAction("G.File.Common", sPath).Succeeded())
+  if (menus.IsSet(xiiStandardMenuTypes::File))
   {
-    pMap->MapAction(s_hCreateDocument, sPath, 1.0f);
-    pMap->MapAction(s_hOpenDocument, sPath, 2.0f);
-    pMap->MapAction(s_hRecentDocuments, sPath, 3.0f);
+    pMap->MapAction(s_hCreateDocument, "G.Files.General", 1.0f);
+    pMap->MapAction(s_hOpenDocument, "G.Files.General", 2.0f);
+    pMap->MapAction(s_hRecentDocuments, "G.Files.General", 3.0f);
   }
 }
 
@@ -274,7 +279,7 @@ void xiiProjectActions::MapActions(xiiStringView sMapping)
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRecentDocumentsMenuAction, 0, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-void xiiRecentDocumentsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
+void xiiRecentDocumentsMenuAction::GetEntries(xiiDynamicArray<Item>& out_entries)
 {
   out_entries.Clear();
 
@@ -335,7 +340,7 @@ void xiiRecentDocumentsMenuAction::Execute(const xiiVariant& value)
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRecentProjectsMenuAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-void xiiRecentProjectsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
+void xiiRecentProjectsMenuAction::GetEntries(xiiDynamicArray<Item>& out_entries)
 {
   out_entries.Clear();
 
@@ -404,6 +409,9 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     case xiiProjectAction::ButtonType::LaunchInspector:
       SetIconPath(":/EditorFramework/Icons/Inspector.svg");
       break;
+    case xiiProjectAction::ButtonType::LaunchTracy:
+      SetIconPath(":/EditorFramework/Icons/Tracy.svg");
+      break;
     case xiiProjectAction::ButtonType::ReloadEngine:
       SetIconPath(":/GuiFoundation/Icons/ReloadEngine.svg");
       break;
@@ -471,6 +479,7 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
       m_ButtonType == ButtonType::ReloadEngine ||
       m_ButtonType == ButtonType::ReloadResources ||
       m_ButtonType == ButtonType::LaunchFileserve ||
+      m_ButtonType == ButtonType::LaunchTracy ||
       m_ButtonType == ButtonType::LaunchInspector ||
       m_ButtonType == ButtonType::OpenVsCode ||
       m_ButtonType == ButtonType::InputConfig ||
@@ -487,7 +496,8 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiProjectAction::ProjectEventHandler, this));
   }
 
-  if (m_ButtonType == ButtonType::OpenCppProject || m_ButtonType == ButtonType::CompileCppProject)
+  if (m_ButtonType == ButtonType::OpenCppProject ||
+      m_ButtonType == ButtonType::CompileCppProject)
   {
     SetEnabled(xiiCppProject::ExistsProjectCMakeListsTxt());
 
@@ -506,6 +516,7 @@ xiiProjectAction::~xiiProjectAction()
       m_ButtonType == ButtonType::ReloadResources ||
       m_ButtonType == ButtonType::LaunchFileserve ||
       m_ButtonType == ButtonType::LaunchInspector ||
+      m_ButtonType == ButtonType::LaunchTracy ||
       m_ButtonType == ButtonType::OpenVsCode ||
       m_ButtonType == ButtonType::InputConfig ||
       m_ButtonType == ButtonType::AssetProfiles ||
@@ -566,7 +577,8 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       break;
 
     case xiiProjectAction::ButtonType::OpenProject:
-      xiiQtEditorApp::GetSingleton()->GuiOpenProject();
+      xiiQtEditorApp::GetSingleton()->GuiOpenDashboard();
+      // xiiQtEditorApp::GetSingleton()->GuiOpenProject();
       break;
 
     case xiiProjectAction::ButtonType::CloseProject:
@@ -720,6 +732,14 @@ void xiiProjectAction::Execute(const xiiVariant& value)
     }
     break;
 
+    case xiiProjectAction::ButtonType::LaunchTracy:
+    {
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching Tracy...", xiiTime::MakeFromSeconds(5));
+
+      xiiQtEditorApp::GetSingleton()->RunTracy();
+    }
+    break;
+
     case xiiProjectAction::ButtonType::ReloadEngine:
     {
       xiiEditorEngineProcessConnection::GetSingleton()->RestartProcess().IgnoreResult();
@@ -824,9 +844,12 @@ void xiiProjectAction::Execute(const xiiVariant& value)
         {
           xiiQtUiServices::GetSingleton()->MessageBoxWarning("Generating the C++ solution failed.");
         }
-        else if (!xiiQtUiServices::OpenFileInDefaultProgram(xiiCppProject::GetSolutionPath(cpp)))
+        else
         {
-          xiiQtUiServices::GetSingleton()->MessageBoxWarning("Opening the solution failed.");
+          if (auto status = xiiCppProject::OpenSolution(cpp); status.Failed())
+          {
+            xiiQtUiServices::GetSingleton()->MessageBoxWarning(status.m_sMessage.GetView());
+          }
         }
       }
       else

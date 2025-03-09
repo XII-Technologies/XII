@@ -26,8 +26,7 @@ xiiExposedParametersDefaultStateProvider::xiiExposedParametersDefaultStateProvid
   m_pAttrib = pProp->GetAttributeByType<xiiExposedParametersAttribute>();
   XII_ASSERT_DEBUG(m_pAttrib, "xiiExposedParametersDefaultStateProvider was created for a property that does not have the xiiExposedParametersAttribute.");
   m_pParameterSourceProp = pObject->GetType()->FindPropertyByName(m_pAttrib->GetParametersSource());
-  XII_ASSERT_DEBUG(
-    m_pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", m_pAttrib->GetParametersSource(), pObject->GetType()->GetTypeName());
+  XII_ASSERT_DEBUG(m_pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", m_pAttrib->GetParametersSource(), pObject->GetType()->GetTypeName());
 }
 
 xiiInt32 xiiExposedParametersDefaultStateProvider::GetRootDepth() const
@@ -90,7 +89,7 @@ bool xiiExposedParametersDefaultStateProvider::IsDefaultValue(SuperArray superPt
   else
   {
     // We consider an exposed params map to be the default if it is empty.
-    // We deliberately do not use the accessor here and go directly to the object storage as the passed in pAccessor could already be an xiiExposedParameterCommandAccessor in which case we wouldn't truly know if anything was overwritten.
+    // We deliberately do not use the accessor here and go directly to the object storage as the passed in pAccessor could already be a xiiExposedParameterCommandAccessor in which case we wouldn't truly know if anything was overwritten.
     xiiVariant value = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName(), index);
     return value.Get<xiiVariantDictionary>().GetCount() == 0;
   }

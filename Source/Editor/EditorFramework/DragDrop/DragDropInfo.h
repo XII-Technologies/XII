@@ -20,7 +20,7 @@ class XII_EDITORFRAMEWORK_DLL xiiDragDropInfo : public xiiReflectedClass
 public:
   xiiDragDropInfo();
 
-  const QMimeData* m_pMimeData = nullptr;
+  const QMimeData* m_pMimeData;
 
   /// A string identifying into what context the object is dropped, e.g. "viewport" or "scenetree" etc.
   xiiString m_sTargetContext;
@@ -31,6 +31,9 @@ public:
   /// GUID of the xiiDocumentObject that is at the dropped position. May be invalid. Can be used to attach as a child, to modify the object itself or
   /// can be ignored.
   xiiUuid m_TargetObject;
+
+  /// GUID of the xiiDocumentObject that may be used as the parent, if no other target is more important.
+  xiiUuid m_ActiveParentObject;
 
   /// GUID of the xiiDocumentObject that is the more specific component (of m_TargetObject) that was dragged on. May be invalid.
   xiiUuid m_TargetComponent;
@@ -55,7 +58,7 @@ public:
 };
 
 
-/// \brief After an xiiDragDropHandler has been chosen to handle an operation, it is queried once to fill out an instance of this type (or an extended
+/// \brief After a xiiDragDropHandler has been chosen to handle an operation, it is queried once to fill out an instance of this type (or an extended
 /// derived type) to enable configuring how xiiDragDropInfo is computed by the target.
 class XII_EDITORFRAMEWORK_DLL xiiDragDropConfig : public xiiReflectedClass
 {

@@ -7,6 +7,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/IO/OpenDdlReader.h>
 #include <Foundation/IO/OpenDdlWriter.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <GuiFoundation/UIServices/DynamicStringEnum.h>
 #include <GuiFoundation/UIServices/QtProgressbar.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
@@ -118,11 +119,11 @@ void xiiQtEditorApp::EngineProcessMsgHandler(const xiiEditorEngineProcessConnect
       }
     }
     break;
-
     case xiiEditorEngineProcessConnection::Event::Type::ProcessRestarted:
+    {
       StoreEnginePluginModificationTimes();
-      break;
-
+    }
+    break;
     default:
       return;
   }
@@ -363,7 +364,11 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
 
     QProcess proc;
     proc.setWorkingDirectory(sTargetDir.GetData());
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
     proc.start("git.exe", args);
+#else
+    proc.start("git", args);
+#endif
 
     if (!proc.waitForStarted())
     {
@@ -570,6 +575,13 @@ void xiiQtEditorApp::LaunchEditor(const char* szProject, bool bCreate)
   if (m_StartupFlags.IsSet(StartupFlags::NoRecent))
     args << "-noRecent";
 
+  if (xiiCommandLineUtils::GetGlobalInstance()->HasOption("-renderer"))
+  {
+    xiiStringBuilder sRenderer = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer");
+    args << "-renderer";
+    args << sRenderer.GetData();
+  }
+
   QProcess proc;
   proc.startDetached(QString::fromUtf8(app, app.GetElementCount()), args);
 }
@@ -596,4 +608,26 @@ void xiiQtEditorApp::ReloadEngineResources()
   msg.m_sWhatToDo = "ReloadResources";
   msg.m_sPayload  = "ReloadAllResources";
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
+}
+
+void xiiQtEditorApp::OpenDemoDocument()
+{
+  auto* pCurator = xiiAssetCurator::GetSingleton();
+  auto  assets   = pCurator->GetKnownAssets();
+
+  xiiStringBuilder sBestDoc;
+
+  for (auto it = assets->GetIterator(); it.IsValid(); ++it)
+  {
+    if (it.Value()->m_Path.GetDataDirRelativePath().GetFileName().IsEqual_NoCase("Main"))
+    {
+      sBestDoc = it.Value()->m_Path.GetAbsolutePath();
+      break;
+    }
+  }
+
+  if (!sBestDoc.IsEmpty())
+  {
+    SlotQueuedOpenDocument(sBestDoc.GetData(), nullptr);
+  }
 }

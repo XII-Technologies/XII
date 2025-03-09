@@ -36,8 +36,8 @@ protected:
   void CreateViews(bool bQuad);
 
 private:
-  xiiAssetDocument*          m_pDocument = nullptr;
-  xiiQtEngineDocumentWindow* m_pWindow   = nullptr;
+  xiiAssetDocument*          m_pDocument;
+  xiiQtEngineDocumentWindow* m_pWindow;
   ViewFactory                m_ViewFactory;
   xiiString                  m_sViewToolBarMapping;
 

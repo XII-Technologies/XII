@@ -81,7 +81,7 @@ public:
 private:
   void UpdateState();
 
-  xiiGameObjectDocument* m_pGameObjectDocument = nullptr;
+  xiiGameObjectDocument* m_pGameObjectDocument;
   ActionType             m_Type;
 };
 
@@ -113,6 +113,6 @@ public:
   virtual void Execute(const xiiVariant& value) override;
 
 private:
-  const xiiGameObjectDocument* m_pSceneDocument = nullptr;
+  const xiiGameObjectDocument* m_pSceneDocument;
   ActionType                   m_Type;
 };

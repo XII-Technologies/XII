@@ -16,26 +16,37 @@ xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
 
   szToolName = toolExe;
 
-  xiiEditorApplicationPreferences* pPref = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
+  xiiEditorPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
 
-  bool bFolders[2] = {false, true};
+  xiiHybridArray<xiiString, 3> sFolders;
 
   if (pPref->m_bUsePrecompiledTools)
   {
-    xiiMath::Swap(bFolders[0], bFolders[1]);
+    if (!pPref->m_sCustomPrecompiledToolsFolder.IsEmpty() && xiiOSFile::ExistsDirectory(pPref->m_sCustomPrecompiledToolsFolder))
+    {
+      xiiStringBuilder customToolsFolder = pPref->m_sCustomPrecompiledToolsFolder;
+      customToolsFolder.MakeCleanPath();
+      sFolders.PushBack(customToolsFolder);
+    }
+
+    sFolders.PushBack(xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(true));
+    sFolders.PushBack(xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(false));
+  }
+  else
+  {
+    sFolders.PushBack(xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(false));
+    sFolders.PushBack(xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(true));
   }
 
-  xiiStringBuilder sTool = xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(bFolders[0]);
-  sTool.AppendPath(szToolName);
+  xiiStringBuilder sTool;
+  for (auto& folder : sFolders)
+  {
+    sTool = folder;
+    sTool.AppendPath(szToolName);
 
-  if (xiiFileSystem::ExistsFile(sTool))
-    return sTool;
-
-  sTool = xiiApplicationServices::GetSingleton()->GetPrecompiledToolsFolder(bFolders[1]);
-  sTool.AppendPath(szToolName);
-
-  if (xiiFileSystem::ExistsFile(sTool))
-    return sTool;
+    if (xiiOSFile::ExistsFile(sTool))
+      return sTool;
+  }
 
   // just try the one in the same folder as the editor
   return szToolName;
@@ -182,7 +193,7 @@ xiiString xiiQtEditorApp::BuildFileserveCommandLine() const
   xiiStringBuilder       params;
 
   xiiStringBuilder cmd;
-  cmd.Set(sToolPath, " -specialdirs project \"", sProjectDir, "\" -fs_start");
+  cmd.Set(sToolPath, " -specialdirs project \"", sProjectDir, "\"");
 
   return cmd;
 }
@@ -193,8 +204,7 @@ void xiiQtEditorApp::RunFileserve()
   const xiiStringBuilder sProjectDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
 
   QStringList args;
-  args << "-specialdirs"
-       << "project" << sProjectDir.GetData() << "-fs_start";
+  args << "-specialdirs" << "project" << sProjectDir.GetData() << "-fs_start";
 
   QProcess::startDetached(sToolPath.GetData(), args);
 }
@@ -205,4 +215,16 @@ void xiiQtEditorApp::RunInspector()
   QStringList            args;
 
   QProcess::startDetached(sToolPath.GetData(), args);
+}
+
+void xiiQtEditorApp::RunTracy()
+{
+#if BUILDSYSTEM_ENABLE_TRACY_SUPPORT == 0
+  xiiQtUiServices::MessageBoxInformation("<html>This build of XII was compiled without support for Tracy profiling.<br><br>See <a href='https://xiiengine.net/pages/docs/debugging/tracy.html'>the documentation</a> for how to enable it.</html>");
+#else
+  const xiiStringBuilder sToolPath = xiiQtEditorApp::GetSingleton()->FindToolApplication("tracy-profiler");
+  QStringList            args;
+
+  QProcess::startDetached(sToolPath.GetData(), args);
+#endif
 }

@@ -6,7 +6,6 @@
 xiiActionDescriptorHandle xiiAssetActions::s_hAssetCategory;
 xiiActionDescriptorHandle xiiAssetActions::s_hTransformAsset;
 xiiActionDescriptorHandle xiiAssetActions::s_hTransformAllAssets;
-xiiActionDescriptorHandle xiiAssetActions::s_hResaveAllAssets;
 xiiActionDescriptorHandle xiiAssetActions::s_hCheckFileSystem;
 xiiActionDescriptorHandle xiiAssetActions::s_hWriteLookupTable;
 xiiActionDescriptorHandle xiiAssetActions::s_hWriteDependencyDGML;
@@ -16,7 +15,6 @@ void xiiAssetActions::RegisterActions()
   s_hAssetCategory       = XII_REGISTER_CATEGORY("AssetCategory");
   s_hTransformAsset      = XII_REGISTER_ACTION_1("Asset.Transform", xiiActionScope::Document, "Assets", "Ctrl+E", xiiAssetAction, xiiAssetAction::ButtonType::TransformAsset);
   s_hTransformAllAssets  = XII_REGISTER_ACTION_1("Asset.TransformAll", xiiActionScope::Global, "Assets", "Ctrl+Shift+E", xiiAssetAction, xiiAssetAction::ButtonType::TransformAllAssets);
-  s_hResaveAllAssets     = XII_REGISTER_ACTION_1("Asset.ResaveAll", xiiActionScope::Global, "Assets", "", xiiAssetAction, xiiAssetAction::ButtonType::ResaveAllAssets);
   s_hCheckFileSystem     = XII_REGISTER_ACTION_1("Asset.CheckFilesystem", xiiActionScope::Global, "Assets", "", xiiAssetAction, xiiAssetAction::ButtonType::CheckFileSystem);
   s_hWriteLookupTable    = XII_REGISTER_ACTION_1("Asset.WriteLookupTable", xiiActionScope::Global, "Assets", "", xiiAssetAction, xiiAssetAction::ButtonType::WriteLookupTable);
   s_hWriteDependencyDGML = XII_REGISTER_ACTION_1("Asset.WriteDependencyDGML", xiiActionScope::Document, "Assets", "", xiiAssetAction, xiiAssetAction::ButtonType::WriteDependencyDGML);
@@ -27,7 +25,6 @@ void xiiAssetActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hAssetCategory);
   xiiActionManager::UnregisterAction(s_hTransformAsset);
   xiiActionManager::UnregisterAction(s_hTransformAllAssets);
-  xiiActionManager::UnregisterAction(s_hResaveAllAssets);
   xiiActionManager::UnregisterAction(s_hCheckFileSystem);
   xiiActionManager::UnregisterAction(s_hWriteLookupTable);
   xiiActionManager::UnregisterAction(s_hWriteDependencyDGML);
@@ -59,7 +56,6 @@ void xiiAssetActions::MapToolBarActions(xiiStringView sMapping, bool bDocument)
   {
     pMap->MapAction(s_hCheckFileSystem, "AssetCategory", 1.0f);
     pMap->MapAction(s_hTransformAllAssets, "AssetCategory", 2.0f);
-    pMap->MapAction(s_hResaveAllAssets, "AssetCategory", 3.0f);
   }
 }
 
@@ -82,9 +78,6 @@ xiiAssetAction::xiiAssetAction(const xiiActionContext& context, const char* szNa
       break;
     case xiiAssetAction::ButtonType::TransformAllAssets:
       SetIconPath(":/EditorFramework/Icons/TransformAllAssets.svg");
-      break;
-    case xiiAssetAction::ButtonType::ResaveAllAssets:
-      SetIconPath(":/EditorFramework/Icons/ResavAllAssets.svg");
       break;
     case xiiAssetAction::ButtonType::CheckFileSystem:
       SetIconPath(":/EditorFramework/Icons/CheckFileSystem.svg");
@@ -132,12 +125,6 @@ void xiiAssetAction::Execute(const xiiVariant& value)
     {
       xiiAssetCurator::GetSingleton()->CheckFileSystem();
       xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::None).IgnoreResult();
-    }
-    break;
-
-    case xiiAssetAction::ButtonType::ResaveAllAssets:
-    {
-      xiiAssetCurator::GetSingleton()->ResaveAllAssets();
     }
     break;
 

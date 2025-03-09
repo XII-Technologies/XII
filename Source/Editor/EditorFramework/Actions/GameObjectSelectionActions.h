@@ -24,7 +24,6 @@ public:
   static xiiActionDescriptorHandle s_hFocusOnSelectionAllViews;
   static xiiActionDescriptorHandle s_hSnapCameraToObject;
   static xiiActionDescriptorHandle s_hMoveCameraHere;
-  static xiiActionDescriptorHandle s_hCreateEmptyGameObjectHere;
 };
 
 ///
@@ -40,7 +39,6 @@ public:
     FocusOnSelectionAllViews,
     SnapCameraToObject,
     MoveCameraHere,
-    CreateGameObjectHere,
   };
 
   xiiGameObjectSelectionAction(const xiiActionContext& context, const char* szName, ActionType type);
@@ -53,6 +51,6 @@ private:
 
   void UpdateEnableState();
 
-  xiiGameObjectDocument* m_pSceneDocument = nullptr;
+  xiiGameObjectDocument* m_pSceneDocument;
   ActionType             m_Type;
 };

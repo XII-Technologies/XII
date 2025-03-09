@@ -2,7 +2,6 @@
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Gizmos/GizmoBase.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 class XII_EDITORFRAMEWORK_DLL xiiScaleGizmo : public xiiGizmo
 {

@@ -18,9 +18,9 @@ public:
   xiiQtGameObjectViewWidget(QWidget* pParent, xiiQtGameObjectDocumentWindow* pOwnerWindow, xiiEngineViewConfig* pViewConfig);
   ~xiiQtGameObjectViewWidget();
 
-  xiiOrthoGizmoContext* m_pOrthoGizmoContext = nullptr;
-  xiiSelectionContext*  m_pSelectionContext  = nullptr;
-  xiiCameraMoveContext* m_pCameraMoveContext = nullptr;
+  xiiOrthoGizmoContext* m_pOrthoGizmoContext;
+  xiiSelectionContext*  m_pSelectionContext;
+  xiiCameraMoveContext* m_pCameraMoveContext;
 
   virtual void SyncToEngine() override;
 

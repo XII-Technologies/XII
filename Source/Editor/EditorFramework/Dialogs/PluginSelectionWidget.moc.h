@@ -21,6 +21,7 @@ public:
 
   void SetPluginSet(xiiPluginBundleSet* pPluginSet);
   void SyncStateToSet();
+  void SelectTemplate(const char* szTemplate);
 
 private Q_SLOTS:
   void on_PluginsList_currentItemChanged(QListWidgetItem* current, QListWidgetItem* previous);

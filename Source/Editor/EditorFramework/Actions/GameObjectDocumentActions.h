@@ -59,7 +59,7 @@ private:
   void OnPreferenceChange(xiiPreferences* pref);
 
   float                  m_fSimSpeed;
-  xiiGameObjectDocument* m_pGameObjectDocument = nullptr;
+  xiiGameObjectDocument* m_pGameObjectDocument;
   ActionType             m_Type;
 };
 
@@ -83,6 +83,6 @@ private:
   void OnPreferenceChange(xiiPreferences* pref);
   void UpdateState();
 
-  xiiGameObjectDocument* m_pGameObjectDocument = nullptr;
+  xiiGameObjectDocument* m_pGameObjectDocument;
   ActionType             m_Type;
 };

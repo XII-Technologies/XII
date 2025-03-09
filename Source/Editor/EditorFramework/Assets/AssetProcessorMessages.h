@@ -12,8 +12,9 @@ class XII_EDITORFRAMEWORK_DLL xiiProcessAssetMsg : public xiiProcessMessage
 
 public:
   xiiUuid                    m_AssetGuid;
-  xiiUInt64                  m_AssetHash = 0;
-  xiiUInt64                  m_ThumbHash = 0;
+  xiiUInt64                  m_AssetHash   = 0;
+  xiiUInt64                  m_ThumbHash   = 0;
+  xiiUInt64                  m_PackageHash = 0;
   xiiString                  m_sAssetPath;
   xiiString                  m_sPlatform;
   xiiDynamicArray<xiiString> m_DepRefHull;

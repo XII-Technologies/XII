@@ -9,7 +9,6 @@ xiiActionDescriptorHandle xiiViewActions::s_hPerspective;
 xiiActionDescriptorHandle xiiViewActions::s_hActivateRemoteProcess;
 xiiActionDescriptorHandle xiiViewActions::s_hLinkDeviceCamera;
 
-
 void xiiViewActions::RegisterActions()
 {
   s_hRenderMode            = XII_REGISTER_DYNAMIC_MENU("View.RenderMode", xiiRenderModeAction, ":/EditorFramework/Icons/RenderMode.svg");

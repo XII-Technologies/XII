@@ -76,6 +76,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiAssetInfo
     TransformError,
     MissingTransformDependency,
     MissingThumbnailDependency,
+    MissingPackageDependency,
     CircularDependency,
     COUNT,
   };
@@ -85,6 +86,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiAssetInfo
   TransformState               m_TransformState  = TransformState::Unknown;
   xiiUInt64                    m_AssetHash       = 0; ///< Valid if m_TransformState != Unknown and asset not in Curator's m_TransformStateStale list.
   xiiUInt64                    m_ThumbHash       = 0; ///< Valid if m_TransformState != Unknown and asset not in Curator's m_TransformStateStale list.
+  xiiUInt64                    m_PackageHash     = 0; ///< Valid if m_TransformState != Unknown and asset not in Curator's m_TransformStateStale list.
 
   xiiDynamicArray<xiiLogEntry> m_LogEntries;
 
@@ -95,6 +97,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiAssetInfo
 
   xiiSet<xiiString> m_MissingTransformDeps;
   xiiSet<xiiString> m_MissingThumbnailDeps;
+  xiiSet<xiiString> m_MissingPackageDeps;
   xiiSet<xiiString> m_CircularDependencies;
 
   xiiSet<xiiUuid> m_SubAssets; ///< Main asset uses the same GUID as this (see m_Info), but is NOT stored in m_SubAssets
@@ -219,9 +222,10 @@ public:
 
   /// \brief Transforms all assets and writes the lookup tables. If the given platform is empty, the active platform is used.
   xiiStatus          TransformAllAssets(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
-  void               ResaveAllAssets();
   xiiTransformStatus TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus CreateThumbnail(const xiiUuid& assetGuid);
+
+  void ResaveAllAssets(xiiStringView sPrefixPath);
 
   /// Some assets are not automatically updated by the asset dependency detection (mainly Collections) because of their transitive data dependencies.
   /// So we must update them when the user does something 'significant' like doing TransformAllAssets or a scene export.
@@ -261,7 +265,7 @@ public:
   /// \brief Computes the combined hash for the asset and its references. Returns 0 if anything went wrong.
   xiiUInt64 GetAssetReferenceHash(xiiUuid assetGuid);
 
-  xiiAssetInfo::TransformState IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, bool bForce = false);
+  xiiAssetInfo::TransformState IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, xiiUInt64& out_uiPackageHash, bool bForce = false);
   /// \brief Returns the number of assets in the system and how many are in what transform state
   void GetAssetTransformStats(xiiUInt32& out_uiNumAssets, xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT>& out_count);
 
@@ -370,16 +374,8 @@ private:
   /// \name Asset Hashing and Status Updates (AssetUpdates.cpp)
   ///@{
 
-  xiiAssetInfo::TransformState HashAsset(
-    xiiUInt64                            uiSettingsHash,
-    const xiiHybridArray<xiiString, 16>& assetTransformDeps,
-    const xiiHybridArray<xiiString, 16>& assetThumbnailDeps,
-    xiiSet<xiiString>&                   missingTransformDeps,
-    xiiSet<xiiString>&                   missingThumbnailDeps,
-    xiiUInt64&                           out_AssetHash,
-    xiiUInt64&                           out_ThumbHash,
-    bool                                 bForce);
-  bool AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
+  bool                         AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce);
+  xiiAssetInfo::TransformState HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDeps, const xiiHybridArray<xiiString, 16>& assetThumbnailDeps, const xiiHybridArray<xiiString, 16>& assetPackageDeps, xiiSet<xiiString>& missingTransformDeps, xiiSet<xiiString>& missingThumbnailDeps, xiiSet<xiiString>& missingPackageDeps, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce);
 
   xiiResult EnsureAssetInfoUpdated(const xiiDataDirPath& absFilePath, const xiiFileStatus& stat, bool bForce = false);
   void      TrackDependencies(xiiAssetInfo* pAssetInfo);
@@ -393,7 +389,7 @@ private:
   void RemoveAssetTransformState(const xiiUuid& assetGuid);
   void InvalidateAssetTransformState(const xiiUuid& assetGuid);
 
-  xiiAssetInfo::TransformState UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce);
+  xiiAssetInfo::TransformState UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce);
   void                         UpdateAssetTransformState(const xiiUuid& assetGuid, xiiAssetInfo::TransformState state);
   void                         UpdateAssetTransformLog(const xiiUuid& assetGuid, xiiDynamicArray<xiiLogEntry>& logEntries);
   void                         SetAssetExistanceState(xiiAssetInfo& assetInfo, xiiAssetExistanceState::Enum state);

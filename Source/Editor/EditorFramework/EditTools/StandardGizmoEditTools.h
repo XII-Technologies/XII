@@ -34,6 +34,14 @@ private:
   void OnPreferenceChange(xiiPreferences* pref);
 
   xiiTranslateGizmo m_TranslateGizmo;
+  enum GridPlane
+  {
+    X,
+    Y,
+    Z
+  };
+
+  GridPlane m_GridPlane = GridPlane::Z;
 };
 
 //////////////////////////////////////////////////////////////////////////

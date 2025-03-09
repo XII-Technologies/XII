@@ -134,7 +134,7 @@ xiiEditorInput xiiNonUniformBoxGizmo::DoMousePressEvent(QMouseEvent* e)
 
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::MayBeHandledByOthers;
-  if (e->modifiers() != 0)
+  if (e->modifiers() != 0 && e->modifiers() != Qt::KeyboardModifier::ShiftModifier) // allow shift for toggling snapping
     return xiiEditorInput::MayBeHandledByOthers;
 
   for (xiiUInt32 i = 0; i < 6; ++i)
@@ -230,8 +230,8 @@ xiiEditorInput xiiNonUniformBoxGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
     xiiVec3 vTranslate = GetTransformation().m_qRotation.GetInverse() * (vNewPos - m_vStartPosition);
 
-    // disable snapping when ALT is pressed
-    if (!e->modifiers().testFlag(Qt::AltModifier))
+    // disable snapping when SHIFT is pressed
+    if (!e->modifiers().testFlag(Qt::ShiftModifier))
     {
       xiiSnapProvider::SnapTranslation(vTranslate);
     }

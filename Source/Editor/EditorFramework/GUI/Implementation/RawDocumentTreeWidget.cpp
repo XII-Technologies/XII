@@ -7,11 +7,14 @@
 xiiQtDocumentTreeView::xiiQtDocumentTreeView(QWidget* pParent) :
   xiiQtItemView<QTreeView>(pParent)
 {
+  setObjectName("xiiQtDocumentTreeView");
 }
 
 xiiQtDocumentTreeView::xiiQtDocumentTreeView(QWidget* pParent, xiiDocument* pDocument, std::unique_ptr<xiiQtDocumentTreeModel> pModel, xiiSelectionManager* pSelection) :
   xiiQtItemView<QTreeView>(pParent)
 {
+  setObjectName("xiiQtDocumentTreeView");
+
   Initialize(pDocument, std::move(pModel), pSelection);
 }
 
@@ -66,7 +69,7 @@ void xiiQtDocumentTreeView::on_selectionChanged_triggered(const QItemSelection& 
 
   foreach (QModelIndex index, selection)
   {
-    if (index.isValid())
+    if (index.isValid() && index.column() == 0)
     {
       index = m_pFilterModel->mapToSource(index);
 
@@ -91,6 +94,7 @@ void xiiQtDocumentTreeView::SelectionEventHandler(const xiiSelectionManagerEvent
       m_bBlockSelectionSignal = false;
     }
     break;
+
     case xiiSelectionManagerEvent::Type::SelectionSet:
     case xiiSelectionManagerEvent::Type::ObjectAdded:
     case xiiSelectionManagerEvent::Type::ObjectRemoved:
@@ -112,11 +116,14 @@ void xiiQtDocumentTreeView::SelectionEventHandler(const xiiSelectionManagerEvent
         // We need to change the current index as well because the current index can trigger side effects. E.g. deleting the current index row triggers a selection change event.
         selectionModel()->setCurrentIndex(currentIndex, QItemSelectionModel::SelectCurrent);
       }
-      selectionModel()
-        ->select(selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows | QItemSelectionModel::NoUpdate);
+      selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows | QItemSelectionModel::NoUpdate);
       m_bBlockSelectionSignal = false;
     }
     break;
+
+    case xiiSelectionManagerEvent::Type::ChangedRuntimeOverrideSelection:
+      // ignore
+      break;
   }
 }
 

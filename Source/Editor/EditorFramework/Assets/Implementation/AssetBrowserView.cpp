@@ -23,6 +23,26 @@ xiiQtAssetBrowserView::xiiQtAssetBrowserView(QWidget* pParent) :
   SetIconScale(m_iIconSizePercentage);
 }
 
+void xiiQtAssetBrowserView::startDrag(Qt::DropActions supportedActions)
+{
+  // overridden so that we can get rid of the preview image
+
+  QModelIndexList indexes = selectedIndexes();
+  if (indexes.count() > 0)
+  {
+    QMimeData* data = model()->mimeData(indexes);
+    if (!data)
+    {
+      return;
+    }
+
+    QDrag* drag = new QDrag(this);
+    drag->setMimeData(data);
+
+    drag->exec(supportedActions, Qt::MoveAction);
+  }
+}
+
 void xiiQtAssetBrowserView::SetDialogMode(bool bDialogMode)
 {
   m_bDialogMode = bDialogMode;
@@ -103,9 +123,11 @@ void xiiQtAssetBrowserView::dropEvent(QDropEvent* pEvent)
     return;
 
   QList<QUrl>     paths           = pEvent->mimeData()->urls();
-  const xiiString targetDirectory = indexAt(pEvent->pos()).data(xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
+  const xiiString targetDirectory = indexAt(pEvent->position().toPoint()).data(xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
   if (targetDirectory.IsEmpty())
+  {
     return;
+  }
 
   xiiHybridArray<xiiString, 32> touchedFiles;
   // make sure to notify the filesystem of files and folders that were touched
@@ -118,11 +140,17 @@ void xiiQtAssetBrowserView::dropEvent(QDropEvent* pEvent)
     src.MakeCleanPath();
 
     xiiStringBuilder dst = targetDirectory;
-    dst.AppendPath(qtToXIIString(it->fileName()));
     dst.MakeCleanPath();
 
+    // prevent moving stuff into itself
     if (src == dst)
       continue;
+
+    // don't allow dropping anything onto an existing file
+    if (xiiOSFile::ExistsFile(dst))
+      continue;
+
+    dst.AppendPath(qtToXIIString(it->fileName()));
 
     if (xiiOSFile::ExistsDirectory(src))
     {
@@ -195,26 +223,26 @@ void xiiQtAssetBrowserView::wheelEvent(QWheelEvent* pEvent)
   QListView::wheelEvent(pEvent);
 }
 
-void xiiQtAssetBrowserView::mousePressEvent(QMouseEvent* pEvent)
-{
-  if (pEvent->button() == Qt::MouseButton::BackButton)
-  {
-    pEvent->ignore();
-
-    return;
-  }
-  QListView::mousePressEvent(pEvent);
-}
-
 void xiiQtAssetBrowserView::mouseDoubleClickEvent(QMouseEvent* pEvent)
 {
   if (pEvent->button() == Qt::MouseButton::BackButton)
   {
     pEvent->ignore();
-
     return;
   }
+
   QListView::mouseDoubleClickEvent(pEvent);
+}
+
+void xiiQtAssetBrowserView::mousePressEvent(QMouseEvent* pEvent)
+{
+  if (pEvent->button() == Qt::MouseButton::BackButton)
+  {
+    pEvent->ignore();
+    return;
+  }
+
+  QListView::mousePressEvent(pEvent);
 }
 
 void xiiQtAssetBrowserView::mouseMoveEvent(QMouseEvent* pEvent)
@@ -441,6 +469,9 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
           xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetOk.svg").paint(pPainter, thumbnailRect);
           break;
         case xiiAssetInfo::TransformState::MissingTransformDependency:
+          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetMissingDependency.svg").paint(pPainter, thumbnailRect);
+          break;
+        case xiiAssetInfo::TransformState::MissingPackageDependency:
           xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetMissingDependency.svg").paint(pPainter, thumbnailRect);
           break;
         case xiiAssetInfo::TransformState::MissingThumbnailDependency:

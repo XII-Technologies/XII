@@ -257,19 +257,20 @@ xiiStatus xiiAssetDocumentGenerator::Import(xiiStringView sInputFileAbs, xiiStri
   if (!m_SupportedFileTypes.Contains(ext))
     return xiiStatus(xiiFmt("Files of type '{}' cannot be imported as '{}' documents.", ext, GetDocumentExtension()));
 
-  xiiDocument* pGeneratedDoc = nullptr;
-  XII_SUCCEED_OR_RETURN(Generate(sInputFileAbs, sMode, pGeneratedDoc));
+  xiiHybridArray<xiiDocument*, 16> pGeneratedDocs;
+  XII_SUCCEED_OR_RETURN(Generate(sInputFileAbs, sMode, pGeneratedDocs));
 
-  XII_ASSERT_DEV(pGeneratedDoc != nullptr, "");
-
-  const xiiString sDocPath = pGeneratedDoc->GetDocumentPath();
-
-  pGeneratedDoc->SaveDocument(true).LogFailure();
-  pGeneratedDoc->GetDocumentManager()->CloseDocument(pGeneratedDoc);
-
-  if (bOpenDocument)
+  for (xiiDocument* pDoc : pGeneratedDocs)
   {
-    xiiQtEditorApp::GetSingleton()->OpenDocumentQueued(sDocPath);
+    const xiiString sDocPath = pDoc->GetDocumentPath();
+
+    pDoc->SaveDocument(true).LogFailure();
+    pDoc->GetDocumentManager()->CloseDocument(pDoc);
+
+    if (bOpenDocument)
+    {
+      xiiQtEditorApp::GetSingleton()->OpenDocumentQueued(sDocPath);
+    }
   }
 
   return xiiStatus(XII_SUCCESS);

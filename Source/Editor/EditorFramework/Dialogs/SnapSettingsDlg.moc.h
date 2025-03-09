@@ -20,7 +20,7 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    const char* m_szKey = nullptr;
+    const char* m_szKey;
     float       m_fValue;
   };
 

@@ -285,7 +285,7 @@ protected:
   EngineStatus                m_EngineStatus;
   xiiAssetDocEngineConnection m_EngineConnectionType = xiiAssetDocEngineConnection::None;
 
-  xiiEditorEngineConnection* m_pEngineConnection = nullptr;
+  xiiEditorEngineConnection* m_pEngineConnection;
 
   mutable xiiHashTable<xiiUuid, xiiEditorEngineSyncObject*> m_AllSyncObjects;
   mutable xiiDeque<xiiEditorEngineSyncObject*>              m_SyncObjects;

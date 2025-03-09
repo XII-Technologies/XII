@@ -237,6 +237,11 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
         // range.BeginNextStep(doc.m_File);
         SlotQueuedOpenDocument(doc.m_File.GetData(), nullptr);
       }
+
+      if (allDocs.GetFileList().IsEmpty())
+      {
+        OpenDemoDocument();
+      }
     }
 
     if (!xiiQtEditorApp::GetSingleton()->IsInSafeMode())
@@ -288,7 +293,7 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
 
       m_RecentProjects.Insert(xiiToolsProject::GetSingleton()->GetProjectFile(), 0);
 
-      xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
+      xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
 
       // Make sure preferences are saved, this is important when the project was just created.
       if (m_bSavePreferencesAfterOpenProject)
@@ -304,18 +309,31 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
 
       if (m_StartupFlags.AreNoneSet(xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::SafeMode | xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::Background))
       {
-        if (xiiCppProject::IsBuildRequired())
+        if (xiiCppProject::ExistsProjectCMakeListsTxt())
         {
-          const auto clicked = xiiQtUiServices::MessageBoxQuestion("<html>Compile this project's C++ plugin?<br><br>\
+          xiiStatus compilerStatus = xiiCppProject::TestCompiler();
+          if (compilerStatus.Failed())
+          {
+            xiiQtUiServices::MessageBoxWarning(xiiFmt("<html>The compiler preferences are invalid.<br><br>\
+              This project has <a href='https://xiiengine.net/pages/docs/custom-code/cpp/cpp-project-generation.html'>a dedicated C++ plugin</a> with custom code.<br><br>\
+              The compiler set in the preferences does not appear to work, as a result the plugin cannot be compiled <br><br><b>Error:</b> {}</html>",
+                                                      compilerStatus.m_sMessage.GetView()));
+            break;
+          }
+          else if (xiiCppProject::IsBuildRequired())
+          {
+            const auto clicked = xiiQtUiServices::MessageBoxQuestion("<html>Compile this project's C++ plugin?<br><br>\
 Explanation: This project has <a href='https://xiiengine.net/pages/docs/custom-code/cpp/cpp-project-generation.html'>a dedicated C++ plugin</a> with custom code. The plugin is currently not compiled and therefore the project won't fully work and certain assets will fail to transform.<br><br>\
 It is advised to compile the plugin now, but you can also do so later.</html>",
-                                                                   QMessageBox::StandardButton::Apply | QMessageBox::StandardButton::Ignore, QMessageBox::StandardButton::Apply);
+                                                                     QMessageBox::StandardButton::Apply | QMessageBox::StandardButton::Ignore, QMessageBox::StandardButton::Apply);
 
-          if (clicked == QMessageBox::StandardButton::Ignore)
-            break;
+            if (clicked == QMessageBox::StandardButton::Ignore)
+              break;
 
-          QTimer::singleShot(1000, this, [this]() { xiiCppProject::EnsureCppPluginReady().IgnoreResult(); });
+            QTimer::singleShot(1000, this, [this]() { xiiCppProject::EnsureCppPluginReady().IgnoreResult(); });
+          }
         }
+
 
         xiiTimestamp lastTransform = xiiAssetCurator::GetSingleton()->GetLastFullTransformDate().GetTimestamp();
 
@@ -466,17 +484,18 @@ void xiiQtEditorApp::SetupNewProject()
 {
   xiiToolsProject::GetSingleton()->CreateSubFolder("Editor");
   xiiToolsProject::GetSingleton()->CreateSubFolder("RuntimeConfigs");
-  xiiToolsProject::GetSingleton()->CreateSubFolder("Scenes");
-  xiiToolsProject::GetSingleton()->CreateSubFolder("Prefabs");
 
   // write the default window config
   {
     xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
     sPath.AppendPath("RuntimeConfigs/Window.ddl");
 
-    xiiWindowCreationDesc desc;
-    desc.m_Title = xiiToolsProject::GetSingleton()->GetProjectName(false);
-    desc.SaveToDDL(sPath).IgnoreResult();
+    if (!xiiFileSystem::ExistsFile(sPath))
+    {
+      xiiWindowCreationDesc desc;
+      desc.m_Title = xiiToolsProject::GetSingleton()->GetProjectName(false);
+      desc.SaveToDDL(sPath).IgnoreResult();
+    }
   }
 
   // write a stub input mapping
@@ -484,20 +503,23 @@ void xiiQtEditorApp::SetupNewProject()
     xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
     sPath.AppendPath("RuntimeConfigs/InputConfig.ddl");
 
-    xiiDeferredFileWriter file;
-    file.SetOutput(sPath);
+    if (!xiiFileSystem::ExistsFile(sPath))
+    {
+      xiiDeferredFileWriter file;
+      file.SetOutput(sPath);
 
-    xiiHybridArray<xiiGameAppInputConfig, 4> actions;
-    xiiGameAppInputConfig&                   a = actions.ExpandAndGetRef();
-    a.m_sInputSet                              = "Default";
-    a.m_sInputAction                           = "Interact";
-    a.m_bApplyTimeScaling                      = false;
-    a.m_sInputSlotTrigger[0]                   = xiiInputSlot_KeySpace;
-    a.m_sInputSlotTrigger[1]                   = xiiInputSlot_MouseButton0;
-    a.m_sInputSlotTrigger[2]                   = xiiInputSlot_Controller0_ButtonA;
+      xiiHybridArray<xiiGameAppInputConfig, 4> actions;
+      xiiGameAppInputConfig&                   a = actions.ExpandAndGetRef();
+      a.m_sInputSet                              = "Default";
+      a.m_sInputAction                           = "Interact";
+      a.m_bApplyTimeScaling                      = false;
+      a.m_sInputSlotTrigger[0]                   = xiiInputSlot_KeySpace;
+      a.m_sInputSlotTrigger[1]                   = xiiInputSlot_MouseButton0;
+      a.m_sInputSlotTrigger[2]                   = xiiInputSlot_Controller0_ButtonA;
 
-    xiiGameAppInputConfig::WriteToDDL(file, actions);
+      xiiGameAppInputConfig::WriteToDDL(file, actions);
 
-    file.Close().IgnoreResult();
+      file.Close().IgnoreResult();
+    }
   }
 }

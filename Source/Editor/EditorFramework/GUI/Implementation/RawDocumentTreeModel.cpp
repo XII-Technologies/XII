@@ -68,7 +68,7 @@ xiiQtNamedAdapter::xiiQtNamedAdapter(const xiiDocumentObjectManager* pTree, cons
   xiiQtDocumentTreeModelAdapter(pTree, pType, szChildProperty), m_sNameProperty(szNameProperty)
 {
   auto pProp = pType->FindPropertyByName(m_sNameProperty);
-  XII_ASSERT_DEV(pProp != nullptr && pProp->GetCategory() == xiiPropertyCategory::Member && (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String || pProp->GetSpecificType()->GetVariantType() == xiiVariantType::StringView), "The name property must be a string member property.");
+  XII_ASSERT_DEV(pProp != nullptr && pProp->GetCategory() == xiiPropertyCategory::Member && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String, "The name property must be a string member property.");
 
   m_pTree->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNamedAdapter::TreePropertyEventHandler, this));
 }
@@ -137,12 +137,14 @@ bool xiiQtNameableAdapter::setData(const xiiDocumentObject* pObject, int iRow, i
 
 Qt::ItemFlags xiiQtNameableAdapter::flags(const xiiDocumentObject* pObject, int iRow, int iColumn) const
 {
+  Qt::ItemFlags flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+
   if (iColumn == 0)
   {
-    return (Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
+    return flags | Qt::ItemIsEditable;
   }
 
-  return Qt::ItemFlag::NoItemFlags;
+  return flags;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -169,7 +171,9 @@ void xiiQtDocumentTreeModel::AddAdapter(xiiQtDocumentTreeModelAdapter* pAdapter)
     auto index = ComputeModelIndex(pObject);
     if (!index.isValid())
       return;
-    dataChanged(index, index, roles);
+
+    QModelIndex idx2 = index.siblingAtColumn(columnCount() - 1); // mark the entire row as modified
+    Q_EMIT      dataChanged(index, idx2, roles);
   });
   m_Adapters.Insert(pAdapter->GetType(), pAdapter);
   beginResetModel();

@@ -72,7 +72,7 @@ bool xiiDrawBoxGizmo::PickPosition(QMouseEvent* e)
 
 xiiEditorInput xiiDrawBoxGizmo::DoMousePressEvent(QMouseEvent* e)
 {
-  if (e->buttons() == Qt::LeftButton && e->modifiers().testFlag(Qt::ControlModifier))
+  if (e->buttons() == Qt::LeftButton && e->modifiers() == Qt::ControlModifier)
   {
     if (m_ManipulateMode == ManipulateMode::None)
     {

@@ -87,7 +87,7 @@ public:
 
 struct XII_EDITORFRAMEWORK_DLL xiiSelectedGameObject
 {
-  const xiiDocumentObject* m_pObject = nullptr;
+  const xiiDocumentObject* m_pObject;
   xiiVec3                  m_vLocalScaling;
   float                    m_fLocalUniformScaling;
   xiiTransform             m_GlobalTransform;
@@ -100,6 +100,9 @@ class XII_EDITORFRAMEWORK_DLL xiiGameObjectDocument : public xiiAssetDocument
 public:
   xiiGameObjectDocument(xiiStringView sDocumentPath, xiiDocumentObjectManager* pObjectManager, xiiAssetDocEngineConnection engineConnectionType = xiiAssetDocEngineConnection::FullObjectMirroring);
   ~xiiGameObjectDocument();
+
+  /// \brief In case a document consists of multiple layers, this redirection is necessary to execute actions on the active layer.
+  virtual xiiGameObjectDocument* GetRedirectedGameObjectDoc() { return this; }
 
   virtual xiiEditorInputContext* GetEditorInputContextOverride() override;
 
@@ -161,9 +164,6 @@ public:
   /// \brief Moves the camera to the current picking position
   void MoveCameraHere();
 
-  /// \brief Creates an empty game object at the current picking position
-  xiiStatus CreateGameObjectHere();
-
   void ScheduleSendObjectSelection();
 
   /// \brief Sends the current object selection, but only if it was modified or specifically tagged for resending with ScheduleSendObjectSelection().
@@ -191,10 +191,21 @@ public:
   bool GetPickTransparent() const { return m_bPickTransparent; }
   void SetPickTransparent(bool b);
 
+  /// \brief Specifies which object is the 'active parent', which is the object under which newly created objects should be parented.
+  void SetActiveParent(xiiUuid object);
+  /// \brief Returns the object under which newly created objects should be parented.
+  ///
+  /// \note The object may not exist anymore! So check with the ObjectManager first.
+  xiiUuid GetActiveParent() const { return m_ActiveParent; }
+
+private:
+  xiiUuid m_ActiveParent = xiiUuid::MakeInvalid();
+
   ///@}
   /// \name Transform
   ///@{
 
+public:
   /// \brief Sets the new global transformation of the given object.
   /// The transformationChanges bitmask (of type TransformationChanges) allows to tell the system that, e.g. only translation has changed and thus
   /// some work can be spared.
@@ -214,7 +225,7 @@ public:
   /// This function does not return a cached value, but always computes it. It does update the internal cache for later reads though.
   xiiTransform ComputeGlobalTransform(const xiiDocumentObject* pObject) const;
 
-  /// \brief Traverses the pObject hierarchy up until it hits an xiiGameObject, then computes the global transform of that.
+  /// \brief Traverses the pObject hierarchy up until it hits a xiiGameObject, then computes the global transform of that.
   virtual xiiResult ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_result) const override;
 
   ///@}

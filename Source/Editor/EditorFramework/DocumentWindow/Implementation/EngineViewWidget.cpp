@@ -147,7 +147,7 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
   const xiiTime tDiff = tNow - m_LastCameraUpdate;
   m_LastCameraUpdate  = tNow;
 
-  m_fCameraLerp += tDiff.GetSeconds() * 2.0f;
+  m_fCameraLerp += tDiff.GetSeconds() * 3.0f;
 
   if (m_fCameraLerp >= 1.0f)
     m_fCameraLerp = 1.0f;
@@ -683,26 +683,38 @@ void xiiQtEngineViewWidget::SlotRestartEngineProcess()
 // xiiQtViewWidgetContainer
 ////////////////////////////////////////////////////////////////////////
 
-xiiQtViewWidgetContainer::xiiQtViewWidgetContainer(QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, const char* szToolBarMapping) :
-  QWidget(pParent)
+xiiQtViewWidgetContainer::xiiQtViewWidgetContainer(QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, xiiStringView sToolBarMapping) :
+  ads::CDockWidget("3D View", pParent)
 {
+  setObjectName("xiiQtViewWidgetContainer");
+
+  setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetClosable, false);
+  setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetFloatable, false);
+  setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetMovable, false);
+  setFeature(ads::CDockWidget::DockWidgetFeature::DockWidgetFocusable, true);
+
+  // need contrast with the rest of the widgets around it
   setBackgroundRole(QPalette::Base);
   setAutoFillBackground(true);
 
-  m_pLayout = new QVBoxLayout(this);
+  QWidget* pDummy = new QWidget();
+  pDummy->setObjectName("Dummy");
+
+  m_pLayout = new QVBoxLayout(pDummy);
+  m_pLayout->setObjectName("QVBoxLayout1");
   m_pLayout->setContentsMargins(0, 0, 0, 0);
   m_pLayout->setSpacing(0);
-  setLayout(m_pLayout);
+  pDummy->setLayout(m_pLayout);
 
   m_pViewWidget = pViewWidget;
-  m_pViewWidget->setParent(this);
+  m_pViewWidget->setParent(pDummy);
 
-  if (!xiiStringUtils::IsNullOrEmpty(szToolBarMapping))
+  if (!sToolBarMapping.IsEmpty())
   {
     // Add Tool Bar
     xiiQtToolBarActionMapView* pToolBar = new xiiQtToolBarActionMapView("Toolbar", this);
     xiiActionContext           context;
-    context.m_sMapping  = szToolBarMapping;
+    context.m_sMapping  = sToolBarMapping;
     context.m_pDocument = pViewWidget->GetDocumentWindow()->GetDocument();
     context.m_pWindow   = m_pViewWidget;
     pToolBar->SetActionContext(context);
@@ -710,6 +722,8 @@ xiiQtViewWidgetContainer::xiiQtViewWidgetContainer(QWidget* pParent, xiiQtEngine
   }
 
   m_pLayout->addWidget(m_pViewWidget, 1);
+
+  setWidget(pDummy);
 }
 
 xiiQtViewWidgetContainer::~xiiQtViewWidgetContainer() = default;

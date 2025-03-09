@@ -270,13 +270,11 @@ void xiiAssetTableWriter::AssetCuratorEvents(const xiiAssetCuratorEvent& e)
   const xiiPlatformProfile* pProfile = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile();
   switch (e.m_Type)
   {
-//#TODO Are asset table entries static or do they change with the asset?
-#if 0
-    case xiiAssetCuratorEvent::Type::AssetUpdated:
+    // #TODO Are asset table entries static or do they change with the asset?
+    /*case xiiAssetCuratorEvent::Type::AssetUpdated:
       if (e.m_pInfo->m_pAssetInfo->m_TransformState == xiiAssetInfo::TransformState::Unknown)
         return;
-      [[fallthrough]];
-#endif
+      [[fallthrough]];*/
     case xiiAssetCuratorEvent::Type::AssetAdded:
     case xiiAssetCuratorEvent::Type::AssetMoved:
     {

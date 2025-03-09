@@ -20,5 +20,5 @@ protected:
 
   bool IsSpecificAssetType(const xiiDragDropInfo* pInfo, const char* szType) const;
 
-  xiiDocument* m_pDocument = nullptr;
+  xiiDocument* m_pDocument;
 };

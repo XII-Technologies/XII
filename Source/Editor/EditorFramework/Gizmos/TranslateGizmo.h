@@ -2,7 +2,6 @@
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Gizmos/GizmoBase.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 #include <QPoint>
 
@@ -23,11 +22,15 @@ public:
     MouseDiff
   };
 
-  enum class PlaneInteraction
+  enum class HandleInteraction
   {
+    None,
+    AxisX,
+    AxisY,
+    AxisZ,
     PlaneX,
     PlaneY,
-    PlaneZ
+    PlaneZ,
   };
 
   enum class TranslateMode
@@ -37,9 +40,9 @@ public:
     Plane
   };
 
-  void             SetMovementMode(MovementMode mode);
-  PlaneInteraction GetLastPlaneInteraction() const { return m_LastPlaneInteraction; }
-  TranslateMode    GetTranslateMode() const { return m_Mode; }
+  void              SetMovementMode(MovementMode mode);
+  HandleInteraction GetLastHandleInteraction() const { return m_LastHandleInteraction; }
+  TranslateMode     GetTranslateMode() const { return m_Mode; }
 
   /// \brief Used when CTRL+drag moves the object AND the camera
   void SetCameraSpeed(float fSpeed);
@@ -75,8 +78,8 @@ private:
   xiiEngineGizmoHandle m_hPlaneXZ;
   xiiEngineGizmoHandle m_hPlaneYZ;
 
-  TranslateMode    m_Mode;
-  PlaneInteraction m_LastPlaneInteraction;
+  TranslateMode     m_Mode;
+  HandleInteraction m_LastHandleInteraction;
 
   float m_fStartScale;
   float m_fCameraSpeed;

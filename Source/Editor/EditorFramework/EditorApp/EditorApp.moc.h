@@ -107,6 +107,9 @@ public:
   /// \brief Launches xiiInspector.
   void RunInspector();
 
+  /// \brief Launches Tracy.
+  void RunTracy();
+
   //
   //
   //
@@ -176,7 +179,7 @@ public:
 
   /// \brief If this project is remote, ie coming from another repository that is not checked-out by default, make sure it exists locally on disk.
   ///
-  /// Adjusts inout_sFilePath from pointing to an xiiRemoteProject file to a xiiProject file, if necessary.
+  /// Adjusts inout_sFilePath from pointing to a xiiRemoteProject file to a xiiProject file, if necessary.
   /// If the project is already local, it always succeeds.
   /// If checking out fails or is user canceled, the function returns failure.
   xiiStatus MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePath);
@@ -247,7 +250,6 @@ private:
   void DocumentManagerRequestHandler(xiiDocumentManager::Request& r);
   void DocumentManagerEventHandler(const xiiDocumentManager::Event& r);
   void DocumentEventHandler(const xiiDocumentEvent& e);
-  void DocumentWindowEventHandler(const xiiQtDocumentWindowEvent& e);
   void ProjectRequestHandler(xiiToolsProjectRequest& r);
   void ProjectEventHandler(const xiiToolsProjectEvent& r);
   void EngineProcessMsgHandler(const xiiEditorEngineProcessConnection::Event& e);
@@ -267,6 +269,8 @@ private:
 
   void SetupAndShowSplashScreen();
   void CloseSplashScreen();
+
+  void OpenDemoDocument();
 
   xiiResult AddBundlesInOrder(xiiDynamicArray<xiiApplicationPluginConfig::PluginConfig>& order, const xiiPluginBundleSet& bundles, const xiiString& start, bool bEditor, bool bEditorEngine, bool bRuntime) const;
 
@@ -292,8 +296,8 @@ private:
   int                               m_iArgc          = 0;
   QApplication*                     m_pQtApplication = nullptr;
   xiiLongOpControllerManager        m_LongOpControllerManager;
-  xiiEditorEngineProcessConnection* m_pEngineViewProcess = nullptr;
-  QTimer*                           m_pTimer             = nullptr;
+  xiiEditorEngineProcessConnection* m_pEngineViewProcess;
+  QTimer*                           m_pTimer = nullptr;
 
   QSplashScreen* m_pSplashScreen = nullptr;
 

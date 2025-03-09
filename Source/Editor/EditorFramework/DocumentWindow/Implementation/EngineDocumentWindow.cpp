@@ -4,20 +4,12 @@
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 
 #include <EditorFramework/Assets/AssetDocument.h>
-#include <EditorFramework/Preferences/EditorPreferences.h>
 
 xiiQtEngineDocumentWindow::xiiQtEngineDocumentWindow(xiiAssetDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
 {
   pDocument->m_ProcessMessageEvent.AddEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::ProcessMessageEventHandler, this));
   pDocument->m_CommonAssetUiChangeEvent.AddEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::CommonAssetUiEventHandler, this));
-
-  auto pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
-
-  SetTargetFrameRate(pPreferences->GetMaxEditorFrameRate());
-  SetTargetFrameRateUnfocused(pPreferences->GetMaxEditorFrameRateWhenUnfocused());
-
-  pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::PreferenceChangedEventHandler, this));
 }
 
 xiiQtEngineDocumentWindow::~xiiQtEngineDocumentWindow()
@@ -30,9 +22,6 @@ xiiQtEngineDocumentWindow::~xiiQtEngineDocumentWindow()
 
   // delete all view widgets, so that they can send their messages before we clean up the engine connection
   DestroyAllViews();
-
-  auto pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
-  pPreferences->m_ChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::PreferenceChangedEventHandler, this));
 }
 
 xiiEditorEngineConnection* xiiQtEngineDocumentWindow::GetEditorEngineConnection() const
@@ -143,8 +132,8 @@ void xiiQtEngineDocumentWindow::RemoveViewWidget(xiiQtEngineViewWidget* pView)
 void xiiQtEngineDocumentWindow::CommonAssetUiEventHandler(const xiiCommonAssetUiState& e)
 {
   xiiSimpleDocumentConfigMsgToEngine msg;
-  msg.m_sWhatToDo = "CommonAssetUiState";
-  msg.m_fPayload  = e.m_fValue;
+  msg.m_sWhatToDo    = "CommonAssetUiState";
+  msg.m_PayloadValue = e.m_fValue;
 
   switch (e.m_State)
   {
@@ -178,15 +167,6 @@ void xiiQtEngineDocumentWindow::CommonAssetUiEventHandler(const xiiCommonAssetUi
   if (!msg.m_sPayload.IsEmpty())
   {
     GetEditorEngineConnection()->SendMessage(&msg);
-  }
-}
-
-void xiiQtEngineDocumentWindow::PreferenceChangedEventHandler(xiiPreferences* pPreferenceBase)
-{
-  if (xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>())
-  {
-    SetTargetFrameRate(pPreferences->GetMaxEditorFrameRate());
-    SetTargetFrameRateUnfocused(pPreferences->GetMaxEditorFrameRateWhenUnfocused());
   }
 }
 

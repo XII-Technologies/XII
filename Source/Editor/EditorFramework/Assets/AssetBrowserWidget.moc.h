@@ -31,6 +31,7 @@ public:
   void SetSelectedFile(xiiStringView sAbsPath);
   void ShowOnlyTheseTypeFilters(xiiStringView sFilters);
   void UseFileExtensionFilters(xiiStringView sFileExtensions);
+  void SetRequiredTag(xiiStringView sRequiredTag);
 
   void SaveState(const char* szSettingsName);
   void RestoreState(const char* szSettingsName);
@@ -54,6 +55,7 @@ private Q_SLOTS:
   void OnTextFilterChanged();
   void OnTypeFilterChanged();
   void OnPathFilterChanged();
+  void OnFilterChanged();
   void on_ListAssets_doubleClicked(const QModelIndex& index);
   void on_ListAssets_activated(const QModelIndex& index);
   void on_ListAssets_clicked(const QModelIndex& index);
@@ -61,6 +63,7 @@ private Q_SLOTS:
   void on_ButtonIconMode_clicked();
   void on_IconSizeSlider_valueChanged(int iValue);
   void on_ListAssets_ViewZoomed(xiiInt32 iIconSizePercentage);
+  void on_ResetTypeFilter_clicked();
   void OnSearchWidgetTextChanged(const QString& text);
   void on_TreeFolderFilter_customContextMenuRequested(const QPoint& pt);
   void on_TypeFilter_currentIndexChanged(int index);
@@ -68,9 +71,11 @@ private Q_SLOTS:
   void OnScrollToFile(QString sPreselectedFile);
   void OnShowSubFolderItemsToggled();
   void OnShowHiddenFolderItemsToggled();
+  void OnResaveAssets();
   void on_ListAssets_customContextMenuRequested(const QPoint& pt);
   void OnListOpenExplorer();
   void OnListOpenAssetDocument();
+  void OnListOpenFileWith();
   void OnTransform();
   void OnListToggleSortByRecentlyUsed();
   void OnListCopyAssetGuid();
@@ -84,6 +89,7 @@ private Q_SLOTS:
   void OnFileEditingFinished(const QString& sAbsPath, const QString& sNewName, bool bIsAsset);
   void ImportSelection();
   void OnOpenImportReferenceAsset();
+  void RenameCurrent();
   void DeleteSelection();
   void OnImportAsAboutToShow();
   void OnImportAsClicked();

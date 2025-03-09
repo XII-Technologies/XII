@@ -81,6 +81,11 @@ void xiiQtPluginSelectionWidget::SyncStateToSet()
   }
 }
 
+void xiiQtPluginSelectionWidget::SelectTemplate(const char* szTemplate)
+{
+  Template->setCurrentText(szTemplate);
+}
+
 void xiiQtPluginSelectionWidget::on_PluginsList_currentItemChanged(QListWidgetItem* current, QListWidgetItem* previous)
 {
   if (previous)

@@ -12,21 +12,22 @@
 // xiiAssetCurator Asset Hashing and Status Updates
 ////////////////////////////////////////////////////////////////////////
 
-xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDeps, const xiiHybridArray<xiiString, 16>& assetThumbnailDeps, xiiSet<xiiString>& missingTransformDeps, xiiSet<xiiString>& missingThumbnailDeps, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce)
+xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDeps, const xiiHybridArray<xiiString, 16>& assetThumbnailDeps, const xiiHybridArray<xiiString, 16>& assetPackageDeps, xiiSet<xiiString>& missingTransformDeps, xiiSet<xiiString>& missingThumbnailDeps, xiiSet<xiiString>& missingPackageDeps, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce)
 {
   CURATOR_PROFILE("HashAsset");
   xiiStringBuilder             tmp;
   xiiAssetInfo::TransformState state = xiiAssetInfo::Unknown;
   {
     // hash of the main asset file
-    out_AssetHash = uiSettingsHash;
-    out_ThumbHash = uiSettingsHash;
+    out_AssetHash   = uiSettingsHash;
+    out_ThumbHash   = uiSettingsHash;
+    out_PackageHash = uiSettingsHash;
 
     // Iterate dependencies
     for (const auto& dep : assetTransformDeps)
     {
       xiiString sPath = dep;
-      if (!AddAssetHash(sPath, false, out_AssetHash, out_ThumbHash, bForce))
+      if (!AddAssetHash(sPath, false, out_AssetHash, out_ThumbHash, out_PackageHash, bForce))
       {
         missingTransformDeps.Insert(sPath);
       }
@@ -35,9 +36,18 @@ xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash
     for (const auto& dep : assetThumbnailDeps)
     {
       xiiString sPath = dep;
-      if (!AddAssetHash(sPath, true, out_AssetHash, out_ThumbHash, bForce))
+      if (!AddAssetHash(sPath, true, out_AssetHash, out_ThumbHash, out_PackageHash, bForce))
       {
         missingThumbnailDeps.Insert(sPath);
+      }
+    }
+
+    for (const auto& dep : assetPackageDeps)
+    {
+      xiiString sPath = dep;
+      if (!AddAssetHash(sPath, true, out_AssetHash, out_ThumbHash, out_PackageHash, bForce))
+      {
+        missingPackageDeps.Insert(sPath);
       }
     }
   }
@@ -53,22 +63,29 @@ xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash
     out_ThumbHash = 0;
     state         = xiiAssetInfo::MissingTransformDependency;
   }
+  if (!missingPackageDeps.IsEmpty())
+  {
+    out_AssetHash = 0;
+    out_ThumbHash = 0;
+    state         = xiiAssetInfo::MissingPackageDependency;
+  }
 
   return state;
 }
 
-bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce)
+bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce)
 {
   if (sPath.IsEmpty())
     return true;
 
   if (xiiConversionUtils::IsStringUuid(sPath))
   {
-    const xiiUuid                guid      = xiiConversionUtils::ConvertStringToUuid(sPath);
-    xiiUInt64                    assetHash = 0;
-    xiiUInt64                    thumbHash = 0;
-    xiiAssetInfo::TransformState state     = UpdateAssetTransformState(guid, assetHash, thumbHash, bForce);
-    if (state == xiiAssetInfo::Unknown || state == xiiAssetInfo::MissingTransformDependency || state == xiiAssetInfo::MissingThumbnailDependency || state == xiiAssetInfo::CircularDependency)
+    const xiiUuid                guid        = xiiConversionUtils::ConvertStringToUuid(sPath);
+    xiiUInt64                    assetHash   = 0;
+    xiiUInt64                    thumbHash   = 0;
+    xiiUInt64                    packageHash = 0;
+    xiiAssetInfo::TransformState state       = UpdateAssetTransformState(guid, assetHash, thumbHash, packageHash, bForce);
+    if (state == xiiAssetInfo::Unknown || state == xiiAssetInfo::MissingTransformDependency || state == xiiAssetInfo::MissingThumbnailDependency || state == xiiAssetInfo::MissingPackageDependency || state == xiiAssetInfo::CircularDependency)
     {
       xiiLog::Error("Failed to hash dependency asset '{0}'", sPath);
       return false;
@@ -76,6 +93,7 @@ bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt6
 
     // Thumbs hash is affected by both transform dependencies and references.
     out_ThumbHash += thumbHash;
+    out_PackageHash += packageHash;
     if (!bIsReference)
     {
       // References do not affect the asset hash.
@@ -154,7 +172,7 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
 
   XII_LOCK(m_CuratorMutex);
   const xiiUuid oldGuid = stat.m_DocumentID;
-  // if it already has a valid GUID, an xiiAssetInfo object must exist
+  // if it already has a valid GUID, a xiiAssetInfo object must exist
   const bool bNewAssetFile = !stat.m_DocumentID.IsValid(); // Under this current location the asset is not known.
   xiiUuid    newGuid       = pNewAssetInfo->m_Info->m_DocumentID;
 
@@ -447,7 +465,9 @@ void xiiAssetCurator::UpdateSubAssets(xiiAssetInfo& assetInfo)
 {
   CURATOR_PROFILE("UpdateSubAssets");
   if (assetInfo.m_ExistanceState == xiiAssetExistanceState::FileRemoved)
+  {
     return;
+  }
 
   if (assetInfo.m_ExistanceState == xiiAssetExistanceState::FileAdded)
   {
@@ -542,8 +562,9 @@ void xiiAssetCurator::InvalidateAssetTransformState(const xiiUuid& assetGuid)
       // Increasing m_LastStateUpdate will ensure that asset hash/state computations
       // that are in flight will not be written back to the asset.
       pAssetInfo->m_LastStateUpdate++;
-      pAssetInfo->m_AssetHash = 0;
-      pAssetInfo->m_ThumbHash = 0;
+      pAssetInfo->m_AssetHash   = 0;
+      pAssetInfo->m_ThumbHash   = 0;
+      pAssetInfo->m_PackageHash = 0;
     }
   }
 }
@@ -701,13 +722,14 @@ void xiiUpdateTask::Execute()
   if (xiiDocumentManager::FindDocumentTypeFromPath(m_sAssetPath, false, pTypeDescriptor).Failed())
     return;
 
-  xiiUInt64 uiAssetHash = 0;
-  xiiUInt64 uiThumbHash = 0;
+  xiiUInt64 uiAssetHash   = 0;
+  xiiUInt64 uiThumbHash   = 0;
+  xiiUInt64 uiPackageHash = 0;
 
   // Do not log update errors done on the background thread. Only if done explicitly on the main thread or the GUI will not be responsive
   // if the user deleted some base asset and everything starts complaining about it.
   xiiLogEntryDelegate logger([&](xiiLogEntry& ref_entry) -> void {}, xiiLogMsgType::All);
   xiiLogSystemScope   logScope(&logger);
 
-  xiiAssetCurator::GetSingleton()->IsAssetUpToDate(assetGuid, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile(), static_cast<const xiiAssetDocumentTypeDescriptor*>(pTypeDescriptor), uiAssetHash, uiThumbHash);
+  xiiAssetCurator::GetSingleton()->IsAssetUpToDate(assetGuid, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile(), static_cast<const xiiAssetDocumentTypeDescriptor*>(pTypeDescriptor), uiAssetHash, uiThumbHash, uiPackageHash);
 }
