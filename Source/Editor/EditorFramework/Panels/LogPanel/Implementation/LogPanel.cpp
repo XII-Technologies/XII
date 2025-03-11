@@ -1,6 +1,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Panels/LogPanel/LogPanel.moc.h>
+#include <EditorFramework/Preferences/EditorPreferences.h>
 #include <GuiFoundation/Models/LogModel.moc.h>
 
 XII_IMPLEMENT_SINGLETON(xiiQtLogPanel);
@@ -19,6 +20,7 @@ xiiQtLogPanel::xiiQtLogPanel() :
 
   EditorLog->GetSearchWidget()->setPlaceholderText(QStringLiteral("Search Editor Log"));
   EngineLog->GetSearchWidget()->setPlaceholderText(QStringLiteral("Search Engine Log"));
+  CombinedLog->GetSearchWidget()->setPlaceholderText(QStringLiteral("Search Log"));
 
   xiiGlobalLog::AddLogWriter(xiiMakeDelegate(&xiiQtLogPanel::LogWriter, this));
   xiiEditorEngineProcessConnection::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtLogPanel::EngineProcessMsgHandler, this));
@@ -32,12 +34,23 @@ xiiQtLogPanel::xiiQtLogPanel() :
 
   connect(EditorLog->GetLog(), &xiiQtLogModel::NewErrorsOrWarnings, this, &xiiQtLogPanel::OnNewWarningsOrErrors);
   connect(EngineLog->GetLog(), &xiiQtLogModel::NewErrorsOrWarnings, this, &xiiQtLogPanel::OnNewWarningsOrErrors);
+  connect(CombinedLog->GetLog(), &xiiQtLogModel::NewErrorsOrWarnings, this, &xiiQtLogPanel::OnNewWarningsOrErrors);
 
   xiiQtUiServices::GetSingleton()->s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtLogPanel::UiServiceEventHandler, this));
+
+  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtLogPanel::OnPreferenceChange, this));
+
+  m_bCombineLogs = pPreferences->m_bCombinedEditorAndEngineLogs;
+
+  LogWidgets->setCurrentIndex(m_bCombineLogs ? 0 : 1);
 }
 
 xiiQtLogPanel::~xiiQtLogPanel()
 {
+  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  pPreferences->m_ChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtLogPanel::OnPreferenceChange, this));
+
   QSettings Settings;
   Settings.beginGroup(QLatin1String("LogPanel"));
   {
@@ -52,8 +65,8 @@ xiiQtLogPanel::~xiiQtLogPanel()
 
 void xiiQtLogPanel::OnNewWarningsOrErrors(xiiStringView sText, bool bError)
 {
-  m_uiKnownNumWarnings = EditorLog->GetLog()->GetNumSeriousWarnings() + EditorLog->GetLog()->GetNumWarnings() + EngineLog->GetLog()->GetNumSeriousWarnings() + EngineLog->GetLog()->GetNumWarnings();
-  m_uiKnownNumErrors   = EditorLog->GetLog()->GetNumErrors() + EngineLog->GetLog()->GetNumErrors();
+  m_uiKnownNumWarnings = EditorLog->GetLog()->GetNumSeriousWarnings() + EditorLog->GetLog()->GetNumWarnings() + EngineLog->GetLog()->GetNumSeriousWarnings() + EngineLog->GetLog()->GetNumWarnings() + CombinedLog->GetLog()->GetNumSeriousWarnings() + CombinedLog->GetLog()->GetNumWarnings();
+  m_uiKnownNumErrors = EditorLog->GetLog()->GetNumErrors() + EngineLog->GetLog()->GetNumErrors() + CombinedLog->GetLog()->GetNumErrors();
 
   xiiQtUiServices::Event::TextType type = xiiQtUiServices::Event::Info;
 
@@ -104,6 +117,7 @@ void xiiQtLogPanel::ToolsProjectEventHandler(const xiiToolsProjectEvent& e)
   switch (e.m_Type)
   {
     case xiiToolsProjectEvent::Type::ProjectClosing:
+      CombinedLog->GetLog()->Clear();
       EditorLog->GetLog()->Clear();
       EngineLog->GetLog()->Clear();
       [[fallthrough]];
@@ -123,7 +137,11 @@ void xiiQtLogPanel::LogWriter(const xiiLoggingEventData& e)
 {
   // Can be called from a different thread, but AddLogMsg is thread safe.
   xiiLogEntry msg(e);
-  EditorLog->GetLog()->AddLogMsg(msg);
+
+  if (m_bCombineLogs)
+    CombinedLog->GetLog()->AddLogMsg(msg);
+  else
+    EditorLog->GetLog()->AddLogMsg(msg);
 
   if (msg.m_sTag == "EditorStatus")
   {
@@ -139,7 +157,10 @@ void xiiQtLogPanel::EngineProcessMsgHandler(const xiiEditorEngineProcessConnecti
     {
       if (const xiiLogMsgToEditor* pMsg = xiiDynamicCast<const xiiLogMsgToEditor*>(e.m_pMsg))
       {
-        EngineLog->GetLog()->AddLogMsg(pMsg->m_Entry);
+        if (m_bCombineLogs)
+          CombinedLog->GetLog()->AddLogMsg(pMsg->m_Entry);
+        else
+          EngineLog->GetLog()->AddLogMsg(pMsg->m_Entry);
       }
     }
     break;
@@ -159,5 +180,18 @@ void xiiQtLogPanel::UiServiceEventHandler(const xiiQtUiServices::Event& e)
     m_uiIgnoreNumWarnings = m_uiKnownNumWarnings;
 
     xiiQtUiServices::GetSingleton()->ShowAllDocumentsPermanentStatusBarMessage(nullptr, xiiQtUiServices::Event::Info);
+  }
+}
+
+void xiiQtLogPanel::OnPreferenceChange(xiiPreferences* pref)
+{
+  if (xiiEditorPreferencesUser* pPref = xiiDynamicCast<xiiEditorPreferencesUser*>(pref))
+  {
+    if (m_bCombineLogs != pPref->m_bCombinedEditorAndEngineLogs)
+    {
+      m_bCombineLogs = pPref->m_bCombinedEditorAndEngineLogs;
+
+      LogWidgets->setCurrentIndex(m_bCombineLogs ? 0 : 1);
+    }
   }
 }

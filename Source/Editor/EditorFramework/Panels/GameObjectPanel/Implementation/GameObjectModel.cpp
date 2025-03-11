@@ -18,7 +18,7 @@ xiiQtGameObjectAdapter::xiiQtGameObjectAdapter(xiiDocumentObjectManager* pObject
   if (!m_pGameObjectMetaData)
     m_pGameObjectMetaData = m_pGameObjectDocument->m_GameObjectMetaData.Borrow();
 
-  m_GameObjectMetaDataSubscription     = m_pGameObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectAdapter::GameObjectMetaDataEventHandler, this));
+  m_GameObjectMetaDataSubscription = m_pGameObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectAdapter::GameObjectMetaDataEventHandler, this));
   m_DocumentObjectMetaDataSubscription = m_pObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectAdapter::DocumentObjectMetaDataEventHandler, this));
 }
 
@@ -88,7 +88,7 @@ QVariant xiiQtGameObjectAdapter::data(const xiiDocumentObject* pObject, int iRow
         if (pInfo)
           return xiiMakeQString(pInfo->m_pAssetInfo->m_Path.GetDataDirParentRelativePath());
 
-        return QStringLiteral("Prefab asset could not be found");
+        return QString::fromUtf8("Prefab asset could not be found");
       }
     }
     break;
@@ -134,6 +134,22 @@ QVariant xiiQtGameObjectAdapter::data(const xiiDocumentObject* pObject, int iRow
       }
     }
     break;
+
+    case UserRoles::HiddenRole:
+    {
+      auto       pMeta   = m_pObjectMetaData->BeginReadMetaData(pObject->GetGuid());
+      const bool bHidden = pMeta->m_bHidden;
+      m_pObjectMetaData->EndReadMetaData();
+
+      return bHidden;
+    }
+    break;
+
+    case UserRoles::ActiveParentRole:
+    {
+      return (pObject->GetGuid() == m_pGameObjectDocument->GetActiveParent());
+    }
+    break;
   }
 
   return xiiQtNameableAdapter::data(pObject, iRow, iColumn, iRole);
@@ -165,7 +181,7 @@ bool xiiQtGameObjectAdapter::setData(const xiiDocumentObject* pObject, int iRow,
 
 void xiiQtGameObjectAdapter::DocumentObjectMetaDataEventHandler(const xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>::EventData& e)
 {
-  if ((e.m_uiModifiedFlags & (xiiDocumentObjectMetaData::HiddenFlag | xiiDocumentObjectMetaData::PrefabFlag)) == 0)
+  if ((e.m_uiModifiedFlags & (xiiDocumentObjectMetaData::HiddenFlag | xiiDocumentObjectMetaData::PrefabFlag | xiiDocumentObjectMetaData::ActiveParentFlag)) == 0)
     return;
 
   auto pObject = m_pObjectManager->GetObject(e.m_ObjectKey);
@@ -183,6 +199,8 @@ void xiiQtGameObjectAdapter::DocumentObjectMetaDataEventHandler(const xiiObjectM
 
   QVector<int> v;
   v.push_back(Qt::FontRole);
+  v.push_back(Qt::DecorationRole);
+  v.push_back(Qt::ForegroundRole);
   dataChanged(pObject, v);
 }
 
@@ -215,3 +233,81 @@ xiiQtGameObjectModel::xiiQtGameObjectModel(const xiiDocumentObjectManager* pObje
 }
 
 xiiQtGameObjectModel::~xiiQtGameObjectModel() = default;
+
+//////////////////////////////////////////////////////////////////////////
+
+
+xiiQtGameObjectDelegate::xiiQtGameObjectDelegate(QObject* pParent, xiiGameObjectDocument* pDocument) :
+  xiiQtItemDelegate(pParent), m_pDocument(pDocument)
+{
+}
+
+void xiiQtGameObjectDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+  xiiQtItemDelegate::paint(pPainter, option, index);
+
+  QPoint mousePos;
+  if (QWidget* pParent = qobject_cast<QWidget*>(parent()))
+  {
+    mousePos = pParent->mapFromGlobal(QCursor::pos());
+  }
+
+  {
+    const bool  bIsHidden = index.data(xiiQtGameObjectAdapter::UserRoles::HiddenRole).value<bool>();
+    const QRect iconRect  = GetHiddenIconRect(option);
+
+    if (bIsHidden)
+    {
+      xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/ObjectsHidden.svg").paint(pPainter, iconRect, Qt::AlignmentFlag::AlignCenter, QIcon::Mode::Normal);
+    }
+  }
+
+  {
+    const bool  bIsActiveParent = index.data(xiiQtGameObjectAdapter::UserRoles::ActiveParentRole).value<bool>();
+    const QRect iconRect        = GetActiveParentIconRect(option);
+
+    if (bIsActiveParent)
+    {
+      xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/ActiveParent.svg").paint(pPainter, iconRect, Qt::AlignmentFlag::AlignCenter, QIcon::Mode::Normal);
+    }
+  }
+}
+
+bool xiiQtGameObjectDelegate::helpEvent(QHelpEvent* pEvent, QAbstractItemView* pView, const QStyleOptionViewItem& option, const QModelIndex& index)
+{
+  const QRect hiddenRect       = GetHiddenIconRect(option);
+  const QRect activeParentRect = GetActiveParentIconRect(option);
+
+  if (hiddenRect.contains(pEvent->pos()))
+  {
+    const bool bIsHidden = index.data(xiiQtGameObjectAdapter::UserRoles::HiddenRole).value<bool>();
+
+    if (bIsHidden)
+    {
+      QToolTip::showText(pEvent->globalPos(), "Object is hidden. It is not rendered in the viewport.");
+      return true;
+    }
+  }
+  else if (activeParentRect.contains(pEvent->pos()))
+  {
+    const bool bIsActiveParent = index.data(xiiQtGameObjectAdapter::UserRoles::ActiveParentRole).value<bool>();
+
+    if (bIsActiveParent)
+    {
+      QToolTip::showText(pEvent->globalPos(), "This is the 'active parent' object. All new objects will be created below this.");
+      return true;
+    }
+  }
+
+  return xiiQtItemDelegate::helpEvent(pEvent, pView, option, index);
+}
+
+QRect xiiQtGameObjectDelegate::GetHiddenIconRect(const QStyleOptionViewItem& opt)
+{
+  return opt.rect.adjusted(opt.rect.width() - opt.rect.height(), 0, 0, 0);
+}
+
+QRect xiiQtGameObjectDelegate::GetActiveParentIconRect(const QStyleOptionViewItem& opt)
+{
+  return opt.rect.adjusted(opt.rect.width() - opt.rect.height() * 2, 0, -opt.rect.height(), 0);
+}

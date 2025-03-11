@@ -9,22 +9,29 @@
 
 xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel, xiiSelectionManager* pSelection)
 {
+  setObjectName("xiiQtGameObjectWidget");
+
   m_pDocument           = pDocument;
   m_sContextMenuMapping = szContextMenuMapping;
+  m_pDelegate           = new xiiQtGameObjectDelegate(this, pDocument);
 
   setLayout(new QVBoxLayout());
   setContentsMargins(0, 0, 0, 0);
+  layout()->setObjectName("QVBoxLayout1");
   layout()->setContentsMargins(0, 0, 0, 0);
 
   m_pFilterWidget = new xiiQtSearchWidget(this);
+  m_pFilterWidget->setObjectName("xiiQtSearchWidget");
   connect(m_pFilterWidget, &xiiQtSearchWidget::textChanged, this, &xiiQtGameObjectWidget::OnFilterTextChanged);
 
   layout()->addWidget(m_pFilterWidget);
 
   m_pTreeWidget = new xiiQtDocumentTreeView(this, pDocument, std::move(pCustomModel), pSelection);
+  m_pTreeWidget->setObjectName("xiiQtDocumentTreeView");
   m_pTreeWidget->SetAllowDragDrop(true);
   m_pTreeWidget->SetAllowDeleteObjects(true);
   layout()->addWidget(m_pTreeWidget);
+  m_pTreeWidget->setItemDelegate(m_pDelegate);
 
   m_pDocument->m_GameObjectEvents.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectWidget::DocumentSceneEventHandler, this));
 
@@ -79,11 +86,12 @@ void xiiQtGameObjectWidget::OnFilterTextChanged(const QString& text)
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtGameObjectPanel::xiiQtGameObjectPanel(QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel) :
+xiiQtGameObjectPanel::xiiQtGameObjectPanel(
+  QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel) :
   xiiQtDocumentPanel(pParent, pDocument)
 {
   setObjectName("ScenegraphPanel");
-  setWindowTitle("Scenegraph");
+  setWindowTitle("xiiQtGameObjectPanel");
 
   m_pMainWidget = new xiiQtGameObjectWidget(this, pDocument, szContextMenuMapping, std::move(pCustomModel));
   setWidget(m_pMainWidget);

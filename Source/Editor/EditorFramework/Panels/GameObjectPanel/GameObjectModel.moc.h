@@ -4,15 +4,39 @@
 
 #include <EditorFramework/Document/GameObjectDocument.h>
 #include <EditorFramework/GUI/RawDocumentTreeModel.moc.h>
+#include <GuiFoundation/Widgets/ItemView.moc.h>
 #include <ToolsFoundation/Object/ObjectMetaData.h>
 
 class xiiSceneDocument;
+
+
+/// \brief Custom delegate for game objects, used in xiiQtGameObjectWidget.
+///
+/// Renders additional icons to display stats.
+class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectDelegate : public xiiQtItemDelegate
+{
+  Q_OBJECT
+public:
+  xiiQtGameObjectDelegate(QObject* pParent, xiiGameObjectDocument* pDocument);
+  virtual void paint(QPainter* pPainter, const QStyleOptionViewItem& opt, const QModelIndex& index) const override;
+  virtual bool helpEvent(QHelpEvent* pEvent, QAbstractItemView* pView, const QStyleOptionViewItem& option, const QModelIndex& index) override;
+  static QRect GetHiddenIconRect(const QStyleOptionViewItem& opt);
+  static QRect GetActiveParentIconRect(const QStyleOptionViewItem& opt);
+
+  xiiGameObjectDocument* m_pDocument = nullptr;
+};
 
 class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectAdapter : public xiiQtNameableAdapter
 {
   Q_OBJECT;
 
 public:
+  enum UserRoles
+  {
+    HiddenRole       = Qt::UserRole + 0,
+    ActiveParentRole = Qt::UserRole + 1,
+  };
+
   xiiQtGameObjectAdapter(xiiDocumentObjectManager* pObjectManager, xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>* pObjectMetaData = nullptr, xiiObjectMetaData<xiiUuid, xiiGameObjectMetaData>* pGameObjectMetaData = nullptr);
   ~xiiQtGameObjectAdapter();
   virtual QVariant data(const xiiDocumentObject* pObject, int iRow, int iColumn, int iRole) const override;

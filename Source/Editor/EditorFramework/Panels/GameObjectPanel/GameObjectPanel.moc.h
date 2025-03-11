@@ -8,6 +8,7 @@
 class xiiQtSearchWidget;
 class xiiGameObjectDocument;
 struct xiiGameObjectEvent;
+class xiiQtGameObjectDelegate;
 
 class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectWidget : public QWidget
 {
@@ -16,6 +17,8 @@ class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectWidget : public QWidget
 public:
   xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel, xiiSelectionManager* pSelection = nullptr);
   ~xiiQtGameObjectWidget();
+
+  xiiQtSearchWidget& GetFilterWidget() { return *m_pFilterWidget; }
 
 private Q_SLOTS:
   void OnItemDoubleClicked(const QModelIndex&);
@@ -26,10 +29,11 @@ private:
   void DocumentSceneEventHandler(const xiiGameObjectEvent& e);
 
 protected:
-  xiiGameObjectDocument* m_pDocument     = nullptr;
-  xiiQtDocumentTreeView* m_pTreeWidget   = nullptr;
-  xiiQtSearchWidget*     m_pFilterWidget = nullptr;
-  xiiString              m_sContextMenuMapping;
+  xiiQtGameObjectDelegate* m_pDelegate = nullptr;
+  xiiGameObjectDocument*   m_pDocument;
+  xiiQtDocumentTreeView*   m_pTreeWidget;
+  xiiQtSearchWidget*       m_pFilterWidget;
+  xiiString                m_sContextMenuMapping;
 };
 
 class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectPanel : public xiiQtDocumentPanel

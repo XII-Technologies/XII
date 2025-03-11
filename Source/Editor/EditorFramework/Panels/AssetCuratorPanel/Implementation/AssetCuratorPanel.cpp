@@ -24,7 +24,7 @@ bool xiiQtAssetCuratorFilter::IsAssetFiltered(xiiStringView sDataDirParentRelati
   if (!pInfo->m_bMainAsset)
     return true;
 
-  if (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingTransformDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::CircularDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingThumbnailDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::TransformError)
+  if ((pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingTransformDependency) && (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::CircularDependency) && (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingThumbnailDependency) && (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingPackageDependency) && (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::TransformError))
   {
     return true;
   }
@@ -34,6 +34,19 @@ bool xiiQtAssetCuratorFilter::IsAssetFiltered(xiiStringView sDataDirParentRelati
     if (pInfo->m_pAssetInfo->m_TransformState == xiiAssetInfo::MissingThumbnailDependency)
     {
       for (auto& ref : pInfo->m_pAssetInfo->m_MissingThumbnailDeps)
+      {
+        if (!xiiAssetCurator::GetSingleton()->FindSubAsset(ref).isValid())
+        {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    if (pInfo->m_pAssetInfo->m_TransformState == xiiAssetInfo::MissingPackageDependency)
+    {
+      for (auto& ref : pInfo->m_pAssetInfo->m_MissingPackageDeps)
       {
         if (!xiiAssetCurator::GetSingleton()->FindSubAsset(ref).isValid())
         {
@@ -178,8 +191,8 @@ void xiiQtAssetCuratorPanel::UpdateIssueInfo()
     xiiLog::Error(&logger, "Missing Transform Dependency:");
     for (const xiiString& dep : pAssetInfo->m_MissingTransformDeps)
     {
-      xiiStringBuilder sNiceName = getNiceName(dep);
-      xiiLog::Error(&logger, "{0}", sNiceName);
+      xiiStringBuilder m_sNiceName = getNiceName(dep);
+      xiiLog::Error(&logger, "{0}", m_sNiceName);
     }
   }
   else if (pAssetInfo->m_TransformState == xiiAssetInfo::CircularDependency)
@@ -187,8 +200,8 @@ void xiiQtAssetCuratorPanel::UpdateIssueInfo()
     xiiLog::Error(&logger, "Circular Dependency:");
     for (const xiiString& ref : pAssetInfo->m_CircularDependencies)
     {
-      xiiStringBuilder sNiceName = getNiceName(ref);
-      xiiLog::Error(&logger, "{0}", sNiceName);
+      xiiStringBuilder m_sNiceName = getNiceName(ref);
+      xiiLog::Error(&logger, "{0}", m_sNiceName);
     }
   }
   else if (pAssetInfo->m_TransformState == xiiAssetInfo::MissingThumbnailDependency)
@@ -196,8 +209,17 @@ void xiiQtAssetCuratorPanel::UpdateIssueInfo()
     xiiLog::Error(&logger, "Missing Thumbnail Dependency:");
     for (const xiiString& ref : pAssetInfo->m_MissingThumbnailDeps)
     {
-      xiiStringBuilder sNiceName = getNiceName(ref);
-      xiiLog::Error(&logger, "{0}", sNiceName);
+      xiiStringBuilder m_sNiceName = getNiceName(ref);
+      xiiLog::Error(&logger, "{0}", m_sNiceName);
+    }
+  }
+  else if (pAssetInfo->m_TransformState == xiiAssetInfo::MissingPackageDependency)
+  {
+    xiiLog::Error(&logger, "Missing Package Dependency:");
+    for (const xiiString& ref : pAssetInfo->m_MissingPackageDeps)
+    {
+      xiiStringBuilder m_sNiceName = getNiceName(ref);
+      xiiLog::Error(&logger, "{0}", m_sNiceName);
     }
   }
   else if (pAssetInfo->m_TransformState == xiiAssetInfo::TransformError)
