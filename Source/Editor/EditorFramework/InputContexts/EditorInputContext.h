@@ -37,7 +37,7 @@ public:
   xiiEditorInput MouseMoveEvent(QMouseEvent* e);
   xiiEditorInput WheelEvent(QWheelEvent* e) { return DoWheelEvent(e); }
 
-  static void SetActiveInputContext(xiiEditorInputContext* pContext) { s_pActiveInputContext = pContext; }
+  static void SetActiveInputContext(xiiEditorInputContext* pContext);
 
   void MakeActiveInputContext(bool bActive = true);
 
@@ -90,6 +90,8 @@ protected:
 
   virtual void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) = 0;
 
+  virtual void           OnActivated() {}
+  virtual void           OnDeactivated() {}
   virtual xiiEditorInput DoKeyPressEvent(QKeyEvent* e);
   virtual xiiEditorInput DoKeyReleaseEvent(QKeyEvent* e) { return xiiEditorInput::MayBeHandledByOthers; }
   virtual xiiEditorInput DoMousePressEvent(QMouseEvent* e) { return xiiEditorInput::MayBeHandledByOthers; }
@@ -100,8 +102,8 @@ protected:
 private:
   static xiiEditorInputContext* s_pActiveInputContext;
 
-  xiiQtEngineDocumentWindow* m_pOwnerWindow = nullptr;
-  xiiQtEngineViewWidget*     m_pOwnerView   = nullptr;
+  xiiQtEngineDocumentWindow* m_pOwnerWindow;
+  xiiQtEngineViewWidget*     m_pOwnerView;
   bool                       m_bDisableShortcuts;
   bool                       m_bJustWrappedMouse;
   MouseMode                  m_MouseMode;
