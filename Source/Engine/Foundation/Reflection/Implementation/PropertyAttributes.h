@@ -457,29 +457,54 @@ class XII_FOUNDATION_DLL xiiFileBrowserAttribute : public xiiTypeWidgetAttribute
 
 public:
   // Predefined common type filters
-  static constexpr xiiStringView Meshes            = "*.obj;*.fbx;*.gltf;*.glb"_xiisv;
-  static constexpr xiiStringView SkeletalMeshes    = "*.fbx;*.gltf;*.glb"_xiisv;
-  static constexpr xiiStringView ImagesLdrOnly     = "*.dds;*.tga;*.png;*.jpg;*.jpeg"_xiisv;
-  static constexpr xiiStringView ImagesHdrOnly     = "*.hdr;*.exr"_xiisv;
-  static constexpr xiiStringView ImagesLdrAndHdr   = "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr;*.exr"_xiisv;
-  static constexpr xiiStringView CubemapsLdrAndHdr = "*.dds;*.hdr"_xiisv;
+  static constexpr xiiStringView Meshes               = "*.obj;*.fbx;*.gltf;*.glb"_xiisv;
+  static constexpr xiiStringView MeshesWithAnimations = "*.fbx;*.gltf;*.glb"_xiisv;
+  static constexpr xiiStringView ImagesLdrOnly        = "*.dds;*.tga;*.png;*.jpg;*.jpeg"_xiisv;
+  static constexpr xiiStringView ImagesHdrOnly        = "*.hdr;*.exr"_xiisv;
+  static constexpr xiiStringView ImagesLdrAndHdr      = "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr;*.exr"_xiisv;
+  static constexpr xiiStringView CubemapsLdrAndHdr    = "*.dds;*.hdr"_xiisv;
 
   xiiFileBrowserAttribute() = default;
-  xiiFileBrowserAttribute(xiiStringView sDialogTitle, xiiStringView sTypeFilter, xiiStringView sCustomAction = {}, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail) :
-    m_sDialogTitle(sDialogTitle), m_sTypeFilter(sTypeFilter), m_sCustomAction(sCustomAction), m_DependencyFlags(dependencyFlags)
+  xiiFileBrowserAttribute(xiiStringView sDialogTitle, xiiStringView sTypeFilter, xiiStringView sCustomAction = {}, xiiStringView sCreateTitle = {}, xiiBitflags<xiiDependencyFlags> depencyFlags = xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail) :
+    m_sDialogTitle(sDialogTitle), m_sTypeFilter(sTypeFilter), m_sCustomAction(sCustomAction), m_sCreateTitle(sCreateTitle), m_DependencyFlags(depencyFlags)
   {
   }
 
   xiiStringView                   GetDialogTitle() const { return m_sDialogTitle; }
   xiiStringView                   GetTypeFilter() const { return m_sTypeFilter; }
   xiiStringView                   GetCustomAction() const { return m_sCustomAction; }
+  xiiStringView                   GetCreateTitle() const { return m_sCreateTitle; }
   xiiBitflags<xiiDependencyFlags> GetDependencyFlags() const { return m_DependencyFlags; }
 
 private:
   xiiUntrackedString              m_sDialogTitle;
   xiiUntrackedString              m_sTypeFilter;
   xiiUntrackedString              m_sCustomAction;
+  xiiUntrackedString              m_sCreateTitle;
   xiiBitflags<xiiDependencyFlags> m_DependencyFlags;
+};
+
+/// \brief Indicates that the string property should allow to browse for an file (or programs) outside the project directories.
+///
+/// Allows to specify the title for the browse dialog and the allowed file types.
+/// Usage: XII_MEMBER_PROPERTY("File", m_sFilePath)->AddAttributes(new xiiFileBrowserAttribute("Choose a File", "*.exe")),
+class XII_FOUNDATION_DLL xiiExternalFileBrowserAttribute : public xiiTypeWidgetAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiExternalFileBrowserAttribute, xiiTypeWidgetAttribute);
+
+public:
+  xiiExternalFileBrowserAttribute() = default;
+  xiiExternalFileBrowserAttribute(xiiStringView sDialogTitle, xiiStringView sTypeFilter) :
+    m_sDialogTitle(sDialogTitle), m_sTypeFilter(sTypeFilter)
+  {
+  }
+
+  xiiStringView GetDialogTitle() const { return m_sDialogTitle; }
+  xiiStringView GetTypeFilter() const { return m_sTypeFilter; }
+
+private:
+  xiiUntrackedString m_sDialogTitle;
+  xiiUntrackedString m_sTypeFilter;
 };
 
 /// \brief A property attribute that indicates that the string property is actually an asset reference.
@@ -492,10 +517,18 @@ class XII_FOUNDATION_DLL xiiAssetBrowserAttribute : public xiiTypeWidgetAttribut
 
 public:
   xiiAssetBrowserAttribute() = default;
-  xiiAssetBrowserAttribute(xiiStringView sTypeFilter, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package) :
-    m_DependencyFlags(dependencyFlags)
+  xiiAssetBrowserAttribute(xiiStringView sTypeFilter, xiiBitflags<xiiDependencyFlags> depencyFlags = xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package) :
+    m_DependencyFlags(depencyFlags)
   {
     SetTypeFilter(sTypeFilter);
+  }
+
+  xiiAssetBrowserAttribute(xiiStringView sTypeFilter, xiiStringView sRequiredTag, xiiBitflags<xiiDependencyFlags> depencyFlags = xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package) :
+    m_DependencyFlags(depencyFlags)
+  {
+    SetTypeFilter(sTypeFilter);
+
+    m_sRequiredTag = sRequiredTag;
   }
 
   void SetTypeFilter(xiiStringView sTypeFilter)
@@ -507,8 +540,11 @@ public:
   xiiStringView                   GetTypeFilter() const { return m_sTypeFilter; }
   xiiBitflags<xiiDependencyFlags> GetDependencyFlags() const { return m_DependencyFlags; }
 
+  xiiStringView GetRequiredTag() const { return m_sRequiredTag; }
+
 private:
   xiiUntrackedString              m_sTypeFilter;
+  xiiUntrackedString              m_sRequiredTag;
   xiiBitflags<xiiDependencyFlags> m_DependencyFlags;
 };
 
@@ -877,10 +913,10 @@ public:
 
   /// \brief Attribute to add on an RTTI type to add a cone visualizer for specific properties.
   ///
-  /// szRadiusProperty may be nullptr, in which case it is assumed to be 1
-  /// fScale will be multiplied with value of szRadiusProperty to determine the size of the cone
-  /// szColorProperty may be nullptr. In this case it is ignored and fixedColor is used instead.
-  /// fixedColor is ignored if szColorProperty is valid.
+  /// sRadiusProperty may be nullptr, in which case it is assumed to be 1
+  /// fScale will be multiplied with value of sRadiusProperty to determine the size of the cone
+  /// sColorProperty may be nullptr. In this case it is ignored and fixedColor is used instead.
+  /// fixedColor is ignored if sColorProperty is valid.
   xiiConeVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, xiiStringView sAngleProperty, float fScale, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {});
 
   const xiiUntrackedString& GetAngleProperty() const { return m_sProperty1; }

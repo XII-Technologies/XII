@@ -279,17 +279,37 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFileBrowserAttribute, 1, xiiRTTIDefaultAlloc
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExternalFileBrowserAttribute, 1, xiiRTTIDefaultAllocator<xiiExternalFileBrowserAttribute>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Title", m_sDialogTitle),
+    XII_MEMBER_PROPERTY("Filter", m_sTypeFilter),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetBrowserAttribute, 1, xiiRTTIDefaultAllocator<xiiAssetBrowserAttribute>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Filter", m_sTypeFilter),
+    XII_MEMBER_PROPERTY("RequiredTag", m_sRequiredTag),
     XII_BITFLAGS_MEMBER_PROPERTY("DependencyFlags", xiiDependencyFlags, m_DependencyFlags),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
     XII_CONSTRUCTOR_PROPERTY(xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiBitflags<xiiDependencyFlags>),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiBitflags<xiiDependencyFlags>),
   }
   XII_END_FUNCTIONS;
 }

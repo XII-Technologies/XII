@@ -3,6 +3,8 @@
     <file>Icons/Connection.svg</file>
     <file>Icons/Tag.svg</file>
     <file>Icons/Perspective.svg</file>
+    <file>Icons/ObjectsVisible.svg</file>
+    <file>Icons/ObjectsHidden.svg</file>
     <file>Icons/RenderMode.svg</file>
     <file>Icons/Asset.svg</file>
     <file>Icons/AssetCurator.svg</file>
@@ -39,6 +41,7 @@
     <file>Icons/SwitchToRemoteProcess.svg</file>
     <file>Icons/Fileserve.svg</file>
     <file>Icons/Inspector.svg</file>
+    <file>Icons/Tracy.svg</file>
     <file>Icons/GizmoNone.svg</file>
     <file>Icons/WorldSpace.svg</file>
     <file>Icons/TransformParent.svg</file>
@@ -59,6 +62,9 @@
     <file>Icons/GitHub-Light.svg</file>
     <file>Icons/ViewLightMenu.svg</file>
     <file>Icons/VisualStudio.svg</file>
+    <file>Icons/MoveCameraHere.svg</file>
+    <file>Icons/id.svg</file>
+    <file>Icons/ActiveParent.svg</file>
   </qresource>
   <qresource prefix="TypeIcons">
     <file>xiiDragToPositionGizmoEditTool.svg</file>
@@ -68,7 +74,7 @@
   </qresource>
   <qresource prefix="Splash">
     <file>Splash/splash.svg</file>
-  <file>Splash/splash.png</file>
+    <file>Splash/splash.png</file>
   </qresource>
   <qresource prefix="AssetIcons">
     <file>Icons/AllAssets.svg</file>

@@ -45,9 +45,9 @@ protected:
   void UpdateThumbnail(const xiiUuid& guid, const char* szThumbnailPath);
 
   QPalette            m_Pal;
-  QHBoxLayout*        m_pLayout = nullptr;
-  xiiQtAssetLineEdit* m_pWidget = nullptr;
-  QToolButton*        m_pButton = nullptr;
+  QHBoxLayout*        m_pLayout;
+  xiiQtAssetLineEdit* m_pWidget;
+  QToolButton*        m_pButton;
   xiiUInt32           m_uiThumbnailID;
   xiiUuid             m_AssetGuid;
 };
