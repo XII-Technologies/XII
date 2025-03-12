@@ -38,7 +38,7 @@ void xiiSkeletonContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg
     {
       if (pMsg->m_sPayload == "Grid")
       {
-        m_bDisplayGrid = pMsg->m_fPayload > 0;
+        m_bDisplayGrid = pMsg->m_PayloadValue.ConvertTo<float>() > 0;
         return;
       }
     }
@@ -59,7 +59,7 @@ void xiiSkeletonContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg
       xiiSkeletonComponent* pSkeleton = nullptr;
       if (m_pWorld->TryGetComponent(m_hSkeletonComponent, pSkeleton))
       {
-        pSkeleton->m_bVisualizeBones = (pMsg->m_fPayload != 0);
+        pSkeleton->m_bVisualizeBones = pMsg->m_PayloadValue.Get<bool>();
       }
 
       // resend the pose every frame (this config message is send every frame)
@@ -78,7 +78,7 @@ void xiiSkeletonContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg
       xiiSkeletonComponent* pSkeleton = nullptr;
       if (m_pWorld->TryGetComponent(m_hSkeletonComponent, pSkeleton))
       {
-        pSkeleton->m_bVisualizeColliders = (pMsg->m_fPayload != 0);
+        pSkeleton->m_bVisualizeColliders = pMsg->m_PayloadValue.Get<bool>();
       }
     }
     else if (pMsg->m_sWhatToDo == "RenderJoints")
@@ -88,7 +88,7 @@ void xiiSkeletonContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg
       xiiSkeletonComponent* pSkeleton = nullptr;
       if (m_pWorld->TryGetComponent(m_hSkeletonComponent, pSkeleton))
       {
-        pSkeleton->m_bVisualizeJoints = (pMsg->m_fPayload != 0);
+        pSkeleton->m_bVisualizeJoints = pMsg->m_PayloadValue.Get<bool>();
       }
     }
     else if (pMsg->m_sWhatToDo == "RenderSwingLimits")
@@ -98,7 +98,7 @@ void xiiSkeletonContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg
       xiiSkeletonComponent* pSkeleton = nullptr;
       if (m_pWorld->TryGetComponent(m_hSkeletonComponent, pSkeleton))
       {
-        pSkeleton->m_bVisualizeSwingLimits = (pMsg->m_fPayload != 0);
+        pSkeleton->m_bVisualizeSwingLimits = pMsg->m_PayloadValue.Get<bool>();
       }
     }
     else if (pMsg->m_sWhatToDo == "RenderTwistLimits")
@@ -108,7 +108,7 @@ void xiiSkeletonContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg
       xiiSkeletonComponent* pSkeleton = nullptr;
       if (m_pWorld->TryGetComponent(m_hSkeletonComponent, pSkeleton))
       {
-        pSkeleton->m_bVisualizeTwistLimits = (pMsg->m_fPayload != 0);
+        pSkeleton->m_bVisualizeTwistLimits = pMsg->m_PayloadValue.Get<bool>();
       }
     }
     else if (pMsg->m_sWhatToDo == "PreviewMesh" && m_sAnimatedMeshToUse != pMsg->m_sPayload)
@@ -188,7 +188,6 @@ bool xiiSkeletonContext::UpdateThumbnailViewContext(xiiEngineProcessViewContext*
   xiiSkeletonViewContext* pMeshViewContext = static_cast<xiiSkeletonViewContext*>(pThumbnailViewContext);
   return pMeshViewContext->UpdateThumbnailCamera(bounds);
 }
-
 
 void xiiSkeletonContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg)
 {

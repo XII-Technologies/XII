@@ -4,18 +4,14 @@
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 
-class XII_ENGINEPLUGINASSETS_DLL xiiRenderPipelineContext : public xiiEngineProcessDocumentContext
+class XII_ENGINEPLUGINASSETS_DLL xiiStateMachineContext : public xiiEngineProcessDocumentContext
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineContext, xiiEngineProcessDocumentContext);
+  XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineContext, xiiEngineProcessDocumentContext);
 
 public:
-  xiiRenderPipelineContext();
-
-  virtual void HandleMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
+  xiiStateMachineContext();
 
 protected:
-  virtual void OnInitialize() override;
-
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
 

@@ -22,6 +22,7 @@ public:
   virtual void HandleMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
 
   const xiiTexture2DResourceHandle& GetTexture() const { return m_hTexture; }
+  int                               GetLodLevel() const { return m_iLodLevel; }
 
 protected:
   virtual void OnInitialize() override;
@@ -30,6 +31,7 @@ protected:
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
 
 private:
+  void SetTexture(xiiStringView sTextureFile);
   void OnResourceEvent(const xiiResourceEvent& e);
 
   xiiGameObjectHandle        m_hPreviewObject;
@@ -39,4 +41,6 @@ private:
   xiiTexture2DResourceHandle m_hTexture;
 
   xiiEvent<const xiiResourceEvent&, xiiMutex>::Unsubscriber m_TextureResourceEventSubscriber;
+
+  int m_iLodLevel = -1;
 };
