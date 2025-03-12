@@ -1,25 +1,20 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
-#include <EditorPluginAssets/StateMachineAsset/StateMachineAssetWindow.moc.h>
-#include <EditorPluginAssets/StateMachineAsset/StateMachineGraphQt.moc.h>
+#include <EditorPluginAssets/CustomDataAsset/CustomDataAssetWindow.moc.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 #include <GuiFoundation/DockPanels/DocumentPanel.moc.h>
-#include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 
-
-
-xiiQtStateMachineAssetDocumentWindow::xiiQtStateMachineAssetDocumentWindow(xiiDocument* pDocument) :
+xiiQtCustomDataAssetDocumentWindow::xiiQtCustomDataAssetDocumentWindow(xiiDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
 {
-
   // Menu Bar
   {
     xiiQtMenuBarActionMapView* pMenuBar = static_cast<xiiQtMenuBarActionMapView*>(menuBar());
     xiiActionContext           context;
-    context.m_sMapping  = "StateMachineAssetMenuBar";
+    context.m_sMapping  = "CustomDataAssetMenuBar";
     context.m_pDocument = pDocument;
     context.m_pWindow   = this;
     pMenuBar->SetActionContext(context);
@@ -29,34 +24,18 @@ xiiQtStateMachineAssetDocumentWindow::xiiQtStateMachineAssetDocumentWindow(xiiDo
   {
     xiiQtToolBarActionMapView* pToolBar = new xiiQtToolBarActionMapView("Toolbar", this);
     xiiActionContext           context;
-    context.m_sMapping  = "StateMachineAssetToolBar";
+    context.m_sMapping  = "CustomDataAssetToolBar";
     context.m_pDocument = pDocument;
     context.m_pWindow   = this;
     pToolBar->SetActionContext(context);
-    pToolBar->setObjectName("StateMachineAssetWindowToolBar");
+    pToolBar->setObjectName("CustomDataAssetWindowToolBar");
     addToolBar(pToolBar);
-  }
-
-  // Central Widget
-  {
-    m_pScene = new xiiQtStateMachineAssetScene(this);
-    m_pScene->InitScene(static_cast<const xiiDocumentNodeManager*>(pDocument->GetObjectManager()));
-
-    m_pView = new xiiQtNodeView(this);
-    m_pView->SetScene(m_pScene);
-
-    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
-    pCentral->setObjectName("StateMachineView");
-    pCentral->setWindowTitle("State Machine");
-    pCentral->setWidget(m_pView);
-
-    m_pDockManager->setCentralWidget(pCentral);
   }
 
   {
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
-    pPropertyPanel->setObjectName("StateMachineAssetDockWidget");
-    pPropertyPanel->setWindowTitle("Properties");
+    pPropertyPanel->setObjectName("CustomDataAssetDockWidget");
+    pPropertyPanel->setWindowTitle("CustomData Properties");
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
@@ -72,10 +51,10 @@ xiiQtStateMachineAssetDocumentWindow::xiiQtStateMachineAssetDocumentWindow(xiiDo
 
     pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
 
-    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
+    m_pDockManager->setCentralWidget(pPropertyPanel);
+
+    pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }
 
   FinishWindowCreation();
 }
-
-xiiQtStateMachineAssetDocumentWindow::~xiiQtStateMachineAssetDocumentWindow() = default;

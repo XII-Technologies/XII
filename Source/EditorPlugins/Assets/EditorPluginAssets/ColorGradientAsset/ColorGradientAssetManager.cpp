@@ -46,18 +46,12 @@ void xiiColorGradientAssetDocumentManager::OnDocumentManagerEvent(const xiiDocum
   }
 }
 
-void xiiColorGradientAssetDocumentManager::InternalCreateDocument(
-  xiiStringView            sDocumentTypeName,
-  xiiStringView            sPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiColorGradientAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiColorGradientAssetDocument(sPath);
 }
 
-void xiiColorGradientAssetDocumentManager::InternalGetSupportedDocumentTypes(
-  xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const
+void xiiColorGradientAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const
 {
   inout_DocumentTypes.PushBack(&m_DocTypeDesc);
 }

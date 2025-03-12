@@ -47,4 +47,65 @@ void xiiMeshComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg) cons
   ref_msg.AddMeshObject(GetOwner()->GetGlobalTransform(), xiiResourceManager::LoadResource<xiiCpuMeshResource>(GetMesh().GetResourceID()));
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshImportTransform, 1)
+  XII_ENUM_CONSTANT(xiiMeshImportTransform::Blender_YUp),
+    XII_ENUM_CONSTANT(xiiMeshImportTransform::Blender_ZUp),
+    XII_ENUM_CONSTANT(xiiMeshImportTransform::Custom),
+XII_END_STATIC_REFLECTED_ENUM;
+// clang-format on
+
+xiiBasisAxis::Enum xiiMeshImportTransform::GetRightDir(xiiMeshImportTransform::Enum transform, xiiBasisAxis::Enum dir)
+{
+  switch (transform)
+  {
+    case xiiMeshImportTransform::Blender_YUp:
+      return xiiBasisAxis::PositiveX;
+    case xiiMeshImportTransform::Blender_ZUp:
+      return xiiBasisAxis::PositiveX;
+    case xiiMeshImportTransform::Custom:
+      return dir;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return dir;
+}
+
+xiiBasisAxis::Enum xiiMeshImportTransform::GetUpDir(xiiMeshImportTransform::Enum transform, xiiBasisAxis::Enum dir)
+{
+  switch (transform)
+  {
+    case xiiMeshImportTransform::Blender_YUp:
+      return xiiBasisAxis::PositiveY;
+    case xiiMeshImportTransform::Blender_ZUp:
+      return xiiBasisAxis::PositiveZ;
+    case xiiMeshImportTransform::Custom:
+      return dir;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return dir;
+}
+
+bool xiiMeshImportTransform::GetFlipForward(xiiMeshImportTransform::Enum transform, bool bFlip)
+{
+  switch (transform)
+  {
+    case xiiMeshImportTransform::Blender_YUp:
+      return true;
+    case xiiMeshImportTransform::Blender_ZUp:
+      return true;
+    case xiiMeshImportTransform::Custom:
+      return bFlip;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return bFlip;
+}
+
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_MeshComponent);

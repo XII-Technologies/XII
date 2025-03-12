@@ -188,7 +188,7 @@ void xiiDecalAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInputFile,
   }
 }
 
-xiiStatus xiiDecalAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiDecalAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
   xiiStringBuilder sOutFile = sInputFileAbs;
   sOutFile.ChangeFileExtension(GetDocumentExtension());
@@ -199,12 +199,13 @@ xiiStatus xiiDecalAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, 
   xiiStringBuilder sInputFileRel = sInputFileAbs;
   pApp->MakePathDataDirectoryRelative(sInputFileRel);
 
-  out_pGeneratedDocument = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
-
-  if (out_pGeneratedDocument == nullptr)
+  xiiDocument* pDoc = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
+  if (pDoc == nullptr)
     return xiiStatus("Could not create target document");
 
-  xiiDecalAssetDocument* pAssetDoc = xiiDynamicCast<xiiDecalAssetDocument*>(out_pGeneratedDocument);
+  out_generatedDocuments.PushBack(pDoc);
+
+  xiiDecalAssetDocument* pAssetDoc = xiiDynamicCast<xiiDecalAssetDocument*>(pDoc);
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("BaseColor", sInputFileRel.GetView());

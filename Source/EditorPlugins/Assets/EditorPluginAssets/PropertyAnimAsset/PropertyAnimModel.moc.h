@@ -25,11 +25,8 @@ struct xiiQtPropertyAnimModelTreeEntry
 
   bool operator==(const xiiQtPropertyAnimModelTreeEntry& rhs) const
   {
-    return (m_iParent == rhs.m_iParent) && (m_uiOwnRowIndex == rhs.m_uiOwnRowIndex) && (m_pTrack == rhs.m_pTrack) &&
-      (m_iTrackIdx == rhs.m_iTrackIdx) && (m_sDisplay == rhs.m_sDisplay) && (m_Children == rhs.m_Children);
+    return (m_iParent == rhs.m_iParent) && (m_uiOwnRowIndex == rhs.m_uiOwnRowIndex) && (m_pTrack == rhs.m_pTrack) && (m_iTrackIdx == rhs.m_iTrackIdx) && (m_sDisplay == rhs.m_sDisplay) && (m_Children == rhs.m_Children);
   }
-
-  bool operator!=(const xiiQtPropertyAnimModelTreeEntry& rhs) const { return !(*this == rhs); }
 };
 
 class xiiQtPropertyAnimModel : public QAbstractItemModel

@@ -1,6 +1,7 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorPluginAssets/Curve1DAsset/Curve1DAsset.h>
 #include <EditorPluginAssets/Curve1DAsset/Curve1DAssetWindow.moc.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
@@ -38,13 +39,26 @@ xiiQtCurve1DAssetDocumentWindow::xiiQtCurve1DAssetDocumentWindow(xiiDocument* pD
     addToolBar(pToolBar);
   }
 
-  m_pCurveEditor = new xiiQtCurve1DEditorWidget(this);
+  // Central Widget
+  {
+    m_pCurveEditor = new xiiQtCurve1DEditorWidget(this);
 
-  QWidget* pContainer = new QWidget(this);
-  pContainer->setLayout(new QVBoxLayout());
-  pContainer->layout()->addWidget(m_pCurveEditor);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
 
-  setCentralWidget(pContainer);
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator((xiiAssetDocument*)GetDocument()));
+    pWidget->layout()->addWidget(m_pCurveEditor);
+
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    pCentral->setObjectName("xiiQtDocumentPanel");
+    pCentral->setWindowTitle("Curve");
+    pCentral->setWidget(pWidget);
+
+    m_pDockManager->setCentralWidget(pCentral);
+  }
 
   connect(m_pCurveEditor, &xiiQtCurve1DEditorWidget::InsertCpEvent, this, &xiiQtCurve1DAssetDocumentWindow::onInsertCpAt);
   connect(m_pCurveEditor, &xiiQtCurve1DEditorWidget::CpMovedEvent, this, &xiiQtCurve1DAssetDocumentWindow::onCurveCpMoved);
@@ -68,7 +82,7 @@ xiiQtCurve1DAssetDocumentWindow::xiiQtCurve1DAssetDocumentWindow(xiiDocument* pD
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
     pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }

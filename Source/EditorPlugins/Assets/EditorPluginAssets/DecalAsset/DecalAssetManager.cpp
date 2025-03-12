@@ -50,7 +50,7 @@ void xiiDecalAssetDocumentManager::AddEntriesToAssetTable(xiiStringView sDataDir
 
   if (projectDir.StartsWith_NoCase(sDataDirectory))
   {
-    addEntry("{ ProjectDecalAtlas }", "Default/Decals.ezBinTextureAtlas", "Decal Atlas");
+    addEntry("{ ProjectDecalAtlas }", "Default/Decals.xiiBinTextureAtlas", "Decal Atlas");
   }
 }
 
@@ -284,7 +284,7 @@ xiiString xiiDecalAssetDocumentManager::GetDecalTexturePath(const xiiPlatformPro
 {
   const xiiPlatformProfile* pAssetProfile = xiiAssetDocumentManager::DetermineFinalTargetProfile(pAssetProfile0);
   xiiStringBuilder          result        = "Decals";
-  GenerateOutputFilename(result, pAssetProfile, "ezBinTextureAtlas", true);
+  GenerateOutputFilename(result, pAssetProfile, "xiiBinTextureAtlas", true);
 
   return result;
 }

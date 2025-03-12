@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <EditorPluginAssets/DecalAsset/DecalAsset.h>
@@ -40,6 +41,8 @@ xiiQtDecalAssetDocumentWindow::xiiQtDecalAssetDocumentWindow(xiiDecalAssetDocume
 
   // 3D View
   {
+    SetTargetFrameRate(25);
+
     m_ViewConfig.m_Camera.LookAt(xiiVec3(2, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
@@ -49,7 +52,7 @@ xiiQtDecalAssetDocumentWindow::xiiQtDecalAssetDocumentWindow(xiiDecalAssetDocume
 
     xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(nullptr, m_pViewWidget, "DecalAssetViewToolBar");
 
-    setCentralWidget(pContainer);
+    m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
@@ -60,9 +63,19 @@ xiiQtDecalAssetDocumentWindow::xiiQtDecalAssetDocumentWindow(xiiDecalAssetDocume
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator(GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidget(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }

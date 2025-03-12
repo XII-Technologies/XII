@@ -11,14 +11,8 @@ public:
   xiiDecalAssetDocumentManager();
   ~xiiDecalAssetDocumentManager();
 
-  virtual void AddEntriesToAssetTable(
-    xiiStringView                                                                    sDataDirectory,
-    const xiiPlatformProfile*                                                        pAssetProfile,
-    xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const override;
-  virtual xiiString GetAssetTableEntry(
-    const xiiSubAsset*        pSubAsset,
-    xiiStringView             sDataDirectory,
-    const xiiPlatformProfile* pAssetProfile) const override;
+  virtual void AddEntriesToAssetTable(xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const override;
+  virtual xiiString GetAssetTableEntry(const xiiSubAsset* pSubAsset, xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile) const override;
 
   /// \brief There is only a single decal texture per project. This function creates it, in case any decal asset was modified.
   xiiStatus GenerateDecalTexture(const xiiPlatformProfile* pAssetProfile);
@@ -29,12 +23,7 @@ private:
   bool      IsDecalTextureUpToDate(const char* szDecalFile, xiiUInt64 uiAssetHash) const;
   xiiStatus RunTexConv(const char* szTargetFile, const char* szInputFile, const xiiAssetFileHeader& AssetHeader);
 
-  virtual void InternalCreateDocument(
-    xiiStringView            sDocumentTypeName,
-    xiiStringView            sPath,
-    bool                     bCreateNewDocument,
-    xiiDocument*&            out_pDocument,
-    const xiiDocumentObject* pOpenContext) override;
+  virtual void InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) override;
   virtual void InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const override;
 
   virtual bool GeneratesProfileSpecificAssets() const override { return true; }

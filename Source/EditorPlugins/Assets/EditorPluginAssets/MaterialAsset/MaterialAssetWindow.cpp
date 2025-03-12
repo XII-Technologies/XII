@@ -1,6 +1,7 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <EditorPluginAssets/MaterialAsset/MaterialAsset.h>
@@ -105,6 +106,8 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
 
   // 3D View
   {
+    SetTargetFrameRate(25);
+
     m_ViewConfig.m_Camera.LookAt(xiiVec3(+1.6f, 0.5f, 0.3f), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90, 0.01f, 100.0f);
 
@@ -114,7 +117,7 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
     AddViewWidget(m_pViewWidget);
     xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(nullptr, m_pViewWidget, "MaterialAssetViewToolBar");
 
-    setCentralWidget(pContainer);
+    m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
@@ -125,9 +128,19 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator(GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
   }
 
   // Visual Shader Editor
@@ -174,11 +187,9 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
 
     m_bVisualShaderEnabled = false;
     m_pVsePanel->setWidget(pSplitter);
-    m_pVsePanel->setVisible(false);
 
-    addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, m_pVsePanel);
-
-    m_pVsePanel->setVisible(false);
+    m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pVsePanel);
+    m_pVsePanel->toggleView(false);
   }
 
   pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
@@ -256,7 +267,7 @@ void xiiQtMaterialAssetDocumentWindow::showEvent(QShowEvent* event)
 {
   xiiQtEngineDocumentWindow::showEvent(event);
 
-  m_pVsePanel->setVisible(m_bVisualShaderEnabled);
+  m_pVsePanel->toggleView(m_bVisualShaderEnabled);
 }
 
 void xiiQtMaterialAssetDocumentWindow::OnOpenShaderClicked(bool)
@@ -385,11 +396,11 @@ void xiiQtMaterialAssetDocumentWindow::UpdateNodeEditorVisibility()
 {
   const bool bCustom = GetMaterialDocument()->GetPropertyObject()->GetTypeAccessor().GetValue("ShaderMode").ConvertTo<xiiInt64>() == xiiMaterialShaderMode::Custom;
 
-  m_pVsePanel->setVisible(bCustom);
+  m_pVsePanel->toggleView(bCustom);
 
   // when this is called during construction, it seems to be overridden again (probably by the dock widget code or the splitter)
   // by delaying it a bit, we have the last word
-  QTimer::singleShot(100, this, [this, bCustom]() { m_pVsePanel->setVisible(bCustom); });
+  QTimer::singleShot(100, this, [this, bCustom]() { m_pVsePanel->toggleView(bCustom); });
 
   if (m_bVisualShaderEnabled != bCustom)
   {

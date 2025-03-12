@@ -1,8 +1,10 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetBrowserDlg.moc.h>
 #include <EditorPluginAssets/AnimationClipAsset/AnimationClipAsset.h>
 #include <Foundation/Utilities/Progress.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
+#include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ModelImporter2/ModelImporter.h>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
@@ -18,7 +20,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipAssetProperties, 3, xiiRTTIDefa
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Animation", xiiFileBrowserAttribute::SkeletalMeshes)),
+    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Animation", xiiFileBrowserAttribute::MeshesWithAnimations)),
     XII_MEMBER_PROPERTY("PreviewMesh", m_sPreviewMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skinned", xiiDependencyFlags::None)),
     XII_MEMBER_PROPERTY("UseAnimationClip", m_sAnimationClipToExtract),
     XII_ARRAY_MEMBER_PROPERTY("AvailableClips", m_AvailableClips)->AddAttributes(new xiiReadOnlyAttribute, new xiiContainerAttribute(false, false, false)),
@@ -114,8 +116,11 @@ xiiTransformStatus xiiAnimationClipAssetDocument::InternalTransformAsset(xiiStre
   if (pImporter == nullptr)
     return xiiStatus("No known importer for this file type.");
 
+  xiiEditableSkeleton skeleton;
+
   xiiModelImporter2::ImportOptions opt;
-  opt.m_sSourceFile         = sAbsFilename;
+  opt.m_sSourceFile = sAbsFilename;
+  // opt.m_pSkeletonOutput = &skeleton; // TODO: may be needed later to optimize the clip
   opt.m_pAnimationOutput    = &desc;
   opt.m_bAdditiveAnimation  = pProp->m_bAdditive;
   opt.m_sAnimationToImport  = pProp->m_sAnimationClipToExtract;
@@ -184,12 +189,10 @@ xiiUuid xiiAnimationClipAssetDocument::InsertEventTrackCpAt(xiiInt64 iTickX, con
   xiiUuid                    trackGuid  = accessor.Get<xiiUuid>(GetPropertyObject(), pTrackProp);
 
   xiiUuid newObjectGuid;
-  XII_VERIFY(
-    acc.AddObject(accessor.GetObject(trackGuid), "ControlPoints", -1, xiiGetStaticRTTI<xiiEventTrackControlPointData>(), newObjectGuid).Succeeded(),
-    "");
+  XII_VERIFY(acc.AddObjectByName(accessor.GetObject(trackGuid), "ControlPoints", -1, xiiGetStaticRTTI<xiiEventTrackControlPointData>(), newObjectGuid).Succeeded(), "");
   const xiiDocumentObject* pCPObj = accessor.GetObject(newObjectGuid);
-  XII_VERIFY(acc.SetValue(pCPObj, "Tick", iTickX).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(pCPObj, "Event", szValue).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(pCPObj, "Tick", iTickX).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(pCPObj, "Event", szValue).Succeeded(), "");
 
   acc.FinishTransaction();
 
@@ -365,12 +368,19 @@ void xiiAnimationClipAssetDocumentGenerator::GetImportModes(xiiStringView sAbsIn
   {
     xiiAssetDocumentGenerator::ImportMode& info = out_modes.ExpandAndGetRef();
     info.m_Priority                             = xiiAssetDocGeneratorPriority::Undecided;
-    info.m_sName                                = "AnimationClipImport";
+    info.m_sName                                = "AnimationClipImport_Single";
+    info.m_sIcon                                = ":/AssetIcons/Animation_Clip.svg";
+  }
+
+  {
+    xiiAssetDocumentGenerator::ImportMode& info = out_modes.ExpandAndGetRef();
+    info.m_Priority                             = xiiAssetDocGeneratorPriority::Undecided;
+    info.m_sName                                = "AnimationClipImport_All";
     info.m_sIcon                                = ":/AssetIcons/Animation_Clip.svg";
   }
 }
 
-xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
   xiiStringBuilder sOutFile = sInputFileAbs;
   sOutFile.ChangeFileExtension(GetDocumentExtension());
@@ -381,14 +391,79 @@ xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(xiiStringView sInputF
   xiiStringBuilder sInputFileRel = sInputFileAbs;
   pApp->MakePathDataDirectoryRelative(sInputFileRel);
 
-  out_pGeneratedDocument = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
-  if (out_pGeneratedDocument == nullptr)
-    return xiiStatus("Could not create target document");
+  xiiStringBuilder title;
+  title.SetFormat("Select Preview Mesh for Animation Clip '{}'", sInputFileAbs.GetFileName());
 
-  xiiAnimationClipAssetDocument* pAssetDoc = xiiDynamicCast<xiiAnimationClipAssetDocument*>(out_pGeneratedDocument);
+  xiiStringBuilder sPreviewMesh;
 
-  auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
-  accessor.SetValue("File", sInputFileRel.GetView());
+  xiiQtAssetBrowserDlg dlg(nullptr, xiiUuid::MakeInvalid(), "CompatibleAsset_Mesh_Skinned", title);
+  if (dlg.exec() != 0)
+  {
+    if (dlg.GetSelectedAssetGuid().IsValid())
+    {
+      xiiConversionUtils::ToString(dlg.GetSelectedAssetGuid(), sPreviewMesh);
+    }
+  }
 
-  return xiiStatus(XII_SUCCESS);
+  if (sMode == "AnimationClipImport_Single")
+  {
+    xiiDocument* pDoc = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
+    if (pDoc == nullptr)
+      return xiiStatus("Could not create target document");
+
+    out_generatedDocuments.PushBack(pDoc);
+
+    xiiAnimationClipAssetDocument* pAssetDoc = xiiDynamicCast<xiiAnimationClipAssetDocument*>(pDoc);
+
+    auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
+    accessor.SetValue("File", sInputFileRel.GetView());
+    accessor.SetValue("PreviewMesh", sPreviewMesh.GetView());
+
+    return xiiStatus(XII_SUCCESS);
+  }
+
+  if (sMode == "AnimationClipImport_All")
+  {
+    xiiModelImporter2::ImportOptions opt;
+    opt.m_sSourceFile = sInputFileAbs;
+
+    xiiUniquePtr<xiiModelImporter2::Importer> pImporter = xiiModelImporter2::RequestImporterForFileType(opt.m_sSourceFile);
+    if (pImporter == nullptr)
+      return xiiStatus("No known importer for this file type.");
+
+    if (pImporter->Import(opt).Failed())
+      return xiiStatus("Failed to import asset.");
+
+    xiiStringBuilder sFilename;
+    xiiStringBuilder sOutFile2;
+
+    for (const auto& clip : pImporter->m_OutputAnimationNames)
+    {
+      sFilename = clip;
+      sFilename.ReplaceAll(" ", "-");
+      sFilename.Prepend(sOutFile.GetFileName(), "_");
+
+      sOutFile2 = sOutFile;
+      sOutFile2.ChangeFileName(sFilename);
+      xiiOSFile::FindFreeFilename(sOutFile2);
+
+      xiiDocument* pDoc = pApp->CreateDocument(sOutFile2, xiiDocumentFlags::None);
+      if (pDoc == nullptr)
+        return xiiStatus("Could not create target document");
+
+      out_generatedDocuments.PushBack(pDoc);
+
+      xiiAnimationClipAssetDocument* pAssetDoc = xiiDynamicCast<xiiAnimationClipAssetDocument*>(pDoc);
+
+      auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
+      accessor.SetValue("File", sInputFileRel.GetView());
+      accessor.SetValue("UseAnimationClip", clip);
+      accessor.SetValue("PreviewMesh", sPreviewMesh.GetView());
+    }
+
+    return xiiStatus(XII_SUCCESS);
+  }
+
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return xiiStatus(XII_FAILURE);
 }

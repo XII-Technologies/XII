@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/GameObjectViewWidget.moc.h>
 #include <EditorFramework/DocumentWindow/QuadViewWidget.moc.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
@@ -28,11 +29,21 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
   };
   m_pQuadViewWidget = new xiiQtQuadViewWidget(pDocument, this, ViewFactory, "PropertyAnimAssetViewToolBar");
 
-  pDocument->SetEditToolConfigDelegate([this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
+  pDocument->SetEditToolConfigDelegate(
+    [this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
 
   pDocument->m_PropertyAnimEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyAnimAssetEventHandler, this));
 
-  setCentralWidget(m_pQuadViewWidget);
+  {
+    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(this, pDocument);
+    pViewPanel->setObjectName("xiiQtDocumentPanel");
+    pViewPanel->setWindowTitle("3D View");
+    pViewPanel->setWidget(m_pQuadViewWidget);
+
+    m_pDockManager->setCentralWidget(pViewPanel);
+  }
+
+  SetTargetFrameRate(25);
 
   // Menu Bar
   {
@@ -63,7 +74,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     pModel->AddAdapter(new xiiQtGameObjectAdapter(pDocument->GetObjectManager()));
 
     xiiQtDocumentPanel* pGameObjectPanel = new xiiQtGameObjectPanel(this, pDocument, "PropertyAnimAsset_ScenegraphContextMenu", std::move(pModel));
-    addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, pGameObjectPanel);
+    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pGameObjectPanel);
   }
 
   // Property Grid
@@ -74,9 +85,19 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     pPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPanel, pDocument);
-    pPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator(GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPanel);
   }
 
   // Property Tree View
@@ -102,7 +123,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     connect(m_pPropertyTreeView, &xiiQtPropertyAnimAssetTreeView::FrameSelectedItemsEvent, this,
             &xiiQtPropertyAnimAssetDocumentWindow::onFrameSelectedTracks);
 
-    addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, pPanel);
+    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pPanel);
   }
 
   // Property Model
@@ -134,7 +155,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     m_pCurveEditor = new xiiQtCurve1DEditorWidget(m_pCurvePanel);
     m_pCurvePanel->setWidget(m_pCurveEditor);
 
-    addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, m_pCurvePanel);
+    m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pCurvePanel);
   }
 
   // Color Gradient Panel
@@ -147,7 +168,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     m_pGradientEditor = new xiiQtColorGradientEditorWidget(m_pColorGradientPanel);
     m_pColorGradientPanel->setWidget(m_pGradientEditor);
 
-    addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, m_pColorGradientPanel);
+    m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pColorGradientPanel);
   }
 
   // Event Track Panel
@@ -160,7 +181,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     m_pEventTrackEditor = new xiiQtEventTrackEditorWidget(m_pEventTrackPanel);
     m_pEventTrackPanel->setWidget(m_pEventTrackEditor);
 
-    addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, m_pEventTrackPanel);
+    m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pEventTrackPanel);
   }
 
   // Time Scrubber

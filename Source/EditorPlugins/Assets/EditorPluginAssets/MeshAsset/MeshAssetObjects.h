@@ -4,6 +4,7 @@
 #include <EditorPluginAssets/Util/AssetUtils.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
+#include <GraphicsCore/Declarations.h>
 
 struct xiiPropertyMetaStateEvent;
 
@@ -53,9 +54,10 @@ public:
   bool      m_bCap      = true;
   bool      m_bCap2     = true;
 
-  xiiEnum<xiiBasisAxis> m_RightDir        = xiiBasisAxis::PositiveY;
-  xiiEnum<xiiBasisAxis> m_UpDir           = xiiBasisAxis::PositiveZ;
-  bool                  m_bFlipForwardDir = false;
+  xiiEnum<xiiMeshImportTransform> m_ImportTransform;
+  xiiEnum<xiiBasisAxis>           m_RightDir        = xiiBasisAxis::PositiveX;
+  xiiEnum<xiiBasisAxis>           m_UpDir           = xiiBasisAxis::PositiveY;
+  bool                            m_bFlipForwardDir = true;
 
   xiiMeshPrimitive::Enum m_PrimitiveType = xiiMeshPrimitive::Default;
 
@@ -63,11 +65,17 @@ public:
   bool m_bRecalculateTrangents = true;
   bool m_bImportMaterials      = true;
 
-  xiiEnum<xiiMeshNormalPrecision>   m_NormalPrecision;
-  xiiEnum<xiiMeshTexCoordPrecision> m_TexCoordPrecision;
+  xiiEnum<xiiMeshNormalPrecision>       m_NormalPrecision;
+  xiiEnum<xiiMeshTexCoordPrecision>     m_TexCoordPrecision;
+  xiiEnum<xiiMeshVertexColorConversion> m_VertexColorConversion;
 
   xiiHybridArray<xiiMaterialResourceSlot, 8> m_Slots;
 
   xiiUInt32 m_uiVertices  = 0;
   xiiUInt32 m_uiTriangles = 0;
+
+  bool     m_bSimplifyMesh             = false;
+  bool     m_bAggressiveSimplification = false;
+  xiiUInt8 m_uiMeshSimplification      = 50;
+  xiiUInt8 m_uiMaxSimplificationError  = 5;
 };

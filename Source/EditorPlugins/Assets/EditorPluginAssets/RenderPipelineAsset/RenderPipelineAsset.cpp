@@ -89,22 +89,14 @@ xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source,
   return xiiStatus(XII_SUCCESS);
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 xiiRenderPipelineAssetDocument::xiiRenderPipelineAssetDocument(xiiStringView sDocumentPath) :
   xiiAssetDocument(sDocumentPath, XII_DEFAULT_NEW(xiiRenderPipelineNodeManager), xiiAssetDocEngineConnection::FullObjectMirroring)
 {
 }
 
-xiiRenderPipelineAssetDocument::~xiiRenderPipelineAssetDocument()
-{
-  static_cast<xiiRenderPipelineObjectMirrorEditor*>(m_pMirror.Borrow())->DeInitNodeSender();
-}
-
-
-void xiiRenderPipelineAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
-{
-  m_pMirror = XII_DEFAULT_NEW(xiiRenderPipelineObjectMirrorEditor);
-  static_cast<xiiRenderPipelineObjectMirrorEditor*>(m_pMirror.Borrow())->InitNodeSender(static_cast<const xiiDocumentNodeManager*>(GetObjectManager()));
-}
+xiiRenderPipelineAssetDocument::~xiiRenderPipelineAssetDocument() = default;
 
 xiiTransformStatus xiiRenderPipelineAssetDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
@@ -137,8 +129,6 @@ void xiiRenderPipelineAssetDocument::RestoreMetaDataAfterLoading(const xiiAbstra
   pManager->RestoreMetaDataAfterLoading(graph, bUndoable);
 }
 
-
-
 void xiiRenderPipelineAssetDocument::GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_MimeTypes) const
 {
   out_MimeTypes.PushBack("application/xiiEditor.RenderPipelineGraph");
@@ -156,66 +146,4 @@ bool xiiRenderPipelineAssetDocument::Paste(const xiiArrayPtr<PasteInfo>& info, c
 {
   xiiDocumentNodeManager* pManager = static_cast<xiiDocumentNodeManager*>(GetObjectManager());
   return pManager->PasteObjects(info, objectGraph, xiiQtNodeScene::GetLastMouseInteractionPos(), bAllowPickedPosition);
-}
-
-void xiiRenderPipelineObjectMirrorEditor::InitNodeSender(const xiiDocumentNodeManager* pNodeManager)
-{
-  m_pNodeManager = pNodeManager;
-  m_pNodeManager->m_NodeEvents.AddEventHandler(xiiMakeDelegate(&xiiRenderPipelineObjectMirrorEditor::NodeEventsHandler, this));
-}
-
-void xiiRenderPipelineObjectMirrorEditor::DeInitNodeSender()
-{
-  m_pNodeManager->m_NodeEvents.RemoveEventHandler(xiiMakeDelegate(&xiiRenderPipelineObjectMirrorEditor::NodeEventsHandler, this));
-}
-
-void xiiRenderPipelineObjectMirrorEditor::ApplyOp(xiiObjectChange& ref_change)
-{
-  // SUPER::ApplyOp will move the data out of the payload, so we have to check for connections before.
-  const xiiConnection* pConnection = nullptr;
-  if (ref_change.m_Change.m_Operation == xiiObjectChangeType::NodeAdded)
-  {
-    const xiiDocumentObject* pObject = m_pNodeManager->GetObject(ref_change.m_Change.m_Value.Get<xiiUuid>());
-    if (pObject != nullptr && m_pNodeManager->IsConnection(pObject))
-    {
-      pConnection = m_pNodeManager->GetConnectionIfExists(pObject);
-    }
-  }
-  SUPER::ApplyOp(ref_change);
-
-  // We need to handle this case in addition to the NodeEventsHandler because after loading the meta data is restored before the object mirror is initialized so we miss all the NodeEventsHandler calls.
-  if (pConnection)
-    SendConnection(*pConnection);
-}
-
-void xiiRenderPipelineObjectMirrorEditor::NodeEventsHandler(const xiiDocumentNodeManagerEvent& e)
-{
-  if (e.m_EventType == xiiDocumentNodeManagerEvent::Type::AfterPinsConnected)
-  {
-    const xiiConnection& connection = m_pNodeManager->GetConnection(e.m_pObject);
-    SendConnection(connection);
-  }
-}
-
-void xiiRenderPipelineObjectMirrorEditor::SendConnection(const xiiConnection& connection)
-{
-  const xiiPin& sourcePin = connection.GetSourcePin();
-  const xiiPin& targetPin = connection.GetTargetPin();
-
-  xiiUuid   Source    = sourcePin.GetParent()->GetGuid();
-  xiiUuid   Target    = targetPin.GetParent()->GetGuid();
-  xiiString SourcePin = sourcePin.GetName();
-  xiiString TargetPin = targetPin.GetName();
-
-  auto SendMetaData = [this](const xiiDocumentObject* pObject, const char* szProperty, xiiVariant value) {
-    xiiObjectChange change;
-    CreatePath(change, pObject, szProperty);
-    change.m_Change.m_Operation = xiiObjectChangeType::PropertySet;
-    change.m_Change.m_Value     = value;
-    ApplyOp(change);
-  };
-  SendMetaData(connection.GetParent(), "Connection::Source", Source);
-  SendMetaData(connection.GetParent(), "Connection::Target", Target);
-  SendMetaData(connection.GetParent(), "Connection::SourcePin", SourcePin);
-  SendMetaData(connection.GetParent(), "Connection::TargetPin", TargetPin);
 }

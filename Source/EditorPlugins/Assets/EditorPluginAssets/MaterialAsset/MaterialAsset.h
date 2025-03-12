@@ -91,6 +91,7 @@ public:
   xiiString m_sBaseMaterial;
   xiiString m_sSurface;
   xiiString m_sShader;
+  xiiString m_sAssetFilterTags;
 
   xiiMap<xiiString, xiiVariant>  m_CachedProperties;
   xiiMaterialAssetDocument*      m_pDocument = nullptr;

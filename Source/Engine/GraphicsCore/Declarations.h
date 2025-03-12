@@ -34,4 +34,23 @@ struct XII_GRAPHICSCORE_DLL xiiPermutationVar
   }
 };
 
-#define XII_RENDERER_TODO 0
+struct XII_GRAPHICSCORE_DLL xiiMeshImportTransform
+{
+  using StorageType = xiiInt8;
+
+  enum Enum
+  {
+    Blender_YUp,
+    Blender_ZUp,
+
+    Custom = 127,
+
+    Default = Blender_YUp
+  };
+
+  static xiiBasisAxis::Enum GetRightDir(xiiMeshImportTransform::Enum transform, xiiBasisAxis::Enum dir);
+  static xiiBasisAxis::Enum GetUpDir(xiiMeshImportTransform::Enum transform, xiiBasisAxis::Enum dir);
+  static bool               GetFlipForward(xiiMeshImportTransform::Enum transform, bool bFlip);
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshImportTransform);

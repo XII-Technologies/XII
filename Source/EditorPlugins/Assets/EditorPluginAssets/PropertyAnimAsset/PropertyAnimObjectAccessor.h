@@ -9,47 +9,22 @@ class xiiPropertyAnimObjectAccessor : public xiiObjectCommandAccessor
 public:
   xiiPropertyAnimObjectAccessor(xiiPropertyAnimAssetDocument* pDoc, xiiCommandHistory* pHistory);
 
-  virtual xiiStatus GetValue(
-    const xiiDocumentObject*   pObject,
-    const xiiAbstractProperty* pProp,
-    xiiVariant&                out_value,
-    xiiVariant                 index = xiiVariant()) override;
-  virtual xiiStatus SetValue(
-    const xiiDocumentObject*   pObject,
-    const xiiAbstractProperty* pProp,
-    const xiiVariant&          newValue,
-    xiiVariant                 index = xiiVariant()) override;
+  virtual xiiStatus GetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant& out_value, xiiVariant index = xiiVariant()) override;
+  virtual xiiStatus SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index = xiiVariant()) override;
 
-  virtual xiiStatus InsertValue(
-    const xiiDocumentObject*   pObject,
-    const xiiAbstractProperty* pProp,
-    const xiiVariant&          newValue,
-    xiiVariant                 index = xiiVariant()) override;
+  virtual xiiStatus InsertValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index = xiiVariant()) override;
   virtual xiiStatus RemoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index = xiiVariant()) override;
-  virtual xiiStatus MoveValue(
-    const xiiDocumentObject*   pObject,
-    const xiiAbstractProperty* pProp,
-    const xiiVariant&          oldIndex,
-    const xiiVariant&          newIndex) override;
+  virtual xiiStatus MoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& oldIndex, const xiiVariant& newIndex) override;
 
   virtual xiiStatus AddObject(const xiiDocumentObject* pParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid) override;
   virtual xiiStatus RemoveObject(const xiiDocumentObject* pObject) override;
-  virtual xiiStatus MoveObject(
-    const xiiDocumentObject*   pObject,
-    const xiiDocumentObject*   pNewParent,
-    const xiiAbstractProperty* pParentProp,
-    const xiiVariant&          index) override;
+  virtual xiiStatus MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index) override;
 
 private:
   bool IsTemporary(const xiiDocumentObject* pObject) const;
   bool IsTemporary(const xiiDocumentObject* pParent, const xiiAbstractProperty* pParentProp) const;
   using OnAddTrack = xiiDelegate<void(const xiiUuid&)>;
-  xiiUuid FindOrAddTrack(
-    const xiiDocumentObject*    pObject,
-    const xiiAbstractProperty*  pProp,
-    xiiVariant                  index,
-    xiiPropertyAnimTarget::Enum target,
-    OnAddTrack                  onAddTrack);
+  xiiUuid FindOrAddTrack(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target, OnAddTrack onAddTrack);
 
   xiiStatus SetCurveCp(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target, double fOldValue, double fNewValue);
   xiiStatus SetOrInsertCurveCp(const xiiUuid& track, double fValue);

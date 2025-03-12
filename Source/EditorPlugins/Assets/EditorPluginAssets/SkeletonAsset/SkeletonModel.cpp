@@ -16,7 +16,7 @@ QVariant xiiQtJointAdapter::data(const xiiDocumentObject* pObject, int iRow, int
   {
     case Qt::DecorationRole:
     {
-      QIcon icon = xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorPluginAssets/CurveY.svg"); // Giv ICon Plxii!
+      QIcon icon = xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorPluginAssets/CurveY.svg"); // Giv ICon Plez!
       return icon;
     }
     break;

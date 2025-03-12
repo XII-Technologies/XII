@@ -86,5 +86,5 @@ public:
   virtual void          GetImportModes(xiiStringView sAbsInputFile, xiiDynamicArray<xiiAssetDocumentGenerator::ImportMode>& out_modes) const override;
   virtual xiiStringView GetDocumentExtension() const override { return "xiiAnimationClipAsset"; }
   virtual xiiStringView GetGeneratorGroup() const override { return "AnimationClipGroup"; }
-  virtual xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument) override;
+  virtual xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) override;
 };

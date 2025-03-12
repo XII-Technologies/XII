@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/OrbitCameraContext.h>
 #include <EditorPluginAssets/AnimationClipAsset/AnimationClipAssetWindow.moc.h>
@@ -39,6 +40,8 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
   // 3D View
   xiiQtViewWidgetContainer* pContainer = nullptr;
   {
+    SetTargetFrameRate(25);
+
     m_ViewConfig.m_Camera.LookAt(xiiVec3(-1.6f, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
@@ -46,7 +49,7 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
     m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(5.0f), xiiVec3(5, -2, 3), 2.0f);
     AddViewWidget(m_pViewWidget);
     pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "AnimationClipAssetViewToolBar");
-    setCentralWidget(pContainer);
+    m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
@@ -57,9 +60,19 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator(GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }
@@ -84,7 +97,7 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
     m_pEventTrackEditor = new xiiQtEventTrackEditorWidget(m_pEventTrackPanel);
     m_pEventTrackPanel->setWidget(m_pEventTrackEditor);
 
-    addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, m_pEventTrackPanel);
+    m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pEventTrackPanel);
 
     UpdateEventTrackEditor();
   }
@@ -126,8 +139,8 @@ void xiiQtAnimationClipAssetDocumentWindow::SendRedrawMsg()
 
   {
     xiiSimpleDocumentConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "PlaybackPos";
-    msg.m_fPayload  = m_PlaybackPosition.GetSeconds() / m_ClipDuration.GetSeconds();
+    msg.m_sWhatToDo    = "PlaybackPos";
+    msg.m_PayloadValue = (double)(m_PlaybackPosition.GetSeconds() / m_ClipDuration.GetSeconds());
     GetDocument()->SendMessageToEngine(&msg);
   }
 
@@ -143,9 +156,9 @@ void xiiQtAnimationClipAssetDocumentWindow::SendRedrawMsg()
     msg.m_sWhatToDo = "SimulationSpeed";
 
     if (GetAnimationClipDocument()->GetCommonAssetUiState(xiiCommonAssetUiState::Pause) != 0.0f)
-      msg.m_fPayload = 0.0;
+      msg.m_PayloadValue = 0.0;
     else
-      msg.m_fPayload = GetAnimationClipDocument()->GetCommonAssetUiState(xiiCommonAssetUiState::SimulationSpeed);
+      msg.m_PayloadValue = GetAnimationClipDocument()->GetCommonAssetUiState(xiiCommonAssetUiState::SimulationSpeed);
 
     GetEditorEngineConnection()->SendMessage(&msg);
   }
@@ -234,9 +247,9 @@ void xiiQtAnimationClipAssetDocumentWindow::ProcessMessageEventHandler(const xii
 
   if (auto pMsg = xiiDynamicCast<const xiiSimpleDocumentConfigMsgToEditor*>(pMsg0))
   {
-    if (pMsg->m_sName == "ClipDuration")
+    if (pMsg->m_sWhatToDo == "ClipDuration")
     {
-      const xiiTime newDuration = xiiTime::MakeFromSeconds(pMsg->m_fPayload);
+      const xiiTime newDuration = pMsg->m_PayloadValue.Get<xiiTime>();
 
       if (m_ClipDuration != newDuration)
       {

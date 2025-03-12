@@ -1,8 +1,9 @@
 #pragma once
 
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
+
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
-#include <Foundation/Basics.h>
 #include <GuiFoundation/Action/Action.h>
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
@@ -28,7 +29,7 @@ private:
   xiiQtOrbitCamViewWidget* m_pViewWidget;
 };
 
-class xiiTextureChannelModeAction : public xiiEnumerationMenuAction
+class XII_EDITORPLUGINASSETS_DLL xiiTextureChannelModeAction : public xiiEnumerationMenuAction
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTextureChannelModeAction, xiiEnumerationMenuAction);
 
@@ -36,9 +37,12 @@ public:
   xiiTextureChannelModeAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
   virtual xiiInt64 GetValue() const override;
   virtual void     Execute(const xiiVariant& value) override;
+
+private:
+  const xiiAbstractMemberProperty* m_pValueProperty = nullptr;
 };
 
-class xiiTextureLodSliderAction : public xiiSliderAction
+class XII_EDITORPLUGINASSETS_DLL xiiTextureLodSliderAction : public xiiSliderAction
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTextureLodSliderAction, xiiSliderAction);
 
@@ -48,7 +52,7 @@ public:
   virtual void Execute(const xiiVariant& value) override;
 
 private:
-  xiiTextureAssetDocument* m_pDocument;
+  const xiiAbstractMemberProperty* m_pValueProperty = nullptr;
 };
 
 class xiiTextureAssetActions

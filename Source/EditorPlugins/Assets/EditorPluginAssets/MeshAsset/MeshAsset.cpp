@@ -16,9 +16,13 @@ static xiiMat3 CalculateTransformationMatrix(const xiiMeshAssetProperties* pProp
 {
   const float us = xiiMath::Clamp(pProp->m_fUniformScaling, 0.0001f, 10000.0f);
 
-  const xiiBasisAxis::Enum forwardDir = xiiBasisAxis::GetOrthogonalAxis(pProp->m_RightDir, pProp->m_UpDir, !pProp->m_bFlipForwardDir);
+  auto rightDir = xiiMeshImportTransform::GetRightDir(pProp->m_ImportTransform, pProp->m_RightDir);
+  auto upDir    = xiiMeshImportTransform::GetUpDir(pProp->m_ImportTransform, pProp->m_UpDir);
+  auto flipFwd  = xiiMeshImportTransform::GetFlipForward(pProp->m_ImportTransform, pProp->m_bFlipForwardDir);
 
-  return xiiBasisAxis::CalculateTransformationMatrix(forwardDir, pProp->m_RightDir, pProp->m_UpDir, us);
+  const xiiBasisAxis::Enum forwardDir = xiiBasisAxis::GetOrthogonalAxis(rightDir, upDir, !flipFwd);
+
+  return xiiBasisAxis::CalculateTransformationMatrix(forwardDir, rightDir, upDir, us);
 }
 
 xiiMeshAssetDocument::xiiMeshAssetDocument(xiiStringView sDocumentPath) :
@@ -195,8 +199,8 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
   auto& mbd = desc.MeshBufferDesc();
   mbd.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
   mbd.AddStream(xiiGALInputLayoutSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::_16Bit /*pProp->m_TexCoordPrecision*/));
-  mbd.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_8Bit /*pProp->m_NormalPrecision*/));
-  mbd.AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_8Bit /*pProp->m_NormalPrecision*/));
+  mbd.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_10Bit /*pProp->m_NormalPrecision*/));
+  mbd.AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_10Bit /*pProp->m_NormalPrecision*/));
 
   mbd.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
   desc.AddSubMesh(mbd.GetPrimitiveCount(), 0, 0);
@@ -220,13 +224,21 @@ xiiTransformStatus xiiMeshAssetDocument::CreateMeshFromFile(xiiMeshAssetProperti
     return xiiStatus("No known importer for this file type.");
 
   xiiModelImporter2::ImportOptions opt;
-  opt.m_sSourceFile            = sAbsFilename;
-  opt.m_bRecomputeNormals      = pProp->m_bRecalculateNormals;
-  opt.m_bRecomputeTangents     = pProp->m_bRecalculateTrangents;
-  opt.m_pMeshOutput            = &desc;
-  opt.m_MeshNormalsPrecision   = pProp->m_NormalPrecision;
-  opt.m_MeshTexCoordsPrecision = pProp->m_TexCoordPrecision;
-  opt.m_RootTransform          = CalculateTransformationMatrix(pProp);
+  opt.m_sSourceFile               = sAbsFilename;
+  opt.m_bRecomputeNormals         = pProp->m_bRecalculateNormals;
+  opt.m_bRecomputeTangents        = pProp->m_bRecalculateTrangents;
+  opt.m_pMeshOutput               = &desc;
+  opt.m_MeshNormalsPrecision      = pProp->m_NormalPrecision;
+  opt.m_MeshTexCoordsPrecision    = pProp->m_TexCoordPrecision;
+  opt.m_MeshVertexColorConversion = pProp->m_VertexColorConversion;
+  opt.m_RootTransform             = CalculateTransformationMatrix(pProp);
+
+  if (pProp->m_bSimplifyMesh)
+  {
+    opt.m_uiMeshSimplification      = pProp->m_uiMeshSimplification;
+    opt.m_uiMaxSimplificationError  = pProp->m_uiMaxSimplificationError;
+    opt.m_bAggressiveSimplification = pProp->m_bAggressiveSimplification;
+  }
 
   if (pImporter->Import(opt).Failed())
     return xiiStatus("Model importer was unable to read this asset.");
@@ -314,7 +326,7 @@ void xiiMeshAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInputFile, 
   }
 }
 
-xiiStatus xiiMeshAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiMeshAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
   xiiStringBuilder sOutFile = sInputFileAbs;
   sOutFile.ChangeFileExtension(GetDocumentExtension());
@@ -325,11 +337,13 @@ xiiStatus xiiMeshAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, x
   xiiStringBuilder sInputFileRel = sInputFileAbs;
   pApp->MakePathDataDirectoryRelative(sInputFileRel);
 
-  out_pGeneratedDocument = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
-  if (out_pGeneratedDocument == nullptr)
+  xiiDocument* pDoc = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
+  if (pDoc == nullptr)
     return xiiStatus("Could not create target document");
 
-  xiiMeshAssetDocument* pAssetDoc = xiiDynamicCast<xiiMeshAssetDocument*>(out_pGeneratedDocument);
+  out_generatedDocuments.PushBack(pDoc);
+
+  xiiMeshAssetDocument* pAssetDoc = xiiDynamicCast<xiiMeshAssetDocument*>(pDoc);
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("MeshFile", sInputFileRel.GetView());

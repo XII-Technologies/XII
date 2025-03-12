@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <EditorPluginAssets/TextureAsset/TextureAsset.h>
@@ -20,39 +21,61 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiTextureChannelModeAction::xiiTextureChannelModeAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
   xiiEnumerationMenuAction(context, szName, szIconPath)
 {
-  InitEnumerationType(xiiGetStaticRTTI<xiiTextureChannelMode>());
+  auto pDocument   = context.m_pDocument;
+  m_pValueProperty = xiiReflectionUtils::GetMemberProperty(pDocument->GetDynamicRTTI(), "ChannelMode");
+
+  const xiiRTTI* pEnumRTTI = m_pValueProperty != nullptr ? m_pValueProperty->GetSpecificType() : xiiGetStaticRTTI<xiiTextureChannelMode>();
+  InitEnumerationType(pEnumRTTI);
 }
 
 xiiInt64 xiiTextureChannelModeAction::GetValue() const
 {
-  return static_cast<const xiiTextureAssetDocument*>(m_Context.m_pDocument)->m_ChannelMode.GetValue();
+  xiiVariant value = 0;
+  if (m_pValueProperty)
+  {
+    value = xiiReflectionUtils::GetMemberPropertyValue(m_pValueProperty, m_Context.m_pDocument);
+  }
+  return value.ConvertTo<xiiInt64>();
 }
 
 void xiiTextureChannelModeAction::Execute(const xiiVariant& value)
 {
-  ((xiiTextureAssetDocument*)m_Context.m_pDocument)->m_ChannelMode.SetValue(value.ConvertTo<xiiInt32>());
+  if (m_pValueProperty)
+  {
+    xiiReflectionUtils::SetMemberPropertyValue(m_pValueProperty, m_Context.m_pDocument, value);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
 // xiiTextureLodSliderAction
 //////////////////////////////////////////////////////////////////////////
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureLodSliderAction, 1, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureLodSliderAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 
 xiiTextureLodSliderAction::xiiTextureLodSliderAction(const xiiActionContext& context, const char* szName) :
   xiiSliderAction(context, szName)
 {
-  m_pDocument = const_cast<xiiTextureAssetDocument*>(static_cast<const xiiTextureAssetDocument*>(context.m_pDocument));
+  auto pDocument   = context.m_pDocument;
+  m_pValueProperty = xiiReflectionUtils::GetMemberProperty(pDocument->GetDynamicRTTI(), "TextureLod");
+
+  xiiVariant currentValue = -1;
+  if (m_pValueProperty)
+  {
+    currentValue = xiiReflectionUtils::GetMemberPropertyValue(m_pValueProperty, pDocument);
+  }
 
   SetRange(-1, 13);
-  SetValue(m_pDocument->m_iTextureLod);
+  SetValue(currentValue.ConvertTo<int>());
 }
 
 void xiiTextureLodSliderAction::Execute(const xiiVariant& value)
 {
-  m_pDocument->m_iTextureLod = value.Get<xiiInt32>();
+  if (m_pValueProperty)
+  {
+    xiiReflectionUtils::SetMemberPropertyValue(m_pValueProperty, m_Context.m_pDocument, value);
+  }
 }
 
 
@@ -116,6 +139,8 @@ xiiQtTextureAssetDocumentWindow::xiiQtTextureAssetDocumentWindow(xiiTextureAsset
 
   // 3D View
   {
+    SetTargetFrameRate(25);
+
     m_ViewConfig.m_Camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
@@ -124,7 +149,7 @@ xiiQtTextureAssetDocumentWindow::xiiQtTextureAssetDocumentWindow(xiiTextureAsset
     AddViewWidget(m_pViewWidget);
     xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, nullptr);
 
-    setCentralWidget(pContainer);
+    m_pDockManager->setCentralWidget(pContainer);
   }
 
   {
@@ -134,9 +159,19 @@ xiiQtTextureAssetDocumentWindow::xiiQtTextureAssetDocumentWindow(xiiTextureAsset
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator(GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }
@@ -158,14 +193,23 @@ void xiiQtTextureAssetDocumentWindow::SendRedrawMsg()
     return;
 
   {
-    const xiiTextureAssetDocument* pDoc = static_cast<const xiiTextureAssetDocument*>(GetDocument());
+    const xiiTextureAssetDocument*   pDoc   = static_cast<const xiiTextureAssetDocument*>(GetDocument());
+    const xiiTextureAssetProperties* pProps = pDoc->GetProperties();
 
-    xiiDocumentConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "ChannelMode";
-    msg.m_iValue    = pDoc->m_ChannelMode.GetValue();
-    msg.m_fValue    = pDoc->m_iTextureLod;
+    {
+      xiiDocumentConfigMsgToEngine msg;
+      msg.m_sWhatToDo = "SetChannelMode";
+      msg.m_iValue    = pDoc->m_ChannelMode.GetValue();
+      msg.m_fValue    = pProps->m_fAlphaThreshold;
+      GetEditorEngineConnection()->SendMessage(&msg);
+    }
 
-    GetEditorEngineConnection()->SendMessage(&msg);
+    {
+      xiiDocumentConfigMsgToEngine msg;
+      msg.m_sWhatToDo = "SetLodLevel";
+      msg.m_iValue    = pDoc->m_iTextureLod;
+      GetEditorEngineConnection()->SendMessage(&msg);
+    }
   }
 
   for (auto pView : m_ViewWidgets)

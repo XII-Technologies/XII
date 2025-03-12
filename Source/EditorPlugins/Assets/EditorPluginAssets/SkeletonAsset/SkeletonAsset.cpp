@@ -18,16 +18,18 @@ static xiiTransform CalculateTransformationMatrix(const xiiEditableSkeleton* pPr
 {
   const float us = xiiMath::Clamp(pProp->m_fUniformScaling, 0.0001f, 10000.0f);
 
-  const xiiBasisAxis::Enum rightDir   = pProp->m_RightDir;
-  const xiiBasisAxis::Enum upDir      = pProp->m_UpDir;
-  xiiBasisAxis::Enum       forwardDir = xiiBasisAxis::GetOrthogonalAxis(rightDir, upDir, !pProp->m_bFlipForwardDir);
+  auto rightDir = xiiMeshImportTransform::GetRightDir(pProp->m_ImportTransform, pProp->m_RightDir);
+  auto upDir    = xiiMeshImportTransform::GetUpDir(pProp->m_ImportTransform, pProp->m_UpDir);
+  auto flipFwd  = xiiMeshImportTransform::GetFlipForward(pProp->m_ImportTransform, pProp->m_bFlipForwardDir);
+
+  xiiBasisAxis::Enum forwardDir = xiiBasisAxis::GetOrthogonalAxis(rightDir, upDir, !flipFwd);
 
   xiiTransform t;
   t.SetIdentity();
   t.m_vScale.Set(us);
 
   // prevent mirroring in the rotation matrix, because we can't generate a quaternion from that
-  if (!pProp->m_bFlipForwardDir)
+  if (!flipFwd)
   {
     switch (forwardDir)
     {
@@ -73,6 +75,17 @@ xiiSkeletonAssetDocument::~xiiSkeletonAssetDocument() = default;
 
 void xiiSkeletonAssetDocument::PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
 {
+  if (e.m_pObject->GetTypeAccessor().GetType() == xiiGetStaticRTTI<xiiEditableSkeleton>())
+  {
+    auto& props = *e.m_pPropertyStates;
+
+    const xiiInt64 importTransform       = e.m_pObject->GetTypeAccessor().GetValue("ImportTransform").ConvertTo<xiiInt64>();
+    const bool     bCustomTransform      = importTransform == 127;
+    props["RightDir"].m_Visibility       = bCustomTransform ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["UpDir"].m_Visibility          = bCustomTransform ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["FlipForwardDir"].m_Visibility = bCustomTransform ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+  }
+
   if (e.m_pObject->GetTypeAccessor().GetType() == xiiGetStaticRTTI<xiiEditableSkeletonJoint>())
   {
     auto& props = *e.m_pPropertyStates;
@@ -445,7 +458,7 @@ void xiiSkeletonAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInputFi
   }
 }
 
-xiiStatus xiiSkeletonAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiSkeletonAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
   xiiStringBuilder sOutFile = sInputFileAbs;
   sOutFile.ChangeFileExtension(GetDocumentExtension());
@@ -456,14 +469,37 @@ xiiStatus xiiSkeletonAssetDocumentGenerator::Generate(xiiStringView sInputFileAb
   xiiStringBuilder sInputFileRel = sInputFileAbs;
   pApp->MakePathDataDirectoryRelative(sInputFileRel);
 
-  out_pGeneratedDocument = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
-  if (out_pGeneratedDocument == nullptr)
+  xiiDocument* pDoc = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
+  if (pDoc == nullptr)
     return xiiStatus("Could not create target document");
 
-  xiiSkeletonAssetDocument* pAssetDoc = xiiDynamicCast<xiiSkeletonAssetDocument*>(out_pGeneratedDocument);
+  out_generatedDocuments.PushBack(pDoc);
+
+  xiiSkeletonAssetDocument* pAssetDoc = xiiDynamicCast<xiiSkeletonAssetDocument*>(pDoc);
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("File", sInputFileRel.GetView());
 
   return xiiStatus(XII_SUCCESS);
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+
+#include <Foundation/Serialization/GraphPatch.h>
+
+class xiiEditableSkeleton_1_2 : public xiiGraphPatch
+{
+public:
+  xiiEditableSkeleton_1_2() :
+    xiiGraphPatch("xiiEditableSkeleton", 2)
+  {
+  }
+
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  {
+    pNode->AddProperty("ImportTransform", 127);
+  }
+};
+
+xiiEditableSkeleton_1_2 g_xiiEditableSkeleton_1_2;

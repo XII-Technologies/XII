@@ -200,7 +200,7 @@ void xiiQtStateMachineAssetScene::SetInitialState(xiiQtStateMachineNode* pNode)
 
   xiiStatus res = history->AddCommand(cmd);
 
-  if (res.m_Result.Failed())
+  if (res.Failed())
     history->CancelTransaction();
   else
     history->FinishTransaction();
@@ -212,7 +212,7 @@ xiiStatus xiiQtStateMachineAssetScene::RemoveNode(xiiQtNode* pNode)
   const bool bWasInitialState = pManager->IsInitialState(pNode->GetObject());
 
   auto res = xiiQtNodeScene::RemoveNode(pNode);
-  if (res.m_Result.Succeeded() && bWasInitialState)
+  if (res.Succeeded() && bWasInitialState)
   {
     // Find another node
     xiiUuid newInitialStateObject;
@@ -224,12 +224,15 @@ xiiStatus xiiQtStateMachineAssetScene::RemoveNode(xiiQtNode* pNode)
       }
     }
 
-    xiiCommandHistory* history = pManager->GetDocument()->GetCommandHistory();
+    if (newInitialStateObject.IsValid())
+    {
+      xiiCommandHistory* history = pManager->GetDocument()->GetCommandHistory();
 
-    xiiStateMachine_SetInitialStateCommand cmd;
-    cmd.m_NewInitialStateObject = newInitialStateObject;
+      xiiStateMachine_SetInitialStateCommand cmd;
+      cmd.m_NewInitialStateObject = newInitialStateObject;
 
-    xiiStatus res = history->AddCommand(cmd);
+      res = history->AddCommand(cmd);
+    }
   }
 
   return res;

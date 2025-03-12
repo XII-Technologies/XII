@@ -128,8 +128,7 @@ private:
   {
     XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiPropertyReference& key)
     {
-      return xiiHashingUtils::xxHash32(&key.m_Object, sizeof(xiiUuid)) + xiiHashingUtils::xxHash32(&key.m_pProperty, sizeof(const xiiAbstractProperty*)) +
-        (xiiUInt32)key.m_Index.ComputeHash();
+      return xiiHashingUtils::xxHash32(&key.m_Object, sizeof(xiiUuid)) + xiiHashingUtils::xxHash32(&key.m_pProperty, sizeof(const xiiAbstractProperty*)) + (xiiUInt32)key.m_Index.ComputeHash();
     }
 
     XII_ALWAYS_INLINE static bool Equal(const xiiPropertyReference& a, const xiiPropertyReference& b)
@@ -141,14 +140,10 @@ private:
   void      RebuildMapping();
   void      RemoveTrack(const xiiUuid& track);
   void      AddTrack(const xiiUuid& track);
-  xiiStatus FindTrackKeys(
-    const char*                              szObjectSearchSequence,
-    const char*                              szComponentType,
-    const char*                              szPropertyPath,
-    xiiHybridArray<xiiPropertyReference, 1>& keys) const;
-  void GenerateTrackInfo(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiStringBuilder& sObjectSearchSequence, xiiStringBuilder& sComponentType, xiiStringBuilder& sPropertyPath) const;
-  void ApplyAnimation();
-  void ApplyAnimation(const xiiPropertyReference& key, const PropertyValue& value);
+  xiiStatus FindTrackKeys(const char* szObjectSearchSequence, const char* szComponentType, const char* szPropertyPath, xiiHybridArray<xiiPropertyReference, 1>& keys) const;
+  void      GenerateTrackInfo(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiStringBuilder& sObjectSearchSequence, xiiStringBuilder& sComponentType, xiiStringBuilder& sPropertyPath) const;
+  void      ApplyAnimation();
+  void      ApplyAnimation(const xiiPropertyReference& key, const PropertyValue& value);
 
   xiiHashTable<xiiPropertyReference, PropertyValue, PropertyKeyHash> m_PropertyTable;
   xiiHashTable<xiiUuid, xiiHybridArray<xiiPropertyReference, 1>>     m_TrackTable;

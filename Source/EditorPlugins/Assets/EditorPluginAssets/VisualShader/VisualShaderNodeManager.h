@@ -25,17 +25,12 @@ class xiiVisualShaderNodeManager : public xiiDocumentNodeManager
 public:
   virtual bool InternalIsNode(const xiiDocumentObject* pObject) const override;
   virtual void InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node) override;
-  virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
+  virtual void GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
 
-  virtual xiiStatus     InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const override;
-  virtual xiiStringView GetTypeCategory(const xiiRTTI* pRtti) const override;
+  virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const override;
 
 private:
-  virtual xiiStatus InternalCanAdd(
-    const xiiRTTI*           pRtti,
-    const xiiDocumentObject* pParent,
-    xiiStringView            sParentProperty,
-    const xiiVariant&        index) const override;
+  virtual xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const override;
 
   xiiUInt32 CountNodesOfType(xiiVisualShaderNodeType::Enum type) const;
 };

@@ -56,8 +56,7 @@ void xiiAnimationClipAssetDocumentManager::InternalCreateDocument(xiiStringView 
   out_pDocument = new xiiAnimationClipAssetDocument(sPath);
 }
 
-void xiiAnimationClipAssetDocumentManager::InternalGetSupportedDocumentTypes(
-  xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const
+void xiiAnimationClipAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const
 {
   inout_DocumentTypes.PushBack(&m_DocTypeDesc);
 }

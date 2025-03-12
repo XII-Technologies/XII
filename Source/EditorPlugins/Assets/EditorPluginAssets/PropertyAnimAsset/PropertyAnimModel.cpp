@@ -184,13 +184,7 @@ void xiiQtPropertyAnimModel::BuildMapping(xiiInt32 iToUse)
   }
 }
 
-void xiiQtPropertyAnimModel::BuildMapping(
-  xiiInt32                   iToUse,
-  xiiInt32                   iTrackIdx,
-  xiiPropertyAnimationTrack* pTrack,
-  xiiDynamicArray<xiiInt32>& treeItems,
-  xiiInt32                   iParentEntry,
-  const char*                szPath)
+void xiiQtPropertyAnimModel::BuildMapping(xiiInt32 iToUse, xiiInt32 iTrackIdx, xiiPropertyAnimationTrack* pTrack, xiiDynamicArray<xiiInt32>& treeItems, xiiInt32 iParentEntry, const char* szPath)
 {
   const char* szSubPath = xiiStringUtils::FindSubString(szPath, "/");
 

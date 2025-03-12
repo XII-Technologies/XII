@@ -7,6 +7,14 @@
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 6, xiiRTTINoAllocator)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ENUM_MEMBER_PROPERTY("ChannelMode", xiiTextureChannelMode, m_ChannelMode),
+    XII_MEMBER_PROPERTY("TextureLod", m_iTextureLod),
+  }
+  XII_END_PROPERTIES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureChannelMode, 1)
@@ -15,14 +23,15 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureChannelMode, 1)
   XII_ENUM_CONSTANT(xiiTextureChannelMode::Red)->AddAttributes(new xiiGroupAttribute("Single", 0.0f)),
   XII_ENUM_CONSTANT(xiiTextureChannelMode::Green)->AddAttributes(new xiiGroupAttribute("Single", 1.0f)),
   XII_ENUM_CONSTANT(xiiTextureChannelMode::Blue)->AddAttributes(new xiiGroupAttribute("Single", 2.0f)),
-  XII_ENUM_CONSTANT(xiiTextureChannelMode::Alpha)->AddAttributes(new xiiGroupAttribute("Single", 3.0f))
+  XII_ENUM_CONSTANT(xiiTextureChannelMode::Alpha)->AddAttributes(new xiiGroupAttribute("Single", 3.0f)),
+  XII_ENUM_CONSTANT(xiiTextureChannelMode::CoverageRed)->AddAttributes(new xiiGroupAttribute("Coverage", 0.0f)),
+  XII_ENUM_CONSTANT(xiiTextureChannelMode::CoverageAlpha)->AddAttributes(new xiiGroupAttribute("Coverage", 1.0f)),
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 xiiTextureAssetDocument::xiiTextureAssetDocument(xiiStringView sDocumentPath) :
   xiiSimpleAssetDocument<xiiTextureAssetProperties>(sDocumentPath, xiiAssetDocEngineConnection::Simple)
 {
-  m_iTextureLod = -1;
 }
 
 static const char* ToWrapMode(xiiImageAddressMode::Enum mode)
@@ -373,7 +382,7 @@ void xiiTextureAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
     if (GetProperties()->m_bIsRenderTarget == false)
     {
       GetCommandHistory()->StartTransaction("MakeRenderTarget");
-      GetObjectAccessor()->SetValue(GetPropertyObject(), "IsRenderTarget", true).AssertSuccess();
+      GetObjectAccessor()->SetValueByName(GetPropertyObject(), "IsRenderTarget", true).AssertSuccess();
       GetCommandHistory()->FinishTransaction();
       GetCommandHistory()->ClearUndoHistory();
     }
@@ -598,28 +607,26 @@ void xiiTextureAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInputFil
       info2.m_sIcon                                = ":/AssetIcons/Texture_2D.svg";
     }
 
-#if 0
-    {
-      xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
-      info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
-      info2.m_sName = "TextureImport.Diffuse";
-      info2.m_sIcon = ":/AssetIcons/Texture_2D.svg";
-    }
+    //{
+    //  xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
+    //  info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
+    //  info2.m_sName = "TextureImport.Diffuse";
+    //  info2.m_sIcon = ":/AssetIcons/Texture_2D.svg";
+    //}
 
-    {
-      xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
-      info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
-      info2.m_sName = "TextureImport.Linear";
-      info2.m_sIcon = ":/AssetIcons/Texture_Linear.svg";
-    }
+    //{
+    //  xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
+    //  info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
+    //  info2.m_sName = "TextureImport.Linear";
+    //  info2.m_sIcon = ":/AssetIcons/Texture_Linear.svg";
+    //}
 
-    {
-      xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
-      info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
-      info2.m_sName = "TextureImport.Normal";
-      info2.m_sIcon = ":/AssetIcons/Texture_Normals.svg";
-    }
-#endif
+    //{
+    //  xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
+    //  info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
+    //  info2.m_sName = "TextureImport.Normal";
+    //  info2.m_sIcon = ":/AssetIcons/Texture_Normals.svg";
+    //}
     return;
   }
 
@@ -762,7 +769,7 @@ void xiiTextureAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInputFil
   }
 }
 
-xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
   if (sMode == "TextureImport.Auto")
   {
@@ -809,11 +816,13 @@ xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs
   xiiStringBuilder sInputFileRel = sInputFileAbs;
   pApp->MakePathDataDirectoryRelative(sInputFileRel);
 
-  out_pGeneratedDocument = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
-  if (out_pGeneratedDocument == nullptr)
+  xiiDocument* pDoc = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
+  if (pDoc == nullptr)
     return xiiStatus("Could not create target document");
 
-  xiiTextureAssetDocument* pAssetDoc = xiiDynamicCast<xiiTextureAssetDocument*>(out_pGeneratedDocument);
+  out_generatedDocuments.PushBack(pDoc);
+
+  xiiTextureAssetDocument* pAssetDoc = xiiDynamicCast<xiiTextureAssetDocument*>(pDoc);
   if (pAssetDoc == nullptr)
     return xiiStatus("Target document is not a valid xiiTextureAssetDocument");
 

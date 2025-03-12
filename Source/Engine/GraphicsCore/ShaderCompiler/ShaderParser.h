@@ -4,6 +4,7 @@
 
 #include <GraphicsCore/ShaderCompiler/Declarations.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
+#include <GraphicsCore/Shader/Implementation/Helper.h>
 
 class xiiPropertyAttribute;
 
@@ -37,6 +38,8 @@ public:
     xiiUInt32                     m_uiDefaultValue = 0;
     xiiHybridArray<EnumValue, 16> m_Values;
   };
+
+  static xiiResult PreprocessSection(xiiStreamReader& inout_stream, xiiShaderHelper::xiiShaderSections::Enum section, xiiArrayPtr<xiiString> customDefines, xiiStringBuilder& out_sResult);
 
   static void ParseMaterialParameterSection(xiiStreamReader& inout_stream, xiiHybridArray<ParameterDefinition, 16>& out_parameter, xiiHybridArray<EnumDefinition, 4>& out_enumDefinitions);
 

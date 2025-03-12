@@ -57,13 +57,21 @@ void xiiVisualShaderNodeManager::InternalCreatePins(const xiiDocumentObject* pOb
   }
 }
 
-void xiiVisualShaderNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const
+void xiiVisualShaderNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const
 {
   const xiiRTTI* pNodeBaseType = xiiVisualShaderTypeRegistry::GetSingleton()->GetNodeBaseType();
 
   xiiRTTI::ForEachDerivedType(
     pNodeBaseType,
-    [&](const xiiRTTI* pRtti) { ref_types.PushBack(pRtti); },
+    [&](const xiiRTTI* pRtti) {
+      auto& nodeTemplate   = out_templates.ExpandAndGetRef();
+      nodeTemplate.m_pType = pRtti;
+
+      if (const xiiVisualShaderNodeDescriptor* pDesc = xiiVisualShaderTypeRegistry::GetSingleton()->GetDescriptorForType(pRtti))
+      {
+        nodeTemplate.m_sCategory = pDesc->m_sCategory;
+      }
+    },
     xiiRTTI::ForEachOptions::ExcludeAbstract);
 }
 
@@ -95,16 +103,6 @@ xiiStatus xiiVisualShaderNodeManager::InternalCanConnect(const xiiPin& source, c
 
   out_result = CanConnectResult::ConnectNto1;
   return xiiStatus(XII_SUCCESS);
-}
-
-xiiStringView xiiVisualShaderNodeManager::GetTypeCategory(const xiiRTTI* pRtti) const
-{
-  const xiiVisualShaderNodeDescriptor* pDesc = xiiVisualShaderTypeRegistry::GetSingleton()->GetDescriptorForType(pRtti);
-
-  if (pDesc == nullptr)
-    return {};
-
-  return pDesc->m_sCategory;
 }
 
 

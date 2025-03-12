@@ -67,16 +67,24 @@ xiiStatus xiiAnimatedMeshAssetDocument::CreateMeshFromFile(xiiAnimatedMeshAssetP
     return xiiStatus("No known importer for this file type.");
 
   xiiModelImporter2::ImportOptions opt;
-  opt.m_sSourceFile             = sAbsFilename;
-  opt.m_bImportSkinningData     = true;
-  opt.m_bRecomputeNormals       = pProp->m_bRecalculateNormals;
-  opt.m_bRecomputeTangents      = pProp->m_bRecalculateTrangents;
-  opt.m_pMeshOutput             = &desc;
-  opt.m_MeshNormalsPrecision    = pProp->m_NormalPrecision;
-  opt.m_MeshTexCoordsPrecision  = pProp->m_TexCoordPrecision;
-  opt.m_MeshBoneWeightPrecision = pProp->m_BoneWeightPrecision;
-  opt.m_bNormalizeWeights       = pProp->m_bNormalizeWeights;
+  opt.m_sSourceFile               = sAbsFilename;
+  opt.m_bImportSkinningData       = true;
+  opt.m_bRecomputeNormals         = pProp->m_bRecalculateNormals;
+  opt.m_bRecomputeTangents        = pProp->m_bRecalculateTrangents;
+  opt.m_pMeshOutput               = &desc;
+  opt.m_MeshNormalsPrecision      = pProp->m_NormalPrecision;
+  opt.m_MeshTexCoordsPrecision    = pProp->m_TexCoordPrecision;
+  opt.m_MeshVertexColorConversion = pProp->m_VertexColorConversion;
+  opt.m_MeshBoneWeightPrecision   = pProp->m_BoneWeightPrecision;
+  opt.m_bNormalizeWeights         = pProp->m_bNormalizeWeights;
   // opt.m_RootTransform = CalculateTransformationMatrix(pProp);
+
+  if (pProp->m_bSimplifyMesh)
+  {
+    opt.m_uiMeshSimplification      = pProp->m_uiMeshSimplification;
+    opt.m_uiMaxSimplificationError  = pProp->m_uiMaxSimplificationError;
+    opt.m_bAggressiveSimplification = pProp->m_bAggressiveSimplification;
+  }
 
   if (pImporter->Import(opt).Failed())
     return xiiStatus("Model importer was unable to read this asset.");
@@ -145,7 +153,7 @@ void xiiAnimatedMeshAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInp
   }
 }
 
-xiiStatus xiiAnimatedMeshAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiAnimatedMeshAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
   xiiStringBuilder sOutFile = sInputFileAbs;
   sOutFile.ChangeFileExtension(GetDocumentExtension());
@@ -156,11 +164,13 @@ xiiStatus xiiAnimatedMeshAssetDocumentGenerator::Generate(xiiStringView sInputFi
   xiiStringBuilder sInputFileRel = sInputFileAbs;
   pApp->MakePathDataDirectoryRelative(sInputFileRel);
 
-  out_pGeneratedDocument = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
-  if (out_pGeneratedDocument == nullptr)
+  xiiDocument* pDoc = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
+  if (pDoc == nullptr)
     return xiiStatus("Could not create target document");
 
-  xiiAnimatedMeshAssetDocument* pAssetDoc = xiiDynamicCast<xiiAnimatedMeshAssetDocument*>(out_pGeneratedDocument);
+  out_generatedDocuments.PushBack(pDoc);
+
+  xiiAnimatedMeshAssetDocument* pAssetDoc = xiiDynamicCast<xiiAnimatedMeshAssetDocument*>(pDoc);
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("MeshFile", sInputFileRel.GetView());

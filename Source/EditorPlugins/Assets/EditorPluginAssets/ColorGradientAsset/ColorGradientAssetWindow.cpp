@@ -1,6 +1,7 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorPluginAssets/ColorGradientAsset/ColorGradientAsset.h>
 #include <EditorPluginAssets/ColorGradientAsset/ColorGradientAssetWindow.moc.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
@@ -40,13 +41,23 @@ xiiQtColorGradientAssetDocumentWindow::xiiQtColorGradientAssetDocumentWindow(xii
   m_bShowFirstTime  = true;
   m_pGradientEditor = new xiiQtColorGradientEditorWidget(this);
 
-  QWidget* pContainer = new QWidget(this);
-  pContainer->setLayout(new QVBoxLayout());
-  pContainer->layout()->addItem(new QSpacerItem(0, 0, QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding));
-  pContainer->layout()->addWidget(m_pGradientEditor);
-  pContainer->layout()->addItem(new QSpacerItem(0, 0, QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding));
 
-  setCentralWidget(pContainer);
+  // Central Widget
+  {
+    QWidget* pContainer = new QWidget(this);
+    pContainer->setLayout(new QVBoxLayout());
+    pContainer->layout()->addWidget(new xiiQtAssetStatusIndicator((xiiAssetDocument*)GetDocument()));
+    pContainer->layout()->addItem(new QSpacerItem(0, 0, QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding));
+    pContainer->layout()->addWidget(m_pGradientEditor);
+    pContainer->layout()->addItem(new QSpacerItem(0, 0, QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding));
+
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    pCentral->setObjectName("xiiQtDocumentPanel");
+    pCentral->setWindowTitle("Gradient");
+    pCentral->setWidget(pContainer);
+
+    m_pDockManager->setCentralWidget(pCentral);
+  }
 
   connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::ColorCpAdded, this, &xiiQtColorGradientAssetDocumentWindow::onGradientColorCpAdded);
   connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::ColorCpMoved, this, &xiiQtColorGradientAssetDocumentWindow::onGradientColorCpMoved);
@@ -79,7 +90,7 @@ xiiQtColorGradientAssetDocumentWindow::xiiQtColorGradientAssetDocumentWindow(xii
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
     pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }

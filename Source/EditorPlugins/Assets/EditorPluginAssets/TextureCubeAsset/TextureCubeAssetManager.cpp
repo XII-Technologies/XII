@@ -50,12 +50,7 @@ void xiiTextureCubeAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumen
   }
 }
 
-void xiiTextureCubeAssetDocumentManager::InternalCreateDocument(
-  xiiStringView            sDocumentTypeName,
-  xiiStringView            sPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiTextureCubeAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiTextureCubeAssetDocument(sPath);
 }

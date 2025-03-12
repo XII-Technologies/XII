@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <EditorPluginAssets/LUTAsset/LUTAsset.h>
@@ -51,27 +52,22 @@ xiiQtLUTAssetDocumentWindow::xiiQtLUTAssetDocumentWindow(xiiLUTAssetDocument* pD
   }
 
   // 3D View
-#if 0
   {
-    // TODO: Add live 3D preview of the LUT with a slider for the strength etc.
+    /*
+        TODO: Add live 3D preview of the LUT with a slider for the strength etc.
 
-    if (xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>())
-    {
-      SetTargetFrameRate(pPreferences->GetMaxEditorFrameRate());
-      SetTargetFrameRateUnfocused(pPreferences->GetMaxEditorFrameRateWhenUnfocused());
-    }
+        SetTargetFrameRate(10);
 
-    m_ViewConfig.m_Camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
-    m_ViewConfig.ApplyPerspectiveSetting(90);
+        m_ViewConfig.m_Camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
+        m_ViewConfig.ApplyPerspectiveSetting(90);
 
-    m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
-    m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0), xiiVec3(1.0f), xiiVec3(-1, 0, 0));
-    AddViewWidget(m_pViewWidget);
-    xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, nullptr);
+        m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
+        m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0), xiiVec3(1.0f), xiiVec3(-1, 0, 0));
+        AddViewWidget(m_pViewWidget);
+        xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, nullptr);
 
-    setCentralWidget(pContainer);
+        m_pDockManager->setCentralWidget(pContainer);*/
   }
-#endif
 
   {
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
@@ -80,9 +76,19 @@ xiiQtLUTAssetDocumentWindow::xiiQtLUTAssetDocumentWindow(xiiLUTAssetDocument* pD
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator((xiiAssetDocument*)GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }

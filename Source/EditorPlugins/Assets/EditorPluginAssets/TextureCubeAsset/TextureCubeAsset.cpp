@@ -5,11 +5,15 @@
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetDocument, 3, xiiRTTINoAllocator)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ENUM_MEMBER_PROPERTY("ChannelMode", xiiTextureChannelMode, m_ChannelMode),
+    XII_MEMBER_PROPERTY("TextureLod", m_iTextureLod),
+  }
+  XII_END_PROPERTIES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureCubeChannelMode, 1)
-  XII_ENUM_CONSTANTS(xiiTextureCubeChannelMode::RGB, xiiTextureCubeChannelMode::Red, xiiTextureCubeChannelMode::Green, xiiTextureCubeChannelMode::Blue, xiiTextureCubeChannelMode::Alpha)
-XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 const char* ToFilterMode(xiiTextureFilterSetting::Enum mode);
@@ -20,7 +24,6 @@ const char* ToMipmapMode(xiiTexConvMipmapMode::Enum mode);
 xiiTextureCubeAssetDocument::xiiTextureCubeAssetDocument(xiiStringView sDocumentPath) :
   xiiSimpleAssetDocument<xiiTextureCubeAssetProperties>(sDocumentPath, xiiAssetDocEngineConnection::Simple)
 {
-  m_iTextureLod = -1;
 }
 
 xiiStatus xiiTextureCubeAssetDocument::RunTexConv(const char* szTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail)
@@ -262,7 +265,7 @@ void xiiTextureCubeAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInpu
   }
 }
 
-xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
   xiiStringBuilder sOutFile = sInputFileAbs;
   sOutFile.ChangeFileExtension(GetDocumentExtension());
@@ -273,11 +276,13 @@ xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(xiiStringView sInputFil
   xiiStringBuilder sInputFileRel = sInputFileAbs;
   pApp->MakePathDataDirectoryRelative(sInputFileRel);
 
-  out_pGeneratedDocument = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
-  if (out_pGeneratedDocument == nullptr)
+  xiiDocument* pDoc = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
+  if (pDoc == nullptr)
     return xiiStatus("Could not create target document");
 
-  xiiTextureCubeAssetDocument* pAssetDoc = xiiDynamicCast<xiiTextureCubeAssetDocument*>(out_pGeneratedDocument);
+  out_generatedDocuments.PushBack(pDoc);
+
+  xiiTextureCubeAssetDocument* pAssetDoc = xiiDynamicCast<xiiTextureCubeAssetDocument*>(pDoc);
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("Input1", sInputFileRel.GetView());

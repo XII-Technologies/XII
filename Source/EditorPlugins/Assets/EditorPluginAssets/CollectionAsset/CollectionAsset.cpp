@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCollectionAssetEntry, 1, xiiRTTIDefaultAlloc
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Name", m_sLookupName),
-    XII_MEMBER_PROPERTY("Asset", m_sRedirectionAsset)->AddAttributes(new xiiAssetBrowserAttribute("", xiiDependencyFlags::Package))
+    XII_MEMBER_PROPERTY("Asset", m_sRedirectionAsset)->AddAttributes(new xiiAssetBrowserAttribute("", "*", xiiDependencyFlags::Package))
   }
   XII_END_PROPERTIES;
 }
