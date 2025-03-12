@@ -25,7 +25,7 @@ xiiQtSceneViewWidget::xiiQtSceneViewWidget(QWidget* pParent, xiiQtGameObjectDocu
 
   if (xiiDynamicCast<xiiScene2Document*>(pOwnerWindow->GetDocument()))
   {
-    //#TODO Not the cleanest solution but this replaces the default selection context of the base class.
+    // #TODO Not the cleanest solution but this replaces the default selection context of the base class.
     const xiiUInt32 uiSelectionIndex = m_InputContexts.IndexOf(m_pSelectionContext);
     XII_DEFAULT_DELETE(m_pSelectionContext);
     m_pSelectionContext               = XII_DEFAULT_NEW(xiiSceneSelectionContext, pOwnerWindow, this, &m_pViewConfig->m_Camera);
@@ -51,7 +51,7 @@ void xiiQtSceneViewWidget::OnOpenContextMenu(QPoint globalPos)
   {
     s_bContextMenuInitialized = true;
 
-    xiiActionMapManager::RegisterActionMap("SceneViewContextMenu").IgnoreResult();
+    xiiActionMapManager::RegisterActionMap("SceneViewContextMenu");
 
     xiiGameObjectSelectionActions::MapViewContextMenuActions("SceneViewContextMenu");
     xiiSelectionActions::MapViewContextMenuActions("SceneViewContextMenu");
@@ -101,6 +101,18 @@ void xiiQtSceneViewWidget::dragEnterEvent(QDragEnterEvent* e)
     info.m_TargetComponent               = res.m_PickedComponent;
     info.m_bShiftKeyDown                 = e->modifiers() & Qt::ShiftModifier;
     info.m_bCtrlKeyDown                  = e->modifiers() & Qt::ControlModifier;
+
+    if (xiiGameObjectDocument* pSceneDoc = xiiDynamicCast<xiiGameObjectDocument*>(m_pDocumentWindow->GetDocument()))
+    {
+      pSceneDoc          = pSceneDoc->GetRedirectedGameObjectDoc();
+      const xiiUuid guid = pSceneDoc->GetActiveParent();
+
+      // the object may not exist anymore
+      if (pSceneDoc->GetObjectManager()->GetObject(guid) != nullptr)
+      {
+        info.m_ActiveParentObject = guid;
+      }
+    }
 
     xiiDragDropConfig cfg;
     if (xiiDragDropHandler::BeginDragDropOperation(&info, &cfg))
@@ -174,6 +186,8 @@ void xiiQtSceneViewWidget::dropEvent(QDropEvent* e)
     info.m_bCtrlKeyDown                  = e->modifiers() & Qt::ControlModifier;
 
     xiiDragDropHandler::FinishDragDrop(&info);
+
+    setFocus();
   }
 
   xiiQtEngineViewWidget::dropEvent(e);

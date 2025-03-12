@@ -190,11 +190,14 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
   }
 
 
-  auto        history   = m_pSceneDocument->GetCommandHistory();
-  auto        selman    = m_pSceneDocument->GetSelectionManager();
-  const auto& selection = selman->GetTopLevelSelection();
+  auto history = m_pSceneDocument->GetCommandHistory();
+  auto selman  = m_pSceneDocument->GetSelectionManager();
 
-  if (selection.IsEmpty())
+  xiiHybridArray<xiiSelectionEntry, 64> selection;
+  selman->GetTopLevelSelection(selection);
+  const xiiDocumentObject* pCurObj = selman->GetCurrentObject();
+
+  if (selection.IsEmpty() || pCurObj == nullptr)
     return;
 
   Space space = (Space)ComboSpace->currentIndex();
@@ -202,11 +205,11 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
   if (s_Mode == Mode::NaturalDeviationZ)
     space = Space::LocalEach;
 
-  xiiTransform tReference = m_pSceneDocument->GetGlobalTransform(selection.PeekBack());
+  xiiTransform tReference = m_pSceneDocument->GetGlobalTransform(pCurObj);
 
   if (space == Space::World)
   {
-    tReference = m_pSceneDocument->GetGlobalTransform(selection.PeekBack());
+    tReference = m_pSceneDocument->GetGlobalTransform(pCurObj);
     tReference.m_qRotation.SetIdentity();
   }
 
@@ -215,9 +218,9 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
   xiiRandom rng;
   rng.InitializeFromCurrentTime();
 
-  for (const xiiDocumentObject* pObject : selection)
+  for (const xiiSelectionEntry& entry : selection)
   {
-    if (!pObject->GetTypeAccessor().GetType()->IsDerivedFrom<xiiGameObject>())
+    if (!entry.m_pObject->GetTypeAccessor().GetType()->IsDerivedFrom<xiiGameObject>())
       continue;
 
     xiiVec3 vTranslate    = s_vTranslate;
@@ -285,10 +288,10 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
 
     if (space == Space::LocalEach)
     {
-      tReference = m_pSceneDocument->GetGlobalTransform(pObject);
+      tReference = m_pSceneDocument->GetGlobalTransform(entry.m_pObject);
     }
 
-    xiiTransform trans      = m_pSceneDocument->GetGlobalTransform(pObject);
+    xiiTransform trans      = m_pSceneDocument->GetGlobalTransform(entry.m_pObject);
     xiiTransform localTrans = tReference.GetInverse() * trans;
     xiiQuat      qRot;
 
@@ -297,7 +300,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       case Mode::Translate:
       case Mode::TranslateDeviation:
         trans.m_vPosition += tReference.m_qRotation * vTranslate;
-        m_pSceneDocument->SetGlobalTransform(pObject, trans, TransformationChanges::Translation);
+        m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Translation);
         break;
 
       case Mode::RotateX:
@@ -308,7 +311,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
         trans.m_qRotation.Normalize();
-        m_pSceneDocument->SetGlobalTransform(pObject, trans, TransformationChanges::Translation | TransformationChanges::Rotation);
+        m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Translation | TransformationChanges::Rotation);
         break;
 
       case Mode::RotateY:
@@ -319,7 +322,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
         trans.m_qRotation.Normalize();
-        m_pSceneDocument->SetGlobalTransform(pObject, trans, TransformationChanges::Translation | TransformationChanges::Rotation);
+        m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Translation | TransformationChanges::Rotation);
         break;
 
       case Mode::RotateZ:
@@ -330,13 +333,13 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
         trans.m_qRotation.Normalize();
-        m_pSceneDocument->SetGlobalTransform(pObject, trans, TransformationChanges::Translation | TransformationChanges::Rotation);
+        m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Translation | TransformationChanges::Rotation);
         break;
 
       case Mode::Scale:
       case Mode::ScaleDeviation:
         trans.m_vScale = trans.m_vScale.CompMul(vScale);
-        m_pSceneDocument->SetGlobalTransform(pObject, trans, TransformationChanges::Scale);
+        m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Scale);
         break;
 
       case Mode::UniformScale:
@@ -344,15 +347,15 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
         trans.m_vScale *= fUniformScale;
 
         if (trans.m_vScale.x == trans.m_vScale.y && trans.m_vScale.x == trans.m_vScale.z)
-          m_pSceneDocument->SetGlobalTransform(pObject, trans, TransformationChanges::UniformScale);
+          m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::UniformScale);
         else
-          m_pSceneDocument->SetGlobalTransform(pObject, trans, TransformationChanges::Scale);
+          m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Scale);
 
         break;
 
       case Mode::NaturalDeviationZ:
       {
-        const xiiAngle randomRotationZ = xiiAngle::MakeFromDegree(rng.DoubleInRange(0, 360));
+        const xiiAngle randomRotationZ = xiiAngle::MakeFromDegree(rng.DoubleMinMax(0, 360));
 
         xiiQuat qDeviation;
         qDeviation.SetIdentity();
@@ -368,7 +371,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
         localTrans.m_vPosition = qDeviation * qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
         trans.m_qRotation.Normalize();
-        m_pSceneDocument->SetGlobalTransform(pObject, trans, TransformationChanges::Translation | TransformationChanges::Rotation);
+        m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Translation | TransformationChanges::Rotation);
 
         break;
       }

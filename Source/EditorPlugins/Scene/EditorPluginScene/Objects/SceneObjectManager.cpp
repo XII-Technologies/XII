@@ -52,11 +52,7 @@ void xiiSceneObjectManager::GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32
     xiiRTTI::ForEachOptions::ExcludeAbstract);
 }
 
-xiiStatus xiiSceneObjectManager::InternalCanAdd(
-  const xiiRTTI*           pRtti,
-  const xiiDocumentObject* pParent,
-  xiiStringView            sParentProperty,
-  const xiiVariant&        index) const
+xiiStatus xiiSceneObjectManager::InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const
 {
   if (IsUnderRootProperty("Children", pParent, sParentProperty))
   {
@@ -96,11 +92,7 @@ xiiStatus xiiSceneObjectManager::InternalCanAdd(
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiSceneObjectManager::InternalCanMove(
-  const xiiDocumentObject* pObject,
-  const xiiDocumentObject* pNewParent,
-  xiiStringView            sParentProperty,
-  const xiiVariant&        index) const
+xiiStatus xiiSceneObjectManager::InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const
 {
   // code to disallow attaching nodes to a prefab node
   // if (pNewParent != nullptr)

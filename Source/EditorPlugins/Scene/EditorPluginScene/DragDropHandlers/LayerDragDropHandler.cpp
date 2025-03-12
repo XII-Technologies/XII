@@ -86,7 +86,7 @@ float xiiGameObjectOnLayerDragDropHandler::CanHandle(const xiiDragDropInfo* pInf
       if (pTarget && pTarget->GetType() == xiiGetStaticRTTI<xiiSceneLayer>() && pInfo->m_iTargetObjectInsertChildIndex == -1 && GetCommonBaseType(pInfo) == xiiGetStaticRTTI<xiiGameObject>())
       {
         xiiObjectAccessorBase* pAccessor = pDoc->GetSceneObjectAccessor();
-        xiiUuid                layerGuid = pAccessor->Get<xiiUuid>(pTarget, "Layer");
+        xiiUuid                layerGuid = pAccessor->GetByName<xiiUuid>(pTarget, "Layer");
         if (pDoc->IsLayerLoaded(layerGuid))
           return 1.0f;
       }
@@ -109,7 +109,7 @@ void xiiGameObjectOnLayerDragDropHandler::OnDrop(const xiiDragDropInfo* pInfo)
     // We are dragging game objects on another layer => delete objects and recreate in target layer.
     xiiSceneDocument*      pSourceDoc = xiiDynamicCast<xiiSceneDocument*>(Dragged[0]->GetDocumentObjectManager()->GetDocument());
     xiiObjectAccessorBase* pAccessor  = pDoc->GetSceneObjectAccessor();
-    xiiUuid                layerGuid  = pAccessor->Get<xiiUuid>(pTarget, "Layer");
+    xiiUuid                layerGuid  = pAccessor->GetByName<xiiUuid>(pTarget, "Layer");
     xiiSceneDocument*      pTargetDoc = pDoc->GetLayerDocument(layerGuid);
 
     if (pSourceDoc != pTargetDoc && pTargetDoc)

@@ -16,10 +16,13 @@
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
-#include <QClipboard>
+#include <GuiFoundation/Widgets/SearchableTypeMenu.moc.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/Object/ObjectDirectAccessor.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
+
+#include <QClipboard>
+#include <QMenu>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneDocument, 7, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -74,8 +77,9 @@ xiiSceneDocument::xiiSceneDocument(xiiStringView sDocumentPath, DocumentType doc
   m_GameModeData[GameMode::Play].m_bRenderSelectionOverlay = false;
   m_GameModeData[GameMode::Play].m_bRenderShapeIcons       = false;
   m_GameModeData[GameMode::Play].m_bRenderVisualizers      = false;
-}
 
+  GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::SelectionManagerEventHandler, this), m_SelectionHandlerUnsubscriber);
+}
 
 void xiiSceneDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 {
@@ -99,6 +103,8 @@ void xiiSceneDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 
 xiiSceneDocument::~xiiSceneDocument()
 {
+  m_SelectionHandlerUnsubscriber.Unsubscribe();
+
   m_DocumentObjectMetaData->m_DataModifiedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiSceneDocument::DocumentObjectMetaDataEventHandler, this));
 
   xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiSceneDocument::ToolsProjectEventHandler, this));
@@ -116,26 +122,23 @@ void xiiSceneDocument::GroupSelection()
   if (numSel <= 1)
     return;
 
-  xiiVec3                  vCenter(0.0f);
   const xiiDocumentObject* pCommonParent = sel[0]->GetParent();
 
-  // this happens for top-level objects, their parent object is an xiiDocumentRootObject
+  // this happens for top-level objects, their parent object is a xiiDocumentRootObject
   if (pCommonParent->GetType() != xiiGetStaticRTTI<xiiGameObject>())
   {
     pCommonParent = nullptr;
   }
 
+  const xiiTransform tGroup = GetGlobalTransform(GetSelectionManager()->GetCurrentObject());
+
   for (const auto& item : sel)
   {
-    vCenter += GetGlobalTransform(item).m_vPosition;
-
     if (pCommonParent != item->GetParent())
     {
       pCommonParent = nullptr;
     }
   }
-
-  vCenter /= numSel;
 
   auto pHistory = GetCommandHistory();
 
@@ -164,7 +167,7 @@ void xiiSceneDocument::GroupSelection()
   }
 
   auto pGroupObject = GetObjectManager()->GetObject(cmdAdd.m_NewObjectGuid);
-  SetGlobalTransform(pGroupObject, xiiTransform(vCenter), TransformationChanges::Translation);
+  SetGlobalTransform(pGroupObject, tGroup, TransformationChanges::All);
 
   xiiMoveObjectCommand cmdMove;
   cmdMove.m_NewParent       = cmdAdd.m_NewObjectGuid;
@@ -186,6 +189,41 @@ void xiiSceneDocument::GroupSelection()
   ShowDocumentStatus(xiiFmt("Grouped {} objects", numSel));
 }
 
+void xiiSceneDocument::SelectParentObject()
+{
+  const auto& Sel = GetSelectionManager()->GetSelection();
+
+  if (Sel.IsEmpty())
+    return;
+
+  const auto& ctxt = xiiQtEngineViewWidget::GetInteractionContext();
+
+  const xiiDocumentObject* pObject = GetObjectManager()->GetObject(Sel[0]->GetGuid());
+
+  if (pObject->GetParent() && pObject->GetParent() != GetObjectManager()->GetRootObject())
+  {
+    GetSelectionManager()->SetSelection(pObject->GetParent());
+  }
+  else
+  {
+    ShowDocumentStatus("Object has no parent.");
+  }
+}
+
+void xiiSceneDocument::SetSelectedAsActiveParent()
+{
+  const auto& sel = GetSelectionManager()->GetSelection();
+
+  if (sel.IsEmpty())
+    return;
+
+  SetActiveParent(sel.PeekBack()->GetGuid());
+}
+
+void xiiSceneDocument::ClearActiveParent()
+{
+  SetActiveParent(xiiUuid::MakeInvalid());
+}
 
 void xiiSceneDocument::DuplicateSpecial()
 {
@@ -385,8 +423,27 @@ void xiiSceneDocument::CopyReference()
   xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", sGuid), xiiTime::MakeFromSeconds(5));
 }
 
-xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPickedPosition)
+xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPickedPosition, bool bComponentSelectionMenu)
 {
+  const xiiRTTI* pComponentType = xiiRTTI::FindTypeByName("xiiShapeIconComponent");
+
+  if (bComponentSelectionMenu)
+  {
+    // show the context menu to select a component type
+
+    QMenu         m;
+    xiiQtTypeMenu tm;
+    tm.FillMenu(&m, xiiGetStaticRTTI<xiiComponent>(), true, false);
+
+    m.exec(QCursor::pos());
+
+    if (tm.m_pLastSelectedType)
+    {
+      pComponentType         = tm.m_pLastSelectedType;
+      tm.m_pLastSelectedType = nullptr;
+    }
+  }
+
   auto history = GetCommandHistory();
 
   history->StartTransaction("Create Node");
@@ -404,6 +461,17 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
   {
     cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
+
+    if (!bAttachToParent)
+    {
+      const xiiUuid activeParent = GetRedirectedGameObjectDoc()->GetActiveParent();
+
+      // the object may not exist anymore
+      if (auto pParentObj = GetObjectManager()->GetObject(activeParent))
+      {
+        cmdAdd.m_Parent = activeParent;
+      }
+    }
 
     auto res = history->AddCommand(cmdAdd);
     if (res.Failed())
@@ -439,6 +507,14 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
     cmdSet.m_Object    = NewNode;
     cmdSet.m_sProperty = "LocalPosition";
 
+    if (auto pParentObj = GetObjectManager()->GetObject(cmdAdd.m_Parent))
+    {
+      const xiiTransform tParent = GetGlobalTransform(pParentObj);
+      const xiiTransform tRel    = xiiTransform::MakeLocalTransform(tParent, xiiTransform(position, xiiQuat::MakeIdentity()));
+
+      cmdSet.m_NewValue = tRel.m_vPosition;
+    }
+
     auto res = history->AddCommand(cmdSet);
     if (res.Failed())
     {
@@ -450,7 +526,7 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
   // Add a dummy shape icon component, which enables picking
   {
     xiiAddObjectCommand cmdAdd;
-    cmdAdd.m_pType           = xiiRTTI::FindTypeByName("xiiShapeIconComponent");
+    cmdAdd.m_pType           = pComponentType;
     cmdAdd.m_sParentProperty = "Components";
     cmdAdd.m_Index           = -1;
     cmdAdd.m_Parent          = NewNode;
@@ -510,9 +586,6 @@ void xiiSceneDocument::ShowOrHideSelectedObjects(ShowOrHide action)
       continue;
 
     ApplyRecursive(pItem, [this, bHide](const xiiDocumentObject* pObj) {
-      // if (!pObj->GetTypeAccessor().GetType()->IsDerivedFrom<xiiGameObject>())
-      // return;
-
       auto pMeta = m_DocumentObjectMetaData->BeginModifyMetaData(pObj->GetGuid());
       if (pMeta->m_bHidden != bHide)
       {
@@ -573,12 +646,13 @@ void xiiSceneDocument::SetGameMode(GameMode::Enum mode)
 
 xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB /* = {} */, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB /* = {} */, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB /* = {} */)
 {
-  auto Selection = GetSelectionManager()->GetTopLevelSelection(pRootType);
+  xiiHybridArray<xiiSelectionEntry, 32> Selection;
+  GetSelectionManager()->GetTopLevelSelectionOfType(pRootType, Selection);
 
   if (Selection.IsEmpty())
     return xiiStatus("To create a prefab, the selection must not be empty");
 
-  const xiiTransform tReference = QueryLocalTransform(Selection.PeekBack());
+  const xiiTransform tReference = QueryLocalTransform(Selection.PeekBack().m_pObject);
 
   xiiVariantArray varChildren;
 
@@ -784,26 +858,28 @@ bool xiiSceneDocument::CopySelectedObjects(xiiAbstractObjectGraph& ref_graph, xi
     return false;
 
   // Serialize selection to graph
-  auto Selection = GetSelectionManager()->GetTopLevelSelection();
+  xiiHybridArray<xiiSelectionEntry, 64> selection;
+  GetSelectionManager()->GetTopLevelSelection(selection);
 
   xiiDocumentObjectConverterWriter writer(&ref_graph, GetObjectManager());
 
-  // TODO: objects are required to be named root but this is not enforced or obvious by the interface.
-  for (xiiUInt32 i = 0; i < Selection.GetCount(); i++)
+  // objects are required to be named root but this is not enforced or obvious by the interface.
+  for (xiiUInt32 i = 0; i < selection.GetCount(); i++)
   {
-    auto                   item  = Selection[i];
-    xiiAbstractObjectNode* pNode = writer.AddObjectToGraph(item, "root");
-    pNode->AddProperty("__GlobalTransform", GetGlobalTransform(item));
+    const auto&            item  = selection[i];
+    xiiAbstractObjectNode* pNode = writer.AddObjectToGraph(item.m_pObject, "root");
+    pNode->AddProperty("__GlobalTransform", GetGlobalTransform(item.m_pObject));
     pNode->AddProperty("__Order", i);
+    pNode->AddProperty("__SelectionOrder", item.m_uiSelectionOrder);
   }
 
   if (out_pParents != nullptr)
   {
     out_pParents->Clear();
 
-    for (auto item : Selection)
+    for (const auto& item : selection)
     {
-      (*out_pParents)[item->GetGuid()] = item->GetParent()->GetGuid();
+      (*out_pParents)[item.m_pObject->GetGuid()] = item.m_pObject->GetParent()->GetGuid();
     }
   }
 
@@ -812,24 +888,45 @@ bool xiiSceneDocument::CopySelectedObjects(xiiAbstractObjectGraph& ref_graph, xi
   return true;
 }
 
-bool xiiSceneDocument::PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiVec3& vPasteAt)
+bool xiiSceneDocument::PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec3& vPasteAt)
 {
-  xiiVec3 vAvgPos(0.0f);
+  xiiTransform refTransform            = xiiTransform::MakeIdentity();
+  xiiUInt32    uiHighestSelectionOrder = 0;
 
-  for (const PasteInfo& pi : info)
+  xiiHybridArray<xiiTransform, 16> globalTransforms;
+  globalTransforms.SetCount(info.GetCount(), xiiTransform::MakeIdentity());
+
+  for (xiiUInt32 i = 0; i < info.GetCount(); ++i)
   {
+    const PasteInfo& pi = info[i];
+
     if (pi.m_pObject->GetTypeAccessor().GetType() != xiiGetStaticRTTI<xiiGameObject>())
       return false;
 
-    vAvgPos += pi.m_pObject->GetTypeAccessor().GetValue("LocalPosition").Get<xiiVec3>();
+    if (auto* pNode = objectGraph.GetNode(pi.m_pObject->GetGuid()))
+    {
+      if (auto* pProperty = pNode->FindProperty("__GlobalTransform"))
+      {
+        globalTransforms[i] = pProperty->m_Value.Get<xiiTransform>();
+
+        if (auto* pProperty = pNode->FindProperty("__SelectionOrder"))
+        {
+          // find the last selected element, and use it as the reference point for the paste position
+
+          const xiiUInt32 uiSelOrder = pProperty->m_Value.ConvertTo<xiiUInt32>();
+          if (uiSelOrder >= uiHighestSelectionOrder)
+          {
+            uiHighestSelectionOrder = uiSelOrder;
+            refTransform            = globalTransforms[i];
+          }
+        }
+      }
+    }
   }
 
-  vAvgPos /= info.GetCount();
-
-  for (const PasteInfo& pi : info)
+  for (xiiUInt32 i = 0; i < info.GetCount(); ++i)
   {
-    const xiiVec3 vLocalPos = pi.m_pObject->GetTypeAccessor().GetValue("LocalPosition").Get<xiiVec3>();
-    pi.m_pObject->GetTypeAccessor().SetValue("LocalPosition", vLocalPos - vAvgPos + vPasteAt);
+    const PasteInfo& pi = info[i];
 
     if (pi.m_pParent == nullptr || pi.m_pParent == GetObjectManager()->GetRootObject())
     {
@@ -839,6 +936,12 @@ bool xiiSceneDocument::PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiVec3
     {
       GetObjectManager()->AddObject(pi.m_pObject, pi.m_pParent, "Children", pi.m_Index);
     }
+
+    xiiTransform tNew = globalTransforms[i];
+    tNew.m_vPosition -= refTransform.m_vPosition;
+    tNew.m_vPosition += vPasteAt;
+
+    SetGlobalTransform(pi.m_pObject, tNew, TransformationChanges::All);
   }
 
   return true;
@@ -856,6 +959,7 @@ bool xiiSceneDocument::PasteAtOrignalPosition(const xiiArrayPtr<PasteInfo>& info
     {
       GetObjectManager()->AddObject(pi.m_pObject, pi.m_pParent, "Children", pi.m_Index);
     }
+
     if (auto* pNode = objectGraph.GetNode(pi.m_pObject->GetGuid()))
     {
       if (auto* pProperty = pNode->FindProperty("__GlobalTransform"))
@@ -880,7 +984,7 @@ bool xiiSceneDocument::Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstra
     xiiVec3 pos = ctxt.m_pLastPickingResult->m_vPickedPosition;
     xiiSnapProvider::SnapTranslation(pos);
 
-    if (!PasteAt(info, pos))
+    if (!PasteAt(info, objectGraph, pos))
       return false;
   }
   else
@@ -897,10 +1001,22 @@ bool xiiSceneDocument::Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstra
     auto pSelMan = GetSelectionManager();
 
     xiiDeque<const xiiDocumentObject*> NewSelection;
+    NewSelection.SetCount(info.GetCount());
 
-    for (const PasteInfo& pi : info)
+    for (xiiUInt32 i = 0; i < info.GetCount(); ++i)
     {
-      NewSelection.PushBack(pi.m_pObject);
+      const PasteInfo& pi = info[i];
+
+      xiiUInt32 order = i;
+      if (auto* pNode = objectGraph.GetNode(pi.m_pObject->GetGuid()))
+      {
+        if (auto* pProperty = pNode->FindProperty("__SelectionOrder"))
+        {
+          order = pProperty->m_Value.ConvertTo<xiiUInt32>();
+        }
+      }
+
+      NewSelection[order] = pi.m_pObject;
     }
 
     pSelMan->SetSelection(NewSelection);
@@ -957,11 +1073,11 @@ void xiiSceneDocument::EnsureSettingsObjectExist()
   // undo ops for this operation.
   xiiObjectDirectAccessor accessor(GetObjectManager());
   xiiVariant              value;
-  XII_VERIFY(accessor.xiiObjectAccessorBase::GetValue(pRoot, "Settings", value).Succeeded(), "The scene doc root should have a settings property.");
+  XII_VERIFY(accessor.xiiObjectAccessorBase::GetValueByName(pRoot, "Settings", value).Succeeded(), "The scene doc root should have a settings property.");
   xiiUuid id = value.Get<xiiUuid>();
   if (!id.IsValid())
   {
-    XII_VERIFY(accessor.xiiObjectAccessorBase::AddObject(pRoot, "Settings", xiiVariant(), pSettingsType, id).Succeeded(), "Adding scene settings object to root failed.");
+    XII_VERIFY(accessor.xiiObjectAccessorBase::AddObjectByName(pRoot, "Settings", xiiVariant(), pSettingsType, id).Succeeded(), "Adding scene settings object to root failed.");
   }
   else
   {
@@ -971,7 +1087,7 @@ void xiiSceneDocument::EnsureSettingsObjectExist()
     {
       accessor.RemoveObject(pSettings).AssertSuccess();
       GetObjectManager()->DestroyObject(pSettings);
-      XII_VERIFY(accessor.xiiObjectAccessorBase::AddObject(pRoot, "Settings", xiiVariant(), pSettingsType, id).Succeeded(), "Adding scene settings object to root failed.");
+      XII_VERIFY(accessor.xiiObjectAccessorBase::AddObjectByName(pRoot, "Settings", xiiVariant(), pSettingsType, id).Succeeded(), "Adding scene settings object to root failed.");
     }
   }
 }
@@ -980,7 +1096,7 @@ const xiiDocumentObject* xiiSceneDocument::GetSettingsObject() const
 {
   auto       pRoot = GetObjectManager()->GetRootObject();
   xiiVariant value;
-  XII_VERIFY(GetObjectAccessor()->GetValue(pRoot, "Settings", value).Succeeded(), "The scene doc root should have a settings property.");
+  XII_VERIFY(GetObjectAccessor()->GetValueByName(pRoot, "Settings", value).Succeeded(), "The scene doc root should have a settings property.");
   xiiUuid id = value.Get<xiiUuid>();
   return GetObjectManager()->GetObject(id);
 }
@@ -1022,13 +1138,13 @@ xiiStatus xiiSceneDocument::AddExposedParameter(const char* szName, const xiiDoc
     return res;
 
   xiiUuid id;
-  res = GetObjectAccessor()->AddObject(GetSettingsObject(), "ExposedProperties", -1, xiiGetStaticRTTI<xiiExposedSceneProperty>(), id);
+  res = GetObjectAccessor()->AddObjectByName(GetSettingsObject(), "ExposedProperties", -1, xiiGetStaticRTTI<xiiExposedSceneProperty>(), id);
   if (res.Failed())
     return res;
   const xiiDocumentObject* pParam = GetObjectManager()->GetObject(id);
-  GetObjectAccessor()->SetValue(pParam, "Name", szName).LogFailure();
-  GetObjectAccessor()->SetValue(pParam, "Object", key.m_Object).LogFailure();
-  GetObjectAccessor()->SetValue(pParam, "PropertyPath", xiiVariant(key.m_sPropertyPath)).LogFailure();
+  GetObjectAccessor()->SetValueByName(pParam, "Name", szName).LogFailure();
+  GetObjectAccessor()->SetValueByName(pParam, "Object", key.m_Object).LogFailure();
+  GetObjectAccessor()->SetValueByName(pParam, "PropertyPath", xiiVariant(key.m_sPropertyPath)).LogFailure();
   return xiiStatus(XII_SUCCESS);
 }
 
@@ -1054,7 +1170,7 @@ xiiInt32 xiiSceneDocument::FindExposedParameter(const xiiDocumentObject* pObject
 xiiStatus xiiSceneDocument::RemoveExposedParameter(xiiInt32 iIndex)
 {
   xiiVariant value;
-  auto       res = GetObjectAccessor()->GetValue(GetSettingsObject(), "ExposedProperties", value, iIndex);
+  auto       res = GetObjectAccessor()->GetValueByName(GetSettingsObject(), "ExposedProperties", value, iIndex);
   if (res.Failed())
     return res;
 
@@ -1225,7 +1341,7 @@ xiiResult xiiSceneDocument::CreateLevelCamera(xiiUInt8 uiSlot)
   pAccessor->StartTransaction("Create Level Camera");
 
   xiiUuid camObjGuid;
-  if (pAccessor->AddObject(pRootObj, "Children", -1, xiiGetStaticRTTI<xiiGameObject>(), camObjGuid).Failed())
+  if (pAccessor->AddObjectByName(pRootObj, "Children", -1, xiiGetStaticRTTI<xiiGameObject>(), camObjGuid).Failed())
   {
     pAccessor->CancelTransaction();
     return XII_FAILURE;
@@ -1235,19 +1351,20 @@ xiiResult xiiSceneDocument::CreateLevelCamera(xiiUInt8 uiSlot)
   mRot.SetColumn(0, vDir);
   mRot.SetColumn(1, vUp.CrossRH(vDir).GetNormalized());
   mRot.SetColumn(2, vUp);
-  xiiQuat qRot = xiiQuat::MakeFromMat3(mRot);
+  xiiQuat qRot;
+  qRot = xiiQuat::MakeFromMat3(mRot);
   qRot.Normalize();
 
   SetGlobalTransform(pAccessor->GetObject(camObjGuid), xiiTransform(vPos, qRot), TransformationChanges::Translation | TransformationChanges::Rotation);
 
   xiiUuid camCompGuid;
-  if (pAccessor->AddObject(pAccessor->GetObject(camObjGuid), "Components", -1, xiiGetStaticRTTI<xiiCameraComponent>(), camCompGuid).Failed())
+  if (pAccessor->AddObjectByName(pAccessor->GetObject(camObjGuid), "Components", -1, xiiGetStaticRTTI<xiiCameraComponent>(), camCompGuid).Failed())
   {
     pAccessor->CancelTransaction();
     return XII_FAILURE;
   }
 
-  if (pAccessor->SetValue(pAccessor->GetObject(camCompGuid), "EditorShortcut", uiSlot).Failed())
+  if (pAccessor->SetValueByName(pAccessor->GetObject(camCompGuid), "EditorShortcut", uiSlot).Failed())
   {
     pAccessor->CancelTransaction();
     return XII_FAILURE;
@@ -1395,6 +1512,99 @@ void xiiSceneDocument::GatherObjectsOfType(xiiDocumentObject* pRoot, xiiGatherOb
   }
 }
 
+void xiiSceneDocument::SelectionManagerEventHandler(const xiiSelectionManagerEvent& e)
+{
+  if (!m_bStoreSelectionChange)
+    return;
+
+  if (m_iAllowSelectionChanges != -1)
+  {
+    if (m_iAllowSelectionChanges == 0)
+      m_SelectionStack.PopBack();
+
+    --m_iAllowSelectionChanges;
+  }
+
+  switch (e.m_Type)
+  {
+    case xiiSelectionManagerEvent::Type::ObjectAdded:
+    case xiiSelectionManagerEvent::Type::ObjectRemoved:
+    case xiiSelectionManagerEvent::Type::SelectionSet:
+    case xiiSelectionManagerEvent::Type::SelectionCleared: // empty selections are important to keep, for layer changes to be undoable
+    {
+      const auto& curSel = GetSelectionManager()->GetSelection();
+
+      auto& sel = m_SelectionStack.ExpandAndGetRef();
+
+      sel.m_documentGuid = GetRedirectedGameObjectDoc()->GetGuid();
+
+      sel.m_Objects.SetCountUninitialized(curSel.GetCount());
+
+      for (xiiUInt32 i = 0; i < curSel.GetCount(); ++i)
+      {
+        sel.m_Objects[i] = curSel[i]->GetGuid();
+      }
+
+      // discard duplicate selection changes (but keep empty selections)
+      if (m_SelectionStack.GetCount() > 1)
+      {
+        const auto& prev = m_SelectionStack[m_SelectionStack.GetCount() - 2];
+
+        if (prev.m_Objects == sel.m_Objects && prev.m_documentGuid == sel.m_documentGuid)
+        {
+          m_SelectionStack.PopBack();
+        }
+      }
+
+      if (m_SelectionStack.GetCount() > 16)
+      {
+        m_SelectionStack.PopFront();
+      }
+
+      break;
+    }
+
+    default:
+      break;
+  }
+}
+
+bool xiiSceneDocument::CanUndoSelection() const
+{
+  return m_SelectionStack.GetCount() > 1;
+}
+
+void xiiSceneDocument::UndoSelection()
+{
+  if (m_SelectionStack.IsEmpty())
+    return;
+
+  if (m_SelectionStack.GetCount() > 1)
+    m_SelectionStack.PopBack();
+
+  auto& back = m_SelectionStack.PeekBack();
+
+  m_bStoreSelectionChange = false;
+  XII_SCOPE_EXIT(m_bStoreSelectionChange = true);
+
+  auto* pDoc = xiiDocumentManager::GetDocumentByGuid(back.m_documentGuid);
+  if (pDoc == nullptr)
+    return;
+
+  auto pObjMan = pDoc->GetObjectManager();
+
+  xiiDeque<const xiiDocumentObject*> newSel;
+  for (const xiiUuid& guid : back.m_Objects)
+  {
+    if (auto pDoc = pObjMan->GetObject(guid))
+    {
+      newSel.PushBack(pDoc);
+    }
+  }
+
+  GetSelectionManager()->SetSelection(newSel);
+}
+
 void xiiSceneDocument::OnInterDocumentMessage(xiiReflectedClass* pMessage, xiiDocument* pSender)
 {
   // #TODO needs to be overwritten by Scene2
@@ -1459,8 +1669,8 @@ void xiiSceneDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) cons
       if (const xiiExposedParametersAttribute* pAttrib = key.m_pProperty->GetAttributeByType<xiiExposedParametersAttribute>())
       {
         // If the target of the exposed parameter is yet another exposed parameter, we need to do the following:
-        // A: Get the default value from via an xiiExposedParameterCommandAccessor. This ensures that in case the target does not actually exist (because it was not overwritten in this template instance) we get the default parameter of the exposed param instead.
-        // B: Replace the property type of the exposed parameter (which will always be an xiiVariant inside the xiiVariantDictionary) with the property type the exposed parameter actually points to.
+        // A: Get the default value from via a xiiExposedParameterCommandAccessor. This ensures that in case the target does not actually exist (because it was not overwritten in this template instance) we get the default parameter of the exposed param instead.
+        // B: Replace the property type of the exposed parameter (which will always be a xiiVariant inside the xiiVariantDictionary) with the property type the exposed parameter actually points to.
         const xiiAbstractProperty* pParameterSourceProp = pLeafObject->GetType()->FindPropertyByName(pAttrib->GetParametersSource());
         XII_ASSERT_DEBUG(pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", pAttrib->GetParametersSource(), pLeafObject->GetType()->GetTypeName());
 

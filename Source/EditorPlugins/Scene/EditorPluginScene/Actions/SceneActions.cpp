@@ -8,6 +8,7 @@
 #include <EditorPluginScene/Dialogs/ExportAndRunDlg.moc.h>
 #include <EditorPluginScene/Dialogs/ExtractGeometryDlg.moc.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <Foundation/Utilities/Progress.h>
 #include <GuiFoundation/Action/ActionManager.h>
 #include <GuiFoundation/Action/ActionMapManager.h>
@@ -43,8 +44,7 @@ void xiiSceneActions::RegisterActions()
   s_hGameModeSimulate = XII_REGISTER_ACTION_1("Scene.GameMode.Simulate", xiiActionScope::Document, "Scene", "F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModeSimulate);
   s_hGameModePlay     = XII_REGISTER_ACTION_1("Scene.GameMode.Play", xiiActionScope::Document, "Scene", "Ctrl+F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModePlay);
 
-  s_hGameModePlayFromHere = XII_REGISTER_ACTION_1("Scene.GameMode.PlayFromHere", xiiActionScope::Document, "Scene", "Ctrl+Shift+F5", xiiSceneAction,
-                                                  xiiSceneAction::ActionType::StartGameModePlayFromHere);
+  s_hGameModePlayFromHere = XII_REGISTER_ACTION_1("Scene.GameMode.PlayFromHere", xiiActionScope::Document, "Scene", "F6", xiiSceneAction, xiiSceneAction::ActionType::StartGameModePlayFromHere);
 
   s_hGameModeStop = XII_REGISTER_ACTION_1("Scene.GameMode.Stop", xiiActionScope::Document, "Scene", "Shift+F5", xiiSceneAction, xiiSceneAction::ActionType::StopGameMode);
 
@@ -168,7 +168,6 @@ void xiiSceneActions::MapToolbarActions(xiiStringView sMapping)
   {
     const char* szSubPath = "SceneCategory";
 
-
     /// \todo This works incorrectly with value 6.0f -> it places the action inside the snap category
     pMap->MapAction(s_hSceneCategory, "", 11.0f);
     pMap->MapAction(s_hGameModeStop, szSubPath, 1.0f);
@@ -183,7 +182,7 @@ void xiiSceneActions::MapViewContextMenuActions(xiiStringView sMapping)
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the actions failed!", sMapping);
 
-  pMap->MapAction(s_hGameModePlayFromHere, "", 1.0f);
+  pMap->MapAction(s_hGameModePlayFromHere, "", 0.0f);
 }
 
 xiiSceneAction::xiiSceneAction(const xiiActionContext& context, const char* szName, xiiSceneAction::ActionType type) :
@@ -527,6 +526,13 @@ QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_sSingleLi
 
   arguments << "-profile";
   arguments << xiiString(xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName()).GetData();
+
+  if (xiiCommandLineUtils::GetGlobalInstance()->HasOption("-renderer"))
+  {
+    xiiStringBuilder sRenderer = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer");
+    arguments << "-renderer";
+    arguments << sRenderer.GetData();
+  }
 
   for (QString s : arguments)
   {

@@ -36,6 +36,10 @@ public:
   static xiiActionDescriptorHandle s_hConvertToEnginePrefab;
   static xiiActionDescriptorHandle s_hConvertToEditorPrefab;
   static xiiActionDescriptorHandle s_hCopyReference;
+  static xiiActionDescriptorHandle s_hSelectParent;
+  static xiiActionDescriptorHandle s_hSetActiveParent;
+  static xiiActionDescriptorHandle s_hClearActiveParent;
+  static xiiActionDescriptorHandle s_hUndoSelection;
 };
 
 ///
@@ -66,6 +70,12 @@ public:
     AttachToObject,
     DetachFromParent,
     CopyReference,
+    SelectParent,
+
+    SetActiveParent,
+    ClearActiveParent,
+
+    UndoSelection,
   };
 
   xiiSelectionAction(const xiiActionContext& context, const char* szName, ActionType type);

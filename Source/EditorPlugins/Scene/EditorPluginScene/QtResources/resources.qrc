@@ -20,6 +20,8 @@
     <file>Icons/Layer.svg</file>
     <file>Icons/LayerVisible.svg</file>
     <file>Icons/LayerLoaded.svg</file>
+    <file>Icons/LayerUnloaded.svg</file>
+    <file>Icons/SelectParent.svg</file>
   </qresource>
   <qresource prefix="TypeIcons">
     <file>xiiMeshComponent.svg</file>
@@ -86,14 +88,34 @@
     <file>xiiForwardEventsToGameStateComponent.svg</file>
     <file>xiiPathComponent.svg</file>
     <file>xiiCommentComponent.svg</file>
+    <file>xiiCameraShakeComponent.svg</file>
     <file>xiiCameraShakeVolumeSphereComponent.svg</file>
     <file>xiiPathNodeComponent.svg</file>
     <file>xiiFollowPathComponent.svg</file>
     <file>xiiLocalBlackboardComponent.svg</file>
-	<file>xiiGlobalBlackboardComponent.svg</file>
+    <file>xiiGlobalBlackboardComponent.svg</file>
     <file>xiiPostProcessingComponent.svg</file>
     <file>xiiVolumeBoxComponent.svg</file>
     <file>xiiVolumeSphereComponent.svg</file>
+    <file>xiiLodComponent.svg</file>
+    <file>xiiLodMeshComponent.svg</file>
+    <file>xiiLodAnimatedMeshComponent.svg</file>
+    <file>xiiAimIKComponent.svg</file>
+    <file>xiiTwoBoneIKComponent.svg</file>
+    <file>xiiFillLightComponent.svg</file>
+    <file>xiiSceneTransitionComponent.svg</file>
+    <file>xiiCreatureCrawlComponent.svg</file>
+    <file>xiiCustomMeshComponent.svg</file>
+    <file>xiiGrabbableItemComponent.svg</file>
+    <file>xiiJointOverrideComponent.svg</file>
+    <file>xiiLensFlareComponent.svg</file>
+    <file>xiiPowerConnectorComponent.svg</file>
+    <file>xiiVisualizeHandComponent.svg</file>
+    <file>xiiTriggerDelayModifierComponent.svg</file>
+    <file>xiiSkeletonPoseComponent.svg</file>
+    <file>xiiResetTransformComponent.svg</file>
+    <file>xiiRandomPrefabComponent.svg</file>
+    <file>xiiScriptComponent.svg</file>
   </qresource>
   <qresource prefix="GroupIcons">
     <file>Size.svg</file>
