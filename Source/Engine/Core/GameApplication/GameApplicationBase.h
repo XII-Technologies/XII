@@ -135,7 +135,7 @@ public:
   ///
   /// Broadcasts local event: xiiGameApplicationStaticEvent::AfterGameStateActivated
   /// Broadcasts global event: AfterGameStateActivation(xiiGameStateBase*)
-  xiiResult ActivateGameState(xiiWorld* pWorld = nullptr, const xiiTransform* pStartPosition = nullptr);
+  void ActivateGameState(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset);
 
   /// \brief Deactivates and destroys the active game state.
   ///
@@ -146,20 +146,12 @@ public:
   /// \brief Returns the currently active game state. Could be nullptr.
   xiiGameStateBase* GetActiveGameState() const { return m_pGameState.Borrow(); }
 
-  /// \brief Returns the currently active game state IF it was created for the given world.
-  ///
-  /// This is mostly for editor use cases, where some documents want to handle the game state, but only
-  /// it it was set up for a particular document.
-  xiiGameStateBase* GetActiveGameStateLinkedToWorld(const xiiWorld* pWorld) const;
-
 protected:
   /// \brief Creates a game state for the application to use.
   ///
-  /// \a pWorld is typically nullptr in a stand-alone app, but may be existing already when called from the editor.
-  ///
   /// The default implementation will query all available game states for the best match.
   /// By overriding this, one can also just create a specific game state directly.
-  virtual xiiUniquePtr<xiiGameStateBase> CreateGameState(xiiWorld* pWorld);
+  virtual xiiUniquePtr<xiiGameStateBase> CreateGameState();
 
   /// \brief Allows to override whether a game state is created and activated at application startup.
   ///
@@ -168,7 +160,6 @@ protected:
   virtual void ActivateGameStateAtStartup();
 
   xiiUniquePtr<xiiGameStateBase> m_pGameState;
-  xiiWorld*                      m_pWorldLinkedWithGameState = nullptr;
 
   ///@}
   /// \name Platform Profile
