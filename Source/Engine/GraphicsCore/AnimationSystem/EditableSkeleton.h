@@ -6,6 +6,7 @@
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/VariantTypeRegistry.h>
 #include <GraphicsCore/AnimationSystem/Declarations.h>
+#include <GraphicsCore/Declarations.h>
 
 class xiiSkeletonBuilder;
 class xiiSkeleton;
@@ -112,10 +113,11 @@ public:
   float m_fUniformScaling = 1.0f;
   float m_fMaxImpulse     = 100.0f;
 
-  xiiEnum<xiiBasisAxis> m_RightDir;
-  xiiEnum<xiiBasisAxis> m_UpDir;
-  bool                  m_bFlipForwardDir = false;
-  xiiEnum<xiiBasisAxis> m_BoneDirection;
+  xiiEnum<xiiMeshImportTransform> m_ImportTransform;
+  xiiEnum<xiiBasisAxis>           m_RightDir        = xiiBasisAxis::PositiveX;
+  xiiEnum<xiiBasisAxis>           m_UpDir           = xiiBasisAxis::PositiveY;
+  bool                            m_bFlipForwardDir = true;
+  xiiEnum<xiiBasisAxis>           m_BoneDirection;
 
   xiiHybridArray<xiiEditableSkeletonJoint*, 4> m_Children;
 };
