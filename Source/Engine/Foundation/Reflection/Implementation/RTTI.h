@@ -150,8 +150,9 @@ public:
     enum Enum : StorageType
     {
       None                  = 0,
-      ExcludeNonAllocatable = XII_BIT(0),
-      ExcludeAbstract       = XII_BIT(1),
+      ExcludeNonAllocatable = XII_BIT(0), ///< Excludes all types that cannot be allocated through xiiRTTI. They may still be creatable through regular C++, though.
+      ExcludeAbstract       = XII_BIT(1), ///< Excludes all types that are marked as 'abstract'. They may not be abstract in the C++ sense, though.
+      ExcludeNotConcrete    = ExcludeNonAllocatable | ExcludeAbstract,
 
       Default = None
     };
@@ -159,6 +160,7 @@ public:
     struct Bits
     {
       xiiUInt8 ExcludeNonAllocatable : 1;
+      xiiUInt8 ExcludeAbstract : 1;
     };
   };
 

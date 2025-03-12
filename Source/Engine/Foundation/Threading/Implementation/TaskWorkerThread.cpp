@@ -39,6 +39,27 @@ xiiResult xiiTaskWorkerThread::DeactivateWorker()
   return XII_SUCCESS;
 }
 
+void xiiTaskWorkerThread::BroadcastClearThreadLocalsEvent()
+{
+  m_bClearThreadLocalsEvent = true;
+
+  if (GetThreadStatus() != xiiThread::Finished)
+  {
+    // if necessary, wake this thread up
+    WakeUpIfIdle();
+  }
+}
+
+void xiiTaskWorkerThread::WaitForBroadcastClearTLS()
+{
+  while (m_bClearThreadLocalsEvent)
+  {
+    WakeUpIfIdle();
+
+    xiiThreadUtils::YieldTimeSlice();
+  }
+}
+
 xiiUInt32 xiiTaskWorkerThread::Run()
 {
   XII_ASSERT_DEBUG(m_WorkerType != xiiWorkerThreadType::Unknown && m_WorkerType != xiiWorkerThreadType::MainThread, "Worker threads cannot use this type");

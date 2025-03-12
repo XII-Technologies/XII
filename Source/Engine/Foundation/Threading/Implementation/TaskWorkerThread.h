@@ -21,12 +21,18 @@ public:
   /// \brief Deactivates the thread. Returns failure, if the thread is currently still running.
   xiiResult DeactivateWorker();
 
+  /// \brief Broadcasts xiiThreadEvent::ClearThreadLocals on this thread.
+  void BroadcastClearThreadLocalsEvent();
+
+  void WaitForBroadcastClearTLS();
+
 private:
   // Which types of tasks this thread should work on.
   xiiWorkerThreadType::Enum m_WorkerType;
 
   // Whether the thread is supposed to continue running.
-  volatile bool m_bActive = true;
+  volatile bool m_bActive                 = true;
+  bool          m_bClearThreadLocalsEvent = false;
 
   // For display purposes.
   xiiUInt16 m_uiWorkerThreadNumber = 0xFFFF;

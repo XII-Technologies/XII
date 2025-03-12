@@ -79,6 +79,9 @@ public:
     xiiUInt32             m_uiInvocation    = 0;
   };
 
+  /// \brief Broadcasts ezThreadEvent::ClearThreadLocals on all worker threads.
+  static void BroadcastClearThreadLocalsEvent();
+
 private:
   /// \brief Searches for a task of priority between \a FirstPriority and \a LastPriority (inclusive).
   static TaskData GetNextTask(xiiTaskPriority::Enum FirstPriority, xiiTaskPriority::Enum LastPriority, bool bOnlyTasksThatNeverWait, const xiiTaskGroupID& WaitingForGroup, xiiAtomicInteger32* pWorkerState);
