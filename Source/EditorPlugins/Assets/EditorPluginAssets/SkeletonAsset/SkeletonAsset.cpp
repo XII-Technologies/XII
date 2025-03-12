@@ -6,6 +6,7 @@
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ModelImporter2/ModelImporter.h>
+#include <GraphicsCore/Declarations.h>
 
 //////////////////////////////////////////////////////////////////////////
 
