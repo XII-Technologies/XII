@@ -100,7 +100,7 @@ void xiiQtLongOpsPanel::RebuildTable()
 
     // operation name
     {
-      OperationsTable->setItem(rowIdx, COL_OPERATION, new QTableWidgetItem(opInfo.m_pProxyOp->GetDisplayName()));
+      OperationsTable->setItem(rowIdx, COL_OPERATION, new QTableWidgetItem(xiiMakeQString(opInfo.m_pProxyOp->GetDisplayName())));
     }
 
     // progress bar

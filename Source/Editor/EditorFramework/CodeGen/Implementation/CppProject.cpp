@@ -1193,14 +1193,9 @@ void xiiCppProject::LoadPreferences()
 
   if (preferences->m_CompilerPreferences.m_Compiler != sdkCompiler)
   {
-    xiiStringBuilder incompatibleCompilerName = u8"⚠ ";
-    incompatibleCompilerName.SetFormat(u8"⚠ {} (incompatible)", xiiCppProject::CompilerToString(preferences->m_CompilerPreferences.m_Compiler));
-    s_MachineSpecificCompilers.PushBack(
-      {incompatibleCompilerName,
-       preferences->m_CompilerPreferences.m_Compiler,
-       preferences->m_CompilerPreferences.m_sCCompiler,
-       preferences->m_CompilerPreferences.m_sCppCompiler,
-       preferences->m_CompilerPreferences.m_bCustomCompiler});
+    xiiStringBuilder incompatibleCompilerName = reinterpret_cast<const char*>(u8"⚠ ");
+    incompatibleCompilerName.SetFormat(reinterpret_cast<const char*>(u8"⚠ {} (incompatible)"), xiiCppProject::CompilerToString(preferences->m_CompilerPreferences.m_Compiler));
+    s_MachineSpecificCompilers.PushBack({incompatibleCompilerName, preferences->m_CompilerPreferences.m_Compiler, preferences->m_CompilerPreferences.m_sCCompiler, preferences->m_CompilerPreferences.m_sCppCompiler, preferences->m_CompilerPreferences.m_bCustomCompiler});
   }
 }
 
