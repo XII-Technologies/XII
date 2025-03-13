@@ -12,7 +12,6 @@
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
-#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 
 #include <QInputDialog>
 
