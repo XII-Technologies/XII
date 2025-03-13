@@ -6,7 +6,6 @@
 #include <GuiFoundation/Models/TreeSearchFilterModel.moc.h>
 #include <GuiFoundation/Widgets/SearchWidget.moc.h>
 
-
 xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel, xiiSelectionManager* pSelection)
 {
   setObjectName("xiiQtGameObjectWidget");
@@ -86,9 +85,8 @@ void xiiQtGameObjectWidget::OnFilterTextChanged(const QString& text)
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtGameObjectPanel::xiiQtGameObjectPanel(
-  QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel) :
-  xiiQtDocumentPanel(pParent, pDocument)
+xiiQtGameObjectPanel::xiiQtGameObjectPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel) :
+  xiiQtDocumentPanel(pDockManager, pParent, pDocument)
 {
   setObjectName("ScenegraphPanel");
   setWindowTitle("xiiQtGameObjectPanel");

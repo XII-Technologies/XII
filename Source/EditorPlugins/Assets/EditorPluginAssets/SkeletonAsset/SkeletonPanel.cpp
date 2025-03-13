@@ -7,8 +7,8 @@
 #include <GuiFoundation/Models/TreeSearchFilterModel.moc.h>
 #include <GuiFoundation/Widgets/SearchWidget.moc.h>
 
-xiiQtSkeletonPanel::xiiQtSkeletonPanel(QWidget* pParent, xiiSkeletonAssetDocument* pDocument) :
-  xiiQtDocumentPanel(pParent, pDocument)
+xiiQtSkeletonPanel::xiiQtSkeletonPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiSkeletonAssetDocument* pDocument) :
+  xiiQtDocumentPanel(pDockManager, pParent, pDocument)
 {
   m_pSkeletonDocument = pDocument;
 
@@ -20,8 +20,9 @@ xiiQtSkeletonPanel::xiiQtSkeletonPanel(QWidget* pParent, xiiSkeletonAssetDocumen
   m_pMainWidget->setContentsMargins(0, 0, 0, 0);
   m_pMainWidget->layout()->setContentsMargins(0, 0, 0, 0);
   m_pFilterWidget = new xiiQtSearchWidget(this);
-  connect(m_pFilterWidget, &xiiQtSearchWidget::textChanged, this,
-          [this](const QString& sText) { m_pTreeWidget->GetProxyFilterModel()->SetFilterText(sText); });
+  connect(m_pFilterWidget, &xiiQtSearchWidget::textChanged, this, [this](const QString& sText) {
+    m_pTreeWidget->GetProxyFilterModel()->SetFilterText(sText);
+  });
 
   m_pMainWidget->layout()->addWidget(m_pFilterWidget);
 

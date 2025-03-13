@@ -38,7 +38,7 @@ xiiQtBlackboardTemplateAssetDocumentWindow::xiiQtBlackboardTemplateAssetDocument
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("BlackboardTemplateAssetDockWidget");
     pPropertyPanel->setWindowTitle("BlackboardTemplate Properties");
     pPropertyPanel->show();

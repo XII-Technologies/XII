@@ -115,14 +115,14 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
     m_pViewWidget->ConfigureFixed(xiiVec3(0), xiiVec3(0.0f), xiiVec3(+0.23f, -0.04f, 0.02f));
 
     AddViewWidget(m_pViewWidget);
-    xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(nullptr, m_pViewWidget, "MaterialAssetViewToolBar");
+    xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(GetContainerWindow()->GetDockManager(), nullptr, m_pViewWidget, "MaterialAssetViewToolBar");
 
     m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("MaterialAssetDockWidget");
     pPropertyPanel->setWindowTitle("Material Properties");
     pPropertyPanel->show();
@@ -145,7 +145,7 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
 
   // Visual Shader Editor
   {
-    m_pVsePanel = new xiiQtDocumentPanel(this, pDocument);
+    m_pVsePanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     m_pVsePanel->setObjectName("VisualShaderDockWidget");
     m_pVsePanel->setWindowTitle("Visual Shader Editor");
 

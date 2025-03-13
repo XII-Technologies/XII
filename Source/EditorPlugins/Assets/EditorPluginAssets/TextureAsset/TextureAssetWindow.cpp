@@ -147,13 +147,13 @@ xiiQtTextureAssetDocumentWindow::xiiQtTextureAssetDocumentWindow(xiiTextureAsset
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
     m_pViewWidget->ConfigureFixed(xiiVec3(0), xiiVec3(0.0f), xiiVec3(-1, 0, 0));
     AddViewWidget(m_pViewWidget);
-    xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, nullptr);
+    xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(GetContainerWindow()->GetDockManager(), this, m_pViewWidget, nullptr);
 
     m_pDockManager->setCentralWidget(pContainer);
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("TextureAssetDockWidget");
     pPropertyPanel->setWindowTitle("Texture Properties");
     pPropertyPanel->show();

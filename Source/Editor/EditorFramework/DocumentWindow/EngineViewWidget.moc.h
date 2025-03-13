@@ -171,7 +171,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtViewWidgetContainer : public ads::CDockWidget
   Q_OBJECT
 
 public:
-  xiiQtViewWidgetContainer(QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, xiiStringView sToolBarMapping);
+  xiiQtViewWidgetContainer(ads::CDockManager* pDockManager, QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, xiiStringView sToolBarMapping);
   ~xiiQtViewWidgetContainer();
 
   xiiQtEngineViewWidget* GetViewWidget() const { return m_pViewWidget; }

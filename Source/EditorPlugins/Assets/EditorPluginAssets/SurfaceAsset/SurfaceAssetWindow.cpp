@@ -33,7 +33,7 @@ xiiQtSurfaceAssetDocumentWindow::xiiQtSurfaceAssetDocumentWindow(xiiDocument* pD
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("SurfaceAssetDockWidget");
     pPropertyPanel->setWindowTitle("Surface Properties");
     pPropertyPanel->show();

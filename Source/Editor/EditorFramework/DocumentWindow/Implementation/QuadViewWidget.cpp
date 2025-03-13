@@ -6,6 +6,7 @@
 #include <EditorFramework/DocumentWindow/QuadViewWidget.moc.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <EditorFramework/Preferences/QuadViewPreferences.h>
+#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 
 xiiQtQuadViewWidget::xiiQtQuadViewWidget(xiiAssetDocument* pDocument, xiiQtEngineDocumentWindow* pWindow, ViewFactory viewFactory, const char* szViewToolBarMapping)
 {
@@ -103,7 +104,7 @@ void xiiQtQuadViewWidget::CreateViews(bool bQuad)
     for (xiiUInt32 i = 0; i < 4; ++i)
     {
       xiiQtEngineViewWidget*    pViewWidget = m_ViewFactory(m_pWindow, &m_ViewConfigQuad[i]);
-      xiiQtViewWidgetContainer* pContainer  = new xiiQtViewWidgetContainer(m_pWindow, pViewWidget, m_sViewToolBarMapping);
+      xiiQtViewWidgetContainer* pContainer  = new xiiQtViewWidgetContainer(m_pWindow->GetContainerWindow()->GetDockManager(), m_pWindow, pViewWidget, m_sViewToolBarMapping);
       m_ActiveMainViews.PushBack(pContainer);
       m_pViewLayout->addWidget(pContainer, i / 2, i % 2);
     }
@@ -111,7 +112,7 @@ void xiiQtQuadViewWidget::CreateViews(bool bQuad)
   else
   {
     xiiQtEngineViewWidget*    pViewWidget = m_ViewFactory(m_pWindow, &m_ViewConfigSingle);
-    xiiQtViewWidgetContainer* pContainer  = new xiiQtViewWidgetContainer(m_pWindow, pViewWidget, m_sViewToolBarMapping);
+    xiiQtViewWidgetContainer* pContainer  = new xiiQtViewWidgetContainer(m_pWindow->GetContainerWindow()->GetDockManager(), m_pWindow, pViewWidget, m_sViewToolBarMapping);
     m_ActiveMainViews.PushBack(pContainer);
     m_pViewLayout->addWidget(pContainer, 0, 0);
   }

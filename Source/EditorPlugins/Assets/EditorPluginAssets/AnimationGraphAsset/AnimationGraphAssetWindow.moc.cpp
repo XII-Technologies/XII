@@ -13,7 +13,6 @@
 xiiQtAnimationGraphAssetDocumentWindow::xiiQtAnimationGraphAssetDocumentWindow(xiiDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
 {
-
   // Menu Bar
   {
     xiiQtMenuBarActionMapView* pMenuBar = static_cast<xiiQtMenuBarActionMapView*>(menuBar());
@@ -44,7 +43,7 @@ xiiQtAnimationGraphAssetDocumentWindow::xiiQtAnimationGraphAssetDocumentWindow(x
     m_pView = new xiiQtNodeView(this);
     m_pView->SetScene(m_pScene);
 
-    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pCentral->setObjectName("xiiQtDocumentPanel");
     pCentral->setWindowTitle("Anim Graph");
     pCentral->setWidget(m_pView);
@@ -53,7 +52,7 @@ xiiQtAnimationGraphAssetDocumentWindow::xiiQtAnimationGraphAssetDocumentWindow(x
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("AnimationGraphAssetDockWidget");
     pPropertyPanel->setWindowTitle("Properties");
     pPropertyPanel->show();

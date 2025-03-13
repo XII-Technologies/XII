@@ -50,14 +50,14 @@ xiiQtDecalAssetDocumentWindow::xiiQtDecalAssetDocumentWindow(xiiDecalAssetDocume
     m_pViewWidget->ConfigureFixed(xiiVec3(0), xiiVec3(0.0f), xiiVec3(2, 0, 0));
     AddViewWidget(m_pViewWidget);
 
-    xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(nullptr, m_pViewWidget, "DecalAssetViewToolBar");
+    xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(GetContainerWindow()->GetDockManager(), nullptr, m_pViewWidget, "DecalAssetViewToolBar");
 
     m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("DecalAssetDockWidget");
     pPropertyPanel->setWindowTitle("Decal Properties");
     pPropertyPanel->show();

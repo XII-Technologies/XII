@@ -66,7 +66,6 @@ xiiStatus xiiImageDataAssetDocument::RunTexConv(const char* szTargetFile, const 
     arguments << temp.GetData();
   }
 
-
   arguments << "-out";
   arguments << szTargetFile;
 

@@ -6,8 +6,8 @@
 
 XII_IMPLEMENT_SINGLETON(xiiQtLogPanel);
 
-xiiQtLogPanel::xiiQtLogPanel() :
-  xiiQtApplicationPanel("Panel.Log"), m_SingletonRegistrar(this)
+xiiQtLogPanel::xiiQtLogPanel(ads::CDockManager* pDockManager) :
+  xiiQtApplicationPanel(pDockManager, "Panel.Log"), m_SingletonRegistrar(this)
 {
   QWidget* pDummy = new QWidget();
   setupUi(pDummy);

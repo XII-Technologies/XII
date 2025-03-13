@@ -33,7 +33,7 @@ xiiQtCustomDataAssetDocumentWindow::xiiQtCustomDataAssetDocumentWindow(xiiDocume
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("CustomDataAssetDockWidget");
     pPropertyPanel->setWindowTitle("CustomData Properties");
     pPropertyPanel->show();

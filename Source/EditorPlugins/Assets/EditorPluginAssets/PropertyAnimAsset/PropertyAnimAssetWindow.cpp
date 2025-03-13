@@ -35,7 +35,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
   pDocument->m_PropertyAnimEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyAnimAssetEventHandler, this));
 
   {
-    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pViewPanel->setObjectName("xiiQtDocumentPanel");
     pViewPanel->setWindowTitle("3D View");
     pViewPanel->setWidget(m_pQuadViewWidget);
@@ -73,13 +73,13 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     pModel->AddAdapter(new xiiQtDummyAdapter(pDocument->GetObjectManager(), xiiGetStaticRTTI<xiiDocumentRoot>(), "TempObjects"));
     pModel->AddAdapter(new xiiQtGameObjectAdapter(pDocument->GetObjectManager()));
 
-    xiiQtDocumentPanel* pGameObjectPanel = new xiiQtGameObjectPanel(this, pDocument, "PropertyAnimAsset_ScenegraphContextMenu", std::move(pModel));
+    xiiQtDocumentPanel* pGameObjectPanel = new xiiQtGameObjectPanel(GetContainerWindow()->GetDockManager(), this, pDocument, "PropertyAnimAsset_ScenegraphContextMenu", std::move(pModel));
     m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pGameObjectPanel);
   }
 
   // Property Grid
   {
-    xiiQtDocumentPanel* pPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPanel->setObjectName("PropertyAnimAssetDockWidget");
     pPanel->setWindowTitle("Object Properties");
     pPanel->show();
@@ -102,7 +102,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
 
   // Property Tree View
   {
-    xiiQtDocumentPanel* pPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPanel->setObjectName("PropertyAnimPropertiesDockWidget");
     pPanel->setWindowTitle("Animated Properties");
     pPanel->show();
@@ -114,14 +114,11 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     m_pPropertyTreeView->setExpandsOnDoubleClick(false);
     pPanel->setWidget(m_pPropertyTreeView);
 
-    connect(m_pPropertyTreeView, &xiiQtPropertyAnimAssetTreeView::DeleteSelectedItemsEvent, this,
-            &xiiQtPropertyAnimAssetDocumentWindow::onDeleteSelectedItems);
-    connect(m_pPropertyTreeView, &xiiQtPropertyAnimAssetTreeView::RebindSelectedItemsEvent, this,
-            &xiiQtPropertyAnimAssetDocumentWindow::onRebindSelectedItems);
+    connect(m_pPropertyTreeView, &xiiQtPropertyAnimAssetTreeView::DeleteSelectedItemsEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onDeleteSelectedItems);
+    connect(m_pPropertyTreeView, &xiiQtPropertyAnimAssetTreeView::RebindSelectedItemsEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onRebindSelectedItems);
 
     connect(m_pPropertyTreeView, &QTreeView::doubleClicked, this, &xiiQtPropertyAnimAssetDocumentWindow::onTreeItemDoubleClicked);
-    connect(m_pPropertyTreeView, &xiiQtPropertyAnimAssetTreeView::FrameSelectedItemsEvent, this,
-            &xiiQtPropertyAnimAssetDocumentWindow::onFrameSelectedTracks);
+    connect(m_pPropertyTreeView, &xiiQtPropertyAnimAssetTreeView::FrameSelectedItemsEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onFrameSelectedTracks);
 
     m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pPanel);
   }
@@ -147,7 +144,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
 
   // Float Curve Panel
   {
-    m_pCurvePanel = new xiiQtDocumentPanel(this, pDocument);
+    m_pCurvePanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     m_pCurvePanel->setObjectName("PropertyAnimFloatCurveDockWidget");
     m_pCurvePanel->setWindowTitle("Curves");
     m_pCurvePanel->show();
@@ -160,7 +157,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
 
   // Color Gradient Panel
   {
-    m_pColorGradientPanel = new xiiQtDocumentPanel(this, pDocument);
+    m_pColorGradientPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     m_pColorGradientPanel->setObjectName("PropertyAnimColorGradientDockWidget");
     m_pColorGradientPanel->setWindowTitle("Color Gradient");
     m_pColorGradientPanel->show();
@@ -173,7 +170,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
 
   // Event Track Panel
   {
-    m_pEventTrackPanel = new xiiQtDocumentPanel(this, pDocument);
+    m_pEventTrackPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     m_pEventTrackPanel->setObjectName("PropertyAnimEventTrackDockWidget");
     m_pEventTrackPanel->setWindowTitle("Event Track");
     m_pEventTrackPanel->show();
@@ -226,14 +223,10 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::AlphaCpDeleted, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientAlphaCpDeleted);
     connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::AlphaCpChanged, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientAlphaCpChanged);
 
-    connect(
-      m_pGradientEditor, &xiiQtColorGradientEditorWidget::IntensityCpAdded, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpAdded);
-    connect(
-      m_pGradientEditor, &xiiQtColorGradientEditorWidget::IntensityCpMoved, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpMoved);
-    connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::IntensityCpDeleted, this,
-            &xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpDeleted);
-    connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::IntensityCpChanged, this,
-            &xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpChanged);
+    connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::IntensityCpAdded, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpAdded);
+    connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::IntensityCpMoved, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpMoved);
+    connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::IntensityCpDeleted, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpDeleted);
+    connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::IntensityCpChanged, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpChanged);
 
     connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::BeginOperation, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientBeginOperation);
     connect(m_pGradientEditor, &xiiQtColorGradientEditorWidget::EndOperation, this, &xiiQtPropertyAnimAssetDocumentWindow::onGradientEndOperation);
@@ -248,23 +241,17 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     connect(m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::CpMovedEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackCpMoved);
     connect(m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::CpDeletedEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackCpDeleted);
 
-    connect(
-      m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::BeginOperationEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackBeginOperation);
-    connect(
-      m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::EndOperationEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackEndOperation);
-    connect(
-      m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::BeginCpChangesEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackBeginCpChanges);
-    connect(
-      m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::EndCpChangesEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackEndCpChanges);
+    connect(m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::BeginOperationEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackBeginOperation);
+    connect(m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::EndOperationEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackEndOperation);
+    connect(m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::BeginCpChangesEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackBeginCpChanges);
+    connect(m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::EndCpChangesEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackEndCpChanges);
   }
 
   // GetDocument()->GetObjectManager()->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyEventHandler,
   // this));
-  GetDocument()->GetObjectManager()->m_StructureEvents.AddEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler, this));
+  GetDocument()->GetObjectManager()->m_StructureEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler, this));
   GetDocument()->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::SelectionEventHandler, this));
-  GetDocument()->GetCommandHistory()->m_Events.AddEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler, this));
+  GetDocument()->GetCommandHistory()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler, this));
 
   FinishWindowCreation();
 
@@ -280,16 +267,11 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
 
 xiiQtPropertyAnimAssetDocumentWindow::~xiiQtPropertyAnimAssetDocumentWindow()
 {
-  GetPropertyAnimDocument()->m_PropertyAnimEvents.RemoveEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyAnimAssetEventHandler, this));
-  // GetDocument()->GetObjectManager()->m_PropertyEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyEventHandler,
-  // this));
-  GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler, this));
-  GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::SelectionEventHandler, this));
-  GetDocument()->GetCommandHistory()->m_Events.RemoveEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler, this));
+  GetPropertyAnimDocument()->m_PropertyAnimEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyAnimAssetEventHandler, this));
+  // GetDocument()->GetObjectManager()->m_PropertyEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyEventHandler, this));
+  GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler, this));
+  GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::SelectionEventHandler, this));
+  GetDocument()->GetCommandHistory()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler, this));
 }
 
 void xiiQtPropertyAnimAssetDocumentWindow::ToggleViews(QWidget* pView)
@@ -311,7 +293,6 @@ void xiiQtPropertyAnimAssetDocumentWindow::DuplicateSelection()
 {
   XII_ASSERT_NOT_IMPLEMENTED;
 }
-
 
 void xiiQtPropertyAnimAssetDocumentWindow::InternalRedraw()
 {
@@ -399,8 +380,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::UpdateSelectionData()
 
   for (const QModelIndex& selIdx : m_pSelectionModel->selection().indexes())
   {
-    xiiQtPropertyAnimModelTreeEntry* pTreeItem =
-      reinterpret_cast<xiiQtPropertyAnimModelTreeEntry*>(m_pPropertiesModel->data(selIdx, xiiQtPropertyAnimModel::UserRoles::TreeItem).value<void*>());
+    xiiQtPropertyAnimModelTreeEntry* pTreeItem = reinterpret_cast<xiiQtPropertyAnimModelTreeEntry*>(m_pPropertiesModel->data(selIdx, xiiQtPropertyAnimModel::UserRoles::TreeItem).value<void*>());
 
     xiiQtPropertyAnimModel* pModel = m_pPropertiesModel;
 

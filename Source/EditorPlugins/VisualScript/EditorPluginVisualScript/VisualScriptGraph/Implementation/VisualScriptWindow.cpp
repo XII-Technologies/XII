@@ -41,7 +41,7 @@ xiiQtVisualScriptWindow::xiiQtVisualScriptWindow(xiiDocument* pDocument) :
     m_pView = new xiiQtNodeView(this);
     m_pView->SetScene(m_pScene);
 
-    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pCentral->setObjectName("VisualScriptView");
     pCentral->setWindowTitle("Script");
     pCentral->setWidget(m_pView);
@@ -50,7 +50,7 @@ xiiQtVisualScriptWindow::xiiQtVisualScriptWindow(xiiDocument* pDocument) :
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("VisualScriptAssetDockWidget");
     pPropertyPanel->setWindowTitle("Properties");
     pPropertyPanel->show();

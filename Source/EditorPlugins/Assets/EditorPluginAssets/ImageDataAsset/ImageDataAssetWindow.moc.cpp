@@ -41,7 +41,7 @@ xiiQtImageDataAssetDocumentWindow::xiiQtImageDataAssetDocumentWindow(xiiImageDat
   {
     m_pImageWidget = new xiiQtImageWidget(this);
 
-    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pCentral->setObjectName("ImageDataView");
     pCentral->setWindowTitle("Image");
     pCentral->setWidget(m_pImageWidget);
@@ -50,7 +50,7 @@ xiiQtImageDataAssetDocumentWindow::xiiQtImageDataAssetDocumentWindow(xiiImageDat
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("ImageDataProperties");
     pPropertyPanel->setWindowTitle("Image Properties");
 
