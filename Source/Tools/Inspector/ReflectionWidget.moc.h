@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtReflectionWidget(QWidget* pParent = nullptr);
+  xiiQtReflectionWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtReflectionWidget* s_pWidget;
 

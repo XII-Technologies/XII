@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtInputWidget(QWidget* pParent = nullptr);
+  xiiQtInputWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtInputWidget* s_pWidget;
 

@@ -21,7 +21,7 @@ public:
 public:
   static const xiiUInt8 s_uiMaxColors = 9;
 
-  xiiQtMemoryWidget(QWidget* pParent = nullptr);
+  xiiQtMemoryWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtMemoryWidget* s_pWidget;
 

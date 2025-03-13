@@ -14,7 +14,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtResourceWidget(QWidget* pParent = nullptr);
+  xiiQtResourceWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtResourceWidget* s_pWidget;
 

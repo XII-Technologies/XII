@@ -18,7 +18,7 @@ public:
 public:
   static const xiiUInt8 s_uiMaxColors = 9;
 
-  xiiQtTimeWidget(QWidget* pParent = nullptr);
+  xiiQtTimeWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtTimeWidget* s_pWidget;
 

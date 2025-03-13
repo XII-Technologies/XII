@@ -17,8 +17,8 @@ void FormatSize(xiiStringBuilder& s, xiiStringView sPrefix, xiiUInt64 uiSize);
 
 xiiQtResourceWidget* xiiQtResourceWidget::s_pWidget = nullptr;
 
-xiiQtResourceWidget::xiiQtResourceWidget(QWidget* pParent) :
-  ads::CDockWidget("Resource Widget", pParent)
+xiiQtResourceWidget::xiiQtResourceWidget(ads::CDockManager* pDockManager, QWidget* pParent) :
+  ads::CDockWidget(pDockManager, "Resource Widget", pParent)
 {
   s_pWidget = this;
 

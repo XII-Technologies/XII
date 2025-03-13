@@ -36,8 +36,8 @@ void FormatSize(xiiStringBuilder& s, xiiStringView sPrefix, xiiUInt64 uiSize)
     s.SetFormat("{0}{1} GB", sPrefix, xiiArgF(uiSize / 1024.0 / 1024.0 / 1024.0, 2));
 }
 
-xiiQtMemoryWidget::xiiQtMemoryWidget(QWidget* pParent) :
-  ads::CDockWidget("Memory Widget", pParent)
+xiiQtMemoryWidget::xiiQtMemoryWidget(ads::CDockManager* pDockManager, QWidget* pParent) :
+  ads::CDockWidget(pDockManager, "Memory Widget", pParent)
 {
   s_pWidget = this;
 

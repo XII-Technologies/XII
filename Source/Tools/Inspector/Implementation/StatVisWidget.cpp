@@ -27,8 +27,8 @@ namespace StatVisWidgetDetail
   };
 }
 
-xiiQtStatVisWidget::xiiQtStatVisWidget(QWidget* pParent, xiiInt32 iWindowNumber) :
-  ads::CDockWidget(QString("StatVisWidget") + QString::number(iWindowNumber), pParent), m_ShowWindowAction(pParent)
+xiiQtStatVisWidget::xiiQtStatVisWidget(ads::CDockManager* pDockManager, QWidget* pParent, xiiInt32 iWindowNumber) :
+  ads::CDockWidget(pDockManager, QString("StatVisWidget") + QString::number(iWindowNumber), pParent), m_ShowWindowAction(pParent)
 {
   m_iWindowNumber   = iWindowNumber;
   m_DisplayInterval = xiiTime::MakeFromSeconds(60.0);

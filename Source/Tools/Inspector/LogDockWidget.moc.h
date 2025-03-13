@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtLogDockWidget(QWidget* pParent = nullptr);
+  xiiQtLogDockWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   void Log(const xiiFormatString& text);
 

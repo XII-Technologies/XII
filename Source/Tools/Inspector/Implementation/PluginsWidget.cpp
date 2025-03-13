@@ -8,8 +8,8 @@
 
 xiiQtPluginsWidget* xiiQtPluginsWidget::s_pWidget = nullptr;
 
-xiiQtPluginsWidget::xiiQtPluginsWidget(QWidget* pParent) :
-  ads::CDockWidget("Plugins Widget", pParent)
+xiiQtPluginsWidget::xiiQtPluginsWidget(ads::CDockManager* pDockManager, QWidget* pParent) :
+  ads::CDockWidget(pDockManager, "Plugins Widget", pParent)
 {
   s_pWidget = this;
 

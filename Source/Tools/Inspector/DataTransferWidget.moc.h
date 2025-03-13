@@ -14,7 +14,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtDataWidget(QWidget* pParent = nullptr);
+  xiiQtDataWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtDataWidget* s_pWidget;
 
