@@ -169,6 +169,8 @@ void xiiQtCreateProjectDlg::FillProjectTemplatesList()
 
     ProjectTemplates->addItem(pItem);
 
+    ProjectTemplates->setCurrentItem(pItem);
+
     pItem->setSelected(true);
   }
 
@@ -256,7 +258,11 @@ void xiiQtCreateProjectDlg::on_Next_clicked()
 
     case State::Templates:
     {
-      m_sProjectTemplate = ProjectTemplates->currentItem()->data(Qt::UserRole).toString().toUtf8().data();
+      // no current item -> nothing selected -> blank project
+      if (ProjectTemplates->currentItem())
+      {
+        m_sProjectTemplate = ProjectTemplates->currentItem()->data(Qt::UserRole).toString().toUtf8().data();
+      }
 
       if (m_sProjectTemplate.IsEmpty())
         m_State = State::Plugins;

@@ -10,8 +10,10 @@
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
-#include <QInputDialog>
+#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
+
+#include <QInputDialog>
 
 xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) :
   xiiQtSceneDocumentWindowBase(pDocument)
