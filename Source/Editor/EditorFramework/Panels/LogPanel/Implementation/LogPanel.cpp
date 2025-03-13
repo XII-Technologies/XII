@@ -66,7 +66,7 @@ xiiQtLogPanel::~xiiQtLogPanel()
 void xiiQtLogPanel::OnNewWarningsOrErrors(xiiStringView sText, bool bError)
 {
   m_uiKnownNumWarnings = EditorLog->GetLog()->GetNumSeriousWarnings() + EditorLog->GetLog()->GetNumWarnings() + EngineLog->GetLog()->GetNumSeriousWarnings() + EngineLog->GetLog()->GetNumWarnings() + CombinedLog->GetLog()->GetNumSeriousWarnings() + CombinedLog->GetLog()->GetNumWarnings();
-  m_uiKnownNumErrors = EditorLog->GetLog()->GetNumErrors() + EngineLog->GetLog()->GetNumErrors() + CombinedLog->GetLog()->GetNumErrors();
+  m_uiKnownNumErrors   = EditorLog->GetLog()->GetNumErrors() + EngineLog->GetLog()->GetNumErrors() + CombinedLog->GetLog()->GetNumErrors();
 
   xiiQtUiServices::Event::TextType type = xiiQtUiServices::Event::Info;
 

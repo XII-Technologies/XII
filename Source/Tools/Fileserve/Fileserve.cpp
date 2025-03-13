@@ -113,9 +113,9 @@ void xiiFileserverApp::ShaderMessageHandler(xiiFileserveClientContext& ref_ctxt,
 
     auto& r = ref_msg.GetReader();
 
-    xiiStringBuilder                     tmp;
-    xiiStringBuilder                     file, platform;
-    xiiUInt32                            numPermVars;
+    xiiStringBuilder                      tmp;
+    xiiStringBuilder                      file, platform;
+    xiiUInt32                             numPermVars;
     xiiHybridArray<xiiPermutationVar, 16> permVars;
 
     r >> file;

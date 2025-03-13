@@ -2,9 +2,9 @@
 
 #include <Foundation/Strings/String.h>
 
+#include <GraphicsCore/Shader/Implementation/Helper.h>
 #include <GraphicsCore/ShaderCompiler/Declarations.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
-#include <GraphicsCore/Shader/Implementation/Helper.h>
 
 class xiiPropertyAttribute;
 

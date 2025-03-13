@@ -650,7 +650,7 @@ xiiUuid xiiPropertyAnimAssetDocument::CreateTrack(const xiiDocumentObject* pObje
   xiiObjectCommandAccessor accessor(GetCommandHistory());
   const xiiRTTI*           pTrackType = xiiGetStaticRTTI<xiiPropertyAnimationTrack>();
   xiiUuid                  newTrack;
-  XII_VERIFY( accessor.AddObject(GetPropertyObject(), xiiGetStaticRTTI<xiiPropertyAnimationTrackGroup>()->FindPropertyByName("Tracks"), -1, pTrackType, newTrack)   .Succeeded(), "Adding track failed.");
+  XII_VERIFY(accessor.AddObject(GetPropertyObject(), xiiGetStaticRTTI<xiiPropertyAnimationTrackGroup>()->FindPropertyByName("Tracks"), -1, pTrackType, newTrack).Succeeded(), "Adding track failed.");
   const xiiDocumentObject* pTrackObj = accessor.GetObject(newTrack);
   xiiVariant               value     = sObjectSearchSequence.GetData();
   XII_VERIFY(accessor.SetValue(pTrackObj, pTrackType->FindPropertyByName("ObjectPath"), value).Succeeded(), "Adding track failed.");

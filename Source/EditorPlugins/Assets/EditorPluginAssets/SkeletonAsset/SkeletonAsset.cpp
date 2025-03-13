@@ -4,9 +4,9 @@
 #include <EditorPluginAssets/SkeletonAsset/SkeletonAsset.h>
 #include <Foundation/Utilities/Progress.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
+#include <GraphicsCore/Declarations.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ModelImporter2/ModelImporter.h>
-#include <GraphicsCore/Declarations.h>
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -31,7 +31,7 @@ public:
 
 protected:
   /// \brief Called by SwitchToLoadingScreen() to setup a new world that acts as the loading screen while waiting for another scene to finish loading.
-  virtual void     ConfigureInputActions() override;
+  virtual void      ConfigureInputActions() override;
   virtual xiiResult SpawnPlayer(xiiStringView sStartPosition, const xiiTransform& startPositionOffset) override;
 
   virtual const xiiCameraComponent* FindActiveCameraComponent();
@@ -55,10 +55,10 @@ protected:
   void FindAvailableScenes();
   bool DisplayMenu();
 
-  bool                     m_bCheckedForScenes = false;
+  bool                       m_bCheckedForScenes = false;
   xiiDynamicArray<xiiString> m_AvailableScenes;
-  xiiUInt32                 m_uiSelectedScene = 0;
-  xiiString                 m_sTitleOfScene;
+  xiiUInt32                  m_uiSelectedScene = 0;
+  xiiString                  m_sTitleOfScene;
 
   virtual void OnBackgroundSceneLoadingFinished(xiiUniquePtr<xiiWorld>&& pWorld) override;
   virtual void OnBackgroundSceneLoadingFailed(xiiStringView sReason) override;

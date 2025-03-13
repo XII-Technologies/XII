@@ -11,7 +11,7 @@ public:
   xiiDecalAssetDocumentManager();
   ~xiiDecalAssetDocumentManager();
 
-  virtual void AddEntriesToAssetTable(xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const override;
+  virtual void      AddEntriesToAssetTable(xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const override;
   virtual xiiString GetAssetTableEntry(const xiiSubAsset* pSubAsset, xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile) const override;
 
   /// \brief There is only a single decal texture per project. This function creates it, in case any decal asset was modified.

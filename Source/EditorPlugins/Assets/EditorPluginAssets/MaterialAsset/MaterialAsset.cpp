@@ -1021,7 +1021,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
       {
         XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out texture");
         xiiStringView sName = pProp->GetPropertyName();
-        sValue             = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
+        sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
 
         stream << sName;
         stream << sValue;
@@ -1037,7 +1037,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
       {
         XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out texture cube");
         xiiStringView sName = pProp->GetPropertyName();
-        sValue             = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
+        sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
 
         stream << sName;
         stream << sValue;
@@ -1053,7 +1053,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
       {
         XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out constant");
         xiiStringView sName = pProp->GetPropertyName();
-        xiiVariant  value  = pObject->GetTypeAccessor().GetValue(sName);
+        xiiVariant    value = pObject->GetTypeAccessor().GetValue(sName);
 
         stream << sName;
         stream << value;
@@ -1086,7 +1086,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
         {
           XII_ASSERT_DEBUG(pObject != nullptr, "Need object to write out texture2d");
           xiiStringView sName = prop->GetPropertyName();
-          sValue             = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
+          sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
 
           if (sValue.IsEmpty())
             continue;

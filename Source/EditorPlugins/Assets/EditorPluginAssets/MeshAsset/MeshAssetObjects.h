@@ -2,9 +2,9 @@
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
 #include <EditorPluginAssets/Util/AssetUtils.h>
+#include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
-#include <GraphicsCore/Declarations.h>
 
 struct xiiPropertyMetaStateEvent;
 
