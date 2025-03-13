@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtFileWidget(QWidget* pParent = 0);
+  xiiQtFileWidget(QWidget* pParent = nullptr);
   ~xiiQtFileWidget();
   static xiiQtFileWidget* s_pWidget;
 
