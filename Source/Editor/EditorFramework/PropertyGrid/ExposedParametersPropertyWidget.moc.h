@@ -24,7 +24,7 @@ public:
 
 public:
   const xiiExposedParameters* GetExposedParams(const xiiDocumentObject* pObject);
-  const xiiExposedParameter*  GetExposedParam(const xiiDocumentObject* pObject, const char* szParamName);
+  const xiiExposedParameter*  GetExposedParam(const xiiDocumentObject* pObject, xiiStringView sParamName);
   const xiiRTTI*              GetExposedParamsType(const xiiDocumentObject* pObject);
   const xiiRTTI*              GetCommonExposedParamsType(const xiiHybridArray<xiiPropertySelection, 8>& items);
   bool                        IsExposedProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp);

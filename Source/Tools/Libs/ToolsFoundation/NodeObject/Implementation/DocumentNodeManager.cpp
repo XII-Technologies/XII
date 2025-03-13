@@ -773,7 +773,7 @@ void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject
         out_Names.PushBack(sTemp);
       }
     }
-    else if (variantType == xiiVariantType::String || variantType == xiiVariantType::HashedString)
+    else if (variantType == xiiVariantType::String || variantType == xiiVariantType::StringView || variantType == xiiVariantType::HashedString)
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {

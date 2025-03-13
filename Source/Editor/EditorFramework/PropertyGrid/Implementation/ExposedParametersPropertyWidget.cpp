@@ -138,7 +138,15 @@ const xiiExposedParameters* xiiExposedParameterCommandAccessor::GetExposedParams
     if (value.IsA<xiiString>())
     {
       const auto& sValue = value.Get<xiiString>();
-      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue.GetData()))
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
+      {
+        return asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiExposedParameters>();
+      }
+    }
+    else if (value.IsA<xiiStringView>())
+    {
+      const auto& sValue = value.Get<xiiStringView>();
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiExposedParameters>();
       }
@@ -147,11 +155,11 @@ const xiiExposedParameters* xiiExposedParameterCommandAccessor::GetExposedParams
   return nullptr;
 }
 
-const xiiExposedParameter* xiiExposedParameterCommandAccessor::GetExposedParam(const xiiDocumentObject* pObject, const char* szParamName)
+const xiiExposedParameter* xiiExposedParameterCommandAccessor::GetExposedParam(const xiiDocumentObject* pObject, xiiStringView sParamName)
 {
   if (const xiiExposedParameters* pParams = GetExposedParams(pObject))
   {
-    return pParams->Find(szParamName);
+    return pParams->Find(sParamName);
   }
   return nullptr;
 }
@@ -164,7 +172,15 @@ const xiiRTTI* xiiExposedParameterCommandAccessor::GetExposedParamsType(const xi
     if (value.IsA<xiiString>())
     {
       const auto& sValue = value.Get<xiiString>();
-      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue.GetData()))
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
+      {
+        return xiiExposedParametersTypeRegistry::GetSingleton()->GetExposedParametersType(sValue);
+      }
+    }
+    else if (value.IsA<xiiStringView>())
+    {
+      const auto& sValue = value.Get<xiiStringView>();
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return xiiExposedParametersTypeRegistry::GetSingleton()->GetExposedParametersType(sValue);
       }

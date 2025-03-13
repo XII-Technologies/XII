@@ -23,7 +23,7 @@ public:
   xiiExposedParameters();
   virtual ~xiiExposedParameters();
 
-  const xiiExposedParameter* Find(const char* szParamName) const;
+  const xiiExposedParameter* Find(xiiStringView sParamName) const;
 
   xiiDynamicArray<xiiExposedParameter*> m_Parameters;
 };
