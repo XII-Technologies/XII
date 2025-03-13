@@ -18,7 +18,7 @@ public:
 public:
   static const xiiUInt8 s_uiMaxColors = 9;
 
-  xiiQtStatVisWidget(QWidget* pParent, xiiInt32 iWindowNumber);
+  xiiQtStatVisWidget(ads::CDockManager* pDockManager, QWidget* pParent, xiiInt32 iWindowNumber);
   ~xiiQtStatVisWidget();
 
   void UpdateStats();

@@ -88,6 +88,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   flags |= ads::CDockManager::RetainTabSizeWhenCloseButtonHidden;
   flags |= ads::CDockManager::DockAreaHideDisabledButtons;
   flags |= ads::CDockManager::DockAreaHasUndockButton;
+  // flags |= ads::CDockManager::DoubleClickUndocksWidget; // don't want this
   flags |= ads::CDockManager::OpaqueSplitterResize;
   ads::CDockManager::setConfigFlags(flags);
 
@@ -410,7 +411,7 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
 
   m_DocumentWindows.PushBack(pDocWindow);
   xiiString         displayName = pDocWindow->GetDisplayNameShort();
-  ads::CDockWidget* dock        = new ads::CDockWidget(xiiMakeQString(displayName));
+  ads::CDockWidget* dock        = new ads::CDockWidget(m_pDockManager, xiiMakeQString(displayName));
   dock->installEventFilter(pDocWindow);
   dock->setFeature(ads::CDockWidget::CustomCloseHandling, true);
 

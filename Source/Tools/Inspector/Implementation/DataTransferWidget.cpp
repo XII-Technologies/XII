@@ -14,8 +14,8 @@
 
 xiiQtDataWidget* xiiQtDataWidget::s_pWidget = nullptr;
 
-xiiQtDataWidget::xiiQtDataWidget(QWidget* pParent) :
-  ads::CDockWidget("Data Transfer Widget", pParent)
+xiiQtDataWidget::xiiQtDataWidget(ads::CDockManager* pDockManager, QWidget* pParent) :
+  ads::CDockWidget(pDockManager, "Data Transfer Widget", pParent)
 {
   /// \todo Improve Data Transfer UI
 

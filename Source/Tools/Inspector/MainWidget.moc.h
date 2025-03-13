@@ -17,7 +17,7 @@ class xiiQtMainWidget : public ads::CDockWidget, public Ui_MainWidget
 public:
   static xiiQtMainWidget* s_pWidget;
 
-  xiiQtMainWidget(QWidget* pParent = nullptr);
+  xiiQtMainWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
   ~xiiQtMainWidget();
 
   void         ResetStats();

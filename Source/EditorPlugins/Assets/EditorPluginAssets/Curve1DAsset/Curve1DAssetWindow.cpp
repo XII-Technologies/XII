@@ -52,7 +52,7 @@ xiiQtCurve1DAssetDocumentWindow::xiiQtCurve1DAssetDocumentWindow(xiiDocument* pD
     pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator((xiiAssetDocument*)GetDocument()));
     pWidget->layout()->addWidget(m_pCurveEditor);
 
-    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pCentral->setObjectName("xiiQtDocumentPanel");
     pCentral->setWindowTitle("Curve");
     pCentral->setWidget(pWidget);
@@ -74,7 +74,7 @@ xiiQtCurve1DAssetDocumentWindow::xiiQtCurve1DAssetDocumentWindow(xiiDocument* pD
 
   if (false)
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("Curve1DAssetDockWidget");
     pPropertyPanel->setWindowTitle("Curve1D Properties");
     pPropertyPanel->show();

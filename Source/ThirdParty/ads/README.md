@@ -22,7 +22,7 @@ integrated development environments (IDEs) such as Visual Studio.
 
 ## New and Noteworthy
 
-Release [4.1](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/releases/latest) significantly improves the Auto-Hide functionality and also brings improvements 
+Release [4.1](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/releases/latest) significantly improves the Auto-Hide functionality and also brings improvements
 for Drag and Drop of dock widgets into dock area tabs. These are the highlights of the new version:
 
 #### Drag & Drop to Auto-Hide
@@ -57,7 +57,7 @@ That means, you can drag them to a different border or sidebar:
 
 #### Auto-Hide Tab Sorting
 
-You can drag Auto-Hide tabs to a new position in the current sidebar 
+You can drag Auto-Hide tabs to a new position in the current sidebar
 to sort them:
 
 ![Auo-Hide sort tabs](doc/AutoHide_Sort_Tabs.gif)
@@ -81,7 +81,7 @@ sidebar:
 #### Dock Area Tab Insert Order
 
 And last but not least the new version also improves the docking of widgets
-into the tabs of a Dock area. Just as with Auto-Hide tabs, you can now determine the position at which a tab is inserted by moving the mouse over an already existing tab (insertion before the tab) or behind the last tab 
+into the tabs of a Dock area. Just as with Auto-Hide tabs, you can now determine the position at which a tab is inserted by moving the mouse over an already existing tab (insertion before the tab) or behind the last tab
 (appending):
 
 ![Dock area tab insert order](doc/DockArea_Tab_Insertion_Order.gif)
@@ -94,7 +94,7 @@ adds the following features:
 ![Auto Hide Functionality](doc/AutoHide_Animation.gif)
 
 - improved demo application with new image viewer dock widgets
-  
+
 ![Auto Hide Functionality](doc/Feature_ImageViewer.png)
 
 - Visual Studio like CSS theme in demo application
@@ -217,7 +217,7 @@ into floating windows is supported.
 
 ### Grouped dragging
 
-When dragging the titlebar of a dock, all the tabs that are tabbed with it are 
+When dragging the titlebar of a dock, all the tabs that are tabbed with it are
 going to be dragged. So you can move complete groups of tabbed widgets into
 a floating widget or from one dock area to another one.
 
@@ -230,7 +230,7 @@ a floating widget or from one dock area to another one.
 A perspective defines the set and layout of dock windows in the main
 window. You can save the current layout of the dockmanager into a named
 perspective to make your own custom perspective. Later you can simply
-select a perspective from the perspective list to quickly switch the complete 
+select a perspective from the perspective list to quickly switch the complete
 main window layout.
 
 ![Perspective](doc/perspectives.gif)
@@ -439,7 +439,7 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    
+
     // The main container for docking
     ads::CDockManager* m_DockManager;
 };
@@ -462,7 +462,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Create the dock manager after the ui is setup. Because the
     // parent parameter is a QMainWindow the dock manager registers
     // itself as the central widget as such the ui must be set up first.
-    m_DockManager = new ads::CDockManager(this);
+    DockManager = new ads::CDockManager(this);
 
     // Create example content label - this can be any application specific
     // widget
@@ -473,7 +473,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Create a dock widget with the title Label 1 and set the created label
     // as the dock widget content
-    ads::CDockWidget* DockWidget = new ads::CDockWidget("Label 1");
+    ads::CDockWidget* DockWidget = DockManager->createDockWidget("Label 1");
     DockWidget->setWidget(l);
 
     // Add the toggleViewAction of the dock widget to the menu to give
@@ -481,7 +481,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->menuView->addAction(DockWidget->toggleViewAction());
 
     // Add the dock widget to the top dock widget area
-    m_DockManager->addDockWidget(ads::TopDockWidgetArea, DockWidget);
+    DockManager->addDockWidget(ads::TopDockWidgetArea, DockWidget);
 }
 
 MainWindow::~MainWindow()
@@ -582,7 +582,7 @@ highlights are:
 - Simple Drag & Drop user interface.
 - Load data from file.
 - Connect to live streaming of data.
-- Save the visualization layout and configurations to re-use them later.
+- Save the visualization layout and configurations to reuse them later.
 - Fast OpenGL visualization.
 - Can handle thousands of timeseries and millions of data points.
 - Transform your data using a simple editor: derivative, moving average, integral, etc…
@@ -594,7 +594,7 @@ highlights are:
 
 ### [Notepad Next](https://github.com/dail8859/NotepadNext)
 
-Notepad Next is a cross-platform reimplementation of Notepad++ that uses the 
+Notepad Next is a cross-platform reimplementation of Notepad++ that uses the
 Advanced Docking System to arrange the open source files on the screen.
 
 [read more...](https://github.com/dail8859/NotepadNext)
@@ -657,7 +657,7 @@ The Automotive Data and Time-Triggered Framework was designed as a Rapid Prototy
 - Recording of vehicle data for visualisation
 - Simulation of complex scenarios in SIL/HIL test environments
 
-The software features time-based processing of multiple data streams and graphical editing of dynamic filter graphs. It also includes an SDK for custom plug-ins and reusable components, as well as components for data visualization in both 2D and 3D. This is was the 
+The software features time-based processing of multiple data streams and graphical editing of dynamic filter graphs. It also includes an SDK for custom plug-ins and reusable components, as well as components for data visualization in both 2D and 3D. This is was the
 [manual](https://support.digitalwerk.net/adtf/v3/adtf_html/page_adtf_xsystem_plugin.html)
 says about the switch to Qt Advanced Docking:
 

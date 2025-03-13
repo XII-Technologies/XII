@@ -12,7 +12,6 @@
 xiiQtRenderPipelineAssetDocumentWindow::xiiQtRenderPipelineAssetDocumentWindow(xiiDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
 {
-
   // Menu Bar
   {
     xiiQtMenuBarActionMapView* pMenuBar = static_cast<xiiQtMenuBarActionMapView*>(menuBar());
@@ -43,7 +42,7 @@ xiiQtRenderPipelineAssetDocumentWindow::xiiQtRenderPipelineAssetDocumentWindow(x
     m_pView = new xiiQtNodeView(this);
     m_pView->SetScene(m_pScene);
 
-    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pCentral->setObjectName("PipelineView");
     pCentral->setWindowTitle("Pipeline");
     pCentral->setWidget(m_pView);
@@ -52,7 +51,7 @@ xiiQtRenderPipelineAssetDocumentWindow::xiiQtRenderPipelineAssetDocumentWindow(x
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("RenderPipelineAssetDockWidget");
     pPropertyPanel->setWindowTitle("Properties");
     pPropertyPanel->show();

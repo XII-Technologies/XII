@@ -12,7 +12,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtPluginsWidget(QWidget* pParent = 0);
+  xiiQtPluginsWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtPluginsWidget* s_pWidget;
 

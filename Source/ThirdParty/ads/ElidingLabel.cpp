@@ -38,37 +38,37 @@ namespace ads
  */
 struct ElidingLabelPrivate
 {
-	CElidingLabel* _this;
-	Qt::TextElideMode ElideMode = Qt::ElideNone;
-	QString Text;
-	bool IsElided = false;
+  CElidingLabel* _this;
+  Qt::TextElideMode ElideMode = Qt::ElideNone;
+  QString Text;
+  bool IsElided = false;
 
-	ElidingLabelPrivate(CElidingLabel* _public) : _this(_public) {}
+  ElidingLabelPrivate(CElidingLabel* _public) : _this(_public) {}
 
-	void elideText(int Width);
+  void elideText(int Width);
 
-	/**
-	 * Convenience function to check if the
-	 */
-	bool isModeElideNone() const
-	{
-		return Qt::ElideNone == ElideMode;
-	}
+  /**
+   * Convenience function to check if the
+   */
+  bool isModeElideNone() const
+  {
+    return Qt::ElideNone == ElideMode;
+  }
 };
 
 
 //============================================================================
 void ElidingLabelPrivate::elideText(int Width)
 {
-	if (isModeElideNone())
-	{
-		return;
-	}
+  if (isModeElideNone())
+  {
+    return;
+  }
     QFontMetrics fm = _this->fontMetrics();
     QString  str = fm.elidedText(Text, ElideMode, Width - _this->margin() * 2 - _this->indent());
     if (str == "…")
     {
-    	str = Text.at(0);
+      str = Text.at(0);
     }
     bool WasElided = IsElided;
     IsElided = str != Text;
@@ -82,8 +82,8 @@ void ElidingLabelPrivate::elideText(int Width)
 
 //============================================================================
 CElidingLabel::CElidingLabel(QWidget* parent, Qt::WindowFlags f)
-	: QLabel(parent, f),
-	  d(new ElidingLabelPrivate(this))
+  : QLabel(parent, f),
+    d(new ElidingLabelPrivate(this))
 {
 
 }
@@ -91,71 +91,71 @@ CElidingLabel::CElidingLabel(QWidget* parent, Qt::WindowFlags f)
 
 //============================================================================
 CElidingLabel::CElidingLabel(const QString& text, QWidget* parent, Qt::WindowFlags f)
-	: QLabel(text, parent,f),
-	  d(new ElidingLabelPrivate(this))
+  : QLabel(text, parent,f),
+    d(new ElidingLabelPrivate(this))
 {
-	d->Text = text;
-	internal::setToolTip(this, text);
+  d->Text = text;
+  internal::setToolTip(this, text);
 }
 
 
 //============================================================================
 CElidingLabel::~CElidingLabel()
 {
-	delete d;
+  delete d;
 }
 
 
 //============================================================================
 Qt::TextElideMode CElidingLabel::elideMode() const
 {
-	return d->ElideMode;
+  return d->ElideMode;
 }
 
 
 //============================================================================
 void CElidingLabel::setElideMode(Qt::TextElideMode mode)
 {
-	d->ElideMode = mode;
-	d->elideText(size().width());
+  d->ElideMode = mode;
+  d->elideText(size().width());
 }
 
 //============================================================================
 bool CElidingLabel::isElided() const
 {
-	return d->IsElided;
+  return d->IsElided;
 }
 
 
 //============================================================================
 void CElidingLabel::mouseReleaseEvent(QMouseEvent* event)
 {
-	Super::mouseReleaseEvent(event);
-	if (event->button() != Qt::LeftButton)
-	{
-		return;
-	}
+  Super::mouseReleaseEvent(event);
+  if (event->button() != Qt::LeftButton)
+  {
+    return;
+  }
 
-	Q_EMIT clicked();
+  Q_EMIT clicked();
 }
 
 
 //============================================================================
 void CElidingLabel::mouseDoubleClickEvent( QMouseEvent *ev )
 {
-	Q_UNUSED(ev)
-	Q_EMIT doubleClicked();
-	Super::mouseDoubleClickEvent(ev);
+  Q_UNUSED(ev)
+  Q_EMIT doubleClicked();
+  Super::mouseDoubleClickEvent(ev);
 }
 
 
 //============================================================================
 void CElidingLabel::resizeEvent(QResizeEvent *event)
 {
-	if (!d->isModeElideNone())
-	{
-		d->elideText(event->size().width());
-	}
+  if (!d->isModeElideNone())
+  {
+    d->elideText(event->size().width());
+  }
     Super::resizeEvent(event);
 }
 
@@ -200,30 +200,30 @@ QSize CElidingLabel::sizeHint() const
     #else
         QSize size(fm.width(d->Text), QLabel::sizeHint().height());
     #endif
-	return size;
+  return size;
 }
 
 
 //============================================================================
 void CElidingLabel::setText(const QString &text)
 {
-	d->Text = text;
-	if (d->isModeElideNone())
-	{
-		Super::setText(text);
-	}
-	else
-	{
-		internal::setToolTip(this, text);
-		d->elideText(this->size().width());
-	}
+  d->Text = text;
+  if (d->isModeElideNone())
+  {
+    Super::setText(text);
+  }
+  else
+  {
+    internal::setToolTip(this, text);
+    d->elideText(this->size().width());
+  }
 }
 
 
 //============================================================================
 QString CElidingLabel::text() const
 {
-	return d->Text;
+  return d->Text;
 }
 } // namespace QtLabb
 

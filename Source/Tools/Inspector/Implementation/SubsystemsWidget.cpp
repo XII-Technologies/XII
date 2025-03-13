@@ -8,8 +8,8 @@
 
 xiiQtSubsystemsWidget* xiiQtSubsystemsWidget::s_pWidget = nullptr;
 
-xiiQtSubsystemsWidget::xiiQtSubsystemsWidget(QWidget* pParent) :
-  ads::CDockWidget("Subsystem Widget", pParent)
+xiiQtSubsystemsWidget::xiiQtSubsystemsWidget(ads::CDockManager* pDockManager, QWidget* pParent) :
+  ads::CDockWidget(pDockManager, "Subsystem Widget", pParent)
 {
   s_pWidget = this;
 
@@ -26,7 +26,6 @@ void xiiQtSubsystemsWidget::ResetStats()
   m_bUpdateSubsystems = true;
   m_Subsystems.Clear();
 }
-
 
 void xiiQtSubsystemsWidget::UpdateStats()
 {

@@ -30,7 +30,7 @@ xiiQtScene2DocumentWindow::xiiQtScene2DocumentWindow(xiiScene2Document* pDocumen
   pDocument->SetEditToolConfigDelegate([this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
 
   {
-    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pViewPanel->setObjectName("xiiQtDocumentPanel");
     pViewPanel->setWindowTitle("3D View");
     pViewPanel->setWidget(m_pQuadViewWidget);
@@ -65,16 +65,16 @@ xiiQtScene2DocumentWindow::xiiQtScene2DocumentWindow(xiiScene2Document* pDocumen
 
   {
     // Panels
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("PropertyPanel");
     pPropertyPanel->setWindowTitle("Properties");
     pPropertyPanel->show();
     pPropertyPanel->layout()->setObjectName("PropertyPanelLayout");
 
-    xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(this, pDocument);
+    xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPanelTree->show();
 
-    xiiQtLayerPanel* pLayers = new xiiQtLayerPanel(this, pDocument);
+    xiiQtLayerPanel* pLayers = new xiiQtLayerPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pLayers->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);

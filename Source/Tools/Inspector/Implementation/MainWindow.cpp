@@ -26,10 +26,8 @@ xiiQtMainWindow::xiiQtMainWindow() :
 
   setupUi(this);
 
-  m_DockManager = new ads::CDockManager(this);
-  m_DockManager->setConfigFlags(
-    static_cast<ads::CDockManager::ConfigFlags>(ads::CDockManager::DockAreaHasCloseButton | ads::CDockManager::DockAreaCloseButtonClosesTab |
-                                                ads::CDockManager::OpaqueSplitterResize | ads::CDockManager::AllTabsHaveCloseButton));
+  m_pDockManager = new ads::CDockManager(this);
+  m_pDockManager->setConfigFlags(static_cast<ads::CDockManager::ConfigFlags>(ads::CDockManager::DockAreaHasCloseButton | ads::CDockManager::DockAreaCloseButtonClosesTab | ads::CDockManager::OpaqueSplitterResize | ads::CDockManager::AllTabsHaveCloseButton));
 
   QSettings Settings;
   SetAlwaysOnTop((OnTopMode)Settings.value("AlwaysOnTop", (int)WhenConnected).toInt());
@@ -45,19 +43,19 @@ xiiQtMainWindow::xiiQtMainWindow() :
 
   // The dock manager will set ownership to null on add so there is no reason to provide an owner here.
   // Setting one will actually cause memory corruptions on shutdown for unknown reasons.
-  xiiQtMainWidget*         pMainWidget          = new xiiQtMainWidget();
-  xiiQtLogDockWidget*      pLogWidget           = new xiiQtLogDockWidget();
-  xiiQtMemoryWidget*       pMemoryWidget        = new xiiQtMemoryWidget();
-  xiiQtTimeWidget*         pTimeWidget          = new xiiQtTimeWidget();
-  xiiQtInputWidget*        pInputWidget         = new xiiQtInputWidget();
-  xiiQtCVarsWidget*        pCVarsWidget         = new xiiQtCVarsWidget();
-  xiiQtSubsystemsWidget*   pSubsystemsWidget    = new xiiQtSubsystemsWidget();
-  xiiQtFileWidget*         pFileWidget          = new xiiQtFileWidget();
-  xiiQtPluginsWidget*      pPluginsWidget       = new xiiQtPluginsWidget();
-  xiiQtGlobalEventsWidget* pGlobalEventesWidget = new xiiQtGlobalEventsWidget();
-  xiiQtReflectionWidget*   pReflectionWidget    = new xiiQtReflectionWidget();
-  xiiQtDataWidget*         pDataWidget          = new xiiQtDataWidget();
-  xiiQtResourceWidget*     pResourceWidget      = new xiiQtResourceWidget();
+  xiiQtMainWidget*         pMainWidget          = new xiiQtMainWidget(m_pDockManager);
+  xiiQtLogDockWidget*      pLogWidget           = new xiiQtLogDockWidget(m_pDockManager);
+  xiiQtMemoryWidget*       pMemoryWidget        = new xiiQtMemoryWidget(m_pDockManager);
+  xiiQtTimeWidget*         pTimeWidget          = new xiiQtTimeWidget(m_pDockManager);
+  xiiQtInputWidget*        pInputWidget         = new xiiQtInputWidget(m_pDockManager);
+  xiiQtCVarsWidget*        pCVarsWidget         = new xiiQtCVarsWidget(m_pDockManager);
+  xiiQtSubsystemsWidget*   pSubsystemsWidget    = new xiiQtSubsystemsWidget(m_pDockManager);
+  xiiQtFileWidget*         pFileWidget          = new xiiQtFileWidget(m_pDockManager);
+  xiiQtPluginsWidget*      pPluginsWidget       = new xiiQtPluginsWidget(m_pDockManager);
+  xiiQtGlobalEventsWidget* pGlobalEventesWidget = new xiiQtGlobalEventsWidget(m_pDockManager);
+  xiiQtReflectionWidget*   pReflectionWidget    = new xiiQtReflectionWidget(m_pDockManager);
+  xiiQtDataWidget*         pDataWidget          = new xiiQtDataWidget(m_pDockManager);
+  xiiQtResourceWidget*     pResourceWidget      = new xiiQtResourceWidget(m_pDockManager);
 
   XII_VERIFY(nullptr != QWidget::connect(pMainWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pLogWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
@@ -80,8 +78,8 @@ xiiQtMainWindow::xiiQtMainWindow() :
 
   for (xiiUInt32 i = 0; i < 10; ++i)
   {
-    m_pStatHistoryWidgets[i] = new xiiQtStatVisWidget(this, i);
-    m_DockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pStatHistoryWidgets[i]);
+    m_pStatHistoryWidgets[i] = new xiiQtStatVisWidget(m_pDockManager, this, i);
+    m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pStatHistoryWidgets[i]);
 
     XII_VERIFY(nullptr != QWidget::connect(m_pStatHistoryWidgets[i], &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
 
@@ -104,21 +102,21 @@ xiiQtMainWindow::xiiQtMainWindow() :
 
   pMemoryWidget->raise();
 
-  m_DockManager->addDockWidget(ads::LeftDockWidgetArea, pMainWidget);
-  m_DockManager->addDockWidget(ads::CenterDockWidgetArea, pLogWidget);
+  m_pDockManager->addDockWidget(ads::LeftDockWidgetArea, pMainWidget);
+  m_pDockManager->addDockWidget(ads::CenterDockWidgetArea, pLogWidget);
 
-  m_DockManager->addDockWidget(ads::RightDockWidgetArea, pCVarsWidget);
-  m_DockManager->addDockWidgetTab(ads::RightDockWidgetArea, pGlobalEventesWidget);
-  m_DockManager->addDockWidgetTab(ads::RightDockWidgetArea, pDataWidget);
-  m_DockManager->addDockWidgetTab(ads::RightDockWidgetArea, pInputWidget);
-  m_DockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPluginsWidget);
-  m_DockManager->addDockWidgetTab(ads::RightDockWidgetArea, pReflectionWidget);
-  m_DockManager->addDockWidgetTab(ads::RightDockWidgetArea, pResourceWidget);
-  m_DockManager->addDockWidgetTab(ads::RightDockWidgetArea, pSubsystemsWidget);
+  m_pDockManager->addDockWidget(ads::RightDockWidgetArea, pCVarsWidget);
+  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pGlobalEventesWidget);
+  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pDataWidget);
+  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pInputWidget);
+  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPluginsWidget);
+  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pReflectionWidget);
+  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pResourceWidget);
+  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pSubsystemsWidget);
 
-  m_DockManager->addDockWidget(ads::BottomDockWidgetArea, pFileWidget);
-  m_DockManager->addDockWidgetTab(ads::BottomDockWidgetArea, pMemoryWidget);
-  m_DockManager->addDockWidgetTab(ads::BottomDockWidgetArea, pTimeWidget);
+  m_pDockManager->addDockWidget(ads::BottomDockWidgetArea, pFileWidget);
+  m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, pMemoryWidget);
+  m_pDockManager->addDockWidgetTab(ads::BottomDockWidgetArea, pTimeWidget);
 
 
   pLogWidget->raise();
@@ -129,7 +127,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
     auto dockState = Settings.value("DockManagerState");
     if (dockState.isValid() && dockState.typeId() == QMetaType::QByteArray)
     {
-      m_DockManager->restoreState(dockState.toByteArray(), 1);
+      m_pDockManager->restoreState(dockState.toByteArray(), 1);
     }
 
     move(Settings.value("WindowPosition", pos()).toPoint());
@@ -158,10 +156,10 @@ xiiQtMainWindow::~xiiQtMainWindow()
     m_pStatHistoryWidgets[i]->Save();
   }
   // The dock manager does not take ownership of dock widgets.
-  auto dockWidgets = m_DockManager->dockWidgetsMap();
+  auto dockWidgets = m_pDockManager->dockWidgetsMap();
   for (auto it = dockWidgets.begin(); it != dockWidgets.end(); ++it)
   {
-    m_DockManager->removeDockWidget(it.value());
+    m_pDockManager->removeDockWidget(it.value());
     delete it.value();
   }
 }
@@ -177,7 +175,7 @@ void xiiQtMainWindow::closeEvent(QCloseEvent* pEvent)
   Settings.beginGroup("MainWindow");
 
   Settings.setValue("DockingVersion", g_iDockingStateVersion);
-  Settings.setValue("DockManagerState", m_DockManager->saveState(1));
+  Settings.setValue("DockManagerState", m_pDockManager->saveState(1));
   Settings.setValue("WindowGeometry", saveGeometry());
   Settings.setValue("WindowState", saveState());
   Settings.setValue("IsMaximized", bMaximized);

@@ -14,7 +14,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtCVarsWidget(QWidget* pParent = 0);
+  xiiQtCVarsWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtCVarsWidget* s_pWidget;
 

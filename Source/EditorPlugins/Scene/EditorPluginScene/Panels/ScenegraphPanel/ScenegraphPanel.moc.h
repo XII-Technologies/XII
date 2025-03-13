@@ -15,8 +15,8 @@ class xiiQtScenegraphPanel : public xiiQtDocumentPanel
   Q_OBJECT
 
 public:
-  xiiQtScenegraphPanel(QWidget* pParent, xiiSceneDocument* pDocument);
-  xiiQtScenegraphPanel(QWidget* pParent, xiiScene2Document* pDocument);
+  xiiQtScenegraphPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiSceneDocument* pDocument);
+  xiiQtScenegraphPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiScene2Document* pDocument);
   ~xiiQtScenegraphPanel();
 
 private:

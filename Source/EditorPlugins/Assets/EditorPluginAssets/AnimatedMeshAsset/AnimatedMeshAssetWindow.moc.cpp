@@ -48,13 +48,13 @@ xiiQtAnimatedMeshAssetDocumentWindow::xiiQtAnimatedMeshAssetDocumentWindow(xiiAn
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
     m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(10.0f), xiiVec3(5, -2, 3), 2.0f);
     AddViewWidget(m_pViewWidget);
-    pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "AnimatedMeshAssetViewToolBar");
+    pContainer = new xiiQtViewWidgetContainer(GetContainerWindow()->GetDockManager(), this, m_pViewWidget, "AnimatedMeshAssetViewToolBar");
     m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("AnimatedMeshAssetDockWidget");
     pPropertyPanel->setWindowTitle("Mesh Properties");
     pPropertyPanel->show();

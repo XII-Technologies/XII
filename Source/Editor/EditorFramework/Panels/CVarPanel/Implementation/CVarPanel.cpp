@@ -29,8 +29,8 @@ public:
   }
 };
 
-xiiQtCVarPanel::xiiQtCVarPanel() :
-  xiiQtApplicationPanel("Panel.CVar"), m_SingletonRegistrar(this)
+xiiQtCVarPanel::xiiQtCVarPanel(ads::CDockManager* pDockManager) :
+  xiiQtApplicationPanel(pDockManager, "Panel.CVar"), m_SingletonRegistrar(this)
 {
   setIcon(xiiQtUiServices::GetCachedIconResource(":/GuiFoundation/Icons/CVar.svg"));
   setWindowTitle(xiiMakeQString(xiiTranslate("Panel.CVar")));

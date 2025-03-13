@@ -539,14 +539,15 @@ void xiiQtEditorApp::ShutdownEditor()
 void xiiQtEditorApp::CreatePanels()
 {
   XII_PROFILE_SCOPE("CreatePanels");
-  xiiQtApplicationPanel* pAssetBrowserPanel = new xiiQtAssetBrowserPanel();
-  xiiQtApplicationPanel* pAssetCuratorPanel = new xiiQtAssetCuratorPanel();
-  xiiQtApplicationPanel* pLogPanel          = new xiiQtLogPanel();
-  xiiQtApplicationPanel* pCVarPanel         = new xiiQtCVarPanel();
-  xiiQtApplicationPanel* pLongOpsPanel      = new xiiQtLongOpsPanel();
 
   xiiQtContainerWindow* pMainWnd     = xiiQtContainerWindow::GetContainerWindow();
   ads::CDockManager*    pDockManager = pMainWnd->GetDockManager();
+
+  xiiQtApplicationPanel* pAssetBrowserPanel = new xiiQtAssetBrowserPanel(pDockManager);
+  xiiQtApplicationPanel* pAssetCuratorPanel = new xiiQtAssetCuratorPanel(pDockManager);
+  xiiQtApplicationPanel* pLogPanel          = new xiiQtLogPanel(pDockManager);
+  xiiQtApplicationPanel* pCVarPanel         = new xiiQtCVarPanel(pDockManager);
+  xiiQtApplicationPanel* pLongOpsPanel      = new xiiQtLongOpsPanel(pDockManager);
 
   pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pAssetBrowserPanel);
   pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pLogPanel);

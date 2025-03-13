@@ -41,9 +41,8 @@ class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectPanel : public xiiQtDocumentPanel
   Q_OBJECT
 
 public:
-  xiiQtGameObjectPanel(QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel);
+  xiiQtGameObjectPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel);
   ~xiiQtGameObjectPanel();
-
 
 protected:
   xiiQtGameObjectWidget* m_pMainWidget = nullptr;

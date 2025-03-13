@@ -9,8 +9,8 @@
 
 xiiQtInputWidget* xiiQtInputWidget::s_pWidget = nullptr;
 
-xiiQtInputWidget::xiiQtInputWidget(QWidget* pParent) :
-  ads::CDockWidget("Input Widget", pParent)
+xiiQtInputWidget::xiiQtInputWidget(ads::CDockManager* pDockManager, QWidget* pParent) :
+  ads::CDockWidget(pDockManager, "Input Widget", pParent)
 {
   s_pWidget = this;
 

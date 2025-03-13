@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtSubsystemsWidget(QWidget* pParent = 0);
+  xiiQtSubsystemsWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtSubsystemsWidget* s_pWidget;
 

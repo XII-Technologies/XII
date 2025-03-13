@@ -61,7 +61,7 @@ private:
   QTimer*   m_pNetworkTimer;
 
 public:
-  ads::CDockManager*  m_DockManager = nullptr;
+  ads::CDockManager*  m_pDockManager = nullptr;
   QAction*            m_pActionShowStatIn[10];
   xiiQtStatVisWidget* m_pStatHistoryWidgets[10];
 };

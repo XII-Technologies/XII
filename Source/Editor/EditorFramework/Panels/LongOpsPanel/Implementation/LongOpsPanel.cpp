@@ -13,8 +13,8 @@ constexpr int COL_PROGRESS  = 2;
 constexpr int COL_DURATION  = 3;
 constexpr int COL_BUTTON    = 4;
 
-xiiQtLongOpsPanel ::xiiQtLongOpsPanel() :
-  xiiQtApplicationPanel("Panel.LongOps"), m_SingletonRegistrar(this)
+xiiQtLongOpsPanel ::xiiQtLongOpsPanel(ads::CDockManager* pDockManager) :
+  xiiQtApplicationPanel(pDockManager, "Panel.LongOps"), m_SingletonRegistrar(this)
 {
   QWidget* pDummy = new QWidget();
   setupUi(pDummy);

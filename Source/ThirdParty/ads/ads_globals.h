@@ -3,17 +3,17 @@
 /*******************************************************************************
 ** Qt Advanced Docking System
 ** Copyright (C) 2017 Uwe Kindler
-** 
+**
 ** This library is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU Lesser General Public
 ** License as published by the Free Software Foundation; either
 ** version 2.1 of the License, or (at your option) any later version.
-** 
+**
 ** This library is distributed in the hope that it will be useful,
 ** but WITHOUT ANY WARRANTY; without even the implied warranty of
 ** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ** Lesser General Public License for more details.
-** 
+**
 ** You should have received a copy of the GNU Lesser General Public
 ** License along with this library; If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
@@ -76,39 +76,39 @@ class CDockSplitter;
 
 enum DockWidgetArea
 {
-	NoDockWidgetArea = 0x00,
-	LeftDockWidgetArea = 0x01,
-	RightDockWidgetArea = 0x02,
-	TopDockWidgetArea = 0x04,
-	BottomDockWidgetArea = 0x08,
-	CenterDockWidgetArea = 0x10,
-	LeftAutoHideArea = 0x20,
-	RightAutoHideArea = 0x40,
-	TopAutoHideArea = 0x80,
-	BottomAutoHideArea = 0x100,
+  NoDockWidgetArea = 0x00,
+  LeftDockWidgetArea = 0x01,
+  RightDockWidgetArea = 0x02,
+  TopDockWidgetArea = 0x04,
+  BottomDockWidgetArea = 0x08,
+  CenterDockWidgetArea = 0x10,
+  LeftAutoHideArea = 0x20,
+  RightAutoHideArea = 0x40,
+  TopAutoHideArea = 0x80,
+  BottomAutoHideArea = 0x100,
 
-	InvalidDockWidgetArea = NoDockWidgetArea,
-	OuterDockAreas = TopDockWidgetArea | LeftDockWidgetArea | RightDockWidgetArea | BottomDockWidgetArea,
-	AutoHideDockAreas = LeftAutoHideArea | RightAutoHideArea | TopAutoHideArea | BottomAutoHideArea,
-	AllDockAreas = OuterDockAreas | CenterDockWidgetArea
+  InvalidDockWidgetArea = NoDockWidgetArea,
+  OuterDockAreas = TopDockWidgetArea | LeftDockWidgetArea | RightDockWidgetArea | BottomDockWidgetArea,
+  AutoHideDockAreas = LeftAutoHideArea | RightAutoHideArea | TopAutoHideArea | BottomAutoHideArea,
+  AllDockAreas = OuterDockAreas | CenterDockWidgetArea
 };
 Q_DECLARE_FLAGS(DockWidgetAreas, DockWidgetArea)
 
 
 enum eTabIndex
 {
-	TabDefaultInsertIndex = -1,
-	TabInvalidIndex = -2
+  TabDefaultInsertIndex = -1,
+  TabInvalidIndex = -2
 };
 
 
 enum TitleBarButton
 {
-	TitleBarButtonTabsMenu,
-	TitleBarButtonUndock,
-	TitleBarButtonClose,
-	TitleBarButtonAutoHide,
-	TitleBarButtonMinimize
+  TitleBarButtonTabsMenu,
+  TitleBarButtonUndock,
+  TitleBarButtonClose,
+  TitleBarButtonAutoHide,
+  TitleBarButtonMinimize
 };
 
 /**
@@ -116,10 +116,10 @@ enum TitleBarButton
  */
 enum eDragState
 {
-	DraggingInactive,     //!< DraggingInactive
-	DraggingMousePressed, //!< DraggingMousePressed
-	DraggingTab,          //!< DraggingTab
-	DraggingFloatingWidget//!< DraggingFloatingWidget
+  DraggingInactive,     //!< DraggingInactive
+  DraggingMousePressed, //!< DraggingMousePressed
+  DraggingTab,          //!< DraggingTab
+  DraggingFloatingWidget//!< DraggingFloatingWidget
 };
 
 /**
@@ -127,14 +127,14 @@ enum eDragState
  */
 enum eIcon
 {
-	TabCloseIcon,      //!< TabCloseIcon
-	AutoHideIcon,      //!< AutoHideIcon
-	DockAreaMenuIcon,  //!< DockAreaMenuIcon
-	DockAreaUndockIcon,//!< DockAreaUndockIcon
-	DockAreaCloseIcon, //!< DockAreaCloseIcon
-	DockAreaMinimizeIcon,
+  TabCloseIcon,      //!< TabCloseIcon
+  AutoHideIcon,      //!< AutoHideIcon
+  DockAreaMenuIcon,  //!< DockAreaMenuIcon
+  DockAreaUndockIcon,//!< DockAreaUndockIcon
+  DockAreaCloseIcon, //!< DockAreaCloseIcon
+  DockAreaMinimizeIcon,
 
-	IconCount,         //!< just a delimiter for range checks
+  IconCount,         //!< just a delimiter for range checks
 };
 
 /**
@@ -142,8 +142,8 @@ enum eIcon
  */
 enum eBitwiseOperator
 {
-	BitwiseAnd,
-	BitwiseOr
+  BitwiseAnd,
+  BitwiseOr
 };
 
 
@@ -152,11 +152,11 @@ enum eBitwiseOperator
  */
 enum SideBarLocation
 {
-	SideBarTop,
-	SideBarLeft,
-	SideBarRight,
-	SideBarBottom,
-	SideBarNone
+  SideBarTop,
+  SideBarLeft,
+  SideBarRight,
+  SideBarBottom,
+  SideBarNone
 };
 Q_ENUMS(SideBarLocation)
 
@@ -218,9 +218,9 @@ class CDockInsertParam : public QPair<Qt::Orientation, bool>
 {
 public:
     using QPair<Qt::Orientation, bool>::QPair;
-	Qt::Orientation orientation() const {return this->first;}
-	bool append() const {return this->second;}
-	int insertOffset() const {return append() ? 1 : 0;}
+  Qt::Orientation orientation() const {return this->first;}
+  bool append() const {return this->second;}
+  int insertOffset() const {return append() ? 1 : 0;}
 };
 
 /**
@@ -236,7 +236,7 @@ SideBarLocation toSideBarLocation(DockWidgetArea Area);
 
 
 /**
- * Returns true for the top or bottom side bar ansd false for the
+ * Returns true for the top or bottom side bar and false for the
  * left and right side bar
  */
 bool isHorizontalSideBarLocation(SideBarLocation Location);
@@ -259,17 +259,17 @@ bool isSideBarArea(DockWidgetArea Area);
 template <class T>
 T findParent(const QWidget* w)
 {
-	QWidget* parentWidget = w->parentWidget();
-	while (parentWidget)
-	{
-		T ParentImpl = qobject_cast<T>(parentWidget);
-		if (ParentImpl)
-		{
-			return ParentImpl;
-		}
-		parentWidget = parentWidget->parentWidget();
-	}
-	return nullptr;
+  QWidget* parentWidget = w->parentWidget();
+  while (parentWidget)
+  {
+    T ParentImpl = qobject_cast<T>(parentWidget);
+    if (ParentImpl)
+    {
+      return ParentImpl;
+    }
+    parentWidget = parentWidget->parentWidget();
+  }
+  return nullptr;
 }
 
 /**
@@ -287,7 +287,7 @@ template <class T>
 void setFlag(T& Flags, typename T::enum_type flag, bool on = true)
 {
 #if QT_VERSION >= 0x050700
-	Flags.setFlag(flag, on);
+  Flags.setFlag(flag, on);
 #else
     if(on)
     {
@@ -309,10 +309,10 @@ template <class QObjectPtr>
 void setToolTip(QObjectPtr obj, const QString &tip)
 {
 #ifndef QT_NO_TOOLTIP
-	obj->setToolTip(tip);
+  obj->setToolTip(tip);
 #else
-	Q_UNUSED(obj);
-	Q_UNUSED(tip);
+  Q_UNUSED(obj);
+  Q_UNUSED(tip);
 #endif
 }
 
@@ -344,14 +344,14 @@ inline QPoint globalPositionOf(QMouseEvent* ev)
  * param[in] CustomIconId The identifier for the custom icon.
  */
 void setButtonIcon(QAbstractButton* Button, QStyle::StandardPixmap StandarPixmap,
-	ads::eIcon CustomIconId);
+  ads::eIcon CustomIconId);
 
 
 enum eRepolishChildOptions
 {
-	RepolishIgnoreChildren,
-	RepolishDirectChildren,
-	RepolishChildrenRecursively
+  RepolishIgnoreChildren,
+  RepolishDirectChildren,
+  RepolishChildrenRecursively
 };
 
 /**

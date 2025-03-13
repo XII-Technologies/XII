@@ -19,7 +19,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtLogPanel : public xiiQtApplicationPanel, publ
   XII_DECLARE_SINGLETON(xiiQtLogPanel);
 
 public:
-  xiiQtLogPanel();
+  xiiQtLogPanel(ads::CDockManager* pDockManager);
   ~xiiQtLogPanel();
 
 protected:

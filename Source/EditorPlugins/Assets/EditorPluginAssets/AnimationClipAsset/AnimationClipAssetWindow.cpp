@@ -48,13 +48,13 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
     m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(5.0f), xiiVec3(5, -2, 3), 2.0f);
     AddViewWidget(m_pViewWidget);
-    pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "AnimationClipAssetViewToolBar");
+    pContainer = new xiiQtViewWidgetContainer(GetContainerWindow()->GetDockManager(), this, m_pViewWidget, "AnimationClipAssetViewToolBar");
     m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("AnimationClipAssetDockWidget");
     pPropertyPanel->setWindowTitle("Animation Clip Properties");
     pPropertyPanel->show();
@@ -89,7 +89,7 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
 
   // Event Track Panel
   {
-    m_pEventTrackPanel = new xiiQtDocumentPanel(this, pDocument);
+    m_pEventTrackPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     m_pEventTrackPanel->setObjectName("AnimClipEventTrackDockWidget");
     m_pEventTrackPanel->setWindowTitle("Event Track");
     m_pEventTrackPanel->show();

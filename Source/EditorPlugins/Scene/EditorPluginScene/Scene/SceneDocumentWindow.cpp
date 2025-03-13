@@ -28,7 +28,7 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
   pDocument->SetEditToolConfigDelegate([this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
 
   {
-    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pViewPanel->setObjectName("xiiQtDocumentPanel");
     pViewPanel->setWindowTitle("3D View");
     pViewPanel->setWidget(m_pQuadViewWidget);
@@ -64,7 +64,7 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
   // Exposed Parameters
   if (GetSceneDocument()->IsPrefab())
   {
-    xiiQtDocumentPanel* pPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPanel->setObjectName("SceneSettingsDockWidget");
     pPanel->setWindowTitle(GetSceneDocument()->IsPrefab() ? "Prefab Settings" : "Scene Settings");
     pPanel->show();
@@ -79,12 +79,12 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("PropertyPanel");
     pPropertyPanel->setWindowTitle("Properties");
     pPropertyPanel->show();
 
-    xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(this, static_cast<xiiSceneDocument*>(pDocument));
+    xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(GetContainerWindow()->GetDockManager(), this, static_cast<xiiSceneDocument*>(pDocument));
     pPanelTree->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
@@ -126,7 +126,6 @@ void xiiQtSceneDocumentWindowBase::ToggleViews(QWidget* pView)
 {
   m_pQuadViewWidget->ToggleViews(pView);
 }
-
 
 xiiObjectAccessorBase* xiiQtSceneDocumentWindowBase::GetObjectAccessor()
 {

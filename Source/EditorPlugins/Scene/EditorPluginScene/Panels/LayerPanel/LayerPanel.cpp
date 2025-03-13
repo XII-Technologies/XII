@@ -6,10 +6,11 @@
 #include <EditorPluginScene/Panels/ScenegraphPanel/ScenegraphModel.moc.h>
 #include <EditorPluginScene/Scene/Scene2Document.h>
 #include <GuiFoundation/ActionViews/MenuActionMapView.moc.h>
+
 #include <QVBoxLayout>
 
-xiiQtLayerPanel::xiiQtLayerPanel(QWidget* pParent, xiiScene2Document* pDocument) :
-  xiiQtDocumentPanel(pParent, pDocument)
+xiiQtLayerPanel::xiiQtLayerPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiScene2Document* pDocument) :
+  xiiQtDocumentPanel(pDockManager, pParent, pDocument)
 {
   setObjectName("LayerPanel");
   setWindowTitle("Layers");
@@ -27,8 +28,7 @@ xiiQtLayerPanel::xiiQtLayerPanel(QWidget* pParent, xiiScene2Document* pDocument)
   m_pTreeWidget->setItemDelegate(m_pDelegate);
 
   m_pTreeWidget->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
-  XII_VERIFY(connect(m_pTreeWidget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(OnRequestContextMenu(QPoint))) != nullptr,
-             "signal/slot connection failed");
+  XII_VERIFY(connect(m_pTreeWidget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(OnRequestContextMenu(QPoint))) != nullptr, "signal/slot connection failed");
 
   setWidget(m_pTreeWidget);
 }

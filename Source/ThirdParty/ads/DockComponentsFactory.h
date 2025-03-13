@@ -36,60 +36,53 @@ class CAutoHideTab;
 class ADS_EXPORT CDockComponentsFactory
 {
 public:
-	/**
-	 * Force virtual destructor
-	 */
-	virtual ~CDockComponentsFactory() {}
+  /**
+   * Force virtual destructor
+   */
+  virtual ~CDockComponentsFactory() {}
 
-	/**
-	 * This default implementation just creates a dock widget tab with
-	 * new CDockWidgetTab(DockWIdget).
-	 */
-	virtual CDockWidgetTab* createDockWidgetTab(CDockWidget* DockWidget) const;
+  /**
+   * This default implementation just creates a dock widget tab with
+   * new CDockWidgetTab(DockWIdget).
+   */
+  virtual CDockWidgetTab* createDockWidgetTab(CDockWidget* DockWidget) const;
 
-	/**
-	 * This default implementation just creates a dock widget side tab with
-	 * new CDockWidgetTab(DockWidget).
-	 */
-	virtual CAutoHideTab* createDockWidgetSideTab(CDockWidget* DockWidget) const;
+  /**
+   * This default implementation just creates a dock widget side tab with
+   * new CDockWidgetTab(DockWidget).
+   */
+  virtual CAutoHideTab* createDockWidgetSideTab(CDockWidget* DockWidget) const;
 
-	/**
-	 * This default implementation just creates a dock area tab bar with
-	 * new CDockAreaTabBar(DockArea).
-	 */
-	virtual CDockAreaTabBar* createDockAreaTabBar(CDockAreaWidget* DockArea) const;
+  /**
+   * This default implementation just creates a dock area tab bar with
+   * new CDockAreaTabBar(DockArea).
+   */
+  virtual CDockAreaTabBar* createDockAreaTabBar(CDockAreaWidget* DockArea) const;
 
-	/**
-	 * This default implementation just creates a dock area title bar with
-	 * new CDockAreaTitleBar(DockArea).
-	 */
-	virtual CDockAreaTitleBar* createDockAreaTitleBar(CDockAreaWidget* DockArea) const;
+  /**
+   * This default implementation just creates a dock area title bar with
+   * new CDockAreaTitleBar(DockArea).
+   */
+  virtual CDockAreaTitleBar* createDockAreaTitleBar(CDockAreaWidget* DockArea) const;
 
-	/**
-	 * Returns the default components factory
-	 */
-	static const CDockComponentsFactory* factory();
+  /**
+   * This returns the default dock components factory instance.
+   * If no components factory is assigned to a specific dock manager, this
+   * global factory instance will be used.
+   */
+    static QSharedPointer<ads::CDockComponentsFactory> factory();
 
-	/**
-	 * Sets a new default factory for creation of GUI elements.
-	 * This function takes ownership of the given Factory.
-	 */
-	static void setFactory(CDockComponentsFactory* Factory);
+  /**
+   * Sets a new default factory for creation of GUI elements.
+   * This function takes ownership of the given Factory.
+   */
+  static void setFactory(CDockComponentsFactory* Factory);
 
-	/**
-	 * Resets the current factory to the
-	 */
-	static void resetDefaultFactory();
+  /**
+   * Resets the current factory to the
+   */
+  static void resetDefaultFactory();
 };
-
-
-/**
- * Convenience function to ease factory instance access
- */
-inline const CDockComponentsFactory* componentsFactory()
-{
-	return CDockComponentsFactory::factory();
-}
 
 } // namespace ads
 

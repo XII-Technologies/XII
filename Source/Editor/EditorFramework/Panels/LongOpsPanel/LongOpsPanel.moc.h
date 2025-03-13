@@ -17,7 +17,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtLongOpsPanel : public xiiQtApplicationPanel, 
   XII_DECLARE_SINGLETON(xiiQtLongOpsPanel);
 
 public:
-  xiiQtLongOpsPanel();
+  xiiQtLongOpsPanel(ads::CDockManager* pDockManager);
   ~xiiQtLongOpsPanel();
 
 private:

@@ -694,8 +694,8 @@ void xiiQtEngineViewWidget::SlotRestartEngineProcess()
 // xiiQtViewWidgetContainer
 ////////////////////////////////////////////////////////////////////////
 
-xiiQtViewWidgetContainer::xiiQtViewWidgetContainer(QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, xiiStringView sToolBarMapping) :
-  ads::CDockWidget("3D View", pParent)
+xiiQtViewWidgetContainer::xiiQtViewWidgetContainer(ads::CDockManager* pDockManager, QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, xiiStringView sToolBarMapping) :
+  ads::CDockWidget(pDockManager, "3D View", pParent)
 {
   setObjectName("xiiQtViewWidgetContainer");
 

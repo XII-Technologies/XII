@@ -9,8 +9,8 @@
 
 xiiQtGlobalEventsWidget* xiiQtGlobalEventsWidget::s_pWidget = nullptr;
 
-xiiQtGlobalEventsWidget::xiiQtGlobalEventsWidget(QWidget* pParent) :
-  ads::CDockWidget("Global Events", pParent)
+xiiQtGlobalEventsWidget::xiiQtGlobalEventsWidget(ads::CDockManager* pDockManager, QWidget* pParent) :
+  ads::CDockWidget(pDockManager, "Global Events", pParent)
 {
   s_pWidget = this;
 

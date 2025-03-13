@@ -63,8 +63,8 @@ bool xiiQtAssetCuratorFilter::IsAssetFiltered(xiiStringView sDataDirParentRelati
 
 XII_IMPLEMENT_SINGLETON(xiiQtAssetCuratorPanel);
 
-xiiQtAssetCuratorPanel::xiiQtAssetCuratorPanel() :
-  xiiQtApplicationPanel("Panel.AssetCurator"), m_SingletonRegistrar(this)
+xiiQtAssetCuratorPanel::xiiQtAssetCuratorPanel(ads::CDockManager* pDockManager) :
+  xiiQtApplicationPanel(pDockManager, "Panel.AssetCurator"), m_SingletonRegistrar(this)
 {
   QWidget* pDummy = new QWidget();
   setupUi(pDummy);

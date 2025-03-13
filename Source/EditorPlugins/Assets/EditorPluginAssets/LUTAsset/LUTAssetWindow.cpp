@@ -70,7 +70,7 @@ xiiQtLUTAssetDocumentWindow::xiiQtLUTAssetDocumentWindow(xiiLUTAssetDocument* pD
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("LUTAssetDockWidget");
     pPropertyPanel->setWindowTitle("LUT Properties");
     pPropertyPanel->show();

@@ -33,7 +33,7 @@ xiiQtCollectionAssetDocumentWindow::xiiQtCollectionAssetDocumentWindow(xiiDocume
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("CollectionAssetDockWidget");
     pPropertyPanel->setWindowTitle("Collection Properties");
     pPropertyPanel->show();

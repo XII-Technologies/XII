@@ -30,7 +30,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtAssetCuratorPanel : public xiiQtApplicationPa
   XII_DECLARE_SINGLETON(xiiQtAssetCuratorPanel);
 
 public:
-  xiiQtAssetCuratorPanel();
+  xiiQtAssetCuratorPanel(ads::CDockManager* pDockManager);
   ~xiiQtAssetCuratorPanel();
 
 public Q_SLOTS:

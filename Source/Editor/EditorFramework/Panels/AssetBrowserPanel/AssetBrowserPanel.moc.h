@@ -18,7 +18,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserPanel : public xiiQtApplicationPa
   XII_DECLARE_SINGLETON(xiiQtAssetBrowserPanel);
 
 public:
-  xiiQtAssetBrowserPanel();
+  xiiQtAssetBrowserPanel(ads::CDockManager* pDockManager);
   ~xiiQtAssetBrowserPanel();
 
   const xiiUuid& GetLastSelectedAsset() const { return m_LastSelected; }

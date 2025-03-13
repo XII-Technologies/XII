@@ -48,13 +48,13 @@ xiiQtSkeletonAssetDocumentWindow::xiiQtSkeletonAssetDocumentWindow(xiiSkeletonAs
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig, true);
     m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(5.0f), xiiVec3(5, -2, 3), 2.0f);
     AddViewWidget(m_pViewWidget);
-    pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "SkeletonAssetViewToolBar");
+    pContainer = new xiiQtViewWidgetContainer(GetContainerWindow()->GetDockManager(), this, m_pViewWidget, "SkeletonAssetViewToolBar");
     m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("SkeletonAssetDockWidget");
     pPropertyPanel->setWindowTitle("Skeleton Properties");
     pPropertyPanel->show();
@@ -79,7 +79,7 @@ xiiQtSkeletonAssetDocumentWindow::xiiQtSkeletonAssetDocumentWindow(xiiSkeletonAs
 
   // Tree View
   {
-    xiiQtDocumentPanel* pPanelTree = new xiiQtSkeletonPanel(this, static_cast<xiiSkeletonAssetDocument*>(pDocument));
+    xiiQtDocumentPanel* pPanelTree = new xiiQtSkeletonPanel(GetContainerWindow()->GetDockManager(), this, static_cast<xiiSkeletonAssetDocument*>(pDocument));
     pPanelTree->show();
 
     m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pPanelTree);

@@ -11,7 +11,7 @@ class xiiQtLayerPanel : public xiiQtDocumentPanel
   Q_OBJECT
 
 public:
-  xiiQtLayerPanel(QWidget* pParent, xiiScene2Document* pDocument);
+  xiiQtLayerPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiScene2Document* pDocument);
   ~xiiQtLayerPanel();
 
 private Q_SLOTS:

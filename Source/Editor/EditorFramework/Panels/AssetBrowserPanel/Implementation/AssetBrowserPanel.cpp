@@ -6,8 +6,8 @@
 
 XII_IMPLEMENT_SINGLETON(xiiQtAssetBrowserPanel);
 
-xiiQtAssetBrowserPanel::xiiQtAssetBrowserPanel() :
-  xiiQtApplicationPanel("Panel.AssetBrowser"), m_SingletonRegistrar(this)
+xiiQtAssetBrowserPanel::xiiQtAssetBrowserPanel(ads::CDockManager* pDockManager) :
+  xiiQtApplicationPanel(pDockManager, "Panel.AssetBrowser"), m_SingletonRegistrar(this)
 {
   setFeature(ads::CDockWidget::DockWidgetClosable, false);
 

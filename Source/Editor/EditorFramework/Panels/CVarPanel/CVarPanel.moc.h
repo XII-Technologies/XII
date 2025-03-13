@@ -17,7 +17,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtCVarPanel : public xiiQtApplicationPanel
   XII_DECLARE_SINGLETON(xiiQtCVarPanel);
 
 public:
-  xiiQtCVarPanel();
+  xiiQtCVarPanel(ads::CDockManager* pDockManager);
   ~xiiQtCVarPanel();
 
 protected:

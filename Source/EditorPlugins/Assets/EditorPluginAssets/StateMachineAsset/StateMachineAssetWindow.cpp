@@ -45,7 +45,7 @@ xiiQtStateMachineAssetDocumentWindow::xiiQtStateMachineAssetDocumentWindow(xiiDo
     m_pView = new xiiQtNodeView(this);
     m_pView->SetScene(m_pScene);
 
-    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pCentral->setObjectName("StateMachineView");
     pCentral->setWindowTitle("State Machine");
     pCentral->setWidget(m_pView);
@@ -54,7 +54,7 @@ xiiQtStateMachineAssetDocumentWindow::xiiQtStateMachineAssetDocumentWindow(xiiDo
   }
 
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("StateMachineAssetDockWidget");
     pPropertyPanel->setWindowTitle("Properties");
     pPropertyPanel->show();

@@ -13,7 +13,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtGlobalEventsWidget(QWidget* pParent = 0);
+  xiiQtGlobalEventsWidget(ads::CDockManager* pDockManager, QWidget* pParent = nullptr);
 
   static xiiQtGlobalEventsWidget* s_pWidget;
 

@@ -50,13 +50,13 @@ xiiQtMeshAssetDocumentWindow::xiiQtMeshAssetDocumentWindow(xiiMeshAssetDocument*
     m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(5.0f), xiiVec3(5, -2, 3), 2.0f);
     AddViewWidget(m_pViewWidget);
 
-    pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "MeshAssetViewToolBar");
+    pContainer = new xiiQtViewWidgetContainer(GetContainerWindow()->GetDockManager(), this, m_pViewWidget, "MeshAssetViewToolBar");
     m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
   {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPropertyPanel->setObjectName("MeshAssetDockWidget");
     pPropertyPanel->setWindowTitle("Mesh Properties");
 

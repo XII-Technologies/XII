@@ -11,8 +11,8 @@
 
 xiiQtMainWidget* xiiQtMainWidget::s_pWidget = nullptr;
 
-xiiQtMainWidget::xiiQtMainWidget(QWidget* pParent) :
-  ads::CDockWidget("Main", pParent)
+xiiQtMainWidget::xiiQtMainWidget(ads::CDockManager* pDockManager, QWidget* pParent) :
+  ads::CDockWidget(pDockManager, "Main", pParent)
 {
   s_pWidget = this;
 

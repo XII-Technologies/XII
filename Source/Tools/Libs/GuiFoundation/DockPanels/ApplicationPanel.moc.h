@@ -8,6 +8,11 @@
 
 class xiiQtContainerWindow;
 
+namespace ads
+{
+  class CDockManager;
+}
+
 /// \brief Base class for all panels that are supposed to be application wide (not tied to some document).
 class XII_GUIFOUNDATION_DLL xiiQtApplicationPanel : public ads::CDockWidget
 {
@@ -15,7 +20,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtApplicationPanel(xiiStringView sPanelName);
+  xiiQtApplicationPanel(ads::CDockManager* pDockManager, xiiStringView sPanelName);
   ~xiiQtApplicationPanel();
 
   void EnsureVisible();
@@ -31,6 +36,7 @@ private:
 
   static xiiDynamicArray<xiiQtApplicationPanel*> s_AllApplicationPanels;
 
-  xiiQtContainerWindow* m_pContainerWindow;
+  xiiQtContainerWindow* m_pContainerWindow = nullptr;
 };
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_GUIFOUNDATION_DLL, xiiQtApplicationPanel);
