@@ -35,7 +35,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiGreyBoxComponent, 5, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("SlopedTop", GetSlopedTop, SetSlopedTop),
     XII_ACCESSOR_PROPERTY("SlopedBottom", GetSlopedBottom, SetSlopedBottom),
     XII_ACCESSOR_PROPERTY("GenerateCollision", GetGenerateCollision, SetGenerateCollision)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_ACCESSOR_PROPERTY("IncludeInNavmesh", GetIncludeInNavmesh, SetIncludeInNavmesh)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("UseAsOccluder", m_bUseAsOccluder)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
   XII_END_PROPERTIES;
@@ -85,8 +84,9 @@ void xiiGreyBoxComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_Color;
 
   // Version 4
+  bool bIncludeInNavmesh = true; // unused
   s << m_bGenerateCollision;
-  s << m_bIncludeInNavmesh;
+  s << bIncludeInNavmesh;
 
   // Version 5
   s << m_bUseAsOccluder;
@@ -123,8 +123,9 @@ void xiiGreyBoxComponent::DeserializeComponent(xiiWorldReader& stream)
 
   if (uiVersion >= 4)
   {
+    bool bIncludeInNavmesh = true; // unused
     s >> m_bGenerateCollision;
-    s >> m_bIncludeInNavmesh;
+    s >> bIncludeInNavmesh;
   }
 
   if (uiVersion >= 5)
@@ -291,11 +292,6 @@ void xiiGreyBoxComponent::SetGenerateCollision(bool b)
   m_bGenerateCollision = b;
 }
 
-void xiiGreyBoxComponent::SetIncludeInNavmesh(bool b)
-{
-  m_bIncludeInNavmesh = b;
-}
-
 void xiiGreyBoxComponent::OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) const
 {
   if (!m_bGenerateCollision)
@@ -361,9 +357,6 @@ void xiiGreyBoxComponent::OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) const
 void xiiGreyBoxComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const
 {
   if (msg.m_Mode == xiiWorldGeoExtractionUtil::ExtractionMode::CollisionMesh && (m_bGenerateCollision == false || GetOwner()->IsDynamic()))
-    return;
-
-  if (msg.m_Mode == xiiWorldGeoExtractionUtil::ExtractionMode::NavMeshGeneration && (m_bIncludeInNavmesh == false || GetOwner()->IsDynamic()))
     return;
 
   msg.AddMeshObject(GetOwner()->GetGlobalTransform(), GenerateMesh<xiiCpuMeshResource>());

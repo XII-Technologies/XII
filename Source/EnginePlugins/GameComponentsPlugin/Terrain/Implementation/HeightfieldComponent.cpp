@@ -28,7 +28,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiHeightfieldComponent, 2, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("TexCoordScale", GetTexCoordScale, SetTexCoordScale)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2(1))),
     XII_ACCESSOR_PROPERTY("GenerateCollision", GetGenerateCollision, SetGenerateCollision)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("ColMeshTesselation", GetColMeshTesselation, SetColMeshTesselation)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2U32(64))),
-    XII_ACCESSOR_PROPERTY("IncludeInNavmesh", GetIncludeInNavmesh, SetIncludeInNavmesh)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -83,8 +82,9 @@ void xiiHeightfieldComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_vColMeshTesselation;
 
   // Version 2
+  bool bIncludeInNavmesh = true; // unused
   s << m_bGenerateCollision;
-  s << m_bIncludeInNavmesh;
+  s << bIncludeInNavmesh;
 }
 
 void xiiHeightfieldComponent::DeserializeComponent(xiiWorldReader& stream)
@@ -104,8 +104,9 @@ void xiiHeightfieldComponent::DeserializeComponent(xiiWorldReader& stream)
 
   if (uiVersion >= 2)
   {
+    bool bIncludeInNavmesh = true;
     s >> m_bGenerateCollision;
-    s >> m_bIncludeInNavmesh;
+    s >> bIncludeInNavmesh;
   }
 }
 
@@ -213,11 +214,6 @@ void xiiHeightfieldComponent::SetColMeshTesselation(xiiVec2U32 value)
   // don't invalidate the render mesh
 }
 
-void xiiHeightfieldComponent::SetIncludeInNavmesh(bool b)
-{
-  m_bIncludeInNavmesh = b;
-}
-
 void xiiHeightfieldComponent::OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) const
 {
   if (!m_bGenerateCollision)
@@ -294,9 +290,6 @@ void xiiHeightfieldComponent::OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) cons
 void xiiHeightfieldComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const
 {
   if (msg.m_Mode == xiiWorldGeoExtractionUtil::ExtractionMode::CollisionMesh && (m_bGenerateCollision == false || GetOwner()->IsDynamic()))
-    return;
-
-  if (msg.m_Mode == xiiWorldGeoExtractionUtil::ExtractionMode::NavMeshGeneration && (m_bIncludeInNavmesh == false || GetOwner()->IsDynamic()))
     return;
 
   msg.AddMeshObject(GetOwner()->GetGlobalTransform(), GenerateMesh<xiiCpuMeshResource>());

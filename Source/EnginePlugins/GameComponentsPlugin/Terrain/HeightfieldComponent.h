@@ -96,9 +96,6 @@ public:
   xiiVec2U32 GetColMeshTesselation() const { return m_vColMeshTesselation; } // [ property ]
   void       SetColMeshTesselation(xiiVec2U32 value);                        // [ property ]
 
-  void SetIncludeInNavmesh(bool b);                                // [ property ]
-  bool GetIncludeInNavmesh() const { return m_bIncludeInNavmesh; } // [ property ]
-
 protected:
   void OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) const;    // [ msg handler ]
   void OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const; // [ msg handler ]
@@ -124,7 +121,6 @@ protected:
   xiiVec2U32 m_vColMeshTesselation = xiiVec2U32(64);
 
   bool m_bGenerateCollision = true;
-  bool m_bIncludeInNavmesh  = true;
 
   xiiMeshResourceHandle m_hMesh;
 };

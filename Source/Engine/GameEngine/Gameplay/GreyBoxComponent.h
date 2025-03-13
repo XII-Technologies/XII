@@ -96,9 +96,6 @@ public:
   void SetGenerateCollision(bool b);                                 // [ property ]
   bool GetGenerateCollision() const { return m_bGenerateCollision; } // [ property ]
 
-  void SetIncludeInNavmesh(bool b);                                // [ property ]
-  bool GetIncludeInNavmesh() const { return m_bIncludeInNavmesh; } // [ property ]
-
   void                      SetMaterial(const xiiMaterialResourceHandle& hMaterial) { m_hMaterial = hMaterial; }
   xiiMaterialResourceHandle GetMaterial() const { return m_hMaterial; }
 
@@ -122,7 +119,6 @@ protected:
   bool                      m_bSlopedTop         = false;
   bool                      m_bSlopedBottom      = false;
   bool                      m_bGenerateCollision = true;
-  bool                      m_bIncludeInNavmesh  = true;
   bool                      m_bUseAsOccluder     = true;
 
   void InvalidateMesh();
