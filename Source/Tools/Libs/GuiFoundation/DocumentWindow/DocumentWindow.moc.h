@@ -107,7 +107,7 @@ private Q_SLOTS:
 
 private:
   void SaveWindowLayout();
-  void RestoreWindowLayout();
+  void RestoreWindowLayout(bool bForce);
   void DisableWindowLayoutSaving();
 
   void ShutdownDocumentWindow();
