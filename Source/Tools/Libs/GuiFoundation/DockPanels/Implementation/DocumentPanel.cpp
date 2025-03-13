@@ -3,8 +3,8 @@
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/DockPanels/DocumentPanel.moc.h>
 
-xiiQtDocumentPanel::xiiQtDocumentPanel(QWidget* pParent, xiiDocument* pDocument) :
-  ads::CDockWidget("xiiQtDocumentPanel", pParent)
+xiiQtDocumentPanel::xiiQtDocumentPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiDocument* pDocument) :
+  ads::CDockWidget(pDockManager, "xiiQtDocumentPanel", pParent)
 {
   m_pDocument = pDocument;
 

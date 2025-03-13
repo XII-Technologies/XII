@@ -14,8 +14,8 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 xiiDynamicArray<xiiQtApplicationPanel*> xiiQtApplicationPanel::s_AllApplicationPanels;
 
-xiiQtApplicationPanel::xiiQtApplicationPanel(xiiStringView sPanelName) :
-  ads::CDockWidget(xiiMakeQString(sPanelName), xiiQtContainerWindow::GetContainerWindow())
+xiiQtApplicationPanel::xiiQtApplicationPanel(ads::CDockManager* pDockManager, xiiStringView sPanelName) :
+  ads::CDockWidget(pDockManager, xiiMakeQString(sPanelName), xiiQtContainerWindow::GetContainerWindow())
 {
   xiiStringBuilder sPanel("AppPanel_", sPanelName);
 
