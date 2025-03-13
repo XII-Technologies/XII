@@ -18,7 +18,7 @@ xiiQtGameObjectAdapter::xiiQtGameObjectAdapter(xiiDocumentObjectManager* pObject
   if (!m_pGameObjectMetaData)
     m_pGameObjectMetaData = m_pGameObjectDocument->m_GameObjectMetaData.Borrow();
 
-  m_GameObjectMetaDataSubscription = m_pGameObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectAdapter::GameObjectMetaDataEventHandler, this));
+  m_GameObjectMetaDataSubscription     = m_pGameObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectAdapter::GameObjectMetaDataEventHandler, this));
   m_DocumentObjectMetaDataSubscription = m_pObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectAdapter::DocumentObjectMetaDataEventHandler, this));
 }
 
@@ -123,15 +123,24 @@ QVariant xiiQtGameObjectAdapter::data(const xiiDocumentObject* pObject, int iRow
       const bool bPrefab = pMeta->m_CreateFromPrefab.IsValid();
       m_pObjectMetaData->EndReadMetaData();
 
+      bool bActive = pObject->GetTypeAccessor().GetValue("Active").ConvertTo<bool>();
+
+      const QPalette palette        = QApplication::palette();
+      const QColor   qtDefaultColor = palette.color(QPalette::Text);
+
+      xiiColor color = qtToXIIColor(qtDefaultColor);
+
       if (bPrefab)
       {
-        return xiiToQtColor(xiiColorScheme::LightUI(xiiColorScheme::Blue));
+        color = xiiColorScheme::LightUI(xiiColorScheme::Blue);
       }
 
-      if (sName.IsEmpty())
+      if (!bActive)
       {
-        return QVariant();
+        return xiiToQtColor(color.GetDarker(1.85f));
       }
+
+      return xiiToQtColor(color);
     }
     break;
 
