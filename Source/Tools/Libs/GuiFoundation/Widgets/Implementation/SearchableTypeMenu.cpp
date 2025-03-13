@@ -80,7 +80,7 @@ void xiiQtTypeMenu::OnMenuAction(const xiiRTTI* pRtti)
 
   if (s_pRecentList && !s_pRecentList->Contains(pRtti->GetTypeName()))
   {
-    if (s_pRecentList->GetCount() > 8)
+    if (s_pRecentList->GetCount() > 32)
     {
       s_pRecentList->RemoveAtAndCopy(0);
     }
@@ -154,11 +154,16 @@ void xiiQtTypeMenu::FillMenu(QMenu* pMenu, const xiiRTTI* pBaseType, bool bDeriv
     {
       xiiStringBuilder sInternalPath, sDisplayName;
 
+      xiiInt32 iToAdd = 8;
+
       for (auto& sTypeName : *s_pRecentList)
       {
         const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sTypeName);
 
         if (pRtti == nullptr)
+          continue;
+
+        if (!pRtti->IsDerivedFrom(pBaseType))
           continue;
 
         sIconName.Set(":/TypeIcons/", pRtti->GetTypeName(), ".svg");
@@ -184,6 +189,9 @@ void xiiQtTypeMenu::FillMenu(QMenu* pMenu, const xiiRTTI* pBaseType, bool bDeriv
         const QIcon actionIcon = xiiQtUiServices::GetCachedIconResource(sIconName.GetData(), iconColor);
 
         m_pSearchableMenu->AddItem(sDisplayName, sInternalPath, QVariant::fromValue((void*)pRtti), actionIcon);
+
+        if (--iToAdd <= 0)
+          break;
       }
     }
   }
