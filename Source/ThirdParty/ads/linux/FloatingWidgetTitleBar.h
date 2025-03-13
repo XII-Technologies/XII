@@ -48,16 +48,16 @@ struct FloatingWidgetTitleBarPrivate;
  */
 class CFloatingWidgetTitleBar : public QFrame
 {
-	Q_OBJECT
+  Q_OBJECT
     Q_PROPERTY(QIcon maximizeIcon READ maximizeIcon WRITE setMaximizeIcon)
     Q_PROPERTY(QIcon normalIcon READ normalIcon WRITE setNormalIcon)
 private:
-	FloatingWidgetTitleBarPrivate *d; ///< private data (pimpl)
+  FloatingWidgetTitleBarPrivate *d; ///< private data (pimpl)
 
 protected:
-	virtual void mousePressEvent(QMouseEvent *ev) override;
-	virtual void mouseReleaseEvent(QMouseEvent *ev) override;
-	virtual void mouseMoveEvent(QMouseEvent *ev) override;
+  virtual void mousePressEvent(QMouseEvent *ev) override;
+  virtual void mouseReleaseEvent(QMouseEvent *ev) override;
+  virtual void mouseMoveEvent(QMouseEvent *ev) override;
     virtual void mouseDoubleClickEvent(QMouseEvent *event) override;
 
     void setMaximizeIcon(const QIcon& Icon);
@@ -66,39 +66,39 @@ protected:
     QIcon normalIcon() const;
 
 public:
-	using Super = QWidget;
-	explicit CFloatingWidgetTitleBar(CFloatingDockContainer *parent = nullptr);
+  using Super = QWidget;
+  explicit CFloatingWidgetTitleBar(CFloatingDockContainer *parent = nullptr);
 
-	/**
-	 * Virtual Destructor
-	 */
-	virtual ~CFloatingWidgetTitleBar();
+  /**
+   * Virtual Destructor
+   */
+  virtual ~CFloatingWidgetTitleBar();
 
-	/**
-	 * Enables / disables the window close button.
-	 */
-	void enableCloseButton(bool Enable);
+  /**
+   * Enables / disables the window close button.
+   */
+  void enableCloseButton(bool Enable);
 
-	/**
-	 * Sets the window title, that means, the text of the internal tile label.
-	 */
-	void setTitle(const QString &Text);
+  /**
+   * Sets the window title, that means, the text of the internal tile label.
+   */
+  void setTitle(const QString &Text);
 
     /**
      * Update stylesheet style if a property changes
      */
     void updateStyle();
 
-	/**
-	 * Change the maximize button icon according to current windows state
-	 */
+  /**
+   * Change the maximize button icon according to current windows state
+   */
     void setMaximizedIcon(bool maximized);
 
 signals:
-	/**
-	 * This signal is emitted, if the close button is clicked.
-	 */
-	void closeRequested();
+  /**
+   * This signal is emitted, if the close button is clicked.
+   */
+  void closeRequested();
 
     /**
     * This signal is emitted, if the maximize button is clicked.

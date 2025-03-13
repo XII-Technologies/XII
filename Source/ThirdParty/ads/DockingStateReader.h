@@ -21,20 +21,20 @@ namespace ads
 class CDockingStateReader : public QXmlStreamReader
 {
 private:
-	int m_FileVersion;
+  int m_FileVersion;
 
 public:
-	using QXmlStreamReader::QXmlStreamReader;
+  using QXmlStreamReader::QXmlStreamReader;
 
-	/**
-	 * Set the file version for this state reader
-	 */
-	void setFileVersion(int FileVersion);
+  /**
+   * Set the file version for this state reader
+   */
+  void setFileVersion(int FileVersion);
 
-	/**
-	 * Returns the file version set via setFileVersion
-	 */
-	int fileVersion() const;
+  /**
+   * Returns the file version set via setFileVersion
+   */
+  int fileVersion() const;
 };
 
 } // namespace ads

@@ -179,8 +179,8 @@ public:
 
     enum eToolBarStyleSource
     {
-    	ToolBarStyleFromDockManager,
-    	ToolBarStyleFromDockWidget
+      ToolBarStyleFromDockManager,
+      ToolBarStyleFromDockWidget
     };
 
     /**
@@ -222,10 +222,10 @@ public:
      */
     enum eMinimumSizeHintMode
     {
-    	MinimumSizeHintFromDockWidget,
-    	MinimumSizeHintFromContent,
-    	MinimumSizeHintFromDockWidgetMinimumSize,
-    	MinimumSizeHintFromContentMinimumSize,
+      MinimumSizeHintFromDockWidget,
+      MinimumSizeHintFromContent,
+      MinimumSizeHintFromDockWidgetMinimumSize,
+      MinimumSizeHintFromContentMinimumSize,
     };
 
 
@@ -256,8 +256,35 @@ public:
      * during runtime, you need to set a unique object name explicitly
      * by calling setObjectName() after construction.
      * Use the layoutFlags to configure the layout of the dock widget.
+     * \note If you would like to use custom TabWidget implementations, you need
+     * to use the constructor with the CDockManager argument.
      */
-    CDockWidget(const QString &title, QWidget* parent = nullptr);
+    Q_DECL_DEPRECATED explicit CDockWidget(const QString &title, QWidget* parent = nullptr);
+
+    /**
+     * This constructor creates a dock widget for the given dock manager with the
+     * provided title.
+     *
+     * @param manager Pointer to the dock manager that owns the dock widget.
+     * @param title The title is the text that is shown in the window title when
+     * the dock widget is floating and it is the title that is shown in the
+     * titlebar or the tab of this dock widget if it is tabified.
+     * @param parent Pointer to the parent widget, defaults to nullptr.
+     *
+     * @note The object name of the dock widget is also set to the title. The
+     * object name is required by the dock manager to properly save and restore
+     * the state of the dock widget. That means, the title needs to be unique. If
+     * the title is not unique or if you would like to change the title during
+     * runtime, you need to set a unique object name explicitly by calling
+     * setObjectName() after construction. Use the layoutFlags to configure the
+     * layout of the dock widget.
+     *
+     * @note this constructor is preferred over the two argument version, especially
+     * when custom factories are in use. Indeed, it will use the Dock Manager factory,
+     * and not the default factory. For this reason, the original constructor should
+     * be deprecated in favour of this version.
+     */
+    CDockWidget(CDockManager *manager, const QString &title, QWidget* parent = nullptr);
 
     /**
      * Virtual Destructor
@@ -288,19 +315,19 @@ public:
      * provide the InsertMode ForceNoScrollArea
      */
     void setWidget(QWidget* widget, eInsertMode InsertMode = AutoScrollArea);
-	
-	/**
-	 * Only used when the feature flag DeleteContentOnClose is set.
-	 * Using the flag and setting a widget factory allows to free the resources
-	 * of the widget of your application while retaining the position the next
-	 * time you want to show your widget, unlike the flag DockWidgetDeleteOnClose
-	 * which deletes the dock widget itself. Since we keep the dock widget, all
-	 * regular features of ADS should work as normal, including saving and
-	 * restoring the state of the docking system and using perspectives.
-	 */
-	using FactoryFunc = std::function<QWidget*(QWidget*)>;
-	void setWidgetFactory(FactoryFunc createWidget, eInsertMode InsertMode = AutoScrollArea);
-	
+
+  /**
+   * Only used when the feature flag DeleteContentOnClose is set.
+   * Using the flag and setting a widget factory allows to free the resources
+   * of the widget of your application while retaining the position the next
+   * time you want to show your widget, unlike the flag DockWidgetDeleteOnClose
+   * which deletes the dock widget itself. Since we keep the dock widget, all
+   * regular features of ADS should work as normal, including saving and
+   * restoring the state of the docking system and using perspectives.
+   */
+  using FactoryFunc = std::function<QWidget*(QWidget*)>;
+  void setWidgetFactory(FactoryFunc createWidget, eInsertMode InsertMode = AutoScrollArea);
+
     /**
      * Remove the widget from the dock and give ownership back to the caller
      */
@@ -595,9 +622,9 @@ public Q_SLOTS:
     /**
      * Brings the dock widget to the front
      * This means:
-     * 	- If the dock widget is tabbed with other dock widgets but its tab is not current, it's made current.
-     * 	- If the dock widget is floating, QWindow::raise() is called.
-     * 	This only applies if the dock widget is already open. If closed, does nothing.
+     *   - If the dock widget is tabbed with other dock widgets but its tab is not current, it's made current.
+     *   - If the dock widget is floating, QWindow::raise() is called.
+     *   This only applies if the dock widget is already open. If closed, does nothing.
      */
     void raise();
 
@@ -646,17 +673,17 @@ public Q_SLOTS:
      */
     void showNormal();
 
-	/**
-	 * Sets the dock widget into auto hide mode if this feature is enabled
-	 * via CDockManager::setAutoHideFlags(CDockManager::AutoHideFeatureEnabled)
-	 */
-	void setAutoHide(bool Enable, SideBarLocation Location = SideBarNone, int TabIndex = -1);
+  /**
+   * Sets the dock widget into auto hide mode if this feature is enabled
+   * via CDockManager::setAutoHideFlags(CDockManager::AutoHideFeatureEnabled)
+   */
+  void setAutoHide(bool Enable, SideBarLocation Location = SideBarNone, int TabIndex = -1);
 
-	/**
-	 * Switches the dock widget to auto hide mode or vice versa depending on its
-	 * current state.
-	 */
-	void toggleAutoHide(SideBarLocation Location = SideBarNone);
+  /**
+   * Switches the dock widget to auto hide mode or vice versa depending on its
+   * current state.
+   */
+  void toggleAutoHide(SideBarLocation Location = SideBarNone);
 
 
 Q_SIGNALS:
