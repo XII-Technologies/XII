@@ -26,11 +26,15 @@ public:
   xiiSet<xiiString> m_Outputs; ///< Additional output this asset produces besides the default one. These are tags like VISUAL_SHADER that are resolved
                                ///< by the xiiAssetDocumentManager into paths.
   xiiHashedString                     m_sAssetsDocumentTypeName;
+  xiiString                           m_sAssetsDocumentTags;
   xiiDynamicArray<xiiReflectedClass*> m_MetaInfo; ///< Holds arbitrary objects that store meta-data for the asset document. Mainly used for exposed parameters, but can be any reflected
                                                   ///< type. This array takes ownership of all objects and deallocates them on shutdown.
 
   const char* GetAssetsDocumentTypeName() const;
   void        SetAssetsDocumentTypeName(const char* szSz);
+
+  const xiiString& GetAssetsDocumentTags() const;
+  void             SetAssetsDocumentTags(const xiiString& sTags);
 
   /// \brief Returns an object from m_MetaInfo of the given base type, or nullptr if none exists
   const xiiReflectedClass* GetMetaInfo(const xiiRTTI* pType) const;

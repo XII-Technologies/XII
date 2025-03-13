@@ -146,10 +146,7 @@ public:
   virtual void DestroyAllObjects();
   virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const {};
 
-  /// \brief Allows to annotate types with a category (group), such that things like creator menus can use this to present the types in a more user
-  /// friendly way
-  virtual xiiStringView GetTypeCategory(const xiiRTTI* pRtti) const { return {}; }
-  void                  PatchEmbeddedClassObjects(const xiiDocumentObject* pObject) const;
+  void PatchEmbeddedClassObjects(const xiiDocumentObject* pObject) const;
 
   const xiiDocumentObject* GetRootObject() const { return &m_pObjectStorage->m_RootObject; }
   xiiDocumentObject*       GetRootObject() { return &m_pObjectStorage->m_RootObject; }
@@ -196,7 +193,7 @@ private:
     return xiiStatus(XII_SUCCESS);
   };
   virtual xiiStatus InternalCanRemove(const xiiDocumentObject* pObject) const { return xiiStatus(XII_SUCCESS); };
-  virtual xiiStatus InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView szParentProperty, const xiiVariant& index) const
+  virtual xiiStatus InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const
   {
     return xiiStatus(XII_SUCCESS);
   };

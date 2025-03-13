@@ -28,10 +28,10 @@ struct XII_GAMEENGINE_DLL xiiFollowPathMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiFollowPathMode)
 
-/// \brief This component makes the xiiGameObject, that it is attached to, move along a path defined by an xiiPathComponent.
+/// \brief This component makes the xiiGameObject, that it is attached to, move along a path defined by a xiiPathComponent.
 ///
-/// Build a path using an xiiPathComponent and xiiPathNodeComponents.
-/// Then attach an xiiFollowPathComponent to a free-standing xiiGameObject and reference the object with the xiiPathComponent in it.
+/// Build a path using a xiiPathComponent and xiiPathNodeComponents.
+/// Then attach a xiiFollowPathComponent to a free-standing xiiGameObject and reference the object with the xiiPathComponent in it.
 ///
 /// During simulation the xiiFollowPathComponent will now move and rotate its owner object such that it moves along the path.
 ///
@@ -40,7 +40,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiFollowPathMode)
 ///
 /// One option is to align the 'hook' perfectly with the start location.
 /// You can achieve this, using the "Keep Simulation Changes" feature of the editor (simulate with zero speed, press K, stop simulation).
-/// Another option is to instead delay the spawning of the object below the hook, by using an xiiSpawnComponent next to the xiiFollowPathComponent,
+/// Another option is to instead delay the spawning of the object below the hook, by using a xiiSpawnComponent next to the xiiFollowPathComponent,
 /// and thus have the payload spawn only after the hook has been placed properly.
 class XII_GAMEENGINE_DLL xiiFollowPathComponent : public xiiComponent
 {
@@ -64,7 +64,7 @@ public:
   xiiFollowPathComponent();
   ~xiiFollowPathComponent();
 
-  /// \brief Sets the reference to the game object on which an xiiPathComponent should be attached.
+  /// \brief Sets the reference to the game object on which a xiiPathComponent should be attached.
   void SetPathObject(const char* szReference); // [ property ]
 
   xiiEnum<xiiPropertyAnimMode> m_Mode;                                          ///< [ property ] How the path should be traversed.

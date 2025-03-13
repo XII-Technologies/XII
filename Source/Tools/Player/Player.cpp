@@ -1,23 +1,8 @@
 #include <Player/Player.h>
 
-#include <Core/Input/InputManager.h>
-#include <Core/World/World.h>
-#include <Core/WorldSerializer/WorldReader.h>
 #include <Foundation/Configuration/Startup.h>
-#include <Foundation/IO/FileSystem/FileReader.h>
-#include <Foundation/IO/OSFile.h>
 #include <Foundation/Logging/Log.h>
-#include <Foundation/Threading/Lock.h>
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
-#include <GameEngine/Animation/RotorComponent.h>
-#include <GameEngine/Animation/SliderComponent.h>
-#include <GameEngine/Gameplay/InputComponent.h>
-#include <GameEngine/Gameplay/SpawnComponent.h>
-#include <GameEngine/Gameplay/TimedDeathComponent.h>
-#include <GraphicsCore/Components/CameraComponent.h>
-#include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Meshes/MeshComponent.h>
 
 // this injects the main function
 XII_APPLICATION_ENTRY_POINT(xiiPlayerApplication);
@@ -27,7 +12,7 @@ xiiCommandLineOptionString opt_Project("_Player", "-project", "Path to the proje
 xiiCommandLineOptionString opt_Scene("_Player", "-scene", "Path to a scene file.\nUsually given relative to the corresponding project data directory where it resides, but can also be given as an absolute path.", "");
 
 xiiPlayerApplication::xiiPlayerApplication() :
-  xiiGameApplication("xiiPlayer") // we don't have a fixed project path in this app, so we need to pass that in a bit later
+  xiiGameApplication("xiiPlayer", nullptr) // we don't have a fixed project path in this app, so we need to pass that in a bit later
 {
 }
 
@@ -67,16 +52,19 @@ void xiiPlayerApplication::AfterCoreSystemsStartup()
   // if no custom game state is available, xiiFallbackGameState will be used
   // the game state is also responsible for either creating a world, or loading it
   // the xiiFallbackGameState inspects the command line to figure out which scene to load
-  ActivateGameState(nullptr).AssertSuccess();
+  ActivateGameState(nullptr, {}, xiiTransform::MakeIdentity());
 }
 
 void xiiPlayerApplication::Run_InputUpdate()
 {
   SUPER::Run_InputUpdate();
 
-  if (GetActiveGameState() && GetActiveGameState()->WasQuitRequested())
+  if (auto pGameState = GetActiveGameState())
   {
-    RequestQuit();
+    if (pGameState->WasQuitRequested())
+    {
+      RequestQuit();
+    }
   }
 }
 
@@ -87,7 +75,7 @@ void xiiPlayerApplication::DetermineProjectPath()
 #if XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
   // We can't specify command line arguments on many platforms so the project must be defined by xiiFileserve.
   // xiiFileserve must be started with the project special dir set. For example:
-  // -specialdirs project ".../XII/Data/Samples/Testing Chambers
+  // -specialdirs project ".../XII/Data/Samples/SampleGame
 
   if (sProjectPath.IsEmpty())
   {

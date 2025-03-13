@@ -10,6 +10,8 @@
 #include <GraphicsCore/ShaderCompiler/PermutationGenerator.h>
 #include <GraphicsCore/ShaderCompiler/ShaderParser.h>
 
+class xiiRemoteMessage;
+
 /// \brief Shader compiler interface.
 /// Custom shader compiles need to derive from this class and implement the pure virtual interface functions. Instances are created via reflection so each implementation must be properly reflected.
 class XII_GRAPHICSCORE_DLL xiiShaderProgramCompiler : public xiiReflectedClass
@@ -46,6 +48,8 @@ private:
 
   bool PassThroughUnknownCommandCB(xiiStringView sCmd) { return sCmd == "version"; }
 
+  void ShaderCompileMsg(xiiRemoteMessage& msg);
+
   struct xiiShaderData
   {
     xiiString                             m_Platforms;
@@ -63,4 +67,7 @@ private:
   xiiShaderData         m_ShaderData;
 
   xiiSet<xiiString> m_IncludeFiles;
+
+  bool      m_bCompileShaderRemotely    = false;
+  xiiResult m_RemoteShaderCompileResult = XII_FAILURE;
 };

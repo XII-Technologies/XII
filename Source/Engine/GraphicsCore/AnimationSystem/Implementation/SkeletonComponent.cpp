@@ -16,7 +16,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonComponent, 5, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Skeleton", GetSkeletonFile, SetSkeletonFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skeleton")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skeleton")),
     XII_MEMBER_PROPERTY("VisualizeSkeleton", m_bVisualizeBones)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("VisualizeColliders", m_bVisualizeColliders),
     XII_MEMBER_PROPERTY("VisualizeJoints", m_bVisualizeJoints),
@@ -149,27 +149,6 @@ void xiiSkeletonComponent::OnActivated()
   m_MaxBounds = xiiBoundingBox::MakeInvalid();
   VisualizeSkeletonDefaultState();
 }
-
-void xiiSkeletonComponent::SetSkeletonFile(const char* szFile)
-{
-  xiiSkeletonResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiSkeletonResource>(szFile);
-  }
-
-  SetSkeleton(hResource);
-}
-
-const char* xiiSkeletonComponent::GetSkeletonFile() const
-{
-  if (!m_hSkeleton.IsValid())
-    return "";
-
-  return m_hSkeleton.GetResourceID();
-}
-
 
 void xiiSkeletonComponent::SetSkeleton(const xiiSkeletonResourceHandle& hResource)
 {

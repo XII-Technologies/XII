@@ -61,9 +61,9 @@ void xiiTranslateGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGiz
   {
     case xiiGizmoEvent::Type::BeginInteractions:
     {
-      const bool bDuplicate = QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier) && GetGizmoInterface()->CanDuplicateSelection();
+      const bool bDuplicate = (QApplication::keyboardModifiers() == Qt::KeyboardModifier::ControlModifier) && GetGizmoInterface()->CanDuplicateSelection();
 
-      // duplicate the object when shift is held while dragging the item
+      // duplicate the object when CTRL is held while dragging the item
       if (bDuplicate && (e.m_pGizmo == &m_TranslateGizmo || e.m_pGizmo->GetDynamicRTTI()->IsDerivedFrom<xiiOrthoGizmoContext>()))
       {
         m_bMergeTransactions = true;
@@ -179,41 +179,63 @@ void xiiTranslateGizmoEditTool::GetGridSettings(xiiGridSettingsMsgToEngine& ref_
   {
     ref_msg.m_vGridCenter = translateGizmo.GetStartPosition();
 
-    if (translateGizmo.GetTranslateMode() == xiiTranslateGizmo::TranslateMode::Axis)
-      ref_msg.m_vGridCenter = translateGizmo.GetTransformation().m_vPosition;
+    switch (translateGizmo.GetLastHandleInteraction())
+    {
+      case xiiTranslateGizmo::HandleInteraction::AxisX:
+        if (m_GridPlane == GridPlane::X)
+          ref_msg.m_vGridCenter = translateGizmo.GetTransformation().m_vPosition;
+        break;
+      case xiiTranslateGizmo::HandleInteraction::AxisY:
+        if (m_GridPlane == GridPlane::Y)
+          ref_msg.m_vGridCenter = translateGizmo.GetTransformation().m_vPosition;
+        break;
+      case xiiTranslateGizmo::HandleInteraction::AxisZ:
+        if (m_GridPlane == GridPlane::Z)
+          ref_msg.m_vGridCenter = translateGizmo.GetTransformation().m_vPosition;
+        break;
+      case xiiTranslateGizmo::HandleInteraction::PlaneX:
+        m_GridPlane = GridPlane::X;
+        break;
+      case xiiTranslateGizmo::HandleInteraction::PlaneY:
+        m_GridPlane = GridPlane::Y;
+        break;
+      case xiiTranslateGizmo::HandleInteraction::PlaneZ:
+        m_GridPlane = GridPlane::Z;
+        break;
+      case xiiTranslateGizmo::HandleInteraction::None:
+        break;
+    }
 
     if (pSceneDoc->GetGizmoWorldSpace())
     {
-      xiiSnapProvider::SnapTranslation(ref_msg.m_vGridCenter);
-
-      switch (translateGizmo.GetLastPlaneInteraction())
+      switch (m_GridPlane)
       {
-        case xiiTranslateGizmo::PlaneInteraction::PlaneX:
+        case GridPlane::X:
           ref_msg.m_vGridCenter.y = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.y, xiiSnapProvider::GetTranslationSnapValue() * 10);
           ref_msg.m_vGridCenter.z = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.z, xiiSnapProvider::GetTranslationSnapValue() * 10);
           break;
-        case xiiTranslateGizmo::PlaneInteraction::PlaneY:
+        case GridPlane::Y:
           ref_msg.m_vGridCenter.x = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.x, xiiSnapProvider::GetTranslationSnapValue() * 10);
           ref_msg.m_vGridCenter.z = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.z, xiiSnapProvider::GetTranslationSnapValue() * 10);
           break;
-        case xiiTranslateGizmo::PlaneInteraction::PlaneZ:
+        case GridPlane::Z:
           ref_msg.m_vGridCenter.x = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.x, xiiSnapProvider::GetTranslationSnapValue() * 10);
           ref_msg.m_vGridCenter.y = xiiMath::RoundToMultiple(ref_msg.m_vGridCenter.y, xiiSnapProvider::GetTranslationSnapValue() * 10);
           break;
       }
     }
 
-    switch (translateGizmo.GetLastPlaneInteraction())
+    switch (m_GridPlane)
     {
-      case xiiTranslateGizmo::PlaneInteraction::PlaneX:
+      case GridPlane::X:
         ref_msg.m_vGridTangent1 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(0, 1, 0);
         ref_msg.m_vGridTangent2 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(0, 0, 1);
         break;
-      case xiiTranslateGizmo::PlaneInteraction::PlaneY:
+      case GridPlane::Y:
         ref_msg.m_vGridTangent1 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(1, 0, 0);
         ref_msg.m_vGridTangent2 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(0, 0, 1);
         break;
-      case xiiTranslateGizmo::PlaneInteraction::PlaneZ:
+      case GridPlane::Z:
         ref_msg.m_vGridTangent1 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(1, 0, 0);
         ref_msg.m_vGridTangent2 = translateGizmo.GetTransformation().m_qRotation * xiiVec3(0, 1, 0);
         break;
@@ -260,9 +282,10 @@ void xiiRotateGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoE
   {
     case xiiGizmoEvent::Type::BeginInteractions:
     {
-      const bool bDuplicate = QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier) && GetGizmoInterface()->CanDuplicateSelection();
+      const bool bDuplicate =
+        QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier) && GetGizmoInterface()->CanDuplicateSelection();
 
-      // duplicate the object when shift is held while dragging the item
+      // duplicate the object when CTRL is held while dragging the item
       if (e.m_pGizmo == &m_RotateGizmo && bDuplicate)
       {
         m_bMergeTransactions = true;
@@ -302,15 +325,12 @@ void xiiRotateGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoE
 
         const xiiQuat qRotation = pOrtho->GetRotationResult();
 
-        // const xiiVec3 vPivot(0);
-
         for (xiiUInt32 sel = 0; sel < m_GizmoSelection.GetCount(); ++sel)
         {
           const auto& obj = m_GizmoSelection[sel];
 
           tNew             = obj.m_GlobalTransform;
           tNew.m_qRotation = qRotation * obj.m_GlobalTransform.m_qRotation;
-          // tNew.m_vPosition = vPivot + qRotation * (obj.m_GlobalTransform.m_vPosition - vPivot);
 
           pDocument->SetGlobalTransform(obj.m_pObject, tNew, TransformationChanges::Rotation);
         }
@@ -394,7 +414,7 @@ void xiiScaleGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoEv
             const auto& obj       = m_GizmoSelection[sel];
             float       fNewScale = obj.m_fLocalUniformScaling * vScale.x;
 
-            if (pAccessor->SetValue(obj.m_pObject, "LocalUniformScaling", fNewScale).m_Result.Failed())
+            if (pAccessor->SetValueByName(obj.m_pObject, "LocalUniformScaling", fNewScale).m_Result.Failed())
             {
               bCancel = true;
               break;
@@ -408,7 +428,7 @@ void xiiScaleGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoEv
             const auto& obj       = m_GizmoSelection[sel];
             xiiVec3     vNewScale = obj.m_vLocalScaling.CompMul(vScale);
 
-            if (pAccessor->SetValue(obj.m_pObject, "LocalScaling", vNewScale).m_Result.Failed())
+            if (pAccessor->SetValueByName(obj.m_pObject, "LocalScaling", vNewScale).m_Result.Failed())
             {
               bCancel = true;
               break;
@@ -427,7 +447,7 @@ void xiiScaleGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoEv
           const auto& obj       = m_GizmoSelection[sel];
           const float fNewScale = obj.m_fLocalUniformScaling * fScale;
 
-          if (pAccessor->SetValue(obj.m_pObject, "LocalUniformScaling", fNewScale).m_Result.Failed())
+          if (pAccessor->SetValueByName(obj.m_pObject, "LocalUniformScaling", fNewScale).m_Result.Failed())
           {
             bCancel = true;
             break;
@@ -496,9 +516,9 @@ void xiiDragToPositionGizmoEditTool::TransformationGizmoEventHandlerImpl(const x
     case xiiGizmoEvent::Type::BeginInteractions:
     {
       const bool bDuplicate =
-        QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier) && GetGizmoInterface()->CanDuplicateSelection();
+        QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier) && GetGizmoInterface()->CanDuplicateSelection();
 
-      // duplicate the object when shift is held while dragging the item
+      // duplicate the object when CTRL is held while dragging the item
       if (e.m_pGizmo == &m_DragToPosGizmo && bDuplicate)
       {
         m_bMergeTransactions = true;

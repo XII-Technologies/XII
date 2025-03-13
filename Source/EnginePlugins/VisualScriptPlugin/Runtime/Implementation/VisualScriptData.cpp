@@ -21,13 +21,13 @@ static_assert(xiiVisualScriptDataDescription::DataOffset::Source::Count <= XII_B
 // static
 const char* xiiVisualScriptDataDescription::DataOffset::Source::GetName(Enum source)
 {
-  XII_ASSERT_DEBUG(source >= 0 && source < XII_ARRAY_SIZE(s_DataOffsetSourceNames), "Out of bounds access");
+  XII_ASSERT_DEBUG(source >= 0 && static_cast<xiiUInt32>(source) < XII_ARRAY_SIZE(s_DataOffsetSourceNames), "Out of bounds access");
   return s_DataOffsetSourceNames[source];
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-static const xiiTypeVersion s_uiVisualScriptDataDescriptionVersion = 1;
+static const xiiTypeVersion s_uiVisualScriptDataDescriptionVersion = 2;
 
 xiiResult xiiVisualScriptDataDescription::Serialize(xiiStreamWriter& inout_stream) const
 {
@@ -35,11 +35,8 @@ xiiResult xiiVisualScriptDataDescription::Serialize(xiiStreamWriter& inout_strea
 
   for (auto& typeInfo : m_PerTypeInfo)
   {
-    inout_stream << typeInfo.m_uiStartOffset;
     inout_stream << typeInfo.m_uiCount;
   }
-
-  inout_stream << m_uiStorageSizeNeeded;
 
   return XII_SUCCESS;
 }
@@ -47,15 +44,18 @@ xiiResult xiiVisualScriptDataDescription::Serialize(xiiStreamWriter& inout_strea
 xiiResult xiiVisualScriptDataDescription::Deserialize(xiiStreamReader& inout_stream)
 {
   xiiTypeVersion uiVersion = inout_stream.ReadVersion(s_uiVisualScriptDataDescriptionVersion);
-  XII_IGNORE_UNUSED(uiVersion);
+  if (uiVersion < 2)
+  {
+    xiiLog::Error("Invalid visual script data desc version. Expected >= 2 but got {}. Visual Script needs re-export", uiVersion);
+    return XII_FAILURE;
+  }
 
   for (auto& typeInfo : m_PerTypeInfo)
   {
-    inout_stream >> typeInfo.m_uiStartOffset;
     inout_stream >> typeInfo.m_uiCount;
   }
 
-  inout_stream >> m_uiStorageSizeNeeded;
+  CalculatePerTypeStartOffsets();
 
   return XII_SUCCESS;
 }
@@ -98,12 +98,15 @@ xiiVisualScriptDataStorage::~xiiVisualScriptDataStorage()
   DeallocateStorage();
 }
 
-void xiiVisualScriptDataStorage::AllocateStorage()
+void xiiVisualScriptDataStorage::AllocateStorage(xiiAllocatorBase* pAllocator)
 {
-  m_Storage.SetCountUninitialized(m_pDesc->m_uiStorageSizeNeeded);
-  m_Storage.ZeroFill();
+  XII_ASSERT_DEV(IsAllocated() == false, "Storage already allocated");
 
-  auto pData = m_Storage.GetByteBlobPtr().GetPtr();
+  m_Storage = XII_NEW_ARRAY(pAllocator, xiiUInt8, m_pDesc->m_uiStorageSizeNeeded);
+  xiiMemoryUtils::ZeroFill(m_Storage.GetPtr(), m_Storage.GetCount());
+  m_pAllocator = pAllocator;
+
+  auto pData = m_Storage.GetPtr();
 
   for (xiiUInt32 scriptDataType = 0; scriptDataType < xiiVisualScriptDataType::Count; ++scriptDataType)
   {
@@ -144,7 +147,7 @@ void xiiVisualScriptDataStorage::DeallocateStorage()
   if (IsAllocated() == false)
     return;
 
-  auto pData = m_Storage.GetByteBlobPtr().GetPtr();
+  auto pData = m_Storage.GetPtr();
 
   for (xiiUInt32 scriptDataType = 0; scriptDataType < xiiVisualScriptDataType::Count; ++scriptDataType)
   {
@@ -179,12 +182,13 @@ void xiiVisualScriptDataStorage::DeallocateStorage()
     }
   }
 
-  m_Storage.Clear();
+  XII_DELETE_ARRAY(m_pAllocator, m_Storage);
+  m_pAllocator = nullptr;
 }
 
 xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) const
 {
-  auto pData = m_Storage.GetByteBlobPtr().GetPtr();
+  auto pData = m_Storage.GetPtr();
 
   for (xiiUInt32 scriptDataType = 0; scriptDataType < xiiVisualScriptDataType::Count; ++scriptDataType)
   {
@@ -242,6 +246,11 @@ xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) c
         ++pVariantMaps;
       }
     }
+    else if (scriptDataType == xiiVisualScriptDataType::GameObject || scriptDataType == xiiVisualScriptDataType::Component || scriptDataType == xiiVisualScriptDataType::TypedPointer || scriptDataType == xiiVisualScriptDataType::Coroutine)
+    {
+      xiiLog::Error("Cannot serialize visual script data type '{}'", xiiVisualScriptDataType::GetName(static_cast<xiiVisualScriptDataType::Enum>(scriptDataType)));
+      return XII_FAILURE;
+    }
     else
     {
       const xiiUInt32 uiBytesToWrite = typeInfo.m_uiCount * xiiVisualScriptDataType::GetStorageSize(static_cast<xiiVisualScriptDataType::Enum>(scriptDataType));
@@ -252,14 +261,14 @@ xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) c
   return XII_SUCCESS;
 }
 
-xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream)
+xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream, xiiAllocatorBase* pAllocator)
 {
   if (IsAllocated() == false)
   {
-    AllocateStorage();
+    AllocateStorage(pAllocator);
   }
 
-  auto pData = m_Storage.GetByteBlobPtr().GetPtr();
+  auto pData = m_Storage.GetPtr();
 
   for (xiiUInt32 scriptDataType = 0; scriptDataType < xiiVisualScriptDataType::Count; ++scriptDataType)
   {
@@ -330,7 +339,7 @@ xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream)
 xiiTypedPointer xiiVisualScriptDataStorage::GetPointerData(DataOffset dataOffset, xiiUInt32 uiExecutionCounter) const
 {
   m_pDesc->CheckOffset(dataOffset, nullptr);
-  auto pData = m_Storage.GetByteBlobPtr().GetPtr() + dataOffset.m_uiByteOffset;
+  auto pData = m_Storage.GetPtr() + dataOffset.m_uiByteOffset;
 
   if (dataOffset.m_uiType == xiiVisualScriptDataType::GameObject)
   {
@@ -348,8 +357,10 @@ xiiTypedPointer xiiVisualScriptDataStorage::GetPointerData(DataOffset dataOffset
     return *reinterpret_cast<const xiiTypedPointer*>(pData);
   }
 
-  XII_ASSERT_NOT_IMPLEMENTED;
-  return xiiTypedPointer();
+  xiiTypedPointer t;
+  t.m_pObject = const_cast<xiiUInt8*>(pData);
+  t.m_pType   = xiiVisualScriptDataType::GetRtti(static_cast<xiiVisualScriptDataType::Enum>(dataOffset.m_uiType));
+  return t;
 }
 
 xiiVariant xiiVisualScriptDataStorage::GetDataAsVariant(DataOffset dataOffset, const xiiRTTI* pExpectedType, xiiUInt32 uiExecutionCounter) const
@@ -357,7 +368,7 @@ xiiVariant xiiVisualScriptDataStorage::GetDataAsVariant(DataOffset dataOffset, c
   auto scriptDataType = dataOffset.GetType();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  // pExpectedType == nullptr means that the caller expects an xiiVariant so we decide solely based on the scriptDataType.
+  // pExpectedType == nullptr means that the caller expects a xiiVariant so we decide solely based on the scriptDataType.
   // We set the pExpectedType to the equivalent of the scriptDataType here so we don't need to check for pExpectedType == nullptr in all the asserts below.
   if (pExpectedType == nullptr || pExpectedType == xiiGetStaticRTTI<xiiVariant>())
   {

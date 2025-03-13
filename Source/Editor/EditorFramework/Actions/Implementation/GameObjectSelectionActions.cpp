@@ -14,7 +14,6 @@ xiiActionDescriptorHandle xiiGameObjectSelectionActions::s_hFocusOnSelection;
 xiiActionDescriptorHandle xiiGameObjectSelectionActions::s_hFocusOnSelectionAllViews;
 xiiActionDescriptorHandle xiiGameObjectSelectionActions::s_hSnapCameraToObject;
 xiiActionDescriptorHandle xiiGameObjectSelectionActions::s_hMoveCameraHere;
-xiiActionDescriptorHandle xiiGameObjectSelectionActions::s_hCreateEmptyGameObjectHere;
 
 void xiiGameObjectSelectionActions::RegisterActions()
 {
@@ -24,8 +23,6 @@ void xiiGameObjectSelectionActions::RegisterActions()
   s_hFocusOnSelectionAllViews = XII_REGISTER_ACTION_1("Selection.FocusAllViews", xiiActionScope::Document, "Scene - Selection", "Shift+F", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::FocusOnSelectionAllViews);
   s_hSnapCameraToObject       = XII_REGISTER_ACTION_1("Scene.Camera.SnapCameraToObject", xiiActionScope::Document, "Camera", "", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::SnapCameraToObject);
   s_hMoveCameraHere           = XII_REGISTER_ACTION_1("Scene.Camera.MoveCameraHere", xiiActionScope::Document, "Camera", "C", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::MoveCameraHere);
-
-  s_hCreateEmptyGameObjectHere = XII_REGISTER_ACTION_1("Scene.GameObject.CreateEmptyHere", xiiActionScope::Document, "Scene", "", xiiGameObjectSelectionAction, xiiGameObjectSelectionAction::ActionType::CreateGameObjectHere);
 }
 
 void xiiGameObjectSelectionActions::UnregisterActions()
@@ -36,7 +33,6 @@ void xiiGameObjectSelectionActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hFocusOnSelectionAllViews);
   xiiActionManager::UnregisterAction(s_hSnapCameraToObject);
   xiiActionManager::UnregisterAction(s_hMoveCameraHere);
-  xiiActionManager::UnregisterAction(s_hCreateEmptyGameObjectHere);
 }
 
 void xiiGameObjectSelectionActions::MapActions(xiiStringView sMapping)
@@ -60,7 +56,7 @@ void xiiGameObjectSelectionActions::MapContextMenuActions(xiiStringView sMapping
 
   pMap->MapAction(s_hSelectionCategory, "", 5.0f);
 
-  pMap->MapAction(s_hFocusOnSelectionAllViews, "G.Selection", 1.0f);
+  pMap->MapAction(s_hFocusOnSelection, "G.Selection", 1.0f);
 }
 
 
@@ -71,17 +67,14 @@ void xiiGameObjectSelectionActions::MapViewContextMenuActions(xiiStringView sMap
 
   pMap->MapAction(s_hSelectionCategory, "", 5.0f);
 
-  pMap->MapAction(s_hFocusOnSelectionAllViews, "G.Selection", 1.0f);
-  pMap->MapAction(s_hSnapCameraToObject, "G.Selection", 4.0f);
-  pMap->MapAction(s_hMoveCameraHere, "G.Selection", 6.0f);
-  pMap->MapAction(s_hCreateEmptyGameObjectHere, "G.Selection", 1.0f);
+  pMap->MapAction(s_hMoveCameraHere, "G.Selection", 1.5f);
+  pMap->MapAction(s_hSnapCameraToObject, "G.Selection", 8.0f);
 }
 
 xiiGameObjectSelectionAction::xiiGameObjectSelectionAction(const xiiActionContext& context, const char* szName, xiiGameObjectSelectionAction::ActionType type) :
   xiiButtonAction(context, szName, false, "")
 {
-  m_Type = type;
-  // TODO const cast
+  m_Type           = type;
   m_pSceneDocument = const_cast<xiiGameObjectDocument*>(static_cast<const xiiGameObjectDocument*>(context.m_pDocument));
 
   switch (m_Type)
@@ -96,13 +89,10 @@ xiiGameObjectSelectionAction::xiiGameObjectSelectionAction(const xiiActionContex
       SetIconPath(":/EditorFramework/Icons/FocusOnSelectionAllViews.svg");
       break;
     case ActionType::SnapCameraToObject:
-      // SetIconPath(":/EditorFramework/Icons/Duplicate.svg"); // TODO Icon
+      // SetIconPath(":/EditorFramework/Icons/SnapToCamera.svg"); // TODO Icon
       break;
     case ActionType::MoveCameraHere:
-      // SetIconPath(":/EditorFramework/Icons/Duplicate.svg"); // TODO Icon
-      break;
-    case ActionType::CreateGameObjectHere:
-      SetIconPath(":/EditorFramework/Icons/CreateEmpty.svg");
+      SetIconPath(":/EditorFramework/Icons/MoveCameraHere.svg");
       break;
   }
 
@@ -136,12 +126,6 @@ void xiiGameObjectSelectionAction::Execute(const xiiVariant& value)
     case ActionType::MoveCameraHere:
       m_pSceneDocument->MoveCameraHere();
       break;
-    case ActionType::CreateGameObjectHere:
-    {
-      auto res = m_pSceneDocument->CreateGameObjectHere();
-      xiiQtUiServices::GetSingleton()->MessageBoxStatus(res, "Create empty object at picked position failed.");
-    }
-    break;
   }
 }
 

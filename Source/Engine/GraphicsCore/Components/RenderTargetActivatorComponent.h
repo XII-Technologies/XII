@@ -35,11 +35,8 @@ public:
   xiiRenderTargetActivatorComponent();
   ~xiiRenderTargetActivatorComponent();
 
-  void        SetRenderTargetFile(const char* szFile); // [ property ]
-  const char* GetRenderTargetFile() const;             // [ property ]
-
-  void                               SetRenderTarget(const xiiRenderToTexture2DResourceHandle& hResource);
-  xiiRenderToTexture2DResourceHandle GetRenderTarget() const { return m_hRenderTarget; }
+  void                                      SetRenderTarget(const xiiRenderToTexture2DResourceHandle& hResource); // [property]
+  const xiiRenderToTexture2DResourceHandle& GetRenderTarget() const { return m_hRenderTarget; }                   // [property]
 
 private:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;

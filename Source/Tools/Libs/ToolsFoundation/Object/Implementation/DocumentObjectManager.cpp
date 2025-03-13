@@ -505,7 +505,6 @@ bool xiiDocumentObjectManager::IsUnderRootProperty(xiiStringView sRootProperty, 
   return sRootProperty == pObject->GetParentProperty();
 }
 
-
 bool xiiDocumentObjectManager::IsUnderRootProperty(xiiStringView sRootProperty, const xiiDocumentObject* pParent, xiiStringView sParentProperty) const
 {
   XII_ASSERT_DEBUG(pParent == nullptr || m_pObjectStorage->m_RootObject.GetDocumentObjectManager() == pParent->GetDocumentObjectManager(), "Passed in object does not belong to this object manager.");

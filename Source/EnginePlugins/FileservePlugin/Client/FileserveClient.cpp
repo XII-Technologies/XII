@@ -370,6 +370,21 @@ void xiiFileserveClient::NetworkMsgHandler(xiiRemoteMessage& msg)
     return;
   }
 
+  if (msg.GetMessageID() == 'INVC')
+  {
+    // Invalidate caches, so that next read will go to the server.
+
+    for (auto& dd : m_MountedDataDirs)
+    {
+      for (auto& it : dd.m_CacheStatus)
+      {
+        it.Value().m_LastCheck = xiiTime::MakeZero();
+      }
+    }
+
+    return;
+  }
+
   xiiLog::Error("Unknown FSRV message: '{0}' - {1} bytes", msg.GetMessageID(), msg.GetMessageData().GetCount());
 }
 

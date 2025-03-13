@@ -6,85 +6,74 @@
 
 class xiiWorld;
 
-enum class xiiGameStatePriority
-{
-  None     = -1, ///< This game state cannot be used for this app type or world
-  Fallback = 0,  ///< This game state could be used, but it is only a fallback solution
-  Default  = 5,  ///< This game state is suitable for the given app type and world
-  Override = 10, ///< This game state should be preferred over all others
-};
-
-/// \brief xiiGameState is the base class to build custom game logic upon. It works closely together with xiiGameApplication.
+/// \brief xiiGameStateBase is the base class for all game states. Game states are used to implement custom high level game logic.
 ///
-/// In a typical game there is always exactly one instance of a xiiGameState derived class active.
-/// The game state handles custom game logic, which must be handled outside xiiWorld, custom components and scripts.
+/// See the online documentation for details: https://xiiengine.net/pages/docs/runtime/application/game-state.html
 ///
-/// For example a custom implementation of xiiGameState may handle how to show a menu, when to switch to
-/// another level, how multi-player works, or which player information is transitioned from one level to the next.
-/// It's main purpose is to implement high-level game logic.
-///
-/// xiiGameApplication will loop through all available xiiGameState implementations and ask each available one
-/// whether it can handle a certain level. Each game state returns a 'priority' how well it can handle the game.
-///
-/// In a typical game you only have one game state linked into the binary, so in that case there is no reason for
-/// such a system. However, in an editor you might have multiple game states available through plugins, but
-/// only one can take control.
-/// In such a case, each game state may inspect the given world and check whether it is e.g. a single-player
-/// or multi-player level, or whether it uses it's own game specific components, and then decide whether
-/// it is the best fit for that level.
-///
-/// \note Do not forget to reflect your derived class, otherwise xiiGameApplication may not find it.
+/// Note that you would typically derive custom game states from xiiGameState, not xiiGameStateBase, since the
+/// former provides much more functionality out of the box.
 class XII_CORE_DLL xiiGameStateBase : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGameStateBase, xiiReflectedClass)
 
 public:
-  xiiGameStateBase();
-  virtual ~xiiGameStateBase();
+  xiiGameStateBase()          = default;
+  virtual ~xiiGameStateBase() = default;
 
-  /// \brief When a game state was chosen, it gets activated through this function.
+  /// \brief A game state gets activated through this function.
   ///
   /// \param pWorld
   /// The game state is supposed to operate on the given world.
-  /// In a stand-alone application pWorld will always be nullptr and the game state is expected
-  /// to create worlds itself.
+  /// In a stand-alone application pWorld will always be nullptr and the game state is expected to create worlds itself.
   /// When run inside the editor, pWorld will already exist and the game state is expected to work on it.
+  ///
+  /// \param sStartPosition
+  /// An optional string to identify where the player should spawn.
+  /// This may, for instance, be the unique name of an object. It is up to the game state how the string is used, if at all.
   ///
   /// \param pStartPosition
   /// An optional transform for the 'player object' to start at.
   /// Usually nullptr, but may be set by the editor to relocate or create the player object at the given destination.
-  virtual void OnActivation(xiiWorld* pWorld, const xiiTransform* pStartPosition) = 0;
+  virtual void OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset) = 0;
 
   /// \brief Called when the game state is being shut down.
+  ///
+  /// Override this to clean up or save data to disk.
   virtual void OnDeactivation() = 0;
 
-  /// \brief Called once per game update. Should handle input updates here.
-  virtual void ProcessInput();
+  /// \brief Called once per game update, early in the frame. Should handle input updates here.
+  virtual void ProcessInput() {}
 
   /// \brief Called once each frame before the worlds are updated.
-  virtual void BeforeWorldUpdate();
+  virtual void BeforeWorldUpdate() {}
 
   /// \brief Called once each frame after the worlds have been updated.
-  virtual void AfterWorldUpdate();
+  virtual void AfterWorldUpdate() {}
 
-
-  /// \brief Called by xiiGameApplication to determine which game state is best suited to handle a situation.
+  /// \brief Called once each frame to configure the main camera position and rotation.
   ///
-  /// If the application already has a world that should be shown, the game state can inspect it.
-  /// If the game state is expected to create a new world, pWorld will be nullptr.
-  virtual xiiGameStatePriority DeterminePriority(xiiWorld* pWorld) const = 0;
+  /// Note that xiiCameraComponent may already apply set general options like field-of-view,
+  /// so don't override these values, if you want to use that component.
+  /// The default xiiGameState implementation searches for an xiiCameraComponent in the world that is set to "Main View"
+  /// and uses it's transform for the main camera.
+  virtual void ConfigureMainCamera() {}
 
-  /// \brief Has to call xiiRenderLoop::AddMainView for all views that need to be rendered
-  virtual void ScheduleRendering() = 0;
+  /// \brief Has to call xiiRenderLoop::AddMainView for all views that need to be rendered.
+  ///
+  /// This will be called every frame by the editor, to ensure that only the relevant views are rendered,
+  /// but during stand-alone game execution this may never be called.
+  virtual void AddMainViewsToRender() = 0;
 
   /// \brief Call this to signal that a game state requested the application to quit.
   ///
   /// xiiGameApplication will shut down when this happens. xiiEditor will stop play-the-game mode when it is running.
-  virtual void RequestQuit();
+  virtual void RequestQuit() = 0;
 
   /// \brief Returns whether the game state wants to quit the application.
-  bool WasQuitRequested() const;
+  virtual bool WasQuitRequested() const = 0;
 
-protected:
-  bool m_bStateWantsToQuit = false;
+  /// \brief Should be overridden by game states that are only meant as a fallback solution.
+  ///
+  /// See the implementation for xiiFallbackGameState for details.
+  virtual bool IsFallbackGameState() const { return false; }
 };

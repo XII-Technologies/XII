@@ -6,7 +6,7 @@
 #include <ToolsFoundation/Command/TreeCommands.h>
 
 
-void xiiSceneDocument::UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& selection)
+void xiiSceneDocument::UnlinkPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection)
 {
   SUPER::UnlinkPrefabs(selection);
 
@@ -161,7 +161,7 @@ void xiiSceneDocument::UpdatePrefabObject(xiiDocumentObject* pObject, const xiiU
   }
 }
 
-void xiiSceneDocument::ConvertToEditorPrefab(const xiiDeque<const xiiDocumentObject*>& selection)
+void xiiSceneDocument::ConvertToEditorPrefab(xiiArrayPtr<const xiiDocumentObject*> selection)
 {
   xiiDeque<const xiiDocumentObject*> newSelection;
 
@@ -198,7 +198,7 @@ void xiiSceneDocument::ConvertToEditorPrefab(const xiiDeque<const xiiDocumentObj
   GetSelectionManager()->SetSelection(newSelection);
 }
 
-void xiiSceneDocument::ConvertToEnginePrefab(const xiiDeque<const xiiDocumentObject*>& selection)
+void xiiSceneDocument::ConvertToEnginePrefab(xiiArrayPtr<const xiiDocumentObject*> selection)
 {
   xiiDeque<const xiiDocumentObject*> newSelection;
 

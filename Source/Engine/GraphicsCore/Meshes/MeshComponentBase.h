@@ -32,11 +32,10 @@ struct XII_GRAPHICSCORE_DLL xiiMsgSetMeshMaterial : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetMeshMaterial, xiiMessage);
 
-  void        SetMaterialFile(const char* szFile);
-  const char* GetMaterialFile() const;
+  XII_ADD_RESOURCEHANDLE_ACCESSORS(Material, m_hMaterial);
 
-  xiiMaterialResourceHandle m_hMaterial;
-  xiiUInt32                 m_uiMaterialSlot = 0xFFFFFFFFu;
+  xiiMaterialResourceHandle m_hMaterial;                    // [ property ]
+  xiiUInt32                 m_uiMaterialSlot = 0xFFFFFFFFU; // [ property ]
 
   virtual void Serialize(xiiStreamWriter& inout_stream) const override;
   virtual void Deserialize(xiiStreamReader& inout_stream, xiiUInt8 uiTypeVersion) override;
@@ -66,18 +65,23 @@ public:
   xiiMeshComponentBase();
   ~xiiMeshComponentBase();
 
-  void                    SetMesh(const xiiMeshResourceHandle& hMesh);
-  XII_ALWAYS_INLINE const xiiMeshResourceHandle& GetMesh() const { return m_hMesh; }
+  /// \brief Changes which mesh to render.
+  void                    SetMesh(const xiiMeshResourceHandle& hMesh);               // [ property ]
+  XII_ALWAYS_INLINE const xiiMeshResourceHandle& GetMesh() const { return m_hMesh; } // [ property ]
 
-  void                      SetMaterial(xiiUInt32 uiIndex, const xiiMaterialResourceHandle& hMaterial);
-  xiiMaterialResourceHandle GetMaterial(xiiUInt32 uiIndex) const;
+  XII_ADD_RESOURCEHANDLE_ACCESSORS_WITH_SETTER(Mesh, m_hMesh, SetMesh);
 
-  void        SetMeshFile(const char* szFile); // [ property ]
-  const char* GetMeshFile() const;             // [ property ]
+  /// \brief Sets the material that should be used for the sub-mesh with the given index.
+  void                      SetMaterial(xiiUInt32 uiIndex, const xiiMaterialResourceHandle& hMaterial); // [ property ]
+  xiiMaterialResourceHandle GetMaterial(xiiUInt32 uiIndex) const;                                       // [ property ]
 
+  /// \brief An additional tint color passed to the renderer to modify the mesh.
   void            SetColor(const xiiColor& color); // [ property ]
   const xiiColor& GetColor() const;                // [ property ]
 
+  /// \brief The sorting depth offset allows to tweak the order in which this mesh is rendered relative to other meshes.
+  ///
+  /// This is mainly useful for transparent objects to render them before or after other meshes.
   void  SetSortingDepthOffset(float fOffset); // [ property ]
   float GetSortingDepthOffset() const;        // [ property ]
 
@@ -87,11 +91,11 @@ public:
 protected:
   virtual xiiMeshRenderData* CreateRenderData() const;
 
-  xiiUInt32   Materials_GetCount() const;                               // [ property ]
-  const char* Materials_GetValue(xiiUInt32 uiIndex) const;              // [ property ]
-  void        Materials_SetValue(xiiUInt32 uiIndex, const char* value); // [ property ]
-  void        Materials_Insert(xiiUInt32 uiIndex, const char* value);   // [ property ]
-  void        Materials_Remove(xiiUInt32 uiIndex);                      // [ property ]
+  xiiUInt32     Materials_GetCount() const;                                 // [ property ]
+  xiiStringView Materials_GetValue(xiiUInt32 uiIndex) const;                // [ property ]
+  void          Materials_SetValue(xiiUInt32 uiIndex, xiiStringView value); // [ property ]
+  void          Materials_Insert(xiiUInt32 uiIndex, xiiStringView value);   // [ property ]
+  void          Materials_Remove(xiiUInt32 uiIndex);                        // [ property ]
 
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;
 

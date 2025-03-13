@@ -20,7 +20,4 @@ add_dependencies(${PROJECT_NAME}
   EnginePluginScene
 )
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/Scene.xiiPluginBundle" $<TARGET_FILE_DIR:${PROJECT_NAME}>
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	  )
+xii_copy_plugin_bundle(${PROJECT_NAME} "Scene")

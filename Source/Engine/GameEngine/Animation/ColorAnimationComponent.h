@@ -10,7 +10,7 @@
 
 using xiiColorAnimationComponentManager = xiiComponentManagerSimple<class xiiColorAnimationComponent, xiiComponentUpdateType::WhenSimulating>;
 
-/// \brief Samples a color gradient and sends an xiiMsgSetColor to the object it is attached to
+/// \brief Samples a color gradient and sends a xiiMsgSetColor to the object it is attached to
 ///
 /// The color gradient is samples linearly over time. This can be used to animate the color of a light source or mesh.
 /// \todo Expose the xiiSetColorMode of the xiiMsgSetColor
@@ -38,11 +38,8 @@ public:
 
   xiiTime m_Duration; // [ property ]
 
-  void        SetColorGradientFile(const char* szFile); // [ property ]
-  const char* GetColorGradientFile() const;             // [ property ]
-
-  void                    SetColorGradient(const xiiColorGradientResourceHandle& hResource);
-  XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; }
+  void                    SetColorGradient(const xiiColorGradientResourceHandle& hResource);               // [ property ]
+  XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; } // [ property ]
 
   xiiEnum<xiiPropertyAnimMode> m_AnimationMode; // [ property ]
   xiiEnum<xiiSetColorMode>     m_SetColorMode;  // [ property ]

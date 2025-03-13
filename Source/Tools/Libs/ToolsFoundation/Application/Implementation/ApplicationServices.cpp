@@ -54,16 +54,16 @@ xiiString xiiApplicationServices::GetProjectPreferencesFolder(xiiStringView sPro
   sProjectFilePath.TrimWordEnd("xiiRemoteProject");
   sProjectFilePath.Trim("/\\");
 
-  xiiStringBuilder ProjectName = sProjectFilePath;
+  xiiStringBuilder sProjectName = sProjectFilePath;
 
-  xiiStringBuilder ProjectPath = ProjectName;
+  xiiStringBuilder ProjectPath = sProjectName;
   ProjectPath.PathParentDirectory();
 
-  const xiiUInt64 uiPathHash = xiiHashingUtils::StringHash(ProjectPath.GetView());
+  const xiiUInt64 uiPathHash = xiiHashingUtils::StringHash(ProjectPath);
 
-  ProjectName = ProjectName.GetFileName();
+  sProjectName = sProjectName.GetFileName();
 
-  path.AppendFormat("/Projects/{}_{}", uiPathHash, ProjectName);
+  path.AppendFormat("/Projects/{}_{}", uiPathHash, sProjectName);
 
   path.MakeCleanPath();
   return path;

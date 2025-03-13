@@ -157,6 +157,10 @@ void xiiGameObjectGizmoEditTool::SelectionManagerEventHandler(const xiiSelection
       UpdateGizmoVisibleState();
       break;
 
+    case xiiSelectionManagerEvent::Type::ObjectRemoved:
+      UpdateGizmoVisibleState();
+      break;
+
     default:
       break;
   }

@@ -70,8 +70,6 @@ public:
 
   void                     SetShape(xiiEnum<xiiGreyBoxShape> shape);           // [ property ]
   xiiEnum<xiiGreyBoxShape> GetShape() const { return m_Shape; }                // [ property ]
-  void                     SetMaterialFile(const char* szFile);                // [ property ]
-  const char*              GetMaterialFile() const;                            // [ property ]
   void                     SetSizeNegX(float f);                               // [ property ]
   float                    GetSizeNegX() const { return m_fSizeNegX; }         // [ property ]
   void                     SetSizePosX(float f);                               // [ property ]
@@ -98,9 +96,6 @@ public:
   void SetGenerateCollision(bool b);                                 // [ property ]
   bool GetGenerateCollision() const { return m_bGenerateCollision; } // [ property ]
 
-  void SetIncludeInNavmesh(bool b);                                // [ property ]
-  bool GetIncludeInNavmesh() const { return m_bIncludeInNavmesh; } // [ property ]
-
   void                      SetMaterial(const xiiMaterialResourceHandle& hMaterial) { m_hMaterial = hMaterial; }
   xiiMaterialResourceHandle GetMaterial() const { return m_hMaterial; }
 
@@ -124,7 +119,6 @@ protected:
   bool                      m_bSlopedTop         = false;
   bool                      m_bSlopedBottom      = false;
   bool                      m_bGenerateCollision = true;
-  bool                      m_bIncludeInNavmesh  = true;
   bool                      m_bUseAsOccluder     = true;
 
   void InvalidateMesh();

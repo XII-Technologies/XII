@@ -67,7 +67,7 @@ public:
   virtual xiiStringView GetGeneratorGroup() const = 0;
 
   /// \brief Tells the generator to create a new asset document with the chosen mode.
-  virtual xiiStatus Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument) = 0;
+  virtual xiiStatus Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) = 0;
 
   /// \brief Returns whether this generator supports the given file type for import.
   bool SupportsFileType(xiiStringView sFile) const;

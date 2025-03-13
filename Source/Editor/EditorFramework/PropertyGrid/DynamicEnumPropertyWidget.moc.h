@@ -25,6 +25,6 @@ protected:
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  QComboBox*   m_pWidget = nullptr;
-  QHBoxLayout* m_pLayout = nullptr;
+  QComboBox*   m_pWidget;
+  QHBoxLayout* m_pLayout;
 };

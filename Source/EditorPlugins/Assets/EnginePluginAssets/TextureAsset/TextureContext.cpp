@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureContext, 1, xiiRTTIDefaultAllocator<x
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_CONSTANT_PROPERTY("DocumentType", (const char*) "Texture 2D;Render Target"),
+    XII_CONSTANT_PROPERTY("DocumentType", (const char*) "Texture 2D;Render Target;Substance Package"),
   }
   XII_END_PROPERTIES;
 }
@@ -42,15 +42,27 @@ xiiTextureContext::xiiTextureContext() :
 
 void xiiTextureContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentConfigMsgToEngine>())
+  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentConfigMsgToEngine>() && m_hMaterial.IsValid())
   {
     const xiiDocumentConfigMsgToEngine* pMsg2 = static_cast<const xiiDocumentConfigMsgToEngine*>(pMsg);
 
-    if (pMsg2->m_sWhatToDo == "ChannelMode" && m_hMaterial.IsValid())
+    xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
+    if (pMsg2->m_sWhatToDo == "SetChannelMode")
     {
-      xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
       pMaterial->SetParameter("ShowChannelMode", pMsg2->m_iValue);
-      pMaterial->SetParameter("LodLevel", pMsg2->m_fValue);
+      pMaterial->SetParameter("AlphaThreshold", pMsg2->m_fValue);
+    }
+    else if (pMsg2->m_sWhatToDo == "SetLodLevel")
+    {
+      if (pMsg2->m_iValue != m_iLodLevel)
+      {
+        pMaterial->SetParameter("LodLevel", pMsg2->m_iValue);
+        m_iLodLevel = pMsg2->m_iValue;
+      }
+    }
+    else if (pMsg2->m_sWhatToDo == "SetTexture" && pMsg2->m_sValue.IsEmpty() == false)
+    {
+      SetTexture(pMsg2->m_sValue);
     }
   }
 
@@ -64,15 +76,6 @@ void xiiTextureContext::OnInitialize()
   const xiiStringBuilder sMaterialResource(sTextureGuid.GetData(), " - Texture Preview");
 
   m_hMaterial = xiiResourceManager::GetExistingResource<xiiMaterialResource>(sMaterialResource);
-
-  m_hTexture                               = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTextureGuid);
-  xiiGALResourceFormat::Enum textureFormat = xiiGALResourceFormat::Unknown;
-  {
-    xiiResourceLock<xiiTexture2DResource> pTexture(m_hTexture, xiiResourceAcquireMode::PointerOnly);
-
-    textureFormat = pTexture->GetFormat();
-    pTexture->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiTextureContext::OnResourceEvent, this), m_TextureResourceEventSubscriber);
-  }
 
   // Preview Mesh
   const char* szMeshName = "DefaultTexturePreviewMesh";
@@ -116,14 +119,6 @@ void xiiTextureContext::OnInitialize()
     xiiMaterialResourceDescriptor md;
     md.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Editor/Materials/TexturePreview.xiiMaterial");
 
-    auto& tb = md.m_Texture2DBindings.ExpandAndGetRef();
-    tb.m_Name.Assign("BaseTexture");
-    tb.m_Value = m_hTexture;
-
-    auto& param = md.m_Parameters.ExpandAndGetRef();
-    param.m_Name.Assign("IsLinear");
-    param.m_Value = textureFormat != xiiGALResourceFormat::Unknown ? !xiiGALResourceFormat::IsSrgb(textureFormat) : false;
-
     m_hMaterial = xiiResourceManager::GetOrCreateResource<xiiMaterialResource>(sMaterialResource, std::move(md));
   }
 
@@ -143,6 +138,8 @@ void xiiTextureContext::OnInitialize()
     pMesh->SetMesh(m_hPreviewMeshResource);
     pMesh->SetMaterial(0, m_hMaterial);
   }
+
+  SetTexture(sTextureGuid);
 }
 
 xiiEngineProcessViewContext* xiiTextureContext::CreateViewContext()
@@ -153,6 +150,20 @@ xiiEngineProcessViewContext* xiiTextureContext::CreateViewContext()
 void xiiTextureContext::DestroyViewContext(xiiEngineProcessViewContext* pContext)
 {
   XII_DEFAULT_DELETE(pContext);
+}
+
+void xiiTextureContext::SetTexture(xiiStringView sTextureFile)
+{
+  if (m_hTexture.IsValid() && m_hTexture.GetResourceID() == sTextureFile)
+    return;
+
+  m_hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTextureFile);
+  xiiResourceLock<xiiTexture2DResource> pTexture(m_hTexture, xiiResourceAcquireMode::PointerOnly);
+  pTexture->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiTextureContext::OnResourceEvent, this), m_TextureResourceEventSubscriber);
+
+  xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::BlockTillLoaded);
+  pMaterial->SetTexture2DBinding("BaseTexture", m_hTexture);
+  pMaterial->SetParameter("IsLinear", !xiiGALResourceFormat::IsSrgb(pTexture->GetFormat()));
 }
 
 void xiiTextureContext::OnResourceEvent(const xiiResourceEvent& e)

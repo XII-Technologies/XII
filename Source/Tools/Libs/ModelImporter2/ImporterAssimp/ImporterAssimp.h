@@ -33,6 +33,8 @@ namespace xiiModelImporter2
 
     xiiResult ImportBoneColliders(xiiEditableSkeletonJoint* pJoint);
 
+    void SimplifyAiMesh(aiMesh* pMesh);
+
     Assimp::Importer m_Importer;
     const aiScene*   m_pScene               = nullptr;
     xiiUInt32        m_uiTotalMeshVertices  = 0;
@@ -45,6 +47,8 @@ namespace xiiModelImporter2
     };
 
     xiiMap<xiiUInt32, xiiHybridArray<MeshInstance, 4>> m_MeshInstances;
+
+    xiiSet<aiMesh*> m_OptimizedMeshes;
   };
 
   extern xiiColor ConvertAssimpType(const aiColor3D& value, bool bInvert = false);

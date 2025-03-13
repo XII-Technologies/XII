@@ -2,6 +2,7 @@
 
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <QDoubleSpinBox>
+
 class xiiVariant;
 
 class XII_GUIFOUNDATION_DLL xiiQtDoubleSpinBox : public QDoubleSpinBox

@@ -39,7 +39,8 @@ protected:
   virtual xiiUniquePtr<xiiEditorEngineProcessApp> CreateEngineProcessApp();
 
   virtual void ActivateGameStateAtStartup() override
-  { /* do nothing */
+  {
+    // Do nothing.
   }
 
 private:

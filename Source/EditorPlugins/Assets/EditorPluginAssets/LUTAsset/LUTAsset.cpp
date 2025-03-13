@@ -2,15 +2,11 @@
 
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 
-
-
 #include <EditorPluginAssets/LUTAsset/AdobeCUBEReader.h>
 #include <EditorPluginAssets/LUTAsset/LUTAsset.h>
 
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
-
-
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLUTAssetDocument, 1, xiiRTTINoAllocator)
@@ -43,7 +39,7 @@ xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(const char* szTar
 
   const xiiUInt32 lutSize = cubeReader.GetLUTSize();
 
-  // Build an xiiImage from the data
+  // Build a xiiImage from the data
   xiiImageHeader imgHeader;
   imgHeader.SetImageFormat(xiiImageFormat::R8G8B8A8_UNORM_SRGB);
   imgHeader.SetWidth(lutSize);
@@ -121,7 +117,7 @@ void xiiLUTAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInputFile, x
   info.m_sIcon                                = ":/AssetIcons/LUT.svg";
 }
 
-xiiStatus xiiLUTAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDocument*& out_pGeneratedDocument)
+xiiStatus xiiLUTAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments)
 {
   xiiStringBuilder sOutFile = sInputFileAbs;
   sOutFile.ChangeFileExtension(GetDocumentExtension());
@@ -132,11 +128,13 @@ xiiStatus xiiLUTAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xi
   xiiStringBuilder sInputFileRel = sInputFileAbs;
   pApp->MakePathDataDirectoryRelative(sInputFileRel);
 
-  out_pGeneratedDocument = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
-  if (out_pGeneratedDocument == nullptr)
+  xiiDocument* pDoc = pApp->CreateDocument(sOutFile, xiiDocumentFlags::None);
+  if (pDoc == nullptr)
     return xiiStatus("Could not create target document");
 
-  xiiLUTAssetDocument* pAssetDoc = xiiDynamicCast<xiiLUTAssetDocument*>(out_pGeneratedDocument);
+  out_generatedDocuments.PushBack(pDoc);
+
+  xiiLUTAssetDocument* pAssetDoc = xiiDynamicCast<xiiLUTAssetDocument*>(pDoc);
 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("Input", sInputFileRel.GetView());

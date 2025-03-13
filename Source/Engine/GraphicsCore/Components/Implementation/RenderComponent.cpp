@@ -80,12 +80,12 @@ void xiiRenderComponent::TriggerLocalBoundsUpdate()
 }
 
 // static
-xiiUInt32 xiiRenderComponent::GetUniqueIdForRendering(const xiiComponent* pComponent, xiiUInt32 uiInnerIndex /*= 0*/, xiiUInt32 uiInnerIndexShift /*= 24*/)
+xiiUInt32 xiiRenderComponent::GetUniqueIdForRendering(const xiiComponent& component, xiiUInt32 uiInnerIndex /*= 0*/, xiiUInt32 uiInnerIndexShift /*= 24*/)
 {
-  xiiUInt32 uniqueId = pComponent->GetUniqueID();
+  xiiUInt32 uniqueId = component.GetUniqueID();
   if (uniqueId == xiiInvalidIndex)
   {
-    uniqueId = pComponent->GetOwner()->GetHandle().GetInternalID().m_InstanceIndex;
+    uniqueId = component.GetOwner()->GetHandle().GetInternalID().m_InstanceIndex;
   }
   else
   {
@@ -94,7 +94,7 @@ xiiUInt32 xiiRenderComponent::GetUniqueIdForRendering(const xiiComponent* pCompo
 
   const xiiUInt32 dynamicBit     = (1 << 31);
   const xiiUInt32 dynamicBitMask = ~dynamicBit;
-  return (uniqueId & dynamicBitMask) | (pComponent->GetOwner()->IsDynamic() ? dynamicBit : 0);
+  return (uniqueId & dynamicBitMask) | (component.GetOwner()->IsDynamic() ? dynamicBit : 0);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_RenderComponent);

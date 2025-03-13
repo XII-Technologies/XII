@@ -22,10 +22,11 @@ namespace xiiModelImporter2
     bool    m_bNormalizeWeights   = false;
     xiiMat3 m_RootTransform       = xiiMat3::MakeIdentity();
 
-    xiiMeshResourceDescriptor*          m_pMeshOutput             = nullptr;
-    xiiEnum<xiiMeshNormalPrecision>     m_MeshNormalsPrecision    = xiiMeshNormalPrecision::Default;
-    xiiEnum<xiiMeshTexCoordPrecision>   m_MeshTexCoordsPrecision  = xiiMeshTexCoordPrecision::Default;
-    xiiEnum<xiiMeshBoneWeigthPrecision> m_MeshBoneWeightPrecision = xiiMeshBoneWeigthPrecision::Default;
+    xiiMeshResourceDescriptor*            m_pMeshOutput               = nullptr;
+    xiiEnum<xiiMeshNormalPrecision>       m_MeshNormalsPrecision      = xiiMeshNormalPrecision::Default;
+    xiiEnum<xiiMeshTexCoordPrecision>     m_MeshTexCoordsPrecision    = xiiMeshTexCoordPrecision::Default;
+    xiiEnum<xiiMeshBoneWeigthPrecision>   m_MeshBoneWeightPrecision   = xiiMeshBoneWeigthPrecision::Default;
+    xiiEnum<xiiMeshVertexColorConversion> m_MeshVertexColorConversion = xiiMeshVertexColorConversion::Default;
 
     xiiEditableSkeleton* m_pSkeletonOutput = nullptr;
 
@@ -34,6 +35,10 @@ namespace xiiModelImporter2
     xiiAnimationClipResourceDescriptor* m_pAnimationOutput    = nullptr;
     xiiUInt32                           m_uiFirstAnimKeyframe = 0;
     xiiUInt32                           m_uiNumAnimKeyframes  = 0;
+
+    xiiUInt8 m_uiMeshSimplification      = 0;
+    xiiUInt8 m_uiMaxSimplificationError  = 5;
+    bool     m_bAggressiveSimplification = false;
   };
 
   enum class PropertySemantic : xiiInt8

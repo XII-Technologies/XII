@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorPluginAssets/AnimationGraphAsset/AnimationGraphAsset.h>
 #include <EditorPluginAssets/AnimationGraphAsset/AnimationGraphAssetScene.moc.h>
 #include <EditorPluginAssets/AnimationGraphAsset/AnimationGraphAssetWindow.moc.h>
@@ -8,8 +9,6 @@
 #include <GuiFoundation/DockPanels/DocumentPanel.moc.h>
 #include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
-
-
 
 xiiQtAnimationGraphAssetDocumentWindow::xiiQtAnimationGraphAssetDocumentWindow(xiiDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
@@ -37,12 +36,21 @@ xiiQtAnimationGraphAssetDocumentWindow::xiiQtAnimationGraphAssetDocumentWindow(x
     addToolBar(pToolBar);
   }
 
-  m_pScene = new xiiQtAnimationGraphAssetScene(this);
-  m_pScene->InitScene(static_cast<const xiiDocumentNodeManager*>(pDocument->GetObjectManager()));
+  // Central Widget
+  {
+    m_pScene = new xiiQtAnimationGraphAssetScene(this);
+    m_pScene->InitScene(static_cast<const xiiDocumentNodeManager*>(pDocument->GetObjectManager()));
 
-  m_pView = new xiiQtNodeView(this);
-  m_pView->SetScene(m_pScene);
-  setCentralWidget(m_pView);
+    m_pView = new xiiQtNodeView(this);
+    m_pView->SetScene(m_pScene);
+
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    pCentral->setObjectName("xiiQtDocumentPanel");
+    pCentral->setWindowTitle("Anim Graph");
+    pCentral->setWidget(m_pView);
+
+    m_pDockManager->setCentralWidget(pCentral);
+  }
 
   {
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
@@ -51,9 +59,19 @@ xiiQtAnimationGraphAssetDocumentWindow::xiiQtAnimationGraphAssetDocumentWindow(x
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator((xiiAssetDocument*)GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
   }
 
   GetDocument()->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAnimationGraphAssetDocumentWindow::SelectionEventHandler, this));
@@ -81,6 +99,7 @@ void xiiQtAnimationGraphAssetDocumentWindow::SelectionEventHandler(const xiiSele
       if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
       {
         GetDocument()->GetSelectionManager()->SetSelection(((xiiAnimationGraphAssetDocument*)GetDocument())->GetPropertyObject());
-      } });
+      }
+    });
   }
 }

@@ -1,7 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/CodeUtils/Preprocessor.h>
 #include <Foundation/CodeUtils/TokenParseUtils.h>
 #include <Foundation/CodeUtils/Tokenizer.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/Types/Variant.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Shader/Implementation/Helper.h>
@@ -382,6 +384,83 @@ namespace
     }
   }
 } // namespace
+
+// static
+xiiResult xiiShaderParser::PreprocessSection(xiiStreamReader& inout_stream, xiiShaderHelper::xiiShaderSections::Enum section, xiiArrayPtr<xiiString> customDefines, xiiStringBuilder& out_sResult)
+{
+  xiiString sContent;
+  sContent.ReadAll(inout_stream);
+
+  xiiShaderHelper::xiiTextSectionizer sections;
+  xiiShaderHelper::GetShaderSections(sContent, sections);
+
+  xiiUInt32     uiFirstLine     = 0;
+  xiiStringView sSectionContent = sections.GetSectionContent(section, uiFirstLine);
+
+  xiiPreprocessor pp;
+  pp.SetPassThroughPragma(false);
+  pp.SetPassThroughLine(false);
+
+  // setup defines
+  {
+    XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("TRUE 1"));
+    XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("FALSE 0"));
+    XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("PLATFORM_SHADER ="));
+
+    for (auto& sDefine : customDefines)
+    {
+      XII_SUCCEED_OR_RETURN(pp.AddCustomDefine(sDefine));
+    }
+  }
+
+  pp.SetFileOpenFunction([&](xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& out_fileContent, xiiTimestamp& out_fileModification) {
+    if (sAbsoluteFile == "SectionContent")
+    {
+      out_fileContent.PushBackRange(xiiMakeArrayPtr((const xiiUInt8*)sSectionContent.GetStartPointer(), sSectionContent.GetElementCount()));
+      return XII_SUCCESS;
+    }
+
+    xiiFileReader r;
+    if (r.Open(sAbsoluteFile).Failed())
+    {
+      xiiLog::Error("Could not find include file '{0}'", sAbsoluteFile);
+      return XII_FAILURE;
+    }
+
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
+    xiiFileStats stats;
+    if (xiiFileSystem::GetFileStats(sAbsoluteFile, stats).Succeeded())
+    {
+      out_fileModification = stats.m_LastModificationTime;
+    }
+#endif
+
+    xiiUInt8 Temp[4096];
+    while (xiiUInt64 uiRead = r.ReadBytes(Temp, 4096))
+    {
+      out_fileContent.PushBackRange(xiiArrayPtr<xiiUInt8>(Temp, (xiiUInt32)uiRead));
+    }
+
+    return XII_SUCCESS;
+  });
+
+  bool bFoundUndefinedVars = false;
+  pp.m_ProcessingEvents.AddEventHandler([&bFoundUndefinedVars](const xiiPreprocessor::ProcessingEvent& e) {
+    if (e.m_Type == xiiPreprocessor::ProcessingEvent::EvaluateUnknown)
+    {
+      bFoundUndefinedVars = true;
+
+      xiiLog::Error("Undefined variable is evaluated: '{0}' (File: '{1}', Line: {2}. Only material permutation variables are allowed in material config sections.", e.m_pToken->m_DataView, e.m_pToken->m_File, e.m_pToken->m_uiLine);
+    }
+  });
+
+  if (pp.Process("SectionContent", out_sResult, false).Failed() || bFoundUndefinedVars)
+  {
+    return XII_FAILURE;
+  }
+
+  return XII_SUCCESS;
+}
 
 // static
 void xiiShaderParser::ParseMaterialParameterSection(xiiStreamReader& inout_stream, xiiHybridArray<ParameterDefinition, 16>& out_parameter, xiiHybridArray<EnumDefinition, 4>& out_enumDefinitions)

@@ -263,10 +263,18 @@ function(xii_add_output_xii_prefix TARGET_NAME)
 endfunction()
 
 # #####################################
-# ## xii_make_winmain_executable(<target>)
+# ## xii_make_windowapp(<target>)
+# 
+# Turns the target application from a 'console app' into a 'window app', which means it doesn't
+# show a command prompt with the log output on systems that differentiate between the these app types.
 # #####################################
-function(xii_make_winmain_executable TARGET_NAME)
+function(xii_make_windowapp TARGET_NAME)
   set_property(TARGET ${TARGET_NAME} PROPERTY WIN32_EXECUTABLE ON)
+  target_compile_definitions(${TARGET_NAME} PRIVATE EZ_WINDOWAPP=1)
+
+  if (COMMAND xii_platformhook_make_windowapp)
+    xii_platformhook_make_windowapp(${TARGET_NAME})
+  endif()	
 endfunction()
 
 # #####################################
@@ -709,4 +717,18 @@ function(xii_get_export_location DST_VAR)
       message(FATAL_ERROR "Unknown CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
     endif()
   endif()
+endfunction()
+
+# #####################################
+# ## xii_copy_plugin_bundle(TARGET_NAME FILE_NAME)
+# #####################################
+#
+# Copies the given file with the .xiiPluginBundle extension from the current source directory into the target directory.
+#
+# #####################################
+function(xii_copy_plugin_bundle TARGET_NAME FILE_NAME)
+  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_NAME}.xiiPluginBundle" $<TARGET_FILE_DIR:${TARGET_NAME}>
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
 endfunction()

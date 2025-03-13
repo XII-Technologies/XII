@@ -1,5 +1,6 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
+#include <EditorFramework/Assets/AssetBrowserDlg.moc.h>
 #include <EditorFramework/Dialogs/DashboardDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 
@@ -47,7 +48,11 @@ void xiiQtEditorApp::GuiCreateDocument()
 
 void xiiQtEditorApp::GuiOpenDocument()
 {
-  GuiCreateOrOpenDocument(false);
+  xiiQtAssetBrowserDlg dlg(QApplication::activeWindow(), xiiUuid(), "", "");
+  if (dlg.exec() == 0)
+    return;
+
+  xiiQtEditorApp::GetSingleton()->OpenDocument(dlg.GetSelectedAssetPathAbsolute(), xiiDocumentFlags::RequestWindow | xiiDocumentFlags::AddToRecentFilesList);
 }
 
 xiiString xiiQtEditorApp::BuildDocumentTypeFileFilter(bool bForCreation)
@@ -85,23 +90,4 @@ xiiString xiiQtEditorApp::BuildDocumentTypeFileFilter(bool bForCreation)
   }
 
   return sAllFilters;
-}
-
-void xiiQtEditorApp::DocumentWindowEventHandler(const xiiQtDocumentWindowEvent& e)
-{
-  switch (e.m_Type)
-  {
-    case xiiQtDocumentWindowEvent::WindowClosed:
-    {
-      // if all windows are closed, show at least the settings window
-      if (xiiQtDocumentWindow::GetAllDocumentWindows().GetCount() == 0)
-      {
-        ShowSettingsDocument();
-      }
-    }
-    break;
-
-    default:
-      break;
-  }
 }

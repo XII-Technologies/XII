@@ -33,7 +33,6 @@ void xiiQtDoubleSpinBox::SetIntMode(bool bEnable)
 
 void xiiQtDoubleSpinBox::setDisplaySuffix(xiiStringView sSuffix)
 {
-  ;
   m_sSuffix = xiiMakeQString(sSuffix);
 }
 

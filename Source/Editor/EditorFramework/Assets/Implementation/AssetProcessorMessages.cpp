@@ -10,6 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessAssetMsg, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("AssetGuid", m_AssetGuid),
     XII_MEMBER_PROPERTY("AssetHash", m_AssetHash),
     XII_MEMBER_PROPERTY("ThumbHash", m_ThumbHash),
+    XII_MEMBER_PROPERTY("PackageHash", m_PackageHash),
     XII_MEMBER_PROPERTY("AssetPath", m_sAssetPath),
     XII_MEMBER_PROPERTY("Platform", m_sPlatform),
     XII_ARRAY_MEMBER_PROPERTY("DepRefHull", m_DepRefHull),

@@ -32,6 +32,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneContext, 1, xiiRTTIDefaultAllocator<xii
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
+xiiWorld* xiiSceneContext::s_pWorldLinkedWithGameState = nullptr;
+
 void xiiSceneContext::ComputeHierarchyBounds(xiiGameObject* pObj, xiiBoundingBoxSphere& bounds)
 {
   pObj->UpdateGlobalTransformAndBounds();
@@ -487,7 +489,12 @@ void xiiSceneContext::OnSimulationDisabled()
 
 xiiGameStateBase* xiiSceneContext::GetGameState() const
 {
-  return xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameStateLinkedToWorld(m_pWorld);
+  if (s_pWorldLinkedWithGameState == m_pWorld)
+  {
+    return xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameState();
+  }
+
+  return nullptr;
 }
 
 xiiUInt32 xiiSceneContext::RegisterLayer(xiiLayerContext* pLayer)
@@ -619,7 +626,7 @@ void xiiSceneContext::HandleSelectionMsg(const xiiObjectSelectionMsgToEngine* pM
   }
 }
 
-void xiiSceneContext::OnPlayTheGameModeStarted(const xiiTransform* pStartPosition)
+void xiiSceneContext::OnPlayTheGameModeStarted(xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
   if (xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameState() != nullptr)
   {
@@ -638,7 +645,8 @@ void xiiSceneContext::OnPlayTheGameModeStarted(const xiiTransform* pStartPositio
 
   xiiGameApplication::GetGameApplicationInstance()->ReinitializeInputConfig();
 
-  xiiGameApplicationBase::GetGameApplicationBaseInstance()->ActivateGameState(m_pWorld, pStartPosition).IgnoreResult();
+  s_pWorldLinkedWithGameState = m_pWorld;
+  xiiGameApplicationBase::GetGameApplicationBaseInstance()->ActivateGameState(m_pWorld, sStartPosition, startPositionOffset);
 
   xiiGameModeMsgToEditor msgRet;
   msgRet.m_DocumentGuid = GetDocumentGuid();
@@ -719,11 +727,11 @@ void xiiSceneContext::HandleGameModeMsg(const xiiGameModeMsgToEngine* pMsg)
 
       xiiTransform tStart(pMsg->m_vStartPosition, qRot);
 
-      OnPlayTheGameModeStarted(&tStart);
+      OnPlayTheGameModeStarted("GlobalOverride", tStart);
     }
     else
     {
-      OnPlayTheGameModeStarted(nullptr);
+      OnPlayTheGameModeStarted({}, xiiTransform::MakeIdentity());
     }
   }
   else
@@ -916,16 +924,23 @@ void xiiSceneContext::OnDestroyThumbnailViewContext()
 void xiiSceneContext::UpdateDocumentContext()
 {
   SUPER::UpdateDocumentContext();
-  xiiGameStateBase* pState = GetGameState();
-  if (pState && pState->WasQuitRequested())
+
+  if (xiiGameStateBase* pState = GetGameState())
   {
-    xiiGameApplicationBase::GetGameApplicationBaseInstance()->DeactivateGameState();
+    // If we have a running game state we always want to render it (e.g. play the game).
+    pState->AddMainViewsToRender();
 
-    xiiGameModeMsgToEditor msgToEd;
-    msgToEd.m_DocumentGuid = GetDocumentGuid();
-    msgToEd.m_bRunningPTG  = false;
+    if (pState->WasQuitRequested())
+    {
+      xiiGameApplicationBase::GetGameApplicationBaseInstance()->DeactivateGameState();
+      s_pWorldLinkedWithGameState = nullptr;
 
-    SendProcessMessage(&msgToEd);
+      xiiGameModeMsgToEditor msgToEd;
+      msgToEd.m_DocumentGuid = GetDocumentGuid();
+      msgToEd.m_bRunningPTG  = false;
+
+      SendProcessMessage(&msgToEd);
+    }
   }
 }
 

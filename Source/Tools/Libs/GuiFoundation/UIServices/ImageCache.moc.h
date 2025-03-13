@@ -38,8 +38,8 @@ public:
   /// ImageInvalidated() signal.
   const QPixmap* QueryPixmap(xiiStringView sAbsolutePath, QModelIndex index = QModelIndex(), QVariant userData1 = QVariant(), QVariant userData2 = QVariant(), xiiUInt32* out_pImageID = nullptr);
 
-  /// \brief Same as QueryPixmap(), but first \a szType is used to call QueryTypeImage() and check whether a type specific image was registerd. If
-  /// yes, that is used instead of szAbsolutePath.
+  /// \brief Same as QueryPixmap(), but first \a sType is used to call QueryTypeImage() and check whether a type specific image was registerd. If
+  /// yes, that is used instead of sAbsolutePath.
   const QPixmap* QueryPixmapForType(xiiStringView sType, xiiStringView sAbsolutePath, QModelIndex index = QModelIndex(), QVariant userData1 = QVariant(), QVariant userData2 = QVariant(), xiiUInt32* out_pImageID = nullptr);
 
   /// \brief Invalidate the cached image with the given path. This is typically done when a thumbnail was just written to disk, to inform this system
@@ -90,17 +90,15 @@ private:
       if (rhs.m_Index < m_Index)
         return false;
 
-        // not supported in Qt 5.15 anymore, but doesn't look like it's vital
-#if 0
-      if (m_UserData1 < rhs.m_UserData1)
-        return true;
-      if (rhs.m_UserData1 < m_UserData1)
-        return false;
-      if (m_UserData2 < rhs.m_UserData2)
-        return true;
-      if (rhs.m_UserData2 < m_UserData2)
-        return false;
-#endif
+      // not supported in Qt 5.15 anymore, but doesn't look like it's vital
+      // if (m_UserData1 < rhs.m_UserData1)
+      //  return true;
+      // if (rhs.m_UserData1 < m_UserData1)
+      //  return false;
+      // if (m_UserData2 < rhs.m_UserData2)
+      //  return true;
+      // if (rhs.m_UserData2 < m_UserData2)
+      //  return false;
 
       return false;
     }
@@ -134,6 +132,5 @@ constexpr static xiiUInt32 xiiThumbnailSize = 256;
 
 XII_ALWAYS_INLINE QPixmap xiiSvgThumbnailToPixmap(xiiStringView sFilePath)
 {
-  xiiStringBuilder tmp;
-  return QIcon(sFilePath.GetData(tmp)).pixmap(QSize(xiiThumbnailSize, xiiThumbnailSize));
+  return QIcon(xiiMakeQString(sFilePath)).pixmap(QSize(xiiThumbnailSize, xiiThumbnailSize));
 }

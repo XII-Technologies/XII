@@ -6,8 +6,9 @@
 
 XII_IMPLEMENT_SINGLETON(xiiToolsProject);
 
-xiiEvent<const xiiToolsProjectEvent&> xiiToolsProject::s_Events;
-xiiEvent<xiiToolsProjectRequest&>     xiiToolsProject::s_Requests;
+xiiEvent<const xiiToolsProjectEvent&, xiiMutex> xiiToolsProject::s_Events;
+xiiEvent<xiiToolsProjectRequest&>               xiiToolsProject::s_Requests;
+
 
 xiiToolsProjectRequest::xiiToolsProjectRequest()
 {
@@ -44,12 +45,26 @@ xiiStatus xiiToolsProject::Create()
     }
   }
 
-  xiiToolsProjectEvent e;
-  e.m_pProject = this;
-  e.m_Type     = xiiToolsProjectEvent::Type::ProjectCreated;
-  s_Events.Broadcast(e);
+  {
+    xiiToolsProjectEvent e;
+    e.m_pProject = this;
+    e.m_Type     = xiiToolsProjectEvent::Type::ProjectCreated;
+    s_Events.Broadcast(e);
+  }
 
-  return Open();
+  XII_SUCCEED_OR_RETURN(Open());
+
+  // if this file already exists, the project was created from a template and should not get additional setup
+  xiiStringBuilder path(GetProjectDirectory(), "/Scenes/Main.xiiScene");
+  if (!xiiOSFile::ExistsDirectory(path))
+  {
+    xiiToolsProjectEvent e;
+    e.m_pProject = this;
+    e.m_Type     = xiiToolsProjectEvent::Type::ProjectFirstSetup;
+    s_Events.Broadcast(e);
+  }
+
+  return xiiStatus(XII_SUCCESS);
 }
 
 xiiStatus xiiToolsProject::Open()
@@ -319,8 +334,8 @@ xiiString xiiToolsProject::GetProjectDirectory() const
 
 xiiString xiiToolsProject::GetProjectDataFolder() const
 {
-  xiiStringBuilder s = GetProjectFile();
-  s.Append("_data");
+  xiiStringBuilder s = GetProjectDirectory();
+  s.AppendPath("Editor");
 
   return s;
 }

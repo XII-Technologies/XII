@@ -27,9 +27,24 @@ xiiUInt64 xiiTypelessResourceHandle::GetResourceIDHash() const
   return IsValid() ? m_pResource->GetResourceIDHash() : 0;
 }
 
-const xiiString& xiiTypelessResourceHandle::GetResourceID() const
+xiiStringView xiiTypelessResourceHandle::GetResourceID() const
 {
-  return m_pResource->GetResourceID();
+  if (IsValid())
+  {
+    return m_pResource->GetResourceID();
+  }
+
+  return {};
+}
+
+xiiStringView xiiTypelessResourceHandle::GetResourceIdOrDescription() const
+{
+  if (IsValid())
+  {
+    return m_pResource->GetResourceIdOrDescription();
+  }
+
+  return {};
 }
 
 const xiiRTTI* xiiTypelessResourceHandle::GetResourceType() const

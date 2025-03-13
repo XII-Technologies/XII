@@ -4,22 +4,6 @@
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 
-struct xiiRenderPipelineContextLoaderConnection
-{
-  xiiUuid   m_Source;
-  xiiUuid   m_Target;
-  xiiString m_SourcePin;
-  xiiString m_TargetPin;
-};
-XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiRenderPipelineContextLoaderConnection);
-
-
-class xiiRenderPipelineRttiConverterContext : public xiiWorldRttiConverterContext
-{
-public:
-  const xiiRTTI* FindTypeByName(xiiStringView sName) const override;
-};
-
 class XII_ENGINEPLUGINASSETS_DLL xiiRenderPipelineContext : public xiiEngineProcessDocumentContext
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineContext, xiiEngineProcessDocumentContext);
@@ -36,10 +20,4 @@ protected:
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
 
   virtual xiiStatus ExportDocument(const xiiExportDocumentMsgToEngine* pMsg) override;
-
-  virtual xiiWorldRttiConverterContext&       GetContext() override;
-  virtual const xiiWorldRttiConverterContext& GetContext() const override;
-
-private:
-  xiiRenderPipelineRttiConverterContext m_RenderPipelineContext;
 };

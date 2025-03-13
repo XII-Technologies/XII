@@ -21,7 +21,7 @@ xiiResourceLoadData xiiResourceLoaderFromFile::OpenDataStream(const xiiResource*
   xiiResourceLoadData res;
 
   xiiFileReader File;
-  if (File.Open(pResource->GetResourceID().GetData()).Failed())
+  if (File.Open(pResource->GetResourceID()).Failed())
     return res;
 
   res.m_sResourceDescription = File.GetFilePathRelative().GetData();

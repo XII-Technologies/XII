@@ -122,7 +122,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     if (uiStageHash == 0) // not used
       continue;
 
-    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash);
+    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash, xiiShaderManager::GetActivePlatform());
 
     if (pStageBin == nullptr)
     {
@@ -298,7 +298,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
 
   {
     xiiFileReader File;
-    if (File.Open(pResource->GetResourceID().GetData()).Failed())
+    if (File.Open(pResource->GetResourceID()).Failed())
     {
       xiiLog::Debug("Shader Permutation '{0}' does not exist, triggering recompile.", pResource->GetResourceID());
 
@@ -307,7 +307,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
         return res;
 
       // try again
-      if (File.Open(pResource->GetResourceID().GetData()).Failed())
+      if (File.Open(pResource->GetResourceID()).Failed())
       {
         xiiLog::Debug("Shader Permutation '{0}' still does not exist after recompile.", pResource->GetResourceID());
         return res;
@@ -345,7 +345,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
 
     xiiFileReader File;
 
-    if (File.Open(pResource->GetResourceID().GetData()).Failed())
+    if (File.Open(pResource->GetResourceID()).Failed())
     {
       xiiLog::Error("Shader Permutation '{0}': Failed to open the file", pResource->GetResourceID());
       return res;
@@ -377,7 +377,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
         continue;
 
       // this is where the preloading happens
-      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash);
+      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash, xiiShaderManager::GetActivePlatform());
     }
   }
 

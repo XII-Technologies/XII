@@ -41,7 +41,8 @@ private:
   void ReadBackPropertiesMarqueePick(xiiView* pView);
 
 private:
-  xiiRectFloat m_TargetRect;
+  xiiRectFloat   m_TargetRect;
+  const xiiRTTI* m_pGridRenderDataType = nullptr;
 
   xiiGALTextureHandle     m_hPickingIdRT;
   xiiGALTextureHandle     m_hPickingIdRTStaging;

@@ -18,7 +18,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiBeamComponent, 1, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("TargetObject", DummyGetter, SetTargetObject)->AddAttributes(new xiiGameObjectReferenceAttribute()),
-    XII_ACCESSOR_PROPERTY("Material", GetMaterialFile, SetMaterialFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
+    XII_RESOURCE_MEMBER_PROPERTY("Material", m_hMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
     XII_MEMBER_PROPERTY("Color", m_Color)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::White)),
     XII_ACCESSOR_PROPERTY("Width", GetWidth, SetWidth)->AddAttributes(new xiiDefaultValueAttribute(0.1f), new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_ACCESSOR_PROPERTY("UVUnitsPerWorldUnit", GetUVUnitsPerWorldUnit, SetUVUnitsPerWorldUnit)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.01f, xiiVariant())),
@@ -208,26 +208,6 @@ void xiiBeamComponent::SetUVUnitsPerWorldUnit(float fUVUnitsPerWorldUnit)
 float xiiBeamComponent::GetUVUnitsPerWorldUnit() const
 {
   return m_fUVUnitsPerWorldUnit;
-}
-
-void xiiBeamComponent::SetMaterialFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(szFile);
-  }
-  else
-  {
-    m_hMaterial.Invalidate();
-  }
-}
-
-const char* xiiBeamComponent::GetMaterialFile() const
-{
-  if (!m_hMaterial.IsValid())
-    return "";
-
-  return m_hMaterial.GetResourceID();
 }
 
 xiiMaterialResourceHandle xiiBeamComponent::GetMaterial() const

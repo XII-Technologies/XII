@@ -41,11 +41,8 @@ public:
   xiiTime m_MinDelay   = xiiTime::MakeFromSeconds(1.0); // [ property ]
   xiiTime m_DelayRange = xiiTime::MakeFromSeconds(0.0); // [ property ]
 
-  void        SetTimeoutPrefab(const char* szPrefab); // [ property ]
-  const char* GetTimeoutPrefab() const;               // [ property ]
+  xiiPrefabResourceHandle m_hTimeoutPrefab; ///< [ property ] Spawned when the component is killed due to the timeout
 
 protected:
   void OnTriggered(xiiMsgComponentInternalTrigger& msg);
-
-  xiiPrefabResourceHandle m_hTimeoutPrefab; ///< Spawned when the component is killed due to the timeout
 };

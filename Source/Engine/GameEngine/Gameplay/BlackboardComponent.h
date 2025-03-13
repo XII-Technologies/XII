@@ -39,7 +39,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief This base component represents an xiiBlackboard, which can be used to share state between multiple components and objects.
+/// \brief This base component represents a xiiBlackboard, which can be used to share state between multiple components and objects.
 ///
 /// The derived implementations may either create their own blackboards or reference other blackboards.
 class XII_GAMEENGINE_DLL xiiBlackboardComponent : public xiiComponent
@@ -78,9 +78,6 @@ public:
 
   void SetShowDebugInfo(bool bShow); // [ property ]
   bool GetShowDebugInfo() const;     // [ property ]
-
-  void        SetTemplateFile(const char* szName); // [ property ]
-  const char* GetTemplateFile() const;             // [ property ]
 
   void       SetEntryValue(const char* szName, const xiiVariant& value); // [ scriptable ]
   xiiVariant GetEntryValue(const char* szName) const;                    // [ scriptable ]

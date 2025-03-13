@@ -2,7 +2,6 @@
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Gizmos/GizmoBase.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 /// \brief The click gizmo displays a simple shape that can be clicked.
 ///

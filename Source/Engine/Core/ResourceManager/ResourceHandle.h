@@ -76,8 +76,13 @@ public:
   xiiUInt64 GetResourceIDHash() const;
 
   /// \brief Returns the Resource ID of the exact resource that this handle points to, without acquiring the resource.
-  /// The handle must be valid.
-  const xiiString& GetResourceID() const;
+  /// If the handle is not valid, an empty string is returned.
+  xiiStringView GetResourceID() const;
+
+  /// \brief The returns the resource description, if available, otherwise the resource ID.
+  /// This is mainly for logging, where you want the more user friendly description, but the ID, if no description is available.
+  /// If the handle is not valid, an empty string is returned.
+  xiiStringView GetResourceIdOrDescription() const;
 
   /// \brief Releases the current reference and increases the refcount of the given resource.
   void operator=(const xiiTypelessResourceHandle& rhs);
@@ -88,17 +93,11 @@ public:
   /// \brief Checks whether the two handles point to the same resource.
   XII_ALWAYS_INLINE bool operator==(const xiiTypelessResourceHandle& rhs) const { return m_pResource == rhs.m_pResource; }
 
-  /// \brief Checks whether the two handles point to the same resource.
-  XII_ALWAYS_INLINE bool operator!=(const xiiTypelessResourceHandle& rhs) const { return m_pResource != rhs.m_pResource; }
-
   /// \brief For storing handles as keys in maps
   XII_ALWAYS_INLINE bool operator<(const xiiTypelessResourceHandle& rhs) const { return m_pResource < rhs.m_pResource; }
 
   /// \brief Checks whether the handle points to the given resource.
   XII_ALWAYS_INLINE bool operator==(const xiiResource* rhs) const { return m_pResource == rhs; }
-
-  /// \brief Checks whether the handle points to the given resource.
-  XII_ALWAYS_INLINE bool operator!=(const xiiResource* rhs) const { return m_pResource != rhs; }
 
   /// \brief Returns the type information of the resource or nullptr if the handle is invalid.
   const xiiRTTI* GetResourceType() const;
@@ -220,7 +219,12 @@ public:
 
   /// \brief Returns the Resource ID of the exact resource that this handle points to, without acquiring the resource.
   /// The handle must be valid.
-  XII_ALWAYS_INLINE const xiiString& GetResourceID() const { return m_hTypeless.GetResourceID(); }
+  XII_ALWAYS_INLINE xiiStringView GetResourceID() const { return m_hTypeless.GetResourceID(); }
+
+  /// \brief The returns the resource description, if available, otherwise the resource ID.
+  /// This is mainly for logging, where you want the more user friendly description, but the ID, if no description is available.
+  /// If the handle is not valid, an empty string is returned.
+  XII_ALWAYS_INLINE xiiStringView GetResourceIdOrDescription() const { return m_hTypeless.GetResourceIdOrDescription(); }
 
   /// \brief Attempts to copy the given typeless handle to this handle.
   ///

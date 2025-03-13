@@ -40,11 +40,9 @@ public:
   xiiSimpleAnimationComponent();
   ~xiiSimpleAnimationComponent();
 
-  void                                  SetAnimationClip(const xiiAnimationClipResourceHandle& hResource);
-  const xiiAnimationClipResourceHandle& GetAnimationClip() const;
+  xiiAnimationClipResourceHandle m_hAnimationClip;
 
-  void        SetAnimationClipFile(const char* szFile); // [ property ]
-  const char* GetAnimationClipFile() const;             // [ property ]
+  XII_ADD_RESOURCEHANDLE_ACCESSORS(AnimationClip, m_hAnimationClip);
 
   xiiEnum<xiiPropertyAnimMode> m_AnimationMode; // [ property ]
   float                        m_fSpeed = 1.0f; // [ property ]
@@ -58,12 +56,11 @@ protected:
   void Update();
   bool UpdatePlaybackTime(xiiTime tDiff, const xiiEventTrack& eventTrack, xiiAnimPoseEventTrackSampleMode& out_trackSampling);
 
-  xiiEnum<xiiRootMotionMode>     m_RootMotionMode;
-  float                          m_fNormalizedPlaybackPosition = 0.0f;
-  xiiTime                        m_Duration;
-  xiiAnimationClipResourceHandle m_hAnimationClip;
-  xiiSkeletonResourceHandle      m_hSkeleton;
-  xiiTime                        m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
+  xiiEnum<xiiRootMotionMode> m_RootMotionMode;
+  float                      m_fNormalizedPlaybackPosition = 0.0f;
+  xiiTime                    m_Duration;
+  xiiSkeletonResourceHandle  m_hSkeleton;
+  xiiTime                    m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
 
   ozz::vector<ozz::math::SoaTransform> m_OzzLocalTransforms; // TODO: could be frame allocated
 };

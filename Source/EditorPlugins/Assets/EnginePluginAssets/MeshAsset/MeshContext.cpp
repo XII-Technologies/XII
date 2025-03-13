@@ -58,7 +58,7 @@ void xiiMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg)
     {
       if (pMsg->m_sPayload == "Grid")
       {
-        m_bDisplayGrid = pMsg->m_fPayload > 0;
+        m_bDisplayGrid = pMsg->m_PayloadValue.ConvertTo<float>() > 0;
         return;
       }
     }

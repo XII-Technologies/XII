@@ -27,6 +27,7 @@ protected:
 
 private:
   void UpdateView();
+
   void DrawGrid(QPainter* painter, const double gridStep);
 
 private:

@@ -37,7 +37,7 @@ public:
     PasteAtOriginalLocation,
     Delete,
   };
-  xiiEditAction(const xiiActionContext& context, const char* szName, ButtonType button);
+  xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
   ~xiiEditAction();
 
   virtual void Execute(const xiiVariant& value) override;

@@ -63,8 +63,10 @@ void xiiAssetInfo::Update(xiiUniquePtr<xiiAssetInfo>& rhs)
 
   m_AssetHash            = rhs->m_AssetHash;
   m_ThumbHash            = rhs->m_ThumbHash;
+  m_PackageHash          = rhs->m_PackageHash;
   m_MissingTransformDeps = std::move(rhs->m_MissingTransformDeps);
   m_MissingThumbnailDeps = std::move(rhs->m_MissingThumbnailDeps);
+  m_MissingPackageDeps   = std::move(rhs->m_MissingPackageDeps);
   m_CircularDependencies = std::move(rhs->m_CircularDependencies);
   // Don't copy m_SubAssets, we want to update it independently.
   rhs = nullptr;
@@ -437,20 +439,31 @@ xiiStatus xiiAssetCurator::TransformAllAssets(xiiBitflags<xiiTransformFlags> tra
   return xiiStatus(XII_SUCCESS);
 }
 
-void xiiAssetCurator::ResaveAllAssets()
+void xiiAssetCurator::ResaveAllAssets(xiiStringView sPrefixPath)
 {
-  xiiProgressRange range("Re-saving all Assets", 1 + m_KnownAssets.GetCount(), true);
+  xiiHashTable<xiiUuid, xiiAssetInfo*> resaveAssets;
+  resaveAssets.Reserve(m_KnownAssets.GetCount());
+
+  for (auto itAsset = m_KnownAssets.GetIterator(); itAsset.IsValid(); ++itAsset)
+  {
+    if (xiiPathUtils::IsSubPath(sPrefixPath, itAsset.Value()->m_Path.GetAbsolutePath()))
+    {
+      resaveAssets.Insert(itAsset.Key(), itAsset.Value());
+    }
+  }
+
+  xiiProgressRange range("Re-saving Assets", 1 + resaveAssets.GetCount(), true);
 
   XII_LOCK(m_CuratorMutex);
 
   xiiDynamicArray<xiiUuid> sortedAssets;
-  sortedAssets.Reserve(m_KnownAssets.GetCount());
+  sortedAssets.Reserve(resaveAssets.GetCount());
 
   xiiMap<xiiUuid, xiiSet<xiiUuid>> dependencies;
 
   xiiSet<xiiUuid> accu;
 
-  for (auto itAsset = m_KnownAssets.GetIterator(); itAsset.IsValid(); ++itAsset)
+  for (auto itAsset = resaveAssets.GetIterator(); itAsset.IsValid(); ++itAsset)
   {
     auto it2 = dependencies.Insert(itAsset.Key(), xiiSet<xiiUuid>());
     for (const xiiString& dep : itAsset.Value()->m_Info->m_TransformDependencies)
@@ -762,23 +775,25 @@ const xiiAssetCurator::xiiLockedAssetTable xiiAssetCurator::GetKnownAssets() con
 
 xiiUInt64 xiiAssetCurator::GetAssetDependencyHash(xiiUuid assetGuid)
 {
-  xiiUInt64 assetHash = 0;
-  xiiUInt64 thumbHash = 0;
-  xiiAssetCurator::UpdateAssetTransformState(assetGuid, assetHash, thumbHash, false);
+  xiiUInt64 assetHash   = 0;
+  xiiUInt64 thumbHash   = 0;
+  xiiUInt64 packageHash = 0;
+  xiiAssetCurator::UpdateAssetTransformState(assetGuid, assetHash, thumbHash, packageHash, false);
   return assetHash;
 }
 
 xiiUInt64 xiiAssetCurator::GetAssetReferenceHash(xiiUuid assetGuid)
 {
-  xiiUInt64 assetHash = 0;
-  xiiUInt64 thumbHash = 0;
-  xiiAssetCurator::UpdateAssetTransformState(assetGuid, assetHash, thumbHash, false);
+  xiiUInt64 assetHash   = 0;
+  xiiUInt64 packageHash = 0;
+  xiiUInt64 thumbHash   = 0;
+  xiiAssetCurator::UpdateAssetTransformState(assetGuid, assetHash, thumbHash, packageHash, false);
   return thumbHash;
 }
 
-xiiAssetInfo::TransformState xiiAssetCurator::IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile*, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, bool bForce)
+xiiAssetInfo::TransformState xiiAssetCurator::IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile*, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, xiiUInt64& out_uiPackageHash, bool bForce)
 {
-  return xiiAssetCurator::UpdateAssetTransformState(assetGuid, out_uiAssetHash, out_uiThumbHash, bForce);
+  return xiiAssetCurator::UpdateAssetTransformState(assetGuid, out_uiAssetHash, out_uiThumbHash, out_uiPackageHash, bForce);
 }
 
 void xiiAssetCurator::InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState state)
@@ -793,7 +808,7 @@ void xiiAssetCurator::InvalidateAssetsWithTransformState(xiiAssetInfo::Transform
   }
 }
 
-xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, bool bForce)
+xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce)
 {
   CURATOR_PROFILE("UpdateAssetTransformState");
   xiiStringBuilder sAbsAssetPath;
@@ -816,8 +831,9 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
       if (CheckForCircularDependencies(pAssetInfo).Failed())
       {
         UpdateAssetTransformState(assetGuid, xiiAssetInfo::CircularDependency);
-        out_AssetHash = 0;
-        out_ThumbHash = 0;
+        out_AssetHash   = 0;
+        out_ThumbHash   = 0;
+        out_PackageHash = 0;
         return xiiAssetInfo::CircularDependency;
       }
     }
@@ -827,8 +843,9 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     // file without modifying the content). Thus we need to check for m_TransformStateStale as well as for the set state.
     if (!bForce && pAssetInfo->m_TransformState != xiiAssetInfo::Unknown && !m_TransformStateStale.Contains(assetGuid))
     {
-      out_AssetHash = pAssetInfo->m_AssetHash;
-      out_ThumbHash = pAssetInfo->m_ThumbHash;
+      out_AssetHash   = pAssetInfo->m_AssetHash;
+      out_ThumbHash   = pAssetInfo->m_ThumbHash;
+      out_PackageHash = pAssetInfo->m_PackageHash;
       return pAssetInfo->m_TransformState;
     }
   }
@@ -843,6 +860,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
   xiiUInt64                             uiSettingsHash    = 0;
   xiiHybridArray<xiiString, 16>         transformDeps;
   xiiHybridArray<xiiString, 16>         thumbnailDeps;
+  xiiHybridArray<xiiString, 16>         packageDeps;
   xiiHybridArray<xiiString, 16>         outputs;
   xiiHybridArray<xiiString, 16>         subAssetNames;
 
@@ -871,6 +889,10 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     {
       thumbnailDeps.PushBack(ref);
     }
+    for (const xiiString& ref : pAssetInfo->m_Info->m_PackageDependencies)
+    {
+      packageDeps.PushBack(ref);
+    }
     for (const xiiString& output : pAssetInfo->m_Info->m_Outputs)
     {
       outputs.PushBack(output);
@@ -887,10 +909,11 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
   xiiAssetInfo::TransformState state = xiiAssetInfo::TransformState::Unknown;
   xiiSet<xiiString>            missingTransformDeps;
   xiiSet<xiiString>            missingThumbnailDeps;
+  xiiSet<xiiString>            missingPackageDeps;
   // Compute final state and hashes.
   {
-    state = HashAsset(uiSettingsHash, transformDeps, thumbnailDeps, missingTransformDeps, missingThumbnailDeps, out_AssetHash, out_ThumbHash, bForce);
-    XII_ASSERT_DEV(state == xiiAssetInfo::Unknown || state == xiiAssetInfo::MissingTransformDependency || state == xiiAssetInfo::MissingThumbnailDependency, "Unhandled case of HashAsset return value.");
+    state = HashAsset(uiSettingsHash, transformDeps, thumbnailDeps, packageDeps, missingTransformDeps, missingThumbnailDeps, missingPackageDeps, out_AssetHash, out_ThumbHash, out_PackageHash, bForce);
+    XII_ASSERT_DEV(state == xiiAssetInfo::Unknown || state == xiiAssetInfo::MissingTransformDependency || state == xiiAssetInfo::MissingThumbnailDependency || state == xiiAssetInfo::MissingPackageDependency, "Unhandled case of HashAsset return value.");
 
     if (state == xiiAssetInfo::Unknown)
     {
@@ -938,8 +961,10 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
         UpdateAssetTransformState(assetGuid, state);
         pAssetInfo->m_AssetHash            = out_AssetHash;
         pAssetInfo->m_ThumbHash            = out_ThumbHash;
+        pAssetInfo->m_PackageHash          = out_PackageHash;
         pAssetInfo->m_MissingTransformDeps = std::move(missingTransformDeps);
         pAssetInfo->m_MissingThumbnailDeps = std::move(missingThumbnailDeps);
+        pAssetInfo->m_MissingPackageDeps   = std::move(missingPackageDeps);
         if (state == xiiAssetInfo::TransformState::UpToDate)
         {
           UpdateSubAssets(*pAssetInfo);
@@ -1400,10 +1425,11 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
   if (transformFlags.IsSet(xiiTransformFlags::ForceTransform))
     xiiLog::Dev("Asset transform forced.");
 
-  const xiiAssetDocumentTypeDescriptor* pTypeDesc   = pAssetInfo->m_pDocumentTypeDescriptor;
-  xiiUInt64                             uiHash      = 0;
-  xiiUInt64                             uiThumbHash = 0;
-  xiiAssetInfo::TransformState          state       = IsAssetUpToDate(pAssetInfo->m_Info->m_DocumentID, pAssetProfile, pTypeDesc, uiHash, uiThumbHash);
+  const xiiAssetDocumentTypeDescriptor* pTypeDesc     = pAssetInfo->m_pDocumentTypeDescriptor;
+  xiiUInt64                             uiHash        = 0;
+  xiiUInt64                             uiThumbHash   = 0;
+  xiiUInt64                             uiPackageHash = 0;
+  xiiAssetInfo::TransformState          state         = IsAssetUpToDate(pAssetInfo->m_Info->m_DocumentID, pAssetProfile, pTypeDesc, uiHash, uiThumbHash, uiPackageHash);
 
   if (state == xiiAssetInfo::TransformState::CircularDependency)
   {
@@ -1457,14 +1483,17 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
     // Sanity check that transforming the dependencies did not change the asset's transform state.
     // In theory this can happen if an asset is transformed by multiple processes at the same time or changes to the file system are being made in the middle of the transform.
     // If this can be reproduced consistently, it is usually a bug in the dependency tracking or other part of the asset curator.
-    xiiUInt64                    uiHash2      = 0;
-    xiiUInt64                    uiThumbHash2 = 0;
-    xiiAssetInfo::TransformState state2       = IsAssetUpToDate(pAssetInfo->m_Info->m_DocumentID, pAssetProfile, pTypeDesc, uiHash2, uiThumbHash2);
+    xiiUInt64                    uiHash2        = 0;
+    xiiUInt64                    uiThumbHash2   = 0;
+    xiiUInt64                    uiPackageHash2 = 0;
+    xiiAssetInfo::TransformState state2         = IsAssetUpToDate(pAssetInfo->m_Info->m_DocumentID, pAssetProfile, pTypeDesc, uiHash2, uiThumbHash2, uiPackageHash2);
 
     if (uiHash != uiHash2)
       return xiiTransformStatus(xiiFmt("Asset hash changed while prosessing dependencies from {} to {}", uiHash, uiHash2));
     if (uiThumbHash != uiThumbHash2)
       return xiiTransformStatus(xiiFmt("Asset thumbnail hash changed while prosessing dependencies from {} to {}", uiThumbHash, uiThumbHash2));
+    if (uiPackageHash != uiPackageHash2)
+      return xiiTransformStatus(xiiFmt("Asset package hash changed while prosessing dependencies from {} to {}", uiPackageHash, uiPackageHash2));
     if (state != state2)
       return xiiTransformStatus(xiiFmt("Asset state changed while prosessing dependencies from {} to {}", state, state2));
   }
@@ -1512,9 +1541,14 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
     }
   }
 
+  if (state == xiiAssetInfo::TransformState::MissingPackageDependency)
+  {
+    return xiiTransformStatus(xiiFmt("Missing package dependency for asset '{0}'. Asset compromised.", pAssetInfo->m_Path.GetAbsolutePath()));
+  }
+
   if (state == xiiAssetInfo::TransformState::MissingThumbnailDependency)
   {
-    return xiiTransformStatus(xiiFmt("Missing reference for asset '{0}', can't create thumbnail.", pAssetInfo->m_Path.GetAbsolutePath()));
+    return xiiTransformStatus(xiiFmt("Missing thumbnail dependency for asset '{0}', can't create thumbnail.", pAssetInfo->m_Path.GetAbsolutePath()));
   }
 
   if (opt_AssetThumbnails.GetOptionValue(xiiCommandLineOption::LogMode::FirstTimeIfSpecified) != 1)
@@ -1524,7 +1558,7 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
     if (ret.Succeeded() && assetFlags.IsSet(xiiAssetDocumentFlags::SupportsThumbnail) && !assetFlags.IsSet(xiiAssetDocumentFlags::AutoThumbnailOnTransform) && !resReferences.Failed())
     {
       // If the transformed succeeded, the asset should now be in the NeedsThumbnail state unless the thumbnail already exists in which case we are done or the transform made changes to the asset, e.g. a mesh imported new materials in which case we will revert to transform needed as our dependencies need transform. We simply skip the thumbnail generation in this case.
-      xiiAssetInfo::TransformState state3 = IsAssetUpToDate(pAssetInfo->m_Info->m_DocumentID, pAssetProfile, pTypeDesc, uiHash, uiThumbHash);
+      xiiAssetInfo::TransformState state3 = IsAssetUpToDate(pAssetInfo->m_Info->m_DocumentID, pAssetProfile, pTypeDesc, uiHash, uiThumbHash, uiPackageHash);
       if (state3 == xiiAssetInfo::TransformState::NeedsThumbnail)
       {
         ret = pAsset->CreateThumbnail();

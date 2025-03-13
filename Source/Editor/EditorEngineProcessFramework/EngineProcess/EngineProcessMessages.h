@@ -160,9 +160,9 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSimpleDocumentConfigMsgToEngine : 
   XII_ADD_DYNAMIC_REFLECTION(xiiSimpleDocumentConfigMsgToEngine, xiiEditorEngineDocumentMsg);
 
 public:
-  xiiString m_sWhatToDo;
-  xiiString m_sPayload;
-  double    m_fPayload;
+  xiiString  m_sWhatToDo;
+  xiiString  m_sPayload;
+  xiiVariant m_PayloadValue;
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSimpleDocumentConfigMsgToEditor : public xiiEditorEngineDocumentMsg
@@ -170,9 +170,9 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSimpleDocumentConfigMsgToEditor : 
   XII_ADD_DYNAMIC_REFLECTION(xiiSimpleDocumentConfigMsgToEditor, xiiEditorEngineDocumentMsg);
 
 public:
-  xiiString m_sName;
-  xiiString m_sPayload;
-  double    m_fPayload;
+  xiiString  m_sWhatToDo;
+  xiiString  m_sPayload;
+  xiiVariant m_PayloadValue;
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSyncWithProcessMsgToEngine : public xiiProcessMessage

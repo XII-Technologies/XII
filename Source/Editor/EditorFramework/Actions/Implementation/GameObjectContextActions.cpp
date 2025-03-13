@@ -21,7 +21,6 @@ void xiiGameObjectContextActions::RegisterActions()
   s_hClearContextObject = XII_REGISTER_ACTION_1("GameObjectContext.ClearContextObject", xiiActionScope::Window, "Game Object Context", "", xiiGameObjectContextAction, xiiGameObjectContextAction::ActionType::ClearContextObject);
 }
 
-
 void xiiGameObjectContextActions::UnregisterActions()
 {
   xiiActionManager::UnregisterAction(s_hCategory);
@@ -40,7 +39,6 @@ void xiiGameObjectContextActions::MapToolbarActions(xiiStringView sMapping)
   const xiiStringView szSubPath = "GameObjectContextCategory";
   pMap->MapAction(s_hPickContextScene, szSubPath, 1.0f);
 }
-
 
 void xiiGameObjectContextActions::MapContextMenuActions(xiiStringView sMapping)
 {

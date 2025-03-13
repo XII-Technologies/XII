@@ -1,9 +1,10 @@
 #pragma once
 
+#include <ToolsFoundation/ToolsFoundationDLL.h>
+
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <ToolsFoundation/Document/Document.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 struct XII_TOOLSFOUNDATION_DLL xiiActiveDocumentChange
 {

@@ -10,7 +10,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiColorAnimationComponent, 2, xiiComponentMode::Static
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Gradient", GetColorGradientFile, SetColorGradientFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Data_Gradient")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Gradient", GetColorGradient, SetColorGradient)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Data_Gradient")),
     XII_MEMBER_PROPERTY("Duration", m_Duration),
     XII_ENUM_MEMBER_PROPERTY("SetColorMode", xiiSetColorMode, m_SetColorMode),
     XII_ENUM_MEMBER_PROPERTY("AnimationMode", xiiPropertyAnimMode, m_AnimationMode),
@@ -73,26 +73,6 @@ void xiiColorAnimationComponent::OnSimulationStarted()
   {
     m_CurAnimTime = xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_Duration.GetSeconds()));
   }
-}
-
-void xiiColorAnimationComponent::SetColorGradientFile(const char* szFile)
-{
-  xiiColorGradientResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiColorGradientResource>(szFile);
-  }
-
-  SetColorGradient(hResource);
-}
-
-const char* xiiColorAnimationComponent::GetColorGradientFile() const
-{
-  if (!m_hGradient.IsValid())
-    return "";
-
-  return m_hGradient.GetResourceID();
 }
 
 void xiiColorAnimationComponent::SetColorGradient(const xiiColorGradientResourceHandle& hResource)

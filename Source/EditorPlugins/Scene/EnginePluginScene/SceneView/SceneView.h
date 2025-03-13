@@ -8,6 +8,7 @@ class xiiView;
 class xiiViewRedrawMsgToEngine;
 class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
+class xiiEditorRenderPass;
 class xiiSelectedObjectsExtractorBase;
 class xiiSceneContext;
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
@@ -40,7 +41,7 @@ protected:
   void MarqueePickObjects(const xiiViewMarqueePickingMsgToEngine* pMsg);
 
 private:
-  xiiSceneContext* m_pSceneContext = nullptr;
+  xiiSceneContext* m_pSceneContext;
 
   bool m_bUpdatePickingData;
 

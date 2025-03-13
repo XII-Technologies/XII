@@ -112,39 +112,37 @@ const xiiIdTable<xiiActionId, xiiActionDescriptor*>::ConstIterator xiiActionMana
   return s_ActionTable.GetIterator();
 }
 
-xiiActionDescriptorHandle xiiActionManager::GetActionHandle(const char* szCategoryPath, const char* szActionName)
+xiiActionDescriptorHandle xiiActionManager::GetActionHandle(xiiStringView sCategoryPath, xiiStringView sActionName)
 {
   xiiActionDescriptorHandle hAction;
-  auto                      it = s_CategoryPathToActions.Find(szCategoryPath);
+  auto                      it = s_CategoryPathToActions.Find(sCategoryPath);
   if (!it.IsValid())
     return hAction;
 
-  it.Value().m_ActionNameToHandle.TryGetValue(szActionName, hAction);
+  it.Value().m_ActionNameToHandle.TryGetValue(sActionName, hAction);
 
   return hAction;
 }
 
-xiiString xiiActionManager::FindActionCategory(const char* szActionName)
+xiiString xiiActionManager::FindActionCategory(xiiStringView sActionName)
 {
   for (auto itCat : s_CategoryPathToActions)
   {
-    if (itCat.Value().m_ActionNameToHandle.Contains(szActionName))
+    if (itCat.Value().m_ActionNameToHandle.Contains(sActionName))
       return itCat.Key();
   }
 
   return xiiString();
 }
 
-xiiResult xiiActionManager::ExecuteAction(const char* szCategory, const char* szActionName, const xiiActionContext& context, const xiiVariant& value /*= xiiVariant()*/)
+xiiResult xiiActionManager::ExecuteAction(xiiStringView sCategory, xiiStringView sActionName, const xiiActionContext& context, const xiiVariant& value /*= xiiVariant()*/)
 {
-  xiiString sCategory = szCategory;
-
-  if (szCategory == nullptr)
+  if (sCategory.IsEmpty())
   {
-    sCategory = FindActionCategory(szActionName);
+    sCategory = FindActionCategory(sActionName);
   }
 
-  auto hAction = xiiActionManager::GetActionHandle(sCategory, szActionName);
+  auto hAction = xiiActionManager::GetActionHandle(sCategory, sActionName);
 
   if (hAction.IsInvalidated())
     return XII_FAILURE;

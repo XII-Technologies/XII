@@ -30,9 +30,6 @@ public:
   xiiPlayerStartPointComponent();
   ~xiiPlayerStartPointComponent();
 
-  void        SetPlayerPrefabFile(const char* szFile); // [ property ]
-  const char* GetPlayerPrefabFile() const;             // [ property ]
-
   void                           SetPlayerPrefab(const xiiPrefabResourceHandle& hPrefab); // [ property ]
   const xiiPrefabResourceHandle& GetPlayerPrefab() const;                                 // [ property ]
 

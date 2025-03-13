@@ -4,6 +4,8 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
+#include <GraphicsCore/ShaderCompiler/ShaderCompiler.h>
+#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
 
 #ifdef XII_USE_QT
 #  include <Fileserve/Gui.moc.h>
@@ -97,6 +99,81 @@ void xiiFileserverApp::FileserverEventHandler(const xiiFileserverEvent& e)
 
     default:
       break;
+  }
+}
+
+void xiiFileserverApp::ShaderMessageHandler(xiiFileserveClientContext& ref_ctxt, xiiRemoteMessage& ref_msg, xiiRemoteInterface& ref_clientChannel, xiiDelegate<void(const char*)> logActivity)
+{
+  if (ref_msg.GetMessageID() == 'CMPL')
+  {
+    for (auto& dd : ref_ctxt.m_MountedDataDirs)
+    {
+      xiiFileSystem::AddDataDirectory(dd.m_sPathOnServer, "FileServe", dd.m_sRootName, xiiDataDirUsage::AllowWrites).IgnoreResult();
+    }
+
+    auto& r = ref_msg.GetReader();
+
+    xiiStringBuilder                      tmp;
+    xiiStringBuilder                      file, platform;
+    xiiUInt32                             numPermVars;
+    xiiHybridArray<xiiPermutationVar, 16> permVars;
+
+    r >> file;
+    r >> platform;
+    r >> numPermVars;
+    permVars.SetCount(numPermVars);
+
+    tmp.SetFormat("Compiling Shader '{}' - '{}'", file, platform);
+
+    for (auto& pv : permVars)
+    {
+      r >> pv.m_sName;
+      r >> pv.m_sValue;
+
+      tmp.AppendWithSeparator(" | ", pv.m_sName, "=", pv.m_sValue);
+    }
+
+    logActivity(tmp);
+
+    // enable runtime shader compilation and set the shader cache directories (this only works, if the user doesn't change the default values)
+    // the 'active platform' value should never be used during shader compilation, because there it is passed in
+    xiiShaderManager::Configure("FILESERVE_UNUSED", true);
+
+    xiiLogSystemToBuffer log;
+    xiiLogSystemScope    ls(&log);
+
+    xiiShaderCompiler sc;
+    xiiResult         res = sc.CompileShaderPermutationForPlatforms(file, permVars, xiiLog::GetThreadLocalLogSystem(), platform);
+
+    xiiFileSystem::RemoveDataDirectoryGroup("FileServe");
+
+    if (res.Succeeded())
+    {
+      // invalidate read cache to not short-circuit the next file read operation
+      xiiRemoteMessage msg2('FSRV', 'INVC');
+      ref_clientChannel.Send(xiiRemoteTransmitMode::Reliable, msg2);
+    }
+    else
+    {
+      logActivity("[ERROR] Shader Compilation failed:");
+
+      xiiHybridArray<xiiStringView, 32> lines;
+      log.m_sBuffer.Split(false, lines, "\n", "\r");
+
+      for (auto line : lines)
+      {
+        tmp.Set(">   ", line);
+        logActivity(tmp);
+      }
+    }
+
+    {
+      xiiRemoteMessage msg2('SHDR', 'CRES');
+      msg2.GetWriter() << (res == XII_SUCCESS);
+      msg2.GetWriter() << log.m_sBuffer;
+
+      ref_clientChannel.Send(xiiRemoteTransmitMode::Reliable, msg2);
+    }
   }
 }
 

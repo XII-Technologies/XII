@@ -20,7 +20,7 @@ void xiiObjectAccessorBase::CancelTemporaryCommands() {}
 void xiiObjectAccessorBase::FinishTemporaryCommands() {}
 
 
-xiiStatus xiiObjectAccessorBase::GetValue(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant& out_value, xiiVariant index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::GetValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant& out_value, xiiVariant index /*= xiiVariant()*/)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -29,7 +29,7 @@ xiiStatus xiiObjectAccessorBase::GetValue(const xiiDocumentObject* pObject, xiiS
 }
 
 
-xiiStatus xiiObjectAccessorBase::SetValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::SetValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -38,7 +38,7 @@ xiiStatus xiiObjectAccessorBase::SetValue(const xiiDocumentObject* pObject, xiiS
 }
 
 
-xiiStatus xiiObjectAccessorBase::InsertValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::InsertValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -47,7 +47,7 @@ xiiStatus xiiObjectAccessorBase::InsertValue(const xiiDocumentObject* pObject, x
 }
 
 
-xiiStatus xiiObjectAccessorBase::RemoveValue(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index /*= xiiVariant()*/)
+xiiStatus xiiObjectAccessorBase::RemoveValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index /*= xiiVariant()*/)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -56,7 +56,7 @@ xiiStatus xiiObjectAccessorBase::RemoveValue(const xiiDocumentObject* pObject, x
 }
 
 
-xiiStatus xiiObjectAccessorBase::MoveValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& oldIndex, const xiiVariant& newIndex)
+xiiStatus xiiObjectAccessorBase::MoveValueByName(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& oldIndex, const xiiVariant& newIndex)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -65,7 +65,7 @@ xiiStatus xiiObjectAccessorBase::MoveValue(const xiiDocumentObject* pObject, xii
 }
 
 
-xiiStatus xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, xiiStringView sProp, xiiInt32& out_iCount)
+xiiStatus xiiObjectAccessorBase::GetCountByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiInt32& out_iCount)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -74,7 +74,7 @@ xiiStatus xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, xiiS
 }
 
 
-xiiStatus xiiObjectAccessorBase::AddObject(const xiiDocumentObject* pParent, xiiStringView sParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
+xiiStatus xiiObjectAccessorBase::AddObjectByName(const xiiDocumentObject* pParent, xiiStringView sParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
 {
   const xiiAbstractProperty* pProp = pParent->GetType()->FindPropertyByName(sParentProp);
   if (!pProp)
@@ -82,7 +82,7 @@ xiiStatus xiiObjectAccessorBase::AddObject(const xiiDocumentObject* pParent, xii
   return AddObject(pParent, pProp, index, pType, inout_objectGuid);
 }
 
-xiiStatus xiiObjectAccessorBase::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProp, const xiiVariant& index)
+xiiStatus xiiObjectAccessorBase::MoveObjectByName(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProp, const xiiVariant& index)
 {
   const xiiAbstractProperty* pProp = pNewParent->GetType()->FindPropertyByName(sParentProp);
   if (!pProp)
@@ -91,7 +91,7 @@ xiiStatus xiiObjectAccessorBase::MoveObject(const xiiDocumentObject* pObject, co
 }
 
 
-xiiStatus xiiObjectAccessorBase::GetKeys(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_keys)
+xiiStatus xiiObjectAccessorBase::GetKeysByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_keys)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -100,7 +100,7 @@ xiiStatus xiiObjectAccessorBase::GetKeys(const xiiDocumentObject* pObject, xiiSt
 }
 
 
-xiiStatus xiiObjectAccessorBase::GetValues(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_values)
+xiiStatus xiiObjectAccessorBase::GetValuesByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_values)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -108,17 +108,17 @@ xiiStatus xiiObjectAccessorBase::GetValues(const xiiDocumentObject* pObject, xii
   return GetValues(pObject, pProp, out_values);
 }
 
-const xiiDocumentObject* xiiObjectAccessorBase::GetChildObject(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index)
+const xiiDocumentObject* xiiObjectAccessorBase::GetChildObjectByName(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index)
 {
   xiiVariant value;
-  if (GetValue(pObject, sProp, value, index).Succeeded() && value.IsA<xiiUuid>())
+  if (GetValueByName(pObject, sProp, value, index).Succeeded() && value.IsA<xiiUuid>())
   {
     return GetObject(value.Get<xiiUuid>());
   }
   return nullptr;
 }
 
-xiiStatus xiiObjectAccessorBase::Clear(const xiiDocumentObject* pObject, xiiStringView sProp)
+xiiStatus xiiObjectAccessorBase::ClearByName(const xiiDocumentObject* pObject, xiiStringView sProp)
 {
   const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sProp);
   if (!pProp)
@@ -136,6 +136,11 @@ xiiStatus xiiObjectAccessorBase::Clear(const xiiDocumentObject* pObject, xiiStri
       return res;
   }
   return xiiStatus(XII_SUCCESS);
+}
+
+const xiiAbstractProperty* xiiObjectAccessorBase::FindPropertyByName(const xiiDocumentObject* pObject, xiiStringView sProp)
+{
+  return pObject->GetType()->FindPropertyByName(sProp);
 }
 
 xiiObjectAccessorBase::xiiObjectAccessorBase(const xiiDocumentObjectManager* pManager) :

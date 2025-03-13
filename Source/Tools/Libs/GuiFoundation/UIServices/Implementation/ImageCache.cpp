@@ -216,7 +216,6 @@ void xiiQtImageCache::EnableRequestProcessing()
   RunLoadingTask();
 }
 
-
 void xiiQtImageCache::RegisterTypeImage(xiiStringView sType, QPixmap pixmap)
 {
   m_TypeImages[xiiMakeQString(sType)] = pixmap;

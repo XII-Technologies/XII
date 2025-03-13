@@ -62,7 +62,7 @@ void xiiQtGameObjectReferencePropertyWidget::FillContextMenu(QMenu& menu)
   QAction* pCopyAction = menu.addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/Copy.svg")), QLatin1String("Copy Object Reference"), this, SLOT(OnCopyReference()));
   menu.addAction(QIcon(":/GuiFoundation/Icons/Paste.svg"), QLatin1String("Paste Object Reference"), this, SLOT(OnPasteReference()));
   QAction* pSelectAction = menu.addAction(QIcon(":/GuiFoundation/Icons/Go.svg"), QLatin1String("Select Referenced Object"), this, SLOT(OnSelectReferencedObject()));
-  QAction* pClearAction  = menu.addAction(QIcon(":/GuiFoundation/Icons/Delete.svg"), QLatin1String("Clear Reference"), this, SLOT(OnClearReference()));
+  QAction* pClearAction  = menu.addAction(QIcon(":/GuiFoundation/Icons/Clear.svg"), QLatin1String("Clear Reference"), this, SLOT(OnClearReference()));
   XII_IGNORE_UNUSED(pClearAction);
 
   pCopyAction->setEnabled(!m_sInternalValue.isEmpty());

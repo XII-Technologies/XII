@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Foundation/CodeUtils/Expression/ExpressionByteCode.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <VisualScriptPlugin/Runtime/VisualScript.h>
 
@@ -20,6 +21,13 @@ namespace
     return uiSize;
   }
 
+
+  template <typename T>
+  static constexpr xiiUInt32 GetUserDataAlignment()
+  {
+    return xiiVisualScriptGraphDescription::Node::GetUserDataAlignment<T>();
+  }
+
   struct NodeUserData_Type
   {
     const xiiRTTI* m_pType = nullptr;
@@ -33,7 +41,7 @@ namespace
       inout_stream << nodeDesc.m_sTargetTypeName;
 
       out_uiSize      = sizeof(NodeUserData_Type);
-      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_Type);
+      out_uiAlignment = GetUserDataAlignment<NodeUserData_Type>();
       return XII_SUCCESS;
     }
 
@@ -69,6 +77,7 @@ namespace
   };
 
   static_assert(sizeof(NodeUserData_Type) == 8);
+  static_assert(GetUserDataAlignment<NodeUserData_Type>() == 8);
 
   //////////////////////////////////////////////////////////////////////////
 
@@ -90,7 +99,7 @@ namespace
       inout_stream << propertiesVar[0].Get<xiiHashedString>();
 
       out_uiSize      = sizeof(NodeUserData_TypeAndProperty);
-      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_TypeAndProperty);
+      out_uiAlignment = GetUserDataAlignment<NodeUserData_TypeAndProperty>();
       return XII_SUCCESS;
     }
 
@@ -154,6 +163,7 @@ namespace
   };
 
   static_assert(sizeof(NodeUserData_TypeAndProperty) == 16);
+  static_assert(GetUserDataAlignment<NodeUserData_TypeAndProperty>() == 8);
 
   //////////////////////////////////////////////////////////////////////////
 
@@ -189,7 +199,7 @@ namespace
 
       static_assert(sizeof(void*) <= sizeof(xiiUInt64));
       out_uiSize      = GetDynamicSize<NodeUserData_TypeAndProperties, xiiUInt64>(uiCount);
-      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_TypeAndProperties);
+      out_uiAlignment = GetUserDataAlignment<NodeUserData_TypeAndProperties>();
       return XII_SUCCESS;
     }
 
@@ -226,6 +236,7 @@ namespace
   };
 
   static_assert(sizeof(NodeUserData_TypeAndProperties) == 24);
+  static_assert(GetUserDataAlignment<NodeUserData_TypeAndProperties>() == 8);
 
   //////////////////////////////////////////////////////////////////////////
 
@@ -250,7 +261,7 @@ namespace
       }
 
       out_uiSize      = GetDynamicSize<NodeUserData_Switch, xiiInt64>(uiCount);
-      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_Switch);
+      out_uiAlignment = GetUserDataAlignment<NodeUserData_Switch>();
       return XII_SUCCESS;
     }
 
@@ -277,6 +288,9 @@ namespace
     }
   };
 
+  static_assert(sizeof(NodeUserData_Switch) == 16);
+  static_assert(GetUserDataAlignment<NodeUserData_Switch>() == 8);
+
   //////////////////////////////////////////////////////////////////////////
 
   struct NodeUserData_Comparison
@@ -289,7 +303,7 @@ namespace
       inout_stream << compOp;
 
       out_uiSize      = sizeof(NodeUserData_Comparison);
-      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_Comparison);
+      out_uiAlignment = GetUserDataAlignment<NodeUserData_Comparison>();
       return XII_SUCCESS;
     }
 
@@ -310,11 +324,66 @@ namespace
     }
   };
 
+  static_assert(sizeof(NodeUserData_Comparison) == 1);
+  static_assert(GetUserDataAlignment<NodeUserData_Comparison>() == 8);
+
+  //////////////////////////////////////////////////////////////////////////
+
+  struct NodeUserData_Expression
+  {
+    xiiExpressionByteCode m_ByteCode;
+
+#if XII_ENABLED(XII_PLATFORM_32BIT)
+    xiiUInt32 m_uiPadding[4];
+#endif
+
+    static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_uiSize, xiiUInt32& out_uiAlignment)
+    {
+      const xiiExpressionByteCode& byteCode = nodeDesc.m_Value.Get<xiiExpressionByteCode>();
+
+      xiiUInt32 uiDataSize = static_cast<xiiUInt32>(byteCode.GetDataBlob().GetCount());
+      inout_stream << uiDataSize;
+
+      XII_SUCCEED_OR_RETURN(byteCode.Save(inout_stream));
+
+      out_uiSize      = sizeof(NodeUserData_Expression) + uiDataSize;
+      out_uiAlignment = GetUserDataAlignment<NodeUserData_Expression>();
+      return XII_SUCCESS;
+    }
+
+    static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& ref_node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
+    {
+      auto& userData = ref_node.InitUserData<NodeUserData_Expression>(inout_pAdditionalData);
+
+      xiiUInt32 uiDataSize = 0;
+      inout_stream >> uiDataSize;
+
+      auto externalMemory = xiiMakeArrayPtr(inout_pAdditionalData, uiDataSize);
+      inout_pAdditionalData += uiDataSize;
+
+      XII_SUCCEED_OR_RETURN(userData.m_ByteCode.Load(inout_stream, externalMemory));
+
+      return XII_SUCCESS;
+    }
+
+    static void ToString(const xiiVisualScriptNodeDescription& nodeDesc, xiiStringBuilder& out_sResult)
+    {
+      // Nothing to add here
+    }
+  };
+
+  static_assert(sizeof(NodeUserData_Expression) == 64);
+  static_assert(GetUserDataAlignment<NodeUserData_Expression>() == 8);
+
   //////////////////////////////////////////////////////////////////////////
 
   struct NodeUserData_StartCoroutine : public NodeUserData_Type
   {
     xiiEnum<xiiScriptCoroutineCreationMode> m_CreationMode;
+
+#if XII_ENABLED(XII_PLATFORM_32BIT)
+    xiiUInt32 m_uiPadding;
+#endif
 
     static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_uiSize, xiiUInt32& out_uiAlignment)
     {
@@ -324,7 +393,7 @@ namespace
       inout_stream << creationMode;
 
       out_uiSize      = sizeof(NodeUserData_StartCoroutine);
-      out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_StartCoroutine);
+      out_uiAlignment = GetUserDataAlignment<NodeUserData_StartCoroutine>();
       return XII_SUCCESS;
     }
 
@@ -350,6 +419,7 @@ namespace
   };
 
   static_assert(sizeof(NodeUserData_StartCoroutine) == 16);
+  static_assert(GetUserDataAlignment<NodeUserData_StartCoroutine>() == 8);
 
   //////////////////////////////////////////////////////////////////////////
 
@@ -394,6 +464,7 @@ namespace
     {}, // Builtin_SetVariable,
     {}, // Builtin_IncVariable,
     {}, // Builtin_DecVariable,
+    {}, // Builtin_TempVariable,
 
     {}, // Builtin_Branch,
     {&NodeUserData_Switch::Serialize,
@@ -420,7 +491,9 @@ namespace
     {}, // Builtin_Subtract,
     {}, // Builtin_Multiply,
     {}, // Builtin_Divide,
-    {}, // Builtin_Expression,
+    {&NodeUserData_Expression::Serialize,
+     &NodeUserData_Expression::Deserialize,
+     &NodeUserData_Expression::ToString}, // Builtin_Expression,
 
     {}, // Builtin_ToBool,
     {}, // Builtin_ToByte,
@@ -468,6 +541,6 @@ namespace
 
 const UserDataContext& GetUserDataContext(xiiVisualScriptNodeDescription::Type::Enum nodeType)
 {
-  XII_ASSERT_DEBUG(nodeType >= 0 && nodeType < XII_ARRAY_SIZE(s_TypeToUserDataContexts), "Out of bounds access");
+  XII_ASSERT_DEBUG(nodeType >= 0 && static_cast<xiiUInt32>(nodeType) < XII_ARRAY_SIZE(s_TypeToUserDataContexts), "Out of bounds access");
   return s_TypeToUserDataContexts[nodeType];
 }

@@ -79,8 +79,8 @@ public:
   /// \name Serialization
   ///@{
 
-  xiiStreamWriter& Write(xiiStreamWriter& ref_stream) const;
-  xiiStreamReader& Read(xiiStreamReader& ref_stream);
+  xiiStreamWriter& Write(xiiStreamWriter& inout_stream) const;
+  xiiStreamReader& Read(xiiStreamReader& inout_stream);
 
   ///@}
 
@@ -91,8 +91,8 @@ private:
   mutable xiiUInt8  m_uiDataDirIndex  = 0;
 };
 
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiDataDirPath& value);
-xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiDataDirPath& out_value);
+xiiStreamWriter& operator<<(xiiStreamWriter& inout_stream, const xiiDataDirPath& value);
+xiiStreamReader& operator>>(xiiStreamReader& inout_stream, xiiDataDirPath& out_value);
 
 /// \brief Comparator that first sort case-insensitive and then case-sensitive if necessary for a unique ordering.
 ///

@@ -52,12 +52,20 @@ xiiResult xiiProjectExport::ScanFolder(xiiSet<xiiString>& out_Files, const char*
     sRelFilePath = sAbsFilePath;
     sRelFilePath.Shrink(uiRootFolderLength, 0); // keep the slash at the front -> useful for the pattern filter
 
-    if (!filter.PassesFilters(sRelFilePath))
+    xiiStringBuilder filterRule;
+
+    if (!filter.PassesFilters(sRelFilePath, &filterRule))
     {
       if (it.GetStats().m_bIsDirectory)
+      {
+        xiiLog::Info(" Skipping folder '{}' - doesn't pass filter rule '{}'.", sRelFilePath, filterRule);
         it.SkipFolder();
+      }
       else
+      {
+        xiiLog::Info(" Skipping file '{}' - doesn't pass filter rule '{}'.", sRelFilePath, filterRule);
         it.Next();
+      }
 
       continue;
     }
@@ -363,7 +371,7 @@ xiiResult xiiProjectExport::CreateLaunchConfig(const xiiDynamicArray<xiiString>&
   for (const auto& sf : sceneFiles)
   {
     xiiStringBuilder cmd;
-    cmd.SetFormat("start Bin/Player.exe -project \"Data/project\" -scene \"{}\"", sf);
+    cmd.SetFormat("start Bin/xiiPlayer.exe -project \"Data/project\" -scene \"{}\"", sf);
 
     xiiStringBuilder bat;
     bat.SetFormat("{}/Launch {}.bat", szTargetDirectory, xiiPathUtils::GetFileName(sf));

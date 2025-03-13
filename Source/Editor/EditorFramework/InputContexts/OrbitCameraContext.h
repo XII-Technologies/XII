@@ -59,8 +59,8 @@ private:
     Pan,
   };
 
-  Mode       m_Mode    = Mode::Off;
-  xiiCamera* m_pCamera = nullptr;
+  Mode       m_Mode = Mode::Off;
+  xiiCamera* m_pCamera;
 
   xiiBoundingBox m_Volume;
 

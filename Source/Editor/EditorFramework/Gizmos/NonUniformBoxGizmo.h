@@ -2,7 +2,6 @@
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Gizmos/GizmoBase.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 #include <QPoint>
 

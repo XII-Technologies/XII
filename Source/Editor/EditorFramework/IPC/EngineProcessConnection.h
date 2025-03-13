@@ -71,8 +71,14 @@ public:
       ProcessRestarted,
     };
 
-    Type                     m_Type = Type::Invalid;
-    const xiiProcessMessage* m_pMsg = nullptr;
+    Event()
+    {
+      m_Type = Type::Invalid;
+      m_pMsg = nullptr;
+    }
+
+    Type                     m_Type;
+    const xiiProcessMessage* m_pMsg;
   };
 
   static xiiEvent<const Event&> s_Events;
@@ -111,5 +117,5 @@ private:
   xiiEditorEngineConnection(xiiDocument* pDocument) { m_pDocument = pDocument; }
   ~xiiEditorEngineConnection() = default;
 
-  xiiDocument* m_pDocument = nullptr;
+  xiiDocument* m_pDocument;
 };

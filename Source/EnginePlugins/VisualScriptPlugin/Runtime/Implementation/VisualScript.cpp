@@ -30,6 +30,7 @@ namespace
     "Builtin_SetVariable",
     "Builtin_IncVariable",
     "Builtin_DecVariable",
+    "Builtin_TempVariable",
 
     "Builtin_Branch",
     "Builtin_Switch",
@@ -132,7 +133,7 @@ xiiVisualScriptNodeDescription::Type::Enum xiiVisualScriptNodeDescription::Type:
 // static
 const char* xiiVisualScriptNodeDescription::Type::GetName(Enum type)
 {
-  XII_ASSERT_DEBUG(type >= 0 && type < XII_ARRAY_SIZE(s_NodeDescTypeNames), "Out of bounds access");
+  XII_ASSERT_DEBUG(type >= 0 && static_cast<xiiUInt32>(type) < XII_ARRAY_SIZE(s_NodeDescTypeNames), "Out of bounds access");
   return s_NodeDescTypeNames[type];
 }
 
@@ -155,12 +156,14 @@ xiiVisualScriptGraphDescription::xiiVisualScriptGraphDescription()
 
 xiiVisualScriptGraphDescription::~xiiVisualScriptGraphDescription() = default;
 
-static const xiiTypeVersion s_uiVisualScriptGraphDescriptionVersion = 3;
+static const xiiTypeVersion s_uiVisualScriptGraphDescriptionVersion = 5;
 
 // static
 xiiResult xiiVisualScriptGraphDescription::Serialize(xiiArrayPtr<const xiiVisualScriptNodeDescription> nodes, const xiiVisualScriptDataDescription& localDataDesc, xiiStreamWriter& inout_stream)
 {
   inout_stream.WriteVersion(s_uiVisualScriptGraphDescriptionVersion);
+
+  XII_SUCCEED_OR_RETURN(localDataDesc.Serialize(inout_stream));
 
   xiiDefaultMemoryStreamStorage streamStorage;
   xiiMemoryStreamWriter         stream(&streamStorage);
@@ -195,18 +198,22 @@ xiiResult xiiVisualScriptGraphDescription::Serialize(xiiArrayPtr<const xiiVisual
 
   XII_SUCCEED_OR_RETURN(streamStorage.CopyToStream(inout_stream));
 
-  XII_SUCCEED_OR_RETURN(localDataDesc.Serialize(inout_stream));
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiVisualScriptGraphDescription::Deserialize(xiiStreamReader& inout_stream)
+xiiResult xiiVisualScriptGraphDescription::Deserialize(xiiStreamReader& inout_stream, const xiiVisualScriptDataDescription& instanceDataDesc, const xiiVisualScriptDataDescription& constantDataDesc)
 {
   xiiTypeVersion uiVersion = inout_stream.ReadVersion(s_uiVisualScriptGraphDescriptionVersion);
-  if (uiVersion < 3)
+  if (uiVersion < s_uiVisualScriptGraphDescriptionVersion)
   {
-    xiiLog::Error("Invalid visual script desc version. Expected >= 3 but got {}. Visual Script needs re-export", uiVersion);
+    xiiLog::Error("Invalid visual script desc version. Expected >= {} but got {}. Visual Script needs re-export", s_uiVisualScriptGraphDescriptionVersion, uiVersion);
     return XII_FAILURE;
+  }
+
+  {
+    xiiSharedPtr<xiiVisualScriptDataDescription> pLocalDataDesc = XII_SCRIPT_NEW(xiiVisualScriptDataDescription);
+    XII_SUCCEED_OR_RETURN(pLocalDataDesc->Deserialize(inout_stream));
+    m_pLocalDataDesc = std::move(pLocalDataDesc);
   }
 
   {
@@ -225,6 +232,31 @@ xiiResult xiiVisualScriptGraphDescription::Deserialize(xiiStreamReader& inout_st
 
   xiiUInt8* pAdditionalData = pData + uiNumNodes * sizeof(Node);
 
+  auto GetDataDesc = [&](DataOffset dataOffset) -> const xiiVisualScriptDataDescription* {
+    switch (dataOffset.GetSource())
+    {
+      case DataOffset::Source::Local:
+        return m_pLocalDataDesc.Borrow();
+      case DataOffset::Source::Instance:
+        return &instanceDataDesc;
+      case DataOffset::Source::Constant:
+        return &constantDataDesc;
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+
+    return nullptr;
+  };
+
+  auto CalculateDataOffsets = [&](DataOffset* pDataOffsets, xiiUInt32 uiNumDataOffsets) {
+    DataOffset* pDataOffsetsEnd = pDataOffsets + uiNumDataOffsets;
+    while (pDataOffsets < pDataOffsetsEnd)
+    {
+      auto& dataOffset = *pDataOffsets;
+      dataOffset       = GetDataDesc(dataOffset)->GetOffset(dataOffset.GetType(), dataOffset.m_uiByteOffset, dataOffset.GetSource());
+      ++pDataOffsets;
+    }
+  };
+
   for (auto& node : nodes)
   {
     inout_stream >> node.m_Type;
@@ -236,6 +268,9 @@ xiiResult xiiVisualScriptGraphDescription::Deserialize(xiiStreamReader& inout_st
     XII_SUCCEED_OR_RETURN(node.m_InputDataOffsets.ReadFromStream(node.m_NumInputDataOffsets, inout_stream, pAdditionalData));
     XII_SUCCEED_OR_RETURN(node.m_OutputDataOffsets.ReadFromStream(node.m_NumOutputDataOffsets, inout_stream, pAdditionalData));
 
+    CalculateDataOffsets(node.GetInputDataOffsets(), node.m_NumInputDataOffsets);
+    CalculateDataOffsets(node.GetOutputDataOffsets(), node.m_NumOutputDataOffsets);
+
     if (auto func = GetUserDataContext(node.m_Type).m_DeserializeFunc)
     {
       XII_SUCCEED_OR_RETURN(func(node, inout_stream, pAdditionalData));
@@ -244,21 +279,13 @@ xiiResult xiiVisualScriptGraphDescription::Deserialize(xiiStreamReader& inout_st
 
   m_Nodes = nodes;
 
-  xiiSharedPtr<xiiVisualScriptDataDescription> pLocalDataDesc = XII_SCRIPT_NEW(xiiVisualScriptDataDescription);
-  XII_SUCCEED_OR_RETURN(pLocalDataDesc->Deserialize(inout_stream));
-  m_pLocalDataDesc = pLocalDataDesc;
-
   return XII_SUCCESS;
 }
 
 xiiScriptMessageDesc xiiVisualScriptGraphDescription::GetMessageDesc() const
 {
   auto pEntryNode = GetNode(0);
-  XII_ASSERT_DEBUG(pEntryNode != nullptr &&
-                       pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::MessageHandler ||
-                     pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::MessageHandler_Coroutine ||
-                     pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::SendMessage,
-                   "Entry node is invalid or not a message handler");
+  XII_ASSERT_DEBUG(pEntryNode != nullptr && (pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::MessageHandler || pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::MessageHandler_Coroutine || pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::SendMessage), "Entry node is invalid or not a message handler");
 
   auto& userData = pEntryNode->GetUserData<NodeUserData_TypeAndProperties>();
 
@@ -272,9 +299,11 @@ xiiScriptMessageDesc xiiVisualScriptGraphDescription::GetMessageDesc() const
 
 xiiCVarInt cvar_MaxNodeExecutions("VisualScript.MaxNodeExecutions", 100000, xiiCVarFlags::Default, "The maximum number of nodes executed within a script invocation");
 
-xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
-  m_pDesc(pDesc)
+xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc, xiiAllocatorBase* pAllocator) :
+  m_pDesc(pDesc), m_LocalDataStorage(pDesc->GetLocalDataDesc())
 {
+  m_LocalDataStorage.AllocateStorage(pAllocator);
+  m_DataStorage[DataOffset::Source::Local] = &m_LocalDataStorage;
 }
 
 xiiVisualScriptExecutionContext::~xiiVisualScriptExecutionContext()
@@ -282,11 +311,10 @@ xiiVisualScriptExecutionContext::~xiiVisualScriptExecutionContext()
   Deinitialize();
 }
 
-void xiiVisualScriptExecutionContext::Initialize(xiiVisualScriptInstance& inout_instance, xiiVisualScriptDataStorage& inout_localDataStorage, xiiArrayPtr<xiiVariant> arguments)
+void xiiVisualScriptExecutionContext::Initialize(xiiVisualScriptInstance& inout_instance, xiiArrayPtr<xiiVariant> arguments)
 {
   m_pInstance = &inout_instance;
 
-  m_DataStorage[DataOffset::Source::Local]    = &inout_localDataStorage;
   m_DataStorage[DataOffset::Source::Instance] = inout_instance.GetInstanceDataStorage();
   m_DataStorage[DataOffset::Source::Constant] = inout_instance.GetConstantDataStorage();
 
@@ -333,7 +361,7 @@ xiiVisualScriptExecutionContext::ExecResult xiiVisualScriptExecutionContext::Exe
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     ++uiCounter;
-    if (uiCounter >= cvar_MaxNodeExecutions)
+    if (uiCounter >= xiiUInt32(cvar_MaxNodeExecutions))
     {
       xiiLog::Error("Maximum node executions ({}) reached, execution will be aborted. Does the script contain an infinite loop?", cvar_MaxNodeExecutions);
       return ExecResult::Error();
@@ -356,3 +384,5 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiVisualScriptSendMessageMode, 1)
   XII_ENUM_CONSTANTS(xiiVisualScriptSendMessageMode::Direct, xiiVisualScriptSendMessageMode::Recursive, xiiVisualScriptSendMessageMode::Event)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
+
+XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Runtime_VisualScript);

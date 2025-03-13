@@ -62,4 +62,30 @@ void xiiTaskSystem::SetTargetFrameTime(xiiTime targetFrameTime)
   s_pState->m_TargetFrameTime = targetFrameTime;
 }
 
+void xiiTaskSystem::BroadcastClearThreadLocalsEvent()
+{
+  for (xiiUInt32 i = 0; i < xiiWorkerThreadType::ENUM_COUNT; ++i)
+  {
+    for (xiiTaskWorkerThread* pWorker : s_pThreadState->m_Workers[i])
+    {
+      if (pWorker)
+      {
+        pWorker->BroadcastClearThreadLocalsEvent();
+      }
+    }
+  }
+
+  // make sure they have all sent the event
+  for (xiiUInt32 i = 0; i < xiiWorkerThreadType::ENUM_COUNT; ++i)
+  {
+    for (xiiTaskWorkerThread* pWorker : s_pThreadState->m_Workers[i])
+    {
+      if (pWorker)
+      {
+        pWorker->WaitForBroadcastClearTLS();
+      }
+    }
+  }
+}
+
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystem);

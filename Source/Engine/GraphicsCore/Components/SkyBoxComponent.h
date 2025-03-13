@@ -50,11 +50,10 @@ public:
   void  SetVirtualDistance(float fVirtualDistance);               // [ property ]
   float GetVirtualDistance() const { return m_fVirtualDistance; } // [ property ]
 
-  void        SetCubeMapFile(const char* szFile); // [ property ]
-  const char* GetCubeMapFile() const;             // [ property ]
+  XII_ADD_RESOURCEHANDLE_ACCESSORS_WITH_SETTER(CubeMap, m_hCubeMap, SetCubeMap);
 
-  void                                SetCubeMap(const xiiTextureCubeResourceHandle& hCubeMap);
-  const xiiTextureCubeResourceHandle& GetCubeMap() const;
+  void                                SetCubeMap(const xiiTextureCubeResourceHandle& hCubeMap); // [ property ]
+  const xiiTextureCubeResourceHandle& GetCubeMap() const;                                       // [ property ]
 
 private:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;

@@ -14,7 +14,6 @@ public:
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) override;
 
 private:
-  xiiVisualScriptDataStorage      m_LocalDataStorage;
   xiiVisualScriptExecutionContext m_Context;
 };
 

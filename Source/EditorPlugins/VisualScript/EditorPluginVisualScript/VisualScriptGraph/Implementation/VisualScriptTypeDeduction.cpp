@@ -2,6 +2,7 @@
 
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptGraph.h>
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptTypeDeduction.h>
+#include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptVariable.moc.h>
 
 // static
 xiiVisualScriptDataType::Enum xiiVisualScriptTypeDeduction::DeductFromNodeDataType(const xiiVisualScriptPin& pin)
@@ -21,6 +22,18 @@ xiiVisualScriptDataType::Enum xiiVisualScriptTypeDeduction::DeductFromTypeProper
   }
 
   return xiiVisualScriptDataType::Invalid;
+}
+
+// static
+xiiVisualScriptDataType::Enum xiiVisualScriptTypeDeduction::DeductFromExpressionInput(const xiiVisualScriptPin& pin)
+{
+  return DeductFromExpressionVariable(pin, "Inputs");
+}
+
+// static
+xiiVisualScriptDataType::Enum xiiVisualScriptTypeDeduction::DeductFromExpressionOutput(const xiiVisualScriptPin& pin)
+{
+  return DeductFromExpressionVariable(pin, "Outputs");
 }
 
 // static
@@ -96,6 +109,13 @@ xiiVisualScriptDataType::Enum xiiVisualScriptTypeDeduction::DeductFromPropertyPr
 }
 
 // static
+xiiVisualScriptDataType::Enum xiiVisualScriptTypeDeduction::DeductDummy(const xiiDocumentObject* pObject, const xiiVisualScriptPin* pDisconnectedPin)
+{
+  // nothing to do here
+  return xiiVisualScriptDataType::Float;
+}
+
+// static
 const xiiRTTI* xiiVisualScriptTypeDeduction::GetReflectedType(const xiiDocumentObject* pObject)
 {
   auto typeVar = pObject->GetTypeAccessor().GetValue("Type");
@@ -147,4 +167,29 @@ const xiiAbstractProperty* xiiVisualScriptTypeDeduction::GetReflectedProperty(co
   }
 
   return pProperty;
+}
+
+// static
+xiiVisualScriptDataType::Enum xiiVisualScriptTypeDeduction::DeductFromExpressionVariable(const xiiVisualScriptPin& pin, xiiStringView sPropertyName)
+{
+  auto pObject = pin.GetParent();
+
+  xiiVariant varList = pObject->GetTypeAccessor().GetValue(sPropertyName);
+  if (varList.IsA<xiiVariantArray>() == false)
+    return xiiVisualScriptDataType::Invalid;
+
+  xiiVariant var = varList[pin.GetDataPinIndex()];
+  if (var.IsA<xiiUuid>() == false)
+    return xiiVisualScriptDataType::Invalid;
+
+  const xiiDocumentObject* pVarObject = pObject->GetDocumentObjectManager()->GetObject(var.Get<xiiUuid>());
+  if (pVarObject == nullptr)
+    return xiiVisualScriptDataType::Invalid;
+
+  xiiVariant typeVar = pVarObject->GetTypeAccessor().GetValue("Type");
+  if (typeVar.IsA<xiiInt64>() == false)
+    return xiiVisualScriptDataType::Invalid;
+
+  auto expressionDataType = static_cast<xiiVisualScriptExpressionDataType::Enum>(typeVar.Get<xiiInt64>());
+  return xiiVisualScriptExpressionDataType::GetVisualScriptDataType(expressionDataType);
 }

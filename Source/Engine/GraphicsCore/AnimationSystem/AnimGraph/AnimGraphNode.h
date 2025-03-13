@@ -25,7 +25,7 @@ namespace ozz
   }
 } // namespace ozz
 
-/// \brief Base class for all nodes in an xiiAnimGraphInstance
+/// \brief Base class for all nodes in a xiiAnimGraphInstance
 ///
 /// These nodes are used to configure which skeletal animations can be played on an object,
 /// and how they would be played back exactly.

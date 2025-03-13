@@ -19,8 +19,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiHeightfieldComponent, 2, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("HeightfieldImage", GetHeightfieldFile, SetHeightfieldFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Data_2D")),
-    XII_ACCESSOR_PROPERTY("Material", GetMaterialFile, SetMaterialFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("HeightfieldImage", GetHeightfield, SetHeightfield)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Data_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("Material", m_hMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
     XII_ACCESSOR_PROPERTY("HalfExtents", GetHalfExtents, SetHalfExtents)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2(50))),
     XII_ACCESSOR_PROPERTY("Height", GetHeight, SetHeight)->AddAttributes(new xiiDefaultValueAttribute(50)),
     XII_ACCESSOR_PROPERTY("Tesselation", GetTesselation, SetTesselation)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2U32(128))),
@@ -28,7 +28,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiHeightfieldComponent, 2, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("TexCoordScale", GetTexCoordScale, SetTexCoordScale)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2(1))),
     XII_ACCESSOR_PROPERTY("GenerateCollision", GetGenerateCollision, SetGenerateCollision)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("ColMeshTesselation", GetColMeshTesselation, SetColMeshTesselation)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2U32(64))),
-    XII_ACCESSOR_PROPERTY("IncludeInNavmesh", GetIncludeInNavmesh, SetIncludeInNavmesh)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -83,8 +82,9 @@ void xiiHeightfieldComponent::SerializeComponent(xiiWorldWriter& stream) const
   s << m_vColMeshTesselation;
 
   // Version 2
+  bool bIncludeInNavmesh = true; // unused
   s << m_bGenerateCollision;
-  s << m_bIncludeInNavmesh;
+  s << bIncludeInNavmesh;
 }
 
 void xiiHeightfieldComponent::DeserializeComponent(xiiWorldReader& stream)
@@ -104,8 +104,9 @@ void xiiHeightfieldComponent::DeserializeComponent(xiiWorldReader& stream)
 
   if (uiVersion >= 2)
   {
+    bool bIncludeInNavmesh = true;
     s >> m_bGenerateCollision;
-    s >> m_bIncludeInNavmesh;
+    s >> bIncludeInNavmesh;
   }
 }
 
@@ -190,47 +191,6 @@ void xiiHeightfieldComponent::SetTexCoordScale(xiiVec2 value) // [ property ]
   InvalidateMesh();
 }
 
-void xiiHeightfieldComponent::SetMaterialFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(szFile);
-  }
-  else
-  {
-    m_hMaterial.Invalidate();
-  }
-}
-
-const char* xiiHeightfieldComponent::GetMaterialFile() const
-{
-  if (!m_hMaterial.IsValid())
-    return "";
-
-  return m_hMaterial.GetResourceID();
-}
-
-
-void xiiHeightfieldComponent::SetHeightfieldFile(const char* szFile)
-{
-  xiiImageDataResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiImageDataResource>(szFile);
-  }
-
-  SetHeightfield(hResource);
-}
-
-const char* xiiHeightfieldComponent::GetHeightfieldFile() const
-{
-  if (!m_hHeightfield.IsValid())
-    return "";
-
-  return m_hHeightfield.GetResourceID();
-}
-
 void xiiHeightfieldComponent::SetHeightfield(const xiiImageDataResourceHandle& hResource)
 {
   m_hHeightfield = hResource;
@@ -252,11 +212,6 @@ void xiiHeightfieldComponent::SetColMeshTesselation(xiiVec2U32 value)
 {
   m_vColMeshTesselation = value;
   // don't invalidate the render mesh
-}
-
-void xiiHeightfieldComponent::SetIncludeInNavmesh(bool b)
-{
-  m_bIncludeInNavmesh = b;
 }
 
 void xiiHeightfieldComponent::OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) const
@@ -335,9 +290,6 @@ void xiiHeightfieldComponent::OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) cons
 void xiiHeightfieldComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& msg) const
 {
   if (msg.m_Mode == xiiWorldGeoExtractionUtil::ExtractionMode::CollisionMesh && (m_bGenerateCollision == false || GetOwner()->IsDynamic()))
-    return;
-
-  if (msg.m_Mode == xiiWorldGeoExtractionUtil::ExtractionMode::NavMeshGeneration && (m_bIncludeInNavmesh == false || GetOwner()->IsDynamic()))
     return;
 
   msg.AddMeshObject(GetOwner()->GetGlobalTransform(), GenerateMesh<xiiCpuMeshResource>());

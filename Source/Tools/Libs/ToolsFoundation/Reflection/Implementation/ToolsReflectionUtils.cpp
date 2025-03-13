@@ -108,10 +108,9 @@ namespace
 // xiiToolsReflectionUtils public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiVariant xiiToolsReflectionUtils::GetStorageDefault(const xiiAbstractProperty* pProperty)
+xiiVariantType::Enum xiiToolsReflectionUtils::GetStorageType(const xiiAbstractProperty* pProperty)
 {
-  const xiiDefaultValueAttribute* pAttrib = pProperty->GetAttributeByType<xiiDefaultValueAttribute>();
-  auto                            type    = pProperty->GetFlags().IsSet(xiiPropertyFlags::StandardType) ? pProperty->GetSpecificType()->GetVariantType() : xiiVariantType::Uuid;
+  xiiVariantType::Enum type = xiiVariantType::Uuid;
 
   const bool bIsValueType = xiiReflectionUtils::IsValueType(pProperty);
 
@@ -119,7 +118,51 @@ xiiVariant xiiToolsReflectionUtils::GetStorageDefault(const xiiAbstractProperty*
   {
     case xiiPropertyCategory::Member:
     {
-      return xiiReflectionUtils::GetDefaultValue(pProperty);
+      if (bIsValueType)
+        type = pProperty->GetSpecificType()->GetVariantType();
+      else if (pProperty->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
+        type = xiiVariantType::Int64;
+    }
+    break;
+    case xiiPropertyCategory::Array:
+    case xiiPropertyCategory::Set:
+    {
+      type = xiiVariantType::VariantArray;
+    }
+    break;
+    case xiiPropertyCategory::Map:
+    {
+      type = xiiVariantType::VariantDictionary;
+    }
+    break;
+    default:
+      break;
+  }
+
+  // We can't 'store' a string view as it has no ownership of its own. Thus, all string views are stored as strings instead.
+  if (type == xiiVariantType::StringView)
+    type = xiiVariantType::String;
+
+  return type;
+}
+
+xiiVariant xiiToolsReflectionUtils::GetStorageDefault(const xiiAbstractProperty* pProperty)
+{
+  const xiiDefaultValueAttribute* pAttrib      = pProperty->GetAttributeByType<xiiDefaultValueAttribute>();
+  const bool                      bIsValueType = xiiReflectionUtils::IsValueType(pProperty);
+
+  switch (pProperty->GetCategory())
+  {
+    case xiiPropertyCategory::Member:
+    {
+      const xiiVariantType::Enum memberType = GetStorageType(pProperty);
+      xiiVariant                 value      = xiiReflectionUtils::GetDefaultValue(pProperty);
+      // Sometimes, the default value does not match the storage type, e.g. xiiStringView is stored as xiiString as it needs to be stored in the editor representation, but the reflection can still return default values matching xiiStringView (constants for example).
+      if (bIsValueType && value.GetType() != memberType)
+        value = value.ConvertTo(memberType);
+
+      XII_ASSERT_DEBUG(!value.IsValid() || memberType == value.GetType(), "Default value type does not match the storage type of the property");
+      return value;
     }
     break;
     case xiiPropertyCategory::Array:
@@ -127,12 +170,14 @@ xiiVariant xiiToolsReflectionUtils::GetStorageDefault(const xiiAbstractProperty*
     {
       if (bIsValueType && pAttrib && pAttrib->GetValue().IsA<xiiVariantArray>())
       {
+        auto elementType = pProperty->GetFlags().IsSet(xiiPropertyFlags::StandardType) ? pProperty->GetSpecificType()->GetVariantType() : xiiVariantType::Uuid;
+
         const xiiVariantArray& value = pAttrib->GetValue().Get<xiiVariantArray>();
         xiiVariantArray        ret;
         ret.SetCount(value.GetCount());
         for (xiiUInt32 i = 0; i < value.GetCount(); i++)
         {
-          ret[i] = value[i].ConvertTo(type);
+          ret[i] = value[i].ConvertTo(elementType);
         }
         return ret;
       }

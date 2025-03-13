@@ -5,6 +5,7 @@
 #include <Core/Messages/UpdateLocalBoundsMessage.h>
 #include <Core/World/World.h>
 
+/// \brief Base class for objects that should be rendered.
 class XII_GRAPHICSCORE_DLL xiiRenderComponent : public xiiComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiRenderComponent, xiiComponent);
@@ -14,7 +15,6 @@ class XII_GRAPHICSCORE_DLL xiiRenderComponent : public xiiComponent
 
 protected:
   virtual void Deinitialize() override;
-
   virtual void OnActivated() override;
   virtual void OnDeactivated() override;
 
@@ -27,17 +27,21 @@ public:
   ~xiiRenderComponent();
 
   /// \brief Called by xiiRenderComponent::OnUpdateLocalBounds().
-  /// If XII_SUCCESS is returned, \a bounds and \a bAlwaysVisible will be integrated into the xiiMsgUpdateLocalBounds result,
+  ///
+  /// If XII_SUCCESS is returned, out_bounds and out_bAlwaysVisible will be integrated into the xiiMsgUpdateLocalBounds ref_msg,
   /// otherwise the out values are simply ignored.
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) = 0;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& out_bounds, bool& out_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) = 0;
 
+  /// \brief Call this when some value was modified that affects the size of the local bounding box and it should be recomputed.
   void TriggerLocalBoundsUpdate();
 
-  static xiiUInt32 GetUniqueIdForRendering(const xiiComponent* pComponent, xiiUInt32 uiInnerIndex = 0, xiiUInt32 uiInnerIndexShift = 24);
+  /// \brief Computes a unique ID for the given component, that is usually given to the renderer to distinguish objects.
+  static xiiUInt32 GetUniqueIdForRendering(const xiiComponent& component, xiiUInt32 uiInnerIndex = 0, xiiUInt32 uiInnerIndexShift = 24);
 
+  /// \brief Computes a unique ID for the given component, that is usually given to the renderer to distinguish objects.
   XII_ALWAYS_INLINE xiiUInt32 GetUniqueIdForRendering(xiiUInt32 uiInnerIndex = 0, xiiUInt32 uiInnerIndexShift = 24) const
   {
-    return GetUniqueIdForRendering(this, uiInnerIndex, uiInnerIndexShift);
+    return GetUniqueIdForRendering(*this, uiInnerIndex, uiInnerIndexShift);
   }
 
 protected:

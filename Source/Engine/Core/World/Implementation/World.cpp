@@ -1533,4 +1533,84 @@ void xiiWorld::RemoveResourceReloadFunction(xiiTypelessResourceHandle hResource,
   }
 }
 
+xiiGameObject* xiiWorld::SearchForObject(xiiStringView sSearchPath, xiiGameObject* pReferenceObject, const xiiRTTI* pExpectedComponent)
+{
+  // Possible paths:
+  //
+  // rel/path
+  // ../rel/path
+  // ..
+  // G:key/rel/path
+  // P:parent/rel/path
+  // G:key/P:parent/rel/path
+  // G:key/../rel/path
+  // G:key/..
+  // P:parent/../rel/path
+
+  // if the search string starts with "G:", the next part of the path is the global key of an object
+  // in this case, this object is not the reference object anymore, instead the object with that global key is the reference object
+  if (sSearchPath.TrimWordStart("G:"))
+  {
+    xiiStringView sGlobalKey;
+
+    if (const char* szSep = sSearchPath.FindSubString("/"))
+    {
+      sGlobalKey = xiiStringView(sSearchPath.GetStartPointer(), szSep);
+      sSearchPath.SetStartPosition(szSep + 1);
+    }
+    else
+    {
+      sGlobalKey  = sSearchPath;
+      sSearchPath = {};
+    }
+
+    if (!TryGetObjectWithGlobalKey(xiiTempHashedString(sGlobalKey), pReferenceObject))
+    {
+      return nullptr;
+    }
+  }
+
+  if (pReferenceObject == nullptr)
+    return nullptr;
+
+  // if the search string starts with "P:", the next part of the path is an object name of a parent object
+  // of the reference object, so we search upwards until we find the object with that name
+  if (sSearchPath.TrimWordStart("P:"))
+  {
+    xiiStringView sParentName;
+
+    if (const char* szSep = sSearchPath.FindSubString("/"))
+    {
+      sParentName = xiiStringView(sSearchPath.GetStartPointer(), szSep);
+      sSearchPath.SetStartPosition(szSep + 1);
+    }
+    else
+    {
+      sParentName = sSearchPath;
+      sSearchPath = {};
+    }
+
+    const xiiTempHashedString sStartName(sParentName);
+    while (!pReferenceObject->HasName(sStartName))
+    {
+      pReferenceObject = pReferenceObject->GetParent();
+
+      if (pReferenceObject == nullptr)
+        return nullptr;
+    }
+  }
+
+  // if the path contains "..", we go up one parent
+  // this is only allowed at the start of the relative path section
+  while (sSearchPath.TrimWordStart("../") || sSearchPath.TrimWordStart(".."))
+  {
+    pReferenceObject = pReferenceObject->GetParent();
+
+    if (pReferenceObject == nullptr)
+      return nullptr;
+  }
+
+  return pReferenceObject->SearchForChildByNameSequence(sSearchPath, pExpectedComponent);
+}
+
 XII_STATICLINK_FILE(Core, Core_World_Implementation_World);

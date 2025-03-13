@@ -10,20 +10,12 @@ xiiPropertyAnimObjectAccessor::xiiPropertyAnimObjectAccessor(xiiPropertyAnimAsse
   m_pObjAccessor = XII_DEFAULT_NEW(xiiObjectCommandAccessor, pHistory);
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::GetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant&                out_value,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiPropertyAnimObjectAccessor::GetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant& out_value, xiiVariant index /*= xiiVariant()*/)
 {
   return xiiObjectCommandAccessor::GetValue(pObject, pProp, out_value, index);
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::SetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index)
+xiiStatus xiiPropertyAnimObjectAccessor::SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index)
 {
   if (IsTemporary(pObject))
   {
@@ -151,11 +143,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetValue(
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::InsertValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiPropertyAnimObjectAccessor::InsertValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   if (IsTemporary(pObject))
   {
@@ -167,10 +155,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::InsertValue(
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::RemoveValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiPropertyAnimObjectAccessor::RemoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index /*= xiiVariant()*/)
 {
   if (IsTemporary(pObject))
   {
@@ -182,11 +167,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::RemoveValue(
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::MoveValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          oldIndex,
-  const xiiVariant&          newIndex)
+xiiStatus xiiPropertyAnimObjectAccessor::MoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& oldIndex, const xiiVariant& newIndex)
 {
   if (IsTemporary(pObject))
   {
@@ -198,12 +179,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::MoveValue(
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::AddObject(
-  const xiiDocumentObject*   pParent,
-  const xiiAbstractProperty* pParentProp,
-  const xiiVariant&          index,
-  const xiiRTTI*             pType,
-  xiiUuid&                   inout_objectGuid)
+xiiStatus xiiPropertyAnimObjectAccessor::AddObject(const xiiDocumentObject* pParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
 {
   if (IsTemporary(pParent, pParentProp))
   {
@@ -227,11 +203,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::RemoveObject(const xiiDocumentObject* p
   }
 }
 
-xiiStatus xiiPropertyAnimObjectAccessor::MoveObject(
-  const xiiDocumentObject*   pObject,
-  const xiiDocumentObject*   pNewParent,
-  const xiiAbstractProperty* pParentProp,
-  const xiiVariant&          index)
+xiiStatus xiiPropertyAnimObjectAccessor::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index)
 {
   if (IsTemporary(pObject))
   {
@@ -253,7 +225,6 @@ bool xiiPropertyAnimObjectAccessor::IsTemporary(const xiiDocumentObject* pParent
   return m_pObjectManager->IsTemporary(pParent, pParentProp->GetPropertyName());
 }
 
-
 xiiStatus xiiPropertyAnimObjectAccessor::SetCurveCp(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target, double fOldValue, double fNewValue)
 {
   XII_SUCCEED_OR_RETURN(m_pDocument->CanAnimate(pObject, pProp, index, target));
@@ -263,12 +234,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetCurveCp(const xiiDocumentObject* pOb
   return SetOrInsertCurveCp(track, fNewValue);
 }
 
-xiiUuid xiiPropertyAnimObjectAccessor::FindOrAddTrack(
-  const xiiDocumentObject*    pObject,
-  const xiiAbstractProperty*  pProp,
-  xiiVariant                  index,
-  xiiPropertyAnimTarget::Enum target,
-  OnAddTrack                  onAddTrack)
+xiiUuid xiiPropertyAnimObjectAccessor::FindOrAddTrack(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target, OnAddTrack onAddTrack)
 {
   xiiUuid track = m_pDocument->FindTrack(pObject, pProp, index, target);
   if (!track.IsValid())
@@ -298,7 +264,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertCurveCp(const xiiUuid& track
   if (cpGuid.IsValid())
   {
     auto pCP = GetObject(cpGuid);
-    XII_VERIFY(m_pObjAccessor->SetValue(pCP, "Value", fValue).Succeeded(), "");
+    XII_VERIFY(m_pObjAccessor->SetValueByName(pCP, "Value", fValue).Succeeded(), "");
   }
   else
   {
@@ -338,9 +304,9 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertColorCurveCp(const xiiUuid& 
   if (cpGuid.IsValid())
   {
     auto pCP = GetObject(cpGuid);
-    XII_VERIFY(m_pObjAccessor->SetValue(pCP, "Red", value.r).Succeeded(), "");
-    XII_VERIFY(m_pObjAccessor->SetValue(pCP, "Green", value.g).Succeeded(), "");
-    XII_VERIFY(m_pObjAccessor->SetValue(pCP, "Blue", value.b).Succeeded(), "");
+    XII_VERIFY(m_pObjAccessor->SetValueByName(pCP, "Red", value.r).Succeeded(), "");
+    XII_VERIFY(m_pObjAccessor->SetValueByName(pCP, "Green", value.g).Succeeded(), "");
+    XII_VERIFY(m_pObjAccessor->SetValueByName(pCP, "Blue", value.b).Succeeded(), "");
   }
   else
   {
@@ -379,7 +345,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertAlphaCurveCp(const xiiUuid& 
   if (cpGuid.IsValid())
   {
     auto pCP = GetObject(cpGuid);
-    XII_VERIFY(m_pObjAccessor->SetValue(pCP, "Alpha", value).Succeeded(), "");
+    XII_VERIFY(m_pObjAccessor->SetValueByName(pCP, "Alpha", value).Succeeded(), "");
   }
   else
   {
@@ -417,7 +383,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertIntensityCurveCp(const xiiUu
   if (cpGuid.IsValid())
   {
     auto pCP = GetObject(cpGuid);
-    XII_VERIFY(m_pObjAccessor->SetValue(pCP, "Intensity", value).Succeeded(), "");
+    XII_VERIFY(m_pObjAccessor->SetValueByName(pCP, "Intensity", value).Succeeded(), "");
   }
   else
   {

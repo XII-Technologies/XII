@@ -472,7 +472,7 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
 
       case Qt::EditRole:
       {
-        xiiStringView sFilename = entry.m_sAbsFilePath.GetAbsolutePath().GetFileNameAndExtension();
+        xiiStringView sFilename = entry.m_sAbsFilePath.GetAbsolutePath().GetFileName(); // remove the file extension
         return xiiMakeQString(sFilename);
       }
 
@@ -555,6 +555,9 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
             break;
           case xiiAssetInfo::MissingTransformDependency:
             sToolTip.Append("Missing Transform Dependency");
+            break;
+          case xiiAssetInfo::MissingPackageDependency:
+            sToolTip.Append("Missing Package Dependency");
             break;
           case xiiAssetInfo::MissingThumbnailDependency:
             sToolTip.Append("Missing Thumbnail Dependency");
@@ -640,9 +643,14 @@ Qt::ItemFlags xiiQtAssetBrowserModel::flags(const QModelIndex& index) const
 
   Qt::ItemFlags flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 
-  if (entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::File | xiiAssetBrowserItemFlags::Folder))
+  if (entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::File | xiiAssetBrowserItemFlags::Folder | xiiAssetBrowserItemFlags::Asset))
   {
     flags |= Qt::ItemIsDragEnabled | Qt::ItemIsEditable;
+  }
+
+  if (entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::SubAsset))
+  {
+    flags |= Qt::ItemIsDragEnabled;
   }
 
   return flags;

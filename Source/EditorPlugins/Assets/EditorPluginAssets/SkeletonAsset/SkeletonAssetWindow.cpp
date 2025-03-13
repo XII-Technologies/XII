@@ -1,6 +1,7 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/OrbitCameraContext.h>
 #include <EditorFramework/InputContexts/SelectionContext.h>
@@ -39,6 +40,8 @@ xiiQtSkeletonAssetDocumentWindow::xiiQtSkeletonAssetDocumentWindow(xiiSkeletonAs
   // 3D View
   xiiQtViewWidgetContainer* pContainer = nullptr;
   {
+    SetTargetFrameRate(25);
+
     m_ViewConfig.m_Camera.LookAt(xiiVec3(-1.6f, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
@@ -46,7 +49,7 @@ xiiQtSkeletonAssetDocumentWindow::xiiQtSkeletonAssetDocumentWindow(xiiSkeletonAs
     m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(5.0f), xiiVec3(5, -2, 3), 2.0f);
     AddViewWidget(m_pViewWidget);
     pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, "SkeletonAssetViewToolBar");
-    setCentralWidget(pContainer);
+    m_pDockManager->setCentralWidget(pContainer);
   }
 
   // Property Grid
@@ -57,9 +60,19 @@ xiiQtSkeletonAssetDocumentWindow::xiiQtSkeletonAssetDocumentWindow(xiiSkeletonAs
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator(GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }
@@ -69,7 +82,7 @@ xiiQtSkeletonAssetDocumentWindow::xiiQtSkeletonAssetDocumentWindow(xiiSkeletonAs
     xiiQtDocumentPanel* pPanelTree = new xiiQtSkeletonPanel(this, static_cast<xiiSkeletonAssetDocument*>(pDocument));
     pPanelTree->show();
 
-    addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, pPanelTree);
+    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pPanelTree);
   }
 
   pDocument->Events().AddEventHandler(xiiMakeDelegate(&xiiQtSkeletonAssetDocumentWindow::SkeletonAssetEventHandler, this));
@@ -107,36 +120,36 @@ void xiiQtSkeletonAssetDocumentWindow::SendRedrawMsg()
 
   {
     xiiSimpleDocumentConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "RenderBones";
-    msg.m_fPayload  = pDoc->GetRenderBones() ? 1.0f : 0.0f;
+    msg.m_sWhatToDo    = "RenderBones";
+    msg.m_PayloadValue = pDoc->GetRenderBones();
     pDoc->SendMessageToEngine(&msg);
   }
 
   {
     xiiSimpleDocumentConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "RenderColliders";
-    msg.m_fPayload  = pDoc->GetRenderColliders() ? 1.0f : 0.0f;
+    msg.m_sWhatToDo    = "RenderColliders";
+    msg.m_PayloadValue = pDoc->GetRenderColliders();
     pDoc->SendMessageToEngine(&msg);
   }
 
   {
     xiiSimpleDocumentConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "RenderJoints";
-    msg.m_fPayload  = pDoc->GetRenderJoints() ? 1.0f : 0.0f;
+    msg.m_sWhatToDo    = "RenderJoints";
+    msg.m_PayloadValue = pDoc->GetRenderJoints();
     pDoc->SendMessageToEngine(&msg);
   }
 
   {
     xiiSimpleDocumentConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "RenderSwingLimits";
-    msg.m_fPayload  = pDoc->GetRenderSwingLimits() ? 1.0f : 0.0f;
+    msg.m_sWhatToDo    = "RenderSwingLimits";
+    msg.m_PayloadValue = pDoc->GetRenderSwingLimits();
     pDoc->SendMessageToEngine(&msg);
   }
 
   {
     xiiSimpleDocumentConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "RenderTwistLimits";
-    msg.m_fPayload  = pDoc->GetRenderTwistLimits() ? 1.0f : 0.0f;
+    msg.m_sWhatToDo    = "RenderTwistLimits";
+    msg.m_PayloadValue = pDoc->GetRenderTwistLimits();
     pDoc->SendMessageToEngine(&msg);
   }
 
@@ -200,6 +213,10 @@ void xiiQtSkeletonAssetDocumentWindow::SelectionEventHandler(const xiiSelectionM
       GetDocument()->SendMessageToEngine(&msg);
     }
     break;
+
+    case xiiSelectionManagerEvent::Type::ChangedRuntimeOverrideSelection:
+      // ignore
+      break;
   }
 }
 

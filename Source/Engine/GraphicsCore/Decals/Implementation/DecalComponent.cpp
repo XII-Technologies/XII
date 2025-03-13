@@ -596,30 +596,27 @@ xiiUInt32 xiiDecalComponent::DecalFile_GetCount() const
   return m_Decals.GetCount();
 }
 
-const char* xiiDecalComponent::DecalFile_Get(xiiUInt32 uiIndex) const
+xiiStringView xiiDecalComponent::DecalFile_Get(xiiUInt32 uiIndex) const
 {
-  if (!m_Decals[uiIndex].IsValid())
-    return "";
-
   return m_Decals[uiIndex].GetResourceID();
 }
 
-void xiiDecalComponent::DecalFile_Set(xiiUInt32 uiIndex, const char* szFile)
+void xiiDecalComponent::DecalFile_Set(xiiUInt32 uiIndex, xiiStringView sFile)
 {
   xiiDecalResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hResource = xiiResourceManager::LoadResource<xiiDecalResource>(szFile);
+    hResource = xiiResourceManager::LoadResource<xiiDecalResource>(sFile);
   }
 
   SetDecal(uiIndex, hResource);
 }
 
-void xiiDecalComponent::DecalFile_Insert(xiiUInt32 uiIndex, const char* szFile)
+void xiiDecalComponent::DecalFile_Insert(xiiUInt32 uiIndex, xiiStringView sFile)
 {
   m_Decals.InsertAt(uiIndex, xiiDecalResourceHandle());
-  DecalFile_Set(uiIndex, szFile);
+  DecalFile_Set(uiIndex, sFile);
 }
 
 void xiiDecalComponent::DecalFile_Remove(xiiUInt32 uiIndex)

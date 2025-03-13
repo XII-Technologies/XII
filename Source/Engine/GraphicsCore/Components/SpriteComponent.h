@@ -80,11 +80,8 @@ public:
   xiiSpriteComponent();
   ~xiiSpriteComponent();
 
-  void                              SetTexture(const xiiTexture2DResourceHandle& hTexture);
-  const xiiTexture2DResourceHandle& GetTexture() const;
-
-  void        SetTextureFile(const char* szFile); // [ property ]
-  const char* GetTextureFile() const;             // [ property ]
+  void                              SetTexture(const xiiTexture2DResourceHandle& hTexture); // [ property ]
+  const xiiTexture2DResourceHandle& GetTexture() const;                                     // [ property ]
 
   void     SetColor(xiiColor color); // [ property ]
   xiiColor GetColor() const;         // [ property ]

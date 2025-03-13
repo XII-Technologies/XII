@@ -53,7 +53,7 @@ struct xiiResourceFlags
   using StorageType = xiiUInt16;
 
   /// \brief The flags of a xiiResource instance.
-  enum Enum
+  enum Enum : StorageType
   {
     UpdateOnMainThread   = XII_BIT(0), ///< After loading the resource data on a thread, it must be uploaded on the main thread. Use this for resources which require a context that is only available on the main thread.
     NoFileAccessRequired = XII_BIT(1), ///< The resource 'loading' does not require file accesses and can therefore be done on one or several non-file-loading threads. Use this for procedurally generated data.

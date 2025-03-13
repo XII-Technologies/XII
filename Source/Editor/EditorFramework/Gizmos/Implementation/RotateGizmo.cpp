@@ -196,8 +196,8 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   xiiAngle rot = m_Rotation;
 
-  // disable snapping when ALT is pressed
-  if (!e->modifiers().testFlag(Qt::AltModifier))
+  // disable snapping when SHIFT is pressed
+  if (!e->modifiers().testFlag(Qt::ShiftModifier))
     xiiSnapProvider::SnapRotation(rot);
 
   m_qCurrentRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, rot);

@@ -27,6 +27,7 @@ public:
   void dragMoveEvent(QDragMoveEvent* pEvent) override;
   void dragLeaveEvent(QDragLeaveEvent* pEvent) override;
   void dropEvent(QDropEvent* pEvent) override;
+  void startDrag(Qt::DropActions supportedActions) override;
 
 Q_SIGNALS:
   void ViewZoomed(xiiInt32 iIconSizePercentage);
@@ -39,7 +40,7 @@ protected:
 
 private:
   bool                   m_bDialogMode;
-  xiiQtIconViewDelegate* m_pDelegate = nullptr;
+  xiiQtIconViewDelegate* m_pDelegate;
   xiiInt32               m_iIconSizePercentage;
 };
 
@@ -83,5 +84,5 @@ private:
 
   bool                   m_bDrawTransformState;
   xiiInt32               m_iIconSizePercentage;
-  xiiQtAssetBrowserView* m_pView = nullptr;
+  xiiQtAssetBrowserView* m_pView;
 };

@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <GuiFoundation/Action/BaseActions.h>
+#include <GuiFoundation/Action/StandardMenus.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
 class xiiCppSettings;
@@ -14,7 +15,7 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(xiiStringView sMapping);
+  static void MapActions(xiiStringView sMapping, const xiiBitflags<xiiStandardMenuTypes> menus = xiiStandardMenuTypes::Default);
 
   static xiiActionDescriptorHandle s_hCatProjectGeneral;
   static xiiActionDescriptorHandle s_hCatProjectAssets;
@@ -58,6 +59,7 @@ public:
   static xiiActionDescriptorHandle s_hReloadEngine;
   static xiiActionDescriptorHandle s_hLaunchFileserve;
   static xiiActionDescriptorHandle s_hLaunchInspector;
+  static xiiActionDescriptorHandle s_hLaunchTracy;
   static xiiActionDescriptorHandle s_hSaveProfiling;
   static xiiActionDescriptorHandle s_hOpenVsCode;
   static xiiActionDescriptorHandle s_hImportAsset;
@@ -80,7 +82,7 @@ public:
     xiiDynamicMenuAction(context, szName, szIconPath)
   {
   }
-  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
+  virtual void GetEntries(xiiDynamicArray<Item>& out_entries) override;
   virtual void Execute(const xiiVariant& value) override;
 };
 
@@ -94,7 +96,7 @@ public:
     xiiDynamicMenuAction(context, szName, szIconPath)
   {
   }
-  virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
+  virtual void GetEntries(xiiDynamicArray<Item>& out_entries) override;
   virtual void Execute(const xiiVariant& value) override;
 };
 
@@ -116,6 +118,7 @@ public:
     ReloadEngine,
     LaunchFileserve,
     LaunchInspector,
+    LaunchTracy,
     SaveProfiling,
     OpenVsCode,
     Shortcuts,

@@ -404,7 +404,7 @@ void xiiEngineProcessDocumentContext::OnDeinitialize() {}
 
 bool xiiEngineProcessDocumentContext::PendingOperationInProgress() const
 {
-  auto pState = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameStateLinkedToWorld(GetWorld());
+  auto pState = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameState();
   return m_pThumbnailViewContext != nullptr || pState != nullptr;
 }
 
@@ -417,15 +417,6 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
     {
       if (pView)
         pView->Redraw(false);
-    }
-  }
-
-  {
-    // If we have a running game state we always want to render it (e.g. play the game).
-    auto pState = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameStateLinkedToWorld(GetWorld());
-    if (pState != nullptr)
-    {
-      pState->ScheduleRendering();
     }
   }
 
@@ -755,7 +746,7 @@ void xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler(cons
         // we can, however, just update the entire prefab, which will kill all internal objects and recreate them
 
         xiiPrefabReferenceComponent* pPrefab = xiiDynamicCast<xiiPrefabReferenceComponent*>(pRefComp);
-        XII_ASSERT_DEV(pPrefab != nullptr, "Game-Object reference update: Expected an xiiPrefabReferenceComponent");
+        XII_ASSERT_DEV(pPrefab != nullptr, "Game-Object reference update: Expected a xiiPrefabReferenceComponent");
 
         xiiPrefabReferenceComponentManager* pManager = xiiStaticCast<xiiPrefabReferenceComponentManager*>(pPrefab->GetOwningManager());
         pManager->AddToUpdateList(pPrefab);
@@ -768,7 +759,7 @@ void xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler(cons
   }
 }
 
-/// Tries to resolve a 'reference' (given in pData) to an xiiGameObject.
+/// Tries to resolve a 'reference' (given in pData) to a xiiGameObject.
 /// hThis is the 'owner' of the reference and szComponentProperty is the name of the reference property in that component.
 ///
 /// There are two different use cases:
@@ -813,7 +804,7 @@ xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHa
     // if we do not know hThis, it is usually a component that was created by a prefab instance
     // since we need hThis/srcComponentGuid to update our tables who references whom, we now try to walk up the node hierarchy
     // until we find a known game object
-    // there, currently, we assume to find an xiiPrefabReferenceComponent, which will be used as srcComponentGuid
+    // there, currently, we assume to find a xiiPrefabReferenceComponent, which will be used as srcComponentGuid
 
     xiiComponent* pComponent = nullptr;
     if (!m_pWorld->TryGetComponent(hThis, pComponent))

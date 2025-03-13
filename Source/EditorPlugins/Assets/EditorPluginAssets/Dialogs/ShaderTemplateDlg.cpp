@@ -129,7 +129,6 @@ void xiiQtShaderTemplateDlg::on_Buttons_accepted()
     ref_fileContent.SetCountUninitialized(code.GetElementCount());
     xiiMemoryUtils::RawByteCopy(ref_fileContent.GetData(), code.GetData(), code.GetElementCount());
     return XII_SUCCESS;
-    //
   });
 
   QTableWidget* pTable = TemplateVars;

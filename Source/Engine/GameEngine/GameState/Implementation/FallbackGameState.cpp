@@ -16,42 +16,17 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFallbackGameState, 1, xiiRTTIDefaultAllocator<xiiFallbackGameState>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiFallbackGameState::xiiFallbackGameState()
-{
-  m_iActiveCameraComponentIndex = -3;
-}
+xiiFallbackGameState::xiiFallbackGameState() = default;
 
-void xiiFallbackGameState::EnableSceneSelectionMenu(bool bEnable)
+void xiiFallbackGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
-  m_bEnableSceneSelectionMenu = bEnable;
-}
-
-void xiiFallbackGameState::EnableFreeCameras(bool bEnable)
-{
-  m_bEnableFreeCameras = bEnable;
-}
-
-void xiiFallbackGameState::EnableAutoSwitchToLoadedScene(bool bEnable)
-{
-  m_bAutoSwitchToLoadedScene = bEnable;
-}
-
-xiiGameStatePriority xiiFallbackGameState::DeterminePriority(xiiWorld* pWorld) const
-{
-  return xiiGameStatePriority::Fallback;
-}
-
-void xiiFallbackGameState::OnActivation(xiiWorld* pWorld, const xiiTransform* pStartPosition)
-{
-  SUPER::OnActivation(pWorld, pStartPosition);
+  SUPER::OnActivation(pWorld, sStartPosition, startPositionOffset);
 
   // if we already have a scene (editor use case), just use that and don't create any other world
   if (pWorld != nullptr)
     return;
 
   // otherwise we need to load a scene
-
-  SwitchToLoadingScreen();
 
   if (!xiiFileSystem::ExistsFile(":project/xiiProject"))
   {
@@ -69,105 +44,32 @@ void xiiFallbackGameState::OnActivation(xiiWorld* pWorld, const xiiTransform* pS
 
     if (sScenePath.IsEmpty())
     {
+      SwitchToLoadingScreen("");
+
       m_bShowMenu = true;
       m_State     = State::NoScene;
     }
-    else if (StartSceneLoading(sScenePath, {}).Failed())
-    {
-      m_bShowMenu = true;
-      m_State     = State::BadScene;
-    }
   }
 }
 
-void xiiFallbackGameState::OnDeactivation()
+bool xiiFallbackGameState::IsFallbackGameState() const
 {
-  CancelSceneLoading();
-
-  SUPER::OnDeactivation();
+  // only this class is a fallback, derived ones are not
+  return xiiGetStaticRTTI<xiiFallbackGameState>() == GetDynamicRTTI();
 }
 
-xiiString xiiFallbackGameState::GetStartupSceneFile()
+xiiResult xiiFallbackGameState::SpawnPlayer(xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
-  return xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-scene");
-}
+  m_iActiveCameraComponentIndex = -3;
 
-void xiiFallbackGameState::SwitchToLoadingScreen()
-{
-  m_sTitleOfActiveScene = "Loading Screen";
-  m_bIsInLoadingScreen  = true;
-
-  m_pActiveWorld = std::move(CreateLoadingScreenWorld());
-  ChangeMainWorld(m_pActiveWorld.Borrow());
-}
-
-xiiUniquePtr<xiiWorld> xiiFallbackGameState::CreateLoadingScreenWorld()
-{
-  xiiWorldDesc desc("LoadingScreen");
-
-  return XII_DEFAULT_NEW(xiiWorld, desc);
-}
-
-xiiResult xiiFallbackGameState::StartSceneLoading(xiiStringView sSceneFile, xiiStringView sPreloadCollection)
-{
-  if (m_pSceneToLoad != nullptr && m_sTitleOfLoadingScene == sSceneFile)
-  {
-    // already being loaded
-    return XII_SUCCESS;
-  }
-
-  m_sTitleOfLoadingScene = sSceneFile;
-
-  m_pSceneToLoad = XII_DEFAULT_NEW(xiiSceneLoadUtility);
-  m_pSceneToLoad->StartSceneLoading(sSceneFile, sPreloadCollection);
-
-  if (m_pSceneToLoad->GetLoadingState() == xiiSceneLoadUtility::LoadingState::Failed)
-  {
-    xiiLog::Error("Scene loading failed: {}", m_pSceneToLoad->GetLoadingFailureReason());
-    CancelSceneLoading();
-    return XII_FAILURE;
-  }
-
-  return XII_SUCCESS;
-}
-
-void xiiFallbackGameState::CancelSceneLoading()
-{
-  m_sTitleOfLoadingScene.Clear();
-  m_pSceneToLoad.Clear();
-}
-
-bool xiiFallbackGameState::IsLoadingScene() const
-{
-  return m_pSceneToLoad != nullptr;
-}
-
-void xiiFallbackGameState::SwitchToLoadedScene()
-{
-  XII_ASSERT_DEV(IsLoadingScene(), "Can't switch to loaded scene, if no scene is currently being loaded.");
-  XII_ASSERT_DEV(m_pSceneToLoad->GetLoadingState() == xiiSceneLoadUtility::LoadingState::FinishedSuccessfully, "Can't switch to loaded scene before it has finished loading.");
-
-  m_State               = State::Ok;
-  m_sTitleOfActiveScene = m_sTitleOfLoadingScene;
-  m_pActiveWorld        = m_pSceneToLoad->RetrieveLoadedScene();
-  ChangeMainWorld(m_pActiveWorld.Borrow());
-  SpawnPlayer(nullptr).IgnoreResult();
-
-  CancelSceneLoading();
-
-  m_bIsInLoadingScreen = false;
-}
-
-xiiResult xiiFallbackGameState::SpawnPlayer(const xiiTransform* pStartPosition)
-{
-  if (SUPER::SpawnPlayer(pStartPosition).Succeeded())
+  if (SUPER::SpawnPlayer(sStartPosition, startPositionOffset).Succeeded())
     return XII_SUCCESS;
 
-  if (m_pMainWorld && pStartPosition)
+  if (m_pMainWorld)
   {
-    m_iActiveCameraComponentIndex = -1; // set free camera
-    m_MainCamera.LookAt(pStartPosition->m_vPosition, pStartPosition->m_vPosition + pStartPosition->m_qRotation * xiiVec3(1, 0, 0),
-                        pStartPosition->m_qRotation * xiiVec3(0, 0, 1));
+    // TODO: find sStartPosition as base location
+
+    m_MainCamera.LookAt(startPositionOffset.m_vPosition, startPositionOffset.m_vPosition + startPositionOffset.m_qRotation * xiiVec3(1, 0, 0), startPositionOffset.m_qRotation * xiiVec3(0, 0, 1));
   }
 
   return XII_FAILURE;
@@ -293,30 +195,16 @@ const xiiCameraComponent* xiiFallbackGameState::FindActiveCameraComponent()
 
 void xiiFallbackGameState::ProcessInput()
 {
-  if (IsLoadingScene())
+  SUPER::ProcessInput();
+
+  if (IsInLoadingScreen())
   {
-    m_pSceneToLoad->TickSceneLoading();
+    float fProgress = 0.0f;
+    IsLoadingSceneInBackground(&fProgress);
 
-    switch (m_pSceneToLoad->GetLoadingState())
-    {
-      case xiiSceneLoadUtility::LoadingState::FinishedSuccessfully:
-        if (m_bAutoSwitchToLoadedScene)
-        {
-          SwitchToLoadedScene();
-        }
-        break;
-
-      case xiiSceneLoadUtility::LoadingState::Failed:
-        xiiLog::Error("Scene loading failed: {}", m_pSceneToLoad->GetLoadingFailureReason());
-        CancelSceneLoading();
-        break;
-
-      default:
-        break;
-    }
+    xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Loading: {}%%", xiiMath::RoundToInt(fProgress * 100.0f)));
   }
 
-  if (m_bEnableSceneSelectionMenu)
   {
     if (xiiInputManager::GetExclusiveInputSet().IsEmpty() || xiiInputManager::GetExclusiveInputSet() == "xiiPlayer")
     {
@@ -333,7 +221,7 @@ void xiiFallbackGameState::ProcessInput()
     }
   }
 
-  if (m_bEnableFreeCameras)
+  if (m_pMainWorld)
   {
     XII_LOCK(m_pMainWorld->GetReadMarker());
 
@@ -380,8 +268,11 @@ void xiiFallbackGameState::ProcessInput()
   }
 }
 
-void xiiFallbackGameState::AfterWorldUpdate()
+void xiiFallbackGameState::ConfigureMainCamera()
 {
+  if (!m_pMainWorld)
+    return;
+
   XII_LOCK(m_pMainWorld->GetReadMarker());
 
   // Update the camera transform after world update so the owner node has its final position for this frame.
@@ -431,7 +322,7 @@ void xiiFallbackGameState::FindAvailableScenes()
 
 bool xiiFallbackGameState::DisplayMenu()
 {
-  if (IsLoadingScene() || m_pMainWorld == nullptr)
+  if (IsLoadingSceneInBackground() || m_pMainWorld == nullptr)
     return false;
 
   auto pWorld = m_pMainWorld;
@@ -466,11 +357,11 @@ bool xiiFallbackGameState::DisplayMenu()
   }
   else if (m_State == State::BadScene)
   {
-    xiiDebugRenderer::DrawInfoText(pWorld, xiiDebugTextPlacement::TopCenter, "_Player", xiiFmt("Failed to load scene: '{}'", m_sTitleOfLoadingScene), xiiColor::Red);
+    xiiDebugRenderer::DrawInfoText(pWorld, xiiDebugTextPlacement::TopCenter, "_Player", xiiFmt("Failed to load scene: '{}'", m_sTitleOfScene), xiiColor::Red);
   }
   else
   {
-    xiiDebugRenderer::DrawInfoText(pWorld, xiiDebugTextPlacement::TopCenter, "_Player", xiiFmt("Scene: '{}'", m_sTitleOfActiveScene), xiiColor::White);
+    xiiDebugRenderer::DrawInfoText(pWorld, xiiDebugTextPlacement::TopCenter, "_Player", xiiFmt("Scene: '{}'", m_sTitleOfScene), xiiColor::White);
   }
 
   if (m_bShowMenu)
@@ -519,15 +410,8 @@ bool xiiFallbackGameState::DisplayMenu()
 
       if (xiiInputManager::GetInputSlotState(xiiInputSlot_KeyReturn) == xiiKeyState::Pressed || xiiInputManager::GetInputSlotState(xiiInputSlot_KeyNumpadEnter) == xiiKeyState::Pressed)
       {
-        if (StartSceneLoading(m_AvailableScenes[m_uiSelectedScene], {}).Succeeded())
-        {
-          m_bShowMenu = false;
-        }
-        else
-        {
-          m_bShowMenu = true;
-          m_State     = State::BadScene;
-        }
+        LoadScene(m_AvailableScenes[m_uiSelectedScene], {}, "", xiiTransform::MakeIdentity());
+        m_bShowMenu = false;
       }
 
       return true;
@@ -537,9 +421,30 @@ bool xiiFallbackGameState::DisplayMenu()
   return false;
 }
 
-bool xiiFallbackGameState::IsInLoadingScreen() const
+void xiiFallbackGameState::OnBackgroundSceneLoadingFinished(xiiUniquePtr<xiiWorld>&& pWorld)
 {
-  return m_bIsInLoadingScreen;
+  m_State     = State::Ok;
+  m_bShowMenu = false;
+
+  if (m_pBackgroundSceneLoad)
+  {
+    m_sTitleOfScene = m_pBackgroundSceneLoad->GetRequestedScene();
+  }
+
+  SUPER::OnBackgroundSceneLoadingFinished(std::move(pWorld));
+}
+
+void xiiFallbackGameState::OnBackgroundSceneLoadingFailed(xiiStringView sReason)
+{
+  m_State     = State::BadScene;
+  m_bShowMenu = true;
+
+  if (m_pBackgroundSceneLoad)
+  {
+    m_sTitleOfScene = m_pBackgroundSceneLoad->GetRequestedScene();
+  }
+
+  SUPER::OnBackgroundSceneLoadingFailed(sReason);
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_FallbackGameState);

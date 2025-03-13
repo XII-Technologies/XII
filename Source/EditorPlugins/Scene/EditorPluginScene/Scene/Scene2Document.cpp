@@ -79,6 +79,8 @@ xiiScene2Document::xiiScene2Document(xiiStringView sDocumentPath) :
 
 xiiScene2Document::~xiiScene2Document()
 {
+  m_SelectionHandlerUnsubscriber.Unsubscribe();
+
   SetActiveLayer(GetGuid()).LogFailure();
 
   // We need to clear all things that are dependent in the current object manager, selection etc setup before we swap the managers as otherwise those will fail to de-register.
@@ -130,9 +132,9 @@ void xiiScene2Document::InitializeAfterLoading(bool bFirstTimeCreation)
   if (pRoot->GetChildren().IsEmpty())
   {
     xiiUuid objectGuid;
-    pAccessor->AddObject(pRoot, "Layers", 0, xiiGetStaticRTTI<xiiSceneLayer>(), objectGuid).AssertSuccess();
+    pAccessor->AddObjectByName(pRoot, "Layers", 0, xiiGetStaticRTTI<xiiSceneLayer>(), objectGuid).AssertSuccess();
     const xiiDocumentObject* pObject = pAccessor->GetObject(objectGuid);
-    pAccessor->SetValue(pObject, "Layer", GetGuid()).AssertSuccess();
+    pAccessor->SetValueByName(pObject, "Layer", GetGuid()).AssertSuccess();
   }
 
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
@@ -179,10 +181,15 @@ void xiiScene2Document::InitializeAfterLoadingAndSaving()
   SubscribeGameObjectEventHandlers();
 
   UpdateLayers();
+
   if (const xiiDocumentObject* pLayerObject = GetLayerObject(GetActiveLayer()))
   {
     m_pLayerSelection->SetSelection(pLayerObject);
   }
+
+  // change the selection handler to our custom selection manager
+  m_SelectionHandlerUnsubscriber.Unsubscribe();
+  GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiScene2Document::SelectionManagerEventHandler, this), m_SelectionHandlerUnsubscriber);
 }
 
 const xiiDocumentObject* xiiScene2Document::GetSettingsObject() const
@@ -193,7 +200,7 @@ const xiiDocumentObject* xiiScene2Document::GetSettingsObject() const
 
   auto       pRoot = GetSceneObjectManager()->GetRootObject();
   xiiVariant value;
-  XII_VERIFY(GetSceneObjectAccessor()->GetValue(pRoot, "Settings", value).Succeeded(), "The scene doc root should have a settings property.");
+  XII_VERIFY(GetSceneObjectAccessor()->GetValueByName(pRoot, "Settings", value).Succeeded(), "The scene doc root should have a settings property.");
   xiiUuid id = value.Get<xiiUuid>();
   return GetSceneObjectManager()->GetObject(id);
 }
@@ -229,6 +236,45 @@ void xiiScene2Document::SendGameWorldToEngine()
   }
 }
 
+void xiiScene2Document::PreventDoubleSelectionChange(bool b)
+{
+  m_iAllowSelectionChanges = b ? 1 : -1;
+}
+
+void xiiScene2Document::UndoSelection()
+{
+  if (m_SelectionStack.IsEmpty())
+    return;
+
+  if (m_SelectionStack.GetCount() > 1)
+    m_SelectionStack.PopBack();
+
+  auto& back = m_SelectionStack.PeekBack();
+
+  m_bStoreSelectionChange = false;
+  XII_SCOPE_EXIT(m_bStoreSelectionChange = true);
+
+  if (SetActiveLayer(back.m_documentGuid).Failed())
+    return;
+
+  auto* pDoc = xiiDocumentManager::GetDocumentByGuid(back.m_documentGuid);
+  if (pDoc == nullptr)
+    return;
+
+  auto pObjMan = pDoc->GetObjectManager();
+
+  xiiDeque<const xiiDocumentObject*> newSel;
+  for (const xiiUuid& guid : back.m_Objects)
+  {
+    if (auto pDoc = pObjMan->GetObject(guid))
+    {
+      newSel.PushBack(pDoc);
+    }
+  }
+
+  GetSelectionManager()->SetSelection(newSel);
+}
+
 void xiiScene2Document::LayerSelectionEventHandler(const xiiSelectionManagerEvent& e)
 {
   const xiiDocumentObject* pObject = m_pLayerSelection->GetCurrentObject();
@@ -237,7 +283,7 @@ void xiiScene2Document::LayerSelectionEventHandler(const xiiSelectionManagerEven
   {
     if (pObject->GetType()->IsDerivedFrom(xiiGetStaticRTTI<xiiSceneLayer>()))
     {
-      xiiUuid layerGuid = GetSceneObjectAccessor()->Get<xiiUuid>(pObject, "Layer");
+      xiiUuid layerGuid = GetSceneObjectAccessor()->GetByName<xiiUuid>(pObject, "Layer");
       if (IsLayerLoaded(layerGuid))
       {
         SetActiveLayer(layerGuid).LogFailure();
@@ -382,7 +428,7 @@ void xiiScene2Document::HandleObjectStateFromEngineMsg2(const xiiPushObjectState
           if (idx == xiiInvalidIndex)
             continue;
 
-          XII_ASSERT_DEBUG(boneValues[idx].GetReflectedType() == xiiGetStaticRTTI<xiiExposedBone>(), "Expected an xiiExposedBone in variant");
+          XII_ASSERT_DEBUG(boneValues[idx].GetReflectedType() == xiiGetStaticRTTI<xiiExposedBone>(), "Expected a xiiExposedBone in variant");
 
           // retrieve the default/previous value of the bone
           const xiiExposedBone* pDefVal = reinterpret_cast<const xiiExposedBone*>(boneValues[idx].GetData());
@@ -470,7 +516,7 @@ void xiiScene2Document::LayerAdded(const xiiUuid& layerGuid, const xiiUuid& laye
   e.m_layerGuid = layerGuid;
   m_LayerEvents.Broadcast(e);
 
-  //#TODO Decide whether to load a layer or not (persist as meta data? / user preferences?)
+  // #TODO Decide whether to load a layer or not (persist as meta data? / user preferences?)
   SetLayerLoaded(layerGuid, true).LogFailure();
 }
 
@@ -490,6 +536,12 @@ void xiiScene2Document::LayerRemoved(const xiiUuid& layerGuid)
   m_LayerEvents.Broadcast(e);
 
   m_Layers.Remove(layerGuid);
+}
+
+void xiiScene2Document::ActiveLayerGameObjectEventHandler(const xiiGameObjectEvent& e)
+{
+  // forward all game object events from the active layer
+  m_GameObjectEvents.Broadcast(e);
 }
 
 xiiStatus xiiScene2Document::CreateLayer(const char* szName, xiiUuid& out_layerGuid)
@@ -534,11 +586,11 @@ xiiStatus xiiScene2Document::CreateLayer(const char* szName, xiiUuid& out_layerG
   {
     auto     pRoot   = m_pSceneObjectManager->GetObject(GetSettingsObject()->GetGuid());
     xiiInt32 uiCount = 0;
-    XII_VERIFY(pAccessor->GetCount(pRoot, "Layers", uiCount).Succeeded(), "Failed to get layer count.");
+    XII_VERIFY(pAccessor->GetCountByName(pRoot, "Layers", uiCount).Succeeded(), "Failed to get layer count.");
     xiiUuid sceneLayerGuid;
-    XII_VERIFY(pAccessor->AddObject(pRoot, "Layers", uiCount, xiiGetStaticRTTI<xiiSceneLayer>(), sceneLayerGuid).Succeeded(), "Failed to add layer to scene.");
+    XII_VERIFY(pAccessor->AddObjectByName(pRoot, "Layers", uiCount, xiiGetStaticRTTI<xiiSceneLayer>(), sceneLayerGuid).Succeeded(), "Failed to add layer to scene.");
     auto pLayer = pAccessor->GetObject(sceneLayerGuid);
-    XII_VERIFY(pAccessor->SetValue(pLayer, "Layer", pLayerDoc->GetGuid()).Succeeded(), "Failed to set layer GUID.");
+    XII_VERIFY(pAccessor->SetValueByName(pLayer, "Layer", pLayerDoc->GetGuid()).Succeeded(), "Failed to set layer GUID.");
   }
   pAccessor->FinishTransaction();
 
@@ -618,7 +670,9 @@ xiiStatus xiiScene2Document::SetActiveLayer(const xiiUuid& layerGuid)
   if (layerGuid == m_ActiveLayerGuid)
     return xiiStatus(XII_SUCCESS);
 
-  if (layerGuid == GetGuid())
+  m_ActiveLayerGoEvUnsubscriber.Unsubscribe();
+
+  if (layerGuid == GetGuid()) // "Main" layer (this document)
   {
     xiiDocumentObjectStructureEvent e;
     e.m_pDocument = this;
@@ -654,12 +708,25 @@ xiiStatus xiiScene2Document::SetActiveLayer(const xiiUuid& layerGuid)
 
     e.m_EventType = xiiDocumentObjectStructureEvent::Type::AfterReset;
     m_pObjectManager->m_StructureEvents.Broadcast(e);
+
+    xiiGameObjectDocument* pGoDoc = xiiDynamicCast<xiiGameObjectDocument*>(pDoc);
+    XII_ASSERT_DEBUG(pGoDoc, "");
+    pGoDoc->m_GameObjectEvents.AddEventHandler(xiiMakeDelegate(&xiiScene2Document::ActiveLayerGameObjectEventHandler, this), m_ActiveLayerGoEvUnsubscriber);
   }
 
   const bool bVisualizers = xiiVisualizerManager::GetSingleton()->GetVisualizersActive(GetLayerDocument(m_ActiveLayerGuid));
 
   xiiVisualizerManager::GetSingleton()->SetVisualizersActive(GetLayerDocument(m_ActiveLayerGuid), false);
 
+  m_ActiveLayerGuid    = layerGuid;
+  m_pActiveSubDocument = GetLayerDocument(layerGuid);
+
+  {
+    xiiScene2LayerEvent e;
+    e.m_Type      = xiiScene2LayerEvent::Type::ActiveLayerChanged;
+    e.m_layerGuid = layerGuid;
+    m_LayerEvents.Broadcast(e);
+  }
   {
     xiiSelectionManagerEvent se;
     se.m_pDocument = this;
@@ -672,15 +739,6 @@ xiiStatus xiiScene2Document::SetActiveLayer(const xiiUuid& layerGuid)
     ce.m_pDocument = this;
     ce.m_Type      = xiiCommandHistoryEvent::Type::HistoryChanged;
     m_pCommandHistory->GetStorage()->m_Events.Broadcast(ce);
-  }
-
-  m_ActiveLayerGuid    = layerGuid;
-  m_pActiveSubDocument = GetLayerDocument(layerGuid);
-  {
-    xiiScene2LayerEvent e;
-    e.m_Type      = xiiScene2LayerEvent::Type::ActiveLayerChanged;
-    e.m_layerGuid = layerGuid;
-    m_LayerEvents.Broadcast(e);
   }
   {
     xiiDocumentEvent e;
@@ -878,6 +936,14 @@ xiiSceneDocument* xiiScene2Document::GetLayerDocument(const xiiUuid& layerGuid) 
     return pInfo->m_pLayer;
   }
   return nullptr;
+}
+
+xiiGameObjectDocument* xiiScene2Document::GetRedirectedGameObjectDoc()
+{
+  if (m_ActiveLayerGuid == GetGuid())
+    return this;
+
+  return GetLayerDocument(m_ActiveLayerGuid);
 }
 
 bool xiiScene2Document::IsAnyLayerModified() const

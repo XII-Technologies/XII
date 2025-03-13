@@ -7,7 +7,7 @@ xiiQtScopedUpdatesDisabled::xiiQtScopedUpdatesDisabled(QWidget* pWidget1, QWidge
 {
   QWidget* pWidgets[] = {pWidget1, pWidget2, pWidget3, pWidget4, pWidget5, pWidget6};
 
-  for (int i = 0; i < XII_ARRAY_SIZE(pWidgets); ++i)
+  for (xiiInt32 i = 0; i < XII_ARRAY_SIZE(pWidgets); ++i)
   {
     if (pWidgets[i] != nullptr && pWidgets[i]->updatesEnabled())
     {
@@ -23,7 +23,7 @@ xiiQtScopedUpdatesDisabled::xiiQtScopedUpdatesDisabled(QWidget* pWidget1, QWidge
 
 xiiQtScopedUpdatesDisabled::~xiiQtScopedUpdatesDisabled()
 {
-  for (int i = XII_ARRAY_SIZE(m_pWidgets) - 1; i >= 0; --i)
+  for (xiiInt32 i = XII_ARRAY_SIZE(m_pWidgets) - 1; i >= 0; --i)
   {
     if (m_pWidgets[i] != nullptr)
     {
@@ -36,7 +36,7 @@ xiiQtScopedBlockSignals::xiiQtScopedBlockSignals(QObject* pObject1, QObject* pOb
 {
   QObject* pObjects[] = {pObject1, pObject2, pObject3, pObject4, pObject5, pObject6};
 
-  for (int i = 0; i < XII_ARRAY_SIZE(pObjects); ++i)
+  for (xiiInt32 i = 0; i < XII_ARRAY_SIZE(pObjects); ++i)
   {
     if (pObjects[i] != nullptr && !pObjects[i]->signalsBlocked())
     {
@@ -52,7 +52,7 @@ xiiQtScopedBlockSignals::xiiQtScopedBlockSignals(QObject* pObject1, QObject* pOb
 
 xiiQtScopedBlockSignals::~xiiQtScopedBlockSignals()
 {
-  for (int i = XII_ARRAY_SIZE(m_pObjects) - 1; i >= 0; --i)
+  for (xiiInt32 i = XII_ARRAY_SIZE(m_pObjects) - 1; i >= 0; --i)
   {
     if (m_pObjects[i] != nullptr)
     {

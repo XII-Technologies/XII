@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorPluginAssets/StateMachineAsset/StateMachineAssetWindow.moc.h>
 #include <EditorPluginAssets/StateMachineAsset/StateMachineGraphQt.moc.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
@@ -36,12 +37,21 @@ xiiQtStateMachineAssetDocumentWindow::xiiQtStateMachineAssetDocumentWindow(xiiDo
     addToolBar(pToolBar);
   }
 
-  m_pScene = new xiiQtStateMachineAssetScene(this);
-  m_pScene->InitScene(static_cast<const xiiDocumentNodeManager*>(pDocument->GetObjectManager()));
+  // Central Widget
+  {
+    m_pScene = new xiiQtStateMachineAssetScene(this);
+    m_pScene->InitScene(static_cast<const xiiDocumentNodeManager*>(pDocument->GetObjectManager()));
 
-  m_pView = new xiiQtNodeView(this);
-  m_pView->SetScene(m_pScene);
-  setCentralWidget(m_pView);
+    m_pView = new xiiQtNodeView(this);
+    m_pView->SetScene(m_pScene);
+
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    pCentral->setObjectName("StateMachineView");
+    pCentral->setWindowTitle("State Machine");
+    pCentral->setWidget(m_pView);
+
+    m_pDockManager->setCentralWidget(pCentral);
+  }
 
   {
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
@@ -50,9 +60,19 @@ xiiQtStateMachineAssetDocumentWindow::xiiQtStateMachineAssetDocumentWindow(xiiDo
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator((xiiAssetDocument*)GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
   }
 
   FinishWindowCreation();

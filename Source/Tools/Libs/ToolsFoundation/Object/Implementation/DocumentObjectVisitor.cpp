@@ -8,8 +8,7 @@ xiiDocumentObjectVisitor::xiiDocumentObjectVisitor(const xiiDocumentObjectManage
 {
   const xiiAbstractProperty* pRootProp = m_pManager->GetRootObject()->GetType()->FindPropertyByName(sRootProperty);
   XII_ASSERT_DEV(pRootProp, "Given root property '{0}' does not exist on root object", sRootProperty);
-  XII_ASSERT_DEV(pRootProp->GetCategory() == xiiPropertyCategory::Set || pRootProp->GetCategory() == xiiPropertyCategory::Array,
-                 "Traverser only works on arrays and sets.");
+  XII_ASSERT_DEV(pRootProp->GetCategory() == xiiPropertyCategory::Set || pRootProp->GetCategory() == xiiPropertyCategory::Array, "Traverser only works on arrays and sets.");
 
   // const xiiAbstractProperty* pChildProp = pRootProp->GetSpecificType()->FindPropertyByName(szChildrenProperty);
   // XII_ASSERT_DEV(pChildProp, "Given child property '{0}' does not exist", szChildrenProperty);

@@ -181,7 +181,7 @@ void xiiSkyLightComponent::SetCubeMapFile(xiiStringView sFile)
 
 xiiStringView xiiSkyLightComponent::GetCubeMapFile() const
 {
-  return m_hCubeMap.IsValid() ? m_hCubeMap.GetResourceID().GetData() : xiiStringView();
+  return m_hCubeMap.GetResourceID();
 }
 
 void xiiSkyLightComponent::SetNearPlane(float fNearPlane)

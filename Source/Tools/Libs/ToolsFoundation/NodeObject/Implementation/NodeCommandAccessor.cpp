@@ -13,21 +13,35 @@ xiiNodeCommandAccessor::~xiiNodeCommandAccessor() = default;
 
 xiiStatus xiiNodeCommandAccessor::SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
-  if (m_pHistory->InTemporaryTransaction() == false && IsDynamicPinProperty(pObject, pProp))
+  if (m_pHistory->InTemporaryTransaction() == false)
   {
-    xiiHybridArray<ConnectionInfo, 16> oldConnections;
-    XII_SUCCEED_OR_RETURN(DisconnectAllPins(pObject, oldConnections));
+    auto pNodeObject         = pObject;
+    auto pDynamicPinProperty = pProp;
 
-    // TODO: remap oldConnections
+    if (IsNode(pObject) == false)
+    {
+      auto pParent = pObject->GetParent();
+      if (pParent != nullptr && IsNode(pParent))
+      {
+        pNodeObject         = pParent;
+        pDynamicPinProperty = pParent->GetType()->FindPropertyByName(pObject->GetParentProperty());
+      }
+    }
 
-    XII_SUCCEED_OR_RETURN(xiiObjectCommandAccessor::SetValue(pObject, pProp, newValue, index));
+    if (IsDynamicPinProperty(pNodeObject, pDynamicPinProperty))
+    {
+      xiiHybridArray<ConnectionInfo, 16> oldConnections;
+      XII_SUCCEED_OR_RETURN(DisconnectAllPins(pNodeObject, oldConnections));
 
-    return TryReconnectAllPins(pObject, oldConnections);
+      // TODO: remap oldConnections
+
+      XII_SUCCEED_OR_RETURN(xiiObjectCommandAccessor::SetValue(pObject, pProp, newValue, index));
+
+      return TryReconnectAllPins(pNodeObject, oldConnections);
+    }
   }
-  else
-  {
-    return xiiObjectCommandAccessor::SetValue(pObject, pProp, newValue, index);
-  }
+
+  return xiiObjectCommandAccessor::SetValue(pObject, pProp, newValue, index);
 }
 
 xiiStatus xiiNodeCommandAccessor::InsertValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
@@ -81,6 +95,54 @@ xiiStatus xiiNodeCommandAccessor::MoveValue(const xiiDocumentObject* pObject, co
   {
     return xiiObjectCommandAccessor::MoveValue(pObject, pProp, oldIndex, newIndex);
   }
+}
+
+xiiStatus xiiNodeCommandAccessor::AddObject(const xiiDocumentObject* pParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
+{
+  if (IsDynamicPinProperty(pParent, pParentProp))
+  {
+    xiiHybridArray<ConnectionInfo, 16> oldConnections;
+    XII_SUCCEED_OR_RETURN(DisconnectAllPins(pParent, oldConnections));
+
+    // TODO: remap oldConnections
+
+    XII_SUCCEED_OR_RETURN(xiiObjectCommandAccessor::AddObject(pParent, pParentProp, index, pType, inout_objectGuid));
+
+    return TryReconnectAllPins(pParent, oldConnections);
+  }
+  else
+  {
+    return xiiObjectCommandAccessor::AddObject(pParent, pParentProp, index, pType, inout_objectGuid);
+  }
+}
+
+xiiStatus xiiNodeCommandAccessor::RemoveObject(const xiiDocumentObject* pObject)
+{
+  if (const xiiDocumentObject* pParent = pObject->GetParent())
+  {
+    const xiiAbstractProperty* pProp = pParent->GetType()->FindPropertyByName(pObject->GetParentProperty());
+    if (IsDynamicPinProperty(pParent, pProp))
+    {
+      xiiHybridArray<ConnectionInfo, 16> oldConnections;
+      XII_SUCCEED_OR_RETURN(DisconnectAllPins(pParent, oldConnections));
+
+      // TODO: remap oldConnections
+
+      XII_SUCCEED_OR_RETURN(xiiObjectCommandAccessor::RemoveObject(pObject));
+
+      return TryReconnectAllPins(pParent, oldConnections);
+    }
+  }
+
+  return xiiObjectCommandAccessor::RemoveObject(pObject);
+}
+
+
+bool xiiNodeCommandAccessor::IsNode(const xiiDocumentObject* pObject) const
+{
+  auto pManager = static_cast<const xiiDocumentNodeManager*>(pObject->GetDocumentObjectManager());
+
+  return pManager->IsNode(pObject);
 }
 
 bool xiiNodeCommandAccessor::IsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const

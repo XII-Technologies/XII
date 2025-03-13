@@ -26,7 +26,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 2, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Color", GetColor, SetColor)->AddAttributes(new xiiExposeColorAlphaAttribute()),
-    XII_ACCESSOR_PROPERTY("Material", GetMaterialFile, SetMaterialFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
+    XII_RESOURCE_MEMBER_PROPERTY("Material", m_hMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
@@ -125,26 +125,6 @@ void xiiCustomMeshComponent::SetMaterial(const xiiMaterialResourceHandle& hMater
 xiiMaterialResourceHandle xiiCustomMeshComponent::GetMaterial() const
 {
   return m_hMaterial;
-}
-
-void xiiCustomMeshComponent::SetMaterialFile(const char* szMaterial)
-{
-  xiiMaterialResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szMaterial))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiMaterialResource>(szMaterial);
-  }
-
-  m_hMaterial = hResource;
-}
-
-const char* xiiCustomMeshComponent::GetMaterialFile() const
-{
-  if (!m_hMaterial.IsValid())
-    return "";
-
-  return m_hMaterial.GetResourceID();
 }
 
 void xiiCustomMeshComponent::SetColor(const xiiColor& color)

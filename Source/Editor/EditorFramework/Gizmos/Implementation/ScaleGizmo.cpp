@@ -181,8 +181,8 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
   if (m_vScaleMouseMove.z < 0.0f)
     m_vScalingResult.z = 1.0f / (1.0f - m_vScaleMouseMove.z * fScaleSpeed);
 
-  // disable snapping when ALT is pressed
-  if (!e->modifiers().testFlag(Qt::AltModifier))
+  // disable snapping when SHIFT is pressed
+  if (!e->modifiers().testFlag(Qt::ShiftModifier))
     xiiSnapProvider::SnapScale(m_vScalingResult);
 
   GetOwnerWindow()->SetPermanentStatusBarMsg(
@@ -203,10 +203,14 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiManipulatorScaleGizmo::xiiManipulatorScaleGizmo()
 {
+  const xiiColor colr = xiiColorScheme::LightUI(xiiColorScheme::Red);
+  const xiiColor colg = xiiColorScheme::LightUI(xiiColorScheme::Green);
+  const xiiColor colb = xiiColorScheme::LightUI(xiiColorScheme::Blue);
+
   // Overwrite axis to be boxes.
-  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, xiiColorLinearUB(128, 0, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, xiiColorLinearUB(0, 128, 0), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
-  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, xiiColorLinearUB(0, 0, 128), xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
+  m_hAxisX.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colr, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
+  m_hAxisY.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colg, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
+  m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::Box, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable);
 }
 
 void xiiManipulatorScaleGizmo::OnTransformationChanged(const xiiTransform& transform)

@@ -20,7 +20,10 @@ bool xiiProcessCommunicationChannel::SendMessage(xiiProcessMessage* pMessage)
     // this is necessary to make sure that during an engine restart we don't accidentally send stray messages while
     // the engine is not yet correctly set up
     if (!pMessage->GetDynamicRTTI()->IsDerivedFrom(m_pFirstAllowedMessageType))
+    {
+      xiiLog::Warning("[IPC]Ignored send message of type {} because it is not a {}", pMessage->GetDynamicRTTI()->GetTypeName(), m_pFirstAllowedMessageType->GetTypeName());
       return false;
+    }
 
     m_pFirstAllowedMessageType = nullptr;
   }
@@ -29,8 +32,7 @@ bool xiiProcessCommunicationChannel::SendMessage(xiiProcessMessage* pMessage)
     if (m_pProtocol == nullptr)
       return false;
 
-    m_pProtocol->Send(pMessage);
-    return true;
+    return m_pProtocol->Send(pMessage);
   }
 }
 
@@ -41,7 +43,6 @@ bool xiiProcessCommunicationChannel::ProcessMessages()
 
   return m_pProtocol->ProcessMessages();
 }
-
 
 void xiiProcessCommunicationChannel::WaitForMessages()
 {
@@ -172,4 +173,9 @@ xiiResult xiiProcessCommunicationChannel::WaitForConnection(xiiTime timeout)
   }
 
   return m_pChannel->IsConnected() ? XII_SUCCESS : XII_FAILURE;
+}
+
+bool xiiProcessCommunicationChannel::IsConnected() const
+{
+  return m_pChannel->IsConnected();
 }

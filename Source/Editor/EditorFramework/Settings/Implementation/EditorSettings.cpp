@@ -79,11 +79,11 @@ void xiiQtEditorApp::SaveSettings()
 
   // this setting is needed before we have loaded the preferences, so we duplicate it in the QSettings (registry)
   {
-    xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
+    xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
 
     QSettings s;
     s.beginGroup("EditorPreferences");
-    s.setValue("ShowSplashscreen", pPreferences->m_bShowSplashScreen);
+    s.setValue("ShowSplashscreen", pPreferences->m_bShowSplashscreen);
     s.endGroup();
   }
 

@@ -237,7 +237,7 @@ void xiiQtGameObjectDocumentWindow::HandleFocusOnSelection(const xiiQuerySelecti
     }
   }
 
-  pSceneView->m_pCameraMoveContext->SetOrbitPoint(vPivotPoint);
+  pSceneView->m_pCameraMoveContext->SetOrbitDistance(vPivotPoint.Distance(vNewCameraPosition));
   pSceneView->InterpolateCameraTo(vNewCameraPosition, vNewCameraDirection, fNewFovOrDim);
 }
 

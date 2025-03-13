@@ -65,8 +65,8 @@ public:
   xiiEnum<xiiCameraUsageHint> GetUsageHint() const { return m_UsageHint; }   // [ property ]
   void                        SetUsageHint(xiiEnum<xiiCameraUsageHint> val); // [ property ]
 
-  void        SetRenderTargetFile(const char* szFile); // [ property ]
-  const char* GetRenderTargetFile() const;             // [ property ]
+  void          SetRenderTargetFile(xiiStringView sFile); // [ property ]
+  xiiStringView GetRenderTargetFile() const;              // [ property ]
 
   void    SetRenderTargetRectOffset(xiiVec2 value);                               // [ property ]
   xiiVec2 GetRenderTargetRectOffset() const { return m_vRenderTargetRectOffset; } // [ property ]
@@ -92,8 +92,8 @@ public:
   xiiRenderPipelineResourceHandle GetRenderPipeline() const;
   xiiViewHandle                   GetRenderTargetView() const;
 
-  const char* GetRenderPipelineEnum() const;             // [ property ]
-  void        SetRenderPipelineEnum(const char* szFile); // [ property ]
+  xiiStringView GetRenderPipelineEnum() const;              // [ property ]
+  void          SetRenderPipelineEnum(xiiStringView sFile); // [ property ]
 
   float GetAperture() const { return m_fAperture; } // [ property ]
   void  SetAperture(float fAperture);               // [ property ]

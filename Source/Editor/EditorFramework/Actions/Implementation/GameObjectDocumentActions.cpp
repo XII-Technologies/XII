@@ -161,7 +161,6 @@ xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(const xiiActionContext&
 
     case ActionType::AddAmbientLight:
       SetCheckable(true);
-      // SetIconPath(":/EditorPluginScene/Icons/ShapeIcons.svg"); // TODO icon
       SetChecked(m_pGameObjectDocument->GetAddAmbientLight());
       break;
 
@@ -172,7 +171,6 @@ xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(const xiiActionContext&
 
     case ActionType::PickTransparent:
       SetCheckable(true);
-      // SetIconPath(":/EditorFramework/Icons/Visualizers.svg"); // TODO icon
       SetChecked(m_pGameObjectDocument->GetPickTransparent());
       break;
   }

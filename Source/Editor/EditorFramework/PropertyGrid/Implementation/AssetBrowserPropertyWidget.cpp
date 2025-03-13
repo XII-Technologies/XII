@@ -2,6 +2,7 @@
 
 #include <EditorFramework/Assets/AssetBrowserDlg.moc.h>
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/AssetBrowserPanel.moc.h>
 #include <EditorFramework/PropertyGrid/AssetBrowserPropertyWidget.moc.h>
@@ -27,6 +28,8 @@ xiiQtAssetPropertyWidget::xiiQtAssetPropertyWidget() :
 
   XII_VERIFY(connect(m_pWidget, SIGNAL(editingFinished()), this, SLOT(on_TextFinished_triggered())) != nullptr, "signal/slot connection failed");
   XII_VERIFY(connect(m_pWidget, SIGNAL(textChanged(const QString&)), this, SLOT(on_TextChanged_triggered(const QString&))) != nullptr, "signal/slot connection failed");
+  XII_VERIFY(connect(m_pWidget, SIGNAL(OpenAsset()), this, SLOT(OnOpenAssetDocument())) != nullptr, "signal/slot connection failed");
+  XII_VERIFY(connect(m_pWidget, SIGNAL(SelectAsset()), this, SLOT(on_BrowseFile_clicked())) != nullptr, "signal/slot connection failed");
 
   m_pButton = new QToolButton(this);
   m_pButton->setText(QStringLiteral("... "));
@@ -210,9 +213,9 @@ void xiiQtAssetPropertyWidget::InternalSetValue(const xiiVariant& value)
       m_pWidget->setPalette(m_Pal);
 
       if (m_AssetGuid.IsValid())
-        m_pWidget->setToolTip(QStringLiteral("The selected file resolved to a valid asset GUID"));
+        m_pWidget->setToolTip(QStringLiteral("Valid asset selected.\n\nCTRL+LMB or MMB to open the asset document.\nSHIFT+LMB to select a different asset."));
       else
-        m_pWidget->setToolTip(QStringLiteral("The selected file is not a valid asset"));
+        m_pWidget->setToolTip(QStringLiteral("The selected file is not a valid asset."));
     }
 
     m_pWidget->setPlaceholderText(QString());
@@ -239,7 +242,7 @@ void xiiQtAssetPropertyWidget::FillAssetMenu(QMenu& menu)
   menu.addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/OpenFolder.svg")), QLatin1String("Open in Explorer"), this, SLOT(OnOpenExplorer()))->setEnabled(bAsset);
   menu.addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/Guid.svg")), QLatin1String("Copy Asset Guid"), this, SLOT(OnCopyAssetGuid()))->setEnabled(bAsset);
   menu.addAction(QIcon(), QLatin1String("Create New Asset"), this, SLOT(OnCreateNewAsset()));
-  menu.addAction(QIcon(":/GuiFoundation/Icons/Delete.svg"), QLatin1String("Clear Asset Reference"), this, SLOT(OnClearReference()))->setEnabled(bAsset);
+  menu.addAction(QIcon(":/GuiFoundation/Icons/Clear.svg"), QLatin1String("Clear Asset Reference"), this, SLOT(OnClearReference()))->setEnabled(bAsset);
 }
 
 void xiiQtAssetPropertyWidget::on_TextFinished_triggered()
@@ -272,7 +275,6 @@ void xiiQtAssetPropertyWidget::ThumbnailLoaded(QString sPath, QModelIndex index,
   }
 }
 
-
 void xiiQtAssetPropertyWidget::ThumbnailInvalidated(QString sPath, xiiUInt32 uiImageID)
 {
   if (m_uiThumbnailID == uiImageID)
@@ -283,8 +285,13 @@ void xiiQtAssetPropertyWidget::ThumbnailInvalidated(QString sPath, xiiUInt32 uiI
 
 void xiiQtAssetPropertyWidget::OnOpenAssetDocument()
 {
-  xiiQtEditorApp::GetSingleton()->OpenDocumentQueued(
-    xiiAssetCurator::GetSingleton()->GetSubAsset(m_AssetGuid)->m_pAssetInfo->m_Path.GetAbsolutePath(), GetSelection()[0].m_pObject);
+  if (!m_AssetGuid.IsValid())
+    return;
+
+  if (auto asset = xiiAssetCurator::GetSingleton()->GetSubAsset(m_AssetGuid))
+  {
+    xiiQtEditorApp::GetSingleton()->OpenDocumentQueued(asset->m_pAssetInfo->m_Path.GetAbsolutePath(), GetSelection()[0].m_pObject);
+  }
 }
 
 void xiiQtAssetPropertyWidget::OnSelectInAssetBrowser()
@@ -435,6 +442,7 @@ void xiiQtAssetPropertyWidget::OnCreateNewAsset()
     }
   }
 
+
   xiiStringBuilder sOutput = sPath;
   {
 
@@ -461,6 +469,24 @@ void xiiQtAssetPropertyWidget::OnCreateNewAsset()
 
       if (res.m_Result.Succeeded())
       {
+        // if this is an asset, make sure it gets transformed, so that the output file exists
+        // and make sure the filesystem knows about it (the asset lookup table is written)
+        // so that redirections inside the resource manager will work right away
+        // otherwise they may only work after a while (the world gets set up again) which would be irritating
+        if (xiiAssetDocument* pAsset = xiiDynamicCast<xiiAssetDocument*>(pDoc))
+        {
+          xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(pAsset->GetGuid());
+
+          if (pAsset->TransformAsset(xiiTransformFlags::Default).Failed())
+          {
+            xiiLog::Error("Failed to transform newly created asset '{}'", pDoc->GetDocumentPath());
+            break;
+          }
+
+          xiiAssetCurator::GetSingleton()->MainThreadTick(false);
+          xiiAssetCurator::GetSingleton()->WriteAssetTables(nullptr, true).IgnoreResult();
+        }
+
         pDoc->EnsureVisible();
 
         InternalSetValue(sOutput.GetData());
@@ -488,7 +514,7 @@ void xiiQtAssetPropertyWidget::on_BrowseFile_clicked()
   xiiStringBuilder                sFile           = m_pWidget->text().toUtf8().data();
   const xiiAssetBrowserAttribute* pAssetAttribute = m_pProp->GetAttributeByType<xiiAssetBrowserAttribute>();
 
-  xiiQtAssetBrowserDlg dlg(this, m_AssetGuid, pAssetAttribute->GetTypeFilter());
+  xiiQtAssetBrowserDlg dlg(this, m_AssetGuid, pAssetAttribute->GetTypeFilter(), {}, pAssetAttribute->GetRequiredTag());
   if (dlg.exec() == 0)
     return;
 

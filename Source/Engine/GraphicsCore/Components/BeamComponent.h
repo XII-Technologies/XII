@@ -51,9 +51,6 @@ public:
   void  SetUVUnitsPerWorldUnit(float fUVUnitsPerWorldUnit); // [ property ]
   float GetUVUnitsPerWorldUnit() const;                     // [ property ]
 
-  void        SetMaterialFile(const char* szFile); // [ property ]
-  const char* GetMaterialFile() const;             // [ property ]
-
   xiiMaterialResourceHandle GetMaterial() const;
 
   xiiGameObjectHandle m_hTargetObject; // [ property ]

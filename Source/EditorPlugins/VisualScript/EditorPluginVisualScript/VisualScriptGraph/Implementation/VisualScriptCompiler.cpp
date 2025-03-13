@@ -3,6 +3,9 @@
 #include <Core/World/World.h>
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptCompiler.h>
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptTypeDeduction.h>
+#include <Foundation/CodeUtils/Expression/ExpressionByteCode.h>
+#include <Foundation/CodeUtils/Expression/ExpressionCompiler.h>
+#include <Foundation/CodeUtils/Expression/ExpressionParser.h>
 #include <Foundation/IO/ChunkStream.h>
 #include <Foundation/IO/StringDeduplicationContext.h>
 #include <Foundation/SimdMath/SimdRandom.h>
@@ -10,22 +13,6 @@
 
 namespace
 {
-  xiiResult ExtractPropertyName(xiiStringView sPinName, xiiStringView& out_sPropertyName, xiiUInt32* out_pArrayIndex = nullptr)
-  {
-    const char* szBracket = sPinName.FindSubString("[");
-    if (szBracket == nullptr)
-      return XII_FAILURE;
-
-    out_sPropertyName = xiiStringView(sPinName.GetStartPointer(), szBracket);
-
-    if (out_pArrayIndex != nullptr)
-    {
-      return xiiConversionUtils::StringToUInt(szBracket + 1, *out_pArrayIndex);
-    }
-
-    return XII_SUCCESS;
-  }
-
   void MakeSubfunctionName(const xiiDocumentObject* pObject, const xiiDocumentObject* pEntryObject, xiiStringBuilder& out_sName)
   {
     xiiVariant sNameProperty = pObject->GetTypeAccessor().GetValue("Name");
@@ -37,7 +24,7 @@ namespace
   xiiVisualScriptDataType::Enum FinalizeDataType(xiiVisualScriptDataType::Enum dataType)
   {
     xiiVisualScriptDataType::Enum result = dataType;
-    if (result == xiiVisualScriptDataType::EnumValue)
+    if (result == xiiVisualScriptDataType::EnumValue || result == xiiVisualScriptDataType::BitflagValue)
       result = xiiVisualScriptDataType::Int64;
 
     return result;
@@ -159,6 +146,46 @@ namespace
     return XII_SUCCESS;
   }
 
+  static xiiResult FillUserData_Builtin_Expression(xiiVisualScriptCompiler::AstNode& inout_astNode, xiiVisualScriptCompiler* pCompiler, const xiiDocumentObject* pObject, const xiiDocumentObject* pEntryObject)
+  {
+    auto pManager = static_cast<const xiiVisualScriptNodeManager*>(pObject->GetDocumentObjectManager());
+
+    xiiHybridArray<const xiiVisualScriptPin*, 16> pins;
+
+    xiiHybridArray<xiiExpression::StreamDesc, 8> inputs;
+    pManager->GetInputDataPins(pObject, pins);
+    for (auto pPin : pins)
+    {
+      auto& input = inputs.ExpandAndGetRef();
+      input.m_sName.Assign(pPin->GetName());
+      input.m_DataType = xiiVisualScriptDataType::GetStreamDataType(pPin->GetResolvedScriptDataType());
+    }
+
+    xiiHybridArray<xiiExpression::StreamDesc, 8> outputs;
+    pManager->GetOutputDataPins(pObject, pins);
+    for (auto pPin : pins)
+    {
+      auto& output = outputs.ExpandAndGetRef();
+      output.m_sName.Assign(pPin->GetName());
+      output.m_DataType = xiiVisualScriptDataType::GetStreamDataType(pPin->GetResolvedScriptDataType());
+    }
+
+    xiiString sExpressionSource = pObject->GetTypeAccessor().GetValue("Expression").Get<xiiString>();
+
+    xiiExpressionParser          parser;
+    xiiExpressionParser::Options options = {};
+    xiiExpressionAST             ast;
+    XII_SUCCEED_OR_RETURN(parser.Parse(sExpressionSource, inputs, outputs, options, ast));
+
+    xiiExpressionCompiler compiler;
+    xiiExpressionByteCode byteCode;
+    XII_SUCCEED_OR_RETURN(compiler.Compile(ast, byteCode));
+
+    inout_astNode.m_Value = byteCode;
+
+    return XII_SUCCESS;
+  }
+
   static xiiResult FillUserData_Builtin_TryGetComponentOfBaseType(xiiVisualScriptCompiler::AstNode& inout_astNode, xiiVisualScriptCompiler* pCompiler, const xiiDocumentObject* pObject, const xiiDocumentObject* pEntryObject)
   {
     auto           typeName = pObject->GetTypeAccessor().GetValue("TypeName");
@@ -219,6 +246,7 @@ namespace
     &FillUserData_VariableName,  // Builtin_SetVariable,
     &FillUserData_VariableName,  // Builtin_IncVariable,
     &FillUserData_VariableName,  // Builtin_DecVariable,
+    nullptr,                     // Builtin_TempVariable,
 
     nullptr,              // Builtin_Branch,
     &FillUserData_Switch, // Builtin_Switch,
@@ -237,11 +265,11 @@ namespace
     nullptr,                       // Builtin_IsValid,
     nullptr,                       // Builtin_Select,
 
-    nullptr, // Builtin_Add,
-    nullptr, // Builtin_Subtract,
-    nullptr, // Builtin_Multiply,
-    nullptr, // Builtin_Divide,
-    nullptr, // Builtin_Expression,
+    nullptr,                          // Builtin_Add,
+    nullptr,                          // Builtin_Subtract,
+    nullptr,                          // Builtin_Multiply,
+    nullptr,                          // Builtin_Divide,
+    &FillUserData_Builtin_Expression, // Builtin_Expression,
 
     nullptr, // Builtin_ToBool,
     nullptr, // Builtin_ToByte,
@@ -327,6 +355,20 @@ xiiResult xiiVisualScriptCompiler::CompiledModule::Serialize(xiiStreamWriter& in
   }
 
   {
+    chunk.BeginChunk("ConstantData", 1);
+    XII_SUCCEED_OR_RETURN(m_ConstantDataDesc.Serialize(chunk));
+    XII_SUCCEED_OR_RETURN(m_ConstantDataStorage.Serialize(chunk));
+    chunk.EndChunk();
+  }
+
+  {
+    chunk.BeginChunk("InstanceData", 1);
+    XII_SUCCEED_OR_RETURN(m_InstanceDataDesc.Serialize(chunk));
+    XII_SUCCEED_OR_RETURN(chunk.WriteHashTable(m_InstanceDataMapping.m_Content));
+    chunk.EndChunk();
+  }
+
+  {
     chunk.BeginChunk("FunctionGraphs", 1);
     chunk << m_Functions.GetCount();
 
@@ -342,20 +384,6 @@ xiiResult xiiVisualScriptCompiler::CompiledModule::Serialize(xiiStreamWriter& in
     chunk.EndChunk();
   }
 
-  {
-    chunk.BeginChunk("ConstantData", 1);
-    XII_SUCCEED_OR_RETURN(m_ConstantDataDesc.Serialize(chunk));
-    XII_SUCCEED_OR_RETURN(m_ConstantDataStorage.Serialize(chunk));
-    chunk.EndChunk();
-  }
-
-  {
-    chunk.BeginChunk("InstanceData", 1);
-    XII_SUCCEED_OR_RETURN(m_InstanceDataDesc.Serialize(chunk));
-    XII_SUCCEED_OR_RETURN(chunk.WriteHashTable(m_InstanceDataMapping.m_Content));
-    chunk.EndChunk();
-  }
-
   chunk.EndStream();
 
   return stringDedup.End();
@@ -367,10 +395,10 @@ xiiResult xiiVisualScriptCompiler::CompiledModule::Serialize(xiiStreamWriter& in
 xiiUInt32 xiiVisualScriptCompiler::ConnectionHasher::Hash(const Connection& c)
 {
   xiiUInt32 uiHashes[] = {
-    xiiHashHelper<void*>::Hash(c.m_pPrev),
-    xiiHashHelper<void*>::Hash(c.m_pCurrent),
+    xiiHashHelper<void*>::Hash(c.m_pSource),
+    xiiHashHelper<void*>::Hash(c.m_pTarget),
     xiiHashHelper<xiiUInt32>::Hash(c.m_Type),
-    xiiHashHelper<xiiUInt32>::Hash(c.m_uiPrevPinIndex),
+    xiiHashHelper<xiiUInt32>::Hash(c.m_uiSourcePinIndex),
   };
   return xiiHashingUtils::xxHash32(uiHashes, sizeof(uiHashes));
 }
@@ -378,10 +406,10 @@ xiiUInt32 xiiVisualScriptCompiler::ConnectionHasher::Hash(const Connection& c)
 // static
 bool xiiVisualScriptCompiler::ConnectionHasher::Equal(const Connection& a, const Connection& b)
 {
-  return a.m_pPrev == b.m_pPrev &&
-    a.m_pCurrent == b.m_pCurrent &&
+  return a.m_pSource == b.m_pSource &&
+    a.m_pTarget == b.m_pTarget &&
     a.m_Type == b.m_Type &&
-    a.m_uiPrevPinIndex == b.m_uiPrevPinIndex;
+    a.m_uiSourcePinIndex == b.m_uiSourcePinIndex;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -471,7 +499,6 @@ xiiResult xiiVisualScriptCompiler::Compile(xiiStringView sDebugAstOutputPath)
     m_PinIdToDataDesc.Clear();
   }
 
-  XII_SUCCEED_OR_RETURN(FinalizeDataOffsets());
   XII_SUCCEED_OR_RETURN(FinalizeConstantData());
 
   return XII_SUCCESS;
@@ -656,7 +683,7 @@ xiiVisualScriptCompiler::AstNode* xiiVisualScriptCompiler::BuildAST(const xiiDoc
 
       AstNode* pAstNodeToAddInput = pAstNode;
       bool     bArrayInput        = false;
-      if (pNodeDesc->m_Type != xiiVisualScriptNodeDescription::Type::Builtin_MakeArray && pinDesc.m_sDynamicPinProperty.IsEmpty() == false)
+      if (pinDesc.m_bReplaceWithArray && pinDesc.m_sDynamicPinProperty.IsEmpty() == false)
       {
         const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(pinDesc.m_sDynamicPinProperty);
         if (pProp == nullptr)
@@ -678,11 +705,7 @@ xiiVisualScriptCompiler::AstNode* xiiVisualScriptCompiler::BuildAST(const xiiDoc
       {
         auto pPin = pins[uiNextInputPinIndex];
 
-        xiiStringView sPropertyName = pPin->GetName();
-        xiiUInt32     uiArrayIndex  = 0;
-        ExtractPropertyName(sPropertyName, sPropertyName, &uiArrayIndex).IgnoreResult();
-
-        if (pinDesc.m_sName.GetView() != sPropertyName)
+        if (pPin->GetDynamicPinProperty() != pinDesc.m_sDynamicPinProperty)
           break;
 
         auto connections = m_pManager->GetConnections(*pPin);
@@ -716,14 +739,18 @@ xiiVisualScriptCompiler::AstNode* xiiVisualScriptCompiler::BuildAST(const xiiDoc
           }
           else
           {
-            xiiStringBuilder sTmp;
-            const char*      szPropertyName = sPropertyName.GetData(sTmp);
+            xiiStringView sPropertyName = pPin->HasDynamicPinProperty() ? pPin->GetDynamicPinProperty() : pPin->GetName();
 
-            xiiVariant value = pObject->GetTypeAccessor().GetValue(szPropertyName);
+            xiiVariant value = pObject->GetTypeAccessor().GetValue(sPropertyName);
             if (value.IsValid() && pPin->HasDynamicPinProperty())
             {
               XII_ASSERT_DEBUG(value.IsA<xiiVariantArray>(), "Implementation error");
-              value = value.Get<xiiVariantArray>()[uiArrayIndex];
+              value = value.Get<xiiVariantArray>()[pPin->GetElementIndex()];
+            }
+
+            if (value.IsA<xiiUuid>())
+            {
+              value = 0;
             }
 
             xiiVisualScriptDataType::Enum valueDataType = xiiVisualScriptDataType::FromVariantType(value.GetType());
@@ -837,7 +864,7 @@ xiiResult xiiVisualScriptCompiler::ReplaceUnsupportedNodes(AstNode* pEntryAstNod
 {
   XII_SUCCEED_OR_RETURN(TraverseExecutionConnections(pEntryAstNode,
                                                      [&](Connection& connection) {
-                                                       AstNode* pNode = connection.m_pCurrent;
+                                                       AstNode* pNode = connection.m_pTarget;
 
                                                        if (xiiVisualScriptNodeDescription::Type::IsLoop(pNode->m_Type))
                                                        {
@@ -850,7 +877,7 @@ xiiResult xiiVisualScriptCompiler::ReplaceUnsupportedNodes(AstNode* pEntryAstNod
 
   return TraverseExecutionConnections(pEntryAstNode,
                                       [&](Connection& connection) {
-                                        AstNode* pNode = connection.m_pCurrent;
+                                        AstNode* pNode = connection.m_pTarget;
 
                                         if (pNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_CompareExec)
                                         {
@@ -869,8 +896,9 @@ xiiResult xiiVisualScriptCompiler::ReplaceUnsupportedNodes(AstNode* pEntryAstNod
                                           branchNode.m_Next.PushBack(pNode->m_Next[1]);
 
                                           compareNode.m_Next.PushBack(&branchNode);
-                                          connection.m_pPrev->m_Next[connection.m_uiPrevPinIndex] = &compareNode;
-                                          connection.m_pCurrent                                   = &branchNode;
+                                          XII_ASSERT_DEBUG(connection.m_pSource != nullptr, "");
+                                          connection.m_pSource->m_Next[connection.m_uiSourcePinIndex] = &compareNode;
+                                          connection.m_pTarget                                        = &branchNode;
                                         }
 
                                         return VisitorResult::Continue;
@@ -889,7 +917,7 @@ xiiResult xiiVisualScriptCompiler::ReplaceLoop(Connection& connection)
   AstNode* pLoopElement = nullptr;
   AstNode* pLoopIndex   = nullptr;
 
-  AstNode* pLoopNode      = connection.m_pCurrent;
+  AstNode* pLoopNode      = connection.m_pTarget;
   AstNode* pLoopBody      = pLoopNode->m_Next[0];
   AstNode* pLoopCompleted = pLoopNode->m_Next[1];
   auto     loopType       = pLoopNode->m_Type;
@@ -1076,12 +1104,12 @@ xiiResult xiiVisualScriptCompiler::ReplaceLoop(Connection& connection)
 
   if (pLoopInitStart != nullptr)
   {
-    connection.m_pPrev->m_Next[connection.m_uiPrevPinIndex] = pLoopInitStart;
+    connection.m_pSource->m_Next[connection.m_uiSourcePinIndex] = pLoopInitStart;
     pLoopInitEnd->m_Next.PushBack(pLoopConditionStart);
   }
   else
   {
-    connection.m_pPrev->m_Next[connection.m_uiPrevPinIndex] = pLoopConditionStart;
+    connection.m_pSource->m_Next[connection.m_uiSourcePinIndex] = pLoopConditionStart;
   }
 
   AstNode* pJumpNode = CreateJumpNode(pLoopConditionStart);
@@ -1093,26 +1121,26 @@ xiiResult xiiVisualScriptCompiler::ReplaceLoop(Connection& connection)
 
   XII_SUCCEED_OR_RETURN(TraverseAllConnections(pLoopBody,
                                                [&](Connection& connection) {
-                                                 if (connection.m_pPrev == nullptr)
+                                                 if (connection.m_pSource == nullptr)
                                                  {
-                                                   connection.m_pPrev          = pLoopConditionEnd;
-                                                   connection.m_uiPrevPinIndex = 0;
+                                                   connection.m_pSource          = pLoopConditionEnd;
+                                                   connection.m_uiSourcePinIndex = 0;
                                                  }
 
-                                                 if (xiiVisualScriptNodeDescription::Type::IsLoop(connection.m_pCurrent->m_Type))
+                                                 if (xiiVisualScriptNodeDescription::Type::IsLoop(connection.m_pTarget->m_Type))
                                                  {
                                                    if (ReplaceLoop(connection).Failed())
                                                      return VisitorResult::Error;
                                                  }
 
-                                                 if (connection.m_Type == ConnectionType::Data && connection.m_pCurrent->m_bImplicitExecution == false)
+                                                 if (connection.m_Type == ConnectionType::Data && connection.m_pTarget->m_bImplicitExecution == false)
                                                    return VisitorResult::Skip;
 
-                                                 AstNode* pNode = connection.m_pCurrent;
+                                                 AstNode* pNode = connection.m_pTarget;
 
                                                  if (pNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_Break)
                                                  {
-                                                   connection.m_pPrev->m_Next[connection.m_uiPrevPinIndex] = pLoopCompleted;
+                                                   connection.m_pSource->m_Next[connection.m_uiSourcePinIndex] = pLoopCompleted;
                                                    return VisitorResult::Continue;
                                                  }
 
@@ -1151,9 +1179,9 @@ xiiResult xiiVisualScriptCompiler::ReplaceLoop(Connection& connection)
                                                  return VisitorResult::Continue;
                                                }));
 
-  connection.m_pPrev          = pLoopConditionEnd;
-  connection.m_pCurrent       = pLoopCompleted;
-  connection.m_uiPrevPinIndex = 1;
+  connection.m_pSource          = pLoopConditionStart;
+  connection.m_pTarget          = pLoopConditionEnd;
+  connection.m_uiSourcePinIndex = 0;
 
   return XII_SUCCESS;
 }
@@ -1164,7 +1192,7 @@ xiiResult xiiVisualScriptCompiler::InsertTypeConversions(AstNode* pEntryAstNode)
                                 [&](const Connection& connection) {
                                   if (connection.m_Type == ConnectionType::Data)
                                   {
-                                    auto& dataInput  = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
+                                    auto& dataInput  = connection.m_pSource->m_Inputs[connection.m_uiSourcePinIndex];
                                     auto& dataOutput = GetDataOutput(dataInput);
 
                                     if (dataOutput.m_DataType != dataInput.m_DataType)
@@ -1188,7 +1216,7 @@ xiiResult xiiVisualScriptCompiler::InlineConstants(AstNode* pEntryAstNode)
 {
   return TraverseAllConnections(pEntryAstNode,
                                 [&](const Connection& connection) {
-                                  auto pCurrentNode = connection.m_pCurrent;
+                                  auto pCurrentNode = connection.m_pTarget;
                                   for (auto& dataInput : pCurrentNode->m_Inputs)
                                   {
                                     if (m_PinIdToDataDesc.Contains(dataInput.m_uiId))
@@ -1229,7 +1257,7 @@ xiiResult xiiVisualScriptCompiler::InlineVariables(AstNode* pEntryAstNode)
 {
   return TraverseAllConnections(pEntryAstNode,
                                 [&](const Connection& connection) {
-                                  auto pCurrentNode = connection.m_pCurrent;
+                                  auto pCurrentNode = connection.m_pTarget;
                                   for (auto& dataInput : pCurrentNode->m_Inputs)
                                   {
                                     if (m_PinIdToDataDesc.Contains(dataInput.m_uiId))
@@ -1297,16 +1325,16 @@ xiiResult xiiVisualScriptCompiler::BuildDataStack(AstNode* pEntryAstNode, xiiDyn
   XII_SUCCEED_OR_RETURN(TraverseDataConnections(
     pEntryAstNode,
     [&](const Connection& connection) {
-      if (connection.m_pCurrent->m_bImplicitExecution == false)
+      if (connection.m_pTarget->m_bImplicitExecution == false)
         return VisitorResult::Skip;
 
-      if (visitedNodes.Insert(connection.m_pCurrent))
+      if (visitedNodes.Insert(connection.m_pTarget))
       {
         // If the node was already visited, remove it again so it is moved to the top of the stack
-        out_Stack.RemoveAndCopy(connection.m_pCurrent);
+        out_Stack.RemoveAndCopy(connection.m_pTarget);
       }
 
-      out_Stack.PushBack(connection.m_pCurrent);
+      out_Stack.PushBack(connection.m_pTarget);
 
       return VisitorResult::Continue;
     },
@@ -1409,9 +1437,9 @@ xiiResult xiiVisualScriptCompiler::BuildDataExecutions(AstNode* pEntryAstNode)
   for (const auto& connection : allExecConnections)
   {
     AstNode* pFirstDataNode = nullptr;
-    if (nodeToFirstDataNode.TryGetValue(connection.m_pCurrent, pFirstDataNode) == false)
+    if (nodeToFirstDataNode.TryGetValue(connection.m_pTarget, pFirstDataNode) == false)
     {
-      if (BuildDataStack(connection.m_pCurrent, nodeStack).Failed())
+      if (BuildDataStack(connection.m_pTarget, nodeStack).Failed())
         return XII_FAILURE;
 
       if (nodeStack.IsEmpty() == false)
@@ -1419,15 +1447,15 @@ xiiResult xiiVisualScriptCompiler::BuildDataExecutions(AstNode* pEntryAstNode)
         pFirstDataNode = nodeStack.PeekBack();
 
         AstNode* pLastDataNode = nodeStack[0];
-        pLastDataNode->m_Next.PushBack(connection.m_pCurrent);
+        pLastDataNode->m_Next.PushBack(connection.m_pTarget);
       }
     }
 
     if (pFirstDataNode != nullptr)
     {
-      connection.m_pPrev->m_Next[connection.m_uiPrevPinIndex] = pFirstDataNode;
+      connection.m_pSource->m_Next[connection.m_uiSourcePinIndex] = pFirstDataNode;
     }
-    nodeToFirstDataNode.Insert(connection.m_pCurrent, pFirstDataNode);
+    nodeToFirstDataNode.Insert(connection.m_pTarget, pFirstDataNode);
   }
 
   return XII_SUCCESS;
@@ -1439,13 +1467,13 @@ xiiResult xiiVisualScriptCompiler::FillDataOutputConnections(AstNode* pEntryAstN
                                 [&](const Connection& connection) {
                                   if (connection.m_Type == ConnectionType::Data)
                                   {
-                                    auto& dataInput  = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
+                                    auto& dataInput  = connection.m_pSource->m_Inputs[connection.m_uiSourcePinIndex];
                                     auto& dataOutput = GetDataOutput(dataInput);
 
-                                    XII_ASSERT_DEBUG(dataInput.m_pSourceNode == connection.m_pCurrent, "");
-                                    if (dataOutput.m_TargetNodes.Contains(connection.m_pPrev) == false)
+                                    XII_ASSERT_DEBUG(dataInput.m_pSourceNode == connection.m_pTarget, "");
+                                    if (dataOutput.m_TargetNodes.Contains(connection.m_pSource) == false)
                                     {
-                                      dataOutput.m_TargetNodes.PushBack(connection.m_pPrev);
+                                      dataOutput.m_TargetNodes.PushBack(connection.m_pSource);
                                     }
                                   }
 
@@ -1460,7 +1488,7 @@ xiiResult xiiVisualScriptCompiler::AssignLocalVariables(AstNode* pEntryAstNode, 
   return TraverseExecutionConnections(pEntryAstNode,
                                       [&](const Connection& connection) {
                                         // Outputs first so we don't end up using the same data as input and output
-                                        for (auto& dataOutput : connection.m_pCurrent->m_Outputs)
+                                        for (auto& dataOutput : connection.m_pTarget->m_Outputs)
                                         {
                                           if (m_PinIdToDataDesc.Contains(dataOutput.m_uiId))
                                             continue;
@@ -1496,7 +1524,7 @@ xiiResult xiiVisualScriptCompiler::AssignLocalVariables(AstNode* pEntryAstNode, 
                                           }
                                         }
 
-                                        for (auto& dataInput : connection.m_pCurrent->m_Inputs)
+                                        for (auto& dataInput : connection.m_pTarget->m_Inputs)
                                         {
                                           if (m_PinIdToDataDesc.Contains(dataInput.m_uiId) || dataInput.m_pSourceNode == nullptr)
                                             continue;
@@ -1563,18 +1591,18 @@ xiiResult xiiVisualScriptCompiler::BuildNodeDescriptions(AstNode* pEntryAstNode,
   return TraverseExecutionConnections(pEntryAstNode,
                                       [&](const Connection& connection) {
                                         xiiUInt32 uiCurrentIndex = 0;
-                                        if (astNodeToNodeDescIndices.TryGetValue(connection.m_pCurrent, uiCurrentIndex) == false)
+                                        if (astNodeToNodeDescIndices.TryGetValue(connection.m_pTarget, uiCurrentIndex) == false)
                                         {
                                           return VisitorResult::Skip;
                                         }
 
                                         auto pNodeDesc = &out_NodeDescriptions[uiCurrentIndex];
-                                        if (pNodeDesc->m_ExecutionIndices.GetCount() == connection.m_pCurrent->m_Next.GetCount())
+                                        if (pNodeDesc->m_ExecutionIndices.GetCount() == connection.m_pTarget->m_Next.GetCount())
                                         {
                                           return VisitorResult::Continue;
                                         }
 
-                                        for (auto pNextAstNode : connection.m_pCurrent->m_Next)
+                                        for (auto pNextAstNode : connection.m_pTarget->m_Next)
                                         {
                                           if (pNextAstNode == nullptr)
                                           {
@@ -1624,26 +1652,26 @@ xiiResult xiiVisualScriptCompiler::TraverseExecutionConnections(AstNode* pEntryA
     if (res == VisitorResult::Error)
       return XII_FAILURE;
 
-    if (connection.m_pCurrent != nullptr)
+    if (connection.m_pTarget != nullptr)
     {
-      nodeStack.PushBack(connection.m_pCurrent);
+      nodeStack.PushBack(connection.m_pTarget);
     }
   }
 
   while (nodeStack.IsEmpty() == false)
   {
-    AstNode* pCurrentAstNode = nodeStack.PeekBack();
+    AstNode* pSourceAstNode = nodeStack.PeekBack();
     nodeStack.PopBack();
 
-    for (xiiUInt32 i = 0; i < pCurrentAstNode->m_Next.GetCount(); ++i)
+    for (xiiUInt32 i = 0; i < pSourceAstNode->m_Next.GetCount(); ++i)
     {
-      auto pNextAstNode = pCurrentAstNode->m_Next[i];
-      XII_ASSERT_DEBUG(pNextAstNode != pCurrentAstNode, "");
+      auto pTargetAstNode = pSourceAstNode->m_Next[i];
+      XII_ASSERT_DEBUG(pTargetAstNode != pSourceAstNode, "");
 
-      if (pNextAstNode == nullptr)
+      if (pTargetAstNode == nullptr)
         continue;
 
-      Connection connection = {pCurrentAstNode, pNextAstNode, ConnectionType::Execution, i};
+      Connection connection = {pSourceAstNode, pTargetAstNode, ConnectionType::Execution, i};
       if (bDeduplicate && m_ReportedConnections.Insert(connection))
         continue;
 
@@ -1655,9 +1683,9 @@ xiiResult xiiVisualScriptCompiler::TraverseExecutionConnections(AstNode* pEntryA
       if (res == VisitorResult::Error)
         return XII_FAILURE;
 
-      if (connection.m_pCurrent != nullptr)
+      if (connection.m_pTarget != nullptr)
       {
-        nodeStack.PushBack(connection.m_pCurrent);
+        nodeStack.PushBack(connection.m_pTarget);
       }
     }
   }
@@ -1700,9 +1728,9 @@ xiiResult xiiVisualScriptCompiler::TraverseDataConnections(AstNode* pEntryAstNod
       if (res == VisitorResult::Error)
         return XII_FAILURE;
 
-      if (connection.m_pCurrent != nullptr)
+      if (connection.m_pTarget != nullptr)
       {
-        nodeStack.PushBack(connection.m_pCurrent);
+        nodeStack.PushBack(connection.m_pTarget);
       }
     }
   }
@@ -1719,7 +1747,7 @@ xiiResult xiiVisualScriptCompiler::TraverseAllConnections(AstNode* pEntryAstNode
       if (res != VisitorResult::Continue)
         return res;
 
-      if (TraverseDataConnections(connection.m_pCurrent, func, bDeduplicate, false).Failed())
+      if (TraverseDataConnections(connection.m_pTarget, func, bDeduplicate, false).Failed())
         return VisitorResult::Error;
 
       return VisitorResult::Continue;
@@ -1727,57 +1755,10 @@ xiiResult xiiVisualScriptCompiler::TraverseAllConnections(AstNode* pEntryAstNode
     bDeduplicate);
 }
 
-xiiResult xiiVisualScriptCompiler::FinalizeDataOffsets()
-{
-  m_Module.m_InstanceDataDesc.CalculatePerTypeStartOffsets();
-  m_Module.m_ConstantDataDesc.CalculatePerTypeStartOffsets();
-
-  auto GetDataDesc = [this](const CompiledFunction& function, DataOffset dataOffset) -> const xiiVisualScriptDataDescription* {
-    switch (dataOffset.GetSource())
-    {
-      case DataOffset::Source::Local:
-        return &function.m_LocalDataDesc;
-      case DataOffset::Source::Instance:
-        return &m_Module.m_InstanceDataDesc;
-      case DataOffset::Source::Constant:
-        return &m_Module.m_ConstantDataDesc;
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-
-    return nullptr;
-  };
-
-  for (auto& function : m_Module.m_Functions)
-  {
-    function.m_LocalDataDesc.CalculatePerTypeStartOffsets();
-
-    for (auto& nodeDesc : function.m_NodeDescriptions)
-    {
-      for (auto& dataOffset : nodeDesc.m_InputDataOffsets)
-      {
-        dataOffset = GetDataDesc(function, dataOffset)->GetOffset(dataOffset.GetType(), dataOffset.m_uiByteOffset, dataOffset.GetSource());
-      }
-
-      for (auto& dataOffset : nodeDesc.m_OutputDataOffsets)
-      {
-        XII_ASSERT_DEBUG(dataOffset.IsConstant() == false, "Cannot write to constant data");
-        dataOffset = GetDataDesc(function, dataOffset)->GetOffset(dataOffset.GetType(), dataOffset.m_uiByteOffset, dataOffset.GetSource());
-      }
-    }
-  }
-
-  for (auto& it : m_Module.m_InstanceDataMapping.m_Content)
-  {
-    auto& dataOffset = it.Value().m_DataOffset;
-    dataOffset       = m_Module.m_InstanceDataDesc.GetOffset(dataOffset.GetType(), dataOffset.m_uiByteOffset, dataOffset.GetSource());
-  }
-
-  return XII_SUCCESS;
-}
-
 xiiResult xiiVisualScriptCompiler::FinalizeConstantData()
 {
-  m_Module.m_ConstantDataStorage.AllocateStorage();
+  m_Module.m_ConstantDataDesc.CalculatePerTypeStartOffsets();
+  m_Module.m_ConstantDataStorage.AllocateStorage(xiiFoundation::GetDefaultAllocator());
 
   for (auto& it : m_ConstantDataToIndex)
   {
@@ -1811,7 +1792,7 @@ void xiiVisualScriptCompiler::DumpAST(AstNode* pEntryAstNode, xiiStringView sOut
 
     TraverseAllConnections(pEntryAstNode,
                            [&](const Connection& connection) {
-                             AstNode* pAstNode = connection.m_pCurrent;
+                             AstNode* pAstNode = connection.m_pTarget;
 
                              xiiUInt32 uiGraphNode = 0;
                              if (nodeCache.TryGetValue(pAstNode, uiGraphNode) == false)
@@ -1840,10 +1821,10 @@ void xiiVisualScriptCompiler::DumpAST(AstNode* pEntryAstNode, xiiStringView sOut
                                nodeCache.Insert(pAstNode, uiGraphNode);
                              }
 
-                             if (connection.m_pPrev != nullptr)
+                             if (connection.m_pSource != nullptr)
                              {
                                xiiUInt32 uiPrevGraphNode = 0;
-                               XII_VERIFY(nodeCache.TryGetValue(connection.m_pPrev, uiPrevGraphNode), "");
+                               XII_VERIFY(nodeCache.TryGetValue(connection.m_pSource, uiPrevGraphNode), "");
 
                                if (connection.m_Type == ConnectionType::Execution)
                                {
@@ -1855,7 +1836,7 @@ void xiiVisualScriptCompiler::DumpAST(AstNode* pEntryAstNode, xiiStringView sOut
                                  {
                                    sb.Append(" + ");
                                  }
-                                 sb.Append("Exec");
+                                 sb.AppendFormat("Exec{}", connection.m_uiSourcePinIndex);
                                  sLabel = sb;
                                }
                                else
@@ -1863,7 +1844,7 @@ void xiiVisualScriptCompiler::DumpAST(AstNode* pEntryAstNode, xiiStringView sOut
                                  xiiUInt64  uiConnectionKey = uiGraphNode | xiiUInt64(uiPrevGraphNode) << 32;
                                  xiiString& sLabel          = connectionCache[uiConnectionKey];
 
-                                 auto& dataInput  = connection.m_pPrev->m_Inputs[connection.m_uiPrevPinIndex];
+                                 auto& dataInput  = connection.m_pSource->m_Inputs[connection.m_uiSourcePinIndex];
                                  auto& dataOutput = GetDataOutput(dataInput);
 
                                  xiiStringBuilder sb = sLabel;
@@ -1871,7 +1852,7 @@ void xiiVisualScriptCompiler::DumpAST(AstNode* pEntryAstNode, xiiStringView sOut
                                  {
                                    sb.Append(" + ");
                                  }
-                                 sb.AppendFormat("o{}:{} (id: {})->i{}:{} (id: {})", dataInput.m_uiSourcePinIndex, xiiVisualScriptDataType::GetName(dataOutput.m_DataType), dataOutput.m_uiId, connection.m_uiPrevPinIndex, xiiVisualScriptDataType::GetName(dataInput.m_DataType), dataInput.m_uiId);
+                                 sb.AppendFormat("o{}:{} (id: {})->i{}:{} (id: {})", dataInput.m_uiSourcePinIndex, xiiVisualScriptDataType::GetName(dataOutput.m_DataType), dataOutput.m_uiId, connection.m_uiSourcePinIndex, xiiVisualScriptDataType::GetName(dataInput.m_DataType), dataInput.m_uiId);
                                  sLabel = sb;
                                }
                              }

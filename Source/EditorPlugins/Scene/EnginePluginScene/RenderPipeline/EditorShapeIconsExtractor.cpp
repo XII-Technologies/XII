@@ -34,13 +34,20 @@ xiiEditorShapeIconsExtractor::~xiiEditorShapeIconsExtractor() = default;
 
 void xiiEditorShapeIconsExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
+  xiiFrustum frustum;
+  view.ComputeCullingFrustum(frustum);
+
   XII_LOCK(view.GetWorld()->GetReadMarker());
 
   /// \todo Once we have a solution for objects that only have a shape icon we can switch this loop to use visibleObjects instead.
   for (auto it = view.GetWorld()->GetObjects(); it.IsValid(); ++it)
   {
     const xiiGameObject* pObject = it;
-    if (FilterByViewTags(view, pObject))
+    if (!pObject->IsActive() || FilterByViewTags(view, pObject))
+      continue;
+
+    xiiBoundingSphere sphere = xiiBoundingSphere::MakeFromCenterAndRadius(pObject->GetGlobalPosition(), 0.1f);
+    if (frustum.GetObjectPosition(sphere) == xiiVolumePosition::Outside)
       continue;
 
     ExtractShapeIcon(pObject, view, ref_extractedRenderData, xiiDefaultRenderDataCategories::SimpleOpaque);
@@ -55,7 +62,11 @@ void xiiEditorShapeIconsExtractor::Extract(const xiiView& view, const xiiDynamic
       const xiiGameObject* pObject = nullptr;
       if (view.GetWorld()->TryGetObject(hObject, pObject))
       {
-        if (FilterByViewTags(view, pObject))
+        if (!pObject->IsActive() || FilterByViewTags(view, pObject))
+          continue;
+
+        xiiBoundingSphere sphere = xiiBoundingSphere::MakeFromCenterAndRadius(pObject->GetGlobalPosition(), 0.1f);
+        if (frustum.GetObjectPosition(sphere) == xiiVolumePosition::Outside)
           continue;
 
         ExtractShapeIcon(pObject, view, ref_extractedRenderData, xiiDefaultRenderDataCategories::Selection);
@@ -125,7 +136,7 @@ void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject
       pRenderData->m_BlendMode       = xiiSpriteBlendMode::ShapeIcon;
       pRenderData->m_texCoordScale   = xiiVec2(1.0f);
       pRenderData->m_texCoordOffset  = xiiVec2(0.0f);
-      pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(pComponent);
+      pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(*pComponent);
 
       // prefer color gamma properties
       if (pShapeIconInfo->m_pColorGammaProperty != nullptr)

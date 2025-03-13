@@ -22,9 +22,11 @@ xiiQtElementGroupButton::xiiQtElementGroupButton(QWidget* pParent, xiiQtElementG
       break;
     case xiiQtElementGroupButton::ElementAction::DeleteElement:
       setIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/Delete.svg")));
+      setToolTip("Remove this element.");
       break;
     case xiiQtElementGroupButton::ElementAction::Help:
       setIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/Log.svg")));
+      setToolTip("Open the online help for this.");
       break;
   }
 }

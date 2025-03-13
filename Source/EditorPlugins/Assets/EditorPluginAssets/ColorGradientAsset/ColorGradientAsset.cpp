@@ -172,7 +172,7 @@ xiiColor xiiColorGradientAssetData::Evaluate(xiiInt64 iTick) const
       temp.AddIntensityControlPoint(rrhs->GetTickAsTime().GetSeconds(), rrhs->m_fIntensity);
   }
   xiiColor color;
-  //#TODO: This is rather slow as we eval lots of points but only need one
+  // #TODO: This is rather slow as we eval lots of points but only need one
   temp.SortControlPoints();
   temp.Evaluate(iTick / 4800.0, color);
   return color;

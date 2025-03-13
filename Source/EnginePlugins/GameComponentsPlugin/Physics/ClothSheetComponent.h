@@ -164,9 +164,6 @@ public:
   void                            SetFlags(xiiBitflags<xiiClothSheetFlags> flags); // [ property ]
   xiiBitflags<xiiClothSheetFlags> GetFlags() const { return m_Flags; }             // [ property ]
 
-  void        SetMaterialFile(const char* szFile); // [ property ]
-  const char* GetMaterialFile() const;             // [ property ]
-
   xiiMaterialResourceHandle m_hMaterial; // [ property ]
 
 private:

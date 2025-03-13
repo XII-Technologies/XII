@@ -54,6 +54,7 @@ namespace
 xiiQtContainerWindow::xiiQtContainerWindow()
 {
   setMinimumSize(QSize(800, 600));
+
   m_bWindowLayoutRestored         = false;
   m_pStatusBarLabel               = nullptr;
   m_iWindowLayoutRestoreScheduled = 0;
@@ -73,17 +74,21 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   flags |= ads::CDockManager::ActiveTabHasCloseButton;
   flags |= ads::CDockManager::XmlCompressionEnabled;
   flags |= ads::CDockManager::FloatingContainerHasWidgetTitle;
+  flags |= ads::CDockManager::FloatingContainerHasWidgetIcon;
+  flags |= ads::CDockManager::HideSingleCentralWidgetTitleBar;
   flags |= ads::CDockManager::DragPreviewShowsContentPixmap;
   flags |= ads::CDockManager::FocusHighlighting;
-  flags |= ads::CDockManager::AlwaysShowTabs;
-  flags |= ads::CDockManager::DockAreaHasCloseButton;
+  // flags |= ads::CDockManager::AlwaysShowTabs;
+  // flags |= ads::CDockManager::DockAreaHasCloseButton;
   flags |= ads::CDockManager::DockAreaCloseButtonClosesTab;
   flags |= ads::CDockManager::MiddleMouseButtonClosesTab;
   flags |= ads::CDockManager::DockAreaHasTabsMenuButton;
-  flags |= ads::CDockManager::FloatingContainerHasWidgetIcon;
-  flags |= ads::CDockManager::AllTabsHaveCloseButton;
-  flags |= ads::CDockManager::OpaqueSplitterResize;
+  flags |= ads::CDockManager::DockAreaDynamicTabsMenuButtonVisibility;
+  // flags |= ads::CDockManager::AllTabsHaveCloseButton;
+  flags |= ads::CDockManager::RetainTabSizeWhenCloseButtonHidden;
+  flags |= ads::CDockManager::DockAreaHideDisabledButtons;
   flags |= ads::CDockManager::DockAreaHasUndockButton;
+  flags |= ads::CDockManager::OpaqueSplitterResize;
   ads::CDockManager::setConfigFlags(flags);
 
   ads::CDockManager::AutoHideFlags autoHideFlags = ads::CDockManager::AutoHideFeatureEnabled;
@@ -280,7 +285,7 @@ void xiiQtContainerWindow::RestoreWindowLayout()
   }
 
   for (xiiUInt32 i = 0; i < m_DocumentWindows.GetCount(); ++i)
-    m_DocumentWindows[i]->RestoreWindowLayout();
+    m_DocumentWindows[i]->RestoreWindowLayout(true);
 
   m_bWindowLayoutRestored = true;
 }
@@ -363,6 +368,7 @@ void xiiQtContainerWindow::RemoveDocumentWindow(xiiQtDocumentWindow* pDocWindow)
   {
     iCurIdx = xiiMath::Min(iCurIdx, pDockArea->openDockWidgetsCount() - 1);
     pDockArea->setCurrentIndex(iCurIdx);
+    pDockArea->currentDockWidget()->update();
   }
 
   if (pDockArea && pDockArea->openDockWidgetsCount() == 1)
@@ -406,6 +412,7 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
   xiiString         displayName = pDocWindow->GetDisplayNameShort();
   ads::CDockWidget* dock        = new ads::CDockWidget(xiiMakeQString(displayName));
   dock->installEventFilter(pDocWindow);
+  dock->setFeature(ads::CDockWidget::CustomCloseHandling, true);
 
   dock->setObjectName(xiiMakeQString(pDocWindow->GetUniqueName()));
   XII_ASSERT_DEV(!dock->objectName().isEmpty(), "Dock name must not be empty.");
@@ -423,7 +430,8 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
     m_pDockManager->addDockWidgetTab(ads::TopDockWidgetArea, dock);
   }
   m_DocumentDocks.PushBack(dock);
-  connect(dock, &ads::CDockWidget::closed, this, &xiiQtContainerWindow::SlotDocumentTabCloseRequested);
+
+  connect(dock, &ads::CDockWidget::closeRequested, this, &xiiQtContainerWindow::SlotDocumentTabCloseRequested);
   connect(dock->tabWidget(), &QWidget::customContextMenuRequested, this, &xiiQtContainerWindow::SlotTabsContextMenuRequested);
   connect(dock, &ads::CDockWidget::topLevelChanged, this, &xiiQtContainerWindow::SlotDockWidgetFloatingChanged);
 
@@ -569,10 +577,9 @@ void xiiQtContainerWindow::SlotDocumentTabCloseRequested()
 
   if (!pDocWindow->CanCloseWindow())
   {
-    // TODO: There is no CloseRequested event so we just reopen on a timer.
-    QTimer::singleShot(1, [dock]() { dock->toggleView(); });
     return;
   }
+
   pDocWindow->CloseDocumentWindow();
 }
 
@@ -626,6 +633,7 @@ void xiiQtContainerWindow::UIServicesEventHandler(const xiiQtUiServices::Event& 
       }
 
       statusBar()->setHidden(e.m_sText.IsEmpty());
+
       m_pStatusBarLabel->setText(xiiMakeQString(e.m_sText));
     }
     break;

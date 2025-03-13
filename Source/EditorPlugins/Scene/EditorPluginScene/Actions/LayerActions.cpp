@@ -153,7 +153,11 @@ void xiiLayerAction::ToggleLayerLoaded(xiiScene2Document* pSceneDocument, xiiUui
   }
 
   pSceneDocument->SetLayerLoaded(layerGuid, bLoad).LogFailure();
-  pSceneDocument->SetActiveLayer(layerGuid).LogFailure();
+
+  if (bLoad)
+  {
+    pSceneDocument->SetActiveLayer(layerGuid).LogFailure();
+  }
 }
 
 void xiiLayerAction::Execute(const xiiVariant& value)
@@ -270,7 +274,7 @@ xiiUuid xiiLayerAction::GetCurrentSelectedLayer() const
     xiiObjectAccessorBase* pAccessor = m_pSceneDocument->GetSceneObjectAccessor();
     if (pObject->GetType()->IsDerivedFrom(xiiGetStaticRTTI<xiiSceneLayer>()))
     {
-      layerGuid = pAccessor->Get<xiiUuid>(pObject, "Layer");
+      layerGuid = pAccessor->GetByName<xiiUuid>(pObject, "Layer");
     }
   }
   return layerGuid;

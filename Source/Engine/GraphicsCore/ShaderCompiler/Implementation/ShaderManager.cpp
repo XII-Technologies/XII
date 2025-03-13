@@ -112,14 +112,13 @@ namespace
 
 void xiiShaderManager::Configure(xiiStringView sActivePlatform, bool bEnableRuntimeCompilation, xiiStringView sShaderCacheDirectory, xiiStringView sPermVarSubDirectory)
 {
-  s_sShaderCacheDirectory = sShaderCacheDirectory;
-  s_sPermVarSubDir        = sPermVarSubDirectory;
-
   xiiStringBuilder s = sActivePlatform;
   s.ToUpper();
 
-  s_bEnableRuntimeCompilation = bEnableRuntimeCompilation;
   s_sPlatform                 = s;
+  s_bEnableRuntimeCompilation = bEnableRuntimeCompilation;
+  s_sShaderCacheDirectory     = sShaderCacheDirectory;
+  s_sPermVarSubDir            = sPermVarSubDirectory;
 }
 
 void xiiShaderManager::ReloadPermutationVarConfig(xiiStringView sName, const xiiTempHashedString& sHashedName)

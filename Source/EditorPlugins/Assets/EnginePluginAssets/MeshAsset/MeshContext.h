@@ -33,7 +33,7 @@ private:
   void QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg);
   void OnResourceEvent(const xiiResourceEvent& e);
 
-  xiiGameObject*        m_pMeshObject = nullptr;
+  xiiGameObject*        m_pMeshObject;
   xiiMeshResourceHandle m_hMesh;
 
   xiiAtomicBool                                             m_bBoundsDirty = false;

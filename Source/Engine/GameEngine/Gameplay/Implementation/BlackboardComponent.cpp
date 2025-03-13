@@ -78,7 +78,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiBlackboardComponent, 3)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Template", GetTemplateFile, SetTemplateFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_BlackboardTemplate")),
+    XII_RESOURCE_MEMBER_PROPERTY("Template", m_hTemplate)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_BlackboardTemplate")),
     XII_ACCESSOR_PROPERTY("ShowDebugInfo", GetShowDebugInfo, SetShowDebugInfo),
   }
   XII_END_PROPERTIES;
@@ -202,28 +202,6 @@ void xiiBlackboardComponent::SetShowDebugInfo(bool bShow)
 bool xiiBlackboardComponent::GetShowDebugInfo() const
 {
   return GetUserFlag(BCFlags::ShowDebugInfo);
-}
-
-void xiiBlackboardComponent::SetTemplateFile(const char* szName)
-{
-  xiiBlackboardTemplateResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szName))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiBlackboardTemplateResource>(szName);
-  }
-
-  m_hTemplate = hResource;
-}
-
-const char* xiiBlackboardComponent::GetTemplateFile() const
-{
-  if (m_hTemplate.IsValid())
-  {
-    return m_hTemplate.GetResourceID();
-  }
-
-  return "";
 }
 
 void xiiBlackboardComponent::SetEntryValue(const char* szName, const xiiVariant& value)

@@ -46,10 +46,7 @@ xiiPropertyAnimationTrackGroup::~xiiPropertyAnimationTrackGroup()
 }
 
 xiiPropertyAnimAssetDocument::xiiPropertyAnimAssetDocument(xiiStringView sDocumentPath) :
-  xiiSimpleAssetDocument<xiiPropertyAnimationTrackGroup, xiiGameObjectContextDocument>(
-    XII_DEFAULT_NEW(xiiPropertyAnimObjectManager),
-    sDocumentPath,
-    xiiAssetDocEngineConnection::FullObjectMirroring)
+  xiiSimpleAssetDocument<xiiPropertyAnimationTrackGroup, xiiGameObjectContextDocument>(XII_DEFAULT_NEW(xiiPropertyAnimObjectManager), sDocumentPath, xiiAssetDocEngineConnection::FullObjectMirroring)
 {
   m_GameObjectContextEvents.AddEventHandler(xiiMakeDelegate(&xiiPropertyAnimAssetDocument::GameObjectContextEventHandler, this));
   m_pObjectAccessor = XII_DEFAULT_NEW(xiiPropertyAnimObjectAccessor, this, GetCommandHistory());
@@ -97,7 +94,6 @@ xiiUInt64 xiiPropertyAnimAssetDocument::GetAnimationDurationTicks() const
 
   return pProp->m_uiCurveDuration;
 }
-
 
 xiiTime xiiPropertyAnimAssetDocument::GetAnimationDurationTime() const
 {
@@ -459,8 +455,9 @@ void xiiPropertyAnimAssetDocument::ApplyAnimation(const xiiPropertyReference& ke
 
   if (bIsRotation)
   {
-    xiiQuat qRotation = xiiQuat::MakeFromEulerAngles(euler[0], euler[1], euler[2]);
-    animValue         = qRotation;
+    xiiQuat qRotation;
+    qRotation = xiiQuat::MakeFromEulerAngles(euler[0], euler[1], euler[2]);
+    animValue = qRotation;
   }
 
   xiiDocumentObject* pObj = GetObjectManager()->GetObject(key.m_Object);
@@ -544,19 +541,12 @@ const xiiPropertyAnimationTrack* xiiPropertyAnimAssetDocument::GetTrack(const xi
 xiiPropertyAnimationTrack* xiiPropertyAnimAssetDocument::GetTrack(const xiiUuid& track)
 {
   auto obj = m_Context.GetObjectByGUID(track);
-  XII_ASSERT_DEBUG(obj.m_pType == xiiGetStaticRTTI<xiiPropertyAnimationTrack>(),
-                   "Track guid does not resolve to a track, "
-                   "either the track is not yet created in the mirror or already destroyed. Make sure callbacks are executed in the right order.");
+  XII_ASSERT_DEBUG(obj.m_pType == xiiGetStaticRTTI<xiiPropertyAnimationTrack>(), "Track guid does not resolve to a track, either the track is not yet created in the mirror or already destroyed. Make sure callbacks are executed in the right order.");
   auto pTrack = static_cast<xiiPropertyAnimationTrack*>(obj.m_pObject);
   return pTrack;
 }
 
-
-xiiStatus xiiPropertyAnimAssetDocument::CanAnimate(
-  const xiiDocumentObject*    pObject,
-  const xiiAbstractProperty*  pProp,
-  xiiVariant                  index,
-  xiiPropertyAnimTarget::Enum target) const
+xiiStatus xiiPropertyAnimAssetDocument::CanAnimate(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target) const
 {
   if (!pObject)
     return xiiStatus("Object is null.");
@@ -606,11 +596,7 @@ xiiStatus xiiPropertyAnimAssetDocument::CanAnimate(
   return FindTrackKeys(sObjectSearchSequence.GetData(), sComponentType.GetData(), sPropertyPath.GetData(), keys);
 }
 
-xiiUuid xiiPropertyAnimAssetDocument::FindTrack(
-  const xiiDocumentObject*    pObject,
-  const xiiAbstractProperty*  pProp,
-  xiiVariant                  index,
-  xiiPropertyAnimTarget::Enum target) const
+xiiUuid xiiPropertyAnimAssetDocument::FindTrack(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target) const
 {
   xiiPropertyReference key;
   key.m_Object    = pObject->GetGuid();
@@ -654,11 +640,7 @@ static xiiColorGammaUB g_FloatColors[10] = {
   xiiColorGammaUB(238, 130, 238),
 };
 
-xiiUuid xiiPropertyAnimAssetDocument::CreateTrack(
-  const xiiDocumentObject*    pObject,
-  const xiiAbstractProperty*  pProp,
-  xiiVariant                  index,
-  xiiPropertyAnimTarget::Enum target)
+xiiUuid xiiPropertyAnimAssetDocument::CreateTrack(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiPropertyAnimTarget::Enum target)
 {
   xiiStringBuilder sObjectSearchSequence;
   xiiStringBuilder sComponentType;
@@ -668,10 +650,7 @@ xiiUuid xiiPropertyAnimAssetDocument::CreateTrack(
   xiiObjectCommandAccessor accessor(GetCommandHistory());
   const xiiRTTI*           pTrackType = xiiGetStaticRTTI<xiiPropertyAnimationTrack>();
   xiiUuid                  newTrack;
-  XII_VERIFY(
-    accessor.AddObject(GetPropertyObject(), xiiGetStaticRTTI<xiiPropertyAnimationTrackGroup>()->FindPropertyByName("Tracks"), -1, pTrackType, newTrack)
-      .Succeeded(),
-    "Adding track failed.");
+  XII_VERIFY(accessor.AddObject(GetPropertyObject(), xiiGetStaticRTTI<xiiPropertyAnimationTrackGroup>()->FindPropertyByName("Tracks"), -1, pTrackType, newTrack).Succeeded(), "Adding track failed.");
   const xiiDocumentObject* pTrackObj = accessor.GetObject(newTrack);
   xiiVariant               value     = sObjectSearchSequence.GetData();
   XII_VERIFY(accessor.SetValue(pTrackObj, pTrackType->FindPropertyByName("ObjectPath"), value).Succeeded(), "Adding track failed.");
@@ -758,14 +737,13 @@ xiiUuid xiiPropertyAnimAssetDocument::InsertCurveCpAt(const xiiUuid& track, xiiI
   const xiiVariant         curveGuid   = trackObject->GetTypeAccessor().GetValue("FloatCurve");
 
   xiiUuid newObjectGuid;
-  XII_VERIFY(acc.AddObject(accessor.GetObject(curveGuid.Get<xiiUuid>()), "ControlPoints", -1, xiiGetStaticRTTI<xiiCurveControlPointData>(), newObjectGuid)
-               .Succeeded(),
-             "");
+  XII_VERIFY(acc.AddObjectByName(accessor.GetObject(curveGuid.Get<xiiUuid>()), "ControlPoints", -1, xiiGetStaticRTTI<xiiCurveControlPointData>(), newObjectGuid).Succeeded(), "");
+
   auto curveCPObj = accessor.GetObject(newObjectGuid);
-  XII_VERIFY(acc.SetValue(curveCPObj, "Tick", iTickX).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(curveCPObj, "Value", fNewPosY).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(curveCPObj, "LeftTangent", xiiVec2(-0.1f, 0.0f)).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(curveCPObj, "RightTangent", xiiVec2(+0.1f, 0.0f)).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(curveCPObj, "Tick", iTickX).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(curveCPObj, "Value", fNewPosY).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(curveCPObj, "LeftTangent", xiiVec2(-0.1f, 0.0f)).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(curveCPObj, "RightTangent", xiiVec2(+0.1f, 0.0f)).Succeeded(), "");
 
   acc.FinishTransaction();
 
@@ -807,12 +785,12 @@ xiiUuid xiiPropertyAnimAssetDocument::InsertGradientColorCpAt(const xiiUuid& tra
 
   acc.StartTransaction("Add Color Control Point");
   xiiUuid newObjectGuid;
-  XII_VERIFY(acc.AddObject(gradientObject, "ColorCPs", -1, xiiGetStaticRTTI<xiiColorControlPoint>(), newObjectGuid).Succeeded(), "");
+  XII_VERIFY(acc.AddObjectByName(gradientObject, "ColorCPs", -1, xiiGetStaticRTTI<xiiColorControlPoint>(), newObjectGuid).Succeeded(), "");
   const xiiDocumentObject* cpObject = GetObjectManager()->GetObject(newObjectGuid);
-  XII_VERIFY(acc.SetValue(cpObject, "Tick", iTickX).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(cpObject, "Red", color.r).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(cpObject, "Green", color.g).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(cpObject, "Blue", color.b).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(cpObject, "Tick", iTickX).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(cpObject, "Red", color.r).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(cpObject, "Green", color.g).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(cpObject, "Blue", color.b).Succeeded(), "");
   acc.FinishTransaction();
   return newObjectGuid;
 }
@@ -852,10 +830,10 @@ xiiUuid xiiPropertyAnimAssetDocument::InsertGradientAlphaCpAt(const xiiUuid& tra
 
   acc.StartTransaction("Add Alpha Control Point");
   xiiUuid newObjectGuid;
-  XII_VERIFY(acc.AddObject(gradientObject, "AlphaCPs", -1, xiiGetStaticRTTI<xiiAlphaControlPoint>(), newObjectGuid).Succeeded(), "");
+  XII_VERIFY(acc.AddObjectByName(gradientObject, "AlphaCPs", -1, xiiGetStaticRTTI<xiiAlphaControlPoint>(), newObjectGuid).Succeeded(), "");
   const xiiDocumentObject* cpObject = GetObjectManager()->GetObject(newObjectGuid);
-  XII_VERIFY(acc.SetValue(cpObject, "Tick", iTickX).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(cpObject, "Alpha", uiAlpha).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(cpObject, "Tick", iTickX).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(cpObject, "Alpha", uiAlpha).Succeeded(), "");
   acc.FinishTransaction();
   return newObjectGuid;
 }
@@ -895,10 +873,10 @@ xiiUuid xiiPropertyAnimAssetDocument::InsertGradientIntensityCpAt(const xiiUuid&
 
   acc.StartTransaction("Add Intensity Control Point");
   xiiUuid newObjectGuid;
-  XII_VERIFY(acc.AddObject(gradientObject, "IntensityCPs", -1, xiiGetStaticRTTI<xiiIntensityControlPoint>(), newObjectGuid).Succeeded(), "");
+  XII_VERIFY(acc.AddObjectByName(gradientObject, "IntensityCPs", -1, xiiGetStaticRTTI<xiiIntensityControlPoint>(), newObjectGuid).Succeeded(), "");
   const xiiDocumentObject* cpObject = GetObjectManager()->GetObject(newObjectGuid);
-  XII_VERIFY(acc.SetValue(cpObject, "Tick", iTickX).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(cpObject, "Intensity", fIntensity).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(cpObject, "Tick", iTickX).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(cpObject, "Intensity", fIntensity).Succeeded(), "");
   acc.FinishTransaction();
   return newObjectGuid;
 }
@@ -913,12 +891,11 @@ xiiUuid xiiPropertyAnimAssetDocument::InsertEventTrackCpAt(xiiInt64 iTickX, cons
   xiiUuid                    trackGuid  = accessor.Get<xiiUuid>(GetPropertyObject(), pTrackProp);
 
   xiiUuid newObjectGuid;
-  XII_VERIFY(
-    acc.AddObject(accessor.GetObject(trackGuid), "ControlPoints", -1, xiiGetStaticRTTI<xiiEventTrackControlPointData>(), newObjectGuid).Succeeded(),
-    "");
+  XII_VERIFY(acc.AddObjectByName(accessor.GetObject(trackGuid), "ControlPoints", -1, xiiGetStaticRTTI<xiiEventTrackControlPointData>(), newObjectGuid).Succeeded(), "");
+
   const xiiDocumentObject* pCPObj = accessor.GetObject(newObjectGuid);
-  XII_VERIFY(acc.SetValue(pCPObj, "Tick", iTickX).Succeeded(), "");
-  XII_VERIFY(acc.SetValue(pCPObj, "Event", szValue).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(pCPObj, "Tick", iTickX).Succeeded(), "");
+  XII_VERIFY(acc.SetValueByName(pCPObj, "Event", szValue).Succeeded(), "");
 
   acc.FinishTransaction();
 

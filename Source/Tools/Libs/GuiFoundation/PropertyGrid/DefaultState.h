@@ -79,7 +79,7 @@ public:
   /// \brief Constructor. Will collect the appropriate xiiDefaultStateProviders to query the states.
   /// \param pAccessor Used to revert properties and query their current value.
   /// \param selection For which objects the default state should be queried. If xiiPropertySelection::m_Index is set, IsDefaultElement and RevertElement will query the value under that index if the passed in index is invalid.
-  /// \param szProperty The name of the container for which default states should be queried.
+  /// \param sProperty The name of the container for which default states should be queried.
   xiiDefaultContainerState(xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection, xiiStringView sProperty);
 
   /// \brief Returns the color of the top-most xiiDefaultStateProvider of the first element of the selection.

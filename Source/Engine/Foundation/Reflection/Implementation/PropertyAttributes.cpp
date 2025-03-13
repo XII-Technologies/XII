@@ -279,17 +279,37 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFileBrowserAttribute, 1, xiiRTTIDefaultAlloc
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExternalFileBrowserAttribute, 1, xiiRTTIDefaultAllocator<xiiExternalFileBrowserAttribute>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Title", m_sDialogTitle),
+    XII_MEMBER_PROPERTY("Filter", m_sTypeFilter),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetBrowserAttribute, 1, xiiRTTIDefaultAllocator<xiiAssetBrowserAttribute>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Filter", m_sTypeFilter),
+    XII_MEMBER_PROPERTY("RequiredTag", m_sRequiredTag),
     XII_BITFLAGS_MEMBER_PROPERTY("DependencyFlags", xiiDependencyFlags, m_DependencyFlags),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
   {
     XII_CONSTRUCTOR_PROPERTY(xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiBitflags<xiiDependencyFlags>),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiBitflags<xiiDependencyFlags>),
   }
   XII_END_FUNCTIONS;
 }
@@ -921,50 +941,49 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScriptableFunctionAttribute, 1, xiiRTTIDefau
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiScriptableFunctionAttribute::xiiScriptableFunctionAttribute(ArgType argType1 /*= In*/, xiiStringView sArg1 /*= nullptr*/, ArgType argType2 /*= In*/, xiiStringView sArg2 /*= nullptr*/, ArgType argType3 /*= In*/, xiiStringView sArg3 /*= nullptr*/, ArgType argType4 /*= In*/, xiiStringView sArg4 /*= nullptr*/, ArgType argType5 /*= In*/, xiiStringView sArg5 /*= nullptr*/, ArgType argType6 /*= In*/, xiiStringView sArg6 /*= nullptr*/)
+xiiScriptableFunctionAttribute::xiiScriptableFunctionAttribute(ArgType argType1 /*= In*/, xiiStringView sArg1 /*= nullptr*/, ArgType argType2 /*= In*/, xiiStringView sArg2 /*= nullptr*/, ArgType argType3 /*= In*/, xiiStringView sArg3 /*= nullptr*/, ArgType argType4 /*= In*/, xiiStringView sArg4 /*= nullptr*/, ArgType argType5 /*= In*/, xiiStringView sArg5 /*= nullptr*/, ArgType argType6 /*= In*/, xiiStringView sArg6 /*= nullptr*/, ArgType argType7 /*= In*/, xiiStringView sArg7 /*= nullptr*/, ArgType argType8 /*= In*/, xiiStringView sArg8 /*= nullptr*/, ArgType argType9 /*= In*/, xiiStringView sArg9 /*= nullptr*/, ArgType argType10 /*= In*/, xiiStringView sArg10 /*= nullptr*/, ArgType argType11 /*= In*/, xiiStringView sArg11 /*= nullptr*/, ArgType argType12 /*= In*/, xiiStringView sArg12 /*= nullptr*/, ArgType argType13 /*= In*/, xiiStringView sArg13 /*= nullptr*/, ArgType argType14 /*= In*/, xiiStringView sArg14 /*= nullptr*/, ArgType argType15 /*= In*/, xiiStringView sArg15 /*= nullptr*/, ArgType argType16 /*= In*/, xiiStringView sArg16 /*= nullptr*/, ArgType argType17 /*= In*/, xiiStringView sArg17 /*= nullptr*/, ArgType argType18 /*= In*/, xiiStringView sArg18 /*= nullptr*/, ArgType argType19 /*= In*/, xiiStringView sArg19 /*= nullptr*/, ArgType argType20 /*= In*/, xiiStringView sArg20 /*= nullptr*/, ArgType argType21 /*= In*/, xiiStringView sArg21 /*= nullptr*/, ArgType argType22 /*= In*/, xiiStringView sArg22 /*= nullptr*/, ArgType argType23 /*= In*/, xiiStringView sArg23 /*= nullptr*/, ArgType argType24 /*= In*/, xiiStringView sArg24 /*= nullptr*/, ArgType argType25 /*= In*/, xiiStringView sArg25 /*= nullptr*/, ArgType argType26 /*= In*/, xiiStringView sArg26 /*= nullptr*/, ArgType argType27 /*= In*/, xiiStringView sArg27 /*= nullptr*/, ArgType argType28 /*= In*/, xiiStringView sArg28 /*= nullptr*/, ArgType argType29 /*= In*/, xiiStringView sArg29 /*= nullptr*/, ArgType argType30 /*= In*/, xiiStringView sArg30 /*= nullptr*/, ArgType argType31 /*= In*/, xiiStringView sArg31 /*= nullptr*/, ArgType argType32 /*= In*/, xiiStringView sArg32 /*= nullptr*/)
 {
-  {
-    if (sArg1.IsEmpty())
-      return;
-
-    m_ArgNames.PushBack(sArg1);
-    m_ArgTypes.PushBack(argType1);
+#define ADD_ARGUMENT(sArg, argType) \
+  if (!sArg.IsEmpty())              \
+  {                                 \
+    m_ArgNames.PushBack(sArg);      \
+    m_ArgTypes.PushBack(argType);   \
   }
-  {
-    if (sArg2.IsEmpty())
-      return;
 
-    m_ArgNames.PushBack(sArg2);
-    m_ArgTypes.PushBack(argType2);
-  }
-  {
-    if (sArg3.IsEmpty())
-      return;
+  ADD_ARGUMENT(sArg1, argType1);
+  ADD_ARGUMENT(sArg2, argType2);
+  ADD_ARGUMENT(sArg3, argType3);
+  ADD_ARGUMENT(sArg4, argType4);
+  ADD_ARGUMENT(sArg5, argType5);
+  ADD_ARGUMENT(sArg6, argType6);
+  ADD_ARGUMENT(sArg7, argType7);
+  ADD_ARGUMENT(sArg8, argType8);
+  ADD_ARGUMENT(sArg9, argType9);
+  ADD_ARGUMENT(sArg10, argType10);
+  ADD_ARGUMENT(sArg11, argType11);
+  ADD_ARGUMENT(sArg12, argType12);
+  ADD_ARGUMENT(sArg13, argType13);
+  ADD_ARGUMENT(sArg14, argType14);
+  ADD_ARGUMENT(sArg15, argType15);
+  ADD_ARGUMENT(sArg16, argType16);
+  ADD_ARGUMENT(sArg17, argType17);
+  ADD_ARGUMENT(sArg18, argType18);
+  ADD_ARGUMENT(sArg19, argType19);
+  ADD_ARGUMENT(sArg20, argType20);
+  ADD_ARGUMENT(sArg21, argType21);
+  ADD_ARGUMENT(sArg22, argType22);
+  ADD_ARGUMENT(sArg23, argType23);
+  ADD_ARGUMENT(sArg24, argType24);
+  ADD_ARGUMENT(sArg25, argType25);
+  ADD_ARGUMENT(sArg26, argType26);
+  ADD_ARGUMENT(sArg27, argType27);
+  ADD_ARGUMENT(sArg28, argType28);
+  ADD_ARGUMENT(sArg29, argType29);
+  ADD_ARGUMENT(sArg30, argType30);
+  ADD_ARGUMENT(sArg31, argType31);
+  ADD_ARGUMENT(sArg32, argType32);
 
-    m_ArgNames.PushBack(sArg3);
-    m_ArgTypes.PushBack(argType3);
-  }
-  {
-    if (sArg4.IsEmpty())
-      return;
-
-    m_ArgNames.PushBack(sArg4);
-    m_ArgTypes.PushBack(argType4);
-  }
-  {
-    if (sArg5.IsEmpty())
-      return;
-
-    m_ArgNames.PushBack(sArg5);
-    m_ArgTypes.PushBack(argType5);
-  }
-  {
-    if (sArg6.IsEmpty())
-      return;
-
-    m_ArgNames.PushBack(sArg6);
-    m_ArgTypes.PushBack(argType6);
-  }
+#undef ADD_ARGUMENT
 }
 
 //////////////////////////////////////////////////////////////////////////

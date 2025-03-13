@@ -33,6 +33,6 @@ private:
   void ProjectEvents(const xiiToolsProjectEvent& e);
 
   xiiUuid              m_LastSelected;
-  QStatusBar*          m_pStatusBar      = nullptr;
-  xiiQtCuratorControl* m_pCuratorControl = nullptr;
+  QStatusBar*          m_pStatusBar;
+  xiiQtCuratorControl* m_pCuratorControl;
 };

@@ -85,7 +85,7 @@ const xiiVariant xiiReflectedTypeStorageAccessor::GetValue(xiiStringView sProper
         }
 
         const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if (index.IsA<xiiString>())
+        if (index.IsA<xiiString>() || index.IsA<xiiStringView>())
         {
           const xiiString& sIndex = index.Get<xiiString>();
           if (const xiiVariant* pValue = values.GetValue(sIndex))
@@ -130,7 +130,7 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
         if (value.IsA<xiiString>() && pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
         {
           xiiInt64 iValue;
-          xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiString>().GetView(), iValue);
+          xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiString>(), iValue);
           m_Data[storageInfo->m_uiIndex] = xiiVariant(iValue).ConvertTo(storageInfo->m_Type);
           return true;
         }
@@ -194,7 +194,7 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
       case xiiPropertyCategory::Map:
       {
         const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if (index.IsA<xiiString>() && values.Contains(index.Get<xiiString>()))
+        if ((index.IsA<xiiString>() || index.IsA<xiiStringView>()) && values.Contains(index.Get<xiiString>()))
         {
           const xiiString&     sIndex        = index.Get<xiiString>();
           xiiVariantDictionary changedValues = values;
@@ -357,7 +357,7 @@ bool xiiReflectedTypeStorageAccessor::InsertValue(xiiStringView sProperty, xiiVa
       case xiiPropertyCategory::Map:
       {
         const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if (index.IsA<xiiString>() && !values.Contains(index.Get<xiiString>()))
+        if ((index.IsA<xiiString>() || index.IsA<xiiStringView>()) && !values.Contains(index.Get<xiiString>()))
         {
           const xiiString&     sIndex        = index.Get<xiiString>();
           xiiVariantDictionary changedValues = values;
@@ -419,7 +419,7 @@ bool xiiReflectedTypeStorageAccessor::RemoveValue(xiiStringView sProperty, xiiVa
       case xiiPropertyCategory::Map:
       {
         const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if (index.IsA<xiiString>() && values.Contains(index.Get<xiiString>()))
+        if ((index.IsA<xiiString>() || index.IsA<xiiStringView>()) && values.Contains(index.Get<xiiString>()))
         {
           const xiiString&     sIndex        = index.Get<xiiString>();
           xiiVariantDictionary changedValues = values;
@@ -478,7 +478,7 @@ bool xiiReflectedTypeStorageAccessor::MoveValue(xiiStringView sProperty, xiiVari
       case xiiPropertyCategory::Map:
       {
         const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if (oldIndex.IsA<xiiString>() && values.Contains(oldIndex.Get<xiiString>()) && newIndex.IsA<xiiString>())
+        if ((oldIndex.IsA<xiiString>() || oldIndex.IsA<xiiStringView>()) && values.Contains(oldIndex.Get<xiiString>()) && (newIndex.IsA<xiiString>() || newIndex.IsA<xiiStringView>()))
         {
           const xiiString&     sIndex        = oldIndex.Get<xiiString>();
           xiiVariantDictionary changedValues = values;
@@ -488,6 +488,7 @@ bool xiiReflectedTypeStorageAccessor::MoveValue(xiiStringView sProperty, xiiVari
           return true;
         }
       }
+      break;
       default:
         break;
     }

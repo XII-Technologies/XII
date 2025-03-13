@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptGraph.h>
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptGraphQt.moc.h>
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptNodeRegistry.h>
@@ -157,9 +158,28 @@ void xiiQtVisualScriptNode::UpdateState()
       else if (val.IsA<xiiString>() || val.IsA<xiiHashedString>())
       {
         sVal = val.ConvertTo<xiiString>();
-        if (sVal.GetCharacterCount() > 16)
+
+        if (prop->GetAttributeByType<xiiAssetBrowserAttribute>())
         {
-          sVal.Shrink(0, sVal.GetCharacterCount() - 13);
+          if (xiiConversionUtils::IsStringUuid(sVal))
+          {
+            const xiiUuid AssetGuid = xiiConversionUtils::ConvertStringToUuid(sVal);
+
+            auto pAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(AssetGuid);
+
+            if (pAsset)
+              sVal = pAsset->m_pAssetInfo->m_Path.GetDataDirRelativePath().GetFileName();
+            else
+              sVal = "<unknown>";
+          }
+        }
+
+        sVal.ReplaceAll("\n", " ");
+        sVal.ReplaceAll("\t", " ");
+
+        if (sVal.GetCharacterCount() > 23)
+        {
+          sVal.Shrink(0, sVal.GetCharacterCount() - 21);
           sVal.Append("...");
         }
         sVal.Prepend("\"");

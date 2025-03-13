@@ -24,15 +24,19 @@ xiiTextureCubeContext::xiiTextureCubeContext() :
 
 void xiiTextureCubeContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentConfigMsgToEngine>())
+  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentConfigMsgToEngine>() && m_hMaterial.IsValid())
   {
     const xiiDocumentConfigMsgToEngine* pMsg2 = static_cast<const xiiDocumentConfigMsgToEngine*>(pMsg);
 
-    if (pMsg2->m_sWhatToDo == "ChannelMode" && m_hMaterial.IsValid())
+    xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
+    if (pMsg2->m_sWhatToDo == "SetChannelMode")
     {
-      xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
       pMaterial->SetParameter("ShowChannelMode", pMsg2->m_iValue);
-      pMaterial->SetParameter("LodLevel", pMsg2->m_fValue);
+      pMaterial->SetParameter("AlphaThreshold", pMsg2->m_fValue);
+    }
+    else if (pMsg2->m_sWhatToDo == "SetLodLevel")
+    {
+      pMaterial->SetParameter("LodLevel", pMsg2->m_iValue);
     }
   }
 

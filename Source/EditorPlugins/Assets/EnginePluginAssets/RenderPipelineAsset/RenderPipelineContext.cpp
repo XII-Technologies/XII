@@ -9,31 +9,7 @@
 #include <GraphicsCore/Pipeline/Extractor.h>
 #include <GraphicsCore/Pipeline/Implementation/RenderPipelineResourceLoader.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-
-// clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineContextLoaderConnection, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineContextLoaderConnection>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Connection::Source", m_Source),
-    XII_MEMBER_PROPERTY("Connection::Target", m_Target),
-    XII_MEMBER_PROPERTY("Connection::SourcePin", m_SourcePin),
-    XII_MEMBER_PROPERTY("Connection::TargetPin", m_TargetPin),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_STATIC_REFLECTED_TYPE;
-// clang-format on
-
-
-const xiiRTTI* xiiRenderPipelineRttiConverterContext::FindTypeByName(xiiStringView sName) const
-{
-  if (sName == "DocumentNodeManager_DefaultConnection")
-  {
-    return xiiGetStaticRTTI<xiiRenderPipelineContextLoaderConnection>();
-  }
-  return xiiWorldRttiConverterContext::FindTypeByName(sName);
-}
+#include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineContext, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineContext>)
@@ -72,28 +48,18 @@ void xiiRenderPipelineContext::DestroyViewContext(xiiEngineProcessViewContext* p
   XII_ASSERT_DEV(false, "Should not be called");
 }
 
-xiiWorldRttiConverterContext& xiiRenderPipelineContext::GetContext()
-{
-  return m_RenderPipelineContext;
-}
-
-const xiiWorldRttiConverterContext& xiiRenderPipelineContext::GetContext() const
-{
-  return m_RenderPipelineContext;
-}
-
 xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
 {
   xiiDynamicArray<xiiRenderPipelinePass*>                    passes;
   xiiDynamicArray<xiiExtractor*>                             extractors;
   xiiDynamicArray<xiiRenderPipelineResourceLoaderConnection> connections;
 
-  xiiDynamicArray<xiiUuid>                                   passUuids;
-  xiiDynamicArray<xiiRenderPipelineContextLoaderConnection*> toolConnections;
+  xiiDynamicArray<xiiUuid>                           passUuids;
+  xiiDynamicArray<xiiDocumentObject_ConnectionBase*> toolConnections;
 
-  m_RenderPipelineContext.GetObjectsByType(passes, &passUuids);
-  m_RenderPipelineContext.GetObjectsByType(extractors);
-  m_RenderPipelineContext.GetObjectsByType(toolConnections);
+  m_Context.GetObjectsByType(passes, &passUuids);
+  m_Context.GetObjectsByType(extractors);
+  m_Context.GetObjectsByType(toolConnections);
 
   xiiHashTable<xiiUuid, xiiUInt32> passUuidToIndex;
   for (xiiUInt32 i = 0; i < passUuids.GetCount(); ++i)
@@ -103,7 +69,7 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
   connections.SetCount(toolConnections.GetCount());
   for (xiiUInt32 i = 0; i < toolConnections.GetCount(); i++)
   {
-    xiiRenderPipelineContextLoaderConnection*  pConnection      = toolConnections[i];
+    xiiDocumentObject_ConnectionBase*          pConnection      = toolConnections[i];
     xiiRenderPipelineResourceLoaderConnection& engineConnection = connections[i];
     XII_VERIFY(passUuidToIndex.TryGetValue(pConnection->m_Source, engineConnection.m_uiSource), "");
     XII_VERIFY(passUuidToIndex.TryGetValue(pConnection->m_Target, engineConnection.m_uiTarget), "");

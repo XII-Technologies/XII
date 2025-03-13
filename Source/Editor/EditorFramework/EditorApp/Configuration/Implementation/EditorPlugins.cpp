@@ -9,16 +9,16 @@
 #include <Foundation/IO/OpenDdlWriter.h>
 #include <Foundation/Profiling/Profiling.h>
 
-void xiiPluginBundle::WriteStateToDDL(xiiOpenDdlWriter& ref_ddl, const char* szOwnName) const
+void xiiPluginBundle::WriteStateToDDL(xiiOpenDdlWriter& ref_ddl, xiiStringView sOwnName) const
 {
   ref_ddl.BeginObject("PluginState");
-  xiiOpenDdlUtils::StoreString(ref_ddl, szOwnName, "ID");
+  xiiOpenDdlUtils::StoreString(ref_ddl, sOwnName, "ID");
   xiiOpenDdlUtils::StoreBool(ref_ddl, m_bSelected, "Selected");
   xiiOpenDdlUtils::StoreBool(ref_ddl, m_bLoadCopy, "LoadCopy");
   ref_ddl.EndObject();
 }
 
-void xiiPluginBundle::ReadStateFromDDL(xiiOpenDdlReader& ref_ddl, const char* szOwnName)
+void xiiPluginBundle::ReadStateFromDDL(xiiOpenDdlReader& ref_ddl, xiiStringView sOwnName)
 {
   m_bSelected = false;
 
@@ -26,7 +26,7 @@ void xiiPluginBundle::ReadStateFromDDL(xiiOpenDdlReader& ref_ddl, const char* sz
   while (pState)
   {
     auto pName = pState->FindChildOfType(xiiOpenDdlPrimitiveType::String, "ID");
-    if (!pName || pName->GetPrimitivesString()[0] != szOwnName)
+    if (!pName || pName->GetPrimitivesString()[0] != sOwnName)
     {
       pState = pState->GetSibling();
       continue;
@@ -38,6 +38,16 @@ void xiiPluginBundle::ReadStateFromDDL(xiiOpenDdlReader& ref_ddl, const char* sz
       m_bLoadCopy = pVal->GetPrimitivesBool()[0];
 
     break;
+  }
+}
+
+void xiiPluginBundleSet::SetFromTemplate(xiiStringView sTemplateName)
+{
+  for (auto it : m_Plugins)
+  {
+    xiiPluginBundle& bundle = it.Value();
+
+    bundle.m_bSelected = bundle.m_EnabledInTemplates.Contains(sTemplateName);
   }
 }
 

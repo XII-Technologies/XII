@@ -103,7 +103,7 @@ struct xiiComparePanels
 };
 
 
-void xiiApplicationPanelsMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
+void xiiApplicationPanelsMenuAction::GetEntries(xiiDynamicArray<Item>& out_entries)
 {
   out_entries.Clear();
 
@@ -144,8 +144,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiHelpActions, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiHelpActions::xiiHelpActions(const xiiActionContext& context, const char* szName, ButtonType button) :
-  xiiButtonAction(context, szName, false, "")
+xiiHelpActions::xiiHelpActions(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
+  xiiButtonAction(context, sName, false, "")
 {
   m_ButtonType = button;
 

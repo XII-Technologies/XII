@@ -13,7 +13,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPlayerStartPointComponent, 2, xiiComponentMode::Stat
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("PlayerPrefab", GetPlayerPrefabFile, SetPlayerPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("PlayerPrefab", m_hPlayerPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("PlayerPrefab")),
   }
   XII_END_PROPERTIES;
@@ -53,26 +53,6 @@ void xiiPlayerStartPointComponent::DeserializeComponent(xiiWorldReader& inout_st
   {
     xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, inout_stream);
   }
-}
-
-void xiiPlayerStartPointComponent::SetPlayerPrefabFile(const char* szFile)
-{
-  xiiPrefabResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiPrefabResource>(szFile);
-  }
-
-  SetPlayerPrefab(hResource);
-}
-
-const char* xiiPlayerStartPointComponent::GetPlayerPrefabFile() const
-{
-  if (!m_hPlayerPrefab.IsValid())
-    return "";
-
-  return m_hPlayerPrefab.GetResourceID();
 }
 
 void xiiPlayerStartPointComponent::SetPlayerPrefab(const xiiPrefabResourceHandle& hPrefab)

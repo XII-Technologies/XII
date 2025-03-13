@@ -5,20 +5,22 @@
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 3, xiiRTTIDefaultAllocator<xiiMeshAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 4, xiiRTTIDefaultAllocator<xiiMeshAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ENUM_MEMBER_PROPERTY("PrimitiveType", xiiMeshPrimitive, m_PrimitiveType),
     XII_MEMBER_PROPERTY("MeshFile", m_sMeshFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::Meshes)),
+    XII_ENUM_MEMBER_PROPERTY("ImportTransform", xiiMeshImportTransform, m_ImportTransform),
     XII_ENUM_MEMBER_PROPERTY("RightDir", xiiBasisAxis, m_RightDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveX)),
     XII_ENUM_MEMBER_PROPERTY("UpDir", xiiBasisAxis, m_UpDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveY)),
-    XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir),
+    XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("UniformScaling", m_fUniformScaling)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0001f, 10000.0f)),
     XII_MEMBER_PROPERTY("RecalculateNormals", m_bRecalculateNormals),
     XII_MEMBER_PROPERTY("RecalculateTangents", m_bRecalculateTrangents)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("NormalPrecision", xiiMeshNormalPrecision, m_NormalPrecision),
     XII_ENUM_MEMBER_PROPERTY("TexCoordPrecision", xiiMeshTexCoordPrecision, m_TexCoordPrecision),
+    XII_ENUM_MEMBER_PROPERTY("VertexColorConversion", xiiMeshVertexColorConversion, m_VertexColorConversion),
     XII_MEMBER_PROPERTY("ImportMaterials", m_bImportMaterials)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("Radius", m_fRadius)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("Radius2", m_fRadius2)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, xiiVariant())),
@@ -29,6 +31,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 3, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Cap2", m_bCap2)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(360.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(360.0f))),
     XII_ARRAY_MEMBER_PROPERTY("Materials", m_Slots)->AddAttributes(new xiiContainerAttribute(false, true, true)),
+    XII_MEMBER_PROPERTY("SimplifyMesh", m_bSimplifyMesh),
+    XII_MEMBER_PROPERTY("MeshSimplification", m_uiMeshSimplification)->AddAttributes(new xiiDefaultValueAttribute(50), new xiiClampValueAttribute(1, 100)),
+    XII_MEMBER_PROPERTY("MaxSimplificationError", m_uiMaxSimplificationError)->AddAttributes(new xiiDefaultValueAttribute(5), new xiiClampValueAttribute(1, 100)),
+    XII_MEMBER_PROPERTY("AggressiveSimplification", m_bAggressiveSimplification),
   }
   XII_END_PROPERTIES;
 }
@@ -61,9 +67,21 @@ public:
 
 xiiMeshAssetPropertiesPatch_1_2 g_MeshAssetPropertiesPatch_1_2;
 
+// clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshPrimitive, 1)
-XII_ENUM_CONSTANT(xiiMeshPrimitive::File), XII_ENUM_CONSTANT(xiiMeshPrimitive::Box), XII_ENUM_CONSTANT(xiiMeshPrimitive::Rect), XII_ENUM_CONSTANT(xiiMeshPrimitive::Cylinder), XII_ENUM_CONSTANT(xiiMeshPrimitive::Cone), XII_ENUM_CONSTANT(xiiMeshPrimitive::Pyramid), XII_ENUM_CONSTANT(xiiMeshPrimitive::Sphere), XII_ENUM_CONSTANT(xiiMeshPrimitive::HalfSphere), XII_ENUM_CONSTANT(xiiMeshPrimitive::GeodesicSphere), XII_ENUM_CONSTANT(xiiMeshPrimitive::Capsule), XII_ENUM_CONSTANT(xiiMeshPrimitive::Torus),
-  XII_END_STATIC_REFLECTED_ENUM;
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::File),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::Box),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::Rect),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::Cylinder),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::Cone),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::Pyramid),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::Sphere),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::HalfSphere),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::GeodesicSphere),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::Capsule),
+  XII_ENUM_CONSTANT(xiiMeshPrimitive::Torus),
+XII_END_STATIC_REFLECTED_ENUM;
+// clang-format on
 
 xiiMeshAssetProperties::xiiMeshAssetProperties()  = default;
 xiiMeshAssetProperties::~xiiMeshAssetProperties() = default;
@@ -73,34 +91,47 @@ void xiiMeshAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaStateE
 {
   if (e.m_pObject->GetTypeAccessor().GetType() == xiiGetStaticRTTI<xiiMeshAssetProperties>())
   {
-    xiiInt64 primType = e.m_pObject->GetTypeAccessor().GetValue("PrimitiveType").ConvertTo<xiiInt64>();
+    const xiiInt64 primType  = e.m_pObject->GetTypeAccessor().GetValue("PrimitiveType").ConvertTo<xiiInt64>();
+    const bool     bSimplify = e.m_pObject->GetTypeAccessor().GetValue("SimplifyMesh").ConvertTo<bool>();
 
     auto& props = *e.m_pPropertyStates;
 
-    props["MeshFile"].m_Visibility            = xiiPropertyUiState::Invisible;
-    props["Radius"].m_Visibility              = xiiPropertyUiState::Invisible;
-    props["Radius2"].m_Visibility             = xiiPropertyUiState::Invisible;
-    props["Height"].m_Visibility              = xiiPropertyUiState::Invisible;
-    props["Detail"].m_Visibility              = xiiPropertyUiState::Invisible;
-    props["Detail2"].m_Visibility             = xiiPropertyUiState::Invisible;
-    props["Cap"].m_Visibility                 = xiiPropertyUiState::Invisible;
-    props["Cap2"].m_Visibility                = xiiPropertyUiState::Invisible;
-    props["Angle"].m_Visibility               = xiiPropertyUiState::Invisible;
-    props["ImportMaterials"].m_Visibility     = xiiPropertyUiState::Invisible;
-    props["RecalculateNormals"].m_Visibility  = xiiPropertyUiState::Invisible;
-    props["RecalculateTangents"].m_Visibility = xiiPropertyUiState::Invisible;
-    props["NormalPrecision"].m_Visibility     = xiiPropertyUiState::Invisible;
-    props["TexCoordPrecision"].m_Visibility   = xiiPropertyUiState::Invisible;
+    props["MeshFile"].m_Visibility              = xiiPropertyUiState::Invisible;
+    props["Radius"].m_Visibility                = xiiPropertyUiState::Invisible;
+    props["Radius2"].m_Visibility               = xiiPropertyUiState::Invisible;
+    props["Height"].m_Visibility                = xiiPropertyUiState::Invisible;
+    props["Detail"].m_Visibility                = xiiPropertyUiState::Invisible;
+    props["Detail2"].m_Visibility               = xiiPropertyUiState::Invisible;
+    props["Cap"].m_Visibility                   = xiiPropertyUiState::Invisible;
+    props["Cap2"].m_Visibility                  = xiiPropertyUiState::Invisible;
+    props["Angle"].m_Visibility                 = xiiPropertyUiState::Invisible;
+    props["ImportMaterials"].m_Visibility       = xiiPropertyUiState::Invisible;
+    props["RecalculateNormals"].m_Visibility    = xiiPropertyUiState::Invisible;
+    props["RecalculateTangents"].m_Visibility   = xiiPropertyUiState::Invisible;
+    props["NormalPrecision"].m_Visibility       = xiiPropertyUiState::Invisible;
+    props["TexCoordPrecision"].m_Visibility     = xiiPropertyUiState::Invisible;
+    props["VertexColorConversion"].m_Visibility = xiiPropertyUiState::Invisible;
+
+    props["MeshSimplification"].m_Visibility       = bSimplify ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["MaxSimplificationError"].m_Visibility   = bSimplify ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["AggressiveSimplification"].m_Visibility = bSimplify ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+
+    const xiiInt64 importTransform       = e.m_pObject->GetTypeAccessor().GetValue("ImportTransform").ConvertTo<xiiInt64>();
+    const bool     bCustomTransform      = importTransform == 127;
+    props["RightDir"].m_Visibility       = bCustomTransform ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["UpDir"].m_Visibility          = bCustomTransform ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["FlipForwardDir"].m_Visibility = bCustomTransform ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
 
     switch (primType)
     {
       case xiiMeshPrimitive::File:
-        props["MeshFile"].m_Visibility            = xiiPropertyUiState::Default;
-        props["ImportMaterials"].m_Visibility     = xiiPropertyUiState::Default;
-        props["RecalculateNormals"].m_Visibility  = xiiPropertyUiState::Default;
-        props["RecalculateTangents"].m_Visibility = xiiPropertyUiState::Default;
-        props["NormalPrecision"].m_Visibility     = xiiPropertyUiState::Default;
-        props["TexCoordPrecision"].m_Visibility   = xiiPropertyUiState::Default;
+        props["MeshFile"].m_Visibility              = xiiPropertyUiState::Default;
+        props["ImportMaterials"].m_Visibility       = xiiPropertyUiState::Default;
+        props["RecalculateNormals"].m_Visibility    = xiiPropertyUiState::Default;
+        props["RecalculateTangents"].m_Visibility   = xiiPropertyUiState::Default;
+        props["NormalPrecision"].m_Visibility       = xiiPropertyUiState::Default;
+        props["TexCoordPrecision"].m_Visibility     = xiiPropertyUiState::Default;
+        props["VertexColorConversion"].m_Visibility = xiiPropertyUiState::Default;
         break;
 
       case xiiMeshPrimitive::Box:
@@ -220,3 +251,21 @@ public:
 };
 
 xiiMeshAssetPropertiesPatch_2_3 g_xiiMeshAssetPropertiesPatch_2_3;
+
+//////////////////////////////////////////////////////////////////////////
+
+class xiiMeshAssetPropertiesPatch_3_4 : public xiiGraphPatch
+{
+public:
+  xiiMeshAssetPropertiesPatch_3_4() :
+    xiiGraphPatch("xiiMeshAssetProperties", 4)
+  {
+  }
+
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  {
+    pNode->AddProperty("ImportTransform", 127);
+  }
+};
+
+xiiMeshAssetPropertiesPatch_3_4 g_xiiMeshAssetPropertiesPatch_3_4;

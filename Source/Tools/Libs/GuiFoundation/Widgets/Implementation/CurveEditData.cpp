@@ -175,8 +175,8 @@ void xiiCurveGroupData::ConvertToRuntimeData(xiiUInt32 uiCurveIdx, xiiCurve1D& o
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-#include <Foundation/Serialization/GraphPatch.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
 
 class xiiCurve1DControlPoint_2_3 : public xiiGraphPatch
 {

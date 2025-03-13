@@ -57,6 +57,6 @@ private:
   void    ObjectToNative(xiiUuid objectGuid, xiiPlatformProfile* pProfile);
   void    SelectionEventHandler(const xiiSelectionManagerEvent& e);
 
-  xiiAssetProfilesDocument* m_pDocument = nullptr;
+  xiiAssetProfilesDocument* m_pDocument;
   xiiMap<xiiUuid, Binding>  m_ProfileBindings;
 };

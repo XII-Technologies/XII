@@ -34,14 +34,14 @@ struct XII_TOOLSFOUNDATION_DLL xiiFileStatus
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiFileStatus);
 
-XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiFileStatus& value)
+XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& inout_stream, const xiiFileStatus& value)
 {
-  ref_stream.WriteBytes(&value, sizeof(xiiFileStatus)).IgnoreResult();
-  return ref_stream;
+  inout_stream.WriteBytes(&value, sizeof(xiiFileStatus)).IgnoreResult();
+  return inout_stream;
 }
 
-XII_ALWAYS_INLINE xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiFileStatus& ref_value)
+XII_ALWAYS_INLINE xiiStreamReader& operator>>(xiiStreamReader& inout_stream, xiiFileStatus& ref_value)
 {
-  ref_stream.ReadBytes(&ref_value, sizeof(xiiFileStatus));
-  return ref_stream;
+  inout_stream.ReadBytes(&ref_value, sizeof(xiiFileStatus));
+  return inout_stream;
 }

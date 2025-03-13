@@ -41,10 +41,10 @@ void xiiToolsTagRegistry::Clear()
   }
 }
 
-void xiiToolsTagRegistry::WriteToDDL(xiiStreamWriter& ref_stream)
+void xiiToolsTagRegistry::WriteToDDL(xiiStreamWriter& inout_stream)
 {
   xiiOpenDdlWriter writer;
-  writer.SetOutputStream(&ref_stream);
+  writer.SetOutputStream(&inout_stream);
   writer.SetCompactMode(false);
   writer.SetPrimitiveTypeStringMode(xiiOpenDdlWriter::TypeStringMode::ShortenedUnsignedInt);
 
@@ -64,10 +64,10 @@ void xiiToolsTagRegistry::WriteToDDL(xiiStreamWriter& ref_stream)
   }
 }
 
-xiiStatus xiiToolsTagRegistry::ReadFromDDL(xiiStreamReader& ref_stream)
+xiiStatus xiiToolsTagRegistry::ReadFromDDL(xiiStreamReader& inout_stream)
 {
   xiiOpenDdlReader reader;
-  if (reader.ParseDocument(ref_stream).Failed())
+  if (reader.ParseDocument(inout_stream).Failed())
   {
     return xiiStatus("Failed to read data from ToolsTagRegistry stream!");
   }

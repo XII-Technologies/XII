@@ -13,12 +13,13 @@ xiiSceneLoadUtility::~xiiSceneLoadUtility() = default;
 
 void xiiSceneLoadUtility::StartSceneLoading(xiiStringView sSceneFile, xiiStringView sPreloadCollectionFile)
 {
-  XII_ASSERT_DEV(m_LoadingState == LoadingState::NotStarted, "Can't reuse an xiiSceneLoadUtility.");
+  XII_ASSERT_DEV(m_LoadingState == LoadingState::NotStarted, "Can't reuse a xiiSceneLoadUtility.");
 
   XII_LOG_BLOCK("StartSceneLoading");
 
   m_LoadingState = LoadingState::Ongoing;
 
+  m_sRequestedFile                 = sSceneFile;
   xiiStringBuilder sFinalSceneFile = sSceneFile;
 
   if (sFinalSceneFile.IsEmpty())
@@ -61,7 +62,7 @@ void xiiSceneLoadUtility::StartSceneLoading(xiiStringView sSceneFile, xiiStringV
     xiiLog::Dev("Redirecting scene file from '{}' to '{}'", sSceneFile, sFinalSceneFile);
   }
 
-  m_sFile = sFinalSceneFile;
+  m_sRedirectedFile = sFinalSceneFile;
 
   if (!sPreloadCollectionFile.IsEmpty())
   {
@@ -72,6 +73,10 @@ void xiiSceneLoadUtility::StartSceneLoading(xiiStringView sSceneFile, xiiStringV
 xiiUniquePtr<xiiWorld> xiiSceneLoadUtility::RetrieveLoadedScene()
 {
   XII_ASSERT_DEV(m_LoadingState == LoadingState::FinishedSuccessfully, "Can't retrieve a scene when loading hasn't finished successfully.");
+
+  m_LoadingState = LoadingState::FinishedAndRetrieved;
+
+  m_pWorld->SetWorldSimulationEnabled(true);
 
   return std::move(m_pWorld);
 }
@@ -112,7 +117,10 @@ void xiiSceneLoadUtility::TickSceneLoading()
 
       if (pCollection.GetAcquireResult() == xiiResourceAcquireResult::Final)
       {
-        pCollection->PreloadResources();
+        if (pCollection->PreloadResources())
+        {
+          XII_REPORT_FAILURE("Failed to start preloading all resources.");
+        }
 
         float progress = 0.0f;
         if (pCollection->IsLoadingFinished(&progress))
@@ -140,14 +148,15 @@ void xiiSceneLoadUtility::TickSceneLoading()
   // if we haven't created a world yet, do so now, and set up an instantiation context
   if (m_pWorld == nullptr)
   {
-    XII_LOG_BLOCK("LoadObjectGraph", m_sFile);
+    XII_LOG_BLOCK("LoadObjectGraph", m_sRedirectedFile);
 
-    xiiWorldDesc desc(m_sFile);
+    xiiWorldDesc desc(m_sRedirectedFile);
     m_pWorld = XII_DEFAULT_NEW(xiiWorld, desc);
+    m_pWorld->SetWorldSimulationEnabled(false);
 
     XII_LOCK(m_pWorld->GetWriteMarker());
 
-    if (m_FileReader.Open(m_sFile).Failed())
+    if (m_FileReader.Open(m_sRedirectedFile).Failed())
     {
       LoadingFailed("Failed to open the file.");
       return;
@@ -173,6 +182,7 @@ void xiiSceneLoadUtility::TickSceneLoading()
         return;
       }
 
+      // TODO: make frame time configurable ?
       m_pInstantiationContext = m_WorldReader.InstantiateWorld(*m_pWorld, nullptr, xiiTime::MakeFromMilliseconds(1), &m_InstantiationProgress);
     }
   }
@@ -206,6 +216,5 @@ void xiiSceneLoadUtility::TickSceneLoading()
     XII_REPORT_FAILURE("Invalid code path.");
   }
 }
-
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Utils_Implementation_SceneLoadUtil);

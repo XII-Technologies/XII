@@ -46,12 +46,7 @@ void xiiCurve1DAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentMan
   }
 }
 
-void xiiCurve1DAssetDocumentManager::InternalCreateDocument(
-  xiiStringView            sDocumentTypeName,
-  xiiStringView            sPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiCurve1DAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiCurve1DAssetDocument(sPath);
 }

@@ -34,9 +34,6 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiSurfaceInteractionAlignment);
 
 struct XII_CORE_DLL xiiSurfaceInteraction
 {
-  void          SetPrefab(xiiStringView sPrefab);
-  xiiStringView GetPrefab() const;
-
   xiiString m_sInteractionType;
 
   xiiPrefabResourceHandle                 m_hPrefab;
@@ -62,9 +59,6 @@ struct XII_CORE_DLL xiiSurfaceResourceDescriptor : public xiiReflectedClass
 public:
   void Load(xiiStreamReader& ref_stream);
   void Save(xiiStreamWriter& ref_stream) const;
-
-  void          SetBaseSurfaceFile(xiiStringView sFile);
-  xiiStringView GetBaseSurfaceFile() const;
 
   void          SetCollisionInteraction(xiiStringView sName);
   xiiStringView GetCollisionInteraction() const;

@@ -10,9 +10,12 @@
 #include <EditorPluginScene/Scene/SceneViewWidget.moc.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
+#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
-#include <QInputDialog>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
+
+#include <QInputDialog>
+#include <QLayout>
 
 xiiQtScene2DocumentWindow::xiiQtScene2DocumentWindow(xiiScene2Document* pDocument) :
   xiiQtSceneDocumentWindowBase(pDocument)
@@ -26,7 +29,17 @@ xiiQtScene2DocumentWindow::xiiQtScene2DocumentWindow(xiiScene2Document* pDocumen
 
   pDocument->SetEditToolConfigDelegate([this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
 
-  setCentralWidget(m_pQuadViewWidget);
+  {
+    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(this, pDocument);
+    pViewPanel->setObjectName("xiiQtDocumentPanel");
+    pViewPanel->setWindowTitle("3D View");
+    pViewPanel->setWidget(m_pQuadViewWidget);
+
+    m_pDockManager->setCentralWidget(pViewPanel);
+  }
+
+  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  SetTargetFrameRate(pPreferences->GetMaxFramerate());
 
   {
     // Menu Bar
@@ -56,6 +69,7 @@ xiiQtScene2DocumentWindow::xiiQtScene2DocumentWindow(xiiScene2Document* pDocumen
     pPropertyPanel->setObjectName("PropertyPanel");
     pPropertyPanel->setWindowTitle("Properties");
     pPropertyPanel->show();
+    pPropertyPanel->layout()->setObjectName("PropertyPanelLayout");
 
     xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(this, pDocument);
     pPanelTree->show();
@@ -67,9 +81,9 @@ xiiQtScene2DocumentWindow::xiiQtScene2DocumentWindow(xiiScene2Document* pDocumen
     pPropertyPanel->setWidget(pPropertyGrid);
     XII_VERIFY(connect(pPropertyGrid, &xiiQtPropertyGridWidget::ExtendContextMenu, this, &xiiQtScene2DocumentWindow::ExtendPropertyGridContextMenu), "");
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
-    addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, pPanelTree);
-    addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, pLayers);
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
+    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pLayers);
+    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pPanelTree);
   }
   FinishWindowCreation();
 }

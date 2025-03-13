@@ -19,7 +19,6 @@ public:
 
 private:
   xiiSharedPtr<const xiiVisualScriptGraphDescription> m_pDesc;
-  mutable xiiVisualScriptDataStorage                  m_LocalDataStorage;
 };
 
 class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptMessageHandler : public xiiScriptMessageHandler
@@ -32,5 +31,4 @@ public:
 
 private:
   xiiSharedPtr<const xiiVisualScriptGraphDescription> m_pDesc;
-  mutable xiiVisualScriptDataStorage                  m_LocalDataStorage;
 };

@@ -370,8 +370,8 @@ xiiResult xiiFileSystemModel::UnlinkDocument(xiiStringView sAbsolutePath)
     {
       bDocumentLinkChanged    = it.Value().m_DocumentID.IsValid();
       fileStatus              = it.Value();
-      filePath                = it.Key();
       it.Value().m_DocumentID = xiiUuid::MakeInvalid();
+      filePath                = it.Key();
     }
     else
     {
@@ -474,8 +474,8 @@ xiiResult xiiFileSystemModel::HashFile(xiiStringView sAbsolutePath, xiiFileStatu
     if (!out_stat.m_LastModified.Compare(statDep.m_LastModificationTime, xiiTimestamp::CompareMode::Identical) || out_stat.m_uiHash == 0)
     {
       FILESYSTEM_PROFILE(sAbsolutePath2);
-      xiiFileReader file;
-      if (file.Open(sAbsolutePath2).Failed())
+      xiiFileReader modifiedFile;
+      if (modifiedFile.Open(sAbsolutePath2).Failed())
       {
         xiiLog::Error("Failed to hash file '{0}', open failed", sAbsolutePath2);
         return XII_FAILURE;
@@ -488,7 +488,7 @@ xiiResult xiiFileSystemModel::HashFile(xiiStringView sAbsolutePath, xiiFileStatu
         return XII_FAILURE;
       }
       out_stat.m_LastModified = statDep.m_LastModificationTime;
-      out_stat.m_uiHash       = xiiFileSystemModel::HashFile(file, nullptr);
+      out_stat.m_uiHash       = xiiFileSystemModel::HashFile(modifiedFile, nullptr);
       out_stat.m_Status       = xiiFileStatus::Status::Valid;
 
       // Update state. No need to compare timestamps we hold a lock on the file via the reader.
@@ -931,7 +931,9 @@ void xiiFileSystemModel::FireFileChangedEvent(const xiiDataDirPath& file, xiiFil
   e.m_Type               = type;
 
   if (g_bInFileBroadcast)
+  {
     return;
+  }
 
   g_bInFileBroadcast = true;
   XII_SCOPE_EXIT(g_bInFileBroadcast = false);
@@ -953,7 +955,9 @@ void xiiFileSystemModel::FireFolderChangedEvent(const xiiDataDirPath& file, xiiF
   e.m_Type                 = type;
 
   if (g_bInFolderBroadcast)
+  {
     return;
+  }
 
   g_bInFolderBroadcast = true;
   XII_SCOPE_EXIT(g_bInFolderBroadcast = false);

@@ -40,7 +40,7 @@ struct xiiVisualShaderNodeDescriptor
   xiiEnum<xiiVisualShaderNodeType> m_NodeType;
   xiiString                        m_sCfgFile; ///< from which config file this node type was loaded
   xiiString                        m_sName;
-  xiiString                        m_sCategory;
+  xiiHashedString                  m_sCategory;
   xiiString                        m_sCheckPermutations;
   xiiColorGammaUB                  m_Color = xiiColorScheme::DarkUI(xiiColorScheme::Gray);
   xiiString                        m_sShaderCodePixelDefines;
@@ -86,11 +86,7 @@ private:
   const xiiRTTI* GenerateTypeFromDesc(const xiiVisualShaderNodeDescriptor& desc);
   void           LoadConfigFile(const char* szFile);
 
-  void ExtractNodePins(
-    const xiiOpenDdlReaderElement*                   pNode,
-    const char*                                      szPinType,
-    xiiHybridArray<xiiVisualShaderPinDescriptor, 4>& pinArray,
-    bool                                             bOutput);
+  void ExtractNodePins(const xiiOpenDdlReaderElement* pNode, const char* szPinType, xiiHybridArray<xiiVisualShaderPinDescriptor, 4>& pinArray, bool bOutput);
   void ExtractNodeProperties(const xiiOpenDdlReaderElement* pNode, xiiVisualShaderNodeDescriptor& nd);
   void ExtractNodeConfig(const xiiOpenDdlReaderElement* pNode, xiiVisualShaderNodeDescriptor& nd);
 

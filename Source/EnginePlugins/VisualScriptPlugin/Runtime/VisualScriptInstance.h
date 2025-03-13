@@ -13,10 +13,11 @@ public:
   virtual xiiVariant GetInstanceVariable(const xiiHashedString& sName) override;
 
   xiiVisualScriptDataStorage* GetConstantDataStorage() { return m_pConstantDataStorage.Borrow(); }
-  xiiVisualScriptDataStorage* GetInstanceDataStorage() { return m_pInstanceDataStorage.Borrow(); }
+  xiiVisualScriptDataStorage* GetInstanceDataStorage() { return &m_InstanceDataStorage; }
 
 private:
   xiiSharedPtr<xiiVisualScriptDataStorage>         m_pConstantDataStorage;
-  xiiUniquePtr<xiiVisualScriptDataStorage>         m_pInstanceDataStorage;
   xiiSharedPtr<xiiVisualScriptInstanceDataMapping> m_pInstanceDataMapping;
+
+  xiiVisualScriptDataStorage m_InstanceDataStorage;
 };

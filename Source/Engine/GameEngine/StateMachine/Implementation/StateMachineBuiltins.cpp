@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineState_NestedStateMachine, 1, xii
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Resource", GetResourceFile, SetResourceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine", xiiDependencyFlags::Package)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Resource", GetResource, SetResource)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("InitialState", GetInitialState, SetInitialState),
     XII_MEMBER_PROPERTY("KeepCurrentStateOnExit", m_bKeepCurrentStateOnExit),
   }
@@ -36,7 +36,7 @@ void xiiStateMachineState_NestedStateMachine::OnEnter(xiiStateMachineInstance& r
     xiiResourceLock<xiiStateMachineResource> pStateMachineResource(m_hResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (pStateMachineResource.GetAcquireResult() != xiiResourceAcquireResult::Final)
     {
-      xiiLog::Error("Failed to load state machine '{}'", GetResourceFile());
+      xiiLog::Error("Failed to load state machine '{}'", GetResource().GetResourceID());
       return;
     }
 
@@ -102,27 +102,6 @@ bool xiiStateMachineState_NestedStateMachine::GetInstanceDataDesc(xiiInstanceDat
 void xiiStateMachineState_NestedStateMachine::SetResource(const xiiStateMachineResourceHandle& hResource)
 {
   m_hResource = hResource;
-}
-
-void xiiStateMachineState_NestedStateMachine::SetResourceFile(const char* szFile)
-{
-  xiiStateMachineResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiStateMachineResource>(szFile);
-    xiiResourceManager::PreloadResource(hResource);
-  }
-
-  SetResource(hResource);
-}
-
-const char* xiiStateMachineState_NestedStateMachine::GetResourceFile() const
-{
-  if (!m_hResource.IsValid())
-    return "";
-
-  return m_hResource.GetResourceID();
 }
 
 void xiiStateMachineState_NestedStateMachine::SetInitialState(const char* szName)

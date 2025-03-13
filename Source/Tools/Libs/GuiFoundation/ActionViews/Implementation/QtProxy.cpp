@@ -136,6 +136,7 @@ xiiRttiMappedObjectFactory<xiiQtProxy>& xiiQtProxy::GetFactory()
 {
   return s_Factory;
 }
+
 QSharedPointer<xiiQtProxy> xiiQtProxy::GetProxy(xiiActionContext& ref_context, xiiActionDescriptorHandle hDesc)
 {
   QSharedPointer<xiiQtProxy> pProxy;
@@ -365,12 +366,9 @@ void SetupQAction(xiiAction* pAction, QPointer<QAction>& ref_pQtAction, QObject*
       case xiiActionScope::Document:
       {
         // Parent is set to the window belonging to the document.
-        xiiQtDocumentWindow* pWindow = nullptr;
-        if (xiiDocument* pDocument = pAction->GetContext().m_pDocument)
-        {
-          pWindow = xiiQtDocumentWindow::FindWindowByDocument(pAction->GetContext().m_pDocument);
-          XII_ASSERT_DEBUG(pWindow != nullptr, "You can't map a xiiActionScope::Document action without that document existing!");
-        }
+        xiiQtDocumentWindow* pWindow = xiiQtDocumentWindow::FindWindowByDocument(pAction->GetContext().m_pDocument);
+        XII_ASSERT_DEBUG(pWindow != nullptr, "You can't map a xiiActionScope::Document action without that document existing!");
+
         ref_pQtAction->setParent(pWindow);
         ref_pQtAction->setShortcutContext(Qt::ShortcutContext::WidgetWithChildrenShortcut);
       }
@@ -534,7 +532,7 @@ void xiiQtDynamicActionAndMenuProxy::Update()
   }
 
   m_pQtAction->setIcon(xiiQtUiServices::GetCachedIconResource(pButton->GetIconPath()));
-  m_pQtAction->setText(xiiMakeQString(sDisplay));
+  m_pQtAction->setText(xiiMakeQString(sDisplay.GetView()));
   m_pQtAction->setToolTip(sTooltip);
   m_pQtAction->setEnabled(pButton->IsEnabled());
   m_pQtAction->setVisible(pButton->IsVisible());

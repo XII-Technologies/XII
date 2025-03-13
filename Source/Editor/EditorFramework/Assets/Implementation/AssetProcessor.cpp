@@ -83,7 +83,9 @@ void xiiAssetProcessor::StartProcessTask()
 {
   XII_LOCK(m_ProcessorMutex);
   if (m_ProcessTaskState != ProcessTaskState::Stopped)
+  {
     return;
+  }
 
   // Join old thread.
   if (m_pThread)
@@ -95,7 +97,6 @@ void xiiAssetProcessor::StartProcessTask()
   m_ProcessTaskState = ProcessTaskState::Running;
 
   const xiiUInt32 uiWorkerCount = xiiTaskSystem::GetWorkerThreadCount(xiiWorkerThreadType::LongTasks);
-  m_ProcessRunning.SetCount(uiWorkerCount, false);
   m_ProcessTasks.SetCount(uiWorkerCount);
 
   for (xiiUInt32 idx = 0; idx < uiWorkerCount; ++idx)
@@ -130,11 +131,9 @@ void xiiAssetProcessor::StopProcessTask(bool bForce)
       }
       break;
       case ProcessTaskState::Stopping:
-      {
         if (!bForce)
           return;
-      }
-      break;
+        break;
       default:
       case ProcessTaskState::Stopped:
         return;
@@ -166,14 +165,7 @@ void xiiAssetProcessor::Run()
   {
     for (xiiUInt32 i = 0; i < m_ProcessTasks.GetCount(); i++)
     {
-      if (m_ProcessRunning[i])
-      {
-        m_ProcessRunning[i] = !m_ProcessTasks[i].FinishExecute();
-      }
-      else
-      {
-        m_ProcessRunning[i] = m_ProcessTasks[i].BeginExecute();
-      }
+      m_ProcessTasks[i].Tick(true);
     }
     xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
   }
@@ -184,14 +176,10 @@ void xiiAssetProcessor::Run()
 
     for (xiiUInt32 i = 0; i < m_ProcessTasks.GetCount(); i++)
     {
-      if (m_ProcessRunning[i])
-      {
-        if (m_bForceStop)
-          m_ProcessTasks[i].ShutdownProcess();
+      if (m_bForceStop)
+        m_ProcessTasks[i].ShutdownProcess();
 
-        m_ProcessRunning[i] = !m_ProcessTasks[i].FinishExecute();
-        bAnyRunning |= m_ProcessRunning[i];
-      }
+      bAnyRunning |= m_ProcessTasks[i].Tick(false);
     }
 
     if (bAnyRunning)
@@ -201,7 +189,6 @@ void xiiAssetProcessor::Run()
   }
 
   XII_LOCK(m_ProcessorMutex);
-  m_ProcessRunning.Clear();
   m_ProcessTasks.Clear();
   m_ProcessTaskState = ProcessTaskState::Stopped;
   m_bForceStop       = false;
@@ -232,11 +219,9 @@ xiiProcessTask::~xiiProcessTask()
 }
 
 
-void xiiProcessTask::StartProcess()
+xiiResult xiiProcessTask::StartProcess()
 {
   const xiiRTTI* pFirstAllowedMessageType = nullptr;
-  m_bProcessShouldBeRunning               = true;
-  m_bProcessCrashed                       = false;
 
   xiiStringBuilder tmp;
 
@@ -258,16 +243,13 @@ void xiiProcessTask::StartProcess()
 
   if (m_pIPC->StartClientProcess(EditorProcessorExecutable, args, false, pFirstAllowedMessageType).Failed())
   {
-    m_bProcessCrashed = true;
+    return XII_FAILURE;
   }
+  return XII_SUCCESS;
 }
 
 void xiiProcessTask::ShutdownProcess()
 {
-  if (!m_bProcessShouldBeRunning)
-    return;
-
-  m_bProcessShouldBeRunning = false;
   m_pIPC->CloseConnection();
 }
 
@@ -275,8 +257,9 @@ void xiiProcessTask::EventHandlerIPC(const xiiProcessCommunicationChannel::Event
 {
   if (const xiiProcessAssetResponseMsg* pMsg = xiiDynamicCast<const xiiProcessAssetResponseMsg*>(e.m_pMessage))
   {
-    m_Status   = pMsg->m_Status;
-    m_bWaiting = false;
+    XII_ASSERT_DEV(m_State == State::Processing, "Message handling should only happen when currently processing");
+    m_Status = pMsg->m_Status;
+    m_State  = State::ReportResult;
     m_LogEntries.Swap(pMsg->m_LogEntries);
   }
 }
@@ -304,6 +287,7 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
           case xiiAssetInfo::TransformState::Unknown:
           case xiiAssetInfo::TransformState::TransformError:
           case xiiAssetInfo::TransformState::MissingTransformDependency:
+          case xiiAssetInfo::TransformState::MissingPackageDependency:
           case xiiAssetInfo::TransformState::MissingThumbnailDependency:
           case xiiAssetInfo::TransformState::CircularDependency:
           {
@@ -383,114 +367,164 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
   return false;
 }
 
-void xiiProcessTask::OnProcessCrashed()
+
+void xiiProcessTask::OnProcessCrashed(xiiStringView message)
 {
-  m_Status = xiiStatus("Asset processor crashed");
+  ShutdownProcess();
+  m_Status = xiiStatus(message);
   xiiLogEntryDelegate logger([this](xiiLogEntry& ref_entry) { m_LogEntries.PushBack(std::move(ref_entry)); });
-  xiiLog::Error(&logger, "AssetProcessor crashed!");
-  xiiLog::Error(&xiiAssetProcessor::GetSingleton()->m_CuratorLog, "AssetProcessor crashed!");
+  xiiLog::Error(&logger, message);
+  xiiLog::Error(&xiiAssetProcessor::GetSingleton()->m_CuratorLog, message);
 }
 
-bool xiiProcessTask::BeginExecute()
+bool xiiProcessTask::IsConnected()
 {
-  m_LogEntries.Clear();
-  m_TransitiveHull.Clear();
-  m_Status = xiiStatus(XII_SUCCESS);
-  {
-    XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
-
-    if (!GetNextAssetToProcess(m_AssetGuid, m_AssetPath))
-    {
-      m_AssetGuid = xiiUuid();
-      m_AssetPath.Clear();
-      m_bDidWork = false;
-      return false;
-    }
-
-    m_bDidWork                         = true;
-    xiiAssetInfo::TransformState state = xiiAssetCurator::GetSingleton()->IsAssetUpToDate(m_AssetGuid, nullptr, nullptr, m_uiAssetHash, m_uiThumbHash);
-    XII_ASSERT_DEV(state == xiiAssetInfo::TransformState::NeedsTransform || state == xiiAssetInfo::TransformState::NeedsThumbnail, "An asset was selected that is already up to date.");
-
-    xiiSet<xiiString> dependencies;
-
-    xiiStringBuilder sTemp;
-    xiiAssetCurator::GetSingleton()->GenerateTransitiveHull(xiiConversionUtils::ToString(m_AssetGuid, sTemp), dependencies, true, true);
-
-    m_TransitiveHull.Reserve(dependencies.GetCount());
-    for (const xiiString& str : dependencies)
-    {
-      m_TransitiveHull.PushBack(str);
-    }
-  }
-
-  if (!m_bProcessShouldBeRunning)
-  {
-    StartProcess();
-  }
-
-  if (m_bProcessCrashed)
-  {
-    OnProcessCrashed();
-    return false;
-  }
-  else
-  {
-    xiiLog::Info(&xiiAssetProcessor::GetSingleton()->m_CuratorLog, "Processing '{0}'", m_AssetPath.GetDataDirRelativePath());
-    // Send and wait
-    xiiProcessAssetMsg msg;
-    msg.m_AssetGuid  = m_AssetGuid;
-    msg.m_AssetHash  = m_uiAssetHash;
-    msg.m_ThumbHash  = m_uiThumbHash;
-    msg.m_sAssetPath = m_AssetPath;
-    msg.m_DepRefHull.Swap(m_TransitiveHull);
-    msg.m_sPlatform = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName();
-
-    m_pIPC->SendMessage(&msg);
-    m_bWaiting = true;
-    return true;
-  }
+  return m_pIPC->IsConnected();
 }
 
-bool xiiProcessTask::FinishExecute()
+bool xiiProcessTask::HasProcessCrashed()
 {
-  if (m_bWaiting)
-  {
-    m_pIPC->ProcessMessages();
-    if (!m_pIPC->IsClientAlive())
-    {
-      m_bProcessCrashed = true;
-    }
+  return m_pIPC->IsClientAlive();
+}
 
-    if (m_bProcessCrashed)
-    {
-      m_bWaiting = false;
-      OnProcessCrashed();
-    }
-    if (m_bWaiting)
-      return false;
-  }
-
-  if (m_Status.Succeeded())
+bool xiiProcessTask::Tick(bool bStartNewWork)
+{
+  while (true)
   {
-    xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(m_AssetGuid);
-    xiiAssetCurator::GetSingleton()->NeedsReloadResources(m_AssetGuid);
-  }
-  else
-  {
-    if (m_Status.m_Result == xiiTransformResult::NeedsImport)
+    switch (m_State)
     {
-      xiiAssetCurator::GetSingleton()->UpdateAssetTransformState(m_AssetGuid, xiiAssetInfo::TransformState::NeedsImport);
-    }
-    else
-    {
-      xiiAssetCurator::GetSingleton()->UpdateAssetTransformLog(m_AssetGuid, m_LogEntries);
-      xiiAssetCurator::GetSingleton()->UpdateAssetTransformState(m_AssetGuid, xiiAssetInfo::TransformState::TransformError);
-    }
-  }
+      case State::LookingForWork:
+      {
+        if (!bStartNewWork)
+        {
+          return false; // don't call later
+        }
+        m_LogEntries.Clear();
+        m_TransitiveHull.Clear();
+        m_Status = xiiStatus(XII_SUCCESS);
+        {
+          XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
 
-  XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
-  xiiAssetCurator::GetSingleton()->m_Updating.Remove(m_AssetGuid);
-  return true;
+          if (!GetNextAssetToProcess(m_AssetGuid, m_AssetPath))
+          {
+            m_AssetGuid = xiiUuid();
+            m_AssetPath.Clear();
+            return bStartNewWork; // call again if we should be looking for new work
+          }
+
+          xiiAssetInfo::TransformState state = xiiAssetCurator::GetSingleton()->IsAssetUpToDate(m_AssetGuid, nullptr, nullptr, m_uiAssetHash, m_uiThumbHash, m_uiPackageHash);
+          XII_ASSERT_DEV(state == xiiAssetInfo::TransformState::NeedsTransform || state == xiiAssetInfo::TransformState::NeedsThumbnail, "An asset was selected that is already up to date.");
+
+          xiiSet<xiiString> dependencies;
+          xiiStringBuilder  sTemp;
+          xiiAssetCurator::GetSingleton()->GenerateTransitiveHull(xiiConversionUtils::ToString(m_AssetGuid, sTemp), dependencies, true, true);
+
+          m_TransitiveHull.Reserve(dependencies.GetCount());
+          for (const xiiString& str : dependencies)
+          {
+            m_TransitiveHull.PushBack(str);
+          }
+        }
+
+        if (!m_pIPC->IsClientAlive() || !m_pIPC->IsConnected())
+        {
+          if (StartProcess().Failed())
+          {
+            m_State = State::ReportResult;
+            OnProcessCrashed("Asset processor did not launch");
+          }
+          else
+          {
+            m_State = State::WaitingForConnection;
+            return true; // call again later
+          }
+        }
+        else
+        {
+          m_State = State::Ready;
+        }
+      }
+      break;
+      case State::WaitingForConnection:
+      {
+        if (!m_pIPC->IsClientAlive())
+        {
+          m_State = State::ReportResult;
+          OnProcessCrashed("Asset processor crashed while waiting for connection");
+          break;
+        }
+
+        if (m_pIPC->IsConnected())
+        {
+          m_State = State::Ready;
+        }
+      }
+      break;
+      case State::Ready:
+      {
+        xiiLog::Info(&xiiAssetProcessor::GetSingleton()->m_CuratorLog, "Processing '{0}'", m_AssetPath.GetDataDirRelativePath());
+        // Send and wait
+        xiiProcessAssetMsg msg;
+        msg.m_AssetGuid   = m_AssetGuid;
+        msg.m_AssetHash   = m_uiAssetHash;
+        msg.m_ThumbHash   = m_uiThumbHash;
+        msg.m_PackageHash = m_uiPackageHash;
+        msg.m_sAssetPath  = m_AssetPath;
+        msg.m_DepRefHull.Swap(m_TransitiveHull);
+        msg.m_sPlatform = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName();
+
+        if (m_pIPC->SendMessage(&msg))
+        {
+          m_State = State::Processing;
+          return true; // call again later
+        }
+        else
+        {
+          m_State = State::ReportResult;
+          OnProcessCrashed("Asset processor crashed, failed to send message");
+        }
+      }
+      break;
+      case State::Processing:
+      {
+        m_pIPC->ProcessMessages();
+        if (!m_pIPC->IsClientAlive())
+        {
+          OnProcessCrashed("Asset Processor crashed during processing");
+          m_State = State::ReportResult;
+        }
+      }
+      break;
+      case State::ReportResult:
+      {
+        if (m_Status.Succeeded())
+        {
+          xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(m_AssetGuid);
+          xiiAssetCurator::GetSingleton()->NeedsReloadResources(m_AssetGuid);
+        }
+        else
+        {
+          if (m_Status.m_Result == xiiTransformResult::NeedsImport)
+          {
+            xiiAssetCurator::GetSingleton()->UpdateAssetTransformState(m_AssetGuid, xiiAssetInfo::TransformState::NeedsImport);
+          }
+          else
+          {
+            xiiAssetCurator::GetSingleton()->UpdateAssetTransformLog(m_AssetGuid, m_LogEntries);
+            xiiAssetCurator::GetSingleton()->UpdateAssetTransformState(m_AssetGuid, xiiAssetInfo::TransformState::TransformError);
+          }
+        }
+
+        {
+          XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
+          xiiAssetCurator::GetSingleton()->m_Updating.Remove(m_AssetGuid);
+        }
+
+        m_State = State::LookingForWork;
+      }
+      break;
+    }
+  }
 }
 
 xiiUInt32 xiiProcessThread::Run()

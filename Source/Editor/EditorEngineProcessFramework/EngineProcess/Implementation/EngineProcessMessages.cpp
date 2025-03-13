@@ -309,8 +309,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleDocumentConfigMsgToEngine, 1, xiiRTTID
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("WhatToDo", m_sWhatToDo),
-    XII_MEMBER_PROPERTY("Payload", m_sPayload),
-    XII_MEMBER_PROPERTY("PayloadValue", m_fPayload),
+    XII_MEMBER_PROPERTY("Payload1", m_sPayload),
+    XII_MEMBER_PROPERTY("Payload2", m_PayloadValue),
   }
   XII_END_PROPERTIES;
 }
@@ -320,9 +320,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleDocumentConfigMsgToEditor, 1, xiiRTTID
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Name", m_sName),
-    XII_MEMBER_PROPERTY("PayloadString", m_sPayload),
-    XII_MEMBER_PROPERTY("PayloadFloat", m_fPayload),
+    XII_MEMBER_PROPERTY("WhatToDo", m_sWhatToDo),
+    XII_MEMBER_PROPERTY("Payload1", m_sPayload),
+    XII_MEMBER_PROPERTY("Payload2", m_PayloadValue),
   }
   XII_END_PROPERTIES;
 }

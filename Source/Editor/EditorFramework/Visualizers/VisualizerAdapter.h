@@ -46,6 +46,6 @@ protected:
   virtual void UpdateGizmoTransform() = 0;
 
   bool                          m_bVisualizerIsVisible;
-  const xiiVisualizerAttribute* m_pVisualizerAttr = nullptr;
-  const xiiDocumentObject*      m_pObject         = nullptr;
+  const xiiVisualizerAttribute* m_pVisualizerAttr;
+  const xiiDocumentObject*      m_pObject;
 };

@@ -45,7 +45,7 @@ private:
   void LogWriter(const xiiLoggingEventData& e);
   void UpdateIssueInfo();
 
-  xiiQtAssetBrowserModel*  m_pModel  = nullptr;
-  xiiQtAssetCuratorFilter* m_pFilter = nullptr;
+  xiiQtAssetBrowserModel*  m_pModel;
+  xiiQtAssetCuratorFilter* m_pFilter;
   QPersistentModelIndex    m_SelectedIndex;
 };

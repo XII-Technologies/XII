@@ -10,13 +10,17 @@ class XII_CORE_DLL xiiResource : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiResource, xiiReflectedClass);
 
-protected:
+public:
   enum class DoUpdate
   {
     OnMainThread,
-    OnAnyThread
+    OnAnyThread,
+    OnGraphicsResourceThreads ///< If set, the setting from UpdateGraphicsResource is used. This must be configured by the active renderer.
   };
 
+  static DoUpdate UpdateGraphicsResource /*= DoUpdate::OnAnyThread*/;
+
+protected:
   enum class Unload
   {
     AllQualityLevels,
@@ -44,7 +48,7 @@ public:
 
   /// \brief Returns the unique ID that identifies this resource. On a file resource this might be a path. Can also be a GUID or any other
   /// scheme that uniquely identifies the resource.
-  XII_ALWAYS_INLINE const xiiString& GetResourceID() const { return m_sUniqueID; }
+  XII_ALWAYS_INLINE xiiStringView GetResourceID() const { return m_sUniqueID; }
 
   /// \brief Returns the hash of the unique ID.
   XII_ALWAYS_INLINE xiiUInt64 GetResourceIDHash() const { return m_uiUniqueIDHash; }
@@ -133,7 +137,6 @@ public:
   /// Otherwise the function does nothing.
   void PrintHandleStackTraces();
 
-
   mutable xiiEvent<const xiiResourceEvent&, xiiMutex> m_ResourceEvents;
 
 private:
@@ -172,7 +175,6 @@ private:
 
   xiiUInt8 m_uiQualityLevelsDiscardable = 0;
   xiiUInt8 m_uiQualityLevelsLoadable    = 0;
-
 
 protected:
   /// \brief Non-const version for resources that want to write this variable directly.

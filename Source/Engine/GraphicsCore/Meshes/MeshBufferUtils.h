@@ -11,7 +11,7 @@ struct xiiMeshNormalPrecision
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     _8Bit,
     _10Bit,
@@ -34,7 +34,7 @@ struct xiiMeshTexCoordPrecision
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     _16Bit,
     _32Bit,
@@ -52,7 +52,7 @@ struct xiiMeshBoneWeigthPrecision
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     _8Bit,
     _10Bit,
@@ -68,12 +68,29 @@ struct xiiMeshBoneWeigthPrecision
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshBoneWeigthPrecision);
 
+struct xiiMeshVertexColorConversion
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None,
+    LinearToSrgb,
+    SrgbToLinear,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshVertexColorConversion);
+
 struct XII_GRAPHICSCORE_DLL xiiMeshBufferUtils
 {
   static xiiResult EncodeNormal(const xiiVec3& vNormal, xiiArrayPtr<xiiUInt8> dest, xiiMeshNormalPrecision::Enum normalPrecision);
   static xiiResult EncodeTangent(const xiiVec3& vTangent, float fTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiMeshNormalPrecision::Enum tangentPrecision);
   static xiiResult EncodeTexCoord(const xiiVec2& vTexCoord, xiiArrayPtr<xiiUInt8> dest, xiiMeshTexCoordPrecision::Enum texCoordPrecision);
   static xiiResult EncodeBoneWeights(const xiiVec4& vWeights, xiiArrayPtr<xiiUInt8> dest, xiiMeshBoneWeigthPrecision::Enum precision);
+  static xiiResult EncodeColor(const xiiVec4& vColor, xiiArrayPtr<xiiUInt8> dest, xiiMeshVertexColorConversion::Enum conversion);
 
   static xiiResult EncodeNormal(const xiiVec3& vNormal, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
   static xiiResult EncodeTangent(const xiiVec3& vTangent, float fTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);

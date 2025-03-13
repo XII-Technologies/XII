@@ -41,6 +41,8 @@ public:
 
   void SetFileExtensionFilters(xiiStringView sExtensions);
 
+  void SetRequiredTag(xiiStringView sRequiredTag);
+
   /// \brief If set, the given item will be visible no matter what until any other filter is changed.
   /// This is used to ensure that newly created assets are always visible, even if they are excluded from the current filter.
   void          SetTemporaryPinnedItem(xiiStringView sDataDirParentRelativePath);
@@ -57,6 +59,7 @@ public:
 
 private:
   xiiString                m_sTypeFilter;
+  xiiString                m_sRequiredTag = "*"; // show all is the default for the asset browser
   xiiString                m_sPathFilter;
   xiiString                m_sTemporaryPinnedItem;
   xiiSearchPatternFilter   m_SearchFilter;

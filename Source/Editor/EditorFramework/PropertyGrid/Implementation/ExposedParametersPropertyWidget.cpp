@@ -138,7 +138,7 @@ const xiiExposedParameters* xiiExposedParameterCommandAccessor::GetExposedParams
     if (value.IsA<xiiString>())
     {
       const auto& sValue = value.Get<xiiString>();
-      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue.GetData()))
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiExposedParameters>();
       }
@@ -155,11 +155,11 @@ const xiiExposedParameters* xiiExposedParameterCommandAccessor::GetExposedParams
   return nullptr;
 }
 
-const xiiExposedParameter* xiiExposedParameterCommandAccessor::GetExposedParam(const xiiDocumentObject* pObject, const char* szParamName)
+const xiiExposedParameter* xiiExposedParameterCommandAccessor::GetExposedParam(const xiiDocumentObject* pObject, xiiStringView sParamName)
 {
   if (const xiiExposedParameters* pParams = GetExposedParams(pObject))
   {
-    return pParams->Find(szParamName);
+    return pParams->Find(sParamName);
   }
   return nullptr;
 }
@@ -172,7 +172,7 @@ const xiiRTTI* xiiExposedParameterCommandAccessor::GetExposedParamsType(const xi
     if (value.IsA<xiiString>())
     {
       const auto& sValue = value.Get<xiiString>();
-      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue.GetData()))
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return xiiExposedParametersTypeRegistry::GetSingleton()->GetExposedParametersType(sValue);
       }
@@ -249,7 +249,7 @@ void xiiQtExposedParameterPropertyWidget::InternalSetValue(const xiiVariant& val
           m_pCurrentSubType = pNewtSubType;
           m_pWidget         = xiiQtPropertyGridWidget::CreateMemberPropertyWidget(prop);
           if (!m_pWidget)
-            m_pWidget = new xiiQtUnsupportedPropertyWidget("Unsupported type");
+            m_pWidget = new xiiQtUnsupportedPropertyWidget("Unsupported Type");
 
           m_pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
           m_pWidget->setParent(this);

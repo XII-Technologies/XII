@@ -25,9 +25,13 @@ QValidator::State xiiFileNameValidator::validate(QString& ref_sInput, int& ref_i
 
   if (!m_sCurrentName.IsEmpty() && sTemp == m_sCurrentName)
     return QValidator::State::Acceptable;
+  if (!m_sCurrentName.IsEmpty() && sTemp == m_sCurrentName.GetFileName())
+    return QValidator::State::Acceptable;
 
   xiiStringBuilder sAbsPath = m_sParentFolder;
   sAbsPath.AppendPath(sTemp);
+  sAbsPath.Append(".", m_sCurrentName.GetFileExtension());
+
   if (xiiOSFile::ExistsDirectory(sAbsPath) || xiiOSFile::ExistsFile(sAbsPath))
     return QValidator::State::Intermediate;
 
@@ -592,11 +596,26 @@ void eqQtAssetBrowserFolderView::BuildDirectoryTree(const xiiDataDirPath& path, 
   }
 
   { // #TODO_ASSET data for folder
+
+    QString sPathAbs = pParent->data(0, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString();
+    QString sPathRel = pParent->data(0, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString();
+
+    if (sPathAbs.isEmpty())
+    {
+      sPathAbs = xiiMakeQString(path.GetAbsolutePath());
+      sPathRel = xiiMakeQString(path.GetDataDirParentRelativePath());
+    }
+    else
+    {
+      sPathAbs += "/" + sQtFolderName;
+      sPathRel += "/" + sQtFolderName;
+    }
+
     const bool bIsDataDir = sCurPathToItem.IsEmpty();
     pNewParent            = new QTreeWidgetItem();
     pNewParent->setText(0, sQtFolderName);
-    pNewParent->setData(0, xiiQtAssetBrowserModel::UserRoles::AbsolutePath, xiiMakeQString(path.GetAbsolutePath().GetView()));
-    pNewParent->setData(0, xiiQtAssetBrowserModel::UserRoles::RelativePath, xiiMakeQString(path.GetDataDirParentRelativePath()));
+    pNewParent->setData(0, xiiQtAssetBrowserModel::UserRoles::AbsolutePath, sPathAbs);
+    pNewParent->setData(0, xiiQtAssetBrowserModel::UserRoles::RelativePath, sPathRel);
     xiiBitflags<xiiAssetBrowserItemFlags> flags = bIsDataDir ? xiiAssetBrowserItemFlags::DataDirectory : xiiAssetBrowserItemFlags::Folder;
     pNewParent->setData(0, xiiQtAssetBrowserModel::UserRoles::ItemFlags, (int)flags.GetValue());
     pNewParent->setIcon(0, xiiQtUiServices::GetCachedIconResource(bIsDataDir ? ":/EditorFramework/Icons/DataDirectory.svg" : ":/EditorFramework/Icons/Folder.svg"));

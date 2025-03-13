@@ -1,5 +1,6 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
+#include <EditorFramework/Document/GameObjectDocument.h>
 #include <EditorFramework/DragDrop/ComponentDragDropHandler.h>
 #include <EditorFramework/DragDrop/DragDropInfo.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
@@ -106,6 +107,8 @@ void xiiComponentDragDropHandler::MoveDraggedObjectsToPosition(xiiVec3 vPosition
 
   auto history = m_pDocument->GetCommandHistory();
 
+  xiiGameObjectDocument* pGameDoc = xiiDynamicCast<xiiGameObjectDocument*>(m_pDocument);
+
   history->StartTransaction("Move to Position");
 
   xiiQuat rot;
@@ -118,7 +121,23 @@ void xiiComponentDragDropHandler::MoveDraggedObjectsToPosition(xiiVec3 vPosition
 
   for (const auto& guid : m_DraggedObjects)
   {
-    MoveObjectToPosition(guid, vPosition, rot);
+    xiiVec3 vNewPos = vPosition;
+    xiiQuat qNewRot = rot;
+
+    if (pGameDoc)
+    {
+      const xiiDocumentObject* pObject = m_pDocument->GetObjectManager()->GetObject(guid);
+      if (const xiiDocumentObject* pParent = pObject->GetParent())
+      {
+        const xiiTransform tParent = pGameDoc->GetGlobalTransform(pParent);
+        const xiiTransform rRel    = xiiTransform::MakeLocalTransform(tParent, xiiTransform(vNewPos, qNewRot));
+
+        vNewPos = rRel.m_vPosition;
+        qNewRot = rRel.m_qRotation;
+      }
+    }
+
+    MoveObjectToPosition(guid, vNewPos, qNewRot);
   }
 
   history->FinishTransaction();
@@ -132,7 +151,15 @@ void xiiComponentDragDropHandler::SelectCreatedObjects()
     NewSel.PushBack(m_pDocument->GetObjectManager()->GetObject(id));
   }
 
-  m_pDocument->GetSelectionManager()->SetSelection(NewSel);
+  if (m_bSelectionAsRuntimeOverride)
+  {
+    m_pDocument->GetSelectionManager()->SetRuntimeOverrideSelection(NewSel);
+  }
+  else
+  {
+    m_pDocument->GetSelectionManager()->SetRuntimeOverrideSelection({});
+    m_pDocument->GetSelectionManager()->SetSelection(NewSel);
+  }
 }
 
 void xiiComponentDragDropHandler::BeginTemporaryCommands()
@@ -149,8 +176,6 @@ void xiiComponentDragDropHandler::CancelTemporaryCommands()
 {
   if (m_DraggedObjects.IsEmpty())
     return;
-
-  m_pDocument->GetSelectionManager()->Clear();
 
   m_pDocument->GetCommandHistory()->CancelTemporaryCommands();
 }
@@ -175,7 +200,7 @@ void xiiComponentDragDropHandler::OnDragUpdate(const xiiDragDropInfo* pInfo)
   if (!vNormal.IsValid() || vNormal.IsZero())
     vNormal = xiiVec3(1, 0, 0);
 
-  MoveDraggedObjectsToPosition(vPos, !pInfo->m_bCtrlKeyDown, vNormal);
+  MoveDraggedObjectsToPosition(vPos, !pInfo->m_bShiftKeyDown, vNormal);
 }
 
 void xiiComponentDragDropHandler::OnDragCancel()
@@ -184,6 +209,8 @@ void xiiComponentDragDropHandler::OnDragCancel()
   m_pDocument->GetCommandHistory()->CancelTransaction();
 
   m_DraggedObjects.Clear();
+
+  m_pDocument->GetSelectionManager()->SetRuntimeOverrideSelection({});
 }
 
 void xiiComponentDragDropHandler::OnDrop(const xiiDragDropInfo* pInfo)
@@ -191,6 +218,7 @@ void xiiComponentDragDropHandler::OnDrop(const xiiDragDropInfo* pInfo)
   EndTemporaryCommands();
   m_pDocument->GetCommandHistory()->FinishTransaction();
 
+  m_bSelectionAsRuntimeOverride = false;
   SelectCreatedObjects();
 
   m_DraggedObjects.Clear();

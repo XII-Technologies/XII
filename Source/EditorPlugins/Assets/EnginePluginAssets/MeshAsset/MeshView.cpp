@@ -23,7 +23,6 @@ bool xiiMeshViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& bound
   return !FocusCameraOnObject(m_Camera, bounds, 45.0f, -xiiVec3(5, -2, 3));
 }
 
-
 xiiViewHandle xiiMeshViewContext::CreateView()
 {
   xiiView* pView = nullptr;
@@ -55,9 +54,14 @@ void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 
     auto& bufferDesc = xiiGALDevice::GetDefaultDevice()->GetBuffer(pMeshBuffer->GetVertexBuffer())->GetDescription();
 
-    xiiUInt32             uiNumVertices  = bufferDesc.m_uiSize / bufferDesc.m_uiElementByteStride;
-    xiiUInt32             uiNumTriangles = pMeshBuffer->GetPrimitiveCount();
-    const xiiBoundingBox& bbox           = pMeshBuffer->GetBounds().GetBox();
+    xiiUInt32      uiNumVertices  = bufferDesc.m_uiSize / bufferDesc.m_uiElementByteStride;
+    xiiUInt32      uiNumTriangles = pMeshBuffer->GetPrimitiveCount();
+    xiiBoundingBox bbox           = xiiBoundingBox::MakeFromMinMax(xiiVec3(-1), xiiVec3(1));
+
+    if (pMeshBuffer->GetBounds().IsValid())
+    {
+      bbox = pMeshBuffer->GetBounds().GetBox();
+    }
 
     xiiUInt32 uiNumUVs    = 0;
     xiiUInt32 uiNumColors = 0;

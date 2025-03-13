@@ -3,6 +3,7 @@
 #include <EditorPluginScene/Panels/ScenegraphPanel/ScenegraphModel.moc.h>
 #include <EditorPluginScene/Panels/ScenegraphPanel/ScenegraphPanel.moc.h>
 #include <EditorPluginScene/Scene/Scene2Document.h>
+#include <GuiFoundation/Widgets/SearchWidget.moc.h>
 
 #include <QLayout>
 #include <QStackedWidget>
@@ -29,11 +30,12 @@ namespace
 xiiQtScenegraphPanel::xiiQtScenegraphPanel(QWidget* pParent, xiiSceneDocument* pDocument) :
   xiiQtDocumentPanel(pParent, pDocument)
 {
-  setObjectName("ScenegraphPanel");
+  setObjectName("xiiQtScenegraphPanel");
   setWindowTitle("Scenegraph");
   m_pSceneDocument = pDocument;
 
   m_pStack = new QStackedWidget(this);
+  m_pStack->setObjectName("QStackedWidget");
   m_pStack->setContentsMargins(0, 0, 0, 0);
   m_pStack->layout()->setContentsMargins(0, 0, 0, 0);
   setWidget(m_pStack);
@@ -46,11 +48,12 @@ xiiQtScenegraphPanel::xiiQtScenegraphPanel(QWidget* pParent, xiiSceneDocument* p
 xiiQtScenegraphPanel::xiiQtScenegraphPanel(QWidget* pParent, xiiScene2Document* pDocument) :
   xiiQtDocumentPanel(pParent, pDocument)
 {
-  setObjectName("ScenegraphPanel");
+  setObjectName("xiiQtScenegraphPanel");
   setWindowTitle("Scenegraph");
   m_pSceneDocument = pDocument;
 
   m_pStack = new QStackedWidget(this);
+  m_pStack->setObjectName("QStackedWidget");
   m_pStack->setContentsMargins(0, 0, 0, 0);
   m_pStack->layout()->setContentsMargins(0, 0, 0, 0);
   setWidget(m_pStack);
@@ -120,5 +123,12 @@ void xiiQtScenegraphPanel::LayerUnloaded(const xiiUuid& layerGuid)
 
 void xiiQtScenegraphPanel::ActiveLayerChanged(const xiiUuid& layerGuid)
 {
+  // migrate the search filter text to the other layer
+  if (xiiQtGameObjectWidget* pPrev = qobject_cast<xiiQtGameObjectWidget*>(m_pStack->currentWidget()))
+  {
+    QString sText = pPrev->GetFilterWidget().text();
+    m_LayerWidgets[layerGuid]->GetFilterWidget().setText(sText);
+  }
+
   m_pStack->setCurrentWidget(m_LayerWidgets[layerGuid]);
 }

@@ -41,34 +41,7 @@ static constexpr float s_fMoveSpeed[25] = {
 
 xiiCameraMoveContext::xiiCameraMoveContext(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
 {
-  m_vOrbitPoint.SetZero();
-  m_pCamera = nullptr;
-
-  m_bRun                  = false;
-  m_bSlowDown             = false;
-  m_bMoveForwards         = false;
-  m_bMoveBackwards        = false;
-  m_bMoveRight            = false;
-  m_bMoveLeft             = false;
-  m_bMoveUp               = false;
-  m_bMoveDown             = false;
-  m_bMoveForwardsInPlane  = false;
-  m_bMoveBackwardsInPlane = false;
-  m_bOpenMenuOnMouseUp    = false;
-
   m_LastUpdate = xiiTime::Now();
-
-  m_bRotateCamera      = false;
-  m_bMoveCamera        = false;
-  m_bMoveCameraInPlane = false;
-  m_bOrbitCamera       = false;
-  m_bSlideForwards     = false;
-  m_bPanOrbitPoint     = false;
-
-  m_bRotateLeft  = false;
-  m_bRotateRight = false;
-  m_bRotateUp    = false;
-  m_bRotateDown  = false;
 
   // while the camera moves, ignore all other shortcuts
   SetShortcutsDisabled(true);
@@ -90,6 +63,7 @@ void xiiCameraMoveContext::DoFocusLost(bool bCancel)
   m_bSlideForwards     = false;
   m_bOpenMenuOnMouseUp = false;
   m_bPanOrbitPoint     = false;
+  m_bPanCamera         = false;
 
   ResetCursor();
 
@@ -189,7 +163,7 @@ void xiiCameraMoveContext::UpdateContext()
 
 void xiiCameraMoveContext::DeactivateIfLast()
 {
-  if (m_bRotateCamera || m_bMoveCamera || m_bMoveCameraInPlane || m_bOrbitCamera || m_bSlideForwards || m_bPanOrbitPoint || m_bMoveForwards || m_bMoveBackwards || m_bMoveRight || m_bMoveLeft || m_bMoveUp || m_bMoveDown || m_bMoveForwardsInPlane || m_bMoveBackwardsInPlane || m_bRotateLeft || m_bRotateRight || m_bRotateUp || m_bRotateDown)
+  if (m_bRotateCamera || m_bMoveCamera || m_bMoveCameraInPlane || m_bOrbitCamera || m_bSlideForwards || m_bPanOrbitPoint || m_bMoveForwards || m_bMoveBackwards || m_bMoveRight || m_bMoveLeft || m_bMoveUp || m_bMoveDown || m_bMoveForwardsInPlane || m_bMoveBackwardsInPlane || m_bRotateLeft || m_bRotateRight || m_bRotateUp || m_bRotateDown || m_bPanCamera)
     return;
 
   FocusLost(false);
@@ -256,8 +230,8 @@ xiiEditorInput xiiCameraMoveContext::DoKeyPressEvent(QKeyEvent* e)
   if (m_pCamera == nullptr)
     return xiiEditorInput::MayBeHandledByOthers;
 
-  //if (e->modifiers() == Qt::KeyboardModifier::ControlModifier)
-  //  return xiiEditorInput::MayBeHandledByOthers;
+  // if (e->modifiers() == Qt::KeyboardModifier::ControlModifier)
+  //   return xiiEditorInput::MayBeHandledByOthers;
 
   m_bRun = (e->modifiers() & Qt::KeyboardModifier::ShiftModifier) != 0;
 
@@ -326,6 +300,9 @@ xiiEditorInput xiiCameraMoveContext::DoMousePressEvent(QMouseEvent* e)
   if (m_pCamera == nullptr)
     return xiiEditorInput::MayBeHandledByOthers;
 
+  const QPoint curPos = QCursor::pos();
+  m_vMouseClickPos.Set(curPos.x(), curPos.y());
+
   if (m_pCamera->IsOrthographic())
   {
     if (e->button() == Qt::MouseButton::RightButton)
@@ -333,7 +310,7 @@ xiiEditorInput xiiCameraMoveContext::DoMousePressEvent(QMouseEvent* e)
       m_bOpenMenuOnMouseUp = (e->buttons() == Qt::MouseButton::RightButton);
       m_bMoveCamera        = true;
       m_vLastMousePos      = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
-      m_bDidMoveMouse[1]   = false;
+      m_iDidMoveMouse[1]   = 0;
       MakeActiveInputContext();
       return xiiEditorInput::WasExclusivelyHandled;
     }
@@ -350,15 +327,13 @@ xiiEditorInput xiiCameraMoveContext::DoMousePressEvent(QMouseEvent* e)
       m_bRotateCamera      = false;
       m_bOpenMenuOnMouseUp = (e->buttons() == Qt::MouseButton::RightButton);
 
-      m_fSlideForwardsDistance = (m_vOrbitPoint - m_pCamera->GetPosition()).GetLength();
-
       if ((e->modifiers() & Qt::KeyboardModifier::AltModifier) != 0)
         m_bSlideForwards = true;
       else
         m_bRotateCamera = true;
 
       m_vLastMousePos    = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
-      m_bDidMoveMouse[1] = false;
+      m_iDidMoveMouse[1] = 0;
       MakeActiveInputContext();
       return xiiEditorInput::WasExclusivelyHandled;
     }
@@ -370,15 +345,19 @@ xiiEditorInput xiiCameraMoveContext::DoMousePressEvent(QMouseEvent* e)
     if (e->button() == Qt::MouseButton::LeftButton)
     {
       m_bOrbitCamera = false;
-      m_bMoveCamera  = false;
+      m_bPanCamera   = false;
 
       if ((e->modifiers() & Qt::KeyboardModifier::AltModifier) != 0)
-        m_bOrbitCamera = true;
-      else
-        m_bMoveCamera = true;
+      {
+        m_bOrbitCamera  = true;
+        m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+      }
+      else if (!e->modifiers().testAnyFlags(Qt::KeyboardModifier::ControlModifier | Qt::KeyboardModifier::ShiftModifier))
+      {
+        m_bPanCamera = true;
+      }
 
-      m_vLastMousePos    = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
-      m_bDidMoveMouse[0] = false;
+      m_iDidMoveMouse[0] = 0;
       MakeActiveInputContext();
       return xiiEditorInput::WasExclusivelyHandled;
     }
@@ -389,16 +368,23 @@ xiiEditorInput xiiCameraMoveContext::DoMousePressEvent(QMouseEvent* e)
       m_bMoveCamera        = false;
       m_bMoveCameraInPlane = false;
       m_bPanOrbitPoint     = false;
+      m_bPanCamera         = false;
 
-      if ((e->modifiers() & Qt::KeyboardModifier::AltModifier) != 0)
+      if (e->modifiers().testAnyFlags(Qt::KeyboardModifier::AltModifier))
       {
         m_bPanOrbitPoint = true;
       }
+      else if (e->modifiers().testAnyFlags(Qt::KeyboardModifier::ControlModifier))
+      {
+        m_bMoveCamera = true;
+      }
       else
+      {
         m_bMoveCameraInPlane = true;
+      }
 
       m_vLastMousePos    = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
-      m_bDidMoveMouse[2] = false;
+      m_iDidMoveMouse[2] = 0;
       MakeActiveInputContext();
       return xiiEditorInput::WasExclusivelyHandled;
     }
@@ -409,7 +395,7 @@ xiiEditorInput xiiCameraMoveContext::DoMousePressEvent(QMouseEvent* e)
 
 void xiiCameraMoveContext::ResetCursor()
 {
-  if (!m_bRotateCamera && !m_bMoveCamera && !m_bMoveCameraInPlane && !m_bOrbitCamera && !m_bSlideForwards)
+  if (!m_bRotateCamera && !m_bMoveCamera && !m_bMoveCameraInPlane && !m_bOrbitCamera && !m_bSlideForwards && !m_bPanCamera)
   {
     SetMouseMode(xiiEditorInputContext::MouseMode::Normal);
 
@@ -445,7 +431,7 @@ xiiEditorInput xiiCameraMoveContext::DoMouseReleaseEvent(QMouseEvent* e)
 
       ResetCursor();
 
-      if (!m_bDidMoveMouse[1] && m_bOpenMenuOnMouseUp)
+      if (m_iDidMoveMouse[1] < 3 && m_bOpenMenuOnMouseUp)
       {
         GetOwnerView()->OpenContextMenu(e->globalPosition().toPoint());
       }
@@ -472,7 +458,7 @@ xiiEditorInput xiiCameraMoveContext::DoMouseReleaseEvent(QMouseEvent* e)
 
       ResetCursor();
 
-      if (!m_bDidMoveMouse[1] && m_bOpenMenuOnMouseUp)
+      if (m_iDidMoveMouse[1] < 3 && m_bOpenMenuOnMouseUp)
       {
         GetOwnerView()->OpenContextMenu(e->globalPosition().toPoint());
       }
@@ -482,11 +468,11 @@ xiiEditorInput xiiCameraMoveContext::DoMouseReleaseEvent(QMouseEvent* e)
 
     if (e->button() == Qt::MouseButton::LeftButton)
     {
-      m_bMoveCamera  = false;
+      m_bPanCamera   = false;
       m_bOrbitCamera = false;
       ResetCursor();
 
-      if (!m_bDidMoveMouse[0])
+      if (m_iDidMoveMouse[0] < 8) // be a bit lenient about how far the mouse may move before discarding the click
       {
         // not really handled, so make this context inactive and tell the surrounding code that it may pass
         // the event to the next handler
@@ -505,7 +491,7 @@ xiiEditorInput xiiCameraMoveContext::DoMouseReleaseEvent(QMouseEvent* e)
 
       ResetCursor();
 
-      if (!m_bDidMoveMouse[2])
+      if (m_iDidMoveMouse[2] < 5)
       {
         // not really handled, so make this context inactive and tell the surrounding code that it may pass
         // the event to the next handler
@@ -519,14 +505,14 @@ xiiEditorInput xiiCameraMoveContext::DoMouseReleaseEvent(QMouseEvent* e)
   return xiiEditorInput::MayBeHandledByOthers;
 }
 
-const xiiVec3& xiiCameraMoveContext::GetOrbitPoint() const
+xiiVec3 xiiCameraMoveContext::GetOrbitPoint() const
 {
-  return m_vOrbitPoint;
+  return m_pCamera->GetCenterPosition() + m_pCamera->GetCenterDirForwards() * m_fOrbitPointDistance;
 }
 
-void xiiCameraMoveContext::SetOrbitPoint(const xiiVec3& vPos)
+void xiiCameraMoveContext::SetOrbitDistance(float fDistance)
 {
-  m_vOrbitPoint = vPos;
+  m_fOrbitPointDistance = fDistance;
 }
 
 xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
@@ -535,9 +521,16 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
   if (!IsActiveInputContext())
     return xiiEditorInput::MayBeHandledByOthers;
 
+  const QPoint curPos = QCursor::pos();
+
   // store that the mouse has been moved since the last click
-  for (xiiInt32 i = 0; i < XII_ARRAY_SIZE(m_bDidMoveMouse); ++i)
-    m_bDidMoveMouse[i] = true;
+  for (xiiInt32 i = 0; i < XII_ARRAY_SIZE(m_iDidMoveMouse); ++i)
+  {
+    m_iDidMoveMouse[i] += xiiMath::Abs(m_vMouseClickPos.x - curPos.x());
+    m_iDidMoveMouse[i] += xiiMath::Abs(m_vMouseClickPos.y - curPos.y());
+  }
+
+  m_vMouseClickPos.Set(curPos.x(), curPos.y());
 
   // send a message to clear any highlight
   xiiViewHighlightMsgToEngine msg;
@@ -547,6 +540,8 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
     return xiiEditorInput::MayBeHandledByOthers;
 
   const xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
+
+  m_bRun = (e->modifiers() & Qt::KeyboardModifier::ShiftModifier) != 0;
 
   float fBoost       = 1.0f;
   float fRotateBoost = 1.0f;
@@ -601,7 +596,7 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
     const float fMouseRotateSensitivityX = (fFovX.GetRadian() / (float)GetOwnerView()->size().width()) * fRotateBoost * fMouseScale;
     const float fMouseRotateSensitivityY = (fFovY.GetRadian() / (float)GetOwnerView()->size().height()) * fRotateBoost * fMouseScale;
 
-    if (m_bRotateCamera && m_bMoveCamera) // left & right mouse button -> pan
+    if (m_bRotateCamera && m_bPanCamera) // left & right mouse button -> pan
     {
       float fMoveUp    = -diff.y * fMouseMoveSensitivity;
       float fMoveRight = diff.x * fMouseMoveSensitivity;
@@ -614,11 +609,14 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
 
     if (m_bRotateCamera || m_bOrbitCamera)
     {
-      float fDistToOrbit = 0.0f;
+      float   fDistToOrbit = 0.0f;
+      xiiVec3 vOrbitPoint;
 
       if (m_bOrbitCamera)
       {
-        fDistToOrbit = xiiMath::Max(0.01f, (m_vOrbitPoint - m_pCamera->GetCenterPosition()).GetLength());
+        // fDistToOrbit = xiiMath::Max(0.01f, (m_vOrbitPoint - m_pCamera->GetCenterPosition()).GetLength());
+        fDistToOrbit = xiiMath::Max(0.01f, m_fOrbitPointDistance);
+        vOrbitPoint  = GetOrbitPoint();
       }
 
       float fRotateHorizontal = diff.x * fMouseRotateSensitivityX;
@@ -630,9 +628,9 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
       if (m_bOrbitCamera)
       {
         const xiiVec3 vDirection = m_pCamera->GetDirForwards();
-        const xiiVec3 vNewCamPos = m_vOrbitPoint - vDirection * fDistToOrbit;
+        const xiiVec3 vNewCamPos = vOrbitPoint - vDirection * fDistToOrbit;
 
-        m_pCamera->LookAt(vNewCamPos, m_vOrbitPoint, m_pCamera->GetDirUp());
+        m_pCamera->LookAt(vNewCamPos, vOrbitPoint, m_pCamera->GetDirUp());
       }
 
       m_vLastMousePos = UpdateMouseMode(e);
@@ -662,7 +660,7 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
       vDir.z       = 0.0f;
       vDir.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
 
-      m_vOrbitPoint += vDir * fMoveForward;
+      // m_vOrbitPoint += vDir * fMoveForward;
       m_pCamera->MoveGlobally(vDir.x * fMoveForward, vDir.y * fMoveForward, vDir.z * fMoveForward);
 
       m_vLastMousePos = UpdateMouseMode(e);
@@ -672,11 +670,14 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
 
     if (m_bSlideForwards)
     {
-      float fMove = diff.y * fMouseMoveSensitivity * m_fSlideForwardsDistance * 0.1f;
+      float         fMove       = diff.y * fMouseMoveSensitivity * m_fOrbitPointDistance * 0.1f;
+      const xiiVec3 vOrbitPoint = GetOrbitPoint();
 
       m_pCamera->MoveLocally(fMove, 0, 0);
 
       m_vLastMousePos = UpdateMouseMode(e);
+
+      m_fOrbitPointDistance = vOrbitPoint.Distance(m_pCamera->GetCenterPosition());
 
       return xiiEditorInput::WasExclusivelyHandled;
     }
@@ -686,10 +687,11 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
       xiiMat4 viewMatrix, projectionMatrix;
       GetOwnerView()->GetCameraMatrices(viewMatrix, projectionMatrix);
 
-      xiiMat4 mvp = projectionMatrix * viewMatrix;
+      xiiMat4 mvp         = projectionMatrix * viewMatrix;
+      xiiVec3 vOrbitPoint = GetOrbitPoint();
 
       xiiVec3 vScreenPos(0);
-      if (xiiGraphicsUtils::ConvertWorldPosToScreenPos(mvp, 0, 0, GetOwnerView()->width(), GetOwnerView()->height(), m_vOrbitPoint, vScreenPos).Succeeded())
+      if (xiiGraphicsUtils::ConvertWorldPosToScreenPos(mvp, 0, 0, GetOwnerView()->width(), GetOwnerView()->height(), vOrbitPoint, vScreenPos).Succeeded())
       {
         xiiMat4 invMvp = mvp.GetInverse();
 
@@ -699,9 +701,8 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
         xiiVec3 vNewPoint(0);
         if (xiiGraphicsUtils::ConvertScreenPosToWorldPos(invMvp, 0, 0, GetOwnerView()->width(), GetOwnerView()->height(), vScreenPos, vNewPoint).Succeeded())
         {
-          const xiiVec3 vDiff = vNewPoint - m_vOrbitPoint;
+          const xiiVec3 vDiff = vNewPoint - vOrbitPoint;
 
-          m_vOrbitPoint = vNewPoint;
           m_pCamera->MoveGlobally(vDiff.x, vDiff.y, vDiff.z);
         }
       }
@@ -723,12 +724,31 @@ void xiiCameraMoveContext::SetMoveSpeed(xiiInt32 iSpeed)
   }
 }
 
+void xiiCameraMoveContext::OnActivated()
+{
+  m_LastUpdate = xiiTime::Now();
+}
+
 xiiEditorInput xiiCameraMoveContext::DoWheelEvent(QWheelEvent* e)
 {
-  if (m_bMoveCamera || m_bMoveCameraInPlane || m_bOrbitCamera || m_bRotateCamera)
-    return xiiEditorInput::WasExclusivelyHandled; // ignore it, but others should not handle it either
-
   const xiiScenePreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetOwnerWindow()->GetDocument());
+
+  if (m_bMoveCamera || m_bMoveCameraInPlane || m_bOrbitCamera || m_bRotateCamera)
+  {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    if (e->angleDelta().y() > 0)
+#else
+    if (e->delta() > 0)
+#endif
+    {
+      SetMoveSpeed(pPreferences->GetCameraSpeed() + 1);
+    }
+    else
+    {
+      SetMoveSpeed(pPreferences->GetCameraSpeed() - 1);
+    }
+    return xiiEditorInput::WasExclusivelyHandled; // ignore it, but others should not handle it either
+  }
 
   if (m_pCamera->IsOrthographic())
   {

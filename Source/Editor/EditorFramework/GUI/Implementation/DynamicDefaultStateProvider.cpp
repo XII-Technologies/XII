@@ -235,7 +235,7 @@ const xiiReflectedClass* xiiDynamicDefaultStateProvider::GetMetaInfo(xiiObjectAc
     if (value.IsA<xiiString>())
     {
       const auto& sValue = value.Get<xiiString>();
-      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue.GetData()))
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return asset->m_pAssetInfo->m_Info->GetMetaInfo(m_pClassType);
       }

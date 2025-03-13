@@ -12,7 +12,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSpawnBoxComponent, 1, xiiComponentMode::Dynamic)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("HalfExtents", GetHalfExtents, SetHalfExtents)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(2.0f, 2.0f, 0.25f)), new xiiClampValueAttribute(xiiVec3(0), xiiVariant())),
-    XII_ACCESSOR_PROPERTY("Prefab", GetPrefabFile, SetPrefabFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("Prefab", m_hPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("SpawnAtStart", GetSpawnAtStart, SetSpawnAtStart),
     XII_ACCESSOR_PROPERTY("SpawnContinuously", GetSpawnContinuously, SetSpawnContinuously),
     XII_MEMBER_PROPERTY("MinSpawnCount", m_uiMinSpawnCount)->AddAttributes(new xiiDefaultValueAttribute(10)),
@@ -52,26 +52,6 @@ void xiiSpawnBoxComponent::SetHalfExtents(const xiiVec3& value)
   {
     GetOwner()->UpdateLocalBounds();
   }
-}
-
-void xiiSpawnBoxComponent::SetPrefabFile(const char* szFile)
-{
-  xiiPrefabResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiPrefabResource>(szFile);
-  }
-
-  m_hPrefab = hResource;
-}
-
-const char* xiiSpawnBoxComponent::GetPrefabFile() const
-{
-  if (!m_hPrefab.IsValid())
-    return "";
-
-  return m_hPrefab.GetResourceID();
 }
 
 bool xiiSpawnBoxComponent::GetSpawnAtStart() const

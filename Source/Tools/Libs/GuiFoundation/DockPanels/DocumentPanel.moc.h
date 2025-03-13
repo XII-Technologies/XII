@@ -2,11 +2,11 @@
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
-#include <QDockWidget>
+#include <ads/DockWidget.h>
 
 class xiiDocument;
 
-class XII_GUIFOUNDATION_DLL xiiQtDocumentPanel : public QDockWidget
+class XII_GUIFOUNDATION_DLL xiiQtDocumentPanel : public ads::CDockWidget
 {
 public:
   Q_OBJECT
@@ -15,14 +15,8 @@ public:
   xiiQtDocumentPanel(QWidget* pParent, xiiDocument* pDocument);
   ~xiiQtDocumentPanel();
 
-  // prevents closing of the dockwidget, even with Alt+F4
-  virtual void closeEvent(QCloseEvent* e) override;
   virtual bool event(QEvent* pEvent) override;
-
-  static const xiiDynamicArray<xiiQtDocumentPanel*>& GetAllDocumentPanels() { return s_AllDocumentPanels; }
 
 private:
   xiiDocument* m_pDocument = nullptr;
-
-  static xiiDynamicArray<xiiQtDocumentPanel*> s_AllDocumentPanels;
 };

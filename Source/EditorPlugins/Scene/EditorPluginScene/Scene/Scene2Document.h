@@ -106,6 +106,8 @@ public:
   const xiiDocumentObject* GetLayerObject(const xiiUuid& layerGuid) const;
   xiiSceneDocument*        GetLayerDocument(const xiiUuid& layerGuid) const;
 
+  virtual xiiGameObjectDocument* GetRedirectedGameObjectDoc() override;
+
   bool IsAnyLayerModified() const;
 
   ///@}
@@ -120,6 +122,14 @@ public:
   virtual void                     SendGameWorldToEngine() override;
 
   ///@}
+  /// \name Selection Specific Functions
+  ///@{
+
+  void         PreventDoubleSelectionChange(bool b);
+  virtual void UndoSelection() override;
+
+  ///@}
+
 
 public:
   mutable xiiEvent<const xiiScene2LayerEvent&> m_LayerEvents;
@@ -163,4 +173,8 @@ private:
   mutable xiiUniquePtr<xiiSelectionManager> m_pLayerSelection;
   xiiUuid                                   m_ActiveLayerGuid;
   xiiHashTable<xiiUuid, LayerInfo>          m_Layers;
+
+  void ActiveLayerGameObjectEventHandler(const xiiGameObjectEvent& e);
+
+  xiiEvent<const xiiGameObjectEvent&>::Unsubscriber m_ActiveLayerGoEvUnsubscriber;
 };

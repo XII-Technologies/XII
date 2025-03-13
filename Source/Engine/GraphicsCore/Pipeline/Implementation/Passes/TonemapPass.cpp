@@ -19,15 +19,15 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTonemapPass, 1, xiiRTTIDefaultAllocator<xiiT
     XII_MEMBER_PROPERTY("Color", m_PinColorInput),
     XII_MEMBER_PROPERTY("Bloom", m_PinBloomInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
-    XII_ACCESSOR_PROPERTY("VignettingTexture", GetVignettingTextureFile, SetVignettingTextureFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
+    XII_RESOURCE_MEMBER_PROPERTY("VignettingTexture", m_hVignettingTexture)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
     XII_MEMBER_PROPERTY("MoodColor", m_MoodColor)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::Orange)),
     XII_MEMBER_PROPERTY("MoodStrength", m_fMoodStrength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("Saturation", m_fSaturation)->AddAttributes(new xiiClampValueAttribute(0.0f, 2.0f), new xiiDefaultValueAttribute(1.0f)),
     XII_MEMBER_PROPERTY("Contrast", m_fContrast)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("LUT1Strength", m_fLut1Strength)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("LUT2Strength", m_fLut2Strength)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_ACCESSOR_PROPERTY("LUT1", GetLUT1TextureFile, SetLUT1TextureFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_3D")),
-    XII_ACCESSOR_PROPERTY("LUT2", GetLUT2TextureFile, SetLUT2TextureFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_3D")),
+    XII_RESOURCE_MEMBER_PROPERTY("LUT1", m_hLUT1)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_3D")),
+    XII_RESOURCE_MEMBER_PROPERTY("LUT2", m_hLUT2)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_3D")),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -216,55 +216,5 @@ xiiResult xiiTonemapPass::Deserialize(xiiStreamReader& inout_stream)
   SetLUT2TextureFile(sTemp);
   return XII_SUCCESS;
 }
-
-void xiiTonemapPass::SetVignettingTextureFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hVignettingTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(szFile);
-  }
-}
-
-const char* xiiTonemapPass::GetVignettingTextureFile() const
-{
-  if (!m_hVignettingTexture.IsValid())
-    return "";
-
-  return m_hVignettingTexture.GetResourceID();
-}
-
-
-void xiiTonemapPass::SetLUT1TextureFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hLUT1 = xiiResourceManager::LoadResource<xiiTexture3DResource>(szFile);
-  }
-}
-
-const char* xiiTonemapPass::GetLUT1TextureFile() const
-{
-  if (!m_hLUT1.IsValid())
-    return "";
-
-  return m_hLUT1.GetResourceID();
-}
-
-void xiiTonemapPass::SetLUT2TextureFile(const char* szFile)
-{
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    m_hLUT2 = xiiResourceManager::LoadResource<xiiTexture3DResource>(szFile);
-  }
-}
-
-const char* xiiTonemapPass::GetLUT2TextureFile() const
-{
-  if (!m_hLUT2.IsValid())
-    return "";
-
-  return m_hLUT2.GetResourceID();
-}
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_TonemapPass);

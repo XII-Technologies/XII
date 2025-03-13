@@ -77,3 +77,44 @@ xiiResult xiiQtVisualScriptVariableWidget::GetVariantTypeDisplayName(xiiVariantT
 
   return XII_SUCCESS;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiVisualScriptExpressionDataType, 1)
+  XII_ENUM_CONSTANT(xiiVisualScriptExpressionDataType::Int),
+  XII_ENUM_CONSTANT(xiiVisualScriptExpressionDataType::Float),
+  XII_ENUM_CONSTANT(xiiVisualScriptExpressionDataType::Vector3),
+  XII_ENUM_CONSTANT(xiiVisualScriptExpressionDataType::Color),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVisualScriptExpressionVariable, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiVisualScriptExpressionVariable>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Name", m_sName),
+    XII_ENUM_MEMBER_PROPERTY("Type", xiiVisualScriptExpressionDataType, m_Type),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiVisualScriptDataType::Enum xiiVisualScriptExpressionDataType::GetVisualScriptDataType(Enum dataType)
+{
+  switch (dataType)
+  {
+    case Int:
+      return xiiVisualScriptDataType::Int;
+    case Float:
+      return xiiVisualScriptDataType::Float;
+    case Vector3:
+      return xiiVisualScriptDataType::Vector3;
+    case Color:
+      return xiiVisualScriptDataType::Color;
+    default:
+      XII_ASSERT_NOT_IMPLEMENTED;
+  }
+
+  return xiiVisualScriptDataType::Invalid;
+}

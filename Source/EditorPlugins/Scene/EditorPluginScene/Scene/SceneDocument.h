@@ -40,7 +40,16 @@ public:
     Hide
   };
 
+  /// \brief Creates a new object and attaches all currently selected objects to it.
   void GroupSelection();
+
+  /// \brief Changes the selection to the parent object.
+  void SelectParentObject();
+
+  /// \brief Sets the last selected object as the 'active parent'.
+  void SetSelectedAsActiveParent();
+  /// \brief Clears the 'active parent' object.
+  void ClearActiveParent();
 
   /// \brief Opens the Duplicate Special dialog
   void DuplicateSpecial();
@@ -63,7 +72,7 @@ public:
   void CopyReference();
 
   /// \brief Creates a new empty object, either top-level (selection empty) or as a child of the selected item
-  xiiStatus CreateEmptyObject(bool bAttachToParent, bool bAtPickedPosition);
+  xiiStatus CreateEmptyObject(bool bAttachToParent, bool bAtPickedPosition, bool bComponentSelectionMenu);
 
   void DuplicateSelection();
   void ShowOrHideSelectedObjects(ShowOrHide action);
@@ -88,13 +97,13 @@ public:
   virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType) override;
   bool         DuplicateSelectedObjects(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bSetSelected);
   bool         CopySelectedObjects(xiiAbstractObjectGraph& ref_graph, xiiMap<xiiUuid, xiiUuid>* out_pParents) const;
-  bool         PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiVec3& vPos);
+  bool         PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec3& vPos);
   bool         PasteAtOrignalPosition(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph);
 
   virtual void UpdatePrefabs() override;
 
   /// \brief Removes the link to the prefab template, making the editor prefab a simple object
-  virtual void UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& selection) override;
+  virtual void UnlinkPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection) override;
 
   virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiStringView sPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab) override;
 
@@ -102,9 +111,9 @@ public:
   virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject) override;
 
   /// \brief Converts all objects in the selection that are engine prefabs to their respective editor prefab representation
-  virtual void ConvertToEditorPrefab(const xiiDeque<const xiiDocumentObject*>& selection);
+  virtual void ConvertToEditorPrefab(xiiArrayPtr<const xiiDocumentObject*> selection);
   /// \brief Converts all objects in the selection that are editor prefabs to their respective engine prefab representation
-  virtual void ConvertToEnginePrefab(const xiiDeque<const xiiDocumentObject*>& selection);
+  virtual void ConvertToEnginePrefab(xiiArrayPtr<const xiiDocumentObject*> selection);
 
   virtual xiiStatus CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {}) override;
 
@@ -158,10 +167,10 @@ public:
   /// The camera will quickly interpolate to the stored position.
   void RestoreFavoriteCamera(xiiUInt8 uiSlot);
 
-  /// \brief Searches for an xiiCameraComponent with the 'EditorShortcut' property set to \a uiSlot and moves the editor camera to that position.
+  /// \brief Searches for a xiiCameraComponent with the 'EditorShortcut' property set to \a uiSlot and moves the editor camera to that position.
   xiiResult JumpToLevelCamera(xiiUInt8 uiSlot, bool bImmediate);
 
-  /// \brief Creates an object with an xiiCameraComponent at the current editor camera position and sets the 'EditorShortcut' property to \a uiSlot.
+  /// \brief Creates an object with a xiiCameraComponent at the current editor camera position and sets the 'EditorShortcut' property to \a uiSlot.
   xiiResult CreateLevelCamera(xiiUInt8 uiSlot);
 
   virtual xiiManipulatorSearchStrategy GetManipulatorSearchStrategy() const override
@@ -170,6 +179,9 @@ public:
   }
 
   ///@}
+
+  bool         CanUndoSelection() const;
+  virtual void UndoSelection();
 
 protected:
   void SetGameMode(GameMode::Enum mode);
@@ -217,6 +229,21 @@ protected:
   // Local mirror for settings
   xiiDocumentObjectMirror m_ObjectMirror;
   xiiRttiConverterContext m_Context;
+
+  //////////////////////////////////////////////////////////////////////////
+protected:
+  bool                                                                   m_bStoreSelectionChange  = true;
+  xiiInt8                                                                m_iAllowSelectionChanges = -1;
+  xiiCopyOnBroadcastEvent<const xiiSelectionManagerEvent&>::Unsubscriber m_SelectionHandlerUnsubscriber;
+  void                                                                   SelectionManagerEventHandler(const xiiSelectionManagerEvent& e);
+
+  struct SelectionHistory
+  {
+    xiiDynamicArray<xiiUuid> m_Objects;
+    xiiUuid                  m_documentGuid;
+  };
+
+  xiiDeque<SelectionHistory> m_SelectionStack;
 
   //////////////////////////////////////////////////////////////////////////
   /// Communication with other document types

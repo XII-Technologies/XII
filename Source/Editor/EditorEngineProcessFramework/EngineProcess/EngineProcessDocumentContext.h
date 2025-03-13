@@ -78,7 +78,7 @@ public:
 
   xiiWorld* GetWorld() const { return m_pWorld; }
 
-  /// \brief Tries to resolve a 'reference' (given in pData) to an xiiGameObject.
+  /// \brief Tries to resolve a 'reference' (given in pData) to a xiiGameObject.
   virtual xiiGameObjectHandle ResolveStringToGameObjectHandle(const void* pString, xiiComponentHandle hThis, xiiStringView sProperty) const;
 
 protected:

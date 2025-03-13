@@ -37,7 +37,7 @@ void xiiAnimationClipContext::HandleMessage(const xiiEditorEngineDocumentMsg* pM
     {
       if (pMsg->m_sPayload == "Grid")
       {
-        m_bDisplayGrid = pMsg->m_fPayload > 0;
+        m_bDisplayGrid = pMsg->m_PayloadValue.ConvertTo<float>() > 0;
       }
     }
     else if (pMsg->m_sWhatToDo == "PreviewMesh" && m_sAnimatedMeshToUse != pMsg->m_sPayload)
@@ -75,7 +75,7 @@ void xiiAnimationClipContext::HandleMessage(const xiiEditorEngineDocumentMsg* pM
     }
     else if (pMsg->m_sWhatToDo == "PlaybackPos")
     {
-      SetPlaybackPosition(pMsg->m_fPayload);
+      SetPlaybackPosition(pMsg->m_PayloadValue.Get<double>());
     }
 
     return;
@@ -89,16 +89,16 @@ void xiiAnimationClipContext::HandleMessage(const xiiEditorEngineDocumentMsg* pM
     xiiSimpleAnimationComponent* pAnimController;
     if (pWorld->TryGetComponent(m_hAnimControllerComponent, pAnimController))
     {
-      if (pAnimController->GetAnimationClip().IsValid())
+      if (pAnimController->m_hAnimationClip.IsValid())
       {
-        xiiResourceLock<xiiAnimationClipResource> pResource(pAnimController->GetAnimationClip(), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+        xiiResourceLock<xiiAnimationClipResource> pResource(pAnimController->m_hAnimationClip, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
 
         if (pResource.GetAcquireResult() == xiiResourceAcquireResult::Final)
         {
           xiiSimpleDocumentConfigMsgToEditor msg;
           msg.m_DocumentGuid = pMsg->m_DocumentGuid;
-          msg.m_sName        = "ClipDuration";
-          msg.m_fPayload     = pResource->GetDescriptor().GetDuration().GetSeconds();
+          msg.m_sWhatToDo    = "ClipDuration";
+          msg.m_PayloadValue = pResource->GetDescriptor().GetDuration();
 
           SendProcessMessage(&msg);
         }
@@ -163,7 +163,7 @@ void xiiAnimationClipContext::QuerySelectionBBox(const xiiEditorEngineDocumentMs
   if (m_pGameObject == nullptr)
     return;
 
-  xiiBoundingBoxSphere bounds = xiiBoundingSphere::MakeInvalid();
+  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
 
   {
     XII_LOCK(m_pWorld->GetWriteMarker());

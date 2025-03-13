@@ -177,7 +177,7 @@ void xiiBoneManipulatorAdapter::RetrieveBones()
     }
     else
     {
-      //XII_REPORT_FAILURE("Property is not an xiiExposedBone");
+      // XII_REPORT_FAILURE("Property is not a xiiExposedBone");
       m_Bones.Clear();
       return;
     }

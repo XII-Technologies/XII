@@ -1,10 +1,12 @@
 #pragma once
 
+#include <GameComponentsPlugin/GameComponentsDLL.h>
+
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/World/Component.h>
 #include <Core/World/World.h>
 #include <Foundation/Math/Vec2.h>
-#include <GameComponentsPlugin/GameComponentsDLL.h>
+#include <GameEngine/Utils/ImageDataResource.h>
 #include <GraphicsCore/Components/RenderComponent.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 
@@ -79,17 +81,11 @@ public:
   xiiVec2 GetTexCoordScale() const { return m_vTexCoordScale; } // [ property ]
   void    SetTexCoordScale(xiiVec2 value);                      // [ property ]
 
-  void        SetMaterialFile(const char* szFile); // [ property ]
-  const char* GetMaterialFile() const;             // [ property ]
+  void                      SetMaterial(const xiiMaterialResourceHandle& hMaterial) { m_hMaterial = hMaterial; } // [ property ]
+  xiiMaterialResourceHandle GetMaterial() const { return m_hMaterial; }                                          // [ property ]
 
-  void                      SetMaterial(const xiiMaterialResourceHandle& hMaterial) { m_hMaterial = hMaterial; }
-  xiiMaterialResourceHandle GetMaterial() const { return m_hMaterial; }
-
-  void        SetHeightfieldFile(const char* szFile); // [ property ]
-  const char* GetHeightfieldFile() const;             // [ property ]
-
-  void                       SetHeightfield(const xiiImageDataResourceHandle& hResource);
-  xiiImageDataResourceHandle GetHeightfield() const { return m_hHeightfield; }
+  void                              SetHeightfield(const xiiImageDataResourceHandle& hResource);
+  const xiiImageDataResourceHandle& GetHeightfield() const { return m_hHeightfield; }
 
   xiiVec2U32 GetTesselation() const { return m_vTesselation; } // [ property ]
   void       SetTesselation(xiiVec2U32 value);                 // [ property ]
@@ -99,9 +95,6 @@ public:
 
   xiiVec2U32 GetColMeshTesselation() const { return m_vColMeshTesselation; } // [ property ]
   void       SetColMeshTesselation(xiiVec2U32 value);                        // [ property ]
-
-  void SetIncludeInNavmesh(bool b);                                // [ property ]
-  bool GetIncludeInNavmesh() const { return m_bIncludeInNavmesh; } // [ property ]
 
 protected:
   void OnBuildStaticMesh(xiiMsgBuildStaticMesh& msg) const;    // [ msg handler ]
@@ -128,7 +121,6 @@ protected:
   xiiVec2U32 m_vColMeshTesselation = xiiVec2U32(64);
 
   bool m_bGenerateCollision = true;
-  bool m_bIncludeInNavmesh  = true;
 
   xiiMeshResourceHandle m_hMesh;
 };

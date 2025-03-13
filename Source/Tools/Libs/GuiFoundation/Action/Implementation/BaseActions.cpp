@@ -47,7 +47,7 @@ void xiiEnumerationMenuAction::InitEnumerationType(const xiiRTTI* pEnumerationTy
   m_pEnumerationType = pEnumerationType;
 }
 
-void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries)
+void xiiEnumerationMenuAction::GetEntries(xiiDynamicArray<Item>& out_entries)
 {
   out_entries.Clear();
   out_entries.Reserve(m_pEnumerationType->GetProperties().GetCount() - 1);

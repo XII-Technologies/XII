@@ -1,6 +1,6 @@
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
 
-#include <EditorEngineProcessFramework/LongOps/Implementation/LongOpManager.h>
+#include <EditorEngineProcessFramework/LongOps/LongOpManager.h>
 
 void xiiLongOpManager::Startup(xiiProcessCommunicationChannel* pCommunicationChannel)
 {

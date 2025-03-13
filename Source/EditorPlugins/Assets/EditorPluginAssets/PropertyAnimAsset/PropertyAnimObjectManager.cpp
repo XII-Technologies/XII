@@ -6,11 +6,7 @@ xiiPropertyAnimObjectManager::xiiPropertyAnimObjectManager() = default;
 
 xiiPropertyAnimObjectManager::~xiiPropertyAnimObjectManager() = default;
 
-xiiStatus xiiPropertyAnimObjectManager::InternalCanAdd(
-  const xiiRTTI*           pRtti,
-  const xiiDocumentObject* pParent,
-  xiiStringView            sParentProperty,
-  const xiiVariant&        index) const
+xiiStatus xiiPropertyAnimObjectManager::InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const
 {
   if (m_bAllowStructureChangeOnTemporaries)
     return xiiStatus(XII_SUCCESS);
@@ -30,11 +26,7 @@ xiiStatus xiiPropertyAnimObjectManager::InternalCanRemove(const xiiDocumentObjec
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiPropertyAnimObjectManager::InternalCanMove(
-  const xiiDocumentObject* pObject,
-  const xiiDocumentObject* pNewParent,
-  xiiStringView            sParentProperty,
-  const xiiVariant&        index) const
+xiiStatus xiiPropertyAnimObjectManager::InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const
 {
   if (m_bAllowStructureChangeOnTemporaries)
     return xiiStatus(XII_SUCCESS);

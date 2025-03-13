@@ -248,7 +248,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiStateMachineComponent, 2, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Resource", GetResourceFile, SetResourceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine", xiiDependencyFlags::Package)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Resource", GetResource, SetResource)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_StateMachine", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("InitialState", GetInitialState, SetInitialState),
     XII_ACCESSOR_PROPERTY("BlackboardName", GetBlackboardName, SetBlackboardName)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardNamesEnum")),
   }
@@ -336,27 +336,6 @@ void xiiStateMachineComponent::SetResource(const xiiStateMachineResourceHandle& 
   }
 }
 
-void xiiStateMachineComponent::SetResourceFile(const char* szFile)
-{
-  xiiStateMachineResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiStateMachineResource>(szFile);
-    xiiResourceManager::PreloadResource(hResource);
-  }
-
-  SetResource(hResource);
-}
-
-const char* xiiStateMachineComponent::GetResourceFile() const
-{
-  if (!m_hResource.IsValid())
-    return "";
-
-  return m_hResource.GetResourceID();
-}
-
 void xiiStateMachineComponent::SetInitialState(const char* szName)
 {
   xiiHashedString sInitialState;
@@ -442,7 +421,7 @@ void xiiStateMachineComponent::InstantiateStateMachine()
   xiiResourceLock<xiiStateMachineResource> pStateMachineResource(m_hResource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (pStateMachineResource.GetAcquireResult() != xiiResourceAcquireResult::Final)
   {
-    xiiLog::Error("Failed to load state machine '{}'", GetResourceFile());
+    xiiLog::Error("Failed to load state machine '{}'", GetResource().GetResourceID());
     return;
   }
 

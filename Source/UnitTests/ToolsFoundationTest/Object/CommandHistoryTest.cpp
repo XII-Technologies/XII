@@ -34,8 +34,8 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
 
   const xiiDocumentObject* pRoot = CreateObject(xiiGetStaticRTTI<xiiMirrorTest>());
 
-  xiiUuid mathGuid   = pAccessor->Get<xiiUuid>(pRoot, "Math");
-  xiiUuid objectGuid = pAccessor->Get<xiiUuid>(pRoot, "Object");
+  xiiUuid mathGuid   = pAccessor->GetByName<xiiUuid>(pRoot, "Math");
+  xiiUuid objectGuid = pAccessor->GetByName<xiiUuid>(pRoot, "Object");
 
   const xiiDocumentObject* pMath       = pAccessor->GetObject(mathGuid);
   const xiiDocumentObject* pObjectTest = pAccessor->GetObject(objectGuid);
@@ -52,12 +52,12 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       xiiUInt32 uiUndoHistorySize = doc.GetCommandHistory()->GetUndoStackSize();
 
       pAccessor->StartTransaction("SetValue");
-      XII_TEST_STATUS(pAccessor->SetValue(pObject, szProperty, value));
+      XII_TEST_STATUS(pAccessor->SetValueByName(pObject, szProperty, value));
       pAccessor->FinishTransaction();
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
       xiiVariant newValue;
-      XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue));
+      XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue));
       XII_TEST_BOOL(newValue == value);
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
@@ -68,7 +68,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       XII_TEST_STATUS(doc.GetCommandHistory()->Redo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue));
+      XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue));
       XII_TEST_BOOL(newValue == value);
     };
 
@@ -157,29 +157,29 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       StoreOriginalState(graph, pObject);
 
       const xiiUInt32 uiUndoHistorySize = doc.GetCommandHistory()->GetUndoStackSize();
-      const xiiInt32  iArraySize        = pAccessor->GetCount(pObject, szProperty);
+      const xiiInt32  iArraySize        = pAccessor->GetCountByName(pObject, szProperty);
 
       pAccessor->StartTransaction("InsertValue");
-      XII_TEST_STATUS(pAccessor->InsertValue(pObject, szProperty, value, index));
+      XII_TEST_STATUS(pAccessor->InsertValueByName(pObject, szProperty, value, index));
       pAccessor->FinishTransaction();
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize + 1);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize + 1);
       xiiVariant newValue;
-      XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, index));
+      XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, index));
       XII_TEST_BOOL(newValue == value);
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 1);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize);
       CompareAgainstOriginalState(graph, pObject);
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Redo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize + 1);
-      XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, index));
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize + 1);
+      XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, index));
       XII_TEST_BOOL(newValue == value);
     };
 
@@ -203,42 +203,42 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       StoreOriginalState(graph, pObject);
 
       const xiiUInt32 uiUndoHistorySize = doc.GetCommandHistory()->GetUndoStackSize();
-      const xiiInt32  iArraySize        = pAccessor->GetCount(pObject, szProperty);
+      const xiiInt32  iArraySize        = pAccessor->GetCountByName(pObject, szProperty);
       XII_TEST_INT(iArraySize, expectedOutcome.GetCount());
 
       xiiDynamicArray<xiiVariant> values;
-      XII_TEST_STATUS(pAccessor->GetValues(pObject, szProperty, values));
+      XII_TEST_STATUS(pAccessor->GetValuesByName(pObject, szProperty, values));
       XII_TEST_INT(iArraySize, values.GetCount());
 
       pAccessor->StartTransaction("MoveValue");
-      XII_TEST_STATUS(pAccessor->MoveValue(pObject, szProperty, oldIndex, newIndex));
+      XII_TEST_STATUS(pAccessor->MoveValueByName(pObject, szProperty, oldIndex, newIndex));
       pAccessor->FinishTransaction();
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize);
 
       for (xiiInt32 i = 0; i < iArraySize; i++)
       {
         xiiVariant newValue;
-        XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, i));
+        XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, i));
         XII_TEST_BOOL(newValue == expectedOutcome[i]);
       }
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 1);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize);
       CompareAgainstOriginalState(graph, pObject);
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Redo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize);
 
       for (xiiInt32 i = 0; i < iArraySize; i++)
       {
         xiiVariant newValue;
-        XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, i));
+        XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, i));
         XII_TEST_BOOL(newValue == expectedOutcome[i]);
       }
     };
@@ -311,16 +311,16 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       StoreOriginalState(graph, pObject);
 
       const xiiUInt32 uiUndoHistorySize = doc.GetCommandHistory()->GetUndoStackSize();
-      const xiiInt32  iArraySize        = pAccessor->GetCount(pObject, szProperty);
+      const xiiInt32  iArraySize        = pAccessor->GetCountByName(pObject, szProperty);
       XII_TEST_INT(iArraySize - 1, expectedOutcome.GetCount());
 
       xiiDynamicArray<xiiVariant> values;
       xiiDynamicArray<xiiVariant> keys;
       {
-        XII_TEST_STATUS(pAccessor->GetValues(pObject, szProperty, values));
+        XII_TEST_STATUS(pAccessor->GetValuesByName(pObject, szProperty, values));
         XII_TEST_INT(iArraySize, values.GetCount());
 
-        XII_TEST_STATUS(pAccessor->GetKeys(pObject, szProperty, keys));
+        XII_TEST_STATUS(pAccessor->GetKeysByName(pObject, szProperty, keys));
         XII_TEST_INT(iArraySize, keys.GetCount());
         xiiUInt32 uiIndex = keys.IndexOf(index);
         keys.RemoveAtAndSwap(uiIndex);
@@ -329,11 +329,11 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       }
 
       pAccessor->StartTransaction("RemoveValue");
-      XII_TEST_STATUS(pAccessor->RemoveValue(pObject, szProperty, index));
+      XII_TEST_STATUS(pAccessor->RemoveValueByName(pObject, szProperty, index));
       pAccessor->FinishTransaction();
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize - 1);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize - 1);
 
       if (pObject->GetType()->FindPropertyByName(szProperty)->GetCategory() == xiiPropertyCategory::Map)
       {
@@ -342,7 +342,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
           const xiiVariant& key   = keys[i];
           const xiiVariant& value = values[i];
           xiiVariant        newValue;
-          XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, key));
+          XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, key));
           XII_TEST_BOOL(newValue == value);
           XII_TEST_BOOL(expectedOutcome.Contains(newValue));
         }
@@ -352,7 +352,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
         for (xiiInt32 i = 0; i < iArraySize - 1; i++)
         {
           xiiVariant newValue;
-          XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, i));
+          XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, i));
           XII_TEST_BOOL(newValue == expectedOutcome[i]);
         }
       }
@@ -360,13 +360,13 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 1);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize);
       CompareAgainstOriginalState(graph, pObject);
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Redo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize - 1);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize - 1);
 
       if (pObject->GetType()->FindPropertyByName(szProperty)->GetCategory() == xiiPropertyCategory::Map)
       {
@@ -375,7 +375,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
           const xiiVariant& key   = keys[i];
           const xiiVariant& value = values[i];
           xiiVariant        newValue;
-          XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, key));
+          XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, key));
           XII_TEST_BOOL(newValue == value);
           XII_TEST_BOOL(expectedOutcome.Contains(newValue));
         }
@@ -385,7 +385,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
         for (xiiInt32 i = 0; i < iArraySize - 1; i++)
         {
           xiiVariant newValue;
-          XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, i));
+          XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, i));
           XII_TEST_BOOL(newValue == expectedOutcome[i]);
         }
       }
@@ -443,29 +443,29 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       StoreOriginalState(graph, pObject);
 
       const xiiUInt32 uiUndoHistorySize = doc.GetCommandHistory()->GetUndoStackSize();
-      const xiiInt32  iArraySize        = pAccessor->GetCount(pObject, szProperty);
+      const xiiInt32  iArraySize        = pAccessor->GetCountByName(pObject, szProperty);
 
       pAccessor->StartTransaction("TestAddObject");
-      XII_TEST_STATUS(pAccessor->AddObject(pObject, szProperty, index, pType, inout_object));
+      XII_TEST_STATUS(pAccessor->AddObjectByName(pObject, szProperty, index, pType, inout_object));
       pAccessor->FinishTransaction();
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize + 1);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize + 1);
       xiiVariant newValue;
-      XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, index));
+      XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, index));
       XII_TEST_BOOL(newValue == inout_object);
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 1);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize);
       CompareAgainstOriginalState(graph, pObject);
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Redo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject, szProperty), iArraySize + 1);
-      XII_TEST_STATUS(pAccessor->GetValue(pObject, szProperty, newValue, index));
+      XII_TEST_INT(pAccessor->GetCountByName(pObject, szProperty), iArraySize + 1);
+      XII_TEST_STATUS(pAccessor->GetValueByName(pObject, szProperty, newValue, index));
       XII_TEST_BOOL(newValue == inout_object);
     };
 
@@ -515,7 +515,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
   {
     auto TestMoveObjectFailure = [&](const xiiDocumentObject* pObject, const char* szProperty, xiiVariant newIndex) {
       pAccessor->StartTransaction("MoveObject");
-      XII_TEST_BOOL(pAccessor->MoveObject(pObject, pObject->GetParent(), szProperty, newIndex).Failed());
+      XII_TEST_BOOL(pAccessor->MoveObjectByName(pObject, pObject->GetParent(), szProperty, newIndex).Failed());
       pAccessor->CancelTransaction();
     };
 
@@ -524,42 +524,42 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       StoreOriginalState(graph, pObject->GetParent());
 
       const xiiUInt32 uiUndoHistorySize = doc.GetCommandHistory()->GetUndoStackSize();
-      const xiiInt32  iArraySize        = pAccessor->GetCount(pObject->GetParent(), szProperty);
+      const xiiInt32  iArraySize        = pAccessor->GetCountByName(pObject->GetParent(), szProperty);
       XII_TEST_INT(iArraySize, expectedOutcome.GetCount());
 
       xiiDynamicArray<xiiVariant> values;
-      XII_TEST_STATUS(pAccessor->GetValues(pObject->GetParent(), szProperty, values));
+      XII_TEST_STATUS(pAccessor->GetValuesByName(pObject->GetParent(), szProperty, values));
       XII_TEST_INT(iArraySize, values.GetCount());
 
       pAccessor->StartTransaction("MoveObject");
-      XII_TEST_STATUS(pAccessor->MoveObject(pObject, pObject->GetParent(), szProperty, newIndex));
+      XII_TEST_STATUS(pAccessor->MoveObjectByName(pObject, pObject->GetParent(), szProperty, newIndex));
       pAccessor->FinishTransaction();
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject->GetParent(), szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject->GetParent(), szProperty), iArraySize);
 
       for (xiiInt32 i = 0; i < iArraySize; i++)
       {
         xiiVariant newValue;
-        XII_TEST_STATUS(pAccessor->GetValue(pObject->GetParent(), szProperty, newValue, i));
+        XII_TEST_STATUS(pAccessor->GetValueByName(pObject->GetParent(), szProperty, newValue, i));
         XII_TEST_BOOL(newValue == expectedOutcome[i]);
       }
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 1);
-      XII_TEST_INT(pAccessor->GetCount(pObject->GetParent(), szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject->GetParent(), szProperty), iArraySize);
       CompareAgainstOriginalState(graph, pObject->GetParent());
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Redo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pObject->GetParent(), szProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pObject->GetParent(), szProperty), iArraySize);
 
       for (xiiInt32 i = 0; i < iArraySize; i++)
       {
         xiiVariant newValue;
-        XII_TEST_STATUS(pAccessor->GetValue(pObject->GetParent(), szProperty, newValue, i));
+        XII_TEST_STATUS(pAccessor->GetValueByName(pObject->GetParent(), szProperty, newValue, i));
         XII_TEST_BOOL(newValue == expectedOutcome[i]);
       }
     };
@@ -610,17 +610,17 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       xiiAbstractObjectGraph graph;
       StoreOriginalState(graph, pParent);
       const xiiUInt32 uiUndoHistorySize = doc.GetCommandHistory()->GetUndoStackSize();
-      const xiiInt32  iArraySize        = pAccessor->GetCount(pParent, sProperty);
+      const xiiInt32  iArraySize        = pAccessor->GetCountByName(pParent, sProperty);
       XII_TEST_INT(iArraySize - 1, expectedOutcome.GetCount());
 
 
       xiiDynamicArray<xiiVariant> values;
       xiiDynamicArray<xiiVariant> keys;
       {
-        XII_TEST_STATUS(pAccessor->GetValues(pParent, sProperty, values));
+        XII_TEST_STATUS(pAccessor->GetValuesByName(pParent, sProperty, values));
         XII_TEST_INT(iArraySize, values.GetCount());
 
-        XII_TEST_STATUS(pAccessor->GetKeys(pParent, sProperty, keys));
+        XII_TEST_STATUS(pAccessor->GetKeysByName(pParent, sProperty, keys));
         XII_TEST_INT(iArraySize, keys.GetCount());
         xiiUInt32 uiIndex = keys.IndexOf(pObject->GetPropertyIndex());
         keys.RemoveAtAndSwap(uiIndex);
@@ -633,7 +633,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       pAccessor->FinishTransaction();
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pParent, sProperty), iArraySize - 1);
+      XII_TEST_INT(pAccessor->GetCountByName(pParent, sProperty), iArraySize - 1);
 
       if (pParent->GetType()->FindPropertyByName(sProperty)->GetCategory() == xiiPropertyCategory::Map)
       {
@@ -642,7 +642,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
           const xiiVariant& key   = keys[i];
           const xiiVariant& value = values[i];
           xiiVariant        newValue;
-          XII_TEST_STATUS(pAccessor->GetValue(pParent, sProperty, newValue, key));
+          XII_TEST_STATUS(pAccessor->GetValueByName(pParent, sProperty, newValue, key));
           XII_TEST_BOOL(newValue == value);
           XII_TEST_BOOL(expectedOutcome.Contains(newValue.Get<xiiUuid>()));
         }
@@ -652,7 +652,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
         for (xiiInt32 i = 0; i < iArraySize - 1; i++)
         {
           xiiVariant newValue;
-          XII_TEST_STATUS(pAccessor->GetValue(pParent, sProperty, newValue, i));
+          XII_TEST_STATUS(pAccessor->GetValueByName(pParent, sProperty, newValue, i));
           XII_TEST_BOOL(newValue == expectedOutcome[i]);
         }
       }
@@ -660,13 +660,13 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
       XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 1);
-      XII_TEST_INT(pAccessor->GetCount(pParent, sProperty), iArraySize);
+      XII_TEST_INT(pAccessor->GetCountByName(pParent, sProperty), iArraySize);
       CompareAgainstOriginalState(graph, pParent);
 
       XII_TEST_STATUS(doc.GetCommandHistory()->Redo());
       XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiUndoHistorySize + 1);
       XII_TEST_INT(doc.GetCommandHistory()->GetRedoStackSize(), 0);
-      XII_TEST_INT(pAccessor->GetCount(pParent, sProperty), iArraySize - 1);
+      XII_TEST_INT(pAccessor->GetCountByName(pParent, sProperty), iArraySize - 1);
 
       if (pParent->GetType()->FindPropertyByName(sProperty)->GetCategory() == xiiPropertyCategory::Map)
       {
@@ -675,7 +675,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
           const xiiVariant& key   = keys[i];
           const xiiVariant& value = values[i];
           xiiVariant        newValue;
-          XII_TEST_STATUS(pAccessor->GetValue(pParent, sProperty, newValue, key));
+          XII_TEST_STATUS(pAccessor->GetValueByName(pParent, sProperty, newValue, key));
           XII_TEST_BOOL(newValue == value);
           XII_TEST_BOOL(expectedOutcome.Contains(newValue.Get<xiiUuid>()));
         }
@@ -685,7 +685,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
         for (xiiInt32 i = 0; i < iArraySize - 1; i++)
         {
           xiiVariant newValue;
-          XII_TEST_STATUS(pAccessor->GetValue(pParent, sProperty, newValue, i));
+          XII_TEST_STATUS(pAccessor->GetValueByName(pParent, sProperty, newValue, i));
           XII_TEST_BOOL(newValue == expectedOutcome[i]);
         }
       }

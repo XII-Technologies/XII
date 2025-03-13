@@ -141,7 +141,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       pRenderData->m_hMaterial      = s_pData->m_hDebugMaterial[iMappedIndex * uiMipLevels + i];
       pRenderData->m_Color          = xiiColor::White;
       pRenderData->m_uiSubMeshIndex = 0;
-      pRenderData->m_uiUniqueID     = xiiRenderComponent::GetUniqueIdForRendering(pComponent, 0);
+      pRenderData->m_uiUniqueID     = xiiRenderComponent::GetUniqueIdForRendering(*pComponent, 0);
 
       pRenderData->FillSortingKey();
       ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitOpaque, xiiRenderData::Caching::Never);

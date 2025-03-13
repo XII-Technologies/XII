@@ -30,6 +30,7 @@ struct xiiFileserverEvent
     FileUploading,
     FileUploadFinished,
     AreYouThereRequest,
+    LogCustomActivity,
   };
 
   Type                  m_Type             = Type::None;
@@ -88,10 +89,15 @@ public:
 
   static xiiResult SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& myIPs, xiiTime timeout = xiiTime::MakeFromSeconds(10));
 
+  using ClientMessageHandler = xiiDelegate<void(xiiFileserveClientContext&, xiiRemoteMessage&, xiiRemoteInterface&, xiiDelegate<void(const char*)>)>;
+
+  void SetCustomMessageHandler(xiiUInt32 uiSystemID, ClientMessageHandler handler);
+
 private:
   void                       NetworkEventHandler(const xiiRemoteEvent& e);
   xiiFileserveClientContext& DetermineClient(xiiRemoteMessage& msg);
   void                       NetworkMsgHandler(xiiRemoteMessage& msg);
+  void                       UnknownNetworkMsgHandler(xiiRemoteMessage& msg);
   void                       HandleMountRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
   void                       HandleUnmountRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
   void                       HandleFileRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
@@ -99,6 +105,7 @@ private:
   void                       HandleUploadFileHeader(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
   void                       HandleUploadFileTransfer(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
   void                       HandleUploadFileFinished(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
+  void                       LogCustomActivity(const char* szText);
 
   xiiHashTable<xiiUInt32, xiiFileserveClientContext> m_Clients;
   xiiUniquePtr<xiiRemoteInterface>                   m_pNetwork;
@@ -108,4 +115,5 @@ private:
   xiiUuid                                            m_FileUploadGuid;
   xiiUInt32                                          m_uiFileUploadSize;
   xiiUInt16                                          m_uiPort = 1042;
+  xiiMap<xiiUInt32, ClientMessageHandler>            m_CustomMessageHandlers;
 };

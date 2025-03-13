@@ -33,50 +33,40 @@ xiiActionDescriptorHandle xiiSelectionActions::s_hDetachFromParent;
 xiiActionDescriptorHandle xiiSelectionActions::s_hConvertToEnginePrefab;
 xiiActionDescriptorHandle xiiSelectionActions::s_hConvertToEditorPrefab;
 xiiActionDescriptorHandle xiiSelectionActions::s_hCopyReference;
-
-
+xiiActionDescriptorHandle xiiSelectionActions::s_hSelectParent;
+xiiActionDescriptorHandle xiiSelectionActions::s_hSetActiveParent;
+xiiActionDescriptorHandle xiiSelectionActions::s_hClearActiveParent;
+xiiActionDescriptorHandle xiiSelectionActions::s_hUndoSelection;
 
 void xiiSelectionActions::RegisterActions()
 {
-  s_hGroupSelectedItems          = XII_REGISTER_ACTION_1("Selection.GroupItems", xiiActionScope::Document, "Scene - Selection", "Ctrl+G", xiiSelectionAction,
-                                                xiiSelectionAction::ActionType::GroupSelectedItems);
-  s_hCreateEmptyChildObject      = XII_REGISTER_ACTION_1("Selection.CreateEmptyChildObject", xiiActionScope::Document, "Scene - Selection", "",
-                                                    xiiSelectionAction, xiiSelectionAction::ActionType::CreateEmptyChildObject);
-  s_hCreateEmptyObjectAtPosition = XII_REGISTER_ACTION_1("Selection.CreateEmptyObjectAtPosition", xiiActionScope::Document, "Scene - Selection",
-                                                         "Ctrl+Shift+X", xiiSelectionAction, xiiSelectionAction::ActionType::CreateEmptyObjectAtPosition);
-  s_hHideSelectedObjects         = XII_REGISTER_ACTION_1(
-    "Selection.HideItems", xiiActionScope::Document, "Scene - Selection", "H", xiiSelectionAction, xiiSelectionAction::ActionType::HideSelectedObjects);
-  s_hHideUnselectedObjects = XII_REGISTER_ACTION_1("Selection.HideUnselectedItems", xiiActionScope::Document, "Scene - Selection", "Shift+H",
-                                                   xiiSelectionAction, xiiSelectionAction::ActionType::HideUnselectedObjects);
-  s_hShowHiddenObjects     = XII_REGISTER_ACTION_1("Selection.ShowHidden", xiiActionScope::Document, "Scene - Selection", "Ctrl+H", xiiSelectionAction,
-                                               xiiSelectionAction::ActionType::ShowHiddenObjects);
-  s_hAttachToObject        = XII_REGISTER_ACTION_1(
-    "Selection.Attach", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::AttachToObject);
-  s_hDetachFromParent = XII_REGISTER_ACTION_1(
-    "Selection.Detach", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::DetachFromParent);
+  s_hGroupSelectedItems          = XII_REGISTER_ACTION_1("Selection.GroupItems", xiiActionScope::Document, "Scene - Selection", "Ctrl+G", xiiSelectionAction, xiiSelectionAction::ActionType::GroupSelectedItems);
+  s_hCreateEmptyChildObject      = XII_REGISTER_ACTION_1("Selection.CreateEmptyChildObject", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::CreateEmptyChildObject);
+  s_hSelectParent                = XII_REGISTER_ACTION_1("Selection.SelectParent", xiiActionScope::Document, "Scene - Selection", "Ctrl+Q", xiiSelectionAction, xiiSelectionAction::ActionType::SelectParent);
+  s_hCreateEmptyObjectAtPosition = XII_REGISTER_ACTION_1("Selection.CreateEmptyObjectAtPosition", xiiActionScope::Document, "Scene - Selection", "Ctrl+Shift+X", xiiSelectionAction, xiiSelectionAction::ActionType::CreateEmptyObjectAtPosition);
+  s_hHideSelectedObjects         = XII_REGISTER_ACTION_1("Selection.HideItems", xiiActionScope::Document, "Scene - Selection", "H", xiiSelectionAction, xiiSelectionAction::ActionType::HideSelectedObjects);
+  s_hHideUnselectedObjects       = XII_REGISTER_ACTION_1("Selection.HideUnselectedItems", xiiActionScope::Document, "Scene - Selection", "Shift+H", xiiSelectionAction, xiiSelectionAction::ActionType::HideUnselectedObjects);
+  s_hShowHiddenObjects           = XII_REGISTER_ACTION_1("Selection.ShowHidden", xiiActionScope::Document, "Scene - Selection", "Ctrl+H", xiiSelectionAction, xiiSelectionAction::ActionType::ShowHiddenObjects);
+  s_hAttachToObject              = XII_REGISTER_ACTION_1("Selection.Attach", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::AttachToObject);
+  s_hDetachFromParent            = XII_REGISTER_ACTION_1("Selection.Detach", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::DetachFromParent);
 
-  s_hPrefabMenu = XII_REGISTER_MENU_WITH_ICON("Prefabs.Menu", ":/AssetIcons/Prefab.svg");
-  s_hCreatePrefab =
-    XII_REGISTER_ACTION_1("Prefabs.Create", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::CreatePrefab);
-  s_hRevertPrefab =
-    XII_REGISTER_ACTION_1("Prefabs.Revert", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::RevertPrefab);
-  s_hUnlinkFromPrefab = XII_REGISTER_ACTION_1(
-    "Prefabs.Unlink", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::UnlinkFromPrefab);
-  s_hOpenPrefabDocument = XII_REGISTER_ACTION_1(
-    "Prefabs.OpenDocument", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::OpenPrefabDocument);
-  s_hConvertToEnginePrefab = XII_REGISTER_ACTION_1(
-    "Prefabs.ConvertToEngine", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::ConvertToEnginePrefab);
-  s_hConvertToEditorPrefab = XII_REGISTER_ACTION_1(
-    "Prefabs.ConvertToEditor", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::ConvertToEditorPrefab);
+  s_hPrefabMenu            = XII_REGISTER_MENU_WITH_ICON("Prefabs.Menu", ":/AssetIcons/Prefab.svg");
+  s_hCreatePrefab          = XII_REGISTER_ACTION_1("Prefabs.Create", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::CreatePrefab);
+  s_hRevertPrefab          = XII_REGISTER_ACTION_1("Prefabs.Revert", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::RevertPrefab);
+  s_hUnlinkFromPrefab      = XII_REGISTER_ACTION_1("Prefabs.Unlink", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::UnlinkFromPrefab);
+  s_hOpenPrefabDocument    = XII_REGISTER_ACTION_1("Prefabs.OpenDocument", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::OpenPrefabDocument);
+  s_hConvertToEnginePrefab = XII_REGISTER_ACTION_1("Prefabs.ConvertToEngine", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::ConvertToEnginePrefab);
+  s_hConvertToEditorPrefab = XII_REGISTER_ACTION_1("Prefabs.ConvertToEditor", xiiActionScope::Document, "Prefabs", "", xiiSelectionAction, xiiSelectionAction::ActionType::ConvertToEditorPrefab);
 
-  s_hDuplicateSpecial   = XII_REGISTER_ACTION_1("Selection.DuplicateSpecial", xiiActionScope::Document, "Scene - Selection", "Ctrl+D", xiiSelectionAction,
-                                              xiiSelectionAction::ActionType::DuplicateSpecial);
-  s_hDeltaTransform     = XII_REGISTER_ACTION_1("Selection.DeltaTransform", xiiActionScope::Document, "Scene - Selection", "Ctrl+M", xiiSelectionAction,
-                                            xiiSelectionAction::ActionType::DeltaTransform);
-  s_hSnapObjectToCamera = XII_REGISTER_ACTION_1(
-    "Scene.Camera.SnapObjectToCamera", xiiActionScope::Document, "Camera", "", xiiSelectionAction, xiiSelectionAction::ActionType::SnapObjectToCamera);
-  s_hCopyReference = XII_REGISTER_ACTION_1(
-    "Selection.CopyReference", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::CopyReference);
+  s_hDuplicateSpecial   = XII_REGISTER_ACTION_1("Selection.DuplicateSpecial", xiiActionScope::Document, "Scene - Selection", "Ctrl+D", xiiSelectionAction, xiiSelectionAction::ActionType::DuplicateSpecial);
+  s_hDeltaTransform     = XII_REGISTER_ACTION_1("Selection.DeltaTransform", xiiActionScope::Document, "Scene - Selection", "Ctrl+M", xiiSelectionAction, xiiSelectionAction::ActionType::DeltaTransform);
+  s_hSnapObjectToCamera = XII_REGISTER_ACTION_1("Scene.Camera.SnapObjectToCamera", xiiActionScope::Document, "Camera", "", xiiSelectionAction, xiiSelectionAction::ActionType::SnapObjectToCamera);
+  s_hCopyReference      = XII_REGISTER_ACTION_1("Selection.CopyReference", xiiActionScope::Document, "Scene - Selection", "", xiiSelectionAction, xiiSelectionAction::ActionType::CopyReference);
+
+  s_hSetActiveParent   = XII_REGISTER_ACTION_1("Selection.SetActiveParent", xiiActionScope::Document, "Scene - Selection", "Ctrl+Shift+A", xiiSelectionAction, xiiSelectionAction::ActionType::SetActiveParent);
+  s_hClearActiveParent = XII_REGISTER_ACTION_1("Selection.ClearActiveParent", xiiActionScope::Document, "Scene - Selection", "Ctrl+Shift+C", xiiSelectionAction, xiiSelectionAction::ActionType::ClearActiveParent);
+
+  s_hUndoSelection = XII_REGISTER_ACTION_1("Selection.UndoSelection", xiiActionScope::Document, "Scene - Selection", "Ctrl+B", xiiSelectionAction, xiiSelectionAction::ActionType::UndoSelection);
 }
 
 void xiiSelectionActions::UnregisterActions()
@@ -100,6 +90,10 @@ void xiiSelectionActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hConvertToEditorPrefab);
   xiiActionManager::UnregisterAction(s_hConvertToEnginePrefab);
   xiiActionManager::UnregisterAction(s_hCopyReference);
+  xiiActionManager::UnregisterAction(s_hSelectParent);
+  xiiActionManager::UnregisterAction(s_hSetActiveParent);
+  xiiActionManager::UnregisterAction(s_hClearActiveParent);
+  xiiActionManager::UnregisterAction(s_hUndoSelection);
 }
 
 void xiiSelectionActions::MapActions(xiiStringView sMapping)
@@ -110,6 +104,7 @@ void xiiSelectionActions::MapActions(xiiStringView sMapping)
   pMap->MapAction(s_hCreateEmptyChildObject, "G.Selection", 1.0f);
   pMap->MapAction(s_hCreateEmptyObjectAtPosition, "G.Selection", 1.1f);
   pMap->MapAction(s_hGroupSelectedItems, "G.Selection", 3.7f);
+  pMap->MapAction(s_hSelectParent, "G.Selection", 3.8f);
   pMap->MapAction(s_hHideSelectedObjects, "G.Selection", 4.0f);
   pMap->MapAction(s_hHideUnselectedObjects, "G.Selection", 5.0f);
   pMap->MapAction(s_hShowHiddenObjects, "G.Selection", 6.0f);
@@ -119,6 +114,9 @@ void xiiSelectionActions::MapActions(xiiStringView sMapping)
   pMap->MapAction(s_hDetachFromParent, "G.Selection", 7.3f);
   pMap->MapAction(s_hSnapObjectToCamera, "G.Selection", 9.0f);
   pMap->MapAction(s_hCopyReference, "G.Selection", 10.0f);
+  pMap->MapAction(s_hSetActiveParent, "G.Selection", 11.0f);
+  pMap->MapAction(s_hClearActiveParent, "G.Selection", 12.0f);
+  pMap->MapAction(s_hUndoSelection, "CmdHistoryCategory", 13.0f);
 
   MapPrefabActions(sMapping, 0.0f);
 }
@@ -145,27 +143,31 @@ void xiiSelectionActions::MapContextMenuActions(xiiStringView sMapping)
 
   pMap->MapAction(s_hCreateEmptyChildObject, "G.Selection", 0.5f);
   pMap->MapAction(s_hGroupSelectedItems, "G.Selection", 2.0f);
+  pMap->MapAction(s_hSelectParent, "G.Selection", 2.5f);
   pMap->MapAction(s_hHideSelectedObjects, "G.Selection", 3.0f);
   pMap->MapAction(s_hDetachFromParent, "G.Selection", 3.2f);
   pMap->MapAction(s_hCopyReference, "G.Selection", 4.0f);
+  pMap->MapAction(s_hSetActiveParent, "G.Selection", 11.0f);
+  pMap->MapAction(s_hClearActiveParent, "G.Selection", 12.0f);
 
   MapPrefabActions(sMapping, 4.0f);
 }
-
 
 void xiiSelectionActions::MapViewContextMenuActions(xiiStringView sMapping)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the actions failed!", sMapping);
 
+  pMap->MapAction(s_hCreateEmptyObjectAtPosition, "G.Selection", 1.0f);
   pMap->MapAction(s_hGroupSelectedItems, "G.Selection", 2.0f);
-  pMap->MapAction(s_hHideSelectedObjects, "G.Selection", 3.0f);
-  pMap->MapAction(s_hAttachToObject, "G.Selection", 3.1f);
-  pMap->MapAction(s_hDetachFromParent, "G.Selection", 3.2f);
-  pMap->MapAction(s_hSnapObjectToCamera, "G.Selection", 5.0f);
-  pMap->MapAction(s_hCopyReference, "G.Selection", 6.0f);
+  pMap->MapAction(s_hSelectParent, "G.Selection", 3.0f);
+  pMap->MapAction(s_hHideSelectedObjects, "G.Selection", 4.0f);
+  pMap->MapAction(s_hAttachToObject, "G.Selection", 5.0f);
+  pMap->MapAction(s_hDetachFromParent, "G.Selection", 6.0f);
+  pMap->MapAction(s_hSnapObjectToCamera, "G.Selection", 7.0f);
+  pMap->MapAction(s_hCopyReference, "G.Selection", 10.0f);
 
-  MapPrefabActions(sMapping, 7.0f);
+  MapPrefabActions(sMapping, 12.0f);
 }
 
 xiiSelectionAction::xiiSelectionAction(const xiiActionContext& context, const char* szName, xiiSelectionAction::ActionType type) :
@@ -211,25 +213,37 @@ xiiSelectionAction::xiiSelectionAction(const xiiActionContext& context, const ch
       SetIconPath(":/EditorPluginScene/Icons/Duplicate.svg");
       break;
     case ActionType::DeltaTransform:
-      // SetIconPath(":/EditorPluginScene/Icons/Duplicate.svg"); // TODO Icon
+      // SetIconPath(":/EditorPluginScene/Icons/DeltaTransform.svg"); // TODO Icon
       break;
     case ActionType::SnapObjectToCamera:
-      // SetIconPath(":/EditorPluginScene/Icons/Duplicate.svg"); // TODO Icon
+      // SetIconPath(":/EditorPluginScene/Icons/SnapToCamera.svg"); // TODO Icon
       break;
     case ActionType::AttachToObject:
-      // SetIconPath(":/EditorPluginScene/Icons/Duplicate.svg"); // TODO Icon
+      // SetIconPath(":/EditorPluginScene/Icons/Attach.svg"); // TODO Icon
       break;
     case ActionType::DetachFromParent:
-      // SetIconPath(":/EditorPluginScene/Icons/Duplicate.svg"); // TODO Icon
+      // SetIconPath(":/EditorPluginScene/Icons/Detach.svg"); // TODO Icon
       break;
     case ActionType::ConvertToEditorPrefab:
-      // SetIconPath(":/EditorPluginScene/PrefabRevert.png"); // TODO Icon
+      // SetIconPath(":/EditorPluginScene/ToEditorPrefab.png"); // TODO Icon
       break;
     case ActionType::ConvertToEnginePrefab:
-      // SetIconPath(":/EditorPluginScene/PrefabRevert.png"); // TODO Icon
+      // SetIconPath(":/EditorPluginScene/ToEnginePrefab.png"); // TODO Icon
       break;
     case ActionType::CopyReference:
-      // SetIconPath(":/EditorPluginScene/PrefabRevert.png"); // TODO Icon
+      SetIconPath(":/EditorFramework/Icons/id.svg");
+      break;
+    case ActionType::SelectParent:
+      SetIconPath(":/EditorPluginScene/Icons/SelectParent.svg");
+      break;
+    case ActionType::SetActiveParent:
+      // SetIconPath(":/EditorPluginScene/Icons/SelectParent.svg"); // TODO Icon
+      break;
+    case ActionType::ClearActiveParent:
+      // SetIconPath(":/EditorPluginScene/Icons/SelectParent.svg"); // TODO Icon
+      break;
+    case ActionType::UndoSelection:
+      // SetIconPath(":/EditorPluginScene/Icons/SelectParent.svg"); // TODO Icon
       break;
   }
 
@@ -253,13 +267,13 @@ void xiiSelectionAction::Execute(const xiiVariant& value)
       return;
     case ActionType::CreateEmptyChildObject:
     {
-      auto res = m_pSceneDocument->CreateEmptyObject(true, false);
+      auto res = m_pSceneDocument->CreateEmptyObject(true, false, false);
       xiiQtUiServices::MessageBoxStatus(res, "Object creation failed.");
       return;
     }
     case ActionType::CreateEmptyObjectAtPosition:
     {
-      auto res = m_pSceneDocument->CreateEmptyObject(false, true);
+      auto res = m_pSceneDocument->CreateEmptyObject(false, true, true);
       xiiQtUiServices::MessageBoxStatus(res, "Object creation failed.");
       return;
     }
@@ -281,22 +295,38 @@ void xiiSelectionAction::Execute(const xiiVariant& value)
 
     case ActionType::RevertPrefab:
     {
-      if (xiiQtUiServices::MessageBoxQuestion("Discard all modifications to the selected prefabs and revert to the prefab template state?",
-                                              QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) == QMessageBox::StandardButton::Yes)
+      if (xiiQtUiServices::MessageBoxQuestion("Discard all modifications to the selected prefabs and revert to the prefab template state?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) == QMessageBox::StandardButton::Yes)
       {
-        const xiiDeque<const xiiDocumentObject*> sel = m_pSceneDocument->GetSelectionManager()->GetTopLevelSelection(xiiGetStaticRTTI<xiiGameObject>());
-        m_pSceneDocument->RevertPrefabs(sel);
+        xiiHybridArray<xiiSelectionEntry, 64> selection;
+        m_pSceneDocument->GetSelectionManager()->GetTopLevelSelectionOfType(xiiGetStaticRTTI<xiiGameObject>(), selection);
+
+        xiiHybridArray<const xiiDocumentObject*, 64> selection2;
+        selection2.SetCount(selection.GetCount());
+        for (xiiUInt32 i = 0; i < selection.GetCount(); ++i)
+        {
+          selection2[i] = selection[i].m_pObject;
+        }
+
+        m_pSceneDocument->RevertPrefabs(selection2);
       }
     }
     break;
 
     case ActionType::UnlinkFromPrefab:
     {
-      if (xiiQtUiServices::MessageBoxQuestion("Unlink the selected prefab instances from their templates?",
-                                              QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) == QMessageBox::StandardButton::Yes)
+      if (xiiQtUiServices::MessageBoxQuestion("Unlink the selected prefab instances from their templates?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) == QMessageBox::StandardButton::Yes)
       {
-        const xiiDeque<const xiiDocumentObject*> sel = m_pSceneDocument->GetSelectionManager()->GetTopLevelSelection(xiiGetStaticRTTI<xiiGameObject>());
-        m_pSceneDocument->UnlinkPrefabs(sel);
+        xiiHybridArray<xiiSelectionEntry, 64> selection;
+        m_pSceneDocument->GetSelectionManager()->GetTopLevelSelectionOfType(xiiGetStaticRTTI<xiiGameObject>(), selection);
+
+        xiiHybridArray<const xiiDocumentObject*, 64> selection2;
+        selection2.SetCount(selection.GetCount());
+        for (xiiUInt32 i = 0; i < selection.GetCount(); ++i)
+        {
+          selection2[i] = selection[i].m_pObject;
+        }
+
+        m_pSceneDocument->UnlinkPrefabs(selection2);
       }
     }
     break;
@@ -330,8 +360,17 @@ void xiiSelectionAction::Execute(const xiiVariant& value)
 
     case ActionType::ConvertToEditorPrefab:
     {
-      const xiiDeque<const xiiDocumentObject*> sel = m_pSceneDocument->GetSelectionManager()->GetTopLevelSelection(xiiGetStaticRTTI<xiiGameObject>());
-      m_pSceneDocument->ConvertToEditorPrefab(sel);
+      xiiHybridArray<xiiSelectionEntry, 64> selection;
+      m_pSceneDocument->GetSelectionManager()->GetTopLevelSelectionOfType(xiiGetStaticRTTI<xiiGameObject>(), selection);
+
+      xiiHybridArray<const xiiDocumentObject*, 64> selection2;
+      selection2.SetCount(selection.GetCount());
+      for (xiiUInt32 i = 0; i < selection.GetCount(); ++i)
+      {
+        selection2[i] = selection[i].m_pObject;
+      }
+
+      m_pSceneDocument->ConvertToEditorPrefab(selection2);
     }
     break;
 
@@ -340,14 +379,46 @@ void xiiSelectionAction::Execute(const xiiVariant& value)
       if (xiiQtUiServices::MessageBoxQuestion("Discard all modifications to the selected prefabs and convert them to engine prefabs?",
                                               QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) == QMessageBox::StandardButton::Yes)
       {
-        const xiiDeque<const xiiDocumentObject*> sel = m_pSceneDocument->GetSelectionManager()->GetTopLevelSelection(xiiGetStaticRTTI<xiiGameObject>());
-        m_pSceneDocument->ConvertToEnginePrefab(sel);
+        xiiHybridArray<xiiSelectionEntry, 64> selection;
+        m_pSceneDocument->GetSelectionManager()->GetTopLevelSelectionOfType(xiiGetStaticRTTI<xiiGameObject>(), selection);
+
+        xiiHybridArray<const xiiDocumentObject*, 64> selection2;
+        selection2.SetCount(selection.GetCount());
+        for (xiiUInt32 i = 0; i < selection.GetCount(); ++i)
+        {
+          selection2[i] = selection[i].m_pObject;
+        }
+
+        m_pSceneDocument->ConvertToEnginePrefab(selection2);
       }
     }
     break;
+
+    case ActionType::SelectParent:
+    {
+      m_pSceneDocument->SelectParentObject();
+      return;
+    }
+
+    case ActionType::SetActiveParent:
+    {
+      m_pSceneDocument->SetSelectedAsActiveParent();
+      return;
+    }
+
+    case ActionType::ClearActiveParent:
+    {
+      m_pSceneDocument->ClearActiveParent();
+      return;
+    }
+
+    case ActionType::UndoSelection:
+    {
+      m_pSceneDocument->UndoSelection();
+      return;
+    }
   }
 }
-
 
 void xiiSelectionAction::OpenPrefabDocument()
 {
@@ -378,8 +449,7 @@ void xiiSelectionAction::OpenPrefabDocument()
   }
   else
   {
-    xiiQtUiServices::MessageBoxWarning("The prefab asset of this instance is currently unknown. It may have been deleted. Try updating the "
-                                       "asset library ('Check FileSystem'), if it should be there.");
+    xiiQtUiServices::MessageBoxWarning("The prefab asset of this instance is currently unknown. It may have been deleted. Try updating the asset library ('Check FileSystem'), if it should be there.");
   }
 }
 
@@ -387,10 +457,7 @@ void xiiSelectionAction::CreatePrefab()
 {
   static xiiString sSearchDir = xiiToolsProject::GetSingleton()->GetProjectFile();
 
-  xiiStringBuilder sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Prefab"),
-                                                        QString::fromUtf8(sSearchDir.GetData()), QString::fromUtf8("*.xiiPrefab"), nullptr, QFileDialog::Option::DontResolveSymlinks)
-                             .toUtf8()
-                             .data();
+  xiiStringBuilder sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Prefab"), QString::fromUtf8(sSearchDir.GetData()), QString::fromUtf8("*.xiiPrefab"), nullptr, QFileDialog::Option::DontResolveSymlinks).toUtf8().data();
 
   if (!sFile.IsEmpty())
   {
@@ -423,23 +490,37 @@ void xiiSelectionAction::UpdateEnableState()
   {
     SetEnabled(!m_Context.m_pDocument->GetSelectionManager()->IsSelectionEmpty());
   }
-
-  if (m_Type == ActionType::GroupSelectedItems)
+  else if (m_Type == ActionType::GroupSelectedItems)
   {
     SetEnabled(m_Context.m_pDocument->GetSelectionManager()->GetSelection().GetCount() > 1);
   }
-
-  if (m_Type == ActionType::CreateEmptyChildObject)
+  else if (m_Type == ActionType::CreateEmptyChildObject)
   {
     SetEnabled(m_Context.m_pDocument->GetSelectionManager()->GetSelection().GetCount() <= 1);
   }
-
-  if (m_Type == ActionType::CopyReference)
+  else if (m_Type == ActionType::CopyReference)
   {
     SetEnabled(m_Context.m_pDocument->GetSelectionManager()->GetSelection().GetCount() == 1);
   }
-
-  if (m_Type == ActionType::OpenPrefabDocument)
+  else if (m_Type == ActionType::SelectParent)
+  {
+    SetEnabled(m_Context.m_pDocument->GetSelectionManager()->GetSelection().GetCount() == 1);
+  }
+  else if (m_Type == ActionType::SetActiveParent)
+  {
+    SetEnabled(m_Context.m_pDocument->GetSelectionManager()->GetSelection().GetCount() >= 1);
+  }
+  else if (m_Type == ActionType::ClearActiveParent)
+  {
+    const xiiSceneDocument* pScene = static_cast<const xiiSceneDocument*>(m_Context.m_pDocument);
+    SetEnabled(pScene->GetActiveParent().IsValid());
+  }
+  else if (m_Type == ActionType::UndoSelection)
+  {
+    const xiiSceneDocument* pScene = static_cast<const xiiSceneDocument*>(m_Context.m_pDocument);
+    SetEnabled(pScene->CanUndoSelection());
+  }
+  else if (m_Type == ActionType::OpenPrefabDocument)
   {
     const auto& sel = m_Context.m_pDocument->GetSelectionManager()->GetSelection();
 
@@ -455,9 +536,7 @@ void xiiSelectionAction::UpdateEnableState()
     SetEnabled(bIsPrefab);
     return;
   }
-
-  if (m_Type == ActionType::RevertPrefab || m_Type == ActionType::UnlinkFromPrefab || m_Type == ActionType::ConvertToEnginePrefab ||
-      m_Type == ActionType::CreatePrefab)
+  else if (m_Type == ActionType::RevertPrefab || m_Type == ActionType::UnlinkFromPrefab || m_Type == ActionType::ConvertToEnginePrefab || m_Type == ActionType::CreatePrefab)
   {
     const auto& sel = m_Context.m_pDocument->GetSelectionManager()->GetSelection();
 
@@ -473,16 +552,14 @@ void xiiSelectionAction::UpdateEnableState()
       return;
     }
 
-    const bool bShouldBePrefab =
-      (m_Type == ActionType::RevertPrefab) || (m_Type == ActionType::ConvertToEnginePrefab) || (m_Type == ActionType::UnlinkFromPrefab);
+    const bool bShouldBePrefab = (m_Type == ActionType::RevertPrefab) || (m_Type == ActionType::ConvertToEnginePrefab) || (m_Type == ActionType::UnlinkFromPrefab);
 
     const xiiSceneDocument* pScene    = static_cast<const xiiSceneDocument*>(m_Context.m_pDocument);
     const bool              bIsPrefab = pScene->IsObjectEditorPrefab(sel[0]->GetGuid());
 
     SetEnabled(bIsPrefab == bShouldBePrefab);
   }
-
-  if (m_Type == ActionType::ConvertToEditorPrefab)
+  else if (m_Type == ActionType::ConvertToEditorPrefab)
   {
     const auto& sel = m_Context.m_pDocument->GetSelectionManager()->GetSelection();
 

@@ -36,21 +36,19 @@ void xiiQtEventTrackWidget::SetData(const xiiEventTrackData* pData, double fMinC
 
   RecreateSortedData();
 
-#if 0
-  // make sure the selection does not contain points that got deleted
-  for (xiiUInt32 i = 0; i < m_SelectedCPs.GetCount(); )
-  {
-    if (m_SelectedCPs[i].m_uiCurve >= m_Curves.GetCount() ||
-      m_SelectedCPs[i].m_uiPoint >= m_Curves[m_SelectedCPs[i].m_uiCurve].GetNumControlPoints())
-    {
-      m_SelectedCPs.RemoveAtAndCopy(i);
-    }
-    else
-    {
-      ++i;
-    }
-  }
-#endif
+  //  // make sure the selection does not contain points that got deleted
+  //  for (xiiUInt32 i = 0; i < m_SelectedCPs.GetCount(); )
+  //  {
+  //    if (m_SelectedCPs[i].m_uiCurve >= m_Curves.GetCount() ||
+  //      m_SelectedCPs[i].m_uiPoint >= m_Curves[m_SelectedCPs[i].m_uiCurve].GetNumControlPoints())
+  //    {
+  //      m_SelectedCPs.RemoveAtAndCopy(i);
+  //    }
+  //    else
+  //    {
+  //      ++i;
+  //    }
+  //  }
 
   ComputeSelectionRect();
 
@@ -84,16 +82,15 @@ void xiiQtEventTrackWidget::RecreateSortedData()
 
   // actually this is not needed (or used)
   // and when we sort, the selection index does not match when moving points around
-#if 0
+
   // sort points by X position
-  for (auto& cat : m_Categories)
-  {
-    cat.m_SortedPoints.Sort([](const xiiQtEventTrackWidget::Point& lhs, const xiiQtEventTrackWidget::Point& rhs) -> bool
-    {
-      return lhs.m_fPosX < rhs.m_fPosX;
-    });
-  }
-#endif
+  // for (auto& cat : m_Categories)
+  //{
+  //  cat.m_SortedPoints.Sort([](const xiiQtEventTrackWidget::Point& lhs, const xiiQtEventTrackWidget::Point& rhs) -> bool
+  //  {
+  //    return lhs.m_fPosX < rhs.m_fPosX;
+  //  });
+  //}
 }
 
 void xiiQtEventTrackWidget::SetScrubberPosition(double fPosition)
@@ -1011,7 +1008,8 @@ void xiiQtEventTrackWidget::ComputeSelectionRect()
   if (m_SelectedPoints.GetCount() < 2)
     return;
 
-  xiiBoundingBox bbox = xiiBoundingBox::MakeInvalid();
+  xiiBoundingBox bbox;
+  bbox = xiiBoundingBox::MakeInvalid();
 
   // TODO: properly implement the Y value
   // for (const auto& cpSel : m_SelectedPoints)

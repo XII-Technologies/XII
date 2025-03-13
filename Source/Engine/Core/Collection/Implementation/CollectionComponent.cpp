@@ -9,7 +9,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiCollectionComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Collection", GetCollectionFile, SetCollectionFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_AssetCollection", xiiDependencyFlags::Package)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Collection", GetCollection, SetCollection)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_AssetCollection", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("RegisterNames", m_bRegisterNames),
   }
   XII_END_PROPERTIES;
@@ -44,27 +44,6 @@ void xiiCollectionComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 
   s >> m_hCollection;
   s >> m_bRegisterNames;
-}
-
-void xiiCollectionComponent::SetCollectionFile(xiiStringView sFile)
-{
-  xiiCollectionResourceHandle hResource;
-
-  if (!sFile.IsEmpty())
-  {
-    hResource = xiiResourceManager::LoadResource<xiiCollectionResource>(sFile);
-    xiiResourceManager::PreloadResource(hResource);
-  }
-
-  SetCollection(hResource);
-}
-
-xiiStringView xiiCollectionComponent::GetCollectionFile() const
-{
-  if (!m_hCollection.IsValid())
-    return {};
-
-  return m_hCollection.GetResourceID();
 }
 
 void xiiCollectionComponent::SetCollection(const xiiCollectionResourceHandle& hCollection)

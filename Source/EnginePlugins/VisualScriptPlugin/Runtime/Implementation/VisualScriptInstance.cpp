@@ -3,17 +3,16 @@
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 
 xiiVisualScriptInstance::xiiVisualScriptInstance(xiiReflectedClass& inout_owner, xiiWorld* pWorld, const xiiSharedPtr<xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pInstanceDataDesc, const xiiSharedPtr<xiiVisualScriptInstanceDataMapping>& pInstanceDataMapping) :
-  xiiScriptInstance(inout_owner, pWorld), m_pConstantDataStorage(pConstantDataStorage), m_pInstanceDataMapping(pInstanceDataMapping)
+  xiiScriptInstance(inout_owner, pWorld), m_pConstantDataStorage(pConstantDataStorage), m_pInstanceDataMapping(pInstanceDataMapping), m_InstanceDataStorage(pInstanceDataDesc)
 {
   if (pInstanceDataDesc != nullptr)
   {
-    m_pInstanceDataStorage = XII_SCRIPT_NEW(xiiVisualScriptDataStorage, pInstanceDataDesc);
-    m_pInstanceDataStorage->AllocateStorage();
+    m_InstanceDataStorage.AllocateStorage(xiiScriptAllocator::GetAllocator());
 
     for (auto& it : m_pInstanceDataMapping->m_Content)
     {
       auto& instanceData = it.Value();
-      m_pInstanceDataStorage->SetDataFromVariant(instanceData.m_DataOffset, instanceData.m_DefaultValue, 0);
+      m_InstanceDataStorage.SetDataFromVariant(instanceData.m_DataOffset, instanceData.m_DefaultValue, 0);
     }
   }
 }
@@ -37,7 +36,7 @@ void xiiVisualScriptInstance::SetInstanceVariable(const xiiHashedString& sName, 
     return;
   }
 
-  m_pInstanceDataStorage->SetDataFromVariant(pInstanceData->m_DataOffset, convertedValue, 0);
+  m_InstanceDataStorage.SetDataFromVariant(pInstanceData->m_DataOffset, convertedValue, 0);
 }
 
 xiiVariant xiiVisualScriptInstance::GetInstanceVariable(const xiiHashedString& sName)
@@ -49,5 +48,5 @@ xiiVariant xiiVisualScriptInstance::GetInstanceVariable(const xiiHashedString& s
   if (m_pInstanceDataMapping->m_Content.TryGetValue(sName, pInstanceData) == false)
     return xiiVariant();
 
-  return m_pInstanceDataStorage->GetDataAsVariant(pInstanceData->m_DataOffset, nullptr, 0);
+  return m_InstanceDataStorage.GetDataAsVariant(pInstanceData->m_DataOffset, nullptr, 0);
 }

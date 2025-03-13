@@ -14,7 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassResource, 1, xiiRTTIDefault
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiVisualScriptClassResource);
 
-XII_BEGIN_SUBSYSTEM_DECLARATION(VisualScript, Resource)
+XII_BEGIN_SUBSYSTEM_DECLARATION(VisualScript, VisualScriptResource)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "ResourceManager"
@@ -24,8 +24,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(VisualScript, Resource)
   {
     xiiResourceManager::RegisterResourceForAssetType("VisualScriptClass", xiiGetStaticRTTI<xiiVisualScriptClassResource>());
     xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiVisualScriptClassResource>(), [](const xiiStringBuilder& sResourceID) -> bool  {
-        return sResourceID.HasExtension(".xiiBinVisualScriptClass");
-      });
+      return sResourceID.HasExtension(".xiiBinVisualScriptClass");
+    });
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -64,11 +64,9 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
     return ld;
   }
 
-  // skip the absolute file path data that the standard file reader writes into the stream
-  {
-    xiiString sAbsFilePath;
-    (*pStream) >> sAbsFilePath;
-  }
+  // the standard file reader writes the absolute file path into the stream
+  xiiString sAbsFilePath;
+  (*pStream) >> sAbsFilePath;
 
   // skip the asset file header at the start of the file
   xiiAssetFileHeader AssetHash;
@@ -101,10 +99,51 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
           return ld;
         }
       }
+      else if (chunk.GetCurrentChunk().m_sChunkName == "ConstantData")
+      {
+        xiiSharedPtr<xiiVisualScriptDataDescription> pConstantDataDesc = XII_SCRIPT_NEW(xiiVisualScriptDataDescription);
+        if (pConstantDataDesc->Deserialize(chunk).Failed())
+        {
+          return ld;
+        }
+
+        xiiSharedPtr<xiiVisualScriptDataStorage> pConstantDataStorage = XII_SCRIPT_NEW(xiiVisualScriptDataStorage, pConstantDataDesc);
+        if (pConstantDataStorage->Deserialize(chunk, xiiScriptAllocator::GetAllocator()).Succeeded())
+        {
+          m_pConstantDataStorage = pConstantDataStorage;
+        }
+      }
+      else if (chunk.GetCurrentChunk().m_sChunkName == "InstanceData")
+      {
+        xiiSharedPtr<xiiVisualScriptDataDescription> pInstanceDataDesc = XII_SCRIPT_NEW(xiiVisualScriptDataDescription);
+        if (pInstanceDataDesc->Deserialize(chunk).Succeeded())
+        {
+          m_pInstanceDataDesc = pInstanceDataDesc;
+        }
+
+        xiiSharedPtr<xiiVisualScriptInstanceDataMapping> pInstanceDataMapping = XII_SCRIPT_NEW(xiiVisualScriptInstanceDataMapping);
+        if (chunk.ReadHashTable(pInstanceDataMapping->m_Content).Succeeded())
+        {
+          m_pInstanceDataMapping = pInstanceDataMapping;
+
+          // calculate byte offsets from indices
+          for (auto& it : m_pInstanceDataMapping->m_Content)
+          {
+            auto& dataOffset = it.Value().m_DataOffset;
+            dataOffset       = m_pInstanceDataDesc->GetOffset(dataOffset.GetType(), dataOffset.m_uiByteOffset, dataOffset.GetSource());
+          }
+        }
+      }
       else if (chunk.GetCurrentChunk().m_sChunkName == "FunctionGraphs")
       {
         xiiUInt32 uiNumFunctions;
         chunk >> uiNumFunctions;
+
+        if (m_pInstanceDataDesc == nullptr || m_pConstantDataStorage == nullptr)
+        {
+          xiiLog::Error("Old visual script, needs re-export");
+          return ld;
+        }
 
         for (xiiUInt32 i = 0; i < uiNumFunctions; ++i)
         {
@@ -116,7 +155,7 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
           chunk >> coroutineCreationMode;
 
           xiiUniquePtr<xiiVisualScriptGraphDescription> pDesc = XII_SCRIPT_NEW(xiiVisualScriptGraphDescription);
-          if (pDesc->Deserialize(chunk).Failed())
+          if (pDesc->Deserialize(chunk, *m_pInstanceDataDesc, m_pConstantDataStorage->GetDesc()).Failed())
           {
             xiiLog::Error("Invalid visual script desc");
             return ld;
@@ -155,34 +194,6 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
           }
         }
       }
-      else if (chunk.GetCurrentChunk().m_sChunkName == "ConstantData")
-      {
-        xiiSharedPtr<xiiVisualScriptDataDescription> pConstantDataDesc = XII_SCRIPT_NEW(xiiVisualScriptDataDescription);
-        if (pConstantDataDesc->Deserialize(chunk).Failed())
-        {
-          return ld;
-        }
-
-        xiiSharedPtr<xiiVisualScriptDataStorage> pConstantDataStorage = XII_SCRIPT_NEW(xiiVisualScriptDataStorage, pConstantDataDesc);
-        if (pConstantDataStorage->Deserialize(chunk).Succeeded())
-        {
-          m_pConstantDataStorage = pConstantDataStorage;
-        }
-      }
-      else if (chunk.GetCurrentChunk().m_sChunkName == "InstanceData")
-      {
-        xiiSharedPtr<xiiVisualScriptDataDescription> pInstanceDataDesc = XII_SCRIPT_NEW(xiiVisualScriptDataDescription);
-        if (pInstanceDataDesc->Deserialize(chunk).Succeeded())
-        {
-          m_pInstanceDataDesc = pInstanceDataDesc;
-        }
-
-        xiiSharedPtr<xiiVisualScriptInstanceDataMapping> pInstanceDataMapping = XII_SCRIPT_NEW(xiiVisualScriptInstanceDataMapping);
-        if (chunk.ReadHashTable(pInstanceDataMapping->m_Content).Succeeded())
-        {
-          m_pInstanceDataMapping = pInstanceDataMapping;
-        }
-      }
 
       chunk.NextChunk();
     }
@@ -204,3 +215,5 @@ xiiUniquePtr<xiiScriptInstance> xiiVisualScriptClassResource::Instantiate(xiiRef
 {
   return XII_SCRIPT_NEW(xiiVisualScriptInstance, inout_owner, pWorld, m_pConstantDataStorage, m_pInstanceDataDesc, m_pInstanceDataMapping);
 }
+
+XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Resources_VisualScriptClassResource);

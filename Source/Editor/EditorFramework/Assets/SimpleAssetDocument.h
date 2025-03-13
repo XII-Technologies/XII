@@ -60,7 +60,8 @@ public:
     return static_cast<PropertyType*>(m_ObjectMirror.GetNativeObjectPointer(this->GetObjectManager()->GetRootObject()->GetChildren()[0]));
   }
 
-  xiiDocumentObject* GetPropertyObject() { return this->GetObjectManager()->GetRootObject()->GetChildren()[0]; }
+  xiiDocumentObject*       GetPropertyObject() { return this->GetObjectManager()->GetRootObject()->GetChildren()[0]; }
+  const xiiDocumentObject* GetPropertyObject() const { return this->GetObjectManager()->GetRootObject()->GetChildren()[0]; }
 
 protected:
   virtual void InitializeAfterLoading(bool bFirstTimeCreation) override

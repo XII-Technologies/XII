@@ -590,8 +590,7 @@ void xiiQtCurve1DEditorWidget::onContextMenu(QPoint pos, QPointF scenePos)
       cm->addAction("Loop: Adjust First Point", this, [this]() { MakeRepeatable(false); });
       cm->addAction("Clear Curve", this, [this]() { ClearAllPoints(); });
 
-      cm->addAction(
-        "Frame Curve\tCtrl+F", this, [this]() { FrameCurve(); });
+      cm->addAction("Frame Curve\tCtrl+F", this, [this]() { FrameCurve(); });
     }
   }
 
@@ -1276,7 +1275,7 @@ void xiiQtCurve1DEditorWidget::on_LinePosition_editingFinished()
   {
     const auto& cp = m_Curves.m_Curves[cpSel.m_uiCurve]->m_ControlPoints[cpSel.m_uiPoint];
 
-    xiiInt64 iTick = m_Curves.TickFromTime(xiiTime::MakeFromSeconds(value));
+    const xiiInt64 iTick = m_Curves.TickFromTime(xiiTime::MakeFromSeconds(value));
     if (cp.m_iTick != iTick)
       Q_EMIT CpMovedEvent(cpSel.m_uiCurve, cpSel.m_uiPoint, iTick, cp.m_fValue);
   }

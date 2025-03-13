@@ -37,11 +37,8 @@ public:
   xiiSkeletonComponent();
   ~xiiSkeletonComponent();
 
-  void        SetSkeletonFile(const char* szFile); // [ property ]
-  const char* GetSkeletonFile() const;             // [ property ]
-
-  void                             SetSkeleton(const xiiSkeletonResourceHandle& hResource);
-  const xiiSkeletonResourceHandle& GetSkeleton() const { return m_hSkeleton; }
+  void                             SetSkeleton(const xiiSkeletonResourceHandle& hResource); // [ property ]
+  const xiiSkeletonResourceHandle& GetSkeleton() const { return m_hSkeleton; }              // [ property ]
 
   void        SetBonesToHighlight(const char* szFilter); // [ property ]
   const char* GetBonesToHighlight() const;               // [ property ]

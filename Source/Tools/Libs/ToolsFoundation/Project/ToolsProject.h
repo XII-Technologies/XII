@@ -15,6 +15,7 @@ struct xiiToolsProjectEvent
   {
     ProjectCreated,
     ProjectOpened,
+    ProjectFirstSetup,
     ProjectSaveState,
     ProjectClosing,
     ProjectClosed,
@@ -55,8 +56,8 @@ class XII_TOOLSFOUNDATION_DLL xiiToolsProject
   XII_DECLARE_SINGLETON(xiiToolsProject);
 
 public:
-  static xiiEvent<const xiiToolsProjectEvent&> s_Events;
-  static xiiEvent<xiiToolsProjectRequest&>     s_Requests;
+  static xiiEvent<const xiiToolsProjectEvent&, xiiMutex> s_Events;
+  static xiiEvent<xiiToolsProjectRequest&>               s_Requests;
 
 public:
   static bool IsProjectOpen() { return GetSingleton() != nullptr; }

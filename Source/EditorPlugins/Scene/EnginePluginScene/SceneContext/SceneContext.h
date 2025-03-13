@@ -104,7 +104,7 @@ private:
   void QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg);
   void OnSimulationEnabled();
   void OnSimulationDisabled();
-  void OnPlayTheGameModeStarted(const xiiTransform* pStartPosition);
+  void OnPlayTheGameModeStarted(xiiStringView sStartPosition, const xiiTransform& startPositionOffset);
 
   void OnResourceManagerEvent(const xiiResourceManagerEvent& e);
   void GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e);
@@ -137,4 +137,6 @@ private:
   xiiHybridArray<xiiTag, 1>  m_InvisibleLayerTags;
 
   xiiDynamicArray<TagGameObject> m_ObjectsToTag;
+
+  static xiiWorld* s_pWorldLinkedWithGameState;
 };

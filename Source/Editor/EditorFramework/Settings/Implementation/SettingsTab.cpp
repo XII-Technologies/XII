@@ -27,8 +27,6 @@ void xiiQtEditorApp::ShowSettingsDocument()
   {
     pSettingsTab = new xiiQtSettingsTab();
   }
-
-  pSettingsTab->EnsureVisible();
 }
 
 void xiiQtEditorApp::CloseSettingsDocument()
@@ -44,12 +42,6 @@ void xiiQtEditorApp::CloseSettingsDocument()
 xiiQtSettingsTab::xiiQtSettingsTab() :
   xiiQtDocumentWindow("Settings"), m_SingletonRegistrar(this)
 {
-  setCentralWidget(new QWidget());
-  XII_ASSERT_DEV(centralWidget() != nullptr, "");
-
-  setupUi(centralWidget());
-  QMetaObject::connectSlotsByName(this);
-
   xiiQtMenuBarActionMapView* pMenuBar = static_cast<xiiQtMenuBarActionMapView*>(menuBar());
   xiiActionContext           context;
   context.m_sMapping  = "SettingsTabMenuBar";
@@ -57,34 +49,9 @@ xiiQtSettingsTab::xiiQtSettingsTab() :
   pMenuBar->SetActionContext(context);
 
   FinishWindowCreation();
-
-  xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtSettingsTab::ToolsProjectEventHandler, this));
 }
 
-xiiQtSettingsTab::~xiiQtSettingsTab()
-{
-  xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtSettingsTab::ToolsProjectEventHandler, this));
-}
-
-void xiiQtSettingsTab::on_OpenScene_clicked()
-{
-  xiiQtAssetBrowserDlg dlg(this, xiiUuid(), "Scene");
-  if (dlg.exec() == 0)
-    return;
-
-  xiiQtEditorApp::GetSingleton()->OpenDocument(dlg.GetSelectedAssetPathAbsolute(), xiiDocumentFlags::RequestWindow | xiiDocumentFlags::AddToRecentFilesList);
-}
-
-void xiiQtSettingsTab::on_OpenProject_clicked()
-{
-  xiiQtDashboardDlg dlg(nullptr, xiiQtDashboardDlg::DashboardTab::Samples);
-  dlg.exec();
-}
-
-void xiiQtSettingsTab::on_GettingStarted_clicked()
-{
-  QDesktopServices::openUrl(QUrl("https://xiiengine.net/pages/getting-started/editor-overview.html"));
-}
+xiiQtSettingsTab::~xiiQtSettingsTab() = default;
 
 bool xiiQtSettingsTab::InternalCanCloseWindow()
 {
@@ -96,25 +63,4 @@ void xiiQtSettingsTab::InternalCloseDocumentWindow()
 {
   // make sure this instance isn't used anymore
   UnregisterSingleton();
-}
-
-void xiiQtSettingsTab::ToolsProjectEventHandler(const xiiToolsProjectEvent& e)
-{
-  if (e.m_Type == xiiToolsProjectEvent::Type::ProjectClosed || e.m_Type == xiiToolsProjectEvent::Type::ProjectCreated || e.m_Type == xiiToolsProjectEvent::Type::ProjectOpened)
-  {
-    xiiStringBuilder txt = "<html><head/><body><p align=\"center\"><span style=\" font-size:18pt;\">Open Project:</span></p><p align=\"center\"><span style=\" font-size:18pt;\">None</span></p></body></html>";
-
-    if (xiiToolsProject::GetSingleton()->IsProjectOpen())
-    {
-      txt.ReplaceAll("None", xiiToolsProject::GetSingleton()->GetProjectName(false));
-      OpenScene->setVisible(true);
-    }
-    else
-    {
-      txt = "<html><head/><body><p align=\"center\"><span style=\" font-size:18pt;\">No Project Open</span></p></body></html>";
-      OpenScene->setVisible(false);
-    }
-
-    ProjectLabel->setText(txt.GetData());
-  }
 }

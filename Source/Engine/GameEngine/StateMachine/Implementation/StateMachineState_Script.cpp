@@ -29,7 +29,7 @@ namespace
       xiiResourceLock<xiiScriptClassResource> pScript(m_hScriptClass, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
       if (pScript.GetAcquireResult() != xiiResourceAcquireResult::Final)
       {
-        xiiLog::Error("Failed to load script '{}'", (m_hScriptClass.IsValid() ? m_hScriptClass.GetResourceID().GetData() : ""));
+        xiiLog::Error("Failed to load script '{}'", m_hScriptClass.GetResourceID());
         return;
       }
 

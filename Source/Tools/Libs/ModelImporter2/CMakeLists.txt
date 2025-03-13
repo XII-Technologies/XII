@@ -15,6 +15,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE
   mikktspace
   ozz
+  meshoptimizer
 )
 
 xii_link_target_assimp(${PROJECT_NAME})

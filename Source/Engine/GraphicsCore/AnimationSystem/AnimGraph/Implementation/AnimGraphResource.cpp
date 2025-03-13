@@ -14,9 +14,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipMapping, 1, xiiRTTIDefaultAlloc
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("ClipName", GetClipName, SetClipName)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
-    XII_ACCESSOR_PROPERTY("Clip", GetClip, SetClip)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Animation")),
+    XII_RESOURCE_MEMBER_PROPERTY("Clip", m_hClip)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Animation")),
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -25,26 +25,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiAnimGraphResource);
 // clang-format on
-
-const char* xiiAnimationClipMapping::GetClip() const
-{
-  if (m_hClip.IsValid())
-    return m_hClip.GetResourceID();
-
-  return "";
-}
-
-void xiiAnimationClipMapping::SetClip(const char* szName)
-{
-  xiiAnimationClipResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szName))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiAnimationClipResource>(szName);
-  }
-
-  m_hClip = hResource;
-}
 
 xiiAnimGraphResource::xiiAnimGraphResource() :
   xiiResource(xiiResource::DoUpdate::OnAnyThread, 0)

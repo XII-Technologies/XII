@@ -50,6 +50,7 @@ private:
     xiiDocumentObject* m_pParent;
     xiiString          m_sParentProperty;
     xiiVariant         m_Index;
+    xiiUInt32          m_uiSelectionOrder = 0;
   };
 
   xiiDeque<const xiiDocumentObject*>  m_OriginalSelection;

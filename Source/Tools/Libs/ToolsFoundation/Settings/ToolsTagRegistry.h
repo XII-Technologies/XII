@@ -24,8 +24,8 @@ public:
   /// \brief Removes all tags that are not specified as 'built-in'
   static void Clear();
 
-  static void      WriteToDDL(xiiStreamWriter& ref_stream);
-  static xiiStatus ReadFromDDL(xiiStreamReader& ref_stream);
+  static void      WriteToDDL(xiiStreamWriter& inout_stream);
+  static xiiStatus ReadFromDDL(xiiStreamReader& inout_stream);
 
   static bool AddTag(const xiiToolsTag& tag);
   static bool RemoveTag(xiiStringView sName);

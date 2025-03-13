@@ -33,7 +33,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 namespace
 {
-  static xiiVariantType::Enum s_ScriptDataTypeVariantTypes[] = {
+  static constexpr xiiVariantType::Enum s_ScriptDataTypeVariantTypes[] = {
     xiiVariantType::Invalid, // Invalid,
 
     xiiVariantType::Bool,              // Bool,
@@ -60,7 +60,7 @@ namespace
   };
   static_assert(XII_ARRAY_SIZE(s_ScriptDataTypeVariantTypes) == (size_t)xiiVisualScriptDataType::Count);
 
-  static xiiUInt32 s_ScriptDataTypeSizes[] = {
+  static constexpr xiiUInt32 s_ScriptDataTypeSizes[] = {
     0, // Invalid,
 
     sizeof(bool),                            // Bool,
@@ -87,34 +87,34 @@ namespace
   };
   static_assert(XII_ARRAY_SIZE(s_ScriptDataTypeSizes) == (size_t)xiiVisualScriptDataType::Count);
 
-  static xiiUInt32 s_ScriptDataTypeAlignments[] = {
+  static constexpr xiiUInt32 s_ScriptDataTypeAlignments[] = {
     0, // Invalid,
 
-    XII_ALIGNMENT_OF(bool),                            // Bool,
-    XII_ALIGNMENT_OF(xiiUInt8),                        // Byte,
-    XII_ALIGNMENT_OF(xiiInt32),                        // Int,
-    XII_ALIGNMENT_OF(xiiInt64),                        // Int64,
-    XII_ALIGNMENT_OF(float),                           // Float,
-    XII_ALIGNMENT_OF(double),                          // Double,
-    XII_ALIGNMENT_OF(xiiColor),                        // Color,
-    XII_ALIGNMENT_OF(xiiVec3),                         // Vector3,
-    XII_ALIGNMENT_OF(xiiQuat),                         // Quaternion,
-    XII_ALIGNMENT_OF(xiiTransform),                    // Transform,
-    XII_ALIGNMENT_OF(xiiTime),                         // Time,
-    XII_ALIGNMENT_OF(xiiAngle),                        // Angle,
-    XII_ALIGNMENT_OF(xiiString),                       // String,
-    XII_ALIGNMENT_OF(xiiHashedString),                 // HashedString,
-    XII_ALIGNMENT_OF(xiiVisualScriptGameObjectHandle), // GameObject,
-    XII_ALIGNMENT_OF(xiiVisualScriptComponentHandle),  // Component,
-    XII_ALIGNMENT_OF(xiiTypedPointer),                 // TypedPointer,
-    XII_ALIGNMENT_OF(xiiVariant),                      // Variant,
-    XII_ALIGNMENT_OF(xiiVariantArray),                 // Array,
-    XII_ALIGNMENT_OF(xiiVariantDictionary),            // Map,
-    XII_ALIGNMENT_OF(xiiScriptCoroutineHandle),        // Coroutine,
+    alignof(bool),                            // Bool,
+    alignof(xiiUInt8),                        // Byte,
+    alignof(xiiInt32),                        // Int,
+    alignof(xiiInt64),                        // Int64,
+    alignof(float),                           // Float,
+    alignof(double),                          // Double,
+    alignof(xiiColor),                        // Color,
+    alignof(xiiVec3),                         // Vector3,
+    alignof(xiiQuat),                         // Quaternion,
+    alignof(xiiTransform),                    // Transform,
+    alignof(xiiTime),                         // Time,
+    alignof(xiiAngle),                        // Angle,
+    alignof(xiiString),                       // String,
+    alignof(xiiHashedString),                 // HashedString,
+    alignof(xiiVisualScriptGameObjectHandle), // GameObject,
+    alignof(xiiVisualScriptComponentHandle),  // Component,
+    alignof(xiiTypedPointer),                 // TypedPointer,
+    alignof(xiiVariant),                      // Variant,
+    alignof(xiiVariantArray),                 // Array,
+    alignof(xiiVariantDictionary),            // Map,
+    alignof(xiiScriptCoroutineHandle),        // Coroutine,
   };
   static_assert(XII_ARRAY_SIZE(s_ScriptDataTypeAlignments) == (size_t)xiiVisualScriptDataType::Count);
 
-  static const char* s_ScriptDataTypeNames[] = {
+  static constexpr const char* s_ScriptDataTypeNames[] = {
     "Invalid",
 
     "Bool",
@@ -140,6 +140,7 @@ namespace
     "Coroutine",
     "", // Count,
     "Enum",
+    "Bitflag",
   };
   static_assert(XII_ARRAY_SIZE(s_ScriptDataTypeNames) == (size_t)xiiVisualScriptDataType::ExtendedCount);
 } // namespace
@@ -200,6 +201,33 @@ xiiVisualScriptDataType::Enum xiiVisualScriptDataType::FromVariantType(xiiVarian
   }
 }
 
+xiiProcessingStream::DataType xiiVisualScriptDataType::GetStreamDataType(Enum dataType)
+{
+  // We treat xiiColor and xiiVec4 as the same in the visual script <=> expression binding
+  // so ensure that they have the same size and layout
+  static_assert(sizeof(xiiColor) == sizeof(xiiVec4));
+  static_assert(offsetof(xiiColor, r) == offsetof(xiiVec4, x));
+  static_assert(offsetof(xiiColor, g) == offsetof(xiiVec4, y));
+  static_assert(offsetof(xiiColor, b) == offsetof(xiiVec4, z));
+  static_assert(offsetof(xiiColor, a) == offsetof(xiiVec4, w));
+
+  switch (dataType)
+  {
+    case Int:
+      return xiiProcessingStream::DataType::Int;
+    case Float:
+      return xiiProcessingStream::DataType::Float;
+    case Vector3:
+      return xiiProcessingStream::DataType::Float3;
+    case Color:
+      return xiiProcessingStream::DataType::Float4;
+    default:
+      XII_ASSERT_NOT_IMPLEMENTED;
+  }
+
+  return xiiProcessingStream::DataType::Float;
+}
+
 // static
 const xiiRTTI* xiiVisualScriptDataType::GetRtti(Enum dataType)
 {
@@ -230,6 +258,7 @@ const xiiRTTI* xiiVisualScriptDataType::GetRtti(Enum dataType)
     xiiGetStaticRTTI<xiiScriptCoroutineHandle>(), // Coroutine,
     nullptr,                                      // Count,
     nullptr,                                      // EnumValue,
+    nullptr,                                      // BitflagValue,
   };
   static_assert(XII_ARRAY_SIZE(s_Rttis) == (size_t)xiiVisualScriptDataType::ExtendedCount);
 
@@ -258,6 +287,9 @@ xiiVisualScriptDataType::Enum xiiVisualScriptDataType::FromRtti(const xiiRTTI* p
 
   if (pRtti->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum))
     return EnumValue;
+
+  if (pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags))
+    return BitflagValue;
 
   if (pRtti == xiiGetStaticRTTI<xiiVariant>())
     return Variant;
@@ -304,8 +336,8 @@ bool xiiVisualScriptDataType::CanConvertTo(Enum sourceDataType, Enum targetDataT
       targetDataType == Variant)
     return true;
 
-  if ((IsNumber(sourceDataType) || sourceDataType == EnumValue) &&
-      (IsNumber(targetDataType) || targetDataType == EnumValue))
+  if ((IsNumber(sourceDataType) || (sourceDataType == EnumValue || sourceDataType == BitflagValue)) &&
+      (IsNumber(targetDataType) || (targetDataType == EnumValue || targetDataType == BitflagValue)))
     return true;
 
   return false;
@@ -350,3 +382,5 @@ xiiComponent* xiiVisualScriptComponentHandle::GetPtr(xiiUInt32 uiExecutionCounte
 
   return m_Ptr;
 }
+
+XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Runtime_VisualScriptDataType);

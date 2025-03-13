@@ -42,7 +42,7 @@ void xiiQtAssetBrowserDlg::Init(QWidget* pParent)
     AssetBrowserWidget->GetAssetBrowserFilter()->SetTypeFilter(s_TypeFilter[m_sVisibleFilters]);
 }
 
-xiiQtAssetBrowserDlg::xiiQtAssetBrowserDlg(QWidget* pParent, const xiiUuid& preselectedAsset, xiiStringView sVisibleFilters) :
+xiiQtAssetBrowserDlg::xiiQtAssetBrowserDlg(QWidget* pParent, const xiiUuid& preselectedAsset, xiiStringView sVisibleFilters, xiiStringView sWindowTitle, xiiStringView sRequiredTag) :
   QDialog(pParent)
 {
   {
@@ -64,6 +64,7 @@ xiiQtAssetBrowserDlg::xiiQtAssetBrowserDlg(QWidget* pParent, const xiiUuid& pres
     }
 
     m_sVisibleFilters = allFiltered;
+    m_sRequiredTag    = sRequiredTag;
   }
   Init(pParent);
 
@@ -74,9 +75,16 @@ xiiQtAssetBrowserDlg::xiiQtAssetBrowserDlg(QWidget* pParent, const xiiUuid& pres
     AssetBrowserWidget->ShowOnlyTheseTypeFilters(m_sVisibleFilters);
   }
 
+  AssetBrowserWidget->SetRequiredTag(m_sRequiredTag);
+
   AssetBrowserWidget->SetSelectedAsset(preselectedAsset);
 
   AssetBrowserWidget->SearchWidget->setFocus();
+
+  if (!sWindowTitle.IsEmpty())
+  {
+    setWindowTitle(xiiMakeQString(sWindowTitle));
+  }
 }
 
 xiiQtAssetBrowserDlg::xiiQtAssetBrowserDlg(QWidget* pParent, xiiStringView sWindowTitle, xiiStringView sPreselectedFileAbs, xiiStringView sFileExtensions) :

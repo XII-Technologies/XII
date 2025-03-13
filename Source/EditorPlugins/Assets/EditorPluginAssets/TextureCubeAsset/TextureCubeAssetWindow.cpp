@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <EditorPluginAssets/TextureCubeAsset/TextureCubeAsset.h>
@@ -41,6 +42,8 @@ xiiQtTextureCubeAssetDocumentWindow::xiiQtTextureCubeAssetDocumentWindow(xiiText
 
   // 3D View
   {
+    SetTargetFrameRate(25);
+
     m_ViewConfig.m_Camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
@@ -49,7 +52,7 @@ xiiQtTextureCubeAssetDocumentWindow::xiiQtTextureCubeAssetDocumentWindow(xiiText
     AddViewWidget(m_pViewWidget);
     xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, nullptr);
 
-    setCentralWidget(pContainer);
+    m_pDockManager->setCentralWidget(pContainer);
   }
 
   {
@@ -59,9 +62,19 @@ xiiQtTextureCubeAssetDocumentWindow::xiiQtTextureCubeAssetDocumentWindow(xiiText
     pPropertyPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator(GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }
@@ -83,14 +96,23 @@ void xiiQtTextureCubeAssetDocumentWindow::SendRedrawMsg()
     return;
 
   {
-    const xiiTextureCubeAssetDocument* pDoc = static_cast<const xiiTextureCubeAssetDocument*>(GetDocument());
+    const xiiTextureCubeAssetDocument*   pDoc   = static_cast<const xiiTextureCubeAssetDocument*>(GetDocument());
+    const xiiTextureCubeAssetProperties* pProps = pDoc->GetProperties();
 
-    xiiDocumentConfigMsgToEngine msg;
-    msg.m_sWhatToDo = "ChannelMode";
-    msg.m_iValue    = pDoc->m_ChannelMode.GetValue();
-    msg.m_fValue    = pDoc->m_iTextureLod;
+    {
+      xiiDocumentConfigMsgToEngine msg;
+      msg.m_sWhatToDo = "SetChannelMode";
+      msg.m_iValue    = pDoc->m_ChannelMode.GetValue();
+      msg.m_fValue    = 0.5f;
+      GetEditorEngineConnection()->SendMessage(&msg);
+    }
 
-    GetEditorEngineConnection()->SendMessage(&msg);
+    {
+      xiiDocumentConfigMsgToEngine msg;
+      msg.m_sWhatToDo = "SetLodLevel";
+      msg.m_iValue    = pDoc->m_iTextureLod;
+      GetEditorEngineConnection()->SendMessage(&msg);
+    }
   }
 
   for (auto pView : m_ViewWidgets)

@@ -72,10 +72,10 @@ public:
 
   /// \brief Shows a non-modal color dialog. The Qt slots are called when the selected color is changed or when the dialog is closed and the result
   /// accepted or rejected.
-  void ShowColorDialog(const xiiColor& color, bool bAlpha, bool bHDR, QWidget* pParent, const char* szSlotCurColChanged, const char* szSlotAccept, const char* szSlotReject);
+  void ShowColorDialog(const xiiColor& color, bool bAlpha, bool bHDR, QWidget* pParent, xiiStringView sSlotCurColChanged, xiiStringView sSlotAccept, xiiStringView sSlotReject);
 
-  /// \brief Might show a message box depending on the given status. If the status is 'failure' the szFailureMsg is shown, including the message in
-  /// xiiStatus. If the status is success a message box with text szSuccessMsg is shown, but only if the status message is not empty or if
+  /// \brief Might show a message box depending on the given status. If the status is 'failure' the sFailureMsg is shown, including the message in
+  /// xiiStatus. If the status is success a message box with text sSuccessMsg is shown, but only if the status message is not empty or if
   /// bOnlySuccessMsgIfDetails is false.
   static void MessageBoxStatus(const xiiStatus& s, xiiStringView sFailureMsg, xiiStringView sSuccessMsg = {}, bool bOnlySuccessMsgIfDetails = true);
 

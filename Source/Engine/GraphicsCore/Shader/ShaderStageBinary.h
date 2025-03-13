@@ -33,7 +33,7 @@ private:
   friend class xiiShaderPermutationResource;
   friend class xiiShaderPermutationResourceLoader;
 
-  xiiResult WriteStageBinary(xiiLogInterface* pLog) const;
+  xiiResult WriteStageBinary(xiiLogInterface* pLog, xiiStringView sPlatform) const;
   xiiResult Write(xiiStreamWriter& inout_stream) const;
   xiiResult Read(xiiStreamReader& inout_stream);
   xiiResult Write(xiiStreamWriter& inout_stream, const xiiDynamicArray<xiiGALShaderVariableDescription>& layout) const;
@@ -44,7 +44,7 @@ private:
   xiiSharedPtr<xiiGALShaderByteCode> m_pGALByteCode;
 
 private: // statics
-  static xiiShaderStageBinary* LoadStageBinary(xiiGALShaderType::Enum Stage, xiiUInt32 uiHash);
+  static xiiShaderStageBinary* LoadStageBinary(xiiGALShaderType::Enum Stage, xiiUInt32 uiHash, xiiStringView sPlatform);
 
   static void OnEngineShutdown();
 

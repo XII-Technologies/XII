@@ -3,6 +3,7 @@
 #include <Foundation/Logging/Log.h>
 #include <GuiFoundation/Action/ActionManager.h>
 #include <GuiFoundation/Action/ActionMap.h>
+#include <GuiFoundation/Action/ActionMapManager.h>
 #include <ToolsFoundation/Reflection/PhantomRttiManager.h>
 
 // clang-format off
@@ -16,11 +17,41 @@ XII_END_STATIC_REFLECTED_TYPE;
 // xiiActionMap public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiActionMap::xiiActionMap() = default;
+xiiActionMap::xiiActionMap(xiiStringView sParentMapping)
+{
+  m_sParentMapping = sParentMapping;
+}
 
 xiiActionMap::~xiiActionMap() = default;
 
 void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, xiiStringView sSubPath, float fOrder)
+{
+  TempActionMapDescriptor& desc = m_TempActions.ExpandAndGetRef();
+  desc.m_hAction                = hAction;
+  desc.m_sPath                  = sPath;
+  desc.m_sSubPath               = sSubPath;
+  desc.m_fOrder                 = fOrder;
+  m_uiEditCounter++;
+}
+
+void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, float fOrder)
+{
+  TempActionMapDescriptor& desc = m_TempActions.ExpandAndGetRef();
+  desc.m_hAction                = hAction;
+  desc.m_sPath                  = sPath;
+  desc.m_fOrder                 = fOrder;
+  m_uiEditCounter++;
+}
+
+void xiiActionMap::HideAction(xiiActionDescriptorHandle hAction, xiiStringView sPath)
+{
+  TempActionMapDescriptor& desc = m_TempHiddenActions.ExpandAndGetRef();
+  desc.m_hAction                = hAction;
+  desc.m_sPath                  = sPath;
+  m_uiEditCounter++;
+}
+
+void xiiActionMap::MapActionInternal(xiiActionDescriptorHandle hAction, xiiStringView sPath, xiiStringView sSubPath, float fOrder)
 {
   xiiStringBuilder sFullPath = sPath;
 
@@ -34,10 +65,10 @@ void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, xiiStringView sP
 
   sFullPath.AppendPath(sSubPath);
 
-  MapAction(hAction, sFullPath, fOrder);
+  MapActionInternal(hAction, sFullPath, fOrder);
 }
 
-void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, float fOrder)
+void xiiActionMap::MapActionInternal(xiiActionDescriptorHandle hAction, xiiStringView sPath, float fOrder)
 {
   xiiStringBuilder sCleanPath = sPath;
   sCleanPath.MakeCleanPath();
@@ -56,10 +87,10 @@ void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, xiiStringView sP
     }
   }
 
-  XII_VERIFY(MapAction(d).IsValid(), "Mapping Failed");
+  XII_VERIFY(MapActionInternal(d).IsValid(), "Mapping Failed");
 }
 
-xiiUuid xiiActionMap::MapAction(const xiiActionMapDescriptor& desc)
+xiiUuid xiiActionMap::MapActionInternal(const xiiActionMapDescriptor& desc)
 {
   xiiUuid ParentGUID;
   if (!FindObjectByPath(desc.m_sPath, ParentGUID))
@@ -114,7 +145,7 @@ xiiUuid xiiActionMap::MapAction(const xiiActionMapDescriptor& desc)
 }
 
 
-xiiResult xiiActionMap::UnmapAction(const xiiUuid& guid)
+xiiResult xiiActionMap::UnmapActionInternal(const xiiUuid& guid)
 {
   auto it = m_Descriptors.Find(guid);
   if (!it.IsValid())
@@ -129,7 +160,7 @@ xiiResult xiiActionMap::UnmapAction(const xiiUuid& guid)
   return XII_SUCCESS;
 }
 
-xiiResult xiiActionMap::UnmapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath)
+xiiResult xiiActionMap::UnmapActionInternal(xiiActionDescriptorHandle hAction, xiiStringView sPath)
 {
   xiiStringBuilder sCleanPath = sPath;
   sCleanPath.MakeCleanPath();
@@ -148,10 +179,10 @@ xiiResult xiiActionMap::UnmapAction(xiiActionDescriptorHandle hAction, xiiString
     }
   }
 
-  return UnmapAction(d);
+  return UnmapActionInternal(d);
 }
 
-xiiResult xiiActionMap::UnmapAction(const xiiActionMapDescriptor& desc)
+xiiResult xiiActionMap::UnmapActionInternal(const xiiActionMapDescriptor& desc)
 {
   xiiTreeNode<xiiActionMapDescriptor>* pParent = nullptr;
   if (desc.m_sPath.IsEmpty())
@@ -173,7 +204,7 @@ xiiResult xiiActionMap::UnmapAction(const xiiActionMapDescriptor& desc)
 
   if (auto* pChild = GetChildByName(pParent, desc.m_hAction.GetDescriptor()->m_sActionName))
   {
-    return UnmapAction(pChild->GetGuid());
+    return UnmapActionInternal(pChild->GetGuid());
   }
   return XII_FAILURE;
 }
@@ -265,4 +296,54 @@ const xiiTreeNode<xiiActionMapDescriptor>* xiiActionMap::GetChildByName(const xi
     }
   }
   return nullptr;
+}
+
+const xiiActionMap::TreeNode* xiiActionMap::BuildActionTree()
+{
+  xiiUInt32                              uiCurrentTransitiveEditCounter = 0;
+  xiiHybridArray<const xiiActionMap*, 3> mappings;
+  {
+    const xiiActionMap* pCurrent = this;
+    while (pCurrent)
+    {
+      uiCurrentTransitiveEditCounter += pCurrent->m_uiEditCounter;
+      mappings.PushBack(pCurrent);
+      pCurrent = xiiActionMapManager::GetActionMap(pCurrent->m_sParentMapping);
+    }
+  }
+
+  if (uiCurrentTransitiveEditCounter == m_uiTransitiveEditCounterOfRoot)
+  {
+    return &m_Root;
+  }
+  m_uiTransitiveEditCounterOfRoot = uiCurrentTransitiveEditCounter;
+
+  m_Root = TreeNode();
+  m_Descriptors.Clear();
+
+  for (xiiInt32 i = (xiiInt32)mappings.GetCount() - 1; i >= 0; --i)
+  {
+    const xiiActionMap* pCurrent = mappings[i];
+    for (const TempActionMapDescriptor& desc : pCurrent->m_TempActions)
+    {
+      if (desc.m_sSubPath.IsEmpty())
+        MapActionInternal(desc.m_hAction, desc.m_sPath, desc.m_fOrder);
+      else
+        MapActionInternal(desc.m_hAction, desc.m_sPath, desc.m_sSubPath, desc.m_fOrder);
+    }
+  }
+
+  for (xiiInt32 i = (xiiInt32)mappings.GetCount() - 1; i >= 0; --i)
+  {
+    const xiiActionMap* pCurrent = mappings[i];
+    for (const TempActionMapDescriptor& desc : pCurrent->m_TempHiddenActions)
+    {
+      if (UnmapActionInternal(desc.m_hAction, desc.m_sPath).Failed())
+      {
+        xiiLog::Warning("Failed to hide the action at path '{}' as it does not exist", desc.m_sPath);
+      }
+    }
+  }
+
+  return &m_Root;
 }

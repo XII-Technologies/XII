@@ -25,17 +25,16 @@ void xiiPrefabComponentDragDropHandler::OnDragBegin(const xiiDragDropInfo* pInfo
   if (pInfo->m_bShiftKeyDown)
   {
     if (pInfo->m_sTargetContext == "viewport")
-      CreatePrefab(pInfo->m_vDropPosition, GetAssetGuid(pInfo), xiiUuid(), -1);
+      CreatePrefab(pInfo->m_vDropPosition, GetAssetGuid(pInfo), pInfo->m_ActiveParentObject, -1);
     else
       CreatePrefab(pInfo->m_vDropPosition, GetAssetGuid(pInfo), pInfo->m_TargetObject, pInfo->m_iTargetObjectInsertChildIndex);
   }
   else
   {
     if (pInfo->m_sTargetContext == "viewport")
-      CreateDropObject(pInfo->m_vDropPosition, "xiiPrefabReferenceComponent", "Prefab", GetAssetGuidString(pInfo), xiiUuid(), -1);
+      CreateDropObject(pInfo->m_vDropPosition, "xiiPrefabReferenceComponent", "Prefab", GetAssetGuidString(pInfo), pInfo->m_ActiveParentObject, -1);
     else
-      CreateDropObject(pInfo->m_vDropPosition, "xiiPrefabReferenceComponent", "Prefab", GetAssetGuidString(pInfo), pInfo->m_TargetObject,
-                       pInfo->m_iTargetObjectInsertChildIndex);
+      CreateDropObject(pInfo->m_vDropPosition, "xiiPrefabReferenceComponent", "Prefab", GetAssetGuidString(pInfo), pInfo->m_TargetObject, pInfo->m_iTargetObjectInsertChildIndex);
   }
 
   SelectCreatedObjects();

@@ -313,7 +313,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
       pRenderData->m_hMaterial       = pManager->m_hDebugMaterial;
       pRenderData->m_Color           = encodedSkyVisibility;
       pRenderData->m_uiSubMeshIndex  = 0;
-      pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(this, 0);
+      pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(*this, 0);
       pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
 
       pRenderData->FillSortingKey();

@@ -1,5 +1,4 @@
 
-
 template <typename Object>
 xiiRttiMappedObjectFactory<Object>::xiiRttiMappedObjectFactory() = default;
 

@@ -82,22 +82,22 @@ inline xiiUInt8 xiiDataDirPath::GetDataDirIndex() const
   return m_uiDataDirIndex;
 }
 
-inline xiiStreamWriter& xiiDataDirPath::Write(xiiStreamWriter& ref_stream) const
+inline xiiStreamWriter& xiiDataDirPath::Write(xiiStreamWriter& inout_stream) const
 {
-  ref_stream << m_sAbsolutePath;
-  ref_stream << m_uiDataDirParent;
-  ref_stream << m_uiDataDirLength;
-  ref_stream << m_uiDataDirIndex;
-  return ref_stream;
+  inout_stream << m_sAbsolutePath;
+  inout_stream << m_uiDataDirParent;
+  inout_stream << m_uiDataDirLength;
+  inout_stream << m_uiDataDirIndex;
+  return inout_stream;
 }
 
-inline xiiStreamReader& xiiDataDirPath::Read(xiiStreamReader& ref_stream)
+inline xiiStreamReader& xiiDataDirPath::Read(xiiStreamReader& inout_stream)
 {
-  ref_stream >> m_sAbsolutePath;
-  ref_stream >> m_uiDataDirParent;
-  ref_stream >> m_uiDataDirLength;
-  ref_stream >> m_uiDataDirIndex;
-  return ref_stream;
+  inout_stream >> m_sAbsolutePath;
+  inout_stream >> m_uiDataDirParent;
+  inout_stream >> m_uiDataDirLength;
+  inout_stream >> m_uiDataDirIndex;
+  return inout_stream;
 }
 
 bool xiiCompareDataDirPath::Less(xiiStringView lhs, xiiStringView rhs)
@@ -116,12 +116,12 @@ bool xiiCompareDataDirPath::Equal(xiiStringView lhs, xiiStringView rhs)
   return lhs.IsEqual(rhs);
 }
 
-inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiDataDirPath& value)
+inline xiiStreamWriter& operator<<(xiiStreamWriter& inout_stream, const xiiDataDirPath& value)
 {
-  return value.Write(ref_stream);
+  return value.Write(inout_stream);
 }
 
-inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiDataDirPath& out_value)
+inline xiiStreamReader& operator>>(xiiStreamReader& inout_stream, xiiDataDirPath& out_value)
 {
-  return out_value.Read(ref_stream);
+  return out_value.Read(inout_stream);
 }

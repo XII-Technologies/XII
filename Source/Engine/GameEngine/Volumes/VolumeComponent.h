@@ -12,8 +12,8 @@ using xiiBlackboardTemplateResourceHandle = xiiTypedResourceHandle<class xiiBlac
 
 /// \brief A volume component can hold generic values either from a blackboard template or set directly on the component.
 ///
-/// The values can be sampled with an xiiVolumeSampler and then used for things like e.g. post-processing, reverb etc.
-/// They can also be used to represent knowledge in a scene, like e.g. smell or threat, and can be detected by an xiiSensorComponent and then processed by AI.
+/// The values can be sampled with a xiiVolumeSampler and then used for things like e.g. post-processing, reverb etc.
+/// They can also be used to represent knowledge in a scene, like e.g. smell or threat, and can be detected by a xiiSensorComponent and then processed by AI.
 class XII_GAMEENGINE_DLL xiiVolumeComponent : public xiiComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiVolumeComponent, xiiComponent);
@@ -25,11 +25,8 @@ public:
   virtual void OnActivated() override;
   virtual void OnDeactivated() override;
 
-  void        SetTemplateFile(const char* szFile); // [ property ]
-  const char* GetTemplateFile() const;             // [ property ]
-
-  void                                SetTemplate(const xiiBlackboardTemplateResourceHandle& hResource);
-  xiiBlackboardTemplateResourceHandle GetTemplate() const { return m_hTemplateResource; }
+  void                                       SetTemplate(const xiiBlackboardTemplateResourceHandle& hResource); // [ property ]
+  const xiiBlackboardTemplateResourceHandle& GetTemplate() const { return m_hTemplateResource; }                // [ property ]
 
   /// @brief In case two volumes overlap, the one with a higher sort order value has precedence.
   void  SetSortOrder(float fOrder);                   // [ property ]

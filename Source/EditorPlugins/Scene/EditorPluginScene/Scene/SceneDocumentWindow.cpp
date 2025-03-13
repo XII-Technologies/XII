@@ -9,9 +9,11 @@
 #include <EditorPluginScene/Scene/SceneViewWidget.moc.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
+#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
-#include <QInputDialog>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
+
+#include <QInputDialog>
 
 xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) :
   xiiQtSceneDocumentWindowBase(pDocument)
@@ -25,7 +27,17 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
 
   pDocument->SetEditToolConfigDelegate([this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
 
-  setCentralWidget(m_pQuadViewWidget);
+  {
+    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(this, pDocument);
+    pViewPanel->setObjectName("xiiQtDocumentPanel");
+    pViewPanel->setWindowTitle("3D View");
+    pViewPanel->setWidget(m_pQuadViewWidget);
+
+    m_pDockManager->setCentralWidget(pViewPanel);
+  }
+
+  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  SetTargetFrameRate(pPreferences->GetMaxFramerate());
 
   {
     // Menu Bar
@@ -49,23 +61,6 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
     addToolBar(pToolBar);
   }
 
-  {
-    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
-    pPropertyPanel->setObjectName("PropertyPanel");
-    pPropertyPanel->setWindowTitle("Properties");
-    pPropertyPanel->show();
-
-    xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(this, static_cast<xiiSceneDocument*>(pDocument));
-    pPanelTree->show();
-
-    xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
-    XII_VERIFY(connect(pPropertyGrid, &xiiQtPropertyGridWidget::ExtendContextMenu, this, &xiiQtSceneDocumentWindow::ExtendPropertyGridContextMenu), "");
-
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
-    addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, pPanelTree);
-  }
-
   // Exposed Parameters
   if (GetSceneDocument()->IsPrefab())
   {
@@ -80,7 +75,24 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
     pPropertyGrid->SetSelection(selection);
     pPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPanel);
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPanel);
+  }
+
+  {
+    xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
+    pPropertyPanel->setObjectName("PropertyPanel");
+    pPropertyPanel->setWindowTitle("Properties");
+    pPropertyPanel->show();
+
+    xiiQtDocumentPanel* pPanelTree = new xiiQtScenegraphPanel(this, static_cast<xiiSceneDocument*>(pDocument));
+    pPanelTree->show();
+
+    xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
+    pPropertyPanel->setWidget(pPropertyGrid);
+    XII_VERIFY(connect(pPropertyGrid, &xiiQtPropertyGridWidget::ExtendContextMenu, this, &xiiQtSceneDocumentWindow::ExtendPropertyGridContextMenu), "");
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
+    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pPanelTree);
   }
 
   FinishWindowCreation();
@@ -303,7 +315,7 @@ void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(QMenu& menu, co
       while (true)
       {
         bool bOk = false;
-        QString name = QInputDialog::getText(this, "Parameter Name", "Name:", QLineEdit::Normal, xiiMakeQString( pProp->GetPropertyName()), &bOk);
+        QString name = QInputDialog::getText(this, "Parameter Name", "Name:", QLineEdit::Normal, xiiMakeQString(pProp->GetPropertyName()), &bOk);
 
         if (!bOk)
           return;

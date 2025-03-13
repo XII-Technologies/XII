@@ -60,7 +60,7 @@ xiiEditorInput xiiConeLengthGizmo::DoMousePressEvent(QMouseEvent* e)
 
   if (e->button() != Qt::MouseButton::LeftButton)
     return xiiEditorInput::MayBeHandledByOthers;
-  if (e->modifiers() != 0)
+  if (e->modifiers() != 0 && e->modifiers() != Qt::KeyboardModifier::ShiftModifier) // allow shift for toggling snapping
     return xiiEditorInput::MayBeHandledByOthers;
 
   if (m_pInteractionGizmoHandle == &m_hConeRadius)

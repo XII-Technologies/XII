@@ -67,11 +67,8 @@ public:
   xiiSkeletonPoseComponent();
   ~xiiSkeletonPoseComponent();
 
-  void          SetSkeletonFile(xiiStringView sFile); // [ property ]
-  xiiStringView GetSkeletonFile() const;              // [ property ]
-
-  void                             SetSkeleton(const xiiSkeletonResourceHandle& hResource);
-  const xiiSkeletonResourceHandle& GetSkeleton() const { return m_hSkeleton; }
+  void                             SetSkeleton(const xiiSkeletonResourceHandle& hResource); // [ property ]
+  const xiiSkeletonResourceHandle& GetSkeleton() const { return m_hSkeleton; }              // [ property ]
 
   xiiEnum<xiiSkeletonPoseMode> GetPoseMode() const { return m_PoseMode; }
   void                         SetPoseMode(xiiEnum<xiiSkeletonPoseMode> mode);

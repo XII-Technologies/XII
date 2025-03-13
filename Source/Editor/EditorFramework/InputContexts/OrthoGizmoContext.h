@@ -46,6 +46,6 @@ private:
   float            m_fScalingResult;
   float            m_fUnsnappedScalingResult;
   bool             m_bCanInteract;
-  const xiiCamera* m_pCamera = nullptr;
+  const xiiCamera* m_pCamera;
   xiiVec2I32       m_vViewport;
 };

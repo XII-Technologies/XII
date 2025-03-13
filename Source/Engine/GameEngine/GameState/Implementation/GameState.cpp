@@ -4,6 +4,7 @@
 #include <Core/ActorSystem/Actor.h>
 #include <Core/ActorSystem/ActorManager.h>
 #include <Core/ActorSystem/ActorPluginWindow.h>
+#include <Core/GameApplication/GameApplicationBase.h>
 #include <Core/GameState/GameStateWindow.h>
 #include <Core/Prefabs/PrefabResource.h>
 #include <Core/World/World.h>
@@ -19,20 +20,30 @@
 #include <GameEngine/XR/DummyXR.h>
 #include <GameEngine/XR/XRInterface.h>
 #include <GameEngine/XR/XRRemotingInterface.h>
+#include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
+xiiCommandLineOptionPath opt_Window("GameState", "-wnd", "Path to the window configuration file to use.", "");
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);
 // clang-format on
 
 xiiGameState* xiiGameState::s_pActiveGameState = nullptr;
 
-xiiGameState::xiiGameState() = default;
+xiiGameState::xiiGameState()
+{
+  // initialize camera to default values
+  m_MainCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 1000.0f);
+  m_MainCamera.LookAt(xiiVec3::MakeZero(), xiiVec3(1, 0, 0), xiiVec3(0, 0, 1));
+}
 
 xiiGameState::~xiiGameState() = default;
 
@@ -41,24 +52,33 @@ xiiGameState* xiiGameState::GetActiveGameState()
   return s_pActiveGameState;
 }
 
-void xiiGameState::OnActivation(xiiWorld* pWorld, const xiiTransform* pStartPosition)
+void xiiGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
   s_pActiveGameState = this;
 
-  m_pMainWorld = pWorld;
-  {
-    ConfigureMainCamera();
-
-    CreateActors();
-  }
-
+  CreateActors();
   ConfigureInputActions();
 
-  SpawnPlayer(pStartPosition).IgnoreResult();
+  if (pWorld)
+  {
+    ChangeMainWorld(pWorld, sStartPosition, startPositionOffset);
+  }
+  else
+  {
+    xiiStringBuilder sSceneFile = GetStartupSceneFile();
+
+    if (!sSceneFile.IsEmpty())
+    {
+      // TODO: also pass along a preload collection
+      LoadScene(sSceneFile, {}, sStartPosition, startPositionOffset);
+    }
+  }
 }
 
 void xiiGameState::OnDeactivation()
 {
+  CancelBackgroundSceneLoading();
+
   if (m_bXREnabled)
   {
     m_bXREnabled                 = false;
@@ -82,9 +102,27 @@ void xiiGameState::OnDeactivation()
   s_pActiveGameState = nullptr;
 }
 
-void xiiGameState::ScheduleRendering()
+void xiiGameState::AddMainViewsToRender()
 {
-  xiiRenderWorld::AddMainView(m_hMainView);
+  if (!m_hMainView.IsInvalidated())
+  {
+    xiiRenderWorld::AddMainView(m_hMainView);
+  }
+}
+
+void xiiGameState::RequestQuit()
+{
+  m_bStateWantsToQuit = true;
+}
+
+bool xiiGameState::WasQuitRequested() const
+{
+  return m_bStateWantsToQuit;
+}
+
+void xiiGameState::ProcessInput()
+{
+  UpdateBackgroundSceneLoading();
 }
 
 xiiView* xiiGameState::GetMainView()
@@ -94,7 +132,34 @@ xiiView* xiiGameState::GetMainView()
   {
     return pView;
   }
+
   return nullptr;
+}
+
+bool xiiGameState::IsLoadingSceneInBackground(float* out_pProgress) const
+{
+  if (out_pProgress)
+  {
+    *out_pProgress = 0.0f;
+
+    if (m_pBackgroundSceneLoad != nullptr)
+    {
+      *out_pProgress = m_pBackgroundSceneLoad->GetLoadingProgress();
+
+      auto state = m_pBackgroundSceneLoad->GetLoadingState();
+      if (state != xiiSceneLoadUtility::LoadingState::FinishedSuccessfully)
+      {
+        *out_pProgress = xiiMath::Min(*out_pProgress, 0.99f);
+      }
+    }
+  }
+
+  return m_pBackgroundSceneLoad != nullptr;
+}
+
+bool xiiGameState::IsInLoadingScreen() const
+{
+  return m_pMainWorld == m_pLoadingScreenWorld;
 }
 
 xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
@@ -174,7 +239,7 @@ xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
 
   xiiView* pView = nullptr;
   XII_VERIFY(xiiRenderWorld::TryGetView(m_hMainView, pView), "");
-  xiiUniquePtr<xiiActor> pXRActor = pXRInterface->CreateActor(pView, xiiGALMSAASampleCount::OneSample, std::move(pMainWindow), std::move(pOutput));
+  xiiUniquePtr<xiiActor> pXRActor = pXRInterface->CreateActor(pView, xiiGALMSAASampleCount::Default, std::move(pMainWindow), std::move(pOutput));
   return std::move(pXRActor);
 }
 
@@ -218,6 +283,7 @@ void xiiGameState::SetupMainView(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 vi
     xiiLog::Error("Main view is invalid, SetupMainView canceled.");
     return;
   }
+
   if (m_bXREnabled)
   {
     const xiiXRConfig* pConfig = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiXRConfig>();
@@ -258,7 +324,7 @@ xiiView* xiiGameState::CreateMainView()
   return pView;
 }
 
-xiiResult xiiGameState::SpawnPlayer(const xiiTransform* pStartPosition)
+xiiResult xiiGameState::SpawnPlayer(xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
   if (m_pMainWorld == nullptr)
     return XII_FAILURE;
@@ -269,39 +335,66 @@ xiiResult xiiGameState::SpawnPlayer(const xiiTransform* pStartPosition)
   if (pMan == nullptr)
     return XII_FAILURE;
 
+  xiiPlayerStartPointComponent* pBestComp = nullptr;
+
   for (auto it = pMan->GetComponents(); it.IsValid(); ++it)
   {
     if (it->IsActive() && it->GetPlayerPrefab().IsValid())
     {
-      xiiResourceLock<xiiPrefabResource> pPrefab(it->GetPlayerPrefab(), xiiResourceAcquireMode::BlockTillLoaded);
-
-      if (pPrefab.GetAcquireResult() == xiiResourceAcquireResult::Final)
+      if (pBestComp == nullptr)
       {
-        const xiiUInt16 uiTeamID = it->GetOwner()->GetTeamID();
-        xiiTransform    startPos = it->GetOwner()->GetGlobalTransform();
-
-        if (pStartPosition)
-        {
-          startPos = *pStartPosition;
-          startPos.m_vScale.Set(1.0f);
-          startPos.m_vPosition.z += 1.0f; // do not spawn player prefabs on the ground, they may not have their origin there
-        }
-
-        xiiPrefabInstantiationOptions options;
-        options.m_pOverrideTeamID = &uiTeamID;
-
-        pPrefab->InstantiatePrefab(*m_pMainWorld, startPos, options, &(it->m_Parameters));
-
-        return XII_SUCCESS;
+        // take the first one, no matter what
+        pBestComp = it;
       }
+      else if (it->GetOwner()->GetName().IsEqual_NoCase(sStartPosition))
+      {
+        // if we find one by exact name match, take that one
+        pBestComp = it;
+      }
+      else if (!pBestComp->GetOwner()->GetName().IsEqual_NoCase(sStartPosition) && it->GetOwner()->GetName().IsEmpty())
+      {
+        // if the name of the best one isn't identical to the searched name, yet
+        // and this one is nameless, prefer the nameless one
+        pBestComp = it;
+      }
+    }
+  }
+
+  if (pBestComp)
+  {
+    xiiResourceLock<xiiPrefabResource> pPrefab(pBestComp->GetPlayerPrefab(), xiiResourceAcquireMode::BlockTillLoaded);
+
+    if (pPrefab.GetAcquireResult() == xiiResourceAcquireResult::Final)
+    {
+      const xiiUInt16 uiTeamID = pBestComp->GetOwner()->GetTeamID();
+      xiiTransform    startPos = xiiTransform::MakeGlobalTransform(pBestComp->GetOwner()->GetGlobalTransform(), startPositionOffset);
+
+      if (sStartPosition.IsEqual_NoCase("GlobalOverride"))
+      {
+        startPos = startPositionOffset;
+      }
+
+      startPos.m_vScale.Set(1.0f);
+
+      xiiPrefabInstantiationOptions options;
+      options.m_pOverrideTeamID = &uiTeamID;
+
+      pPrefab->InstantiatePrefab(*m_pMainWorld, startPos, options, &(pBestComp->m_Parameters));
+
+      return XII_SUCCESS;
     }
   }
 
   return XII_FAILURE;
 }
 
-void xiiGameState::ChangeMainWorld(xiiWorld* pNewMainWorld)
+void xiiGameState::ChangeMainWorld(xiiWorld* pNewMainWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
+  if (m_pMainWorld == pNewMainWorld)
+    return;
+
+  xiiWorld* pPrevWorld = m_pMainWorld;
+
   m_pMainWorld = pNewMainWorld;
 
   xiiView* pView = nullptr;
@@ -309,34 +402,62 @@ void xiiGameState::ChangeMainWorld(xiiWorld* pNewMainWorld)
   {
     pView->SetWorld(m_pMainWorld);
   }
+
+  OnChangedMainWorld(pPrevWorld, pNewMainWorld, sStartPosition, startPositionOffset);
+
+  // make sure the camera gets re-initialized for the new world
+  ConfigureMainCamera();
+}
+
+void xiiGameState::OnChangedMainWorld(xiiWorld* pPrevWorld, xiiWorld* pNewWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
+{
+  if (pNewWorld != m_pLoadingScreenWorld)
+  {
+    // can get rid of the loading screen world, or we could also keep it around for later, if that has any use
+    m_pLoadingScreenWorld.Clear();
+
+    SpawnPlayer(sStartPosition, startPositionOffset).IgnoreResult();
+  }
 }
 
 void xiiGameState::ConfigureMainCamera()
 {
-  xiiVec3 vCameraPos = xiiVec3(0.0f, 0.0f, 0.0f);
-
-  xiiCoordinateSystem coordSys;
-
-  if (m_pMainWorld)
+  if (m_MainCamera.GetCameraMode() == xiiCameraMode::Stereo)
   {
-    m_pMainWorld->GetCoordinateSystem(vCameraPos, coordSys);
-  }
-  else
-  {
-    coordSys.m_vForwardDir.Set(1, 0, 0);
-    coordSys.m_vRightDir.Set(0, 1, 0);
-    coordSys.m_vUpDir.Set(0, 0, 1);
+    // if the camera is already set to be in 'Stereo' mode, its parameters are set from the outside
+    return;
   }
 
-  // if the camera is already set to be in 'Stereo' mode, its parameters are set from the outside
-  if (m_MainCamera.GetCameraMode() != xiiCameraMode::Stereo)
+
+  if (const xiiWorld* pConstWorld = m_pMainWorld)
   {
-    m_MainCamera.LookAt(vCameraPos, vCameraPos + coordSys.m_vForwardDir, coordSys.m_vUpDir);
-    m_MainCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 1000.0f);
+    XII_LOCK(pConstWorld->GetReadMarker());
+
+    const xiiCameraComponentManager* pManager = pConstWorld->GetComponentManager<xiiCameraComponentManager>();
+    if (pManager != nullptr)
+    {
+      for (auto itComp = pManager->GetComponents(); itComp.IsValid(); itComp.Next())
+      {
+        const xiiCameraComponent* pComp = itComp;
+
+        if (pComp->IsActive() && pComp->GetUsageHint() == xiiCameraUsageHint::MainView)
+        {
+          xiiVec3 vCameraPos = pComp->GetOwner()->GetGlobalPosition();
+
+          xiiCoordinateSystem coordSys;
+          coordSys.m_vForwardDir = pComp->GetOwner()->GetGlobalDirForwards();
+          coordSys.m_vRightDir   = pComp->GetOwner()->GetGlobalDirRight();
+          coordSys.m_vUpDir      = pComp->GetOwner()->GetGlobalDirUp();
+
+          // update the camera position
+          // camera options (FOV etc) are already set by xiiCameraComponentManager on demand
+          m_MainCamera.LookAt(vCameraPos, vCameraPos + coordSys.m_vForwardDir, coordSys.m_vUpDir);
+          return;
+        }
+      }
+    }
   }
 }
-
-xiiCommandLineOptionPath opt_Window("GameState", "-wnd", "Path to the window configuration file to use.", "");
 
 xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 {
@@ -395,6 +516,119 @@ xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiW
   pOutput->CreateSwapchain(desc);
 
   return pOutput;
+}
+
+xiiString xiiGameState::GetStartupSceneFile()
+{
+  return xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-scene");
+}
+
+void xiiGameState::LoadScene(xiiStringView sSceneFile, xiiStringView sPreloadCollection, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
+{
+  m_sTargetSceneSpawnPoint = sStartPosition;
+  m_TargetSceneSpawnOffset = startPositionOffset;
+
+  StartBackgroundSceneLoading(sSceneFile, sPreloadCollection);
+  m_bTransitionWhenReady = true;
+
+  auto state = m_pBackgroundSceneLoad->GetLoadingState();
+  XII_ASSERT_DEBUG(state != xiiSceneLoadUtility::LoadingState::FinishedAndRetrieved, "Scene already loaded and retrieved.");
+
+  if (state != xiiSceneLoadUtility::LoadingState::FinishedSuccessfully)
+  {
+    // switch to loading screen only if we can't immediately switch to the target scene
+    SwitchToLoadingScreen(sSceneFile);
+  }
+}
+
+void xiiGameState::SwitchToLoadingScreen(xiiStringView sTargetSceneFile)
+{
+  m_pLoadingScreenWorld = CreateLoadingScreenWorld(sTargetSceneFile);
+
+  ChangeMainWorld(m_pLoadingScreenWorld.Borrow(), {}, xiiTransform::MakeIdentity());
+}
+
+xiiUniquePtr<xiiWorld> xiiGameState::CreateLoadingScreenWorld(xiiStringView sTargetSceneFile)
+{
+  xiiWorldDesc desc("LoadingScreen");
+  return XII_DEFAULT_NEW(xiiWorld, desc);
+}
+
+void xiiGameState::StartBackgroundSceneLoading(xiiStringView sSceneFile, xiiStringView sPreloadCollection)
+{
+  m_bTransitionWhenReady = false;
+
+  if ((m_pBackgroundSceneLoad != nullptr) && (m_pBackgroundSceneLoad->GetRequestedScene() == sSceneFile))
+  {
+    // already being loaded
+    return;
+  }
+
+  CancelBackgroundSceneLoading();
+
+  m_pBackgroundSceneLoad = XII_DEFAULT_NEW(xiiSceneLoadUtility);
+  m_pBackgroundSceneLoad->StartSceneLoading(sSceneFile, sPreloadCollection);
+}
+
+void xiiGameState::CancelBackgroundSceneLoading()
+{
+  if (m_pBackgroundSceneLoad)
+  {
+    OnBackgroundSceneLoadingCanceled();
+    m_pBackgroundSceneLoad.Clear();
+  }
+}
+
+void xiiGameState::UpdateBackgroundSceneLoading()
+{
+  if (m_pBackgroundSceneLoad)
+  {
+    xiiSceneLoadUtility::LoadingState state = m_pBackgroundSceneLoad->GetLoadingState();
+
+    switch (state)
+    {
+      case xiiSceneLoadUtility::LoadingState::FinishedAndRetrieved:
+        return;
+
+      case xiiSceneLoadUtility::LoadingState::NotStarted:
+      case xiiSceneLoadUtility::LoadingState::Ongoing:
+        m_pBackgroundSceneLoad->TickSceneLoading();
+        break;
+
+      case xiiSceneLoadUtility::LoadingState::FinishedSuccessfully:
+        if (m_bTransitionWhenReady)
+        {
+          OnBackgroundSceneLoadingFinished(m_pBackgroundSceneLoad->RetrieveLoadedScene());
+          m_pBackgroundSceneLoad.Clear();
+        }
+        break;
+
+      case xiiSceneLoadUtility::LoadingState::Failed:
+        OnBackgroundSceneLoadingFailed(m_pBackgroundSceneLoad->GetLoadingFailureReason());
+        m_pBackgroundSceneLoad.Clear();
+        break;
+    }
+  }
+}
+
+void xiiGameState::OnBackgroundSceneLoadingFinished(xiiUniquePtr<xiiWorld>&& pWorld)
+{
+  xiiLog::Success("Finished loading scene '{}'.", m_pBackgroundSceneLoad->GetRequestedScene());
+
+  m_pLoadedWorld = std::move(pWorld);
+  ChangeMainWorld(m_pLoadedWorld.Borrow(), m_sTargetSceneSpawnPoint, m_TargetSceneSpawnOffset);
+  m_sTargetSceneSpawnPoint.Clear();
+  m_TargetSceneSpawnOffset = xiiTransform::MakeIdentity();
+}
+
+void xiiGameState::OnBackgroundSceneLoadingFailed(xiiStringView sReason)
+{
+  xiiLog::Error("Scene loading failed: {}", sReason);
+}
+
+void xiiGameState::OnBackgroundSceneLoadingCanceled()
+{
+  xiiLog::Dev("Cancelled background loading of scene '{}'.", m_pBackgroundSceneLoad->GetRequestedScene());
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);

@@ -51,8 +51,8 @@ public:
 
   float GetEffectiveRange() const;
 
-  void        SetProjectedTextureFile(const char* szFile); // [ property ]
-  const char* GetProjectedTextureFile() const;             // [ property ]
+  void          SetProjectedTextureFile(xiiStringView sFile); // [ property ]
+  xiiStringView GetProjectedTextureFile() const;              // [ property ]
 
   void                                SetProjectedTexture(const xiiTextureCubeResourceHandle& hProjectedTexture);
   const xiiTextureCubeResourceHandle& GetProjectedTexture() const;
@@ -73,7 +73,7 @@ class XII_GRAPHICSCORE_DLL xiiPointLightVisualizerAttribute : public xiiVisualiz
 
 public:
   xiiPointLightVisualizerAttribute();
-  xiiPointLightVisualizerAttribute(const char* szRangeProperty, const char* szIntensityProperty, const char* szColorProperty);
+  xiiPointLightVisualizerAttribute(xiiStringView sRangeProperty, xiiStringView sIntensityProperty, xiiStringView sColorProperty);
 
   const xiiUntrackedString& GetRangeProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetIntensityProperty() const { return m_sProperty2; }

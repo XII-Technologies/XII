@@ -88,7 +88,7 @@ private:
   void CreateQtConnection(const xiiDocumentObject* pObject);
   void DeleteQtConnection(const xiiDocumentObject* pObject);
   void RecreateQtPins(const xiiDocumentObject* pObject);
-  void CreateNodeObject(const xiiRTTI* pRtti);
+  void CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplate);
   void NodeEventsHandler(const xiiDocumentNodeManagerEvent& e);
   void PropertyEventsHandler(const xiiDocumentObjectPropertyEvent& e);
   void SelectionEventsHandler(const xiiSelectionManagerEvent& e);
@@ -130,6 +130,8 @@ private:
   xiiDynamicArray<const xiiQtPin*>       m_ConnectablePins;
   xiiEnum<ConnectionStyle>               m_ConnectionStyle;
   xiiBitflags<ConnectionDecorationFlags> m_ConnectionDecorationFlags;
+
+  xiiDynamicArray<xiiNodeCreationTemplate> m_NodeCreationTemplates;
 
   static xiiVec2 s_vLastMouseInteraction;
 };

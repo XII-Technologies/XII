@@ -6,6 +6,7 @@
 xiiQtAssetBrowserFilter::xiiQtAssetBrowserFilter(QObject* pParent) :
   xiiQtAssetFilter(pParent)
 {
+  Reset();
 }
 
 void xiiQtAssetBrowserFilter::Reset()
@@ -172,6 +173,30 @@ void xiiQtAssetBrowserFilter::SetFileExtensionFilters(xiiStringView sExtensions)
     tmp.ToLower();
     m_FileExtensions.Insert(tmp);
   }
+
+  Q_EMIT FilterChanged();
+}
+
+void xiiQtAssetBrowserFilter::SetRequiredTag(xiiStringView sRequiredTag)
+{
+  xiiStringBuilder tag;
+
+  if (sRequiredTag == "*")
+  {
+    tag = "*";
+  }
+  else if (!sRequiredTag.IsEmpty())
+  {
+    tag.Set(";", sRequiredTag, ";");
+  }
+  // else: tag stays empty
+
+  if (m_sRequiredTag == tag)
+    return;
+
+  m_sRequiredTag = tag;
+
+  Q_EMIT FilterChanged();
 }
 
 void xiiQtAssetBrowserFilter::SetTemporaryPinnedItem(xiiStringView sDataDirParentRelativePath)
@@ -208,18 +233,34 @@ bool xiiQtAssetBrowserFilter::IsAssetFiltered(xiiStringView sDataDirParentRelati
       return true;
   }
 
-  if (!m_sPathFilter.IsEmpty() || bIsFolder)
-  {
-    // if the string is not found in the path, ignore this asset
-    if (!sDataDirParentRelativePath.StartsWith(m_sPathFilter))
-      return true;
+  // if the string is not found in the path, ignore this asset
+  if (!sDataDirParentRelativePath.StartsWith(m_sPathFilter))
+    return true;
 
-    if (!m_bShowItemsInSubFolders || bIsFolder)
+  if (bIsFolder)
+  {
+    // do we find another path separator after the prefix path?
+    // if so, there is a sub-folder, and thus we ignore it
+    if (xiiStringUtils::FindSubString(sDataDirParentRelativePath.GetStartPointer() + m_sPathFilter.GetElementCount(), "/", sDataDirParentRelativePath.GetEndPointer()) != nullptr)
     {
-      // do we find another path separator after the prefix path?
-      // if so, there is a sub-folder, and thus we ignore it
-      if (xiiStringUtils::FindSubString(sDataDirParentRelativePath.GetStartPointer() + m_sPathFilter.GetElementCount(), "/", sDataDirParentRelativePath.GetEndPointer()) != nullptr)
-        return true;
+      return true;
+    }
+  }
+
+  if (m_SearchFilter.IsEmpty() && !m_bShowItemsInSubFolders)
+  {
+    // do we find another path separator after the prefix path?
+    // if so, there is a sub-folder, and thus we ignore it
+    if (xiiStringUtils::FindSubString(sDataDirParentRelativePath.GetStartPointer() + m_sPathFilter.GetElementCount(), "/", sDataDirParentRelativePath.GetEndPointer()) != nullptr)
+    {
+      return true;
+    }
+  }
+  else if (m_sPathFilter.IsEmpty() && !bIsFolder) // <Root> folder
+  {
+    if (!m_bShowItemsInSubFolders && m_SearchFilter.IsEmpty())
+    {
+      return true;
     }
   }
 
@@ -266,9 +307,12 @@ bool xiiQtAssetBrowserFilter::IsAssetFiltered(xiiStringView sDataDirParentRelati
     }
   }
 
-  // Always show folders
+  // Always show folders on the right
   if (bIsFolder)
-    return false;
+  {
+    // unless we have a type filter active
+    return !m_sTypeFilter.IsEmpty();
+  }
 
   if (!m_FileExtensions.IsEmpty())
   {
@@ -287,6 +331,25 @@ bool xiiQtAssetBrowserFilter::IsAssetFiltered(xiiStringView sDataDirParentRelati
 
     if (!m_sTypeFilter.FindSubString(m_sTemp))
       return true;
+  }
+
+  if (pInfo && m_sRequiredTag != "*") // '*' means everything is allowed
+  {
+    const auto& tags = pInfo->m_pAssetInfo->m_Info->GetAssetsDocumentTags();
+
+    if (m_sRequiredTag.IsEmpty())
+    {
+      // if the required tag is empty, we only display assets without any tags
+      // so the "default tag" (nothing at all) is already a tag for not-tagged items
+      // if you really want to see all assets, use * as the required tag
+      return !tags.IsEmpty();
+    }
+    else
+    {
+      // otherwise search for ";required;" in the tags string (note the semicolons at the start and end as delimiters
+      if (tags.FindSubString(m_sRequiredTag) == nullptr)
+        return true;
+    }
   }
 
   return false;

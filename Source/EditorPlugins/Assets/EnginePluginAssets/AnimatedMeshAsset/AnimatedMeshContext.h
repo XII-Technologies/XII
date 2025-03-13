@@ -32,6 +32,6 @@ protected:
 private:
   void QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg);
 
-  xiiGameObject*        m_pAnimatedMeshObject = nullptr;
+  xiiGameObject*        m_pAnimatedMeshObject;
   xiiMeshResourceHandle m_hAnimatedMesh;
 };

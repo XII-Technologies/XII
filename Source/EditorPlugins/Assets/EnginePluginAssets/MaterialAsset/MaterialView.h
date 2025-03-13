@@ -15,5 +15,5 @@ public:
 protected:
   virtual xiiViewHandle CreateView() override;
 
-  xiiMaterialContext* m_pMaterialContext = nullptr;
+  xiiMaterialContext* m_pMaterialContext;
 };

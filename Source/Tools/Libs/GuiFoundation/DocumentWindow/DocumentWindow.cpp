@@ -17,6 +17,7 @@
 #include <QStatusBar>
 #include <QTimer>
 #include <ToolsFoundation/Document/Document.h>
+#include <ads/DockManager.h>
 #include <ads/DockWidget.h>
 
 xiiEvent<const xiiQtDocumentWindowEvent&> xiiQtDocumentWindow::s_Events;
@@ -25,6 +26,8 @@ bool                                      xiiQtDocumentWindow::s_bAllowRestoreWi
 
 void xiiQtDocumentWindow::Constructor()
 {
+  m_pDockManager = new ads::CDockManager(this);
+
   s_AllDocumentWindows.PushBack(this);
 
   // status bar
@@ -41,8 +44,6 @@ void xiiQtDocumentWindow::Constructor()
 
     XII_VERIFY(connect(m_pPermanentGlobalStatusButton, &QToolButton::clicked, this, &xiiQtDocumentWindow::OnPermanentGlobalStatusClicked), "");
   }
-
-  setDockNestingEnabled(true);
 
   xiiQtMenuBarActionMapView* pMenuBar = new xiiQtMenuBarActionMapView(this);
   setMenuBar(pMenuBar);
@@ -316,8 +317,7 @@ bool xiiQtDocumentWindow::eventFilter(QObject* obj, QEvent* e)
         return true;
     }
 
-    // Some central widgets consume the shortcut (or any key press for that matter) instead of passing it up the parent hierarchy. For example a QGraphicsView will forward
-    // any key-press to the QGraphicsScene which will consume every event. As a workaround, we overrule the central widget by default when it comes to shortcuts.
+    // Some central widgets consume the shortcut (or any key press for that matter) instead of passing it up the parent hierarchy. For example a QGraphicsView will forward any key-press to the QGraphicsScene which will consume every event. As a workaround, we overrule the central widget by default when it comes to shortcuts.
     if (obj == centralWidget())
     {
       QKeyEvent* keyEvent = static_cast<QKeyEvent*>(e);
@@ -325,6 +325,7 @@ bool xiiQtDocumentWindow::eventFilter(QObject* obj, QEvent* e)
         return true;
     }
   }
+
   return false;
 }
 
@@ -354,7 +355,7 @@ void xiiQtDocumentWindow::ScheduleRestoreWindowLayout()
 
 void xiiQtDocumentWindow::SlotRestoreLayout()
 {
-  RestoreWindowLayout();
+  RestoreWindowLayout(false);
 }
 
 void xiiQtDocumentWindow::SaveWindowLayout()
@@ -372,48 +373,48 @@ void xiiQtDocumentWindow::SaveWindowLayout()
     showNormal();
 
   xiiStringBuilder sGroup;
-  sGroup.SetFormat("DocumentWnd_{0}", GetWindowLayoutGroupName());
+  sGroup.SetFormat("DocWndLayout_{0}", GetWindowLayoutGroupName());
 
   QSettings Settings;
   Settings.beginGroup(xiiMakeQString(sGroup.GetView()));
   {
     // All other properties are defined by the outer container window.
-    Settings.setValue("WindowState", saveState());
+    Settings.setValue("DocWndState", m_pDockManager->saveState());
   }
   Settings.endGroup();
 }
 
-void xiiQtDocumentWindow::RestoreWindowLayout()
+void xiiQtDocumentWindow::RestoreWindowLayout(bool bForce)
 {
   if (!s_bAllowRestoreWindowLayout)
     return;
 
+  if (!bForce && m_bWindowRestored)
+    return;
+
+  m_bWindowRestored = true;
+
   xiiQtScopedUpdatesDisabled _(this);
 
   xiiStringBuilder sGroup;
-  sGroup.SetFormat("DocumentWnd_{0}", GetWindowLayoutGroupName());
+  sGroup.SetFormat("DocWndLayout_{0}", GetWindowLayoutGroupName());
 
   {
-    QSettings Settings;
-    Settings.beginGroup(xiiMakeQString(sGroup.GetView()));
+    xiiHybridArray<QWidget*, 8> docks;
+
+    for (QDockWidget* dockWidget : findChildren<QDockWidget*>())
     {
-      restoreState(Settings.value("WindowState", saveState()).toByteArray());
+      dockWidget->show();
+      QWidget* ptr = dockWidget->widget();
+      docks.PushBack(ptr);
+    }
+
+    QSettings Settings;
+    Settings.beginGroup(QString::fromUtf8(sGroup, sGroup.GetElementCount()));
+    {
+      m_pDockManager->restoreState(Settings.value("DocWndState", m_pDockManager->saveState()).toByteArray());
     }
     Settings.endGroup();
-
-    // with certain Qt versions the window state could be saved corrupted
-    // if that is the case, make sure that non-closable widgets get restored to be visible
-    // otherwise the user would need to delete the serialized state from the registry
-    {
-      for (QDockWidget* dockWidget : findChildren<QDockWidget*>())
-      {
-        // not closable means the user can generally not change the visible state -> make sure it is visible
-        if (!dockWidget->features().testFlag(QDockWidget::DockWidgetClosable) && dockWidget->isHidden())
-        {
-          dockWidget->show();
-        }
-      }
-    }
   }
 
   statusBar()->clearMessage();
@@ -431,7 +432,9 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
     {
       if (m_pDocument->GetUnknownObjectTypeInstances() > 0)
       {
-        if (xiiQtUiServices::MessageBoxQuestion("Warning! This document contained unknown object types that could not be loaded. Saving the document means those objects will get lost permanently.\n\nDo you really want to save this document?",
+        if (xiiQtUiServices::MessageBoxQuestion("Warning! This document contained unknown object types that could not be loaded. Saving the "
+                                                "document means those objects will get lost permanently.\n\nDo you really want to save this "
+                                                "document?",
                                                 QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)
           return xiiStatus(XII_SUCCESS); // failed successfully
       }
@@ -462,7 +465,6 @@ void xiiQtDocumentWindow::ShowTemporaryStatusBarMsg(const xiiFormatString& msg, 
   xiiStringBuilder tmp;
   statusBar()->showMessage(QString::fromUtf8(msg.GetTextCStr(tmp)), (xiiInt32)duration.GetMilliseconds());
 }
-
 
 void xiiQtDocumentWindow::SetPermanentStatusBarMsg(const xiiFormatString& text)
 {

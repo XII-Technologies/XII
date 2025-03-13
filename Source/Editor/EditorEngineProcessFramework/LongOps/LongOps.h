@@ -25,7 +25,7 @@ public:
   virtual void InitializeRegistered(const xiiUuid& documentGuid, const xiiUuid& componentGuid) {}
 
   /// \brief Called by the xiiQtLongOpsPanel to determine the display string to be shown in the UI.
-  virtual const char* GetDisplayName() const = 0;
+  virtual xiiStringView GetDisplayName() const = 0;
 
   /// \brief Called every time the long op shall be executed
   /// \param out_sReplicationOpType must name the xiiLongOpWorker that shall be executed in the engine process.

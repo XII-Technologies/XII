@@ -21,7 +21,6 @@
 #include <QGridLayout>
 #include <QLabel>
 
-
 xiiQtTypeWidget::xiiQtTypeWidget(QWidget* pParent, xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, xiiStringView sIncludeProperties, xiiStringView sExcludeProperties) :
   QWidget(pParent), m_pGrid(pGrid), m_pObjectAccessor(pObjectAccessor), m_pType(pType)
 {
@@ -82,7 +81,6 @@ void xiiQtTypeWidget::SetSelection(const xiiHybridArray<xiiPropertySelection, 8>
   e.m_bHideManipulators = false; // irrelevant for this
   ManipulatorManagerEventHandler(e);
 }
-
 
 void xiiQtTypeWidget::PrepareToDie()
 {
@@ -424,7 +422,7 @@ void xiiQtTypeWidget::UpdatePropertyMetaState()
 
       if (itData.IsValid() && !itData.Value().m_sNewLabelText.IsEmpty())
       {
-        xiiString& sLabelText = itData.Value().m_sNewLabelText;
+        xiiStringView sLabelText = itData.Value().m_sNewLabelText;
         it.Value().m_pLabel->setText(xiiMakeQString(xiiTranslate(sLabelText)));
         it.Value().m_pLabel->setToolTip(xiiMakeQString(xiiTranslateTooltip(sLabelText)));
       }
@@ -446,7 +444,7 @@ void xiiQtTypeWidget::UpdatePropertyMetaState()
     }
 
     it.Value().m_pWidget->setVisible(state != xiiPropertyUiState::Invisible);
-    it.Value().m_pWidget->setEnabled(!bReadOnly && state != xiiPropertyUiState::Disabled);
+    it.Value().m_pWidget->SetReadOnly(bReadOnly || state == xiiPropertyUiState::Disabled);
     it.Value().m_pWidget->SetIsDefault(bIsDefaultValue);
   }
 }

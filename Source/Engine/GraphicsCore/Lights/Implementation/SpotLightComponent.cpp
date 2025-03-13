@@ -111,23 +111,20 @@ const xiiTexture2DResourceHandle& xiiSpotLightComponent::GetProjectedTexture() c
   return m_hProjectedTexture;
 }
 
-void xiiSpotLightComponent::SetProjectedTextureFile(const char* szFile)
+void xiiSpotLightComponent::SetProjectedTextureFile(xiiStringView sFile)
 {
   xiiTexture2DResourceHandle hProjectedTexture;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hProjectedTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(szFile);
+    hProjectedTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sFile);
   }
 
   SetProjectedTexture(hProjectedTexture);
 }
 
-const char* xiiSpotLightComponent::GetProjectedTextureFile() const
+xiiStringView xiiSpotLightComponent::GetProjectedTextureFile() const
 {
-  if (!m_hProjectedTexture.IsValid())
-    return "";
-
   return m_hProjectedTexture.GetResourceID();
 }
 
@@ -230,8 +227,8 @@ xiiSpotLightVisualizerAttribute::xiiSpotLightVisualizerAttribute() :
 {
 }
 
-xiiSpotLightVisualizerAttribute::xiiSpotLightVisualizerAttribute(const char* szAngleProperty, const char* szRangeProperty, const char* szIntensityProperty, const char* szColorProperty) :
-  xiiVisualizerAttribute(szAngleProperty, szRangeProperty, szIntensityProperty, szColorProperty)
+xiiSpotLightVisualizerAttribute::xiiSpotLightVisualizerAttribute(xiiStringView sAngleProperty, xiiStringView sRangeProperty, xiiStringView sIntensityProperty, xiiStringView sColorProperty) :
+  xiiVisualizerAttribute(sAngleProperty, sRangeProperty, sIntensityProperty, sColorProperty)
 {
 }
 

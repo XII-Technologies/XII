@@ -39,9 +39,8 @@ void xiiEditorEngineProcessConnection::HandleIPCEvent(const xiiProcessCommunicat
   {
     const xiiEditorEngineDocumentMsg* pMsg = static_cast<const xiiEditorEngineDocumentMsg*>(e.m_pMessage);
 
-    xiiAssetDocument* pDocument = m_DocumentByGuid[pMsg->m_DocumentGuid];
-
-    if (pDocument)
+    xiiAssetDocument* pDocument = nullptr;
+    if (m_DocumentByGuid.TryGetValue(pMsg->m_DocumentGuid, pDocument))
     {
       pDocument->HandleEngineMessage(pMsg);
     }
@@ -68,6 +67,9 @@ void xiiEditorEngineProcessConnection::UIServicesTickEventHandler(const xiiQtUiS
 
       if (m_uiRedrawCountSent > m_uiRedrawCountReceived)
       {
+        xiiStringBuilder sRedrawScope;
+        sRedrawScope.SetFormat("Wait For Redraw {}", m_uiRedrawCountReceived + 1);
+        XII_PROFILE_SCOPE(sRedrawScope.GetData());
         WaitForMessage(xiiGetStaticRTTI<xiiSyncWithProcessMsgToEditor>(), xiiTime::MakeFromSeconds(2.0)).IgnoreResult();
       }
 
@@ -145,6 +147,7 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   if (m_IPC.StartClientProcess(EditorEngineProcessExecutableName, args, false, pFirstAllowedMessageType).Failed())
   {
     m_bProcessCrashed = true;
+    xiiLog::Error("EngineProcess crashed on startup.");
   }
   else
   {
@@ -350,7 +353,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
     msg.m_FileSystemConfig  = m_FileSystemConfig;
     msg.m_PluginConfig      = m_PluginConfig;
     msg.m_sAssetProfile     = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName();
-    msg.m_fDevicePixelRatio = QApplication::activeWindow() != nullptr ? QApplication::activeWindow()->devicePixelRatio() : 1.0f;
+    msg.m_fDevicePixelRatio = QApplication::activeWindow() != nullptr ? QApplication::activeWindow()->devicePixelRatio() : QGuiApplication::primaryScreen()->devicePixelRatio();
 
     SendMessage(&msg);
   }
@@ -377,7 +380,8 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
   docs.Sort([](const xiiAssetDocument* a, const xiiAssetDocument* b) {
     if (a->IsMainDocument() != b->IsMainDocument())
       return a->IsMainDocument();
-    return a < b; });
+    return a < b;
+  });
 
   for (xiiAssetDocument* pDoc : docs)
   {

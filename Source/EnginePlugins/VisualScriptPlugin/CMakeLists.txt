@@ -9,3 +9,5 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
   Core
 )
+
+xii_copy_plugin_bundle(${PROJECT_NAME} "VisualScript")

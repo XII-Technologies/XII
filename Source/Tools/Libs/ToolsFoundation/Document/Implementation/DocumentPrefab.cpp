@@ -19,7 +19,7 @@ void xiiDocument::UpdatePrefabs()
   SetModified(true);
 }
 
-void xiiDocument::RevertPrefabs(const xiiDeque<const xiiDocumentObject*>& selection)
+void xiiDocument::RevertPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection)
 {
   if (selection.IsEmpty())
     return;
@@ -36,7 +36,7 @@ void xiiDocument::RevertPrefabs(const xiiDeque<const xiiDocumentObject*>& select
   pHistory->FinishTransaction();
 }
 
-void xiiDocument::UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& selection)
+void xiiDocument::UnlinkPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection)
 {
   if (selection.IsEmpty())
     return;
@@ -57,16 +57,17 @@ void xiiDocument::UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& select
 
 xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB)
 {
-  auto Selection = GetSelectionManager()->GetTopLevelSelection(pRootType);
+  xiiHybridArray<xiiSelectionEntry, 64> selection;
+  GetSelectionManager()->GetTopLevelSelectionOfType(pRootType, selection);
 
-  if (Selection.IsEmpty())
+  if (selection.IsEmpty())
     return xiiStatus("To create a prefab, the selection must not be empty");
 
   xiiHybridArray<const xiiDocumentObject*, 32> nodes;
-  nodes.Reserve(Selection.GetCount());
-  for (auto pNode : Selection)
+  nodes.Reserve(selection.GetCount());
+  for (const auto& e : selection)
   {
-    nodes.PushBack(pNode);
+    nodes.PushBack(e.m_pObject);
   }
 
   xiiUuid PrefabGuid, SeedGuid;
@@ -193,7 +194,7 @@ xiiUuid xiiDocument::ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiSt
     instCmd.m_bAllowPickedPosition = false;
     instCmd.m_CreateFromPrefab     = prefabAsset;
     instCmd.m_Parent               = pRootObject->GetParent() == GetObjectManager()->GetRootObject() ? xiiUuid() : pRootObject->GetParent()->GetGuid();
-    instCmd.m_sBasePrefabGraph     = xiiPrefabUtils::ReadDocumentAsString(sPrefabFile); // Since the prefab might have been created just now, going through the cache (via GUID) will most likely fail.
+    instCmd.m_sBasePrefabGraph     = xiiPrefabUtils::ReadDocumentAsString(sPrefabFile); // since the prefab might have been created just now, going through the cache (via GUID) will most likely fail
     instCmd.m_RemapGuid            = prefabSeed;
 
     GetCommandHistory()->AddCommand(instCmd).AssertSuccess();

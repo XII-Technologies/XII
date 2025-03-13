@@ -142,9 +142,9 @@ void xiiQtNodeView::drawBackground(QPainter* painter, const QRectF& r)
 
   if (m_ViewScale.manhattanLength() > 1.0)
   {
-    QPen p(xiiToQtColor(xiiColorScheme::GetColor(xiiColorScheme::Gray, 0)), 1.0);
+    QPen pfine(xiiToQtColor(xiiColorScheme::GetColor(xiiColorScheme::Gray, 0)), 1.0);
 
-    painter->setPen(p);
+    painter->setPen(pfine);
     DrawGrid(painter, 15);
   }
 

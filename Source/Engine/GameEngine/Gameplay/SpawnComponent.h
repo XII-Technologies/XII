@@ -75,9 +75,6 @@ public:
   /// To stop continuously spawning, remove the continuous spawn flag.
   void ScheduleSpawn(); // [ scriptable ]
 
-  void        SetPrefabFile(const char* szFile); // [ property ]
-  const char* GetPrefabFile() const;             // [ property ]
-
   bool GetSpawnAtStart() const; // [ property ]
   void SetSpawnAtStart(bool b); // [ property ]
 
@@ -87,8 +84,7 @@ public:
   bool GetAttachAsChild() const; // [ property ]
   void SetAttachAsChild(bool b); // [ property ]
 
-  void                    SetPrefab(const xiiPrefabResourceHandle& hPrefab);
-  XII_ALWAYS_INLINE const xiiPrefabResourceHandle& GetPrefab() const { return m_hPrefab; }
+  xiiPrefabResourceHandle m_hPrefab; // [ property ]
 
   /// The minimum delay between spawning objects. This is also enforced for manually spawning things.
   xiiTime m_MinDelay; // [ property ]
@@ -113,6 +109,5 @@ protected:
   bool         SpawnOnce(const xiiVec3& vLocalOffset);
   void         OnTriggered(xiiMsgComponentInternalTrigger& msg);
 
-  xiiTime                 m_LastManualSpawn;
-  xiiPrefabResourceHandle m_hPrefab;
+  xiiTime m_LastManualSpawn;
 };

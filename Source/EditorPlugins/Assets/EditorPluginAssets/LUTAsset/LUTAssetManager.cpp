@@ -57,12 +57,7 @@ void xiiLUTAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentManager
   }
 }
 
-void xiiLUTAssetDocumentManager::InternalCreateDocument(
-  xiiStringView            sDocumentTypeName,
-  xiiStringView            sPath,
-  bool                     bCreateNewDocument,
-  xiiDocument*&            out_pDocument,
-  const xiiDocumentObject* pOpenContext)
+void xiiLUTAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   xiiLUTAssetDocument* pDoc = new xiiLUTAssetDocument(sPath);
   out_pDocument             = pDoc;

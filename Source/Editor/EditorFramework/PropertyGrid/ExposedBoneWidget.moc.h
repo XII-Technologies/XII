@@ -26,5 +26,5 @@ protected:
 
   bool                m_bTemporaryCommand = false;
   QHBoxLayout*        m_pLayout           = nullptr;
-  xiiQtDoubleSpinBox* m_pRotWidget[3]     = {};
+  xiiQtDoubleSpinBox* m_pRotWidget[3];
 };

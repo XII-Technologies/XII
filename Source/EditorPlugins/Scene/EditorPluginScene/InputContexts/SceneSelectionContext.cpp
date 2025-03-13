@@ -18,6 +18,8 @@ void xiiSceneSelectionContext::OpenDocumentForPickedObject(const xiiObjectPickin
 
 void xiiSceneSelectionContext::SelectPickedObject(const xiiObjectPickingResult& res, bool bToggle, bool bDirect) const
 {
+  xiiScene2Document* pSceneDocument = nullptr;
+
   // If bToggle (ctrl-key) is held, we don't want to switch layers.
   // Same if we have a custom pick override set which usually means that the selection is hijacked to make an object modification on the current layer.
   if (res.m_PickedObject.IsValid() && !bToggle)
@@ -26,7 +28,7 @@ void xiiSceneSelectionContext::SelectPickedObject(const xiiObjectPickingResult& 
     xiiUuid                  layerGuid = FindLayerByObject(res.m_PickedObject, pObject);
     if (layerGuid.IsValid())
     {
-      xiiScene2Document* pSceneDocument = xiiDynamicCast<xiiScene2Document*>(GetOwnerWindow()->GetDocument());
+      pSceneDocument = xiiDynamicCast<xiiScene2Document*>(GetOwnerWindow()->GetDocument());
       if (pSceneDocument->IsLayerLoaded(layerGuid))
       {
         if (m_PickObjectOverride.IsValid())
@@ -34,11 +36,20 @@ void xiiSceneSelectionContext::SelectPickedObject(const xiiObjectPickingResult& 
           m_PickObjectOverride(pObject);
           return;
         }
-        pSceneDocument->SetActiveLayer(layerGuid).LogFailure();
+
+        if (pSceneDocument->GetActiveLayer() != layerGuid)
+        {
+          pSceneDocument->PreventDoubleSelectionChange(true);
+          pSceneDocument->SetActiveLayer(layerGuid).LogFailure();
+        }
       }
     }
   }
+
   xiiSelectionContext::SelectPickedObject(res, bToggle, bDirect);
+
+  if (pSceneDocument)
+    pSceneDocument->PreventDoubleSelectionChange(false);
 }
 
 xiiUuid xiiSceneSelectionContext::FindLayerByObject(xiiUuid objectGuid, const xiiDocumentObject*& out_pObject) const

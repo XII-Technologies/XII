@@ -27,12 +27,20 @@ public:
 
   virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 
+  using LogItemContextActionCallback = xiiDelegate<void(const xiiStringView& sLogText)>;
+  static bool AddLogItemContextActionCallback(const xiiStringView& sName, const LogItemContextActionCallback& logCallback);
+  static bool RemoveLogItemContextActionCallback(const xiiStringView& sName);
+
 private Q_SLOTS:
   void on_ButtonClearLog_clicked();
   void on_Search_textChanged(const QString& text);
   void on_ComboFilter_currentIndexChanged(int index);
+  void OnItemDoubleClicked(QModelIndex idx);
 
 private:
   xiiQtLogModel* m_pLog;
   void           ScrollToBottomIfAtEnd(int iNumElements);
+
+  /// \brief List of callbacks invoked when the user double clicks a log message
+  static xiiMap<xiiString, LogItemContextActionCallback> s_LogCallbacks;
 };

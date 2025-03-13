@@ -1,5 +1,6 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorPluginAssets/ImageDataAsset/ImageDataAsset.h>
 #include <EditorPluginAssets/ImageDataAsset/ImageDataAssetWindow.moc.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
@@ -36,23 +37,40 @@ xiiQtImageDataAssetDocumentWindow::xiiQtImageDataAssetDocumentWindow(xiiImageDat
     addToolBar(pToolBar);
   }
 
+  // Central Widget
+  {
+    m_pImageWidget = new xiiQtImageWidget(this);
+
+    xiiQtDocumentPanel* pCentral = new xiiQtDocumentPanel(this, pDocument);
+    pCentral->setObjectName("ImageDataView");
+    pCentral->setWindowTitle("Image");
+    pCentral->setWidget(m_pImageWidget);
+
+    m_pDockManager->setCentralWidget(pCentral);
+  }
+
   {
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);
-    pPropertyPanel->setObjectName("ImageDataAssetDockWidget");
-    pPropertyPanel->setWindowTitle("Properties");
-    pPropertyPanel->show();
+    pPropertyPanel->setObjectName("ImageDataProperties");
+    pPropertyPanel->setWindowTitle("Image Properties");
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPropertyPanel, pDocument);
-    pPropertyPanel->setWidget(pPropertyGrid);
 
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, pPropertyPanel);
+    QWidget* pWidget = new QWidget();
+    pWidget->setObjectName("Group");
+    pWidget->setLayout(new QVBoxLayout());
+    pWidget->setContentsMargins(0, 0, 0, 0);
+
+    pWidget->layout()->setContentsMargins(0, 0, 0, 0);
+    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator((xiiAssetDocument*)GetDocument()));
+    pWidget->layout()->addWidget(pPropertyGrid);
+
+    pPropertyPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
+
+    m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPropertyPanel);
 
     pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
   }
-
-  m_pImageWidget = new xiiQtImageWidget(this);
-
-  setCentralWidget(m_pImageWidget);
 
   FinishWindowCreation();
 

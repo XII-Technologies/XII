@@ -24,6 +24,7 @@ public:
     NotStarted,
     Ongoing,
     FinishedSuccessfully,
+    FinishedAndRetrieved, ///< Loading succeeded and someone already called RetrieveLoadedScene()
     Failed,
   };
 
@@ -52,6 +53,12 @@ public:
   /// Afterwards there is no point in keeping the xiiSceneLoadUtility around anymore and it should be deleted.
   xiiUniquePtr<xiiWorld> RetrieveLoadedScene();
 
+  /// \brief Returns the path to the scene file as it was originally requested.
+  xiiStringView GetRequestedScene() const { return m_sRequestedFile; }
+
+  /// \brief Returns the path to the scene file after it was redirected.
+  xiiStringView GetRedirectedScene() const { return m_sRedirectedFile; }
+
 private:
   void LoadingFailed(const xiiFormatString& reason);
 
@@ -59,7 +66,8 @@ private:
   float        m_fLoadingProgress = 0.0f;
   xiiString    m_sFailureReason;
 
-  xiiString                                              m_sFile;
+  xiiString                                              m_sRequestedFile;
+  xiiString                                              m_sRedirectedFile;
   xiiCollectionResourceHandle                            m_hPreloadCollection;
   xiiFileReader                                          m_FileReader;
   xiiWorldReader                                         m_WorldReader;

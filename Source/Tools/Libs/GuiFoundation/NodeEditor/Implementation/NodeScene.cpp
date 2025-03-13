@@ -411,6 +411,12 @@ void xiiQtNodeScene::CreateQtNode(const xiiDocumentObject* pObject)
   pNode->setPos(vPos.x, vPos.y);
 
   pNode->ResetFlags();
+
+  // Note: We dont create connections here as it can cause recusion issues
+  if (m_pTempConnection)
+  {
+    m_pTempNode = pNode;
+  }
 }
 
 void xiiQtNodeScene::DeleteQtNode(const xiiDocumentObject* pObject)
@@ -487,7 +493,7 @@ void xiiQtNodeScene::RecreateQtPins(const xiiDocumentObject* pObject)
   pNode->UpdateGeometry();
 }
 
-void xiiQtNodeScene::CreateNodeObject(const xiiRTTI* pRtti)
+void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplate)
 {
   xiiCommandHistory* history = m_pManager->GetDocument()->GetCommandHistory();
   history->StartTransaction("Add Node");
@@ -495,7 +501,7 @@ void xiiQtNodeScene::CreateNodeObject(const xiiRTTI* pRtti)
   xiiStatus res;
   {
     xiiAddObjectCommand cmd;
-    cmd.m_pType         = pRtti;
+    cmd.m_pType         = nodeTemplate.m_pType;
     cmd.m_NewObjectGuid = xiiUuid::MakeUuid();
     cmd.m_Index         = -1;
 
@@ -506,6 +512,18 @@ void xiiQtNodeScene::CreateNodeObject(const xiiRTTI* pRtti)
       move.m_Object = cmd.m_NewObjectGuid;
       move.m_NewPos = m_vMousePos;
       res           = history->AddCommand(move);
+    }
+
+    for (auto& propValue : nodeTemplate.m_PropertyValues)
+    {
+      if (res.m_Result.Failed())
+        break;
+
+      xiiSetObjectPropertyCommand setCmd;
+      setCmd.m_Object    = cmd.m_NewObjectGuid;
+      setCmd.m_sProperty = propValue.m_sPropertyName.GetString();
+      setCmd.m_NewValue  = propValue.m_Value;
+      res                = history->AddCommand(setCmd);
     }
   }
 
@@ -726,15 +744,16 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
   connect(pSearchMenu, &xiiQtSearchableMenu::MenuItemTriggered, this, &xiiQtNodeScene::OnMenuItemTriggered);
   connect(pSearchMenu, &xiiQtSearchableMenu::MenuItemTriggered, this, [&menu]() { menu.close(); });
 
-  xiiStringBuilder tmp;
   xiiStringBuilder sFullPath;
 
-  xiiHybridArray<const xiiRTTI*, 32> types;
-  m_pManager->GetCreateableTypes(types);
+  m_NodeCreationTemplates.Clear();
+  m_pManager->GetNodeCreationTemplates(m_NodeCreationTemplates);
 
-  for (const xiiRTTI* pRtti : types)
+  for (xiiUInt32 i = 0; i < m_NodeCreationTemplates.GetCount(); ++i)
   {
-    xiiStringView sCleanName = pRtti->GetTypeName();
+    const xiiNodeCreationTemplate& nodeTemplate = m_NodeCreationTemplates[i];
+    const xiiRTTI*                 pRtti        = nodeTemplate.m_pType;
+    xiiStringView                  sCleanName   = nodeTemplate.m_sTypeName.IsEmpty() ? pRtti->GetTypeName() : nodeTemplate.m_sTypeName;
 
     if (const char* szUnderscore = sCleanName.FindLastSubString("_"))
     {
@@ -746,8 +765,7 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
       sCleanName = xiiStringView(sCleanName.GetStartPointer(), szBracket);
     }
 
-    sFullPath = m_pManager->GetTypeCategory(pRtti);
-
+    sFullPath = nodeTemplate.m_sCategory.GetString();
     if (sFullPath.IsEmpty())
     {
       if (auto pAttr = pRtti->GetAttributeByType<xiiCategoryAttribute>())
@@ -758,7 +776,7 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
 
     sFullPath.AppendPath(sCleanName);
 
-    pSearchMenu->AddItem(xiiTranslate(sCleanName.GetData(tmp)), sFullPath, QVariant::fromValue((void*)pRtti));
+    pSearchMenu->AddItem(xiiTranslate(sCleanName), sFullPath, QVariant::fromValue(i));
   }
 
   pSearchMenu->Finalize(m_sContextMenuSearchText);
@@ -902,9 +920,11 @@ void xiiQtNodeScene::DisconnectPinsAction(xiiQtPin* pPin)
 
 void xiiQtNodeScene::OnMenuItemTriggered(const QString& sName, const QVariant& variant)
 {
-  const xiiRTTI* pRtti = static_cast<const xiiRTTI*>(variant.value<void*>());
+  xiiUInt32 uiTypeIndex = variant.value<xiiUInt32>();
+  if (uiTypeIndex >= m_NodeCreationTemplates.GetCount())
+    return;
 
-  CreateNodeObject(pRtti);
+  CreateNodeObject(m_NodeCreationTemplates[uiTypeIndex]);
 }
 
 void xiiQtNodeScene::OnSelectionChanged()

@@ -31,9 +31,9 @@ xiiTranslateGizmo::xiiTranslateGizmo()
   SetVisible(false);
   SetTransformation(xiiTransform::MakeIdentity());
 
-  m_Mode                 = TranslateMode::None;
-  m_MovementMode         = MovementMode::ScreenProjection;
-  m_LastPlaneInteraction = PlaneInteraction::PlaneZ;
+  m_Mode                  = TranslateMode::None;
+  m_MovementMode          = MovementMode::ScreenProjection;
+  m_LastHandleInteraction = HandleInteraction::None;
 }
 
 void xiiTranslateGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
@@ -92,8 +92,9 @@ void xiiTranslateGizmo::DoFocusLost(bool bCancel)
   m_hPlaneXZ.SetVisible(true);
   m_hPlaneYZ.SetVisible(true);
 
-  m_Mode         = TranslateMode::None;
-  m_MovementMode = MovementMode::ScreenProjection;
+  m_Mode                  = TranslateMode::None;
+  m_LastHandleInteraction = HandleInteraction::None;
+  m_MovementMode          = MovementMode::ScreenProjection;
   m_vLastMoveDiff.SetZero();
 
   m_vStartPosition = GetTransformation().m_vPosition;
@@ -116,42 +117,45 @@ xiiEditorInput xiiTranslateGizmo::DoMousePressEvent(QMouseEvent* e)
 
   if (m_pInteractionGizmoHandle == &m_hAxisX)
   {
-    m_vMoveAxis = gizmoRot * xiiVec3(1, 0, 0);
-    m_Mode      = TranslateMode::Axis;
+    m_vMoveAxis             = gizmoRot * xiiVec3(1, 0, 0);
+    m_Mode                  = TranslateMode::Axis;
+    m_LastHandleInteraction = HandleInteraction::AxisX;
   }
   else if (m_pInteractionGizmoHandle == &m_hAxisY)
   {
-    m_vMoveAxis = gizmoRot * xiiVec3(0, 1, 0);
-    m_Mode      = TranslateMode::Axis;
+    m_vMoveAxis             = gizmoRot * xiiVec3(0, 1, 0);
+    m_Mode                  = TranslateMode::Axis;
+    m_LastHandleInteraction = HandleInteraction::AxisY;
   }
   else if (m_pInteractionGizmoHandle == &m_hAxisZ)
   {
-    m_vMoveAxis = gizmoRot * xiiVec3(0, 0, 1);
-    m_Mode      = TranslateMode::Axis;
+    m_vMoveAxis             = gizmoRot * xiiVec3(0, 0, 1);
+    m_Mode                  = TranslateMode::Axis;
+    m_LastHandleInteraction = HandleInteraction::AxisZ;
   }
   else if (m_pInteractionGizmoHandle == &m_hPlaneXY)
   {
-    m_vMoveAxis            = gizmoRot * xiiVec3(0, 0, 1);
-    m_vPlaneAxis[0]        = gizmoRot * xiiVec3(1, 0, 0);
-    m_vPlaneAxis[1]        = gizmoRot * xiiVec3(0, 1, 0);
-    m_Mode                 = TranslateMode::Plane;
-    m_LastPlaneInteraction = PlaneInteraction::PlaneZ;
+    m_vMoveAxis             = gizmoRot * xiiVec3(0, 0, 1);
+    m_vPlaneAxis[0]         = gizmoRot * xiiVec3(1, 0, 0);
+    m_vPlaneAxis[1]         = gizmoRot * xiiVec3(0, 1, 0);
+    m_Mode                  = TranslateMode::Plane;
+    m_LastHandleInteraction = HandleInteraction::PlaneZ;
   }
   else if (m_pInteractionGizmoHandle == &m_hPlaneXZ)
   {
-    m_vMoveAxis            = gizmoRot * xiiVec3(0, 1, 0);
-    m_vPlaneAxis[0]        = gizmoRot * xiiVec3(1, 0, 0);
-    m_vPlaneAxis[1]        = gizmoRot * xiiVec3(0, 0, 1);
-    m_Mode                 = TranslateMode::Plane;
-    m_LastPlaneInteraction = PlaneInteraction::PlaneY;
+    m_vMoveAxis             = gizmoRot * xiiVec3(0, 1, 0);
+    m_vPlaneAxis[0]         = gizmoRot * xiiVec3(1, 0, 0);
+    m_vPlaneAxis[1]         = gizmoRot * xiiVec3(0, 0, 1);
+    m_Mode                  = TranslateMode::Plane;
+    m_LastHandleInteraction = HandleInteraction::PlaneY;
   }
   else if (m_pInteractionGizmoHandle == &m_hPlaneYZ)
   {
-    m_vMoveAxis            = gizmoRot * xiiVec3(1, 0, 0);
-    m_vPlaneAxis[0]        = gizmoRot * xiiVec3(0, 1, 0);
-    m_vPlaneAxis[1]        = gizmoRot * xiiVec3(0, 0, 1);
-    m_Mode                 = TranslateMode::Plane;
-    m_LastPlaneInteraction = PlaneInteraction::PlaneX;
+    m_vMoveAxis             = gizmoRot * xiiVec3(1, 0, 0);
+    m_vPlaneAxis[0]         = gizmoRot * xiiVec3(0, 1, 0);
+    m_vPlaneAxis[1]         = gizmoRot * xiiVec3(0, 0, 1);
+    m_Mode                  = TranslateMode::Plane;
+    m_LastHandleInteraction = HandleInteraction::PlaneX;
   }
   else
     return xiiEditorInput::MayBeHandledByOthers;
@@ -317,8 +321,8 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   m_vLastMousePos = UpdateMouseMode(e);
 
-  // disable snapping when ALT is pressed
-  if (!e->modifiers().testFlag(Qt::AltModifier))
+  // disable snapping when SHIFT is pressed
+  if (!e->modifiers().testFlag(Qt::ShiftModifier))
   {
     xiiSnapProvider::SnapTranslationInLocalSpace(mTrans.m_qRotation, vTranslate);
   }

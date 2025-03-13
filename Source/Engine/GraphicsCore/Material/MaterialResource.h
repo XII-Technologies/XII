@@ -40,8 +40,7 @@ struct xiiMaterialResourceDescriptor
 
   void Clear();
 
-  bool                  operator==(const xiiMaterialResourceDescriptor& other) const;
-  XII_FORCE_INLINE bool operator!=(const xiiMaterialResourceDescriptor& other) const { return !(*this == other); }
+  bool operator==(const xiiMaterialResourceDescriptor& other) const;
 
   xiiMaterialResourceHandle m_hBaseMaterial;
   // xiiSurfaceResource is not linked into this project (not true anymore -> could be changed)

@@ -3,7 +3,6 @@
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <Foundation/Logging/Log.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 class xiiCamera;
 
@@ -48,8 +47,8 @@ protected:
   virtual void OnVisibleChanged(bool bVisible)                        = 0;
   virtual void OnTransformationChanged(const xiiTransform& transform) = 0;
 
-  const xiiCamera* m_pCamera                 = nullptr;
-  xiiGizmoHandle*  m_pInteractionGizmoHandle = nullptr;
+  const xiiCamera* m_pCamera;
+  xiiGizmoHandle*  m_pInteractionGizmoHandle;
   xiiVec3          m_vInteractionPivot;
   xiiVec2I32       m_vViewport;
 

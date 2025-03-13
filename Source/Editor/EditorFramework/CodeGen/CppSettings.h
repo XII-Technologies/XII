@@ -9,13 +9,5 @@ public:
   xiiResult Save(xiiStringView sFile = ":project/Editor/CppProject.ddl");
   xiiResult Load(xiiStringView sFile = ":project/Editor/CppProject.ddl");
 
-  enum class Compiler
-  {
-    None,
-    Vs2022,
-  };
-
-  xiiString         m_sPluginName;
-  Compiler          m_Compiler = Compiler::None;
-  mutable xiiString m_sMsBuildPath;
+  xiiString m_sPluginName;
 };

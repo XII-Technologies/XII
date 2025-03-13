@@ -187,6 +187,7 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiGALSwapChainHandle hSwapC
         pView->SetSwapChain(hSwapChain);
       else
         pView->SetRenderTargets(*pRenderTargets);
+
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)uiWidth, (float)uiHeight));
     }
   }
@@ -194,15 +195,6 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiGALSwapChainHandle hSwapC
 
 void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
 {
-  auto pState = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameStateLinkedToWorld(GetDocumentContext()->GetWorld());
-
-  if (pState != nullptr)
-  {
-    pState->ScheduleRendering();
-  }
-  // setting to only update one view ?
-  // else
-
   xiiView* pView = nullptr;
   if (xiiRenderWorld::TryGetView(m_hView, pView))
   {

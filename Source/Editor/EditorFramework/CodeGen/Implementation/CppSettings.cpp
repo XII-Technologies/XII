@@ -19,18 +19,6 @@ xiiResult xiiCppSettings::Save(xiiStringView sFile)
 
   xiiOpenDdlUtils::StoreString(ddl, m_sPluginName, "PluginName");
 
-  switch (m_Compiler)
-  {
-    case Compiler::None:
-      xiiOpenDdlUtils::StoreString(ddl, "", "Compiler");
-      break;
-    case Compiler::Vs2022:
-      xiiOpenDdlUtils::StoreString(ddl, "Vs2022", "Compiler");
-      break;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-
   ddl.EndObject();
 
   return XII_SUCCESS;
@@ -49,14 +37,6 @@ xiiResult xiiCppSettings::Load(xiiStringView sFile)
     if (auto pValue = pTarget->FindChildOfType(xiiOpenDdlPrimitiveType::String, "PluginName"))
     {
       m_sPluginName = pValue->GetPrimitivesString()[0];
-    }
-
-    if (auto pValue = pTarget->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Compiler"))
-    {
-      if (pValue->GetPrimitivesString()[0] == "Vs2022")
-        m_Compiler = Compiler::Vs2022;
-      else
-        m_Compiler = Compiler::None;
     }
   }
 

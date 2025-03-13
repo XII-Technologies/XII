@@ -323,13 +323,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
   return xiiStatus(XII_SUCCESS);
 }
 
-
-
-xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(
-  const xiiDocumentObject*             pOwnerNode,
-  const xiiVisualShaderNodeDescriptor* pNodeDesc,
-  xiiStringBuilder&                    sInlineCode,
-  xiiStringBuilder&                    sCodeForPlacingDefines)
+xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(const xiiDocumentObject* pOwnerNode, const xiiVisualShaderNodeDescriptor* pNodeDesc, xiiStringBuilder& sInlineCode, xiiStringBuilder& sCodeForPlacingDefines)
 {
   auto inputPins = m_pNodeManager->GetInputPins(pOwnerNode);
 
@@ -383,7 +377,6 @@ xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(
 
   return xiiStatus(XII_SUCCESS);
 }
-
 
 void xiiVisualShaderCodeGenerator::SetPinDefines(const xiiDocumentObject* pOwnerNode, xiiStringBuilder& sInlineCode)
 {
@@ -476,10 +469,7 @@ xiiStatus xiiVisualShaderCodeGenerator::CheckPropertyValues(const xiiDocumentObj
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiVisualShaderCodeGenerator::InsertPropertyValues(
-  const xiiDocumentObject*             pNode,
-  const xiiVisualShaderNodeDescriptor* pDesc,
-  xiiStringBuilder&                    sString)
+xiiStatus xiiVisualShaderCodeGenerator::InsertPropertyValues(const xiiDocumentObject* pNode, const xiiVisualShaderNodeDescriptor* pDesc, xiiStringBuilder& sString)
 {
   const auto& TypeAccess = pNode->GetTypeAccessor();
 

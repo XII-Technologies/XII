@@ -21,7 +21,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 2, xiiComponentMode::Stati
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("AnimationClip", GetAnimationClipFile, SetAnimationClipFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Animation")),
+    XII_RESOURCE_MEMBER_PROPERTY("AnimationClip", m_hAnimationClip)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Animation")),
     XII_ENUM_MEMBER_PROPERTY("AnimationMode", xiiPropertyAnimMode, m_AnimationMode),
     XII_MEMBER_PROPERTY("Speed", m_fSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_ENUM_MEMBER_PROPERTY("RootMotionMode", xiiRootMotionMode, m_RootMotionMode),
@@ -78,36 +78,6 @@ void xiiSimpleAnimationComponent::OnSimulationStarted()
   GetOwner()->SendMessage(msg);
 
   m_hSkeleton = msg.m_hSkeleton;
-}
-
-void xiiSimpleAnimationComponent::SetAnimationClip(const xiiAnimationClipResourceHandle& hResource)
-{
-  m_hAnimationClip = hResource;
-}
-
-const xiiAnimationClipResourceHandle& xiiSimpleAnimationComponent::GetAnimationClip() const
-{
-  return m_hAnimationClip;
-}
-
-void xiiSimpleAnimationComponent::SetAnimationClipFile(const char* szFile)
-{
-  xiiAnimationClipResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiAnimationClipResource>(szFile);
-  }
-
-  SetAnimationClip(hResource);
-}
-
-const char* xiiSimpleAnimationComponent::GetAnimationClipFile() const
-{
-  if (!m_hAnimationClip.IsValid())
-    return "";
-
-  return m_hAnimationClip.GetResourceID();
 }
 
 void xiiSimpleAnimationComponent::SetNormalizedPlaybackPosition(float fPosition)

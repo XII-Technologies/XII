@@ -24,35 +24,41 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshBoneWeigthPrecision, 1)
   XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_16Bit),
   XII_ENUM_CONSTANT(xiiMeshBoneWeigthPrecision::_32Bit),
 XII_END_STATIC_REFLECTED_ENUM;
-// clang-format on
 
-namespace
-{
-  template <xiiUInt32 Bits>
-  XII_ALWAYS_INLINE xiiUInt32 ColorFloatToUNorm(float value)
-  {
-    // Implemented according to
-    // https://docs.microsoft.com/en-us/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-    if (xiiMath::IsNaN(value))
-    {
-      return 0;
-    }
-    else
-    {
-      float fMaxValue = ((1 << Bits) - 1);
-      return static_cast<xiiUInt32>(xiiMath::Saturate(value) * fMaxValue + 0.5f);
-    }
-  }
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshVertexColorConversion, 1)
+  XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::None),
+  XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::LinearToSrgb),
+  XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::SrgbToLinear),
+XII_END_STATIC_REFLECTED_ENUM;
+  // clang-format on
 
-  template <xiiUInt32 Bits>
-  constexpr inline float ColorUNormToFloat(xiiUInt32 value)
+  namespace
   {
-    // Implemented according to
-    // https://docs.microsoft.com/en-us/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-    xiiUInt32 uiMaxValue = ((1 << Bits) - 1);
-    float     fMaxValue  = ((1 << Bits) - 1);
-    return (value & uiMaxValue) * (1.0f / fMaxValue);
-  }
+    template <xiiUInt32 Bits>
+    XII_ALWAYS_INLINE xiiUInt32 ColorFloatToUNorm(float value)
+    {
+      // Implemented according to
+      // https://docs.microsoft.com/en-us/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
+      if (xiiMath::IsNaN(value))
+      {
+        return 0;
+      }
+      else
+      {
+        float fMaxValue = ((1 << Bits) - 1);
+        return static_cast<xiiUInt32>(xiiMath::Saturate(value) * fMaxValue + 0.5f);
+      }
+    }
+
+    template <xiiUInt32 Bits>
+    constexpr inline float ColorUNormToFloat(xiiUInt32 value)
+    {
+      // Implemented according to
+      // https://docs.microsoft.com/en-us/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
+      xiiUInt32 uiMaxValue = ((1 << Bits) - 1);
+      float     fMaxValue  = ((1 << Bits) - 1);
+      return (value & uiMaxValue) * (1.0f / fMaxValue);
+    }
 } // namespace
 
 // static

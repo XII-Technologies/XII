@@ -193,6 +193,26 @@
   op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17)
 #define XII_EXPAND_ARGS_PAIR_COMMA_20(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) \
   op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19)
+#define XII_EXPAND_ARGS_PAIR_COMMA_22(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21)
+#define XII_EXPAND_ARGS_PAIR_COMMA_24(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23)
+#define XII_EXPAND_ARGS_PAIR_COMMA_25(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23), op(a24, a25)
+#define XII_EXPAND_ARGS_PAIR_COMMA_26(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23), op(a24, a25), op(a26, a27)
+#define XII_EXPAND_ARGS_PAIR_COMMA_27(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23), op(a24, a25), op(a26, a27), op(a28, a29)
+#define XII_EXPAND_ARGS_PAIR_COMMA_28(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23), op(a24, a25), op(a26, a27), op(a28, a29), op(a30, a31)
+#define XII_EXPAND_ARGS_PAIR_COMMA_29(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23), op(a24, a25), op(a26, a27), op(a28, a29), op(a30, a31), op(a32, a33)
+#define XII_EXPAND_ARGS_PAIR_COMMA_30(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23), op(a24, a25), op(a26, a27), op(a28, a29), op(a30, a31), op(a32, a33), op(a34, a35)
+#define XII_EXPAND_ARGS_PAIR_COMMA_31(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23), op(a24, a25), op(a26, a27), op(a28, a29), op(a30, a31), op(a32, a33), op(a34, a35), op(a36, a37)
+#define XII_EXPAND_ARGS_PAIR_COMMA_32(op, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39) \
+  op(a0, a1), op(a2, a3), op(a4, a5), op(a6, a7), op(a8, a9), op(a10, a11), op(a12, a13), op(a14, a15), op(a16, a17), op(a18, a19), op(a20, a21), op(a22, a23), op(a24, a25), op(a26, a27), op(a28, a29), op(a30, a31), op(a32, a33), op(a34, a35), op(a36, a37), op(a38, a39)
 
 #define XII_EXPAND_ARGS_PAIR_COMMA(op, ...) XII_CALL_MACRO(XII_PP_CONCAT(XII_EXPAND_ARGS_PAIR_COMMA_, XII_VA_NUM_ARGS(__VA_ARGS__)), (op, __VA_ARGS__))
 

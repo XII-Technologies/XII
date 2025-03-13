@@ -12,7 +12,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiRenderTargetActivatorComponent, 1, xiiComponentMode:
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("RenderTarget", GetRenderTargetFile, SetRenderTargetFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Target", xiiDependencyFlags::Package)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("RenderTarget", GetRenderTarget, SetRenderTarget)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Target", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -83,26 +83,6 @@ void xiiRenderTargetActivatorComponent::SetRenderTarget(const xiiRenderToTexture
   m_hRenderTarget = hResource;
 
   TriggerLocalBoundsUpdate();
-}
-
-void xiiRenderTargetActivatorComponent::SetRenderTargetFile(const char* szFile)
-{
-  xiiRenderToTexture2DResourceHandle hResource;
-
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
-  {
-    hResource = xiiResourceManager::LoadResource<xiiRenderToTexture2DResource>(szFile);
-  }
-
-  SetRenderTarget(hResource);
-}
-
-const char* xiiRenderTargetActivatorComponent::GetRenderTargetFile() const
-{
-  if (!m_hRenderTarget.IsValid())
-    return "";
-
-  return m_hRenderTarget.GetResourceID();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_RenderTargetActivatorComponent);

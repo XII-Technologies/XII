@@ -10,8 +10,12 @@
 #include <EditorFramework/Actions/TransformGizmoActions.h>
 #include <EditorFramework/Actions/ViewActions.h>
 #include <EditorFramework/Actions/ViewLightActions.h>
+#include <EditorFramework/CodeGen/CodeEditorPreferencesWidget.moc.h>
+#include <EditorFramework/CodeGen/CompilerPreferencesWidget.moc.h>
+#include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/EditorApp/StackTraceLogParser.h>
 #include <EditorFramework/GUI/DynamicDefaultStateProvider.h>
 #include <EditorFramework/GUI/ExposedParametersDefaultStateProvider.h>
 #include <EditorFramework/Manipulators/BoneManipulatorAdapter.h>
@@ -36,6 +40,7 @@
 #include <EditorFramework/PropertyGrid/ExposedParametersPropertyWidget.moc.h>
 #include <EditorFramework/PropertyGrid/FileBrowserPropertyWidget.moc.h>
 #include <EditorFramework/PropertyGrid/GameObjectReferencePropertyWidget.moc.h>
+#include <EditorFramework/PropertyGrid/RttiTypeStringPropertyWidget.moc.h>
 #include <EditorFramework/Visualizers/BoxVisualizerAdapter.h>
 #include <EditorFramework/Visualizers/CameraVisualizerAdapter.h>
 #include <EditorFramework/Visualizers/CapsuleVisualizerAdapter.h>
@@ -47,14 +52,18 @@
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Logging/ConsoleWriter.h>
+#include <Foundation/Logging/ETWWriter.h>
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Reflection/Implementation/PropertyAttributes.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
+#include <GuiFoundation/Action/CommandHistoryActions.h>
+#include <GuiFoundation/Action/DocumentActions.h>
 #include <GuiFoundation/Action/StandardMenus.h>
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
 #include <GuiFoundation/UIServices/QtProgressbar.h>
 #include <QSvgRenderer>
@@ -62,6 +71,9 @@
 #include <ToolsFoundation/Document/PrefabCache.h>
 #include <ToolsFoundation/Document/PrefabUtils.h>
 #include <ads/DockManager.h>
+
+void xiiCompilerPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
+void xiiCodeEditorPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
@@ -89,20 +101,59 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiTranslateGizmoAction::RegisterActions();
     xiiCommonAssetActions::RegisterActions();
 
-    xiiActionMapManager::RegisterActionMap("SettingsTabMenuBar").IgnoreResult();
+    // Default Asset Menu Bar
+    // All asset menu bar mappings should derive from this to allow for actions to be defined that show up in every asset document editor's menu bar.
+    {
+      const char* szMenuBar = "AssetMenuBar";
+      xiiActionMapManager::RegisterActionMap(szMenuBar);
+      xiiStandardMenus::MapActions(szMenuBar, xiiStandardMenuTypes::Default | xiiStandardMenuTypes::Edit);
+      xiiProjectActions::MapActions(szMenuBar);
+      xiiDocumentActions::MapMenuActions(szMenuBar);
+      xiiAssetActions::MapMenuActions(szMenuBar);
+      xiiCommandHistoryActions::MapActions(szMenuBar);
+    }
+
+    // Default Asset Toolbar
+    // All asset toolbar mappings should derive from this to allow for actions to be defined that show up in every asset document editor's tool bar.
+    {
+      const char* szToolbar = "AssetToolbar";
+      xiiActionMapManager::RegisterActionMap(szToolbar);
+
+      xiiDocumentActions::MapToolbarActions(szToolbar);
+      xiiCommandHistoryActions::MapActions(szToolbar, "");
+      xiiAssetActions::MapToolBarActions(szToolbar, true);
+    }
+
+    // Default Asset View Toolbar
+    // All asset view toolbar mappings should derive from this or its derived "SimpleAssetViewToolbar" to allow for actions to be defined that show up in every asset document editor's view toolbar.
+    {
+      xiiActionMapManager::RegisterActionMap("AssetViewToolbar");
+      // Convenience mapping that adds the most common view settings:
+      const char* szSimpleViewToolbar = "SimpleAssetViewToolbar";
+      xiiActionMapManager::RegisterActionMap(szSimpleViewToolbar, "AssetViewToolbar");
+      xiiViewActions::MapToolbarActions(szSimpleViewToolbar, xiiViewActions::RenderMode | xiiViewActions::ActivateRemoteProcess);
+      xiiViewLightActions::MapToolbarActions(szSimpleViewToolbar);
+    }
+
+    xiiActionMapManager::RegisterActionMap("SettingsTabMenuBar");
     xiiStandardMenus::MapActions("SettingsTabMenuBar", xiiStandardMenuTypes::Default);
     xiiProjectActions::MapActions("SettingsTabMenuBar");
 
-    xiiActionMapManager::RegisterActionMap("AssetBrowserToolBar").IgnoreResult();
+    xiiActionMapManager::RegisterActionMap("AssetBrowserToolBar");
     xiiAssetActions::MapToolBarActions("AssetBrowserToolBar", false);
 
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiFileBrowserAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtFilePropertyWidget(); });
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiExternalFileBrowserAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtExternalFilePropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiAssetBrowserAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtAssetPropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiDynamicEnumAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtDynamicEnumPropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiDynamicStringEnumAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtDynamicStringEnumPropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiExposedParametersAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtExposedParametersPropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiGameObjectReferenceAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtGameObjectReferencePropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiExposedBone>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtExposedBoneWidget(); });
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiCompilerPreferences>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtCompilerPreferencesWidget(); });
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiCodeEditorPreferences>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtCodeEditorPreferencesWidget(); });
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiImageSliderUiAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtPropertyEditorSliderWidget(); });
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiRttiTypeStringAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtRttiTypeStringPropertyWidget(); });
 
     xiiManipulatorAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiSphereManipulatorAttribute>(), [](const xiiRTTI* pRtti)->xiiManipulatorAdapter* { return XII_DEFAULT_NEW(xiiSphereManipulatorAdapter); });
     xiiManipulatorAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiCapsuleManipulatorAttribute>(), [](const xiiRTTI* pRtti)->xiiManipulatorAdapter* { return XII_DEFAULT_NEW(xiiCapsuleManipulatorAdapter); });
@@ -120,6 +171,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiDirectionVisualizerAttribute>(), [](const xiiRTTI* pRtti)->xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiDirectionVisualizerAdapter); });
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiConeVisualizerAttribute>(), [](const xiiRTTI* pRtti)->xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiConeVisualizerAdapter); });
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiCameraVisualizerAttribute>(), [](const xiiRTTI* pRtti)->xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiCameraVisualizerAdapter); });
+
+    xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiCompilerPreferences_PropertyMetaStateEventHandler);
+    xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiCodeEditorPreferences_PropertyMetaStateEventHandler);
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -139,12 +193,17 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiCommonAssetActions::UnregisterActions();
 
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiFileBrowserAttribute>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiExternalFileBrowserAttribute>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiAssetBrowserAttribute>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiDynamicEnumAttribute>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiDynamicStringEnumAttribute>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiGameObjectReferenceAttribute>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiExposedParametersAttribute>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiExposedBone>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiCompilerPreferences>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiCodeEditorPreferences>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiImageSliderUiAttribute>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiRttiTypeStringAttribute>());
 
     xiiManipulatorAdapterRegistry::GetSingleton()->m_Factory.UnregisterCreator(xiiGetStaticRTTI<xiiSphereManipulatorAttribute>());
     xiiManipulatorAdapterRegistry::GetSingleton()->m_Factory.UnregisterCreator(xiiGetStaticRTTI<xiiCapsuleManipulatorAttribute>());
@@ -162,6 +221,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.UnregisterCreator(xiiGetStaticRTTI<xiiDirectionVisualizerAttribute>());
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.UnregisterCreator(xiiGetStaticRTTI<xiiConeVisualizerAttribute>());
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.UnregisterCreator(xiiGetStaticRTTI<xiiCameraVisualizerAttribute>());
+
+    xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiCompilerPreferences_PropertyMetaStateEventHandler);
+    xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiCodeEditorPreferences_PropertyMetaStateEventHandler);
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -252,7 +314,6 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   xiiToolsProject::s_Requests.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::ProjectRequestHandler, this));
   xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::ProjectEventHandler, this));
   xiiEditorEngineProcessConnection::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::EngineProcessMsgHandler, this));
-  xiiQtDocumentWindow::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::DocumentWindowEventHandler, this));
   xiiQtUiServices::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtEditorApp::UiServicesEvents, this));
 
   xiiStartup::StartupCoreSystems();
@@ -298,6 +359,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLoggingEvent::Handler(&xiiLogWriter::HTML::LogMessageHandler, &m_LogHTML));
+    xiiGlobalLog::AddLogWriter(xiiLogWriter::ETW::LogMessageHandler);
   }
   xiiUniquePtr<xiiTranslatorFromFiles> pTranslatorEn = XII_DEFAULT_NEW(xiiTranslatorFromFiles);
   m_pTranslatorFromFiles                             = pTranslatorEn.Borrow();
@@ -309,6 +371,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   xiiTranslationLookup::AddTranslator(std::move(pTranslatorEn));
 
   LoadEditorPreferences();
+  xiiCppProject::LoadPreferences();
 
   xiiQtUiServices::GetSingleton()->LoadState();
 
@@ -318,9 +381,9 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
     LoadRecentFiles();
 
-    CreatePanels();
-
     ShowSettingsDocument();
+
+    CreatePanels();
 
     if (!IsInUnitTestMode())
     {
@@ -340,7 +403,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     m_Events.Broadcast(e);
   }
 
-  xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
+  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
 
   if (pCmd->GetStringOptionArguments("-newproject") > 0)
   {
@@ -388,10 +451,14 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   {
     GuiOpenDashboard();
   }
+
+  xiiStackTraceLogParser::Register();
 }
 
 void xiiQtEditorApp::ShutdownEditor()
 {
+  xiiStackTraceLogParser::Unregister();
+
   xiiToolsProject::SaveProjectState();
 
   m_pTimer->stop();
@@ -406,7 +473,6 @@ void xiiQtEditorApp::ShutdownEditor()
   xiiDocument::s_EventsAny.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::DocumentEventHandler, this));
   xiiDocumentManager::s_Requests.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::DocumentManagerRequestHandler, this));
   xiiDocumentManager::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::DocumentManagerEventHandler, this));
-  xiiQtDocumentWindow::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::DocumentWindowEventHandler, this));
   xiiQtUiServices::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEditorApp::UiServicesEvents, this));
 
   xiiQtUiServices::GetSingleton()->SaveState();
@@ -474,10 +540,10 @@ void xiiQtEditorApp::CreatePanels()
 {
   XII_PROFILE_SCOPE("CreatePanels");
   xiiQtApplicationPanel* pAssetBrowserPanel = new xiiQtAssetBrowserPanel();
-  xiiQtApplicationPanel* pLogPanel          = new xiiQtLogPanel();
-  xiiQtApplicationPanel* pLongOpsPanel      = new xiiQtLongOpsPanel();
-  xiiQtApplicationPanel* pCVarPanel         = new xiiQtCVarPanel();
   xiiQtApplicationPanel* pAssetCuratorPanel = new xiiQtAssetCuratorPanel();
+  xiiQtApplicationPanel* pLogPanel          = new xiiQtLogPanel();
+  xiiQtApplicationPanel* pCVarPanel         = new xiiQtCVarPanel();
+  xiiQtApplicationPanel* pLongOpsPanel      = new xiiQtLongOpsPanel();
 
   xiiQtContainerWindow* pMainWnd     = xiiQtContainerWindow::GetContainerWindow();
   ads::CDockManager*    pDockManager = pMainWnd->GetDockManager();
@@ -487,6 +553,10 @@ void xiiQtEditorApp::CreatePanels()
   pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pAssetCuratorPanel);
   pDockManager->addAutoHideDockWidget(ads::SideBarRight, pCVarPanel);
   pDockManager->addAutoHideDockWidget(ads::SideBarRight, pLongOpsPanel);
+
+  // by default these panels can be hidden
+  pCVarPanel->toggleView(false);
+  pLongOpsPanel->toggleView(false);
 
   pAssetBrowserPanel->raise();
 }
@@ -516,22 +586,20 @@ void xiiQtEditorApp::SetupAndShowSplashScreen()
   if (!bShowSplashScreen)
     return;
 
-// QSvgRenderer svgRenderer(QString(":/Splash/Splash/splash.svg"));
+  // QSvgRenderer svgRenderer(QString(":/Splash/Splash/splash.svg"));
 
-// const qreal PixelRatio = qApp->primaryScreen()->devicePixelRatio();
+  // const qreal PixelRatio = qApp->primaryScreen()->devicePixelRatio();
 
-// TODO: When migrating to Qt 5.15 or newer this should have a fixed square size and
-// let the aspect ratio mode of the svg renderer handle the difference
-#if 0
-  QPixmap splashPixmap(QSize(187, 256) * PixelRatio);
-  splashPixmap.fill(Qt::transparent);
-  {
-    QPainter painter;
-    painter.begin(&splashPixmap);
-    svgRenderer.render(&painter);
-    painter.end();
-  }
-#endif
+  //// TODO: When migrating to Qt 5.15 or newer this should have a fixed square size and
+  //// let the aspect ratio mode of the svg renderer handle the difference
+  // QPixmap splashPixmap(QSize(187, 256) * PixelRatio);
+  // splashPixmap.fill(Qt::transparent);
+  //{
+  //   QPainter painter;
+  //   painter.begin(&splashPixmap);
+  //   svgRenderer.render(&painter);
+  //   painter.end();
+  // }
 
   QPixmap splashPixmap(QString(":/Splash/Splash/splash.png"));
 

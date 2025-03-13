@@ -22,5 +22,5 @@ public:
 private:
   void SendOp(xiiObjectChange& change);
 
-  xiiEditorEngineConnection* m_pIPC = nullptr;
+  xiiEditorEngineConnection* m_pIPC;
 };

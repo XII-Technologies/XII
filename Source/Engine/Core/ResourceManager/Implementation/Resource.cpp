@@ -10,6 +10,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiResource, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
+xiiResource::DoUpdate xiiResource::UpdateGraphicsResource = xiiResource::DoUpdate::OnAnyThread;
+
 XII_CORE_DLL void IncreaseResourceRefCount(xiiResource* pResource, const void* pOwner)
 {
 #if XII_ENABLED(XII_RESOURCEHANDLE_STACK_TRACES)
@@ -75,6 +77,11 @@ xiiResource::~xiiResource()
 
 xiiResource::xiiResource(DoUpdate ResourceUpdateThread, xiiUInt8 uiQualityLevelsLoadable)
 {
+  if (ResourceUpdateThread == DoUpdate::OnGraphicsResourceThreads)
+  {
+    ResourceUpdateThread = UpdateGraphicsResource;
+  }
+
   m_Flags.AddOrRemove(xiiResourceFlags::UpdateOnMainThread, ResourceUpdateThread == DoUpdate::OnMainThread);
 
   m_uiQualityLevelsLoadable = uiQualityLevelsLoadable;
@@ -128,7 +135,7 @@ void xiiResource::SetUniqueID(xiiStringView sUniqueID, bool bIsReloadable)
 
 void xiiResource::CallUnloadData(Unload WhatToUnload)
 {
-  XII_LOG_BLOCK("xiiResource::UnloadData", GetResourceID().GetData());
+  XII_LOG_BLOCK("xiiResource::UnloadData", GetResourceID());
 
   xiiResourceEvent e;
   e.m_pResource = this;
@@ -159,7 +166,7 @@ void xiiResource::CallUpdateContent(xiiStreamReader* Stream)
 {
   XII_PROFILE_SCOPE("CallUpdateContent");
 
-  XII_LOG_BLOCK("xiiResource::UpdateContent", GetResourceID().GetData());
+  XII_LOG_BLOCK("xiiResource::UpdateContent", GetResourceDescription());
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiResource* pPreviouslyUpdatingContent = g_pCurrentlyUpdatingContent;

@@ -41,6 +41,8 @@ struct DocumentNodeManager_ConnectionMetaData
   xiiUuid   m_Target;
   xiiString m_SourcePin;
   xiiString m_TargetPin;
+
+  bool IsValid() const { return m_Source.IsValid() && m_Target.IsValid(); }
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, DocumentNodeManager_ConnectionMetaData);
 
@@ -70,6 +72,25 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 ////////////////////////////////////////////////////////////////////////
+// xiiDocumentObject_ConnectionBase
+////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentObject_ConnectionBase, 1, xiiRTTIDefaultAllocator<xiiDocumentObject_ConnectionBase>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Source", m_Source)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("Target", m_Target)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("SourcePin", m_SourcePin)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("TargetPin", m_TargetPin)->AddAttributes(new xiiHiddenAttribute()),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+////////////////////////////////////////////////////////////////////////
 // xiiDocumentNodeManager
 ////////////////////////////////////////////////////////////////////////
 
@@ -87,9 +108,21 @@ xiiDocumentNodeManager::~xiiDocumentNodeManager()
   m_PropertyEvents.RemoveEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::PropertyEventsHandler, this));
 }
 
+void xiiDocumentNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const
+{
+  xiiHybridArray<const xiiRTTI*, 32> types;
+  GetCreateableTypes(types);
+
+  for (auto pType : types)
+  {
+    auto& nodeTemplate   = out_templates.ExpandAndGetRef();
+    nodeTemplate.m_pType = pType;
+  }
+}
+
 const xiiRTTI* xiiDocumentNodeManager::GetConnectionType() const
 {
-  return xiiGetStaticRTTI<DocumentNodeManager_DefaultConnection>();
+  return xiiGetStaticRTTI<xiiDocumentObject_ConnectionBase>();
 }
 
 xiiVec2 xiiDocumentNodeManager::GetNodePos(const xiiDocumentObject* pObject) const
@@ -289,6 +322,11 @@ void xiiDocumentNodeManager::Connect(const xiiDocumentObject* pObject, const xii
   XII_IGNORE_UNUSED(res);
   XII_ASSERT_DEBUG(CanConnect(pObject->GetType(), source, target, res).m_Result.Succeeded(), "Connect: Sanity check failed!");
 
+  XII_ASSERT_DEBUG(pObject->GetTypeAccessor().GetValue("Source") == source.GetParent()->GetGuid(), "Property should have been set at this point already");
+  XII_ASSERT_DEBUG(pObject->GetTypeAccessor().GetValue("Target") == target.GetParent()->GetGuid(), "Property should have been set at this point already");
+  XII_ASSERT_DEBUG(pObject->GetTypeAccessor().GetValue("SourcePin") == source.GetName(), "Property should have been set at this point already");
+  XII_ASSERT_DEBUG(pObject->GetTypeAccessor().GetValue("TargetPin") == target.GetName(), "Property should have been set at this point already");
+
   auto pConnection = XII_DEFAULT_NEW(xiiConnection, source, target, pObject);
   m_ObjectToConnection.Insert(pObject->GetGuid(), pConnection);
 
@@ -357,23 +395,6 @@ void xiiDocumentNodeManager::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& 
         rttiConverter.AddProperties(pAbstractObject, pNodeMetaDataType, &nodeMetaData);
       }
     }
-
-    {
-      auto it2 = m_ObjectToConnection.Find(guid);
-      if (it2.IsValid())
-      {
-        const xiiConnection& connection = *it2.Value();
-        const xiiPin&        sourcePin  = connection.GetSourcePin();
-        const xiiPin&        targetPin  = connection.GetTargetPin();
-
-        DocumentNodeManager_ConnectionMetaData connectionMetaData;
-        connectionMetaData.m_Source    = sourcePin.GetParent()->GetGuid();
-        connectionMetaData.m_Target    = targetPin.GetParent()->GetGuid();
-        connectionMetaData.m_SourcePin = sourcePin.GetName();
-        connectionMetaData.m_TargetPin = targetPin.GetName();
-        rttiConverter.AddProperties(pAbstractObject, pConnectionMetaDataType, &connectionMetaData);
-      }
-    }
   }
 }
 
@@ -386,6 +407,21 @@ void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObject
 
   xiiRttiConverterContext context;
   xiiRttiConverterReader  rttiConverter(&graph, &context);
+
+  // Ensure that all nodes have their pins created
+  for (auto it : graph.GetAllNodes())
+  {
+    auto               pAbstractObject = it.Value();
+    xiiDocumentObject* pObject         = GetObject(pAbstractObject->GetGuid());
+    if (pObject != nullptr && IsNode(pObject))
+    {
+      auto& nodeInternal = m_ObjectToNode[pObject->GetGuid()];
+      if (nodeInternal.m_Inputs.IsEmpty() && nodeInternal.m_Outputs.IsEmpty())
+      {
+        InternalCreatePins(pObject, nodeInternal);
+      }
+    }
+  }
 
   for (auto it : graph.GetAllNodes())
   {
@@ -414,67 +450,90 @@ void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObject
         }
       }
 
-      // Backwards compatibility to old file format
-      if (auto pOldConnections = pAbstractObject->FindProperty("Node::Connections"))
-      {
-        XII_ASSERT_DEV(bUndoable == false, "Undo not supported for old file format");
-        RestoreOldMetaDataAfterLoading(graph, *pOldConnections, pObject);
-      }
+      XII_ASSERT_DEV(pAbstractObject->FindProperty("Node::Connections") == nullptr, "Old file format detected that is not supported anymore. Re-save the document with a previous version of xii. ({})", GetDocument()->GetDocumentPath());
     }
     else if (IsConnection(pObject))
+    {
+      xiiVariant sourceVar    = pObject->GetTypeAccessor().GetValue("Source");
+      xiiVariant targetVar    = pObject->GetTypeAccessor().GetValue("Target");
+      xiiVariant sourcePinVar = pObject->GetTypeAccessor().GetValue("SourcePin");
+      xiiVariant targetPinVar = pObject->GetTypeAccessor().GetValue("TargetPin");
+      XII_ASSERT_DEV(sourceVar.IsA<xiiUuid>() && targetVar.IsA<xiiUuid>() && sourcePinVar.IsA<xiiString>() && targetPinVar.IsA<xiiString>(), "Invalid connection object");
+
+      xiiUuid       source    = sourceVar.Get<xiiUuid>();
+      xiiUuid       target    = targetVar.Get<xiiUuid>();
+      xiiStringView sourcePin = sourcePinVar.Get<xiiString>();
+      xiiStringView targetPin = targetPinVar.Get<xiiString>();
+
+      const xiiPin* pSourcePin = nullptr;
+      const xiiPin* pTargetPin = nullptr;
+      if (ResolveConnection(source, target, sourcePin, targetPin, pSourcePin, pTargetPin).Failed())
+      {
+        // Try to restore from metadata
+        DocumentNodeManager_ConnectionMetaData connectionMetaData;
+        rttiConverter.ApplyPropertiesToObject(pAbstractObject, pConnectionMetaDataType, &connectionMetaData);
+        if (connectionMetaData.IsValid())
+        {
+          pObject->GetTypeAccessor().SetValue("Source", connectionMetaData.m_Source);
+          pObject->GetTypeAccessor().SetValue("Target", connectionMetaData.m_Target);
+          pObject->GetTypeAccessor().SetValue("SourcePin", connectionMetaData.m_SourcePin);
+          pObject->GetTypeAccessor().SetValue("TargetPin", connectionMetaData.m_TargetPin);
+
+          source    = connectionMetaData.m_Source;
+          target    = connectionMetaData.m_Target;
+          sourcePin = connectionMetaData.m_SourcePin;
+          targetPin = connectionMetaData.m_TargetPin;
+        }
+      }
+
+      if (ResolveConnection(source, target, sourcePin, targetPin, pSourcePin, pTargetPin).Succeeded())
+      {
+        if (bUndoable)
+        {
+          xiiConnectNodePinsCommand cmd;
+          cmd.m_ConnectionObject = pObject->GetGuid();
+          cmd.m_ObjectSource     = pSourcePin->GetParent()->GetGuid();
+          cmd.m_ObjectTarget     = pTargetPin->GetParent()->GetGuid();
+          cmd.m_sSourcePin       = pSourcePin->GetName();
+          cmd.m_sTargetPin       = pTargetPin->GetName();
+          history->AddCommand(cmd).LogFailure();
+        }
+        else
+        {
+          Connect(pObject, *pSourcePin, *pTargetPin);
+        }
+      }
+      else
+      {
+        RemoveObject(pObject);
+        DestroyObject(pObject);
+      }
+    }
+    else
     {
       DocumentNodeManager_ConnectionMetaData connectionMetaData;
       rttiConverter.ApplyPropertiesToObject(pAbstractObject, pConnectionMetaDataType, &connectionMetaData);
 
-      xiiDocumentObject* pSource = GetObject(connectionMetaData.m_Source);
-      xiiDocumentObject* pTarget = GetObject(connectionMetaData.m_Target);
-      if (pSource == nullptr || pTarget == nullptr)
-      {
-        RemoveObject(pObject);
-        DestroyObject(pObject);
+      if (connectionMetaData.IsValid() == false)
         continue;
+
+      const xiiPin* pSourcePin = nullptr;
+      const xiiPin* pTargetPin = nullptr;
+      if (ResolveConnection(connectionMetaData.m_Source, connectionMetaData.m_Target, connectionMetaData.m_SourcePin, connectionMetaData.m_TargetPin, pSourcePin, pTargetPin).Succeeded())
+      {
+        xiiDocumentObject* pNewConnectionObject = CreateObject(GetConnectionType());
+        pNewConnectionObject->GetTypeAccessor().SetValue("Source", connectionMetaData.m_Source);
+        pNewConnectionObject->GetTypeAccessor().SetValue("Target", connectionMetaData.m_Target);
+        pNewConnectionObject->GetTypeAccessor().SetValue("SourcePin", connectionMetaData.m_SourcePin);
+        pNewConnectionObject->GetTypeAccessor().SetValue("TargetPin", connectionMetaData.m_TargetPin);
+        AddObject(pNewConnectionObject, nullptr, "", -1);
+
+        XII_ASSERT_DEV(bUndoable == false, "This code path should only be taken by document loading code");
+        Connect(pNewConnectionObject, *pSourcePin, *pTargetPin);
       }
 
-      const xiiPin* pSourcePin = GetOutputPinByName(pSource, connectionMetaData.m_SourcePin);
-      if (pSourcePin == nullptr)
-      {
-        xiiLog::Error("Unknown output pin '{}' on '{}'. The connection has been removed.", connectionMetaData.m_SourcePin, pSource->GetType()->GetTypeName());
-        RemoveObject(pObject);
-        DestroyObject(pObject);
-        continue;
-      }
-
-      const xiiPin* pTargetPin = GetInputPinByName(pTarget, connectionMetaData.m_TargetPin);
-      if (pTargetPin == nullptr)
-      {
-        xiiLog::Error("Unknown input pin '{}' on '{}'. The connection has been removed.", connectionMetaData.m_TargetPin, pTarget->GetType()->GetTypeName());
-        RemoveObject(pObject);
-        DestroyObject(pObject);
-        continue;
-      }
-
-      xiiDocumentNodeManager::CanConnectResult res;
-      if (CanConnect(pObject->GetType(), *pSourcePin, *pTargetPin, res).m_Result.Failed())
-      {
-        RemoveObject(pObject);
-        DestroyObject(pObject);
-        continue;
-      }
-
-      if (bUndoable)
-      {
-        xiiConnectNodePinsCommand cmd;
-        cmd.m_ConnectionObject = pObject->GetGuid();
-        cmd.m_ObjectSource     = connectionMetaData.m_Source;
-        cmd.m_ObjectTarget     = connectionMetaData.m_Target;
-        cmd.m_sSourcePin       = connectionMetaData.m_SourcePin;
-        cmd.m_sTargetPin       = connectionMetaData.m_TargetPin;
-        history->AddCommand(cmd).LogFailure();
-      }
-      else
-      {
-        Connect(pObject, *pSourcePin, *pTargetPin);
-      }
+      RemoveObject(pObject);
+      DestroyObject(pObject);
     }
   }
 }
@@ -644,6 +703,34 @@ bool xiiDocumentNodeManager::WouldConnectionCreateCircle(const xiiPin& source, c
   return CanReachNode(pTargetNode, pSourceNode, Visited);
 }
 
+xiiResult xiiDocumentNodeManager::ResolveConnection(const xiiUuid& sourceObject, const xiiUuid& targetObject, xiiStringView sourcePin, xiiStringView targetPin, const xiiPin*& out_pSourcePin, const xiiPin*& out_pTargetPin) const
+{
+  const xiiDocumentObject* pSource = GetObject(sourceObject);
+  const xiiDocumentObject* pTarget = GetObject(targetObject);
+  if (pSource == nullptr || pTarget == nullptr)
+  {
+    return XII_FAILURE;
+  }
+
+  const xiiPin* pSourcePin = GetOutputPinByName(pSource, sourcePin);
+  if (pSourcePin == nullptr)
+  {
+    xiiLog::Error("Unknown output pin '{}' on '{}'. The connection has been removed.", sourcePin, pSource->GetType()->GetTypeName());
+    return XII_FAILURE;
+  }
+
+  const xiiPin* pTargetPin = GetInputPinByName(pTarget, targetPin);
+  if (pTargetPin == nullptr)
+  {
+    xiiLog::Error("Unknown input pin '{}' on '{}'. The connection has been removed.", targetPin, pTarget->GetType()->GetTypeName());
+    return XII_FAILURE;
+  }
+
+  out_pSourcePin = pSourcePin;
+  out_pTargetPin = pTargetPin;
+  return XII_SUCCESS;
+}
+
 void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject, xiiStringView sPropertyName, xiiStringView sPinName, xiiDynamicArray<xiiString>& out_Names) const
 {
   out_Names.Clear();
@@ -693,6 +780,26 @@ void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject
         out_Names.PushBack(a[i].ConvertTo<xiiString>());
       }
     }
+    else if (pArrayProp->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class))
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        auto pInnerObject = GetObject(a[i].Get<xiiUuid>());
+        if (pInnerObject == nullptr)
+          continue;
+
+        xiiVariant nameVar = pInnerObject->GetTypeAccessor().GetValue("Name");
+        if (nameVar.IsString() || nameVar.IsHashedString())
+        {
+          out_Names.PushBack(nameVar.ConvertTo<xiiString>());
+        }
+        else
+        {
+          sTemp.SetFormat("{}[{}]", sPinName, i);
+          out_Names.PushBack(sTemp);
+        }
+      }
+    }
     else
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
@@ -714,13 +821,19 @@ bool xiiDocumentNodeManager::TryRecreatePins(const xiiDocumentObject* pObject)
   for (auto& pPin : nodeInternal.m_Inputs)
   {
     if (HasConnections(*pPin))
+    {
+      xiiLog::Error("Can't re-create pins if they are still connected");
       return false;
+    }
   }
 
   for (auto& pPin : nodeInternal.m_Outputs)
   {
     if (HasConnections(*pPin))
+    {
+      xiiLog::Error("Can't re-create pins if they are still connected");
       return false;
+    }
   }
 
   {
@@ -821,6 +934,10 @@ void xiiDocumentNodeManager::StructureEventHandler(const xiiDocumentObjectStruct
         xiiDocumentNodeManagerEvent e2(xiiDocumentNodeManagerEvent::Type::AfterNodeAdded, e.m_pObject);
         m_NodeEvents.Broadcast(e2);
       }
+      else
+      {
+        HandlePotentialDynamicPinPropertyChanged(e.m_pNewParent, e.m_sParentProperty);
+      }
     }
     break;
     case xiiDocumentObjectStructureEvent::Type::BeforeObjectRemoved:
@@ -839,6 +956,10 @@ void xiiDocumentNodeManager::StructureEventHandler(const xiiDocumentObjectStruct
         xiiDocumentNodeManagerEvent e2(xiiDocumentNodeManagerEvent::Type::AfterNodeRemoved, e.m_pObject);
         m_NodeEvents.Broadcast(e2);
       }
+      else
+      {
+        HandlePotentialDynamicPinPropertyChanged(e.m_pPreviousParent, e.m_sParentProperty);
+      }
     }
     break;
 
@@ -852,58 +973,25 @@ void xiiDocumentNodeManager::PropertyEventsHandler(const xiiDocumentObjectProper
   if (e.m_pObject == nullptr)
     return;
 
-  const xiiAbstractProperty* pProp = e.m_pObject->GetType()->FindPropertyByName(e.m_sProperty);
-  if (pProp == nullptr)
-    return;
+  HandlePotentialDynamicPinPropertyChanged(e.m_pObject, e.m_sProperty);
 
-  if (IsDynamicPinProperty(e.m_pObject, pProp))
+  if (const xiiDocumentObject* pParent = e.m_pObject->GetParent())
   {
-    TryRecreatePins(e.m_pObject);
+    HandlePotentialDynamicPinPropertyChanged(pParent, e.m_pObject->GetParentProperty());
   }
 }
 
-void xiiDocumentNodeManager::RestoreOldMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, const xiiAbstractObjectNode::Property& connectionsProperty, const xiiDocumentObject* pSourceObject)
+void xiiDocumentNodeManager::HandlePotentialDynamicPinPropertyChanged(const xiiDocumentObject* pObject, xiiStringView sPropertyName)
 {
-  if (connectionsProperty.m_Value.IsA<xiiVariantArray>() == false)
+  if (pObject == nullptr)
     return;
 
-  const xiiVariantArray& array = connectionsProperty.m_Value.Get<xiiVariantArray>();
-  for (const xiiVariant& var : array)
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sPropertyName);
+  if (pProp == nullptr)
+    return;
+
+  if (IsDynamicPinProperty(pObject, pProp))
   {
-    if (var.IsA<xiiUuid>() == false)
-      continue;
-
-    auto pOldConnectionAbstractObject = graph.GetNode(var.Get<xiiUuid>());
-    auto pTargetProperty              = pOldConnectionAbstractObject->FindProperty("Target");
-    if (pTargetProperty == nullptr || pTargetProperty->m_Value.IsA<xiiUuid>() == false)
-      continue;
-
-    xiiDocumentObject* pTargetObject = GetObject(pTargetProperty->m_Value.Get<xiiUuid>());
-    if (pTargetObject == nullptr)
-      continue;
-
-    auto pSourcePinProperty = pOldConnectionAbstractObject->FindProperty("SourcePin");
-    if (pSourcePinProperty == nullptr || pSourcePinProperty->m_Value.IsA<xiiString>() == false)
-      continue;
-
-    auto pTargetPinProperty = pOldConnectionAbstractObject->FindProperty("TargetPin");
-    if (pTargetPinProperty == nullptr || pTargetPinProperty->m_Value.IsA<xiiString>() == false)
-      continue;
-
-    const xiiPin* pSourcePin = GetOutputPinByName(pSourceObject, pSourcePinProperty->m_Value.Get<xiiString>());
-    const xiiPin* pTargetPin = GetInputPinByName(pTargetObject, pTargetPinProperty->m_Value.Get<xiiString>());
-    if (pSourcePin == nullptr || pTargetPin == nullptr)
-      continue;
-
-    const xiiRTTI*                           pConnectionType = GetConnectionType();
-    xiiDocumentNodeManager::CanConnectResult res;
-    if (CanConnect(pConnectionType, *pSourcePin, *pTargetPin, res).m_Result.Succeeded())
-    {
-      xiiDocumentObject* pConnectionObject = CreateObject(pConnectionType, xiiUuid::MakeUuid());
-
-      AddObject(pConnectionObject, nullptr, "", -1);
-
-      Connect(pConnectionObject, *pSourcePin, *pTargetPin);
-    }
+    TryRecreatePins(pObject);
   }
 }

@@ -31,15 +31,14 @@ class XII_TOOLSFOUNDATION_DLL xiiDocumentObjectMetaData : public xiiReflectedCla
 public:
   enum ModifiedFlags : xiiUInt32
   {
-    HiddenFlag = XII_BIT(0),
-    PrefabFlag = XII_BIT(1),
+    HiddenFlag       = XII_BIT(0),
+    PrefabFlag       = XII_BIT(1),
+    ActiveParentFlag = XII_BIT(2), /// This flag is used to update an entry, even though there is no meta data for it.
 
     AllFlags = 0xFFFFFFFFU
   };
 
-  xiiDocumentObjectMetaData() { m_bHidden = false; }
-
-  bool      m_bHidden;          /// Whether the object should be rendered in the editor view (no effect on the runtime)
+  bool      m_bHidden = false;  /// Whether the object should be rendered in the editor view (no effect on the runtime)
   xiiUuid   m_CreateFromPrefab; /// The asset GUID of the prefab from which this object was created. Invalid GUID, if this is not a prefab instance.
   xiiUuid   m_PrefabSeedGuid;   /// The seed GUID used to remap the object GUIDs from the prefab asset into this instance.
   xiiString m_sBasePrefab;      /// The prefab from which this instance was created as complete DDL text (this describes the entire object!). Necessary for
@@ -84,7 +83,7 @@ public:
   bool IsSubDocument() const { return m_pHostDocument != this; }
   /// \brief In case this is a sub-document, returns the main document this belongs to. Otherwise 'this' is returned.
   const xiiDocument* GetMainDocument() const { return m_pHostDocument; }
-  /// @brief At any given time, only the active sub-document can be edited. This returns the active sub-document which can also be this document itself. Changes to the active sub-document are generally triggered by xiiDocumentObjectStructureEvent::Type::AfterReset.
+  /// \brief At any given time, only the active sub-document can be edited. This returns the active sub-document which can also be this document itself. Changes to the active sub-document are generally triggered by xiiDocumentObjectStructureEvent::Type::AfterReset.
   const xiiDocument* GetActiveSubDocument() const { return m_pActiveSubDocument; }
   xiiDocument*       GetMainDocument() { return m_pHostDocument; }
   xiiDocument*       GetActiveSubDocument() { return m_pActiveSubDocument; }
@@ -224,10 +223,10 @@ public:
   virtual void UpdatePrefabs();
 
   /// \brief Resets the given objects to their template prefab state, if they have local modifications.
-  void RevertPrefabs(const xiiDeque<const xiiDocumentObject*>& selection);
+  void RevertPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection);
 
   /// \brief Removes the link between a prefab instance and its template, turning the instance into a regular object.
-  virtual void UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& selection);
+  virtual void UnlinkPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection);
 
   virtual xiiStatus CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
   virtual xiiStatus CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});

@@ -30,7 +30,7 @@ QVariant xiiQtLayerAdapter::data(const xiiDocumentObject* pObject, int iRow, int
     case UserRoles::LayerGuid:
     {
       xiiObjectAccessorBase* pAccessor = m_pSceneDocument->GetSceneObjectAccessor();
-      xiiUuid                layerGuid = pAccessor->Get<xiiUuid>(pObject, "Layer");
+      xiiUuid                layerGuid = pAccessor->GetByName<xiiUuid>(pObject, "Layer");
       return QVariant::fromValue(layerGuid);
     }
     break;
@@ -38,7 +38,7 @@ QVariant xiiQtLayerAdapter::data(const xiiDocumentObject* pObject, int iRow, int
     case Qt::ToolTipRole:
     {
       xiiObjectAccessorBase* pAccessor = m_pSceneDocument->GetSceneObjectAccessor();
-      xiiUuid                layerGuid = pAccessor->Get<xiiUuid>(pObject, "Layer");
+      xiiUuid                layerGuid = pAccessor->GetByName<xiiUuid>(pObject, "Layer");
       // Use curator to get name in case the layer is unloaded and there is no document to query.
       const xiiAssetCurator::xiiLockedSubAsset subAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(layerGuid);
       if (subAsset.isValid())
@@ -73,7 +73,7 @@ QVariant xiiQtLayerAdapter::data(const xiiDocumentObject* pObject, int iRow, int
     case Qt::ForegroundRole:
     {
       xiiObjectAccessorBase* pAccessor = m_pSceneDocument->GetSceneObjectAccessor();
-      xiiUuid                layerGuid = pAccessor->Get<xiiUuid>(pObject, "Layer");
+      xiiUuid                layerGuid = pAccessor->GetByName<xiiUuid>(pObject, "Layer");
       if (!m_pSceneDocument->IsLayerLoaded(layerGuid))
       {
         return QVariant();
@@ -84,7 +84,7 @@ QVariant xiiQtLayerAdapter::data(const xiiDocumentObject* pObject, int iRow, int
     {
       QFont                  font;
       xiiObjectAccessorBase* pAccessor = m_pSceneDocument->GetSceneObjectAccessor();
-      xiiUuid                layerGuid = pAccessor->Get<xiiUuid>(pObject, "Layer");
+      xiiUuid                layerGuid = pAccessor->GetByName<xiiUuid>(pObject, "Layer");
       if (m_pSceneDocument->GetActiveLayer() == layerGuid)
         font.setBold(true);
       return font;
@@ -209,18 +209,32 @@ void xiiQtLayerDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem& o
     if (layerGuid.IsValid())
     {
       {
-        const QRect       thumbnailRect = GetVisibleIconRect(opt);
-        const bool        bVisible      = m_pDocument->IsLayerVisible(layerGuid);
-        const QIcon::Mode mode          = bVisible ? QIcon::Mode::Normal : QIcon::Mode::Disabled;
-        xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorPluginScene/Icons/LayerVisible.svg").paint(pPainter, thumbnailRect, Qt::AlignmentFlag::AlignCenter, mode);
+        const QRect thumbnailRect = GetVisibleIconRect(opt);
+        const bool  bVisible      = m_pDocument->IsLayerVisible(layerGuid);
+
+        if (bVisible)
+        {
+          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/ObjectsVisible.svg").paint(pPainter, thumbnailRect, Qt::AlignmentFlag::AlignCenter, QIcon::Mode::Normal);
+        }
+        else
+        {
+          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/ObjectsHidden.svg").paint(pPainter, thumbnailRect, Qt::AlignmentFlag::AlignCenter, QIcon::Mode::Normal);
+        }
       }
 
       if (layerGuid != m_pDocument->GetGuid())
       {
-        const QRect       thumbnailRect = GetLoadedIconRect(opt);
-        const bool        bLoaded       = m_pDocument->IsLayerLoaded(layerGuid);
-        const QIcon::Mode mode          = bLoaded ? QIcon::Mode::Normal : QIcon::Mode::Disabled;
-        xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorPluginScene/Icons/LayerLoaded.svg").paint(pPainter, thumbnailRect, Qt::AlignmentFlag::AlignCenter, mode);
+        const QRect thumbnailRect = GetLoadedIconRect(opt);
+        const bool  bLoaded       = m_pDocument->IsLayerLoaded(layerGuid);
+
+        if (bLoaded)
+        {
+          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorPluginScene/Icons/LayerLoaded.svg").paint(pPainter, thumbnailRect, Qt::AlignmentFlag::AlignCenter, QIcon::Mode::Normal);
+        }
+        else
+        {
+          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorPluginScene/Icons/LayerUnloaded.svg").paint(pPainter, thumbnailRect, Qt::AlignmentFlag::AlignCenter, QIcon::Mode::Normal);
+        }
       }
     }
   }

@@ -149,3 +149,7 @@ macro(xii_platformhook_download_qt)
     endif()
   endif()
 endmacro()
+
+macro (xii_platformhook_make_windowapp TARGET_NAME)
+  set_property(TARGET ${TARGET_NAME} PROPERTY WIN32_EXECUTABLE ON)
+endmacro()

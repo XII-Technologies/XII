@@ -34,9 +34,6 @@ public:
   xiiAnimationControllerComponent();
   ~xiiAnimationControllerComponent();
 
-  void        SetAnimGraphFile(const char* szFile); // [ property ]
-  const char* GetAnimGraphFile() const;             // [ property ]
-
   xiiEnum<xiiAnimationInvisibleUpdateRate> m_InvisibleUpdateRate; // [ property ]
 
 protected:

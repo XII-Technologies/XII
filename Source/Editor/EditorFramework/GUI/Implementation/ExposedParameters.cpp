@@ -47,8 +47,8 @@ xiiExposedParameters::~xiiExposedParameters()
   }
 }
 
-const xiiExposedParameter* xiiExposedParameters::Find(const char* szParamName) const
+const xiiExposedParameter* xiiExposedParameters::Find(xiiStringView sParamName) const
 {
-  const xiiExposedParameter* const* pParam = std::find_if(cbegin(m_Parameters), cend(m_Parameters), [szParamName](const xiiExposedParameter* pParam) { return pParam->m_sName == szParamName; });
+  const xiiExposedParameter* const* pParam = std::find_if(cbegin(m_Parameters), cend(m_Parameters), [sParamName](const xiiExposedParameter* pParam) { return pParam->m_sName == sParamName; });
   return pParam != cend(m_Parameters) ? *pParam : nullptr;
 }

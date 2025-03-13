@@ -3,7 +3,7 @@
 #include <Foundation/Configuration/Singleton.h>
 #include <VisualScriptPlugin/Runtime/VisualScript.h>
 
-struct xiiScriptBaseClassAttribute_Function;
+struct xiiNodePropertyValue;
 class xiiVisualScriptPin;
 
 class xiiVisualScriptNodeRegistry
@@ -21,8 +21,9 @@ public:
     DeductTypeFunc m_DeductTypeFunc = nullptr;
 
     xiiEnum<xiiVisualScriptDataType> m_ScriptDataType;
-    bool                             m_bRequired       = false;
-    bool                             m_bSplitExecution = false;
+    bool                             m_bRequired         = false;
+    bool                             m_bSplitExecution   = false;
+    bool                             m_bReplaceWithArray = false;
 
     XII_ALWAYS_INLINE bool IsExecutionPin() const { return m_ScriptDataType == xiiVisualScriptDataType::Invalid; }
     XII_ALWAYS_INLINE bool IsDataPin() const { return m_ScriptDataType != xiiVisualScriptDataType::Invalid; }
@@ -49,7 +50,7 @@ public:
     void AddInputExecutionPin(xiiStringView sName, const xiiHashedString& sDynamicPinProperty = xiiHashedString());
     void AddOutputExecutionPin(xiiStringView sName, const xiiHashedString& sDynamicPinProperty = xiiHashedString(), bool bSplitExecution = false);
 
-    void AddInputDataPin(xiiStringView sName, const xiiRTTI* pDataType, xiiVisualScriptDataType::Enum scriptDataType, bool bRequired, const xiiHashedString& sDynamicPinProperty = xiiHashedString(), PinDesc::DeductTypeFunc deductTypeFunc = nullptr);
+    void AddInputDataPin(xiiStringView sName, const xiiRTTI* pDataType, xiiVisualScriptDataType::Enum scriptDataType, bool bRequired, const xiiHashedString& sDynamicPinProperty = xiiHashedString(), PinDesc::DeductTypeFunc deductTypeFunc = nullptr, bool bReplaceWithArray = false);
     void AddOutputDataPin(xiiStringView sName, const xiiRTTI* pDataType, xiiVisualScriptDataType::Enum scriptDataType, const xiiHashedString& sDynamicPinProperty = xiiHashedString(), PinDesc::DeductTypeFunc deductTypeFunc = nullptr);
 
     XII_ALWAYS_INLINE bool NeedsTypeDeduction() const { return m_DeductTypeFunc != nullptr; }
@@ -59,9 +60,21 @@ public:
   ~xiiVisualScriptNodeRegistry();
 
   const xiiRTTI*  GetNodeBaseType() const { return m_pBaseType; }
+  const xiiRTTI*  GetVariableSetterType() const { return m_pSetVariableType; }
+  const xiiRTTI*  GetVariableGetterType() const { return m_pGetVariableType; }
   const NodeDesc* GetNodeDescForType(const xiiRTTI* pRtti) const { return m_TypeToNodeDescs.GetValue(pRtti); }
 
-  const xiiMap<const xiiRTTI*, NodeDesc>& GetAllNodeTypes() const { return m_TypeToNodeDescs; }
+  struct NodeCreationTemplate
+  {
+    const xiiRTTI*  m_pType = nullptr;
+    xiiStringView   m_sTypeName;
+    xiiHashedString m_sCategory;
+    xiiUInt32       m_uiPropertyValuesStart;
+    xiiUInt32       m_uiPropertyValuesCount;
+  };
+
+  const xiiArrayPtr<const NodeCreationTemplate> GetNodeCreationTemplates() const { return m_NodeCreationTemplates; }
+  const xiiArrayPtr<const xiiNodePropertyValue> GetPropertyValues() const { return m_PropertyValues; }
 
   static constexpr const char* s_szTypeNamePrefix       = "VisualScriptNode_";
   static constexpr xiiUInt32   s_uiTypeNamePrefixLength = xiiStringUtils::GetStringElementCount(s_szTypeNamePrefix);
@@ -69,7 +82,7 @@ public:
 private:
   void PhantomTypeRegistryEventHandler(const xiiPhantomRttiManagerEvent& e);
   void UpdateNodeTypes();
-  void UpdateNodeType(const xiiRTTI* pRtti);
+  void UpdateNodeType(const xiiRTTI* pRtti, bool bForceExpose = false);
 
   xiiResult                     GetScriptDataType(const xiiRTTI* pRtti, xiiVisualScriptDataType::Enum& out_scriptDataType, xiiStringView sFunctionName = xiiStringView(), xiiStringView sArgName = xiiStringView());
   xiiVisualScriptDataType::Enum GetScriptDataType(const xiiAbstractProperty* pProp);
@@ -83,16 +96,26 @@ private:
 
   void CreateBuiltinTypes();
   void CreateGetOwnerNodeType(const xiiRTTI* pRtti);
-  void CreateFunctionCallNodeType(const xiiRTTI* pRtti, const xiiAbstractFunctionProperty* pFunction, const xiiScriptableFunctionAttribute* pScriptableFunctionAttribute, bool bIsEntryFunction);
+  void CreateFunctionCallNodeType(const xiiRTTI* pRtti, const xiiHashedString& sCategory, const xiiAbstractFunctionProperty* pFunction, const xiiScriptableFunctionAttribute* pScriptableFunctionAttribute, bool bIsEntryFunction);
   void CreateCoroutineNodeType(const xiiRTTI* pRtti);
   void CreateMessageNodeTypes(const xiiRTTI* pRtti);
   void CreateEnumNodeTypes(const xiiRTTI* pRtti);
 
-  void FillDesc(xiiReflectedTypeDescriptor& desc, const xiiRTTI* pRtti, xiiStringView sCategoryOverride = xiiStringView(), const xiiColorGammaUB* pColorOverride = nullptr);
-  void FillDesc(xiiReflectedTypeDescriptor& desc, xiiStringView sTypeName, xiiStringView sCategory, const xiiColorGammaUB& color);
+  void FillDesc(xiiReflectedTypeDescriptor& desc, const xiiRTTI* pRtti, const xiiColorGammaUB* pColorOverride = nullptr);
+  void FillDesc(xiiReflectedTypeDescriptor& desc, xiiStringView sTypeName, const xiiColorGammaUB& color);
+
+  const xiiRTTI* RegisterNodeType(xiiReflectedTypeDescriptor& typeDesc, NodeDesc&& nodeDesc, const xiiHashedString& sCategory);
 
   const xiiRTTI*                   m_pBaseType            = nullptr;
+  const xiiRTTI*                   m_pSetPropertyType     = nullptr;
+  const xiiRTTI*                   m_pGetPropertyType     = nullptr;
+  const xiiRTTI*                   m_pSetVariableType     = nullptr;
+  const xiiRTTI*                   m_pGetVariableType     = nullptr;
   bool                             m_bBuiltinTypesCreated = false;
   xiiMap<const xiiRTTI*, NodeDesc> m_TypeToNodeDescs;
-  xiiHashSet<const xiiRTTI*>       m_EnumTypes;
+  xiiHashSet<const xiiRTTI*>       m_ExposedTypes;
+
+  xiiDynamicArray<NodeCreationTemplate> m_NodeCreationTemplates;
+  xiiDynamicArray<xiiNodePropertyValue> m_PropertyValues;
+  xiiDeque<xiiString>                   m_PropertyNodeTypeNames;
 };

@@ -29,6 +29,7 @@ void xiiFileserver::StartServer()
   m_pNetwork = xiiRemoteInterfaceEnet::Make();
   m_pNetwork->StartServer('XIFS', xiiConversionUtils::ToString(m_uiPort, tmp), false).IgnoreResult();
   m_pNetwork->SetMessageHandler('FSRV', xiiMakeDelegate(&xiiFileserver::NetworkMsgHandler, this));
+  m_pNetwork->SetUnhandledMessageHandler(xiiMakeDelegate(&xiiFileserver::UnknownNetworkMsgHandler, this));
   m_pNetwork->m_RemoteEvents.AddEventHandler(xiiMakeDelegate(&xiiFileserver::NetworkEventHandler, this));
 
   xiiFileserverEvent e;
@@ -141,6 +142,21 @@ void xiiFileserver::NetworkMsgHandler(xiiRemoteMessage& msg)
   xiiLog::Error("Unknown FSRV message: '{0}' - {1} bytes", msg.GetMessageID(), msg.GetMessageData().GetCount());
 }
 
+void xiiFileserver::UnknownNetworkMsgHandler(xiiRemoteMessage& msg)
+{
+  auto it = m_CustomMessageHandlers.Find(msg.GetSystemID());
+  if (!it.IsValid() || !it.Value().IsValid())
+    return;
+
+  auto& client = DetermineClient(msg);
+
+  it.Value()(client, msg, *m_pNetwork, xiiMakeDelegate(&xiiFileserver::LogCustomActivity, this));
+}
+
+void xiiFileserver::SetCustomMessageHandler(xiiUInt32 uiSystemID, ClientMessageHandler handler)
+{
+  m_CustomMessageHandlers[uiSystemID] = handler;
+}
 
 void xiiFileserver::NetworkEventHandler(const xiiRemoteEvent& e)
 {
@@ -452,6 +468,13 @@ void xiiFileserver::HandleUploadFileFinished(xiiFileserveClientContext& client, 
   m_pNetwork->Send('FSRV', 'UACK');
 }
 
+void xiiFileserver::LogCustomActivity(const char* szText)
+{
+  xiiFileserverEvent e;
+  e.m_szName = szText;
+  e.m_Type   = xiiFileserverEvent::Type::LogCustomActivity;
+  m_Events.Broadcast(e);
+}
 
 xiiResult xiiFileserver::SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& myIPs, xiiTime timeout)
 {

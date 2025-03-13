@@ -2,8 +2,7 @@
 
 #include <EditorPluginAssets/StateMachineAsset/StateMachineGraph.h>
 #include <EditorPluginAssets/StateMachineAsset/StateMachineGraphQt.moc.h>
-#include <GameEngine/StateMachine/StateMachine.h>
-#include <GuiFoundation/UIServices/DynamicStringEnum.h>
+#include <SharedPluginAssets/StateMachineAsset/StateMachineGraphTypes.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, StateMachine)
@@ -15,7 +14,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, StateMachine)
   ON_CORESYSTEMS_STARTUP
   {
     xiiQtNodeScene::GetPinFactory().RegisterCreator(xiiGetStaticRTTI<xiiStateMachinePin>(), [](const xiiRTTI* pRtti)->xiiQtPin* { return new xiiQtStateMachinePin(); });
-    xiiQtNodeScene::GetConnectionFactory().RegisterCreator(xiiGetStaticRTTI<xiiStateMachineConnection>(), [](const xiiRTTI* pRtti)->xiiQtConnection* { return new xiiQtStateMachineConnection(); });    
+    xiiQtNodeScene::GetConnectionFactory().RegisterCreator(xiiGetStaticRTTI<xiiStateMachineConnection>(), [](const xiiRTTI* pRtti)->xiiQtConnection* { return new xiiQtStateMachineConnection(); });
     xiiQtNodeScene::GetNodeFactory().RegisterCreator(xiiGetStaticRTTI<xiiStateMachineNodeBase>(), [](const xiiRTTI* pRtti)->xiiQtNode* { return new xiiQtStateMachineNode(); });
   }
 
@@ -41,83 +40,40 @@ xiiStateMachinePin::xiiStateMachinePin(Type type, const xiiDocumentObject* pObje
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineConnection, 1, xiiRTTINoAllocator)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Type", m_pType)->AddFlags(xiiPropertyFlags::PointerOwner)
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
-//////////////////////////////////////////////////////////////////////////
-
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineNodeBase, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
-//////////////////////////////////////////////////////////////////////////
-
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineNode, 1, xiiRTTINoAllocator)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute(xiiStringView("State"))), // wrap in xiiStringView to prevent a memory leak report
-    XII_MEMBER_PROPERTY("Type", m_pType)->AddFlags(xiiPropertyFlags::PointerOwner),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
-//////////////////////////////////////////////////////////////////////////
-
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineNodeAny, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
-//////////////////////////////////////////////////////////////////////////
+constexpr const char* s_szIsInitialState = "IsInitialState";
 
 xiiStateMachineNodeManager::xiiStateMachineNodeManager()
 {
-  m_ObjectEvents.AddEventHandler(xiiMakeDelegate(&xiiStateMachineNodeManager::ObjectHandler, this));
+  m_StructureEvents.AddEventHandler(xiiMakeDelegate(&xiiStateMachineNodeManager::StructureEventHandler, this));
 }
 
 xiiStateMachineNodeManager::~xiiStateMachineNodeManager()
 {
-  m_ObjectEvents.RemoveEventHandler(xiiMakeDelegate(&xiiStateMachineNodeManager::ObjectHandler, this));
+  m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiStateMachineNodeManager::StructureEventHandler, this));
 }
 
-void xiiStateMachineNodeManager::SetInitialState(const xiiDocumentObject* pObject)
+bool xiiStateMachineNodeManager::IsInitialState(const xiiDocumentObject* pObject) const
 {
-  if (m_pInitialStateObject == pObject)
-    return;
+  xiiVariant val = pObject->GetTypeAccessor().GetValue(s_szIsInitialState);
+  if (val.IsValid())
+  {
+    return val.Get<bool>() == true;
+  }
 
-  XII_ASSERT_DEV(IsAnyState(pObject) == false, "'Any State' can't be initial state");
+  return false;
+}
 
-  auto BroadcastEvent = [this](const xiiDocumentObject* pObject) {
-    if (pObject != nullptr)
+const xiiDocumentObject* xiiStateMachineNodeManager::GetInitialState() const
+{
+  for (auto pObject : GetRootObject()->GetChildren())
+  {
+    if (IsNode(pObject) && IsInitialState(pObject))
     {
-      xiiDocumentObjectPropertyEvent e;
-      e.m_EventType = xiiDocumentObjectPropertyEvent::Type::PropertySet;
-      e.m_pObject   = pObject;
-
-      m_PropertyEvents.Broadcast(e);
+      return pObject;
     }
-  };
+  }
 
-  const xiiDocumentObject* pOldInitialStateObject = m_pInitialStateObject;
-  m_pInitialStateObject                           = pObject;
-
-  // Broadcast after the initial state object has been changed since the qt node will query it from the manager
-  BroadcastEvent(pOldInitialStateObject);
-  BroadcastEvent(m_pInitialStateObject);
+  return nullptr;
 }
 
 bool xiiStateMachineNodeManager::IsAnyState(const xiiDocumentObject* pObject) const
@@ -174,14 +130,25 @@ const xiiRTTI* xiiStateMachineNodeManager::GetConnectionType() const
   return xiiGetStaticRTTI<xiiStateMachineConnection>();
 }
 
-void xiiStateMachineNodeManager::ObjectHandler(const xiiDocumentObjectEvent& e)
+void xiiStateMachineNodeManager::StructureEventHandler(const xiiDocumentObjectStructureEvent& e)
 {
-  if (e.m_EventType == xiiDocumentObjectEvent::Type::AfterObjectCreated && IsNode(e.m_pObject))
+  if (IsNode(e.m_pObject) == false || IsAnyState(e.m_pObject))
+    return;
+
+  auto pCommandHistory = GetDocument()->GetCommandHistory();
+  if (pCommandHistory == nullptr || pCommandHistory->IsInTransaction() == false)
+    return;
+
+  if (e.m_EventType == xiiDocumentObjectStructureEvent::Type::AfterObjectAdded &&
+      e.m_pObject->GetTypeAccessor().GetValue(s_szIsInitialState) == false &&
+      GetInitialState() == nullptr)
   {
-    if (m_pInitialStateObject == nullptr && IsAnyState(e.m_pObject) == false)
-    {
-      SetInitialState(e.m_pObject);
-    }
+    xiiSetObjectPropertyCommand propCmd;
+    propCmd.m_Object    = e.m_pObject->GetGuid();
+    propCmd.m_sProperty = s_szIsInitialState;
+    propCmd.m_NewValue  = xiiVariant(true);
+
+    XII_VERIFY(pCommandHistory->AddCommand(propCmd).Succeeded(), "");
   }
 }
 
@@ -208,11 +175,19 @@ xiiStatus xiiStateMachine_SetInitialStateCommand::DoInternal(bool bRedo)
 
   if (!bRedo)
   {
-    m_pNewInitialStateObject = pManager->GetObject(m_NewInitialStateObject);
-    m_pOldInitialStateObject = pManager->GetInitialState();
+    if (m_NewInitialStateObject.IsValid())
+      m_pNewInitialStateObject = pManager->GetObject(m_NewInitialStateObject);
+
+    if (auto pOldInitialStateObject = pManager->GetInitialState())
+      m_pOldInitialStateObject = pManager->GetObject(pOldInitialStateObject->GetGuid());
   }
 
-  pManager->SetInitialState(m_pNewInitialStateObject);
+  if (m_pNewInitialStateObject)
+    XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->SetValue(m_pNewInitialStateObject, s_szIsInitialState, xiiVariant(true)));
+
+  if (m_pOldInitialStateObject)
+    XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->SetValue(m_pOldInitialStateObject, s_szIsInitialState, xiiVariant(false)));
+
   return xiiStatus(XII_SUCCESS);
 }
 
@@ -221,6 +196,11 @@ xiiStatus xiiStateMachine_SetInitialStateCommand::UndoInternal(bool bFireEvents)
   xiiDocument* pDocument = GetDocument();
   auto         pManager  = static_cast<xiiStateMachineNodeManager*>(pDocument->GetObjectManager());
 
-  pManager->SetInitialState(m_pOldInitialStateObject);
+  if (m_pNewInitialStateObject)
+    XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->SetValue(m_pNewInitialStateObject, s_szIsInitialState, xiiVariant(false)));
+
+  if (m_pOldInitialStateObject)
+    XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->SetValue(m_pOldInitialStateObject, s_szIsInitialState, xiiVariant(true)));
+
   return xiiStatus(XII_SUCCESS);
 }

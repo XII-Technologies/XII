@@ -80,7 +80,7 @@ void xiiCollectionUtils::AddResourceHandle(xiiCollectionResourceDescriptor& ref_
   if (!hHandle.IsValid())
     return;
 
-  const char* resID = hHandle.GetResourceID();
+  const xiiStringView resID = hHandle.GetResourceID();
 
   auto& entry = ref_collection.m_Resources.ExpandAndGetRef();
 
