@@ -355,7 +355,7 @@ void xiiQtDocumentWindow::ScheduleRestoreWindowLayout()
 
 void xiiQtDocumentWindow::SlotRestoreLayout()
 {
-  RestoreWindowLayout();
+  RestoreWindowLayout(false);
 }
 
 void xiiQtDocumentWindow::SaveWindowLayout()
@@ -384,12 +384,12 @@ void xiiQtDocumentWindow::SaveWindowLayout()
   Settings.endGroup();
 }
 
-void xiiQtDocumentWindow::RestoreWindowLayout()
+void xiiQtDocumentWindow::RestoreWindowLayout(bool bForce)
 {
   if (!s_bAllowRestoreWindowLayout)
     return;
 
-  if (m_bWindowRestored)
+  if (!bForce && m_bWindowRestored)
     return;
 
   m_bWindowRestored = true;
