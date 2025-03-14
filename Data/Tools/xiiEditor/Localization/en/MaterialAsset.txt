@@ -8,12 +8,14 @@ xiiMaterialShaderMode::File;From File
 xiiMaterialShaderMode::Custom;Visual Shader
 xiiMaterialShaderMode::BaseMaterial;From Base Material
 
+xiiMaterialAssetPreview::Ball;Ball
 xiiMaterialAssetPreview::Sphere;Sphere
 xiiMaterialAssetPreview::Box;Box
 xiiMaterialAssetPreview::Plane;Plane
 
 BLEND_MODE::BLEND_MODE_OPAQUE;Opaque
 BLEND_MODE::BLEND_MODE_MASKED;Masked
+BLEND_MODE::BLEND_MODE_DITHERED;Dithered
 BLEND_MODE::BLEND_MODE_TRANSPARENT;Transparent
 BLEND_MODE::BLEND_MODE_ADDITIVE;Additive
 BLEND_MODE::BLEND_MODE_MODULATE;Modulate
@@ -26,5 +28,6 @@ SHADING_MODE::SHADING_MODE_FULLBRIGHT;Fullbright
 VisualShader.CleanGraph;Clean Visual Shader Graph
 MaterialAsset.Model;Preview Model
 CustomAction_CreateShaderFromTemplate;Create Shader From Template...
+AssetFilterTags;Asset Filter Tags;Semicolon-separated tags to only allow to select this material in specific contexts. Components must specifically request this tag.
 
 # Properties

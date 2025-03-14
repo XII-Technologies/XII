@@ -49,5 +49,6 @@ xiiSampleAnimClipSequenceAnimNode;Sample Clip Sequence
 xiiRestPoseAnimNode;Rest Pose
 
 xiiBoolToNumberAnimNode;Bool To Number
+xiiBoolToTriggerAnimNode;Bool To Trigger
 
 xiiRootRotationAnimNode;Root Rotation
