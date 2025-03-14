@@ -23,10 +23,11 @@ struct xiiThreadEvent
 {
   enum class Type
   {
-    ThreadCreated,     ///< Called on the thread that creates the xiiThread instance
-    ThreadDestroyed,   ///< Called on the thread that destroys the xiiThread instance
-    StartingExecution, ///< Called on the thread that executes the xiiThread instance
-    FinishedExecution, ///< Called on the thread that executes the xiiThread instance
+    ThreadCreated,     ///< Called on the thread that creates the xiiThread instance (not the xiiThread itself).
+    ThreadDestroyed,   ///< Called on the thread that destroys the xiiThread instance (not the xiiThread itself).
+    StartingExecution, ///< Called on the xiiThread before the Run() method is executed.
+    FinishedExecution, ///< Called on the xiiThread after the Run() method was executed.
+    ClearThreadLocals, ///< Potentially called on the xiiThread (currently only for task system threads) at a time when plugins should clean up thread-local storage.
   };
 
   Type       m_Type;

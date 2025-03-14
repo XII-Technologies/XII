@@ -77,32 +77,32 @@ constexpr XII_ALWAYS_INLINE xiiTime xiiTime::operator+(const xiiTime& other) con
   return xiiTime(m_fTime + other.m_fTime);
 }
 
-constexpr XII_ALWAYS_INLINE xiiTime operator*(xiiTime t, double f)
+constexpr XII_ALWAYS_INLINE xiiTime operator*(const xiiTime& t, double f)
 {
   return xiiTime::MakeFromSeconds(t.GetSeconds() * f);
 }
 
-constexpr XII_ALWAYS_INLINE xiiTime operator*(double f, xiiTime t)
+constexpr XII_ALWAYS_INLINE xiiTime operator*(double f, const xiiTime& t)
 {
   return xiiTime::MakeFromSeconds(t.GetSeconds() * f);
 }
 
-constexpr XII_ALWAYS_INLINE xiiTime operator*(xiiTime f, xiiTime t)
+constexpr XII_ALWAYS_INLINE xiiTime operator*(const xiiTime& f, const xiiTime& t)
 {
   return xiiTime::MakeFromSeconds(t.GetSeconds() * f.GetSeconds());
 }
 
-constexpr XII_ALWAYS_INLINE xiiTime operator/(xiiTime t, double f)
+constexpr XII_ALWAYS_INLINE xiiTime operator/(const xiiTime& t, double f)
 {
   return xiiTime::MakeFromSeconds(t.GetSeconds() / f);
 }
 
-constexpr XII_ALWAYS_INLINE xiiTime operator/(double f, xiiTime t)
+constexpr XII_ALWAYS_INLINE xiiTime operator/(double f, const xiiTime& t)
 {
   return xiiTime::MakeFromSeconds(f / t.GetSeconds());
 }
 
-constexpr XII_ALWAYS_INLINE xiiTime operator/(xiiTime f, xiiTime t)
+constexpr XII_ALWAYS_INLINE xiiTime operator/(const xiiTime& f, const xiiTime& t)
 {
   return xiiTime::MakeFromSeconds(f.GetSeconds() / t.GetSeconds());
 }

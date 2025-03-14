@@ -149,25 +149,25 @@ constexpr XII_ALWAYS_INLINE std::partial_ordering xiiAngleTemplate<Type>::operat
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> operator*(xiiAngleTemplate<Type> a, Type f)
+constexpr inline xiiAngleTemplate<Type> operator*(const xiiAngleTemplate<Type>& a, Type f)
 {
   return xiiAngleTemplate<Type>::MakeFromRadian(a.GetRadian() * f);
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> operator*(Type f, xiiAngleTemplate<Type> a)
+constexpr inline xiiAngleTemplate<Type> operator*(Type f, const xiiAngleTemplate<Type>& a)
 {
   return xiiAngleTemplate<Type>::MakeFromRadian(a.GetRadian() * f);
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> operator/(xiiAngleTemplate<Type> a, Type f)
+constexpr inline xiiAngleTemplate<Type> operator/(const xiiAngleTemplate<Type>& a, Type f)
 {
   return xiiAngleTemplate<Type>::MakeFromRadian(a.GetRadian() / f);
 }
 
 template <typename Type>
-constexpr inline Type operator/(xiiAngleTemplate<Type> a, xiiAngleTemplate<Type> b)
+constexpr inline Type operator/(const xiiAngleTemplate<Type>& a, const xiiAngleTemplate<Type>& b)
 {
   return a.GetRadian() / b.GetRadian();
 }

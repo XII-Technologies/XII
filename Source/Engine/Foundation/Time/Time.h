@@ -117,13 +117,13 @@ private:
   static void Initialize();
 };
 
-constexpr xiiTime operator*(xiiTime t, double f);
-constexpr xiiTime operator*(double f, xiiTime t);
-constexpr xiiTime operator*(xiiTime f, xiiTime t); // not physically correct, but useful (should result in seconds squared)
+constexpr xiiTime operator*(const xiiTime& t, double f);
+constexpr xiiTime operator*(double f, const xiiTime& t);
+constexpr xiiTime operator*(const xiiTime& f, const xiiTime& t); // not physically correct, but useful (should result in seconds squared)
 
-constexpr xiiTime operator/(xiiTime t, double f);
-constexpr xiiTime operator/(double f, xiiTime t);
-constexpr xiiTime operator/(xiiTime f, xiiTime t); // not physically correct, but useful (should result in a value without a unit)
+constexpr xiiTime operator/(const xiiTime& t, double f);
+constexpr xiiTime operator/(double f, const xiiTime& t);
+constexpr xiiTime operator/(const xiiTime& f, const xiiTime& t); // not physically correct, but useful (should result in a value without a unit)
 
 
 #include <Foundation/Time/Implementation/Time_inl.h>

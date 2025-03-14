@@ -15,7 +15,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////
-// Start ezEngine edit
+// Start XII edit
 // Configure the DLL Import/Export Define
 #ifdef BUILDSYSTEM_COMPILE_ENGINE_AS_DLL
 #ifdef _WIN32
@@ -39,7 +39,7 @@
 
 extern thread_local struct ImGuiContext* g_ThreadLocalContext;
 #define GImGui g_ThreadLocalContext
-// End ezEngine edit
+// End XII edit
 //////////////////////////////////////////////////////////////////////////
 
 //---- Define assertion handler. Defaults to calling assert().
