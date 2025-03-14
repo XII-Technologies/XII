@@ -14,9 +14,10 @@ struct xiiStandardMenuTypes
     Edit    = XII_BIT(2),
     Panels  = XII_BIT(3),
     Scene   = XII_BIT(4),
-    View    = XII_BIT(5),
-    Tools   = XII_BIT(6),
-    Help    = XII_BIT(7),
+    Asset   = XII_BIT(5),
+    View    = XII_BIT(6),
+    Tools   = XII_BIT(7),
+    Help    = XII_BIT(8),
 
     Default = Project | File | Panels | Tools | Help
   };
@@ -28,6 +29,7 @@ struct xiiStandardMenuTypes
     StorageType Edit : 1;
     StorageType Panels : 1;
     StorageType Scene : 1;
+    StorageType Asset : 1;
     StorageType View : 1;
     StorageType Tools : 1;
     StorageType Help : 1;
@@ -50,6 +52,7 @@ public:
   static xiiActionDescriptorHandle s_hMenuEdit;
   static xiiActionDescriptorHandle s_hMenuPanels;
   static xiiActionDescriptorHandle s_hMenuScene;
+  static xiiActionDescriptorHandle s_hMenuAsset;
   static xiiActionDescriptorHandle s_hMenuView;
   static xiiActionDescriptorHandle s_hMenuTools;
   static xiiActionDescriptorHandle s_hMenuHelp;

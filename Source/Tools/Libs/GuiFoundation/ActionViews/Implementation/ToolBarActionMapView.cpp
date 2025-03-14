@@ -102,7 +102,11 @@ void xiiQtToolBarActionMapView::CreateView(const xiiActionMap::TreeNode* pObject
         pButton->setPopupMode(QToolButton::ToolButtonPopupMode::InstantPopup);
         pButton->setText(pQtMenu->title());
         pButton->setIcon(xiiQtUiServices::GetCachedIconResource(pNamed->GetIconPath()));
-        pButton->setToolTip(pQtMenu->title().toUtf8().data());
+        pButton->setToolTip(pQtMenu->toolTip());
+
+        pNamed->m_StatusUpdateEvent.AddEventHandler([=](xiiAction* pAction) {
+          pButton->setIcon(xiiQtUiServices::GetCachedIconResource(pNamed->GetIconPath()));
+        });
 
         // TODO addWidget return value of QAction leaks!
         QAction* pToolButtonAction = addWidget(pButton);
