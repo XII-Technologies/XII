@@ -81,6 +81,16 @@ xiiUInt32 xiiTaskWorkerThread::Run()
 
   while (m_bActive)
   {
+    if (m_bClearThreadLocalsEvent)
+    {
+      m_bClearThreadLocalsEvent = false;
+
+      xiiThreadEvent e;
+      e.m_pThread = this;
+      e.m_Type    = xiiThreadEvent::Type::ClearThreadLocals;
+      xiiThread::s_ThreadEvents.Broadcast(e);
+    }
+
     if (!m_bExecutingTask)
     {
       m_bExecutingTask     = true;

@@ -74,7 +74,7 @@ public:
 /// It can then return the same result, or adjust the entries (update check marks or show entirely different entries).
 ///
 /// Derive from this, to create your own dynamic menu.
-/// Or use something like ezEnumerationMenuAction to get a menu for an enum type.
+/// Or use something like xiiEnumerationMenuAction to get a menu for an enum type.
 class XII_GUIFOUNDATION_DLL xiiDynamicMenuAction : public xiiMenuAction
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDynamicMenuAction, xiiMenuAction);

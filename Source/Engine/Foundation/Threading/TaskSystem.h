@@ -79,7 +79,7 @@ public:
     xiiUInt32             m_uiInvocation    = 0;
   };
 
-  /// \brief Broadcasts ezThreadEvent::ClearThreadLocals on all worker threads.
+  /// \brief Broadcasts xiiThreadEvent::ClearThreadLocals on all worker threads.
   static void BroadcastClearThreadLocalsEvent();
 
 private:

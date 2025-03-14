@@ -103,17 +103,17 @@ private:
 
 /// \brief Returns f times angle a.
 template <typename Type>
-constexpr xiiAngleTemplate<Type> operator*(xiiAngleTemplate<Type> a, Type f); // [tested]
+constexpr xiiAngleTemplate<Type> operator*(const xiiAngleTemplate<Type>& a, Type f); // [tested]
 /// \brief Returns f times angle a.
 template <typename Type>
-constexpr xiiAngleTemplate<Type> operator*(Type f, xiiAngleTemplate<Type> a); // [tested]
+constexpr xiiAngleTemplate<Type> operator*(Type f, const xiiAngleTemplate<Type>& a); // [tested]
 
 /// \brief Returns the angle a divided by f.
 template <typename Type>
-constexpr xiiAngleTemplate<Type> operator/(xiiAngleTemplate<Type> a, Type f); // [tested]
+constexpr xiiAngleTemplate<Type> operator/(const xiiAngleTemplate<Type>& a, Type f); // [tested]
 /// \brief Returns the fraction of angle a divided by angle b.
 template <typename Type>
-constexpr Type operator/(xiiAngleTemplate<Type> a, xiiAngleTemplate<Type> b); // [tested]
+constexpr Type operator/(const xiiAngleTemplate<Type>& a, const xiiAngleTemplate<Type>& b); // [tested]
 
 
 #include <Foundation/Math/Implementation/Angle_inl.h>

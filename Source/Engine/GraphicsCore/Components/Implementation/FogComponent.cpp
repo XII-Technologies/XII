@@ -59,7 +59,11 @@ void xiiFogComponent::OnDeactivated()
 void xiiFogComponent::SetColor(xiiColor color)
 {
   m_Color = color;
-  SetModified(XII_BIT(1));
+
+  if (IsActiveAndInitialized())
+  {
+    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  }
 }
 
 xiiColor xiiFogComponent::GetColor() const
@@ -70,7 +74,11 @@ xiiColor xiiFogComponent::GetColor() const
 void xiiFogComponent::SetDensity(float fDensity)
 {
   m_fDensity = xiiMath::Max(fDensity, 0.0f);
-  SetModified(XII_BIT(2));
+
+  if (IsActiveAndInitialized())
+  {
+    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  }
 }
 
 float xiiFogComponent::GetDensity() const
@@ -81,7 +89,11 @@ float xiiFogComponent::GetDensity() const
 void xiiFogComponent::SetHeightFalloff(float fHeightFalloff)
 {
   m_fHeightFalloff = xiiMath::Max(fHeightFalloff, 0.0f);
-  SetModified(XII_BIT(3));
+
+  if (IsActiveAndInitialized())
+  {
+    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  }
 }
 
 float xiiFogComponent::GetHeightFalloff() const
@@ -92,7 +104,11 @@ float xiiFogComponent::GetHeightFalloff() const
 void xiiFogComponent::SetModulateWithSkyColor(bool bModulate)
 {
   m_bModulateWithSkyColor = bModulate;
-  SetModified(XII_BIT(4));
+
+  if (IsActiveAndInitialized())
+  {
+    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  }
 }
 
 bool xiiFogComponent::GetModulateWithSkyColor() const
@@ -103,7 +119,11 @@ bool xiiFogComponent::GetModulateWithSkyColor() const
 void xiiFogComponent::SetSkyDistance(float fDistance)
 {
   m_fSkyDistance = fDistance;
-  SetModified(XII_BIT(5));
+
+  if (IsActiveAndInitialized())
+  {
+    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  }
 }
 
 float xiiFogComponent::GetSkyDistance() const
