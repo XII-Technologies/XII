@@ -1,4 +1,3 @@
-#include "MeshBufferUtils.h"
 
 // static
 XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> xiiMeshNormalPrecision::ToResourceFormatNormal(Enum value)
