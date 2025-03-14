@@ -322,7 +322,6 @@ void xiiQtButtonProxy::Update()
 
   auto pButton = static_cast<xiiButtonAction*>(m_pAction);
 
-
   const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
   m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDesc->m_sShortcut)));
 
@@ -355,7 +354,6 @@ void xiiQtButtonProxy::Update()
   m_pQtAction->setEnabled(pButton->IsEnabled());
   m_pQtAction->setVisible(pButton->IsVisible());
 }
-
 
 void SetupQAction(xiiAction* pAction, QPointer<QAction>& ref_pQtAction, QObject* pTarget)
 {
@@ -459,7 +457,7 @@ void xiiQtDynamicMenuProxy::SlotMenuAboutToShow()
       }
       else
       {
-        auto pAction = m_pMenu->addAction(xiiMakeQString(p.m_sDisplay));
+        auto pAction = m_pMenu->addAction(xiiMakeQString(xiiTranslate(p.m_sDisplay)));
         pAction->setData(i);
         pAction->setIcon(p.m_Icon);
         pAction->setCheckable(p.m_CheckState != xiiDynamicMenuAction::Item::CheckMark::NotCheckable);
