@@ -85,9 +85,7 @@ bool xiiSpawnComponent::SpawnOnce(const xiiVec3& vLocalOffset)
       const xiiAngle turnAngle = xiiAngle::MakeFromRadian((float)GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0));
 
       xiiQuat qTilt, qTurn, qDeviate;
-      qTilt;
-      qTilt = xiiQuat::MakeFromAxisAndAngle(vTiltAxis, tiltAngle);
-      qTurn;
+      qTilt    = xiiQuat::MakeFromAxisAndAngle(vTiltAxis, tiltAngle);
       qTurn    = xiiQuat::MakeFromAxisAndAngle(vTurnAxis, turnAngle);
       qDeviate = qTurn * qTilt;
 
