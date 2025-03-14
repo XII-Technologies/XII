@@ -31,7 +31,7 @@
 xiiGameApplication*                                                xiiGameApplication::s_pGameApplicationInstance = nullptr;
 xiiDelegate<xiiGALDevice*(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
 
-xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", false, xiiCVarFlags::Save, "Enables V-Sync");
+xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Enables V-Sync");
 xiiCVarBool xiiGameApplication::cvar_AppShowFPS("App.ShowFPS", false, xiiCVarFlags::Save, "Show frames per second counter");
 
 xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath /*= {}*/) :

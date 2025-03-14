@@ -691,7 +691,6 @@ void xiiQtPropertyPointerWidget::SetSelection(const xiiHybridArray<xiiPropertySe
   UpdateTitle(pCommonType);
 }
 
-
 void xiiQtPropertyPointerWidget::DoPrepareToDie()
 {
   if (m_pTypeWidget)
