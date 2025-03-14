@@ -26,7 +26,8 @@ CubemapImport.SkyboxHDR;HDR Skybox
 # Enums
 
 xiiTexConvUsage::Hdr;HDR
-xiiTexConvUsage::NormalMap_Inverted; Normal Map (inverted)
+xiiTexConvUsage::NormalMap; Normal Map (DX)
+xiiTexConvUsage::NormalMap_Inverted; Normal Map (GL)
 
 xiiRenderTargetFormat::RGBA8;RGBA8 (linear)
 xiiRenderTargetFormat::RGBA8sRgb;RGBA8 (sRGB)
@@ -83,6 +84,8 @@ xiiTextureChannelMode::Red;Display Channel: Red
 xiiTextureChannelMode::Green;Display Channel: Green
 xiiTextureChannelMode::Blue;Display Channel: Blue
 xiiTextureChannelMode::Alpha;Display Channel: Alpha
+xiiTextureChannelMode::CoverageRed;Coverage Preview: Red
+xiiTextureChannelMode::CoverageAlpha;Coverage Preview: Alpha
 
 xiiTextureCubeUsageEnum::Unknown;Unknown
 xiiTextureCubeUsageEnum::Skybox;Skybox

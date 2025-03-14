@@ -30,6 +30,9 @@ public:
   static xiiActionDescriptorHandle s_hWorldSpace;
   static xiiActionDescriptorHandle s_hMoveParentOnly;
   static xiiActionDescriptorHandle s_SnapSettings;
+  static xiiActionDescriptorHandle s_SnapTranslationMenu;
+  static xiiActionDescriptorHandle s_SnapRotationMenu;
+  static xiiActionDescriptorHandle s_SnapScaleMenu;
 };
 
 ///

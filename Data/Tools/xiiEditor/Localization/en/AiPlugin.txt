@@ -3,6 +3,8 @@
 # Component Types
 
 xiiAiNavMeshPathTestComponent;Navmesh Path Test;;https://xiiengine.net/pages/docs/ai/AiPlugin/navmesh-path-test-component.html
+xiiNavMeshObstacleComponent;Navmesh Obstacle;;https://xiiengine.net/pages/docs/ai/AiPlugin/navmesh-obstacle-component.html
+xiiAiNavigationComponent;AI Navigation;;https://xiiengine.net/pages/docs/ai/AiPlugin/navigation-component.html
 
 # UI
 

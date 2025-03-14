@@ -257,16 +257,26 @@ xiiQtMenuProxy::xiiQtMenuProxy()
 
 xiiQtMenuProxy::~xiiQtMenuProxy()
 {
+  m_pAction->m_StatusUpdateEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtMenuProxy::StatusUpdateEventHandler, this));
+
   m_pMenu->deleteLater();
   delete m_pMenu;
+}
+
+void xiiQtMenuProxy::StatusUpdateEventHandler(xiiAction* pAction)
+{
+  Update();
 }
 
 void xiiQtMenuProxy::Update()
 {
   auto pMenu = static_cast<xiiMenuAction*>(m_pAction);
 
+  // note that setting the icon on the menu is pretty pointless, because you'd need to set the icon on something like a QToolButton.
+  // therefore there is another event handler in xiiQtToolBarActionMapView::CreateView()
   m_pMenu->setIcon(xiiQtUiServices::GetCachedIconResource(pMenu->GetIconPath()));
   m_pMenu->setTitle(xiiMakeQString(xiiTranslate(pMenu->GetName())));
+  m_pMenu->setToolTip(xiiMakeQString(xiiTranslateTooltip(pMenu->GetName())));
 }
 
 void xiiQtMenuProxy::SetAction(xiiAction* pAction)
@@ -276,6 +286,8 @@ void xiiQtMenuProxy::SetAction(xiiAction* pAction)
   m_pMenu = new QMenu();
   m_pMenu->setToolTipsVisible(true);
   Update();
+
+  m_pAction->m_StatusUpdateEvent.AddEventHandler(xiiMakeDelegate(&xiiQtMenuProxy::StatusUpdateEventHandler, this));
 }
 
 QMenu* xiiQtMenuProxy::GetQMenu()
@@ -310,7 +322,6 @@ void xiiQtButtonProxy::Update()
 
   auto pButton = static_cast<xiiButtonAction*>(m_pAction);
 
-
   const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
   m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDesc->m_sShortcut)));
 
@@ -343,7 +354,6 @@ void xiiQtButtonProxy::Update()
   m_pQtAction->setEnabled(pButton->IsEnabled());
   m_pQtAction->setVisible(pButton->IsVisible());
 }
-
 
 void SetupQAction(xiiAction* pAction, QPointer<QAction>& ref_pQtAction, QObject* pTarget)
 {
@@ -447,7 +457,7 @@ void xiiQtDynamicMenuProxy::SlotMenuAboutToShow()
       }
       else
       {
-        auto pAction = m_pMenu->addAction(xiiMakeQString(p.m_sDisplay));
+        auto pAction = m_pMenu->addAction(xiiMakeQString(xiiTranslate(p.m_sDisplay)));
         pAction->setData(i);
         pAction->setIcon(p.m_Icon);
         pAction->setCheckable(p.m_CheckState != xiiDynamicMenuAction::Item::CheckMark::NotCheckable);
@@ -488,15 +498,12 @@ xiiQtDynamicActionAndMenuProxy::xiiQtDynamicActionAndMenuProxy()
 
 xiiQtDynamicActionAndMenuProxy::~xiiQtDynamicActionAndMenuProxy()
 {
-  m_pAction->m_StatusUpdateEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtDynamicActionAndMenuProxy::StatusUpdateEventHandler, this));
-
   if (m_pQtAction != nullptr)
   {
     m_pQtAction->deleteLater();
   }
   m_pQtAction = nullptr;
 }
-
 
 void xiiQtDynamicActionAndMenuProxy::Update()
 {
@@ -543,8 +550,6 @@ void xiiQtDynamicActionAndMenuProxy::SetAction(xiiAction* pAction)
 {
   xiiQtDynamicMenuProxy::SetAction(pAction);
 
-  m_pAction->m_StatusUpdateEvent.AddEventHandler(xiiMakeDelegate(&xiiQtDynamicActionAndMenuProxy::StatusUpdateEventHandler, this));
-
   SetupQAction(m_pAction, m_pQtAction, this);
 
   Update();
@@ -567,12 +572,6 @@ void xiiQtDynamicActionAndMenuProxy::OnTriggered()
   if (pFocusWidget)
     pFocusWidget->setFocus();
 }
-
-void xiiQtDynamicActionAndMenuProxy::StatusUpdateEventHandler(xiiAction* pAction)
-{
-  Update();
-}
-
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////// xiiQtSliderProxy /////////////////////

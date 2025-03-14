@@ -33,13 +33,16 @@ xiiLensFlareComponent;Lens Flare;;https://xiiengine.net/pages/docs/effects/lensf
 xiiLineToComponent;Draw Line To Object;;https://xiiengine.net/pages/docs/debugging/components/draw-line-component.html
 xiiMarkerComponent;Marker;;https://xiiengine.net/pages/docs/gameplay/marker-component.html
 xiiMeshComponent;Mesh;;https://xiiengine.net/pages/docs/graphics/meshes/mesh-component.html
+xiiLodMeshComponent;LOD Mesh;;https://xiiengine.net/pages/docs/graphics/meshes/lod-mesh-component.html
 xiiMoveToComponent;Move To;;https://xiiengine.net/pages/docs/animation/property-animation/move-to-component.html
 xiiOccluderComponent;Occluder Component;;https://xiiengine.net/pages/docs/graphics/occluder-component.html
 xiiPlayerStartPointComponent;Player Start Point;;https://xiiengine.net/pages/docs/gameplay/player-start-point.html
 xiiPointLightComponent;Point Light;;https://xiiengine.net/pages/docs/graphics/lighting/point-light-component.html
+xiiFillLightComponent;Fill Light;;https://xiiengine.net/pages/docs/graphics/lighting/fill-light-component.html
 xiiPrefabReferenceComponent;Prefab Reference;;https://xiiengine.net/pages/docs/prefabs/prefabs-overview.html
 xiiProjectileComponent;Projectile;;https://xiiengine.net/pages/docs/gameplay/projectile-component.html
 xiiPropertyAnimComponent;Property Animation;;https://xiiengine.net/pages/docs/animation/property-animation/property-animation-component.html
+xiiRandomPrefabComponent;Random Prefab;;https://xiiengine.net/pages/docs/prefabs/random-prefab-component.html
 xiiRaycastComponent;Raycast Placement;;https://xiiengine.net/pages/docs/gameplay/raycast-placement-component.html
 xiiRenderTargetActivatorComponent;Render Target Activator;;https://xiiengine.net/pages/docs/graphics/render-to-texture/render-target-activator-component.html
 xiiRopeRenderComponent;Rope Renderer;;https://xiiengine.net/pages/docs/effects/ropes/rope-render-component.html
@@ -76,13 +79,17 @@ xiiResetTransformComponent;Reset Transform;;https://xiiengine.net/pages/docs/ani
 xiiVolumeBoxComponent;Box Volume;;https://xiiengine.net/pages/docs/effects/post-processing/volume-components.html
 xiiVolumeSphereComponent;Sphere Volume;;https://xiiengine.net/pages/docs/effects/post-processing/volume-components.html
 xiiPostProcessingComponent;Post Processing;;https://xiiengine.net/pages/docs/effects/post-processing/post-processing-component.html
+xiiTwoBoneIKComponent;Two Bone IK;;https://xiiengine.net/pages/docs/animation/skeletal-animation/ik/two-bone-ik-component.html
+xiiAimIKComponent;Aim IK;;https://xiiengine.net/pages/docs/animation/skeletal-animation/ik/aim-ik-component.html
+xiiCreatureCrawlComponent;Creature Crawl;;https://xiiengine.net/pages/docs/gameplay/creature-crawl-component.html
+xiiLodComponent;LOD Component;;https://xiiengine.net/pages/docs/graphics/lod-component.html
+xiiSceneTransitionComponent;Scene Transition;;https://xiiengine.net/pages/docs/gameplay/scene-transition-component.html
 
 # Properties
 
 EditorShortcut;Editor Shortcut;Press ALT+Number to jump to this camera.
 Scene.CreateThumbnail;Create Scene Thumbnail
 Scene.GameMode.PlayFromHere;Play From Here
-Scene.GameObject.CreateEmptyHere;Create Empty Object Here
 Scene.Camera.Create.0;Create Level Camera 0;Creates a camera node at the current editor camera position and configures its shortcut
 Scene.Camera.Create.1;Create Level Camera 1;Creates a camera node at the current editor camera position and configures its shortcut
 Scene.Camera.Create.2;Create Level Camera 2;Creates a camera node at the current editor camera position and configures its shortcut

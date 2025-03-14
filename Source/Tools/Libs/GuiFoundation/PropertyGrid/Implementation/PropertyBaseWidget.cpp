@@ -691,7 +691,6 @@ void xiiQtPropertyPointerWidget::SetSelection(const xiiHybridArray<xiiPropertySe
   UpdateTitle(pCommonType);
 }
 
-
 void xiiQtPropertyPointerWidget::DoPrepareToDie()
 {
   if (m_pTypeWidget)
@@ -705,8 +704,7 @@ void xiiQtPropertyPointerWidget::UpdateTitle(const xiiRTTI* pType /*= nullptr*/)
   xiiStringBuilder sb = xiiTranslate(m_pProp->GetPropertyName());
   if (pType != nullptr)
   {
-    xiiStringBuilder tmp;
-    sb.Append(": ", xiiTranslate(pType->GetTypeName().GetData(tmp)));
+    sb.Append(": ", xiiTranslate(pType->GetTypeName()));
   }
   m_pGroup->SetTitle(sb);
 }

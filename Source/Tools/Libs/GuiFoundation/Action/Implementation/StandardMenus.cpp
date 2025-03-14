@@ -11,6 +11,7 @@ xiiActionDescriptorHandle xiiStandardMenus::s_hMenuFile;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuEdit;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuPanels;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuScene;
+xiiActionDescriptorHandle xiiStandardMenus::s_hMenuAsset;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuView;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuTools;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuHelp;
@@ -24,6 +25,7 @@ void xiiStandardMenus::RegisterActions()
   s_hMenuEdit        = XII_REGISTER_MENU("G.Edit");
   s_hMenuPanels      = XII_REGISTER_DYNAMIC_MENU("G.Panels", xiiApplicationPanelsMenuAction, "");
   s_hMenuScene       = XII_REGISTER_MENU("G.Scene");
+  s_hMenuAsset       = XII_REGISTER_MENU("G.Asset");
   s_hMenuView        = XII_REGISTER_MENU("G.View");
   s_hMenuTools       = XII_REGISTER_MENU("G.Tools");
   s_hMenuHelp        = XII_REGISTER_MENU("G.Help");
@@ -38,6 +40,7 @@ void xiiStandardMenus::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hMenuEdit);
   xiiActionManager::UnregisterAction(s_hMenuPanels);
   xiiActionManager::UnregisterAction(s_hMenuScene);
+  xiiActionManager::UnregisterAction(s_hMenuAsset);
   xiiActionManager::UnregisterAction(s_hMenuView);
   xiiActionManager::UnregisterAction(s_hMenuTools);
   xiiActionManager::UnregisterAction(s_hMenuHelp);
@@ -64,18 +67,21 @@ void xiiStandardMenus::MapActions(xiiStringView sMapping, const xiiBitflags<xiiS
   if (menus.IsAnySet(xiiStandardMenuTypes::Scene))
     pMap->MapAction(s_hMenuScene, "", 3.0f);
 
+  if (menus.IsAnySet(xiiStandardMenuTypes::Asset))
+    pMap->MapAction(s_hMenuAsset, "", 4.0f);
+
   if (menus.IsAnySet(xiiStandardMenuTypes::View))
-    pMap->MapAction(s_hMenuView, "", 4.0f);
+    pMap->MapAction(s_hMenuView, "", 5.0f);
 
   if (menus.IsAnySet(xiiStandardMenuTypes::Tools))
-    pMap->MapAction(s_hMenuTools, "", 5.0f);
+    pMap->MapAction(s_hMenuTools, "", 6.0f);
 
   if (menus.IsAnySet(xiiStandardMenuTypes::Panels))
-    pMap->MapAction(s_hMenuPanels, "", 6.0f);
+    pMap->MapAction(s_hMenuPanels, "", 7.0f);
 
   if (menus.IsAnySet(xiiStandardMenuTypes::Help))
   {
-    pMap->MapAction(s_hMenuHelp, "", 7.0f);
+    pMap->MapAction(s_hMenuHelp, "", 8.0f);
     pMap->MapAction(s_hReportProblem, "G.Help", 3.0f);
     pMap->MapAction(s_hCheckForUpdates, "G.Help", 10.0f);
   }
