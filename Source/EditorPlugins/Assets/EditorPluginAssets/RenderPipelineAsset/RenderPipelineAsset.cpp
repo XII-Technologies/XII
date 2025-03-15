@@ -98,9 +98,9 @@ xiiRenderPipelineAssetDocument::xiiRenderPipelineAssetDocument(xiiStringView sDo
 
 xiiRenderPipelineAssetDocument::~xiiRenderPipelineAssetDocument() = default;
 
-xiiTransformStatus xiiRenderPipelineAssetDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
+xiiTransformStatus xiiRenderPipelineAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
-  return xiiAssetDocument::RemoteExport(AssetHeader, szTargetFile);
+  return xiiAssetDocument::RemoteExport(AssetHeader, sTargetFile);
 }
 
 xiiTransformStatus xiiRenderPipelineAssetDocument::InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)

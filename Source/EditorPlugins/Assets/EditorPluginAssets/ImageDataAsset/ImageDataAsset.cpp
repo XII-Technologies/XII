@@ -13,18 +13,18 @@ xiiImageDataAssetDocument::xiiImageDataAssetDocument(xiiStringView sDocumentPath
 {
 }
 
-xiiTransformStatus xiiImageDataAssetDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
+xiiTransformStatus xiiImageDataAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   const bool bUpdateThumbnail = pAssetProfile == xiiAssetCurator::GetSingleton()->GetDevelopmentAssetProfile();
 
-  xiiStatus result = RunTexConv(szTargetFile, AssetHeader, bUpdateThumbnail);
+  xiiStatus result = RunTexConv(sTargetFile, AssetHeader, bUpdateThumbnail);
 
   xiiFileStats stat;
-  if (xiiOSFile::GetFileStats(szTargetFile, stat).Succeeded() && stat.m_uiFileSize == 0)
+  if (xiiOSFile::GetFileStats(sTargetFile, stat).Succeeded() && stat.m_uiFileSize == 0)
   {
     // if the file was touched, but nothing written to it, delete the file
     // might happen if TexConv crashed or had an error
-    xiiOSFile::DeleteFile(szTargetFile).IgnoreResult();
+    xiiOSFile::DeleteFile(sTargetFile).IgnoreResult();
     result.m_Result = XII_FAILURE;
   }
 
@@ -38,7 +38,7 @@ xiiTransformStatus xiiImageDataAssetDocument::InternalTransformAsset(const char*
   return result;
 }
 
-xiiStatus xiiImageDataAssetDocument::RunTexConv(const char* szTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail)
+xiiStatus xiiImageDataAssetDocument::RunTexConv(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail)
 {
   const xiiImageDataAssetProperties* pProp = GetProperties();
 
@@ -67,7 +67,7 @@ xiiStatus xiiImageDataAssetDocument::RunTexConv(const char* szTargetFile, const 
   }
 
   arguments << "-out";
-  arguments << szTargetFile;
+  arguments << sTargetFile.GetData(temp);
 
   const xiiStringBuilder sThumbnail = GetThumbnailFilePath();
 
@@ -97,7 +97,6 @@ xiiStatus xiiImageDataAssetDocument::RunTexConv(const char* szTargetFile, const 
   arguments << "Linear";
 
   // arguments << "-maxRes" << QString::number(pAssetConfig->m_uiMaxResolution);
-
 
   {
     arguments << "-in0";

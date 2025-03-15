@@ -142,7 +142,7 @@ const char* ToCompressionMode(xiiTexConvCompressionMode::Enum mode)
   return "";
 }
 
-xiiStatus xiiTextureAssetDocument::RunTexConv(const char* szTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail, const xiiTextureAssetProfileConfig* pAssetConfig)
+xiiStatus xiiTextureAssetDocument::RunTexConv(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail, const xiiTextureAssetProfileConfig* pAssetConfig)
 {
   const xiiTextureAssetProperties* pProp = GetProperties();
 
@@ -172,7 +172,7 @@ xiiStatus xiiTextureAssetDocument::RunTexConv(const char* szTargetFile, const xi
 
 
   arguments << "-out";
-  arguments << szTargetFile;
+  arguments << sTargetFile.GetData(temp);
 
   const xiiStringBuilder sThumbnail = GetThumbnailFilePath();
   if (bUpdateThumbnail)
@@ -190,7 +190,7 @@ xiiStatus xiiTextureAssetDocument::RunTexConv(const char* szTargetFile, const xi
 
   // low resolution data
   {
-    xiiStringBuilder lowResPath = szTargetFile;
+    xiiStringBuilder lowResPath = sTargetFile;
     xiiStringBuilder name       = lowResPath.GetFileName();
     name.Append("-lowres");
     lowResPath.ChangeFileName(name);
@@ -389,7 +389,7 @@ void xiiTextureAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
   }
 }
 
-xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
+xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   if (sOutputTag.IsEqual("LOWRES"))
   {
@@ -404,7 +404,7 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
   if (m_bIsRenderTarget)
   {
     xiiDeferredFileWriter file;
-    file.SetOutput(szTargetFile);
+    file.SetOutput(sTargetFile);
 
     XII_SUCCEED_OR_RETURN(AssetHeader.Write(file));
 
@@ -488,7 +488,7 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
 
 
     if (file.Close().Failed())
-      return xiiTransformStatus(xiiFmt("Writing to target file failed: '{0}'", szTargetFile));
+      return xiiTransformStatus(xiiFmt("Writing to target file failed: '{0}'", sTargetFile));
 
     return xiiTransformStatus();
   }
@@ -496,14 +496,14 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
   {
     const bool bUpdateThumbnail = pAssetProfile == xiiAssetCurator::GetSingleton()->GetDevelopmentAssetProfile();
 
-    xiiTransformStatus result = RunTexConv(szTargetFile, AssetHeader, bUpdateThumbnail, pAssetConfig);
+    xiiTransformStatus result = RunTexConv(sTargetFile, AssetHeader, bUpdateThumbnail, pAssetConfig);
 
     xiiFileStats stat;
-    if (xiiOSFile::GetFileStats(szTargetFile, stat).Succeeded() && stat.m_uiFileSize == 0)
+    if (xiiOSFile::GetFileStats(sTargetFile, stat).Succeeded() && stat.m_uiFileSize == 0)
     {
       // if the file was touched, but nothing written to it, delete the file
       // might happen if TexConv crashed or had an error
-      xiiOSFile::DeleteFile(szTargetFile).IgnoreResult();
+      xiiOSFile::DeleteFile(sTargetFile).IgnoreResult();
 
       if (result.Succeeded())
         result = xiiTransformStatus("TexConv did not write an output file");

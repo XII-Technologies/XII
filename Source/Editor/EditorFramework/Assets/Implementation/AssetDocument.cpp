@@ -536,9 +536,9 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
     AssetHeader.SetFileHashAndVersion(uiHash, GetAssetTypeVersion());
     const auto& outputs = GetAssetDocumentInfo()->m_Outputs;
 
-    auto GenerateOutput = [this, pAssetProfile, &AssetHeader, transformFlags](const char* szOutputTag) -> xiiTransformStatus {
-      const xiiString    sTargetFile = GetAssetDocumentManager()->GetAbsoluteOutputFileName(GetAssetDocumentTypeDescriptor(), GetDocumentPath(), szOutputTag, pAssetProfile);
-      xiiTransformStatus ret         = InternalTransformAsset(sTargetFile, szOutputTag, pAssetProfile, AssetHeader, transformFlags);
+    auto GenerateOutput = [this, pAssetProfile, &AssetHeader, transformFlags](xiiStringView sOutputTag) -> xiiTransformStatus {
+      const xiiString    sTargetFile = GetAssetDocumentManager()->GetAbsoluteOutputFileName(GetAssetDocumentTypeDescriptor(), GetDocumentPath(), sOutputTag, pAssetProfile);
+      xiiTransformStatus ret         = InternalTransformAsset(sTargetFile, sOutputTag, pAssetProfile, AssetHeader, transformFlags);
 
       // if writing failed, make sure the output file does not exist
       if (ret.Failed())
@@ -620,10 +620,10 @@ xiiTransformStatus xiiAssetDocument::CreateThumbnail()
   return xiiTransformStatus(xiiFmt("Asset state is {}", state));
 }
 
-xiiTransformStatus xiiAssetDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
+xiiTransformStatus xiiAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   xiiDeferredFileWriter file;
-  file.SetOutput(szTargetFile);
+  file.SetOutput(sTargetFile);
 
   if (AssetHeader.Write(file) == XII_FAILURE)
   {
@@ -641,7 +641,7 @@ xiiTransformStatus xiiAssetDocument::InternalTransformAsset(const char* szTarget
 
   if (file.Close().Failed())
   {
-    xiiLog::Error("Could not open file for writing: '{0}'", szTargetFile);
+    xiiLog::Error("Could not open file for writing: '{0}'", sTargetFile);
     return xiiStatus("Opening the asset output file failed");
   }
 
@@ -759,29 +759,18 @@ void xiiAssetDocument::AppendThumbnailInfo(xiiStringView sThumbnailFile, const T
   }
 }
 
-xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, const char* szOutputTarget) const
+xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, xiiStringView sOutputTarget) const
 {
   xiiProgressRange range("Exporting Asset", 2, false);
 
-  xiiLog::Info("Exporting {0} to \"{1}\"", GetDocumentTypeName(), szOutputTarget);
+  xiiLog::Info("Exporting {0} to \"{1}\"", GetDocumentTypeName(), sOutputTarget);
 
-  if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Disconnected)
-  {
-    return xiiStatus(xiiFmt("Exporting {0} to \"{1}\" failed, engine not started or crashed.", GetDocumentTypeName(), szOutputTarget));
-  }
-  else if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Initializing)
-  {
-    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), xiiTime::MakeFromSeconds(10)).Failed())
-    {
-      return xiiStatus(xiiFmt("Exporting {0} to \"{1}\" failed, document initialization timed out.", GetDocumentTypeName(), szOutputTarget));
-    }
-    XII_ASSERT_DEV(GetEngineStatus() == xiiAssetDocument::EngineStatus::Loaded, "After receiving xiiDocumentOpenResponseMsgToEditor, the document should be in loaded state.");
-  }
+  XII_SUCCEED_OR_RETURN(WaitForEngineStatusLoaded());
 
-  range.BeginNextStep(szOutputTarget);
+  range.BeginNextStep(sOutputTarget);
 
   xiiExportDocumentMsgToEngine msg;
-  msg.m_sOutputFile = szOutputTarget;
+  msg.m_sOutputFile = sOutputTarget;
   msg.m_uiAssetHash = header.GetFileHash();
   msg.m_uiVersion   = header.GetFileVersion();
 
@@ -888,6 +877,23 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
 xiiUInt16 xiiAssetDocument::GetAssetTypeVersion() const
 {
   return (xiiUInt16)GetDynamicRTTI()->GetTypeVersion();
+}
+
+xiiStatus xiiAssetDocument::WaitForEngineStatusLoaded() const
+{
+  if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Disconnected)
+  {
+    return xiiStatus(xiiFmt("Loading {0} document '{1}' failed, engine not started or crashed.", GetDocumentTypeName(), GetDocumentPath()));
+  }
+  else if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Initializing)
+  {
+    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), {}).Failed())
+    {
+      return xiiStatus(xiiFmt("Loading {0} document '{1}' failed, document initialization timed out or engine crashed.", GetDocumentTypeName(), GetDocumentPath()));
+    }
+    XII_ASSERT_DEV(GetEngineStatus() == xiiAssetDocument::EngineStatus::Loaded, "After receiving xiiDocumentOpenResponseMsgToEditor, the document should be in loaded state.");
+  }
+  return xiiStatus(XII_SUCCESS);
 }
 
 bool xiiAssetDocument::SendMessageToEngine(xiiEditorEngineDocumentMsg* pMessage /*= false*/) const

@@ -89,7 +89,7 @@ public:
 
   xiiSelectionManager* GetLayerSelectionManager() const { return m_pLayerSelection.Borrow(); }
 
-  xiiStatus CreateLayer(const char* szName, xiiUuid& out_layerGuid);
+  xiiStatus CreateLayer(xiiStringView sName, xiiUuid& out_layerGuid);
   xiiStatus DeleteLayer(const xiiUuid& layerGuid);
 
   const xiiUuid& GetActiveLayer() const;
@@ -120,6 +120,7 @@ public:
   virtual void                     HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
   virtual xiiTaskGroupID           InternalSaveDocument(AfterSaveCallback callback) override;
   virtual void                     SendGameWorldToEngine() override;
+  virtual xiiTransformStatus       InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& assetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 
   ///@}
   /// \name Selection Specific Functions

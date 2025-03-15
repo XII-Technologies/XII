@@ -119,6 +119,9 @@ public:
   /// \brief Returns the current state of the engine process side of this document.
   EngineStatus GetEngineStatus() const { return m_EngineStatus; }
 
+  /// \brief Waits for GetEngineStatus to return Loaded or returns a failure reason.
+  xiiStatus WaitForEngineStatusLoaded() const;
+
   /// \brief Passed into xiiEngineProcessDocumentContext::Initialize on the engine process side. Allows the document to provide additional data to the engine process during context creation.
   virtual xiiVariant GetCreateEngineMetaData() const { return xiiVariant(); }
 
@@ -211,9 +214,9 @@ protected:
   /// szTargetFile is where the transformed asset should be written to. The overriding function must ensure to first
   /// write \a AssetHeader to the file, to make it a valid asset file or provide a custom xiiAssetDocumentManager::IsOutputUpToDate function.
   /// See xiiTransformFlags for definition of transform flags.
-  virtual xiiTransformStatus InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags);
+  virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags);
 
-  xiiStatus RemoteExport(const xiiAssetFileHeader& header, const char* szOutputTarget) const;
+  xiiStatus RemoteExport(const xiiAssetFileHeader& header, xiiStringView sOutputTarget) const;
 
   ///@}
   /// \name Thumbnail Functions
