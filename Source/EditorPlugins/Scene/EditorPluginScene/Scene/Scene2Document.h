@@ -120,7 +120,7 @@ public:
   virtual void                     HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
   virtual xiiTaskGroupID           InternalSaveDocument(AfterSaveCallback callback) override;
   virtual void                     SendGameWorldToEngine() override;
-  virtual xiiTransformStatus        InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& assetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  virtual xiiTransformStatus       InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& assetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 
   ///@}
   /// \name Selection Specific Functions
