@@ -22,11 +22,6 @@ void xiiLayerDocument::InitializeAfterLoading(bool bFirstTimeCreation)
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
 }
 
-void xiiLayerDocument::InitializeAfterLoadingAndSaving()
-{
-  SUPER::InitializeAfterLoadingAndSaving();
-}
-
 xiiVariant xiiLayerDocument::GetCreateEngineMetaData() const
 {
   return m_pHostDocument->GetGuid();

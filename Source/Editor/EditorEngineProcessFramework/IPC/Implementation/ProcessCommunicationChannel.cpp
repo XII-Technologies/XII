@@ -113,9 +113,17 @@ xiiResult xiiProcessCommunicationChannel::WaitForMessage(const xiiRTTI* pMessage
 
       if (tTimeLeft < xiiTime::MakeZero())
       {
-        m_pWaitForMessageType = nullptr;
-        xiiLog::Dev("Reached time-out of {0} seconds while waiting for {1}", xiiArgF(timeout.GetSeconds(), 1), pMessageType->GetTypeName());
-        return XII_FAILURE;
+        // Don't time out if a debugger is attached to make stepping easier.
+        if (xiiSystemInformation::IsDebuggerAttached())
+        {
+          tTimeLeft = xiiTime::MakeFromSeconds(1);
+        }
+        else
+        {
+          m_pWaitForMessageType = nullptr;
+          xiiLog::Dev("Reached time-out of {0} seconds while waiting for {1}", xiiArgF(timeout.GetSeconds(), 1), pMessageType->GetTypeName());
+          return XII_FAILURE;
+        }
       }
 
       m_pProtocol->WaitForMessages(tTimeLeft).IgnoreResult();

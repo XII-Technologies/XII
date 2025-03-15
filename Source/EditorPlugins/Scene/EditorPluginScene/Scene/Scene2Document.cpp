@@ -236,6 +236,21 @@ void xiiScene2Document::SendGameWorldToEngine()
   }
 }
 
+xiiTransformStatus xiiScene2Document::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& assetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
+{
+  // We need to wait for layers to be fully loaded before we can transform, i.e. export, a scene.
+  XII_SUCCEED_OR_RETURN(WaitForEngineStatusLoaded());
+
+  xiiHybridArray<xiiSceneDocument*, 4> layers;
+  GetLoadedLayers(layers);
+
+  for (xiiSceneDocument* pLayer : layers)
+  {
+    XII_SUCCEED_OR_RETURN(pLayer->WaitForEngineStatusLoaded());
+  }
+  return SUPER::InternalTransformAsset(sTargetFile, sOutputTag, pAssetProfile, assetHeader, transformFlags);
+}
+
 void xiiScene2Document::PreventDoubleSelectionChange(bool b)
 {
   m_iAllowSelectionChanges = b ? 1 : -1;
@@ -544,7 +559,7 @@ void xiiScene2Document::ActiveLayerGameObjectEventHandler(const xiiGameObjectEve
   m_GameObjectEvents.Broadcast(e);
 }
 
-xiiStatus xiiScene2Document::CreateLayer(const char* szName, xiiUuid& out_layerGuid)
+xiiStatus xiiScene2Document::CreateLayer(xiiStringView sName, xiiUuid& out_layerGuid)
 {
   // We need to be the active layer in order to make changes to the layers.
   xiiStatus res = SetActiveLayer(GetGuid());
@@ -556,7 +571,7 @@ xiiStatus xiiScene2Document::CreateLayer(const char* szName, xiiUuid& out_layerG
   xiiStringBuilder targetDirectory = GetDocumentPath();
   targetDirectory.RemoveFileExtension();
   targetDirectory.Append("_data");
-  targetDirectory.AppendPath(szName);
+  targetDirectory.AppendPath(sName);
   targetDirectory.Append(".", pLayerDesc->m_sFileExtension.GetData());
 
   xiiSceneDocument* pLayerDoc = nullptr;
@@ -567,7 +582,7 @@ xiiStatus xiiScene2Document::CreateLayer(const char* szName, xiiUuid& out_layerG
 
     if (m_Layers.Contains(pLayerDoc->GetGuid()))
     {
-      return xiiStatus(xiiFmt("A layer named '{}' already exists in this scene.", szName));
+      return xiiStatus(xiiFmt("A layer named '{}' already exists in this scene.", sName));
     }
   }
   else
@@ -582,7 +597,7 @@ xiiStatus xiiScene2Document::CreateLayer(const char* szName, xiiUuid& out_layerG
 
   xiiObjectAccessorBase* pAccessor = GetSceneObjectAccessor();
   xiiStringBuilder       sTransactionText;
-  pAccessor->StartTransaction(xiiFmt("Add Layer - '{}'", szName).GetText(sTransactionText));
+  pAccessor->StartTransaction(xiiFmt("Add Layer - '{}'", sName).GetText(sTransactionText));
   {
     auto     pRoot   = m_pSceneObjectManager->GetObject(GetSettingsObject()->GetGuid());
     xiiInt32 uiCount = 0;

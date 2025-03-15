@@ -18,7 +18,7 @@ xiiLUTAssetDocument::xiiLUTAssetDocument(xiiStringView sDocumentPath) :
 {
 }
 
-xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
+xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   const auto props = GetProperties();
 
@@ -54,8 +54,6 @@ xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(const char* szTar
     return xiiStatus("Allocated xiiImage for LUT data is not valid.");
   }
 
-
-
   for (xiiUInt32 b = 0; b < lutSize; ++b)
   {
     for (xiiUInt32 g = 0; g < lutSize; ++g)
@@ -75,7 +73,7 @@ xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(const char* szTar
   }
 
   xiiDeferredFileWriter file;
-  file.SetOutput(szTargetFile);
+  file.SetOutput(sTargetFile);
   XII_SUCCEED_OR_RETURN(AssetHeader.Write(file));
 
   xiiTexFormat texFormat;
@@ -89,10 +87,10 @@ xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(const char* szTar
 
   xiiDdsFileFormat fmt;
   if (fmt.WriteImage(file, img, "dds").Failed())
-    return xiiStatus(xiiFmt("Writing image to target file failed: '{0}'", szTargetFile));
+    return xiiStatus(xiiFmt("Writing image to target file failed: '{0}'", sTargetFile));
 
   if (file.Close().Failed())
-    return xiiStatus(xiiFmt("Writing to target file failed: '{0}'", szTargetFile));
+    return xiiStatus(xiiFmt("Writing to target file failed: '{0}'", sTargetFile));
 
   return xiiStatus(XII_SUCCESS);
 }

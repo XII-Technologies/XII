@@ -728,7 +728,7 @@ public:
   }
 };
 
-xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
+xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   if (sOutputTag.IsEqual(xiiMaterialAssetDocumentManager::s_szShaderOutputTag))
   {
@@ -815,7 +815,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(const char* 
   }
   else
   {
-    return SUPER::InternalTransformAsset(szTargetFile, sOutputTag, pAssetProfile, AssetHeader, transformFlags);
+    return SUPER::InternalTransformAsset(sTargetFile, sOutputTag, pAssetProfile, AssetHeader, transformFlags);
   }
 }
 

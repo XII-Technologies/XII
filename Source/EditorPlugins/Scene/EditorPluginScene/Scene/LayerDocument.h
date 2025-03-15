@@ -13,7 +13,6 @@ public:
   ~xiiLayerDocument();
 
   virtual void InitializeAfterLoading(bool bFirstTimeCreation) override;
-  virtual void InitializeAfterLoadingAndSaving() override;
 
   virtual xiiVariant GetCreateEngineMetaData() const override;
 };

@@ -128,7 +128,7 @@ public:
   bool StopGameMode();
 
   xiiTransformStatus ExportScene(bool bCreateThumbnail);
-  void               ExportSceneGeometry(const char* szFile, bool bOnlySelection, int iExtractionMode /* xiiWorldGeoExtractionUtil::ExtractionMode */, const xiiMat3& mTransform);
+  void               ExportSceneGeometry(xiiStringView sFile, bool bOnlySelection, int iExtractionMode /* xiiWorldGeoExtractionUtil::ExtractionMode */, const xiiMat3& mTransform);
 
   virtual void HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
   void         HandleGameModeMsg(const xiiGameModeMsgToEditor* pMsg);
@@ -149,7 +149,7 @@ public:
   }
 
   xiiStatus CreateExposedProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index, xiiExposedSceneProperty& out_key) const;
-  xiiStatus AddExposedParameter(const char* szName, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index);
+  xiiStatus AddExposedParameter(xiiStringView sName, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index);
   xiiInt32  FindExposedParameter(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index);
   xiiStatus RemoveExposedParameter(xiiInt32 iIndex);
   ///@}
@@ -207,9 +207,9 @@ protected:
   void EngineConnectionEventHandler(const xiiEditorEngineProcessConnection::Event& e);
   void ToolsProjectEventHandler(const xiiToolsProjectEvent& e);
 
-  xiiStatus RequestExportScene(const char* szTargetFile, const xiiAssetFileHeader& header);
+  xiiStatus RequestExportScene(xiiStringView sTargetFile, const xiiAssetFileHeader& header);
 
-  virtual xiiTransformStatus InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
   xiiTransformStatus         InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
 

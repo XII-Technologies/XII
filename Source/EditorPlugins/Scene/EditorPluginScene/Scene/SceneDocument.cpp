@@ -1124,7 +1124,7 @@ xiiStatus xiiSceneDocument::CreateExposedProperty(const xiiDocumentObject* pObje
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiSceneDocument::AddExposedParameter(const char* szName, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index)
+xiiStatus xiiSceneDocument::AddExposedParameter(xiiStringView sName, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index)
 {
   if (m_DocumentType != DocumentType::Prefab)
     return xiiStatus("Exposed parameters are only supported in prefab documents.");
@@ -1142,7 +1142,7 @@ xiiStatus xiiSceneDocument::AddExposedParameter(const char* szName, const xiiDoc
   if (res.Failed())
     return res;
   const xiiDocumentObject* pParam = GetObjectManager()->GetObject(id);
-  GetObjectAccessor()->SetValueByName(pParam, "Name", szName).LogFailure();
+  GetObjectAccessor()->SetValueByName(pParam, "Name", sName).LogFailure();
   GetObjectAccessor()->SetValueByName(pParam, "Object", key.m_Object).LogFailure();
   GetObjectAccessor()->SetValueByName(pParam, "PropertyPath", xiiVariant(key.m_sPropertyPath)).LogFailure();
   return xiiStatus(XII_SUCCESS);
@@ -1614,14 +1614,14 @@ void xiiSceneDocument::OnInterDocumentMessage(xiiReflectedClass* pMessage, xiiDo
   }
 }
 
-xiiStatus xiiSceneDocument::RequestExportScene(const char* szTargetFile, const xiiAssetFileHeader& header)
+xiiStatus xiiSceneDocument::RequestExportScene(xiiStringView sTargetFile, const xiiAssetFileHeader& header)
 {
   if (GetGameMode() != GameMode::Off)
     return xiiStatus("Cannot export while the scene is simulating");
 
   XII_SUCCEED_OR_RETURN(SaveDocument());
 
-  const xiiStatus status = xiiAssetDocument::RemoteExport(header, szTargetFile);
+  const xiiStatus status = xiiAssetDocument::RemoteExport(header, sTargetFile);
 
   // make sure the world is reset
   SendGameWorldToEngine();
@@ -1756,17 +1756,17 @@ xiiTransformStatus xiiSceneDocument::ExportScene(bool bCreateThumbnail)
   return res;
 }
 
-void xiiSceneDocument::ExportSceneGeometry(const char* szFile, bool bOnlySelection, int iExtractionMode, const xiiMat3& mTransform)
+void xiiSceneDocument::ExportSceneGeometry(xiiStringView sFile, bool bOnlySelection, int iExtractionMode, const xiiMat3& mTransform)
 {
   xiiExportSceneGeometryMsgToEngine msg;
-  msg.m_sOutputFile     = szFile;
+  msg.m_sOutputFile     = sFile;
   msg.m_bSelectionOnly  = bOnlySelection;
   msg.m_iExtractionMode = iExtractionMode;
   msg.m_Transform       = mTransform;
 
   SendMessageToEngine(&msg);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", szFile), xiiTime::MakeFromSeconds(5.0f));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", sFile), xiiTime::MakeFromSeconds(5.0f));
 }
 
 void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg)
@@ -1790,7 +1790,7 @@ void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMs
   }
 }
 
-xiiTransformStatus xiiSceneDocument::InternalTransformAsset(const char* szTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
+xiiTransformStatus xiiSceneDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   if (m_DocumentType == DocumentType::Prefab)
   {
@@ -1804,9 +1804,8 @@ xiiTransformStatus xiiSceneDocument::InternalTransformAsset(const char* szTarget
       SendMessageToEngine(&msg);
     }
   }
-  return RequestExportScene(szTargetFile, AssetHeader);
+  return RequestExportScene(sTargetFile, AssetHeader);
 }
-
 
 xiiTransformStatus xiiSceneDocument::InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
@@ -1815,7 +1814,6 @@ xiiTransformStatus xiiSceneDocument::InternalTransformAsset(xiiStreamWriter& str
   /* this function is never called */
   return xiiStatus(XII_FAILURE);
 }
-
 
 xiiTransformStatus xiiSceneDocument::InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo)
 {
