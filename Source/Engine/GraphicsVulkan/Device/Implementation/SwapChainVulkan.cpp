@@ -742,7 +742,7 @@ void xiiGALSwapChainVulkan::Present()
     vkPresentInformation.waitSemaphoreCount = 1U;
 
     vk::Queue vkQueue = pGraphicsQueueVulkan->GetQueueInformation().m_vkQueue;
-    VK_ASSERT_DEV(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    XII_IGNORE_UNUSED(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
     {
@@ -867,7 +867,7 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
 
   m_bIsMinimized = (newSize.width == 0 && newSize.height == 0);
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 void xiiGALSwapChainVulkan::SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode)
