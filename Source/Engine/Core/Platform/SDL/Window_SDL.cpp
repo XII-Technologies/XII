@@ -242,11 +242,32 @@ void xiiWindow::ProcessWindowMessages()
       case SDL_EVENT_WINDOW_FOCUS_GAINED:
       {
         OnFocus(true);
+        OnVisibleChange(true);
       }
       break;
       case SDL_EVENT_WINDOW_FOCUS_LOST:
       {
         OnFocus(false);
+      }
+      break;
+      case SDL_EVENT_WINDOW_MINIMIZED:
+      {
+        OnVisibleChange(false);
+      }
+      break;
+      case SDL_EVENT_WINDOW_MAXIMIZED:
+      {
+        OnVisibleChange(true);
+      }
+      break;
+      case SDL_EVENT_WINDOW_HIDDEN:
+      {
+        OnVisibleChange(false);
+      }
+      break;
+      case SDL_EVENT_WINDOW_SHOWN:
+      {
+        OnVisibleChange(true);
       }
       break;
 
