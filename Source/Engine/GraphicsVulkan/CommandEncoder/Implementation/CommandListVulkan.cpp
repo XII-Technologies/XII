@@ -435,7 +435,7 @@ void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUI
   const xiiUInt32                            uiUpdateRegionDepth            = bufferToTextureCopyDescription.m_Region.GetExtents().z;
 
   // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
-  auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(bufferToTextureCopyDescription.m_uiMemorySize);
+  auto stagingBufferAllocation = m_pUploadStagingBufferPool->Allocate(bufferToTextureCopyDescription.m_uiMemorySize);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   {
@@ -496,6 +496,7 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulk
   VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_pDynamicBufferPoolVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALDynamicBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
+  m_pUploadStagingBufferPool = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALStagingBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
@@ -506,6 +507,7 @@ xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
   pDeviceVulkan->GetVulkanLogicalDevice().freeCommandBuffers(pCommandQueueVulkan->GetVulkanCommandPool(), 1U, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   m_pDynamicBufferPoolVulkan.Clear();
+  m_pUploadStagingBufferPool.Clear();
 }
 
 void xiiGALCommandListVulkan::BeginPlatform()
@@ -560,6 +562,7 @@ void xiiGALCommandListVulkan::ResetInternal()
   InvalidateState();
 
   m_pDynamicBufferPoolVulkan->Reset();
+  m_pUploadStagingBufferPool->Reset();
 
   m_RecordingState = RecordingState::Reset;
 }
@@ -1769,7 +1772,7 @@ void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUIn
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
-  auto stagingBufferAllocation = pDeviceVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pBufferVulkan->GetSize());
+  auto stagingBufferAllocation = m_pUploadStagingBufferPool->Allocate(pBufferVulkan->GetSize());
 
   void* pMappedMemory = nullptr;
   VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));

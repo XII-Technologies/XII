@@ -1095,7 +1095,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     m_pFencePool               = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
     m_pSemaphorePool           = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
     m_pDescriptorSetPool       = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
-    m_pUploadStagingBufferPool = XII_NEW(&m_Allocator, xiiGALStagingBufferPoolVulkan, this, 16, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
   }
 
   // Create command queues.
@@ -1209,7 +1208,6 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
     m_pDescriptorSetPool.Clear();
     m_pFencePool.Clear();
     m_pSemaphorePool.Clear();
-    m_pUploadStagingBufferPool.Clear();
   }
 
   if (m_vkVmaAllocator != VK_NULL_HANDLE)
@@ -1437,8 +1435,6 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchai
   {
     m_pTransferCommandQueue->RecycleCommandLists();
   }
-
-  m_pUploadStagingBufferPool->Reset();
 
   ReleasePerFrameResources(m_pFrameFence->GetCompletedValue());
 

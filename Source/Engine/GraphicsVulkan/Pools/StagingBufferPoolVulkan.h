@@ -25,11 +25,13 @@ public:
 private:
   friend class xiiMemoryUtils;
   friend class xiiGALDeviceVulkan;
+  friend class xiiGALCommandQueueVulkan;
+  friend class xiiGALCommandListVulkan;
 
   xiiGALStagingBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiAlignment, vk::BufferUsageFlags vkBufferUsageFlags);
   ~xiiGALStagingBufferPoolVulkan();
 
-  static constexpr xiiUInt64 s_uiStagingBufferDefaultPageSize = 16 * 1024 * 1024;
+  static constexpr xiiUInt64 s_uiStagingBufferDefaultPageSize = 1 * 1024 * 1024;
 
   xiiGALDeviceVulkan* m_pDeviceVulkan;
 

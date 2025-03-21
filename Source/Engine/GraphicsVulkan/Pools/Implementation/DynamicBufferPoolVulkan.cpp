@@ -124,6 +124,12 @@ void xiiGALDynamicBufferPoolVulkan::Reset()
   m_uiPageAllocationCounter   = 0;
   m_uiOffsetAllocationCounter = 0;
 
+  for (const auto& stagingBufferPages : m_DynamicBufferPages)
+  {
+    m_pDeviceVulkan->SafeReleaseDeviceObject(stagingBufferPages.m_vkBuffer, stagingBufferPages.m_VmaAllocation);
+  }
+  m_DynamicBufferPages.Clear();
+
   for (const auto& largeAllocation : m_LargeAllocations)
   {
     m_pDeviceVulkan->SafeReleaseDeviceObject(largeAllocation.m_vkBuffer, largeAllocation.m_VmaAllocation);
