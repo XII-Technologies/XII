@@ -94,6 +94,8 @@ public:
   void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
   void AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue = 0ULL);
 
+  XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_pUploadStagingBufferPool.Borrow(); }
+
   struct CommandListState
   {
     vk::RenderPass  m_vkRenderPass         = VK_NULL_HANDLE;
@@ -343,6 +345,7 @@ private:
   xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
 
   xiiUniquePtr<xiiGALDynamicBufferPoolVulkan> m_pDynamicBufferPoolVulkan;
+  xiiUniquePtr<xiiGALStagingBufferPoolVulkan> m_pUploadStagingBufferPool;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };
