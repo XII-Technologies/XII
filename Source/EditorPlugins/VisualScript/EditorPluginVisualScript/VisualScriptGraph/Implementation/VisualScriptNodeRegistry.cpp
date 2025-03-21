@@ -1964,11 +1964,14 @@ void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, xii
 const xiiRTTI* xiiVisualScriptNodeRegistry::RegisterNodeType(xiiReflectedTypeDescriptor& typeDesc, NodeDesc&& nodeDesc, const xiiHashedString& sCategory)
 {
   const xiiRTTI* pRtti = xiiPhantomRttiManager::RegisterType(typeDesc);
-  m_TypeToNodeDescs.Insert(pRtti, std::move(nodeDesc));
+  if (m_TypeToNodeDescs.Contains(pRtti) == false)
+  {
+    m_TypeToNodeDescs.Insert(pRtti, std::move(nodeDesc));
 
-  auto& nodeTemplate       = m_NodeCreationTemplates.ExpandAndGetRef();
-  nodeTemplate.m_pType     = pRtti;
-  nodeTemplate.m_sCategory = sCategory;
+    auto& nodeTemplate       = m_NodeCreationTemplates.ExpandAndGetRef();
+    nodeTemplate.m_pType     = pRtti;
+    nodeTemplate.m_sCategory = sCategory;
+  }
 
   return pRtti;
 }
