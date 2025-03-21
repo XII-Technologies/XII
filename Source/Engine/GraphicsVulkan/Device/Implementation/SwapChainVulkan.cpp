@@ -867,7 +867,7 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
 
   m_bIsMinimized = (newSize.width == 0 && newSize.height == 0);
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 void xiiGALSwapChainVulkan::SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode)

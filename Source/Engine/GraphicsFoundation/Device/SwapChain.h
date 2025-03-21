@@ -32,7 +32,7 @@ public:
   /// \brief This changes the swap chain size.
   ///
   /// \param newSize      - The new logical swap chain width and height (not accounting for the pre-transform), in pixels.
-  /// \param newTransform - newTransform The new surface transform.
+  /// \param newTransform - The new surface transform.
   ///
   /// \note When resizing non-primary swap chains, the engine unbinds the swap chain buffers from the output.
   virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) = 0;
