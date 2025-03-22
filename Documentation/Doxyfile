@@ -1018,6 +1018,7 @@ EXCLUDE                = ../Source/BuildSystem \
                          ../Source/Engine/Foundation/ThirdParty \
                          ../Source/Engine/GraphicsCore/Rasterizer/Thirdparty \
                          ../Source/EnginePlugins/RenderDocPlugin/ThirdParty \
+                         ./ThirdParty \
                          Readme.md
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
