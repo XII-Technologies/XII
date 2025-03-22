@@ -1,5 +1,5 @@
 # XII
 
-XII is an advanced multi-platform engine for realtime applictions. XII is written in C++ 20, and supports a variety of platforms such as Windows, Linux, Mac, Android, and iOS. XII is built in a modular way, enabling users to either use all available functionality, or to select specific features implemented through dynamic dynamic libraries.
+XII is a cutting-edge, multi-platform engine designed for real-time applications. Developed in C++20, it offers comprehensive support for a wide range of platforms, including Windows, Linux, macOS, Android, and iOS. Its modular architecture allows users the flexibility to leverage its full suite of features or selectively utilize specific functionalities through dynamically linked libraries.
 
-To learn more, visit the official website at [www.xiitechnologies.com](https://www.xiitechnologies.com/)
+For further details, please visit the official website at [www.xiitechnologies.com](https://www.xiitechnologies.com).
