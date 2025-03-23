@@ -68,4 +68,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPermutationVariable
   {
     return m_sName == other.m_sName && m_sValue == other.m_sValue;
   }
+
+  static xiiUInt32 CalculateHash(const xiiArrayPtr<xiiGALPermutationVariable>& vars);
 };
