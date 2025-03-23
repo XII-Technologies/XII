@@ -44,7 +44,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderSections
 
   enum Enum : StorageType
   {
-    PLATFORMS,
+    PLATFORMS = 0U,
     PERMUTATIONS,
     MATERIALPARAMETER,
     MATERIALCONFIG,
