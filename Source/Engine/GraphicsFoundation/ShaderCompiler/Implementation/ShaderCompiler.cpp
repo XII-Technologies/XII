@@ -4,13 +4,15 @@
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
-#include <Foundation/IO/OSFile.h>
+#include <Foundation/Interfaces/RemoteToolingInterface.h>
 #include <Foundation/Types/UniquePtr.h>
 
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderProgramCompiler, 1, xiiRTTINoAllocator)
@@ -115,6 +117,214 @@ namespace
   };
 } // namespace
 
+
+xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVars, xiiLogInterface* pLog, xiiStringView sPlatform)
+{
+  if (xiiRemoteToolingInterface* pTooling = xiiSingletonRegistry::GetSingletonInstance<xiiRemoteToolingInterface>())
+  {
+    auto pNet = pTooling->GetRemoteInterface();
+
+    if (pNet && pNet->IsConnectedToServer())
+    {
+      m_bCompileShaderRemotely = true;
+
+      pNet->SetMessageHandler('SHDR', xiiMakeDelegate(&xiiGALShaderCompiler::ShaderCompileMsg, this));
+
+      xiiRemoteMessage msg('SHDR', 'CMPL');
+      msg.GetWriter() << sFile;
+      msg.GetWriter() << sPlatform;
+      msg.GetWriter() << permutationVars.GetCount();
+      for (auto& pv : permutationVars)
+      {
+        msg.GetWriter() << pv.m_sName;
+        msg.GetWriter() << pv.m_sValue;
+      }
+
+      pNet->Send(xiiRemoteTransmitMode::Reliable, msg);
+
+      while (m_bCompileShaderRemotely)
+      {
+        pNet->UpdateRemoteInterface();
+        pNet->ExecuteAllMessageHandlers();
+      }
+
+      pNet->SetMessageHandler('SHDR', {});
+
+      return m_RemoteShaderCompileResult;
+    }
+  }
+
+  xiiStringBuilder sFileContent, sTemp;
+
+  {
+    xiiFileReader File;
+    if (File.Open(sFile).Failed())
+      return XII_FAILURE;
+
+    sFileContent.ReadAll(File);
+  }
+
+  xiiGALShaderTextSectionizer sections;
+  xiiGALShaderSections::GetShaderSections(sFileContent, sections);
+
+  xiiUInt32 uiFirstLine = 0;
+  sTemp                 = sections.GetSectionContent(xiiGALShaderSections::PLATFORMS, uiFirstLine);
+  sTemp.ToUpper();
+
+  m_ShaderData.m_sPlatform = sTemp;
+
+  xiiHybridArray<xiiHashedString, 16> usedPermutations;
+  xiiGALShaderParser::ParsePermutationSection(sections.GetSectionContent(xiiGALShaderSections::PERMUTATIONS, uiFirstLine), usedPermutations, m_ShaderData.m_FixedPermutationVariables);
+
+  for (const xiiHashedString& usedPermutationVariable : usedPermutations)
+  {
+    xiiUInt32 uiIndex = xiiInvalidIndex;
+    for (xiiUInt32 i = 0; i < permutationVars.GetCount(); ++i)
+    {
+      if (permutationVars[i].m_sName == usedPermutationVariable)
+      {
+        uiIndex = i;
+        break;
+      }
+    }
+
+    if (uiIndex != xiiInvalidIndex)
+    {
+      m_ShaderData.m_Permutations.PushBack(permutationVars[uiIndex]);
+    }
+    else
+    {
+      xiiLog::Error("No value given for permutation var '{0}'. Assuming default value of zero.", usedPermutationVariable);
+
+      xiiGALPermutationVariable& finalVariable = m_ShaderData.m_Permutations.ExpandAndGetRef();
+      finalVariable.m_sName                    = usedPermutationVariable;
+      finalVariable.m_sValue.Assign("0");
+    }
+  }
+
+  m_ShaderData.m_StateSource = sections.GetSectionContent(xiiGALShaderSections::RENDERSTATE, uiFirstLine);
+
+  xiiUInt32     uiFirstShaderLine = 0;
+  xiiStringView sShaderSource     = sections.GetSectionContent(xiiGALShaderSections::SHADER, uiFirstShaderLine);
+
+  for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
+  {
+    xiiStringView sStageSource = sections.GetSectionContent(xiiGALShaderSections::VERTEXSHADER + stage, uiFirstLine);
+
+    // later code checks whether the string is empty, to see whether we have any shader source, so this has to be kept empty
+    if (!sStageSource.IsEmpty())
+    {
+      sTemp.Clear();
+
+      // prepend common shader section if there is any
+      if (!sShaderSource.IsEmpty())
+      {
+        sTemp.AppendFormat("#line {0}\n{1}", uiFirstShaderLine, sShaderSource);
+      }
+
+      sTemp.AppendFormat("#line {0}\n{1}", uiFirstLine, sStageSource);
+
+      m_ShaderData.m_ShaderStageSource[stage] = sTemp;
+    }
+    else
+    {
+      m_ShaderData.m_ShaderStageSource[stage].Clear();
+    }
+  }
+
+  xiiStringBuilder tmp = sFile;
+  tmp.MakeCleanPath();
+
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("vs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ps");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("gs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Hull)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("hs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ds");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("cs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Amplification)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("as");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Mesh)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ms");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayGeneration)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("rg");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayMiss)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("rms");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayClosestHit)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("rchs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayAnyHit)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("rahs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayIntersection)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ris");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Callable)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("cas");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Tile)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ts");
+  }
+
+  // Try out every compiler that we can find
+  // clang-format off
+  xiiResult result = XII_SUCCESS;
+  xiiRTTI::ForEachDerivedType<xiiGALShaderProgramCompiler>([&](const xiiRTTI* pRtti) {
+    xiiUniquePtr<xiiGALShaderProgramCompiler> pCompiler = pRtti->GetAllocator()->Allocate<xiiGALShaderProgramCompiler>();
+
+    if (RunShaderCompiler(sFile, sPlatform, pCompiler.Borrow(), pLog).Failed())
+      result = XII_FAILURE;
+  },
+  xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+  // clang-format on
+
+  return result;
+}
 
 xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringView sPlatform, xiiGALShaderProgramCompiler* pCompiler, xiiLogInterface* pLog)
 {
