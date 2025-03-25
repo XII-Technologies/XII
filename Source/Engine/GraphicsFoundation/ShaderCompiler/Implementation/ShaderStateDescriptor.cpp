@@ -1,6 +1,6 @@
-#include <GraphicsCore/GraphicsCorePCH.h>
+#include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsCore/Shader/ShaderPermutationBinary.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 
 struct xiiGALShaderStateVersion
 {
@@ -15,66 +15,66 @@ struct xiiGALShaderStateVersion
   };
 };
 
-void xiiShaderStateResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
+void xiiGALShaderStateResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
 {
   inout_stream << (xiiUInt32)xiiGALShaderStateVersion::Current;
 
   // Blend State
   {
-    inout_stream << m_BlendDesc.m_bAlphaToCoverage;
-    inout_stream << m_BlendDesc.m_bIndependentBlend;
-    inout_stream << m_BlendDesc.m_LogicOperationEnable;
-    inout_stream << (xiiUInt8)m_BlendDesc.m_LogicOperation.GetValue();
+    inout_stream << m_BlendDescription.m_bAlphaToCoverage;
+    inout_stream << m_BlendDescription.m_bIndependentBlend;
+    inout_stream << m_BlendDescription.m_LogicOperationEnable;
+    inout_stream << (xiiUInt8)m_BlendDescription.m_LogicOperation.GetValue();
 
-    const xiiUInt8 iBlends = m_BlendDesc.m_RenderTargets.GetCount();
+    const xiiUInt8 iBlends = (xiiUInt8)m_BlendDescription.m_RenderTargets.GetCount();
     inout_stream << iBlends;
 
     for (xiiUInt32 b = 0; b < iBlends; ++b)
     {
-      inout_stream << m_BlendDesc.m_RenderTargets[b].m_bBlendEnable;
-      inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_SourceBlend.GetValue();
-      inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_DestinationBlend.GetValue();
-      inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_BlendOperation.GetValue();
-      inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_SourceBlendAlpha.GetValue();
-      inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_DestinationBlendAlpha.GetValue();
-      inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_BlendOperationAlpha.GetValue();
-      inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_ColorMask.GetValue();
+      inout_stream << m_BlendDescription.m_RenderTargets[b].m_bBlendEnable;
+      inout_stream << (xiiUInt8)m_BlendDescription.m_RenderTargets[b].m_SourceBlend.GetValue();
+      inout_stream << (xiiUInt8)m_BlendDescription.m_RenderTargets[b].m_DestinationBlend.GetValue();
+      inout_stream << (xiiUInt8)m_BlendDescription.m_RenderTargets[b].m_BlendOperation.GetValue();
+      inout_stream << (xiiUInt8)m_BlendDescription.m_RenderTargets[b].m_SourceBlendAlpha.GetValue();
+      inout_stream << (xiiUInt8)m_BlendDescription.m_RenderTargets[b].m_DestinationBlendAlpha.GetValue();
+      inout_stream << (xiiUInt8)m_BlendDescription.m_RenderTargets[b].m_BlendOperationAlpha.GetValue();
+      inout_stream << (xiiUInt8)m_BlendDescription.m_RenderTargets[b].m_ColorMask.GetValue();
     }
   }
 
   // Depth Stencil State
   {
-    inout_stream << m_DepthStencilDesc.m_bDepthEnable;
-    inout_stream << m_DepthStencilDesc.m_bDepthWriteEnable;
-    inout_stream << (xiiInt8)m_DepthStencilDesc.m_ComparisonDepthFunction.GetValue();
-    inout_stream << m_DepthStencilDesc.m_bStencilEnable;
-    inout_stream << m_DepthStencilDesc.m_uiStencilReadMask;
-    inout_stream << m_DepthStencilDesc.m_uiStencilWriteMask;
-    inout_stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFace.m_StencilFailOperation.GetValue();
-    inout_stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFace.m_StencilDepthFailOperation.GetValue();
-    inout_stream << (xiiUInt8)m_DepthStencilDesc.m_FrontFace.m_StencilPassOperation.GetValue();
-    inout_stream << (xiiInt8)m_DepthStencilDesc.m_FrontFace.m_ComparisonFunction.GetValue();
-    inout_stream << (xiiUInt8)m_DepthStencilDesc.m_BackFace.m_StencilFailOperation.GetValue();
-    inout_stream << (xiiUInt8)m_DepthStencilDesc.m_BackFace.m_StencilDepthFailOperation.GetValue();
-    inout_stream << (xiiUInt8)m_DepthStencilDesc.m_BackFace.m_StencilPassOperation.GetValue();
-    inout_stream << (xiiInt8)m_DepthStencilDesc.m_BackFace.m_ComparisonFunction.GetValue();
+    inout_stream << m_DepthStencilDescription.m_bDepthEnable;
+    inout_stream << m_DepthStencilDescription.m_bDepthWriteEnable;
+    inout_stream << (xiiInt8)m_DepthStencilDescription.m_ComparisonDepthFunction.GetValue();
+    inout_stream << m_DepthStencilDescription.m_bStencilEnable;
+    inout_stream << m_DepthStencilDescription.m_uiStencilReadMask;
+    inout_stream << m_DepthStencilDescription.m_uiStencilWriteMask;
+    inout_stream << (xiiUInt8)m_DepthStencilDescription.m_FrontFace.m_StencilFailOperation.GetValue();
+    inout_stream << (xiiUInt8)m_DepthStencilDescription.m_FrontFace.m_StencilDepthFailOperation.GetValue();
+    inout_stream << (xiiUInt8)m_DepthStencilDescription.m_FrontFace.m_StencilPassOperation.GetValue();
+    inout_stream << (xiiInt8)m_DepthStencilDescription.m_FrontFace.m_ComparisonFunction.GetValue();
+    inout_stream << (xiiUInt8)m_DepthStencilDescription.m_BackFace.m_StencilFailOperation.GetValue();
+    inout_stream << (xiiUInt8)m_DepthStencilDescription.m_BackFace.m_StencilDepthFailOperation.GetValue();
+    inout_stream << (xiiUInt8)m_DepthStencilDescription.m_BackFace.m_StencilPassOperation.GetValue();
+    inout_stream << (xiiInt8)m_DepthStencilDescription.m_BackFace.m_ComparisonFunction.GetValue();
   }
 
   // Rasterizer State
   {
-    inout_stream << (xiiUInt8)m_RasterizerDesc.m_FillMode.GetValue();
-    inout_stream << (xiiUInt8)m_RasterizerDesc.m_CullMode.GetValue();
-    inout_stream << m_RasterizerDesc.m_bFrontCounterClockwise;
-    inout_stream << m_RasterizerDesc.m_bDepthClipEnable;
-    inout_stream << m_RasterizerDesc.m_bScissorEnable;
-    inout_stream << m_RasterizerDesc.m_bAntialiasedLineEnable;
-    inout_stream << m_RasterizerDesc.m_iDepthBias;
-    inout_stream << m_RasterizerDesc.m_fDepthBiasClamp;
-    inout_stream << m_RasterizerDesc.m_fSlopeScaledDepthBias;
+    inout_stream << (xiiUInt8)m_RasterizerDescription.m_FillMode.GetValue();
+    inout_stream << (xiiUInt8)m_RasterizerDescription.m_CullMode.GetValue();
+    inout_stream << m_RasterizerDescription.m_bFrontCounterClockwise;
+    inout_stream << m_RasterizerDescription.m_bDepthClipEnable;
+    inout_stream << m_RasterizerDescription.m_bScissorEnable;
+    inout_stream << m_RasterizerDescription.m_bAntialiasedLineEnable;
+    inout_stream << m_RasterizerDescription.m_iDepthBias;
+    inout_stream << m_RasterizerDescription.m_fDepthBiasClamp;
+    inout_stream << m_RasterizerDescription.m_fSlopeScaledDepthBias;
   }
 }
 
-void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& inout_stream)
+void xiiGALShaderStateResourceDescriptor::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt32 uiVersion = 0;
   inout_stream >> uiVersion;
@@ -83,94 +83,94 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& inout_stream)
 
   // Blend State
   {
-    inout_stream >> m_BlendDesc.m_bAlphaToCoverage;
-    inout_stream >> m_BlendDesc.m_bIndependentBlend;
-    inout_stream >> m_BlendDesc.m_LogicOperationEnable;
+    inout_stream >> m_BlendDescription.m_bAlphaToCoverage;
+    inout_stream >> m_BlendDescription.m_bIndependentBlend;
+    inout_stream >> m_BlendDescription.m_LogicOperationEnable;
     {
       xiiUInt8 uiTemp;
       inout_stream >> uiTemp;
-      m_BlendDesc.m_LogicOperation = (xiiGALLogicOperation::Enum)uiTemp;
+      m_BlendDescription.m_LogicOperation = (xiiGALLogicOperation::Enum)uiTemp;
     }
 
     xiiUInt8 uiBlends = 0;
     inout_stream >> uiBlends;
 
-    m_BlendDesc.m_RenderTargets.SetCount(uiBlends);
+    m_BlendDescription.m_RenderTargets.SetCount(uiBlends);
 
     for (xiiUInt32 b = 0; b < uiBlends; ++b)
     {
-      inout_stream >> m_BlendDesc.m_RenderTargets[b].m_bBlendEnable;
+      inout_stream >> m_BlendDescription.m_RenderTargets[b].m_bBlendEnable;
 
       xiiUInt8 uiTemp;
       inout_stream >> uiTemp;
-      m_BlendDesc.m_RenderTargets[b].m_SourceBlend = (xiiGALBlendFactor::Enum)uiTemp;
+      m_BlendDescription.m_RenderTargets[b].m_SourceBlend = (xiiGALBlendFactor::Enum)uiTemp;
       inout_stream >> uiTemp;
-      m_BlendDesc.m_RenderTargets[b].m_DestinationBlend = (xiiGALBlendFactor::Enum)uiTemp;
+      m_BlendDescription.m_RenderTargets[b].m_DestinationBlend = (xiiGALBlendFactor::Enum)uiTemp;
       inout_stream >> uiTemp;
-      m_BlendDesc.m_RenderTargets[b].m_BlendOperation = (xiiGALBlendOperation::Enum)uiTemp;
+      m_BlendDescription.m_RenderTargets[b].m_BlendOperation = (xiiGALBlendOperation::Enum)uiTemp;
       inout_stream >> uiTemp;
-      m_BlendDesc.m_RenderTargets[b].m_SourceBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
+      m_BlendDescription.m_RenderTargets[b].m_SourceBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
       inout_stream >> uiTemp;
-      m_BlendDesc.m_RenderTargets[b].m_DestinationBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
+      m_BlendDescription.m_RenderTargets[b].m_DestinationBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
       inout_stream >> uiTemp;
-      m_BlendDesc.m_RenderTargets[b].m_BlendOperationAlpha = (xiiGALBlendOperation::Enum)uiTemp;
+      m_BlendDescription.m_RenderTargets[b].m_BlendOperationAlpha = (xiiGALBlendOperation::Enum)uiTemp;
       inout_stream >> uiTemp;
-      m_BlendDesc.m_RenderTargets[b].m_ColorMask = (xiiGALColorMask::Enum)uiTemp;
+      m_BlendDescription.m_RenderTargets[b].m_ColorMask = (xiiGALColorMask::Enum)uiTemp;
     }
   }
 
   // Depth Stencil State
   {
-    inout_stream >> m_DepthStencilDesc.m_bDepthEnable;
-    inout_stream >> m_DepthStencilDesc.m_bDepthWriteEnable;
+    inout_stream >> m_DepthStencilDescription.m_bDepthEnable;
+    inout_stream >> m_DepthStencilDescription.m_bDepthWriteEnable;
 
     xiiInt8 iTemp = 0;
     inout_stream >> iTemp;
-    m_DepthStencilDesc.m_ComparisonDepthFunction = (xiiGALComparisonFunction::Enum)iTemp;
+    m_DepthStencilDescription.m_ComparisonDepthFunction = (xiiGALComparisonFunction::Enum)iTemp;
 
-    inout_stream >> m_DepthStencilDesc.m_bStencilEnable;
-    inout_stream >> m_DepthStencilDesc.m_uiStencilReadMask;
-    inout_stream >> m_DepthStencilDesc.m_uiStencilWriteMask;
+    inout_stream >> m_DepthStencilDescription.m_bStencilEnable;
+    inout_stream >> m_DepthStencilDescription.m_uiStencilReadMask;
+    inout_stream >> m_DepthStencilDescription.m_uiStencilWriteMask;
 
     xiiUInt8 uiTemp = 0;
     inout_stream >> uiTemp;
-    m_DepthStencilDesc.m_FrontFace.m_StencilFailOperation = (xiiGALStencilOperation::Enum)uiTemp;
+    m_DepthStencilDescription.m_FrontFace.m_StencilFailOperation = (xiiGALStencilOperation::Enum)uiTemp;
     inout_stream >> uiTemp;
-    m_DepthStencilDesc.m_FrontFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)uiTemp;
+    m_DepthStencilDescription.m_FrontFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)uiTemp;
     inout_stream >> uiTemp;
-    m_DepthStencilDesc.m_FrontFace.m_StencilPassOperation = (xiiGALStencilOperation::Enum)uiTemp;
+    m_DepthStencilDescription.m_FrontFace.m_StencilPassOperation = (xiiGALStencilOperation::Enum)uiTemp;
     inout_stream >> iTemp;
-    m_DepthStencilDesc.m_FrontFace.m_ComparisonFunction = (xiiGALComparisonFunction::Enum)iTemp;
+    m_DepthStencilDescription.m_FrontFace.m_ComparisonFunction = (xiiGALComparisonFunction::Enum)iTemp;
     inout_stream >> uiTemp;
-    m_DepthStencilDesc.m_BackFace.m_StencilFailOperation = (xiiGALStencilOperation::Enum)uiTemp;
+    m_DepthStencilDescription.m_BackFace.m_StencilFailOperation = (xiiGALStencilOperation::Enum)uiTemp;
     inout_stream >> uiTemp;
-    m_DepthStencilDesc.m_BackFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)uiTemp;
+    m_DepthStencilDescription.m_BackFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)uiTemp;
     inout_stream >> uiTemp;
-    m_DepthStencilDesc.m_BackFace.m_StencilPassOperation = (xiiGALStencilOperation::Enum)uiTemp;
+    m_DepthStencilDescription.m_BackFace.m_StencilPassOperation = (xiiGALStencilOperation::Enum)uiTemp;
     inout_stream >> iTemp;
-    m_DepthStencilDesc.m_BackFace.m_ComparisonFunction = (xiiGALComparisonFunction::Enum)iTemp;
+    m_DepthStencilDescription.m_BackFace.m_ComparisonFunction = (xiiGALComparisonFunction::Enum)iTemp;
   }
 
   // Rasterizer State
   {
     xiiUInt8 uiTemp = 0;
     inout_stream >> uiTemp;
-    m_RasterizerDesc.m_FillMode = (xiiGALFillMode::Enum)uiTemp;
+    m_RasterizerDescription.m_FillMode = (xiiGALFillMode::Enum)uiTemp;
     inout_stream >> uiTemp;
-    m_RasterizerDesc.m_CullMode = (xiiGALCullMode::Enum)uiTemp;
-    inout_stream >> m_RasterizerDesc.m_bFrontCounterClockwise;
-    inout_stream >> m_RasterizerDesc.m_bDepthClipEnable;
-    inout_stream >> m_RasterizerDesc.m_bScissorEnable;
-    inout_stream >> m_RasterizerDesc.m_bAntialiasedLineEnable;
-    inout_stream >> m_RasterizerDesc.m_iDepthBias;
-    inout_stream >> m_RasterizerDesc.m_fDepthBiasClamp;
-    inout_stream >> m_RasterizerDesc.m_fSlopeScaledDepthBias;
+    m_RasterizerDescription.m_CullMode = (xiiGALCullMode::Enum)uiTemp;
+    inout_stream >> m_RasterizerDescription.m_bFrontCounterClockwise;
+    inout_stream >> m_RasterizerDescription.m_bDepthClipEnable;
+    inout_stream >> m_RasterizerDescription.m_bScissorEnable;
+    inout_stream >> m_RasterizerDescription.m_bAntialiasedLineEnable;
+    inout_stream >> m_RasterizerDescription.m_iDepthBias;
+    inout_stream >> m_RasterizerDescription.m_fDepthBiasClamp;
+    inout_stream >> m_RasterizerDescription.m_fSlopeScaledDepthBias;
   }
 }
 
-xiiUInt32 xiiShaderStateResourceDescriptor::CalculateHash() const
+xiiUInt32 xiiGALShaderStateResourceDescriptor::CalculateHash() const
 {
-  return m_BlendDesc.CalculateHash() + m_RasterizerDesc.CalculateHash() + m_DepthStencilDesc.CalculateHash();
+  return m_BlendDescription.CalculateHash() + m_RasterizerDescription.CalculateHash() + m_DepthStencilDescription.CalculateHash();
 }
 
 static xiiStringView InsertNumber(const char* szString, xiiUInt32 uiNumber, xiiStringBuilder& ref_sTemp)
@@ -281,7 +281,7 @@ static xiiMap<xiiString, xiiInt32> StateValuesComparisonFunction;
 static xiiMap<xiiString, xiiInt32> StateValuesStencilOperation;
 static xiiMap<xiiString, xiiInt32> StateValuesLogicOperation;
 
-xiiResult xiiShaderStateResourceDescriptor::Parse(xiiStringView sSource)
+xiiResult xiiGALShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 {
   xiiMap<xiiString, xiiString> VariableValues;
 
@@ -405,57 +405,57 @@ xiiResult xiiShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 
   // Retrieve Blend State
   {
-    m_BlendDesc.m_bAlphaToCoverage     = GetBoolStateVariable(VariableValues, "AlphaToCoverage", m_BlendDesc.m_bAlphaToCoverage);
-    m_BlendDesc.m_bIndependentBlend    = GetBoolStateVariable(VariableValues, "IndependentBlend", m_BlendDesc.m_bIndependentBlend);
-    m_BlendDesc.m_LogicOperationEnable = GetBoolStateVariable(VariableValues, "LogicOperationEnable", m_BlendDesc.m_LogicOperationEnable);
-    m_BlendDesc.m_LogicOperation       = (xiiGALLogicOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesLogicOperation, "LogicOperation", m_BlendDesc.m_LogicOperation);
+    m_BlendDescription.m_bAlphaToCoverage     = GetBoolStateVariable(VariableValues, "AlphaToCoverage", m_BlendDescription.m_bAlphaToCoverage);
+    m_BlendDescription.m_bIndependentBlend    = GetBoolStateVariable(VariableValues, "IndependentBlend", m_BlendDescription.m_bIndependentBlend);
+    m_BlendDescription.m_LogicOperationEnable = GetBoolStateVariable(VariableValues, "LogicOperationEnable", m_BlendDescription.m_LogicOperationEnable);
+    m_BlendDescription.m_LogicOperation       = (xiiGALLogicOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesLogicOperation, "LogicOperation", m_BlendDescription.m_LogicOperation);
 
     xiiStringBuilder s;
 
-    m_BlendDesc.m_RenderTargets.SetCount(XII_GAL_MAX_RENDERTARGET_COUNT);
-    for (xiiUInt32 i = 0; i < m_BlendDesc.m_RenderTargets.GetCount(); ++i)
+    m_BlendDescription.m_RenderTargets.SetCount(XII_GAL_MAX_RENDERTARGET_COUNT);
+    for (xiiUInt32 i = 0; i < m_BlendDescription.m_RenderTargets.GetCount(); ++i)
     {
-      m_BlendDesc.m_RenderTargets[i].m_bBlendEnable          = GetBoolStateVariable(VariableValues, InsertNumber("BlendEnable{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_bBlendEnable);
-      m_BlendDesc.m_RenderTargets[i].m_SourceBlend           = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("SourceBlend{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_SourceBlend);
-      m_BlendDesc.m_RenderTargets[i].m_DestinationBlend      = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("DestinationBlend{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_DestinationBlend);
-      m_BlendDesc.m_RenderTargets[i].m_BlendOperation        = (xiiGALBlendOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendOperation, InsertNumber("BlendOperation{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_BlendOperation);
-      m_BlendDesc.m_RenderTargets[i].m_SourceBlendAlpha      = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("SourceBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_SourceBlendAlpha);
-      m_BlendDesc.m_RenderTargets[i].m_DestinationBlendAlpha = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("DestinationBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_DestinationBlendAlpha);
-      m_BlendDesc.m_RenderTargets[i].m_ColorMask             = (xiiGALColorMask::Enum)GetIntStateVariable(VariableValues, InsertNumber("ColorMask{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_ColorMask.GetValue());
+      m_BlendDescription.m_RenderTargets[i].m_bBlendEnable          = GetBoolStateVariable(VariableValues, InsertNumber("BlendEnable{0}", i, s), m_BlendDescription.m_RenderTargets[0].m_bBlendEnable);
+      m_BlendDescription.m_RenderTargets[i].m_SourceBlend           = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("SourceBlend{0}", i, s), m_BlendDescription.m_RenderTargets[0].m_SourceBlend);
+      m_BlendDescription.m_RenderTargets[i].m_DestinationBlend      = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("DestinationBlend{0}", i, s), m_BlendDescription.m_RenderTargets[0].m_DestinationBlend);
+      m_BlendDescription.m_RenderTargets[i].m_BlendOperation        = (xiiGALBlendOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendOperation, InsertNumber("BlendOperation{0}", i, s), m_BlendDescription.m_RenderTargets[0].m_BlendOperation);
+      m_BlendDescription.m_RenderTargets[i].m_SourceBlendAlpha      = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("SourceBlendAlpha{0}", i, s), m_BlendDescription.m_RenderTargets[0].m_SourceBlendAlpha);
+      m_BlendDescription.m_RenderTargets[i].m_DestinationBlendAlpha = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("DestinationBlendAlpha{0}", i, s), m_BlendDescription.m_RenderTargets[0].m_DestinationBlendAlpha);
+      m_BlendDescription.m_RenderTargets[i].m_ColorMask             = (xiiGALColorMask::Enum)GetIntStateVariable(VariableValues, InsertNumber("ColorMask{0}", i, s), m_BlendDescription.m_RenderTargets[0].m_ColorMask.GetValue());
     }
   }
 
   // Retrieve Rasterizer State
   {
-    m_RasterizerDesc.m_FillMode               = (xiiGALFillMode::Enum)GetEnumStateVariable(VariableValues, StateValuesFillMode, "FillMode", m_RasterizerDesc.m_FillMode);
-    m_RasterizerDesc.m_CullMode               = (xiiGALCullMode::Enum)GetEnumStateVariable(VariableValues, StateValuesCullMode, "CullMode", m_RasterizerDesc.m_CullMode);
-    m_RasterizerDesc.m_bFrontCounterClockwise = GetBoolStateVariable(VariableValues, "FrontCounterClockwise", m_RasterizerDesc.m_bFrontCounterClockwise);
-    m_RasterizerDesc.m_bDepthClipEnable       = GetBoolStateVariable(VariableValues, "DepthClipEnable", m_RasterizerDesc.m_bDepthClipEnable);
-    m_RasterizerDesc.m_bScissorEnable         = GetBoolStateVariable(VariableValues, "ScissorEnable", m_RasterizerDesc.m_bScissorEnable);
-    m_RasterizerDesc.m_bAntialiasedLineEnable = GetBoolStateVariable(VariableValues, "AntialiasedLineEnable", m_RasterizerDesc.m_bAntialiasedLineEnable);
-    m_RasterizerDesc.m_iDepthBias             = GetIntStateVariable(VariableValues, "DepthBias", m_RasterizerDesc.m_iDepthBias);
-    m_RasterizerDesc.m_fDepthBiasClamp        = GetFloatStateVariable(VariableValues, "DepthBiasClamp", m_RasterizerDesc.m_fDepthBiasClamp);
-    m_RasterizerDesc.m_fSlopeScaledDepthBias  = GetFloatStateVariable(VariableValues, "SlopeScaledDepthBias", m_RasterizerDesc.m_fSlopeScaledDepthBias);
+    m_RasterizerDescription.m_FillMode               = (xiiGALFillMode::Enum)GetEnumStateVariable(VariableValues, StateValuesFillMode, "FillMode", m_RasterizerDescription.m_FillMode);
+    m_RasterizerDescription.m_CullMode               = (xiiGALCullMode::Enum)GetEnumStateVariable(VariableValues, StateValuesCullMode, "CullMode", m_RasterizerDescription.m_CullMode);
+    m_RasterizerDescription.m_bFrontCounterClockwise = GetBoolStateVariable(VariableValues, "FrontCounterClockwise", m_RasterizerDescription.m_bFrontCounterClockwise);
+    m_RasterizerDescription.m_bDepthClipEnable       = GetBoolStateVariable(VariableValues, "DepthClipEnable", m_RasterizerDescription.m_bDepthClipEnable);
+    m_RasterizerDescription.m_bScissorEnable         = GetBoolStateVariable(VariableValues, "ScissorEnable", m_RasterizerDescription.m_bScissorEnable);
+    m_RasterizerDescription.m_bAntialiasedLineEnable = GetBoolStateVariable(VariableValues, "AntialiasedLineEnable", m_RasterizerDescription.m_bAntialiasedLineEnable);
+    m_RasterizerDescription.m_iDepthBias             = GetIntStateVariable(VariableValues, "DepthBias", m_RasterizerDescription.m_iDepthBias);
+    m_RasterizerDescription.m_fDepthBiasClamp        = GetFloatStateVariable(VariableValues, "DepthBiasClamp", m_RasterizerDescription.m_fDepthBiasClamp);
+    m_RasterizerDescription.m_fSlopeScaledDepthBias  = GetFloatStateVariable(VariableValues, "SlopeScaledDepthBias", m_RasterizerDescription.m_fSlopeScaledDepthBias);
   }
 
   // Retrieve Depth-Stencil State
   {
-    m_DepthStencilDesc.m_bDepthEnable            = GetBoolStateVariable(VariableValues, "DepthEnable", m_DepthStencilDesc.m_bDepthEnable);
-    m_DepthStencilDesc.m_bDepthWriteEnable       = GetBoolStateVariable(VariableValues, "DepthWriteEnable", m_DepthStencilDesc.m_bDepthWriteEnable);
-    m_DepthStencilDesc.m_ComparisonDepthFunction = (xiiGALComparisonFunction::Enum)GetEnumStateVariable(VariableValues, StateValuesComparisonFunction, "ComparisonDepthFunction", m_DepthStencilDesc.m_ComparisonDepthFunction);
-    m_DepthStencilDesc.m_bStencilEnable          = GetBoolStateVariable(VariableValues, "StencilEnable", m_DepthStencilDesc.m_bStencilEnable);
-    m_DepthStencilDesc.m_uiStencilReadMask       = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, "StencilReadMask", m_DepthStencilDesc.m_uiStencilReadMask));
-    m_DepthStencilDesc.m_uiStencilWriteMask      = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, "StencilWriteMask", m_DepthStencilDesc.m_uiStencilWriteMask));
+    m_DepthStencilDescription.m_bDepthEnable            = GetBoolStateVariable(VariableValues, "DepthEnable", m_DepthStencilDescription.m_bDepthEnable);
+    m_DepthStencilDescription.m_bDepthWriteEnable       = GetBoolStateVariable(VariableValues, "DepthWriteEnable", m_DepthStencilDescription.m_bDepthWriteEnable);
+    m_DepthStencilDescription.m_ComparisonDepthFunction = (xiiGALComparisonFunction::Enum)GetEnumStateVariable(VariableValues, StateValuesComparisonFunction, "ComparisonDepthFunction", m_DepthStencilDescription.m_ComparisonDepthFunction);
+    m_DepthStencilDescription.m_bStencilEnable          = GetBoolStateVariable(VariableValues, "StencilEnable", m_DepthStencilDescription.m_bStencilEnable);
+    m_DepthStencilDescription.m_uiStencilReadMask       = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, "StencilReadMask", m_DepthStencilDescription.m_uiStencilReadMask));
+    m_DepthStencilDescription.m_uiStencilWriteMask      = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, "StencilWriteMask", m_DepthStencilDescription.m_uiStencilWriteMask));
 
-    m_DepthStencilDesc.m_FrontFace.m_StencilFailOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "FrontFaceStencilFailOperation", m_DepthStencilDesc.m_FrontFace.m_StencilFailOperation);
-    m_DepthStencilDesc.m_FrontFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "FrontFaceStencilDepthFailOperation", m_DepthStencilDesc.m_FrontFace.m_StencilDepthFailOperation);
-    m_DepthStencilDesc.m_FrontFace.m_StencilPassOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "FrontFaceStencilPassOperation", m_DepthStencilDesc.m_FrontFace.m_StencilPassOperation);
-    m_DepthStencilDesc.m_FrontFace.m_ComparisonFunction        = (xiiGALComparisonFunction::Enum)GetEnumStateVariable(VariableValues, StateValuesComparisonFunction, "FrontFaceComparisonFunction", m_DepthStencilDesc.m_FrontFace.m_ComparisonFunction);
+    m_DepthStencilDescription.m_FrontFace.m_StencilFailOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "FrontFaceStencilFailOperation", m_DepthStencilDescription.m_FrontFace.m_StencilFailOperation);
+    m_DepthStencilDescription.m_FrontFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "FrontFaceStencilDepthFailOperation", m_DepthStencilDescription.m_FrontFace.m_StencilDepthFailOperation);
+    m_DepthStencilDescription.m_FrontFace.m_StencilPassOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "FrontFaceStencilPassOperation", m_DepthStencilDescription.m_FrontFace.m_StencilPassOperation);
+    m_DepthStencilDescription.m_FrontFace.m_ComparisonFunction        = (xiiGALComparisonFunction::Enum)GetEnumStateVariable(VariableValues, StateValuesComparisonFunction, "FrontFaceComparisonFunction", m_DepthStencilDescription.m_FrontFace.m_ComparisonFunction);
 
-    m_DepthStencilDesc.m_BackFace.m_StencilFailOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "BackFaceStencilFailOperation", m_DepthStencilDesc.m_BackFace.m_StencilFailOperation);
-    m_DepthStencilDesc.m_BackFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "BackFaceStencilDepthFailOperation", m_DepthStencilDesc.m_BackFace.m_StencilDepthFailOperation);
-    m_DepthStencilDesc.m_BackFace.m_StencilPassOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "BackFaceStencilPassOperation", m_DepthStencilDesc.m_BackFace.m_StencilPassOperation);
-    m_DepthStencilDesc.m_BackFace.m_ComparisonFunction        = (xiiGALComparisonFunction::Enum)GetEnumStateVariable(VariableValues, StateValuesComparisonFunction, "BackFaceComparisonFunction", m_DepthStencilDesc.m_BackFace.m_ComparisonFunction);
+    m_DepthStencilDescription.m_BackFace.m_StencilFailOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "BackFaceStencilFailOperation", m_DepthStencilDescription.m_BackFace.m_StencilFailOperation);
+    m_DepthStencilDescription.m_BackFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "BackFaceStencilDepthFailOperation", m_DepthStencilDescription.m_BackFace.m_StencilDepthFailOperation);
+    m_DepthStencilDescription.m_BackFace.m_StencilPassOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "BackFaceStencilPassOperation", m_DepthStencilDescription.m_BackFace.m_StencilPassOperation);
+    m_DepthStencilDescription.m_BackFace.m_ComparisonFunction        = (xiiGALComparisonFunction::Enum)GetEnumStateVariable(VariableValues, StateValuesComparisonFunction, "BackFaceComparisonFunction", m_DepthStencilDescription.m_BackFace.m_ComparisonFunction);
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
@@ -474,4 +474,4 @@ xiiResult xiiShaderStateResourceDescriptor::Parse(xiiStringView sSource)
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ShaderStateDescriptor);
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_ShaderStateDescriptor);

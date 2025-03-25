@@ -72,7 +72,7 @@ xiiResult xiiGALShaderPermutationBinary::Read(xiiStreamReader& inout_stream, boo
 
   out_bOldVersion = uiVersion != xiiGALShaderPermutationBinaryVersion::Current;
 
-  const xiiUInt32 uiShaderStageHashCount = 0;
+  xiiUInt32 uiShaderStageHashCount = 0;
   if (inout_stream.ReadDWordValue(&uiShaderStageHashCount).Failed())
     return XII_FAILURE;
 

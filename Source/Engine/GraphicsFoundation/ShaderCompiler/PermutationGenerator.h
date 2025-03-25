@@ -8,7 +8,7 @@
 ///
 /// Just add all permutation variables and their possible values.
 /// Then the number of possible permutations and each permutation can be queried.
-class XII_GRAPHICSFOUNDATION_DLL xiiPermutationGenerator
+class XII_GRAPHICSFOUNDATION_DLL xiiGALPermutationGenerator
 {
 public:
   /// \brief Resets everything.

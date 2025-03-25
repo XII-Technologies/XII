@@ -1,18 +1,18 @@
-#include <GraphicsCore/GraphicsCorePCH.h>
+#include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsCore/ShaderCompiler/PermutationGenerator.h>
+#include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
 
-void xiiPermutationGenerator::Clear()
+void xiiGALPermutationGenerator::Clear()
 {
   m_Permutations.Clear();
 }
 
-void xiiPermutationGenerator::RemovePermutations(const xiiHashedString& sPermutationVariableName)
+void xiiGALPermutationGenerator::RemovePermutations(const xiiHashedString& sPermutationVariableName)
 {
   m_Permutations.Remove(sPermutationVariableName);
 }
 
-void xiiPermutationGenerator::AddPermutation(const xiiHashedString& sName, const xiiHashedString& sValue)
+void xiiGALPermutationGenerator::AddPermutation(const xiiHashedString& sName, const xiiHashedString& sValue)
 {
   XII_ASSERT_DEV(!sName.IsEmpty(), "");
   XII_ASSERT_DEV(!sValue.IsEmpty(), "");
@@ -20,7 +20,7 @@ void xiiPermutationGenerator::AddPermutation(const xiiHashedString& sName, const
   m_Permutations[sName].Insert(sValue);
 }
 
-xiiUInt32 xiiPermutationGenerator::GetPermutationCount() const
+xiiUInt32 xiiGALPermutationGenerator::GetPermutationCount() const
 {
   xiiUInt32 uiPermutations = 1;
 
@@ -32,7 +32,7 @@ xiiUInt32 xiiPermutationGenerator::GetPermutationCount() const
   return uiPermutations;
 }
 
-void xiiPermutationGenerator::GetPermutation(xiiUInt32 uiPerm, xiiHybridArray<xiiPermutationVar, 16>& out_permutationVariables) const
+void xiiGALPermutationGenerator::GetPermutation(xiiUInt32 uiPerm, xiiHybridArray<xiiGALPermutationVariable, 16>& out_permutationVariables) const
 {
   out_permutationVariables.Clear();
 
@@ -50,10 +50,10 @@ void xiiPermutationGenerator::GetPermutation(xiiUInt32 uiPerm, xiiHybridArray<xi
       ++itValue;
     }
 
-    xiiPermutationVar& pv = out_permutationVariables.ExpandAndGetRef();
-    pv.m_sName            = itVariable.Key();
-    pv.m_sValue           = itValue.Key();
+    xiiGALPermutationVariable& pv = out_permutationVariables.ExpandAndGetRef();
+    pv.m_sName                    = itVariable.Key();
+    pv.m_sValue                   = itValue.Key();
   }
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_ShaderCompiler_Implementation_PermutationGenerator);
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_ShaderCompiler_Implementation_PermutationGenerator);

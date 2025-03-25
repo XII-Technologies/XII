@@ -47,7 +47,7 @@ private:
 
   void ShaderCompileMsg(xiiRemoteMessage& msg);
 
-  xiiResult FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification);
+  xiiResult FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& fileContent, xiiTimestamp& out_fileModification);
 
   struct ShaderData
   {
