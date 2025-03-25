@@ -117,6 +117,69 @@ namespace
   };
 } // namespace
 
+xiiResult xiiGALShaderCompiler::FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& fileContent, xiiTimestamp& out_fileModification)
+{
+  if (sAbsoluteFile == "ShaderRenderState")
+  {
+    const xiiString& sData   = m_ShaderData.m_StateSource;
+    const xiiUInt32  uiCount = sData.GetElementCount();
+    xiiStringView    sString = sData;
+
+    fileContent.SetCountUninitialized(uiCount);
+
+    if (uiCount > 0)
+    {
+      xiiMemoryUtils::Copy<xiiUInt8>(fileContent.GetData(), (const xiiUInt8*)sString.GetStartPointer(), uiCount);
+    }
+
+    return XII_SUCCESS;
+  }
+
+  for (auto it : m_StageSourceFile)
+  {
+    if (it.Value() == sAbsoluteFile)
+    {
+      const xiiString& sData   = m_ShaderData.m_ShaderStageSource[it.Key()];
+      const xiiUInt32  uiCount = sData.GetElementCount();
+      xiiStringView    sString = sData;
+
+      fileContent.SetCountUninitialized(uiCount);
+
+      if (uiCount > 0)
+      {
+        xiiMemoryUtils::Copy<xiiUInt8>(fileContent.GetData(), (const xiiUInt8*)sString.GetStartPointer(), uiCount);
+      }
+
+      return XII_SUCCESS;
+    }
+  }
+
+  m_IncludeFiles.Insert(sAbsoluteFile);
+
+  xiiFileReader r;
+  if (r.Open(sAbsoluteFile).Failed())
+  {
+    xiiLog::Error("Could not find include file '{0}'", sAbsoluteFile);
+    return XII_FAILURE;
+  }
+
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
+  xiiFileStats stats;
+  if (xiiFileSystem::GetFileStats(sAbsoluteFile, stats).Succeeded())
+  {
+    out_fileModification = stats.m_LastModificationTime;
+  }
+#endif
+
+  xiiUInt8 Temp[4096];
+
+  while (xiiUInt64 uiRead = r.ReadBytes(Temp, 4096))
+  {
+    fileContent.PushBackRange(xiiArrayPtr<xiiUInt8>(Temp, (xiiUInt32)uiRead));
+  }
+
+  return XII_SUCCESS;
+}
 
 xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVars, xiiLogInterface* pLog, xiiStringView sPlatform)
 {
@@ -224,91 +287,48 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
       sTemp.AppendFormat("#line {0}\n{1}", uiFirstLine, sStageSource);
 
-      m_ShaderData.m_ShaderStageSource[stage] = sTemp;
+      m_ShaderData.m_ShaderStageSource[(xiiGALShaderType::Enum)stage] = sTemp;
     }
     else
     {
-      m_ShaderData.m_ShaderStageSource[stage].Clear();
+      m_ShaderData.m_ShaderStageSource[(xiiGALShaderType::Enum)stage].Clear();
     }
   }
 
   xiiStringBuilder tmp = sFile;
   tmp.MakeCleanPath();
 
+  struct StageSourceData
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("vs");
-  }
+    xiiEnum<xiiGALShaderType> m_ShaderType;
+    xiiString                 m_sExtension;
+  };
+
+  xiiHybridArray<StageSourceData, xiiGALShaderType::ENUM_COUNT> shaderTypesAndExtensions;
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Vertex, .m_sExtension = "vs"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Pixel, .m_sExtension = "ps"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Geometry, .m_sExtension = "gs"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Hull, .m_sExtension = "hs"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Domain, .m_sExtension = "ds"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Compute, .m_sExtension = "cs"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Amplification, .m_sExtension = "as"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Mesh, .m_sExtension = "ms"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::RayGeneration, .m_sExtension = "rgs"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::RayMiss, .m_sExtension = "rms"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::RayClosestHit, .m_sExtension = "rchs"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::RayAnyHit, .m_sExtension = "rahs"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::RayIntersection, .m_sExtension = "ris"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Callable, .m_sExtension = "cas"});
+  shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Tile, .m_sExtension = "ts"});
+
+  for (StageSourceData& stageSourceData : shaderTypesAndExtensions)
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("ps");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("gs");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Hull)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("hs");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("ds");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("cs");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Amplification)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("as");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Mesh)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("ms");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayGeneration)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("rg");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayMiss)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("rms");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayClosestHit)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("rchs");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayAnyHit)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("rahs");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayIntersection)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("ris");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Callable)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("cas");
-  }
-  {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Tile)];
-    sSourceFile       = tmp;
-    sSourceFile.ChangeFileExtension("ts");
+    if (m_StageSourceFile.Contains(stageSourceData.m_ShaderType))
+    {
+      auto& sSourceFile = m_StageSourceFile[stageSourceData.m_ShaderType];
+      sSourceFile       = tmp;
+      sSourceFile.ChangeFileExtension(stageSourceData.m_sExtension);
+    }
   }
 
   // Try out every compiler that we can find
