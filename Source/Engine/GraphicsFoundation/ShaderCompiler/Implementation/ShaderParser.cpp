@@ -872,4 +872,4 @@ void xiiGALShaderParser::ApplyShaderResourceBindings(xiiStringView sPlatform, xi
   }
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_ShaderCompiler_Implementation_ShaderParser);
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_ShaderCompiler_Implementation_ShaderParser);

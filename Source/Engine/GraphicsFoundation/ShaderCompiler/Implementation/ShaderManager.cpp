@@ -2,12 +2,6 @@
 
 #include <Foundation/CodeUtils/Preprocessor.h>
 
-// #include <GraphicsCore/Shader/Implementation/Helper.h>
-// #include <GraphicsCore/Shader/ShaderPermutationResource.h>
-// #include <GraphicsCore/Shader/ShaderResource.h>
-// #include <GraphicsCore/ShaderCompiler/ShaderManager.h>
-// #include <GraphicsCore/ShaderCompiler/ShaderParser.h>
-
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
@@ -291,4 +285,4 @@ xiiUInt32 xiiGALShaderManager::FilterPermutationVars(xiiArrayPtr<const xiiHashed
   return xiiGALPermutationVariable::CalculateHash(out_FilteredPermutationVariables);
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_ShaderCompiler_Implementation_ShaderManager);
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_ShaderCompiler_Implementation_ShaderManager);

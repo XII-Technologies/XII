@@ -295,4 +295,4 @@ void xiiGALShaderStageBinary::OnEngineShutdown()
   }
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ShaderStageBinary);
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_ShaderStageBinary);

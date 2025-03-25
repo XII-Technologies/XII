@@ -25,12 +25,8 @@ public:
   /// E.g. returns TRUE and FALSE for boolean variables.
   static void GetPermutationValues(const xiiHashedString& sName, xiiDynamicArray<xiiHashedString>& out_values);
 
-  // static void                               PreloadPermutations(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permutationVariables, xiiTime shouldBeAvailableIn);
-  // static xiiShaderPermutationResourceHandle PreloadSinglePermutation(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permutationVariables, bool bAllowFallback);
-
 private:
   static xiiUInt32 FilterPermutationVars(xiiArrayPtr<const xiiHashedString> usedVariables, const xiiHashTable<xiiHashedString, xiiHashedString>& permutationVariables, xiiDynamicArray<xiiGALPermutationVariable>& out_FilteredPermutationVariables);
-  //static xiiShaderPermutationResourceHandle PreloadSinglePermutationInternal(xiiStringView sResourceId, xiiUInt64 uiResourceIdHash, xiiUInt32 uiPermutationHash, xiiArrayPtr<xiiGALPermutationVariable> filteredPermutationVariables);
 
   static bool      s_bEnableRuntimeCompilation;
   static xiiString s_sPlatform;
