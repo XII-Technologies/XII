@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderProgramCompiler, 1, xiiRTTINoAllocator)
@@ -258,6 +259,99 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
       WriteFailedShaderSource(spd, pLog);
       return XII_FAILURE;
     }
+
+    // Load shader cache.
+    for (auto it : spd.m_StageData)
+    {
+      auto& stageData = it.Value();
+
+      xiiUInt32 uiSourceStringLength = stageData.m_sShaderSource.GetElementCount();
+      stageData.m_uiSourceHash       = uiSourceStringLength == 0U ? 0U : xiiHashingUtils::xxHash32(stageData.m_sShaderSource.GetData(), uiSourceStringLength);
+
+      if (stageData.m_uiSourceHash != 0U)
+      {
+        xiiGALShaderStageBinary* pBinary = xiiGALShaderStageBinary::LoadStageBinary(it.Key(), stageData.m_uiSourceHash, sPlatform);
+
+        if (pBinary)
+        {
+          stageData.m_pByteCode    = pBinary->m_pGALByteCode;
+          stageData.m_bWriteToDisk = false;
+        }
+        else
+        {
+          // Can't find shader with given hash on disk, create a new xiiGALShaderByteCode and let the compiler build it.
+          stageData.m_pByteCode                          = XII_DEFAULT_NEW(xiiGALShaderByteCode);
+          stageData.m_pByteCode->m_ShaderStage           = it.Key();
+          stageData.m_pByteCode->m_bWasCompiledWithDebug = spd.m_Flags.IsSet(xiiGALShaderCompilerFlags::Debug);
+        }
+      }
+    }
+
+    // copy the source hashes
+    for (auto it : spd.m_StageData)
+    {
+      auto& stageData = it.Value();
+
+      shaderPermutationBinary.m_ShaderStageHashes.Insert(it.Key(), stageData.m_uiSourceHash);
+    }
+
+    // if compilation failed, the stage binary for the source hash will simply not exist and therefore cannot be loaded
+    // the .xiiPermutation file should be updated, however, to store the new source hash to the broken shader
+    if (pCompiler->Compile(spd, xiiLog::GetThreadLocalLogSystem()).Failed())
+    {
+      WriteFailedShaderSource(spd, pLog);
+      return XII_FAILURE;
+    }
+
+    for (auto it : spd.m_StageData)
+    {
+      auto& stageData = it.Value();
+
+      if (stageData.m_uiSourceHash != 0 && stageData.m_bWriteToDisk)
+      {
+        xiiGALShaderStageBinary bin;
+        bin.m_uiSourceHash = stageData.m_uiSourceHash;
+        bin.m_pGALByteCode = stageData.m_pByteCode;
+
+        if (bin.WriteStageBinary(pLog, sPlatform).Failed())
+        {
+          xiiLog::Error(pLog, "Writing stage {0} binary failed.", it.Key());
+          return XII_FAILURE;
+        }
+        xiiGALShaderStageBinary::s_ShaderStageBinaries[it.Key()].Insert(bin.m_uiSourceHash, bin);
+      }
+    }
+
+    xiiStringBuilder sTemp = xiiGALShaderManager::GetCacheDirectory();
+    sTemp.AppendPath(platforms[p]);
+    sTemp.AppendPath(sFile);
+    sTemp.ChangeFileExtension("");
+    if (sTemp.EndsWith("."))
+      sTemp.Shrink(0, 1);
+
+    const xiiUInt32 uiPermutationHash = xiiGALPermutationVariable::CalculateHash(m_ShaderData.m_Permutations);
+    sTemp.AppendFormat("_{0}.xiiPermutation", xiiArgU(uiPermutationHash, 8, true, 16, true));
+
+    shaderPermutationBinary.m_DependencyFile.Clear();
+    shaderPermutationBinary.m_DependencyFile.AddFileDependency(sFile);
+
+    for (auto it = m_IncludeFiles.GetIterator(); it.IsValid(); ++it)
+    {
+      shaderPermutationBinary.m_DependencyFile.AddFileDependency(it.Key());
+    }
+
+    shaderPermutationBinary.m_PermutationVariables = m_ShaderData.m_Permutations;
+
+    xiiDeferredFileWriter PermutationFileOut;
+    PermutationFileOut.SetOutput(sTemp);
+    XII_SUCCEED_OR_RETURN(shaderPermutationBinary.Write(PermutationFileOut));
+
+    if (PermutationFileOut.Close().Failed())
+    {
+      xiiLog::Error(pLog, "Could not open file for writing: '{0}'", sTemp);
+      return XII_FAILURE;
+    }
+  }
 
   return XII_SUCCESS;
 }
