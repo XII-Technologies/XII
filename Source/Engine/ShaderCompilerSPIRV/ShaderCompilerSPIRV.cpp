@@ -433,3 +433,42 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
 
   return XII_SUCCESS;
 }
+
+xiiResult xiiShaderCompilerSPIRV::ModifyShaderSource(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog)
+{
+  for (auto it : inout_data.m_StageData)
+  {
+    xiiGALShaderParser::ParseShaderResources(it.Value().m_sShaderSource, it.Value().m_Resources);
+  }
+
+  xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription> bindings;
+  XII_SUCCEED_OR_RETURN(xiiGALShaderParser::MergeShaderResourceBindings(inout_data, bindings, pLog));
+  XII_SUCCEED_OR_RETURN(DefineShaderResourceBindings(inout_data, bindings, pLog));
+  XII_SUCCEED_OR_RETURN(xiiGALShaderParser::SanityCheckShaderResourceBindings(bindings, pLog));
+
+  // Apply shader resource bindings
+  xiiStringBuilder sNewShaderCode;
+  for (auto it : inout_data.m_StageData)
+  {
+    auto& value = it.Value();
+
+    if (value.m_sShaderSource.IsEmpty())
+      continue;
+
+    xiiGALShaderParser::ApplyShaderResourceBindings(inout_data.m_sPlatform, value.m_sShaderSource, value.m_Resources, bindings, xiiMakeDelegate(&xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration, this), sNewShaderCode);
+
+    value.m_sShaderSource = sNewShaderCode;
+    value.m_Resources.Clear();
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog)
+{
+  return XII_SUCCESS;
+}
+
+void xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration)
+{
+}
