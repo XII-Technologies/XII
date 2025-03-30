@@ -373,7 +373,6 @@ xiiResult xiiShaderCompilerSPIRV::Compile(xiiGALShaderProgramData& inout_data, x
       {
         return XII_FAILURE;
       }
-
     }
   }
   return XII_SUCCESS;
@@ -502,11 +501,154 @@ xiiResult xiiShaderCompilerSPIRV::ModifyShaderSource(xiiGALShaderProgramData& in
 
 xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog)
 {
+  // Determine which indices are hard-coded in the shader already.
+  xiiHybridArray<xiiHybridBitfield<64>, 4> slotInUseInSet;
+
+  for (auto it : inout_resourceBinding)
+  {
+    xiiUInt32& uiDescriptorSet = it.Value().m_uiDescriptorSet;
+    if (uiDescriptorSet == xiiInvalidIndex)
+      uiDescriptorSet = 0;
+
+    slotInUseInSet.EnsureCount(uiDescriptorSet + 1);
+
+    if (it.Value().m_uiBindIndex != xiiInvalidIndex)
+    {
+      slotInUseInSet[uiDescriptorSet].SetCount(xiiMath::Max(slotInUseInSet[uiDescriptorSet].GetCount(), it.Value().m_uiBindIndex + 1));
+      slotInUseInSet[uiDescriptorSet].SetBit(it.Value().m_uiBindIndex);
+    }
+  }
+
+  // Create stable oder of resources in each set.
+  xiiHybridArray<xiiHybridArray<xiiHashedString, 16>, 4> orderInSet;
+  orderInSet.SetCount(slotInUseInSet.GetCount());
+
+  for (auto it : data.m_StageData)
+  {
+    const auto& stageData = it.Value();
+
+    if (stageData.m_sShaderSource.IsEmpty())
+      continue;
+
+    for (const auto& res : stageData.m_Resources)
+    {
+      const xiiUInt32 uiSet = (res.m_ResourceDescription.m_uiDescriptorSet == xiiInvalidIndex) ? 0U : res.m_ResourceDescription.m_uiDescriptorSet;
+
+      if (!orderInSet[uiSet].Contains(res.m_ResourceDescription.m_sName))
+      {
+        orderInSet[uiSet].PushBack(res.m_ResourceDescription.m_sName);
+      }
+    }
+  }
+
+  // Combine the texture and sampler into a single resource.
+  struct TextureAndSamplerTuple
+  {
+    xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>::Iterator itSampler;
+    xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>::Iterator itTexture;
+  };
+  xiiHybridArray<TextureAndSamplerTuple, 2> autoSamplers;
+
+  if (PermitCombinedImageSamplers())
+  {
+    for (auto itSampler : inout_resourceBinding)
+    {
+      const auto& textureAndSampler = itSampler.Value();
+
+      if (textureAndSampler.m_Type != xiiGALShaderResourceType::Sampler || !textureAndSampler.m_sName.GetView().EndsWith("_AutoSampler"))
+        continue;
+
+      xiiStringBuilder sb = textureAndSampler.m_sName.GetView();
+      sb.TrimWordEnd("_AutoSampler");
+
+      auto itTexture = inout_resourceBinding.Find(xiiTempHashedString(sb));
+      if (!itTexture.IsValid())
+        continue;
+
+      if (textureAndSampler.m_uiDescriptorSet != itTexture.Value().m_uiDescriptorSet || textureAndSampler.m_uiBindIndex != itTexture.Value().m_uiBindIndex)
+        continue;
+
+      itSampler.Value().m_Type = xiiGALShaderResourceType::TextureAndSampler;
+      itTexture.Value().m_Type = xiiGALShaderResourceType::TextureAndSampler;
+
+      // Sampler will match the slot of the texture at the end.
+      orderInSet[textureAndSampler.m_uiDescriptorSet].RemoveAndCopy(itSampler.Key());
+      autoSamplers.PushBack({itSampler, itTexture});
+    }
+  }
+
+  // Assign slot to each resource in each set.
+  for (xiiUInt32 uiSet = 0; uiSet < slotInUseInSet.GetCount(); ++uiSet)
+  {
+    xiiUInt32 uiCurrentSlot = 0;
+
+    for (const auto& sName : orderInSet[uiSet])
+    {
+      xiiGALShaderResourceDescription& resource    = inout_resourceBinding[sName];
+      xiiUInt32&                       uiBindIndex = resource.m_uiBindIndex;
+
+      if (uiBindIndex != xiiInvalidIndex)
+        continue;
+
+      while (uiCurrentSlot < slotInUseInSet[uiSet].GetCount() && slotInUseInSet[uiSet].IsBitSet(uiCurrentSlot))
+      {
+        ++uiCurrentSlot;
+      }
+      uiBindIndex = uiCurrentSlot;
+      slotInUseInSet[uiSet].SetCount(xiiMath::Max(slotInUseInSet[uiSet].GetCount(), uiCurrentSlot + 1));
+      slotInUseInSet[uiSet].SetBit(uiCurrentSlot);
+    }
+  }
+
+  // Copy texture assignments to the samplers.
+  for (TextureAndSamplerTuple& tas : autoSamplers)
+  {
+    tas.itSampler.Value().m_uiBindIndex = tas.itTexture.Value().m_uiBindIndex;
+  }
+
   return XII_SUCCESS;
 }
 
 void xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration)
 {
+  xiiEnum<xiiGALShaderResourceType> type = binding.m_Type;
+  xiiStringView                     sResourcePrefix;
+
+  // The only descriptor that can have more than one shader resource type is TextureAndSampler.
+  // There will be two declarations in the HLSL code, the sampler and the texture.
+  if (binding.m_TextureType == xiiGALShaderResourceType::TextureAndSampler)
+  {
+    type = binding.m_TextureType == xiiGALShaderTextureType::Unknown ? xiiGALShaderResourceType::Sampler : xiiGALShaderResourceType::TextureSRV;
+  }
+
+  switch (type)
+  {
+    case xiiGALShaderResourceType::Sampler:
+      sResourcePrefix = "s"_xiisv;
+      break;
+    case xiiGALShaderResourceType::ConstantBuffer:
+      sResourcePrefix = "b"_xiisv;
+      break;
+    case xiiGALShaderResourceType::TextureSRV:
+    case xiiGALShaderResourceType::BufferSRV:
+      sResourcePrefix = "t"_xiisv;
+      break;
+    case xiiGALShaderResourceType::TextureUAV:
+    case xiiGALShaderResourceType::BufferUAV:
+      sResourcePrefix = "u"_xiisv;
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  if (binding.m_Type == xiiGALShaderResourceType::TextureAndSampler)
+  {
+    out_sDeclaration.SetFormat("[[vk::combinedImageSampler]] {} : register({}{}, space{})", sDeclaration, sResourcePrefix, binding.m_uiBindIndex, binding.m_uiDescriptorSet);
+  }
+  else
+  {
+    out_sDeclaration.SetFormat("{} : register({}{}, space{})", sDeclaration, sResourcePrefix, binding.m_uiBindIndex, binding.m_uiDescriptorSet);
+  }
 }
 
 xiiResult xiiShaderCompilerSPIRV::ReflectShaderStage(xiiGALShaderProgramData& inout_Data, xiiEnum<xiiGALShaderType> stage)

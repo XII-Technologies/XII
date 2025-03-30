@@ -18,7 +18,7 @@ public:
   virtual xiiResult Compile(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog) override;
 
 protected:
-  virtual bool AllowCombinedImageSamplers() const { return true; }
+  virtual bool PermitCombinedImageSamplers() const { return true; }
 
 private:
   /// \brief Sets fixed set / slot bindings to each resource.
