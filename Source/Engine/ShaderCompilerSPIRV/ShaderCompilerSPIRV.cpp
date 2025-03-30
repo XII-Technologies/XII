@@ -1065,8 +1065,3 @@ xiiResult xiiShaderCompilerSPIRV::FillUAVResourceBinding(xiiGALShaderResourceDes
   xiiLog::Error("Resource '{}': Unsupported UAV type.", info.name);
   return XII_FAILURE;
 }
-
-xiiGALShaderTextureType::Enum xiiShaderCompilerSPIRV::GetTextureType(const SpvReflectDescriptorBinding& info)
-{
-  return xiiGALShaderTextureType::Enum();
-}

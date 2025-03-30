@@ -40,8 +40,6 @@ private:
   xiiResult FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
   xiiResult FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
 
-  static xiiGALShaderTextureType::Enum GetTextureType(const SpvReflectDescriptorBinding& info);
-
 private:
   xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>> m_InputLayoutMapping;
 };
