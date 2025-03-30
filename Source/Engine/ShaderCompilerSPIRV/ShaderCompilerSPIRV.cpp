@@ -5,6 +5,8 @@
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Strings/StringConversion.h>
 
+#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
+
 #include <spirv_reflect.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -91,6 +93,40 @@ XII_END_SUBSYSTEM_DECLARATION;
 XII_BEGIN_ABSTRACT_DYNAMIC_REFLECTED_TYPE(xiiShaderCompilerSPIRV, 1)
 XII_END_ABSTRACT_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+xiiEnum<xiiGALResourceFormat> GetXIIFormatVulkan(SpvReflectFormat format)
+{
+  switch (format)
+  {
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_UINT:
+      return xiiGALResourceFormat::R32UInt;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_SINT:
+      return xiiGALResourceFormat::R32SInt;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_SFLOAT:
+      return xiiGALResourceFormat::R32Float;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_UINT:
+      return xiiGALResourceFormat::RG32UInt;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_SINT:
+      return xiiGALResourceFormat::RG32SInt;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_SFLOAT:
+      return xiiGALResourceFormat::RG32Float;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_UINT:
+      return xiiGALResourceFormat::RGB32UInt;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_SINT:
+      return xiiGALResourceFormat::RGB32SInt;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:
+      return xiiGALResourceFormat::RGB32Float;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_UINT:
+      return xiiGALResourceFormat::RGBA32UInt;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_SINT:
+      return xiiGALResourceFormat::RGBA32SInt;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT:
+      return xiiGALResourceFormat::RGBA32Float;
+    case SpvReflectFormat::SPV_REFLECT_FORMAT_UNDEFINED:
+    default:
+      return xiiGALResourceFormat::Unknown;
+  }
+}
 
 void xiiShaderCompilerSPIRV::GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& out_platforms)
 {
