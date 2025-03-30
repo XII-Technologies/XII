@@ -48,7 +48,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsVulkan, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Vulkan, .m_sShaderModel = "VK_SM60", .m_sShaderCompiler = "xiiShaderCompiler" };
+  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Vulkan, .m_sShaderModel = "VK_SM60", .m_sShaderCompiler = "xiiShaderCompilerSPIRV" };
 
   xiiGALDeviceFactory::RegisterImplementation("Vulkan", &CreateVulkanDevice, implementation);
 }
