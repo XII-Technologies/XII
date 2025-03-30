@@ -342,3 +342,94 @@ xiiResult xiiShaderCompilerSPIRV::Compile(xiiGALShaderProgramData& inout_data, x
   }
   return XII_SUCCESS;
 }
+
+xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
+{
+  out_ByteCode.Clear();
+
+  xiiStringView    sCompileSource = sSource;
+  xiiStringBuilder sDebugSource;
+
+  xiiDynamicArray<xiiStringWChar> args;
+  args.PushBack(xiiStringWChar(sFile));
+  args.PushBack(L"-E");
+  args.PushBack(xiiStringWChar(sEntryPoint));
+  args.PushBack(L"-T");
+  args.PushBack(xiiStringWChar(sProfile));
+  args.PushBack(L"-spirv");
+  args.PushBack(L"-Zpc"); // Matrices in column-major order
+  args.PushBack(L"-fvk-use-dx-position-w");
+  args.PushBack(L"-fspv-target-env=vulkan1.1");
+
+  if (bDebug)
+  {
+    // In debug mode we need to remove '#line' as any shader debugger won't work with them.
+    sDebugSource = sSource;
+    sDebugSource.ReplaceAll("#line ", "//line ");
+    sCompileSource = sDebugSource;
+
+    args.PushBack(L"-Zi"); // Enable debug information.
+    args.PushBack(L"-Od"); // Disable optimization
+  }
+  else
+  {
+    args.PushBack(L"-O3"); // Optimization Level 3
+  }
+
+  xiiHybridArray<LPCWSTR, 16> pszArgs;
+  pszArgs.SetCount(args.GetCount());
+  for (xiiUInt32 i = 0; i < args.GetCount(); ++i)
+  {
+    pszArgs[i] = args[i].GetData();
+  }
+
+  xiiComPtr<IDxcBlobEncoding> pSource;
+  s_pDxcUtils->CreateBlob(sCompileSource.GetStartPointer(), sCompileSource.GetElementCount(), DXC_CP_UTF8, pSource.RawDblPtr());
+
+  DxcBuffer Source;
+  Source.Ptr      = pSource->GetBufferPointer();
+  Source.Size     = pSource->GetBufferSize();
+  Source.Encoding = DXC_CP_UTF8;
+
+  xiiComPtr<IDxcResult> pCompileResult;
+  s_pDxcCompiler->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
+
+  xiiComPtr<IDxcBlobUtf8> pCompileError;
+  pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pCompileError.RawDblPtr()), nullptr);
+
+  HRESULT hrStatus;
+  pCompileResult->GetStatus(&hrStatus);
+  if (FAILED(hrStatus))
+  {
+    xiiLog::Error("Shader compilation failed.");
+
+    if (pCompileError != nullptr && pCompileError->GetStringLength() != 0)
+    {
+      xiiLog::Error("{}", xiiStringUtf8(pCompileError->GetStringPointer()).GetData());
+    }
+    return XII_FAILURE;
+  }
+  else
+  {
+    if (pCompileError != nullptr && pCompileError->GetStringLength() != 0)
+    {
+      xiiLog::Warning("{}", xiiStringUtf8(pCompileError->GetStringPointer()).GetData());
+    }
+  }
+
+  xiiComPtr<IDxcBlob>     pShader;
+  xiiComPtr<IDxcBlobWide> pShaderName;
+  pCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(pShader.RawDblPtr()), pShaderName.RawDblPtr());
+
+  if (pShader == nullptr)
+  {
+    xiiLog::Error("No SPIRV bytecode was generated.");
+    return XII_FAILURE;
+  }
+
+  out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(pShader->GetBufferSize()));
+
+  xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(pShader->GetBufferPointer()), out_ByteCode.GetCount());
+
+  return XII_SUCCESS;
+}

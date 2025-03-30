@@ -18,7 +18,6 @@ public:
   virtual xiiResult Compile(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog) override;
 
 protected:
-  virtual void ConfigureSPIRVArgs(xiiDynamicArray<xiiStringWChar>& inout_Args);
   virtual bool AllowCombinedImageSamplers() const { return true; }
 
 private:
