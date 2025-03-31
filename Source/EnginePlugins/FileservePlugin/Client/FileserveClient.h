@@ -2,7 +2,7 @@
 
 #include <FileservePlugin/FileservePluginDLL.h>
 
-#include <Core/Interfaces/RemoteToolingInterface.h>
+#include <Foundation/Interfaces/RemoteToolingInterface.h>
 #include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Types/UniquePtr.h>
