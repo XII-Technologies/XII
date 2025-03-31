@@ -47,7 +47,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D11, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D11, .m_sShaderModel = "D3D_SM50", .m_sShaderCompiler = "xiiShaderCompiler" };
+  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D11, .m_sShaderModel = "D3D_SM50", .m_sShaderCompiler = "xiiShaderCompilerDXBC" };
 
   xiiGALDeviceFactory::RegisterImplementation("D3D11", &CreateD3D11Device, implementation);
 }
