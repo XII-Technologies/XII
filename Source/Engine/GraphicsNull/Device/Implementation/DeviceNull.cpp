@@ -37,7 +37,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsNull, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Null, .m_sShaderModel = "NULL_SM", .m_sShaderCompiler = "xiiShaderCompiler" };
+  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Null, .m_sShaderModel = "NULL_SM", .m_sShaderCompiler = "" };
 
   xiiGALDeviceFactory::RegisterImplementation("Null", &CreateNullDevice, implementation);
 }
