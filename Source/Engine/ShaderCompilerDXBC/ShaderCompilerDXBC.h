@@ -26,6 +26,10 @@ public:
   virtual xiiResult Compile(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog) override;
 
 private:
+  xiiResult DefineShaderResourceBindings(const xiiGALShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog);
+
+  void CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration);
+
   xiiResult     Initialize();
   xiiStringView GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage);
   xiiResult     CompileDXBCShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);

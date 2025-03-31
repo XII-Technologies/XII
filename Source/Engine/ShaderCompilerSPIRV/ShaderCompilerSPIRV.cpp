@@ -90,9 +90,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompilerSPIRV, ShaderCompilerSPIRVPlugin)
 
 XII_END_SUBSYSTEM_DECLARATION;
 
-XII_BEGIN_ABSTRACT_DYNAMIC_REFLECTED_TYPE(xiiShaderCompilerSPIRV, 1)
-XII_END_ABSTRACT_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderCompilerSPIRV, 1, xiiRTTIDefaultAllocator<xiiShaderCompilerSPIRV>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format off
 
 xiiEnum<xiiGALResourceFormat> GetXIIFormatVulkan(SpvReflectFormat format)
 {

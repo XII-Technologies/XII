@@ -286,6 +286,200 @@ xiiResult xiiShaderCompilerDXBC::Compile(xiiGALShaderProgramData& inout_data, xi
   return XII_SUCCESS;
 }
 
+xiiResult xiiShaderCompilerDXBC::ModifyShaderSource(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog)
+{
+  for (auto it : inout_data.m_StageData)
+  {
+    xiiGALShaderParser::ParseShaderResources(it.Value().m_sShaderSource, it.Value().m_Resources);
+  }
+
+  xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription> bindings;
+  XII_SUCCEED_OR_RETURN(xiiGALShaderParser::MergeShaderResourceBindings(inout_data, bindings, pLog));
+  XII_SUCCEED_OR_RETURN(DefineShaderResourceBindings(inout_data, bindings, pLog));
+  XII_SUCCEED_OR_RETURN(xiiGALShaderParser::SanityCheckShaderResourceBindings(bindings, pLog));
+
+  for (auto it : bindings)
+  {
+    if (it.Value().m_Type == xiiGALShaderResourceType::ConstantBuffer && it.Value().m_uiBindIndex >= XII_GAL_MAX_CONSTANT_BUFFER_COUNT)
+    {
+      xiiLog::Error(pLog, "Shader constant buffer resource '{}' has slot index {}. D3D11 only supports up to {} slots.", it.Key(), it.Value().m_uiBindIndex, XII_GAL_MAX_CONSTANT_BUFFER_COUNT);
+      return XII_FAILURE;
+    }
+    if (it.Value().m_Type == xiiGALShaderResourceType::Sampler && it.Value().m_uiBindIndex >= XII_GAL_MAX_SAMPLER_COUNT)
+    {
+      xiiLog::Error(pLog, "Shader sampler resource '{}' has slot index {}. D3D11 only supports up to {} slots.", it.Key(), it.Value().m_uiBindIndex, XII_GAL_MAX_SAMPLER_COUNT);
+      return XII_FAILURE;
+    }
+  }
+
+  // Apply shader resource bindings
+  xiiStringBuilder sNewShaderCode;
+  for (auto it : inout_data.m_StageData)
+  {
+    auto& value = it.Value();
+
+    if (value.m_sShaderSource.IsEmpty())
+      continue;
+
+    xiiGALShaderParser::ApplyShaderResourceBindings(inout_data.m_sPlatform, value.m_sShaderSource, value.m_Resources, bindings, xiiMakeDelegate(&xiiShaderCompilerDXBC::CreateNewShaderResourceDeclaration, this), sNewShaderCode);
+
+    value.m_sShaderSource = sNewShaderCode;
+    value.m_Resources.Clear();
+  }
+
+  return XII_SUCCESS;
+}
+
+namespace
+{
+  struct D3D11ResourceCategory
+  {
+    using StorageType                     = xiiUInt8;
+    static constexpr xiiUInt32 ENUM_COUNT = 4U;
+    enum Enum : xiiUInt8
+    {
+      Sampler        = XII_BIT(0),
+      ConstantBuffer = XII_BIT(1),
+      SRV            = XII_BIT(2),
+      UAV            = XII_BIT(3),
+      Default        = 0
+    };
+
+    struct Bits
+    {
+      StorageType Sampler : 1;
+      StorageType ConstantBuffer : 1;
+      StorageType SRV : 1;
+      StorageType UAV : 1;
+    };
+
+    static xiiBitflags<D3D11ResourceCategory> MakeFromShaderDescriptorType(xiiGALShaderResourceType::Enum type);
+  };
+
+  XII_DECLARE_FLAGS_OPERATORS(D3D11ResourceCategory);
+} // namespace
+
+inline xiiBitflags<D3D11ResourceCategory> D3D11ResourceCategory::MakeFromShaderDescriptorType(xiiGALShaderResourceType::Enum type)
+{
+  switch (type)
+  {
+    case xiiGALShaderResourceType::Sampler:
+      return D3D11ResourceCategory::Sampler;
+    case xiiGALShaderResourceType::PushConstants:
+    case xiiGALShaderResourceType::ConstantBuffer:
+      return D3D11ResourceCategory::ConstantBuffer;
+    case xiiGALShaderResourceType::BufferSRV:
+    case xiiGALShaderResourceType::TextureSRV:
+      return D3D11ResourceCategory::SRV;
+    case xiiGALShaderResourceType::BufferUAV:
+    case xiiGALShaderResourceType::TextureUAV:
+      return D3D11ResourceCategory::UAV;
+    case xiiGALShaderResourceType::TextureAndSampler:
+      return D3D11ResourceCategory::SRV | D3D11ResourceCategory::Sampler;
+    default:
+      XII_REPORT_FAILURE("Unknown shader resource type.");
+      return {};
+  }
+}
+
+xiiResult xiiShaderCompilerDXBC::DefineShaderResourceBindings(const xiiGALShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog)
+{
+  xiiHybridBitfield<64> indexInUse[D3D11ResourceCategory::ENUM_COUNT];
+  for (auto it : inout_resourceBinding)
+  {
+    const xiiBitflags<D3D11ResourceCategory> type = D3D11ResourceCategory::MakeFromShaderDescriptorType(it.Value().m_Type);
+    // Convert bit to index. We know that only one bit can be set in D3D11 as TextureAndSampler is not supported.
+    const xiiUInt32 uiIndex = xiiMath::FirstBitLow((xiiUInt32)type.GetValue());
+    const xiiInt16  iSlot   = it.Value().m_uiBindIndex;
+    if (iSlot != xiiInvalidIndex)
+    {
+      indexInUse[uiIndex].SetCount(xiiMath::Max(indexInUse[uiIndex].GetCount(), static_cast<xiiUInt32>(iSlot + 1)));
+      indexInUse[uiIndex].SetBit(iSlot);
+    }
+    // D3D11: Everything is set 0.
+    it.Value().m_uiDescriptorSet = 0;
+  }
+
+  // Create stable order of resources.
+  xiiHybridArray<xiiHashedString, 16> order[D3D11ResourceCategory::ENUM_COUNT];
+
+  for (auto it : data.m_StageData)
+  {
+    const auto& stageData = it.Value();
+
+    if (stageData.m_sShaderSource.IsEmpty())
+      continue;
+
+    for (const auto& res : stageData.m_Resources)
+    {
+      const xiiBitflags<D3D11ResourceCategory> type    = D3D11ResourceCategory::MakeFromShaderDescriptorType(res.m_ResourceDescription.m_Type);
+      const xiiUInt32                          uiIndex = xiiMath::FirstBitLow((xiiUInt32)type.GetValue());
+      if (!order[uiIndex].Contains(res.m_ResourceDescription.m_sName))
+      {
+        order[uiIndex].PushBack(res.m_ResourceDescription.m_sName);
+      }
+    }
+  }
+
+  // XII: We only allow constant buffers to be bound globally, so they must all have unique indices. (We should likely move away from this model for D3D11).
+  // D3D11: UAV are bound globally.
+  // D3D11: SRV, Samplers can be bound by stage, so indices can be re-used. Thus, we don't set an index for any of them and let the compiler choose.
+  for (auto type : xiiBitflags<D3D11ResourceCategory>(D3D11ResourceCategory::UAV | D3D11ResourceCategory::ConstantBuffer))
+  {
+    const xiiUInt32 uiIndex        = xiiMath::FirstBitLow((xiiUInt32)type);
+    xiiUInt32       uiCurrentIndex = 0;
+    // Workaround for this: error X4509: UAV registers live in the same name space as outputs, so they must be bound to at least u1, manual bind to slot u0 failed.
+    if (type == D3D11ResourceCategory::UAV)
+      uiCurrentIndex = 1;
+
+    for (const auto& sName : order[uiIndex])
+    {
+      while (uiCurrentIndex < indexInUse[uiIndex].GetCount() && indexInUse[uiIndex].IsBitSet(uiCurrentIndex))
+      {
+        uiCurrentIndex++;
+      }
+      inout_resourceBinding[sName].m_uiBindIndex = static_cast<xiiInt16>(uiCurrentIndex);
+      indexInUse[uiIndex].SetCount(xiiMath::Max(indexInUse[uiIndex].GetCount(), uiCurrentIndex + 1));
+      indexInUse[uiIndex].SetBit(uiCurrentIndex);
+    }
+  }
+
+  return XII_SUCCESS;
+}
+
+void xiiShaderCompilerDXBC::CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration)
+{
+  XII_ASSERT_DEBUG(binding.m_uiDescriptorSet == 0, "HLSL: error X3721: space is only supported for shader targets 5.1 and higher.");
+
+  const xiiBitflags<D3D11ResourceCategory> type = D3D11ResourceCategory::MakeFromShaderDescriptorType(binding.m_Type);
+  xiiStringView                            sResourcePrefix;
+  if (binding.m_uiBindIndex == xiiInvalidIndex)
+  {
+    // Let the compiler choose an index.
+    out_sDeclaration.SetFormat("{}", sDeclaration);
+    return;
+  }
+
+  switch (type.GetValue())
+  {
+    case D3D11ResourceCategory::Sampler:
+      sResourcePrefix = "s"_xiisv;
+      break;
+    case D3D11ResourceCategory::ConstantBuffer:
+      sResourcePrefix = "b"_xiisv;
+      break;
+    case D3D11ResourceCategory::SRV:
+      sResourcePrefix = "t"_xiisv;
+      break;
+    case D3D11ResourceCategory::UAV:
+      sResourcePrefix = "u"_xiisv;
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  out_sDeclaration.SetFormat("{} : register({}{})", sDeclaration, sResourcePrefix, binding.m_uiBindIndex);
+}
+
 xiiResult xiiShaderCompilerDXBC::CompileDXBCShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
   out_ByteCode.Clear();
@@ -346,11 +540,6 @@ xiiResult xiiShaderCompilerDXBC::CompileDXBCShader(xiiStringView sFile, xiiStrin
     pResultBlob->Release();
   }
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiShaderCompilerDXBC::ModifyShaderSource(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog)
-{
   return XII_SUCCESS;
 }
 
