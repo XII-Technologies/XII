@@ -67,7 +67,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderByteCode, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiGALShaderVariableDescription::CopyDataFormVariant(xiiUInt8* pDestination, xiiVariant* pValue, const xiiGALShaderVariableDescription& description)
+void xiiGALShaderVariableDescription::CopyDataFromVariant(xiiUInt8* pDestination, xiiVariant* pValue, const xiiGALShaderVariableDescription& description)
 {
   /// \todo Perform row-column major conversion on matrices.
 

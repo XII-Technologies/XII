@@ -225,7 +225,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHa
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Members;                                                ///< For a structure, an array of member variables.
 
   /// \brief This copies the data in a variant into into its destination, given its structure in the shader variable description.
-  static void CopyDataFormVariant(xiiUInt8* pDestination, xiiVariant* pValue, const xiiGALShaderVariableDescription& description);
+  static void CopyDataFromVariant(xiiUInt8* pDestination, xiiVariant* pValue, const xiiGALShaderVariableDescription& description);
 };
 
 /// \brief This class wraps shader byte code storage.
