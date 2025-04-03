@@ -431,9 +431,13 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
     }
 
     // Shader Preprocessing
-    for (auto it : processedSources)
+    for (auto it : m_ShaderData.m_ShaderStageSource)
     {
-      xiiStringBuilder& sProcessedSource = it.Value();
+      auto&             stageSource      = it.Value();
+      xiiStringBuilder& sProcessedSource = *processedSources.GetValue(it.Key());
+
+      if (stageSource.IsEmpty())
+        continue;
 
       if (spd.m_StageData.Contains(it.Key()))
       {
