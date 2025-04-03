@@ -103,8 +103,6 @@ namespace
 
     return false;
   }
-
-  static xiiHashTable<xiiUInt64, xiiUntrackedString> s_PermutationPaths;
 } // namespace
 
 //////////////////////////////////////////////////////////////////////////
@@ -256,7 +254,7 @@ xiiArrayPtr<const xiiGALShaderParser::EnumValue> xiiGALShaderManager::GetPermuta
   return {};
 }
 
-xiiUInt32 xiiGALShaderManager::FilterPermutationVars(xiiArrayPtr<const xiiHashedString> usedVariables, const xiiHashTable<xiiHashedString, xiiHashedString>& permutationVariables, xiiDynamicArray<xiiGALPermutationVariable>& out_FilteredPermutationVariables)
+xiiUInt32 xiiGALShaderManager::FilterPermutationVariables(xiiArrayPtr<const xiiHashedString> usedVariables, const xiiHashTable<xiiHashedString, xiiHashedString>& permutationVariables, xiiDynamicArray<xiiGALPermutationVariable>& out_FilteredPermutationVariables)
 {
   for (auto& sName : usedVariables)
   {

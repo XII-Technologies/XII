@@ -219,7 +219,7 @@ struct ShaderPermutationResourceLoadData
   xiiMemoryStreamReader            m_Reader;
 };
 
-xiiResult xiiShaderPermutationResourceLoader::RunCompiler(const xiiResource* pResource, xiiShaderPermutationBinary& BinaryInfo, bool bForce)
+xiiResult xiiShaderPermutationResourceLoader::RunCompiler(const xiiResource* pResource, xiiGALShaderPermutationBinary& BinaryInfo, bool bForce)
 {
   if (xiiShaderManager::IsRuntimeCompilationEnabled())
   {

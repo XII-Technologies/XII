@@ -5,8 +5,8 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/Time/Timestamp.h>
-#include <GraphicsCore/Shader/ShaderPermutationBinary.h>
-#include <GraphicsCore/ShaderCompiler/PermutationGenerator.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
+#include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
 
 using xiiShaderPermutationResourceHandle = xiiTypedResourceHandle<class xiiShaderPermutationResource>;
 using xiiShaderStateResourceHandle       = xiiTypedResourceHandle<class xiiShaderStateResource>;
@@ -36,7 +36,7 @@ public:
 
   bool IsShaderValid() const { return m_bShaderPermutationValid; }
 
-  xiiArrayPtr<const xiiPermutationVar> GetPermutationVars() const { return m_PermutationVars; }
+  xiiArrayPtr<const xiiGALPermutationVariable> GetPermutationVars() const { return m_PermutationVariables; }
 
 private:
   virtual xiiResourceLoadDesc    UnloadData(Unload WhatToUnload) override;
@@ -45,7 +45,7 @@ private:
   virtual xiiResourceTypeLoader* GetDefaultResourceTypeLoader() const override;
 
 private:
-  friend class xiiShaderManager;
+  friend class xiiGALShaderPermutationUtilities;
 
   xiiBitflags<xiiGALShaderType>            m_ActiveShaderStages;
   xiiSharedPtr<const xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderType::ENUM_COUNT];
@@ -58,7 +58,7 @@ private:
   xiiGALDepthStencilStateHandle m_hDepthStencilState;
   xiiGALRasterizerStateHandle   m_hRasterizerState;
 
-  xiiHybridArray<xiiPermutationVar, 16> m_PermutationVars;
+  xiiHybridArray<xiiGALPermutationVariable, 16> m_PermutationVariables;
 };
 
 
@@ -71,5 +71,5 @@ public:
   virtual bool IsResourceOutdated(const xiiResource* pResource) const override;
 
 private:
-  xiiResult RunCompiler(const xiiResource* pResource, xiiShaderPermutationBinary& BinaryInfo, bool bForce);
+  xiiResult RunCompiler(const xiiResource* pResource, xiiGALShaderPermutationBinary& BinaryInfo, bool bForce);
 };

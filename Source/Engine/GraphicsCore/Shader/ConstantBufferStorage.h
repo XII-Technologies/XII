@@ -2,7 +2,6 @@
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 class XII_GRAPHICSCORE_DLL xiiConstantBufferStorageBase
 {
