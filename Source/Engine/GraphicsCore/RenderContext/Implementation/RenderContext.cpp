@@ -22,7 +22,9 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
@@ -305,7 +307,7 @@ void xiiRenderContext::SetShaderPermutationVariable(xiiStringView sName, const x
 
   xiiHashedString sNameHash;
   xiiHashedString sValue;
-  if (xiiShaderManager::IsPermutationValueAllowed(sName, sHashedName, sTempValue, sNameHash, sValue))
+  if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sHashedName, sTempValue, sNameHash, sValue))
   {
     SetShaderPermutationVariableInternal(sNameHash, sValue);
   }
@@ -313,7 +315,7 @@ void xiiRenderContext::SetShaderPermutationVariable(xiiStringView sName, const x
 
 void xiiRenderContext::SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue)
 {
-  if (xiiShaderManager::IsPermutationValueAllowed(sName, sValue))
+  if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sValue))
   {
     SetShaderPermutationVariableInternal(sName, sValue);
   }
@@ -1117,7 +1119,7 @@ void xiiRenderContext::LoadBuiltinShader(xiiShaderUtilities::xiiBuiltinShaderTyp
   else
     permutationVariables.Insert(sVSRTAI, sFalse);
 
-  xiiShaderPermutationResourceHandle hActiveShaderPermutation = xiiShaderManager::PreloadSinglePermutation(hActiveShader, permutationVariables, false);
+  xiiShaderPermutationResourceHandle hActiveShaderPermutation = xiiGALShaderPermutationUtilities::PreloadSinglePermutation(hActiveShader, permutationVariables, false);
 
   XII_ASSERT_DEV(hActiveShaderPermutation.IsValid(), "Could not load builtin shader permutation!");
 
@@ -1141,7 +1143,7 @@ void xiiRenderContext::LoadBuiltinShader(xiiShaderUtilities::xiiBuiltinShaderTyp
 // static
 void xiiRenderContext::OnEngineShutdown()
 {
-  xiiShaderStageBinary::OnEngineShutdown();
+  xiiGALShaderStageBinary::OnEngineShutdown();
 
   for (auto rc : s_Instances)
     XII_DEFAULT_DELETE(rc);
@@ -1580,7 +1582,7 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
   if (!m_hActiveShader.IsValid())
     return nullptr;
 
-  m_hActiveShaderPermutation = xiiShaderManager::PreloadSinglePermutation(m_hActiveShader, m_PermutationVariables, m_bAllowAsyncShaderLoading);
+  m_hActiveShaderPermutation = xiiGALShaderPermutationUtilities::PreloadSinglePermutation(m_hActiveShader, m_PermutationVariables, m_bAllowAsyncShaderLoading);
 
   if (!m_hActiveShaderPermutation.IsValid())
     return nullptr;

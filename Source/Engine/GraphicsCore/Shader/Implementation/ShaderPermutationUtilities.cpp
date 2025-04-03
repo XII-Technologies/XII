@@ -21,7 +21,7 @@ void xiiGALShaderPermutationUtilities::PreloadPermutations(xiiShaderResourceHand
 
   generator.RemoveUnusedPermutations(pShader->GetUsedPermutationVars());
 
-  xiiHybridArray<xiiPermutationVar, 16> usedPermVars;
+  xiiHybridArray<xiiGALPermutationVariable, 16> usedPermVars;
 
   const xiiUInt32 uiPermutationCount = generator.GetPermutationCount();
   for (xiiUInt32 uiPermutation = 0; uiPermutation < uiPermutationCount; ++uiPermutation)

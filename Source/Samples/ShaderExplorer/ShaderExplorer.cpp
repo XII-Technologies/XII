@@ -27,7 +27,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
 // Define this to force usage of fileserve functionality.
@@ -462,7 +462,7 @@ public:
       xiiStringView sShaderCompiler  = {};
       xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
 
-      xiiShaderManager::Configure(sShaderModel, true);
+      xiiGALShaderManager::Configure(sShaderModel, true);
       XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", sShaderCompiler);
 
       m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);

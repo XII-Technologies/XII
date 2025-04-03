@@ -5,8 +5,8 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/Time/Timestamp.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 #include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 
 using xiiShaderPermutationResourceHandle = xiiTypedResourceHandle<class xiiShaderPermutationResource>;
 using xiiShaderStateResourceHandle       = xiiTypedResourceHandle<class xiiShaderStateResource>;
@@ -25,8 +25,8 @@ public:
   xiiShaderPermutationResource();
 
   xiiBitflags<xiiGALShaderType> GetActiveShaderStages() const { return m_ActiveShaderStages; };
-  xiiGALShaderHandle            GetGALShader(xiiGALShaderType::Enum type) const { return m_hShaders[xiiGALShaderType::GetStageIndex(type)]; }
-  const xiiGALShaderByteCode*   GetShaderByteCode(xiiGALShaderType::Enum type) const { return m_ByteCodes[xiiGALShaderType::GetStageIndex(type)]; }
+  xiiGALShaderHandle            GetGALShader(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_hShader; }
+  const xiiGALShaderByteCode*   GetShaderByteCode(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_pByteCode; }
 
   xiiGALPipelineResourceSignatureHandle GetPipelineResourceSignature() const { return m_hPipelineResourceSignature; }
 
@@ -47,9 +47,14 @@ private:
 private:
   friend class xiiGALShaderPermutationUtilities;
 
-  xiiBitflags<xiiGALShaderType>            m_ActiveShaderStages;
-  xiiSharedPtr<const xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderType::ENUM_COUNT];
-  xiiGALShaderHandle                       m_hShaders[xiiGALShaderType::ENUM_COUNT];
+  struct ShaderData
+  {
+    xiiGALShaderHandle                       m_hShader;
+    xiiSharedPtr<const xiiGALShaderByteCode> m_pByteCode;
+  };
+
+  xiiBitflags<xiiGALShaderType>              m_ActiveShaderStages;
+  xiiMap<xiiGALShaderType::Enum, ShaderData> m_ShaderData;
 
   bool                                  m_bShaderPermutationValid;
   xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;

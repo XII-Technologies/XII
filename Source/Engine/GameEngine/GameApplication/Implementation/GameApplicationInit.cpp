@@ -22,7 +22,7 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
@@ -347,7 +347,7 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
   xiiStringView sShaderCompiler  = {};
   xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
 
-  xiiShaderManager::Configure(sShaderModel, true);
+  xiiGALShaderManager::Configure(sShaderModel, true);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();

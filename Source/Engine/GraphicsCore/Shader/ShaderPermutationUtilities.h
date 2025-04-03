@@ -6,6 +6,7 @@
 
 class XII_GRAPHICSCORE_DLL xiiGALShaderPermutationUtilities
 {
+public:
   static void                               PreloadPermutations(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, xiiTime shouldBeAvailableIn);
   static xiiShaderPermutationResourceHandle PreloadSinglePermutation(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, bool bAllowFallback);
 

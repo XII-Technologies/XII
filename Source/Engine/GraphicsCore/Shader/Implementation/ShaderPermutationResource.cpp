@@ -3,10 +3,11 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
-#include <GraphicsCore/ShaderCompiler/ShaderCompiler.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Shader/Shader.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 
 // clang-format off
@@ -22,11 +23,6 @@ xiiShaderPermutationResource::xiiShaderPermutationResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
 {
   m_bShaderPermutationValid = false;
-
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
-  {
-    m_ByteCodes[stage] = nullptr;
-  }
 }
 
 xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload)
@@ -35,12 +31,14 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
 
   auto pDevice = xiiGALDevice::GetDefaultDevice();
 
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hShaders); ++i)
+  for (auto it : m_ShaderData)
   {
-    if (!m_hShaders[i].IsInvalidated())
+    auto& shaderData = it.Value();
+
+    if (!shaderData.m_hShader.IsInvalidated())
     {
-      pDevice->DestroyShader(m_hShaders[i]);
-      m_hShaders[i].Invalidate();
+      pDevice->DestroyShader(shaderData.m_hShader);
+      shaderData.m_hShader.Invalidate();
     }
   }
 
@@ -90,16 +88,16 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
   if (Stream == nullptr)
   {
-    xiiLog::Error("Shader Permutation '{0}': Data is not available", GetResourceID());
+    xiiLog::Error("Shader Permutation '{0}': Data is not available.", GetResourceID());
     return res;
   }
 
-  xiiShaderPermutationBinary PermutationBinary;
+  xiiGALShaderPermutationBinary shaderPermutationBinary;
 
   bool bOldVersion = false;
-  if (PermutationBinary.Read(*Stream, bOldVersion).Failed())
+  if (shaderPermutationBinary.Read(*Stream, bOldVersion).Failed())
   {
-    xiiLog::Error("Shader Permutation '{0}': Could not read shader permutation binary", GetResourceID());
+    xiiLog::Error("Shader Permutation '{0}': Could not read shader permutation binary.", GetResourceID());
     return res;
   }
 
@@ -107,55 +105,62 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
   // get the shader render state object
   {
-    m_hBlendState        = pDevice->CreateBlendState(PermutationBinary.m_StateDescriptor.m_BlendDesc);
-    m_hDepthStencilState = pDevice->CreateDepthStencilState(PermutationBinary.m_StateDescriptor.m_DepthStencilDesc);
-    m_hRasterizerState   = pDevice->CreateRasterizerState(PermutationBinary.m_StateDescriptor.m_RasterizerDesc);
+    m_hBlendState        = pDevice->CreateBlendState(shaderPermutationBinary.m_StateDescriptor.m_BlendDescription);
+    m_hDepthStencilState = pDevice->CreateDepthStencilState(shaderPermutationBinary.m_StateDescriptor.m_DepthStencilDescription);
+    m_hRasterizerState   = pDevice->CreateRasterizerState(shaderPermutationBinary.m_StateDescriptor.m_RasterizerDescription);
   }
 
   xiiGALPipelineResourceSignatureCreationDescription resourceSignatureDescription;
 
   // iterate over all shader stages, add them to the descriptor
-  for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
+  for (auto it : shaderPermutationBinary.m_ShaderStageHashes)
   {
-    const xiiUInt32 uiStageHash = PermutationBinary.m_uiShaderStageHashes[stage];
+    const xiiUInt32 uiStageHash = it.Value();
 
     if (uiStageHash == 0) // not used
       continue;
 
-    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash, xiiShaderManager::GetActivePlatform());
+    xiiGALShaderStageBinary* pStageBinary = xiiGALShaderStageBinary::LoadStageBinary(it.Key(), uiStageHash, xiiGALShaderManager::GetActivePlatform());
 
-    if (pStageBin == nullptr)
+    if (pStageBinary == nullptr)
     {
-      xiiLog::Error("Shader Permutation '{0}': Stage '{1}' could not be loaded", GetResourceID(), xiiGALShaderType::Names[stage]);
+      xiiLog::Error("Shader Permutation '{0}': Stage '{1}' could not be loaded.", GetResourceID(), xiiGALShaderType::Names[it.Key()]);
       return res;
     }
 
-    // store not only the hash but also the pointer to the stage binary
-    // since it contains other useful information (resource bindings), that we need for shader binding
-    m_ByteCodes[stage] = pStageBin->GetByteCode();
+    // Store not only the hash but also the pointer to the stage binary.
+    // It contains other useful information (resource bindings), that we need for shader binding.
+    ShaderData shaderData;
+    if (m_ShaderData.TryGetValue(it.Key(), shaderData))
+    {
+      shaderData.m_pByteCode = pStageBinary->GetByteCode();
+    }
+    else
+    {
+      m_ShaderData.Insert(it.Key(), ShaderData{.m_pByteCode = pStageBinary->GetByteCode()});
+    }
 
-    XII_ASSERT_DEV(pStageBin->m_pGALByteCode->m_ShaderStage == xiiGALShaderType::GetStageFlag(stage), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderType::Names[stage], xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)pStageBin->m_pGALByteCode->m_ShaderStage.GetValue())]);
+    XII_ASSERT_DEV(pStageBinary->GetByteCode()->m_ShaderStage == it.Key(), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderType::Names[it.Key()], xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)pStageBinary->GetByteCode()->m_ShaderStage.GetValue())]);
 
-    if (pStageBin->m_pGALByteCode->IsValid())
+    if (pStageBinary->GetByteCode()->IsValid())
     {
       xiiGALShaderCreationDescription shaderDescription;
-      shaderDescription.m_ShaderType = xiiGALShaderType::GetStageFlag(stage);
-      shaderDescription.m_ByteCode   = pStageBin->m_pGALByteCode;
+      shaderDescription.m_ShaderType = it.Key();
+      shaderDescription.m_ByteCode   = const_cast<xiiGALShaderByteCode*>(pStageBinary->GetByteCode().Borrow()); //TODO: Improve this and avoid const-cast.
 
-      m_hShaders[stage] = pDevice->CreateShader(shaderDescription);
-
-      if (m_hShaders[stage].IsInvalidated())
+      xiiGALShaderHandle hShader = m_ShaderData.GetValue(it.Key())->m_hShader;
+      if (hShader.IsInvalidated())
       {
-        xiiLog::Error("Shader Permutation '{0}': Shader program creation for {1} shader failed.", GetResourceID(), xiiGALShaderType::Names[stage]);
+        xiiLog::Error("Shader Permutation '{0}': Shader program creation for {1} shader failed.", GetResourceID(), xiiGALShaderType::Names[it.Key()]);
         return res;
       }
-      pDevice->GetShader(m_hShaders[stage])->SetDebugName(GetResourceID());
+      pDevice->GetShader(hShader)->SetDebugName(GetResourceID());
 
-      m_ActiveShaderStages |= xiiGALShaderType::GetStageFlag(stage);
+      m_ActiveShaderStages |= it.Key();
 
-      uiGPUMem += pStageBin->m_pGALByteCode->m_ByteCode.GetCount();
+      uiGPUMem += pStageBinary->GetByteCode()->m_ByteCode.GetCount();
 
-      for (const auto& resource : pStageBin->m_pGALByteCode->m_ShaderResourceBindings)
+      for (const auto& resource : pStageBinary->GetByteCode()->m_ShaderResourceBindings)
       {
         auto& resourceSignature = resourceSignatureDescription.m_Resources.ExpandAndGetRef();
 
@@ -178,7 +183,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     return res;
   }
 
-  m_PermutationVars = PermutationBinary.m_PermutationVars;
+  m_PermutationVariables = shaderPermutationBinary.m_PermutationVariables;
 
   m_bShaderPermutationValid = true;
 
@@ -221,11 +226,11 @@ struct ShaderPermutationResourceLoadData
 
 xiiResult xiiShaderPermutationResourceLoader::RunCompiler(const xiiResource* pResource, xiiGALShaderPermutationBinary& BinaryInfo, bool bForce)
 {
-  if (xiiShaderManager::IsRuntimeCompilationEnabled())
+  if (xiiGALShaderManager::IsRuntimeCompilationEnabled())
   {
     if (!bForce)
     {
-      // check whether any dependent file has changed, and trigger a recompilation if necessary
+      // check whether any dependent file has changed, and trigger a recompilation if necessary.
       if (BinaryInfo.m_DependencyFile.HasAnyFileChanged())
       {
         bForce = true;
@@ -238,21 +243,21 @@ xiiResult xiiShaderPermutationResourceLoader::RunCompiler(const xiiResource* pRe
     xiiStringBuilder sPermutationFile = pResource->GetResourceID();
 
     sPermutationFile.ChangeFileExtension("");
-    sPermutationFile.Shrink(xiiShaderManager::GetCacheDirectory().GetCharacterCount() + xiiShaderManager::GetActivePlatform().GetCharacterCount() + 2, 1);
+    sPermutationFile.Shrink(xiiGALShaderManager::GetCacheDirectory().GetCharacterCount() + xiiGALShaderManager::GetActivePlatform().GetCharacterCount() + 2, 1);
 
     sPermutationFile.Shrink(0, 9); // remove underscore and the hash at the end
     sPermutationFile.Append(".xiiShader");
 
-    xiiArrayPtr<const xiiPermutationVar> permutationVars = static_cast<const xiiShaderPermutationResource*>(pResource)->GetPermutationVars();
+    xiiArrayPtr<const xiiGALPermutationVariable> permutationVariables = static_cast<const xiiShaderPermutationResource*>(pResource)->GetPermutationVars();
 
-    xiiShaderCompiler sc;
-    return sc.CompileShaderPermutationForPlatforms(sPermutationFile, permutationVars, xiiLog::GetThreadLocalLogSystem(), xiiShaderManager::GetActivePlatform());
+    xiiGALShaderCompiler sc;
+    return sc.CompileShaderPermutationForPlatforms(sPermutationFile, permutationVariables, xiiLog::GetThreadLocalLogSystem(), xiiGALShaderManager::GetActivePlatform());
   }
   else
   {
     if (bForce)
     {
-      xiiLog::Error("Shader was forced to be compiled, but runtime shader compilation is not available");
+      xiiLog::Error("Shader was forced to be compiled, but runtime shader compilation is not available.");
       return XII_FAILURE;
     }
   }
@@ -291,7 +296,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
 {
   xiiResourceLoadData res;
 
-  xiiShaderPermutationBinary permutationBinary;
+  xiiGALShaderPermutationBinary permutationBinary;
 
   bool bNeedsCompilation = true;
   bool bOldVersion       = false;
@@ -369,15 +374,15 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
     // write the permutation file info back to the output stream, so that the resource can read it as well
     permutationBinary.Write(w).IgnoreResult();
 
-    for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
+    for (auto it : permutationBinary.m_ShaderStageHashes)
     {
-      const xiiUInt32 uiStageHash = permutationBinary.m_uiShaderStageHashes[stage];
+      const xiiUInt32 uiStageHash = it.Value();
 
       if (uiStageHash == 0) // not used
         continue;
 
       // this is where the preloading happens
-      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash, xiiShaderManager::GetActivePlatform());
+      xiiGALShaderStageBinary::LoadStageBinary(it.Key(), uiStageHash, xiiGALShaderManager::GetActivePlatform());
     }
   }
 

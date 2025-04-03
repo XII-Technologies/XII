@@ -15,6 +15,9 @@ public:
 
   xiiSharedPtr<const xiiGALShaderByteCode> GetByteCode() const;
 
+  static xiiGALShaderStageBinary* LoadStageBinary(xiiEnum<xiiGALShaderType> stage, xiiUInt32 uiHash, xiiStringView sPlatform);
+  static void OnEngineShutdown();
+
 private:
   friend class xiiGALShaderCompiler;
 
@@ -29,9 +32,5 @@ private:
   xiiSharedPtr<xiiGALShaderByteCode> m_pGALByteCode;
 
 private: // statics
-  static xiiGALShaderStageBinary* LoadStageBinary(xiiEnum<xiiGALShaderType> stage, xiiUInt32 uiHash, xiiStringView sPlatform);
-
-  static void OnEngineShutdown();
-
   static xiiMap<xiiUInt32, xiiGALShaderStageBinary> s_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
 };

@@ -9,7 +9,7 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureLoader.h>
@@ -869,7 +869,7 @@ void xiiMaterialResource::AddPermutationVar(xiiStringView sName, xiiStringView s
   xiiHashedString sValueHashed;
   sValueHashed.Assign(sValue);
 
-  if (xiiShaderManager::IsPermutationValueAllowed(sNameHashed, sValueHashed))
+  if (xiiGALShaderManager::IsPermutationValueAllowed(sNameHashed, sValueHashed))
   {
     xiiPermutationVar& pv = m_mDesc.m_PermutationVars.ExpandAndGetRef();
     pv.m_sName            = sNameHashed;
@@ -928,7 +928,7 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
         xiiVariant* pValue = nullptr;
         pCachedValues->m_Parameters.TryGetValue(member.m_sName, pValue);
 
-        xiiGALShaderVariableDescription::CopyDataFormVariant(pDestination, pValue, member);
+        xiiGALShaderVariableDescription::CopyDataFromVariant(pDestination, pValue, member);
       }
     }
   }
