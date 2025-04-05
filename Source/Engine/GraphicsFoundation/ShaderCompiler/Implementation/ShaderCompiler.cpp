@@ -289,10 +289,6 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
       m_ShaderData.m_ShaderStageSource[(xiiGALShaderType::Enum)stage] = sTemp;
     }
-    else
-    {
-      m_ShaderData.m_ShaderStageSource[(xiiGALShaderType::Enum)stage].Clear();
-    }
   }
 
   xiiStringBuilder tmp = sFile;
