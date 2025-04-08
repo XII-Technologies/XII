@@ -97,7 +97,7 @@ void xiiSimpleAnimationComponent::Update()
     return;
 
   xiiTime            tMinStep = xiiTime::MakeFromSeconds(0);
-  xiiVisibilityState visType  = GetOwner()->GetVisibilityState();
+  xiiVisibilityState::Enum visType  = GetOwner()->GetVisibilityState();
 
   if (visType != xiiVisibilityState::Direct)
   {

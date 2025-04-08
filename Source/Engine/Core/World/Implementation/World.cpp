@@ -45,8 +45,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiWorld, xiiNoBase, 1, xiiRTTINoAllocator)
   XII_BEGIN_FUNCTIONS
   {
     XII_SCRIPT_FUNCTION_PROPERTY(DeleteObjectDelayed, In, "GameObject", In, "DeleteEmptyParents")->AddAttributes(new xiiFunctionArgumentAttributes(1, new xiiDefaultValueAttribute(true))),
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_TryGetObjectWithGlobalKey, In, "GlobalKey")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetClock)->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_TryGetObjectWithGlobalKey, In, "GlobalKey")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetClock)->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SearchForObject, In, "SearchPath", In, "ReferenceObject")->AddFlags(xiiPropertyFlags::PureFunction),
   }
   XII_END_FUNCTIONS;
 }
@@ -352,13 +353,34 @@ bool xiiWorld::IsComponentInitBatchCompleted(const xiiComponentInitBatchHandle& 
   {
     if (pInitBatch->m_ComponentsToInitialize.IsEmpty())
     {
-      double fStartSimCompletion = pInitBatch->m_ComponentsToStartSimulation.IsEmpty() ? 1.0 : (double)pInitBatch->m_uiNextComponentToStartSimulation / pInitBatch->m_ComponentsToStartSimulation.GetCount();
-      *pCompletionFactor         = fStartSimCompletion * 0.5 + 0.5;
+      if (m_Data.m_bSimulateWorld)
+      {
+        double fStartSimCompletion = pInitBatch->m_ComponentsToStartSimulation.IsEmpty() ? 1.0 : (double)pInitBatch->m_uiNextComponentToStartSimulation / pInitBatch->m_ComponentsToStartSimulation.GetCount();
+        *pCompletionFactor         = fStartSimCompletion * 0.5 + 0.5;
+      }
+      else
+      {
+        *pCompletionFactor = 1.0;
+
+        XII_ASSERT_DEV(m_Data.m_pDefaultInitBatch != pInitBatch, "");
+
+        m_Data.m_pDefaultInitBatch->m_ComponentsToStartSimulation.PushBackRange(pInitBatch->m_ComponentsToStartSimulation);
+        pInitBatch->m_ComponentsToStartSimulation.Clear();
+        return true;
+      }
     }
     else
     {
       double fInitCompletion = pInitBatch->m_ComponentsToInitialize.IsEmpty() ? 1.0 : (double)pInitBatch->m_uiNextComponentToInitialize / pInitBatch->m_ComponentsToInitialize.GetCount();
-      *pCompletionFactor     = fInitCompletion * 0.5;
+
+      if (m_Data.m_bSimulateWorld)
+      {
+        *pCompletionFactor = fInitCompletion * 0.5;
+      }
+      else
+      {
+        *pCompletionFactor = fInitCompletion;
+      }
     }
   }
 
@@ -498,7 +520,7 @@ void xiiWorld::Update()
   {
     XII_PROFILE_SCOPE("Pre-Async Phase");
     ProcessQueuedMessages(xiiObjectMsgQueueType::NextFrame);
-    UpdateSynchronous(m_Data.m_UpdateFunctions[xiiComponentManagerBase::UpdateFunctionDesc::Phase::PreAsync]);
+    UpdateSynchronous(m_Data.m_UpdateFunctions[xiiWorldUpdatePhase::PreAsync]);
   }
 
   // Asynchronous Phase.
@@ -518,7 +540,7 @@ void xiiWorld::Update()
   {
     XII_PROFILE_SCOPE("Post-Async Phase");
     ProcessQueuedMessages(xiiObjectMsgQueueType::PostAsync);
-    UpdateSynchronous(m_Data.m_UpdateFunctions[xiiComponentManagerBase::UpdateFunctionDesc::Phase::PostAsync]);
+    UpdateSynchronous(m_Data.m_UpdateFunctions[xiiWorldUpdatePhase::PostAsync]);
   }
 
   // Delete dead objects and update the object hierarchy.
@@ -538,7 +560,7 @@ void xiiWorld::Update()
   {
     XII_PROFILE_SCOPE("Post-Transform Phase");
     ProcessQueuedMessages(xiiObjectMsgQueueType::PostTransform);
-    UpdateSynchronous(m_Data.m_UpdateFunctions[xiiComponentManagerBase::UpdateFunctionDesc::Phase::PostTransform]);
+    UpdateSynchronous(m_Data.m_UpdateFunctions[xiiWorldUpdatePhase::PostTransform]);
   }
 
   // Process again so new component can receive render messages, otherwise we introduce a frame delay.
@@ -576,7 +598,15 @@ xiiWorldModule* xiiWorld::GetOrCreateModule(const xiiRTTI* pRtti)
     pModule->Initialize();
 
     m_Data.m_Modules[uiTypeId] = pModule;
-    m_Data.m_ModulesToStartSimulation.PushBack(pModule);
+
+    if (m_Data.m_bSimulateWorld)
+    {
+      pModule->OnSimulationStarted();
+    }
+    else
+    {
+      m_Data.m_ModulesToStartSimulation.PushBack(pModule);
+    }
   }
 
   return pModule;
@@ -639,7 +669,7 @@ xiiClock* xiiWorld::Reflection_GetClock()
   return &m_Data.m_Clock;
 }
 
-void xiiWorld::SetParent(xiiGameObject* pObject, xiiGameObject* pNewParent, xiiGameObject::TransformPreservation preserve)
+void xiiWorld::SetParent(xiiGameObject* pObject, xiiGameObject* pNewParent, xiiTransformPreservation::Enum preserve)
 {
   XII_ASSERT_DEV(pObject != pNewParent, "Object can't be its own parent!");
   XII_ASSERT_DEV(pNewParent == nullptr || pObject->IsDynamic() || pNewParent->IsStatic(), "Can't attach a static object to a dynamic parent!");
@@ -1010,8 +1040,8 @@ void xiiWorld::RegisterUpdateFunction(const xiiComponentManagerBase::UpdateFunct
 {
   CheckForWriteAccess();
 
-  XII_ASSERT_DEV(desc.m_Phase == xiiComponentManagerBase::UpdateFunctionDesc::Phase::Async || desc.m_uiGranularity == 0, "Granularity must be 0 for synchronous update functions");
-  XII_ASSERT_DEV(desc.m_Phase != xiiComponentManagerBase::UpdateFunctionDesc::Phase::Async || desc.m_DependsOn.GetCount() == 0, "Asynchronous update functions must not have dependencies");
+  XII_ASSERT_DEV(desc.m_Phase == xiiWorldUpdatePhase::Async || desc.m_uiGranularity == 0, "Granularity must be 0 for synchronous update functions");
+  XII_ASSERT_DEV(desc.m_Phase != xiiWorldUpdatePhase::Async || desc.m_DependsOn.GetCount() == 0, "Asynchronous update functions must not have dependencies");
   XII_ASSERT_DEV(desc.m_Function.IsComparable(), "Delegates with captures are not allowed as xiiWorld update functions.");
 
   m_Data.m_UpdateFunctionsToRegister.PushBack(desc);
@@ -1036,7 +1066,7 @@ void xiiWorld::DeregisterUpdateFunctions(xiiWorldModule* pModule)
 {
   CheckForWriteAccess();
 
-  for (xiiUInt32 phase = xiiWorldModule::UpdateFunctionDesc::Phase::PreAsync; phase < xiiWorldModule::UpdateFunctionDesc::Phase::COUNT; ++phase)
+  for (xiiUInt32 phase = xiiWorldUpdatePhase::PreAsync; phase < xiiWorldUpdatePhase::COUNT; ++phase)
   {
     xiiDynamicArrayBase<xiiInternal::WorldData::RegisteredUpdateFunction>& updateFunctions = m_Data.m_UpdateFunctions[phase];
 
@@ -1084,7 +1114,7 @@ void xiiWorld::UpdateAsynchronous()
 {
   xiiTaskGroupID taskGroupId = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
 
-  xiiDynamicArrayBase<xiiInternal::WorldData::RegisteredUpdateFunction>& updateFunctions = m_Data.m_UpdateFunctions[xiiComponentManagerBase::UpdateFunctionDesc::Phase::Async];
+  xiiDynamicArrayBase<xiiInternal::WorldData::RegisteredUpdateFunction>& updateFunctions = m_Data.m_UpdateFunctions[xiiWorldUpdatePhase::Async];
 
   xiiUInt32 uiCurrentTaskIndex = 0;
 
@@ -1403,7 +1433,7 @@ void xiiWorld::DeleteDeadComponents()
   }
 }
 
-void xiiWorld::PatchHierarchyData(xiiGameObject* pObject, xiiGameObject::TransformPreservation preserve)
+void xiiWorld::PatchHierarchyData(xiiGameObject* pObject, xiiTransformPreservation::Enum preserve)
 {
   xiiGameObject* pParent = pObject->GetParent();
 
@@ -1411,7 +1441,7 @@ void xiiWorld::PatchHierarchyData(xiiGameObject* pObject, xiiGameObject::Transfo
 
   pObject->m_pTransformationData->m_pParentData = pParent != nullptr ? pParent->m_pTransformationData : nullptr;
 
-  if (preserve == xiiGameObject::TransformPreservation::PreserveGlobal)
+  if (preserve == xiiTransformPreservation::Enum::PreserveGlobal)
   {
     // SetGlobalTransform will internally trigger bounds update for static objects
     pObject->SetGlobalTransform(pObject->m_pTransformationData->m_globalTransform);
@@ -1611,6 +1641,14 @@ xiiGameObject* xiiWorld::SearchForObject(xiiStringView sSearchPath, xiiGameObjec
   }
 
   return pReferenceObject->SearchForChildByNameSequence(sSearchPath, pExpectedComponent);
+}
+
+
+const xiiGameObject* xiiWorld::SearchForObject(xiiStringView sSearchPath, const xiiGameObject* pReferenceObject /*= nullptr*/, const xiiRTTI* pExpectedComponent /*= nullptr*/) const
+{
+  xiiWorld*      pThis = const_cast<xiiWorld*>(this);
+  xiiGameObject* pRef  = const_cast<xiiGameObject*>(pReferenceObject);
+  return pThis->SearchForObject(sSearchPath, pRef, pExpectedComponent);
 }
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_World);

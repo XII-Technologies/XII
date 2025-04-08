@@ -104,7 +104,7 @@ void xiiLineToComponentManager::Initialize()
 {
   auto desc                        = xiiWorldModule::UpdateFunctionDesc(xiiWorldModule::UpdateFunction(&xiiLineToComponentManager::Update, this), "xiiLineToComponentManager::Update");
   desc.m_bOnlyUpdateWhenSimulating = false;
-  desc.m_Phase                     = xiiWorldModule::UpdateFunctionDesc::Phase::PostTransform;
+  desc.m_Phase                     = xiiWorldUpdatePhase::PostTransform;
 
   this->RegisterUpdateFunction(desc);
 }

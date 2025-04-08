@@ -104,6 +104,11 @@ XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKey(xiiStringView sKey)
 
 XII_ALWAYS_INLINE xiiStringView xiiGameObject::GetName() const
 {
+  return m_sName.GetView();
+}
+
+XII_ALWAYS_INLINE const xiiHashedString& xiiGameObject::GetNameHashed() const
+{
   return m_sName;
 }
 
@@ -132,7 +137,7 @@ XII_ALWAYS_INLINE void xiiGameObject::DisableParentChangesNotifications()
   m_Flags.Remove(xiiObjectFlags::ParentChangesNotifications);
 }
 
-XII_ALWAYS_INLINE void xiiGameObject::AddChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiGameObject::TransformPreservation preserve)
+XII_ALWAYS_INLINE void xiiGameObject::AddChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiTransformPreservation::Enum preserve)
 {
   for (xiiUInt32 i = 0; i < children.GetCount(); ++i)
   {
@@ -140,7 +145,7 @@ XII_ALWAYS_INLINE void xiiGameObject::AddChildren(const xiiArrayPtr<const xiiGam
   }
 }
 
-XII_ALWAYS_INLINE void xiiGameObject::DetachChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiGameObject::TransformPreservation preserve)
+XII_ALWAYS_INLINE void xiiGameObject::DetachChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiTransformPreservation::Enum preserve)
 {
   for (xiiUInt32 i = 0; i < children.GetCount(); ++i)
   {

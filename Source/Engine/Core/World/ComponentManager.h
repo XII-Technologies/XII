@@ -137,7 +137,7 @@ struct xiiComponentUpdateType
 };
 
 /// \brief Simple component manager implementation that calls an update method on all components every frame.
-template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType = xiiBlockStorageType::FreeList>
+template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType = xiiBlockStorageType::FreeList, xiiWorldUpdatePhase::Enum UpdatePhase = xiiWorldUpdatePhase::PreAsync>
 class xiiComponentManagerSimple final : public xiiComponentManager<ComponentType, StorageType>
 {
 public:

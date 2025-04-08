@@ -41,9 +41,9 @@ private:
   void FindObjectsInSphere(const xiiBoundingSphere& sphere, const QueryParams& queryParams, QueryCallback callback) const override;
   void FindObjectsInBox(const xiiBoundingBox& box, const QueryParams& queryParams, QueryCallback callback) const override;
 
-  void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_Objects, xiiSpatialSystem::IsOccludedFunc IsOccluded, xiiVisibilityState visType) const override;
+  void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_Objects, xiiSpatialSystem::IsOccludedFunc IsOccluded, xiiVisibilityState::Enum visType) const override;
 
-  xiiVisibilityState GetVisibilityState(const xiiSpatialDataHandle& hData, xiiUInt32 uiNumFramesBeforeInvisible) const override;
+  xiiVisibilityState::Enum GetVisibilityState(const xiiSpatialDataHandle& hData, xiiUInt32 uiNumFramesBeforeInvisible) const override;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   virtual void GetInternalStats(xiiStringBuilder& sb) const override;
@@ -85,8 +85,8 @@ private:
   void ForEachGrid(const Data& data, const xiiSpatialDataHandle& hData, Functor func) const;
 
   struct Stats;
-  using CellCallback = xiiDelegate<xiiVisitorExecution::Enum(const Cell&, const QueryParams&, Stats&, void*, xiiVisibilityState)>;
-  void ForEachCellInBoxInMatchingGrids(const xiiSimdBBox& box, const QueryParams& queryParams, CellCallback noFilterCallback, CellCallback filterByTagsCallback, void* pUserData, xiiVisibilityState visType) const;
+  using CellCallback = xiiDelegate<xiiVisitorExecution::Enum(const Cell&, const QueryParams&, Stats&, void*, xiiVisibilityState::Enum)>;
+  void ForEachCellInBoxInMatchingGrids(const xiiSimdBBox& box, const QueryParams& queryParams, CellCallback noFilterCallback, CellCallback filterByTagsCallback, void* pUserData, xiiVisibilityState::Enum visType) const;
 
   struct CacheCandidate
   {

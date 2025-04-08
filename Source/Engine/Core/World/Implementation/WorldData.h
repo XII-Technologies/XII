@@ -195,7 +195,7 @@ namespace xiiInternal
       xiiUInt32                      m_uiCount;
     };
 
-    xiiDynamicArray<RegisteredUpdateFunction, xiiLocalAllocatorWrapper>           m_UpdateFunctions[xiiWorldModule::UpdateFunctionDesc::Phase::COUNT];
+    xiiDynamicArray<RegisteredUpdateFunction, xiiLocalAllocatorWrapper>           m_UpdateFunctions[xiiWorldUpdatePhase::COUNT];
     xiiDynamicArray<xiiWorldModule::UpdateFunctionDesc, xiiLocalAllocatorWrapper> m_UpdateFunctionsToRegister;
 
     xiiDynamicArray<xiiSharedPtr<UpdateTask>, xiiLocalAllocatorWrapper> m_UpdateTasks;

@@ -304,7 +304,7 @@ void xiiFakeRopeComponent::RuntimeUpdate()
   if (m_uiSleepCounter > 10)
     return;
 
-  xiiVisibilityState visType = GetOwner()->GetVisibilityState();
+  xiiVisibilityState::Enum visType = GetOwner()->GetVisibilityState();
 
   if (visType == xiiVisibilityState::Invisible)
     return;
@@ -454,7 +454,7 @@ void xiiFakeRopeComponentManager::Initialize()
 
   {
     auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiFakeRopeComponentManager::Update, this);
-    desc.m_Phase                     = xiiWorldModule::UpdateFunctionDesc::Phase::Async;
+    desc.m_Phase                     = xiiWorldUpdatePhase::Async;
     desc.m_bOnlyUpdateWhenSimulating = false;
 
     this->RegisterUpdateFunction(desc);

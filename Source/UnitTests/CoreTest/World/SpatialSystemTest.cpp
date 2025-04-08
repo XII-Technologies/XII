@@ -238,7 +238,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
       XII_TEST_BOOL(!uniqueObjects.Insert(pObject));
       XII_TEST_BOOL(pObject->IsDynamic());
 
-      xiiVisibilityState visType = pObject->GetVisibilityState();
+      xiiVisibilityState::Enum visType = pObject->GetVisibilityState();
       XII_TEST_BOOL(visType == xiiVisibilityState::Direct);
     }
 
@@ -249,7 +249,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 
       if (testFrustum.GetObjectPosition(pObject->GetGlobalBounds().GetSphere()) == xiiVolumePosition::Outside)
       {
-        xiiVisibilityState visType = pObject->GetVisibilityState();
+        xiiVisibilityState::Enum visType = pObject->GetVisibilityState();
         XII_TEST_BOOL(visType == xiiVisibilityState::Invisible);
       }
     }
@@ -276,7 +276,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
     // Check that last frame visible doesn't reset entirely after moving
     for (const xiiGameObject* pObject : visibleObjects)
     {
-      xiiVisibilityState visType = pObject->GetVisibilityState();
+      xiiVisibilityState::Enum visType = pObject->GetVisibilityState();
       XII_TEST_BOOL(visType == xiiVisibilityState::Direct);
     }
   }

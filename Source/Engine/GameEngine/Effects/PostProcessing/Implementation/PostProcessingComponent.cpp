@@ -15,7 +15,7 @@ xiiPostProcessingComponentManager::xiiPostProcessingComponentManager(xiiWorld* p
 void xiiPostProcessingComponentManager::Initialize()
 {
   auto desc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiPostProcessingComponentManager::UpdateComponents, this);
-  desc.m_Phase = UpdateFunctionDesc::Phase::PostTransform;
+  desc.m_Phase = xiiWorldUpdatePhase::PostTransform;
 
   RegisterUpdateFunction(desc);
 }

@@ -847,7 +847,7 @@ void xiiPathComponentManager::Initialize()
 {
   auto desc                        = xiiWorldModule::UpdateFunctionDesc(xiiWorldModule::UpdateFunction(&xiiPathComponentManager::Update, this), "xiiPathComponentManager::Update");
   desc.m_bOnlyUpdateWhenSimulating = false;
-  desc.m_Phase                     = xiiWorldModule::UpdateFunctionDesc::Phase::PostTransform;
+  desc.m_Phase                     = xiiWorldUpdatePhase::PostTransform;
 
   this->RegisterUpdateFunction(desc);
 }
