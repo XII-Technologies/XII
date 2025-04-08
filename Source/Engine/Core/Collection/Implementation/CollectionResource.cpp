@@ -48,9 +48,7 @@ bool xiiCollectionResource::PreloadResources(xiiUInt32 uiNumResourcesToPreload)
       }
       else
       {
-        xiiLog::Error("There was no valid RTTI available for assets with type name '{}'. Could not pre-load resource '{}'. Did you forget to register "
-                      "the resource type with the xiiResourceManager?",
-                      e.m_sAssetTypeName, xiiArgSensitive(e.m_sResourceID, "ResourceID"));
+        xiiLog::Warning("There was no valid RTTI available for assets with type name '{}'. Could not pre-load resource '{}'. Did you forget to register the resource type with the xiiResourceManager?", e.m_sAssetTypeName, xiiArgSensitive(e.m_sResourceID, "ResourceID"));
       }
     }
     else
@@ -76,6 +74,8 @@ bool xiiCollectionResource::IsLoadingFinished(float* out_pProgress) const
   xiiUInt64 loadedWeight = 0;
   xiiUInt64 totalWeight  = 0;
 
+  xiiUInt32 uiPoked = 0;
+
   for (xiiUInt32 i = 0; i < m_PreloadedResources.GetCount(); i++)
   {
     const xiiTypelessResourceHandle& hResource = m_PreloadedResources[i];
@@ -90,10 +90,21 @@ bool xiiCollectionResource::IsLoadingFinished(float* out_pProgress) const
     {
       loadedWeight += thisWeight;
     }
-
-    if (state != xiiResourceState::Invalid)
+    else if (state != xiiResourceState::Invalid)
     {
       totalWeight += thisWeight;
+    }
+    else
+    {
+      if (uiPoked < 3)
+      {
+        // there's a bug or race condition somewhere when unloading resources, which means resources that should be queued
+        // for preloading don't get preloaded and then the entire preloading system gets stuck
+        // to prevent this, we'll make sure that the next few unloaded resources do get requeued for preload
+
+        ++uiPoked;
+        xiiResourceManager::PreloadResource(hResource);
+      }
     }
   }
 
@@ -146,13 +157,11 @@ xiiResourceLoadDesc xiiCollectionResource::UnloadData(Unload WhatToUnload)
 
   {
     UnregisterNames();
-
     // This lock unnecessary as this function is only called when the reference count is 0, i.e. if we deallocate this.
     // It is intentionally removed as it caused this lock and the resource manager lock to be locked in reverse order.
     // To prevent potential deadlocks and be able to sanity check our locking the entire codebase should never lock any
     // locks in reverse order, even if this lock is probably fine it prevents us from reasoning over the entire system.
     // XII_LOCK(m_preloadMutex);
-
     m_PreloadedResources.Clear();
     m_Collection.m_Resources.Clear();
 
@@ -177,13 +186,11 @@ xiiResourceLoadDesc xiiCollectionResource::UpdateContent(xiiStreamReader* Stream
     return res;
   }
 
-  // skip the absolute file path data that the standard file reader writes into the stream
-  {
-    xiiStringBuilder sAbsFilePath;
-    (*Stream) >> sAbsFilePath;
-  }
+  // The standard file reader writes the absolute file path into the stream.
+  xiiStringBuilder sAbsFilePath;
+  (*Stream) >> sAbsFilePath;
 
-  // skip the asset file header at the start of the file
+  // Skip the asset file header at the start of the file.
   xiiAssetFileHeader AssetHash;
   AssetHash.Read(*Stream).IgnoreResult();
 
