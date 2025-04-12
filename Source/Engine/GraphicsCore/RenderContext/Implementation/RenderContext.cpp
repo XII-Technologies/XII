@@ -840,7 +840,12 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
         xiiRenderContext::PipelineStateInfo newPipelineStateInfo = {.m_hPipelineState = m_hCurrentPipelineState};
 
-        XII_VERIFY(!m_PipelineStateCache.Insert(pipelineDescription, newPipelineStateInfo), "Overwriting an existing cached pipeline state, this is unexpected behavior.");
+        xiiRenderContext::PipelineStateInfo pOldPipelineStateInfo;
+
+        if (m_PipelineStateCache.Insert(pipelineDescription, newPipelineStateInfo, &pOldPipelineStateInfo))
+        {
+          pDevice->DestroyPipelineState(pOldPipelineStateInfo.m_hPipelineState);
+        }
 
         m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
 
