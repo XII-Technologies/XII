@@ -44,7 +44,7 @@ xiiResult xiiGALShaderPermutationBinary::Write(xiiStreamWriter& inout_stream)
 
   m_StateDescriptor.Save(inout_stream);
 
-  const xiiUInt32 uiPermutationVariableCount = m_ShaderStageHashes.GetCount();
+  const xiiUInt32 uiPermutationVariableCount = m_PermutationVariables.GetCount();
   if (inout_stream.WriteDWordValue(&uiPermutationVariableCount).Failed())
     return XII_FAILURE;
 
