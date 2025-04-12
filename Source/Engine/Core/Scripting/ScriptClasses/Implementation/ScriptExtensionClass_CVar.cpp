@@ -10,12 +10,12 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_CVar, xiiNoBase, 1, xiiR
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_SCRIPT_FUNCTION_PROPERTY(GetValue, In, "Name")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(GetBoolValue, In, "Name")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(GetIntValue, In, "Name")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(GetFloatValue, In, "Name")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(GetDoubleValue, In, "Name")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(GetStringValue, In, "Name")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetValue, In, "Name")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetBoolValue, In, "Name")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetIntValue, In, "Name")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetFloatValue, In, "Name")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetDoubleValue, In, "Name")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetStringValue, In, "Name")->AddFlags(xiiPropertyFlags::PureFunction),
     XII_SCRIPT_FUNCTION_PROPERTY(SetValue, In, "Name", In, "Value"),
     XII_SCRIPT_FUNCTION_PROPERTY(SetBoolValue, In, "Name", In, "Value"),
     XII_SCRIPT_FUNCTION_PROPERTY(SetIntValue, In, "Name", In, "Value"),
