@@ -26,9 +26,9 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureLoader.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
 // Constant buffer definition is shared between shader code and C++
 #include <GraphicsCore/../../../Data/Samples/TextureSample/Shaders/SampleConstantBuffer.h>
