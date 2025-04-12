@@ -40,7 +40,7 @@ public:
 
 private:
   virtual xiiResourceLoadDesc    UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDesc    UpdateContent(xiiStreamReader* Stream) override;
+  virtual xiiResourceLoadDesc    UpdateContent(xiiStreamReader* pStream) override;
   virtual void                   UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
   virtual xiiResourceTypeLoader* GetDefaultResourceTypeLoader() const override;
 

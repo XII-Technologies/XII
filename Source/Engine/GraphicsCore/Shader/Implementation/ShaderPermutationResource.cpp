@@ -74,7 +74,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
   return res;
 }
 
-xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader* pStream)
 {
   xiiUInt32 uiGPUMem                = 0;
   ModifyMemoryUsage().m_uiMemoryGPU = 0;
@@ -86,7 +86,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
-  if (Stream == nullptr)
+  if (pStream == nullptr)
   {
     xiiLog::Error("Shader Permutation '{0}': Data is not available.", GetResourceID());
     return res;
@@ -95,7 +95,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
   xiiGALShaderPermutationBinary shaderPermutationBinary;
 
   bool bOldVersion = false;
-  if (shaderPermutationBinary.Read(*Stream, bOldVersion).Failed())
+  if (shaderPermutationBinary.Read(*pStream, bOldVersion).Failed())
   {
     xiiLog::Error("Shader Permutation '{0}': Could not read shader permutation binary.", GetResourceID());
     return res;
@@ -130,31 +130,36 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
     // Store not only the hash but also the pointer to the stage binary.
     // It contains other useful information (resource bindings), that we need for shader binding.
-    ShaderData shaderData;
-    if (m_ShaderData.TryGetValue(it.Key(), shaderData))
     {
-      shaderData.m_pByteCode = pStageBinary->GetByteCode();
-    }
-    else
-    {
-      m_ShaderData.Insert(it.Key(), ShaderData{.m_pByteCode = pStageBinary->GetByteCode()});
+      ShaderData shaderData;
+      if (m_ShaderData.TryGetValue(it.Key(), shaderData))
+      {
+        shaderData.m_pByteCode = pStageBinary->GetByteCode();
+      }
+      else
+      {
+        m_ShaderData.Insert(it.Key(), ShaderData{.m_pByteCode = pStageBinary->GetByteCode()});
+      }
     }
 
     XII_ASSERT_DEV(pStageBinary->GetByteCode()->m_ShaderStage == it.Key(), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderType::Names[it.Key()], xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)pStageBinary->GetByteCode()->m_ShaderStage.GetValue())]);
 
     if (pStageBinary->GetByteCode()->IsValid())
     {
+      ShaderData* pShaderData = m_ShaderData.GetValue(it.Key());
+
       xiiGALShaderCreationDescription shaderDescription;
       shaderDescription.m_ShaderType = it.Key();
       shaderDescription.m_ByteCode   = const_cast<xiiGALShaderByteCode*>(pStageBinary->GetByteCode().Borrow()); //TODO: Improve this and avoid const-cast.
 
-      xiiGALShaderHandle hShader = m_ShaderData.GetValue(it.Key())->m_hShader;
-      if (hShader.IsInvalidated())
+      pShaderData->m_hShader = pDevice->CreateShader(shaderDescription);
+
+      if (pShaderData->m_hShader.IsInvalidated())
       {
         xiiLog::Error("Shader Permutation '{0}': Shader program creation for {1} shader failed.", GetResourceID(), xiiGALShaderType::Names[it.Key()]);
         return res;
       }
-      pDevice->GetShader(hShader)->SetDebugName(GetResourceID());
+      pDevice->GetShader(pShaderData->m_hShader)->SetDebugName(GetResourceID());
 
       m_ActiveShaderStages |= it.Key();
 
