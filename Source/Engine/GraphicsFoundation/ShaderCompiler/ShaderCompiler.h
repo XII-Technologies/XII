@@ -36,7 +36,7 @@ public:
 class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCompiler
 {
 public:
-  xiiResult CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVars, xiiLogInterface* pLog, xiiStringView sPlatform = "ALL");
+  xiiResult CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVariables, xiiLogInterface* pLog, xiiStringView sPlatform = "ALL");
 
 private:
   xiiResult RunShaderCompiler(xiiStringView sFile, xiiStringView sPlatform, xiiGALShaderProgramCompiler* pCompiler, xiiLogInterface* pLog);

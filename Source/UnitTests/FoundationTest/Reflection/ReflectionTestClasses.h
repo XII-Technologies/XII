@@ -140,8 +140,6 @@ public:
 
   bool operator==(const xiiTestStruct3& rhs) const { return m_fFloat1 == rhs.m_fFloat1 && m_iInt32 == rhs.m_iInt32 && m_UInt8 == rhs.m_UInt8; }
 
-  bool operator!=(const xiiTestStruct3& rhs) const { return !(*this == rhs); }
-
   double   m_fFloat1;
   xiiInt16 m_UInt8;
 
@@ -299,8 +297,6 @@ public:
   {
     return m_Hybrid == rhs.m_Hybrid && m_Dynamic == rhs.m_Dynamic && m_Deque == rhs.m_Deque && m_HybridChar == rhs.m_HybridChar && m_CustomVariant == rhs.m_CustomVariant && m_CustomVariant2 == rhs.m_CustomVariant2;
   }
-
-  bool operator!=(const xiiTestArrays& rhs) const { return !(*this == rhs); }
 
   xiiUInt32 GetCount() const;
   double    GetValue(xiiUInt32 uiIndex) const;

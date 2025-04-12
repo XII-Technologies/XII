@@ -181,7 +181,7 @@ xiiResult xiiGALShaderCompiler::FileOpen(xiiStringView sAbsoluteFile, xiiDynamic
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVars, xiiLogInterface* pLog, xiiStringView sPlatform)
+xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVariables, xiiLogInterface* pLog, xiiStringView sPlatform)
 {
   if (xiiRemoteToolingInterface* pTooling = xiiSingletonRegistry::GetSingletonInstance<xiiRemoteToolingInterface>())
   {
@@ -196,8 +196,8 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
       xiiRemoteMessage msg('SHDR', 'CMPL');
       msg.GetWriter() << sFile;
       msg.GetWriter() << sPlatform;
-      msg.GetWriter() << permutationVars.GetCount();
-      for (auto& pv : permutationVars)
+      msg.GetWriter() << permutationVariables.GetCount();
+      for (auto& pv : permutationVariables)
       {
         msg.GetWriter() << pv.m_sName;
         msg.GetWriter() << pv.m_sValue;
@@ -242,9 +242,9 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
   for (const xiiHashedString& usedPermutationVariable : usedPermutations)
   {
     xiiUInt32 uiIndex = xiiInvalidIndex;
-    for (xiiUInt32 i = 0; i < permutationVars.GetCount(); ++i)
+    for (xiiUInt32 i = 0; i < permutationVariables.GetCount(); ++i)
     {
-      if (permutationVars[i].m_sName == usedPermutationVariable)
+      if (permutationVariables[i].m_sName == usedPermutationVariable)
       {
         uiIndex = i;
         break;
@@ -253,7 +253,7 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
     if (uiIndex != xiiInvalidIndex)
     {
-      m_ShaderData.m_Permutations.PushBack(permutationVars[uiIndex]);
+      m_ShaderData.m_Permutations.PushBack(permutationVariables[uiIndex]);
     }
     else
     {
@@ -287,7 +287,7 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
       sTemp.AppendFormat("#line {0}\n{1}", uiFirstLine, sStageSource);
 
-      m_ShaderData.m_ShaderStageSource[(xiiGALShaderType::Enum)stage] = sTemp;
+      m_ShaderData.m_ShaderStageSource[xiiGALShaderType::GetStageFlag(stage)] = sTemp;
     }
   }
 
@@ -300,7 +300,7 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
     xiiString                 m_sExtension;
   };
 
-  xiiHybridArray<StageSourceData, xiiGALShaderType::ENUM_COUNT> shaderTypesAndExtensions;
+  xiiStaticArray<StageSourceData, xiiGALShaderType::ENUM_COUNT> shaderTypesAndExtensions;
   shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Vertex, .m_sExtension = "vs"});
   shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Pixel, .m_sExtension = "ps"});
   shaderTypesAndExtensions.PushBack({.m_ShaderType = xiiGALShaderType::Geometry, .m_sExtension = "gs"});
@@ -319,7 +319,7 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
   for (StageSourceData& stageSourceData : shaderTypesAndExtensions)
   {
-    if (m_StageSourceFile.Contains(stageSourceData.m_ShaderType))
+    if (m_ShaderData.m_ShaderStageSource.Contains(stageSourceData.m_ShaderType))
     {
       auto& sSourceFile = m_StageSourceFile[stageSourceData.m_ShaderType];
       sSourceFile       = tmp;
@@ -470,7 +470,6 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
         XII_SUCCEED_OR_RETURN(pp.AddCustomDefine(define));
       }
 
-      m_StageSourceFile.Insert(it.Key(), xiiStringBuilder());
       if (pp.Process(m_StageSourceFile[it.Key()], sProcessedSource, true, true, true).Failed() || bFoundUndefinedVariables)
       {
         sProcessedSource.Clear();

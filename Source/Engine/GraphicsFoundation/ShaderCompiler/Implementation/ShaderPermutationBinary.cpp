@@ -50,10 +50,10 @@ xiiResult xiiGALShaderPermutationBinary::Write(xiiStreamWriter& inout_stream)
 
   for (const auto& var : m_PermutationVariables)
   {
-    if (inout_stream.WriteString(var.m_sName).Failed())
+    if (inout_stream.WriteString(var.m_sName.GetView()).Failed())
       return XII_FAILURE;
 
-    if (inout_stream.WriteString(var.m_sValue).Failed())
+    if (inout_stream.WriteString(var.m_sValue.GetView()).Failed())
       return XII_FAILURE;
   }
 
