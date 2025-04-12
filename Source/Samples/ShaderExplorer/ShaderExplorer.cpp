@@ -27,8 +27,8 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
 // Define this to force usage of fileserve functionality.
 // #define USE_FILESERVE XII_ON

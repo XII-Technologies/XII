@@ -23,12 +23,12 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 xiiRenderContext*                    xiiRenderContext::s_pDefaultInstance = nullptr;

@@ -16,11 +16,11 @@
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsCore/Shader/ConstantBufferStorage.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
-#include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
+#include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 

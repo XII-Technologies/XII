@@ -22,13 +22,13 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
 #if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "D3D11";

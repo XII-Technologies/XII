@@ -16,7 +16,7 @@ public:
   xiiSharedPtr<const xiiGALShaderByteCode> GetByteCode() const;
 
   static xiiGALShaderStageBinary* LoadStageBinary(xiiEnum<xiiGALShaderType> stage, xiiUInt32 uiHash, xiiStringView sPlatform);
-  static void OnEngineShutdown();
+  static void                     OnEngineShutdown();
 
 private:
   friend class xiiGALShaderCompiler;

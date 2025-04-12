@@ -9,10 +9,10 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureLoader.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
