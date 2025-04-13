@@ -25,7 +25,7 @@ private:
   virtual void      Init_ConfigureTags() override {}
   virtual bool      Run_ProcessApplicationInput() override { return true; }
 
-  xiiGALPermutationGenerator                         m_PermutationGenerator;
+  xiiGALPermutationGenerator                      m_PermutationGenerator;
   xiiString                                       m_sPlatforms;
   xiiString                                       m_sShaderFiles;
   xiiMap<xiiString, xiiHybridArray<xiiString, 4>> m_FixedPermVars;
