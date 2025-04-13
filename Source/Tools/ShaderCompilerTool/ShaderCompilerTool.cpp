@@ -6,9 +6,9 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 
-#include <GraphicsCore/ShaderCompiler/ShaderCompiler.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
-#include <GraphicsCore/ShaderCompiler/ShaderParser.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
 // clang-format off
 xiiCommandLineOptionString opt_Shader("_ShaderCompiler", "-shader", "\
@@ -120,7 +120,7 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
   if (ExtractPermutationVarValues(sShaderFile).Failed())
     return XII_FAILURE;
 
-  xiiHybridArray<xiiPermutationVar, 16> permVars;
+  xiiHybridArray<xiiGALPermutationVariable, 16> permVars;
 
   const xiiUInt32 uiMaxPerms = m_PermutationGenerator.GetPermutationCount();
 
@@ -131,7 +131,7 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
     XII_LOG_BLOCK("Compiling Permutation");
 
     m_PermutationGenerator.GetPermutation(perm, permVars);
-    xiiShaderCompiler sc;
+    xiiGALShaderCompiler sc;
     if (sc.CompileShaderPermutationForPlatforms(sShaderFile, permVars, xiiLog::GetThreadLocalLogSystem(), m_sPlatforms).Failed())
       return XII_FAILURE;
   }
@@ -151,9 +151,9 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
     return XII_FAILURE;
   }
 
-  xiiHybridArray<xiiHashedString, 16>   permVars;
-  xiiHybridArray<xiiPermutationVar, 16> fixedPermVars;
-  xiiShaderParser::ParsePermutationSection(shaderFile, permVars, fixedPermVars);
+  xiiHybridArray<xiiHashedString, 16>           permVars;
+  xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermVars;
+  xiiGALShaderParser::ParsePermutationSection(shaderFile, permVars, fixedPermVars);
 
   {
     XII_LOG_BLOCK("Permutation Vars");
@@ -168,7 +168,7 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
     for (const auto& s : permVars)
     {
       xiiHybridArray<xiiHashedString, 16> values;
-      xiiShaderManager::GetPermutationValues(s, values);
+      xiiGALShaderManager::GetPermutationValues(s, values);
 
       for (const auto& val : values)
       {

@@ -1,7 +1,7 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorPluginAssets/MaterialAsset/ShaderTypeRegistry.h>
-#include <GraphicsCore/ShaderCompiler/ShaderParser.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
 XII_IMPLEMENT_SINGLETON(xiiShaderTypeRegistry);
 
@@ -45,7 +45,7 @@ namespace
   static xiiHashTable<xiiString, PermutationVarConfig> s_PermutationVarConfigs;
   static xiiHashTable<xiiString, const xiiRTTI*>       s_EnumTypes;
 
-  const xiiRTTI* GetPermutationType(const xiiShaderParser::ParameterDefinition& def)
+  const xiiRTTI* GetPermutationType(const xiiGALShaderParser::ParameterDefinition& def)
   {
     XII_ASSERT_DEV(def.m_sType.IsEqual("Permutation"), "");
 
@@ -70,9 +70,9 @@ namespace
     sTemp.ReadAll(file);
 
     xiiVariant                      defaultValue;
-    xiiShaderParser::EnumDefinition enumDefinition;
+    xiiGALShaderParser::EnumDefinition enumDefinition;
 
-    xiiShaderParser::ParsePermutationVarConfig(sTemp, defaultValue, enumDefinition);
+    xiiGALShaderParser::ParsePermutationVariableConfiguration(sTemp, defaultValue, enumDefinition);
     if (defaultValue.IsValid())
     {
       pConfig                 = &(s_PermutationVarConfigs[def.m_sName]);
@@ -115,7 +115,7 @@ namespace
     return nullptr;
   }
 
-  const xiiRTTI* GetEnumType(const xiiShaderParser::EnumDefinition& def)
+  const xiiRTTI* GetEnumType(const xiiGALShaderParser::EnumDefinition& def)
   {
     const xiiRTTI* pType = nullptr;
     if (s_EnumTypes.TryGetValue(def.m_sName, pType))
@@ -152,7 +152,7 @@ namespace
     return pType;
   }
 
-  const xiiRTTI* GetType(const xiiShaderParser::ParameterDefinition& def)
+  const xiiRTTI* GetType(const xiiGALShaderParser::ParameterDefinition& def)
   {
     if (def.m_pType != nullptr)
     {
@@ -170,7 +170,7 @@ namespace
     return pType;
   }
 
-  void AddAttributes(xiiShaderParser::ParameterDefinition& ref_def, const xiiRTTI* pType, xiiHybridArray<const xiiPropertyAttribute*, 2>& ref_attributes)
+  void AddAttributes(xiiGALShaderParser::ParameterDefinition& ref_def, const xiiRTTI* pType, xiiHybridArray<const xiiPropertyAttribute*, 2>& ref_attributes)
   {
     if (ref_def.m_sType.StartsWith_NoCase("texture"))
     {
@@ -310,8 +310,8 @@ void xiiShaderTypeRegistry::UpdateShaderType(ShaderData& data)
 {
   XII_LOG_BLOCK("Updating Shader Parameters", data.m_sShaderPath.GetData());
 
-  xiiHybridArray<xiiShaderParser::ParameterDefinition, 16> parameters;
-  xiiHybridArray<xiiShaderParser::EnumDefinition, 4>       enumDefinitions;
+  xiiHybridArray<xiiGALShaderParser::ParameterDefinition, 16> parameters;
+  xiiHybridArray<xiiGALShaderParser::EnumDefinition, 4>       enumDefinitions;
 
   {
     xiiFileStats Stats;
@@ -324,7 +324,7 @@ void xiiShaderTypeRegistry::UpdateShaderType(ShaderData& data)
       return;
     }
 
-    xiiShaderParser::ParseMaterialParameterSection(file, parameters, enumDefinitions);
+    xiiGALShaderParser::ParseMaterialParameterSection(file, parameters, enumDefinitions);
     data.m_fileModifiedTime = Stats.m_LastModificationTime;
   }
 

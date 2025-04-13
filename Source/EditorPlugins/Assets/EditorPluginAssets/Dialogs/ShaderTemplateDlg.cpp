@@ -2,8 +2,8 @@
 
 #include <EditorPluginAssets/Dialogs/ShaderTemplateDlg.moc.h>
 #include <Foundation/CodeUtils/Preprocessor.h>
-#include <GraphicsCore/Shader/Implementation/Helper.h>
-#include <GraphicsCore/ShaderCompiler/ShaderParser.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
 xiiQtShaderTemplateDlg::xiiQtShaderTemplateDlg(QWidget* pParent, const xiiDocument* pSceneDoc) :
@@ -33,11 +33,11 @@ xiiQtShaderTemplateDlg::xiiQtShaderTemplateDlg(QWidget* pParent, const xiiDocume
       xiiStringBuilder content;
       content.ReadAll(file);
 
-      xiiShaderHelper::xiiTextSectionizer sec;
-      xiiShaderHelper::GetShaderSections(content, sec);
+      xiiGALShaderTextSectionizer sec;
+      xiiGALShaderSections::GetShaderSections(content, sec);
 
       xiiUInt32        uiFirstLine = 0;
-      xiiStringBuilder vars        = sec.GetSectionContent(xiiShaderHelper::xiiShaderSections::TEMPLATE_VARS, uiFirstLine);
+      xiiStringBuilder vars        = sec.GetSectionContent(xiiGALShaderSections::TEMPLATE_VARS, uiFirstLine);
 
       content.ReplaceAll(vars, "");
       content.ReplaceAll("[TEMPLATE_VARS]", "");
@@ -136,8 +136,8 @@ void xiiQtShaderTemplateDlg::on_Buttons_accepted()
   for (xiiUInt32 row = 0; row < m_Templates[idx].m_Vars.GetCount(); ++row)
   {
     xiiVariant                      defVal;
-    xiiShaderParser::EnumDefinition enumDef;
-    xiiShaderParser::ParsePermutationVarConfig(m_Templates[idx].m_Vars[row], defVal, enumDef);
+    xiiGALShaderParser::EnumDefinition enumDef;
+    xiiGALShaderParser::ParsePermutationVariableConfiguration(m_Templates[idx].m_Vars[row], defVal, enumDef);
 
     if (defVal.IsA<bool>())
     {
@@ -230,8 +230,8 @@ void xiiQtShaderTemplateDlg::on_ShaderTemplate_currentIndexChanged(int idx)
   for (xiiUInt32 row = 0; row < m_Templates[idx].m_Vars.GetCount(); ++row)
   {
     xiiVariant                      defVal;
-    xiiShaderParser::EnumDefinition enumDef;
-    xiiShaderParser::ParsePermutationVarConfig(m_Templates[idx].m_Vars[row], defVal, enumDef);
+    xiiGALShaderParser::EnumDefinition enumDef;
+    xiiGALShaderParser::ParsePermutationVariableConfiguration(m_Templates[idx].m_Vars[row], defVal, enumDef);
 
     xiiStringBuilder varName = enumDef.m_sName;
     varName.TrimWordStart("TEMPLATE_");

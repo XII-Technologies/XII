@@ -6,7 +6,7 @@
 #include <EditorPluginAssets/VisualShader/VsCodeGenerator.h>
 #include <Foundation/CodeUtils/Preprocessor.h>
 #include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsCore/ShaderCompiler/ShaderParser.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
@@ -77,7 +77,7 @@ namespace
     }
 
     xiiStringBuilder sOutput;
-    XII_SUCCEED_OR_RETURN(xiiShaderParser::PreprocessSection(file, xiiShaderHelper::xiiShaderSections::MATERIALCONFIG, defines, sOutput));
+    XII_SUCCEED_OR_RETURN(xiiGALShaderParser::PreprocessSection(file, xiiGALShaderSections::MATERIALCONFIG, defines, sOutput));
 
     xiiHybridArray<xiiStringView, 32> allAssignments;
     sOutput.Split(false, allAssignments, "\n", ";", "\r");
