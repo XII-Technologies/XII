@@ -616,7 +616,7 @@ void xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration(xiiStringView sP
 
   // The only descriptor that can have more than one shader resource type is TextureAndSampler.
   // There will be two declarations in the HLSL code, the sampler and the texture.
-  if (binding.m_TextureType == xiiGALShaderResourceType::TextureAndSampler)
+  if (binding.m_Type == xiiGALShaderResourceType::TextureAndSampler)
   {
     type = binding.m_TextureType == xiiGALShaderTextureType::Unknown ? xiiGALShaderResourceType::Sampler : xiiGALShaderResourceType::TextureSRV;
   }
