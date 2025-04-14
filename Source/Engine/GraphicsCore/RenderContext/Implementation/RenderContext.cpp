@@ -796,79 +796,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-    bool bPipelineStateInvalidated = false;
-    if (pShaderPermutation != nullptr)
-    {
-      // Set render state from shader.
-      // Create pipeline state that is valid for this scope.
-      xiiGALPipelineStateCreationDescription pipelineDescription;
-      pipelineDescription.m_PipelineType               = m_bIsCompute ? xiiGALPipelineType::Compute : xiiGALPipelineType::Graphics;
-      pipelineDescription.m_hPipelineResourceSignature = (pShaderPermutation != nullptr) ? pShaderPermutation->GetPipelineResourceSignature() : xiiGALPipelineResourceSignatureHandle();
-
-      if (pipelineDescription.IsAnyGraphicsPipeline())
-      {
-        pipelineDescription.m_GraphicsPipeline.m_hRenderPass          = m_hCurrentRenderPass;
-        pipelineDescription.m_GraphicsPipeline.m_hVertexShader        = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
-        pipelineDescription.m_GraphicsPipeline.m_hPixelShader         = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)];
-        pipelineDescription.m_GraphicsPipeline.m_hDomainShader        = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)];
-        pipelineDescription.m_GraphicsPipeline.m_hHullShader          = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Hull)];
-        pipelineDescription.m_GraphicsPipeline.m_hGeometryShader      = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)];
-        pipelineDescription.m_GraphicsPipeline.m_hAmplificationShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Amplification)];
-        pipelineDescription.m_GraphicsPipeline.m_hMeshShader          = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Mesh)];
-
-        auto& graphicsPipeline               = pipelineDescription.m_GraphicsPipeline;
-        graphicsPipeline.m_PrimitiveTopology = m_Topology;
-        graphicsPipeline.m_hInputLayout      = m_hInputLayout;
-
-        if (pShaderPermutation != nullptr)
-        {
-          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoBlendState))
-            graphicsPipeline.m_hBlendState = pShaderPermutation->GetBlendState();
-
-          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoRasterizerState))
-            graphicsPipeline.m_hRasterizerState = pShaderPermutation->GetRasterizerState();
-
-          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoDepthStencilState))
-            graphicsPipeline.m_hDepthStencilState = pShaderPermutation->GetDepthStencilState();
-        }
-      }
-      else if (pipelineDescription.IsComputePipeline())
-      {
-        pipelineDescription.m_ComputePipeline.m_hComputeShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
-      }
-
-      xiiRenderContext::PipelineStateInfo* pPipelineStateInfo = nullptr;
-      if (!m_PipelineStateCache.TryGetValue(pipelineDescription, pPipelineStateInfo))
-      {
-        m_hCurrentPipelineState = pDevice->CreatePipelineState(pipelineDescription);
-
-        xiiRenderContext::PipelineStateInfo newPipelineStateInfo = {.m_hPipelineState = m_hCurrentPipelineState};
-
-        xiiRenderContext::PipelineStateInfo pOldPipelineStateInfo;
-
-        if (m_PipelineStateCache.Insert(pipelineDescription, newPipelineStateInfo, &pOldPipelineStateInfo))
-        {
-          pDevice->DestroyPipelineState(pOldPipelineStateInfo.m_hPipelineState);
-        }
-
-        m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
-
-        bPipelineStateInvalidated = true;
-      }
-      else
-      {
-        if (m_hCurrentPipelineState != pPipelineStateInfo->m_hPipelineState || m_pCommandList->GetPipelineState() != pPipelineStateInfo->m_hPipelineState)
-        {
-          m_hCurrentPipelineState = pPipelineStateInfo->m_hPipelineState;
-
-          m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
-
-          bPipelineStateInvalidated = true;
-        }
-      }
-
-      XII_ASSERT_DEV(!m_hCurrentPipelineState.IsInvalidated(), "Implementation error!");
-    }
+    bool bPipelineStateInvalidated = SetupPipelineStates(pShaderPermutation);
 
     if (bIsModified || bPipelineStateInvalidated)
     {
@@ -1398,6 +1326,93 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
 
   out_hRenderPass  = frameBufferInfo.hRenderPass;
   out_hFramebuffer = frameBufferInfo.hFrameBuffer;
+}
+
+bool xiiRenderContext::SetupPipelineStates(xiiShaderPermutationResource* pShaderPermutation)
+{
+  if (pShaderPermutation == nullptr)
+    return false;
+
+  xiiGALDevice* pDevice                   = xiiGALDevice::GetDefaultDevice();
+  bool          bPipelineStateInvalidated = false;
+
+  // Set render state from shader.
+  // Create pipeline state that is valid for this scope.
+  xiiGALPipelineStateCreationDescription pipelineDescription;
+  pipelineDescription.m_PipelineType               = m_bIsCompute ? xiiGALPipelineType::Compute : xiiGALPipelineType::Graphics;
+  pipelineDescription.m_hPipelineResourceSignature = (pShaderPermutation != nullptr) ? pShaderPermutation->GetPipelineResourceSignature() : xiiGALPipelineResourceSignatureHandle();
+
+  if (pipelineDescription.IsAnyGraphicsPipeline())
+  {
+    auto& graphicsPipeline                  = pipelineDescription.m_GraphicsPipeline;
+    graphicsPipeline.m_hRenderPass          = m_hCurrentRenderPass;
+    graphicsPipeline.m_hVertexShader        = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
+    graphicsPipeline.m_hPixelShader         = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)];
+    graphicsPipeline.m_hDomainShader        = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)];
+    graphicsPipeline.m_hHullShader          = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Hull)];
+    graphicsPipeline.m_hGeometryShader      = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)];
+    graphicsPipeline.m_hAmplificationShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Amplification)];
+    graphicsPipeline.m_hMeshShader          = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Mesh)];
+
+    graphicsPipeline.m_PrimitiveTopology = m_Topology;
+    graphicsPipeline.m_hInputLayout      = m_hInputLayout;
+
+    if (xiiGALRenderPass* pRenderPass = pDevice->GetRenderPass(graphicsPipeline.m_hRenderPass))
+    {
+      graphicsPipeline.m_SampleDescription.m_uiQuality = 0;
+      graphicsPipeline.m_SampleDescription.m_uiCount   = pRenderPass->GetDescription().m_Attachments.PeekBack().m_uiSampleCount;
+    }
+
+    if (pShaderPermutation != nullptr)
+    {
+      if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoBlendState))
+        graphicsPipeline.m_hBlendState = pShaderPermutation->GetBlendState();
+
+      if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoRasterizerState))
+        graphicsPipeline.m_hRasterizerState = pShaderPermutation->GetRasterizerState();
+
+      if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoDepthStencilState))
+        graphicsPipeline.m_hDepthStencilState = pShaderPermutation->GetDepthStencilState();
+    }
+  }
+  else if (pipelineDescription.IsComputePipeline())
+  {
+    pipelineDescription.m_ComputePipeline.m_hComputeShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
+  }
+
+  xiiRenderContext::PipelineStateInfo* pPipelineStateInfo = nullptr;
+  if (!m_PipelineStateCache.TryGetValue(pipelineDescription, pPipelineStateInfo))
+  {
+    m_hCurrentPipelineState = pDevice->CreatePipelineState(pipelineDescription);
+
+    xiiRenderContext::PipelineStateInfo newPipelineStateInfo = {.m_hPipelineState = m_hCurrentPipelineState};
+
+    xiiRenderContext::PipelineStateInfo pOldPipelineStateInfo;
+
+    if (m_PipelineStateCache.Insert(pipelineDescription, newPipelineStateInfo, &pOldPipelineStateInfo))
+    {
+      pDevice->DestroyPipelineState(pOldPipelineStateInfo.m_hPipelineState);
+    }
+
+    m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
+
+    bPipelineStateInvalidated = true;
+  }
+  else
+  {
+    if (m_hCurrentPipelineState != pPipelineStateInfo->m_hPipelineState || m_pCommandList->GetPipelineState() != pPipelineStateInfo->m_hPipelineState)
+    {
+      m_hCurrentPipelineState = pPipelineStateInfo->m_hPipelineState;
+
+      m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
+
+      bPipelineStateInvalidated = true;
+    }
+  }
+
+  XII_ASSERT_DEV(!m_hCurrentPipelineState.IsInvalidated(), "Implementation error!");
+
+  return bPipelineStateInvalidated;
 }
 
 void xiiRenderContext::FlushPipelineStateCache()

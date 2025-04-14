@@ -312,6 +312,8 @@ private:
   };
 
   void GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassHandle& out_hRenderPass, xiiGALFramebufferHandle& out_hFramebuffer);
+
+  bool SetupPipelineStates(xiiShaderPermutationResource* pShaderPermutation);
   void FlushPipelineStateCache();
 
   void BeginRenderPass();
