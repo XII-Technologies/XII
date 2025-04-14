@@ -804,13 +804,13 @@ xiiResult xiiGALShaderParser::MergeShaderResourceBindings(const xiiGALShaderProg
           xiiLog::Error(pLog, "A shared shader resource '{}' has a mismatching signatures between stages: '{}' vs '{}'.", sName, resourceFirstOccurence.Find(sName).Value()->m_sDeclarationAndRegister, resource.m_sDeclarationAndRegister);
           return XII_FAILURE;
         }
-        current.m_ShaderStages |= xiiGALShaderType::GetStageFlag(it.Key());
+        current.m_ShaderStages |= it.Key();
       }
       else
       {
         out_bindings.Insert(sName, resource.m_ResourceDescription);
         resourceFirstOccurence.Insert(sName, &resource);
-        out_bindings.Find(sName).Value().m_ShaderStages |= xiiGALShaderType::GetStageFlag(it.Key());
+        out_bindings.Find(sName).Value().m_ShaderStages |= it.Key();
       }
     }
   }

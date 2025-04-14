@@ -464,7 +464,7 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
         }
       });
 
-      XII_SUCCEED_OR_RETURN(pp.AddCustomDefine(s_szStageDefines[it.Key()]));
+      XII_SUCCEED_OR_RETURN(pp.AddCustomDefine(s_szStageDefines[xiiGALShaderType::GetStageIndex(it.Key())]));
       for (auto& define : defines)
       {
         XII_SUCCEED_OR_RETURN(pp.AddCustomDefine(define));
@@ -549,7 +549,9 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
           xiiLog::Error(pLog, "Writing stage {0} binary failed.", it.Key());
           return XII_FAILURE;
         }
-        xiiGALShaderStageBinary::s_ShaderStageBinaries[it.Key()].Insert(bin.m_uiSourceHash, bin);
+
+        auto& shaderStageBinaries = xiiGALShaderStageBinary::s_ShaderStageBinaries[it.Key()];
+        shaderStageBinaries.Insert(bin.m_uiSourceHash, bin);
       }
     }
 
