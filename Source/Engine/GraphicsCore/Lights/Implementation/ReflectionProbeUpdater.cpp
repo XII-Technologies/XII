@@ -7,6 +7,8 @@
 #include <GraphicsCore/Lights/Implementation/ReflectionPoolData.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
@@ -37,6 +39,8 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     pDevice->GetTexture(m_hCubemap)->SetDebugName("Reflection Cubemap");
   }
 
+  auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList();
+
   xiiStringBuilder sName;
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapFaceRenderTargets); ++i)
   {
@@ -55,7 +59,11 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
 
     sName.SetFormat("Reflection Cubemap View {}", i);
     pDevice->GetTextureView(m_hCubemapFaceRenderTargets[i])->SetDebugName(sName);
+
+    pCommandList->ClearRenderTargetView(m_hCubemapFaceRenderTargets[i], xiiColor::Black);
   }
+
+  pCommandList->Submit();
 }
 
 xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
