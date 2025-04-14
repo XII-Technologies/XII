@@ -712,6 +712,10 @@ xiiResult xiiRenderContext::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 ui
     return XII_FAILURE;
   }
 
+  auto pCommandList = GetCommandList();
+
+  XII_SUCCEED_OR_RETURN(pCommandList->CommitShaderResources());
+
   return GetCommandList()->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 }
 
