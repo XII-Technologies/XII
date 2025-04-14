@@ -203,6 +203,7 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
   VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
   vmaAllocationCreateInfo.requiredFlags           = static_cast<VkMemoryPropertyFlags>(vkMemoryPropertyFlags);
   vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+  vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
   vk::Buffer        vkStagingBuffer;
   VmaAllocationInfo stagingBufferAllocationInfo;
