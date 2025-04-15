@@ -447,7 +447,10 @@ xiiExpressionAST::VectorComponent::Enum xiiExpressionAST::VectorComponent::FromC
 {
   for (xiiUInt32 i = 0; i < Count; ++i)
   {
-    if (uiChar == s_szVectorComponentNames[i][0] || uiChar == s_szVectorComponentAltNames[i][0])
+    const xiiUInt32 uiComponentName    = s_szVectorComponentNames[i][0];
+    const xiiUInt32 uiComponentAltName = s_szVectorComponentAltNames[i][0];
+
+    if (uiChar == uiComponentName || uiChar == uiComponentAltName)
     {
       return static_cast<Enum>(i);
     }

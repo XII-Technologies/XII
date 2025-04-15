@@ -22,7 +22,7 @@ xiiStringView xiiFormatString::BuildFormattedText(xiiStringBuilder& ref_sStorage
 {
   xiiStringView sString = m_sString;
 
-  xiiUInt32 uiLastParam = -1;
+  xiiUInt32 uiLastParam = xiiInvalidIndex;
 
   ref_sStorage.Clear();
   while (!sString.IsEmpty())
@@ -35,8 +35,7 @@ xiiStringView xiiFormatString::BuildFormattedText(xiiStringBuilder& ref_sStorage
       }
       else
       {
-        XII_ASSERT_DEBUG(false, "Single percentage signs are not allowed in xiiFormatString. Did you forgot to migrate a printf-style "
-                                "string? Use double percentage signs for the actual character.");
+        XII_ASSERT_DEBUG(false, "Single percentage signs are not allowed in xiiFormatString. Did you forgot to migrate a printf-style string? Use double percentage signs for the actual character.");
       }
     }
     else if (sString.GetElementCount() >= 3 && *sString.GetStartPointer() == '{' && *(sString.GetStartPointer() + 1) >= '0' && *(sString.GetStartPointer() + 1) <= '9' && *(sString.GetStartPointer() + 2) == '}')
@@ -136,14 +135,15 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, double fArg)
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, bool bArg)
 {
-  if (bArg)
-    return "true";
-
-  return "false";
+  XII_IGNORE_UNUSED(szTmp);
+  XII_IGNORE_UNUSED(uiLength);
+  return bArg ? "true" : "false";
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const char* szArg)
 {
+  XII_IGNORE_UNUSED(szTmp);
+  XII_IGNORE_UNUSED(uiLength);
   return szArg;
 }
 
@@ -173,31 +173,43 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const wchar_t* pArg)
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiString& sArg)
 {
-  return xiiStringView(sArg.GetData(), sArg.GetData() + sArg.GetElementCount());
+  XII_IGNORE_UNUSED(szTmp);
+  XII_IGNORE_UNUSED(uiLength);
+  return sArg.GetView();
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiHashedString& sArg)
 {
-  return xiiStringView(sArg.GetData(), sArg.GetData() + sArg.GetString().GetElementCount());
+  XII_IGNORE_UNUSED(szTmp);
+  XII_IGNORE_UNUSED(uiLength);
+  return sArg.GetView();
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiStringBuilder& sArg)
 {
-  return xiiStringView(sArg.GetData(), sArg.GetData() + sArg.GetElementCount());
+  XII_IGNORE_UNUSED(szTmp);
+  XII_IGNORE_UNUSED(uiLength);
+  return sArg.GetView();
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiUntrackedString& sArg)
 {
-  return xiiStringView(sArg.GetData(), sArg.GetData() + sArg.GetElementCount());
+  XII_IGNORE_UNUSED(szTmp);
+  XII_IGNORE_UNUSED(uiLength);
+  return sArg.GetView();
 }
 
 const xiiStringView& BuildString(char* szTmp, xiiUInt32 uiLength, const xiiStringView& sArg)
 {
+  XII_IGNORE_UNUSED(szTmp);
+  XII_IGNORE_UNUSED(uiLength);
   return sArg;
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgC& arg)
 {
+  XII_IGNORE_UNUSED(uiLength);
+
   szTmp[0] = arg.m_Value;
   szTmp[1] = '\0';
 
@@ -212,6 +224,9 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgP& arg)
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiResult arg)
 {
+  XII_IGNORE_UNUSED(szTmp);
+  XII_IGNORE_UNUSED(uiLength);
+
   if (arg.Failed())
     return "<failed>";
   else

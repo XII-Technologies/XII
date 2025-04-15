@@ -61,6 +61,8 @@ xiiInternal::xiiAllocatorImpl<A, TrackingMode>::~xiiAllocatorImpl()
 template <typename A, xiiAllocatorTrackingMode TrackingMode>
 void* xiiInternal::xiiAllocatorImpl<A, TrackingMode>::Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc)
 {
+  XII_IGNORE_UNUSED(destructorFunc);
+
   // zero size allocations always return nullptr without tracking (since deallocate nullptr is ignored)
   if (uiSize == 0)
     return nullptr;

@@ -71,6 +71,7 @@ xiiResult xiiTelemetry::ConnectToServer(xiiStringView sConnectTo)
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
   return OpenConnection(Client, sConnectTo);
 #else
+  XII_IGNORE_UNUSED(sConnectTo);
   xiiLog::SeriousWarning("Enet is not compiled into this build, xiiTelemetry::ConnectToServer() will be ignored.");
   return XII_FAILURE;
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT

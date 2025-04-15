@@ -10,7 +10,7 @@ namespace xiiMemoryPolicies
   class xiiAlignedHeapAllocation
   {
   public:
-    XII_ALWAYS_INLINE xiiAlignedHeapAllocation(xiiAllocatorBase* pParent) {}
+    XII_ALWAYS_INLINE xiiAlignedHeapAllocation(xiiAllocatorBase* pParent) { XII_IGNORE_UNUSED(pParent); }
     XII_ALWAYS_INLINE ~xiiAlignedHeapAllocation() = default;
 
     void* Allocate(size_t uiSize, size_t uiAlign);

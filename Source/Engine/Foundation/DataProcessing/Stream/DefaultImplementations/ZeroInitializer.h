@@ -23,7 +23,7 @@ protected:
   virtual xiiResult UpdateStreamBindings() override;
 
   virtual void InitializeElements(xiiUInt64 uiStartIndex, xiiUInt64 uiNumElements) override;
-  virtual void Process(xiiUInt64 uiNumElements) override {}
+  virtual void Process(xiiUInt64 uiNumElements) override { XII_IGNORE_UNUSED(uiNumElements); }
 
   xiiHashedString m_sStreamName;
 

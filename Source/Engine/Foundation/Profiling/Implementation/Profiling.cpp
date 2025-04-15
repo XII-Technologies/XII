@@ -885,32 +885,63 @@ void xiiProfilingListScope::StartNextSection(xiiStringView sNextSectionName)
 
 xiiResult xiiProfilingSystem::ProfilingData::Write(xiiStreamWriter& outputStream) const
 {
+  XII_IGNORE_UNUSED(outputStream);
   return XII_FAILURE;
 }
 
 void xiiProfilingSystem::Clear() {}
 
-void xiiProfilingSystem::Capture(xiiProfilingSystem::ProfilingData& out_Capture, bool bClearAfterCapture) {}
+void xiiProfilingSystem::Capture(xiiProfilingSystem::ProfilingData& out_Capture, bool bClearAfterCapture)
+{
+  XII_IGNORE_UNUSED(out_Capture);
+  XII_IGNORE_UNUSED(bClearAfterCapture);
+}
 
-void xiiProfilingSystem::SetDiscardThreshold(xiiTime threshold) {}
+void xiiProfilingSystem::SetDiscardThreshold(xiiTime threshold)
+{
+  XII_IGNORE_UNUSED(threshold);
+}
 
 void xiiProfilingSystem::StartNewFrame() {}
 
-void xiiProfilingSystem::AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout) {}
+void xiiProfilingSystem::AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout)
+{
+  XII_IGNORE_UNUSED(sName);
+  XII_IGNORE_UNUSED(sFunctionName);
+  XII_IGNORE_UNUSED(beginTime);
+  XII_IGNORE_UNUSED(endTime);
+  XII_IGNORE_UNUSED(scopeTimeout);
+}
 
 void xiiProfilingSystem::Initialize() {}
 
 void xiiProfilingSystem::Reset() {}
 
-void xiiProfilingSystem::SetThreadName(xiiStringView sThreadName) {}
+void xiiProfilingSystem::SetThreadName(xiiStringView sThreadName)
+{
+  XII_IGNORE_UNUSED(sThreadName);
+}
 
 void xiiProfilingSystem::RemoveThread() {}
 
-void xiiProfilingSystem::InitializeGPUData(xiiUInt32 uiGpuCount) {}
+void xiiProfilingSystem::InitializeGPUData(xiiUInt32 uiGpuCount)
+{
+  XII_IGNORE_UNUSED(uiGpuCount);
+}
 
-void xiiProfilingSystem::AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex) {}
+void xiiProfilingSystem::AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex)
+{
+  XII_IGNORE_UNUSED(sName);
+  XII_IGNORE_UNUSED(beginTime);
+  XII_IGNORE_UNUSED(endTime);
+  XII_IGNORE_UNUSED(gpuIndex);
+}
 
-void xiiProfilingSystem::ProfilingData::Merge(ProfilingData& out_Merged, xiiArrayPtr<const ProfilingData*> inputs) {}
+void xiiProfilingSystem::ProfilingData::Merge(ProfilingData& out_Merged, xiiArrayPtr<const ProfilingData*> inputs)
+{
+  XII_IGNORE_UNUSED(out_Merged);
+  XII_IGNORE_UNUSED(inputs);
+}
 
 #endif
 

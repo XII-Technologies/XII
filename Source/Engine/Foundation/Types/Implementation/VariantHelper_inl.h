@@ -862,6 +862,9 @@ class xiiVariantHelper
   template <typename T>
   static void To(const xiiVariant& value, T& result, bool& bSuccessful)
   {
+    XII_IGNORE_UNUSED(value);
+    XII_IGNORE_UNUSED(result);
+
     XII_REPORT_FAILURE("Conversion function not implemented for target type '{0}'", xiiVariant::TypeDeduction<T>::value);
 
     bSuccessful = false;

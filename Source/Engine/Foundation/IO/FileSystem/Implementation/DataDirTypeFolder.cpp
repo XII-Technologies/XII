@@ -91,6 +91,10 @@ namespace xiiDataDirectory
 
   xiiDataDirectoryType* FolderType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiDataDirUsage usage)
   {
+    XII_IGNORE_UNUSED(sGroup);
+    XII_IGNORE_UNUSED(sRootName);
+    XII_IGNORE_UNUSED(usage);
+
     FolderType* pDataDir = XII_DEFAULT_NEW(FolderType);
 
     if (pDataDir->InitializeDataDirectory(sDataDirectory) == XII_SUCCESS)
@@ -202,6 +206,8 @@ namespace xiiDataDirectory
 
   bool FolderType::ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir)
   {
+    XII_IGNORE_UNUSED(bOneSpecificDataDir);
+
     xiiStringBuilder sRedirectedAsset;
     ResolveAssetRedirection(sFile, sRedirectedAsset);
 
@@ -212,6 +218,8 @@ namespace xiiDataDirectory
 
   xiiResult FolderType::GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)
   {
+    XII_IGNORE_UNUSED(bOneSpecificDataDir);
+
     xiiStringBuilder sRedirectedAsset;
     ResolveAssetRedirection(sFileOrFolder, sRedirectedAsset);
 
@@ -288,6 +296,8 @@ namespace xiiDataDirectory
 
   xiiDataDirectoryReader* FolderType::OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir)
   {
+    XII_IGNORE_UNUSED(bSpecificallyThisDataDir);
+
     xiiStringBuilder sFileToOpen;
     ResolveAssetRedirection(sFile, sFileToOpen);
 
@@ -323,7 +333,6 @@ namespace xiiDataDirectory
     // If it succeeds, we return the reader
     return pReader;
   }
-
 
   bool FolderType::ResolveAssetRedirection(xiiStringView sFile, xiiStringBuilder& out_sRedirection)
   {

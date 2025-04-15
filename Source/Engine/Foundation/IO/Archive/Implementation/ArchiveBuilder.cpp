@@ -76,6 +76,9 @@ void xiiArchiveBuilder::AddFolder(xiiStringView sAbsFolderPath, xiiArchiveCompre
   }
 
 #else
+  XII_IGNORE_UNUSED(sAbsFolderPath);
+  XII_IGNORE_UNUSED(defaultMode);
+  XII_IGNORE_UNUSED(callback);
   XII_ASSERT_NOT_IMPLEMENTED;
 #endif
 }
@@ -135,11 +138,16 @@ xiiResult xiiArchiveBuilder::WriteArchive(xiiStreamWriter& ref_stream) const
 
 bool xiiArchiveBuilder::WriteNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const
 {
+  XII_IGNORE_UNUSED(uiCurEntry);
+  XII_IGNORE_UNUSED(uiMaxEntries);
+  XII_IGNORE_UNUSED(sSourceFile);
   return true;
 }
 
 bool xiiArchiveBuilder::WriteFileProgressCallback(xiiUInt64 bytesWritten, xiiUInt64 bytesTotal) const
 {
+  XII_IGNORE_UNUSED(bytesWritten);
+  XII_IGNORE_UNUSED(bytesTotal);
   return true;
 }
 

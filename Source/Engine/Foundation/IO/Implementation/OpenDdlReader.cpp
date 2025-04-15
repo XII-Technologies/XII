@@ -44,7 +44,6 @@ const xiiOpenDdlReaderElement* xiiOpenDdlReader::GetRootElement() const
   return m_ObjectStack[0];
 }
 
-
 const xiiOpenDdlReaderElement* xiiOpenDdlReader::FindElement(xiiStringView sGlobalName) const
 {
   return m_GlobalNames.GetValueOrDefault(sGlobalName, nullptr);
@@ -222,6 +221,8 @@ void xiiOpenDdlReader::OnPrimitiveDouble(xiiUInt32 count, const double* pData, b
 
 void xiiOpenDdlReader::OnPrimitiveString(xiiUInt32 count, const xiiStringView* pData, bool bThisIsAll)
 {
+  XII_IGNORE_UNUSED(bThisIsAll);
+
   const xiiUInt32 uiDataSize = count * sizeof(xiiStringView);
 
   const xiiUInt32 offset = m_TempCache.GetCount();
@@ -236,9 +237,12 @@ void xiiOpenDdlReader::OnPrimitiveString(xiiUInt32 count, const xiiStringView* p
   m_ObjectStack.PeekBack()->m_uiNumChildElements += count;
 }
 
-
 void xiiOpenDdlReader::OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)
 {
+  XII_IGNORE_UNUSED(sMessage);
+  XII_IGNORE_UNUSED(uiLine);
+  XII_IGNORE_UNUSED(uiColumn);
+
   if (bFatal)
   {
     m_ObjectStack.Clear();

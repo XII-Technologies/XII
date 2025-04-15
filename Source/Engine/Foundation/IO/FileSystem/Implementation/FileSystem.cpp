@@ -860,6 +860,8 @@ xiiResult xiiFileSystem::DetectSdkRootDirectory(xiiStringView sExpectedSubFolder
 
   // Probably this is what needs to be done on all mobile platforms as well
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
+  XII_IGNORE_UNUSED(sExpectedSubFolder);
+
   sdkRoot = xiiOSFile::GetApplicationDirectory();
 #else
   if (xiiFileSystem::FindFolderWithSubPath(sdkRoot, xiiOSFile::GetApplicationDirectory(), sExpectedSubFolder, "xiiSdkRoot.txt").Failed())

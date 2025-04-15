@@ -11,11 +11,15 @@ public:
 
   xiiRefCountingImpl(const xiiRefCountingImpl& rhs) // [tested]
   {
+    XII_IGNORE_UNUSED(rhs);
+
     // do not copy the ref count
   }
 
   void operator=(const xiiRefCountingImpl& rhs) // [tested]
   {
+    XII_IGNORE_UNUSED(rhs);
+
     // do not copy the ref count
   }
 

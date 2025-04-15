@@ -96,8 +96,7 @@ struct xiiPropertyFlags
 
     xiiBitflags<xiiPropertyFlags>  flags;
     constexpr xiiVariantType::Enum type = static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<CleanType>::value);
-    if constexpr (std::is_same<CleanType, xiiVariant>::value || std::is_same<Type, const char*>::value || // We treat const char* as a basic type and not a pointer.
-                  (type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType))
+    if constexpr (std::is_same<CleanType, xiiVariant>::value || (type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType) || std::is_same<Type, const char*>::value) // We treat const char* as a basic type and not a pointer.
       flags.Add(xiiPropertyFlags::StandardType);
     else if constexpr (xiiIsEnum<CleanType>::value)
       flags.Add(xiiPropertyFlags::IsEnum);
@@ -302,7 +301,12 @@ public:
   /// \brief Resizes the array to uiCount.
   virtual void SetCount(void* pInstance, xiiUInt32 uiCount) const = 0;
 
-  virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) const { return nullptr; }
+  virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) const
+  {
+    XII_IGNORE_UNUSED(pInstance);
+    XII_IGNORE_UNUSED(uiIndex);
+    return nullptr;
+  }
 };
 
 

@@ -20,6 +20,8 @@ void xiiRttiConverterContext::OnUnknownTypeError(xiiStringView sTypeName)
 
 xiiUuid xiiRttiConverterContext::GenerateObjectGuid(const xiiUuid& parentGuid, const xiiAbstractProperty* pProp, xiiVariant index, void* pObject) const
 {
+  XII_IGNORE_UNUSED(pObject);
+
   xiiUuid guid = parentGuid;
   guid.HashCombine(xiiUuid::MakeStableUuidFromString(pProp->GetPropertyName()));
   if (index.IsA<xiiString>())
@@ -97,6 +99,8 @@ xiiRttiConverterObject xiiRttiConverterContext::GetObjectByGUID(const xiiUuid& g
 
 xiiUuid xiiRttiConverterContext::GetObjectGUID(const xiiRTTI* pRtti, const void* pObject) const
 {
+  XII_IGNORE_UNUSED(pRtti);
+
   xiiUuid guid;
 
   if (pObject != nullptr)
@@ -157,6 +161,8 @@ xiiRttiConverterWriter::xiiRttiConverterWriter(xiiAbstractObjectGraph* pGraph, x
   m_pContext = pContext;
 
   m_Filter = [bSerializeReadOnly, bSerializeOwnerPtrs](const void* pObject, const xiiAbstractProperty* pProp) {
+    XII_IGNORE_UNUSED(pObject);
+
     if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) && !bSerializeReadOnly)
       return false;
 

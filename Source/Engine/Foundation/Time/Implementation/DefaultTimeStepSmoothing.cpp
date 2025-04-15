@@ -9,6 +9,8 @@ xiiDefaultTimeStepSmoothing::xiiDefaultTimeStepSmoothing()
 
 void xiiDefaultTimeStepSmoothing::Reset(const xiiClock* pClock)
 {
+  XII_IGNORE_UNUSED(pClock);
+
   m_LastTimeSteps.Clear();
 }
 

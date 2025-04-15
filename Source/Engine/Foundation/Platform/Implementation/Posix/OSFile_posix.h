@@ -92,6 +92,8 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
     xiiThreadUtils::Sleep(sleepTime);
   }
 
+  XII_IGNORE_UNUSED(FileShareMode);
+
   switch (OpenMode)
   {
     case xiiFileOpenMode::Read:

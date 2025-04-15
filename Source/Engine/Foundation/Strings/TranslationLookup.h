@@ -48,7 +48,10 @@ private:
 class XII_FOUNDATION_DLL xiiTranslatorPassThrough : public xiiTranslator
 {
 public:
-  virtual xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override { return sString; }
+  virtual xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override {
+    XII_IGNORE_UNUSED(uiStringHash);
+    XII_IGNORE_UNUSED(usage);
+    return sString; }
 };
 
 /// \brief Can store translated strings and all translation requests will come from that storage. Returns nullptr if the requested string is

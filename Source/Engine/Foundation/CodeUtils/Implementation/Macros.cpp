@@ -4,15 +4,6 @@
 
 using namespace xiiTokenParseUtils;
 
-xiiPreprocessor::MacroDefinition::MacroDefinition()
-{
-  m_MacroIdentifier     = nullptr;
-  m_bIsFunction         = false;
-  m_bCurrentlyExpanding = false;
-  m_iNumParameters      = -1;
-  m_bHasVarArgs         = false;
-}
-
 void xiiPreprocessor::CopyTokensReplaceParams(const TokenStream& Source, xiiUInt32 uiFirstSourceToken, TokenStream& Destination, const xiiHybridArray<xiiString, 16>& parameters)
 {
   Destination.Clear();

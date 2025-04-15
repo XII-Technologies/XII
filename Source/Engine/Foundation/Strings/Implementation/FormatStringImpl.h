@@ -76,6 +76,8 @@ private:
   template <xiiInt32 N>
   typename std::enable_if<sizeof...(ARGS) == N>::type ReplaceString(char tmp[MaxNumParameters][TempStringLength], xiiStringView* pViews) const
   {
+    XII_IGNORE_UNUSED(tmp);
+    XII_IGNORE_UNUSED(pViews);
   }
 
   // stores the arguments

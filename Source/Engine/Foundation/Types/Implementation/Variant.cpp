@@ -139,7 +139,10 @@ struct ComputeHashFunc
   template <typename T>
   XII_FORCE_INLINE xiiUInt64 operator()(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
   {
+    XII_IGNORE_UNUSED(v);
+
     static_assert(sizeof(typename xiiVariant::TypeDeduction<T>::StorageType) <= sizeof(float) * 4 && !xiiVariant::TypeDeduction<T>::forceSharing, "This type requires special handling! Add a specialization below.");
+
     return xiiHashingUtils::xxHash64(pData, sizeof(T), uiSeed);
   }
 };
@@ -148,18 +151,24 @@ struct ComputeHashFunc
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec2I64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec2I64), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec3I64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec3I64), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4I64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec4I64), uiSeed);
 }
 
@@ -167,18 +176,24 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4I64>(const xiiVar
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec2U64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec2U64), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec3U64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec3U64), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4U64>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec4U64), uiSeed);
 }
 
@@ -186,18 +201,24 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4U64>(const xiiVar
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec2d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec2d), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec3d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec3d), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiVec4d), uiSeed);
 }
 
@@ -205,6 +226,8 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVec4d>(const xiiVaria
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiString>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   auto pString = static_cast<const xiiString*>(pData);
 
   return xiiHashingUtils::xxHash64String(*pString, uiSeed);
@@ -214,30 +237,40 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiString>(const xiiVari
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiQuatd>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiQuatd), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat3>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiMat3), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat3d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiMat3d), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat4>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiMat4), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat4d>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiMat4d), uiSeed);
 }
 
@@ -245,12 +278,16 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiMat4d>(const xiiVaria
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTransform>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiTransform), uiSeed);
 }
 
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTransformd>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   return xiiHashingUtils::xxHash64(pData, sizeof(xiiTransformd), uiSeed);
 }
 
@@ -258,6 +295,8 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTransformd>(const xii
 template <>
 XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiDataBuffer>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   auto pDataBuffer = static_cast<const xiiDataBuffer*>(pData);
 
   return xiiHashingUtils::xxHash64(pDataBuffer->GetData(), pDataBuffer->GetCount(), uiSeed);
@@ -267,6 +306,8 @@ XII_ALWAYS_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiDataBuffer>(const xii
 template <>
 XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVariantArray>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   auto pVariantArray = static_cast<const xiiVariantArray*>(pData);
 
   xiiUInt64 uiHash = uiSeed;
@@ -281,6 +322,8 @@ XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiVariantArray>(const xi
 template <>
 xiiUInt64 ComputeHashFunc::operator()<xiiVariantDictionary>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
+
   auto pVariantDictionary = static_cast<const xiiVariantDictionary*>(pData);
 
   xiiHybridArray<xiiUInt64, 128> hashes;
@@ -301,7 +344,9 @@ xiiUInt64 ComputeHashFunc::operator()<xiiVariantDictionary>(const xiiVariant& v,
 template <>
 XII_FORCE_INLINE xiiUInt64 ComputeHashFunc::operator()<xiiTypedPointer>(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
 {
+  XII_IGNORE_UNUSED(v);
   XII_IGNORE_UNUSED(pData);
+  XII_IGNORE_UNUSED(uiSeed);
 
   XII_ASSERT_NOT_IMPLEMENTED;
   return 0;

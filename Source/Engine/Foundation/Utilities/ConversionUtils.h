@@ -324,6 +324,7 @@ namespace xiiConversionUtils
   template <typename T>
   XII_ALWAYS_INLINE const xiiStringBuilder& ToString(const T& value, xiiStringBuilder& out_sResult)
   {
+    XII_IGNORE_UNUSED(value);
     out_sResult = "N/A";
     return out_sResult;
   }

@@ -39,6 +39,7 @@ xiiInternal::NewInstance<xiiIpcChannel> xiiIpcChannel::CreatePipeChannel(xiiStri
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
   return XII_DEFAULT_NEW(xiiPipeChannel_linux, sAddress, mode);
 #else
+  XII_IGNORE_UNUSED(mode);
   XII_ASSERT_NOT_IMPLEMENTED;
   return nullptr;
 #endif
@@ -50,6 +51,8 @@ xiiInternal::NewInstance<xiiIpcChannel> xiiIpcChannel::CreateNetworkChannel(xiiS
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
   return XII_DEFAULT_NEW(xiiIpcChannelEnet, sAddress, mode);
 #else
+  XII_IGNORE_UNUSED(sAddress);
+  XII_IGNORE_UNUSED(mode);
   XII_ASSERT_NOT_IMPLEMENTED;
   return nullptr;
 #endif

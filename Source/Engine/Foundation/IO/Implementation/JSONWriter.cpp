@@ -308,146 +308,204 @@ void xiiJSONWriter::AddVariableVariant(xiiStringView sName, const xiiVariant& va
 
 void xiiJSONWriter::WriteColor(const xiiColor& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiColor is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteColorGamma(const xiiColorGammaUB& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiColorGammaUB is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec2(const xiiVec2& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec2 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec2d(const xiiVec2d& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec2d is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec3(const xiiVec3& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec3 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec3d(const xiiVec3d& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec3d is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec4(const xiiVec4& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec4 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec4d(const xiiVec4d& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec4d is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec2I32(const xiiVec2I32& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec2I32 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec2I64(const xiiVec2I64& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec2I64 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec3I32(const xiiVec3I32& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec3I32 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec3I64(const xiiVec3I64& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec3I64 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec4I32(const xiiVec4I32& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec4I32 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec4I64(const xiiVec4I64& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec4I64 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec2U32(const xiiVec2U32& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec2U32 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec2U64(const xiiVec2U64& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec2U64 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec3U32(const xiiVec3U32& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec3U32 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec3U64(const xiiVec3U64& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec3U64 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec4U32(const xiiVec4U32& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec4U32 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteVec4U64(const xiiVec4U64& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiVec4U64 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteQuat(const xiiQuat& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiQuat is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteQuatd(const xiiQuatd& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiQuatd is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteMat3(const xiiMat3& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiMat3 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteMat3d(const xiiMat3d& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiMat3d is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteMat4(const xiiMat4& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiMat4 is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteMat4d(const xiiMat4d& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiMat4d is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteTransform(const xiiTransform& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiTransform is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteTransformd(const xiiTransformd& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiTransformd is not supported by this JSON writer.");
 }
 
 void xiiJSONWriter::WriteDataBuffer(const xiiDataBuffer& value)
 {
+  XII_IGNORE_UNUSED(value);
+
   XII_REPORT_FAILURE("The complex data type xiiDateBuffer is not supported by this JSON writer.");
 }
 

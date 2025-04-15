@@ -144,6 +144,8 @@ void xiiDataTransfer::Initialize()
 
 void xiiDataTransfer::TelemetryMessage(void* pPassThrough)
 {
+  XII_IGNORE_UNUSED(pPassThrough);
+
   xiiTelemetryMessage Msg;
 
   while (xiiTelemetry::RetrieveMessage('DTRA', Msg) == XII_SUCCESS)

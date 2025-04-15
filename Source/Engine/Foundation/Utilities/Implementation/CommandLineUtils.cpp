@@ -61,6 +61,8 @@ void xiiCommandLineUtils::SetCommandLine(xiiUInt32 uiArgc, const char** pArgv, A
     SetCommandLine();
     return;
   }
+#else
+  XII_IGNORE_UNUSED(mode);
 #endif
 
   m_Commands.Clear();
@@ -102,14 +104,6 @@ void xiiCommandLineUtils::SetCommandLine()
   LocalFree(argvw);
 }
 
-#elif XII_ENABLED(XII_PLATFORM_OSX)
-// Not implemented on OSX.
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-// Not implemented on Linux.
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-// Not implemented on Android.
-#else
-#  error "xiiCommandLineUtils::SetCommandLine(): Abstraction missing."
 #endif
 
 const xiiDynamicArray<xiiString>& xiiCommandLineUtils::GetCommandLineArray() const
@@ -225,15 +219,16 @@ bool xiiCommandLineUtils::GetBoolOption(xiiStringView sOption, bool bDefault, bo
   if (iIndex < 0)
     return bDefault;
 
-  if (iIndex + 1 == m_Commands.GetCount()) // last command, treat this as 'on'
+  const xiiUInt32 uiIndex = iIndex;
+  if (uiIndex + 1 == m_Commands.GetCount()) // last command, treat this as 'on'
     return true;
 
-  if (m_Commands[iIndex + 1].StartsWith("-")) // next command is the next option -> treat this as 'on' as well
+  if (m_Commands[uiIndex + 1].StartsWith("-")) // next command is the next option -> treat this as 'on' as well
     return true;
 
   // otherwise try to convert the next option to a boolean
   bool bRes = bDefault;
-  xiiConversionUtils::StringToBool(m_Commands[iIndex + 1].GetData(), bRes).IgnoreResult();
+  xiiConversionUtils::StringToBool(m_Commands[uiIndex + 1].GetData(), bRes).IgnoreResult();
 
   return bRes;
 }
@@ -245,12 +240,13 @@ xiiInt32 xiiCommandLineUtils::GetIntOption(xiiStringView sOption, xiiInt32 iDefa
   if (iIndex < 0)
     return iDefault;
 
-  if (iIndex + 1 == m_Commands.GetCount()) // last command
+  const xiiUInt32 uiIndex = iIndex;
+  if (uiIndex + 1 == m_Commands.GetCount()) // last command
     return iDefault;
 
   // try to convert the next option to a number
   xiiInt32 iRes = iDefault;
-  xiiConversionUtils::StringToInt(m_Commands[iIndex + 1].GetData(), iRes).IgnoreResult();
+  xiiConversionUtils::StringToInt(m_Commands[uiIndex + 1].GetData(), iRes).IgnoreResult();
 
   return iRes;
 }
@@ -262,12 +258,13 @@ xiiUInt32 xiiCommandLineUtils::GetUIntOption(xiiStringView sOption, xiiUInt32 ui
   if (iIndex < 0)
     return uiDefault;
 
-  if (iIndex + 1 == m_Commands.GetCount()) // last command
+  const xiiUInt32 uiIndex = iIndex;
+  if (uiIndex + 1 == m_Commands.GetCount()) // last command
     return uiDefault;
 
   // try to convert the next option to a number
   xiiUInt32 uiRes = uiDefault;
-  xiiConversionUtils::StringToUInt(m_Commands[iIndex + 1].GetData(), uiRes).IgnoreResult();
+  xiiConversionUtils::StringToUInt(m_Commands[uiIndex + 1].GetData(), uiRes).IgnoreResult();
 
   return uiRes;
 }
@@ -279,12 +276,13 @@ double xiiCommandLineUtils::GetFloatOption(xiiStringView sOption, double fDefaul
   if (iIndex < 0)
     return fDefault;
 
-  if (iIndex + 1 == m_Commands.GetCount()) // last command
+  const xiiUInt32 uiIndex = iIndex;
+  if (uiIndex + 1 == m_Commands.GetCount()) // last command
     return fDefault;
 
   // try to convert the next option to a number
   double fRes = fDefault;
-  xiiConversionUtils::StringToFloat(m_Commands[iIndex + 1].GetData(), fRes).IgnoreResult();
+  xiiConversionUtils::StringToFloat(m_Commands[uiIndex + 1].GetData(), fRes).IgnoreResult();
 
   return fRes;
 }

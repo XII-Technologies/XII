@@ -263,13 +263,11 @@ private: // *** Macro Definition ***
 
   struct MacroDefinition
   {
-    MacroDefinition();
-
-    const xiiToken*                 m_MacroIdentifier;
-    bool                            m_bIsFunction;
-    bool                            m_bCurrentlyExpanding;
-    bool                            m_bHasVarArgs;
-    xiiInt32                        m_iNumParameters;
+    const xiiToken*                 m_MacroIdentifier = nullptr;
+    bool                            m_bIsFunction = false;
+    bool                            m_bCurrentlyExpanding = false;
+    bool                            m_bHasVarArgs = false;
+    xiiUInt32                       m_uiNumParameters = xiiInvalidIndex;
     xiiTokenParseUtils::TokenStream m_Replacement;
   };
 

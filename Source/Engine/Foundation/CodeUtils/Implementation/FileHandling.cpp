@@ -209,6 +209,8 @@ xiiResult xiiPreprocessor::OpenFile(xiiStringView sFile, const xiiTokenizer** pT
 
 xiiResult xiiPreprocessor::HandleInclude(const TokenStream& Tokens0, xiiUInt32 uiCurToken, xiiUInt32 uiDirectiveToken, TokenStream& TokenOutput)
 {
+  XII_IGNORE_UNUSED(uiDirectiveToken);
+
   XII_ASSERT_DEV(m_FileLocatorCallback.IsValid(), "File locator callback has not been set");
 
   TokenStream Tokens;

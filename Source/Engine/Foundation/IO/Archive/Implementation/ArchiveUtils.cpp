@@ -108,6 +108,8 @@ xiiResult xiiArchiveUtils::WriteEntryPreprocessed(xiiStreamWriter& ref_stream, x
 
 xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& inout_tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress /*= FileWriteProgressCallback()*/)
 {
+  XII_IGNORE_UNUSED(iCompressionLevel);
+
   xiiFileReader file;
   XII_SUCCEED_OR_RETURN(file.Open(sAbsSourcePath, 1024 * 1024));
 

@@ -312,6 +312,8 @@ bool xiiPipeChannel_win::ProcessOutgoingMessages(DWORD uiBytesWritten)
 
 void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfered, DWORD uiError)
 {
+  XII_IGNORE_UNUSED(uiError);
+
   XII_ASSERT_DEBUG(m_ThreadId == xiiThreadUtils::GetCurrentThreadID(), "Function must be called from worker thread!");
   bool bRes = true;
   if (pContext == &m_InputState.Context)

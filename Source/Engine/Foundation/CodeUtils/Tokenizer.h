@@ -143,7 +143,7 @@ private:
   xiiStringView      m_sIterator;
   xiiStringView      m_sRawStringMarker;
   xiiUInt32          m_uiCurLine   = 1;
-  xiiUInt32          m_uiCurColumn = -1;
+  xiiUInt32          m_uiCurColumn = xiiInvalidIndex;
   xiiUInt32          m_uiCurChar   = '\0';
   xiiUInt32          m_uiNextChar  = '\0';
 

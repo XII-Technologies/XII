@@ -255,6 +255,7 @@ private:
   virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) = 0;
   virtual xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocatorBase* pAllocator)
   {
+    XII_IGNORE_UNUSED(pObject);
     XII_REPORT_FAILURE("Cloning is not supported by this allocator.");
     return xiiInternal::NewInstance<void>(nullptr, pAllocator);
   }
@@ -276,6 +277,8 @@ struct XII_FOUNDATION_DLL xiiRTTINoAllocator : public xiiRTTIAllocator
   /// \brief Will trigger an assert.
   virtual void Deallocate(void* pObject, xiiAllocatorBase* pAllocator) override // [tested]
   {
+    XII_IGNORE_UNUSED(pObject);
+    XII_IGNORE_UNUSED(pAllocator);
     XII_REPORT_FAILURE("This function should never be called.");
   }
 };
@@ -303,7 +306,15 @@ struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
       pAllocator = AllocatorWrapper::GetAllocator();
     }
 
-    return CloneImpl(pObject, pAllocator, xiiTraitInt<std::is_copy_constructible<CLASS>::value>());
+    if constexpr (std::is_copy_constructible_v<CLASS>)
+    {
+      return XII_NEW(pAllocator, CLASS, *static_cast<const CLASS*>(pObject));
+    }
+    else
+    {
+      XII_REPORT_FAILURE("Clone failed since the type is not copy constructible");
+      return xiiInternal::NewInstance<void>(nullptr, pAllocator);
+    }
   }
 
   /// \brief Deletes the given instance with the given allocator.
@@ -316,17 +327,5 @@ struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
 
     CLASS* pPointer = static_cast<CLASS*>(pObject);
     XII_DELETE(pAllocator, pPointer);
-  }
-
-private:
-  xiiInternal::NewInstance<void> CloneImpl(const void* pObject, xiiAllocatorBase* pAllocator, xiiTraitInt<0>)
-  {
-    XII_REPORT_FAILURE("Clone failed since the type is not copy constructible");
-    return xiiInternal::NewInstance<void>(nullptr, pAllocator);
-  }
-
-  xiiInternal::NewInstance<void> CloneImpl(const void* pObject, xiiAllocatorBase* pAllocator, xiiTraitInt<1>)
-  {
-    return XII_NEW(pAllocator, CLASS, *static_cast<const CLASS*>(pObject));
   }
 };

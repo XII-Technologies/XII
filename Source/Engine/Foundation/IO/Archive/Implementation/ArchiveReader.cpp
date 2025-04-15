@@ -87,6 +87,7 @@ xiiResult xiiArchiveReader::OpenArchive(xiiStringView sPath)
 
   return XII_SUCCESS;
 #else
+  XII_IGNORE_UNUSED(sPath);
   XII_REPORT_FAILURE("Memory mapped files are unsupported on this platform.");
   return XII_FAILURE;
 #endif
@@ -165,11 +166,16 @@ xiiResult xiiArchiveReader::ExtractFile(xiiUInt32 uiEntryIdx, xiiStringView sTar
 
 bool xiiArchiveReader::ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const
 {
+  XII_IGNORE_UNUSED(uiCurEntry);
+  XII_IGNORE_UNUSED(uiMaxEntries);
+  XII_IGNORE_UNUSED(sSourceFile);
   return true;
 }
 
 bool xiiArchiveReader::ExtractFileProgressCallback(xiiUInt64 bytesWritten, xiiUInt64 bytesTotal) const
 {
+  XII_IGNORE_UNUSED(bytesWritten);
+  XII_IGNORE_UNUSED(bytesTotal);
   return true;
 }
 

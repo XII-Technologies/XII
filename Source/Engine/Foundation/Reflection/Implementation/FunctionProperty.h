@@ -167,6 +167,8 @@ public:
 
   virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
   {
+    XII_IGNORE_UNUSED(pInstance);
+
     ExecuteImpl(xiiTraitInt<std::is_same<R, void>::value>(), out_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
   }
 
@@ -190,21 +192,21 @@ public:
   void ExecuteImpl(xiiTraitInt<1>, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
   {
     out_returnValue = CLASS(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
-    // returnValue = CLASS(static_cast<typename getArgument<I, Args...>::Type>(xiiVariantAdapter<typename getArgument<I,
-    // Args...>::Type>(arguments[I]))...);
+    // returnValue = CLASS(static_cast<typename getArgument<I, Args...>::Type>(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I]))...);
   }
 
   template <std::size_t... I>
   void ExecuteImpl(xiiTraitInt<0>, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
   {
     CLASS* pInstance = XII_DEFAULT_NEW(CLASS, xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
-    // CLASS* pInstance = XII_DEFAULT_NEW(CLASS, static_cast<typename getArgument<I, Args...>::Type>(xiiVariantAdapter<typename getArgument<I,
-    // Args...>::Type>(arguments[I]))...);
+    // CLASS* pInstance = XII_DEFAULT_NEW(CLASS, static_cast<typename getArgument<I, Args...>::Type>(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I]))...);
     out_returnValue = pInstance;
   }
 
   virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
   {
+    XII_IGNORE_UNUSED(pInstance);
+
     ExecuteImpl(xiiTraitInt<xiiIsStandardType<CLASS>::value>(), out_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
   }
 };

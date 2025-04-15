@@ -235,7 +235,7 @@ private:
   static void PluginEventHandler(const xiiPluginEvent& EventData);
 
   /// \brief Loads CVar values for the given vars from the given config file path. Returns the xiiCVars which have actually been loaded.
-  static void LoadCVarsFromFileInternal(xiiStringView path, const xiiDynamicArray<xiiCVar*>& vars, bool bOnlyNewOnes, bool bSetAsCurrentValue, xiiDynamicArray<xiiCVar*>* pOutCVars);
+  static void LoadCVarsFromFileInternal(xiiStringView path, const xiiDynamicArray<xiiCVar*>& vars, bool bSetAsCurrentValue, xiiDynamicArray<xiiCVar*>* pOutCVars);
 
   /// \brief Stores the values of the given vars to the given config file path.
   static void SaveCVarsToFileInternal(xiiStringView path, const xiiDynamicArray<xiiCVar*>& vars);

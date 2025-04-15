@@ -23,6 +23,8 @@ private:
 #else
   XII_ALWAYS_INLINE static void DebugCheckTaskGroup(xiiTaskGroupID groupID, xiiMutex& mutex)
   {
+    XII_IGNORE_UNUSED(groupID);
+    XII_IGNORE_UNUSED(mutex);
   }
 #endif
 

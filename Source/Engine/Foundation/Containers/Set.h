@@ -268,20 +268,25 @@ typename xiiSetBase<KeyType, Comparer>::Iterator cbegin(const xiiSetBase<KeyType
 template <typename KeyType, typename Comparer>
 typename xiiSetBase<KeyType, Comparer>::Iterator end(xiiSetBase<KeyType, Comparer>& ref_container)
 {
+  XII_IGNORE_UNUSED(ref_container);
+
   return typename xiiSetBase<KeyType, Comparer>::Iterator();
 }
 
 template <typename KeyType, typename Comparer>
 typename xiiSetBase<KeyType, Comparer>::Iterator end(const xiiSetBase<KeyType, Comparer>& container)
 {
+  XII_IGNORE_UNUSED(container);
+
   return typename xiiSetBase<KeyType, Comparer>::Iterator();
 }
 
 template <typename KeyType, typename Comparer>
 typename xiiSetBase<KeyType, Comparer>::Iterator cend(const xiiSetBase<KeyType, Comparer>& container)
 {
+  XII_IGNORE_UNUSED(container);
+
   return typename xiiSetBase<KeyType, Comparer>::Iterator();
 }
-
 
 #include <Foundation/Containers/Implementation/Set_inl.h>

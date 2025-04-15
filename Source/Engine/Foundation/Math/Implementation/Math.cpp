@@ -222,6 +222,50 @@ size_t xiiMath::SafeConvertToSizeT(xiiUInt64 uiValue)
 }
 #endif
 
+template <>
+void xiiAngleTemplate<float>::NormalizeRange()
+{
+  constexpr float fTwoPi    = 2.0f * xiiAngleTemplate<float>::Pi();
+  constexpr float fTwoPiTen = 10.0f * xiiAngleTemplate<float>::Pi();
+
+  if (m_fRadian > fTwoPiTen || m_fRadian < -fTwoPiTen)
+  {
+    m_fRadian = xiiMath::Mod(m_fRadian, fTwoPi);
+  }
+
+  while (m_fRadian >= fTwoPi)
+  {
+    m_fRadian -= fTwoPi;
+  }
+
+  while (m_fRadian < 0.0f)
+  {
+    m_fRadian += fTwoPi;
+  }
+}
+
+template <>
+void xiiAngleTemplate<double>::NormalizeRange()
+{
+  constexpr double fTwoPi    = 2.0 * xiiAngleTemplate<double>::Pi();
+  constexpr double fTwoPiTen = 10.0 * xiiAngleTemplate<double>::Pi();
+
+  if (m_fRadian > fTwoPiTen || m_fRadian < -fTwoPiTen)
+  {
+    m_fRadian = xiiMath::Mod(m_fRadian, fTwoPi);
+  }
+
+  while (m_fRadian >= fTwoPi)
+  {
+    m_fRadian -= fTwoPi;
+  }
+
+  while (m_fRadian < 0.0)
+  {
+    m_fRadian += fTwoPi;
+  }
+}
+
 float xiiMath::ReplaceNaN(float fValue, float fFallback)
 {
   // ATTENTION: if this is a template, inline or constexpr function, the current MSVC (17.6)
