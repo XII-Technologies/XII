@@ -98,18 +98,19 @@ public:
 
   struct CommandListState
   {
-    vk::RenderPass  m_vkRenderPass         = VK_NULL_HANDLE;
-    vk::Framebuffer m_vkFramebuffer        = VK_NULL_HANDLE;
-    vk::Pipeline    m_vkGraphicsPipeline   = VK_NULL_HANDLE;
-    vk::Pipeline    m_vkComputePipeline    = VK_NULL_HANDLE;
-    vk::Pipeline    m_vkRayTracingPipeline = VK_NULL_HANDLE;
-    vk::Buffer      m_vkIndexBuffer        = VK_NULL_HANDLE;
-    vk::DeviceSize  m_vkIndexBufferOffset  = 0;
-    vk::IndexType   m_vkIndexType          = vk::IndexType::eNoneKHR;
-    xiiUInt32       m_uiFramebufferWidth   = 0;
-    xiiUInt32       m_uiFramebufferHeight  = 0;
-    xiiUInt32       m_uiInsidePassQueries  = 0;
-    xiiUInt32       m_uiOutsidePassQueries = 0;
+    vk::RenderPass  m_vkRenderPass             = VK_NULL_HANDLE;
+    vk::Framebuffer m_vkFramebuffer            = VK_NULL_HANDLE;
+    vk::Pipeline    m_vkGraphicsPipeline       = VK_NULL_HANDLE;
+    vk::Pipeline    m_vkComputePipeline        = VK_NULL_HANDLE;
+    vk::Pipeline    m_vkRayTracingPipeline     = VK_NULL_HANDLE;
+    vk::Buffer      m_vkIndexBuffer            = VK_NULL_HANDLE;
+    vk::DeviceSize  m_vkIndexBufferOffset      = 0;
+    vk::IndexType   m_vkIndexType              = vk::IndexType::eNoneKHR;
+    xiiUInt32       m_uiFramebufferWidth       = 0;
+    xiiUInt32       m_uiFramebufferHeight      = 0;
+    xiiUInt32       m_uiFramebufferArraySlices = 0;
+    xiiUInt32       m_uiInsidePassQueries      = 0;
+    xiiUInt32       m_uiOutsidePassQueries     = 0;
   };
 
 protected:
@@ -303,10 +304,6 @@ private:
   xiiGALTextureViewVulkan* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
   xiiGALTextureViewVulkan* m_pBoundDepthStencilTarget                            = nullptr;
   xiiUInt32                m_uiBoundRenderTargetCount                            = 0U;
-  xiiUInt32                m_uiFramebufferWidth                                  = 0;
-  xiiUInt32                m_uiFramebufferHeight                                 = 0;
-  xiiUInt32                m_uiFramebufferArraySlices                            = 0;
-  xiiUInt32                m_uiFramebufferSampleCount                            = 0;
 
   xiiUInt32                                                          m_uiSubpassIndex = 0U;
   xiiGALRenderPassVulkan*                                            m_pRenderPass    = nullptr;

@@ -1308,8 +1308,8 @@ void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* p
     vkClearAttachment.colorAttachment = uiAttachmentIndex;
 
     vk::ClearRect vkClearRect  = {};
-    vkClearRect.rect           = vk::Rect2D{{0, 0}, {m_uiFramebufferWidth, m_uiFramebufferHeight}}; // m_uiFramebufferWidth, m_uiFramebufferHeight are scaled to the proper mip level.
-    vkClearRect.baseArrayLayer = 0;                                                                 // The layers [baseArrayLayer, baseArrayLayer + layerCount) count from the base layer of the attachment image view (17.2), so baseArrayLayer is 0, not ViewDesc.FirstArraySlice.
+    vkClearRect.rect           = vk::Rect2D{{0, 0}, {m_CommandListState.m_uiFramebufferWidth, m_CommandListState.m_uiFramebufferHeight}}; // m_uiFramebufferWidth, m_uiFramebufferHeight are scaled to the proper mip level.
+    vkClearRect.baseArrayLayer = 0;                                                                                                       // The layers [baseArrayLayer, baseArrayLayer + layerCount) count from the base layer of the attachment image view (17.2), so baseArrayLayer is 0, not ViewDesc.FirstArraySlice.
     vkClearRect.layerCount     = viewDescription.m_uiArrayOrDepthSlicesCount;
 
     // No memory barriers are needed between vkCmdClearAttachments and preceding or subsequent draw or attachment clear commands in the same subpass (17.2)
@@ -1374,8 +1374,8 @@ void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* p
     vkClearAttachment.clearValue.depthStencil.stencil = uiStencilClear;
 
     vk::ClearRect vkClearRect  = {};
-    vkClearRect.rect           = vk::Rect2D{{0, 0}, {m_uiFramebufferWidth, m_uiFramebufferHeight}}; // m_uiFramebufferWidth, m_uiFramebufferHeight are scaled to the proper mip level.
-    vkClearRect.baseArrayLayer = 0;                                                                 // The layers [baseArrayLayer, baseArrayLayer + layerCount) count from the base layer of the attachment image view (17.2), so baseArrayLayer is 0, not ViewDesc.FirstArraySlice.
+    vkClearRect.rect           = vk::Rect2D{{0, 0}, {m_CommandListState.m_uiFramebufferWidth, m_CommandListState.m_uiFramebufferHeight}}; // m_uiFramebufferWidth, m_uiFramebufferHeight are scaled to the proper mip level.
+    vkClearRect.baseArrayLayer = 0;                                                                                                       // The layers [baseArrayLayer, baseArrayLayer + layerCount) count from the base layer of the attachment image view (17.2), so baseArrayLayer is 0, not ViewDesc.FirstArraySlice.
     vkClearRect.layerCount     = viewDescription.m_uiArrayOrDepthSlicesCount;
 
     // No memory barriers are needed between vkCmdClearAttachments and preceding or subsequent draw or attachment clear commands in the same subpass (17.2)
@@ -1479,10 +1479,11 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderP
     // The contents of the subpass will be recorded inline in the primary command buffer, and secondary command buffers must not be executed within the subpass.
     m_vkCommandBuffer.beginRenderPass(&vkRenderPassBeginInfo, vk::SubpassContents::eInline, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
-    m_CommandListState.m_vkRenderPass        = pRenderPassVulkan->GetVulkanRenderPass();
-    m_CommandListState.m_vkFramebuffer       = pFramebufferVulkan->GetVulkanFramebuffer();
-    m_CommandListState.m_uiFramebufferWidth  = framebufferDescription.m_FramebufferSize.width;
-    m_CommandListState.m_uiFramebufferHeight = framebufferDescription.m_FramebufferSize.height;
+    m_CommandListState.m_vkRenderPass             = pRenderPassVulkan->GetVulkanRenderPass();
+    m_CommandListState.m_vkFramebuffer            = pFramebufferVulkan->GetVulkanFramebuffer();
+    m_CommandListState.m_uiFramebufferWidth       = framebufferDescription.m_FramebufferSize.width;
+    m_CommandListState.m_uiFramebufferHeight      = framebufferDescription.m_FramebufferSize.height;
+    m_CommandListState.m_uiFramebufferArraySlices = framebufferDescription.m_uiArraySliceCount;
   }
 
   // m_bShadingRateIsSet = false;
