@@ -510,6 +510,10 @@ const xiiGALSparseTextureProperties xiiGALTextureUtilities::GetSparseTextureProp
 {
   /// \todo GraphicsFoundation: To be implemented.
 
+  XII_IGNORE_UNUSED(format);
+  XII_IGNORE_UNUSED(dimension);
+  XII_IGNORE_UNUSED(uiSampleCount);
+
   XII_ASSERT_NOT_IMPLEMENTED;
 
   return xiiGALSparseTextureProperties();
