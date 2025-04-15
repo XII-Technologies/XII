@@ -301,6 +301,8 @@ namespace
 
 bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
 {
+  XII_IGNORE_UNUSED(bAutoInvalidate);
+
   CheckQueryDataPtr(pData, uiDataSize);
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);

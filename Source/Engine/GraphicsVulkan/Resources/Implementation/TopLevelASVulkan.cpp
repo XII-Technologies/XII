@@ -31,10 +31,13 @@ xiiResult xiiGALTopLevelASVulkan::DeInitPlatform()
 
 void xiiGALTopLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
+  XII_IGNORE_UNUSED(sName);
 }
 
 xiiGALTopLevelASInstanceDescription xiiGALTopLevelASVulkan::GetInstanceDescription(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
+
   return xiiGALTopLevelASInstanceDescription();
 }
 

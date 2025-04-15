@@ -328,6 +328,8 @@ void xiiGALCommandListVulkan::FlushBarriers()
 
 void xiiGALCommandListVulkan::CopyBufferToTexture(vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceBufferOffset, xiiUInt32 uiSourceBufferRowStrideInTexels, xiiGALTextureVulkan* pDestinationTextureVulkan, const xiiBoundingBoxU32& destinationRegion, xiiUInt32 uiDestinationMipLevel, xiiUInt32 uiDestinationArraySlice, bool bVerifyOnly /*= false*/)
 {
+  XII_IGNORE_UNUSED(bVerifyOnly);
+
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
 
@@ -342,6 +344,8 @@ void xiiGALCommandListVulkan::CopyBufferToTexture(vk::Buffer vkSourceBuffer, xii
 
 void xiiGALCommandListVulkan::CopyTextureToBuffer(xiiGALTextureVulkan* pSourceTextureVulkan, const xiiBoundingBoxU32& sourceRegion, xiiUInt32 uiSourceMipLevel, xiiUInt32 uiSourceArraySlice, vk::Buffer vkDestinationBuffer, xiiUInt64 uiDestinationBufferOffset, xiiUInt32 uiDestinationBufferRowStrideInTexels, bool bVerifyOnly /*= false*/)
 {
+  XII_IGNORE_UNUSED(bVerifyOnly);
+
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
 
