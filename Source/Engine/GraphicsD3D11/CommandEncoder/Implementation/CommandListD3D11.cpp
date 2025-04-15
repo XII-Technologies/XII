@@ -543,6 +543,7 @@ void xiiGALCommandListD3D11::SetSamplerPlatform(const xiiGALPipelineResourceDesc
 
 xiiResult xiiGALCommandListD3D11::CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)
 {
+  XII_IGNORE_UNUSED(mode);
   return XII_SUCCESS;
 }
 
@@ -666,6 +667,10 @@ xiiResult xiiGALCommandListD3D11::DrawInstancedIndirectPlatform(xiiGALBuffer* pI
 
 xiiResult xiiGALCommandListD3D11::DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
+  XII_IGNORE_UNUSED(uiThreadGroupCountX);
+  XII_IGNORE_UNUSED(uiThreadGroupCountY);
+  XII_IGNORE_UNUSED(uiThreadGroupCountZ);
+
   XII_REPORT_FAILURE("DrawMesh is not supported in Direct3D 11.");
 
   return XII_FAILURE;
@@ -741,8 +746,6 @@ void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
   xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
   XII_ASSERT_DEV(pBufferD3D11 != nullptr, "Invalid resource.");
-
-  const auto& bufferDescription = pBufferD3D11->GetDescription();
 
   if (ID3D11Resource* pD3D11TempBuffer = pDeviceD3D11->FindTemporaryBuffer(pSourceData.GetCount()))
   {
@@ -833,6 +836,8 @@ xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEn
 
 xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
+  XII_IGNORE_UNUSED(mapType);
+
   auto pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid resource.");
@@ -995,6 +1000,8 @@ void xiiGALCommandListD3D11::GenerateMipsPlatform(xiiGALTextureView* pTextureVie
 
 xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
+  XII_IGNORE_UNUSED(pTextureBox);
+
   auto pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
 
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
@@ -1046,6 +1053,8 @@ xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiGALTexture*
 
 void xiiGALCommandListD3D11::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
+  XII_IGNORE_UNUSED(color);
+
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
   XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
 
@@ -1070,6 +1079,8 @@ void xiiGALCommandListD3D11::EndDebugGroupPlatform()
 
 void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
+  XII_IGNORE_UNUSED(color);
+
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
   XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
 

@@ -21,8 +21,6 @@ xiiGALTextureD3D11::~xiiGALTextureD3D11() = default;
 
 xiiResult xiiGALTextureD3D11::InitPlatform(const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-
   if (m_Description.m_Usage == xiiGALResourceUsage::Immutable && (pInitialData == nullptr || pInitialData->m_SubResources.IsEmpty()))
   {
     xiiLog::Error("Immutable textures must be initialized with data at creation time: pInitialData cannot be null.");

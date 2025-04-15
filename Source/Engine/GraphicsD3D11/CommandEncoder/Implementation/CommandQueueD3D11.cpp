@@ -36,8 +36,6 @@ void xiiGALCommandQueueD3D11::InitializePlatform()
 
 void xiiGALCommandQueueD3D11::DeInitializePlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-
   m_pCommandListD3D11.Clear();
 
   CloseHandle(m_WaitForGPUEventHandle);

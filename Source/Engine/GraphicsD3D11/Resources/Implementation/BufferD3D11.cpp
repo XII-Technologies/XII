@@ -115,10 +115,14 @@ void xiiGALBufferD3D11::SetDebugNamePlatform(xiiStringView sName)
 
 void xiiGALBufferD3D11::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
+  XII_IGNORE_UNUSED(uiStartOffset);
+  XII_IGNORE_UNUSED(uiSize);
 }
 
 void xiiGALBufferD3D11::InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
+  XII_IGNORE_UNUSED(uiStartOffset);
+  XII_IGNORE_UNUSED(uiSize);
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Resources_Implementation_BufferD3D11);

@@ -308,6 +308,8 @@ xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
   xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
 
   auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueType> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
+    XII_IGNORE_UNUSED(uiAdapterId);
+
     const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
 
     for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
@@ -371,6 +373,8 @@ void xiiGALDeviceD3D11::SetDebugNamePlatform(xiiStringView sName)
 
 void xiiGALDeviceD3D11::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
+  XII_IGNORE_UNUSED(swapchains);
+  XII_IGNORE_UNUSED(uiRenderFrame);
 }
 
 void xiiGALDeviceD3D11::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)

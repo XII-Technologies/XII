@@ -29,12 +29,14 @@ xiiResult xiiGALBottomLevelASD3D11::DeInitPlatform()
 
 xiiUInt32 xiiGALBottomLevelASD3D11::GetGeometryDescriptionIndex(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   XII_ASSERT_NOT_IMPLEMENTED;
   return xiiInvalidIndex;
 }
 
 xiiUInt32 xiiGALBottomLevelASD3D11::GetGeometryIndex(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   XII_ASSERT_NOT_IMPLEMENTED;
   return xiiInvalidIndex;
 }

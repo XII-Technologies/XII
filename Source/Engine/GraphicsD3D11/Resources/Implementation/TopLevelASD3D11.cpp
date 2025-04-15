@@ -29,6 +29,8 @@ xiiResult xiiGALTopLevelASD3D11::DeInitPlatform()
 
 xiiGALTopLevelASInstanceDescription xiiGALTopLevelASD3D11::GetInstanceDescription(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
+
   XII_ASSERT_NOT_IMPLEMENTED;
 
   return xiiGALTopLevelASInstanceDescription();
