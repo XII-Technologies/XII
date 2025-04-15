@@ -12,6 +12,7 @@ xiiGALTextureNull::~xiiGALTextureNull() = default;
 
 xiiResult xiiGALTextureNull::InitPlatform(const xiiGALTextureData* pInitialData)
 {
+  XII_IGNORE_UNUSED(pInitialData);
   return XII_SUCCESS;
 }
 

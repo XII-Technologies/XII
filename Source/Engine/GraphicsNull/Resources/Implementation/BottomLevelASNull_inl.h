@@ -1,11 +1,13 @@
 
 XII_ALWAYS_INLINE xiiUInt32 xiiGALBottomLevelASNull::GetGeometryDescriptionIndex(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   return xiiInvalidIndex;
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiGALBottomLevelASNull::GetGeometryIndex(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   return xiiInvalidIndex;
 }
 

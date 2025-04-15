@@ -80,6 +80,9 @@ void xiiGALSwapChainNull::Present()
 
 xiiResult xiiGALSwapChainNull::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
+  XII_IGNORE_UNUSED(newSize);
+  XII_IGNORE_UNUSED(newTransform);
+
   xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(m_pDevice);
 
   DestroyBackBufferInternal(pDeviceNull);

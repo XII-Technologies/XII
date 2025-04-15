@@ -12,6 +12,7 @@ xiiGALBufferNull::~xiiGALBufferNull() = default;
 
 xiiResult xiiGALBufferNull::InitPlatform(const xiiGALBufferData* pInitialData)
 {
+  XII_IGNORE_UNUSED(pInitialData);
   return XII_SUCCESS;
 }
 

@@ -1,6 +1,9 @@
 
 XII_ALWAYS_INLINE bool xiiGALQueryNull::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
 {
+  XII_IGNORE_UNUSED(uiDataSize);
+  XII_IGNORE_UNUSED(bAutoInvalidate);
+
   switch (m_Description.m_Type)
   {
     case xiiGALQueryType::Occlusion:

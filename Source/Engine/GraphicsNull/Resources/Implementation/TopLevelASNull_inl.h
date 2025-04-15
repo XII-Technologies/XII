@@ -1,6 +1,7 @@
 
 XII_ALWAYS_INLINE xiiGALTopLevelASInstanceDescription xiiGALTopLevelASNull::GetInstanceDescription(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   return xiiGALTopLevelASInstanceDescription();
 }
 
