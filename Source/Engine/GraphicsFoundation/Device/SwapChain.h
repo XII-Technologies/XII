@@ -48,7 +48,7 @@ public:
   /// This value is only relevant for DirectX11 and DirectX12 backends and ignored for others. By default it matches the number of buffers in the swap chain. For example, for a 2-buffer
   /// swap chain, the CPU can enqueue frames 0 and 1, but Present command of frame 2 will block until frame 0 is presented. If in the example above the maximum frame latency is set
   /// to 1, then Present command of frame 1 will block until Present of frame 0 is complete.
-  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency){};
+  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) { XII_IGNORE_UNUSED(uiMaxLatency); };
 
 protected:
   friend class xiiGALDevice;

@@ -704,7 +704,7 @@ xiiResult ParseResource(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xi
     sSlot.Trim("tsubx");
     if (sSlot.IsEqual_NoCase("AUTO")) // See shader macros in StandardMacros.h
     {
-      out_resourceDefinition.m_ResourceDescription.m_uiBindIndex = -1;
+      out_resourceDefinition.m_ResourceDescription.m_uiBindIndex = xiiInvalidIndex;
     }
     else
     {

@@ -550,8 +550,7 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
           return XII_FAILURE;
         }
 
-        auto& shaderStageBinaries = xiiGALShaderStageBinary::s_ShaderStageBinaries[it.Key()];
-        shaderStageBinaries.Insert(bin.m_uiSourceHash, bin);
+        xiiGALShaderStageBinary::s_ShaderStageBinaries[it.Key()].Insert(bin.m_uiSourceHash, bin);
       }
     }
 

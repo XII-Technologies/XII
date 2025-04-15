@@ -45,17 +45,21 @@ xiiInternal::NewInstance<xiiGALDevice> CreateD3D11Device(xiiAllocatorBase* pAllo
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D11, DeviceFactory)
 
-ON_CORESYSTEMS_STARTUP
-{
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D11, .m_sShaderModel = "D3D_SM50", .m_sShaderCompiler = "xiiShaderCompilerDXBC" };
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
 
-  xiiGALDeviceFactory::RegisterImplementation("D3D11", &CreateD3D11Device, implementation);
-}
+  ON_CORESYSTEMS_STARTUP
+  {
+    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D11, .m_sShaderModel = "D3D_SM50", .m_sShaderCompiler = "xiiShaderCompilerDXBC" };
 
-ON_CORESYSTEMS_SHUTDOWN
-{
-  xiiGALDeviceFactory::UnregisterImplementation("D3D11");
-}
+    xiiGALDeviceFactory::RegisterImplementation("D3D11", &CreateD3D11Device, implementation);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiGALDeviceFactory::UnregisterImplementation("D3D11");
+  }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on

@@ -801,6 +801,8 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
 
 xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription& description, xiiGALBuffer* pBuffer)
 {
+  XII_IGNORE_UNUSED(description);
+
   if (pBuffer != nullptr)
   {
     xiiGALBufferHandle hBuffer(m_Buffers.Insert(pBuffer));
@@ -1144,6 +1146,8 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
 
 xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCreationDescription& description, xiiGALTexture* pTexture)
 {
+  XII_IGNORE_UNUSED(description);
+
   if (pTexture != nullptr)
   {
     xiiGALTextureHandle hTexture(m_Textures.Insert(pTexture));

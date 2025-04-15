@@ -35,17 +35,21 @@ xiiInternal::NewInstance<xiiGALDevice> CreateNullDevice(xiiAllocatorBase* pAlloc
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsNull, DeviceFactory)
 
-ON_CORESYSTEMS_STARTUP
-{
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Null, .m_sShaderModel = "NULL_SM", .m_sShaderCompiler = "" };
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
 
-  xiiGALDeviceFactory::RegisterImplementation("Null", &CreateNullDevice, implementation);
-}
+  ON_CORESYSTEMS_STARTUP
+  {
+    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Null, .m_sShaderModel = "NULL_SM", .m_sShaderCompiler = "" };
 
-ON_CORESYSTEMS_SHUTDOWN
-{
-  xiiGALDeviceFactory::UnregisterImplementation("Null");
-}
+    xiiGALDeviceFactory::RegisterImplementation("Null", &CreateNullDevice, implementation);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiGALDeviceFactory::UnregisterImplementation("Null");
+  }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on

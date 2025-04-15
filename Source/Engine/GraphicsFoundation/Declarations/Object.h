@@ -17,7 +17,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  XII_ALWAYS_INLINE virtual void SetDebugNamePlatform(xiiStringView sName){};
+  XII_ALWAYS_INLINE virtual void SetDebugNamePlatform(xiiStringView sName) { XII_IGNORE_UNUSED(sName); };
 
 private:
   mutable xiiHashedString m_sDebugName;
