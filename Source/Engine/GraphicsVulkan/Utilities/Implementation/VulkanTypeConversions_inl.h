@@ -1225,6 +1225,7 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceState(vk::AccessFlags e)
 {
+  XII_IGNORE_UNUSED(e);
   XII_ASSERT_NOT_IMPLEMENTED;
   return xiiBitflags<xiiGALResourceStateFlags>();
 }
@@ -1301,10 +1302,10 @@ XII_ALWAYS_INLINE xiiGALDescriporTypeVulkan xiiVulkanTypeConversions::GetDescrip
 {
   XII_ASSERT_DEV(resourceDescription.m_PipelineResourceFlags.IsStrictlyAnySet(xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resourceDescription.m_ResourceType)) || resourceDescription.m_PipelineResourceFlags.IsNoFlagSet(), "Invalid resource flags, implementation error!");
 
-  const bool bWithDynamicOffset = !resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers);
-  const bool bCombinedSampler   = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::CombinedSampler);
-  const bool bUseTexelBuffer    = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::Formattedbuffer);
-  const bool bGeneralInputAtt   = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment);
+  const bool bWithDynamicOffset      = !resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers);
+  const bool bCombinedSampler        = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::CombinedSampler);
+  const bool bUseTexelBuffer         = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::Formattedbuffer);
+  const bool bGeneralInputAttachment = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment);
 
   switch (resourceDescription.m_ResourceType)
   {
@@ -1321,7 +1322,7 @@ XII_ALWAYS_INLINE xiiGALDescriporTypeVulkan xiiVulkanTypeConversions::GetDescrip
     case xiiGALShaderResourceType::Sampler:
       return xiiGALDescriporTypeVulkan::Sampler;
     case xiiGALShaderResourceType::InputAttachment:
-      return xiiGALDescriporTypeVulkan::InputAttachment;
+      return bGeneralInputAttachment ? xiiGALDescriporTypeVulkan::InputAttachmentGeneral : xiiGALDescriporTypeVulkan::InputAttachment;
     case xiiGALShaderResourceType::AccelerationStructure:
       return xiiGALDescriporTypeVulkan::AccelerationStructure;
     case xiiGALShaderResourceType::TextureAndSampler:

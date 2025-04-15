@@ -31,15 +31,18 @@ xiiResult xiiGALBottomLevelASVulkan::DeInitPlatform()
 
 void xiiGALBottomLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
+  XII_IGNORE_UNUSED(sName);
 }
 
 xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryDescriptionIndex(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   return xiiUInt32();
 }
 
 xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryIndex(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   return xiiUInt32();
 }
 

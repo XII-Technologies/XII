@@ -201,6 +201,8 @@ vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
     UpdateAttachmentsStates(xiiSubPass.m_DepthStencilAttachment);
 
     auto ConvertAttachmentReferences = [&](xiiArrayPtr<const xiiGALAttachmentReferenceDescription> pSourceAttachments, vk::ImageAspectFlags aspectFlags) -> AttachmentReferenceType* {
+      XII_IGNORE_UNUSED(aspectFlags);
+
       auto* pCurrentVkAttachmentReference = &vkAttachmentReferences[uiCurrentAttachmentReferenceIndex];
 
       for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < pSourceAttachments.GetCount(); ++uiAttachmentIndex, ++uiCurrentAttachmentReferenceIndex)

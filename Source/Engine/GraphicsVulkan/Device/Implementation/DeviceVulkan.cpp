@@ -46,17 +46,21 @@ xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAll
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsVulkan, DeviceFactory)
 
-ON_CORESYSTEMS_STARTUP
-{
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Vulkan, .m_sShaderModel = "VK_SM60", .m_sShaderCompiler = "xiiShaderCompilerSPIRV" };
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
 
-  xiiGALDeviceFactory::RegisterImplementation("Vulkan", &CreateVulkanDevice, implementation);
-}
+  ON_CORESYSTEMS_STARTUP
+  {
+    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Vulkan, .m_sShaderModel = "VK_SM60", .m_sShaderCompiler = "xiiShaderCompilerSPIRV" };
 
-ON_CORESYSTEMS_SHUTDOWN
-{
-  xiiGALDeviceFactory::UnregisterImplementation("Vulkan");
-}
+    xiiGALDeviceFactory::RegisterImplementation("Vulkan", &CreateVulkanDevice, implementation);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiGALDeviceFactory::UnregisterImplementation("Vulkan");
+  }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
@@ -1416,6 +1420,8 @@ void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
 
 void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
 {
+  XII_IGNORE_UNUSED(swapchains);
+  XII_IGNORE_UNUSED(uiRenderFrame);
 }
 
 void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
@@ -2942,6 +2948,8 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDeviceFeatures& supportedDeviceFeatures, const xiiGALDeviceFeatures& requestedDeviceFeatures)
 {
   auto GetFeatureState = [](xiiGALDeviceFeatureState::Enum requestedState, xiiGALDeviceFeatureState::Enum supportedState, const char* szFeatureName) -> xiiGALDeviceFeatureState::Enum {
+    XII_IGNORE_UNUSED(szFeatureName);
+
     switch (requestedState)
     {
       case xiiGALDeviceFeatureState::Disabled:
@@ -2957,7 +2965,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
         }
         else
         {
-          XII_REPORT_FAILURE("{} not supported by this device.");
+          XII_REPORT_FAILURE("{} not supported by this device.", szFeatureName);
         }
         break;
       }
