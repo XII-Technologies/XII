@@ -95,7 +95,8 @@ private:
   /// If bFatal is true, the error has left the parser in an unrecoverable state and thus it not continue parsing.
   /// In that case client code will need to clean up it's open state, as no further OnEndObject() / OnEndArray() will be called.
   /// If bFatal is false, the document does not contain valid JSON, but the parser is able to continue still.
-  virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) {
+  virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)
+  {
     XII_IGNORE_UNUSED(sMessage);
     XII_IGNORE_UNUSED(bFatal);
     XII_IGNORE_UNUSED(uiLine);

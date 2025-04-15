@@ -174,7 +174,7 @@ namespace
 
     xiiVariant&                m_value;
     const xiiAbstractProperty* m_pProp    = nullptr;
-    void*                      m_pPtr      = nullptr;
+    void*                      m_pPtr     = nullptr;
     bool                       m_bSuccess = true;
   };
 
@@ -201,7 +201,7 @@ namespace
 
     xiiVariant&                m_value;
     const xiiAbstractProperty* m_pProp    = nullptr;
-    void*                      m_pPtr      = nullptr;
+    void*                      m_pPtr     = nullptr;
     bool                       m_bSuccess = true;
   };
 
@@ -411,11 +411,13 @@ namespace
   template <typename T>
   struct SetComponentValueImpl
   {
-    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue) {
+    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
+    {
       XII_IGNORE_UNUSED(pVector);
       XII_IGNORE_UNUSED(uiComponent);
       XII_IGNORE_UNUSED(fValue);
-      XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType()); }
+      XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType());
+    }
   };
 
   template <typename T>
@@ -499,11 +501,13 @@ namespace
   template <typename T>
   struct GetComponentValueImpl
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue) {
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
+    {
       XII_IGNORE_UNUSED(pVector);
       XII_IGNORE_UNUSED(uiComponent);
       XII_IGNORE_UNUSED(out_fValue);
-      XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType()); }
+      XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType());
+    }
   };
 
   template <typename T>

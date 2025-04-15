@@ -131,7 +131,7 @@ xiiResult xiiPreprocessor::Process(xiiStringView sMainFile, TokenStream& ref_tok
     MacroDefinition md;
     md.m_MacroIdentifier = &m_TokenFile;
     md.m_bIsFunction     = false;
-    md.m_uiNumParameters  = 0;
+    md.m_uiNumParameters = 0;
     md.m_bHasVarArgs     = false;
 
     m_Macros.Insert("__FILE__", md);
@@ -145,7 +145,7 @@ xiiResult xiiPreprocessor::Process(xiiStringView sMainFile, TokenStream& ref_tok
     MacroDefinition md;
     md.m_MacroIdentifier = &m_TokenLine;
     md.m_bIsFunction     = false;
-    md.m_uiNumParameters  = 0;
+    md.m_uiNumParameters = 0;
     md.m_bHasVarArgs     = false;
 
     m_Macros.Insert("__LINE__", md);
