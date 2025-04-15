@@ -268,11 +268,11 @@ endfunction()
 function(xii_set_build_flags TARGET_NAME)
   xii_pull_compiler_and_architecture_vars()
 
-  set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
+  set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 23)
 
   # On Android, we need to specify it manually.
   if(ANDROID)
-    add_compile_options(-std=c++20)
+    add_compile_options(-std=c++23)
   endif()
 
   if(XII_CMAKE_COMPILER_MSVC)
@@ -310,10 +310,10 @@ endfunction()
 # ## xii_set_clib_build_flags(<target>)
 # #####################################
 function(xii_set_clib_build_flags TARGET_NAME)
-  # Since Clang does not support the C++20 flag on C libraries, ensure to remove the flag (compilation will fail otherwise).
+  # Since Clang does not support the C++23 flag on C libraries, ensure to remove the flag (compilation will fail otherwise).
   if(XII_CMAKE_COMPILER_CLANG)
     get_target_property(TARGET_COMPILE_OPTS ${PROJECT_NAME} COMPILE_OPTIONS)
-    list(REMOVE_ITEM TARGET_COMPILE_OPTS -std=c++20)
+    list(REMOVE_ITEM TARGET_COMPILE_OPTS -std=c++23)
     set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
   endif()
 endfunction()
