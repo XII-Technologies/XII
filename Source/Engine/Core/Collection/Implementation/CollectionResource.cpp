@@ -48,9 +48,7 @@ bool xiiCollectionResource::PreloadResources(xiiUInt32 uiNumResourcesToPreload)
       }
       else
       {
-        xiiLog::Error("There was no valid RTTI available for assets with type name '{}'. Could not pre-load resource '{}'. Did you forget to register "
-                      "the resource type with the xiiResourceManager?",
-                      e.m_sAssetTypeName, xiiArgSensitive(e.m_sResourceID, "ResourceID"));
+        xiiLog::Error("There was no valid RTTI available for assets with type name '{}'. Could not pre-load resource '{}'. Did you forget to register the resource type with the xiiResourceManager?", e.m_sAssetTypeName, xiiArgSensitive(e.m_sResourceID, "ResourceID"));
       }
     }
     else
