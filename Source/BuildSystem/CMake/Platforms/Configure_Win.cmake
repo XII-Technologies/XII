@@ -32,7 +32,7 @@ macro(xii_platform_pull_properties)
   get_property(XII_CMAKE_WINDOWS_SDK_VERSION GLOBAL PROPERTY XII_CMAKE_WINDOWS_SDK_VERSION)
 endmacro()
 
-macro (xii_platformhook_set_build_flags_clang)
+macro (xii_platformhook_set_build_flags_clang TARGET_NAME)
   # Disable the warning that clang doesn't support pragma optimize.
   target_compile_options(${TARGET_NAME} PRIVATE -Wno-ignored-pragma-optimize -Wno-pragma-pack)
 endmacro()

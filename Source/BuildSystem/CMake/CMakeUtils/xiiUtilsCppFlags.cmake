@@ -20,84 +20,87 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 
   xii_pull_config_vars()
 
+  set(OPT_CPP_PRIVATE "")
+  set(OPT_CPP_PUBLIC "")
+
   # target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:DEBUG>:${MY_DEBUG_OPTIONS}>")
 
   # Enable multi-threaded compilation
-  target_compile_options(${TARGET_NAME} PRIVATE "/MP")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/MP")
 
   # Disable RTTI
   if(${ARG_ENABLE_RTTI})
     message(STATUS "Enabling RTTI for target '${TARGET_NAME}'")
   else()
-    target_compile_options(${TARGET_NAME} PRIVATE "/GR-")
+    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/GR-")
   endif()
 
   # Use precise floating point model
-  target_compile_options(${TARGET_NAME} PRIVATE "/fp:precise")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/fp:precise")
 
   # Enable floating point exceptions
-  # target_compile_options(${TARGET_NAME} PRIVATE "/fp:except")
+  # set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/fp:except")
 
   # Enable default exception handling
-  target_compile_options(${TARGET_NAME} PRIVATE "/EHsc")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/EHsc")
 
   # Disable permissive mode
-  target_compile_options(${TARGET_NAME} PRIVATE "/permissive-")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/permissive-")
 
   # Enable standard conform casting behavior - casting results always in rvalue
-  target_compile_options(${TARGET_NAME} PRIVATE "/Zc:rvalueCast")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/Zc:rvalueCast")
 
   # Force the compiler to interpret code as utf8.
-  target_compile_options(${TARGET_NAME} PRIVATE "/utf-8")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/utf-8")
 
   # Set the __cplusplus preprocessor macro to something useful.
-	target_compile_options(${TARGET_NAME} PRIVATE "/Zc:__cplusplus")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/Zc:__cplusplus")
 
   # Set high warning level
-  # target_compile_options(${TARGET_NAME} PRIVATE "/W4") # It is a lot of work to fix all warnings in XII
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/W3")
 
   # /WX: Treat warnings as errors
   if(NOT ${ARG_NO_WARNINGS_AS_ERRORS} AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(${TARGET_NAME} PRIVATE "/WX")
+    # Deprecation warnings are not relevant at the moment, thus we can enable warnings as errors for now
+    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/WX")
     # switch Warning 4996 (deprecation warning) from warning level 3 to warning level 1
     # since you can't mark warnings as "not errors" in MSVC, we must switch off
     # the global warning-as-errors flag
     # instead we could switch ON selected warnings as errors
-    # target_compile_options(${TARGET_NAME} PRIVATE "/w14996")
+    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/w14996")
   endif()
 
   if((CMAKE_SIZEOF_VOID_P EQUAL 4) AND XII_CMAKE_ARCHITECTURE_X86)
     # Enable SSE2 (incompatible with /fp:except)
-    target_compile_options(${TARGET_NAME} PRIVATE "/arch:SSE2")
+    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/arch:SSE2")
   endif()
 
   if((CMAKE_SIZEOF_VOID_P EQUAL 8) AND XII_CMAKE_ARCHITECTURE_X86)
-    # Enable AVX2
-    target_compile_options(${TARGET_NAME} PRIVATE "/arch:AVX2")
+    # Enable AVX2 (incompatible with /fp:except)
+    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/arch:SSE2")
   endif()
 
   # /Zo: Improved debugging of optimized code
-  target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Zo>")
-  target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_DEV_UPPER}>:/Zo>")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Zo>")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_DEV_UPPER}>:/Zo>")
 
   # /Ob1: Only consider functions for inlining that are marked with inline or forceinline
-  target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_DEBUG_UPPER}>:/Ob1>")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_DEBUG_UPPER}>:/Ob1>")
 
   # /Ox: Favor speed for optimizations
-  target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Ox>")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Ox>")
 
   # /Ob2: Consider all functions for inlining
-  target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Ob2>")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Ob2>")
 
   # /Oi: Replace some functions with intrinsics or other special forms of the function
-  target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Oi>")
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Oi>")
 
   # Enable SSE4.1 for Clang on Windows.
   # Enable AVX2 for Clang on Windows.
   # Todo: In general we should make this configurable. As of writing SSE4.1 and AVX2 are always active for windows builds (independent of the compiler)
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND XII_CMAKE_ARCHITECTURE_X86)
-    target_compile_options(${TARGET_NAME} PRIVATE "-msse4.1")
-    target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
+    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "-mavx2" "-msse4.1" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
   endif()
 
   set(LINKER_FLAGS_DEBUG "")
@@ -131,35 +134,34 @@ function(xii_set_build_flags_msvc TARGET_NAME)
   set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_${XII_BUILDTYPENAME_RELEASE_UPPER} ${LINKER_FLAGS_RELEASE})
 
   if(XII_ENABLE_COMPILER_STATIC_ANALYSIS)
-    target_compile_options(${TARGET_NAME} PRIVATE "/analyze")
+    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/analyze")
   endif()
 
   # Ignore various warnings we are not interested in
 
   # 4100 = Unreferenced formal parameter *
   # 4127 = Conditional expression is constant *
-  # 4189 = Local variable is initialized but not referenced *
   # 4201 = Nonstandard extension used: nameless struct/union *
-  # 4245 = Signed/unsigned mismatch *
   # 4251 = Class 'type' needs to have dll-interface to be used by clients of class 'type2' -> dll export / import issues (mostly with templates) *
-  # 4310 = Cast truncates constant value *
   # 4324 = Structure was padded due to alignment specifier *
   # 4345 = Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
-  # 4389 = Signed/unsigned mismatch *
   # 4714 = Function 'function' marked as __forceinline not inlined
-  # 6326 = Potential comparison of a constant with another constant
-  target_compile_options(${TARGET_NAME} PUBLIC /wd4201 /wd4251 /wd4324 /wd4345)
-  target_compile_options(${TARGET_NAME} PRIVATE /wd4100 /wd4189 /wd4127 /wd4245 /wd4389 /wd4310 /wd4714 /wd6326)
+  set(OPT_CPP_PUBLIC ${OPT_CPP_PUBLIC} /wd4201 /wd4251 /wd4324 /wd4345)
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} /wd4100 /wd4127 /wd4714)
 
   # Set Warnings as Errors: Too few/many parameters given for Macro
-  target_compile_options(${TARGET_NAME} PRIVATE /we4002 /we4003)
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} /we4002 /we4003)
 
   # 4099 = Linker warning "PDB was not found with lib"
   target_link_options(${TARGET_NAME} PRIVATE /ignore:4099)
 
   # 'nodiscard': Attribute is ignored in this syntactic position
-  target_compile_options(${TARGET_NAME} PRIVATE /wd5240)
+  set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} /wd5240)
 
+  target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${OPT_CPP_PRIVATE}>)
+  target_compile_options(${TARGET_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${OPT_CPP_PUBLIC}>)
+  target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C>:${OPT_CPP_PRIVATE}>)
+  target_compile_options(${TARGET_NAME} PUBLIC $<$<COMPILE_LANGUAGE:C>:${OPT_CPP_PUBLIC}>)
 endfunction()
 
 # #####################################
@@ -167,8 +169,7 @@ endfunction()
 # #####################################
 function(xii_set_build_flags_clang TARGET_NAME)
   if(XII_CMAKE_ARCHITECTURE_X86)
-    target_compile_options(${TARGET_NAME} PRIVATE "-msse4.1")
-    target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
+    target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-msse4.1" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
   endif()
 
   # Disable warning: multi-character character constant
@@ -195,7 +196,7 @@ function(xii_set_build_flags_clang TARGET_NAME)
 
   if(COMMAND xii_platformhook_set_build_flags_clang)
     # call platform-specific hook
-    xii_platformhook_set_build_flags_clang()
+    xii_platformhook_set_build_flags_clang(${TARGET_NAME})
   endif()
 endfunction()
 
@@ -216,8 +217,7 @@ function(xii_set_build_flags_gcc TARGET_NAME)
   target_compile_options(${TARGET_NAME} PRIVATE -fPIC -gdwarf-3)
 
   if(XII_CMAKE_ARCHITECTURE_X86)
-    target_compile_options(${TARGET_NAME} PRIVATE -msse4.1)
-    target_compile_options(${TARGET_NAME} PRIVATE -mavx2 -mfma -mf16c -mbmi -mlzcnt)
+    target_compile_options(${TARGET_NAME} PRIVATE -mavx2 -msse4.1 -mfma -mf16c -mbmi -mlzcnt)
   endif()
 
   # Disable warning: multi-character character constant
@@ -293,9 +293,9 @@ endfunction()
 # #####################################
 function(xii_enable_strict_warnings TARGET_NAME)
   if(XII_CMAKE_COMPILER_MSVC)
-    # In case there is W3 already, remove it so it doesn't spam warnings when using Ninja builds.
     get_target_property(TARGET_COMPILE_OPTS ${PROJECT_NAME} COMPILE_OPTIONS)
-    list(REMOVE_ITEM TARGET_COMPILE_OPTS /W3)
+    list(REMOVE_ITEM TARGET_COMPILE_OPTS /W3) # In case there is W3 already, remove it so it doesn't spam warnings when using Ninja builds.
+    list(REMOVE_ITEM TARGET_COMPILE_OPTS /wd4100) # Enable 4100 = unreferenced formal parameter again
     set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
 
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
