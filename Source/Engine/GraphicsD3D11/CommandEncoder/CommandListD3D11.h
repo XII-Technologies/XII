@@ -30,8 +30,8 @@ protected:
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) override final;
 
-  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight) override final;
-  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight) override final;
+  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) override final;
+  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects) override final;
 
   virtual void      SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset) override final;
   virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;

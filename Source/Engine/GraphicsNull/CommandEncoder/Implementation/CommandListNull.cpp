@@ -40,11 +40,11 @@ void xiiGALCommandListNull::SetBlendFactorPlatform(const xiiColor& blendFactor)
 {
 }
 
-void xiiGALCommandListNull::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+void xiiGALCommandListNull::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
 }
 
-void xiiGALCommandListNull::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+void xiiGALCommandListNull::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
 {
 }
 

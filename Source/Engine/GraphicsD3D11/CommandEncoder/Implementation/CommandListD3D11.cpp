@@ -272,7 +272,7 @@ void xiiGALCommandListD3D11::SetBlendFactorPlatform(const xiiColor& blendFactor)
   }
 }
 
-void xiiGALCommandListD3D11::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+void xiiGALCommandListD3D11::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
   static_assert(XII_GAL_MAX_VIEWPORT_COUNT >= D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "The XII_GAL_MAX_VIEWPORT_COUNT must be greater than (or equal to) D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE.");
 
@@ -295,7 +295,7 @@ void xiiGALCommandListD3D11::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pV
   m_pImmediateContext->RSSetViewports(pViewports.GetCount(), d3d11Viewports);
 }
 
-void xiiGALCommandListD3D11::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+void xiiGALCommandListD3D11::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
 {
   static_assert(XII_GAL_MAX_VIEWPORT_COUNT >= D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "The XII_GAL_MAX_VIEWPORT_COUNT must be greater than (or equal to) D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE.");
 
@@ -580,7 +580,7 @@ void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPa
   // Set viewport to match frame buffer size.
   const auto&    framebufferDescription = pFramebuffer->GetDescription();
   xiiGALViewport viewport               = {.m_fTopLeftX = 0.0f, .m_fTopLeftY = 0.0f, .m_fWidth = (float)framebufferDescription.m_FramebufferSize.width, .m_fHeight = (float)framebufferDescription.m_FramebufferSize.height};
-  SetViewports(xiiMakeArrayPtr(&viewport, 1U), framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
+  SetViewports(xiiMakeArrayPtr(&viewport, 1U));
 
   m_pRenderPass  = static_cast<xiiGALRenderPassD3D11*>(pRenderPass);
   m_pFramebuffer = static_cast<xiiGALFramebufferD3D11*>(pFramebuffer);

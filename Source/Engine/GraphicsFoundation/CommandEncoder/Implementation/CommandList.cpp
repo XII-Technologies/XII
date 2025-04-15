@@ -233,7 +233,7 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
   }
 }
 
-void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiGALViewport> pViewports)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetViewports arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
 
@@ -258,10 +258,10 @@ void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiGALViewport> pViewports, xii
     XII_VERIFY_COMMAND_LIST(viewport.m_fMaxDepth >= viewport.m_fMinDepth, "SetViewports arguments are invalid. Incorrect viewport depth range [{0}, {1}] for index {2}.", viewport.m_fMinDepth, viewport.m_fMaxDepth, i);
   }
 
-  SetViewportsPlatform(m_Viewports, uiRenderTargetWidth, uiRenderTargetHeight);
+  SetViewportsPlatform(m_Viewports);
 }
 
-void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetScissorRects arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
 
@@ -277,7 +277,7 @@ void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects, xiiUInt3
   m_ScissorRects.Clear();
   m_ScissorRects.PushBackRange(pRects);
 
-  SetScissorRectsPlatform(m_ScissorRects, uiRenderTargetWidth, uiRenderTargetHeight);
+  SetScissorRectsPlatform(m_ScissorRects);
 }
 
 void xiiGALCommandList::SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt64 uiByteOffset)

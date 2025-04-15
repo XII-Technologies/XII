@@ -141,17 +141,13 @@ public:
 
   /// \brief Sets the viewports used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
   ///
-  /// \param pViewports           - The array of viewports structures, describing the viewports to bind.
-  /// \param uiRenderTargetWidth  - The width of the render target. If 0 is provided, width of the currently bound render target will be used.
-  /// \param uiRenderTargetHeight - The height of the render target. If 0 is provided, height of the currently bound render target will be used.
-  void SetViewports(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth = 0U, xiiUInt32 uiRenderTargetHeight = 0U);
+  /// \param pViewports - The array of viewports structures, describing the viewports to bind.
+  void SetViewports(xiiArrayPtr<xiiGALViewport> pViewports);
 
   /// \brief Sets the scissor rectangles used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
   ///
-  /// \param pRects               - The array of rectangle structures, describing the scissor rectangles to bind.
-  /// \param uiRenderTargetWidth  - The width of the render target. If 0 is provided, width of the currently bound render target will be used.
-  /// \param uiRenderTargetHeight - The height of the render target. If 0 is provided, height of the currently bound render target will be used.
-  void SetScissorRects(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth = 0U, xiiUInt32 uiRenderTargetHeight = 0U);
+  /// \param pRects - The array of rectangle structures, describing the scissor rectangles to bind.
+  void SetScissorRects(xiiArrayPtr<xiiRectU32> pRects);
 
   /// \brief Sets the index buffer for the input-assembler stage of the pipeline. This contains the indices into the vertex buffers.
   ///
@@ -472,8 +468,8 @@ protected:
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) = 0;
 
-  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight) = 0;
-  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)      = 0;
+  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) = 0;
+  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)      = 0;
 
   virtual void      SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)                                                                                                     = 0;
   virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) = 0;
