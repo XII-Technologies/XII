@@ -364,6 +364,41 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
 
     QProcess proc;
     proc.setWorkingDirectory(sTargetDir.GetData());
+    proc.setProcessChannelMode(QProcess::MergedChannels);
+
+    xiiProgressRange progress("Downloading Project", true);
+    bool             bRecursion = false;
+
+    QObject::connect(&proc, &QProcess::readyReadStandardOutput, [&]() {
+      if (bRecursion)
+        return;
+
+      bRecursion = true;
+
+      auto             data = proc.readAllStandardOutput();
+      xiiStringBuilder str  = data.toStdString().c_str();
+      if (const char* szPercent = str.FindLastSubString("%"))
+      {
+        str.SetSubString_FromTo(szPercent - 3, szPercent);
+        str.Trim();
+
+        xiiInt32 p;
+        if (xiiConversionUtils::StringToInt(str, p).Succeeded())
+        {
+          progress.SetCompletion(p / 100.0f);
+        }
+      }
+
+      if (progress.WasCanceled())
+      {
+        proc.close();
+      }
+
+      bRecursion = false;
+    });
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
     proc.start("git.exe", args);
 #else
@@ -376,6 +411,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
     }
 
     proc.waitForFinished(60 * 1000);
+    QApplication::restoreOverrideCursor();
 
     if (proc.exitStatus() != QProcess::ExitStatus::NormalExit)
     {
