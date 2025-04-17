@@ -1106,9 +1106,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   // Create pools.
   {
-    m_pFencePool               = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
-    m_pSemaphorePool           = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
-    m_pDescriptorSetPool       = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
+    m_pFencePool         = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
+    m_pSemaphorePool     = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+    m_pDescriptorSetPool = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
   }
 
   // Create command queues.

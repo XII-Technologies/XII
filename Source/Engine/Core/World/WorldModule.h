@@ -6,6 +6,22 @@
 
 class xiiWorld;
 
+struct xiiWorldUpdatePhase
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    PreAsync,
+    Async,
+    PostAsync,
+    PostTransform,
+    COUNT,
+
+    Default = PreAsync
+  };
+};
+
 class XII_CORE_DLL xiiWorldModule : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiWorldModule, xiiReflectedClass);
@@ -41,39 +57,19 @@ protected:
   /// \brief Description of an update function that can be registered at the world.
   struct UpdateFunctionDesc
   {
-    struct Phase
-    {
-      using StorageType = xiiUInt8;
-
-      enum Enum
-      {
-        PreAsync,
-        Async,
-        PostAsync,
-        PostTransform,
-        COUNT,
-
-        Default = PreAsync
-      };
-    };
-
     UpdateFunctionDesc(const UpdateFunction& function, xiiStringView sFunctionName) :
       m_Function(function)
     {
       m_sFunctionName.Assign(sFunctionName);
     }
 
-    UpdateFunction  m_Function;                     ///< Delegate to the actual update function.
-    xiiHashedString m_sFunctionName;                ///< Name of the function. Use the XII_CREATE_MODULE_UPDATE_FUNCTION_DESC macro to create a description
-                                                    ///< with the correct name.
-    xiiHybridArray<xiiHashedString, 4> m_DependsOn; ///< Array of other functions on which this function depends on. This function will be
-                                                    ///< called after all its dependencies have been called.
-    xiiEnum<Phase> m_Phase;                         ///< The update phase in which this update function should be called. See xiiWorld for a description on the
-                                                    ///< different phases.
-    bool      m_bOnlyUpdateWhenSimulating = false;  ///< The update function is only called when the world simulation is enabled.
-    xiiUInt16 m_uiGranularity             = 0;      ///< The granularity in which batch updates should happen during the asynchronous phase. Has to be 0 for
-                                                    ///< synchronous functions.
-    float m_fPriority = 0.0f;                       ///< Higher priority (higher number) means that this function is called earlier than a function with lower priority.
+    UpdateFunction                     m_Function;                          ///< Delegate to the actual update function.
+    xiiHashedString                    m_sFunctionName;                     ///< Name of the function. Use the XII_CREATE_MODULE_UPDATE_FUNCTION_DESC macro to create a description with the correct name.
+    xiiHybridArray<xiiHashedString, 4> m_DependsOn;                         ///< Array of other functions on which this function depends on. This function will be called after all its dependencies have been called.
+    xiiEnum<xiiWorldUpdatePhase>       m_Phase;                             ///< The update phase in which this update function should be called. See xiiWorld for a description on the different phases.
+    bool                               m_bOnlyUpdateWhenSimulating = false; ///< The update function is only called when the world simulation is enabled.
+    xiiUInt16                          m_uiGranularity             = 0;     ///< The granularity in which batch updates should happen during the asynchronous phase. Has to be 0 for synchronous functions.
+    float                              m_fPriority                 = 0.0f;  ///< Higher priority (higher number) means that this function is called earlier than a function with lower priority.
   };
 
   /// \brief Registers the given update function at the world.

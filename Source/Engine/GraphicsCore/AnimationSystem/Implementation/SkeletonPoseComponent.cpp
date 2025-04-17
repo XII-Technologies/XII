@@ -352,7 +352,7 @@ void xiiSkeletonPoseComponentManager::Initialize()
   SUPER::Initialize();
 
   xiiWorldModule::UpdateFunctionDesc desc = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiSkeletonPoseComponentManager::Update, this);
-  desc.m_Phase                            = UpdateFunctionDesc::Phase::PreAsync;
+  desc.m_Phase                            = xiiWorldUpdatePhase::PreAsync;
 
   RegisterUpdateFunction(desc);
 }

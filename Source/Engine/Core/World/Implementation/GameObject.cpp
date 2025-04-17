@@ -18,6 +18,10 @@ namespace
 } // namespace
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTransformPreservation, 1)
+  XII_ENUM_CONSTANTS(xiiTransformPreservation::PreserveLocal, xiiTransformPreservation::PreserveGlobal)
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
@@ -45,8 +49,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_SCRIPT_FUNCTION_PROPERTY(HasTag, In, "TagName"),
 
     XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetParent),
-    XII_SCRIPT_FUNCTION_PROPERTY(FindChildByName, In, "Name", In, "Recursive")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(FindChildByPath, In, "Path")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindChildByName, In, "Name", In, "Recursive")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindChildByPath, In, "Path")->AddFlags(xiiPropertyFlags::PureFunction),
 
     XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SetGlobalPosition, In, "Position"),
     XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalPosition),
@@ -86,7 +90,7 @@ void xiiGameObject::Reflection_AddChild(xiiGameObject* pChild)
     pChild->MakeDynamic();
   }
 
-  AddChild(pChild->GetHandle(), TransformPreservation::PreserveLocal);
+  AddChild(pChild->GetHandle(), xiiTransformPreservation::PreserveLocal);
 
   // Check whether the child object was only dynamic because of its old parent
   // If that's the case make it static now.
@@ -95,7 +99,7 @@ void xiiGameObject::Reflection_AddChild(xiiGameObject* pChild)
 
 void xiiGameObject::Reflection_DetachChild(xiiGameObject* pChild)
 {
-  DetachChild(pChild->GetHandle(), TransformPreservation::PreserveLocal);
+  DetachChild(pChild->GetHandle(), xiiTransformPreservation::PreserveLocal);
 
   // The child object is now a top level object, check whether it should be static now.
   pChild->ConditionalMakeStatic();
@@ -156,7 +160,9 @@ xiiObjectMode::Enum xiiGameObject::Reflection_GetMode() const
 void xiiGameObject::Reflection_SetMode(xiiObjectMode::Enum mode)
 {
   if (Reflection_GetMode() == mode)
+  {
     return;
+  }
 
   if (mode == xiiObjectMode::ForceDynamic)
   {
@@ -235,7 +241,9 @@ void xiiGameObject::ConditionalMakeStatic(xiiComponent* pComponentToIgnore /*= n
 void xiiGameObject::MakeStaticInternal()
 {
   if (IsStatic())
+  {
     return;
+  }
 
   m_Flags.Remove(xiiObjectFlags::Dynamic);
 
@@ -335,7 +343,9 @@ void xiiGameObject::operator=(const xiiGameObject& other)
 void xiiGameObject::MakeDynamic()
 {
   if (IsDynamic())
+  {
     return;
+  }
 
   m_Flags.Add(xiiObjectFlags::Dynamic);
 
@@ -395,7 +405,7 @@ xiiStringView xiiGameObject::GetGlobalKey() const
   return GetWorld()->GetObjectGlobalKey(this);
 }
 
-void xiiGameObject::SetParent(const xiiGameObjectHandle& hParent, xiiGameObject::TransformPreservation preserve)
+void xiiGameObject::SetParent(const xiiGameObjectHandle& hParent, xiiTransformPreservation::Enum preserve)
 {
   xiiWorld* pWorld = GetWorld();
 
@@ -415,7 +425,7 @@ const xiiGameObject* xiiGameObject::GetParent() const
   return GetWorld()->GetObjectUnchecked(m_uiParentIndex);
 }
 
-void xiiGameObject::AddChild(const xiiGameObjectHandle& hChild, xiiGameObject::TransformPreservation preserve)
+void xiiGameObject::AddChild(const xiiGameObjectHandle& hChild, xiiTransformPreservation::Enum preserve)
 {
   xiiWorld* pWorld = GetWorld();
 
@@ -426,7 +436,7 @@ void xiiGameObject::AddChild(const xiiGameObjectHandle& hChild, xiiGameObject::T
   }
 }
 
-void xiiGameObject::DetachChild(const xiiGameObjectHandle& hChild, xiiGameObject::TransformPreservation preserve)
+void xiiGameObject::DetachChild(const xiiGameObjectHandle& hChild, xiiTransformPreservation::Enum preserve)
 {
   xiiWorld* pWorld = GetWorld();
 
@@ -454,8 +464,6 @@ xiiGameObject::ConstChildIterator xiiGameObject::GetChildren() const
 
 xiiGameObject* xiiGameObject::FindChildByName(const xiiTempHashedString& sName, bool bRecursive /*= true*/)
 {
-  /// \test Needs a unit test
-
   for (auto it = GetChildren(); it.IsValid(); ++it)
   {
     if (it->m_sName == sName)
@@ -478,10 +486,14 @@ xiiGameObject* xiiGameObject::FindChildByName(const xiiTempHashedString& sName, 
   return nullptr;
 }
 
+const xiiGameObject* xiiGameObject::FindChildByName(const xiiTempHashedString& sName, bool bRecursive /*= true*/) const
+{
+  xiiGameObject* pThis = const_cast<xiiGameObject*>(this);
+  return pThis->FindChildByName(sName, bRecursive);
+}
+
 xiiGameObject* xiiGameObject::FindChildByPath(xiiStringView sPath)
 {
-  /// \test Needs a unit test
-
   if (sPath.IsEmpty())
     return this;
 
@@ -501,17 +513,20 @@ xiiGameObject* xiiGameObject::FindChildByPath(xiiStringView sPath)
   return pNextChild->FindChildByPath(xiiStringView(szSep + 1, sPath.GetEndPointer()));
 }
 
+const xiiGameObject* xiiGameObject::FindChildByPath(xiiStringView sPath) const
+{
+  xiiGameObject* pThis = const_cast<xiiGameObject*>(this);
+  return pThis->FindChildByPath(sPath);
+}
 
 xiiGameObject* xiiGameObject::SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent /*= nullptr*/)
 {
-  /// \test Needs a unit test
-
   if (sObjectSequence.IsEmpty())
   {
     // in case we are searching for a specific component type, verify that it exists on this object
     if (pExpectedComponent != nullptr)
     {
-      xiiComponent* pComp = nullptr;
+      const xiiComponent* pComp = nullptr;
       if (!TryGetComponentOfBaseType(pExpectedComponent, pComp))
         return nullptr;
     }
@@ -563,11 +578,14 @@ xiiGameObject* xiiGameObject::SearchForChildByNameSequence(xiiStringView sObject
   return nullptr;
 }
 
+const xiiGameObject* xiiGameObject::SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent /*= nullptr*/) const
+{
+  xiiGameObject* pThis = const_cast<xiiGameObject*>(this);
+  return pThis->SearchForChildByNameSequence(sObjectSequence, pExpectedComponent);
+}
 
 void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_objects)
 {
-  /// \test Needs a unit test
-
   if (sObjectSequence.IsEmpty())
   {
     // in case we are searching for a specific component type, verify that it exists on this object
@@ -809,7 +827,7 @@ void xiiGameObject::SetTeamID(xiiUInt16 uiId)
   }
 }
 
-xiiVisibilityState xiiGameObject::GetVisibilityState(xiiUInt32 uiNumFramesBeforeInvisible) const
+xiiVisibilityState::Enum xiiGameObject::GetVisibilityState(xiiUInt32 uiNumFramesBeforeInvisible) const
 {
   if (!m_pTransformationData->m_hSpatialData.IsInvalidated())
   {

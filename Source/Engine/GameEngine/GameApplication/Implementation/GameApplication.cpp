@@ -72,7 +72,13 @@ xiiString xiiGameApplication::FindProjectDirectory() const
 
   // first check if the path is relative to the SDK special directory
   {
-    xiiStringBuilder relToSdk(">sdk/", m_sAppProjectPath);
+    xiiStringBuilder relToSdk(m_sAppProjectPath);
+
+    if (!relToSdk.StartsWith_NoCase(">sdk/"))
+    {
+      relToSdk.Prepend(">sdk/");
+    }
+
     xiiStringBuilder absToSdk;
     if (xiiFileSystem::ResolveSpecialDirectory(relToSdk, absToSdk).Succeeded())
     {
@@ -154,7 +160,7 @@ void xiiGameApplication::Run_PresentImage()
   xiiHybridArray<xiiActor*, 8> allActors;
   xiiActorManager::GetSingleton()->GetAllActors(allActors);
 
-  bool bIsExecutingFrameCapture = false;
+  bool bExecutedFrameCapture = false;
   for (xiiActor* pActor : allActors)
   {
     XII_PROFILE_SCOPE(pActor->GetName());
@@ -176,15 +182,13 @@ void xiiGameApplication::Run_PresentImage()
 
       ExecuteTakeScreenshot(pOutput, ctxt);
 
-      if (pWindowPlugin->GetWindow() && !bIsExecutingFrameCapture)
+      if (pWindowPlugin->GetWindow() && !bExecutedFrameCapture)
       {
         ExecuteFrameCapture(pWindowPlugin->GetWindow()->GetNativeWindowHandle(), ctxt);
-
-        bIsExecutingFrameCapture = true;
+        bExecutedFrameCapture = true;
       }
 
-      XII_PROFILE_SCOPE("Present");
-
+      XII_PROFILE_SCOPE("PresentImage");
       pOutput->PresentImage(cvar_AppVSync);
     }
   }

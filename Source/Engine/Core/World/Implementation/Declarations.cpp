@@ -17,6 +17,14 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiObjectMode, 1)
   XII_ENUM_CONSTANTS(xiiObjectMode::Automatic, xiiObjectMode::ForceDynamic)
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiComponentMode, 1)
+  XII_ENUM_CONSTANTS(xiiComponentMode::Static, xiiComponentMode::Dynamic)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiObjectMsgQueueType, 1)
+  XII_ENUM_CONSTANTS(xiiObjectMsgQueueType::PostAsync, xiiObjectMsgQueueType::PostTransform, xiiObjectMsgQueueType::NextFrame, xiiObjectMsgQueueType::AfterInitialized)
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiOnComponentFinishedAction, 1)
   XII_ENUM_CONSTANTS(xiiOnComponentFinishedAction::None, xiiOnComponentFinishedAction::DeleteComponent, xiiOnComponentFinishedAction::DeleteGameObject)
 XII_END_STATIC_REFLECTED_ENUM;

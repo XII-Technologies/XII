@@ -286,12 +286,18 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiObjectMode);
 /// \sa xiiObjectFlags
 struct xiiComponentMode
 {
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
     Static,
-    Dynamic
+    Dynamic,
+
+    Default = Static
   };
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiComponentMode);
 
 /// \brief Specifies at which phase the queued message should be processed.
 struct xiiObjectMsgQueueType
@@ -304,9 +310,13 @@ struct xiiObjectMsgQueueType
     PostTransform,    ///< Process the message in the PostTransform phase.
     NextFrame,        ///< Process the message in the PreAsync phase of the next frame.
     AfterInitialized, ///< Process the message after new components have been initialized.
-    COUNT
+    COUNT,
+
+    Default = NextFrame
   };
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiObjectMsgQueueType);
 
 /// \brief Certain components may delete themselves or their owner when they are finished with their main purpose
 struct XII_CORE_DLL xiiOnComponentFinishedAction

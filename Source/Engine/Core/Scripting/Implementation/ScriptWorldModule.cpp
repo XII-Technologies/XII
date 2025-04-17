@@ -22,7 +22,7 @@ void xiiScriptWorldModule::Initialize()
 
   {
     auto updateDesc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiScriptWorldModule::CallUpdateFunctions, this);
-    updateDesc.m_Phase = xiiWorldModule::UpdateFunctionDesc::Phase::PreAsync;
+    updateDesc.m_Phase = xiiWorldUpdatePhase::PreAsync;
 
     RegisterUpdateFunction(updateDesc);
   }

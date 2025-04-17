@@ -59,7 +59,7 @@ XII_END_STATIC_REFLECTED_ENUM;
       float     fMaxValue  = ((1 << Bits) - 1);
       return (value & uiMaxValue) * (1.0f / fMaxValue);
     }
-} // namespace
+  } // namespace
 
 // static
 xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)

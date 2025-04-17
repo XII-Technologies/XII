@@ -10,13 +10,28 @@
 
 #include <Core/World/ComponentManager.h>
 #include <Core/World/GameObjectDesc.h>
+#include <Core/World/SpatialData.h>
 
 // Avoid conflicts with windows.h
 #ifdef SendMessage
 #  undef SendMessage
 #endif
 
-enum class xiiVisibilityState : xiiUInt8;
+/// \brief Defines during re-parenting what transform is going to be preserved.
+struct xiiTransformPreservation
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    PreserveLocal,
+    PreserveGlobal,
+
+    Default = PreserveLocal
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiTransformPreservation);
 
 /// \brief This class represents an object inside the world.
 ///
@@ -142,10 +157,11 @@ public:
   bool WasCreatedByPrefab() const { return m_Flags.IsSet(xiiObjectFlags::CreatedByPrefab); }
 
   /// \brief Sets the name to identify this object. Does not have to be a unique name.
-  void          SetName(xiiStringView sName);
-  void          SetName(const xiiHashedString& sName);
-  xiiStringView GetName() const;
-  bool          HasName(const xiiTempHashedString& sName) const;
+  void                   SetName(xiiStringView sName);
+  void                   SetName(const xiiHashedString& sName);
+  xiiStringView          GetName() const;
+  const xiiHashedString& GetNameHashed() const;
+  bool                   HasName(const xiiTempHashedString& sName) const;
 
   /// \brief Sets the global key to identify this object. Global keys must be unique within a world.
   void          SetGlobalKey(xiiStringView sGlobalKey);
@@ -160,15 +176,8 @@ public:
   void EnableParentChangesNotifications();
   void DisableParentChangesNotifications();
 
-  /// \brief Defines during re-parenting what transform is going to be preserved.
-  enum class TransformPreservation
-  {
-    PreserveLocal,
-    PreserveGlobal
-  };
-
   /// \brief Sets the parent of this object to the given.
-  void SetParent(const xiiGameObjectHandle& hParent, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
+  void SetParent(const xiiGameObjectHandle& hParent, xiiTransformPreservation::Enum preserve = xiiTransformPreservation::PreserveGlobal);
 
   /// \brief Gets the parent of this object or nullptr if this is a top-level object.
   xiiGameObject* GetParent();
@@ -177,16 +186,16 @@ public:
   const xiiGameObject* GetParent() const;
 
   /// \brief Adds the given object as a child object.
-  void AddChild(const xiiGameObjectHandle& hChild, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
+  void AddChild(const xiiGameObjectHandle& hChild, xiiTransformPreservation::Enum preserve = xiiTransformPreservation::PreserveGlobal);
 
   /// \brief Adds the given objects as child objects.
-  void AddChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
+  void AddChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiTransformPreservation::Enum preserve = xiiTransformPreservation::PreserveGlobal);
 
   /// \brief Detaches the given child object from this object and makes it a top-level object.
-  void DetachChild(const xiiGameObjectHandle& hChild, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
+  void DetachChild(const xiiGameObjectHandle& hChild, xiiTransformPreservation::Enum preserve = xiiTransformPreservation::PreserveGlobal);
 
   /// \brief Detaches the given child objects from this object and makes them top-level objects.
-  void DetachChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiGameObject::TransformPreservation preserve = TransformPreservation::PreserveGlobal);
+  void DetachChildren(const xiiArrayPtr<const xiiGameObjectHandle>& children, xiiTransformPreservation::Enum preserve = xiiTransformPreservation::PreserveGlobal);
 
   /// \brief Returns the number of children.
   xiiUInt32 GetChildCount() const;
@@ -198,7 +207,10 @@ public:
   ConstChildIterator GetChildren() const;
 
   /// \brief Searches for a child object with the given name. Optionally traverses the entire hierarchy.
-  xiiGameObject* FindChildByName(const xiiTempHashedString& sName, bool bRecursive = true);
+  xiiGameObject* FindChildByName(const xiiTempHashedString& sName, bool bRecursive = true); // [tested]
+
+  /// \brief Searches for a child object with the given name. Optionally traverses the entire hierarchy.
+  const xiiGameObject* FindChildByName(const xiiTempHashedString& sName, bool bRecursive = true) const; // [tested]
 
   /// \brief Searches for a child using a path. Every path segment represents a child with a given name.
   ///
@@ -207,7 +219,10 @@ public:
   /// When on any part of the path the next child cannot be found, nullptr is returned.
   /// This function expects an exact path to the destination. It does not search the full hierarchy for
   /// the next child, as SearchChildByNameSequence() does.
-  xiiGameObject* FindChildByPath(xiiStringView sPath);
+  xiiGameObject* FindChildByPath(xiiStringView sPath); // [tested]
+
+  /// \brief Const overload of FindChildByPath()
+  const xiiGameObject* FindChildByPath(xiiStringView sPath) const; // [tested]
 
   /// \brief Searches for a child similar to FindChildByName() but allows to search for multiple names in a sequence.
   ///
@@ -216,7 +231,10 @@ public:
   /// named "a". If that is found, the search continues from there for a child called "b".
   /// If such a child is found and pExpectedComponent != nullptr, it is verified that the object
   /// contains a component of that type. If it doesn't the search continues (including back-tracking).
-  xiiGameObject* SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent = nullptr);
+  xiiGameObject* SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent = nullptr); // [tested]
+
+  /// \brief Const overload of SearchForChildByNameSequence()
+  const xiiGameObject* SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent = nullptr) const; // [tested]
 
   /// \brief Same as SearchForChildByNameSequence but returns ALL matches, in case the given path could mean multiple objects
   void SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_objects);
@@ -499,7 +517,7 @@ public:
   /// An invisible object may stop updating entirely. An indirectly visible object may reduce its update rate.
   ///
   /// \param uiNumFramesBeforeInvisible Used to treat an object that was visible and just became invisible as visible for a few more frames.
-  xiiVisibilityState GetVisibilityState(xiiUInt32 uiNumFramesBeforeInvisible = 5) const;
+  xiiVisibilityState::Enum GetVisibilityState(xiiUInt32 uiNumFramesBeforeInvisible = 5) const;
 
 private:
   friend class xiiComponentManagerBase;
@@ -523,6 +541,9 @@ private:
   void                                                  Reflection_AddComponent(xiiComponent* pComponent);
   void                                                  Reflection_RemoveComponent(xiiComponent* pComponent);
   xiiHybridArray<xiiComponent*, NUM_INPLACE_COMPONENTS> Reflection_GetComponents() const;
+
+  xiiGameObject* Reflection_FindChildByName(const xiiTempHashedString& sName, bool bRecursive) { return FindChildByName(sName, bRecursive); }
+  xiiGameObject* Reflection_FindChildByPath(xiiStringView sPath) { return FindChildByPath(sPath); }
 
   xiiObjectMode::Enum Reflection_GetMode() const;
   void                Reflection_SetMode(xiiObjectMode::Enum mode);

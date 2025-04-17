@@ -147,28 +147,29 @@ XII_FORCE_INLINE void xiiComponentManager<T, StorageType>::RegisterUpdateFunctio
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType>
-xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>::xiiComponentManagerSimple(xiiWorld* pWorld) :
+template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType, xiiWorldUpdatePhase::Enum UpdatePhase>
+xiiComponentManagerSimple<ComponentType, UpdateType, StorageType, UpdatePhase>::xiiComponentManagerSimple(xiiWorld* pWorld) :
   xiiComponentManager<ComponentType, StorageType>(pWorld)
 {
 }
 
-template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType>
-void xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>::Initialize()
+template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType, xiiWorldUpdatePhase::Enum UpdatePhase>
+void xiiComponentManagerSimple<ComponentType, UpdateType, StorageType, UpdatePhase>::Initialize()
 {
-  using OwnType = xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>;
+  using OwnType = xiiComponentManagerSimple<ComponentType, UpdateType, StorageType, UpdatePhase>;
 
   xiiStringBuilder functionName;
   SimpleUpdateName(functionName);
 
   auto desc                        = xiiWorldModule::UpdateFunctionDesc(xiiWorldModule::UpdateFunction(&OwnType::SimpleUpdate, this), functionName);
+  desc.m_Phase                     = UpdatePhase;
   desc.m_bOnlyUpdateWhenSimulating = (UpdateType == xiiComponentUpdateType::WhenSimulating);
 
   this->RegisterUpdateFunction(desc);
 }
 
-template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType>
-void xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>::SimpleUpdate(const xiiWorldModule::UpdateContext& context)
+template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType, xiiWorldUpdatePhase::Enum UpdatePhase>
+void xiiComponentManagerSimple<ComponentType, UpdateType, StorageType, UpdatePhase>::SimpleUpdate(const xiiWorldModule::UpdateContext& context)
 {
   for (auto it = this->m_ComponentStorage.GetIterator(context.m_uiFirstComponentIndex, context.m_uiComponentCount); it.IsValid(); ++it)
   {
@@ -181,8 +182,8 @@ void xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>::SimpleUp
 }
 
 // static
-template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType>
-void xiiComponentManagerSimple<ComponentType, UpdateType, StorageType>::SimpleUpdateName(xiiStringBuilder& out_sName)
+template <typename ComponentType, xiiComponentUpdateType::Enum UpdateType, xiiBlockStorageType::Enum StorageType, xiiWorldUpdatePhase::Enum UpdatePhase>
+void xiiComponentManagerSimple<ComponentType, UpdateType, StorageType, UpdatePhase>::SimpleUpdateName(xiiStringBuilder& out_sName)
 {
   xiiStringView sName(XII_SOURCE_FUNCTION);
   const char*   szEnd = sName.FindSubString(",");

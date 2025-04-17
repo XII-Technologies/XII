@@ -25,7 +25,7 @@ xiiCameraComponentManager::~xiiCameraComponentManager()
 void xiiCameraComponentManager::Initialize()
 {
   auto desc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiCameraComponentManager::Update, this);
-  desc.m_Phase = UpdateFunctionDesc::Phase::PostTransform;
+  desc.m_Phase = xiiWorldUpdatePhase::PostTransform;
 
   this->RegisterUpdateFunction(desc);
 

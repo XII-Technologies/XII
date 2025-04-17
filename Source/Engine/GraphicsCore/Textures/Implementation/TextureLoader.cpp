@@ -60,8 +60,10 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
 
   xiiResourceLoadData res;
 
+  xiiStringView sResourceID = pResource->GetResourceID();
+
   // Solid Color Textures
-  if (xiiPathUtils::HasExtension(pResource->GetResourceID(), "color"))
+  if (sResourceID.HasExtension("color") || sResourceID.StartsWith("#") || (!sResourceID.HasAnyExtension() && !xiiConversionUtils::IsStringUuid(sResourceID)))
   {
     xiiStringBuilder sName = pResource->GetResourceID();
     sName.RemoveFileExtension();
