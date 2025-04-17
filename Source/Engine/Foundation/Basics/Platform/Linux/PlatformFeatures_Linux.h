@@ -1,5 +1,31 @@
 #pragma once
 
+#include <cstdio>
+#include <malloc.h>
+#include <pthread.h>
+#include <stdarg.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+// unset common macros
+#ifdef min
+#  undef min
+#endif
+#ifdef max
+#  undef max
+#endif
+
+#define XII_PLATFORM_NAME "Linux"
+
+#undef XII_PLATFORM_LINUX
+#define XII_PLATFORM_LINUX XII_ON
+
+#undef XII_PLATFORM_LITTLE_ENDIAN
+#define XII_PLATFORM_LITTLE_ENDIAN XII_ON
+
+#undef XII_PLATFORM_PATH_SEPARATOR
+#define XII_PLATFORM_PATH_SEPARATOR '/'
+
 /// If set to one, the POSIX file implementation will be used. Otherwise a platform specific implementation must be available.
 #undef XII_USE_POSIX_FILE_API
 #define XII_USE_POSIX_FILE_API XII_ON
@@ -48,21 +74,45 @@
 #undef XII_SUPPORTS_PROCESSES
 #define XII_SUPPORTS_PROCESSES XII_ON
 
+/// Whether inter-process communication via pipes is supported.
+#undef XII_SUPPORTS_IPC
+#define XII_SUPPORTS_IPC XII_ON
+
 /// SIMD support
 #undef XII_SIMD_IMPLEMENTATION
 
 #if XII_ENABLED(XII_PLATFORM_ARCH_X86)
-#  if __AVX__
+#  if defined(__AVX512F__)
+#    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_AVX
+#    define XII_SSE_LEVEL           XII_AVX_512
+#  elif defined(__AVX2__)
 #    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_AVX
 #    define XII_SSE_LEVEL           XII_AVX_2
-#  elif __SSE4_1__ && __SSSE3__
+#  elif defined(__AVX__)
+#    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_AVX
+#    define XII_SSE_LEVEL           XII_AVX_1
+#  elif defined(__SSE4_2__)
 #    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_SSE
 #    define XII_SSE_LEVEL           XII_SSE_42
+#  elif defined(__SSE4_1__)
+#    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_SSE
+#    define XII_SSE_LEVEL           XII_SSE_41
+#  elif defined(__SSE3__)
+#    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_SSE
+#    define XII_SSE_LEVEL           XII_SSE_30
+#  elif defined(__SSE2__)
+#    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_SSE
+#    define XII_SSE_LEVEL           XII_SSE_20
+#  else
+#    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_FPU
+#    define XII_SSE_LEVEL           0
+#  endif
+#elif XII_ENABLED(XII_PLATFORM_ARCH_ARM)
+#  if defined(__ARM_NEON)
+#    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_NEON
 #  else
 #    define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_FPU
 #  endif
-#elif XII_ENABLED(XII_PLATFORM_ARCH_ARM)
-#  define XII_SIMD_IMPLEMENTATION XII_SIMD_IMPLEMENTATION_FPU
 #else
 #  error "Unknown architecture."
 #endif

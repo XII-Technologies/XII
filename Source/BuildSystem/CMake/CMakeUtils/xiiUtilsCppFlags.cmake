@@ -70,16 +70,6 @@ function(xii_set_build_flags_msvc TARGET_NAME)
     set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/w14996")
   endif()
 
-  if((CMAKE_SIZEOF_VOID_P EQUAL 4) AND XII_CMAKE_ARCHITECTURE_X86)
-    # Enable SSE2 (incompatible with /fp:except)
-    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/arch:SSE2")
-  endif()
-
-  if((CMAKE_SIZEOF_VOID_P EQUAL 8) AND XII_CMAKE_ARCHITECTURE_X86)
-    # Enable AVX2 (incompatible with /fp:except)
-    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "/arch:SSE2")
-  endif()
-
   # /Zo: Improved debugging of optimized code
   set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Zo>")
   set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_DEV_UPPER}>:/Zo>")
@@ -95,13 +85,6 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 
   # /Oi: Replace some functions with intrinsics or other special forms of the function
   set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Oi>")
-
-  # Enable SSE4.1 for Clang on Windows.
-  # Enable AVX2 for Clang on Windows.
-  # Todo: In general we should make this configurable. As of writing SSE4.1 and AVX2 are always active for windows builds (independent of the compiler)
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND XII_CMAKE_ARCHITECTURE_X86)
-    set(OPT_CPP_PRIVATE ${OPT_CPP_PRIVATE} "-mavx2" "-msse4.1" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
-  endif()
 
   set(LINKER_FLAGS_DEBUG "")
 
@@ -168,10 +151,6 @@ endfunction()
 # ## xii_set_build_flags_clang(<target>)
 # #####################################
 function(xii_set_build_flags_clang TARGET_NAME)
-  if(XII_CMAKE_ARCHITECTURE_X86)
-    target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-msse4.1" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
-  endif()
-
   # Disable warning: multi-character character constant
   target_compile_options(${TARGET_NAME} PRIVATE -Wno-multichar)
 
@@ -207,18 +186,10 @@ function(xii_set_build_flags_gcc TARGET_NAME)
   # Wno-enum-compare removes all annoying enum cast warnings
   target_compile_options(${TARGET_NAME} PRIVATE -fPIC -Wno-enum-compare -gdwarf-3 -pthread)
 
-  if(XII_CMAKE_ARCHITECTURE_X86)
-    target_compile_options(${TARGET_NAME} PRIVATE -mssse3 -mfpmath=sse)
-  endif()
-
   # Dynamic linking will fail without fPIC (plugins)
   # gdwarf-3 will use the old debug info which is compatible with older gdb versions.
   # These were previously set as CMAKE_C_FLAGS (not CPP)
   target_compile_options(${TARGET_NAME} PRIVATE -fPIC -gdwarf-3)
-
-  if(XII_CMAKE_ARCHITECTURE_X86)
-    target_compile_options(${TARGET_NAME} PRIVATE -mavx2 -msse4.1 -mfma -mf16c -mbmi -mlzcnt)
-  endif()
 
   # Disable warning: multi-character character constant
   target_compile_options(${TARGET_NAME} PRIVATE -Wno-multichar)
@@ -263,6 +234,114 @@ function(xii_set_build_flags_gcc TARGET_NAME)
 endfunction()
 
 # #####################################
+# ## xii_set_simd_build_flags(<target>)
+# #####################################
+function(xii_set_simd_build_flags TARGET_NAME)
+  if(XII_CMAKE_ARCHITECTURE_X86)
+    if(XII_CMAKE_COMPILER_MSVC)
+      # Before adding any new MSVC SIMD flags, remove "/fp:except" if it exists.
+      get_target_property(MSVC_OPTIONS ${TARGET_NAME} COMPILE_OPTIONS)
+      if(NOT MSVC_OPTIONS OR MSVC_OPTIONS STREQUAL "NOTFOUND")
+        set(MSVC_OPTIONS "")
+      endif()
+      list(REMOVE_ITEM MSVC_OPTIONS "/fp:except")
+      set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${MSVC_OPTIONS}")
+
+      # For MSVC, you cannot mix multiple /arch options.
+      # Instead, select the highest supported flag based on MSVC version.
+      if(XII_DETECTED_MSVC_VER GREATER_EQUAL 1929)
+        # AVX-512 (VS 2019 v16.11+ or later)
+        target_compile_options(${TARGET_NAME} PRIVATE /arch:AVX512)
+      elseif(XII_DETECTED_MSVC_VER GREATER_EQUAL 1920)
+        # AVX2 (VS 2019)
+        target_compile_options(${TARGET_NAME} PRIVATE /arch:AVX2)
+      elseif(XII_DETECTED_MSVC_VER GREATER_EQUAL 1910)
+        # AVX (VS 2017)
+        target_compile_options(${TARGET_NAME} PRIVATE /arch:AVX)
+      elseif(XII_DETECTED_MSVC_VER GREATER_EQUAL 1900)
+        # SSE4.2 (VS 2015)
+        target_compile_options(${TARGET_NAME} PRIVATE /arch:SSE4.2)
+      elseif(XII_DETECTED_MSVC_VER GREATER_EQUAL 1900)
+        # SSE4.1 (VS 2015)
+        target_compile_options(${TARGET_NAME} PRIVATE /arch:SSE4.1)
+      elseif(XII_DETECTED_MSVC_VER GREATER_EQUAL 1900)
+        # SSE3 (VS 2015)
+        target_compile_options(${TARGET_NAME} PRIVATE /arch:SSE3)
+      else()
+        # SSE2 fallback (older versions of MSVC)
+        target_compile_options(${TARGET_NAME} PRIVATE /arch:SSE2)
+      endif()
+
+    elseif(XII_CMAKE_COMPILER_CLANG OR XII_CMAKE_COMPILER_GCC)
+      # Probe for all possible SIMD instruction set flags.
+      set(XII_CPP_SIMD_FLAGS "")
+      set(XII_CPP_SIMD_HIGHEST_FLAG "")
+
+      check_cxx_compiler_flag("-msse2" HAS_SSE2)
+      if(HAS_SSE2)
+        list(APPEND XII_CPP_SIMD_FLAGS "-msse2")
+        set(XII_CPP_SIMD_HIGHEST_FLAG "-msse2")
+      endif()
+
+      check_cxx_compiler_flag("-msse3" HAS_SSE3)
+      if(HAS_SSE3)
+        list(APPEND XII_CPP_SIMD_FLAGS "-msse3")
+        set(XII_CPP_SIMD_HIGHEST_FLAG "-msse3")
+      endif()
+
+      check_cxx_compiler_flag("-mssse3" HAS_SSSE3)
+      if(HAS_SSSE3)
+        list(APPEND XII_CPP_SIMD_FLAGS "-mssse3")
+        set(XII_CPP_SIMD_HIGHEST_FLAG "-mssse3")
+      endif()
+
+      check_cxx_compiler_flag("-msse4.1" HAS_SSE41)
+      if(HAS_SSE41)
+        list(APPEND XII_CPP_SIMD_FLAGS "-msse4.1")
+        set(XII_CPP_SIMD_HIGHEST_FLAG "-msse4.1")
+      endif()
+
+      check_cxx_compiler_flag("-msse4.2" HAS_SSE42)
+      if(HAS_SSE42)
+        list(APPEND XII_CPP_SIMD_FLAGS "-msse4.2")
+        set(XII_CPP_SIMD_HIGHEST_FLAG "-msse4.2")
+      endif()
+
+      check_cxx_compiler_flag("-mavx" HAS_AVX)
+      if(HAS_AVX)
+        list(APPEND XII_CPP_SIMD_FLAGS "-mavx")
+        set(XII_CPP_SIMD_HIGHEST_FLAG "-mavx")
+      endif()
+
+      check_cxx_compiler_flag("-mavx2" HAS_AVX2)
+      if(HAS_AVX2)
+        list(APPEND XII_CPP_SIMD_FLAGS "-mavx2")
+        set(XII_CPP_SIMD_HIGHEST_FLAG "-mavx2")
+      endif()
+
+      check_cxx_compiler_flag("-mavx512f" SUPPORTS_AVX512)
+      if(SUPPORTS_AVX512)
+        list(APPEND SIMD_FLAGS "-mavx512f")
+        set(HIGHEST_SIMD_LEVEL "AVX512")
+      endif()
+
+      if(XII_CPP_SIMD_HIGHEST_FLAG)
+        target_compile_options(${TARGET_NAME} PRIVATE ${XII_CPP_SIMD_FLAGS})
+      endif()
+    endif()
+
+  elseif(XII_CMAKE_ARCHITECTURE_ARM)
+    if(XII_CMAKE_COMPILER_CLANG OR XII_CMAKE_COMPILER_GCC)
+      check_cxx_compiler_flag("-mfpu=neon" HAS_NEON)
+
+      if(HAS_NEON)
+        target_compile_options(${TARGET_NAME} PRIVATE -mfpu=neon)
+      endif()
+    endif()
+  endif()
+endfunction()
+
+# #####################################
 # ## xii_set_build_flags(<target>)
 # #####################################
 function(xii_set_build_flags TARGET_NAME)
@@ -286,6 +365,8 @@ function(xii_set_build_flags TARGET_NAME)
   if(XII_CMAKE_COMPILER_GCC)
     xii_set_build_flags_gcc(${TARGET_NAME} ${ARGN})
   endif()
+
+  xii_set_simd_build_flags(${TARGET_NAME})
 endfunction()
 
 # #####################################

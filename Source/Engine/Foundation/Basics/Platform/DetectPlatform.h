@@ -4,7 +4,7 @@
 #  undef XII_PLATFORM_WINDOWS
 #  define XII_PLATFORM_WINDOWS XII_ON
 
-// Further distinction between desktop, UWP etc. is done in Platform_win.h
+// Further distinction between desktop, server etc. is done in Platform_win.h
 
 #elif defined(__APPLE__) && defined(__MACH__)
 #  include <TargetConditionals.h>

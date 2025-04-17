@@ -1,5 +1,25 @@
 #pragma once
 
+#include <cstdio>
+#include <pthread.h>
+#include <sys/malloc.h>
+#include <sys/time.h>
+
+// unset common macros
+#undef min
+#undef max
+
+#define XIII_PLATFORM_NAME "OSX"
+
+#undef XIII_PLATFORM_OSX
+#define XIII_PLATFORM_OSX XIII_ON
+
+#undef XIII_PLATFORM_LITTLE_ENDIAN
+#define XIII_PLATFORM_LITTLE_ENDIAN XIII_ON
+
+#undef XIII_PLATFORM_PATH_SEPARATOR
+#define XIII_PLATFORM_PATH_SEPARATOR '/'
+
 /// If set to 1, the POSIX file implementation will be used. Otherwise a platform specific implementation must be available.
 #undef XII_USE_POSIX_FILE_API
 #define XII_USE_POSIX_FILE_API XII_ON
@@ -43,6 +63,10 @@
 /// Whether starting other processes is supported.
 #undef XII_SUPPORTS_PROCESSES
 #define XII_SUPPORTS_PROCESSES XII_ON
+
+/// Whether inter-process communication via pipes is supported.
+#undef XII_SUPPORTS_IPC
+#define XII_SUPPORTS_IPC XII_OFF
 
 /// SIMD support
 #undef XII_SIMD_IMPLEMENTATION

@@ -17,6 +17,8 @@
 /// \brief Checks whether x AND y are both defined as XII_ON or XII_OFF. Usually used to check whether configurations overlap, to issue an error.
 #define XII_IS_NOT_EXCLUSIVE(x, y) ((1 XII_PP_CONCAT(x, =) 1) == (1 XII_PP_CONCAT(y, =) 1))
 
+/// \brief Checks that exactly one of x, y and z is defined as XII_ON.
+#define XII_IS_NOT_EXCLUSIVE3(x, y, z) ((XII_ENABLED(x) + XII_ENABLED(y) + XII_ENABLED(z)) != 1)
 
 
 // All the supported Platforms
@@ -27,6 +29,7 @@
 #define XII_PLATFORM_LINUX           XII_OFF
 #define XII_PLATFORM_IOS             XII_OFF
 #define XII_PLATFORM_ANDROID         XII_OFF
+#define XII_PLATFORM_WEB             XII_OFF
 
 // Different Bit OSes
 #define XII_PLATFORM_32BIT XII_OFF
@@ -35,6 +38,7 @@
 // Different CPU architectures
 #define XII_PLATFORM_ARCH_X86 XII_OFF
 #define XII_PLATFORM_ARCH_ARM XII_OFF
+#define XII_PLATFORM_ARCH_WEB XII_OFF
 
 // Endianess
 #define XII_PLATFORM_LITTLE_ENDIAN XII_OFF
@@ -65,6 +69,7 @@
 #define XII_SUPPORTS_CASE_INSENSITIVE_PATHS   XII_OFF
 #define XII_SUPPORTS_CRASH_DUMPS              XII_OFF
 #define XII_SUPPORTS_LONG_PATHS               XII_OFF
+#define XII_SUPPORTS_IPC                      XII_OFF
 
 // Allocators
 #define XII_USE_GUARDED_ALLOCATIONS XII_OFF
@@ -85,20 +90,22 @@
 #define XII_MATH_CHECK_FOR_NAN XII_OFF
 
 // SIMD support
-#define XII_SIMD_IMPLEMENTATION_FPU  1
-#define XII_SIMD_IMPLEMENTATION_SSE  2
-#define XII_SIMD_IMPLEMENTATION_AVX  3
-#define XII_SIMD_IMPLEMENTATION_NEON 4
+#define XII_SIMD_IMPLEMENTATION_FPU  1 // Floating-point unit.
+#define XII_SIMD_IMPLEMENTATION_SSE  2 // Streaming SIMD Extensions (SSE).
+#define XII_SIMD_IMPLEMENTATION_AVX  3 // Advanced Vector Extensions (AVX).
+#define XII_SIMD_IMPLEMENTATION_NEON 4 // NEON (for ARM architecture).
 
 // SSE Levels
-#define XII_SSE_20  0x20
-#define XII_SSE_30  0x30
-#define XII_SSE_31  0x31
-#define XII_SSE_41  0x41
-#define XII_SSE_42  0x42
-#define XII_AVX_1   0x50
-#define XII_AVX_2   0x51
-#define XII_AVX_512 0x52
+#define XII_SSE_20 0x20 // SSE2: Introduces 128-bit SIMD integer operations, cache management instructions, and support for double-precision floating-point.
+#define XII_SSE_30 0x30 // SSE3: Adds horizontal addition/subtraction operations and enhancements for multi-threaded applications.
+#define XII_SSE_31 0x31 // SSE3.1: Minor updates to SSE3, with improved efficiency for some existing instructions.
+#define XII_SSE_41 0x41 // SSE4.1: Introduces a significant set of new instructions, including dot products and rounded floating-point computations.
+#define XII_SSE_42 0x42 // SSE4.2: Adds string and text processing instructions (e.g., CRC32) for improved performance.
+
+// AVX Levels
+#define XII_AVX_1   0x50 // AVX1: Expands SSE instructions to 256-bit registers, supports FMA (Fused Multiply-Add) and improved power efficiency.
+#define XII_AVX_2   0x51 // AVX2: Adds support for 256-bit integer operations, gather instructions, and additional FMA capabilities.
+#define XII_AVX_512 0x52 // AVX-512: Extends to 512-bit registers, introduces new masking features, and supports wide-range instructions for HPC (High-Performance Computing) workloads.
 
 #define XII_SIMD_IMPLEMENTATION 0
 

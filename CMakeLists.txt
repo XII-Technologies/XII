@@ -39,7 +39,7 @@ if(NOT XII_SUBMODULE_MODE)
   set(XII_SOLUTION_NAME ${DETECTED_NAME} CACHE STRING "The name of the solution")
   project(${XII_SOLUTION_NAME}
     VERSION 1.0
-    DESCRIPTION "Copyright (c) 2022-2024 Theophilus Eriata. All Rights Reserved."
+    DESCRIPTION "Copyright (c) 2022-2025 Theophilus Eriata. All Rights Reserved."
     HOMEPAGE_URL "www.xiitechnologies.com"
     LANGUAGES ${XII_LANGUAGES})
 endif()
@@ -80,10 +80,10 @@ if(NOT XII_SUBMODULE_MODE)
 
   get_property(EXTERNAL_PROJECTS GLOBAL PROPERTY "EXTERNAL_PROJECTS")
   if(EXTERNAL_PROJECTS)
-    message(STATUS "External Projects (ezEditor): ${EXTERNAL_PROJECTS}")
+    message(STATUS "External Projects (xiiEditor): ${EXTERNAL_PROJECTS}")
     add_dependencies(Editor ${EXTERNAL_PROJECTS})
 
-    message(STATUS "External Projects (ezPlayer): ${EXTERNAL_PROJECTS}")
+    message(STATUS "External Projects (xiiPlayer): ${EXTERNAL_PROJECTS}")
     add_dependencies(Player ${EXTERNAL_PROJECTS})
   endif()
   endif()
