@@ -92,7 +92,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiBlackboardComponent, 3)
 
   XII_BEGIN_FUNCTIONS
   {
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindBlackboard, In, "SearchObject", In, "BlackboardName")->AddFlags(xiiPropertyFlags::Const)->AddAttributes(new xiiFunctionArgumentAttributes(1, new xiiDynamicStringEnumAttribute("BlackboardNamesEnum"))),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindBlackboard, In, "SearchObject", In, "BlackboardName")->AddFlags(xiiPropertyFlags::PureFunction)->AddAttributes(new xiiFunctionArgumentAttributes(1, new xiiDynamicStringEnumAttribute("BlackboardNamesEnum"))),
     XII_SCRIPT_FUNCTION_PROPERTY(SetEntryValue, In, "Name", In, "Value")->AddAttributes(new xiiFunctionArgumentAttributes(0, new xiiDynamicStringEnumAttribute("BlackboardKeysEnum"))),
     XII_SCRIPT_FUNCTION_PROPERTY(GetEntryValue, In, "Name")->AddAttributes(new xiiFunctionArgumentAttributes(0, new xiiDynamicStringEnumAttribute("BlackboardKeysEnum"))),
   }

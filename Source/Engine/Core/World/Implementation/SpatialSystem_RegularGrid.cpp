@@ -480,7 +480,7 @@ namespace xiiInternal
     };
 
     template <typename T, bool UseTagsFilter>
-    static xiiVisitorExecution::Enum ShapeQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& ref_stats, void* pUserData, xiiVisibilityState visType)
+    static xiiVisitorExecution::Enum ShapeQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& ref_stats, void* pUserData, xiiVisibilityState::Enum visType)
     {
       XII_IGNORE_UNUSED(visType);
 
@@ -530,7 +530,7 @@ namespace xiiInternal
     };
 
     template <bool UseTagsFilter, bool UseOcclusionCallback>
-    static xiiVisitorExecution::Enum FrustumQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& ref_stats, void* pUserData, xiiVisibilityState visType)
+    static xiiVisitorExecution::Enum FrustumQueryCallback(const xiiSpatialSystem_RegularGrid::Cell& cell, const xiiSpatialSystem::QueryParams& queryParams, xiiSpatialSystem_RegularGrid::Stats& ref_stats, void* pUserData, xiiVisibilityState::Enum visType)
     {
       auto      pQueryData = static_cast<FrustumQueryData*>(pUserData);
       PlaneData planeData  = pQueryData->m_PlaneData;
@@ -867,7 +867,7 @@ void xiiSpatialSystem_RegularGrid::FindObjectsInBox(const xiiBoundingBox& box, c
   ForEachCellInBoxInMatchingGrids(simdBox, queryParams, &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBBox, false>, &xiiInternal::QueryHelper::ShapeQueryCallback<xiiSimdBBox, true>, &queryData, xiiVisibilityState::Indirect);
 }
 
-void xiiSpatialSystem_RegularGrid::FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_Objects, xiiSpatialSystem::IsOccludedFunc IsOccluded, xiiVisibilityState visType) const
+void xiiSpatialSystem_RegularGrid::FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_Objects, xiiSpatialSystem::IsOccludedFunc IsOccluded, xiiVisibilityState::Enum visType) const
 {
   XII_PROFILE_SCOPE("FindVisibleObjects");
 
@@ -934,7 +934,7 @@ void xiiSpatialSystem_RegularGrid::FindVisibleObjects(const xiiFrustum& frustum,
 #endif
 }
 
-xiiVisibilityState xiiSpatialSystem_RegularGrid::GetVisibilityState(const xiiSpatialDataHandle& hData, xiiUInt32 uiNumFramesBeforeInvisible) const
+xiiVisibilityState::Enum xiiSpatialSystem_RegularGrid::GetVisibilityState(const xiiSpatialDataHandle& hData, xiiUInt32 uiNumFramesBeforeInvisible) const
 {
   Data* pData = nullptr;
   XII_VERIFY(m_DataTable.TryGetValue(hData.GetInternalID(), pData), "Invalid spatial data handle");
@@ -956,7 +956,7 @@ xiiVisibilityState xiiSpatialSystem_RegularGrid::GetVisibilityState(const xiiSpa
   if (m_uiFrameCounter > uiLastVisibleFrameIdx + uiNumFramesBeforeInvisible)
     return xiiVisibilityState::Invisible;
 
-  return static_cast<xiiVisibilityState>(uiLastVisibilityType);
+  return static_cast<xiiVisibilityState::Enum>(uiLastVisibilityType);
 }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -1079,7 +1079,7 @@ XII_FORCE_INLINE void xiiSpatialSystem_RegularGrid::ForEachGrid(const Data& data
   }
 }
 
-void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimdBBox& box, const QueryParams& queryParams, CellCallback noFilterCallback, CellCallback filterByTagsCallback, void* pUserData, xiiVisibilityState visType) const
+void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimdBBox& box, const QueryParams& queryParams, CellCallback noFilterCallback, CellCallback filterByTagsCallback, void* pUserData, xiiVisibilityState::Enum visType) const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (queryParams.m_pStats != nullptr)

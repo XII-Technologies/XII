@@ -3,6 +3,7 @@
 #include <Core/World/SpatialData.h>
 #include <Foundation/Math/Frustum.h>
 #include <Foundation/Memory/CommonAllocators.h>
+#include <Foundation/Reflection/Reflection.h>
 #include <Foundation/SimdMath/SimdBBoxSphere.h>
 #include <Foundation/Types/TagSet.h>
 
@@ -65,14 +66,14 @@ public:
 
   using IsOccludedFunc = xiiDelegate<bool(const xiiSimdBBox&)>;
 
-  virtual void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_objects, IsOccludedFunc isOccluded, xiiVisibilityState visType) const = 0;
+  virtual void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_objects, IsOccludedFunc isOccluded, xiiVisibilityState::Enum visType) const = 0;
 
   /// \brief Retrieves a state describing how visible the object is.
   ///
   /// An object may be invisible, fully visible, or indirectly visible (through shadows or reflections).
   ///
   /// \param uiNumFramesBeforeInvisible Used to treat an object that was visible and just became invisible as visible for a few more frames.
-  virtual xiiVisibilityState GetVisibilityState(const xiiSpatialDataHandle& hData, xiiUInt32 uiNumFramesBeforeInvisible) const = 0;
+  virtual xiiVisibilityState::Enum GetVisibilityState(const xiiSpatialDataHandle& hData, xiiUInt32 uiNumFramesBeforeInvisible) const = 0;
 
   ///@}
 
@@ -85,3 +86,11 @@ protected:
 
   xiiUInt64 m_uiFrameCounter = 0;
 };
+
+class XII_CORE_DLL xiiScriptExtensionClass_Spatial
+{
+public:
+  static xiiGameObject* FindClosestObjectInSphere(xiiWorld* pWorld, xiiStringView sCategory, const xiiVec3& vCenter, float fRadius);
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiScriptExtensionClass_Spatial);

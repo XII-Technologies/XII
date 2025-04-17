@@ -57,13 +57,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTime, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromNanoseconds, In, "Nanoseconds")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMicroseconds, In, "Microseconds")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMilliseconds, In, "Milliseconds")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromSeconds, In, "Seconds")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMinutes, In, "Minutes")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromHours, In, "Hours")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeZero)->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromNanoseconds, In, "Nanoseconds")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMicroseconds, In, "Microseconds")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMilliseconds, In, "Milliseconds")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromSeconds, In, "Seconds")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMinutes, In, "Minutes")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromHours, In, "Hours")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeZero)->AddFlags(xiiPropertyFlags::PureFunction),
     XII_SCRIPT_FUNCTION_PROPERTY(AsFloatInSeconds),
   }
   XII_END_FUNCTIONS;
@@ -86,8 +86,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiColor, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_CONSTRUCTOR_PROPERTY(float, float, float, float),
     XII_CONSTRUCTOR_PROPERTY(xiiColorLinearUB),
     XII_CONSTRUCTOR_PROPERTY(xiiColorGammaUB),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeRGBA, In, "R", In, "G", In, "B", In, "A")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeHSV, In, "Hue", In, "Saturation", In, "Value")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeRGBA, In, "R", In, "G", In, "B", In, "A")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeHSV, In, "Hue", In, "Saturation", In, "Value")->AddFlags(xiiPropertyFlags::PureFunction),
   }
   XII_END_FUNCTIONS;
 }
@@ -490,9 +490,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiQuat, xiiNoBase, 1, xiiRTTINoAllocator)
   XII_BEGIN_FUNCTIONS
   {
     XII_CONSTRUCTOR_PROPERTY(float, float, float, float),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromAxisAndAngle, In, "Axis", In, "Angle")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeShortestRotation, In, "DirFrom", In, "DirTo")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeSlerp, In, "From", In, "To", In, "Lerp")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromAxisAndAngle, In, "Axis", In, "Angle")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeShortestRotation, In, "DirFrom", In, "DirTo")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeSlerp, In, "From", In, "To", In, "Lerp")->AddFlags(xiiPropertyFlags::PureFunction),
     XII_SCRIPT_FUNCTION_PROPERTY(GetInverse),
     XII_SCRIPT_FUNCTION_PROPERTY(Rotate, In, "v"),
   }
@@ -513,9 +513,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiQuatd, xiiNoBase, 1, xiiRTTINoAllocator)
   XII_BEGIN_FUNCTIONS
   {
     XII_CONSTRUCTOR_PROPERTY(double, double, double, double),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromAxisAndAngle, In, "Axis", In, "Angle")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeShortestRotation, In, "DirFrom", In, "DirTo")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeSlerp, In, "From", In, "To", In, "Lerp")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromAxisAndAngle, In, "Axis", In, "Angle")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeShortestRotation, In, "DirFrom", In, "DirTo")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeSlerp, In, "From", In, "To", In, "Lerp")->AddFlags(xiiPropertyFlags::PureFunction),
     XII_SCRIPT_FUNCTION_PROPERTY(GetInverse),
     XII_SCRIPT_FUNCTION_PROPERTY(Rotate, In, "v"),
   }
@@ -548,9 +548,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTransform, xiiNoBase, 1, xiiRTTINoAllocator)
   {
     XII_CONSTRUCTOR_PROPERTY(xiiVec3, xiiQuat),
     XII_CONSTRUCTOR_PROPERTY(xiiVec3, xiiQuat, xiiVec3),
-    XII_SCRIPT_FUNCTION_PROPERTY(Make, In, "Position", In, "Rotation", In, "Scale")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeLocalTransform, In, "Parent", In, "GlobalChild")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeGlobalTransform, In, "Parent", In, "LocalChild")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Make, In, "Position", In, "Rotation", In, "Scale")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeLocalTransform, In, "Parent", In, "GlobalChild")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeGlobalTransform, In, "Parent", In, "LocalChild")->AddFlags(xiiPropertyFlags::PureFunction),
     XII_SCRIPT_FUNCTION_PROPERTY(TransformPosition, In, "Position"),
     XII_SCRIPT_FUNCTION_PROPERTY(TransformDirection, In, "Direction"),
   }
@@ -571,9 +571,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTransformd, xiiNoBase, 1, xiiRTTINoAllocator)
   {
     XII_CONSTRUCTOR_PROPERTY(xiiVec3d, xiiQuatd),
     XII_CONSTRUCTOR_PROPERTY(xiiVec3d, xiiQuatd, xiiVec3d),
-    XII_SCRIPT_FUNCTION_PROPERTY(Make, In, "Position", In, "Rotation", In, "Scale")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeLocalTransform, In, "Parent", In, "GlobalChild")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(MakeGlobalTransform, In, "Parent", In, "LocalChild")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Make, In, "Position", In, "Rotation", In, "Scale")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeLocalTransform, In, "Parent", In, "GlobalChild")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeGlobalTransform, In, "Parent", In, "LocalChild")->AddFlags(xiiPropertyFlags::PureFunction),
     XII_SCRIPT_FUNCTION_PROPERTY(TransformPosition, In, "Position"),
     XII_SCRIPT_FUNCTION_PROPERTY(TransformDirection, In, "Direction"),
   }

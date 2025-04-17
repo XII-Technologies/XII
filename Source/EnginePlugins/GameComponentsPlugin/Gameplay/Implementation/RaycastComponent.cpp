@@ -23,7 +23,7 @@ void xiiRaycastComponentManager::Initialize()
 
   auto desc                        = xiiWorldModule::UpdateFunctionDesc(xiiWorldModule::UpdateFunction(&xiiRaycastComponentManager::Update, this), "xiiRaycastComponentManager::Update");
   desc.m_bOnlyUpdateWhenSimulating = true;
-  desc.m_Phase                     = UpdateFunctionDesc::Phase::PostAsync;
+  desc.m_Phase                     = xiiWorldUpdatePhase::PostAsync;
   desc.m_fPriority                 = -1000;
 
   this->RegisterUpdateFunction(desc);

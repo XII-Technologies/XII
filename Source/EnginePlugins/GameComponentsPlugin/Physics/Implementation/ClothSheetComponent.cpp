@@ -619,7 +619,7 @@ void xiiClothSheetComponentManager::Initialize()
 
   {
     auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiClothSheetComponentManager::Update, this);
-    desc.m_Phase                     = xiiWorldModule::UpdateFunctionDesc::Phase::Async;
+    desc.m_Phase                     = xiiWorldUpdatePhase::Async;
     desc.m_bOnlyUpdateWhenSimulating = true;
 
     this->RegisterUpdateFunction(desc);
@@ -627,7 +627,7 @@ void xiiClothSheetComponentManager::Initialize()
 
   {
     auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiClothSheetComponentManager::UpdateBounds, this);
-    desc.m_Phase                     = xiiWorldModule::UpdateFunctionDesc::Phase::PostAsync;
+    desc.m_Phase                     = xiiWorldUpdatePhase::PostAsync;
     desc.m_bOnlyUpdateWhenSimulating = true;
 
     this->RegisterUpdateFunction(desc);

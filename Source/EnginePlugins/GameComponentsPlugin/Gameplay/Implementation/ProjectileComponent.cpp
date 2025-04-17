@@ -226,7 +226,7 @@ void xiiProjectileComponent::Update()
           xiiGameObject* pObject;
           if (GetWorld()->TryGetObject(castResult.m_hActorObject, pObject))
           {
-            pObject->AddChild(GetOwner()->GetHandle(), xiiGameObject::TransformPreservation::PreserveGlobal);
+            pObject->AddChild(GetOwner()->GetHandle(), xiiTransformPreservation::PreserveGlobal);
           }
         }
         else if (interaction.m_Reaction == xiiProjectileReaction::PassThrough)

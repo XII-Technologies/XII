@@ -1015,7 +1015,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
   xiiRasterizerView* pRasterizer = PrepareOcclusionCulling(limitedFrustum, view);
   XII_SCOPE_EXIT(g_pRasterizerViewPool->ReturnRasterizerView(pRasterizer));
 
-  const xiiVisibilityState visType = bIsMainView ? xiiVisibilityState::Direct : xiiVisibilityState::Indirect;
+  const xiiVisibilityState::Enum visType = bIsMainView ? xiiVisibilityState::Direct : xiiVisibilityState::Indirect;
 
   if (pRasterizer != nullptr && pRasterizer->HasRasterizedAnyOccluders())
   {

@@ -93,7 +93,10 @@ namespace xiiInternal
 
     m_Clock.SetTimeStepSmoothing(m_pTimeStepSmoothing.Borrow());
 
+    // BEGIN-DOCS-CODE-SNIPPET: resource-management-listen-all
+    // Listening to all resource events
     xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&WorldData::ResourceEventHandler, this));
+    // END-DOCS-CODE-SNIPPET
   }
 
   WorldData::~WorldData()
@@ -390,6 +393,5 @@ namespace xiiInternal
   }
 
 } // namespace xiiInternal
-
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_WorldData);

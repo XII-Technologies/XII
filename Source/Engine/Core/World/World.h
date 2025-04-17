@@ -107,6 +107,9 @@ public:
   /// * "obj/P:name" -> "P:" must be at the very beginning or directly after "G:"
   [[nodiscard]] xiiGameObject* SearchForObject(xiiStringView sSearchPath, xiiGameObject* pReferenceObject = nullptr, const xiiRTTI* pExpectedComponent = nullptr); // [tested]
 
+  /// \brief const overload of SearchForObject()
+  [[nodiscard]] const xiiGameObject* SearchForObject(xiiStringView sSearchPath, const xiiGameObject* pReferenceObject = nullptr, const xiiRTTI* pExpectedComponent = nullptr) const; // [tested]
+
   /// \brief Returns the total number of objects in this world.
   xiiUInt32 GetObjectCount() const; // [tested]
 
@@ -401,13 +404,14 @@ private:
 
   xiiGameObject* Reflection_TryGetObjectWithGlobalKey(xiiTempHashedString sGlobalKey);
   xiiClock*      Reflection_GetClock();
+  xiiGameObject* Reflection_SearchForObject(xiiStringView sSearchPath, xiiGameObject* pReferenceObject) { return SearchForObject(sSearchPath, pReferenceObject, nullptr); }
 
   void CheckForReadAccess() const;
   void CheckForWriteAccess() const;
 
   xiiGameObject* GetObjectUnchecked(xiiUInt32 uiIndex) const;
 
-  void SetParent(xiiGameObject* pObject, xiiGameObject* pNewParent, xiiGameObject::TransformPreservation preserve = xiiGameObject::TransformPreservation::PreserveGlobal);
+  void SetParent(xiiGameObject* pObject, xiiGameObject* pNewParent, xiiTransformPreservation::Enum preserve = xiiTransformPreservation::Enum::PreserveGlobal);
   void LinkToParent(xiiGameObject* pObject);
   void UnlinkFromParent(xiiGameObject* pObject);
 
@@ -441,7 +445,7 @@ private:
   void DeleteDeadObjects();
   void DeleteDeadComponents();
 
-  void PatchHierarchyData(xiiGameObject* pObject, xiiGameObject::TransformPreservation preserve);
+  void PatchHierarchyData(xiiGameObject* pObject, xiiTransformPreservation::Enum preserve);
   void RecreateHierarchyData(xiiGameObject* pObject, bool bWasDynamic);
 
   void ProcessResourceReloadFunctions();

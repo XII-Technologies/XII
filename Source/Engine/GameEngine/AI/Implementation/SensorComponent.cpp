@@ -605,7 +605,7 @@ void xiiSensorWorldModule::Initialize()
 
   {
     auto updateDesc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiSensorWorldModule::UpdateSensors, this);
-    updateDesc.m_Phase                     = xiiWorldModule::UpdateFunctionDesc::Phase::Async;
+    updateDesc.m_Phase                     = xiiWorldUpdatePhase::Async;
     updateDesc.m_bOnlyUpdateWhenSimulating = true;
 
     RegisterUpdateFunction(updateDesc);
@@ -613,7 +613,7 @@ void xiiSensorWorldModule::Initialize()
 
   {
     auto updateDesc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiSensorWorldModule::DebugDrawSensors, this);
-    updateDesc.m_Phase = xiiWorldModule::UpdateFunctionDesc::Phase::PostTransform;
+    updateDesc.m_Phase = xiiWorldUpdatePhase::PostTransform;
 
     RegisterUpdateFunction(updateDesc);
   }
