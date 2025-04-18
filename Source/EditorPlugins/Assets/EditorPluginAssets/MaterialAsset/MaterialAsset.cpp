@@ -758,7 +758,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStringVie
           arguments << QString::fromUtf8(sAutoGenShader.GetData());
 
           arguments << "-platform";
-          arguments << "DX11_SM50"; /// \todo Rendering platform is currently hardcoded
+          arguments << "VK_SM60"; /// \todo Rendering platform is currently hardcoded
 
           // determine the permutation variables that should get fixed values
           {
@@ -784,7 +784,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStringVie
 
           xiiVisualShaderErrorLog log;
 
-          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiShaderCompiler", arguments, 60, &log);
+          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiShaderCompilerTool", arguments, 60, &log);
           if (ret.Failed())
           {
             e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;
