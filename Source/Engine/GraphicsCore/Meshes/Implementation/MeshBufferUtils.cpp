@@ -30,6 +30,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshVertexColorConversion, 1)
   XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::LinearToSrgb),
   XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::SrgbToLinear),
 XII_END_STATIC_REFLECTED_ENUM;
+// clang-format off
 
 namespace
 {
@@ -58,8 +59,7 @@ namespace
     float     fMaxValue  = ((1 << Bits) - 1);
     return (value & uiMaxValue) * (1.0f / fMaxValue);
   }
-}
-// clang-format on
+} // namespace
 
 // static
 xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
