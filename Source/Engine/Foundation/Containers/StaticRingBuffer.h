@@ -69,7 +69,7 @@ private:
   T* GetStaticArray();
 
   /// \brief The fixed size array.
-  struct alignas(XII_ALIGNMENT_OF(T))
+  struct alignas(alignof(T))
   {
     xiiUInt8 m_Data[Capacity * sizeof(T)];
   };

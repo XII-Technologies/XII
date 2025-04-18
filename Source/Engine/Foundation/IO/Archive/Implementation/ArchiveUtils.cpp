@@ -370,7 +370,7 @@ static xiiResult VerifyEndMarker(xiiUInt64 uiArchiveDataSize, const void* pArchi
     return XII_FAILURE;
   }
 
-  const void* pStart = xiiMemoryUtils::AddByteOffset(pArchiveDataBuffer, uiArchiveDataSize - uiEndMarkerSize);
+  const void* pStart = xiiMemoryUtils::AddByteOffset(pArchiveDataBuffer, static_cast<ptrdiff_t>(uiArchiveDataSize - uiEndMarkerSize));
 
   xiiRawMemoryStreamReader reader(pStart, uiEndMarkerSize);
 
@@ -404,7 +404,7 @@ xiiResult xiiArchiveUtils::ExtractTOCMeta(xiiUInt64 uiArchiveEndingDataSize, con
       return XII_FAILURE;
     }
 
-    const void* pTocMetaStart = xiiMemoryUtils::AddByteOffset(pArchiveEndingDataBuffer, uiArchiveEndingDataSize - uiEndMarkerSize - uiTocMetaSize);
+    const void* pTocMetaStart = xiiMemoryUtils::AddByteOffset(pArchiveEndingDataBuffer, static_cast<ptrdiff_t>(uiArchiveEndingDataSize - uiEndMarkerSize - uiTocMetaSize));
 
     xiiRawMemoryStreamReader tocMetaReader(pTocMetaStart, uiTocMetaSize);
 
@@ -455,7 +455,7 @@ xiiResult xiiArchiveUtils::ExtractTOC(xiiUInt64 uiArchiveEndingDataSize, const v
   }
 
   // get toc data ptr
-  const void* pTocStart = xiiMemoryUtils::AddByteOffset(pArchiveEndingDataBuffer, uiArchiveEndingDataSize - tocMeta.m_uiTocOffsetFromArchiveEnd);
+  const void* pTocStart = xiiMemoryUtils::AddByteOffset(pArchiveEndingDataBuffer, static_cast<ptrdiff_t>(uiArchiveEndingDataSize - tocMeta.m_uiTocOffsetFromArchiveEnd));
 
   // validate the TOC hash
   if (uiArchiveVersion >= 2)

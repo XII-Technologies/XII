@@ -266,7 +266,7 @@ private:
   template <typename Function>
   XII_FORCE_INLINE void CopyFunctionToInplaceStorage(Function function)
   {
-    XII_ASSERT_DEBUG(xiiMemoryUtils::IsAligned(&m_Data, XII_ALIGNMENT_OF(Function)), "Wrong alignment. Expected {0} bytes alignment", XII_ALIGNMENT_OF(Function));
+    XII_ASSERT_DEBUG(xiiMemoryUtils::IsAligned(&m_Data, alignof(Function)), "Wrong alignment. Expected {0} bytes alignment", alignof(Function));
 
     memcpy(m_Data, &function, sizeof(Function));
     memset(m_Data + sizeof(Function), 0, DataSize - sizeof(Function));

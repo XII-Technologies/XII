@@ -83,7 +83,7 @@ protected:
   virtual void UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
-  struct alignas(XII_ALIGNMENT_OF(T))
+  struct alignas(alignof(T))
   {
     xiiUInt8 m_Data[sizeof(T)];
   };

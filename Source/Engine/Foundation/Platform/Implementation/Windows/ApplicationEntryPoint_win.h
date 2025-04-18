@@ -20,7 +20,7 @@ namespace xiiApplicationDetails
 #if XII_ENABLED(XII_COMPILER_MSVC)           // Internal compiler error in MSVC. Can not align buffer otherwise the compiler will crash.
     static char appBuffer[sizeof(AppClass)]; // Not on the stack to cope with smaller stacks.
 #else
-    alignas(XII_ALIGNMENT_OF(AppClass)) static char appBuffer[sizeof(AppClass)]; // Not on the stack to cope with smaller stacks.
+    alignas(alignof(AppClass)) static char appBuffer[sizeof(AppClass)]; // Not on the stack to cope with smaller stacks.
 #endif
 
     // This mutex will prevent the console shutdown handler to return
@@ -71,7 +71,7 @@ namespace xiiApplicationDetails
 #if XII_ENABLED(XII_COMPILER_MSVC)           // Internal compiler error in MSVC. Can not align buffer otherwise the compiler will crash.
     static char appBuffer[sizeof(AppClass)]; // Not on the stack to cope with smaller stacks.
 #else
-    alignas(XII_ALIGNMENT_OF(AppClass)) static char appBuffer[sizeof(AppClass)]; // Not on the stack to cope with smaller stacks.
+    alignas(alignof(AppClass)) static char appBuffer[sizeof(AppClass)]; // Not on the stack to cope with smaller stacks.
 #endif
 
     AppClass* pApp = new (appBuffer) AppClass(std::forward<Args>(arguments)...);

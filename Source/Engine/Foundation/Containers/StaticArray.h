@@ -54,7 +54,7 @@ private:
   const T* GetStaticArray() const;
 
   /// \brief The fixed size array.
-  struct alignas(XII_ALIGNMENT_OF(T))
+  struct alignas(alignof(T))
   {
     xiiUInt8 m_Data[Capacity * sizeof(T)];
   };

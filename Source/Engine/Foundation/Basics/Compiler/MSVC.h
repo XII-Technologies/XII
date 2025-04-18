@@ -28,9 +28,6 @@
 #    define XII_FORCE_INLINE __forceinline
 #  endif
 
-// Workaround for MSVC compiler issue with alignment determination of dependent types
-#  define XII_ALIGNMENT_OF(type) XII_COMPILE_TIME_MAX(XII_ALIGNMENT_MINIMUM, XII_COMPILE_TIME_MIN(sizeof(type), __alignof(type)))
-
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG) || (_MSC_VER >= 1929 /* Was broken in early VS2019 but works again in VS2022 and later 2019 versions*/)
 
 #    define XII_DEBUG_BREAK \

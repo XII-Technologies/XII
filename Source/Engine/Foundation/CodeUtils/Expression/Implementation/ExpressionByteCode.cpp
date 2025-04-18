@@ -453,9 +453,9 @@ xiiResult xiiExpressionByteCode::Load(xiiStreamReader& inout_stream, xiiByteArra
       return XII_FAILURE;
     }
 
-    if (xiiMemoryUtils::IsAligned(externalMemory.GetPtr(), XII_ALIGNMENT_OF(xiiExpression::StreamDesc)) == false)
+    if (xiiMemoryUtils::IsAligned(externalMemory.GetPtr(), alignof(xiiExpression::StreamDesc)) == false)
     {
-      xiiLog::Error("External memory is not properly aligned. Expected an alignment of at least {} bytes.", XII_ALIGNMENT_OF(xiiExpression::StreamDesc));
+      xiiLog::Error("External memory is not properly aligned. Expected an alignment of at least {} bytes.", alignof(xiiExpression::StreamDesc));
       return XII_FAILURE;
     }
 
@@ -488,7 +488,7 @@ xiiResult xiiExpressionByteCode::Load(xiiStreamReader& inout_stream, xiiByteArra
 
   // Functions
   {
-    pData = xiiMemoryUtils::AlignForwards(pData, XII_ALIGNMENT_OF(xiiExpression::FunctionDesc));
+    pData = xiiMemoryUtils::AlignForwards(pData, alignof(xiiExpression::FunctionDesc));
 
     inout_stream >> m_uiNumFunctions;
     m_pFunctions = static_cast<xiiExpression::FunctionDesc*>(pData);
@@ -502,7 +502,7 @@ xiiResult xiiExpressionByteCode::Load(xiiStreamReader& inout_stream, xiiByteArra
 
   // ByteCode
   {
-    pData = xiiMemoryUtils::AlignForwards(pData, XII_ALIGNMENT_OF(StorageType));
+    pData = xiiMemoryUtils::AlignForwards(pData, alignof(StorageType));
 
     inout_stream >> m_uiByteCodeCount;
     m_pByteCode = static_cast<StorageType*>(pData);
@@ -526,11 +526,11 @@ void xiiExpressionByteCode::Init(xiiArrayPtr<const StorageType> byteCode, xiiArr
   uiOutputsOffset = uiDataSize;
   uiDataSize += outputs.ToByteArray().GetCount();
 
-  uiDataSize        = xiiMemoryUtils::AlignSize<xiiUInt32>(uiDataSize, XII_ALIGNMENT_OF(xiiExpression::FunctionDesc));
+  uiDataSize        = xiiMemoryUtils::AlignSize<xiiUInt32>(uiDataSize, alignof(xiiExpression::FunctionDesc));
   uiFunctionsOffset = uiDataSize;
   uiDataSize += functions.ToByteArray().GetCount();
 
-  uiDataSize       = xiiMemoryUtils::AlignSize<xiiUInt32>(uiDataSize, XII_ALIGNMENT_OF(StorageType));
+  uiDataSize       = xiiMemoryUtils::AlignSize<xiiUInt32>(uiDataSize, alignof(StorageType));
   uiByteCodeOffset = uiDataSize;
   uiDataSize += byteCode.ToByteArray().GetCount();
 

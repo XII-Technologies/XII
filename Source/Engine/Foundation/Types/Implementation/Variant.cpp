@@ -54,6 +54,7 @@ xiiVariant::xiiVariant(const xiiString& value)
 
 xiiVariant::xiiVariant(const xiiStringView& value, bool bCopyString)
 {
+  bCopyString = true;
   if (bCopyString)
     InitShared(xiiString(value));
   else

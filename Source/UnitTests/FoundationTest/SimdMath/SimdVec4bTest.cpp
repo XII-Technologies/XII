@@ -16,7 +16,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4b)
     // Make sure the class didn't accidentally change in size.
 #if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) || (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
     static_assert(sizeof(xiiSimdVec4b) == 16);
-    static_assert(XII_ALIGNMENT_OF(xiiSimdVec4b) == 16);
+    static_assert(alignof(xiiSimdVec4b) == 16);
 #endif
 
     xiiSimdVec4b vInit1B(true);

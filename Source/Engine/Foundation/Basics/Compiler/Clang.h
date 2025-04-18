@@ -12,8 +12,6 @@
 #    define XII_FORCE_INLINE __attribute__((always_inline)) inline
 #  endif
 
-#  define XII_ALIGNMENT_OF(type) XII_COMPILE_TIME_MAX(__alignof(type), XII_ALIGNMENT_MINIMUM)
-
 #  if __has_builtin(__builtin_debugtrap)
 #    define XII_DEBUG_BREAK    \
       {                        \
