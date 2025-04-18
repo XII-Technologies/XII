@@ -30,9 +30,9 @@ public:
 
 private:
   xiiHashedString m_sClip;                    // [ property ]
-  bool            m_bLoop            = true;  // [ property ]
-  bool            m_bApplyRootMotion = false; // [ property ]
-  float           m_fPlaybackSpeed   = 1.0f;  // [ property ]
+  bool            m_bLoop             = true; // [ property ]
+  float           m_fRootMotionAmount = 0.0f; // [ property ]
+  float           m_fPlaybackSpeed    = 1.0f; // [ property ]
 
   xiiAnimGraphTriggerInputPin m_InStart; // [ property ]
   xiiAnimGraphBoolInputPin    m_InLoop;  // [ property ]
@@ -44,7 +44,6 @@ private:
 
   struct InstanceState
   {
-    bool    m_bPlaying = false;
-    xiiTime m_PlaybackTime;
+    xiiTime m_PlaybackTime = xiiTime::MakeFromHours(1000);
   };
 };

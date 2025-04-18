@@ -16,8 +16,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgAnimationPosePreparing, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgAnimationPoseUpdated);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgAnimationPoseUpdated, 1, xiiRTTIDefaultAllocator<xiiMsgAnimationPoseUpdated>)
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgAnimationPoseGeneration);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgAnimationPoseGeneration, 1, xiiRTTIDefaultAllocator<xiiMsgAnimationPoseGeneration>)
 {
   XII_BEGIN_ATTRIBUTES
   {
@@ -27,8 +27,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgAnimationPoseUpdated, 1, xiiRTTIDefaultAl
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgAnimationPoseProposal);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgAnimationPoseProposal, 1, xiiRTTIDefaultAllocator<xiiMsgAnimationPoseProposal>)
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgAnimationPoseUpdated);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgAnimationPoseUpdated, 1, xiiRTTIDefaultAllocator<xiiMsgAnimationPoseUpdated>)
 {
   XII_BEGIN_ATTRIBUTES
   {

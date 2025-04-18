@@ -38,6 +38,10 @@ struct XII_GRAPHICSCORE_DLL xiiSkeletonResourceDescriptor
   xiiSkeleton  m_Skeleton;
   float        m_fMaxImpulse = xiiMath::HighValue<float>();
 
+  // used for motion extraction
+  xiiUInt16 m_uiLeftFootJoint  = xiiInvalidJointIndex;
+  xiiUInt16 m_uiRightFootJoint = xiiInvalidJointIndex;
+
   xiiDynamicArray<xiiSkeletonResourceGeometry> m_Geometry;
 };
 

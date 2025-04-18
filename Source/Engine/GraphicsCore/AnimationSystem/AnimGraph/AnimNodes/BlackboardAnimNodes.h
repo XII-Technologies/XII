@@ -92,6 +92,7 @@ private:
   xiiAnimGraphTriggerOutputPin m_OutOnTrue;        // [ property ]
   xiiAnimGraphTriggerOutputPin m_OutOnFalse;       // [ property ]
   xiiAnimGraphBoolOutputPin    m_OutIsTrue;        // [ property ]
+  xiiAnimGraphBoolOutputPin    m_OutIsFalse;       // [ property ]
 
   struct InstanceData
   {

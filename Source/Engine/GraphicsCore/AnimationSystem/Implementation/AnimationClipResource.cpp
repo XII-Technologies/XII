@@ -50,7 +50,7 @@ xiiResourceLoadDesc xiiAnimationClipResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiAnimationClipResource::UpdateContent(xiiStreamReader* Stream)
 {
-  XII_LOG_BLOCK("xiiAnimationClipResource::UpdateContent", GetResourceDescription().GetData());
+  XII_LOG_BLOCK("xiiAnimationClipResource::UpdateContent", GetResourceIdOrDescription());
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -62,11 +62,9 @@ xiiResourceLoadDesc xiiAnimationClipResource::UpdateContent(xiiStreamReader* Str
     return res;
   }
 
-  // skip the absolute file path data that the standard file reader writes into the stream
-  {
-    xiiStringBuilder sAbsFilePath;
-    (*Stream) >> sAbsFilePath;
-  }
+  // the standard file reader writes the absolute file path into the stream
+  xiiStringBuilder sAbsFilePath;
+  (*Stream) >> sAbsFilePath;
 
   // skip the asset file header at the start of the file
   xiiAssetFileHeader AssetHash;
@@ -256,18 +254,9 @@ XII_FORCE_INLINE void xii2ozz(const xiiQuat& qIn, ozz::math::Quaternion& ref_out
   ref_out.w = qIn.w;
 }
 
-const ozz::animation::Animation& xiiAnimationClipResourceDescriptor::GetMappedOzzAnimation(const xiiSkeletonResource& skeleton) const
+void xiiAnimationClipResourceDescriptor::CreateMappedOzzAnimation(ozz::unique_ptr<ozz::animation::Animation>& out_pOzzAnim, const xiiSkeleton& skeleton) const
 {
-  auto it = m_pOzzImpl->m_MappedOzzAnimations.Find(&skeleton);
-  if (it.IsValid())
-  {
-    if (it.Value().m_uiResourceChangeCounter == skeleton.GetCurrentResourceChangeCounter())
-    {
-      return *it.Value().m_pAnim.get();
-    }
-  }
-
-  auto            pOzzSkeleton = &skeleton.GetDescriptor().m_Skeleton.GetOzzSkeleton();
+  auto            pOzzSkeleton = &skeleton.GetOzzSkeleton();
   const xiiUInt32 uiNumJoints  = pOzzSkeleton->num_joints();
 
   ozz::animation::offline::RawAnimation rawAnim;
@@ -288,13 +277,13 @@ const ozz::animation::Animation& xiiAnimationClipResourceDescriptor::GetMappedOz
       dstTrack.rotations.resize(1);
       dstTrack.scales.resize(1);
 
-      const xiiUInt16 uiFallbackIdx = skeleton.GetDescriptor().m_Skeleton.FindJointByName(sJointName);
+      const xiiUInt16 uiFallbackIdx = skeleton.FindJointByName(sJointName);
 
       XII_ASSERT_DEV(uiFallbackIdx != xiiInvalidJointIndex, "");
 
-      const auto& fallbackJoint = skeleton.GetDescriptor().m_Skeleton.GetJointByIndex(uiFallbackIdx);
+      const auto& fallbackJoint = skeleton.GetJointByIndex(uiFallbackIdx);
 
-      const xiiTransform& fallbackTransform = fallbackJoint.GetRestPoseLocalTransform();
+      const xiiTransform& fallbackTransform = m_bAdditive ? xiiTransform::MakeIdentity() : fallbackJoint.GetRestPoseLocalTransform();
 
       auto& dstT = dstTrack.translations[0];
       auto& dstR = dstTrack.rotations[0];
@@ -358,8 +347,22 @@ const ozz::animation::Animation& xiiAnimationClipResourceDescriptor::GetMappedOz
 
   XII_ASSERT_DEBUG(rawAnim.Validate(), "Invalid animation data");
 
-  auto& cached                     = m_pOzzImpl->m_MappedOzzAnimations[&skeleton];
-  cached.m_pAnim                   = std::move(animBuilder(rawAnim));
+  out_pOzzAnim = std::move(animBuilder(rawAnim));
+}
+
+const ozz::animation::Animation& xiiAnimationClipResourceDescriptor::GetMappedOzzAnimation(const xiiSkeletonResource& skeleton) const
+{
+  auto it = m_pOzzImpl->m_MappedOzzAnimations.Find(&skeleton);
+  if (it.IsValid())
+  {
+    if (it.Value().m_uiResourceChangeCounter == skeleton.GetCurrentResourceChangeCounter())
+    {
+      return *it.Value().m_pAnim.get();
+    }
+  }
+
+  auto& cached = m_pOzzImpl->m_MappedOzzAnimations[&skeleton];
+  CreateMappedOzzAnimation(cached.m_pAnim, skeleton.GetDescriptor().m_Skeleton);
   cached.m_uiResourceChangeCounter = skeleton.GetCurrentResourceChangeCounter();
 
   return *cached.m_pAnim.get();
@@ -471,14 +474,14 @@ xiiArrayPtr<const xiiAnimationClipResourceDescriptor::KeyframeVec3> xiiAnimation
 //{
 //  xiiUInt16 jointIdx = 0;
 //
-//#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+// #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
 //
-//  const xiiUInt32 idx = m_JointNameToIndex.Find("xiiRootMotionTransform");
+//  const xiiUInt32 idx = m_JointNameToIndex.Find(xiiTempHashedString("xiiRootMotionTransform"));
 //  XII_ASSERT_DEBUG(idx != xiiInvalidIndex, "Animation Clip has no root motion transforms");
 //
 //  jointIdx = m_JointNameToIndex.GetValue(idx);
 //  XII_ASSERT_DEBUG(jointIdx == 0, "The root motion joint should always be at index 0");
-//#endif
+// #endif
 //
 //  return jointIdx;
 //}

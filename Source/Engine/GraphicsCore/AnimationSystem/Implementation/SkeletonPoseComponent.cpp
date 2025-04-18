@@ -167,29 +167,27 @@ void xiiSkeletonPoseComponent::SetBone(xiiStringView sKey, const xiiVariant& val
     m_Bones[hs] = *reinterpret_cast<const xiiExposedBone*>(value.GetData());
   }
 
-// TODO
-#if 0
-  if (IsActiveAndInitialized())
-  {
-    // only add to update list, if not yet activated, since OnActivate will do the instantiation anyway
-    GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
-  }
-#endif
+  // TODO
+  // if (IsActiveAndInitialized())
+  //{
+  //  // only add to update list, if not yet activated,
+  //  // since OnActivate will do the instantiation anyway
+  //  GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
+  //}
   ResendPose();
 }
 
 void xiiSkeletonPoseComponent::RemoveBone(xiiStringView sKey)
 {
-  if (m_Bones.RemoveAndCopy(sKey))
+  if (m_Bones.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
-// TODO
-#if 0
-    if (IsActiveAndInitialized())
-    {
-      // only add to update list, if not yet activated, since OnActivate will do the instantiation anyway
-      GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
-    }
-#endif
+    // TODO
+    // if (IsActiveAndInitialized())
+    //{
+    //  // only add to update list, if not yet activated,
+    //  // since OnActivate will do the instantiation anyway
+    //  GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
+    //}
 
     ResendPose();
   }
@@ -221,13 +219,13 @@ void xiiSkeletonPoseComponent::SendRestPose()
   if (skel.GetJointCount() == 0)
     return;
 
-  xiiHybridArray<xiiMat4, 32> finalTransforms(xiiFrameAllocator::GetCurrentAllocator());
-  finalTransforms.SetCountUninitialized(skel.GetJointCount());
+  xiiArrayPtr<ozz::math::Float4x4> pFinalTransforms = XII_NEW_ARRAY(xiiFrameAllocator::GetCurrentAllocator(), ozz::math::Float4x4, skel.GetJointCount());
+  XII_ASSERT_DEBUG(xiiMemoryUtils::IsAligned(pFinalTransforms.GetPtr(), alignof(ozz::math::Float4x4)), "Unaligned cast");
 
   {
     ozz::animation::LocalToModelJob job;
     job.input    = skel.GetOzzSkeleton().joint_rest_poses();
-    job.output   = ozz::span<ozz::math::Float4x4>(reinterpret_cast<ozz::math::Float4x4*>(finalTransforms.GetData()), finalTransforms.GetCount());
+    job.output   = ozz::span<ozz::math::Float4x4>(pFinalTransforms.GetPtr(), pFinalTransforms.GetEndPtr());
     job.skeleton = &skel.GetOzzSkeleton();
     job.Run();
   }
@@ -235,7 +233,7 @@ void xiiSkeletonPoseComponent::SendRestPose()
   xiiMsgAnimationPoseUpdated msg;
   msg.m_pRootTransform  = &desc.m_RootTransform;
   msg.m_pSkeleton       = &skel;
-  msg.m_ModelTransforms = finalTransforms;
+  msg.m_ModelTransforms = xiiMakeArrayPtr(reinterpret_cast<const xiiMat4*>(pFinalTransforms.GetPtr()), pFinalTransforms.GetCount());
 
   GetOwner()->SendMessage(msg);
 
@@ -252,12 +250,12 @@ void xiiSkeletonPoseComponent::SendCustomPose()
   const auto&                          desc = pSkeleton->GetDescriptor();
   const auto&                          skel = desc.m_Skeleton;
 
-  xiiHybridArray<xiiMat4, 32> finalTransforms(xiiFrameAllocator::GetCurrentAllocator());
-  finalTransforms.SetCountUninitialized(skel.GetJointCount());
+  xiiArrayPtr<ozz::math::Float4x4> pFinalTransforms = XII_NEW_ARRAY(xiiFrameAllocator::GetCurrentAllocator(), ozz::math::Float4x4, skel.GetJointCount());
+  XII_ASSERT_DEBUG(xiiMemoryUtils::IsAligned(pFinalTransforms.GetPtr(), alignof(ozz::math::Float4x4)), "Unaligned cast");
 
-  for (xiiUInt32 i = 0; i < finalTransforms.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < pFinalTransforms.GetCount(); ++i)
   {
-    finalTransforms[i].SetIdentity();
+    pFinalTransforms[i] = ozz::math::Float4x4::identity();
   }
 
   ozz::vector<ozz::math::SoaTransform> ozzLocalTransforms;
@@ -297,9 +295,10 @@ void xiiSkeletonPoseComponent::SendCustomPose()
     reinterpret_cast<float*>(&q.w)[idx1] = boneRot.w;
   }
 
+  XII_ASSERT_DEBUG(xiiMemoryUtils::IsAligned(pFinalTransforms.GetPtr(), alignof(ozz::math::Float4x4)), "Unaligned cast");
   ozz::animation::LocalToModelJob job;
   job.input    = ozz::span<const ozz::math::SoaTransform>(ozzLocalTransforms.data(), ozzLocalTransforms.size());
-  job.output   = ozz::span<ozz::math::Float4x4>(reinterpret_cast<ozz::math::Float4x4*>(finalTransforms.GetData()), finalTransforms.GetCount());
+  job.output   = ozz::span<ozz::math::Float4x4>(pFinalTransforms.GetPtr(), pFinalTransforms.GetEndPtr());
   job.skeleton = &skel.GetOzzSkeleton();
   XII_ASSERT_DEBUG(job.Validate(), "");
   job.Run();
@@ -308,7 +307,8 @@ void xiiSkeletonPoseComponent::SendCustomPose()
   xiiMsgAnimationPoseUpdated msg;
   msg.m_pRootTransform  = &desc.m_RootTransform;
   msg.m_pSkeleton       = &skel;
-  msg.m_ModelTransforms = finalTransforms;
+  msg.m_ModelTransforms = xiiMakeArrayPtr(reinterpret_cast<const xiiMat4*>(pFinalTransforms.GetPtr()), pFinalTransforms.GetCount());
+  ;
 
   GetOwner()->SendMessage(msg);
 

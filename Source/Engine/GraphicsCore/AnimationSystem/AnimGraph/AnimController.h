@@ -58,7 +58,7 @@ public:
 
   void Initialize(const xiiSkeletonResourceHandle& hSkeleton, xiiAnimPoseGenerator& ref_poseGenerator, const xiiSharedPtr<xiiBlackboard>& pBlackboard = nullptr);
 
-  void Update(xiiTime diff, xiiGameObject* pTarget);
+  void Update(xiiTime diff, xiiGameObject* pTarget, bool bEnableIK);
 
   void GetRootMotion(xiiVec3& ref_vTranslation, xiiAngle& ref_rotationX, xiiAngle& ref_rotationY, xiiAngle& ref_rotationZ) const;
 

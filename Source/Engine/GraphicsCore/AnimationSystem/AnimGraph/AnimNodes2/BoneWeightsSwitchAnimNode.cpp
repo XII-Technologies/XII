@@ -68,3 +68,6 @@ void xiiSwitchBoneWeightsAnimNode::Step(xiiAnimController& ref_controller, xiiAn
 
   m_OutWeights.SetWeights(ref_graph, m_InWeights[iIndex].GetWeights(ref_controller, ref_graph));
 }
+
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes2_BoneWeightsSwitchAnimNode);

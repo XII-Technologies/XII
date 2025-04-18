@@ -116,8 +116,8 @@ void xiiSwitchPoseAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraph
     pInstance->m_iTransitionFromIndex = pInstance->m_iTransitionToIndex;
   }
 
-  XII_ASSERT_DEBUG(pInstance->m_iTransitionToIndex >= 0 && pInstance->m_iTransitionToIndex < pPins.GetCount(), "Invalid pose index");
-  XII_ASSERT_DEBUG(pInstance->m_iTransitionToIndex >= 0 && pInstance->m_iTransitionToIndex < pPins.GetCount(), "Invalid pose index");
+  XII_ASSERT_DEBUG(pInstance->m_iTransitionToIndex >= 0 && pInstance->m_iTransitionToIndex < (xiiInt32)pPins.GetCount(), "Invalid pose index");
+  XII_ASSERT_DEBUG(pInstance->m_iTransitionToIndex >= 0 && pInstance->m_iTransitionToIndex < (xiiInt32)pPins.GetCount(), "Invalid pose index");
 
   xiiInt8 iTransitionFromIndex = pInstance->m_iTransitionFromIndex;
   xiiInt8 iTransitionToIndex   = pInstance->m_iTransitionToIndex;
@@ -178,3 +178,6 @@ bool xiiSwitchPoseAnimNode::GetInstanceDataDesc(xiiInstanceDataDesc& out_desc) c
   out_desc.FillFromType<InstanceData>();
   return true;
 }
+
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes2_SwitchPoseAnimNode);

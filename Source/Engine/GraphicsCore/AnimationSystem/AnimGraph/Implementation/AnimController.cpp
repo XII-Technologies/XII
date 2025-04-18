@@ -18,6 +18,22 @@ xiiAnimController::~xiiAnimController() = default;
 
 void xiiAnimController::Initialize(const xiiSkeletonResourceHandle& hSkeleton, xiiAnimPoseGenerator& ref_poseGenerator, const xiiSharedPtr<xiiBlackboard>& pBlackboard /*= nullptr*/)
 {
+  m_Instances.Clear();
+  m_PinDataBoneWeights.Clear();
+  m_PinDataLocalTransforms.Clear();
+  m_PinDataModelTransforms.Clear();
+  m_AnimationClipMapping.Clear();
+  m_CurrentLocalTransformOutputs.Clear();
+  m_pBlackboard.Clear();
+  m_BlendMask.Clear();
+  m_pPoseGenerator          = nullptr;
+  m_pCurrentModelTransforms = nullptr;
+  m_hSkeleton               = {};
+  m_vRootMotion.SetZero();
+  m_RootRotationX = {};
+  m_RootRotationY = {};
+  m_RootRotationZ = {};
+
   m_hSkeleton      = hSkeleton;
   m_pPoseGenerator = &ref_poseGenerator;
   m_pBlackboard    = pBlackboard;
@@ -31,7 +47,7 @@ void xiiAnimController::GetRootMotion(xiiVec3& ref_vTranslation, xiiAngle& ref_r
   ref_rotationZ    = m_RootRotationZ;
 }
 
-void xiiAnimController::Update(xiiTime diff, xiiGameObject* pTarget)
+void xiiAnimController::Update(xiiTime diff, xiiGameObject* pTarget, bool bEnableIK)
 {
   if (!m_hSkeleton.IsValid())
     return;
@@ -49,7 +65,7 @@ void xiiAnimController::Update(xiiTime diff, xiiGameObject* pTarget)
   m_RootRotationY = {};
   m_RootRotationZ = {};
 
-  m_pPoseGenerator->Reset(pSkeleton.GetPointer());
+  m_pPoseGenerator->Reset(pSkeleton.GetPointer(), pTarget);
 
   m_PinDataBoneWeights.Clear();
   m_PinDataLocalTransforms.Clear();
@@ -64,7 +80,15 @@ void xiiAnimController::Update(xiiTime diff, xiiGameObject* pTarget)
 
   GenerateLocalResultProcessors(pSkeleton.GetPointer());
 
-  if (auto newPose = GetPoseGenerator().GeneratePose(pTarget); !newPose.IsEmpty())
+  {
+    xiiMsgAnimationPoseGeneration poseGenMsg;
+    poseGenMsg.m_pGenerator = &GetPoseGenerator();
+    pTarget->SendMessageRecursive(poseGenMsg);
+  }
+
+  GetPoseGenerator().UpdatePose(bEnableIK);
+
+  if (auto newPose = GetPoseGenerator().GetCurrentPose(); !newPose.IsEmpty())
   {
     xiiMsgAnimationPoseUpdated msg;
     msg.m_pSkeleton       = &pSkeleton->GetDescriptor().m_Skeleton;
@@ -271,8 +295,7 @@ void xiiAnimController::GenerateLocalResultProcessors(const xiiSkeletonResource*
     xiiAngle rootRotationZ;
     GetRootMotion(rootMotion, rootRotationX, rootRotationY, rootRotationZ);
 
-    auto& cmd = GetPoseGenerator().AllocCommandModelPoseToOutput();
-    cmd.m_Inputs.PushBack(pModelTransform->m_CommandID);
+    GetPoseGenerator().SetFinalCommand(pModelTransform->m_CommandID);
 
     if (pModelTransform->m_bUseRootMotion)
     {

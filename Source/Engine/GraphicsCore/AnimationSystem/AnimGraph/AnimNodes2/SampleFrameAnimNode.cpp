@@ -80,13 +80,13 @@ void xiiSampleFrameAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGrap
     if (pAnimClip.GetAcquireResult() != xiiResourceAcquireResult::Final)
       return;
 
-    float fNormPos = fNormPos = m_InNormalizedSamplePosition.GetNumber(ref_graph, m_fNormalizedSamplePosition);
+    float fNormPos = static_cast<float>(m_InNormalizedSamplePosition.GetNumber(ref_graph, m_fNormalizedSamplePosition));
 
     if (m_InAbsoluteSamplePosition.IsConnected())
     {
       const xiiTime tDuration    = pAnimClip->GetDescriptor().GetDuration();
       const float   fInvDuration = 1.0f / tDuration.AsFloatInSeconds();
-      fNormPos                   = m_InAbsoluteSamplePosition.GetNumber(ref_graph) * fInvDuration;
+      fNormPos                   = static_cast<float>(m_InAbsoluteSamplePosition.GetNumber(ref_graph) * fInvDuration);
     }
 
     fNormPos = xiiMath::Clamp(fNormPos, 0.0f, 1.0f);
@@ -137,3 +137,6 @@ const char* xiiSampleFrameAnimNode::GetClip() const
 {
   return m_sClip.GetData();
 }
+
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes2_SampleFrameAnimNode);

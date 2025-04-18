@@ -38,12 +38,12 @@ public:
   const char* GetEndClip() const;
 
 private:
-  xiiHashedString                    m_sStartClip;               // [ property ]
-  xiiHybridArray<xiiHashedString, 1> m_Clips;                    // [ property ]
-  xiiHashedString                    m_sEndClip;                 // [ property ]
-  bool                               m_bApplyRootMotion = false; // [ property ]
-  bool                               m_bLoop            = false; // [ property ]
-  float                              m_fPlaybackSpeed   = 1.0f;  // [ property ]
+  xiiHashedString                    m_sStartClip;                // [ property ]
+  xiiHybridArray<xiiHashedString, 1> m_Clips;                     // [ property ]
+  xiiHashedString                    m_sEndClip;                  // [ property ]
+  float                              m_fRootMotionAmount = 0.0f;  // [ property ]
+  bool                               m_bLoop             = false; // [ property ]
+  float                              m_fPlaybackSpeed    = 1.0f;  // [ property ]
 
   xiiAnimGraphTriggerInputPin m_InStart;      // [ property ]
   xiiAnimGraphBoolInputPin    m_InLoop;       // [ property ]
@@ -55,10 +55,21 @@ private:
   xiiAnimGraphTriggerOutputPin   m_OutOnEndStarted;    // [ property ]
   xiiAnimGraphTriggerOutputPin   m_OutOnFinished;      // [ property ]
 
+  enum class State : xiiUInt8
+  {
+    Off,
+    Start,
+    Middle,
+    End,
+    HoldStartFrame,
+    HoldMiddleFrame,
+    HoldEndFrame,
+  };
+
   struct InstanceState
   {
-    xiiTime  m_PlaybackTime;
-    xiiUInt8 m_uiState         = 0; // 0 = off, 1 = start, 2 = middle, 3 = end
+    xiiTime  m_PlaybackTime    = xiiTime::MakeFromHours(1000);
+    State    m_State           = State::Off;
     xiiUInt8 m_uiMiddleClipIdx = 0;
   };
 };

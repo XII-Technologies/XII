@@ -7,7 +7,10 @@
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Tracks/EventTrack.h>
 
+#include <ozz/base/memory/unique_ptr.h>
+
 class xiiSkeletonResource;
+class xiiSkeleton;
 
 namespace ozz::animation
 {
@@ -32,6 +35,7 @@ public:
   xiiTime   GetDuration() const;
   void      SetDuration(xiiTime duration);
 
+  void                             CreateMappedOzzAnimation(ozz::unique_ptr<ozz::animation::Animation>& out_pOzzAnim, const xiiSkeleton& skeleton) const;
   const ozz::animation::Animation& GetMappedOzzAnimation(const xiiSkeletonResource& skeleton) const;
 
   struct JointInfo

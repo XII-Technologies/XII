@@ -86,6 +86,4 @@ bool xiiSkeletonBuilder::HasJoints() const
   return !m_Joints.IsEmpty();
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_SkeletonBuilder);

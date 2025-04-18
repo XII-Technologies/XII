@@ -47,7 +47,7 @@ xiiResourceLoadDesc xiiSkeletonResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiSkeletonResource::UpdateContent(xiiStreamReader* Stream)
 {
-  XII_LOG_BLOCK("xiiSkeletonResource::UpdateContent", GetResourceDescription().GetData());
+  XII_LOG_BLOCK("xiiSkeletonResource::UpdateContent", GetResourceIdOrDescription());
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -59,11 +59,9 @@ xiiResourceLoadDesc xiiSkeletonResource::UpdateContent(xiiStreamReader* Stream)
     return res;
   }
 
-  // skip the absolute file path data that the standard file reader writes into the stream
-  {
-    xiiStringBuilder sAbsFilePath;
-    (*Stream) >> sAbsFilePath;
-  }
+  // the standard file reader writes the absolute file path into the stream
+  xiiStringBuilder sAbsFilePath;
+  (*Stream) >> sAbsFilePath;
 
   // skip the asset file header at the start of the file
   xiiAssetFileHeader AssetHash;
@@ -106,7 +104,7 @@ xiiUInt64 xiiSkeletonResourceDescriptor::GetHeapMemoryUsage() const
 
 xiiResult xiiSkeletonResourceDescriptor::Serialize(xiiStreamWriter& inout_stream) const
 {
-  inout_stream.WriteVersion(7);
+  inout_stream.WriteVersion(8);
 
   m_Skeleton.Save(inout_stream);
   inout_stream << m_RootTransform;
@@ -127,12 +125,16 @@ xiiResult xiiSkeletonResourceDescriptor::Serialize(xiiStreamWriter& inout_stream
     XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(geo.m_TriangleIndices));
   }
 
+  // version 8
+  inout_stream << m_uiLeftFootJoint;
+  inout_stream << m_uiRightFootJoint;
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiSkeletonResourceDescriptor::Deserialize(xiiStreamReader& inout_stream)
 {
-  const xiiTypeVersion version = inout_stream.ReadVersion(7);
+  const xiiTypeVersion version = inout_stream.ReadVersion(8);
 
   if (version < 6)
     return XII_FAILURE;
@@ -176,6 +178,12 @@ xiiResult xiiSkeletonResourceDescriptor::Deserialize(xiiStreamReader& inout_stre
       XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(geo.m_VertexPositions));
       XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(geo.m_TriangleIndices));
     }
+  }
+
+  if (version >= 8)
+  {
+    inout_stream >> m_uiLeftFootJoint;
+    inout_stream >> m_uiRightFootJoint;
   }
 
   // make sure the geometry is sorted by bones

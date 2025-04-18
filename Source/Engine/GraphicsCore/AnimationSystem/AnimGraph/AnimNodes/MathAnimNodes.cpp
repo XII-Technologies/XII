@@ -125,6 +125,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCompareNumberAnimNode, 1, xiiRTTIDefaultAllo
     XII_ENUM_MEMBER_PROPERTY("Comparison", xiiComparisonOperator, m_Comparison),
 
     XII_MEMBER_PROPERTY("OutIsTrue", m_OutIsTrue)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("OutIsFalse", m_OutIsFalse)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("InNumber", m_InNumber)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("InReference", m_InReference)->AddAttributes(new xiiHiddenAttribute()),
   }
@@ -142,7 +143,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiResult xiiCompareNumberAnimNode::SerializeNode(xiiStreamWriter& stream) const
 {
-  stream.WriteVersion(1);
+  stream.WriteVersion(2);
 
   XII_SUCCEED_OR_RETURN(SUPER::SerializeNode(stream));
 
@@ -152,13 +153,14 @@ xiiResult xiiCompareNumberAnimNode::SerializeNode(xiiStreamWriter& stream) const
   XII_SUCCEED_OR_RETURN(m_InNumber.Serialize(stream));
   XII_SUCCEED_OR_RETURN(m_InReference.Serialize(stream));
   XII_SUCCEED_OR_RETURN(m_OutIsTrue.Serialize(stream));
+  XII_SUCCEED_OR_RETURN(m_OutIsFalse.Serialize(stream));
 
   return XII_SUCCESS;
 }
 
 xiiResult xiiCompareNumberAnimNode::DeserializeNode(xiiStreamReader& stream)
 {
-  stream.ReadVersion(1);
+  auto version = stream.ReadVersion(2);
 
   XII_SUCCEED_OR_RETURN(SUPER::DeserializeNode(stream));
 
@@ -169,6 +171,11 @@ xiiResult xiiCompareNumberAnimNode::DeserializeNode(xiiStreamReader& stream)
   XII_SUCCEED_OR_RETURN(m_InReference.Deserialize(stream));
   XII_SUCCEED_OR_RETURN(m_OutIsTrue.Deserialize(stream));
 
+  if (version >= 2)
+  {
+    XII_SUCCEED_OR_RETURN(m_OutIsFalse.Deserialize(stream));
+  }
+
   return XII_SUCCESS;
 }
 
@@ -177,6 +184,7 @@ void xiiCompareNumberAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGr
   const bool bIsTrue = xiiComparisonOperator::Compare<double>(m_Comparison, m_InNumber.GetNumber(ref_graph), m_InReference.GetNumber(ref_graph, m_fReferenceValue));
 
   m_OutIsTrue.SetBool(ref_graph, bIsTrue);
+  m_OutIsFalse.SetBool(ref_graph, !bIsTrue);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -241,6 +249,89 @@ xiiResult xiiBoolToNumberAnimNode::DeserializeNode(xiiStreamReader& stream)
 void xiiBoolToNumberAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, const xiiSkeletonResource* pSkeleton, xiiGameObject* pTarget) const
 {
   m_OutNumber.SetNumber(ref_graph, m_InValue.GetBool(ref_graph) ? m_fTrueValue : m_fFalseValue);
+}
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBoolToTriggerAnimNode, 1, xiiRTTIDefaultAllocator<xiiBoolToTriggerAnimNode>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("InValue", m_InValue)->AddAttributes(new xiiHiddenAttribute),
+    XII_MEMBER_PROPERTY("OutOnTrue", m_OutOnTrue)->AddAttributes(new xiiHiddenAttribute),
+    XII_MEMBER_PROPERTY("OutOnFalse", m_OutOnFalse)->AddAttributes(new xiiHiddenAttribute),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Logic"),
+    new xiiTitleAttribute("Bool To Event"),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiBoolToTriggerAnimNode::xiiBoolToTriggerAnimNode()  = default;
+xiiBoolToTriggerAnimNode::~xiiBoolToTriggerAnimNode() = default;
+
+xiiResult xiiBoolToTriggerAnimNode::SerializeNode(xiiStreamWriter& stream) const
+{
+  stream.WriteVersion(1);
+
+  XII_SUCCEED_OR_RETURN(SUPER::SerializeNode(stream));
+
+  XII_SUCCEED_OR_RETURN(m_InValue.Serialize(stream));
+  XII_SUCCEED_OR_RETURN(m_OutOnTrue.Serialize(stream));
+  XII_SUCCEED_OR_RETURN(m_OutOnFalse.Serialize(stream));
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiBoolToTriggerAnimNode::DeserializeNode(xiiStreamReader& stream)
+{
+  stream.ReadVersion(1);
+
+  XII_SUCCEED_OR_RETURN(SUPER::DeserializeNode(stream));
+
+  XII_SUCCEED_OR_RETURN(m_InValue.Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(m_OutOnTrue.Deserialize(stream));
+  XII_SUCCEED_OR_RETURN(m_OutOnFalse.Deserialize(stream));
+
+  return XII_SUCCESS;
+}
+
+bool xiiBoolToTriggerAnimNode::GetInstanceDataDesc(xiiInstanceDataDesc& out_desc) const
+{
+  out_desc.FillFromType<InstanceData>();
+  return true;
+}
+
+void xiiBoolToTriggerAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, const xiiSkeletonResource* pSkeleton, xiiGameObject* pTarget) const
+{
+  InstanceData* pInstance = ref_graph.GetAnimNodeInstanceData<InstanceData>(*this);
+
+  const bool    bIsTrueNow = m_InValue.GetBool(ref_graph);
+  const xiiInt8 iIsTrueNow = bIsTrueNow ? 1 : 0;
+
+  // we use a tri-state bool here to ensure that OnTrue or OnFalse get fired right away
+  if (pInstance->m_iIsTrue != iIsTrueNow)
+  {
+    pInstance->m_iIsTrue = iIsTrueNow;
+
+    if (bIsTrueNow)
+    {
+      m_OutOnTrue.SetTriggered(ref_graph);
+    }
+    else
+    {
+      m_OutOnFalse.SetTriggered(ref_graph);
+    }
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes_MathAnimNodes);

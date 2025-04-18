@@ -9,6 +9,12 @@ struct xiiMsgQueryAnimationSkeleton;
 
 using xiiVisualizeSkeletonComponentManager = xiiComponentManagerSimple<class xiiSkeletonComponent, xiiComponentUpdateType::Always, xiiBlockStorageType::Compact>;
 
+/// \brief Uses debug rendering to visualize various aspects of an animation skeleton.
+///
+/// This is meant for visually inspecting skeletons. It is used by the main skeleton editor,
+/// but can also be added to a scene or added to an animated mesh on-demand.
+///
+/// There are different options what to visualize and also to highlight certain bones.
 class XII_GRAPHICSCORE_DLL xiiSkeletonComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSkeletonComponent, xiiRenderComponent, xiiVisualizeSkeletonComponentManager);
@@ -40,19 +46,23 @@ public:
   void                             SetSkeleton(const xiiSkeletonResourceHandle& hResource); // [ property ]
   const xiiSkeletonResourceHandle& GetSkeleton() const { return m_hSkeleton; }              // [ property ]
 
+  /// \brief Sets a semicolon-separated list of bone names that should be highlighted.
+  ///
+  /// Set it to "*" to highlight all bones.
+  /// Set it to empty to not highlight any bone.
+  /// Set it to "BoneA;BoneB" to highlight the bones with name "BoneA" and "BoneB".
   void        SetBonesToHighlight(const char* szFilter); // [ property ]
   const char* GetBonesToHighlight() const;               // [ property ]
 
-  void VisualizeSkeletonDefaultState();
-
-  bool m_bVisualizeBones       = true;
-  bool m_bVisualizeColliders   = false;
-  bool m_bVisualizeJoints      = false;
-  bool m_bVisualizeSwingLimits = false;
-  bool m_bVisualizeTwistLimits = false;
+  bool m_bVisualizeBones       = true;  // [ property ]
+  bool m_bVisualizeColliders   = false; // [ property ]
+  bool m_bVisualizeJoints      = false; // [ property ]
+  bool m_bVisualizeSwingLimits = false; // [ property ]
+  bool m_bVisualizeTwistLimits = false; // [ property ]
 
 protected:
   void Update();
+  void VisualizeSkeletonDefaultState();
   void OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& msg); // [ msg handler ]
 
   void BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated& msg);

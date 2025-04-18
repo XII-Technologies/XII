@@ -30,36 +30,38 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshVertexColorConversion, 1)
   XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::LinearToSrgb),
   XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::SrgbToLinear),
 XII_END_STATIC_REFLECTED_ENUM;
-  // clang-format on
+// clang-format on
 
-  namespace
+// clang-format off
+namespace
+{
+  template <xiiUInt32 Bits>
+  XII_ALWAYS_INLINE xiiUInt32 ColorFloatToUNorm(float value)
   {
-    template <xiiUInt32 Bits>
-    XII_ALWAYS_INLINE xiiUInt32 ColorFloatToUNorm(float value)
+    // Implemented according to
+    // https://docs.microsoft.com/en-us/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
+    if (xiiMath::IsNaN(value))
     {
-      // Implemented according to
-      // https://docs.microsoft.com/en-us/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-      if (xiiMath::IsNaN(value))
-      {
-        return 0;
-      }
-      else
-      {
-        float fMaxValue = ((1 << Bits) - 1);
-        return static_cast<xiiUInt32>(xiiMath::Saturate(value) * fMaxValue + 0.5f);
-      }
+      return 0;
     }
+    else
+    {
+      float fMaxValue = ((1 << Bits) - 1);
+      return static_cast<xiiUInt32>(xiiMath::Saturate(value) * fMaxValue + 0.5f);
+    }
+  }
 
-    template <xiiUInt32 Bits>
-    constexpr inline float ColorUNormToFloat(xiiUInt32 value)
-    {
-      // Implemented according to
-      // https://docs.microsoft.com/en-us/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-      xiiUInt32 uiMaxValue = ((1 << Bits) - 1);
-      float     fMaxValue  = ((1 << Bits) - 1);
-      return (value & uiMaxValue) * (1.0f / fMaxValue);
-    }
-  } // namespace
+  template <xiiUInt32 Bits>
+  constexpr inline float ColorUNormToFloat(xiiUInt32 value)
+  {
+    // Implemented according to
+    // https://docs.microsoft.com/en-us/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
+    xiiUInt32 uiMaxValue = ((1 << Bits) - 1);
+    float     fMaxValue  = ((1 << Bits) - 1);
+    return (value & uiMaxValue) * (1.0f / fMaxValue);
+  }
+} // namespace
+// clang-format on
 
 // static
 xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)

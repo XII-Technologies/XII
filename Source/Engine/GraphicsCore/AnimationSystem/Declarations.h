@@ -10,6 +10,8 @@ class xiiAnimationPose;
 struct xiiSkeletonResourceDescriptor;
 class xiiEditableSkeletonJoint;
 struct xiiAnimationClipResourceDescriptor;
+class xiiAnimPoseGenerator;
+class xiiGameObject;
 
 using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 
@@ -20,6 +22,7 @@ namespace ozz::animation
   class Skeleton;
 }
 
+/// \brief What shape is used to approximate a bone's geometry
 struct xiiSkeletonJointGeometryType
 {
   using StorageType = xiiUInt8;
@@ -30,7 +33,7 @@ struct xiiSkeletonJointGeometryType
     Capsule,
     Sphere,
     Box,
-    ConvexMesh,
+    ConvexMesh, ///< A convex mesh is extracted from the mesh file.
 
     Default = None
   };
@@ -48,6 +51,19 @@ struct XII_GRAPHICSCORE_DLL xiiMsgAnimationPosePreparing : public xiiMessage
   xiiArrayPtr<ozz::math::SoaTransform> m_LocalTransforms;
 };
 
+/// \brief Sent to objects when a parent component is generating an animation pose, to inject additional pose commands, for instance to apply inverse kinematics (IK).
+///
+/// The message contains the xiiAnimPoseGenerator that is currently being built.
+/// Usually it has already been executed once and generated a pose (in model space), which can be queried to build upon.
+/// Additional commands can then be added to modify the pose.
+/// This is mainly meant for inverse kinematics use cases.
+struct XII_GRAPHICSCORE_DLL xiiMsgAnimationPoseGeneration : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgAnimationPoseGeneration, xiiMessage);
+
+  xiiAnimPoseGenerator* m_pGenerator = nullptr;
+};
+
 /// \brief Used by components that skin a mesh to inform children whenever a new pose has been computed.
 ///
 /// This can be used by child nodes/components to synchronize their state to the new animation pose.
@@ -60,16 +76,6 @@ struct XII_GRAPHICSCORE_DLL xiiMsgAnimationPoseUpdated : public xiiMessage
   static void ComputeFullBoneTransform(const xiiMat4& mRootTransform, const xiiMat4& mModelTransform, xiiMat4& ref_mFullTransform, xiiQuat& ref_qRotationOnly);
   void        ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& ref_mFullTransform) const;
   void        ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& ref_mFullTransform, xiiQuat& ref_qRotationOnly) const;
-
-  const xiiTransform*        m_pRootTransform = nullptr;
-  const xiiSkeleton*         m_pSkeleton      = nullptr;
-  xiiArrayPtr<const xiiMat4> m_ModelTransforms;
-  bool                       m_bContinueAnimating = true;
-};
-
-struct XII_GRAPHICSCORE_DLL xiiMsgAnimationPoseProposal : public xiiMessage
-{
-  XII_DECLARE_MESSAGE_TYPE(xiiMsgAnimationPoseProposal, xiiMessage);
 
   const xiiTransform*        m_pRootTransform = nullptr;
   const xiiSkeleton*         m_pSkeleton      = nullptr;
@@ -125,16 +131,17 @@ struct XII_GRAPHICSCORE_DLL xiiMsgRetrieveBoneState : public xiiMessage
   xiiMap<xiiString, xiiTransform> m_BoneTransforms;
 };
 
+/// \brief What type of physics constraint to use for a bone.
 struct xiiSkeletonJointType
 {
   using StorageType = xiiUInt8;
 
   enum Enum
   {
-    None,
-    Fixed,
+    None,  ///< The bone is not constrained, at all. It will not be connected to another bone and fall down separately.
+    Fixed, ///< The bone is joined to the parent bone by a fixed joint type and can't move, at all.
     //  Hinge,
-    SwingTwist,
+    SwingTwist, ///< The bone is joined to the parent bone and can swing and twist relative to it in limited fashion.
 
     Default = None,
   };
@@ -145,6 +152,9 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSkeletonJointType);
 //////////////////////////////////////////////////////////////////////////
 
 /// \brief What to do when an animated object is not visible.
+///
+/// It is often important to still update animated meshes, so that animation events get handled.
+/// Also even though a mesh may be invisible itself, its shadow or reflection may still be visible.
 struct XII_GRAPHICSCORE_DLL xiiAnimationInvisibleUpdateRate
 {
   using StorageType = xiiUInt8;

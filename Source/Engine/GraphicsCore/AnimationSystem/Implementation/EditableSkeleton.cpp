@@ -79,12 +79,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonJoint, 2, xiiRTTIDefaultAllo
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 1, xiiRTTIDefaultAllocator<xiiEditableSkeleton>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 2, xiiRTTIDefaultAllocator<xiiEditableSkeleton>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::MeshesWithAnimations)),
-    XII_ENUM_MEMBER_PROPERTY("RightDir", xiiBasisAxis, m_RightDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveX)),
+    XII_ENUM_MEMBER_PROPERTY("ImportTransform", xiiMeshImportTransform, m_ImportTransform),
+    XII_ENUM_MEMBER_PROPERTY("RightDir", xiiBasisAxis, m_RightDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::NegativeX)),
     XII_ENUM_MEMBER_PROPERTY("UpDir", xiiBasisAxis, m_UpDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveY)),
     XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir),
     XII_MEMBER_PROPERTY("UniformScaling", m_fUniformScaling)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0001f, 10000.0f)),
@@ -93,6 +94,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 1, xiiRTTIDefaultAllocator
     XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
     XII_MEMBER_PROPERTY("Surface", m_sSurfaceFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("MaxImpulse", m_fMaxImpulse)->AddAttributes(new xiiDefaultValueAttribute(100.f)),
+    XII_MEMBER_PROPERTY("LeftFootJoint", m_sLeftFootJoint),
+    XII_MEMBER_PROPERTY("RightFootJoint", m_sRightFootJoint),
 
     XII_ARRAY_MEMBER_PROPERTY("Children", m_Children)->AddFlags(xiiPropertyFlags::PointerOwner | xiiPropertyFlags::Hidden),
   }
@@ -227,6 +230,9 @@ void xiiEditableSkeleton::FillResourceDescriptor(xiiSkeletonResourceDescriptor& 
 
   sb.BuildSkeleton(ref_desc.m_Skeleton);
   ref_desc.m_Skeleton.m_BoneDirection = m_BoneDirection;
+
+  ref_desc.m_uiLeftFootJoint  = ref_desc.m_Skeleton.FindJointByName(xiiTempHashedString(m_sLeftFootJoint));
+  ref_desc.m_uiRightFootJoint = ref_desc.m_Skeleton.FindJointByName(xiiTempHashedString(m_sRightFootJoint));
 }
 
 static void BuildOzzRawSkeleton(const xiiEditableSkeletonJoint& srcJoint, ozz::animation::offline::RawSkeleton::Joint& ref_dstJoint)

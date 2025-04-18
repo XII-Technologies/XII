@@ -114,12 +114,16 @@ public:
   float m_fMaxImpulse     = 100.0f;
 
   xiiEnum<xiiMeshImportTransform> m_ImportTransform;
-  xiiEnum<xiiBasisAxis>           m_RightDir        = xiiBasisAxis::PositiveX;
+  xiiEnum<xiiBasisAxis>           m_RightDir        = xiiBasisAxis::NegativeX;
   xiiEnum<xiiBasisAxis>           m_UpDir           = xiiBasisAxis::PositiveY;
-  bool                            m_bFlipForwardDir = true;
+  bool                            m_bFlipForwardDir = false;
   xiiEnum<xiiBasisAxis>           m_BoneDirection;
 
   xiiHybridArray<xiiEditableSkeletonJoint*, 4> m_Children;
+
+  // used for motion extraction
+  xiiString m_sLeftFootJoint;
+  xiiString m_sRightFootJoint;
 };
 
 struct XII_GRAPHICSCORE_DLL xiiExposedBone
