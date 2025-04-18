@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Foundation/Algorithm/HashingUtils.h>
 #include <TestFramework/TestFrameworkDLL.h>
+
+#include <Foundation/Algorithm/HashingUtils.h>
 
 struct xiiConstructionCounter
 {
