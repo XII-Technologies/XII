@@ -1,7 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, ShaderCompiler)
