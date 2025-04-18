@@ -25,6 +25,7 @@ o
 		{
 			s{"Textures/Vignetting.tga"}
 		}
+		s %Tags{""}
 	}
 }
 }

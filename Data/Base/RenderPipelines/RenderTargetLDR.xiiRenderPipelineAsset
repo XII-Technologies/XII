@@ -11,11 +11,12 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{9340082855766888863,4792825339744186213}}
-		u4 %Hash{10055378868850872724}
+		u4 %Hash{10408778709209255196}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
 		VarArray %References{}
+		s %Tags{""}
 	}
 }
 }
@@ -58,19 +59,6 @@ o
 }
 o
 {
-	Uuid %id{u4{10816726009636777398,4710030915269093864}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{4078915948612949949,4755842352955031626}}
-		s %Connection::SourcePin{"Color"}
-		Uuid %Connection::Target{u4{6020936048026470328,5199890642471235401}}
-		s %Connection::TargetPin{"Color"}
-	}
-}
-o
-{
 	Uuid %id{u4{4078915948612949949,4755842352955031626}}
 	s %t{"xiiOpaqueForwardRenderPass"}
 	u3 %v{1}
@@ -101,6 +89,32 @@ o
 }
 o
 {
+	Uuid %id{u4{12763895144882172559,4889232671800437772}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{4078915948612949949,4755842352955031626}}
+		s %SourcePin{"Color"}
+		Uuid %Target{u4{6020936048026470328,5199890642471235401}}
+		s %TargetPin{"Color"}
+	}
+}
+o
+{
+	Uuid %id{u4{14879175446311291561,4944347467445358161}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{14015861933268748453,4832101727536707722}}
+		s %SourcePin{"DepthStencil"}
+		Uuid %Target{u4{4078915948612949949,4755842352955031626}}
+		s %TargetPin{"DepthStencil"}
+	}
+}
+o
+{
 	Uuid %id{u4{12011283833418556728,4973465496662681475}}
 	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
@@ -108,15 +122,15 @@ o
 }
 o
 {
-	Uuid %id{u4{990012088595644838,4975111872320788701}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
+	Uuid %id{u4{14035255639659835524,5079500214203996769}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Connection::Source{u4{13766159566503031479,5378026105745909468}}
-		s %Connection::SourcePin{"Output"}
-		Uuid %Connection::Target{u4{12728475743831224468,5240091406013980589}}
-		s %Connection::TargetPin{"Color0"}
+		Uuid %Source{u4{6728452850495430079,5725267199525040572}}
+		s %SourcePin{"Output"}
+		Uuid %Target{u4{4078915948612949949,4755842352955031626}}
+		s %TargetPin{"Color"}
 	}
 }
 o
@@ -136,15 +150,15 @@ o
 }
 o
 {
-	Uuid %id{u4{8212464623913843896,5220611033640168752}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
+	Uuid %id{u4{392150324288425868,5214171459657720079}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Connection::Source{u4{14015861933268748453,4832101727536707722}}
-		s %Connection::SourcePin{"DepthStencil"}
-		Uuid %Connection::Target{u4{4078915948612949949,4755842352955031626}}
-		s %Connection::TargetPin{"DepthStencil"}
+		Uuid %Source{u4{13766159566503031479,5378026105745909468}}
+		s %SourcePin{"Output"}
+		Uuid %Target{u4{12728475743831224468,5240091406013980589}}
+		s %TargetPin{"Color0"}
 	}
 }
 o
@@ -182,19 +196,6 @@ o
 }
 o
 {
-	Uuid %id{u4{18330112437917409678,5264917298377185037}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{6020936048026470328,5199890642471235401}}
-		s %Connection::SourcePin{"Color"}
-		Uuid %Connection::Target{u4{13766159566503031479,5378026105745909468}}
-		s %Connection::TargetPin{"Color"}
-	}
-}
-o
-{
 	Uuid %id{u4{13766159566503031479,5378026105745909468}}
 	s %t{"xiiTonemapPass"}
 	u3 %v{1}
@@ -219,32 +220,6 @@ o
 }
 o
 {
-	Uuid %id{u4{14299218432884426170,5392179023575638550}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{4078915948612949949,4755842352955031626}}
-		s %Connection::SourcePin{"DepthStencil"}
-		Uuid %Connection::Target{u4{6020936048026470328,5199890642471235401}}
-		s %Connection::TargetPin{"DepthStencil"}
-	}
-}
-o
-{
-	Uuid %id{u4{16542229199765245622,5423285714566994399}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{17468437186822461850,5437837372954499738}}
-		s %Connection::SourcePin{"Output"}
-		Uuid %Connection::Target{u4{14015861933268748453,4832101727536707722}}
-		s %Connection::TargetPin{"DepthStencil"}
-	}
-}
-o
-{
 	Uuid %id{u4{17468437186822461850,5437837372954499738}}
 	s %t{"xiiSourcePass"}
 	u3 %v{1}
@@ -263,6 +238,32 @@ o
 		s %StencilLoadOperation{"xiiGALAttachmentLoadOperation::Clear"}
 		s %StencilStoreOperation{"xiiGALAttachmentStoreOperation::Store"}
 		s %StoreOperation{"xiiGALAttachmentStoreOperation::Store"}
+	}
+}
+o
+{
+	Uuid %id{u4{7863826547745250944,5482500942844596003}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{17468437186822461850,5437837372954499738}}
+		s %SourcePin{"Output"}
+		Uuid %Target{u4{14015861933268748453,4832101727536707722}}
+		s %TargetPin{"DepthStencil"}
+	}
+}
+o
+{
+	Uuid %id{u4{14870808098052198543,5486673044144899116}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{4078915948612949949,4755842352955031626}}
+		s %SourcePin{"DepthStencil"}
+		Uuid %Target{u4{6020936048026470328,5199890642471235401}}
+		s %TargetPin{"DepthStencil"}
 	}
 }
 o
@@ -293,15 +294,15 @@ o
 }
 o
 {
-	Uuid %id{u4{1179936157229825171,5616477709668064136}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
+	Uuid %id{u4{15521730744401527471,5682396148847365425}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Connection::Source{u4{6728452850495430079,5725267199525040572}}
-		s %Connection::SourcePin{"Output"}
-		Uuid %Connection::Target{u4{4078915948612949949,4755842352955031626}}
-		s %Connection::TargetPin{"Color"}
+		Uuid %Source{u4{6020936048026470328,5199890642471235401}}
+		s %SourcePin{"Color"}
+		Uuid %Target{u4{13766159566503031479,5378026105745909468}}
+		s %TargetPin{"Color"}
 	}
 }
 o
@@ -345,13 +346,13 @@ o
 			Uuid{u4{17753960311421245577,5246638687537846918}}
 			Uuid{u4{4386604233071024777,5604451041350432849}}
 			Uuid{u4{12728475743831224468,5240091406013980589}}
-			Uuid{u4{10816726009636777398,4710030915269093864}}
-			Uuid{u4{14299218432884426170,5392179023575638550}}
-			Uuid{u4{8212464623913843896,5220611033640168752}}
-			Uuid{u4{18330112437917409678,5264917298377185037}}
-			Uuid{u4{16542229199765245622,5423285714566994399}}
-			Uuid{u4{1179936157229825171,5616477709668064136}}
-			Uuid{u4{990012088595644838,4975111872320788701}}
+			Uuid{u4{12763895144882172559,4889232671800437772}}
+			Uuid{u4{392150324288425868,5214171459657720079}}
+			Uuid{u4{14879175446311291561,4944347467445358161}}
+			Uuid{u4{15521730744401527471,5682396148847365425}}
+			Uuid{u4{14870808098052198543,5486673044144899116}}
+			Uuid{u4{7863826547745250944,5482500942844596003}}
+			Uuid{u4{14035255639659835524,5079500214203996769}}
 		}
 	}
 }
@@ -580,6 +581,23 @@ o
 }
 o
 {
+	Uuid %id{u4{14212397541982075057,6548985883735981742}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDocumentObject_ConnectionBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{7807377364782092762,6788077344464291733}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -711,23 +729,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiVisibleObjectsExtractor"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{1988646526571382668,10729334715299371304}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiReflectedClass"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"DocumentNodeManager_DefaultConnection"}
 		u3 %TypeVersion{1}
 	}
 }

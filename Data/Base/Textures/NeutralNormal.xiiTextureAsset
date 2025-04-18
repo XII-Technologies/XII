@@ -25,6 +25,7 @@ o
 		{
 			s{"Textures/NeutralNormal.tga"}
 		}
+		s %Tags{""}
 	}
 }
 }

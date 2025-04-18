@@ -14,7 +14,7 @@ o
 			s{"Shaders/Materials/DefaultMaterial.xiiShader"}
 		}
 		Uuid %DocumentID{u4{14732239694908818835,5276013256709897261}}
-		u4 %Hash{15347810411286218224}
+		u4 %Hash{9206290924451545348}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -26,6 +26,7 @@ o
 			s{"RebeccaPurple.color"}
 			s{"Shaders/Materials/DefaultMaterial.xiiShader"}
 		}
+		s %Tags{""}
 	}
 }
 }
@@ -69,6 +70,7 @@ o
 	u3 %v{4}
 	p
 	{
+		s %AssetFilterTags{""}
 		s %BaseMaterial{""}
 		s %Shader{"Shaders/Materials/DefaultMaterial.xiiShader"}
 		s %ShaderMode{"xiiMaterialShaderMode::File"}
@@ -351,6 +353,7 @@ o
 	{
 		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
+		s %RequiredTag{""}
 	}
 }
 o
@@ -412,6 +415,7 @@ o
 	{
 		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
+		s %RequiredTag{""}
 	}
 }
 o
@@ -445,6 +449,7 @@ o
 	{
 		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
+		s %RequiredTag{""}
 	}
 }
 o
@@ -866,6 +871,7 @@ o
 	{
 		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
+		s %RequiredTag{""}
 	}
 }
 o
@@ -895,6 +901,7 @@ o
 	{
 		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
+		s %RequiredTag{""}
 	}
 }
 o
@@ -952,6 +959,7 @@ o
 	{
 		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
+		s %RequiredTag{""}
 	}
 }
 o
@@ -1104,6 +1112,7 @@ o
 	{
 		s %DependencyFlags{"xiiDependencyFlags::Package|xiiDependencyFlags::Thumbnail"}
 		s %Filter{";CompatibleAsset_Texture_2D;"}
+		s %RequiredTag{""}
 	}
 }
 o

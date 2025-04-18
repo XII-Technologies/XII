@@ -11,11 +11,12 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{17711001407536439736,5505436445966180118}}
-		u4 %Hash{10122275155245967283}
+		u4 %Hash{4346102715635827677}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
 		VarArray %References{}
+		s %Tags{""}
 	}
 }
 }
@@ -41,6 +42,19 @@ o
 	s %t{"xiiRenderPipelineNodeInputProviderPin"}
 	u3 %v{1}
 	p{}
+}
+o
+{
+	Uuid %id{u4{8162648126232482695,4652364602606632881}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{3012569870458697352,5386212663437548644}}
+		s %SourcePin{"Output"}
+		Uuid %Target{u4{6092888042282166442,4702730995123121724}}
+		s %TargetPin{"DepthStencil"}
+	}
 }
 o
 {
@@ -97,19 +111,6 @@ o
 }
 o
 {
-	Uuid %id{u4{3839975967945236644,5356666130192556293}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{3012569870458697352,5386212663437548644}}
-		s %Connection::SourcePin{"Output"}
-		Uuid %Connection::Target{u4{6092888042282166442,4702730995123121724}}
-		s %Connection::TargetPin{"DepthStencil"}
-	}
-}
-o
-{
 	Uuid %id{u4{3012569870458697352,5386212663437548644}}
 	s %t{"xiiSourcePass"}
 	u3 %v{1}
@@ -132,15 +133,15 @@ o
 }
 o
 {
-	Uuid %id{u4{6204173561508457910,5553742337022629907}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
+	Uuid %id{u4{15869144180268939922,5568668632926324402}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Connection::Source{u4{6092888042282166442,4702730995123121724}}
-		s %Connection::SourcePin{"DepthStencil"}
-		Uuid %Connection::Target{u4{506494092431856007,4712002059416219605}}
-		s %Connection::TargetPin{"DepthStencil"}
+		Uuid %Source{u4{6092888042282166442,4702730995123121724}}
+		s %SourcePin{"DepthStencil"}
+		Uuid %Target{u4{506494092431856007,4712002059416219605}}
+		s %TargetPin{"DepthStencil"}
 	}
 }
 o
@@ -157,8 +158,8 @@ o
 			Uuid{u4{6092888042282166442,4702730995123121724}}
 			Uuid{u4{506494092431856007,4712002059416219605}}
 			Uuid{u4{4612768257152447660,5093767427298493568}}
-			Uuid{u4{6204173561508457910,5553742337022629907}}
-			Uuid{u4{3839975967945236644,5356666130192556293}}
+			Uuid{u4{8162648126232482695,4652364602606632881}}
+			Uuid{u4{15869144180268939922,5568668632926324402}}
 		}
 	}
 }
@@ -318,6 +319,23 @@ o
 }
 o
 {
+	Uuid %id{u4{14212397541982075057,6548985883735981742}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDocumentObject_ConnectionBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{7807377364782092762,6788077344464291733}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -432,23 +450,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiVisibleObjectsExtractor"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{1988646526571382668,10729334715299371304}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiReflectedClass"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"DocumentNodeManager_DefaultConnection"}
 		u3 %TypeVersion{1}
 	}
 }

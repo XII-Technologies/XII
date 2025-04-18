@@ -25,6 +25,7 @@ o
 		{
 			s{"Textures/Flare.tga"}
 		}
+		s %Tags{""}
 	}
 }
 }

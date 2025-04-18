@@ -14,7 +14,7 @@ o
 			s{"Shaders/Materials/ReflectionProbeVisualization.xiiShader"}
 		}
 		Uuid %DocumentID{u4{4746343837574186671,4963508747386251216}}
-		u4 %Hash{652876398132365137}
+		u4 %Hash{15545508288871692803}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -22,6 +22,7 @@ o
 		{
 			s{"Shaders/Materials/ReflectionProbeVisualization.xiiShader"}
 		}
+		s %Tags{""}
 	}
 }
 }
@@ -45,6 +46,7 @@ o
 	u3 %v{4}
 	p
 	{
+		s %AssetFilterTags{""}
 		s %BaseMaterial{""}
 		s %Shader{"Shaders/Materials/ReflectionProbeVisualization.xiiShader"}
 		s %ShaderMode{"xiiMaterialShaderMode::File"}

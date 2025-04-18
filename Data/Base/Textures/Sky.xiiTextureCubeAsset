@@ -22,6 +22,7 @@ o
 		{
 			s{"Textures/Sky.jpg"}
 		}
+		s %Tags{""}
 	}
 }
 }
