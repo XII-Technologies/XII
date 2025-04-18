@@ -19,7 +19,7 @@ struct xiiGALShaderStageBinaryVersion
   };
 };
 
-xiiMap<xiiUInt32, xiiGALShaderStageBinary> xiiGALShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
+xiiMap<xiiUInt32, xiiGALShaderStageBinary, xiiCompareHelper<xiiUInt32>, xiiStaticAllocatorWrapper> xiiGALShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
 
 xiiGALShaderStageBinary::xiiGALShaderStageBinary() = default;
 
@@ -287,11 +287,20 @@ xiiGALShaderStageBinary* xiiGALShaderStageBinary::LoadStageBinary(xiiEnum<xiiGAL
 }
 
 // static
+void xiiGALShaderStageBinary::OnEngineStartup()
+{
+  for (xiiUInt32 uiShaderType = 0; uiShaderType < xiiGALShaderType::ENUM_COUNT; ++uiShaderType)
+  {
+    s_ShaderStageBinaries[uiShaderType].Clear();
+  }
+}
+
+// static
 void xiiGALShaderStageBinary::OnEngineShutdown()
 {
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
+  for (xiiUInt32 uiShaderType = 0; uiShaderType < xiiGALShaderType::ENUM_COUNT; ++uiShaderType)
   {
-    s_ShaderStageBinaries[stage].Clear();
+    s_ShaderStageBinaries[uiShaderType].Clear();
   }
 }
 
