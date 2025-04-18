@@ -135,7 +135,7 @@ void xiiQtShaderTemplateDlg::on_Buttons_accepted()
 
   for (xiiUInt32 row = 0; row < m_Templates[idx].m_Vars.GetCount(); ++row)
   {
-    xiiVariant                      defVal;
+    xiiVariant                         defVal;
     xiiGALShaderParser::EnumDefinition enumDef;
     xiiGALShaderParser::ParsePermutationVariableConfiguration(m_Templates[idx].m_Vars[row], defVal, enumDef);
 
@@ -229,7 +229,7 @@ void xiiQtShaderTemplateDlg::on_ShaderTemplate_currentIndexChanged(int idx)
 
   for (xiiUInt32 row = 0; row < m_Templates[idx].m_Vars.GetCount(); ++row)
   {
-    xiiVariant                      defVal;
+    xiiVariant                         defVal;
     xiiGALShaderParser::EnumDefinition enumDef;
     xiiGALShaderParser::ParsePermutationVariableConfiguration(m_Templates[idx].m_Vars[row], defVal, enumDef);
 

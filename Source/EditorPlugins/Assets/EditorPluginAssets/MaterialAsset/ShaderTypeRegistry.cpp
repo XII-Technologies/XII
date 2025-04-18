@@ -69,7 +69,7 @@ namespace
 
     sTemp.ReadAll(file);
 
-    xiiVariant                      defaultValue;
+    xiiVariant                         defaultValue;
     xiiGALShaderParser::EnumDefinition enumDefinition;
 
     xiiGALShaderParser::ParsePermutationVariableConfiguration(sTemp, defaultValue, enumDefinition);
