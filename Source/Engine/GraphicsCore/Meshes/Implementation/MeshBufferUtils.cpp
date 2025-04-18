@@ -30,9 +30,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshVertexColorConversion, 1)
   XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::LinearToSrgb),
   XII_ENUM_CONSTANT(xiiMeshVertexColorConversion::SrgbToLinear),
 XII_END_STATIC_REFLECTED_ENUM;
-  // clang-format on
 
-  // clang-format off
 namespace
 {
   template <xiiUInt32 Bits>
@@ -60,25 +58,25 @@ namespace
     float     fMaxValue  = ((1 << Bits) - 1);
     return (value & uiMaxValue) * (1.0f / fMaxValue);
   }
-} // namespace
-  // clang-format on
+}
+// clang-format on
 
-  // static
-  xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
+// static
+xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
+{
+  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetResourceFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
+
+  switch (destFormat)
   {
-    XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetResourceFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
-
-    switch (destFormat)
-    {
-      case xiiGALResourceFormat::R32Float:
-        *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
-        return XII_SUCCESS;
-      case xiiGALResourceFormat::R16Float:
-        *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
-        return XII_SUCCESS;
-      default:
-        return XII_FAILURE;
-    }
+    case xiiGALResourceFormat::R32Float:
+      *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
+      return XII_SUCCESS;
+    case xiiGALResourceFormat::R16Float:
+      *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
+      return XII_SUCCESS;
+    default:
+      return XII_FAILURE;
+  }
 }
 
 // static
