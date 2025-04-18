@@ -97,7 +97,7 @@ o
 	u3 %v{1}
 	p
 	{
-		Vec2 %Node::Pos{f{0xFFCA4F43,0x28498042}}
+		Vec2 %Node::Pos{f{0xB0A74943,0x28498042}}
 	}
 }
 o
