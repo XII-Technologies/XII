@@ -59,24 +59,24 @@ namespace
     return (value & uiMaxValue) * (1.0f / fMaxValue);
   }
 }
-// clang-format on
+  // clang-format on
 
-// static
-xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
-{
-  XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetResourceFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
-
-  switch (destFormat)
+  // static
+  xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat)
   {
-    case xiiGALResourceFormat::R32Float:
-      *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
-      return XII_SUCCESS;
-    case xiiGALResourceFormat::R16Float:
-      *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
-      return XII_SUCCESS;
-    default:
-      return XII_FAILURE;
-  }
+    XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALTextureUtilities::GetResourceFormatProperties(destFormat).GetElementSize(), "Destination buffer is too small");
+
+    switch (destFormat)
+    {
+      case xiiGALResourceFormat::R32Float:
+        *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
+        return XII_SUCCESS;
+      case xiiGALResourceFormat::R16Float:
+        *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
+        return XII_SUCCESS;
+      default:
+        return XII_FAILURE;
+    }
 }
 
 // static
