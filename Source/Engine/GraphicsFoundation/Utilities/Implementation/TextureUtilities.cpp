@@ -557,6 +557,7 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
     mipLevelProperties.m_StorageSize.height = xiiMemoryUtils::AlignSize(mipLevelProperties.m_LogicalSize.height, xiiUInt32{formatProperties.m_uiBlockHeight});
     mipLevelProperties.m_uiRowSize          = xiiUInt64{mipLevelProperties.m_StorageSize.width} / xiiUInt32{formatProperties.m_uiBlockWidth} * xiiUInt32{formatProperties.m_uiComponentSize}; // Component size is the block size.
     mipLevelProperties.m_uiDepthSliceSize   = mipLevelProperties.m_StorageSize.height / xiiUInt32{formatProperties.m_uiBlockHeight} * mipLevelProperties.m_uiRowSize;
+    mipLevelProperties.m_uiMipSize          = mipLevelProperties.m_uiDepthSliceSize * mipLevelProperties.m_uiDepth;
   }
   else
   {

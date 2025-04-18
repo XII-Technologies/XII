@@ -474,7 +474,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
           vk::BufferImageCopy      vkCopyRegion     = {};
           xiiGALMipLevelProperties mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
 
-          // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
+          // The allocation will stay in the upload heap until the command list is reset, at which point all upload pages will be discarded.
           auto stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(mipLevelProperty.m_uiMipSize);
 
           void* pMappedMemory = nullptr;
@@ -484,7 +484,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
           pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
 
           // bufferOffset must be a multiple of 4 (18.4)
-          vkCopyRegion.bufferOffset = stagingBufferAllocation.m_uiOffset; // offset in bytes from the start of the buffer object.
+          vkCopyRegion.bufferOffset = stagingBufferAllocation.m_uiOffset; // Offset in bytes from the start of the buffer object.
 
           // bufferRowLength and bufferImageHeight specify the data in buffer memory as a subregion of a larger two- or three-dimensional image, and control the addressing calculations of
           // data in buffer memory. If either of these values is zero, that aspect of the buffer memory is considered to be tightly packed according to the imageExtent. (18.4)
