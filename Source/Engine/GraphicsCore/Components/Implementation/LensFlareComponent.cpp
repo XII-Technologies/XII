@@ -256,7 +256,7 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   if (auto pDirectionalLight = xiiDynamicCast<const xiiDirectionalLightComponent*>(pLightComponent))
   {
     xiiTransform localOffset = xiiTransform::MakeIdentity();
-    localOffset.m_vPosition  = xiiVec3(pCamera->GetFarPlane() * -0.999, 0, 0);
+    localOffset.m_vPosition  = xiiVec3(pCamera->GetFarPlane() * -0.999f, 0.0f, 0.0f);
 
     globalTransform = xiiTransform::MakeGlobalTransform(globalTransform, localOffset);
     globalTransform.m_vPosition += pCamera->GetCenterPosition();

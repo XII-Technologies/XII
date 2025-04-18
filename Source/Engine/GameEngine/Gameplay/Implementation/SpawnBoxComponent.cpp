@@ -220,9 +220,9 @@ void xiiSpawnBoxComponent::Spawn(xiiUInt32 uiCount)
   for (xiiUInt32 i = 0; i < uiCount; ++i)
   {
     xiiTransform tLocal  = xiiTransform::MakeIdentity();
-    tLocal.m_vPosition.x = rnd.DoubleMinMax(-m_vHalfExtents.x, m_vHalfExtents.x);
-    tLocal.m_vPosition.y = rnd.DoubleMinMax(-m_vHalfExtents.y, m_vHalfExtents.y);
-    tLocal.m_vPosition.z = rnd.DoubleMinMax(-m_vHalfExtents.z, m_vHalfExtents.z);
+    tLocal.m_vPosition.x = static_cast<float>(rnd.DoubleMinMax(-m_vHalfExtents.x, m_vHalfExtents.x));
+    tLocal.m_vPosition.y = static_cast<float>(rnd.DoubleMinMax(-m_vHalfExtents.y, m_vHalfExtents.y));
+    tLocal.m_vPosition.z = static_cast<float>(rnd.DoubleMinMax(-m_vHalfExtents.z, m_vHalfExtents.z));
 
     if (m_MaxRotationZ.GetRadian() > 0)
     {

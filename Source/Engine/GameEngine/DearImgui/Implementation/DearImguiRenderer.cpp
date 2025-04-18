@@ -200,7 +200,7 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
       {
         auto rect = imGuiBatch.m_ScissorRect;
 
-        pCommandList->SetScissorRects(xiiMakeArrayPtr(&rect, 1U), 0U, 0U);
+        pCommandList->SetScissorRects(xiiMakeArrayPtr(&rect, 1U));
         pRenderContext->BindTexture2D("BaseTexture", textures[imGuiBatch.m_uiTextureID]);
         pRenderContext->DrawMeshBuffer(imGuiBatch.m_uiVertexCount / 3, uiFirstIndex / 3).IgnoreResult();
       }

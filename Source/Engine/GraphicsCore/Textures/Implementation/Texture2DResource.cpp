@@ -116,6 +116,8 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
         xiiGALTextureSubResourceData& id = ref_initData.ExpandAndGetRef();
         id.m_pData                       = pImage->GetSubImageView(mip, face, arrayIndex).GetByteBlobPtr();
 
+        XII_ASSERT_DEV(pImage->GetDepthPitch(mip) < xiiMath::MaxValue<xiiUInt64>(), "Depth pitch exceeds xiiGAL limits.");
+
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
           const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 2 / 8;
@@ -124,13 +126,12 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
         }
         else
         {
-          id.m_uiStride = static_cast<xiiUInt32>(pImage->GetRowPitch(mip));
+          id.m_uiStride = pImage->GetRowPitch(mip);
         }
 
-        XII_ASSERT_DEV(pImage->GetDepthPitch(mip) < xiiMath::MaxValue<xiiUInt32>(), "Depth pitch exceeds xiiGAL limits.");
-        id.m_uiDepthStride = static_cast<xiiUInt32>(pImage->GetDepthPitch(mip));
+        id.m_uiDepthStride = pImage->GetDepthPitch(mip);
 
-        out_uiMemoryUsed += id.m_uiDepthStride;
+        out_uiMemoryUsed += static_cast<xiiUInt32>(id.m_uiDepthStride);
       }
     }
   }
