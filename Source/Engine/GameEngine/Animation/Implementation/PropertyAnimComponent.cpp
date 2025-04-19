@@ -571,7 +571,7 @@ void xiiPropertyAnimComponent::StartPlayback()
   if (!m_RandomOffset.IsZero() && m_pAnimDesc->m_AnimationDuration.IsPositive())
   {
     // should the random offset also be scaled by the speed factor? I guess not
-    m_AnimationTime += xiiMath::Abs(m_fSpeed) * xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomOffset.GetSeconds()));
+    m_AnimationTime += xiiMath::Abs(m_fSpeed) * xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleMinMax(0.0, m_RandomOffset.GetSeconds()));
 
     const xiiTime duration = m_AnimationRangeHigh - m_AnimationRangeLow;
 

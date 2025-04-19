@@ -106,9 +106,7 @@ void xiiAnimatedMeshComponent::InitializeAnimationPose()
     const xiiUInt32                 uiNumSkeletonJoints = pOzzSkeleton->num_joints();
 
     xiiArrayPtr<ozz::math::Float4x4> pPoseMatrices = XII_NEW_ARRAY(xiiFrameAllocator::GetCurrentAllocator(), ozz::math::Float4x4, uiNumSkeletonJoints);
-
-    XII_ASSERT_DEBUG(xiiMemoryUtils::IsAligned(pPoseMatrices.GetPtr(), alignof(ozz::math::Float4x4)), "Unaligned cast.");
-
+    XII_ASSERT_DEBUG(xiiMemoryUtils::IsAligned(pPoseMatrices.GetPtr(), alignof(ozz::math::Float4x4)), "Unaligned cast");
     {
       ozz::animation::LocalToModelJob job;
       job.input    = pOzzSkeleton->joint_rest_poses();
@@ -165,7 +163,7 @@ xiiMeshRenderData* xiiAnimatedMeshComponent::CreateRenderData() const
   auto pRenderData               = xiiCreateRenderDataForThisFrame<xiiSkinnedMeshRenderData>(GetOwner());
   pRenderData->m_GlobalTransform = m_RootTransform;
 
-  m_SkinningState.FillSkinnedMeshRenderData(*pRenderData);
+  pRenderData->m_hSkinningTransforms = m_SkinningState.m_hGpuBuffer;
 
   return pRenderData;
 }
@@ -205,7 +203,8 @@ void xiiAnimatedMeshComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated
 
   xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded);
 
-  xiiBoundingBox poseBounds = xiiBoundingBox::MakeInvalid();
+  xiiBoundingBox poseBounds;
+  poseBounds = xiiBoundingBox::MakeInvalid();
   MapModelSpacePoseToSkinningSpace(pMesh->m_Bones, *msg.m_pSkeleton, msg.m_ModelTransforms, &poseBounds);
 
   if (poseBounds.IsValid() && (!m_MaxBounds.IsValid() || !m_MaxBounds.Contains(poseBounds)))
@@ -247,7 +246,7 @@ xiiResult xiiAnimatedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds,
 
   xiiBoundingBox bbox = m_MaxBounds;
   bbox.Grow(xiiVec3(pMesh->m_fMaxBoneVertexOffset));
-  bounds = xiiBoundingBoxSphere(bbox);
+  bounds = xiiBoundingBoxSphere::MakeFromBox(bbox);
   bounds.Transform(m_RootTransform.GetAsMat4());
   return XII_SUCCESS;
 }

@@ -176,7 +176,7 @@ void xiiPathComponent::FindControlPoints(xiiDynamicArray<ControlPoint>& out_Cont
 
   for (const xiiString& sNode : m_Nodes)
   {
-    const xiiGameObject* pNodeObj = pOwner->FindChildByName(xiiTempHashedString(sNode), false);
+    const xiiGameObject* pNodeObj = GetWorld()->SearchForObject(sNode, GetOwner(), xiiGetStaticRTTI<xiiPathNodeComponent>());
     if (pNodeObj == nullptr)
       continue;
 
@@ -663,8 +663,7 @@ static void ComputeSegmentUpVector(xiiArrayPtr<xiiPathComponent::LinearizedEleme
 
     const xiiAngle roll = xiiMath::Lerp(cp0.m_Roll, cp1.m_Roll, fLerpFactor);
 
-    xiiQuat qRoll;
-    qRoll = xiiQuat::MakeFromAxisAndAngle(tangents[t], roll);
+    xiiQuat qRoll = xiiQuat::MakeFromAxisAndAngle(tangents[t], roll);
 
     xiiVec3 vLocalUp = xiiMath::Lerp(cp0up, cp1up, fLerpFactor);
     vLocalUp.NormalizeIfNotZero(vWorldUp).IgnoreResult();
@@ -845,7 +844,7 @@ void xiiPathComponentManager::SetEnableUpdate(xiiPathComponent* pThis, bool bEna
 
 void xiiPathComponentManager::Initialize()
 {
-  auto desc                        = xiiWorldModule::UpdateFunctionDesc(xiiWorldModule::UpdateFunction(&xiiPathComponentManager::Update, this), "xiiPathComponentManager::Update");
+  auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiPathComponentManager::Update, this);
   desc.m_bOnlyUpdateWhenSimulating = false;
   desc.m_Phase                     = xiiWorldUpdatePhase::PostTransform;
 
@@ -862,3 +861,6 @@ void xiiPathComponentManager::Update(const xiiWorldModule::UpdateContext& contex
     }
   }
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Animation_Implementation_PathComponent);

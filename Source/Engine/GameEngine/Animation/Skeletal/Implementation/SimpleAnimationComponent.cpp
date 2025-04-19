@@ -17,7 +17,7 @@ using namespace ozz::animation;
 using namespace ozz::math;
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 2, xiiComponentMode::Static);
+XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 3, xiiComponentMode::Static);
 {
   XII_BEGIN_PROPERTIES
   {
@@ -26,6 +26,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 2, xiiComponentMode::Stati
     XII_MEMBER_PROPERTY("Speed", m_fSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_ENUM_MEMBER_PROPERTY("RootMotionMode", xiiRootMotionMode, m_RootMotionMode),
     XII_ENUM_MEMBER_PROPERTY("InvisibleUpdateRate", xiiAnimationInvisibleUpdateRate, m_InvisibleUpdateRate),
+    XII_MEMBER_PROPERTY("EnableIK", m_bEnableIK),
   }
   XII_END_PROPERTIES;
 
@@ -51,6 +52,7 @@ void xiiSimpleAnimationComponent::SerializeComponent(xiiWorldWriter& inout_strea
   s << m_hAnimationClip;
   s << m_RootMotionMode;
   s << m_InvisibleUpdateRate;
+  s << m_bEnableIK;
 }
 
 void xiiSimpleAnimationComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -67,6 +69,11 @@ void xiiSimpleAnimationComponent::DeserializeComponent(xiiWorldReader& inout_str
   if (uiVersion >= 2)
   {
     s >> m_InvisibleUpdateRate;
+  }
+
+  if (uiVersion >= 3)
+  {
+    s >> m_bEnableIK;
   }
 }
 
@@ -146,7 +153,7 @@ void xiiSimpleAnimationComponent::Update()
     return;
 
   xiiAnimPoseGenerator poseGen;
-  poseGen.Reset(pSkeleton.GetPointer());
+  poseGen.Reset(pSkeleton.GetPointer(), GetOwner());
 
   auto& cmdSample                          = poseGen.AllocCommandSampleTrack(0);
   cmdSample.m_hAnimationClip               = m_hAnimationClip;
@@ -172,11 +179,11 @@ void xiiSimpleAnimationComponent::Update()
       cmdL2M.m_Inputs.PushBack(cmdSample.GetCommandID());
     }
 
-    auto& cmdOut = poseGen.AllocCommandModelPoseToOutput();
-    cmdOut.m_Inputs.PushBack(cmdL2M.GetCommandID());
+    xiiAnimPoseGeneratorCommandID prevCmdID = cmdL2M.GetCommandID();
+    poseGen.SetFinalCommand(prevCmdID);
   }
 
-  auto pose = poseGen.GeneratePose(GetOwner());
+  poseGen.UpdatePose(m_bEnableIK);
 
   if (m_RootMotionMode != xiiRootMotionMode::Ignore)
   {
@@ -192,33 +199,23 @@ void xiiSimpleAnimationComponent::Update()
     xiiRootMotionMode::Apply(m_RootMotionMode, GetOwner(), vRootMotion, xiiAngle(), xiiAngle(), xiiAngle());
   }
 
-  if (pose.IsEmpty())
+  if (poseGen.GetCurrentPose().IsEmpty())
     return;
 
   // inform child nodes/components that a new pose is available
   {
-    xiiMsgAnimationPoseProposal msg1;
-    msg1.m_pRootTransform  = &pSkeleton->GetDescriptor().m_RootTransform;
-    msg1.m_pSkeleton       = &pSkeleton->GetDescriptor().m_Skeleton;
-    msg1.m_ModelTransforms = pose;
+    xiiMsgAnimationPoseUpdated msg2;
+    msg2.m_pRootTransform  = &pSkeleton->GetDescriptor().m_RootTransform;
+    msg2.m_pSkeleton       = &pSkeleton->GetDescriptor().m_Skeleton;
+    msg2.m_ModelTransforms = poseGen.GetCurrentPose();
 
-    GetOwner()->SendMessage(msg1);
+    // recursive, so that objects below the mesh can also listen in on these changes
+    // for example bone attachments
+    GetOwner()->SendMessageRecursive(msg2);
 
-    if (msg1.m_bContinueAnimating)
+    if (msg2.m_bContinueAnimating == false)
     {
-      xiiMsgAnimationPoseUpdated msg2;
-      msg2.m_pRootTransform  = &pSkeleton->GetDescriptor().m_RootTransform;
-      msg2.m_pSkeleton       = &pSkeleton->GetDescriptor().m_Skeleton;
-      msg2.m_ModelTransforms = pose;
-
-      // recursive, so that objects below the mesh can also listen in on these changes
-      // for example bone attachments
-      GetOwner()->SendMessageRecursive(msg2);
-
-      if (msg2.m_bContinueAnimating == false)
-      {
-        SetActiveFlag(false);
-      }
+      SetActiveFlag(false);
     }
   }
 }

@@ -33,7 +33,7 @@ xiiSliderComponent::~xiiSliderComponent() = default;
 
 void xiiSliderComponent::Update()
 {
-  if (m_Flags.IsAnySet(xiiTransformComponentFlags::Running))
+  if (m_Flags.IsAnySet(xiiTransformComponentFlags::CurrentlyRunning))
   {
     xiiVec3 vAxis;
 
@@ -78,7 +78,7 @@ void xiiSliderComponent::Update()
       {
         if (!m_Flags.IsSet(xiiTransformComponentFlags::AutoReturnEnd))
         {
-          m_Flags.Remove(xiiTransformComponentFlags::Running);
+          m_Flags.Remove(xiiTransformComponentFlags::CurrentlyRunning);
         }
 
         m_Flags.Add(xiiTransformComponentFlags::AnimationReversed);
@@ -93,7 +93,7 @@ void xiiSliderComponent::Update()
       {
         if (!m_Flags.IsSet(xiiTransformComponentFlags::AutoReturnStart))
         {
-          m_Flags.Remove(xiiTransformComponentFlags::Running);
+          m_Flags.Remove(xiiTransformComponentFlags::CurrentlyRunning);
         }
 
         m_Flags.Remove(xiiTransformComponentFlags::AnimationReversed);
@@ -114,7 +114,7 @@ void xiiSliderComponent::OnSimulationStarted()
 
   if (m_RandomStart.IsPositive())
   {
-    m_AnimationTime = xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomStart.GetSeconds()));
+    m_AnimationTime = xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleMinMax(0.0, m_RandomStart.GetSeconds()));
   }
 }
 

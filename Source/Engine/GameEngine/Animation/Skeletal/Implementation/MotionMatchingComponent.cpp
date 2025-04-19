@@ -1,36 +1,36 @@
 #include <GameEngine/GameEnginePCH.h>
 
-//#include <Core/Input/InputManager.h>
-//#include <Core/WorldSerializer/WorldReader.h>
-//#include <Core/WorldSerializer/WorldWriter.h>
-//#include <GameEngine/Animation/Skeletal/MotionMatchingComponent.h>
-//#include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
-//#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
-//#include <GraphicsCore/Debug/DebugRenderer.h>
-//#include <GraphicsFoundation/Device/Device.h>
+// #include <Core/Input/InputManager.h>
+// #include <Core/WorldSerializer/WorldReader.h>
+// #include <Core/WorldSerializer/WorldWriter.h>
+// #include <GameEngine/Animation/Skeletal/MotionMatchingComponent.h>
+// #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
+// #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
+// #include <GraphicsCore/Debug/DebugRenderer.h>
+// #include <RendererFoundation/Device/Device.h>
 //
 //// clang-format off
-//XII_BEGIN_COMPONENT_TYPE(xiiMotionMatchingComponent, 2, xiiComponentMode::Dynamic);
+// XII_BEGIN_COMPONENT_TYPE(xiiMotionMatchingComponent, 2, xiiComponentMode::Dynamic);
 //{
-//  XII_BEGIN_PROPERTIES
-//  {
-//    XII_ARRAY_ACCESSOR_PROPERTY("Animations", Animations_GetCount, Animations_GetValue, Animations_SetValue, Animations_Insert, Animations_Remove)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Animation")),
-//  }
-//  XII_END_PROPERTIES;
+//   XII_BEGIN_PROPERTIES
+//   {
+//     XII_ARRAY_ACCESSOR_PROPERTY("Animations", Animations_GetCount, Animations_GetValue, Animations_SetValue, Animations_Insert, Animations_Remove)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Animation")),
+//   }
+//   XII_END_PROPERTIES;
 //
-//  XII_BEGIN_ATTRIBUTES
-//  {
-//      new xiiCategoryAttribute("Animation"),
-//  }
-//  XII_END_ATTRIBUTES;
-//}
-//XII_END_COMPONENT_TYPE
+//   XII_BEGIN_ATTRIBUTES
+//   {
+//       new xiiCategoryAttribute("Animation"),
+//   }
+//   XII_END_ATTRIBUTES;
+// }
+// XII_END_COMPONENT_TYPE
 //// clang-format on
 //
-//xiiMotionMatchingComponent::xiiMotionMatchingComponent() = default;
-//xiiMotionMatchingComponent::~xiiMotionMatchingComponent() = default;
+// xiiMotionMatchingComponent::xiiMotionMatchingComponent() = default;
+// xiiMotionMatchingComponent::~xiiMotionMatchingComponent() = default;
 //
-//void xiiMotionMatchingComponent::SerializeComponent(xiiWorldWriter& stream) const
+// void xiiMotionMatchingComponent::SerializeComponent(xiiWorldWriter& stream) const
 //{
 //  SUPER::SerializeComponent(stream);
 //  auto& s = stream.GetStream();
@@ -38,7 +38,7 @@
 //  s.WriteArray(m_Animations);
 //}
 //
-//void xiiMotionMatchingComponent::DeserializeComponent(xiiWorldReader& stream)
+// void xiiMotionMatchingComponent::DeserializeComponent(xiiWorldReader& stream)
 //{
 //  SUPER::DeserializeComponent(stream);
 //  const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
@@ -50,7 +50,7 @@
 //  }
 //}
 //
-//void xiiMotionMatchingComponent::OnSimulationStarted()
+// void xiiMotionMatchingComponent::OnSimulationStarted()
 //{
 //  SUPER::OnSimulationStarted();
 //
@@ -109,7 +109,7 @@
 //
 //  ConfigureInput();
 //}
-//void xiiMotionMatchingComponent::ConfigureInput()
+// void xiiMotionMatchingComponent::ConfigureInput()
 //{
 //  xiiInputActionConfig iac;
 //  iac.m_bApplyTimeScaling = false;
@@ -143,7 +143,7 @@
 //  xiiInputManager::SetInputActionConfig("mm", "turnleft", iac, true);
 //}
 //
-//xiiVec3 xiiMotionMatchingComponent::GetInputDirection() const
+// xiiVec3 xiiMotionMatchingComponent::GetInputDirection() const
 //{
 //  float fw, bw, l, r;
 //
@@ -161,7 +161,7 @@
 //  return dir * 3.0f;
 //}
 //
-//xiiQuat xiiMotionMatchingComponent::GetInputRotation() const
+// xiiQuat xiiMotionMatchingComponent::GetInputRotation() const
 //{
 //  float tl, tr;
 //
@@ -175,7 +175,7 @@
 //  return q;
 //}
 //
-//void xiiMotionMatchingComponent::Update()
+// void xiiMotionMatchingComponent::Update()
 //{
 //  if (!m_hSkeleton.IsValid() || m_Animations.IsEmpty())
 //    return;
@@ -301,14 +301,14 @@
 //  m_SkinningMatrices = pRenderMatrices;
 //}
 //
-//void xiiMotionMatchingComponent::SetAnimation(xiiUInt32 uiIndex, const xiiAnimationClipResourceHandle& hResource)
+// void xiiMotionMatchingComponent::SetAnimation(xiiUInt32 uiIndex, const xiiAnimationClipResourceHandle& hResource)
 //{
 //  m_Animations.EnsureCount(uiIndex + 1);
 //
 //  m_Animations[uiIndex] = hResource;
 //}
 //
-//xiiAnimationClipResourceHandle xiiMotionMatchingComponent::GetAnimation(xiiUInt32 uiIndex) const
+// xiiAnimationClipResourceHandle xiiMotionMatchingComponent::GetAnimation(xiiUInt32 uiIndex) const
 //{
 //  if (uiIndex >= m_Animations.GetCount())
 //    return xiiAnimationClipResourceHandle();
@@ -316,12 +316,12 @@
 //  return m_Animations[uiIndex];
 //}
 //
-//xiiUInt32 xiiMotionMatchingComponent::Animations_GetCount() const
+// xiiUInt32 xiiMotionMatchingComponent::Animations_GetCount() const
 //{
 //  return m_Animations.GetCount();
 //}
 //
-//const char* xiiMotionMatchingComponent::Animations_GetValue(xiiUInt32 uiIndex) const
+// const char* xiiMotionMatchingComponent::Animations_GetValue(xiiUInt32 uiIndex) const
 //{
 //  const auto& hMat = GetAnimation(uiIndex);
 //
@@ -331,7 +331,7 @@
 //  return hMat.GetResourceID();
 //}
 //
-//void xiiMotionMatchingComponent::Animations_SetValue(xiiUInt32 uiIndex, const char* value)
+// void xiiMotionMatchingComponent::Animations_SetValue(xiiUInt32 uiIndex, const char* value)
 //{
 //  if (xiiStringUtils::IsNullOrEmpty(value))
 //    SetAnimation(uiIndex, xiiAnimationClipResourceHandle());
@@ -342,7 +342,7 @@
 //  }
 //}
 //
-//void xiiMotionMatchingComponent::Animations_Insert(xiiUInt32 uiIndex, const char* value)
+// void xiiMotionMatchingComponent::Animations_Insert(xiiUInt32 uiIndex, const char* value)
 //{
 //  xiiAnimationClipResourceHandle hMat;
 //
@@ -352,12 +352,12 @@
 //  m_Animations.Insert(hMat, uiIndex);
 //}
 //
-//void xiiMotionMatchingComponent::Animations_Remove(xiiUInt32 uiIndex)
+// void xiiMotionMatchingComponent::Animations_Remove(xiiUInt32 uiIndex)
 //{
 //  m_Animations.RemoveAtAndCopy(uiIndex);
 //}
 //
-//xiiMotionMatchingComponent::TargetKeyframe xiiMotionMatchingComponent::FindNextKeyframe(const TargetKeyframe& current, const xiiVec3& vTargetDir) const
+// xiiMotionMatchingComponent::TargetKeyframe xiiMotionMatchingComponent::FindNextKeyframe(const TargetKeyframe& current, const xiiVec3& vTargetDir) const
 //{
 //  TargetKeyframe kf;
 //  kf.m_uiAnimClip = current.m_uiAnimClip;
@@ -396,7 +396,7 @@
 //  return kf;
 //}
 //
-//void xiiMotionMatchingComponent::PrecomputeMotion(xiiDynamicArray<MotionData>& motionData, xiiTempHashedString jointName1, xiiTempHashedString jointName2,
+// void xiiMotionMatchingComponent::PrecomputeMotion(xiiDynamicArray<MotionData>& motionData, xiiTempHashedString jointName1, xiiTempHashedString jointName2,
 //  const xiiAnimationClipResourceDescriptor& animClip, xiiUInt16 uiAnimClipIndex, const xiiSkeleton& skeleton)
 //{
 //  const xiiUInt16 uiRootJoint = animClip.HasRootMotion() ? animClip.GetRootMotionJoint() : 0xFFFFu;
@@ -468,7 +468,7 @@
 //  }
 //}
 //
-//xiiUInt32 xiiMotionMatchingComponent::FindBestKeyframe(
+// xiiUInt32 xiiMotionMatchingComponent::FindBestKeyframe(
 //  const TargetKeyframe& current, xiiVec3 vLeftFootPosition, xiiVec3 vRightFootPosition, xiiVec3 vTargetDir) const
 //{
 //  float fClosest = 1000000000.0f;
