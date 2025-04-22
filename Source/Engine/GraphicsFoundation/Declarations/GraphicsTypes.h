@@ -842,6 +842,47 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
     return 0;
   }
 
+  XII_ALWAYS_INLINE static xiiUInt32 GetIndexCount(xiiGALPrimitiveTopology::Enum e, xiiUInt32 uiPrimitiveCount)
+  {
+    if (uiPrimitiveCount == 0)
+      return 0;
+
+    if (e >= xiiGALPrimitiveTopology::ControlPointPatchList1 && e <= xiiGALPrimitiveTopology::ControlPointPatchList32)
+    {
+      xiiUInt32 uiVerticesPerPrimitive = VerticesPerPrimitive(e);
+      return uiPrimitiveCount * uiVerticesPerPrimitive; // Each primitive requires 'uiVerticesPerPrimitive' indices.
+    }
+
+    switch (e)
+    {
+      case xiiGALPrimitiveTopology::PointList:
+        return uiPrimitiveCount; // 1 index per primitive.
+
+      case xiiGALPrimitiveTopology::LineList:
+      case xiiGALPrimitiveTopology::LineStrip:
+        return uiPrimitiveCount * 2; // 2 indices per primitive.
+
+      case xiiGALPrimitiveTopology::TriangleList:
+        return uiPrimitiveCount * 3; // 3 indices per primitive.
+
+      case xiiGALPrimitiveTopology::TriangleStrip:
+        return uiPrimitiveCount + 2; // First two indices are shared.
+
+      case xiiGALPrimitiveTopology::TriangleListAdjacent:
+        return uiPrimitiveCount * 6; // 6 indices per primitive.
+
+      case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+        return uiPrimitiveCount + 4; // Adjusted for adjacency.
+
+      case xiiGALPrimitiveTopology::LineListAdjacent:
+      case xiiGALPrimitiveTopology::LineStripAdjacent:
+        return uiPrimitiveCount * 4; // 4 indices per primitive.
+
+      default:
+        return 0;
+    }
+  }
+
   static const char* Names[ENUM_COUNT];
 };
 
