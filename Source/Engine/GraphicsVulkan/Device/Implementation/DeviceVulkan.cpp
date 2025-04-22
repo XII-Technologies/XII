@@ -3102,8 +3102,8 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArra
     {
       const vk::QueueFamilyProperties& properties = m_PhysicalDeviceQueueFamilyProperties[uiQueueFamilyIndex];
 
-      // Queues supporting graphics and/or compute operations must report (1,1,1) // in minImageTransferGranularity, meaning that there are no additional restrictions
-      // on the granularity of image transfer operations for these queues (4.1).
+      // Queues supporting graphics and/or compute operations must report (1,1,1).
+      // In minImageTransferGranularity, meaning that there are no additional restrictions on the granularity of image transfer operations for these queues (4.1).
       XII_ASSERT_DEV(properties.minImageTransferGranularity.width == 1 && properties.minImageTransferGranularity.height == 1 && properties.minImageTransferGranularity.depth == 1, "");
     }
   }

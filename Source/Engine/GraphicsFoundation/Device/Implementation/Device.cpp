@@ -784,14 +784,9 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
     XII_VERIFY_BUFFER(description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write) && bHasInitialData, "xiiGALCPUAccessFlag::Write is required to initialize a unified buffer.");
   }
 
-  if (pInitialData != nullptr /* && pInitialData->m_pCommandEncoder != nullptr */)
-  {
-    /// \todo GraphicsFoundation: Assert that the command encoder used to initialize the resource is not a deferred context, as those cannot be used to initialize resources.
-  }
-
   if (bHasInitialData)
   {
-    XII_VERIFY_BUFFER(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger than the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);
+    XII_VERIFY_BUFFER(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger or equal to the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);
   }
 
   xiiGALBuffer* pBuffer = CreateBufferPlatform(description, pInitialData);
