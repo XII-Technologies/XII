@@ -25,8 +25,6 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALMapHelper : public xiiReflectedClass
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALMapHelper);
 
-  XII_ADD_DYNAMIC_REFLECTION(xiiGALMapHelper, xiiReflectedClass);
-
 public:
   /// \brief Default constructor.
   xiiGALMapHelper();
