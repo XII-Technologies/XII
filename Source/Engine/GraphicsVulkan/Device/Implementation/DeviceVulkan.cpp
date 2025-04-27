@@ -618,6 +618,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   vkEnabledFeatures.samplerAnisotropy                       = m_PhysicalDeviceFeatures.samplerAnisotropy;
   vkEnabledFeatures.fullDrawIndexUint32                     = m_PhysicalDeviceFeatures.fullDrawIndexUint32;
   vkEnabledFeatures.drawIndirectFirstInstance               = m_PhysicalDeviceFeatures.drawIndirectFirstInstance;
+  vkEnabledFeatures.shaderStorageImageMultisample           = m_PhysicalDeviceFeatures.shaderStorageImageMultisample;
+  vkEnabledFeatures.shaderStorageImageReadWithoutFormat     = m_PhysicalDeviceFeatures.shaderStorageImageReadWithoutFormat;
   vkEnabledFeatures.shaderStorageImageWriteWithoutFormat    = m_PhysicalDeviceFeatures.shaderStorageImageWriteWithoutFormat;
   vkEnabledFeatures.shaderUniformBufferArrayDynamicIndexing = m_PhysicalDeviceFeatures.shaderUniformBufferArrayDynamicIndexing;
   vkEnabledFeatures.shaderSampledImageArrayDynamicIndexing  = m_PhysicalDeviceFeatures.shaderSampledImageArrayDynamicIndexing;
