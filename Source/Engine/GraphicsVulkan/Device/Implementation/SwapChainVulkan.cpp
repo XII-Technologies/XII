@@ -1,6 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Core/System/Window.h>
+#include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
@@ -667,8 +668,9 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 
     if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
     {
-      pCommandListVulkan->BeginDebugGroup("Add Swap Chain Wait Semaphore");
       {
+        xiiGALScopedDebugGroup debugGroup(pCommandListVulkan, "Add Swap Chain Wait Semaphore");
+
         pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
 
         // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
@@ -679,7 +681,6 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
           m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
         }
       }
-      pCommandListVulkan->EndDebugGroup();
 
       pCommandListVulkan->Submit();
     }
