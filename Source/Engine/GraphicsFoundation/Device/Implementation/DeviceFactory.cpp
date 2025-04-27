@@ -1,5 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 
 struct CreatorFuncInfo
@@ -29,13 +30,12 @@ CreatorFuncInfo* GetCreatorFuncInfo(xiiStringView sImplementationName)
   return pFuncInfo;
 }
 
-xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStringView sImplementationName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
+xiiSharedPtr<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStringView sImplementationName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   if (auto pFuncInfo = GetCreatorFuncInfo(sImplementationName))
   {
     return pFuncInfo->m_Func(pAllocator, description);
   }
-
   return xiiInternal::NewInstance<xiiGALDevice>(nullptr, pAllocator);
 }
 

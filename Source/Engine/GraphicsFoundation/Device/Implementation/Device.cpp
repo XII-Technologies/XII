@@ -36,7 +36,7 @@ namespace
   {
     using StorageType = xiiUInt8;
 
-    enum Enum : xiiUInt8
+    enum Enum : StorageType
     {
       SwapChain = 0U,
       BottomLevelAS,
