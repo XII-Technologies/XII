@@ -488,6 +488,22 @@ void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore, xiiUIn
   m_vkSignalSemaphoreValues.PushBack(uiValue); // Ignored for binary semaphore.
 }
 
+void xiiGALCommandListVulkan::EnqueueSignal(xiiGALFence* pFence, xiiUInt64 uiValue)
+{
+  xiiGALFenceVulkan* pFenceVulkan = static_cast<xiiGALFenceVulkan*>(pFence);
+  FenceInfo          fenceInfo    = {.m_pFenceVulkan = pFenceVulkan, .m_uiWaitValue = uiValue};
+
+  m_SignalFences.PushBack(fenceInfo);
+}
+
+void xiiGALCommandListVulkan::DeviceWaitForFence(xiiGALFence* pFence, xiiUInt64 uiValue)
+{
+  xiiGALFenceVulkan* pFenceVulkan = static_cast<xiiGALFenceVulkan*>(pFence);
+  FenceInfo          fenceInfo    = {.m_pFenceVulkan = pFenceVulkan, .m_uiWaitValue = uiValue};
+
+  m_WaitFences.PushBack(fenceInfo);
+}
+
 xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription)
 {

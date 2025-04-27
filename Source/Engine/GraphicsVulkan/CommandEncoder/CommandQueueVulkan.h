@@ -22,6 +22,9 @@ public:
   /// \brief This returns the last completed value of the internal fence.
   XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return m_pQueueFence->GetCompletedValue(); }
 
+  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
+  XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
+
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
@@ -29,8 +32,7 @@ public:
   void                       ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
   void                       RecycleCommandLists();
 
-  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
-  XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
+
 
 private:
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);

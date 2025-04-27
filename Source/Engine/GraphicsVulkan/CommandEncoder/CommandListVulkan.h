@@ -94,6 +94,9 @@ public:
   void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
   void AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue = 0ULL);
 
+  void EnqueueSignal(xiiGALFence* pFence, xiiUInt64 uiValue);
+  void DeviceWaitForFence(xiiGALFence* pFence, xiiUInt64 uiValue);
+
   XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_pUploadStagingBufferPool.Borrow(); }
 
   struct CommandListState
@@ -282,7 +285,6 @@ private:
   {
     xiiGALFenceVulkan* m_pFenceVulkan = nullptr;
     xiiUInt64          m_uiWaitValue  = 0U;
-    vk::Fence          m_vkFence;
   };
 
   struct ResourceSetBindings
