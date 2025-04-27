@@ -179,6 +179,23 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
+  if (IsTimelineSemaphore())
+  {
+    XII_REPORT_FAILURE("CreateSyncPoint() is not supported for timeline semaphore.");
+  }
+
+  ValidateFenceSignal(uiFenceValue);
+
+  XII_LOCK(m_SyncPointGuard);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  {
+    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? m_LastCompletedFenceValue.load() : m_SyncPoints.PeekBack().m_uiValue;
+
+    XII_ASSERT_DEV(uiFenceValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that is smaller than the last completed value ({}).", uiFenceValue, uiLastCompletedValue);
+  }
+#endif
+
   // If fence is used only for synchronization between queues it will accumulate many more sync points.
   // We need to check VkFence and remove already reached sync points.
   if (m_SyncPoints.GetCount() > s_uiRequiredArraySize)
@@ -220,13 +237,13 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
       if (syncData.m_uiValue > uiValue)
         break;
 
-      vk::Result status = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      if (status == vk::Result::eNotReady)
+      vk::Result vkFenceStatus = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      if (vkFenceStatus == vk::Result::eNotReady)
       {
-        status = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        vkFenceStatus = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
       }
 
-      XII_ASSERT_DEV(status == vk::Result::eSuccess, "All pending fences must now be complete!");
+      XII_ASSERT_DEV(vkFenceStatus == vk::Result::eSuccess, "All pending fences must now be complete!");
 
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
 
