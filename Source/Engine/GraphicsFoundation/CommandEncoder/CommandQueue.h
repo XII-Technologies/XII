@@ -37,7 +37,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALCommandQueue(xiiGALDevice* pDevice, const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueue(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueue();
 

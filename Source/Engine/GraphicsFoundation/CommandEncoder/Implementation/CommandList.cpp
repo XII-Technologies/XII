@@ -155,7 +155,7 @@ void xiiGALCommandList::Begin()
 
 void xiiGALCommandList::End()
 {
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
   XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Recording, "The command list has not begun.");
 
   EndPlatform();
@@ -163,7 +163,7 @@ void xiiGALCommandList::End()
 
 void xiiGALCommandList::Reset()
 {
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
   XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and cannot be resetted until after queue execution.");
 
   if (m_RecordingState == RecordingState::Recording)
@@ -178,7 +178,7 @@ void xiiGALCommandList::Reset()
 
 xiiUInt64 xiiGALCommandList::Submit()
 {
-  XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "The current active render pass has not been ended.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
   XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Commandlist is already reset.");
   XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Submitted, "Commandlist is already submitted!");
 
@@ -193,18 +193,14 @@ xiiUInt64 xiiGALCommandList::Submit()
   return xiiMath::MaxValue<xiiUInt64>();
 }
 
-void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineState)
+void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
 {
-  m_hPipelineState = hPipelineState;
+  m_pPipelineState             = pPipelineState;
+  m_pPipelineResourceSignature = nullptr;
 
-  xiiGALPipelineState* pPipelineState = m_pDevice->GetPipelineState(hPipelineState);
-  if (!m_hPipelineResourceSignature.IsInvalidated())
+  if (m_pPipelineState != nullptr)
   {
-    m_hPipelineResourceSignature = xiiGALPipelineResourceSignatureHandle();
-  }
-  if (pPipelineState != nullptr)
-  {
-    m_hPipelineResourceSignature = pPipelineState->GetDescription().m_hPipelineResourceSignature;
+    m_pPipelineResourceSignature = pPipelineState->GetDescription().m_pPipelineResourceSignature;
   }
   SetPipelineStatePlatform(pPipelineState);
 }
@@ -280,14 +276,12 @@ void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects)
   SetScissorRectsPlatform(m_ScissorRects);
 }
 
-void xiiGALCommandList::SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt64 uiByteOffset)
+void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetIndexBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
 
-  if (m_hIndexBuffer == hIndexBuffer && m_uiIndexDataOffset == uiByteOffset)
+  if (m_pIndexBuffer == pIndexBuffer && m_uiIndexDataOffset == uiByteOffset)
     return;
-
-  xiiGALBuffer* pIndexBuffer = m_pDevice->GetBuffer(hIndexBuffer);
 
   if (pIndexBuffer)
   {
@@ -296,13 +290,13 @@ void xiiGALCommandList::SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt6
     XII_VERIFY_COMMAND_LIST(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer), "SetIndexBuffer arguments are invalid. The Index buffer '{0}' was not created with the xiiGALBindFlags::IndexBuffer bind flag.", pIndexBuffer->GetDebugName());
   }
 
-  m_hIndexBuffer      = hIndexBuffer;
+  m_pIndexBuffer      = pIndexBuffer;
   m_uiIndexDataOffset = uiByteOffset;
 
   SetIndexBufferPlatform(pIndexBuffer, m_uiIndexDataOffset);
 }
 
-void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBufferHandle> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
+void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetVertexBuffers arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(uiStartSlot < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The start slot ({0}) is out of range [0, {1}].", uiStartSlot, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
@@ -313,11 +307,11 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiG
     // Reset only the buffer slots that are not being set.
     for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
     {
-      m_VertexBuffers[i] = xiiGALBufferHandle();
+      m_VertexBuffers[i] = nullptr;
     }
     for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
     {
-      m_VertexBuffers[i] = xiiGALBufferHandle();
+      m_VertexBuffers[i] = nullptr;
     }
   }
 
@@ -325,31 +319,28 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiG
 
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
   {
-    xiiGALBuffer* pVertexBuffer = m_pDevice->GetBuffer(pVertexBuffers[i]);
-
-    if (pVertexBuffer != nullptr)
+    if (pVertexBuffers[i] != nullptr)
     {
-      const auto& bufferDescription = pVertexBuffer->GetDescription();
+      const auto& bufferDescription = pVertexBuffers[i]->GetDescription();
 
-      XII_VERIFY_COMMAND_LIST(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "SetVertexBuffer arguments are invalid. The Vertex buffer '{0}' was not created with the xiiGALBindFlags::VertexBuffer bind flag.", pVertexBuffer->GetDebugName());
+      XII_VERIFY_COMMAND_LIST(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "SetVertexBuffer arguments are invalid. The Vertex buffer '{0}' was not created with the xiiGALBindFlags::VertexBuffer bind flag.", pVertexBuffers[i]->GetDebugName());
 
-      boundVertexBuffers.PushBack(pVertexBuffer);
+      boundVertexBuffers.PushBack(pVertexBuffers[i]);
     }
   }
 
   SetVertexBuffersPlatform(uiStartSlot, boundVertexBuffers, pByteOffsets, flags);
 }
 
-void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferHandle hConstantBuffer)
+void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetConstantBuffer requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetConstantBuffer requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
   {
-    const xiiGALPipelineResourceSignature* pResourceSignature   = m_pDevice->GetPipelineResourceSignature(m_hPipelineResourceSignature);
-    const auto&                            signatureDescription = pResourceSignature->GetDescription();
+    const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
@@ -362,24 +353,20 @@ void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescriptio
   }
 
   XII_VERIFY_COMMAND_LIST(bResourceFound, "The constant buffer resource '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
+  XII_VERIFY_COMMAND_LIST(pConstantBuffer == nullptr || pConstantBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer), "Incorrect buffer bind flags. The buffer must be created with xiiGALBindFlags::UniformBuffer if not invalidated.");
 
-  xiiGALBuffer* pBuffer = m_pDevice->GetBuffer(hConstantBuffer);
-
-  XII_VERIFY_COMMAND_LIST(pBuffer == nullptr || pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer), "Incorrect buffer bind flags. The buffer must be created with xiiGALBindFlags::UniformBuffer if not invalidated.");
-
-  SetConstantBufferPlatform(bindingInformation, pBuffer);
+  SetConstantBufferPlatform(bindingInformation, pConstantBuffer);
 }
 
-void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView)
+void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetShaderResourceBufferView requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetShaderResourceBufferView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
   {
-    const xiiGALPipelineResourceSignature* pResourceSignature   = m_pDevice->GetPipelineResourceSignature(m_hPipelineResourceSignature);
-    const auto&                            signatureDescription = pResourceSignature->GetDescription();
+    const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
@@ -392,24 +379,20 @@ void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResource
   }
 
   XII_VERIFY_COMMAND_LIST(bResourceFound, "The buffer resource view '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
-
-  xiiGALBufferView* pBufferView = m_pDevice->GetBufferView(hBufferView);
-
   XII_VERIFY_COMMAND_LIST(pBufferView == nullptr || pBufferView->GetDescription().m_ViewType == xiiGALBufferViewType::ShaderResource, "Incorrect buffer view type. The view must be created with xiiGALBufferViewType::ShaderResource if not invalidated.");
 
   SetShaderResourceBufferViewPlatform(bindingInformation, pBufferView);
 }
 
-void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView)
+void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetShaderResourceTextureView requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetShaderResourceTextureView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
   {
-    const xiiGALPipelineResourceSignature* pResourceSignature   = m_pDevice->GetPipelineResourceSignature(m_hPipelineResourceSignature);
-    const auto&                            signatureDescription = pResourceSignature->GetDescription();
+    const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
@@ -422,24 +405,20 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
   }
 
   XII_VERIFY_COMMAND_LIST(bResourceFound, "The texture resource view '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
-
-  xiiGALTextureView* pTextureView = m_pDevice->GetTextureView(hTextureView);
-
   XII_VERIFY_COMMAND_LIST(pTextureView == nullptr || pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::ShaderResource, "Incorrect buffer view type. The view must be created with xiiGALTextureViewType::ShaderResource if not invalidated.");
 
   SetShaderResourceTextureViewPlatform(bindingInformation, pTextureView);
 }
 
-void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView)
+void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetUnorderedAccessBufferView requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetUnorderedAccessBufferView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
   {
-    const xiiGALPipelineResourceSignature* pResourceSignature   = m_pDevice->GetPipelineResourceSignature(m_hPipelineResourceSignature);
-    const auto&                            signatureDescription = pResourceSignature->GetDescription();
+    const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
@@ -452,24 +431,20 @@ void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourc
   }
 
   XII_VERIFY_COMMAND_LIST(bResourceFound, "The unordered access buffer view '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
-
-  xiiGALBufferView* pBufferView = m_pDevice->GetBufferView(hBufferView);
-
   XII_VERIFY_COMMAND_LIST(pBufferView == nullptr || pBufferView->GetDescription().m_ViewType == xiiGALBufferViewType::UnorderedAccess, "Incorrect buffer view type. The view must be created with xiiGALBufferViewType::UnorderedAccess if not invalidated.");
 
   SetUnorderedAccessBufferViewPlatform(bindingInformation, pBufferView);
 }
 
-void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView)
+void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetUnorderedAccessTextureView requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetUnorderedAccessTextureView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
   {
-    const xiiGALPipelineResourceSignature* pResourceSignature   = m_pDevice->GetPipelineResourceSignature(m_hPipelineResourceSignature);
-    const auto&                            signatureDescription = pResourceSignature->GetDescription();
+    const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
@@ -482,24 +457,20 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
   }
 
   XII_VERIFY_COMMAND_LIST(bResourceFound, "The unordered access texture view '{0}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
-
-  xiiGALTextureView* pTextureView = m_pDevice->GetTextureView(hTextureView);
-
   XII_VERIFY_COMMAND_LIST(pTextureView == nullptr || pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::UnorderedAccess, "Incorrect buffer view type. The view must be created with xiiGALTextureViewType::UnorderedAccess if not invalidated.");
 
   SetUnorderedAccessTextureViewPlatform(bindingInformation, pTextureView);
 }
 
-void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSamplerHandle hSampler)
+void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!m_hPipelineState.IsInvalidated(), "SetSampler requires a pipeline state to be set.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetSampler requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
   bool bResourceFound = false;
   {
-    const xiiGALPipelineResourceSignature* pResourceSignature   = m_pDevice->GetPipelineResourceSignature(m_hPipelineResourceSignature);
-    const auto&                            signatureDescription = pResourceSignature->GetDescription();
+    const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
 
     for (const auto& resource : signatureDescription.m_Resources)
     {
@@ -513,8 +484,6 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
 
   XII_VERIFY_COMMAND_LIST(bResourceFound, "The sampler resource '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
 
-  xiiGALSampler* pSampler = m_pDevice->GetSampler(hSampler);
-
   SetSamplerPlatform(bindingInformation, pSampler);
 }
 
@@ -523,26 +492,24 @@ xiiResult xiiGALCommandList::CommitShaderResources(xiiEnum<xiiGALStateTransition
   return CommitShaderResourcesPlatform(mode);
 }
 
-void xiiGALCommandList::ClearRenderTargetView(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor)
+void xiiGALCommandList::ClearRenderTargetView(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ClearRenderTargetView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!hRenderTargetView.IsInvalidated(), "ClearRenderTargetView arguments are invalid. The texture view handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(pRenderTargetView != nullptr, "ClearRenderTargetView arguments are invalid. The texture view handle has been invalidated.");
 
-  xiiGALTextureView* pRenderTargetView = m_pDevice->GetTextureView(hRenderTargetView);
-  const auto&        viewDescription   = pRenderTargetView->GetDescription();
+  const auto& viewDescription = pRenderTargetView->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The texture view '{0}' was not created with the xiiGALTextureViewType::RenderTarget.", pRenderTargetView->GetDebugName());
 
   ClearRenderTargetViewPlatform(pRenderTargetView, clearColor);
 }
 
-void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureViewHandle hDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+void xiiGALCommandList::ClearDepthStencilView(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ClearDepthStencilView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!hDepthStencilView.IsInvalidated(), "ClearDepthStencilView arguments are invalid. The texture view handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(pDepthStencilView != nullptr, "ClearDepthStencilView arguments are invalid. The texture view handle has been invalidated.");
 
-  xiiGALTextureView* pDepthStencilView = m_pDevice->GetTextureView(hDepthStencilView);
-  const auto&        viewDescription   = pDepthStencilView->GetDescription();
+  const auto& viewDescription = pDepthStencilView->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The texture view '{0}' was not created with the xiiGALTextureViewType::DepthStencil.", pDepthStencilView->GetDebugName());
   XII_VERIFY_COMMAND_LIST(bClearDepth || bClearStencil, "At least one of bClearDepth or bClearStencil must be set.");
@@ -553,13 +520,10 @@ void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureViewHandle hDepthSten
 void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& beginRenderPass)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!beginRenderPass.m_hRenderPass.IsInvalidated(), "BeginRenderPass: Render pass handle is invalid.");
-  XII_VERIFY_COMMAND_LIST(!beginRenderPass.m_hFramebuffer.IsInvalidated(), "BeginRenderPass: Framebuffer handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(beginRenderPass.m_pRenderPass != nullptr, "BeginRenderPass: Render pass handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(beginRenderPass.m_pFramebuffer != nullptr, "BeginRenderPass: Framebuffer handle is invalid.");
 
-  auto pRenderPass  = m_pDevice->GetRenderPass(beginRenderPass.m_hRenderPass);
-  auto pFramebuffer = m_pDevice->GetFramebuffer(beginRenderPass.m_hFramebuffer);
-
-  const auto& renderPassDescription = m_pDevice->GetRenderPass(beginRenderPass.m_hRenderPass)->GetDescription();
+  const auto& renderPassDescription = beginRenderPass.m_pRenderPass->GetDescription();
 
   xiiUInt32 uiRequiredClearValueCount = 0;
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
@@ -586,17 +550,17 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
   /// \todo GraphicsFoundation: Potentially reset the current render targets here.
   /// \todo GraphicsFoundation: Implement render pass attachment handling in the GAL, as well as state transitions in the begin render pass description.
 
-  m_hRenderPass  = beginRenderPass.m_hRenderPass;
-  m_hFramebuffer = beginRenderPass.m_hFramebuffer;
+  m_pRenderPass  = beginRenderPass.m_pRenderPass;
+  m_pFramebuffer = beginRenderPass.m_pFramebuffer;
 
-  BeginRenderPassPlatform(pRenderPass, pFramebuffer, beginRenderPass.m_ClearValues.GetArrayPtr());
+  BeginRenderPassPlatform(m_pRenderPass, m_pFramebuffer, beginRenderPass.m_ClearValues.GetArrayPtr());
 }
 
 void xiiGALCommandList::NextSubpass()
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!m_hRenderPass.IsInvalidated(), "NextSubpass: Render pass handle is invalid.");
-  XII_VERIFY_COMMAND_LIST(!m_hFramebuffer.IsInvalidated(), "NextSubpass: Framebuffer handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass != nullptr, "NextSubpass: Render pass handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(m_pFramebuffer != nullptr, "NextSubpass: Framebuffer handle is invalid.");
 
   NextSubpassPlatform();
 }
@@ -604,13 +568,13 @@ void xiiGALCommandList::NextSubpass()
 void xiiGALCommandList::EndRenderPass()
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!m_hRenderPass.IsInvalidated(), "NextSubpass: Render pass handle is invalid.");
-  XII_VERIFY_COMMAND_LIST(!m_hFramebuffer.IsInvalidated(), "NextSubpass: Framebuffer handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass != nullptr, "NextSubpass: Render pass handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(m_pFramebuffer != nullptr, "NextSubpass: Framebuffer handle is invalid.");
 
   EndRenderPassPlatform();
 
-  m_hRenderPass  = xiiGALRenderPassHandle();
-  m_hFramebuffer = xiiGALFramebufferHandle();
+  m_pRenderPass  = nullptr;
+  m_pFramebuffer = nullptr;
 }
 
 xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -618,8 +582,8 @@ xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVert
   CountDrawCall();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawCommand arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "DrawCommand arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawCommand arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawCommand arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawCommand arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_VERIFY_COMMAND_LIST_RESULT(uiVertexCount != 0, "DrawCommand vertex count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
   return DrawPlatform(uiVertexCount, uiStartVertex);
@@ -630,9 +594,9 @@ xiiResult xiiGALCommandList::DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiSta
   CountDrawCall();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexed command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "DrawIndexed command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hIndexBuffer.IsInvalidated(), "DrawIndexed command arguments are invalid. No index buffer is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexed command arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pIndexBuffer != nullptr, "DrawIndexed command arguments are invalid. No index buffer is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiIndexCount != 0, "DrawIndexed index count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
   return DrawIndexedPlatform(uiIndexCount, uiStartIndex, uiBaseVertex);
@@ -643,32 +607,31 @@ xiiResult xiiGALCommandList::DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInsta
   CountDrawCall();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstanced command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "DrawIndexedInstanced command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstanced command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hIndexBuffer.IsInvalidated(), "DrawIndexedInstanced command arguments are invalid. No index buffer is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstanced command arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstanced command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pIndexBuffer != nullptr, "DrawIndexedInstanced command arguments are invalid. No index buffer is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiIndexCountPerInstance != 0, "DrawIndexedInstanced index count per instance is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiInstanceCount != 0, "DrawIndexedInstanced instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
   return DrawIndexedInstancedPlatform(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance);
 }
 
-xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
   CountDrawCall();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstancedIndirect command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "DrawIndexedInstancedIndirect command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstancedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(!hIndirectArgumentBuffer.IsInvalidated(), "DrawIndexedInstancedIndirect command arguments are invalid. The indirect argument buffer is invalidated.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstancedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(pIndirectArgumentBuffer != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. The indirect argument buffer is invalidated.");
 
-  xiiGALBuffer* pIndirectArgumentsBuffer = m_pDevice->GetBuffer(hIndirectArgumentBuffer);
-  const auto&   bufferDescription        = pIndirectArgumentsBuffer->GetDescription();
+  const auto& bufferDescription = pIndirectArgumentBuffer->GetDescription();
 
-  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentsBuffer->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentBuffer->GetDebugName());
 
   /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
 
-  return DrawIndexedInstancedIndirectPlatform(pIndirectArgumentsBuffer, uiArgumentOffsetInBytes);
+  return DrawIndexedInstancedIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
 }
 
 xiiResult xiiGALCommandList::DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
@@ -676,31 +639,30 @@ xiiResult xiiGALCommandList::DrawInstanced(xiiUInt32 uiVertexCountPerInstance, x
   CountDrawCall();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawInstanced command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "DrawInstanced command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawInstanced command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawInstanced command arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawInstanced command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_VERIFY_COMMAND_LIST_RESULT(uiVertexCountPerInstance != 0, "DrawInstanced vertex count per instance is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiInstanceCount != 0, "DrawInstanced instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
   return DrawInstancedPlatform(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance);
 }
 
-xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
   CountDrawCall();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstancedIndirect command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "DrawIndexedInstancedIndirect command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstancedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(!hIndirectArgumentBuffer.IsInvalidated(), "DrawIndexedInstancedIndirect command arguments are invalid. The indirect argument buffer is invalidated.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstancedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(pIndirectArgumentBuffer != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. The indirect argument buffer is invalidated.");
 
-  xiiGALBuffer* pIndirectArgumentsBuffer = m_pDevice->GetBuffer(hIndirectArgumentBuffer);
-  const auto&   bufferDescription        = pIndirectArgumentsBuffer->GetDescription();
+  const auto& bufferDescription = pIndirectArgumentBuffer->GetDescription();
 
-  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentsBuffer->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentBuffer->GetDebugName());
 
   /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
 
-  return DrawInstancedIndirectPlatform(pIndirectArgumentsBuffer, uiArgumentOffsetInBytes);
+  return DrawInstancedIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
 }
 
 xiiResult xiiGALCommandList::DrawMesh(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
@@ -709,8 +671,8 @@ xiiResult xiiGALCommandList::DrawMesh(xiiUInt32 uiThreadGroupCountX, xiiUInt32 u
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMesh command arguments are invalid. Mesh shaders are not supported by this device.");
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "DrawMesh command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMesh command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawMesh command arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMesh command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
 
   const auto& meshProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_MeshShaderProperties;
 
@@ -728,41 +690,39 @@ xiiResult xiiGALCommandList::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 u
 {
   CountDispatchCall();
 
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "Dispatch command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(m_hRenderPass.IsInvalidated(), "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "Dispatch command arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pRenderPass == nullptr, "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiThreadGroupCountX != 0U && uiThreadGroupCountY != 0U && uiThreadGroupCountZ != 0U, "Dispatch command arguments are invalid. At least one of the thread group counts are zero, this is OK as the dispatch command will be ignored, but may be unintentional.");
 
   return DispatchPlatform(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 }
 
-xiiResult xiiGALCommandList::DispatchIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandList::DispatchIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
   CountDispatchCall();
 
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_hPipelineState.IsInvalidated(), "DispatchIndirect command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "DispatchIndirect command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(m_hRenderPass.IsInvalidated(), "DispatchIndirect command arguments are invalid. DispatchIndirect command must be performed outside of render pass.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DispatchIndirect command arguments are invalid. No pipeline state is bound.");
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "DispatchIndirect command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(m_pRenderPass == nullptr, "DispatchIndirect command arguments are invalid. DispatchIndirect command must be performed outside of render pass.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(!hIndirectArgumentBuffer.IsInvalidated(), "The indirect arguments buffer is invalidated.");
+  XII_VERIFY_COMMAND_LIST_RESULT(pIndirectArgumentBuffer != nullptr, "The indirect arguments buffer is invalidated.");
 
-  xiiGALBuffer* pIndirectArgumentsBuffer = m_pDevice->GetBuffer(hIndirectArgumentBuffer);
-  const auto&   bufferDescription        = pIndirectArgumentsBuffer->GetDescription();
+  const auto& bufferDescription = pIndirectArgumentBuffer->GetDescription();
 
-  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentsBuffer->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentBuffer->GetDebugName());
 
   const xiiUInt32 uiOffset = ((sizeof(xiiUInt32) * 3) + uiArgumentOffsetInBytes);
-  XII_VERIFY_COMMAND_LIST_RESULT(uiOffset <= bufferDescription.m_uiSize, "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' offset in bytes must be at least {1} bytes.", pIndirectArgumentsBuffer->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(uiOffset <= bufferDescription.m_uiSize, "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' offset in bytes must be at least {1} bytes.", pIndirectArgumentBuffer->GetDebugName());
 
-  return DispatchIndirectPlatform(pIndirectArgumentsBuffer, uiArgumentOffsetInBytes);
+  return DispatchIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
 }
 
-void xiiGALCommandList::BeginQuery(xiiGALQueryHandle hQuery)
+void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 {
-  XII_VERIFY_COMMAND_LIST(!hQuery.IsInvalidated(), "BeginQuery must not be called on an invalidated query.");
+  XII_VERIFY_COMMAND_LIST(pQuery != nullptr, "BeginQuery must not be called on an invalidated query.");
 
-  xiiGALQuery* pQuery           = m_pDevice->GetQuery(hQuery);
-  const auto&  queryDescription = pQuery->GetDescription();
+  const auto& queryDescription = pQuery->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(queryDescription.m_Type != xiiGALQueryType::Timestamp, "BeginQuery cannot be called on timestamp queries. Use EndQuery instead to set the timestamp.");
 
@@ -771,13 +731,11 @@ void xiiGALCommandList::BeginQuery(xiiGALQueryHandle hQuery)
   BeginQueryPlatform(pQuery);
 }
 
-void xiiGALCommandList::EndQuery(xiiGALQueryHandle hQuery)
+void xiiGALCommandList::EndQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 {
-  XII_VERIFY_COMMAND_LIST(!hQuery.IsInvalidated(), "EndQuery must not be called on an invalidated query.");
+  XII_VERIFY_COMMAND_LIST(pQuery != nullptr, "EndQuery must not be called on an invalidated query.");
 
   /// \todo GraphicsFoundation: Assert command queue compatibiliity.
-
-  xiiGALQuery* pQuery = m_pDevice->GetQuery(hQuery);
 
   EndQueryPlatform(pQuery);
 }
@@ -814,16 +772,15 @@ void xiiGALCommandList::InsertDebugLabel(xiiStringView sName, const xiiColor& co
   InsertDebugLabelPlatform(sName, color);
 }
 
-void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
+void xiiGALCommandList::UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
   const auto& graphicsAdapterProperties = m_pDevice->GetGraphicsDeviceAdapterProperties();
 
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
-  XII_VERIFY_COMMAND_LIST(!hBuffer.IsInvalidated(), "UpdateBuffer arguments are invalid. The buffer handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateBuffer command must be used outside of render pass.");
+  XII_VERIFY_COMMAND_LIST(pBuffer != nullptr, "UpdateBuffer arguments are invalid. The buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "UpdateBuffer command must be used outside of render pass.");
 
-  xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
-  const auto&   bufferDescription = pBuffer->GetDescription();
+  const auto& bufferDescription = pBuffer->GetDescription();
 
   if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
   {
@@ -841,36 +798,30 @@ void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDes
   UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData);
 }
 
-void xiiGALCommandList::CopyBuffer(xiiGALBufferHandle hSourceBuffer, xiiGALBufferHandle hDestinationBuffer)
+void xiiGALCommandList::CopyBuffer(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
-  XII_VERIFY_COMMAND_LIST(!hSourceBuffer.IsInvalidated(), "CopyBuffer arguments are invalid. The source buffer handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(!hDestinationBuffer.IsInvalidated(), "CopyBuffer arguments are invalid. The destination buffer handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyBuffer command must be used outside of render pass.");
+  XII_VERIFY_COMMAND_LIST(pSourceBuffer != nullptr, "CopyBuffer arguments are invalid. The source buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(pDestinationBuffer != nullptr, "CopyBuffer arguments are invalid. The destination buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "CopyBuffer command must be used outside of render pass.");
 
-  xiiGALBuffer* pSourceBuffer           = m_pDevice->GetBuffer(hSourceBuffer);
-  const auto&   sourceBufferDescription = pSourceBuffer->GetDescription();
-
-  xiiGALBuffer* pDestinationBuffer           = m_pDevice->GetBuffer(hDestinationBuffer);
-  const auto&   destinationBufferDescription = pDestinationBuffer->GetDescription();
+  const auto& sourceBufferDescription      = pSourceBuffer->GetDescription();
+  const auto& destinationBufferDescription = pDestinationBuffer->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(sourceBufferDescription.m_uiSize <= destinationBufferDescription.m_uiSize, "CopyBuffer command arguments are invalid. The source buffer bounds exceeds the bounds of the destination buffer.");
 
   CopyBufferPlatform(pSourceBuffer, pDestinationBuffer);
 }
 
-void xiiGALCommandList::CopyBufferRegion(xiiGALBufferHandle hSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBufferHandle hDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
+void xiiGALCommandList::CopyBufferRegion(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
-  XII_VERIFY_COMMAND_LIST(!hSourceBuffer.IsInvalidated(), "CopyBufferRegion arguments are invalid. The source buffer handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(!hDestinationBuffer.IsInvalidated(), "CopyBufferRegion arguments are invalid. The destination buffer handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyBufferRegion command must be used outside of render pass.");
+  XII_VERIFY_COMMAND_LIST(pSourceBuffer != nullptr, "CopyBufferRegion arguments are invalid. The source buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(pDestinationBuffer != nullptr, "CopyBufferRegion arguments are invalid. The destination buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "CopyBufferRegion command must be used outside of render pass.");
 
-  xiiGALBuffer* pSourceBuffer           = m_pDevice->GetBuffer(hSourceBuffer);
-  const auto&   sourceBufferDescription = pSourceBuffer->GetDescription();
-
-  xiiGALBuffer* pDestinationBuffer           = m_pDevice->GetBuffer(hDestinationBuffer);
-  const auto&   destinationBufferDescription = pDestinationBuffer->GetDescription();
+  const auto& sourceBufferDescription      = pSourceBuffer->GetDescription();
+  const auto& destinationBufferDescription = pDestinationBuffer->GetDescription();
 
   XII_VERIFY_COMMAND_LIST((uiSourceOffset + uiSize) <= sourceBufferDescription.m_uiSize, "CopyBufferRegion command arguments are invalid. Failed to copy buffer '{0}' to '{1}', the destination range [{2}, {3}) is out of buffer bounds [0, {4}).", pSourceBuffer->GetDebugName(), pDestinationBuffer->GetDebugName(), uiSourceOffset, uiSourceOffset + uiSize, sourceBufferDescription.m_uiSize);
   XII_VERIFY_COMMAND_LIST((uiDestinationOffset + uiSize) <= destinationBufferDescription.m_uiSize, "CopyBufferRegion command arguments are invalid. Failed to copy buffer '{0}' to '{1}', the destination range [{2}, {3}) is out of buffer bounds [0, {4}).", pSourceBuffer->GetDebugName(), pDestinationBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + uiSize, destinationBufferDescription.m_uiSize);
@@ -878,17 +829,15 @@ void xiiGALCommandList::CopyBufferRegion(xiiGALBufferHandle hSourceBuffer, xiiUI
   CopyBufferPlatform(pSourceBuffer, pDestinationBuffer);
 }
 
-xiiResult xiiGALCommandList::MapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
+xiiResult xiiGALCommandList::MapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
-  XII_VERIFY_COMMAND_LIST_RESULT(!hBuffer.IsInvalidated(), "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST_RESULT(pBuffer != nullptr, "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
 
-  xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
-  const auto&   bufferDescription = pBuffer->GetDescription();
+  const auto& bufferDescription = pBuffer->GetDescription();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  const xiiUInt32 uiKey = reinterpret_cast<const xiiUInt32&>(hBuffer);
-  XII_VERIFY_COMMAND_LIST_RESULT(!m_MappedBuffers.Contains(uiKey), "The buffer '{0}' has already been mapped.");
-  m_MappedBuffers.Insert(uiKey, mapType);
+  XII_VERIFY_COMMAND_LIST_RESULT(!m_MappedBuffers.Contains(pBuffer), "The buffer '{0}' has already been mapped.");
+  m_MappedBuffers.Insert(pBuffer, mapType);
 #endif
 
   pMappedData = nullptr;
@@ -934,55 +883,47 @@ xiiResult xiiGALCommandList::MapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGA
   if (MapBufferPlatform(pBuffer, mapType, mapFlags, pMappedData).Failed())
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    XII_VERIFY_COMMAND_LIST_RESULT(m_MappedBuffers.Contains(uiKey), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
-    XII_VERIFY_COMMAND_LIST_RESULT(*m_MappedBuffers.GetValue(uiKey) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(uiKey));
+    XII_VERIFY_COMMAND_LIST_RESULT(m_MappedBuffers.Contains(pBuffer), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
+    XII_VERIFY_COMMAND_LIST_RESULT(*m_MappedBuffers.GetValue(pBuffer) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(pBuffer));
 
-    m_MappedBuffers.Remove(uiKey);
+    m_MappedBuffers.Remove(pBuffer);
 #endif
     return XII_FAILURE;
   }
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType)
+xiiResult xiiGALCommandList::UnmapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
-  XII_VERIFY_COMMAND_LIST_RESULT(!hBuffer.IsInvalidated(), "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
-
-  xiiGALBuffer* pBuffer = m_pDevice->GetBuffer(hBuffer);
+  XII_VERIFY_COMMAND_LIST_RESULT(pBuffer != nullptr, "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  const xiiUInt32 uiKey = reinterpret_cast<const xiiUInt32&>(hBuffer);
-  XII_VERIFY_COMMAND_LIST_RESULT(m_MappedBuffers.Contains(uiKey), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(*m_MappedBuffers.GetValue(uiKey) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(uiKey));
+  XII_VERIFY_COMMAND_LIST_RESULT(m_MappedBuffers.Contains(pBuffer), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
+  XII_VERIFY_COMMAND_LIST_RESULT(*m_MappedBuffers.GetValue(pBuffer) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(pBuffer));
 
-  m_MappedBuffers.Remove(uiKey);
+  m_MappedBuffers.Remove(pBuffer);
 #endif
 
   return UnmapBufferPlatform(pBuffer, mapType);
 }
 
-void xiiGALCommandList::UpdateTexture(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
+void xiiGALCommandList::UpdateTexture(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
-  XII_VERIFY_COMMAND_LIST(!hTexture.IsInvalidated(), "UpdateTexture arguments are invalid. The texture handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateTexture command must be used outside of render pass.");
-
-  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+  XII_VERIFY_COMMAND_LIST(pTexture != nullptr, "UpdateTexture arguments are invalid. The texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "UpdateTexture command must be used outside of render pass.");
 
   ValidateTextureUpdateRegion(pTexture->GetDescription(), textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureBox, subresourceData);
 
   UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
 
-void xiiGALCommandList::CopyTexture(xiiGALTextureHandle hSourceTexture, xiiGALTextureHandle hDestinationTexture)
+void xiiGALCommandList::CopyTexture(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
-  XII_VERIFY_COMMAND_LIST(!hSourceTexture.IsInvalidated(), "CopyTexture arguments are invalid. The source texture handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "CopyTexture arguments are invalid. The destination texture handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyTexture command must be used outside of render pass.");
-
-  xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
-  xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+  XII_VERIFY_COMMAND_LIST(pSourceTexture != nullptr, "CopyTexture arguments are invalid. The source texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(pDestinationTexture != nullptr, "CopyTexture arguments are invalid. The destination texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "CopyTexture command must be used outside of render pass.");
 
   xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(pSourceTexture->GetDescription(), 0);
   xiiBoundingBoxU32        sourceBox          = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), xiiVec3U32(mipLevelProperties.m_LogicalSize.width, mipLevelProperties.m_LogicalSize.height, mipLevelProperties.m_uiDepth));
@@ -993,15 +934,12 @@ void xiiGALCommandList::CopyTexture(xiiGALTextureHandle hSourceTexture, xiiGALTe
   CopyTexturePlatform(pSourceTexture, pDestinationTexture);
 }
 
-void xiiGALCommandList::CopyTextureRegion(xiiGALTextureHandle hSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTextureHandle hDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
+void xiiGALCommandList::CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
-  XII_VERIFY_COMMAND_LIST(!hSourceTexture.IsInvalidated(), "CopyTextureRegion arguments are invalid. The source texture handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "CopyTextureRegion arguments are invalid. The destination texture handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyTextureRegion command must be used outside of render pass.");
-
-  xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
-  xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+  XII_VERIFY_COMMAND_LIST(pSourceTexture != nullptr, "CopyTextureRegion arguments are invalid. The source texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(pDestinationTexture != nullptr, "CopyTextureRegion arguments are invalid. The destination texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "CopyTextureRegion command must be used outside of render pass.");
 
   ValidateTextureRegion(pSourceTexture->GetDescription(), destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, box);
 
@@ -1012,28 +950,23 @@ void xiiGALCommandList::CopyTextureRegion(xiiGALTextureHandle hSourceTexture, co
   CopyTextureRegionPlatform(pSourceTexture, sourceMipLevelData, box, pDestinationTexture, destinationMipLevelData, vDestinationPoint);
 }
 
-void xiiGALCommandList::ResolveTextureSubResource(xiiGALTextureHandle hSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTextureHandle hDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
+void xiiGALCommandList::ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!hSourceTexture.IsInvalidated(), "ResolveTextureSubResource arguments are invalid. The source texture handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "ResolveTextureSubResource arguments are invalid. The destination texture handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "ResolveTextureSubResource command must be used outside of render pass.");
+  XII_VERIFY_COMMAND_LIST(pSourceTexture != nullptr, "ResolveTextureSubResource arguments are invalid. The source texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(pDestinationTexture != nullptr, "ResolveTextureSubResource arguments are invalid. The destination texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "ResolveTextureSubResource command must be used outside of render pass.");
 
   /// \todo GraphicsFoundation: Validate resolve texture parameters.
-
-  xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
-  xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
 
   ResolveTextureSubResourcePlatform(pSourceTexture, sourceMipLevelData, pDestinationTexture, destinationMipLevelData);
 }
 
-void xiiGALCommandList::GenerateMips(xiiGALTextureViewHandle hTextureView)
+void xiiGALCommandList::GenerateMips(xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(!hTextureView.IsInvalidated(), "GenerateMips arguments are invalid. The texture view handle has been invalidated.");
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "GenerateMips command must be used outside of render pass.");
-
-  xiiGALTextureView* pTextureView = m_pDevice->GetTextureView(hTextureView);
+  XII_VERIFY_COMMAND_LIST(pTextureView != nullptr, "GenerateMips arguments are invalid. The texture view handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "GenerateMips command must be used outside of render pass.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const auto& textureViewDescription = pTextureView->GetDescription();
@@ -1045,12 +978,11 @@ void xiiGALCommandList::GenerateMips(xiiGALTextureViewHandle hTextureView)
   GenerateMipsPlatform(pTextureView);
 }
 
-xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
+xiiResult xiiGALCommandList::MapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
-  XII_VERIFY_COMMAND_LIST_RESULT(!hTexture.IsInvalidated(), "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST_RESULT(pTexture != nullptr, "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
 
-  xiiGALTexture* pTexture           = m_pDevice->GetTexture(hTexture);
-  const auto&    textureDescription = pTexture->GetDescription();
+  const auto& textureDescription = pTexture->GetDescription();
 
   XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiMipLevel < textureDescription.m_uiMipLevels, "Mip level ({}) is out of permitted range [0, {}].", textureMipLevelData.m_uiMipLevel, textureDescription.m_uiMipLevels - 1);
 
@@ -1071,12 +1003,9 @@ xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture,
   return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, pTextureBox, mappedData);
 }
 
-xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData)
+xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
-  XII_VERIFY_COMMAND_LIST_RESULT(!hTexture.IsInvalidated(), "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
-
-  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
-
+  XII_VERIFY_COMMAND_LIST_RESULT(pTexture != nullptr, "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiMipLevel < pTexture->GetDescription().m_uiMipLevels, "MapTextureSubresource arguments are invalid. The mip level is out of range.");
   XII_VERIFY_COMMAND_LIST_RESULT(textureMipLevelData.m_uiArraySlice < pTexture->GetDescription().GetArraySize(), "MapTextureSubresource arguments are invalid. The array slice is out of range.");
 
@@ -1085,18 +1014,18 @@ xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiGALTextureHandle hTextur
 
 void xiiGALCommandList::InvalidateState()
 {
-  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "Invalidating the command list is disallowed while a render pass is active. Call EndRenderPass to finish the pass.");
+  XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "Invalidating the command list is disallowed while a render pass is active. Call EndRenderPass to finish the pass.");
 
-  m_hPipelineState             = xiiGALPipelineStateHandle();
-  m_hPipelineResourceSignature = xiiGALPipelineResourceSignatureHandle();
+  m_pPipelineState             = nullptr;
+  m_pPipelineResourceSignature = nullptr;
 
   xiiMemoryUtils::Construct<ConstructAll>(m_VertexBuffers);
 
-  m_hIndexBuffer      = xiiGALBufferHandle();
+  m_pIndexBuffer      = nullptr;
   m_uiIndexDataOffset = 0;
 
-  m_hRenderPass  = xiiGALRenderPassHandle();
-  m_hFramebuffer = xiiGALFramebufferHandle();
+  m_pRenderPass  = nullptr;
+  m_pFramebuffer = nullptr;
 
   m_BlendFactors = xiiColor::Black;
   m_uiStencilRef = 0;

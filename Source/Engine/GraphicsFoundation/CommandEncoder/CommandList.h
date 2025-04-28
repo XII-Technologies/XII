@@ -5,10 +5,11 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Threading/ThreadUtils.h>
 
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/States/PipelineState.h>
+#include <GraphicsFoundation/Shader/Shader.h>
 
 /// \brief This describes the pipeline state shading rate flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
@@ -64,8 +65,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiH
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALRenderPassHandle                                                    m_hRenderPass;
-  xiiGALFramebufferHandle                                                   m_hFramebuffer;
+  xiiSharedPtr<xiiGALRenderPass>                                            m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer>                                           m_pFramebuffer;
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_ClearValues;
 };
 
@@ -90,16 +91,16 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueue* GetCommandQueue() const { return m_pCommandQueue; };
 
   /// \brief This returns the active pipeline state handle for this object.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALPipelineStateHandle GetPipelineState() const { return m_hPipelineState; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALPipelineState> GetPipelineState() const { return m_pPipelineState; };
 
   /// \brief This returns the active pipeline resource signature handle for this object.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALPipelineResourceSignatureHandle GetPipelineResourceSignature() const { return m_hPipelineResourceSignature; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALPipelineResourceSignature> GetPipelineResourceSignature() const { return m_pPipelineResourceSignature; };
 
   /// \brief This returns the active render pass handle for this object.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALRenderPassHandle GetRenderPassHandle() const { return m_hRenderPass; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALRenderPass> GetRenderPass() const { return m_pRenderPass; };
 
   /// \brief This returns the active frame buffer handle for this object.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFramebufferHandle GetFramebufferHandle() const { return m_hFramebuffer; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALFramebuffer> GetFramebuffer() const { return m_pFramebuffer; };
 
 public:
   /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
@@ -127,7 +128,7 @@ public:
   /// \brief Sets the pipeline state object for the command list.
   ///
   /// \param hPipelineState - The handle to the pipeline state object.
-  void SetPipelineState(xiiGALPipelineStateHandle hPipelineState);
+  void SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState);
 
   /// \brief Sets the stencil reference value used in the stencil test.
   ///
@@ -153,7 +154,7 @@ public:
   ///
   /// \param hIndexBuffer - The handle to the index buffer object. The index buffer must be created with the xiiGALBindFlags::IndexBuffer bind flag.
   /// \param uiByteOffset - The byte offset into the index buffer. That is, from the beginning of the buffer to the start of the index data.
-  void SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt64 uiByteOffset = 0U);
+  void SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset = 0U);
 
   /// \brief Sets the vertex buffers for the input-assembler stage of the pipeline. This contains the vertex data.
   ///
@@ -161,43 +162,43 @@ public:
   /// \param pVertexBuffers - The array of handles to the vertex buffer objects. The vertex buffers must be created with the xiiGALBindFlags::VertexBuffer bind flag.
   /// \param pByteOffsets   - The array of offset values; one offset value for each buffer in the vertex-buffer array. Each offset is the number of bytes between the first element of a vertex buffer and the first element that will be used. If this parameter is an empty array, zero offsets for all buffers will be used.
   /// \param flags          - Additional flags for setting vertex buffers. See xiiGALSetVertexBufferFlags for more information.
-  void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBufferHandle> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None);
+  void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None);
 
   /// \brief This is used to set the constant (uniform) buffer for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param hConstantBuffer    - The handle to the constant (uniform) buffer object to set.
-  void SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferHandle hConstantBuffer);
+  void SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer);
 
   /// \brief This is used to set the buffer view for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param hBufferView        - The handle to the buffer view object to set.
-  void SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView);
+  void SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView);
 
   /// \brief This is used to set the texture view for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param hTextureView       - The handle to the texture view object to set.
-  void SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView);
+  void SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView);
 
   /// This is used to set the buffer view for an unordered access.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param hBufferView        - The handle to the buffer view object to set.
-  void SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView);
+  void SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView);
 
   /// \brief This is used to set the texture view for an unordered access.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param hTextureView       - The handle to the texture view object to set.
-  void SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView);
+  void SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView);
 
   /// \brief This is used to set the sampler for a sampler resource.
   ///
   /// \param bindingInformation - This describes the binding information for the sampler resource, see xiiGALPipelineResourceDescription for details.
   /// \param hSampler           - The handle to the sampler object to set.
-  void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSamplerHandle hSampler);
+  void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler);
 
   /// \brief This commits the pipeline shader resources to the GPU, and ensures that all necessary state transitions are performed.
   ///
@@ -208,7 +209,7 @@ public:
   ///
   /// \param hRenderTargetView - The handle to the render target view object. The view must be a xiiGALTextureViewType::RenderTarget.
   /// \param clearColor        - The color to which to clear the render target view.
-  void ClearRenderTargetView(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor);
+  void ClearRenderTargetView(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor);
 
   /// \brief This clears the specified depth stencil view to the specified depth and stencil values.
   ///
@@ -217,7 +218,7 @@ public:
   /// \param bClearStencil     - Whether to clear the stencil portion of the buffer.
   /// \param fDepthClear       - The value to which to clear the depth portion of the buffer with.
   /// \param uiStencilClear    - The value to which to clear the stencil portion of the buffer with.
-  void ClearDepthStencilView(xiiGALTextureViewHandle hDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear);
+  void ClearDepthStencilView(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear);
 
   /// \brief This begins a render pass, which contains a collection of attachments, subpasses, and dependencies between the subpasses, and describes how the attachments are used over the course of the subpasses.
   ///
@@ -260,7 +261,7 @@ public:
   ///
   /// \param hIndirectArgumentBuffer - The handle to the indirect argument buffer object.
   /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
-  xiiResult DrawIndexedInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
+  xiiResult DrawIndexedInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
 
   /// \brief Draws instanced primitives.
   ///
@@ -274,7 +275,7 @@ public:
   ///
   /// \param hIndirectArgumentBuffer - The handle to the indirect argument buffer object.
   /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
-  xiiResult DrawInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
+  xiiResult DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
 
   /// \brief Draws a mesh.
   ///
@@ -298,19 +299,19 @@ public:
   ///
   /// \param hIndirectArgumentBuffer - The handle to the indirect argument buffer object.
   /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
-  xiiResult DispatchIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
+  xiiResult DispatchIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
 
   // Query functions.
 
   /// \brief Begins a query.
   ///
   /// \param hQuery - The handle to the query object.
-  void BeginQuery(xiiGALQueryHandle hQuery);
+  void BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery);
 
   /// \brief Ends a query.
   ///
   /// \param hQuery - The handle to the query object.
-  void EndQuery(xiiGALQueryHandle hQuery);
+  void EndQuery(xiiSharedPtr<xiiGALQuery> pQuery);
 
   // Buffer methods.
 
@@ -319,13 +320,13 @@ public:
   /// \param hBuffer             - The handle to the buffer object.
   /// \param uiDestinationOffset - Byte offset into the buffer where the update should start.
   /// \param pSourceData         - Pointer to the source data.
-  void UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData);
+  void UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData);
 
   /// \brief Copies the entire contents of the source buffer to the destination buffer.
   ///
   /// \param hSourceBuffer      - The handle to the source buffer object.
   /// \param hDestinationBuffer - The handle to the destination buffer object.
-  void CopyBuffer(xiiGALBufferHandle hSourceBuffer, xiiGALBufferHandle hDestinationBuffer);
+  void CopyBuffer(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer);
 
   /// \brief Copies a region from the source buffer to the destination buffer.
   ///
@@ -334,7 +335,7 @@ public:
   /// \param hDestinationBuffer  - The handle to the destination buffer object.
   /// \param uiDestinationOffset - Byte offset into the destination buffer where the copy should start.
   /// \param uiSize              - Size in bytes of the region to copy.
-  void CopyBufferRegion(xiiGALBufferHandle hSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBufferHandle hDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize);
+  void CopyBufferRegion(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize);
 
   /// \brief Maps a buffer into the CPU's address space.
   ///
@@ -342,13 +343,13 @@ public:
   /// \param mapType     - Specifies the CPU's access pattern for the map operation. See xiiGALMapType for details.
   /// \param mapFlags    - Flags specifying how the buffer should be mapped. See xiiGALMapFlags for details.
   /// \param pMappedData - Pointer to the mapped data.
-  xiiResult MapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData);
+  xiiResult MapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData);
 
   /// \brief Unmaps a buffer from the CPU's address space.
   ///
   /// \param hBuffer - The handle to the buffer object.
   /// \param mapType - Specifies the CPU's access pattern for the map operation. See xiiGALMapType for details.
-  xiiResult UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType);
+  xiiResult UnmapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType);
 
   // Texture methods.
 
@@ -358,13 +359,13 @@ public:
   /// \param textureMiplevelData - Specifies the subresource to update. See xiiGALTextureMipLevelData for details.
   /// \param textureBox          - Specifies the region within the subresource to update.
   /// \param subresourceData     - Specifies the new data. See xiiGALTextureSubResourceData for details.
-  void UpdateTexture(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData);
+  void UpdateTexture(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData);
 
   /// \brief Copies the entire contents of the source texture to the destination texture.
   ///
   /// \param hSourceTexture      - The handle to the source texture object.
   /// \param hDestinationTexture - The handle to the destination texture object.
-  void CopyTexture(xiiGALTextureHandle hSourceTexture, xiiGALTextureHandle hDestinationTexture);
+  void CopyTexture(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture);
 
   /// \brief Copies a region from the source texture to the destination texture.
   ///
@@ -374,7 +375,7 @@ public:
   /// \param hDestinationTexture     - The handle to the destination texture object.
   /// \param destinationMipLevelData - Specifies the subresource in the destination texture. See xiiGALTextureMipLevelData for details.
   /// \param vDestinationPoint       - Specifies the point within the destination subresource where the region should be copied to.
-  void CopyTextureRegion(xiiGALTextureHandle hSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTextureHandle hDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint);
+  void CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint);
 
   /// \brief Resolves a multisampled source texture into a non-multisampled destination texture.
   ///
@@ -382,14 +383,14 @@ public:
   /// \param sourceMipLevelData      - Specifies the subresource in the source texture. See xiiGALTextureMipLevelData for details.
   /// \param hDestinationTexture     - The handle to the destination texture object.
   /// \param destinationMipLevelData - Specifies the subresource in the destination texture. See xiiGALTextureMipLevelData for details.
-  void ResolveTextureSubResource(xiiGALTextureHandle hSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTextureHandle hDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData);
+  void ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData);
 
   /// \brief Generates mipmap levels for a texture.
   ///
   /// \param hTextureView - The handle to the texture view object. The texture view must be of type xiiGALTextureViewType::ShaderResource.
   ///
   /// \remarks This method must only be called on a shader resource view. The texture must be created with xiiGALMiscTextureFlags::GenerateMips.
-  void GenerateMips(xiiGALTextureViewHandle hTextureView);
+  void GenerateMips(xiiSharedPtr<xiiGALTextureView> pTextureView);
 
   /// \brief Maps a texture subresource into the address space of the command list.
   ///
@@ -399,13 +400,13 @@ public:
   /// \param mapFlags            - Specifies the behavior of the map operation.
   /// \param pTextureBox         - Specifies the region of the resource to map. If this parameter is null, the entire resource is mapped.
   /// \param mappedData          - Receives information about the resource data when the function returns.
-  xiiResult MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData);
+  xiiResult MapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData);
 
   /// \brief Unmaps a texture subresource from the address space of the command list.
   ///
   /// \param hTexture            - The handle to the texture object.
   /// \param textureMipLevelData - Specifies the subresource to unmap.
-  xiiResult UnmapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData);
+  xiiResult UnmapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData);
 
   // Debug functions.
 
@@ -463,7 +464,7 @@ protected:
 
   virtual xiiUInt64 SubmitPlatform() = 0;
 
-  virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
+  virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState) = 0;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) = 0;
@@ -471,50 +472,50 @@ protected:
   virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) = 0;
   virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)      = 0;
 
-  virtual void      SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)                                                                                                     = 0;
+  virtual void      SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset)                                                                                        = 0;
   virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) = 0;
-  virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)                                                          = 0;
-  virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)                                                = 0;
-  virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)                                             = 0;
-  virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)                                               = 0;
-  virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)                                            = 0;
-  virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)                                                                       = 0;
+  virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)                                             = 0;
+  virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)                                   = 0;
+  virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)                                = 0;
+  virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)                                  = 0;
+  virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)                               = 0;
+  virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)                                                          = 0;
   virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)                                                                                                         = 0;
 
-  virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)                                                       = 0;
-  virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
+  virtual void ClearRenderTargetViewPlatform(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor)                                                       = 0;
+  virtual void ClearDepthStencilViewPlatform(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
 
-  virtual void BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues) = 0;
-  virtual void NextSubpassPlatform()                                                                                                                                       = 0;
-  virtual void EndRenderPassPlatform()                                                                                                                                     = 0;
+  virtual void BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues) = 0;
+  virtual void NextSubpassPlatform()                                                                                                                                                                 = 0;
+  virtual void EndRenderPassPlatform()                                                                                                                                                               = 0;
 
   virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)                                                                                                        = 0;
   virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)                                                                           = 0;
   virtual xiiResult DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance) = 0;
-  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)                                                        = 0;
+  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)                                           = 0;
   virtual xiiResult DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)                              = 0;
-  virtual xiiResult DrawInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)                                                               = 0;
+  virtual xiiResult DrawInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)                                                  = 0;
   virtual xiiResult DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)                                                         = 0;
 
-  virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) = 0;
-  virtual xiiResult DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)            = 0;
+  virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)   = 0;
+  virtual xiiResult DispatchIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) = 0;
 
-  virtual void BeginQueryPlatform(xiiGALQuery* pQuery) = 0;
-  virtual void EndQueryPlatform(xiiGALQuery* pQuery)   = 0;
+  virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) = 0;
+  virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)   = 0;
 
-  virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)                                                = 0;
-  virtual void      CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                  = 0;
-  virtual void      CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize) = 0;
-  virtual xiiResult MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                 = 0;
-  virtual xiiResult UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)                                                                                         = 0;
+  virtual void      UpdateBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)                                                             = 0;
+  virtual void      CopyBufferPlatform(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer)                                                                                  = 0;
+  virtual void      CopyBufferRegionPlatform(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize) = 0;
+  virtual xiiResult MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                              = 0;
+  virtual xiiResult UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType)                                                                                                      = 0;
 
-  virtual void      UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                                 = 0;
-  virtual void      CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)                                                                                                                                                                                         = 0;
-  virtual void      CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
-  virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;
-  virtual void      GenerateMipsPlatform(xiiGALTextureView* pTextureView)                                                                                                                                                                                                                          = 0;
-  virtual xiiResult MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)                        = 0;
-  virtual xiiResult UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)                                                                                                                                                                        = 0;
+  virtual void      UpdateTexturePlatform(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                                              = 0;
+  virtual void      CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture)                                                                                                                                                                                         = 0;
+  virtual void      CopyTextureRegionPlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
+  virtual void      ResolveTextureSubResourcePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;
+  virtual void      GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureView> pTextureView)                                                                                                                                                                                                                                       = 0;
+  virtual xiiResult MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)                                     = 0;
+  virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)                                                                                                                                                                                     = 0;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)  = 0;
   virtual void EndDebugGroupPlatform()                                              = 0;
@@ -531,16 +532,16 @@ protected:
 
   RecordingState m_RecordingState = RecordingState::Reset;
 
-  xiiGALPipelineStateHandle             m_hPipelineState;
-  xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;
+  xiiSharedPtr<xiiGALPipelineState>             m_pPipelineState;
+  xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineResourceSignature;
 
-  xiiGALBufferHandle m_VertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiSharedPtr<xiiGALBuffer> m_VertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
-  xiiGALBufferHandle m_hIndexBuffer;
-  xiiUInt64          m_uiIndexDataOffset = 0ULL;
+  xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;
+  xiiUInt64                  m_uiIndexDataOffset = 0ULL;
 
-  xiiGALRenderPassHandle  m_hRenderPass;
-  xiiGALFramebufferHandle m_hFramebuffer;
+  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
 
   xiiColor  m_BlendFactors = xiiColor::Black;
   xiiUInt32 m_uiStencilRef = 0U;
@@ -564,6 +565,6 @@ private:
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiUInt32 m_uiDebugGroupCount = 0;
 
-  xiiMap<xiiUInt32, xiiEnum<xiiGALMapType>> m_MappedBuffers;
+  xiiMap<xiiGALBuffer*, xiiEnum<xiiGALMapType>> m_MappedBuffers;
 #endif
 };
