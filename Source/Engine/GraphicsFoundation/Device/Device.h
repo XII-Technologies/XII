@@ -121,24 +121,6 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr);
 
 
-  /// \brief This creates a new texture view.
-  ///
-  /// \param description - The texture view description. See xiiGALTextureViewCreationDescription.
-  ///
-  /// \return The reference-counted pointer to the texture view.
-  ///
-  /// \remarks To create a shader resource view addressing the entire texture, set only xiiGALTextureViewCreationDescription::m_ViewType member of the description parameter to xiiGALTextureViewType::ShaderResource and leave all other
-  ///          members in their default values. Using the same method, you can create render target or depth stencil view addressing the largest mip level.\n
-  ///          If texture view format is xiiGALResourceFormat::Unknown, the view format will match the texture format.\n
-  ///          If texture view type is xiiGALTextureViewType::Undefined, the type will match the texture type.\n
-  ///          If the number of mip levels is 0, and the view type is shader resource, the view will address all mip levels. For other view types it will address one mip level.\n
-  ///          If the number of slices is 0, all slices from m_uiFirstArraySlice or m_uiFirstDepthSlice will be referenced by the view.
-  ///          For non-array textures, the only allowed values for the number of slices are 0 and 1.\n
-  ///          Texture view will contain strong reference to the texture, so the texture will not be destroyed until all views are released.\n
-  ///
-  [[nodiscard]] xiiSharedPtr<xiiGALTextureView> CreateTextureView(xiiGALTextureViewCreationDescription& description);
-
-
   /// \brief This creates a new sampler object.
   ///
   /// \param description - The sampler description. See xiiGALSamplerCreationDescription.
@@ -314,7 +296,6 @@ protected:
   virtual xiiInternal::NewInstance<xiiGALBuffer>                    CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr)    = 0;
   virtual xiiInternal::NewInstance<xiiGALBufferView>                CreateBufferViewPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& description)        = 0;
   virtual xiiInternal::NewInstance<xiiGALTexture>                   CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) = 0;
-  virtual xiiInternal::NewInstance<xiiGALTextureView>               CreateTextureViewPlatform(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& description)    = 0;
   virtual xiiInternal::NewInstance<xiiGALSampler>                   CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)                                                  = 0;
   virtual xiiInternal::NewInstance<xiiGALInputLayout>               CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)                                          = 0;
   virtual xiiInternal::NewInstance<xiiGALQuery>                     CreateQueryPlatform(const xiiGALQueryCreationDescription& description)                                                      = 0;
