@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShader, 1, xiiRTTINoAllocator)

@@ -1,7 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 

@@ -1,7 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 
 /// \class xiiGALMapHelper

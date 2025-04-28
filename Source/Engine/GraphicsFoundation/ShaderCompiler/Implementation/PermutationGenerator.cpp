@@ -1,6 +1,5 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
 
 void xiiGALPermutationGenerator::Clear()

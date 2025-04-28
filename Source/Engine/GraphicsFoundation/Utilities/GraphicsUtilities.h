@@ -3,8 +3,8 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Resources/Sampler.h>
-#include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
+#include <GraphicsFoundation/States/PipelineResourceSignature.h>
 
 class XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsUtilities
 {

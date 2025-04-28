@@ -1,7 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 
 // clang-format off

@@ -1,7 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Shader/InputLayout.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALInputElementFrequency, 1)

@@ -1,8 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Fence.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 

@@ -1,6 +1,5 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 

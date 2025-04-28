@@ -5,11 +5,11 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Threading/ThreadUtils.h>
 
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
-#include <GraphicsFoundation/States/PipelineState.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/Shader.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 
 /// \brief This describes the pipeline state shading rate flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags

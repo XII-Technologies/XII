@@ -2,8 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/Constants.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 
 /// \brief This describes the blend factor.
 ///

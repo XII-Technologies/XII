@@ -1,7 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 xiiBitflags<xiiGALBindFlags> xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(xiiBitflags<xiiGALSwapChainUsageFlags> swapChainUsageFlags)
 {

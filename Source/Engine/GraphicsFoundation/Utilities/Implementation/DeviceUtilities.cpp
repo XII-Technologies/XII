@@ -4,7 +4,6 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 xiiEnum<xiiGALGraphicsAdapterVendor> xiiGALDeviceUtilities::GetVendorFromID(xiiUInt32 uiID)
 {
