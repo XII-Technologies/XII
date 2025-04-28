@@ -105,7 +105,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct
 /// \brief This describes the input layout creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutCreationDescription : public xiiHashableStruct<xiiGALInputLayoutCreationDescription>
 {
-  xiiSharedPtr<xiiGALShader>                                       m_pVertexShader;  ///< The reference-counted pointer to the vertex shader.
   xiiStaticArray<xiiGALLayoutElement, XII_GAL_MAX_LAYOUT_ELEMENTS> m_LayoutElements; ///< The input layout elements.
 };
 

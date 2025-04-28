@@ -677,19 +677,6 @@ xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreat
   return CreateSamplerPlatform(description);
 }
 
-xiiSharedPtr<xiiGALInputLayout> xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutCreationDescription& description)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  XII_GAL_DEVICE_CHECK(description.m_pVertexShader != nullptr, "The given vertex shader handle is invalid.");
-
-  const auto& shaderDescription = description.m_pVertexShader->GetDescription();
-
-  XII_GAL_DEVICE_CHECK(shaderDescription.m_ShaderType == xiiGALShaderType::Vertex, "An Input Layout must be created with shaders of type xiiGALShaderType::Vertex.");
-
-  return CreateInputLayoutPlatform(description);
-}
-
 xiiSharedPtr<xiiGALQuery> xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();

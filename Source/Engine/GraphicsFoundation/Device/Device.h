@@ -116,14 +116,6 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALSampler> CreateSampler(const xiiGALSamplerCreationDescription& description);
 
 
-  /// \brief This creates a new input layout object.
-  ///
-  /// \param description - The input layout description. See xiiGALInputLayoutCreationDescription.
-  ///
-  /// \return The reference-counted pointer to the created input layout object.
-  [[nodiscard]] xiiSharedPtr<xiiGALInputLayout> CreateInputLayout(const xiiGALInputLayoutCreationDescription& description);
-
-
   /// \brief This creates a new query object.
   ///
   /// \param description - The query description. See xiiGALQueryCreationDescription.
@@ -281,7 +273,6 @@ protected:
   virtual xiiInternal::NewInstance<xiiGALBuffer>                    CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr)    = 0;
   virtual xiiInternal::NewInstance<xiiGALTexture>                   CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) = 0;
   virtual xiiInternal::NewInstance<xiiGALSampler>                   CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)                                                  = 0;
-  virtual xiiInternal::NewInstance<xiiGALInputLayout>               CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)                                          = 0;
   virtual xiiInternal::NewInstance<xiiGALQuery>                     CreateQueryPlatform(const xiiGALQueryCreationDescription& description)                                                      = 0;
   virtual xiiInternal::NewInstance<xiiGALFence>                     CreateFencePlatform(const xiiGALFenceCreationDescription& description)                                                      = 0;
   virtual xiiInternal::NewInstance<xiiGALRenderPass>                CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)                                            = 0;
