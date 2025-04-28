@@ -108,7 +108,7 @@ public:
   /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
   ///
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
-  [[nodiscard]] xiiGALBufferViewHandle GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType);
+  [[nodiscard]] xiiSharedPtr<xiiGALBufferView> GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType);
 
   /// \brief This returns the buffer memory properties.
   ///
@@ -142,10 +142,12 @@ public:
   /// \brief This returns the sparse buffer memory properties.
   [[nodiscard]] virtual xiiGALSparseBufferProperties GetSparseProperties() const = 0;
 
+  [[nodiscard]] XII_ALWAYS_INLINE virtual xiiUInt64 GetMemoryConsumption() const { return m_Description.m_uiSize; }
+
 protected:
   friend class xiiGALDevice;
 
-  xiiGALBuffer(xiiGALDevice* pDevice, const xiiGALBufferCreationDescription& creationDescription);
+  xiiGALBuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBufferCreationDescription& creationDescription);
 
   virtual ~xiiGALBuffer();
 
@@ -161,10 +163,8 @@ protected:
 
   xiiBitflags<xiiGALMemoryPropertyFlags> m_MemoryPropertyFlags;
 
-  xiiHashTable<xiiUInt32, xiiGALBufferViewHandle> m_BufferViews;
-
-  xiiGALBufferViewHandle m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];
+  xiiSharedPtr<xiiGALBufferView> m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];
 
 private:
-  void CreateDefaultResourceViews(xiiGALBufferHandle hBuffer);
+  void CreateDefaultResourceViews();
 };

@@ -40,7 +40,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALResource(xiiGALDevice* pDevice);
+  xiiGALResource(xiiSharedPtr<xiiGALDevice> pDevice);
 
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceState;
 };
@@ -53,5 +53,5 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALResourceView : public xiiGALDeviceObject
 protected:
   friend class xiiGALDevice;
 
-  xiiGALResourceView(xiiGALDevice* pDevice);
+  xiiGALResourceView(xiiSharedPtr<xiiGALDevice> pDevice);
 };

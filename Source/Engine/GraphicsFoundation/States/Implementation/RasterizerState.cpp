@@ -22,7 +22,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALRasterizerState::xiiGALRasterizerState(xiiGALDevice* pDevice, const xiiGALRasterizerStateCreationDescription& creationDescription) :
+xiiGALRasterizerState::xiiGALRasterizerState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRasterizerStateCreationDescription& creationDescription) :
   xiiGALDeviceObject(pDevice), m_Description(creationDescription)
 {
 }

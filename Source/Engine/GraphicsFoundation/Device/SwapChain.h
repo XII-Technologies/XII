@@ -15,7 +15,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSwapChainCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief This retrieves the current back buffer texture.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALTextureHandle GetBackBufferTexture() const { return m_hBackBufferTexture; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const { return m_pBackBufferTexture; };
 
   /// \brief This retrieves the current swap chain size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_Description.m_Resolution; };
@@ -54,7 +54,7 @@ protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALSwapChain(xiiGALDevice* pDevice, const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChain(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChain();
 
@@ -62,7 +62,7 @@ protected:
 
   virtual xiiResult DeInitPlatform() = 0;
 
-  xiiGALTextureHandle m_hBackBufferTexture;
+  xiiSharedPtr<xiiGALTexture> m_pBackBufferTexture;
 
   xiiEnum<xiiGALPresentMode> m_PresentMode = xiiGALPresentMode::VSync;
 

@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Types/SharedPtr.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 /// \brief A shader resource definition found inside the shader source code.

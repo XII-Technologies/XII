@@ -81,7 +81,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALDepthStencilState(xiiGALDevice* pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription);
+  xiiGALDepthStencilState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription);
 
   virtual ~xiiGALDepthStencilState();
 

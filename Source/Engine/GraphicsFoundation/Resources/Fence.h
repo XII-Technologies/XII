@@ -79,7 +79,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALFence(xiiGALDevice* pDevice, const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFence(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFence();
 

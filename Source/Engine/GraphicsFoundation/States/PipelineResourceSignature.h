@@ -97,7 +97,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALPipelineResourceSignature(xiiGALDevice* pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
+  xiiGALPipelineResourceSignature(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineResourceSignature();
 

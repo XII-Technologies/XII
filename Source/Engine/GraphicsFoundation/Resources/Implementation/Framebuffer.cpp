@@ -7,7 +7,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFramebuffer, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALFramebuffer::xiiGALFramebuffer(xiiGALDevice* pDevice, const xiiGALFramebufferCreationDescription& creationDescription) :
+xiiGALFramebuffer::xiiGALFramebuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALFramebufferCreationDescription& creationDescription) :
   xiiGALDeviceObject(pDevice), m_Description(creationDescription)
 {
 }

@@ -97,7 +97,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewCreationDescription : public 
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALTextureHandle                         m_hTexture;                                                                ///< The handle to the texture of which the view is created.
   xiiEnum<xiiGALTextureViewType>              m_ViewType                  = xiiGALTextureViewType::Undefined;            ///< Describes the texture view type. The default is Undefined.
   xiiEnum<xiiGALResourceDimension>            m_ResourceDimension         = xiiGALResourceDimension::Undefined;          ///< The view interpretation of the original texture. If default value xiiGALResourceDimension::Undefined is provided, the view type will match the type of the referenced texture.
   xiiEnum<xiiGALResourceFormat>               m_Format                    = xiiGALResourceFormat::Unknown;               ///< The view format. If default value xiiGALResourceFormat::Unknown is provided, the view format will match the referenced texture format.
@@ -122,12 +121,12 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureViewCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief Returns the texture of which the texture view is created with.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALTexture* GetTexture() const { return m_pTexture; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetTexture() const { return m_pTexture; }
 
 protected:
   friend class xiiGALDevice;
 
-  xiiGALTextureView(xiiGALDevice* pDevice, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
+  xiiGALTextureView(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureView();
 
@@ -136,7 +135,7 @@ protected:
   virtual xiiResult DeInitPlatform() = 0;
 
 protected:
-  xiiGALTexture* m_pTexture = nullptr;
+  xiiSharedPtr<xiiGALTexture> m_pTexture = nullptr;
 
   xiiGALTextureViewCreationDescription m_Description;
 };

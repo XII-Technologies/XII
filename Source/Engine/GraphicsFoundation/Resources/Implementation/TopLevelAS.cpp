@@ -16,7 +16,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALTopLevelAS::xiiGALTopLevelAS(xiiGALDevice* pDevice, const xiiGALTopLevelASCreationDescription& creationDescription) :
+xiiGALTopLevelAS::xiiGALTopLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTopLevelASCreationDescription& creationDescription) :
   xiiGALResource(pDevice), m_Description(creationDescription)
 {
 }

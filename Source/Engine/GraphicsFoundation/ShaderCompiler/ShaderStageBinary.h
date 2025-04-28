@@ -4,7 +4,6 @@
 
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Logging/Log.h>
-#include <Foundation/Types/SharedPtr.h>
 
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 

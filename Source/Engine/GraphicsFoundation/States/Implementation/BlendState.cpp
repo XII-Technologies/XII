@@ -69,7 +69,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALBlendState::xiiGALBlendState(xiiGALDevice* pDevice, const xiiGALBlendStateCreationDescription& creationDescription) :
+xiiGALBlendState::xiiGALBlendState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBlendStateCreationDescription& creationDescription) :
   xiiGALDeviceObject(pDevice), m_Description(creationDescription)
 {
 }

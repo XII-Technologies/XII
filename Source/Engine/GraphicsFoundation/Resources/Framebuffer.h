@@ -9,10 +9,10 @@
 /// \brief This describes the frame buffer creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFramebufferCreationDescription
 {
-  xiiGALRenderPassHandle                       m_hRenderPass;                            ///< The handle to the render pass that the frame buffer will be compatible with.
-  xiiHybridArray<xiiGALTextureViewHandle, 16U> m_Attachments;                            ///< An array of attachments.
-  xiiSizeU32                                   m_FramebufferSize   = xiiSizeU32(0U, 0U); ///< The size of the frame buffer. The default is (0, 0).
-  xiiUInt32                                    m_uiArraySliceCount = 0U;                 ///< The number of array slices in the frame buffer. The default is 0.
+  xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;                            ///< The handle to the render pass that the frame buffer will be compatible with.
+  xiiHybridArray<xiiSharedPtr<xiiGALTextureView>, 8U> m_Attachments;                            ///< An array of attachments.
+  xiiSizeU32                                          m_FramebufferSize   = xiiSizeU32(0U, 0U); ///< The size of the frame buffer. The default is (0, 0).
+  xiiUInt32                                           m_uiArraySliceCount = 0U;                 ///< The number of array slices in the frame buffer. The default is 0.
 
   XII_ALWAYS_INLINE bool operator==(const xiiGALFramebufferCreationDescription& rhs) const = default;
 };
@@ -29,7 +29,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALFramebuffer(xiiGALDevice* pDevice, const xiiGALFramebufferCreationDescription& creationDescription);
+  xiiGALFramebuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALFramebufferCreationDescription& creationDescription);
 
   virtual ~xiiGALFramebuffer();
 

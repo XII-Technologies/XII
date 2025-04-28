@@ -16,23 +16,23 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTexture, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALTexture::xiiGALTexture(xiiGALDevice* pDevice, const xiiGALTextureCreationDescription& creationDescription) :
+xiiGALTexture::xiiGALTexture(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALResource(pDevice), m_Description(creationDescription)
 {
 }
 
 xiiGALTexture::~xiiGALTexture() = default;
 
-xiiGALTextureViewHandle xiiGALTexture::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
+xiiSharedPtr<xiiGALTextureView> xiiGALTexture::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
 {
   XII_ASSERT_DEV(viewType > xiiGALTextureViewType::Undefined && viewType < xiiGALTextureViewType::ENUM_COUNT, "Invalid view type.");
 
-  XII_ASSERT_DEV(!m_DefaultTextureViews[viewType.GetValue()].IsInvalidated(), "Texture view handle is invalid!");
+  XII_ASSERT_DEV(m_DefaultTextureViews[viewType.GetValue()] != nullptr, "Texture view handle is invalid!");
 
   return m_DefaultTextureViews[viewType.GetValue()];
 }
 
-void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
+void xiiGALTexture::CreateDefaultResourceViews()
 {
   // For texture cubes and texture cube arrays, we only address a single texture view per texture cube.
   xiiUInt32 uiArraySize = XII_GAL_REMAINING_ARRAY_SLICES;
@@ -43,7 +43,7 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   {
     xiiGALTextureViewCreationDescription viewDescription;
     viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
-    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_pTexture                  = this;
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
     viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
@@ -58,7 +58,7 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   {
     xiiGALTextureViewCreationDescription viewDescription;
     viewDescription.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
-    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_pTexture                  = this;
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
     viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
@@ -70,7 +70,7 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   {
     xiiGALTextureViewCreationDescription viewDescription;
     viewDescription.m_ViewType                  = xiiGALTextureViewType::DepthStencil;
-    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_pTexture                  = this;
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
     viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
@@ -85,7 +85,7 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   {
     xiiGALTextureViewCreationDescription viewDescription;
     viewDescription.m_ViewType                  = xiiGALTextureViewType::UnorderedAccess;
-    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_pTexture                  = this;
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
     viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
@@ -97,7 +97,7 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   {
     xiiGALTextureViewCreationDescription viewDescription;
     viewDescription.m_ViewType                  = xiiGALTextureViewType::ShadingRate;
-    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_pTexture                  = this;
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
     viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;

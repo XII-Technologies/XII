@@ -18,7 +18,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALPipelineResourceSignature::xiiGALPipelineResourceSignature(xiiGALDevice* pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
+xiiGALPipelineResourceSignature::xiiGALPipelineResourceSignature(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
   xiiGALDeviceObject(pDevice), m_Description(creationDescription)
 {
 }

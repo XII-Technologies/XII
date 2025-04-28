@@ -134,7 +134,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALRenderPass(xiiGALDevice* pDevice, const xiiGALRenderPassCreationDescription& creationDescription);
+  xiiGALRenderPass(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRenderPassCreationDescription& creationDescription);
 
   virtual ~xiiGALRenderPass();
 

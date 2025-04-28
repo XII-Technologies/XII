@@ -107,7 +107,7 @@ protected:
   friend class xiiGALDevice;
   friend class xiiGALCommandList;
 
-  xiiGALQuery(xiiGALDevice* pDevice, const xiiGALQueryCreationDescription& creationDescription);
+  xiiGALQuery(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALQueryCreationDescription& creationDescription);
 
   virtual ~xiiGALQuery();
 

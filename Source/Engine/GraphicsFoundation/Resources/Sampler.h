@@ -75,7 +75,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALSampler(xiiGALDevice* pDevice, const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSampler(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSampler();
 

@@ -142,14 +142,14 @@ public:
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief This returns the handle of the default view.
+  /// \brief This returns the reference-counted pointer of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALTextureViewType.
   ///
-  /// \return The handle to the buffer view.
+  /// \return The reference-counted pointer to the buffer view.
   ///
-  /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
-  [[nodiscard]] xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
+  /// \note The function **increases** the reference counter for the returned interface.
+  [[nodiscard]] xiiSharedPtr<xiiGALTextureView> GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
   /// \brief This returns the sparse texture properties.
   [[nodiscard]] virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
@@ -157,7 +157,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALTexture(xiiGALDevice* pDevice, const xiiGALTextureCreationDescription& creationDescription);
+  xiiGALTexture(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTextureCreationDescription& creationDescription);
 
   virtual ~xiiGALTexture();
 
@@ -168,10 +168,8 @@ protected:
 protected:
   xiiGALTextureCreationDescription m_Description;
 
-  xiiHashTable<xiiUInt32, xiiGALTextureViewHandle> m_TextureViews;
-
-  xiiGALTextureViewHandle m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
+  xiiSharedPtr<xiiGALTextureView> m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
 
 private:
-  void CreateDefaultResourceViews(xiiGALTextureHandle hTexture);
+  void CreateDefaultResourceViews();
 };

@@ -108,18 +108,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xii
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALShaderHandle                          m_hVertexShader;                                             ///< The vertex shader to be used with the pipeline.
-  xiiGALShaderHandle                          m_hPixelShader;                                              ///< The pixel shader to be used with the pipeline.
-  xiiGALShaderHandle                          m_hDomainShader;                                             ///< The domain shader to be used with the pipeline.
-  xiiGALShaderHandle                          m_hHullShader;                                               ///< The hull shader to be used with the pipeline.
-  xiiGALShaderHandle                          m_hGeometryShader;                                           ///< The geometry shader to be used with the pipeline.
-  xiiGALShaderHandle                          m_hAmplificationShader;                                      ///< The amplification shader to be used with the pipeline.
-  xiiGALShaderHandle                          m_hMeshShader;                                               ///< The mesh shader to be used with the pipeline.
-  xiiGALBlendStateHandle                      m_hBlendState;                                               ///< The handle to the blend state object to be used with the pipeline.
-  xiiGALRasterizerStateHandle                 m_hRasterizerState;                                          ///< The handle to rasterizer state object to be used with the pipeline.
-  xiiGALDepthStencilStateHandle               m_hDepthStencilState;                                        ///< The handle to depth-stencil state object to be used with the pipeline.
-  xiiGALInputLayoutHandle                     m_hInputLayout;                                              ///< The handle to vertex input layout, ignored in a mesh pipeline.
-  xiiGALRenderPassHandle                      m_hRenderPass;                                               ///< The handle to the render pass object to be used with the pipeline.
+  xiiSharedPtr<xiiGALShader>                  m_pVertexShader;                                             ///< The reference-counted pointer to the vertex shader to be used with the pipeline.
+  xiiSharedPtr<xiiGALShader>                  m_pPixelShader;                                              ///< The reference-counted pointer to the pixel shader to be used with the pipeline.
+  xiiSharedPtr<xiiGALShader>                  m_pDomainShader;                                             ///< The reference-counted pointer to the domain shader to be used with the pipeline.
+  xiiSharedPtr<xiiGALShader>                  m_pHullShader;                                               ///< The reference-counted pointer to the hull shader to be used with the pipeline.
+  xiiSharedPtr<xiiGALShader>                  m_pGeometryShader;                                           ///< The reference-counted pointer to the geometry shader to be used with the pipeline.
+  xiiSharedPtr<xiiGALShader>                  m_pAmplificationShader;                                      ///< The reference-counted pointer to the amplification shader to be used with the pipeline.
+  xiiSharedPtr<xiiGALShader>                  m_pMeshShader;                                               ///< The reference-counted pointer to the mesh shader to be used with the pipeline.
+  xiiSharedPtr<xiiGALBlendState>              m_pBlendState;                                               ///< The reference-counted pointer to the blend state object to be used with the pipeline.
+  xiiSharedPtr<xiiGALRasterizerState>         m_pRasterizerState;                                          ///< The reference-counted pointer to the rasterizer state object to be used with the pipeline.
+  xiiSharedPtr<xiiGALDepthStencilState>       m_pDepthStencilState;                                        ///< The reference-counted pointer to the depth-stencil state object to be used with the pipeline.
+  xiiSharedPtr<xiiGALInputLayout>             m_pInputLayout;                                              ///< The reference-counted pointer to the vertex input layout, ignored in a mesh pipeline.
+  xiiSharedPtr<xiiGALRenderPass>              m_pRenderPass;                                               ///< The reference-counted pointer to the render pass object to be used with the pipeline.
   xiiUInt32                                   m_uiSampleMask      = 0xFFFFFFFFU;                           ///< A 32-bit sample mask that determines which samples get updated in all the active render targets. A sample mask is always applied; it is independent of whether multisampling is enabled, and does not depend on whether an application uses multisample render targets.
   xiiEnum<xiiGALPrimitiveTopology>            m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList; ///< The primitive topology type, ignored in a mesh pipeline. The default is xiiGALPrimitiveTopology::TriangleList.
   xiiUInt8                                    m_uiViewportCount   = 1U;                                    ///< The number of viewports used by this pipeline. The default is 1.
@@ -133,7 +133,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputePipelineDescription : public xiiH
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALShaderHandle m_hComputeShader; ///< The compute shader to be used with the pipeline.
+  xiiSharedPtr<xiiGALShader> m_pComputeShader; ///< The reference-counted pointer to the compute shader to be used with the pipeline.
 };
 
 /// \brief This describes the ray tracing general shader group information.
@@ -141,8 +141,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingGeneralShaderGroupDescription 
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiHashedString    m_sName;   ///< The unique group name.
-  xiiGALShaderHandle m_hShader; ///< The shader of type xiiGALShaderType::RayGeneration, xiiGALShaderType::RayMiss, or xiiGALShaderType::Callable. This must not be invalid.
+  xiiHashedString            m_sName;   ///< The unique group name.
+  xiiSharedPtr<xiiGALShader> m_pShader; ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayGeneration, xiiGALShaderType::RayMiss, or xiiGALShaderType::Callable. This must not be invalid.
 };
 
 /// \brief This describes the ray tracing general shader group information.
@@ -150,9 +150,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingTriangleHitShaderGroupDescript
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiHashedString    m_sName;             ///< The unique group name.
-  xiiGALShaderHandle m_hClosestHitShader; ///< The shader of type xiiGALShaderType::RayClosestHit. This must not be invalid.
-  xiiGALShaderHandle m_hAnyHitShader;     ///< The shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
+  xiiHashedString            m_sName;             ///< The unique group name.
+  xiiSharedPtr<xiiGALShader> m_pClosestHitShader; ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayClosestHit. This must not be invalid.
+  xiiSharedPtr<xiiGALShader> m_pAnyHitShader;     ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
 };
 
 /// \brief This describes the ray tracing general shader group information.
@@ -160,10 +160,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescri
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiHashedString    m_sName;               ///< The unique group name.
-  xiiGALShaderHandle m_hIntersectionShader; ///< The shader of type xiiGALShaderType::RayIntersection. This must not be invalid.
-  xiiGALShaderHandle m_hClosestHitShader;   ///< The shader of type xiiGALShaderType::RayClosestHit. This can be invalid.
-  xiiGALShaderHandle m_hAnyHitShader;       ///< The shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
+  xiiHashedString            m_sName;               ///< The unique group name.
+  xiiSharedPtr<xiiGALShader> m_pIntersectionShader; ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayIntersection. This must not be invalid.
+  xiiSharedPtr<xiiGALShader> m_pClosestHitShader;   ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayClosestHit. This can be invalid.
+  xiiSharedPtr<xiiGALShader> m_pAnyHitShader;       ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
 };
 
 /// \brief This describes the ray tracing pipeline information.
@@ -191,13 +191,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription : public xiiHash
 /// \brief This describes the pipeline state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription
 {
-  xiiEnum<xiiGALPipelineType>           m_PipelineType = xiiGALPipelineType::Graphics; ///< The pipeline type. The default is xiiGALPipelineType::Graphics.
-  xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;                  ///< The pipeline resource signature that contains the shader resource description.
-  xiiGALGraphicsPipelineDescription     m_GraphicsPipeline;                            ///< The graphics pipeline description, see xiiGALGraphicsPipelineDescription.
-  xiiGALComputePipelineDescription      m_ComputePipeline;                             ///< The compute pipeline description, see xiiGALComputePipelineDescription.
-  xiiGALRayTracingPipelineDescription   m_RayTracingPipeline;                          ///< The ray tracing pipeline description, see xiiGALRayTracingPipelineDescription.
-  xiiGALTilePipelineDescription         m_TilePipeline;                                ///< The tile pipeline description, see xiiGALTilePipelineDescription.
-  xiiUInt32                             m_uiNodeMask = 0x0;                            ///< Node mask.
+  xiiEnum<xiiGALPipelineType>                   m_PipelineType = xiiGALPipelineType::Graphics; ///< The pipeline type. The default is xiiGALPipelineType::Graphics.
+  xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineResourceSignature;                  ///< The reference-counted pointer to the pipeline resource signature that contains the shader resource description.
+  xiiGALGraphicsPipelineDescription             m_GraphicsPipeline;                            ///< The graphics pipeline description, see xiiGALGraphicsPipelineDescription.
+  xiiGALComputePipelineDescription              m_ComputePipeline;                             ///< The compute pipeline description, see xiiGALComputePipelineDescription.
+  xiiGALRayTracingPipelineDescription           m_RayTracingPipeline;                          ///< The ray tracing pipeline description, see xiiGALRayTracingPipelineDescription.
+  xiiGALTilePipelineDescription                 m_TilePipeline;                                ///< The tile pipeline description, see xiiGALTilePipelineDescription.
+  xiiUInt32                                     m_uiNodeMask = 0x0;                            ///< Node mask.
 
   XII_ALWAYS_INLINE bool operator==(const xiiGALPipelineStateCreationDescription& rhs) const = default;
 
@@ -226,7 +226,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALPipelineState(xiiGALDevice* pDevice, const xiiGALPipelineStateCreationDescription& creationDescription);
+  xiiGALPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineStateCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineState();
 

@@ -81,7 +81,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALRasterizerState(xiiGALDevice* pDevice, const xiiGALRasterizerStateCreationDescription& creationDescription);
+  xiiGALRasterizerState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRasterizerStateCreationDescription& creationDescription);
 
   virtual ~xiiGALRasterizerState();
 

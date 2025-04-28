@@ -10,12 +10,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALResourceView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGALResource::xiiGALResource(xiiGALDevice* pDevice) :
+xiiGALResource::xiiGALResource(xiiSharedPtr<xiiGALDevice> pDevice) :
   xiiGALDeviceObject(pDevice)
 {
 }
 
-xiiGALResourceView::xiiGALResourceView(xiiGALDevice* pDevice) :
+xiiGALResourceView::xiiGALResourceView(xiiSharedPtr<xiiGALDevice> pDevice) :
   xiiGALDeviceObject(pDevice)
 {
 }
