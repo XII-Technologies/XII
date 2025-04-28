@@ -30,35 +30,6 @@
 namespace
 {
   static constexpr xiiUInt32 s_uiMaxResourcesInSignature = XII_BIT(16) - 1U;
-  static constexpr xiiUInt32 s_uiMaxCommandQueues        = 64U;
-
-  struct GALObjectType
-  {
-    using StorageType = xiiUInt8;
-
-    enum Enum : StorageType
-    {
-      SwapChain = 0U,
-      BottomLevelAS,
-      Buffer,
-      BufferView,
-      Fence,
-      Framebuffer,
-      Query,
-      RenderPass,
-      Sampler,
-      Texture,
-      TextureView,
-      TopLevelAS,
-      InputLayout,
-      Shader,
-      BlendState,
-      DepthStencilState,
-      RasterizerState,
-      PipelineResourceSignature,
-      PipelineState
-    };
-  };
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
