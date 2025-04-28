@@ -137,7 +137,7 @@ protected:
   virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& description) = 0;
 
 protected:
-  xiiSharedPtr<xiiGALTexture> m_pTexture = nullptr;
+  xiiSharedPtr<xiiGALTexture> m_pTexture;
 
   xiiGALTextureViewCreationDescription m_Description;
 };

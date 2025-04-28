@@ -99,6 +99,8 @@ public:
   /// \brief This returns the buffer size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetSize() const { return m_Description.m_uiSize; }
 
+  [[nodiscard]] XII_ALWAYS_INLINE virtual xiiUInt64 GetMemoryConsumption() const { return m_Description.m_uiSize; }
+
   /// \brief This returns the handle of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALBufferViewType.
@@ -139,10 +141,19 @@ public:
   /// \note This method must not be called for Dynamic buffers. When a mapped buffer is unmapped, it is automatically flushed by the engine if necessary.
   virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) = 0;
 
+  /// \brief This creates a new buffer view.
+  ///
+  /// \param description - The buffer view description. See xiiGALBufferViewCreationDescription.
+  ///
+  /// \return The reference-counted pointer to the buffer view.
+  ///
+  /// \remarks To create a view addressing the entire buffer, set only xiiGALBufferViewCreationDescription::m_ViewType member of the ViewDesc structure and leave all other members in their default values.
+  ///          The buffer view will contain strong reference to the buffer, so the buffer will not be destroyed until all views are released.
+  ///
+  [[nodiscard]] xiiSharedPtr<xiiGALBufferView> CreateView(xiiGALBufferViewCreationDescription& description);
+
   /// \brief This returns the sparse buffer memory properties.
   [[nodiscard]] virtual xiiGALSparseBufferProperties GetSparseProperties() const = 0;
-
-  [[nodiscard]] XII_ALWAYS_INLINE virtual xiiUInt64 GetMemoryConsumption() const { return m_Description.m_uiSize; }
 
 protected:
   friend class xiiGALDevice;
@@ -154,6 +165,8 @@ protected:
   virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) = 0;
 
   virtual xiiResult DeInitPlatform() = 0;
+
+  virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) = 0;
 
   void VerifyFlushMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const;
   void VerifyInvalidateMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const;

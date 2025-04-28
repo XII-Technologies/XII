@@ -474,60 +474,6 @@ void xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription&
   }
 }
 
-xiiSharedPtr<xiiGALBufferView> xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDescription& description)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  XII_GAL_DEVICE_CHECK(description.m_pBuffer != nullptr, "The buffer handle given for buffer view creation is invalid.");
-
-  const auto& bufferDescription = description.m_pBuffer->GetDescription();
-
-  if (description.m_uiByteWidth == 0U)
-  {
-    XII_GAL_DEVICE_CHECK(bufferDescription.m_uiSize > description.m_uiByteOffset, "The byte offset ({0}) exceeds the buffer size ({1}).", description.m_uiByteOffset, bufferDescription.m_uiSize);
-
-    description.m_uiByteWidth = bufferDescription.m_uiSize - description.m_uiByteOffset;
-  }
-
-  XII_GAL_DEVICE_CHECK((description.m_uiByteOffset + description.m_uiByteWidth) <= bufferDescription.m_uiSize, "The buffer view range [{0}, {1}) is out of the buffer boundaries [0, {2}).", description.m_uiByteOffset, (description.m_uiByteOffset + description.m_uiByteWidth), bufferDescription.m_uiSize);
-
-  if (bufferDescription.m_BindFlags.IsAnySet(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess))
-  {
-    if (bufferDescription.m_Mode == xiiGALBufferMode::Structured || bufferDescription.m_Mode == xiiGALBufferMode::Formatted)
-    {
-      XII_GAL_DEVICE_CHECK(bufferDescription.m_uiElementByteStride != 0U, "The element byte stride is zero.");
-      XII_GAL_DEVICE_CHECK((description.m_uiByteOffset % bufferDescription.m_uiElementByteStride) == 0U, "The buffer view byte offset ({0}) is not a multiple of the element byte stride ({1}).", description.m_uiByteOffset, bufferDescription.m_uiElementByteStride);
-      XII_GAL_DEVICE_CHECK((description.m_uiByteWidth % bufferDescription.m_uiElementByteStride) == 0U, "The buffer view byte width ({0}) is not a multiple of the element byte stride ({1}).", description.m_uiByteWidth, bufferDescription.m_uiElementByteStride);
-    }
-
-    XII_GAL_DEVICE_CHECK(!(bufferDescription.m_Mode == xiiGALBufferMode::Formatted && description.m_Format == xiiGALResourceFormat::Unknown), "The format must be specified when creating a view of a formatted buffer.");
-
-    if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format != xiiGALResourceFormat::Unknown))
-    {
-      XII_GAL_DEVICE_CHECK(bufferDescription.m_Mode != xiiGALBufferMode::Raw && bufferDescription.m_uiElementByteStride != 0U, "To enable formatted views of a raw buffer, the element byte stride must be specified in the buffer creation description.");
-
-      const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
-
-      XII_GAL_DEVICE_CHECK(bufferDescription.m_uiElementByteStride == formatProperties.GetElementSize(), "The buffer element byte stride ({0}) is not consistent with the size ({1}) defined by the format ({2}) of the view ({2}).", bufferDescription.m_uiElementByteStride, formatProperties.GetElementSize(), description.m_Format);
-    }
-
-    if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format == xiiGALResourceFormat::Unknown)
-    {
-      XII_GAL_DEVICE_CHECK((description.m_uiByteOffset % 16U) == 0U, "When creating a Raw buffer view, the offset of the first element from the start of the buffer ({0}) must be a multiple of 16 bytes.", description.m_uiByteOffset);
-    }
-
-    if (bufferDescription.m_Mode == xiiGALBufferMode::Structured)
-    {
-      const xiiUInt32 uiStructuredBufferOffsetAlignment = m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment;
-
-      XII_GAL_DEVICE_CHECK(uiStructuredBufferOffsetAlignment != 0, "Device structured buffer offset alignment may not have been initialized.");
-      XII_GAL_DEVICE_CHECK((description.m_uiByteOffset % uiStructuredBufferOffsetAlignment) == 0U, "Structured buffer view byte offset ({0}) is not a multiple of the required structured buffer offset alignment ({1}).", description.m_uiByteOffset, uiStructuredBufferOffsetAlignment);
-    }
-  }
-
-  return CreateBufferViewPlatform(description.m_pBuffer, description);
-}
-
 xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();

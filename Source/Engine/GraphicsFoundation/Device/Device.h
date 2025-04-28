@@ -92,18 +92,6 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer> CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr);
 
 
-  /// \brief This creates a new buffer view.
-  ///
-  /// \param description - The buffer view description. See xiiGALBufferViewCreationDescription.
-  ///
-  /// \return The reference-counted pointer to the buffer view.
-  ///
-  /// \remarks To create a view addressing the entire buffer, set only xiiGALBufferViewCreationDescription::m_ViewType member of the ViewDesc structure and leave all other members in their default values.
-  ///          The buffer view will contain strong reference to the buffer, so the buffer will not be destroyed until all views are released.
-  ///
-  [[nodiscard]] xiiSharedPtr<xiiGALBufferView> CreateBufferView(xiiGALBufferViewCreationDescription& description);
-
-
   /// \brief This creates a new texture object.
   ///
   /// \param description  - The texture description. See xiiGALTextureCreationDescription.
@@ -294,7 +282,6 @@ protected:
   virtual xiiInternal::NewInstance<xiiGALRasterizerState>           CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)                                  = 0;
   virtual xiiInternal::NewInstance<xiiGALShader>                    CreateShaderPlatform(const xiiGALShaderCreationDescription& description)                                                    = 0;
   virtual xiiInternal::NewInstance<xiiGALBuffer>                    CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr)    = 0;
-  virtual xiiInternal::NewInstance<xiiGALBufferView>                CreateBufferViewPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& description)        = 0;
   virtual xiiInternal::NewInstance<xiiGALTexture>                   CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) = 0;
   virtual xiiInternal::NewInstance<xiiGALSampler>                   CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)                                                  = 0;
   virtual xiiInternal::NewInstance<xiiGALInputLayout>               CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)                                          = 0;

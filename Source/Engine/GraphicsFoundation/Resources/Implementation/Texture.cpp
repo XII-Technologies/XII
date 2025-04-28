@@ -17,7 +17,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTexture, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-#define XII_GAL_TEXTURE_CHECK(expression, ...)  \
+#define XII_GAL_TEXTURE_CHECK(expression, ...) \
   do                                           \
   {                                            \
     XII_ASSERT_DEV((expression), __VA_ARGS__); \
