@@ -6,7 +6,7 @@
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
 
-/// \brief The xiiRenderDevice class is the primary interface for interactions with rendering APIs.
+/// \brief The xiiGALDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
 /// Redundant state changes are prevented at the platform independent level in the non-virtual functions.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject

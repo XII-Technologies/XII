@@ -1,7 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceObject, 1, xiiRTTINoAllocator)

@@ -2,7 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/Object.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 /// \brief Base Graphics Abstraction Layer Object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceObject : public xiiGALObject

@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 
 // clang-format off
@@ -31,4 +32,4 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, ShaderCompiler)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Input_Implementation_Startup);
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Startup);

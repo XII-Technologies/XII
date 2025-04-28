@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>

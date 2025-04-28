@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 struct xiiGALShaderPermutationBinaryVersion
 {
