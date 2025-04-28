@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsFoundation/Resources/BufferView.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferView, 1, xiiRTTINoAllocator)

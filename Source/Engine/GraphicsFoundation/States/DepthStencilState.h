@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief This describes the stencil operation.
 ///

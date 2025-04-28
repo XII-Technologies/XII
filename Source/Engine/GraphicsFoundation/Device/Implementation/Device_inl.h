@@ -49,31 +49,6 @@ XII_ALWAYS_INLINE bool xiiGALDevice::HasDefaultDevice()
   return s_pDefaultDevice != nullptr;
 }
 
-template <typename HandleType>
-XII_FORCE_INLINE void xiiGALDevice::AddDestroyedObject(xiiUInt32 uiType, HandleType handle)
-{
-  auto& destroyedObject      = m_DestroyedObjects.ExpandAndGetRef();
-  destroyedObject.m_uiType   = uiType;
-  destroyedObject.m_uiHandle = handle.GetInternalID().m_Data;
-}
-
-template <typename HandleType>
-void xiiGALDevice::ReviveDestroyedObject(xiiUInt32 uiType, HandleType handle)
-{
-  xiiUInt32 uiHandle = handle.GetInternalID().m_Data;
-
-  for (xiiUInt32 i = 0; i < m_DestroyedObjects.GetCount(); ++i)
-  {
-    const auto& destroyedObject = m_DestroyedObjects[i];
-
-    if (destroyedObject.m_uiType == uiType && destroyedObject.m_uiHandle == uiHandle)
-    {
-      m_DestroyedObjects.RemoveAtAndCopy(i);
-      return;
-    }
-  }
-}
-
 XII_ALWAYS_INLINE void xiiGALDevice::VerifyMultithreadedAccess() const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

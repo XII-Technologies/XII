@@ -5,117 +5,6 @@
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSwapChainHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALBottomLevelASHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALBufferHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALBufferViewHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALFenceHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALFramebufferHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALQueryHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRenderPassHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSamplerHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTextureHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTextureViewHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTopLevelASHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALInputLayoutHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShaderHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShaderBindingTableHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShaderByteCodeHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShaderResourceBindingHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALBlendStateHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALDepthStencilStateHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALPipelineResourceSignatureHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALPipelineStateHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRasterizerStateHandle& value)
-{
-  ref_stream << reinterpret_cast<const xiiUInt32&>(value);
-  return ref_stream;
-}
-
 xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescription& description)
 {
   xiiHashStreamWriter32 writer;
@@ -131,18 +20,18 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
     {
       const auto& graphicsPipeline = description.m_GraphicsPipeline;
 
-      writer << graphicsPipeline.m_hVertexShader;
-      writer << graphicsPipeline.m_hPixelShader;
-      writer << graphicsPipeline.m_hDomainShader;
-      writer << graphicsPipeline.m_hHullShader;
-      writer << graphicsPipeline.m_hGeometryShader;
-      writer << graphicsPipeline.m_hAmplificationShader;
-      writer << graphicsPipeline.m_hMeshShader;
-      writer << graphicsPipeline.m_hBlendState;
-      writer << graphicsPipeline.m_hRasterizerState;
-      writer << graphicsPipeline.m_hDepthStencilState;
-      writer << graphicsPipeline.m_hInputLayout;
-      writer << graphicsPipeline.m_hRenderPass;
+      writer << graphicsPipeline.m_pVertexShader;
+      writer << graphicsPipeline.m_pPixelShader;
+      writer << graphicsPipeline.m_pDomainShader;
+      writer << graphicsPipeline.m_pHullShader;
+      writer << graphicsPipeline.m_pGeometryShader;
+      writer << graphicsPipeline.m_pAmplificationShader;
+      writer << graphicsPipeline.m_pMeshShader;
+      writer << graphicsPipeline.m_pBlendState;
+      writer << graphicsPipeline.m_pRasterizerState;
+      writer << graphicsPipeline.m_pDepthStencilState;
+      writer << graphicsPipeline.m_pInputLayout;
+      writer << graphicsPipeline.m_pRenderPass;
       writer << graphicsPipeline.m_uiSampleMask;
       writer << graphicsPipeline.m_PrimitiveTopology;
       writer << graphicsPipeline.m_uiViewportCount;
@@ -156,7 +45,7 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
     {
       const auto& computePipeline = description.m_ComputePipeline;
 
-      writer << computePipeline.m_hComputeShader;
+      writer << computePipeline.m_pComputeShader;
     }
     break;
     case xiiGALPipelineType::RayTracing:
@@ -175,7 +64,7 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
         const auto& generalShaderDescription = rayTracingPipeline.m_GeneralShaders[i];
 
         writer << generalShaderDescription.m_sName;
-        writer << generalShaderDescription.m_hShader;
+        writer << generalShaderDescription.m_pShader;
       }
 
       writer << rayTracingPipeline.m_TriangleHitShaders.GetCount();
@@ -184,8 +73,8 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
         const auto& triangleHitShaderDescription = rayTracingPipeline.m_TriangleHitShaders[i];
 
         writer << triangleHitShaderDescription.m_sName;
-        writer << triangleHitShaderDescription.m_hClosestHitShader;
-        writer << triangleHitShaderDescription.m_hAnyHitShader;
+        writer << triangleHitShaderDescription.m_pClosestHitShader;
+        writer << triangleHitShaderDescription.m_pAnyHitShader;
       }
 
       writer << rayTracingPipeline.m_ProceduralHitShaders.GetCount();
@@ -194,9 +83,9 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
         const auto& proceduralHitShaderDescription = rayTracingPipeline.m_ProceduralHitShaders[i];
 
         writer << proceduralHitShaderDescription.m_sName;
-        writer << proceduralHitShaderDescription.m_hIntersectionShader;
-        writer << proceduralHitShaderDescription.m_hClosestHitShader;
-        writer << proceduralHitShaderDescription.m_hAnyHitShader;
+        writer << proceduralHitShaderDescription.m_pIntersectionShader;
+        writer << proceduralHitShaderDescription.m_pClosestHitShader;
+        writer << proceduralHitShaderDescription.m_pAnyHitShader;
       }
     }
     break;

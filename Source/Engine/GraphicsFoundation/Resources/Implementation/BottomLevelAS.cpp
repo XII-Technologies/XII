@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 
@@ -18,7 +19,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALBottomLevelAS::xiiGALBottomLevelAS(xiiGALDevice* pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription) :
+xiiGALBottomLevelAS::xiiGALBottomLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription) :
   xiiGALResource(pDevice), m_Description(creationDescription)
 {
 }

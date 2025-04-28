@@ -4,6 +4,7 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 xiiEnum<xiiGALGraphicsAdapterVendor> xiiGALDeviceUtilities::GetVendorFromID(xiiUInt32 uiID)
 {
@@ -35,7 +36,7 @@ xiiEnum<xiiGALGraphicsAdapterVendor> xiiGALDeviceUtilities::GetVendorFromID(xiiU
   return xiiGALGraphicsAdapterVendor::Unknown;
 }
 
-xiiGALBufferHandle xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -55,7 +56,7 @@ xiiGALBufferHandle xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevi
   return pDevice->CreateBuffer(bufferDescription, &initialData);
 }
 
-xiiGALBufferHandle xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -83,7 +84,7 @@ xiiGALBufferHandle xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice* pDevic
   return pDevice->CreateBuffer(bufferDescription, &initialData);
 }
 
-xiiGALBufferHandle xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -112,12 +113,11 @@ xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescri
   };
 }
 
-xiiResult xiiGALDeviceUtilities::MapAndUpdateBuffer(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags /*= xiiGALMapFlags::Discard*/)
+xiiResult xiiGALDeviceUtilities::MapAndUpdateBuffer(xiiGALCommandList* pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags /*= xiiGALMapFlags::Discard*/)
 {
   XII_ASSERT_DEV(pCommandList != nullptr, "Invalid command list.");
 
   xiiGALDevice* pDevice                   = pCommandList->GetDevice();
-  xiiGALBuffer* pBuffer                   = pDevice->GetBuffer(hBuffer);
   const auto&   graphicsAdapterProperties = pDevice->GetGraphicsDeviceAdapterProperties();
   const auto&   bufferDescription         = pBuffer->GetDescription();
 
@@ -133,11 +133,11 @@ xiiResult xiiGALDeviceUtilities::MapAndUpdateBuffer(xiiGALCommandList* pCommandL
   }
 
   void* pMappedData = nullptr;
-  XII_SUCCEED_OR_RETURN(pCommandList->MapBuffer(hBuffer, xiiGALMapType::Write, mapFlags, pMappedData));
+  XII_SUCCEED_OR_RETURN(pCommandList->MapBuffer(pBuffer, xiiGALMapType::Write, mapFlags, pMappedData));
 
   memcpy(xiiMemoryUtils::AddByteOffset(pMappedData, uiDestinationOffset), pSourceData.GetPtr(), pSourceData.GetCount());
 
-  pCommandList->UnmapBuffer(hBuffer, xiiGALMapType::Write).AssertSuccess("Failed to unmap buffer.");
+  pCommandList->UnmapBuffer(pBuffer, xiiGALMapType::Write).AssertSuccess("Failed to unmap buffer.");
 
   return XII_SUCCESS;
 }

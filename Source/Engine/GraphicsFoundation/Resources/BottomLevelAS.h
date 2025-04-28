@@ -124,8 +124,9 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALBottomLevelAS(xiiGALDevice* pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription);
+  xiiGALBottomLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelAS();
 

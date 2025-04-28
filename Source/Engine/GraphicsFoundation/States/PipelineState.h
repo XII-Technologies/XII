@@ -2,8 +2,11 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Shader/Shader.h>
+#include <GraphicsFoundation/States/BlendState.h>
+#include <GraphicsFoundation/States/DepthStencilState.h>
+#include <GraphicsFoundation/States/PipelineResourceSignature.h>
+#include <GraphicsFoundation/States/RasterizerState.h>
 
 /// \brief This describes the shader variable property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableFlags

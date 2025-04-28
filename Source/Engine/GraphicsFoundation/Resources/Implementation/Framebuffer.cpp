@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Resources/Framebuffer.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFramebuffer, 1, xiiRTTINoAllocator)

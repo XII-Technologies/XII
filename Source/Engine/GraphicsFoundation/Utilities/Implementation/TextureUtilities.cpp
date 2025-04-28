@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <Foundation/Math/Size.h>
 
 bool xiiGALTextureUtilities::IsIdentityComponentMapping(const xiiGALTextureComponentMapping& mapping)
 {

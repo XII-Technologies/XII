@@ -2,7 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/Descriptors.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 
 /// \brief Provides hash functions for GAL descriptor objects.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDescriptorHash

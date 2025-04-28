@@ -3,7 +3,8 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Types/Delegate.h>
-#include <GraphicsFoundation/Declarations/Descriptors.h>
+
+#include <GraphicsFoundation/Device/Device.h>
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceImplementationDescription
 {

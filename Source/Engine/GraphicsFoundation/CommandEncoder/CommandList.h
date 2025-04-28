@@ -63,8 +63,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiG
 /// \brief This describes the viewport.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiHashableStruct<xiiGALBeginRenderPassDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiSharedPtr<xiiGALRenderPass>                                            m_pRenderPass;
   xiiSharedPtr<xiiGALFramebuffer>                                           m_pFramebuffer;
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_ClearValues;
@@ -88,7 +86,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief This returns the command queue for this object.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueue* GetCommandQueue() const { return m_pCommandQueue; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALCommandQueue> GetCommandQueue() const { return m_pCommandQueue; };
 
   /// \brief This returns the active pipeline state handle for this object.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALPipelineState> GetPipelineState() const { return m_pPipelineState; };
@@ -446,7 +444,7 @@ protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandList(xiiGALDevice* pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALCommandQueue> pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandList();
 
@@ -528,7 +526,7 @@ protected:
 protected:
   xiiGALCommandListCreationDescription m_Description;
 
-  xiiGALCommandQueue* m_pCommandQueue;
+  xiiSharedPtr<xiiGALCommandQueue> m_pCommandQueue;
 
   RecordingState m_RecordingState = RecordingState::Reset;
 

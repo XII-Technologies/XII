@@ -2,8 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/Descriptors.h>
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 /// \brief Interface that defines methods to manipulate a swap chain object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALDeviceObject

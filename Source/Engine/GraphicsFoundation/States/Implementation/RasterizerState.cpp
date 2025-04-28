@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/States/RasterizerState.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 

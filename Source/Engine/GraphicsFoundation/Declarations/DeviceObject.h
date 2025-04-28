@@ -17,8 +17,9 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALDeviceObject(xiiGALDevice* pDevice);
+  xiiGALDeviceObject(xiiSharedPtr<xiiGALDevice> pDevice);
 
 protected:
   xiiSharedPtr<xiiGALDevice> m_pDevice;

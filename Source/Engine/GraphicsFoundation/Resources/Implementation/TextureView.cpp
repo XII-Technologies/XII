@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsFoundation/Resources/TextureView.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 

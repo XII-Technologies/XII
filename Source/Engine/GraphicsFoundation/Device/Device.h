@@ -2,12 +2,9 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Containers/HashTable.h>
-#include <Foundation/Containers/IdTable.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
-#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 /// \brief The xiiRenderDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
