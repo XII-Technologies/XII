@@ -96,6 +96,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALPipelineResourceSignature(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
 

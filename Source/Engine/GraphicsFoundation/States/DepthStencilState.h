@@ -80,6 +80,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALDepthStencilState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription);
 

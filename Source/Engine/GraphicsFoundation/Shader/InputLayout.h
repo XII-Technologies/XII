@@ -120,6 +120,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALInputLayout(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALInputLayoutCreationDescription& creationDescription);
 

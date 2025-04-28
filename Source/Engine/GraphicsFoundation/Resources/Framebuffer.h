@@ -28,6 +28,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALFramebuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALFramebufferCreationDescription& creationDescription);
 

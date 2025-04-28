@@ -125,6 +125,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALTextureView(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 

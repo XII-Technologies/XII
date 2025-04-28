@@ -56,6 +56,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALShader(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALShaderCreationDescription& creationDescription);
 

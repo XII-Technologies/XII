@@ -74,6 +74,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALSampler(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSamplerCreationDescription& creationDescription);
 

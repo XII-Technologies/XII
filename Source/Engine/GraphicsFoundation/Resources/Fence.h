@@ -78,6 +78,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALFence(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALFenceCreationDescription& creationDescription);
 

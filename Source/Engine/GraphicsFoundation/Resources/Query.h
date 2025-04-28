@@ -105,6 +105,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
   friend class xiiGALCommandList;
 
   xiiGALQuery(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALQueryCreationDescription& creationDescription);

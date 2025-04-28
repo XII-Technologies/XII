@@ -1,5 +1,3 @@
-#pragma once
-
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Declarations/Object.h>

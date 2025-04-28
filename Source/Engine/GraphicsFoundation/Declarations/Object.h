@@ -15,7 +15,7 @@ public:
   void SetDebugName(xiiStringView sDebugName);
 
 protected:
-  friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   XII_ALWAYS_INLINE virtual void SetDebugNamePlatform(xiiStringView sName) { XII_IGNORE_UNUSED(sName); };
 

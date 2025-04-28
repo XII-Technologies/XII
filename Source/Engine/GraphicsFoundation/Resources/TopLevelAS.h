@@ -90,6 +90,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALTopLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTopLevelASCreationDescription& creationDescription);
 

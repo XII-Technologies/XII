@@ -133,6 +133,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALRenderPass(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRenderPassCreationDescription& creationDescription);
 

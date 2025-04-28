@@ -80,6 +80,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALRasterizerState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRasterizerStateCreationDescription& creationDescription);
 

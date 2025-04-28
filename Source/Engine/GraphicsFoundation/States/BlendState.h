@@ -182,6 +182,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALBlendState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBlendStateCreationDescription& creationDescription);
 

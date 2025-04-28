@@ -106,8 +106,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : publ
 /// \brief This describes graphics pipeline information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xiiHashableStruct<xiiGALGraphicsPipelineDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiSharedPtr<xiiGALShader>                  m_pVertexShader;                                             ///< The reference-counted pointer to the vertex shader to be used with the pipeline.
   xiiSharedPtr<xiiGALShader>                  m_pPixelShader;                                              ///< The reference-counted pointer to the pixel shader to be used with the pipeline.
   xiiSharedPtr<xiiGALShader>                  m_pDomainShader;                                             ///< The reference-counted pointer to the domain shader to be used with the pipeline.
@@ -131,16 +129,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xii
 /// \brief This describes compute pipeline information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputePipelineDescription : public xiiHashableStruct<xiiGALComputePipelineDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiSharedPtr<xiiGALShader> m_pComputeShader; ///< The reference-counted pointer to the compute shader to be used with the pipeline.
 };
 
 /// \brief This describes the ray tracing general shader group information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingGeneralShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingGeneralShaderGroupDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiHashedString            m_sName;   ///< The unique group name.
   xiiSharedPtr<xiiGALShader> m_pShader; ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayGeneration, xiiGALShaderType::RayMiss, or xiiGALShaderType::Callable. This must not be invalid.
 };
@@ -148,8 +142,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingGeneralShaderGroupDescription 
 /// \brief This describes the ray tracing general shader group information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingTriangleHitShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingTriangleHitShaderGroupDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiHashedString            m_sName;             ///< The unique group name.
   xiiSharedPtr<xiiGALShader> m_pClosestHitShader; ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayClosestHit. This must not be invalid.
   xiiSharedPtr<xiiGALShader> m_pAnyHitShader;     ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
@@ -158,8 +150,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingTriangleHitShaderGroupDescript
 /// \brief This describes the ray tracing general shader group information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingProceduralHitShaderGroupDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiHashedString            m_sName;               ///< The unique group name.
   xiiSharedPtr<xiiGALShader> m_pIntersectionShader; ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayIntersection. This must not be invalid.
   xiiSharedPtr<xiiGALShader> m_pClosestHitShader;   ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayClosestHit. This can be invalid.
@@ -225,6 +215,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineStateCreationDescription& creationDescription);
 
