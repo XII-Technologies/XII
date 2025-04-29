@@ -125,7 +125,7 @@ protected:
 
   virtual ~xiiGALInputLayout();
 
-  virtual xiiResult InitPlatform() = 0;
+  virtual xiiResult InitPlatform(xiiGALShader* pShader) = 0;
 
 protected:
   xiiGALInputLayoutCreationDescription m_Description;

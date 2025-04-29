@@ -11,8 +11,10 @@ xiiGALInputLayoutNull::xiiGALInputLayoutNull(xiiSharedPtr<xiiGALDeviceNull> pDev
 
 xiiGALInputLayoutNull::~xiiGALInputLayoutNull() = default;
 
-xiiResult xiiGALInputLayoutNull::InitPlatform()
+xiiResult xiiGALInputLayoutNull::InitPlatform(xiiGALShader* pShader)
 {
+  XII_IGNORE_UNUSED(pShader);
+
   return XII_SUCCESS;
 }
 

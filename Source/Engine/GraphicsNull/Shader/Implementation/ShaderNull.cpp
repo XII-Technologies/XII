@@ -21,7 +21,7 @@ xiiInternal::NewInstance<xiiGALInputLayout> xiiGALShaderNull::CreateInputLayoutP
   xiiSharedPtr<xiiGALDeviceNull>                  pDeviceNull      = m_pDevice.Downcast<xiiGALDeviceNull>();
   xiiInternal::NewInstance<xiiGALInputLayoutNull> pInputLayoutNull = XII_NEW(pDeviceNull->GetAllocator(), xiiGALInputLayoutNull, pDeviceNull, description);
 
-  if (pInputLayoutNull->InitPlatform().Succeeded())
+  if (pInputLayoutNull->InitPlatform(this).Succeeded())
     return pInputLayoutNull;
 
   XII_DELETE(pDeviceNull->GetAllocator(), pInputLayoutNull.m_pInstance);

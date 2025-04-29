@@ -16,5 +16,5 @@ protected:
 
   virtual ~xiiGALInputLayoutNull();
 
-  virtual xiiResult InitPlatform() override final;
+  virtual xiiResult InitPlatform(xiiGALShader* pShader) override final;
 };
