@@ -86,8 +86,6 @@ protected:
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
   void UpdateLastCompletedFenceValue(xiiUInt64 uiValue);
 
 protected:

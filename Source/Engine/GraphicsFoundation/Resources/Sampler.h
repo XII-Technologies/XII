@@ -82,8 +82,6 @@ protected:
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
 protected:
   xiiGALSamplerCreationDescription m_Description;
 };

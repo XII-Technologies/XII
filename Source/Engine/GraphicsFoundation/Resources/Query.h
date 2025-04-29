@@ -113,8 +113,6 @@ protected:
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
   void OnBeginQuery(xiiGALCommandList* pCommandList);
   void OnEndQuery(xiiGALCommandList* pCommandList);
 

@@ -17,6 +17,9 @@ public:
 protected:
   friend class xiiMemoryUtils;
 
+  xiiGALObject();
+  virtual ~xiiGALObject();
+
   XII_ALWAYS_INLINE virtual void SetDebugNamePlatform(xiiStringView sName) { XII_IGNORE_UNUSED(sName); };
 
 private:

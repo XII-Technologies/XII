@@ -59,8 +59,6 @@ protected:
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
   xiiSharedPtr<xiiGALTexture> m_pBackBufferTexture;
 
   xiiEnum<xiiGALPresentMode> m_PresentMode = xiiGALPresentMode::VSync;

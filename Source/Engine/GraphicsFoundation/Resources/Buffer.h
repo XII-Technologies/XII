@@ -165,8 +165,6 @@ protected:
 
   virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
   virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) = 0;
 
   void VerifyFlushMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const;

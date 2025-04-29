@@ -20,6 +20,7 @@ protected:
   friend class xiiMemoryUtils;
 
   xiiGALDeviceObject(xiiSharedPtr<xiiGALDevice> pDevice);
+  virtual ~xiiGALDeviceObject();
 
 protected:
   xiiSharedPtr<xiiGALDevice> m_pDevice;

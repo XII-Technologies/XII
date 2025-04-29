@@ -227,8 +227,6 @@ protected:
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
 protected:
   xiiGALPipelineStateCreationDescription m_Description;
 };

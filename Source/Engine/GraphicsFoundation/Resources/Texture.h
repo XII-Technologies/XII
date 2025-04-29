@@ -181,8 +181,6 @@ protected:
 
   virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData) = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
   virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(const xiiGALTextureViewCreationDescription& description) = 0;
 
 protected:

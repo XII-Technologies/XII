@@ -36,8 +36,6 @@ protected:
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
 protected:
   xiiGALFramebufferCreationDescription m_Description;
 };

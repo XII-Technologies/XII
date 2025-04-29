@@ -98,8 +98,6 @@ protected:
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
 protected:
   xiiGALTopLevelASCreationDescription m_Description;
 };
