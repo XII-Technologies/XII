@@ -247,7 +247,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 
     const auto& syncPoint = fenceInfo.m_pFenceVulkan->CreateSyncPoint(fenceInfo.m_uiWaitValue);
 
-		XII_IGNORE_UNUSED(syncPoint);
+    XII_IGNORE_UNUSED(syncPoint);
   }
 
   pCommandListVulkan->ResetPlatform();
