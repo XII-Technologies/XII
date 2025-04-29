@@ -31,22 +31,7 @@ xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDevi
 {
 }
 
-xiiGALSwapChainD3D11::~xiiGALSwapChainD3D11() = default;
-
-xiiResult xiiGALSwapChainD3D11::InitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-
-  if (CreateDXGISwapChain().Failed())
-    return XII_FAILURE;
-
-  // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
-  m_Description.m_pWindow->AddReference();
-
-  return CreateBackBufferInternal(pDeviceD3D11);
-}
-
-xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
+xiiGALSwapChainD3D11::~xiiGALSwapChainD3D11()
 {
   xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
@@ -82,8 +67,19 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
 
     m_Description.m_pWindow->RemoveReference();
   }
+}
 
-  return XII_SUCCESS;
+xiiResult xiiGALSwapChainD3D11::InitPlatform()
+{
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+
+  if (CreateDXGISwapChain().Failed())
+    return XII_FAILURE;
+
+  // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
+  m_Description.m_pWindow->AddReference();
+
+  return CreateBackBufferInternal(pDeviceD3D11);
 }
 
 void xiiGALSwapChainD3D11::SetDebugNamePlatform(xiiStringView sName)
@@ -363,10 +359,10 @@ xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiSharedPtr<xiiGALDevi
     textureDescription.m_MiscFlags.Add(xiiGALMiscTextureFlags::SparseAlias);
   }
 
-  xiiGALTextureHandle hBackbufferTexture = pDeviceD3D11->CreateTexture(textureDescription);
-  XII_ASSERT_RELEASE(!hBackbufferTexture.IsInvalidated(), "Failed to create native backbuffer texture object!");
+  xiiSharedPtr<xiiGALTexture> pBackbufferTexture = pDeviceD3D11->CreateTexture(textureDescription);
+  XII_ASSERT_RELEASE(pBackbufferTexture != nullptr, "Failed to create native backbuffer texture object!");
 
-  m_hBackBufferTexture = hBackbufferTexture;
+  m_pBackBufferTexture = pBackbufferTexture;
 
   // If we sRGB backbuffer was requested, we create a "practical backbuffer".
   if (m_Description.m_ColorBufferFormat == xiiGALResourceFormat::RGBA8UNormalizedSRGB || m_Description.m_ColorBufferFormat == xiiGALResourceFormat::BGRA8UNormalizedSRGB)
@@ -374,42 +370,33 @@ xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiSharedPtr<xiiGALDevi
     textureDescription.m_pExisitingNativeObject = nullptr;
     textureDescription.m_Format                 = m_Description.m_ColorBufferFormat;
 
-    m_hActualBackBufferTexture = m_hBackBufferTexture;
-    m_hBackBufferTexture       = pDeviceD3D11->CreateTexture(textureDescription);
-    XII_ASSERT_RELEASE(!hBackbufferTexture.IsInvalidated(), "Failed to create practical backbuffer texture object!");
+    m_pActualBackBufferTexture = m_pBackBufferTexture;
+    m_pBackBufferTexture       = pDeviceD3D11->CreateTexture(textureDescription);
+    XII_ASSERT_RELEASE(pBackbufferTexture != nullptr, "Failed to create practical backbuffer texture object!");
   }
 
   m_Description.m_Resolution = textureDescription.m_Size;
 
-  if (!m_hActualBackBufferTexture.IsInvalidated())
+  if (m_pActualBackBufferTexture != nullptr)
   {
-    m_pDevice->GetTexture(m_hActualBackBufferTexture)->SetDebugName("Internal Backbuffer");
+    m_pActualBackBufferTexture->SetDebugName("Internal Backbuffer");
   }
-  m_pDevice->GetTexture(m_hBackBufferTexture)->SetDebugName("Main Backbuffer");
+  m_pBackBufferTexture->SetDebugName("Main Backbuffer");
 
   return XII_SUCCESS;
 }
 
 void xiiGALSwapChainD3D11::DestroyBackBufferInternal(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11)
 {
-  if (!m_hBackBufferTexture.IsInvalidated())
-  {
-    pDeviceD3D11->DestroyTexture(m_hBackBufferTexture);
-    m_hBackBufferTexture.Invalidate();
-  }
-
-  if (!m_hActualBackBufferTexture.IsInvalidated())
-  {
-    pDeviceD3D11->DestroyTexture(m_hActualBackBufferTexture);
-    m_hActualBackBufferTexture.Invalidate();
-  }
+  m_pBackBufferTexture.Clear();
+  m_pActualBackBufferTexture.Clear();
 }
 
 void xiiGALSwapChainD3D11::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  if (!m_hActualBackBufferTexture.IsInvalidated())
+  if (m_pActualBackBufferTexture != nullptr)
   {
     if (auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue())
     {
@@ -417,7 +404,7 @@ void xiiGALSwapChainD3D11::Present()
 
       pCommandList->BeginDebugGroup("Update Backbuffer");
       {
-        pCommandList->CopyTexture(m_hBackBufferTexture, m_hActualBackBufferTexture);
+        pCommandList->CopyTexture(m_pBackBufferTexture, m_pActualBackBufferTexture);
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();
