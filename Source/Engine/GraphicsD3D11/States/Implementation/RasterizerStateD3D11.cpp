@@ -10,16 +10,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateD3D11, 1, xiiRTTINoAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALRasterizerStateD3D11::xiiGALRasterizerStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALRasterizerStateCreationDescription& creationDescription) :
+xiiGALRasterizerStateD3D11::xiiGALRasterizerStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALRasterizerStateCreationDescription& creationDescription) :
   xiiGALRasterizerState(pDeviceD3D11, creationDescription)
 {
 }
 
-xiiGALRasterizerStateD3D11::~xiiGALRasterizerStateD3D11() = default;
+xiiGALRasterizerStateD3D11::~xiiGALRasterizerStateD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pRasterizerState);
+}
 
 xiiResult xiiGALRasterizerStateD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   D3D11_RASTERIZER_DESC rasterizerDescription = {};
   rasterizerDescription.FillMode              = xiiD3D11TypeConversions::GetFillMode(m_Description.m_FillMode);
@@ -40,13 +43,6 @@ xiiResult xiiGALRasterizerStateD3D11::InitPlatform()
     xiiLog::Error("Failed to create the Direct3D11 rasterizer state.");
     return XII_FAILURE;
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALRasterizerStateD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pRasterizerState);
-
   return XII_SUCCESS;
 }
 

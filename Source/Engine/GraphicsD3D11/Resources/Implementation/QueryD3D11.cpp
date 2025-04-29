@@ -8,16 +8,21 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQueryD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALQueryD3D11::xiiGALQueryD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALQueryCreationDescription& creationDescription) :
+xiiGALQueryD3D11::xiiGALQueryD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALQueryCreationDescription& creationDescription) :
   xiiGALQuery(pDeviceD3D11, creationDescription)
 {
 }
 
-xiiGALQueryD3D11::~xiiGALQueryD3D11() = default;
+xiiGALQueryD3D11::~xiiGALQueryD3D11()
+{
+  m_DisjointQuery.Clear();
+
+  XII_GAL_D3D11_RELEASE_ARRAY(m_pQueryD3D11);
+}
 
 xiiResult xiiGALQueryD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   D3D11_QUERY_DESC queryDescription = {};
   queryDescription.Query            = xiiD3D11TypeConversions::GetQueryType(m_Description.m_Type);
@@ -30,15 +35,6 @@ xiiResult xiiGALQueryD3D11::InitPlatform()
       return XII_FAILURE;
     }
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALQueryD3D11::DeInitPlatform()
-{
-  m_DisjointQuery.Clear();
-
-  XII_GAL_D3D11_RELEASE_ARRAY(m_pQueryD3D11);
-
   return XII_SUCCESS;
 }
 
@@ -61,7 +57,7 @@ bool xiiGALQueryD3D11::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInva
 {
   CheckQueryDataPtr(pData, uiDataSize);
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   bool bIsDataAvailable = false;
   switch (m_Description.m_Type)

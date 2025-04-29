@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelASD3D11, 1, xiiRTTINoAllocator
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBottomLevelASD3D11::xiiGALBottomLevelASD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALBottomLevelASCreationDescription& creationDescription) :
+xiiGALBottomLevelASD3D11::xiiGALBottomLevelASD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALBottomLevelASCreationDescription& creationDescription) :
   xiiGALBottomLevelAS(pDeviceD3D11, creationDescription)
 {
 }
@@ -20,11 +20,6 @@ xiiResult xiiGALBottomLevelASD3D11::InitPlatform()
   xiiLog::Error("xiiGALBottomLevelAS resource is unsupported in Direct3D11.");
 
   return XII_FAILURE;
-}
-
-xiiResult xiiGALBottomLevelASD3D11::DeInitPlatform()
-{
-  return XII_SUCCESS;
 }
 
 xiiUInt32 xiiGALBottomLevelASD3D11::GetGeometryDescriptionIndex(xiiStringView sName) const

@@ -8,16 +8,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALShaderD3D11::xiiGALShaderD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALShaderCreationDescription& creationDescription) :
+xiiGALShaderD3D11::xiiGALShaderD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALShader(pDeviceD3D11, creationDescription)
 {
 }
 
-xiiGALShaderD3D11::~xiiGALShaderD3D11() = default;
+xiiGALShaderD3D11::~xiiGALShaderD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pD3D11Shader);
+}
 
 xiiResult xiiGALShaderD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   auto&   byteCode = m_Description.m_ByteCode;
   HRESULT hResult  = E_FAIL;
@@ -79,13 +82,6 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
     xiiLog::Error("Failed to create Direct3D11 shader: {}", xiiHRESULTtoString(hResult));
     return XII_FAILURE;
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALShaderD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pD3D11Shader);
-
   return XII_SUCCESS;
 }
 

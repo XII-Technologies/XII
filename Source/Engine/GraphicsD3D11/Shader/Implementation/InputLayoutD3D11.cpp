@@ -21,21 +21,24 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALInputLayoutD3D11::xiiGALInputLayoutD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALInputLayoutCreationDescription& creationDescription) :
+xiiGALInputLayoutD3D11::xiiGALInputLayoutD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALInputLayoutCreationDescription& creationDescription) :
   xiiGALInputLayout(pDeviceD3D11, creationDescription)
 {
 }
 
-xiiGALInputLayoutD3D11::~xiiGALInputLayoutD3D11() = default;
-
-xiiResult xiiGALInputLayoutD3D11::InitPlatform()
+xiiGALInputLayoutD3D11::~xiiGALInputLayoutD3D11()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  xiiGALShaderD3D11* pShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_hVertexShader));
+  XII_GAL_D3D11_RELEASE(m_pInputLayout);
+}
+
+xiiResult xiiGALInputLayoutD3D11::InitPlatform(xiiGALShader* pShader)
+{
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiGALShaderD3D11*              pShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pShader);
 
   if (pShaderD3D11 == nullptr || !pShaderD3D11->GetDescription().HasValidByteCode() || pShaderD3D11->GetDescription().m_ShaderType != xiiGALShaderType::Vertex)
   {
-    xiiLog::Error("Shader is invalid, or does not have Vertex shader bytecode.");
+    xiiLog::Error("Shader does not have Vertex shader bytecode.");
     return XII_FAILURE;
   }
 
@@ -69,13 +72,6 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
     xiiLog::Error("Failed to create the Direct3D11 input layout.");
     return XII_FAILURE;
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALInputLayoutD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pInputLayout);
-
   return XII_SUCCESS;
 }
 

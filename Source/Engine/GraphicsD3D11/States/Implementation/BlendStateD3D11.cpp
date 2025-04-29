@@ -8,16 +8,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendStateD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBlendStateD3D11::xiiGALBlendStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALBlendStateCreationDescription& creationDescription) :
+xiiGALBlendStateD3D11::xiiGALBlendStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALBlendStateCreationDescription& creationDescription) :
   xiiGALBlendState(pDeviceD3D11, creationDescription)
 {
 }
 
-xiiGALBlendStateD3D11::~xiiGALBlendStateD3D11() = default;
+xiiGALBlendStateD3D11::~xiiGALBlendStateD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pBlendState);
+}
 
 xiiResult xiiGALBlendStateD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   D3D11_BLEND_DESC blendDescription       = {};
   blendDescription.AlphaToCoverageEnable  = D3D11_BOOL(m_Description.m_bAlphaToCoverage);
@@ -46,13 +49,6 @@ xiiResult xiiGALBlendStateD3D11::InitPlatform()
     xiiLog::Error("Failed to create the Direct3D11 blend state.");
     return XII_FAILURE;
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALBlendStateD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pBlendState);
-
   return XII_SUCCESS;
 }
 

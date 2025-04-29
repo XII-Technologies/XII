@@ -3,22 +3,24 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/States/DepthStencilStateD3D11.h>
 
-
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilStateD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALDepthStencilStateD3D11::xiiGALDepthStencilStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+xiiGALDepthStencilStateD3D11::xiiGALDepthStencilStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
   xiiGALDepthStencilState(pDeviceD3D11, creationDescription)
 {
 }
 
-xiiGALDepthStencilStateD3D11::~xiiGALDepthStencilStateD3D11() = default;
+xiiGALDepthStencilStateD3D11::~xiiGALDepthStencilStateD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pDepthStencilState);
+}
 
 xiiResult xiiGALDepthStencilStateD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   D3D11_DEPTH_STENCIL_DESC depthStencilDescription = {};
   depthStencilDescription.DepthEnable              = D3D11_BOOL(m_Description.m_bDepthEnable);
@@ -44,13 +46,6 @@ xiiResult xiiGALDepthStencilStateD3D11::InitPlatform()
     xiiLog::Error("Failed to create the Direct3D11 depth stencil state.");
     return XII_FAILURE;
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALDepthStencilStateD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pDepthStencilState);
-
   return XII_SUCCESS;
 }
 

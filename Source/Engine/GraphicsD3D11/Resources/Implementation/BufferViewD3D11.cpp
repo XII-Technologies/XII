@@ -11,12 +11,15 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferViewD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBufferViewD3D11::xiiGALBufferViewD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
+xiiGALBufferViewD3D11::xiiGALBufferViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pDeviceD3D11, pBuffer, creationDescription)
 {
 }
 
-xiiGALBufferViewD3D11::~xiiGALBufferViewD3D11() = default;
+xiiGALBufferViewD3D11::~xiiGALBufferViewD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pBufferView);
+}
 
 xiiResult xiiGALBufferViewD3D11::InitPlatform()
 {
@@ -46,13 +49,6 @@ xiiResult xiiGALBufferViewD3D11::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBufferViewD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pBufferView);
-
-  return XII_SUCCESS;
-}
-
 void xiiGALBufferViewD3D11::SetDebugNamePlatform(xiiStringView sName)
 {
   if (m_pBufferView != nullptr)
@@ -69,7 +65,7 @@ xiiResult xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderRe
 {
   XII_ASSERT_DEV(m_Description.m_ViewType == xiiGALBufferViewType::ShaderResource, "Incorrect view type, expected shader resource view.");
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
   xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(m_pDevice->GetBuffer(m_Description.m_hBuffer));
 
   D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDescription = {};
@@ -130,7 +126,7 @@ xiiResult xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorder
 {
   XII_ASSERT_DEV(m_Description.m_ViewType == xiiGALBufferViewType::UnorderedAccess, "Incorrect view type, expected an unordered access view.");
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
   xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(m_pDevice->GetBuffer(m_Description.m_hBuffer));
 
   D3D11_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewDescription = {};
@@ -184,7 +180,7 @@ xiiGALSparseBufferProperties xiiGALBufferD3D11::GetSparseProperties() const
 {
   XII_ASSERT_DEV(m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse, "xiiGALBuffer::GetSparseProperties() should only be used for sparse buffer.");
 
-  xiiGALDeviceD3D11* pDeviceD3D11   = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11   = m_pDevice.Downcast<xiiGALDeviceD3D11>();
   ID3D11Device2*     pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
 
   xiiUInt32        uiTileCountForEntireResource      = 0;

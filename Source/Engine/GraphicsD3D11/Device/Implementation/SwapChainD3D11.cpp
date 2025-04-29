@@ -26,7 +26,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiEvent<const xiiGALSwapChainD3D11Event&, xiiNoMutex, xiiStaticAllocatorWrapper> xiiGALSwapChainD3D11::s_Events;
 
-xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSwapChainCreationDescription& creationDescription) :
+xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(pDeviceD3D11, creationDescription)
 {
 }
@@ -35,7 +35,7 @@ xiiGALSwapChainD3D11::~xiiGALSwapChainD3D11() = default;
 
 xiiResult xiiGALSwapChainD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   if (CreateDXGISwapChain().Failed())
     return XII_FAILURE;
@@ -48,7 +48,7 @@ xiiResult xiiGALSwapChainD3D11::InitPlatform()
 
 xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
   {
@@ -100,7 +100,7 @@ void xiiGALSwapChainD3D11::SetDebugNamePlatform(xiiStringView sName)
 
 xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   if (m_Description.m_PreTransform != xiiGALSurfaceTransform::Optimal && m_Description.m_PreTransform != xiiGALSurfaceTransform::Identity)
   {
@@ -267,7 +267,7 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
 
 xiiResult xiiGALSwapChainD3D11::UpdateSwapChain(bool bCreateNew)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   // When switching to full screen mode, WM_SIZE is sent to the window and Resize() is called before the new swap chain is created.
   if (!m_pSwapChain)
@@ -321,7 +321,7 @@ xiiResult xiiGALSwapChainD3D11::UpdateSwapChain(bool bCreateNew)
   return CreateBackBufferInternal(pDeviceD3D11);
 }
 
-xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11)
+xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11)
 {
   DestroyBackBufferInternal(pDeviceD3D11);
 
@@ -390,7 +390,7 @@ xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDev
   return XII_SUCCESS;
 }
 
-void xiiGALSwapChainD3D11::DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11)
+void xiiGALSwapChainD3D11::DestroyBackBufferInternal(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11)
 {
   if (!m_hBackBufferTexture.IsInvalidated())
   {

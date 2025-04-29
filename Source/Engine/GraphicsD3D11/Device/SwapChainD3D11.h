@@ -58,13 +58,11 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALSwapChainD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChainD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChainD3D11();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
@@ -73,13 +71,13 @@ private:
 
   xiiResult UpdateSwapChain(bool bCreateNew);
 
-  xiiResult CreateBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11);
+  xiiResult CreateBackBufferInternal(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11);
 
-  void DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11);
+  void DestroyBackBufferInternal(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11);
 
   IDXGISwapChain4* m_pSwapChain = nullptr;
 
-  xiiGALTextureHandle m_hActualBackBufferTexture;
+  xiiSharedPtr<xiiGALTexture> m_pActualBackBufferTexture;
 
   xiiGALFullScreenModeDescription m_FullScreenMode;
 

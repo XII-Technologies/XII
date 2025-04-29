@@ -12,11 +12,9 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALRenderPassD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALRenderPassCreationDescription& creationDescription);
+  xiiGALRenderPassD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALRenderPassCreationDescription& creationDescription);
 
   virtual ~xiiGALRenderPassD3D11();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 };

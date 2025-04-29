@@ -8,16 +8,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBufferD3D11::xiiGALBufferD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALBufferCreationDescription& creationDescription) :
+xiiGALBufferD3D11::xiiGALBufferD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALBufferCreationDescription& creationDescription) :
   xiiGALBuffer(pDeviceD3D11, creationDescription)
 {
 }
 
-xiiGALBufferD3D11::~xiiGALBufferD3D11() = default;
+xiiGALBufferD3D11::~xiiGALBufferD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pBuffer);
+}
 
 xiiResult xiiGALBufferD3D11::InitPlatform(const xiiGALBufferData* pInitialData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Unified)
   {
@@ -91,13 +94,6 @@ xiiResult xiiGALBufferD3D11::InitPlatform(const xiiGALBufferData* pInitialData)
     xiiLog::Error("Failed to create D3D11 buffer.");
     return XII_FAILURE;
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALBufferD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pBuffer);
-
   return XII_SUCCESS;
 }
 

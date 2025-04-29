@@ -12,7 +12,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 DXGI_FORMAT ResourceFormatToDXGI_Format(xiiEnum<xiiGALResourceFormat> textureFormat, xiiBitflags<xiiGALBindFlags> bindFlags);
 
-xiiGALTextureD3D11::xiiGALTextureD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALTextureCreationDescription& creationDescription) :
+xiiGALTextureD3D11::xiiGALTextureD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceD3D11, creationDescription)
 {
 }
@@ -124,7 +124,7 @@ xiiResult xiiGALTextureD3D11::CreateFromNativeObject(void* pNativeObject)
 
 xiiResult xiiGALTextureD3D11::CreateTexture1D(ID3D11Texture1D** ppTexture1D, const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   D3D11_TEXTURE1D_DESC textureDescription = {};
   textureDescription.Width                = m_Description.m_Size.width;
@@ -149,7 +149,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture1D(ID3D11Texture1D** ppTexture1D, con
 
 xiiResult xiiGALTextureD3D11::CreateTexture2D(ID3D11Texture2D** ppTexture2D, const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   DXGI_SAMPLE_DESC sampleDescription = {.Count = m_Description.m_uiSampleCount, .Quality = 0U};
 
@@ -187,7 +187,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture2D(ID3D11Texture2D** ppTexture2D, con
 
 xiiResult xiiGALTextureD3D11::CreateTexture3D(ID3D11Texture3D** ppTexture3D, const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   D3D11_TEXTURE3D_DESC textureDescription = {};
   textureDescription.Width                = m_Description.m_Size.width;
@@ -238,7 +238,7 @@ void xiiGALTextureD3D11::InitializeSparseTextureProperties()
   if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
     return;
 
-  xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
   ID3D11Device2*     pD3D11Device2 = nullptr;
 
   if (FAILED(pDeviceD3D11->GetD3D11Device()->QueryInterface(__uuidof(ID3D11Device2), (void**)&pD3D11Device2)))

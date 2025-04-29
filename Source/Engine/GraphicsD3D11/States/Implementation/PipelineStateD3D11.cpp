@@ -21,7 +21,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineStateD3D11, 1, xiiRTTINoAllocator
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALPipelineStateD3D11::xiiGALPipelineStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALPipelineStateCreationDescription& creationDescription) :
+xiiGALPipelineStateD3D11::xiiGALPipelineStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALPipelineStateCreationDescription& creationDescription) :
   xiiGALPipelineState(pDeviceD3D11, creationDescription)
 {
 }
@@ -30,7 +30,7 @@ xiiGALPipelineStateD3D11::~xiiGALPipelineStateD3D11() = default;
 
 xiiResult xiiGALPipelineStateD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   if (m_Description.m_PipelineType != xiiGALPipelineType::Graphics && m_Description.m_PipelineType != xiiGALPipelineType::Compute)
   {
@@ -38,37 +38,37 @@ xiiResult xiiGALPipelineStateD3D11::InitPlatform()
     return XII_FAILURE;
   }
 
-  if (m_Description.IsAnyGraphicsPipeline() && m_Description.m_GraphicsPipeline.m_hVertexShader.IsInvalidated())
+  if (m_Description.IsAnyGraphicsPipeline() && m_Description.m_GraphicsPipeline.m_pVertexShader != nullptr)
   {
-    xiiLog::Error("The given shader has an invalidated vertex shader!");
+    xiiLog::Error("The given shader has an invalid vertex shader!");
     return XII_FAILURE;
   }
 
   if (m_Description.IsAnyGraphicsPipeline())
   {
-    m_pVertexShaderD3D11   = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_GraphicsPipeline.m_hVertexShader));
-    m_pPixelShaderD3D11    = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_GraphicsPipeline.m_hPixelShader));
-    m_pDomainShaderD3D11   = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_GraphicsPipeline.m_hDomainShader));
-    m_pHullShaderD3D11     = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_GraphicsPipeline.m_hHullShader));
-    m_pGeometryShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_GraphicsPipeline.m_hGeometryShader));
+    m_pVertexShaderD3D11   = m_Description.m_GraphicsPipeline.m_pVertexShader.Downcast<xiiGALShaderD3D11>();
+    m_pPixelShaderD3D11    = m_Description.m_GraphicsPipeline.m_pPixelShader.Downcast<xiiGALShaderD3D11>();
+    m_pDomainShaderD3D11   = m_Description.m_GraphicsPipeline.m_pDomainShader.Downcast<xiiGALShaderD3D11>();
+    m_pHullShaderD3D11     = m_Description.m_GraphicsPipeline.m_pHullShader.Downcast<xiiGALShaderD3D11>();
+    m_pGeometryShaderD3D11 = m_Description.m_GraphicsPipeline.m_pGeometryShader.Downcast<xiiGALShaderD3D11>();
   }
 
   if (m_Description.IsComputePipeline())
   {
-    m_pComputeShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_ComputePipeline.m_hComputeShader));
+    m_pComputeShaderD3D11 = m_Description.m_ComputePipeline.m_pComputeShader.Downcast<xiiGALShaderD3D11>();
   }
 
-  m_pPipelineResourceSignatureD3D11 = static_cast<xiiGALPipelineResourceSignatureD3D11*>(pDeviceD3D11->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature));
+  m_pPipelineResourceSignatureD3D11 = m_Description.m_pPipelineResourceSignature.Downcast<xiiGALPipelineResourceSignatureD3D11>();
 
   switch (m_Description.m_PipelineType)
   {
     case xiiGALPipelineType::Graphics:
     {
-      m_pRenderPassD3D11        = static_cast<xiiGALRenderPassD3D11*>(pDeviceD3D11->GetRenderPass(m_Description.m_GraphicsPipeline.m_hRenderPass));
-      m_pBlendStateD3D11        = static_cast<xiiGALBlendStateD3D11*>(pDeviceD3D11->GetBlendState(m_Description.m_GraphicsPipeline.m_hBlendState));
-      m_pInputLayoutD3D11       = static_cast<xiiGALInputLayoutD3D11*>(pDeviceD3D11->GetInputLayout(m_Description.m_GraphicsPipeline.m_hInputLayout));
-      m_pRasterizerStateD3D11   = static_cast<xiiGALRasterizerStateD3D11*>(pDeviceD3D11->GetRasterizerState(m_Description.m_GraphicsPipeline.m_hRasterizerState));
-      m_pDepthStencilStateD3D11 = static_cast<xiiGALDepthStencilStateD3D11*>(pDeviceD3D11->GetDepthStencilState(m_Description.m_GraphicsPipeline.m_hDepthStencilState));
+      m_pRenderPassD3D11        = m_Description.m_GraphicsPipeline.m_pRenderPass.Downcast<xiiGALRenderPassD3D11>();
+      m_pBlendStateD3D11        = m_Description.m_GraphicsPipeline.m_pBlendState.Downcast<xiiGALBlendStateD3D11>();
+      m_pInputLayoutD3D11       = m_Description.m_GraphicsPipeline.m_pInputLayout.Downcast<xiiGALInputLayoutD3D11>();
+      m_pRasterizerStateD3D11   = m_Description.m_GraphicsPipeline.m_pRasterizerState.Downcast<xiiGALRasterizerStateD3D11>();
+      m_pDepthStencilStateD3D11 = m_Description.m_GraphicsPipeline.m_pDepthStencilState.Downcast<xiiGALDepthStencilStateD3D11>();
     }
     break;
     case xiiGALPipelineType::Compute:
@@ -79,11 +79,6 @@ xiiResult xiiGALPipelineStateD3D11::InitPlatform()
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALPipelineStateD3D11::DeInitPlatform()
-{
   return XII_SUCCESS;
 }
 

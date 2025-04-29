@@ -8,16 +8,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALSamplerD3D11::xiiGALSamplerD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSamplerCreationDescription& creationDescription) :
+xiiGALSamplerD3D11::xiiGALSamplerD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALSamplerCreationDescription& creationDescription) :
   xiiGALSampler(pDeviceD3D11, creationDescription)
 {
 }
 
-xiiGALSamplerD3D11::~xiiGALSamplerD3D11() = default;
+xiiGALSamplerD3D11::~xiiGALSamplerD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pSampler);
+}
 
 xiiResult xiiGALSamplerD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   D3D11_SAMPLER_DESC samplerDescription = {};
   samplerDescription.AddressU           = xiiD3D11TypeConversions::GetTextureAddressMode(m_Description.m_AddressU);
@@ -55,13 +58,6 @@ xiiResult xiiGALSamplerD3D11::InitPlatform()
     return XII_FAILURE;
   }
   return XII_SUCCESS;
-}
-
-xiiResult xiiGALSamplerD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pSampler);
-
-  return XII_FAILURE;
 }
 
 void xiiGALSamplerD3D11::SetDebugNamePlatform(xiiStringView sName)

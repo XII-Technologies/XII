@@ -34,7 +34,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
+xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceD3D11, pCommandQueueD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11), m_pImmediateContext(pDeviceD3D11->GetImmediateContext()), m_GALSwapChainD3D11EventSubscriptionID(xiiGALSwapChainD3D11::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGALCommandListD3D11::GALSwapChainD3D11EventHandler, this)))
 {
 }
@@ -705,7 +705,7 @@ xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiGALBuffer* pIndire
 void xiiGALCommandListD3D11::BeginQueryPlatform(xiiGALQuery* pQuery)
 {
   auto pQueryD3D11       = static_cast<xiiGALQueryD3D11*>(pQuery);
-  auto pImmediateContext = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
+  auto pImmediateContext = m_pDevice.Downcast<xiiGALDeviceD3D11>()->GetImmediateContext();
 
   XII_ASSERT_DEV(pQueryD3D11 != nullptr, "Invalid resource.");
 
@@ -742,7 +742,7 @@ void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
 {
   XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
   xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
   XII_ASSERT_DEV(pBufferD3D11 != nullptr, "Invalid resource.");
@@ -852,7 +852,7 @@ xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
 
 void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
   auto               pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
 
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
@@ -1448,7 +1448,7 @@ bool xiiGALCommandListD3D11::UnsetUnorderedAccessViews(const xiiGALResource* pRe
 
 xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
 
   if (!m_pActiveDisjointQuery)
   {

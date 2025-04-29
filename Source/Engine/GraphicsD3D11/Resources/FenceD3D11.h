@@ -23,7 +23,7 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALFenceD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFenceD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFenceD3D11();
 

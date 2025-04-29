@@ -18,13 +18,11 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALShaderD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALShaderCreationDescription& creationDescription);
+  xiiGALShaderD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALShaderCreationDescription& creationDescription);
 
   virtual ~xiiGALShaderD3D11();
 
-  virtual xiiResult InitPlatform();
-
-  virtual xiiResult DeInitPlatform();
+  virtual xiiResult InitPlatform() override;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 

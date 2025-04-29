@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineResourceSignatureD3D11, 1, xiiRTT
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALPipelineResourceSignatureD3D11::xiiGALPipelineResourceSignatureD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
+xiiGALPipelineResourceSignatureD3D11::xiiGALPipelineResourceSignatureD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
   xiiGALPipelineResourceSignature(pDeviceD3D11, creationDescription)
 {
 }
@@ -16,11 +16,6 @@ xiiGALPipelineResourceSignatureD3D11::xiiGALPipelineResourceSignatureD3D11(xiiGA
 xiiGALPipelineResourceSignatureD3D11::~xiiGALPipelineResourceSignatureD3D11() = default;
 
 xiiResult xiiGALPipelineResourceSignatureD3D11::InitPlatform()
-{
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALPipelineResourceSignatureD3D11::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

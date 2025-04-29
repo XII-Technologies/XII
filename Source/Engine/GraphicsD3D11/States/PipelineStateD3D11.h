@@ -59,26 +59,24 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALPipelineStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALPipelineStateCreationDescription& creationDescription);
+  xiiGALPipelineStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALPipelineStateCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineStateD3D11();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
 private:
-  xiiGALShaderD3D11*            m_pVertexShaderD3D11      = nullptr;
-  xiiGALShaderD3D11*            m_pPixelShaderD3D11       = nullptr;
-  xiiGALShaderD3D11*            m_pDomainShaderD3D11      = nullptr;
-  xiiGALShaderD3D11*            m_pHullShaderD3D11        = nullptr;
-  xiiGALShaderD3D11*            m_pGeometryShaderD3D11    = nullptr;
-  xiiGALShaderD3D11*            m_pComputeShaderD3D11     = nullptr;
-  xiiGALBlendStateD3D11*        m_pBlendStateD3D11        = nullptr;
-  xiiGALInputLayoutD3D11*       m_pInputLayoutD3D11       = nullptr;
-  xiiGALRasterizerStateD3D11*   m_pRasterizerStateD3D11   = nullptr;
-  xiiGALDepthStencilStateD3D11* m_pDepthStencilStateD3D11 = nullptr;
+  xiiSharedPtr<xiiGALShaderD3D11>            m_pVertexShaderD3D11;
+  xiiSharedPtr<xiiGALShaderD3D11>            m_pPixelShaderD3D11;
+  xiiSharedPtr<xiiGALShaderD3D11>            m_pDomainShaderD3D11;
+  xiiSharedPtr<xiiGALShaderD3D11>            m_pHullShaderD3D11;
+  xiiSharedPtr<xiiGALShaderD3D11>            m_pGeometryShaderD3D11;
+  xiiSharedPtr<xiiGALShaderD3D11>            m_pComputeShaderD3D11;
+  xiiSharedPtr<xiiGALBlendStateD3D11>        m_pBlendStateD3D11;
+  xiiSharedPtr<xiiGALInputLayoutD3D11>       m_pInputLayoutD3D11;
+  xiiSharedPtr<xiiGALRasterizerStateD3D11>   m_pRasterizerStateD3D11;
+  xiiSharedPtr<xiiGALDepthStencilStateD3D11> m_pDepthStencilStateD3D11;
 
-  xiiGALRenderPassD3D11*                m_pRenderPassD3D11                = nullptr;
-  xiiGALPipelineResourceSignatureD3D11* m_pPipelineResourceSignatureD3D11 = nullptr;
+  xiiSharedPtr<xiiGALRenderPassD3D11>                m_pRenderPassD3D11;
+  xiiSharedPtr<xiiGALPipelineResourceSignatureD3D11> m_pPipelineResourceSignatureD3D11;
 };

@@ -25,13 +25,11 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALBufferD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALBufferCreationDescription& creationDescription);
+  xiiGALBufferD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALBufferCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferD3D11();
 
   virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
