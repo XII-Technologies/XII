@@ -28,6 +28,8 @@ protected:
 
   virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData) override final;
 
+  virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(const xiiGALTextureViewCreationDescription& description) override;
+
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:

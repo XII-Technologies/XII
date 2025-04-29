@@ -14,10 +14,11 @@ public:
   XII_ALWAYS_INLINE ID3D11View* GetTextureView() const { return m_pTextureView; };
 
 protected:
-  friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D11;
+  friend class xiiGALTextureD3D11;
 
-  xiiGALTextureViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
+  xiiGALTextureViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureViewD3D11();
 

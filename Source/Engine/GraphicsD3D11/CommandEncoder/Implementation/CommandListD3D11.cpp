@@ -584,7 +584,7 @@ void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderPa
   SetViewports(xiiMakeArrayPtr(&viewport, 1U));
 
   m_pRenderPass  = pRenderPass.Downcast<xiiGALRenderPassD3D11>();
-  m_pFramebuffer = pRenderPass.Downcast<xiiGALFramebufferD3D11>();
+  m_pFramebuffer = pFramebuffer.Downcast<xiiGALFramebufferD3D11>();
 
   // Set the active render targes.
   CommitRenderTargets();

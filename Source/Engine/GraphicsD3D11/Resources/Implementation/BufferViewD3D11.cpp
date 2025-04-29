@@ -11,7 +11,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferViewD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBufferViewD3D11::xiiGALBufferViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
+xiiGALBufferViewD3D11::xiiGALBufferViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pDeviceD3D11, pBuffer, creationDescription)
 {
 }
@@ -66,7 +66,7 @@ xiiResult xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderRe
   XII_ASSERT_DEV(m_Description.m_ViewType == xiiGALBufferViewType::ShaderResource, "Incorrect view type, expected shader resource view.");
 
   xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(m_pDevice->GetBuffer(m_Description.m_hBuffer));
+  xiiSharedPtr<xiiGALBufferD3D11> pBufferD3D11 = m_pBuffer.Downcast<xiiGALBufferD3D11>();
 
   D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDescription = {};
   shaderResourceViewDescription.ViewDimension                   = D3D_SRV_DIMENSION_BUFFER;
@@ -127,7 +127,7 @@ xiiResult xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorder
   XII_ASSERT_DEV(m_Description.m_ViewType == xiiGALBufferViewType::UnorderedAccess, "Incorrect view type, expected an unordered access view.");
 
   xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(m_pDevice->GetBuffer(m_Description.m_hBuffer));
+  xiiSharedPtr<xiiGALBufferD3D11> pBufferD3D11 = m_pBuffer.Downcast<xiiGALBufferD3D11>();
 
   D3D11_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewDescription = {};
   unorderedAccessViewDescription.ViewDimension                    = D3D11_UAV_DIMENSION_BUFFER;

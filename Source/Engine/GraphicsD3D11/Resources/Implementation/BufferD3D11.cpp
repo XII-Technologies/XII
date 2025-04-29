@@ -2,6 +2,7 @@
 
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/BufferD3D11.h>
+#include <GraphicsD3D11/Resources/BufferViewD3D11.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferD3D11, 1, xiiRTTINoAllocator)
@@ -95,6 +96,19 @@ xiiResult xiiGALBufferD3D11::InitPlatform(const xiiGALBufferData* pInitialData)
     return XII_FAILURE;
   }
   return XII_SUCCESS;
+}
+
+xiiInternal::NewInstance<xiiGALBufferView> xiiGALBufferD3D11::CreateViewPlatform(const xiiGALBufferViewCreationDescription& description)
+{
+  xiiSharedPtr<xiiGALDeviceD3D11>                 pDeviceD3D11     = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiInternal::NewInstance<xiiGALBufferViewD3D11> pBufferViewD3D11 = XII_NEW(pDeviceD3D11->GetAllocator(), xiiGALBufferViewD3D11, pDeviceD3D11, xiiSharedPtr<xiiGALBuffer>(this, pDeviceD3D11->GetAllocator()), description);
+
+  if (pBufferViewD3D11->InitPlatform().Succeeded())
+    return pBufferViewD3D11;
+
+  XII_DELETE(pBufferViewD3D11.m_pAllocator, pBufferViewD3D11.m_pInstance);
+
+  return pBufferViewD3D11;
 }
 
 void xiiGALBufferD3D11::SetDebugNamePlatform(xiiStringView sName)

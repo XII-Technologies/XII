@@ -2,6 +2,7 @@
 
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Shader/ShaderD3D11.h>
+#include <GraphicsD3D11/Shader/InputLayoutD3D11.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderD3D11, 1, xiiRTTINoAllocator)
@@ -83,6 +84,19 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
     return XII_FAILURE;
   }
   return XII_SUCCESS;
+}
+
+xiiInternal::NewInstance<xiiGALInputLayout> xiiGALShaderD3D11::CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)
+{
+  xiiSharedPtr<xiiGALDeviceD3D11>                  pDeviceD3D11      = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiInternal::NewInstance<xiiGALInputLayoutD3D11> pInputLayoutD3D11 = XII_NEW(pDeviceD3D11->GetAllocator(), xiiGALInputLayoutD3D11, pDeviceD3D11, description);
+
+  if (pInputLayoutD3D11->InitPlatform(this).Succeeded())
+    return pInputLayoutD3D11;
+
+  XII_DELETE(pDeviceD3D11->GetAllocator(), pInputLayoutD3D11.m_pInstance);
+
+  return pInputLayoutD3D11;
 }
 
 void xiiGALShaderD3D11::SetDebugNamePlatform(xiiStringView sName)

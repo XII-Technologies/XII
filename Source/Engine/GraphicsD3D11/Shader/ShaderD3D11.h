@@ -26,6 +26,8 @@ protected:
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
+  virtual xiiInternal::NewInstance<xiiGALInputLayout> CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) override;
+
 private:
   ID3D11DeviceChild* m_pD3D11Shader = nullptr;
 };

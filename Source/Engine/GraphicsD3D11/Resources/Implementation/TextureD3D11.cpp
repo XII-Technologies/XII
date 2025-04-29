@@ -2,6 +2,7 @@
 
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
+#include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 
 #include <d3d11_2.h>
 
@@ -17,7 +18,10 @@ xiiGALTextureD3D11::xiiGALTextureD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3
 {
 }
 
-xiiGALTextureD3D11::~xiiGALTextureD3D11() = default;
+xiiGALTextureD3D11::~xiiGALTextureD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pTexture);
+}
 
 xiiResult xiiGALTextureD3D11::InitPlatform(const xiiGALTextureData* pInitialData)
 {
@@ -84,11 +88,17 @@ xiiResult xiiGALTextureD3D11::InitPlatform(const xiiGALTextureData* pInitialData
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTextureD3D11::DeInitPlatform()
+xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureD3D11::CreateViewPlatform(const xiiGALTextureViewCreationDescription& description)
 {
-  XII_GAL_D3D11_RELEASE(m_pTexture);
+  xiiSharedPtr<xiiGALDeviceD3D11>                  pDeviceD3D11      = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiInternal::NewInstance<xiiGALTextureViewD3D11> pTextureViewD3D11 = XII_NEW(pDeviceD3D11->GetAllocator(), xiiGALTextureViewD3D11, pDeviceD3D11, xiiSharedPtr<xiiGALTexture>(this, pDeviceD3D11->GetAllocator()), description);
 
-  return XII_SUCCESS;
+  if (pTextureViewD3D11->InitPlatform().Succeeded())
+    return pTextureViewD3D11;
+
+  XII_DELETE(pTextureViewD3D11.m_pAllocator, pTextureViewD3D11.m_pInstance);
+
+  return pTextureViewD3D11;
 }
 
 void xiiGALTextureD3D11::SetDebugNamePlatform(xiiStringView sName)

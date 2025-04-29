@@ -17,8 +17,9 @@ public:
   XII_ALWAYS_INLINE ID3D11InputLayout* GetInputLayout() const { return m_pInputLayout; };
 
 protected:
-  friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D11;
+  friend class xiiGALShaderD3D11;
 
   xiiGALInputLayoutD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALInputLayoutCreationDescription& creationDescription);
 

@@ -13,7 +13,15 @@ xiiGALFenceD3D11::xiiGALFenceD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11,
 {
 }
 
-xiiGALFenceD3D11::~xiiGALFenceD3D11() = default;
+xiiGALFenceD3D11::~xiiGALFenceD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pD3D11Fence);
+
+  if (m_pFenceCompleteEvent != NULL && m_pFenceCompleteEvent != INVALID_HANDLE_VALUE)
+  {
+    CloseHandle(m_pFenceCompleteEvent);
+  }
+}
 
 xiiResult xiiGALFenceD3D11::InitPlatform()
 {
@@ -36,17 +44,6 @@ xiiResult xiiGALFenceD3D11::InitPlatform()
   D3D11_FENCE_FLAG fenceFlags = D3D11_FENCE_FLAG_NONE;
   XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D11->GetD3D11Device()->CreateFence(0U, fenceFlags, IID_PPV_ARGS(&m_pD3D11Fence)));
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALFenceD3D11::DeInitPlatform()
-{
-  XII_GAL_D3D11_RELEASE(m_pD3D11Fence);
-
-  if (m_pFenceCompleteEvent != NULL && m_pFenceCompleteEvent != INVALID_HANDLE_VALUE)
-  {
-    CloseHandle(m_pFenceCompleteEvent);
-  }
   return XII_SUCCESS;
 }
 

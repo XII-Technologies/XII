@@ -279,10 +279,8 @@ xiiResult xiiGALSwapChainD3D11::UpdateSwapChain(bool bCreateNew)
       s_Events.Broadcast(e);
     }
 
+    // Need to destroy references to the swap chain image or ResizeBuffers will fail as the backbuffer is still referenced.
     DestroyBackBufferInternal(pDeviceD3D11);
-
-    // Need to flush pending deletion or ResizeBuffers will fail as the backbuffer is still referenced.
-    pDeviceD3D11->FlushPendingObjects();
 
     if (bCreateNew)
     {

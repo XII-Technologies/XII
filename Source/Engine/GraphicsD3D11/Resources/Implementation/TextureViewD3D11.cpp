@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureViewD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALTextureViewD3D11::xiiGALTextureViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
+xiiGALTextureViewD3D11::xiiGALTextureViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
   xiiGALTextureView(pDeviceD3D11, pTexture, creationDescription)
 {
 }
@@ -97,8 +97,8 @@ xiiResult xiiGALTextureViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderR
 
   XII_ASSERT_DEV(m_Description.m_Format != xiiGALResourceFormat::Unknown, "");
 
-  xiiGALDeviceD3D11*  pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(m_pDevice->GetTexture(m_Description.m_hTexture));
+  xiiGALDeviceD3D11*               pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiSharedPtr<xiiGALTextureD3D11> pTextureD3D11 = m_pTexture.Downcast<xiiGALTextureD3D11>();
 
   const auto& textureDescription = pTextureD3D11->GetDescription();
 
@@ -205,8 +205,8 @@ xiiResult xiiGALTextureViewD3D11::CreateRTV(ID3D11RenderTargetView** ppRenderTar
 
   XII_ASSERT_DEV(m_Description.m_Format != xiiGALResourceFormat::Unknown, "");
 
-  xiiGALDeviceD3D11*  pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(m_pDevice->GetTexture(m_Description.m_hTexture));
+  xiiGALDeviceD3D11*               pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiSharedPtr<xiiGALTextureD3D11> pTextureD3D11 = m_pTexture.Downcast<xiiGALTextureD3D11>();
 
   const auto& textureDescription = pTextureD3D11->GetDescription();
 
@@ -294,8 +294,8 @@ xiiResult xiiGALTextureViewD3D11::CreateDSV(ID3D11DepthStencilView** ppDepthSten
 
   XII_ASSERT_DEV(m_Description.m_Format != xiiGALResourceFormat::Unknown, "");
 
-  xiiGALDeviceD3D11*  pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(m_pDevice->GetTexture(m_Description.m_hTexture));
+  xiiGALDeviceD3D11*               pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiSharedPtr<xiiGALTextureD3D11> pTextureD3D11 = m_pTexture.Downcast<xiiGALTextureD3D11>();
 
   const auto& textureDescription = pTextureD3D11->GetDescription();
 
@@ -392,8 +392,8 @@ xiiResult xiiGALTextureViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorde
 
   XII_ASSERT_DEV(m_Description.m_Format != xiiGALResourceFormat::Unknown, "");
 
-  xiiGALDeviceD3D11*  pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(m_pDevice->GetTexture(m_Description.m_hTexture));
+  xiiGALDeviceD3D11*               pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiSharedPtr<xiiGALTextureD3D11> pTextureD3D11 = m_pTexture.Downcast<xiiGALTextureD3D11>();
 
   const auto& textureDescription = pTextureD3D11->GetDescription();
 

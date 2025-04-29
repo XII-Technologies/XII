@@ -35,10 +35,6 @@ private:
   virtual ~xiiGALDeviceD3D11();
 
 public:
-
-  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
-
-public:
   XII_ALWAYS_INLINE virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final
   {
     XII_IGNORE_UNUSED(queueType);
@@ -46,7 +42,7 @@ public:
     return m_pGraphicsCommandQueue.Borrow();
   };
 
-  XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
 
   // Internal objects retrieval.
 

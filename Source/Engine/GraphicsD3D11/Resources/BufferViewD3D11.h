@@ -14,10 +14,11 @@ public:
   XII_ALWAYS_INLINE ID3D11View* GetBufferView() const { return m_pBufferView; };
 
 protected:
-  friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D11;
+  friend class xiiGALBufferD3D11;
 
-  xiiGALBufferViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
+  xiiGALBufferViewD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferViewD3D11();
 
