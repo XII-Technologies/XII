@@ -45,8 +45,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiSharedPtr<xiiGALDevice>                   xiiGALDevice::s_pDefaultDevice;
 xiiEvent<const xiiGALDeviceEvent&, xiiMutex> xiiGALDevice::s_Events;
 
-xiiGALDevice::xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription) :
-  xiiGALObject(), m_Description(creationDescription), m_Allocator("GALDevice", xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator)
+xiiGALDevice::xiiGALDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& creationDescription) :
+  xiiGALObject(), m_Description(creationDescription), m_Allocator("GALDevice", pAllocator), m_AllocatorWrapper(&m_Allocator)
 {
 }
 

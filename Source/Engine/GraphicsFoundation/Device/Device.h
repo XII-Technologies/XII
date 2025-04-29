@@ -232,7 +232,7 @@ public:
   virtual xiiUInt64 GetMemoryConsumptionForBuffer(const xiiGALBufferCreationDescription& description) const;
 
 protected:
-  xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription);
+  xiiGALDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& creationDescription);
 
   virtual ~xiiGALDevice();
 
