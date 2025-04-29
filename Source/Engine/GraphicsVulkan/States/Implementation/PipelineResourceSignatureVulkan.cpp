@@ -189,7 +189,7 @@ void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::Initialize(
 
   if (m_pSamplerVulkan == nullptr)
   {
-    m_pSamplerVulkan = pDeviceVulkan->CreateSamplerInternal(samplerDescription);
+    m_pSamplerVulkan = pDeviceVulkan->CreateSampler(samplerDescription).Downcast<xiiGALSamplerVulkan>();
   }
 }
 
@@ -197,10 +197,7 @@ void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::DeInitializ
 {
   XII_ASSERT_DEV(pDeviceVulkan != nullptr, "");
 
-  if (m_pSamplerVulkan != nullptr)
-  {
-    pDeviceVulkan->DestroySamplerInternal(m_pSamplerVulkan);
-  }
+  m_pSamplerVulkan.Clear();
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_States_Implementation_PipelineResourceSignatureVulkan);

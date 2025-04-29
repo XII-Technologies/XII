@@ -40,7 +40,7 @@ public:
     [[nodiscard]] XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_pSamplerVulkan->GetVulkanSampler(); }
 
   private:
-    xiiGALSamplerVulkan* m_pSamplerVulkan = nullptr;
+    xiiSharedPtr<xiiGALSamplerVulkan> m_pSamplerVulkan;
   };
 
 protected:

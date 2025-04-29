@@ -15,7 +15,7 @@ private:
   friend class xiiMemoryUtils;
   friend class xiiGALDeviceVulkan;
 
-  xiiGALFencePoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiUInt32 uiInitialSize);
+  xiiGALFencePoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiInitialSize);
   ~xiiGALFencePoolVulkan();
 
   vk::Fence CreateVulkanFence();
