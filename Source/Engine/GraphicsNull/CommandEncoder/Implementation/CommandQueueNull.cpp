@@ -40,4 +40,19 @@ xiiUInt64 xiiGALCommandQueueNull::Submit(xiiGALCommandList* pCommandList)
   return 0U;
 }
 
+xiiUInt64 xiiGALCommandQueueNull::GetNextFenceValue() const
+{
+  return 0ULL;
+}
+
+xiiUInt64 xiiGALCommandQueueNull::GetCompletedFenceValue()
+{
+  return 0ULL;
+}
+
+xiiUInt64 xiiGALCommandQueueNull::WaitForIdle()
+{
+  return 0ULL;
+}
+
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_CommandEncoder_Implementation_CommandQueueNull);

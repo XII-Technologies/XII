@@ -3,6 +3,7 @@
 #include <GraphicsNull/CommandEncoder/CommandListNull.h>
 #include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
+#include <GraphicsNull/Resources/QueryNull.h>
 
 xiiGALCommandListNull::xiiGALCommandListNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, xiiGALCommandQueueNull* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceNull, pCommandQueue, creationDescription)
@@ -28,7 +29,7 @@ xiiUInt64 xiiGALCommandListNull::SubmitPlatform()
   return static_cast<xiiGALCommandQueueNull*>(m_pCommandQueue)->Submit(this);
 }
 
-void xiiGALCommandListNull::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
+void xiiGALCommandListNull::SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
 {
   XII_IGNORE_UNUSED(pPipelineState);
 }
@@ -53,37 +54,37 @@ void xiiGALCommandListNull::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRec
   XII_IGNORE_UNUSED(pRects);
 }
 
-void xiiGALCommandListNull::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
+void xiiGALCommandListNull::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
 {
   XII_IGNORE_UNUSED(bindingInformation);
   XII_IGNORE_UNUSED(pConstantBuffer);
 }
 
-void xiiGALCommandListNull::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+void xiiGALCommandListNull::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
   XII_IGNORE_UNUSED(bindingInformation);
   XII_IGNORE_UNUSED(pBufferView);
 }
 
-void xiiGALCommandListNull::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+void xiiGALCommandListNull::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
   XII_IGNORE_UNUSED(bindingInformation);
   XII_IGNORE_UNUSED(pTextureView);
 }
 
-void xiiGALCommandListNull::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+void xiiGALCommandListNull::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
   XII_IGNORE_UNUSED(bindingInformation);
   XII_IGNORE_UNUSED(pBufferView);
 }
 
-void xiiGALCommandListNull::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+void xiiGALCommandListNull::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
   XII_IGNORE_UNUSED(bindingInformation);
   XII_IGNORE_UNUSED(pTextureView);
 }
 
-void xiiGALCommandListNull::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
+void xiiGALCommandListNull::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)
 {
   XII_IGNORE_UNUSED(bindingInformation);
   XII_IGNORE_UNUSED(pSampler);
@@ -95,7 +96,7 @@ xiiResult xiiGALCommandListNull::CommitShaderResourcesPlatform(xiiEnum<xiiGALSta
   return XII_SUCCESS;
 }
 
-void xiiGALCommandListNull::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
+void xiiGALCommandListNull::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset)
 {
   XII_IGNORE_UNUSED(pIndexBuffer);
   XII_IGNORE_UNUSED(uiByteOffset);
@@ -109,13 +110,13 @@ void xiiGALCommandListNull::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiA
   XII_IGNORE_UNUSED(flags);
 }
 
-void xiiGALCommandListNull::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
+void xiiGALCommandListNull::ClearRenderTargetViewPlatform(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor)
 {
   XII_IGNORE_UNUSED(pRenderTargetView);
   XII_IGNORE_UNUSED(clearColor);
 }
 
-void xiiGALCommandListNull::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+void xiiGALCommandListNull::ClearDepthStencilViewPlatform(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
   XII_IGNORE_UNUSED(pDepthStencilView);
   XII_IGNORE_UNUSED(bClearDepth);
@@ -124,7 +125,7 @@ void xiiGALCommandListNull::ClearDepthStencilViewPlatform(xiiGALTextureView* pDe
   XII_IGNORE_UNUSED(uiStencilClear);
 }
 
-void xiiGALCommandListNull::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
+void xiiGALCommandListNull::BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
 {
   XII_IGNORE_UNUSED(pRenderPass);
   XII_IGNORE_UNUSED(pFramebuffer);
@@ -164,7 +165,7 @@ xiiResult xiiGALCommandListNull::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexC
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DrawIndexedInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandListNull::DrawIndexedInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
   XII_IGNORE_UNUSED(pIndirectArgumentBuffer);
   XII_IGNORE_UNUSED(uiArgumentOffsetInBytes);
@@ -180,7 +181,7 @@ xiiResult xiiGALCommandListNull::DrawInstancedPlatform(xiiUInt32 uiVertexCountPe
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DrawInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandListNull::DrawInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
   XII_IGNORE_UNUSED(pIndirectArgumentBuffer);
   XII_IGNORE_UNUSED(uiArgumentOffsetInBytes);
@@ -203,37 +204,37 @@ xiiResult xiiGALCommandListNull::DispatchPlatform(xiiUInt32 uiThreadGroupCountX,
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandListNull::DispatchIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
   XII_IGNORE_UNUSED(pIndirectArgumentBuffer);
   XII_IGNORE_UNUSED(uiArgumentOffsetInBytes);
   return XII_SUCCESS;
 }
 
-void xiiGALCommandListNull::BeginQueryPlatform(xiiGALQuery* pQuery)
+void xiiGALCommandListNull::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   XII_IGNORE_UNUSED(pQuery);
 }
 
-void xiiGALCommandListNull::EndQueryPlatform(xiiGALQuery* pQuery)
+void xiiGALCommandListNull::EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   XII_IGNORE_UNUSED(pQuery);
 }
 
-void xiiGALCommandListNull::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
+void xiiGALCommandListNull::UpdateBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
   XII_IGNORE_UNUSED(pBuffer);
   XII_IGNORE_UNUSED(uiDestinationOffset);
   XII_IGNORE_UNUSED(pSourceData);
 }
 
-void xiiGALCommandListNull::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
+void xiiGALCommandListNull::CopyBufferPlatform(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer)
 {
   XII_IGNORE_UNUSED(pSourceBuffer);
   XII_IGNORE_UNUSED(pDestinationBuffer);
 }
 
-void xiiGALCommandListNull::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
+void xiiGALCommandListNull::CopyBufferRegionPlatform(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
   XII_IGNORE_UNUSED(pSourceBuffer);
   XII_IGNORE_UNUSED(uiSourceOffset);
@@ -242,7 +243,7 @@ void xiiGALCommandListNull::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer
   XII_IGNORE_UNUSED(uiSize);
 }
 
-xiiResult xiiGALCommandListNull::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
+xiiResult xiiGALCommandListNull::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
   XII_IGNORE_UNUSED(pBuffer);
   XII_IGNORE_UNUSED(mapType);
@@ -251,14 +252,14 @@ xiiResult xiiGALCommandListNull::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnu
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
+xiiResult xiiGALCommandListNull::UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
   XII_IGNORE_UNUSED(pBuffer);
   XII_IGNORE_UNUSED(mapType);
   return XII_SUCCESS;
 }
 
-void xiiGALCommandListNull::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
+void xiiGALCommandListNull::UpdateTexturePlatform(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
   XII_IGNORE_UNUSED(pTexture);
   XII_IGNORE_UNUSED(textureMiplevelData);
@@ -266,13 +267,13 @@ void xiiGALCommandListNull::UpdateTexturePlatform(xiiGALTexture* pTexture, const
   XII_IGNORE_UNUSED(subresourceData);
 }
 
-void xiiGALCommandListNull::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
+void xiiGALCommandListNull::CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture)
 {
   XII_IGNORE_UNUSED(pSourceTexture);
   XII_IGNORE_UNUSED(pDestinationTexture);
 }
 
-void xiiGALCommandListNull::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
+void xiiGALCommandListNull::CopyTextureRegionPlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
   XII_IGNORE_UNUSED(pSourceTexture);
   XII_IGNORE_UNUSED(sourceMipLevelData);
@@ -282,7 +283,7 @@ void xiiGALCommandListNull::CopyTextureRegionPlatform(xiiGALTexture* pSourceText
   XII_IGNORE_UNUSED(vDestinationPoint);
 }
 
-void xiiGALCommandListNull::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
+void xiiGALCommandListNull::ResolveTextureSubResourcePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
 {
   XII_IGNORE_UNUSED(pSourceTexture);
   XII_IGNORE_UNUSED(sourceMipLevelData);
@@ -290,12 +291,12 @@ void xiiGALCommandListNull::ResolveTextureSubResourcePlatform(xiiGALTexture* pSo
   XII_IGNORE_UNUSED(destinationMipLevelData);
 }
 
-void xiiGALCommandListNull::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
+void xiiGALCommandListNull::GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
   XII_IGNORE_UNUSED(pTextureView);
 }
 
-xiiResult xiiGALCommandListNull::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
+xiiResult xiiGALCommandListNull::MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
   XII_IGNORE_UNUSED(pTexture);
   XII_IGNORE_UNUSED(textureMipLevelData);
@@ -306,7 +307,7 @@ xiiResult xiiGALCommandListNull::MapTextureSubresourcePlatform(xiiGALTexture* pT
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
+xiiResult xiiGALCommandListNull::UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
   XII_IGNORE_UNUSED(pTexture);
   XII_IGNORE_UNUSED(textureMipLevelData);

@@ -82,7 +82,7 @@ xiiResult xiiGALDeviceNull::PostInitializePlatform()
 {
   xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
 
-  m_pDefaultQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), queueDescription);
+  m_pDefaultQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), queueDescription);
 
   return XII_SUCCESS;
 }
@@ -112,7 +112,7 @@ void xiiGALDeviceNull::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain
 
 xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceNull::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALSwapChainNull> pSwapChainNull = XII_NEW(&m_Allocator, xiiGALSwapChainNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALSwapChainNull> pSwapChainNull = XII_NEW(&m_Allocator, xiiGALSwapChainNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pSwapChainNull->InitPlatform().Succeeded())
     return pSwapChainNull;
@@ -124,7 +124,7 @@ xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceNull::CreateSwapChainPlatf
 
 xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceNull::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALBlendStateNull> pBlendStateNull = XII_NEW(&m_Allocator, xiiGALBlendStateNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBlendStateNull> pBlendStateNull = XII_NEW(&m_Allocator, xiiGALBlendStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pBlendStateNull->InitPlatform().Succeeded())
     return pBlendStateNull;
@@ -136,7 +136,7 @@ xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceNull::CreateBlendStatePla
 
 xiiInternal::NewInstance<xiiGALDepthStencilState> xiiGALDeviceNull::CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALDepthStencilStateNull> pDepthStencilStateNull = XII_NEW(&m_Allocator, xiiGALDepthStencilStateNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALDepthStencilStateNull> pDepthStencilStateNull = XII_NEW(&m_Allocator, xiiGALDepthStencilStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pDepthStencilStateNull->InitPlatform().Succeeded())
     return pDepthStencilStateNull;
@@ -148,7 +148,7 @@ xiiInternal::NewInstance<xiiGALDepthStencilState> xiiGALDeviceNull::CreateDepthS
 
 xiiInternal::NewInstance<xiiGALRasterizerState> xiiGALDeviceNull::CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALRasterizerStateNull> pRasterizerStateNull = XII_NEW(&m_Allocator, xiiGALRasterizerStateNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALRasterizerStateNull> pRasterizerStateNull = XII_NEW(&m_Allocator, xiiGALRasterizerStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pRasterizerStateNull->InitPlatform().Succeeded())
     return pRasterizerStateNull;
@@ -160,7 +160,7 @@ xiiInternal::NewInstance<xiiGALRasterizerState> xiiGALDeviceNull::CreateRasteriz
 
 xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceNull::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALShaderNull> pShaderNull = XII_NEW(&m_Allocator, xiiGALShaderNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALShaderNull> pShaderNull = XII_NEW(&m_Allocator, xiiGALShaderNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pShaderNull->InitPlatform().Succeeded())
     return pShaderNull;
@@ -172,7 +172,7 @@ xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceNull::CreateShaderPlatform(co
 
 xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceNull::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
 {
-  xiiInternal::NewInstance<xiiGALBufferNull> pBufferNull = XII_NEW(&m_Allocator, xiiGALBufferNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBufferNull> pBufferNull = XII_NEW(&m_Allocator, xiiGALBufferNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pBufferNull->InitPlatform(pInitialData).Succeeded())
     return pBufferNull;
@@ -184,7 +184,7 @@ xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceNull::CreateBufferPlatform(co
 
 xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceNull::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
 {
-  xiiInternal::NewInstance<xiiGALTextureNull> pTextureNull = XII_NEW(&m_Allocator, xiiGALTextureNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALTextureNull> pTextureNull = XII_NEW(&m_Allocator, xiiGALTextureNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pTextureNull->InitPlatform(pInitialData).Succeeded())
     return pTextureNull;
@@ -196,7 +196,7 @@ xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceNull::CreateTexturePlatform(
 
 xiiInternal::NewInstance<xiiGALSampler> xiiGALDeviceNull::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALSamplerNull> pSamplerNull = XII_NEW(&m_Allocator, xiiGALSamplerNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALSamplerNull> pSamplerNull = XII_NEW(&m_Allocator, xiiGALSamplerNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pSamplerNull->InitPlatform().Succeeded())
     return pSamplerNull;
@@ -208,7 +208,7 @@ xiiInternal::NewInstance<xiiGALSampler> xiiGALDeviceNull::CreateSamplerPlatform(
 
 xiiInternal::NewInstance<xiiGALQuery> xiiGALDeviceNull::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALQueryNull> pQueryNull = XII_NEW(&m_Allocator, xiiGALQueryNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALQueryNull> pQueryNull = XII_NEW(&m_Allocator, xiiGALQueryNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pQueryNull->InitPlatform().Succeeded())
     return pQueryNull;
@@ -220,7 +220,7 @@ xiiInternal::NewInstance<xiiGALQuery> xiiGALDeviceNull::CreateQueryPlatform(cons
 
 xiiInternal::NewInstance<xiiGALFence> xiiGALDeviceNull::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALFenceNull> pFenceNull = XII_NEW(&m_Allocator, xiiGALFenceNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALFenceNull> pFenceNull = XII_NEW(&m_Allocator, xiiGALFenceNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pFenceNull->InitPlatform().Succeeded())
     return pFenceNull;
@@ -232,7 +232,7 @@ xiiInternal::NewInstance<xiiGALFence> xiiGALDeviceNull::CreateFencePlatform(cons
 
 xiiInternal::NewInstance<xiiGALRenderPass> xiiGALDeviceNull::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALRenderPassNull> pRenderPassNull = XII_NEW(&m_Allocator, xiiGALRenderPassNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALRenderPassNull> pRenderPassNull = XII_NEW(&m_Allocator, xiiGALRenderPassNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pRenderPassNull->InitPlatform().Succeeded())
     return pRenderPassNull;
@@ -244,7 +244,7 @@ xiiInternal::NewInstance<xiiGALRenderPass> xiiGALDeviceNull::CreateRenderPassPla
 
 xiiInternal::NewInstance<xiiGALFramebuffer> xiiGALDeviceNull::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALFramebufferNull> pFramebufferNull = XII_NEW(&m_Allocator, xiiGALFramebufferNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALFramebufferNull> pFramebufferNull = XII_NEW(&m_Allocator, xiiGALFramebufferNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pFramebufferNull->InitPlatform().Succeeded())
     return pFramebufferNull;
@@ -256,7 +256,7 @@ xiiInternal::NewInstance<xiiGALFramebuffer> xiiGALDeviceNull::CreateFramebufferP
 
 xiiInternal::NewInstance<xiiGALBottomLevelAS> xiiGALDeviceNull::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALBottomLevelASNull> pBottomLevelASNull = XII_NEW(&m_Allocator, xiiGALBottomLevelASNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBottomLevelASNull> pBottomLevelASNull = XII_NEW(&m_Allocator, xiiGALBottomLevelASNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pBottomLevelASNull->InitPlatform().Succeeded())
     return pBottomLevelASNull;
@@ -268,7 +268,7 @@ xiiInternal::NewInstance<xiiGALBottomLevelAS> xiiGALDeviceNull::CreateBottomLeve
 
 xiiInternal::NewInstance<xiiGALTopLevelAS> xiiGALDeviceNull::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALTopLevelASNull> pTopLevelASNull = XII_NEW(&m_Allocator, xiiGALTopLevelASNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALTopLevelASNull> pTopLevelASNull = XII_NEW(&m_Allocator, xiiGALTopLevelASNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pTopLevelASNull->InitPlatform().Succeeded())
     return pTopLevelASNull;
@@ -280,7 +280,7 @@ xiiInternal::NewInstance<xiiGALTopLevelAS> xiiGALDeviceNull::CreateTopLevelASPla
 
 xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceNull::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALPipelineResourceSignatureNull> pPipelineResourceSignatureNull = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALPipelineResourceSignatureNull> pPipelineResourceSignatureNull = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pPipelineResourceSignatureNull->InitPlatform().Succeeded())
     return pPipelineResourceSignatureNull;
@@ -292,7 +292,7 @@ xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceNull::Crea
 
 xiiInternal::NewInstance<xiiGALPipelineState> xiiGALDeviceNull::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALPipelineStateNull> pPipelineStateNull = XII_NEW(&m_Allocator, xiiGALPipelineStateNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALPipelineStateNull> pPipelineStateNull = XII_NEW(&m_Allocator, xiiGALPipelineStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
   if (pPipelineStateNull->InitPlatform().Succeeded())
     return pPipelineStateNull;
