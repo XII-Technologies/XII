@@ -11,12 +11,15 @@
 class XII_GRAPHICSNULL_DLL xiiGALDeviceNull final : public xiiGALDevice
 {
 private:
+  friend class xiiMemoryUtils;
+
   friend xiiInternal::NewInstance<xiiGALDevice> CreateNullDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
 
   xiiGALDeviceNull(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
 
+  virtual ~xiiGALDeviceNull();
+
 public:
-  ~xiiGALDeviceNull();
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
 
