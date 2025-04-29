@@ -14,10 +14,10 @@ class XII_GRAPHICSVULKAN_DLL xiiGALPipelineStateVulkan final : public xiiGALPipe
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineStateVulkan, xiiGALPipelineState);
 
 public:
-  XII_ALWAYS_INLINE vk::Pipeline GetVulkanPipeline() const { return m_vkPipeline; }
-  XII_ALWAYS_INLINE vk::PipelineCache GetVulkanPipelineCache() const { return m_vkPipelineCache; }
-  XII_ALWAYS_INLINE vk::PipelineLayout GetVulkanPipelineLayout() const { return m_vkPipelineLayout; }
-  XII_ALWAYS_INLINE vk::PipelineBindPoint GetVulkanPipelineBindPoint() const { return m_vkPipelineBindPoint; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Pipeline GetVulkanPipeline() const { return m_vkPipeline; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::PipelineCache GetVulkanPipelineCache() const { return m_vkPipelineCache; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::PipelineLayout GetVulkanPipelineLayout() const { return m_vkPipelineLayout; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::PipelineBindPoint GetVulkanPipelineBindPoint() const { return m_vkPipelineBindPoint; }
 
 protected:
   friend class xiiGALDeviceVulkan;

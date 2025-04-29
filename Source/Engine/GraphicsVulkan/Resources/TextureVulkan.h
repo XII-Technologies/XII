@@ -15,17 +15,17 @@ class XII_GRAPHICSVULKAN_DLL xiiGALTextureVulkan final : public xiiGALTexture
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureVulkan, xiiGALTexture);
 
 public:
-  XII_ALWAYS_INLINE virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final { return m_SparseTextureProperties; }
+  [[nodiscard]] XII_ALWAYS_INLINE virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final { return m_SparseTextureProperties; }
 
-  XII_ALWAYS_INLINE vk::Image     GetVulkanImage() const { return m_vkImage; }
-  XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_ImageMemoryAllocation; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Image     GetVulkanImage() const { return m_vkImage; }
+  [[nodiscard]] XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_ImageMemoryAllocation; }
 
-  XII_ALWAYS_INLINE vk::Buffer    GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
-  XII_ALWAYS_INLINE VmaAllocation GetStagingBufferAllocationDescription() const { return m_StagingBufferMemoryAllocation; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer    GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
+  [[nodiscard]] XII_ALWAYS_INLINE VmaAllocation GetStagingBufferAllocationDescription() const { return m_StagingBufferMemoryAllocation; }
 
-  XII_ALWAYS_INLINE bool IsNativeObjectWrapper() const { return m_Description.m_pExisitingNativeObject != nullptr; }
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsNativeObjectWrapper() const { return m_Description.m_pExisitingNativeObject != nullptr; }
 
-  vk::ImageLayout GetVulkanImageLayout() const;
+  [[nodiscard]] vk::ImageLayout GetVulkanImageLayout() const;
   void            SetVulkanImageLayout(vk::ImageLayout vkImageLayout);
 
   // For non-compressed color format buffer, the offset must be a multiple of the format's texel block size.
@@ -45,7 +45,7 @@ protected:
 
   virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData) override final;
 
-  virtual xiiResult DeInitPlatform() override final;
+  virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(const xiiGALTextureViewCreationDescription& description) override;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 

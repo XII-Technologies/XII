@@ -9,18 +9,25 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferViewVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBufferViewVulkan::xiiGALBufferViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
+xiiGALBufferViewVulkan::xiiGALBufferViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pDeviceVulkan, pBuffer, creationDescription)
 {
 }
 
-xiiGALBufferViewVulkan::~xiiGALBufferViewVulkan() = default;
+xiiGALBufferViewVulkan::~xiiGALBufferViewVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkBufferView);
+
+  m_vkBufferView = VK_NULL_HANDLE;
+}
 
 xiiResult xiiGALBufferViewVulkan::InitPlatform()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan     = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALBufferVulkan* pBufferVulkan     = static_cast<xiiGALBufferVulkan*>(pDeviceVulkan->GetBuffer(m_Description.m_hBuffer));
-  const auto&         bufferDescription = pBufferVulkan->GetDescription();
+  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan    = m_pBuffer.Downcast<xiiGALBufferVulkan>();
+  const auto&                       bufferDescription = pBufferVulkan->GetDescription();
 
   if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted)
   {
@@ -43,17 +50,6 @@ xiiResult xiiGALBufferViewVulkan::InitPlatform()
   m_vkDescriptorBufferInfo.buffer = pBufferVulkan->GetVulkanBuffer();
   m_vkDescriptorBufferInfo.offset = m_Description.m_uiByteOffset;
   m_vkDescriptorBufferInfo.range  = m_Description.m_uiByteWidth;
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALBufferViewVulkan::DeInitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkBufferView);
-
-  m_vkBufferView = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }

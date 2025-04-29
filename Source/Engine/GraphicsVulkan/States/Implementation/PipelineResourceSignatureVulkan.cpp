@@ -42,7 +42,33 @@ xiiGALPipelineResourceSignatureVulkan::xiiGALPipelineResourceSignatureVulkan(xii
 {
 }
 
-xiiGALPipelineResourceSignatureVulkan::~xiiGALPipelineResourceSignatureVulkan() = default;
+xiiGALPipelineResourceSignatureVulkan::~xiiGALPipelineResourceSignatureVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  m_PipelineResourceSetLayouts.Clear();
+  m_PipelineResourceSetLayouts.Compact();
+
+  for (xiiUInt32 i = 0; i < m_DescriptorSetLayouts.GetCount(); ++i)
+  {
+    if (m_DescriptorSetLayouts[i] != VK_NULL_HANDLE)
+    {
+      pDeviceVulkan->SafeReleaseDeviceObject(m_DescriptorSetLayouts[i]);
+
+      m_DescriptorSetLayouts[i] = VK_NULL_HANDLE;
+    }
+  }
+  m_DescriptorSetLayouts.Clear();
+  m_DescriptorSetLayouts.Compact();
+
+  for (xiiUInt32 i = 0; i < m_ImmutableSamplers.GetCount(); ++i)
+  {
+    if (m_ImmutableSamplers[i])
+    {
+      m_ImmutableSamplers[i].DeInitialize(pDeviceVulkan);
+    }
+  }
+}
 
 xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 {
@@ -141,36 +167,6 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
     vk::DescriptorSetLayout& vkDescriptorSetLayout = m_DescriptorSetLayouts.ExpandAndGetRef();
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createDescriptorSetLayout(&vkDescriptorSetLayoutCreateInfo, nullptr, &vkDescriptorSetLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALPipelineResourceSignatureVulkan::DeInitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-
-  m_PipelineResourceSetLayouts.Clear();
-  m_PipelineResourceSetLayouts.Compact();
-
-  for (xiiUInt32 i = 0; i < m_DescriptorSetLayouts.GetCount(); ++i)
-  {
-    if (m_DescriptorSetLayouts[i] != VK_NULL_HANDLE)
-    {
-      pDeviceVulkan->SafeReleaseDeviceObject(m_DescriptorSetLayouts[i]);
-
-      m_DescriptorSetLayouts[i] = VK_NULL_HANDLE;
-    }
-  }
-  m_DescriptorSetLayouts.Clear();
-  m_DescriptorSetLayouts.Compact();
-
-  for (xiiUInt32 i = 0; i < m_ImmutableSamplers.GetCount(); ++i)
-  {
-    if (m_ImmutableSamplers[i])
-    {
-      m_ImmutableSamplers[i].DeInitialize(pDeviceVulkan);
-    }
-  }
-
   return XII_SUCCESS;
 }
 

@@ -3,6 +3,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 // clang-format off
@@ -13,7 +14,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const auto&         fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
+  const auto&                      fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
   return xiiVulkanTypeConversions::GetImageLayout(GetResourceState(), false, fragmentDensityMap.fragmentDensityMap != vk::False);
 }
 
@@ -27,7 +28,27 @@ xiiGALTextureVulkan::xiiGALTextureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDevic
 {
 }
 
-xiiGALTextureVulkan::~xiiGALTextureVulkan() = default;
+xiiGALTextureVulkan::~xiiGALTextureVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  if (m_vkStagingBuffer != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer, m_StagingBufferMemoryAllocation);
+
+    m_vkStagingBuffer               = VK_NULL_HANDLE;
+    m_StagingBufferMemoryAllocation = {};
+  }
+
+  // Prevent releasing the native object.
+  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkImage, m_ImageMemoryAllocation);
+
+    m_vkImage               = VK_NULL_HANDLE;
+    m_ImageMemoryAllocation = {};
+  }
+}
 
 xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialData)
 {
@@ -118,34 +139,23 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTextureVulkan::DeInitPlatform()
+xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureVulkan::CreateViewPlatform(const xiiGALTextureViewCreationDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>                  pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiInternal::NewInstance<xiiGALTextureViewVulkan> pTextureViewVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALTextureViewVulkan, pDeviceVulkan, xiiSharedPtr<xiiGALTexture>(this, pDeviceVulkan->GetAllocator()), description);
 
-  if (m_vkStagingBuffer != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer, m_StagingBufferMemoryAllocation);
+  if (pTextureViewVulkan->InitPlatform().Succeeded())
+    return pTextureViewVulkan;
 
-    m_vkStagingBuffer               = VK_NULL_HANDLE;
-    m_StagingBufferMemoryAllocation = {};
-  }
+  XII_DELETE(pTextureViewVulkan.m_pAllocator, pTextureViewVulkan.m_pInstance);
 
-  // Prevent releasing the native object.
-  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkImage, m_ImageMemoryAllocation);
-
-    m_vkImage               = VK_NULL_HANDLE;
-    m_ImageMemoryAllocation = {};
-  }
-
-  return XII_SUCCESS;
+  return pTextureViewVulkan;
 }
 
 void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp;
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkImage, sName.GetData(tmp));
 }
@@ -153,7 +163,7 @@ void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
 vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const bool          bInitializeTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
+  const bool                       bInitializeTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
 
   vk::BufferCreateInfo vkStagingBufferCreateInfo = {};
   vkStagingBufferCreateInfo.pNext                = nullptr;

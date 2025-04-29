@@ -23,10 +23,10 @@ class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : publi
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignatureVulkan, xiiGALPipelineResourceSignature);
 
 public:
-  XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan> GetPipelineResourceSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_PipelineResourceSetLayouts.GetCount()) ? m_PipelineResourceSetLayouts[uiSet].GetArrayPtr() : xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan>(); }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::DescriptorSetLayout> GetVulkanDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
-  XII_ALWAYS_INLINE vk::DescriptorSetLayout GetVulkanDescriptorSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_DescriptorSetLayouts.GetCount()) ? m_DescriptorSetLayouts[uiSet] : VK_NULL_HANDLE; }
-  XII_ALWAYS_INLINE xiiUInt32               GetVulkanDescriptorSetLayoutCount() const { return m_DescriptorSetLayouts.GetCount(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan> GetPipelineResourceSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_PipelineResourceSetLayouts.GetCount()) ? m_PipelineResourceSetLayouts[uiSet].GetArrayPtr() : xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan>(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::DescriptorSetLayout> GetVulkanDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::DescriptorSetLayout GetVulkanDescriptorSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_DescriptorSetLayouts.GetCount()) ? m_DescriptorSetLayouts[uiSet] : VK_NULL_HANDLE; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32               GetVulkanDescriptorSetLayoutCount() const { return m_DescriptorSetLayouts.GetCount(); }
 
   struct ImmutableSamplerStorage
   {
@@ -37,7 +37,7 @@ public:
 
     XII_ALWAYS_INLINE explicit operator bool() const { return m_pSamplerVulkan != nullptr; }
 
-    XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_pSamplerVulkan->GetVulkanSampler(); }
+    [[nodiscard]] XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_pSamplerVulkan->GetVulkanSampler(); }
 
   private:
     xiiGALSamplerVulkan* m_pSamplerVulkan = nullptr;

@@ -13,7 +13,14 @@ xiiGALRenderPassVulkan::xiiGALRenderPassVulkan(xiiSharedPtr<xiiGALDeviceVulkan> 
 {
 }
 
-xiiGALRenderPassVulkan::~xiiGALRenderPassVulkan() = default;
+xiiGALRenderPassVulkan::~xiiGALRenderPassVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkRenderPass);
+
+  m_vkRenderPass = VK_NULL_HANDLE;
+}
 
 xiiResult xiiGALRenderPassVulkan::InitPlatform()
 {
@@ -56,17 +63,6 @@ xiiResult xiiGALRenderPassVulkan::InitPlatform()
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALRenderPassVulkan::DeInitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkRenderPass);
-
-  m_vkRenderPass = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }

@@ -13,7 +13,17 @@ xiiGALSamplerVulkan::xiiGALSamplerVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDevic
 {
 }
 
-xiiGALSamplerVulkan::~xiiGALSamplerVulkan() = default;
+xiiGALSamplerVulkan::~xiiGALSamplerVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  if (m_vkSampler != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkSampler);
+
+    m_vkSampler = VK_NULL_HANDLE;
+  }
+}
 
 xiiResult xiiGALSamplerVulkan::InitPlatform()
 {
@@ -100,23 +110,7 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
     vkSamplerCreateInfo.flags |= vk::SamplerCreateFlagBits::eSubsampledCoarseReconstructionEXT;
   }
 
-  m_vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eUndefined;
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSampler(&vkSamplerCreateInfo, nullptr, &m_vkDescriptorImageInfo.sampler, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALSamplerVulkan::DeInitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-
-  if (m_vkDescriptorImageInfo.sampler != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkDescriptorImageInfo.sampler);
-
-    m_vkDescriptorImageInfo = vk::DescriptorImageInfo{};
-  }
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSampler(&vkSamplerCreateInfo, nullptr, &m_vkSampler, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   return XII_SUCCESS;
 }
@@ -124,9 +118,9 @@ xiiResult xiiGALSamplerVulkan::DeInitPlatform()
 void xiiGALSamplerVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp;
+  xiiStringBuilder                 tmp;
 
-  pDeviceVulkan->SetVulkanObjectDebugName(m_vkDescriptorImageInfo.sampler, sName.GetData(tmp));
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkSampler, sName.GetData(tmp));
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_SamplerVulkan);

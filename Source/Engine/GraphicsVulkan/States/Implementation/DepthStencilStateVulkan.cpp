@@ -48,9 +48,4 @@ xiiResult xiiGALDepthStencilStateVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALDepthStencilStateVulkan::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_States_Implementation_DepthStencilStateVulkan);

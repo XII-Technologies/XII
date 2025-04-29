@@ -13,29 +13,7 @@ xiiGALFenceVulkan::xiiGALFenceVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVul
 {
 }
 
-xiiGALFenceVulkan::~xiiGALFenceVulkan() = default;
-
-xiiResult xiiGALFenceVulkan::InitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
-  if (m_Description.m_Type == xiiGALFenceType::General && pDeviceVulkan->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled)
-  {
-    vk::SemaphoreTypeCreateInfo vkTimelineCreateInfo = {};
-    vkTimelineCreateInfo.semaphoreType               = vk::SemaphoreType::eTimeline;
-    vkTimelineCreateInfo.initialValue                = 0U;
-
-    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
-    vkSemaphoreCreateInfo.pNext                   = &vkTimelineCreateInfo;
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkTimelineSemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-  }
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALFenceVulkan::DeInitPlatform()
+xiiGALFenceVulkan::~xiiGALFenceVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
@@ -60,6 +38,24 @@ xiiResult xiiGALFenceVulkan::DeInitPlatform()
     xiiLog::Warning("Max queue size of pending fences is too large. This may indicate that none of the GetCompletedValue(), Wait(), or ExtractSignalSemaphore() methods have been used.");
   }
 #endif
+}
+
+xiiResult xiiGALFenceVulkan::InitPlatform()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  if (m_Description.m_Type == xiiGALFenceType::General && pDeviceVulkan->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled)
+  {
+    vk::SemaphoreTypeCreateInfo vkTimelineCreateInfo = {};
+    vkTimelineCreateInfo.semaphoreType               = vk::SemaphoreType::eTimeline;
+    vkTimelineCreateInfo.initialValue                = 0U;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkTimelineCreateInfo;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkTimelineSemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  }
 
   return XII_SUCCESS;
 }

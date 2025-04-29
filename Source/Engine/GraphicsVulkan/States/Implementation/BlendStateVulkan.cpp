@@ -17,8 +17,8 @@ xiiGALBlendStateVulkan::~xiiGALBlendStateVulkan() = default;
 
 xiiResult xiiGALBlendStateVulkan::InitPlatform()
 {
-  // \note The blend state attachment count is known and set when the number of render targets are given.
-  // \note The attachment count must be equal to the color attachment count in the subpass where this blend state is used.
+  /// \note The blend state attachment count is known and set when the number of render targets are given.
+  /// \note The attachment count must be equal to the color attachment count in the subpass where this blend state is used.
 
   if (m_Description.m_RenderTargets.IsEmpty())
     return XII_SUCCESS;
@@ -69,11 +69,6 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform()
     }
   }
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALBlendStateVulkan::DeInitPlatform()
-{
   return XII_SUCCESS;
 }
 

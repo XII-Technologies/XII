@@ -17,16 +17,7 @@ xiiGALBottomLevelASVulkan::~xiiGALBottomLevelASVulkan() = default;
 
 xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
 {
-  // xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
-
   return XII_FAILURE;
-}
-
-xiiResult xiiGALBottomLevelASVulkan::DeInitPlatform()
-{
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return XII_SUCCESS;
 }
 
 void xiiGALBottomLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)

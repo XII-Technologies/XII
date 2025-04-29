@@ -16,10 +16,10 @@ xiiGALInputLayoutVulkan::xiiGALInputLayoutVulkan(xiiSharedPtr<xiiGALDeviceVulkan
 
 xiiGALInputLayoutVulkan::~xiiGALInputLayoutVulkan() = default;
 
-xiiResult xiiGALInputLayoutVulkan::InitPlatform()
+xiiResult xiiGALInputLayoutVulkan::InitPlatform(xiiGALShader* pShader)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pDeviceVulkan->GetShader(m_Description.m_hVertexShader));
+  xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pShader);
 
   xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputAttributes(pShaderVulkan->GetVertexInputLayout());
   auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum semantic, xiiGALResourceFormat::Enum format) -> xiiUInt32 {
@@ -91,14 +91,6 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform()
     xiiLog::Error("Vertex attributes do not cover all vertex attributes defined in the shader!");
     return XII_FAILURE;
   }
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALInputLayoutVulkan::DeInitPlatform()
-{
-  m_vkVertexAttributes.Clear();
-  m_vkVertexInputBindings.Clear();
 
   return XII_SUCCESS;
 }

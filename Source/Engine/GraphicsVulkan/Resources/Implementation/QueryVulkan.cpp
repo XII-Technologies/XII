@@ -15,17 +15,13 @@ xiiGALQueryVulkan::xiiGALQueryVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVul
 {
 }
 
-xiiGALQueryVulkan::~xiiGALQueryVulkan() = default;
+xiiGALQueryVulkan::~xiiGALQueryVulkan()
+{
+  DiscardQueries();
+}
 
 xiiResult xiiGALQueryVulkan::InitPlatform()
 {
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALQueryVulkan::DeInitPlatform()
-{
-  DiscardQueries();
-
   return XII_SUCCESS;
 }
 
@@ -119,7 +115,6 @@ void xiiGALQueryVulkan::DiscardQueries()
   m_pQueryPoolVulkan     = nullptr;
   m_uiQueryEndFenceValue = xiiInvalidIndex;
 }
-
 
 namespace
 {

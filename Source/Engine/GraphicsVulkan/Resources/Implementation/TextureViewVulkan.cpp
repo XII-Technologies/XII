@@ -9,17 +9,24 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureViewVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALTextureViewVulkan::xiiGALTextureViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
+xiiGALTextureViewVulkan::xiiGALTextureViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
   xiiGALTextureView(pDeviceVulkan, pTexture, creationDescription)
 {
 }
 
-xiiGALTextureViewVulkan::~xiiGALTextureViewVulkan() = default;
+xiiGALTextureViewVulkan::~xiiGALTextureViewVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkImageView);
+
+  m_vkImageView = VK_NULL_HANDLE;
+}
 
 xiiResult xiiGALTextureViewVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan*  pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALTextureVulkan* pTextureVulkan     = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_Description.m_hTexture));
+  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan     = m_pTexture.Downcast<xiiGALTextureVulkan>();
   const auto&          textureDescription = pTextureVulkan->GetDescription();
 
   if (m_Description.m_Format == xiiGALResourceFormat::Unknown)
@@ -243,17 +250,6 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
 
   m_vkDescriptorImageInfo.imageView   = m_vkImageView;
   m_vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral; // TODO
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALTextureViewVulkan::DeInitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkImageView);
-
-  m_vkImageView = VK_NULL_HANDLE;
 
   return XII_SUCCESS;
 }

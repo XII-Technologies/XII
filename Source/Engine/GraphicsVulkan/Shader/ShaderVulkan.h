@@ -15,7 +15,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALShaderVulkan final : public xiiGALShader
   XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderVulkan, xiiGALShader);
 
 public:
-  XII_ALWAYS_INLINE vk::ShaderModule GetVulkanShaderModule() const { return m_vkShaderModule; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::ShaderModule GetVulkanShaderModule() const { return m_vkShaderModule; }
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -27,7 +27,7 @@ protected:
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
+  virtual xiiInternal::NewInstance<xiiGALInputLayout> CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) override;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 

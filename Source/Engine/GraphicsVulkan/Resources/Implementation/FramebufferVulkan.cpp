@@ -16,12 +16,19 @@ xiiGALFramebufferVulkan::xiiGALFramebufferVulkan(xiiSharedPtr<xiiGALDeviceVulkan
 {
 }
 
-xiiGALFramebufferVulkan::~xiiGALFramebufferVulkan() = default;
+xiiGALFramebufferVulkan::~xiiGALFramebufferVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  pDeviceVulkan->SafeReleaseDeviceObject(m_vkFramebuffer);
+
+  m_vkFramebuffer = VK_NULL_HANDLE;
+}
 
 xiiResult xiiGALFramebufferVulkan::InitPlatform()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   vk::FramebufferCreateInfo framebufferCreateInfo = {};
   framebufferCreateInfo.pNext                     = nullptr;
@@ -30,19 +37,17 @@ xiiResult xiiGALFramebufferVulkan::InitPlatform()
   framebufferCreateInfo.height                    = m_Description.m_FramebufferSize.height;
   framebufferCreateInfo.layers                    = m_Description.m_uiArraySliceCount;
 
-  xiiGALRenderPassVulkan* pRenderPassVulkan = static_cast<xiiGALRenderPassVulkan*>(pDeviceVulkan->GetRenderPass(m_Description.m_hRenderPass));
-  framebufferCreateInfo.renderPass          = pRenderPassVulkan->GetVulkanRenderPass();
+  xiiSharedPtr<xiiGALRenderPassVulkan> pRenderPassVulkan = m_Description.m_pRenderPass.Downcast<xiiGALRenderPassVulkan>();
+  framebufferCreateInfo.renderPass                       = pRenderPassVulkan->GetVulkanRenderPass();
 
   xiiHybridArray<vk::ImageView, 8U> vkImageViews(pDeviceVulkan->GetAllocator());
   for (xiiUInt32 i = 0; i < m_Description.m_Attachments.GetCount(); ++i)
   {
-    const xiiGALTextureViewHandle& hAttachmentView = m_Description.m_Attachments[i];
+    xiiSharedPtr<xiiGALTextureViewVulkan> pAttachmentView = m_Description.m_Attachments[i].Downcast<xiiGALTextureViewVulkan>();
 
-    if (!hAttachmentView.IsInvalidated())
+    if (pAttachmentView != nullptr)
     {
-      xiiGALTextureViewVulkan* pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pDeviceVulkan->GetTextureView(m_Description.m_Attachments[i]));
-
-      vkImageViews.PushBack(pTextureViewVulkan->GetVulkanImageView());
+      vkImageViews.PushBack(pAttachmentView->GetVulkanImageView());
     }
     else
     {
@@ -57,21 +62,10 @@ xiiResult xiiGALFramebufferVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALFramebufferVulkan::DeInitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkFramebuffer);
-
-  m_vkFramebuffer = VK_NULL_HANDLE;
-
-  return XII_SUCCESS;
-}
-
 void xiiGALFramebufferVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp;
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkFramebuffer, sName.GetData(tmp));
 }

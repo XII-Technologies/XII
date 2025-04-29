@@ -4,6 +4,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
+#include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferVulkan, 1, xiiRTTINoAllocator)
@@ -15,7 +16,18 @@ xiiGALBufferVulkan::xiiGALBufferVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceV
 {
 }
 
-xiiGALBufferVulkan::~xiiGALBufferVulkan() = default;
+xiiGALBufferVulkan::~xiiGALBufferVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  if (m_vkBuffer != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkBuffer, m_BufferMemoryAllocation);
+
+    m_vkBuffer               = VK_NULL_HANDLE;
+    m_BufferMemoryAllocation = VK_NULL_HANDLE;
+  }
+}
 
 xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 {
@@ -209,21 +221,17 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBufferVulkan::DeInitPlatform()
+xiiInternal::NewInstance<xiiGALBufferView> xiiGALBufferVulkan::CreateViewPlatform(const xiiGALBufferViewCreationDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>                 pDeviceVulkan     = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiInternal::NewInstance<xiiGALBufferViewVulkan> pBufferViewVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALBufferViewVulkan, pDeviceVulkan, xiiSharedPtr<xiiGALBuffer>(this, pDeviceVulkan->GetAllocator()), description);
 
-  if (m_vkBuffer != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkBuffer, m_BufferMemoryAllocation);
+  if (pBufferViewVulkan->InitPlatform().Succeeded())
+    return pBufferViewVulkan;
 
-    m_vkBuffer               = VK_NULL_HANDLE;
-    m_BufferMemoryAllocation = VK_NULL_HANDLE;
-  }
+  XII_DELETE(pBufferViewVulkan.m_pAllocator, pBufferViewVulkan.m_pInstance);
 
-  m_IndexFormat = xiiGALValueType::UInt16;
-
-  return XII_SUCCESS;
+  return pBufferViewVulkan;
 }
 
 void xiiGALBufferVulkan::SetDebugNamePlatform(xiiStringView sName)
