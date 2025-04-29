@@ -42,7 +42,7 @@ protected:
   friend class xiiMemoryUtils;
   friend class xiiGALCommandListVulkan;
 
-  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueueVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueVulkan();
 

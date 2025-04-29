@@ -9,7 +9,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureViewVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALTextureViewVulkan::xiiGALTextureViewVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
+xiiGALTextureViewVulkan::xiiGALTextureViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
   xiiGALTextureView(pDeviceVulkan, pTexture, creationDescription)
 {
 }
@@ -249,7 +249,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
 
 xiiResult xiiGALTextureViewVulkan::DeInitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkImageView);
 
@@ -260,7 +260,7 @@ xiiResult xiiGALTextureViewVulkan::DeInitPlatform()
 
 void xiiGALTextureViewVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkImageView, sName.GetData(tmp));

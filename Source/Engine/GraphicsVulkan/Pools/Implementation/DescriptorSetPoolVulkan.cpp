@@ -13,7 +13,7 @@ bool xiiHashHelper<vk::DescriptorType>::Equal(vk::DescriptorType a, vk::Descript
   return a == b;
 }
 
-xiiGALDescriptorSetPoolVulkan::xiiGALDescriptorSetPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiBaseSize) :
+xiiGALDescriptorSetPoolVulkan::xiiGALDescriptorSetPoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiUInt32 uiBaseSize) :
   m_pDeviceVulkan(pDeviceVulkan), m_DescriptorPools(pDeviceVulkan->GetAllocator()), m_QueuedDescriptorPools(pDeviceVulkan->GetAllocator()), m_uiBaseSize(uiBaseSize)
 {
 }

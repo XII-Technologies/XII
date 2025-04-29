@@ -3,7 +3,7 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
 
-xiiGALDynamicBufferPoolVulkan::xiiGALDynamicBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiAlignment, vk::BufferUsageFlags vkBufferUsageFlags) :
+xiiGALDynamicBufferPoolVulkan::xiiGALDynamicBufferPoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiUInt32 uiAlignment, vk::BufferUsageFlags vkBufferUsageFlags) :
   m_pDeviceVulkan(pDeviceVulkan), m_uiAlignment(uiAlignment), m_vkBufferUsageFlags(vkBufferUsageFlags)
 {
 }

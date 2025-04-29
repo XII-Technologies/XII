@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRenderPassVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALRenderPassVulkan::xiiGALRenderPassVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALRenderPassCreationDescription& creationDescription) :
+xiiGALRenderPassVulkan::xiiGALRenderPassVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALRenderPassCreationDescription& creationDescription) :
   xiiGALRenderPass(pDeviceVulkan, creationDescription)
 {
 }
@@ -62,7 +62,7 @@ xiiResult xiiGALRenderPassVulkan::InitPlatform()
 
 xiiResult xiiGALRenderPassVulkan::DeInitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkRenderPass);
 
@@ -73,7 +73,7 @@ xiiResult xiiGALRenderPassVulkan::DeInitPlatform()
 
 void xiiGALRenderPassVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkRenderPass, sName.GetData(tmp));

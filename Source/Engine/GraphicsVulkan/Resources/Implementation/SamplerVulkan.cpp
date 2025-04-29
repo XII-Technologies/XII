@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALSamplerVulkan::xiiGALSamplerVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSamplerCreationDescription& creationDescription) :
+xiiGALSamplerVulkan::xiiGALSamplerVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& creationDescription) :
   xiiGALSampler(pDeviceVulkan, creationDescription)
 {
 }
@@ -109,7 +109,7 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
 
 xiiResult xiiGALSamplerVulkan::DeInitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   if (m_vkDescriptorImageInfo.sampler != VK_NULL_HANDLE)
   {
@@ -123,7 +123,7 @@ xiiResult xiiGALSamplerVulkan::DeInitPlatform()
 
 void xiiGALSamplerVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkDescriptorImageInfo.sampler, sName.GetData(tmp));

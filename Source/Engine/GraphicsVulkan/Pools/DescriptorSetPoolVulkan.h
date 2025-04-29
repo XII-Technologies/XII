@@ -26,7 +26,7 @@ private:
   friend class xiiMemoryUtils;
   friend class xiiGALDeviceVulkan;
 
-  xiiGALDescriptorSetPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiBaseSize);
+  xiiGALDescriptorSetPoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiUInt32 uiBaseSize);
   ~xiiGALDescriptorSetPoolVulkan();
 
   vk::DescriptorPool CreateVulkanDescriptorPool();

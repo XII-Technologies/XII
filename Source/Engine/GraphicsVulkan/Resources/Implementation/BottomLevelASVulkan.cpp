@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelASVulkan, 1, xiiRTTINoAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBottomLevelASVulkan::xiiGALBottomLevelASVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBottomLevelASCreationDescription& creationDescription) :
+xiiGALBottomLevelASVulkan::xiiGALBottomLevelASVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALBottomLevelASCreationDescription& creationDescription) :
   xiiGALBottomLevelAS(pDeviceVulkan, creationDescription)
 {
 }
@@ -17,7 +17,7 @@ xiiGALBottomLevelASVulkan::~xiiGALBottomLevelASVulkan() = default;
 
 xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
+  // xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
   return XII_FAILURE;
 }

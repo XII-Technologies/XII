@@ -12,7 +12,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
-  xiiGALDeviceVulkan* pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   const auto&         fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
   return xiiVulkanTypeConversions::GetImageLayout(GetResourceState(), false, fragmentDensityMap.fragmentDensityMap != vk::False);
 }
@@ -22,7 +22,7 @@ void xiiGALTextureVulkan::SetVulkanImageLayout(vk::ImageLayout vkImageLayout)
   SetResourceState(xiiVulkanTypeConversions::GetResourceState(vkImageLayout));
 }
 
-xiiGALTextureVulkan::xiiGALTextureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
+xiiGALTextureVulkan::xiiGALTextureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceVulkan, creationDescription), m_ImageMemoryAllocation(nullptr), m_StagingBufferMemoryAllocation(nullptr)
 {
 }
@@ -31,7 +31,7 @@ xiiGALTextureVulkan::~xiiGALTextureVulkan() = default;
 
 xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   if (m_Description.m_Usage == xiiGALResourceUsage::Immutable && (pInitialData == nullptr || pInitialData->m_SubResources.IsEmpty()))
   {
@@ -120,7 +120,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
 xiiResult xiiGALTextureVulkan::DeInitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   if (m_vkStagingBuffer != VK_NULL_HANDLE)
   {
@@ -144,7 +144,7 @@ xiiResult xiiGALTextureVulkan::DeInitPlatform()
 
 void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkImage, sName.GetData(tmp));
@@ -152,7 +152,7 @@ void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   const bool          bInitializeTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
 
   vk::BufferCreateInfo vkStagingBufferCreateInfo = {};
@@ -297,7 +297,7 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 #endif
 }
 
-void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo)
+void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo)
 {
   const bool  bIsMemoryLess         = creationDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless);
   const auto& formatProperties      = xiiGALTextureUtilities::GetResourceFormatProperties(creationDescription.m_Format);
@@ -418,7 +418,7 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDe
 
 void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   // Vulkan validation layers do not like uninitialized memory, so if no initial data is provided, we will clear the memory.
 

@@ -3,7 +3,7 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 
-xiiGALQueryPoolVulkan::xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALQueueInformationVulkan queueInformation) :
+xiiGALQueryPoolVulkan::xiiGALQueryPoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALQueueInformationVulkan queueInformation) :
   m_pDeviceVulkan(pDeviceVulkan), m_pCommandQueueVulkan(pCommandQueueVulkan), m_CommandQueueInformation(queueInformation)
 {
   float fTimeStampPeriod = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits.timestampPeriod;
@@ -151,7 +151,7 @@ xiiUInt32 xiiGALQueryPoolVulkan::ResetStaleQueries(const vk::CommandBuffer& vkCo
 
 ///////////////////////////////////////////////////////////
 
-xiiGALQueryPoolVulkan::QueryPoolInformation::QueryPoolInformation(xiiGALDeviceVulkan* pDeviceVulkan) :
+xiiGALQueryPoolVulkan::QueryPoolInformation::QueryPoolInformation(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan) :
   m_pDeviceVulkan(pDeviceVulkan)
 {
 }

@@ -3,7 +3,7 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 
-xiiGALFencePoolVulkan::xiiGALFencePoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiInitialSize) :
+xiiGALFencePoolVulkan::xiiGALFencePoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiUInt32 uiInitialSize) :
   m_pDeviceVulkan(pDeviceVulkan), m_Fences(pDeviceVulkan->GetAllocator()), m_QueuedFences(pDeviceVulkan->GetAllocator())
 {
   XII_LOCK(m_PoolMutex);

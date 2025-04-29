@@ -9,7 +9,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALInputLayoutVulkan::xiiGALInputLayoutVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALInputLayoutCreationDescription& creationDescription) :
+xiiGALInputLayoutVulkan::xiiGALInputLayoutVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALInputLayoutCreationDescription& creationDescription) :
   xiiGALInputLayout(pDeviceVulkan, creationDescription), m_vkVertexAttributes(pDeviceVulkan->GetAllocator()), m_vkVertexInputBindings(pDeviceVulkan->GetAllocator())
 {
 }
@@ -18,7 +18,7 @@ xiiGALInputLayoutVulkan::~xiiGALInputLayoutVulkan() = default;
 
 xiiResult xiiGALInputLayoutVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pDeviceVulkan->GetShader(m_Description.m_hVertexShader));
 
   xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputAttributes(pShaderVulkan->GetVertexInputLayout());

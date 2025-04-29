@@ -15,7 +15,7 @@ private:
   friend class xiiMemoryUtils;
   friend class xiiGALDeviceVulkan;
 
-  xiiGALSemaphorePoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiInitialSize);
+  xiiGALSemaphorePoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiUInt32 uiInitialSize);
   ~xiiGALSemaphorePoolVulkan();
 
   vk::Semaphore CreateVulkanSemaphore();

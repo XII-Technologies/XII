@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALFenceVulkan::xiiGALFenceVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription) :
+xiiGALFenceVulkan::xiiGALFenceVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription) :
   xiiGALFence(pDeviceVulkan, creationDescription)
 {
 }
@@ -17,7 +17,7 @@ xiiGALFenceVulkan::~xiiGALFenceVulkan() = default;
 
 xiiResult xiiGALFenceVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   if (m_Description.m_Type == xiiGALFenceType::General && pDeviceVulkan->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled)
@@ -37,7 +37,7 @@ xiiResult xiiGALFenceVulkan::InitPlatform()
 
 xiiResult xiiGALFenceVulkan::DeInitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   if (IsTimelineSemaphore())
   {
@@ -66,7 +66,7 @@ xiiResult xiiGALFenceVulkan::DeInitPlatform()
 
 void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkTimelineSemaphore, sName.GetData(tmp));
@@ -74,7 +74,7 @@ void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 void xiiGALFenceVulkan::ReleaseResourcesImmediately()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkTimelineSemaphore);
 
@@ -85,7 +85,7 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 {
   if (IsTimelineSemaphore())
   {
-    xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
     vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
     // GetSemaphoreCounter() is thread safe.
@@ -107,7 +107,7 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 {
   XII_ASSERT_DEV(!IsTimelineSemaphore(), "The fence must have no timeline semaphore.");
 
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   while (!m_SyncPoints.IsEmpty())
@@ -147,7 +147,7 @@ void xiiGALFenceVulkan::Signal(xiiUInt64 uiValue)
     vkSignalInformation.semaphore               = m_vkTimelineSemaphore;
     vkSignalInformation.value                   = uiValue;
 
-    xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
     vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
     VK_ASSERT_DEV(vkLogicalDevice.signalSemaphoreKHR(&vkSignalInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
@@ -177,7 +177,7 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
 
 const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const xiiUInt64 uiFenceValue)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   if (IsTimelineSemaphore())
   {
@@ -212,7 +212,7 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
 
 void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   if (IsTimelineSemaphore())

@@ -32,8 +32,8 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    void Initialize(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription);
-    void DeInitialize(xiiGALDeviceVulkan* pDeviceVulkan);
+    void Initialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription);
+    void DeInitialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan);
 
     XII_ALWAYS_INLINE explicit operator bool() const { return m_pSamplerVulkan != nullptr; }
 
@@ -47,7 +47,7 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALPipelineResourceSignatureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
+  xiiGALPipelineResourceSignatureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineResourceSignatureVulkan();
 

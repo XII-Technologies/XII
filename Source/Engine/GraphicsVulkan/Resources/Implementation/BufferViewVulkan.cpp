@@ -9,7 +9,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferViewVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBufferViewVulkan::xiiGALBufferViewVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
+xiiGALBufferViewVulkan::xiiGALBufferViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pDeviceVulkan, pBuffer, creationDescription)
 {
 }
@@ -18,7 +18,7 @@ xiiGALBufferViewVulkan::~xiiGALBufferViewVulkan() = default;
 
 xiiResult xiiGALBufferViewVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan     = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan     = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALBufferVulkan* pBufferVulkan     = static_cast<xiiGALBufferVulkan*>(pDeviceVulkan->GetBuffer(m_Description.m_hBuffer));
   const auto&         bufferDescription = pBufferVulkan->GetDescription();
 
@@ -49,7 +49,7 @@ xiiResult xiiGALBufferViewVulkan::InitPlatform()
 
 xiiResult xiiGALBufferViewVulkan::DeInitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkBufferView);
 
@@ -60,7 +60,7 @@ xiiResult xiiGALBufferViewVulkan::DeInitPlatform()
 
 void xiiGALBufferViewVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkBufferView, sName.GetData(tmp));

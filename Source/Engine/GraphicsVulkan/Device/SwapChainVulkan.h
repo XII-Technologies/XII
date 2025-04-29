@@ -37,7 +37,7 @@ private:
   friend class xiiMemoryUtils;
   friend class xiiGALTexture;
 
-  xiiGALSwapChainVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChainVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChainVulkan();
 

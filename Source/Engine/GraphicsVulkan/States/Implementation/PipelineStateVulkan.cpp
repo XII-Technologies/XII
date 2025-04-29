@@ -15,7 +15,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineStateVulkan, 1, xiiRTTINoAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALPipelineStateVulkan::xiiGALPipelineStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineStateCreationDescription& creationDescription) :
+xiiGALPipelineStateVulkan::xiiGALPipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALPipelineStateCreationDescription& creationDescription) :
   xiiGALPipelineState(pDeviceVulkan, creationDescription)
 {
 }
@@ -353,7 +353,7 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 
 xiiResult xiiGALPipelineStateVulkan::DeInitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   if (m_vkPipelineCache != VK_NULL_HANDLE)
   {
@@ -381,7 +381,7 @@ void xiiGALPipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName)
   if (m_vkPipeline == VK_NULL_HANDLE)
     return;
 
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkPipeline, sName.GetData(tmp));

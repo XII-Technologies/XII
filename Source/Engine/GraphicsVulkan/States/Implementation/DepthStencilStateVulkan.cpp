@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilStateVulkan, 1, xiiRTTINoAllo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALDepthStencilStateVulkan::xiiGALDepthStencilStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+xiiGALDepthStencilStateVulkan::xiiGALDepthStencilStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
   xiiGALDepthStencilState(pDeviceVulkan, creationDescription)
 {
 }

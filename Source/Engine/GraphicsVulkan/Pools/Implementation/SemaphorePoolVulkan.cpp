@@ -3,7 +3,7 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 
-xiiGALSemaphorePoolVulkan::xiiGALSemaphorePoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiInitialSize) :
+xiiGALSemaphorePoolVulkan::xiiGALSemaphorePoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiUInt32 uiInitialSize) :
   m_pDeviceVulkan(pDeviceVulkan), m_Semaphores(pDeviceVulkan->GetAllocator()), m_QueuedSemaphores(pDeviceVulkan->GetAllocator())
 {
   XII_LOCK(m_PoolMutex);

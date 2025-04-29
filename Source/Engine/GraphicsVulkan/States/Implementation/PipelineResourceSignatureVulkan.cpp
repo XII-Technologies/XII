@@ -37,7 +37,7 @@ xiiUInt32 FindImmutableSampler(const xiiGALPipelineResourceSignatureCreationDesc
   return xiiInvalidIndex;
 }
 
-xiiGALPipelineResourceSignatureVulkan::xiiGALPipelineResourceSignatureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
+xiiGALPipelineResourceSignatureVulkan::xiiGALPipelineResourceSignatureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
   xiiGALPipelineResourceSignature(pDeviceVulkan, creationDescription), m_DescriptorSetLayouts(pDeviceVulkan->GetAllocator()), m_ImmutableSamplers(pDeviceVulkan->GetAllocator())
 {
 }
@@ -46,7 +46,7 @@ xiiGALPipelineResourceSignatureVulkan::~xiiGALPipelineResourceSignatureVulkan() 
 
 xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // First build set layout and resource binding description.
@@ -146,7 +146,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
 xiiResult xiiGALPipelineResourceSignatureVulkan::DeInitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   m_PipelineResourceSetLayouts.Clear();
   m_PipelineResourceSetLayouts.Compact();
@@ -176,7 +176,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::DeInitPlatform()
 
 void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiStringBuilder    tmp(sName);
 
   for (xiiUInt32 i = 0; i < m_DescriptorSetLayouts.GetCount(); ++i)
@@ -187,7 +187,7 @@ void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView s
   }
 }
 
-void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::Initialize(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription)
+void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::Initialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription)
 {
   XII_ASSERT_DEV(pDeviceVulkan != nullptr, "");
 
@@ -197,7 +197,7 @@ void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::Initialize(
   }
 }
 
-void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::DeInitialize(xiiGALDeviceVulkan* pDeviceVulkan)
+void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::DeInitialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan)
 {
   XII_ASSERT_DEV(pDeviceVulkan != nullptr, "");
 

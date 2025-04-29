@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQueryVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALQueryVulkan::xiiGALQueryVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALQueryCreationDescription& creationDescription) :
+xiiGALQueryVulkan::xiiGALQueryVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALQueryCreationDescription& creationDescription) :
   xiiGALQuery(pDeviceVulkan, creationDescription)
 {
 }
@@ -69,7 +69,7 @@ bool xiiGALQueryVulkan::OnEndQuery(xiiGALCommandListVulkan* pCommandListVulkan)
 
 bool xiiGALQueryVulkan::AllocateQueries()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   DiscardQueries();
 
@@ -124,7 +124,7 @@ void xiiGALQueryVulkan::DiscardQueries()
 namespace
 {
   template <xiiUInt32 ElementCount>
-  inline bool GetQueryResults(xiiGALDeviceVulkan* pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiStaticArray<xiiUInt64, ElementCount>& results)
+  inline bool GetQueryResults(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiStaticArray<xiiUInt64, ElementCount>& results)
   {
     static_assert(ElementCount >= 2, "The number of elements must be at least 2 as the last one is used to get the query status.");
 
@@ -158,7 +158,7 @@ namespace
     return bIsDataAvailable;
   }
 
-  inline bool GetOcclusionQueryData(xiiGALDeviceVulkan* pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, void* pData, xiiUInt32 uiDataSize)
+  inline bool GetOcclusionQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, void* pData, xiiUInt32 uiDataSize)
   {
     xiiStaticArray<xiiUInt64, 2U> results;
     results.SetCount(2U, 0ULL);
@@ -177,7 +177,7 @@ namespace
     return bIsDataAvailable;
   }
 
-  inline bool GetBinaryOcclusionQueryData(xiiGALDeviceVulkan* pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, void* pData, xiiUInt32 uiDataSize)
+  inline bool GetBinaryOcclusionQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, void* pData, xiiUInt32 uiDataSize)
   {
     xiiStaticArray<xiiUInt64, 2U> results;
     results.SetCount(2U, 0ULL);
@@ -196,7 +196,7 @@ namespace
     return bIsDataAvailable;
   }
 
-  inline bool GetTimestampQueryData(xiiGALDeviceVulkan* pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiUInt64 uiCounterFrequency, void* pData, xiiUInt32 uiDataSize)
+  inline bool GetTimestampQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiUInt64 uiCounterFrequency, void* pData, xiiUInt32 uiDataSize)
   {
     xiiStaticArray<xiiUInt64, 2U> results;
     results.SetCount(2U, 0ULL);
@@ -216,7 +216,7 @@ namespace
     return bIsDataAvailable;
   }
 
-  inline bool GetDurationQueryData(xiiGALDeviceVulkan* pDeviceVulkan, vk::QueryPool vkQueryPool, const xiiStaticArray<xiiUInt32, 2>& queryIndex, xiiUInt64 uiCounterFrequency, void* pData, xiiUInt32 uiDataSize)
+  inline bool GetDurationQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, const xiiStaticArray<xiiUInt32, 2>& queryIndex, xiiUInt64 uiCounterFrequency, void* pData, xiiUInt32 uiDataSize)
   {
     xiiUInt64 uiStartCounter = 0ULL;
     xiiUInt64 uiEndCounter   = 0ULL;
@@ -247,7 +247,7 @@ namespace
     return bIsDataAvailable;
   }
 
-  inline bool GetStatisticsQueryData(xiiGALDeviceVulkan* pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiGALQueueInformationVulkan queueInformation, void* pData, xiiUInt32 uiDataSize)
+  inline bool GetStatisticsQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiGALQueueInformationVulkan queueInformation, void* pData, xiiUInt32 uiDataSize)
   {
     // Pipeline statistics queries write one integer value for each bit that is enabled in the pipelineStatistics when the pool is created, and the statistics values are written in bit
     // order starting from the least significant bit. (17.2)
@@ -305,7 +305,7 @@ bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInv
 
   CheckQueryDataPtr(pData, uiDataSize);
 
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   const xiiGALQueueInformationVulkan& queueInformation      = m_pQueryPoolVulkan->GetQueueInformation();
   const xiiUInt64                     uiCompletedFenceValue = m_pQueryPoolVulkan->GetCommandQueue()->GetCompletedFenceValue();

@@ -20,7 +20,7 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALRenderPassVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALRenderPassCreationDescription& creationDescription);
+  xiiGALRenderPassVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALRenderPassCreationDescription& creationDescription);
 
   virtual ~xiiGALRenderPassVulkan();
 
