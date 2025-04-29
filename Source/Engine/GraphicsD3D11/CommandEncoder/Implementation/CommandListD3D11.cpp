@@ -93,9 +93,9 @@ xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform()
   return xiiMath::MaxValue<xiiUInt64>();
 }
 
-void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
+void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
 {
-  auto pPipelineStateD3D11 = static_cast<xiiGALPipelineStateD3D11*>(pPipelineState);
+  auto pPipelineStateD3D11 = pPipelineState.Downcast<xiiGALPipelineStateD3D11>();
 
   if (pPipelineStateD3D11 == m_pCommittedPipelineState)
     return;
@@ -316,9 +316,9 @@ void xiiGALCommandListD3D11::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRe
   m_pImmediateContext->RSSetScissorRects(pRects.GetCount(), d3d11ScissorRects);
 }
 
-void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
+void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset)
 {
-  auto          pIndexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndexBuffer);
+  auto          pIndexBufferD3D11 = pIndexBuffer.Downcast<xiiGALBufferD3D11>();
   ID3D11Buffer* pD3D11IndexBuffer = pIndexBufferD3D11 ? pIndexBufferD3D11->GetBuffer() : nullptr;
 
   if (pD3D11IndexBuffer != m_pCommittedIndexBuffer || m_uiCommittedIndexDataStartOffset != uiByteOffset)
@@ -400,12 +400,12 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
   }
 }
 
-void xiiGALCommandListD3D11::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
+void xiiGALCommandListD3D11::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
 {
   XII_ASSERT_RELEASE(bindingInformation.m_uiBindSet == 0, "In D3D11, Shader resources use a single descriptor set.");
   XII_ASSERT_RELEASE(bindingInformation.m_uiBindSlot < XII_GAL_MAX_CONSTANT_BUFFER_COUNT, "Constant buffer bind slot ({0}) must be in the range [0, {1})!", bindingInformation.m_uiBindSlot, XII_GAL_MAX_CONSTANT_BUFFER_COUNT);
 
-  ID3D11Buffer* pD3D11Buffer = pConstantBuffer != nullptr ? static_cast<xiiGALBufferD3D11*>(pConstantBuffer)->GetBuffer() : nullptr;
+  ID3D11Buffer* pD3D11Buffer = pConstantBuffer != nullptr ? pConstantBuffer.Downcast<xiiGALBufferD3D11>()->GetBuffer() : nullptr;
 
   if (m_pBoundConstantBuffers[bindingInformation.m_uiBindSlot] == pD3D11Buffer)
     return;
@@ -420,14 +420,14 @@ void xiiGALCommandListD3D11::SetConstantBufferPlatform(const xiiGALPipelineResou
   }
 }
 
-void xiiGALCommandListD3D11::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+void xiiGALCommandListD3D11::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
   if (pBufferView != nullptr && UnsetUnorderedAccessViews(pBufferView->GetBuffer()))
   {
     FlushDeferredStateChanges().IgnoreResult();
   }
 
-  ID3D11ShaderResourceView* pD3D11ShaderResourceView = pBufferView != nullptr ? static_cast<ID3D11ShaderResourceView*>(static_cast<xiiGALBufferViewD3D11*>(pBufferView)->GetBufferView()) : nullptr;
+  ID3D11ShaderResourceView* pD3D11ShaderResourceView = pBufferView != nullptr ? static_cast<ID3D11ShaderResourceView*>(pBufferView.Downcast<xiiGALBufferViewD3D11>()->GetBufferView()) : nullptr;
 
   for (xiiGALShaderType::Enum shaderType : xiiIterateBitIndices<xiiGALShaderType::StorageType, xiiGALShaderType::Enum>(bindingInformation.m_ShaderStages.GetValue()))
   {
@@ -449,7 +449,7 @@ void xiiGALCommandListD3D11::SetShaderResourceBufferViewPlatform(const xiiGALPip
   }
 }
 
-void xiiGALCommandListD3D11::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+void xiiGALCommandListD3D11::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
   XII_ASSERT_DEV(bindingInformation.m_ResourceType == xiiGALShaderResourceType::TextureSRV, "D3D11 supports only texture shader resource views and not combined image samplers.");
 
@@ -458,7 +458,7 @@ void xiiGALCommandListD3D11::SetShaderResourceTextureViewPlatform(const xiiGALPi
     FlushDeferredStateChanges().IgnoreResult();
   }
 
-  ID3D11ShaderResourceView* pD3D11ShaderResourceView = pTextureView != nullptr ? static_cast<ID3D11ShaderResourceView*>(static_cast<xiiGALTextureViewD3D11*>(pTextureView)->GetTextureView()) : nullptr;
+  ID3D11ShaderResourceView* pD3D11ShaderResourceView = pTextureView != nullptr ? static_cast<ID3D11ShaderResourceView*>(pTextureView.Downcast<xiiGALTextureViewD3D11>()->GetTextureView()) : nullptr;
 
   for (xiiGALShaderType::Enum shaderType : xiiIterateBitIndices<xiiGALShaderType::StorageType, xiiGALShaderType::Enum>(bindingInformation.m_ShaderStages.GetValue()))
   {
@@ -480,14 +480,14 @@ void xiiGALCommandListD3D11::SetShaderResourceTextureViewPlatform(const xiiGALPi
   }
 }
 
-void xiiGALCommandListD3D11::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
+void xiiGALCommandListD3D11::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
   if (pBufferView && UnsetResourceViews(pBufferView->GetBuffer()))
   {
     FlushDeferredStateChanges().IgnoreResult();
   }
 
-  ID3D11UnorderedAccessView* pD3D11UnorderedAccessView = pBufferView != nullptr ? static_cast<ID3D11UnorderedAccessView*>(static_cast<xiiGALBufferViewD3D11*>(pBufferView)->GetBufferView()) : nullptr;
+  ID3D11UnorderedAccessView* pD3D11UnorderedAccessView = pBufferView != nullptr ? static_cast<ID3D11UnorderedAccessView*>(pBufferView.Downcast<xiiGALBufferViewD3D11>()->GetBufferView()) : nullptr;
 
   m_BoundUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
   m_ResourcesForUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
@@ -501,14 +501,14 @@ void xiiGALCommandListD3D11::SetUnorderedAccessBufferViewPlatform(const xiiGALPi
   }
 }
 
-void xiiGALCommandListD3D11::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
+void xiiGALCommandListD3D11::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
   if (pTextureView && UnsetResourceViews(pTextureView->GetTexture()))
   {
     FlushDeferredStateChanges().IgnoreResult();
   }
 
-  ID3D11UnorderedAccessView* pD3D11UnorderedAccessView = pTextureView != nullptr ? static_cast<ID3D11UnorderedAccessView*>(static_cast<xiiGALTextureViewD3D11*>(pTextureView)->GetTextureView()) : nullptr;
+  ID3D11UnorderedAccessView* pD3D11UnorderedAccessView = pTextureView != nullptr ? static_cast<ID3D11UnorderedAccessView*>(pTextureView.Downcast<xiiGALTextureViewD3D11>()->GetTextureView()) : nullptr;
 
   m_BoundUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
   m_ResourcesForUnorderedAccessViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
@@ -521,12 +521,12 @@ void xiiGALCommandListD3D11::SetUnorderedAccessTextureViewPlatform(const xiiGALP
   }
 }
 
-void xiiGALCommandListD3D11::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
+void xiiGALCommandListD3D11::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)
 {
   XII_ASSERT_RELEASE(bindingInformation.m_uiBindSet == 0, "In D3D11, Shader resources use a single descriptor set.");
   XII_ASSERT_RELEASE(bindingInformation.m_uiBindSlot < XII_GAL_MAX_SAMPLER_COUNT, "Sampler bind slot ({0}) must be in the range [0, {1})!", bindingInformation.m_uiBindSlot, XII_GAL_MAX_SAMPLER_COUNT);
 
-  ID3D11SamplerState* pD3D11SamplerState = pSampler != nullptr ? static_cast<xiiGALSamplerD3D11*>(pSampler)->GetSampler() : nullptr;
+  ID3D11SamplerState* pD3D11SamplerState = pSampler != nullptr ? pSampler.Downcast<xiiGALSamplerD3D11>()->GetSampler() : nullptr;
 
   for (xiiGALShaderType::Enum shaderType : xiiIterateBitIndices<xiiGALShaderType::StorageType, xiiGALShaderType::Enum>(bindingInformation.m_ShaderStages.GetValue()))
   {
@@ -547,9 +547,9 @@ xiiResult xiiGALCommandListD3D11::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
   return XII_SUCCESS;
 }
 
-void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
+void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor)
 {
-  auto pRenderTargetViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pRenderTargetView);
+  auto pRenderTargetViewD3D11 = pRenderTargetView.Downcast<xiiGALTextureViewD3D11>();
 
   XII_ASSERT_DEV(pRenderTargetViewD3D11 != nullptr, "Invalid resource.");
 
@@ -557,9 +557,9 @@ void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiGALTextureView* pR
   m_pImmediateContext->ClearRenderTargetView(static_cast<ID3D11RenderTargetView*>(pRenderTargetViewD3D11->GetTextureView()), clearColor.GetData());
 }
 
-void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  auto pDepthStencilViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pDepthStencilView);
+  auto pDepthStencilViewD3D11 = pDepthStencilView.Downcast<xiiGALTextureViewD3D11>();
 
   XII_ASSERT_DEV(pDepthStencilViewD3D11 != nullptr, "Invalid resource.");
 
@@ -573,7 +573,7 @@ void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiGALTextureView* pD
   m_pImmediateContext->ClearDepthStencilView(static_cast<ID3D11DepthStencilView*>(pDepthStencilViewD3D11->GetTextureView()), uiClearFlags, fDepthClear, uiStencilClear);
 }
 
-void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
+void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
 {
   m_AttachmentClearValues.SetCountUninitialized(pOptimizedClearValues.GetCount());
   m_AttachmentClearValues = pOptimizedClearValues;
@@ -583,8 +583,8 @@ void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPa
   xiiGALViewport viewport               = {.m_fTopLeftX = 0.0f, .m_fTopLeftY = 0.0f, .m_fWidth = (float)framebufferDescription.m_FramebufferSize.width, .m_fHeight = (float)framebufferDescription.m_FramebufferSize.height};
   SetViewports(xiiMakeArrayPtr(&viewport, 1U));
 
-  m_pRenderPass  = static_cast<xiiGALRenderPassD3D11*>(pRenderPass);
-  m_pFramebuffer = static_cast<xiiGALFramebufferD3D11*>(pFramebuffer);
+  m_pRenderPass  = pRenderPass.Downcast<xiiGALRenderPassD3D11>();
+  m_pFramebuffer = pRenderPass.Downcast<xiiGALFramebufferD3D11>();
 
   // Set the active render targes.
   CommitRenderTargets();
@@ -630,9 +630,9 @@ xiiResult xiiGALCommandListD3D11::DrawIndexedInstancedPlatform(xiiUInt32 uiIndex
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D11::DrawIndexedInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandListD3D11::DrawIndexedInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  auto pIndirectArgumentBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndirectArgumentBuffer);
+  auto pIndirectArgumentBufferD3D11 = pIndirectArgumentBuffer.Downcast<xiiGALBufferD3D11>();
 
   XII_ASSERT_DEV(pIndirectArgumentBufferD3D11 != nullptr, "Invalid resource.");
 
@@ -652,9 +652,9 @@ xiiResult xiiGALCommandListD3D11::DrawInstancedPlatform(xiiUInt32 uiVertexCountP
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D11::DrawInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandListD3D11::DrawInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  auto pIndirectArgumentBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndirectArgumentBuffer);
+  auto pIndirectArgumentBufferD3D11 = pIndirectArgumentBuffer.Downcast<xiiGALBufferD3D11>();
 
   XII_ASSERT_DEV(pIndirectArgumentBufferD3D11 != nullptr, "Invalid resource.");
 
@@ -687,9 +687,9 @@ xiiResult xiiGALCommandListD3D11::DispatchPlatform(xiiUInt32 uiThreadGroupCountX
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  auto pIndirectArgumentBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndirectArgumentBuffer);
+  auto pIndirectArgumentBufferD3D11 = pIndirectArgumentBuffer.Downcast<xiiGALBufferD3D11>();
 
   XII_ASSERT_DEV(pIndirectArgumentBufferD3D11 != nullptr, "Invalid resource.");
 
@@ -702,9 +702,9 @@ xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiGALBuffer* pIndire
   return XII_SUCCESS;
 }
 
-void xiiGALCommandListD3D11::BeginQueryPlatform(xiiGALQuery* pQuery)
+void xiiGALCommandListD3D11::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
-  auto pQueryD3D11       = static_cast<xiiGALQueryD3D11*>(pQuery);
+  auto pQueryD3D11       = pQuery.Downcast<xiiGALQueryD3D11>();
   auto pImmediateContext = m_pDevice.Downcast<xiiGALDeviceD3D11>()->GetImmediateContext();
 
   XII_ASSERT_DEV(pQueryD3D11 != nullptr, "Invalid resource.");
@@ -721,9 +721,9 @@ void xiiGALCommandListD3D11::BeginQueryPlatform(xiiGALQuery* pQuery)
   }
 }
 
-void xiiGALCommandListD3D11::EndQueryPlatform(xiiGALQuery* pQuery)
+void xiiGALCommandListD3D11::EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
-  auto pQueryD3D11 = static_cast<xiiGALQueryD3D11*>(pQuery);
+  auto pQueryD3D11 = pQuery.Downcast<xiiGALQueryD3D11>();
 
   XII_ASSERT_DEV(pQueryD3D11 != nullptr, "Invalid resource.");
 
@@ -738,12 +738,12 @@ void xiiGALCommandListD3D11::EndQueryPlatform(xiiGALQuery* pQuery)
   m_pImmediateContext->End(pQueryD3D11->GetQuery(queryType == xiiGALQueryType::Duration ? 1 : 0));
 }
 
-void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
+void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
   XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
 
   xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
+  xiiGALBufferD3D11*              pBufferD3D11 = pBuffer.Downcast<xiiGALBufferD3D11>();
 
   XII_ASSERT_DEV(pBufferD3D11 != nullptr, "Invalid resource.");
 
@@ -780,10 +780,10 @@ void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
   }
 }
 
-void xiiGALCommandListD3D11::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
+void xiiGALCommandListD3D11::CopyBufferPlatform(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer)
 {
-  auto pSourceBufferD3D11      = static_cast<xiiGALBufferD3D11*>(pSourceBuffer);
-  auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pDestinationBuffer);
+  auto pSourceBufferD3D11      = pSourceBuffer.Downcast<xiiGALBufferD3D11>();
+  auto pDestinationBufferD3D11 = pDestinationBuffer.Downcast<xiiGALBufferD3D11>();
 
   XII_ASSERT_DEV(pSourceBufferD3D11 != nullptr, "Invalid resource.");
   XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
@@ -791,10 +791,10 @@ void xiiGALCommandListD3D11::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xii
   m_pImmediateContext->CopyResource(pDestinationBufferD3D11->GetBuffer(), pSourceBufferD3D11->GetBuffer());
 }
 
-void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
+void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
-  auto pSourceBufferD3D11      = static_cast<xiiGALBufferD3D11*>(pSourceBuffer);
-  auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pDestinationBuffer);
+  auto pSourceBufferD3D11      = pSourceBuffer.Downcast<xiiGALBufferD3D11>();
+  auto pDestinationBufferD3D11 = pDestinationBuffer.Downcast<xiiGALBufferD3D11>();
 
   XII_ASSERT_DEV(pSourceBufferD3D11 != nullptr, "Invalid resource.");
   XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
@@ -810,9 +810,9 @@ void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffe
   m_pImmediateContext->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, static_cast<xiiUInt32>(uiDestinationOffset), 0, 0, pSourceBufferD3D11->GetBuffer(), 0, &sourceBox);
 }
 
-xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
+xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
-  auto pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
+  auto pBufferD3D11 = pBuffer.Downcast<xiiGALBufferD3D11>();
 
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid resource.");
 
@@ -834,11 +834,11 @@ xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEn
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
+xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
   XII_IGNORE_UNUSED(mapType);
 
-  auto pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
+  auto pBufferD3D11 = pBuffer.Downcast<xiiGALBufferD3D11>();
 
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid resource.");
 
@@ -850,10 +850,10 @@ xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
   return XII_SUCCESS;
 }
 
-void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
+void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
   xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  auto               pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
+  auto                            pTextureD3D11 = pTexture.Downcast<xiiGALTextureD3D11>();
 
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
 
@@ -938,10 +938,10 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   }
 }
 
-void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
+void xiiGALCommandListD3D11::CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture)
 {
-  auto pSourceTextureD3D11      = static_cast<xiiGALTextureD3D11*>(pSourceTexture);
-  auto pDestinationTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pDestinationTexture);
+  auto pSourceTextureD3D11      = pSourceTexture.Downcast<xiiGALTextureD3D11>();
+  auto pDestinationTextureD3D11 = pDestinationTexture.Downcast<xiiGALTextureD3D11>();
 
   XII_ASSERT_DEV(pSourceTextureD3D11 != nullptr, "Invalid resource.");
   XII_ASSERT_DEV(pDestinationTextureD3D11 != nullptr, "Invalid resource.");
@@ -949,10 +949,10 @@ void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, 
   m_pImmediateContext->CopyResource(pDestinationTextureD3D11->GetTexture(), pSourceTextureD3D11->GetTexture());
 }
 
-void xiiGALCommandListD3D11::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
+void xiiGALCommandListD3D11::CopyTextureRegionPlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
-  auto pSourceTextureD3D11      = static_cast<xiiGALTextureD3D11*>(pSourceTexture);
-  auto pDestinationTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pDestinationTexture);
+  auto pSourceTextureD3D11      = pSourceTexture.Downcast<xiiGALTextureD3D11>();
+  auto pDestinationTextureD3D11 = pDestinationTexture.Downcast<xiiGALTextureD3D11>();
 
   XII_ASSERT_DEV(pSourceTextureD3D11 != nullptr, "Invalid resource.");
   XII_ASSERT_DEV(pDestinationTextureD3D11 != nullptr, "Invalid resource.");
@@ -971,10 +971,10 @@ void xiiGALCommandListD3D11::CopyTextureRegionPlatform(xiiGALTexture* pSourceTex
   m_pImmediateContext->CopySubresourceRegion(pDestinationTextureD3D11->GetTexture(), uiDestinationSubresource, vDestinationPoint.x, vDestinationPoint.y, vDestinationPoint.z, pSourceTextureD3D11->GetTexture(), uiSourceSubresource, &sourceBox);
 }
 
-void xiiGALCommandListD3D11::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
+void xiiGALCommandListD3D11::ResolveTextureSubResourcePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
 {
-  auto pSourceTextureD3D11      = static_cast<xiiGALTextureD3D11*>(pSourceTexture);
-  auto pDestinationTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pDestinationTexture);
+  auto pSourceTextureD3D11      = pSourceTexture.Downcast<xiiGALTextureD3D11>();
+  auto pDestinationTextureD3D11 = pDestinationTexture.Downcast<xiiGALTextureD3D11>();
 
   XII_ASSERT_DEV(pSourceTextureD3D11 != nullptr, "Invalid resource.");
   XII_ASSERT_DEV(pDestinationTextureD3D11 != nullptr, "Invalid resource.");
@@ -989,20 +989,20 @@ void xiiGALCommandListD3D11::ResolveTextureSubResourcePlatform(xiiGALTexture* pS
   m_pImmediateContext->ResolveSubresource(pDestinationTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, pSourceTextureD3D11->GetTexture(), uiSourceSubresourceIndex, textureFormat);
 }
 
-void xiiGALCommandListD3D11::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
+void xiiGALCommandListD3D11::GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
-  auto* pTextureViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pTextureView);
+  auto pTextureViewD3D11 = pTextureView.Downcast<xiiGALTextureViewD3D11>();
 
   XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Invalid resource.");
 
   m_pImmediateContext->GenerateMips(static_cast<ID3D11ShaderResourceView*>(pTextureViewD3D11->GetTextureView()));
 }
 
-xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
+xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
   XII_IGNORE_UNUSED(pTextureBox);
 
-  auto pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
+  auto pTextureD3D11 = pTexture.Downcast<xiiGALTextureD3D11>();
 
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
 
@@ -1034,9 +1034,9 @@ xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* p
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
+xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
-  auto pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
+  auto pTextureD3D11 = pTexture.Downcast<xiiGALTextureD3D11>();
 
   XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
 
@@ -1228,7 +1228,7 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
 
     if (attachmentDescription.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
     {
-      auto pRenderTargetView = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex]));
+      auto pRenderTargetView = framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex].Downcast<xiiGALTextureViewD3D11>();
 
       XII_ASSERT_DEV((pRenderTargetView->GetDescription().m_ViewType == xiiGALTextureViewType::RenderTarget), "Expected xiiGALTextureViewType::RenderTarget at the subpass color attachment render target index.");
 
@@ -1249,7 +1249,7 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
 
     if (attachmentDescription.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
     {
-      pDepthStencilView = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex]));
+      pDepthStencilView = framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex].Downcast<xiiGALTextureViewD3D11>();
 
       XII_ASSERT_DEV((pDepthStencilView->GetDescription().m_ViewType == xiiGALTextureViewType::DepthStencil || pDepthStencilView->GetDescription().m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil), "Expected xiiGALTextureViewType::DepthStencil or xiiGALTextureViewType::ReadOnlyDepthStencil at the subpass depth attachment render target index.");
 
@@ -1298,12 +1298,10 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
   {
     const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
-    const auto& hAttachment           = framebufferDescription.m_Attachments[i];
+    const auto& pTextureView          = framebufferDescription.m_Attachments[i];
 
     if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
     {
-      xiiGALTextureView* pTextureView = m_pDevice->GetTextureView(hAttachment);
-
       if (pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::DepthStencil || pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil)
       {
         bool bClearStencil = attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Clear;
@@ -1403,7 +1401,7 @@ static void SetSamplers(xiiGALPipelineStateD3D11::ShaderType::Enum stage, ID3D11
 
 //////////////////////////////////////////////////////////////////////////
 
-bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiGALResource* pResource)
+bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiSharedPtr<xiiGALResource> pResource)
 {
   XII_ASSERT_DEV(pResource != nullptr, "");
 
@@ -1426,7 +1424,7 @@ bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiGALResource* pResource)
   return bResult;
 }
 
-bool xiiGALCommandListD3D11::UnsetUnorderedAccessViews(const xiiGALResource* pResource)
+bool xiiGALCommandListD3D11::UnsetUnorderedAccessViews(const xiiSharedPtr<xiiGALResource> pResource)
 {
   XII_ASSERT_DEV(pResource != nullptr, "");
 
