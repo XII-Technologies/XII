@@ -20,13 +20,35 @@ xiiGALPipelineStateVulkan::xiiGALPipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVu
 {
 }
 
-xiiGALPipelineStateVulkan::~xiiGALPipelineStateVulkan() = default;
+xiiGALPipelineStateVulkan::~xiiGALPipelineStateVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  if (m_vkPipelineCache != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipelineCache);
+
+    m_vkPipelineCache = nullptr;
+  }
+  if (m_vkPipeline != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipeline);
+
+    m_vkPipeline = VK_NULL_HANDLE;
+  }
+  if (m_vkPipelineLayout != VK_NULL_HANDLE)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipelineLayout);
+
+    m_vkPipelineLayout = VK_NULL_HANDLE;
+  }
+}
 
 xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan*                    pDeviceVulkan                    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device                             vkLogicalDevice                  = pDeviceVulkan->GetVulkanLogicalDevice();
-  xiiGALPipelineResourceSignatureVulkan* pPipelineResourceSignatureVulkan = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature));
+  xiiSharedPtr<xiiGALDeviceVulkan>                    pDeviceVulkan                    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device                                          vkLogicalDevice                  = pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiSharedPtr<xiiGALPipelineResourceSignatureVulkan> pPipelineResourceSignatureVulkan = m_Description.m_pPipelineResourceSignature.Downcast<xiiGALPipelineResourceSignatureVulkan>();
 
   switch (m_Description.m_PipelineType)
   {
@@ -49,18 +71,18 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 
       xiiDynamicArray<vk::PipelineShaderStageCreateInfo> vkShaderStages(pDeviceVulkan->GetAllocator());
       {
-#define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                                                 \
-  if (xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pDeviceVulkan->GetShader(graphicsPipeline.m_h##shaderType))) \
-  {                                                                                                                                     \
-    vk::PipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};                                                             \
-    vkPipelineShaderStageCreateInfo.pNext                             = nullptr;                                                        \
-    vkPipelineShaderStageCreateInfo.flags                             = {};                                                             \
-    vkPipelineShaderStageCreateInfo.stage                             = shaderStageFlagBits;                                            \
-    vkPipelineShaderStageCreateInfo.pName                             = "main";                                                         \
-    vkPipelineShaderStageCreateInfo.module                            = pShaderVulkan->GetVulkanShaderModule();                         \
-    vkPipelineShaderStageCreateInfo.pSpecializationInfo               = nullptr;                                                        \
-                                                                                                                                        \
-    vkShaderStages.PushBack(vkPipelineShaderStageCreateInfo);                                                                           \
+#define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                                 \
+  if (xiiSharedPtr<xiiGALShaderVulkan> pShaderVulkan = graphicsPipeline.m_p##shaderType.Downcast<xiiGALShaderVulkan>()) \
+  {                                                                                                                     \
+    vk::PipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};                                             \
+    vkPipelineShaderStageCreateInfo.pNext                             = nullptr;                                        \
+    vkPipelineShaderStageCreateInfo.flags                             = {};                                             \
+    vkPipelineShaderStageCreateInfo.stage                             = shaderStageFlagBits;                            \
+    vkPipelineShaderStageCreateInfo.pName                             = "main";                                         \
+    vkPipelineShaderStageCreateInfo.module                            = pShaderVulkan->GetVulkanShaderModule();         \
+    vkPipelineShaderStageCreateInfo.pSpecializationInfo               = nullptr;                                        \
+                                                                                                                        \
+    vkShaderStages.PushBack(vkPipelineShaderStageCreateInfo);                                                           \
   }
 
         DEFINE_VULKAN_SHADER_IF_EXISTS(VertexShader, vk::ShaderStageFlagBits::eVertex);
@@ -77,7 +99,7 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       vkGraphicsPipelineCreateInfo.pStages    = vkShaderStages.IsEmpty() ? nullptr : vkShaderStages.GetData();
 
       vk::PipelineVertexInputStateCreateInfo vkPipelineVertexInputStateCreateInfo = {};
-      if (xiiGALInputLayoutVulkan* pInputLayoutVulkan = static_cast<xiiGALInputLayoutVulkan*>(pDeviceVulkan->GetInputLayout(graphicsPipeline.m_hInputLayout)))
+      if (xiiSharedPtr<xiiGALInputLayoutVulkan> pInputLayoutVulkan = graphicsPipeline.m_pInputLayout.Downcast<xiiGALInputLayoutVulkan>())
       {
         auto pVertexAttributes = pInputLayoutVulkan->GetVulkanVertexAttributes();
         auto pInputBindings    = pInputLayoutVulkan->GetVulkanVertexInputBindings();
@@ -123,7 +145,7 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       }
 
       bool bScissorEnabled = false;
-      if (xiiGALRasterizerStateVulkan* pRasterizerStateVulkan = static_cast<xiiGALRasterizerStateVulkan*>(pDeviceVulkan->GetRasterizerState(graphicsPipeline.m_hRasterizerState)))
+      if (xiiSharedPtr<xiiGALRasterizerStateVulkan> pRasterizerStateVulkan = graphicsPipeline.m_pRasterizerState.Downcast<xiiGALRasterizerStateVulkan>())
       {
         vkGraphicsPipelineCreateInfo.pRasterizationState = pRasterizerStateVulkan->GetRasterizerState();
         bScissorEnabled                                  = pRasterizerStateVulkan->GetDescription().m_bScissorEnable;
@@ -170,7 +192,7 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       }
       vkGraphicsPipelineCreateInfo.pMultisampleState = &vkPipelineMultisampleStateCreateInfo;
 
-      if (xiiGALDepthStencilStateVulkan* pDepthStencilStateVulkan = static_cast<xiiGALDepthStencilStateVulkan*>(pDeviceVulkan->GetDepthStencilState(graphicsPipeline.m_hDepthStencilState)))
+      if (xiiSharedPtr<xiiGALDepthStencilStateVulkan> pDepthStencilStateVulkan = graphicsPipeline.m_pDepthStencilState.Downcast<xiiGALDepthStencilStateVulkan>())
       {
         vkGraphicsPipelineCreateInfo.pDepthStencilState = pDepthStencilStateVulkan->GetDepthStencilState();
       }
@@ -178,14 +200,14 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       vk::PipelineColorBlendStateCreateInfo vkPipelineColorBlendStateCreateInfo = {};
       {
         xiiArrayPtr<const vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
-        if (xiiGALBlendStateVulkan* pBlendStateVulkan = static_cast<xiiGALBlendStateVulkan*>(pDeviceVulkan->GetBlendState(graphicsPipeline.m_hBlendState)))
+        if (xiiSharedPtr<xiiGALBlendStateVulkan> pBlendStateVulkan = graphicsPipeline.m_pBlendState.Downcast<xiiGALBlendStateVulkan>())
         {
           vkPipelineColorBlendStateCreateInfo = *pBlendStateVulkan->GetBlendState();
           colorBlendAttachmentStates          = pBlendStateVulkan->GetBlendAttachmentStates();
         }
 
-        xiiGALRenderPassVulkan* pRenderPassVulkan     = static_cast<xiiGALRenderPassVulkan*>(pDeviceVulkan->GetRenderPass(graphicsPipeline.m_hRenderPass));
-        const auto&             renderPassDescription = pRenderPassVulkan->GetDescription();
+        xiiSharedPtr<xiiGALRenderPassVulkan> pRenderPassVulkan     = graphicsPipeline.m_pRenderPass.Downcast<xiiGALRenderPassVulkan>();
+        const auto&                          renderPassDescription = pRenderPassVulkan->GetDescription();
 
         vkPipelineColorBlendStateCreateInfo.attachmentCount = renderPassDescription.m_SubPasses[graphicsPipeline.m_uiSubpassIndex].m_RenderTargetAttachments.GetCount();
         vkPipelineColorBlendStateCreateInfo.pAttachments    = nullptr;
@@ -248,7 +270,7 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
       }
       vkGraphicsPipelineCreateInfo.layout = m_vkPipelineLayout;
 
-      if (xiiGALRenderPassVulkan* pRenderPassVulkan = static_cast<xiiGALRenderPassVulkan*>(pDeviceVulkan->GetRenderPass(graphicsPipeline.m_hRenderPass)))
+      if (xiiSharedPtr<xiiGALRenderPassVulkan> pRenderPassVulkan = graphicsPipeline.m_pRenderPass.Downcast<xiiGALRenderPassVulkan>())
       {
         vkGraphicsPipelineCreateInfo.renderPass = pRenderPassVulkan->GetVulkanRenderPass();
         vkGraphicsPipelineCreateInfo.subpass    = graphicsPipeline.m_uiSubpassIndex;
@@ -277,18 +299,18 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 
       xiiHybridArray<vk::PipelineShaderStageCreateInfo, 1U> vkShaderStages(pDeviceVulkan->GetAllocator());
       {
-#define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                                                \
-  if (xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pDeviceVulkan->GetShader(computePipeline.m_h##shaderType))) \
-  {                                                                                                                                    \
-    vk::PipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};                                                            \
-    vkPipelineShaderStageCreateInfo.pNext                             = nullptr;                                                       \
-    vkPipelineShaderStageCreateInfo.flags                             = {};                                                            \
-    vkPipelineShaderStageCreateInfo.stage                             = shaderStageFlagBits;                                           \
-    vkPipelineShaderStageCreateInfo.pName                             = "main";                                                        \
-    vkPipelineShaderStageCreateInfo.module                            = pShaderVulkan->GetVulkanShaderModule();                        \
-    vkPipelineShaderStageCreateInfo.pSpecializationInfo               = nullptr;                                                       \
-                                                                                                                                       \
-    vkShaderStages.PushBack(vkPipelineShaderStageCreateInfo);                                                                          \
+#define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                                \
+  if (xiiSharedPtr<xiiGALShaderVulkan> pShaderVulkan = computePipeline.m_p##shaderType.Downcast<xiiGALShaderVulkan>()) \
+  {                                                                                                                    \
+    vk::PipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};                                            \
+    vkPipelineShaderStageCreateInfo.pNext                             = nullptr;                                       \
+    vkPipelineShaderStageCreateInfo.flags                             = {};                                            \
+    vkPipelineShaderStageCreateInfo.stage                             = shaderStageFlagBits;                           \
+    vkPipelineShaderStageCreateInfo.pName                             = "main";                                        \
+    vkPipelineShaderStageCreateInfo.module                            = pShaderVulkan->GetVulkanShaderModule();        \
+    vkPipelineShaderStageCreateInfo.pSpecializationInfo               = nullptr;                                       \
+                                                                                                                       \
+    vkShaderStages.PushBack(vkPipelineShaderStageCreateInfo);                                                          \
   }
 
         DEFINE_VULKAN_SHADER_IF_EXISTS(ComputeShader, vk::ShaderStageFlagBits::eCompute);
@@ -351,38 +373,13 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALPipelineStateVulkan::DeInitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-
-  if (m_vkPipelineCache != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipelineCache);
-
-    m_vkPipelineCache = nullptr;
-  }
-  if (m_vkPipeline != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipeline);
-
-    m_vkPipeline = VK_NULL_HANDLE;
-  }
-  if (m_vkPipelineLayout != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipelineLayout);
-
-    m_vkPipelineLayout = VK_NULL_HANDLE;
-  }
-  return XII_SUCCESS;
-}
-
 void xiiGALPipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   if (m_vkPipeline == VK_NULL_HANDLE)
     return;
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp;
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkPipeline, sName.GetData(tmp));
 }
