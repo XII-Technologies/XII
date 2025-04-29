@@ -142,11 +142,14 @@ public:
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureCreationDescription& GetDescription() const { return m_Description; }
 
+  /// \brief Returns the calculated memory consumption for texture.
+  [[nodiscard]] virtual xiiUInt64 GetMemoryConsumption() const;
+
   /// \brief This returns the reference-counted pointer of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALTextureViewType.
   ///
-  /// \return The reference-counted pointer to the buffer view.
+  /// \return The reference-counted pointer to the texture view.
   ///
   /// \note The function **increases** the reference counter for the returned interface.
   [[nodiscard]] xiiSharedPtr<xiiGALTextureView> GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);

@@ -8,16 +8,13 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Resources/BufferView.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
-#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
@@ -1336,29 +1333,6 @@ xiiSharedPtr<xiiGALPipelineState> xiiGALDevice::CreatePipelineState(const xiiGAL
 void xiiGALDevice::WaitIdle()
 {
   WaitIdlePlatform();
-}
-
-xiiUInt64 xiiGALDevice::GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& desc) const
-{
-  auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(desc.m_Format);
-
-  // This generic implementation is only an approximation, but it can be overridden by specific devices to give an accurate memory consumption figure.
-  xiiUInt64 uiMemory = xiiUInt64(desc.m_Size.width) * xiiUInt64(desc.m_Size.height) * xiiUInt64(desc.m_uiArraySizeOrDepth);
-  uiMemory *= formatProperties.GetElementSize();
-  uiMemory *= desc.m_uiSampleCount;
-
-  // Also account for mip maps
-  if (desc.m_uiMipLevels > 1)
-  {
-    uiMemory += static_cast<xiiUInt64>((1.0 / 3.0) * uiMemory);
-  }
-
-  return uiMemory;
-}
-
-xiiUInt64 xiiGALDevice::GetMemoryConsumptionForBuffer(const xiiGALBufferCreationDescription& desc) const
-{
-  return desc.m_uiSize;
 }
 
 #undef XII_GAL_DEVICE_CHECK

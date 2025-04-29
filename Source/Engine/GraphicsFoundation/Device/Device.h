@@ -225,12 +225,6 @@ public:
   /// \brief This returns true if there is a set default device.
   [[nodiscard]] static bool HasDefaultDevice();
 
-  /// \brief Returns the calculated memory consumption for texture.
-  virtual xiiUInt64 GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& description) const;
-
-  /// \brief Returns the calculated memory consumption for buffer.
-  virtual xiiUInt64 GetMemoryConsumptionForBuffer(const xiiGALBufferCreationDescription& description) const;
-
 protected:
   xiiGALDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& creationDescription);
 

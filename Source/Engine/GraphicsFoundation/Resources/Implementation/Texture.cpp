@@ -304,6 +304,24 @@ void xiiGALTexture::CreateDefaultResourceViews()
   }
 }
 
+xiiUInt64 xiiGALTexture::GetMemoryConsumption() const
+{
+  auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
+
+  // This generic implementation is only an approximation, but it can be overridden by specific implementations to give an accurate memory consumption figure.
+  xiiUInt64 uiMemory = xiiUInt64(m_Description.m_Size.width) * xiiUInt64(m_Description.m_Size.height) * xiiUInt64(m_Description.m_uiArraySizeOrDepth);
+  uiMemory *= formatProperties.GetElementSize();
+  uiMemory *= m_Description.m_uiSampleCount;
+
+  // Also account for mip maps.
+  if (m_Description.m_uiMipLevels > 1)
+  {
+    uiMemory += static_cast<xiiUInt64>((1.0 / 3.0) * uiMemory);
+  }
+
+  return uiMemory;
+}
+
 #undef XII_GAL_TEXTURE_CHECK
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Texture);

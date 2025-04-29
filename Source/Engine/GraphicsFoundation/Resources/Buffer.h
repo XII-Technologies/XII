@@ -99,6 +99,7 @@ public:
   /// \brief This returns the buffer size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetSize() const { return m_Description.m_uiSize; }
 
+  /// \brief Returns the calculated memory consumption for buffer.
   [[nodiscard]] XII_ALWAYS_INLINE virtual xiiUInt64 GetMemoryConsumption() const { return m_Description.m_uiSize; }
 
   /// \brief This returns the handle of the default view.
