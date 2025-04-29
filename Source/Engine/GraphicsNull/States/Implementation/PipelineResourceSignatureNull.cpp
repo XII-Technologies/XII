@@ -15,11 +15,6 @@ xiiResult xiiGALPipelineResourceSignatureNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALPipelineResourceSignatureNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 bool xiiGALPipelineResourceSignatureNull::IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const
 {
   XII_IGNORE_UNUSED(pPipelineResourceSignature);

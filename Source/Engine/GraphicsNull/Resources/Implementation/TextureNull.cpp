@@ -17,11 +17,6 @@ xiiResult xiiGALTextureNull::InitPlatform(const xiiGALTextureData* pInitialData)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTextureNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureNull::CreateViewPlatform(const xiiGALTextureViewCreationDescription& description)
 {
   xiiSharedPtr<xiiGALDeviceNull>                 pDeviceNull     = m_pDevice.Downcast<xiiGALDeviceNull>();

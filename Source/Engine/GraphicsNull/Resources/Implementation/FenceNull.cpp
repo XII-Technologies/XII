@@ -20,11 +20,6 @@ xiiResult xiiGALFenceNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALFenceNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 void xiiGALFenceNull::Signal(xiiUInt64 uiValue)
 {
   XII_IGNORE_UNUSED(uiValue);

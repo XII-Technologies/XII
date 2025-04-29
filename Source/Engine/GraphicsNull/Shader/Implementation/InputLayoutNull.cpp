@@ -16,9 +16,4 @@ xiiResult xiiGALInputLayoutNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALInputLayoutNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Shader_Implementation_InputLayoutNull);

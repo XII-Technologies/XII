@@ -15,11 +15,6 @@ xiiResult xiiGALBottomLevelASNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBottomLevelASNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 xiiUInt32 xiiGALBottomLevelASNull::GetGeometryDescriptionIndex(xiiStringView sName) const
 {
   XII_IGNORE_UNUSED(sName);

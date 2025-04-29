@@ -17,11 +17,6 @@ xiiResult xiiGALBufferNull::InitPlatform(const xiiGALBufferData* pInitialData)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBufferNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 xiiInternal::NewInstance<xiiGALBufferView> xiiGALBufferNull::CreateViewPlatform(const xiiGALBufferViewCreationDescription& description)
 {
   xiiSharedPtr<xiiGALDeviceNull>                 pDeviceNull     = m_pDevice.Downcast<xiiGALDeviceNull>();

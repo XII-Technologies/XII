@@ -11,17 +11,9 @@ xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiSharedPtr<xiiGALDeviceNull> pD
   m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListNull, pDeviceNull, this, commandListDescription);
 }
 
-xiiGALCommandQueueNull::~xiiGALCommandQueueNull()
-{
-  m_pDefaultCommandList.Clear();
-}
+xiiGALCommandQueueNull::~xiiGALCommandQueueNull() = default;
 
 xiiResult xiiGALCommandQueueNull::InitPlatform()
-{
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALCommandQueueNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

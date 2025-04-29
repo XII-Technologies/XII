@@ -15,11 +15,6 @@ xiiResult xiiGALQueryNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALQueryNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 bool xiiGALQueryNull::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
 {
   XII_IGNORE_UNUSED(uiDataSize);

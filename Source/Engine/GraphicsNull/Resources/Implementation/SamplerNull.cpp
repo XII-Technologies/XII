@@ -15,9 +15,4 @@ xiiResult xiiGALSamplerNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALSamplerNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Resources_Implementation_SamplerNull);

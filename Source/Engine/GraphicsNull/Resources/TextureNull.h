@@ -19,7 +19,5 @@ protected:
 
   virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData) override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
   virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(const xiiGALTextureViewCreationDescription& description) override;
 };

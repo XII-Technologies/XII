@@ -34,8 +34,6 @@ protected:
 
   xiiResult InitPlatform();
 
-  xiiResult DeInitPlatform();
-
 protected:
   xiiUniquePtr<xiiGALCommandListNull> m_pDefaultCommandList;
 };

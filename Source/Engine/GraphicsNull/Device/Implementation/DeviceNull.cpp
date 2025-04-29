@@ -89,8 +89,6 @@ xiiResult xiiGALDeviceNull::PostInitializePlatform()
 
 xiiResult xiiGALDeviceNull::ShutdownPlatform()
 {
-  m_pDefaultQueue.Clear();
-
   return XII_SUCCESS;
 }
 

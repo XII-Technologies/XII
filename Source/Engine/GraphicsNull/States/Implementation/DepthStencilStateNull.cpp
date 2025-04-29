@@ -15,9 +15,4 @@ xiiResult xiiGALDepthStencilStateNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALDepthStencilStateNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_States_Implementation_DepthStencilStateNull);

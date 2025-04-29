@@ -16,9 +16,4 @@ xiiResult xiiGALTextureViewNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTextureViewNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Resources_Implementation_TextureViewNull);

@@ -18,6 +18,4 @@ protected:
   virtual ~xiiGALPipelineResourceSignatureNull();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 };

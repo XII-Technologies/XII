@@ -15,11 +15,6 @@ xiiResult xiiGALTopLevelASNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTopLevelASNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 xiiGALTopLevelASInstanceDescription xiiGALTopLevelASNull::GetInstanceDescription(xiiStringView sName) const
 {
   XII_IGNORE_UNUSED(sName);

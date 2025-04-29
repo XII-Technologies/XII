@@ -17,6 +17,4 @@ protected:
   virtual ~xiiGALBufferViewNull();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 };

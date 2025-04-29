@@ -15,9 +15,4 @@ xiiResult xiiGALRenderPassNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALRenderPassNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Resources_Implementation_RenderPassNull);

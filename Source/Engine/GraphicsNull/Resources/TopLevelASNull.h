@@ -22,6 +22,4 @@ protected:
   virtual ~xiiGALTopLevelASNull();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 };

@@ -15,9 +15,4 @@ xiiResult xiiGALPipelineStateNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALPipelineStateNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_States_Implementation_PipelineStateNull);

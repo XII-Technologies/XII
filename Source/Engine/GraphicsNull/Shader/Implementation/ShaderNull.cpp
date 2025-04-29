@@ -16,11 +16,6 @@ xiiResult xiiGALShaderNull::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALShaderNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
 xiiInternal::NewInstance<xiiGALInputLayout> xiiGALShaderNull::CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)
 {
   xiiSharedPtr<xiiGALDeviceNull>                  pDeviceNull      = m_pDevice.Downcast<xiiGALDeviceNull>();
