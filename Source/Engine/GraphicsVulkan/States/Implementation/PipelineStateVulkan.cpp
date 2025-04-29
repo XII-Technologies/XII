@@ -24,7 +24,7 @@ xiiGALPipelineStateVulkan::~xiiGALPipelineStateVulkan() = default;
 
 xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan*                    pDeviceVulkan                    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*                    pDeviceVulkan                    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                             vkLogicalDevice                  = pDeviceVulkan->GetVulkanLogicalDevice();
   xiiGALPipelineResourceSignatureVulkan* pPipelineResourceSignatureVulkan = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pDeviceVulkan->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature));
 
@@ -353,7 +353,7 @@ xiiResult xiiGALPipelineStateVulkan::InitPlatform()
 
 xiiResult xiiGALPipelineStateVulkan::DeInitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   if (m_vkPipelineCache != VK_NULL_HANDLE)
   {
@@ -381,7 +381,7 @@ void xiiGALPipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName)
   if (m_vkPipeline == VK_NULL_HANDLE)
     return;
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkPipeline, sName.GetData(tmp));

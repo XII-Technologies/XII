@@ -18,7 +18,7 @@ xiiGALTextureViewVulkan::~xiiGALTextureViewVulkan() = default;
 
 xiiResult xiiGALTextureViewVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan*  pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*  pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALTextureVulkan* pTextureVulkan     = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_Description.m_hTexture));
   const auto&          textureDescription = pTextureVulkan->GetDescription();
 
@@ -249,7 +249,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
 
 xiiResult xiiGALTextureViewVulkan::DeInitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkImageView);
 
@@ -260,7 +260,7 @@ xiiResult xiiGALTextureViewVulkan::DeInitPlatform()
 
 void xiiGALTextureViewVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkImageView, sName.GetData(tmp));

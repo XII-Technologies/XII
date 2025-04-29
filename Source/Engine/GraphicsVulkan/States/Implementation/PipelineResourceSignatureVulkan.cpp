@@ -46,7 +46,7 @@ xiiGALPipelineResourceSignatureVulkan::~xiiGALPipelineResourceSignatureVulkan() 
 
 xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // First build set layout and resource binding description.
@@ -146,7 +146,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
 xiiResult xiiGALPipelineResourceSignatureVulkan::DeInitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   m_PipelineResourceSetLayouts.Clear();
   m_PipelineResourceSetLayouts.Compact();
@@ -176,7 +176,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::DeInitPlatform()
 
 void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp(sName);
 
   for (xiiUInt32 i = 0; i < m_DescriptorSetLayouts.GetCount(); ++i)

@@ -17,7 +17,7 @@ xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
 
 void xiiGALCommandQueueVulkan::InitializePlatform(const xiiGALQueueInformationVulkan& queueInformation)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   m_QueueInformation = queueInformation;
@@ -38,7 +38,7 @@ void xiiGALCommandQueueVulkan::InitializePlatform(const xiiGALQueueInformationVu
 
 void xiiGALCommandQueueVulkan::DeInitializePlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   for (xiiUInt32 i = 0; i < m_CommandLists.GetCount(); ++i)
@@ -63,7 +63,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 {
   XII_LOCK(m_QueueMutex);
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   // Update last completed fence value to unlock all waiting events.
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
@@ -90,7 +90,7 @@ xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList()
     {
       // Allocate a new command list.
       xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-      xiiGALDeviceVulkan*                  pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+      xiiGALDeviceVulkan*                  pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
       pCommandListVulkan                                          = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCommandListVulkan, pDeviceVulkan, this, commandListDescription);
 
       m_CommandLists.PushBack(pCommandListVulkan);
@@ -153,7 +153,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 {
   XII_LOCK(m_QueueMutex);
 
-  xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*      pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
 
   pCommandListVulkan->FlushBarriers();
@@ -257,7 +257,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 
 void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkCommandPool, sName.GetData(tmp));

@@ -17,7 +17,7 @@ xiiGALFenceVulkan::~xiiGALFenceVulkan() = default;
 
 xiiResult xiiGALFenceVulkan::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   if (m_Description.m_Type == xiiGALFenceType::General && pDeviceVulkan->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled)
@@ -37,7 +37,7 @@ xiiResult xiiGALFenceVulkan::InitPlatform()
 
 xiiResult xiiGALFenceVulkan::DeInitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   if (IsTimelineSemaphore())
   {
@@ -66,7 +66,7 @@ xiiResult xiiGALFenceVulkan::DeInitPlatform()
 
 void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkTimelineSemaphore, sName.GetData(tmp));
@@ -74,7 +74,7 @@ void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 void xiiGALFenceVulkan::ReleaseResourcesImmediately()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkTimelineSemaphore);
 
@@ -85,7 +85,7 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 {
   if (IsTimelineSemaphore())
   {
-    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
     vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
     // GetSemaphoreCounter() is thread safe.
@@ -107,7 +107,7 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 {
   XII_ASSERT_DEV(!IsTimelineSemaphore(), "The fence must have no timeline semaphore.");
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   while (!m_SyncPoints.IsEmpty())
@@ -147,7 +147,7 @@ void xiiGALFenceVulkan::Signal(xiiUInt64 uiValue)
     vkSignalInformation.semaphore               = m_vkTimelineSemaphore;
     vkSignalInformation.value                   = uiValue;
 
-    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
     vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
     VK_ASSERT_DEV(vkLogicalDevice.signalSemaphoreKHR(&vkSignalInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
@@ -177,7 +177,7 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
 
 const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const xiiUInt64 uiFenceValue)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   if (IsTimelineSemaphore())
   {
@@ -212,7 +212,7 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
 
 void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   if (IsTimelineSemaphore())

@@ -20,7 +20,7 @@ xiiGALFramebufferVulkan::~xiiGALFramebufferVulkan() = default;
 
 xiiResult xiiGALFramebufferVulkan::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   vk::FramebufferCreateInfo framebufferCreateInfo = {};
@@ -59,7 +59,7 @@ xiiResult xiiGALFramebufferVulkan::InitPlatform()
 
 xiiResult xiiGALFramebufferVulkan::DeInitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkFramebuffer);
 
@@ -70,7 +70,7 @@ xiiResult xiiGALFramebufferVulkan::DeInitPlatform()
 
 void xiiGALFramebufferVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkFramebuffer, sName.GetData(tmp));

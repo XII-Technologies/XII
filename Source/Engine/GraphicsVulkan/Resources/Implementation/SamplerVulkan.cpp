@@ -17,7 +17,7 @@ xiiGALSamplerVulkan::~xiiGALSamplerVulkan() = default;
 
 xiiResult xiiGALSamplerVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan*                 pDeviceVulkan              = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*                 pDeviceVulkan              = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                          vkLogicalDevice            = pDeviceVulkan->GetVulkanLogicalDevice();
   const vk::PhysicalDeviceProperties& vkPhysicalDeviceProperties = pDeviceVulkan->GetVulkanPhysicalDeviceProperties();
 
@@ -109,7 +109,7 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
 
 xiiResult xiiGALSamplerVulkan::DeInitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   if (m_vkDescriptorImageInfo.sampler != VK_NULL_HANDLE)
   {
@@ -123,7 +123,7 @@ xiiResult xiiGALSamplerVulkan::DeInitPlatform()
 
 void xiiGALSamplerVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkDescriptorImageInfo.sampler, sName.GetData(tmp));

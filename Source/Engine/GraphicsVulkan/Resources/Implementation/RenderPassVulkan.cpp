@@ -17,7 +17,7 @@ xiiGALRenderPassVulkan::~xiiGALRenderPassVulkan() = default;
 
 xiiResult xiiGALRenderPassVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan*                          pDeviceVulkan                    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*                          pDeviceVulkan                    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   const xiiGALDeviceVulkan::ExtensionFeatures& vkLogicalDeviceExtensionFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
   xiiUInt32 uiRenderPassVersion = 1U;
@@ -62,7 +62,7 @@ xiiResult xiiGALRenderPassVulkan::InitPlatform()
 
 xiiResult xiiGALRenderPassVulkan::DeInitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   pDeviceVulkan->SafeReleaseDeviceObject(m_vkRenderPass);
 
@@ -73,7 +73,7 @@ xiiResult xiiGALRenderPassVulkan::DeInitPlatform()
 
 void xiiGALRenderPassVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkRenderPass, sName.GetData(tmp));
@@ -88,7 +88,7 @@ vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
   using AttachmentReferenceType   = std::conditional_t<RenderPassVersion == 2, vk::AttachmentReference2, vk::AttachmentReference>;
   using SubpassDependencyType     = std::conditional_t<RenderPassVersion == 2, vk::SubpassDependency2, vk::SubpassDependency>;
 
-  xiiGALDeviceVulkan*                          pDeviceVulkan                    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*                          pDeviceVulkan                    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                                   vkLogicalDevice                  = pDeviceVulkan->GetVulkanLogicalDevice();
   const xiiGALDeviceVulkan::ExtensionFeatures& vkLogicalDeviceExtensionFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
   const bool                                   bShadingRateEnabled              = vkLogicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False;

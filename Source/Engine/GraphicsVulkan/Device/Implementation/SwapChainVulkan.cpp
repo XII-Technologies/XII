@@ -58,7 +58,7 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
 
 xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Instance        vkInstance    = pDeviceVulkan->GetVulkanInstance();
 
   if (m_vkSwapChain != VK_NULL_HANDLE)
@@ -79,7 +79,7 @@ xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
 
 void xiiGALSwapChainVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder    tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkSwapChain, sName.GetData(tmp));
@@ -87,7 +87,7 @@ void xiiGALSwapChainVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Instance        vkInstance    = pDeviceVulkan->GetVulkanInstance();
 
   if (m_vkSurface != VK_NULL_HANDLE)
@@ -168,7 +168,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 
 xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
   vk::Device          vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
@@ -465,7 +465,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
 xiiResult xiiGALSwapChainVulkan::RecreateVulkanSwapChain()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
   vk::Device          vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
@@ -501,7 +501,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   if (m_vkSwapChain == VK_NULL_HANDLE)
     return;
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // VERIFY: Flush to submit all pending commands and semaphores to the queue.
@@ -569,7 +569,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
 xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
@@ -620,7 +620,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 
 vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // Applications should not rely on vkAcquireNextImageKHR blocking in order to meter their rendering speed.
@@ -693,7 +693,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 
 void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
@@ -715,7 +715,7 @@ void xiiGALSwapChainVulkan::Present()
   if (m_bIsMinimized)
     return;
 
-  xiiGALDeviceVulkan*       pDeviceVulkan            = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*       pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALCommandQueueVulkan* pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
   xiiGALTextureVulkan*      pCurrentBackbufferVulkan = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_hBackBufferTexture));
 
@@ -796,7 +796,7 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
   if (m_vkSurface != VK_NULL_HANDLE)
   {
-    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
     vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
 
     // Check orientation.
