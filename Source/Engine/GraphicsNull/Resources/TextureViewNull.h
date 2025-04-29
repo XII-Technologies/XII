@@ -8,10 +8,11 @@ class XII_GRAPHICSNULL_DLL xiiGALTextureViewNull final : public xiiGALTextureVie
 {
 public:
 protected:
-  friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceNull;
+  friend class xiiGALTextureNull;
 
-  xiiGALTextureViewNull(xiiGALDeviceNull* pDeviceNull, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
+  xiiGALTextureViewNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureViewNull();
 
@@ -19,5 +20,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/Resources/Implementation/TextureViewNull_inl.h>

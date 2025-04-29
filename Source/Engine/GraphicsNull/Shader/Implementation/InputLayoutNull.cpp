@@ -4,7 +4,7 @@
 #include <GraphicsNull/Shader/InputLayoutNull.h>
 #include <GraphicsNull/Shader/ShaderNull.h>
 
-xiiGALInputLayoutNull::xiiGALInputLayoutNull(xiiGALDeviceNull* pDeviceNull, const xiiGALInputLayoutCreationDescription& creationDescription) :
+xiiGALInputLayoutNull::xiiGALInputLayoutNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALInputLayoutCreationDescription& creationDescription) :
   xiiGALInputLayout(pDeviceNull, creationDescription)
 {
 }

@@ -11,7 +11,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALDepthStencilStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALDepthStencilStateCreationDescription& creationDescription);
+  xiiGALDepthStencilStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALDepthStencilStateCreationDescription& creationDescription);
 
   virtual ~xiiGALDepthStencilStateNull();
 
@@ -19,5 +19,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/States/Implementation/DepthStencilStateNull_inl.h>

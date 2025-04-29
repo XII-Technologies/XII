@@ -8,10 +8,11 @@ class XII_GRAPHICSNULL_DLL xiiGALBufferViewNull final : public xiiGALBufferView
 {
 public:
 protected:
-  friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceNull;
+  friend class xiiGALBufferNull;
 
-  xiiGALBufferViewNull(xiiGALDeviceNull* pDeviceNull, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
+  xiiGALBufferViewNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferViewNull();
 
@@ -19,5 +20,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/Resources/Implementation/BufferViewNull_inl.h>

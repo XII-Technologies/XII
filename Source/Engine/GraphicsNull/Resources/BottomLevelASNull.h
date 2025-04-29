@@ -19,7 +19,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALBottomLevelASNull(xiiGALDeviceNull* pDeviceNull, const xiiGALBottomLevelASCreationDescription& creationDescription);
+  xiiGALBottomLevelASNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelASNull();
 
@@ -27,5 +27,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/Resources/Implementation/BottomLevelASNull_inl.h>

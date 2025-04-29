@@ -29,7 +29,7 @@
 
 xiiInternal::NewInstance<xiiGALDevice> CreateNullDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
-  return XII_NEW(pAllocator, xiiGALDeviceNull, description);
+  return XII_NEW(pAllocator, xiiGALDeviceNull, pAllocator, description);
 }
 
 // clang-format off
@@ -54,12 +54,19 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsNull, DeviceFactory)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiGALDeviceNull::xiiGALDeviceNull(const xiiGALDeviceCreationDescription& description) :
-  xiiGALDevice(description)
+xiiGALDeviceNull::xiiGALDeviceNull(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description) :
+  xiiGALDevice(pAllocator, description)
 {
 }
 
 xiiGALDeviceNull::~xiiGALDeviceNull() = default;
+
+xiiGALCommandQueue* xiiGALDeviceNull::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const
+{
+  XII_IGNORE_UNUSED(queueType);
+  XII_IGNORE_UNUSED(bAllowGraphicsCommandQueueFallback);
+  return m_pDefaultQueue.Borrow();
+}
 
 xiiResult xiiGALDeviceNull::InitializePlatform()
 {
@@ -75,18 +82,9 @@ xiiResult xiiGALDeviceNull::PostInitializePlatform()
 {
   xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
 
-  m_pDefaultQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, this, queueDescription);
+  m_pDefaultQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), queueDescription);
 
   return XII_SUCCESS;
-}
-
-void xiiGALDeviceNull::ReportLiveGPUObjects()
-{
-}
-
-void xiiGALDeviceNull::FlushPendingObjects()
-{
-  FlushDestroyedObjects();
 }
 
 xiiResult xiiGALDeviceNull::ShutdownPlatform()
@@ -96,13 +94,13 @@ xiiResult xiiGALDeviceNull::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceNull::BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame)
+void xiiGALDeviceNull::BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains, const xiiUInt64 uiRenderFrame)
 {
   XII_IGNORE_UNUSED(swapchains);
   XII_IGNORE_UNUSED(uiRenderFrame);
 }
 
-void xiiGALDeviceNull::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains)
+void xiiGALDeviceNull::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains)
 {
   for (auto pSwapChain : swapchains)
   {
@@ -112,408 +110,200 @@ void xiiGALDeviceNull::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains
   ++m_uiFrameNumber;
 }
 
-xiiGALSwapChain* xiiGALDeviceNull::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
+xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceNull::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
 {
-  xiiGALSwapChainNull* pSwapChainNull = XII_NEW(&m_Allocator, xiiGALSwapChainNull, this, description);
+  xiiInternal::NewInstance<xiiGALSwapChainNull> pSwapChainNull = XII_NEW(&m_Allocator, xiiGALSwapChainNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pSwapChainNull->InitPlatform().Succeeded())
     return pSwapChainNull;
 
-  XII_DELETE(&m_Allocator, pSwapChainNull);
+  XII_DELETE(&m_Allocator, pSwapChainNull.m_pInstance);
 
   return pSwapChainNull;
 }
 
-void xiiGALDeviceNull::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
+xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceNull::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
-  xiiGALSwapChainNull* pSwapChainNull = static_cast<xiiGALSwapChainNull*>(pSwapChain);
-
-  pSwapChainNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pSwapChainNull);
-}
-
-xiiGALBlendState* xiiGALDeviceNull::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
-{
-  xiiGALBlendStateNull* pBlendStateNull = XII_NEW(&m_Allocator, xiiGALBlendStateNull, this, description);
+  xiiInternal::NewInstance<xiiGALBlendStateNull> pBlendStateNull = XII_NEW(&m_Allocator, xiiGALBlendStateNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pBlendStateNull->InitPlatform().Succeeded())
     return pBlendStateNull;
 
-  XII_DELETE(&m_Allocator, pBlendStateNull);
+  XII_DELETE(&m_Allocator, pBlendStateNull.m_pInstance);
 
   return pBlendStateNull;
 }
 
-void xiiGALDeviceNull::DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)
+xiiInternal::NewInstance<xiiGALDepthStencilState> xiiGALDeviceNull::CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)
 {
-  xiiGALBlendStateNull* pBlendStateNull = static_cast<xiiGALBlendStateNull*>(pBlendState);
-
-  pBlendStateNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pBlendStateNull);
-}
-
-xiiGALDepthStencilState* xiiGALDeviceNull::CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)
-{
-  xiiGALDepthStencilStateNull* pDepthStencilStateNull = XII_NEW(&m_Allocator, xiiGALDepthStencilStateNull, this, description);
+  xiiInternal::NewInstance<xiiGALDepthStencilStateNull> pDepthStencilStateNull = XII_NEW(&m_Allocator, xiiGALDepthStencilStateNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pDepthStencilStateNull->InitPlatform().Succeeded())
     return pDepthStencilStateNull;
 
-  XII_DELETE(&m_Allocator, pDepthStencilStateNull);
+  XII_DELETE(&m_Allocator, pDepthStencilStateNull.m_pInstance);
 
   return pDepthStencilStateNull;
 }
 
-void xiiGALDeviceNull::DestroyDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState)
+xiiInternal::NewInstance<xiiGALRasterizerState> xiiGALDeviceNull::CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)
 {
-  xiiGALDepthStencilStateNull* pDepthStencilStateNull = static_cast<xiiGALDepthStencilStateNull*>(pDepthStencilState);
-
-  pDepthStencilStateNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pDepthStencilStateNull);
-}
-
-xiiGALRasterizerState* xiiGALDeviceNull::CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)
-{
-  xiiGALRasterizerStateNull* pRasterizerStateNull = XII_NEW(&m_Allocator, xiiGALRasterizerStateNull, this, description);
+  xiiInternal::NewInstance<xiiGALRasterizerStateNull> pRasterizerStateNull = XII_NEW(&m_Allocator, xiiGALRasterizerStateNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pRasterizerStateNull->InitPlatform().Succeeded())
     return pRasterizerStateNull;
 
-  XII_DELETE(&m_Allocator, pRasterizerStateNull);
+  XII_DELETE(&m_Allocator, pRasterizerStateNull.m_pInstance);
 
   return pRasterizerStateNull;
 }
 
-void xiiGALDeviceNull::DestroyRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState)
+xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceNull::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
 {
-  xiiGALRasterizerStateNull* pRasterizerStateNull = static_cast<xiiGALRasterizerStateNull*>(pRasterizerState);
-
-  pRasterizerStateNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pRasterizerStateNull);
-}
-
-xiiGALShader* xiiGALDeviceNull::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
-{
-  xiiGALShaderNull* pShaderNull = XII_NEW(&m_Allocator, xiiGALShaderNull, this, description);
+  xiiInternal::NewInstance<xiiGALShaderNull> pShaderNull = XII_NEW(&m_Allocator, xiiGALShaderNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pShaderNull->InitPlatform().Succeeded())
     return pShaderNull;
 
-  XII_DELETE(&m_Allocator, pShaderNull);
+  XII_DELETE(&m_Allocator, pShaderNull.m_pInstance);
 
   return pShaderNull;
 }
 
-void xiiGALDeviceNull::DestroyShaderPlatform(xiiGALShader* pShader)
+xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceNull::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
 {
-  xiiGALShaderNull* pShaderNull = static_cast<xiiGALShaderNull*>(pShader);
-
-  pShaderNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pShaderNull);
-}
-
-xiiGALBuffer* xiiGALDeviceNull::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
-{
-  xiiGALBufferNull* pBufferNull = XII_NEW(&m_Allocator, xiiGALBufferNull, this, description);
+  xiiInternal::NewInstance<xiiGALBufferNull> pBufferNull = XII_NEW(&m_Allocator, xiiGALBufferNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pBufferNull->InitPlatform(pInitialData).Succeeded())
     return pBufferNull;
 
-  XII_DELETE(&m_Allocator, pBufferNull);
+  XII_DELETE(&m_Allocator, pBufferNull.m_pInstance);
 
   return pBufferNull;
 }
 
-void xiiGALDeviceNull::DestroyBufferPlatform(xiiGALBuffer* pBuffer)
+xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceNull::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
 {
-  xiiGALBufferNull* pBufferNull = static_cast<xiiGALBufferNull*>(pBuffer);
-
-  pBufferNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pBufferNull);
-}
-
-xiiGALBufferView* xiiGALDeviceNull::CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description)
-{
-  xiiGALBufferViewNull* pBufferViewNull = XII_NEW(&m_Allocator, xiiGALBufferViewNull, this, pBuffer, description);
-
-  if (pBufferViewNull->InitPlatform().Succeeded())
-    return pBufferViewNull;
-
-  XII_DELETE(&m_Allocator, pBufferViewNull);
-
-  return pBufferViewNull;
-}
-
-void xiiGALDeviceNull::DestroyBufferViewPlatform(xiiGALBufferView* pBufferView)
-{
-  xiiGALBufferViewNull* pBufferViewNull = static_cast<xiiGALBufferViewNull*>(pBufferView);
-
-  pBufferViewNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pBufferViewNull);
-}
-
-xiiGALTexture* xiiGALDeviceNull::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
-{
-  xiiGALTextureNull* pTextureNull = XII_NEW(&m_Allocator, xiiGALTextureNull, this, description);
+  xiiInternal::NewInstance<xiiGALTextureNull> pTextureNull = XII_NEW(&m_Allocator, xiiGALTextureNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pTextureNull->InitPlatform(pInitialData).Succeeded())
     return pTextureNull;
 
-  XII_DELETE(&m_Allocator, pTextureNull);
+  XII_DELETE(&m_Allocator, pTextureNull.m_pInstance);
 
   return pTextureNull;
 }
 
-void xiiGALDeviceNull::DestroyTexturePlatform(xiiGALTexture* pTexture)
+xiiInternal::NewInstance<xiiGALSampler> xiiGALDeviceNull::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
 {
-  xiiGALTextureNull* pTextureNull = static_cast<xiiGALTextureNull*>(pTexture);
-
-  pTextureNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pTextureNull);
-}
-
-xiiGALTextureView* xiiGALDeviceNull::CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description)
-{
-  xiiGALTextureViewNull* pTextureViewNull = XII_NEW(&m_Allocator, xiiGALTextureViewNull, this, pTexture, description);
-
-  if (pTextureViewNull->InitPlatform().Succeeded())
-    return pTextureViewNull;
-
-  XII_DELETE(&m_Allocator, pTextureViewNull);
-
-  return pTextureViewNull;
-}
-
-void xiiGALDeviceNull::DestroyTextureViewPlatform(xiiGALTextureView* pTextureView)
-{
-  xiiGALTextureViewNull* pTextureViewNull = static_cast<xiiGALTextureViewNull*>(pTextureView);
-
-  pTextureViewNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pTextureViewNull);
-}
-
-xiiGALSampler* xiiGALDeviceNull::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
-{
-  xiiGALSamplerNull* pSamplerNull = XII_NEW(&m_Allocator, xiiGALSamplerNull, this, description);
+  xiiInternal::NewInstance<xiiGALSamplerNull> pSamplerNull = XII_NEW(&m_Allocator, xiiGALSamplerNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pSamplerNull->InitPlatform().Succeeded())
     return pSamplerNull;
 
-  XII_DELETE(&m_Allocator, pSamplerNull);
+  XII_DELETE(&m_Allocator, pSamplerNull.m_pInstance);
 
   return pSamplerNull;
 }
 
-void xiiGALDeviceNull::DestroySamplerPlatform(xiiGALSampler* pSampler)
+xiiInternal::NewInstance<xiiGALQuery> xiiGALDeviceNull::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)
 {
-  xiiGALSamplerNull* pSamplerNull = static_cast<xiiGALSamplerNull*>(pSampler);
-
-  pSamplerNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pSamplerNull);
-}
-
-xiiGALInputLayout* xiiGALDeviceNull::CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)
-{
-  xiiGALInputLayoutNull* pInputLayoutNull = XII_NEW(&m_Allocator, xiiGALInputLayoutNull, this, description);
-
-  if (pInputLayoutNull->InitPlatform().Succeeded())
-    return pInputLayoutNull;
-
-  XII_DELETE(&m_Allocator, pInputLayoutNull);
-
-  return pInputLayoutNull;
-}
-
-void xiiGALDeviceNull::DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout)
-{
-  xiiGALInputLayoutNull* pInputLayoutNull = static_cast<xiiGALInputLayoutNull*>(pInputLayout);
-
-  pInputLayoutNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pInputLayoutNull);
-}
-
-xiiGALQuery* xiiGALDeviceNull::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)
-{
-  xiiGALQueryNull* pQueryNull = XII_NEW(&m_Allocator, xiiGALQueryNull, this, description);
+  xiiInternal::NewInstance<xiiGALQueryNull> pQueryNull = XII_NEW(&m_Allocator, xiiGALQueryNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pQueryNull->InitPlatform().Succeeded())
     return pQueryNull;
 
-  XII_DELETE(&m_Allocator, pQueryNull);
+  XII_DELETE(&m_Allocator, pQueryNull.m_pInstance);
 
   return pQueryNull;
 }
 
-void xiiGALDeviceNull::DestroyQueryPlatform(xiiGALQuery* pQuery)
+xiiInternal::NewInstance<xiiGALFence> xiiGALDeviceNull::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
-  xiiGALQueryNull* pQueryNull = static_cast<xiiGALQueryNull*>(pQuery);
-
-  pQueryNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pQueryNull);
-}
-
-xiiGALFence* xiiGALDeviceNull::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
-{
-  xiiGALFenceNull* pFenceNull = XII_NEW(&m_Allocator, xiiGALFenceNull, this, description);
+  xiiInternal::NewInstance<xiiGALFenceNull> pFenceNull = XII_NEW(&m_Allocator, xiiGALFenceNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pFenceNull->InitPlatform().Succeeded())
     return pFenceNull;
 
-  XII_DELETE(&m_Allocator, pFenceNull);
+  XII_DELETE(&m_Allocator, pFenceNull.m_pInstance);
 
   return pFenceNull;
 }
 
-void xiiGALDeviceNull::DestroyFencePlatform(xiiGALFence* pFence)
+xiiInternal::NewInstance<xiiGALRenderPass> xiiGALDeviceNull::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)
 {
-  xiiGALFenceNull* pFenceNull = static_cast<xiiGALFenceNull*>(pFence);
-
-  pFenceNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pFenceNull);
-}
-
-xiiGALRenderPass* xiiGALDeviceNull::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)
-{
-  xiiGALRenderPassNull* pRenderPassNull = XII_NEW(&m_Allocator, xiiGALRenderPassNull, this, description);
+  xiiInternal::NewInstance<xiiGALRenderPassNull> pRenderPassNull = XII_NEW(&m_Allocator, xiiGALRenderPassNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pRenderPassNull->InitPlatform().Succeeded())
     return pRenderPassNull;
 
-  XII_DELETE(&m_Allocator, pRenderPassNull);
+  XII_DELETE(&m_Allocator, pRenderPassNull.m_pInstance);
 
   return pRenderPassNull;
 }
 
-void xiiGALDeviceNull::DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass)
+xiiInternal::NewInstance<xiiGALFramebuffer> xiiGALDeviceNull::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)
 {
-  xiiGALRenderPassNull* pRenderPassNull = static_cast<xiiGALRenderPassNull*>(pRenderPass);
-
-  pRenderPassNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pRenderPassNull);
-}
-
-xiiGALFramebuffer* xiiGALDeviceNull::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)
-{
-  xiiGALFramebufferNull* pFramebufferNull = XII_NEW(&m_Allocator, xiiGALFramebufferNull, this, description);
+  xiiInternal::NewInstance<xiiGALFramebufferNull> pFramebufferNull = XII_NEW(&m_Allocator, xiiGALFramebufferNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pFramebufferNull->InitPlatform().Succeeded())
     return pFramebufferNull;
 
-  XII_DELETE(&m_Allocator, pFramebufferNull);
+  XII_DELETE(&m_Allocator, pFramebufferNull.m_pInstance);
 
   return pFramebufferNull;
 }
 
-void xiiGALDeviceNull::DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuffer)
+xiiInternal::NewInstance<xiiGALBottomLevelAS> xiiGALDeviceNull::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)
 {
-  xiiGALFramebufferNull* pFramebufferNull = static_cast<xiiGALFramebufferNull*>(pFramebuffer);
-
-  pFramebufferNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pFramebufferNull);
-}
-
-xiiGALBottomLevelAS* xiiGALDeviceNull::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)
-{
-  xiiGALBottomLevelASNull* pBottomLevelASNull = XII_NEW(&m_Allocator, xiiGALBottomLevelASNull, this, description);
+  xiiInternal::NewInstance<xiiGALBottomLevelASNull> pBottomLevelASNull = XII_NEW(&m_Allocator, xiiGALBottomLevelASNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pBottomLevelASNull->InitPlatform().Succeeded())
     return pBottomLevelASNull;
 
-  XII_DELETE(&m_Allocator, pBottomLevelASNull);
+  XII_DELETE(&m_Allocator, pBottomLevelASNull.m_pInstance);
 
   return pBottomLevelASNull;
 }
 
-void xiiGALDeviceNull::DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBottomLevelAS)
+xiiInternal::NewInstance<xiiGALTopLevelAS> xiiGALDeviceNull::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
 {
-  xiiGALBottomLevelASNull* pBottomLevelASNull = static_cast<xiiGALBottomLevelASNull*>(pBottomLevelAS);
-
-  pBottomLevelASNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pBottomLevelASNull);
-}
-
-xiiGALTopLevelAS* xiiGALDeviceNull::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
-{
-  xiiGALTopLevelASNull* pTopLevelASNull = XII_NEW(&m_Allocator, xiiGALTopLevelASNull, this, description);
+  xiiInternal::NewInstance<xiiGALTopLevelASNull> pTopLevelASNull = XII_NEW(&m_Allocator, xiiGALTopLevelASNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pTopLevelASNull->InitPlatform().Succeeded())
     return pTopLevelASNull;
 
-  XII_DELETE(&m_Allocator, pTopLevelASNull);
+  XII_DELETE(&m_Allocator, pTopLevelASNull.m_pInstance);
 
   return pTopLevelASNull;
 }
 
-void xiiGALDeviceNull::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
+xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceNull::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
 {
-  xiiGALTopLevelASNull* pTopLevelASNull = static_cast<xiiGALTopLevelASNull*>(pTopLevelAS);
-
-  pTopLevelASNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pTopLevelASNull);
-}
-
-xiiGALPipelineResourceSignature* xiiGALDeviceNull::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
-{
-  xiiGALPipelineResourceSignatureNull* pPipelineResourceSignatureNull = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureNull, this, description);
+  xiiInternal::NewInstance<xiiGALPipelineResourceSignatureNull> pPipelineResourceSignatureNull = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pPipelineResourceSignatureNull->InitPlatform().Succeeded())
     return pPipelineResourceSignatureNull;
 
-  XII_DELETE(&m_Allocator, pPipelineResourceSignatureNull);
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureNull.m_pInstance);
 
   return pPipelineResourceSignatureNull;
 }
 
-void xiiGALDeviceNull::DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature)
+xiiInternal::NewInstance<xiiGALPipelineState> xiiGALDeviceNull::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
 {
-  xiiGALPipelineResourceSignatureNull* pPipelineResourceSignatureNull = static_cast<xiiGALPipelineResourceSignatureNull*>(pPipelineResourceSignature);
-
-  pPipelineResourceSignatureNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pPipelineResourceSignatureNull);
-}
-
-xiiGALPipelineState* xiiGALDeviceNull::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
-{
-  xiiGALPipelineStateNull* pPipelineStateNull = XII_NEW(&m_Allocator, xiiGALPipelineStateNull, this, description);
+  xiiInternal::NewInstance<xiiGALPipelineStateNull> pPipelineStateNull = XII_NEW(&m_Allocator, xiiGALPipelineStateNull, xiiSharedPtr<xiiGALDevice>(this, m_Allocator.GetParent()), description);
 
   if (pPipelineStateNull->InitPlatform().Succeeded())
     return pPipelineStateNull;
 
-  XII_DELETE(&m_Allocator, pPipelineStateNull);
+  XII_DELETE(&m_Allocator, pPipelineStateNull.m_pInstance);
 
   return pPipelineStateNull;
 }
 
-void xiiGALDeviceNull::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
-{
-  xiiGALPipelineStateNull* pPipelineStateNull = static_cast<xiiGALPipelineStateNull*>(pPipelineState);
-
-  pPipelineStateNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pPipelineStateNull);
-}
-
 void xiiGALDeviceNull::WaitIdlePlatform()
 {
-  FlushPendingObjects();
 }
 
 xiiResult xiiGALDeviceNull::FillCapabilitiesPlatform()
@@ -644,27 +434,6 @@ xiiResult xiiGALDeviceNull::FillCapabilitiesPlatform()
   // Null graphics device does not handle command queues yet.
 
   return XII_SUCCESS;
-}
-
-xiiGALCommandQueue* xiiGALDeviceNull::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
-{
-  xiiGALCommandQueueNull* pCommandQueueNull = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, this, description);
-
-  if (pCommandQueueNull->InitPlatform().Succeeded())
-    return pCommandQueueNull;
-
-  XII_DELETE(&m_Allocator, pCommandQueueNull);
-
-  return pCommandQueueNull;
-}
-
-void xiiGALDeviceNull::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
-{
-  xiiGALCommandQueueNull* pCommandQueueNull = static_cast<xiiGALCommandQueueNull*>(pCommandQueue);
-
-  pCommandQueueNull->DeInitPlatform().IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pCommandQueueNull);
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Device_Implementation_DeviceNull);

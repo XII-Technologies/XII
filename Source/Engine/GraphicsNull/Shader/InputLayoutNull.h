@@ -8,10 +8,11 @@ class XII_GRAPHICSNULL_DLL xiiGALInputLayoutNull final : public xiiGALInputLayou
 {
 public:
 protected:
-  friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceNull;
+  friend class xiiGALShaderNull;
 
-  xiiGALInputLayoutNull(xiiGALDeviceNull* pDeviceNull, const xiiGALInputLayoutCreationDescription& creationDescription);
+  xiiGALInputLayoutNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALInputLayoutCreationDescription& creationDescription);
 
   virtual ~xiiGALInputLayoutNull();
 
@@ -19,5 +20,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/Shader/Implementation/InputLayoutNull_inl.h>

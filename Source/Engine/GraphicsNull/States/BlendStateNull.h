@@ -11,7 +11,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALBlendStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALBlendStateCreationDescription& creationDescription);
+  xiiGALBlendStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALBlendStateCreationDescription& creationDescription);
 
   virtual ~xiiGALBlendStateNull();
 
@@ -19,5 +19,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/States/Implementation/BlendStateNull_inl.h>

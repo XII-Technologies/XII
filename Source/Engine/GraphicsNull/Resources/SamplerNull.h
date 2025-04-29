@@ -11,7 +11,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALSamplerNull(xiiGALDeviceNull* pDeviceNull, const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSamplerNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSamplerNull();
 
@@ -19,5 +19,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/Resources/Implementation/SamplerNull_inl.h>

@@ -6,37 +6,28 @@
 #include <GraphicsNull/Device/SwapChainNull.h>
 #include <GraphicsNull/Resources/TextureNull.h>
 
-xiiGALSwapChainNull::xiiGALSwapChainNull(xiiGALDeviceNull* pDeviceNull, const xiiGALSwapChainCreationDescription& creationDescription) :
+xiiGALSwapChainNull::xiiGALSwapChainNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(pDeviceNull, creationDescription)
 {
 }
 
-xiiGALSwapChainNull::~xiiGALSwapChainNull() = default;
+xiiGALSwapChainNull::~xiiGALSwapChainNull()
+{
+  m_Description.m_pWindow->RemoveReference();
+}
 
 xiiResult xiiGALSwapChainNull::InitPlatform()
 {
-  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(m_pDevice);
-
   // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
   m_Description.m_pWindow->AddReference();
 
-  return CreateBackBufferInternal(pDeviceNull);
+  return CreateBackBufferInternal();
 }
 
-xiiResult xiiGALSwapChainNull::DeInitPlatform()
+xiiResult xiiGALSwapChainNull::CreateBackBufferInternal()
 {
-  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(m_pDevice);
-
-  DestroyBackBufferInternal(pDeviceNull);
-
-  m_Description.m_pWindow->RemoveReference();
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDeviceNull)
-{
-  xiiEnum<xiiGALResourceFormat> textureFormat = pDeviceNull->GetDescription().m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Vulkan ? xiiGALResourceFormat::RGBA8UNormalizedSRGB : xiiGALResourceFormat::BGRA8UNormalizedSRGB;
+  xiiSharedPtr<xiiGALDeviceNull> pDeviceNull   = m_pDevice.Downcast<xiiGALDeviceNull>();
+  xiiEnum<xiiGALResourceFormat>  textureFormat = pDeviceNull->GetDescription().m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Vulkan ? xiiGALResourceFormat::RGBA8UNormalizedSRGB : xiiGALResourceFormat::BGRA8UNormalizedSRGB;
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_Type               = xiiGALResourceDimension::Texture2D;
@@ -58,20 +49,14 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDevic
 
   textureDescription.m_pExisitingNativeObject = nullptr;
 
-  m_hBackBufferTexture = pDeviceNull->CreateTexture(textureDescription);
-  XII_ASSERT_RELEASE(!m_hBackBufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
+  m_pBackBufferTexture = pDeviceNull->CreateTexture(textureDescription);
+  XII_ASSERT_RELEASE(m_pBackBufferTexture != nullptr, "Couldn't create native backbuffer texture object!");
 
-  pDeviceNull->GetTexture(m_hBackBufferTexture)->SetDebugName("SwapChain Null Render Target.");
+  m_pBackBufferTexture->SetDebugName("SwapChain Null Render Target.");
 
   m_Description.m_Resolution = textureDescription.m_Size;
 
   return XII_SUCCESS;
-}
-
-void xiiGALSwapChainNull::DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNull)
-{
-  pDeviceNull->DestroyTexture(m_hBackBufferTexture);
-  m_hBackBufferTexture.Invalidate();
 }
 
 void xiiGALSwapChainNull::Present()
@@ -83,14 +68,23 @@ xiiResult xiiGALSwapChainNull::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceT
   XII_IGNORE_UNUSED(newSize);
   XII_IGNORE_UNUSED(newTransform);
 
-  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(m_pDevice);
+  m_pBackBufferTexture.Clear();
 
-  DestroyBackBufferInternal(pDeviceNull);
+  return CreateBackBufferInternal();
+}
 
-  // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceNull->FlushPendingObjects();
+void xiiGALSwapChainNull::SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode)
+{
+  XII_IGNORE_UNUSED(displayMode);
+}
 
-  return CreateBackBufferInternal(pDeviceNull);
+void xiiGALSwapChainNull::SetWindowedMode()
+{
+}
+
+void xiiGALSwapChainNull::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
+{
+  XII_IGNORE_UNUSED(uiMaxLatency);
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Device_Implementation_SwapChainNull);

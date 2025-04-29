@@ -3,7 +3,7 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/SamplerNull.h>
 
-xiiGALSamplerNull::xiiGALSamplerNull(xiiGALDeviceNull* pDeviceNull, const xiiGALSamplerCreationDescription& creationDescription) :
+xiiGALSamplerNull::xiiGALSamplerNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALSamplerCreationDescription& creationDescription) :
   xiiGALSampler(pDeviceNull, creationDescription)
 {
 }

@@ -28,7 +28,7 @@ protected:
   friend class xiiMemoryUtils;
   friend class xiiGALCommandListNull;
 
-  xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueueNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueNull();
 
@@ -39,5 +39,3 @@ protected:
 protected:
   xiiUniquePtr<xiiGALCommandListNull> m_pDefaultCommandList;
 };
-
-#include <GraphicsNull/CommandEncoder/Implementation/CommandQueueNull_inl.h>

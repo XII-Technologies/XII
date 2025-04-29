@@ -4,7 +4,7 @@
 #include <GraphicsNull/Resources/TextureNull.h>
 #include <GraphicsNull/Resources/TextureViewNull.h>
 
-xiiGALTextureViewNull::xiiGALTextureViewNull(xiiGALDeviceNull* pDeviceNull, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
+xiiGALTextureViewNull::xiiGALTextureViewNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
   xiiGALTextureView(pDeviceNull, pTexture, creationDescription)
 {
 }

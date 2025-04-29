@@ -17,7 +17,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALFenceNull(xiiGALDeviceNull* pDeviceNull, const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFenceNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFenceNull();
 
@@ -25,5 +25,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/Resources/Implementation/FenceNull_inl.h>

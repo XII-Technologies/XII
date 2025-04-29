@@ -6,7 +6,7 @@
 #include <GraphicsNull/Resources/TextureNull.h>
 #include <GraphicsNull/Resources/TextureViewNull.h>
 
-xiiGALFramebufferNull::xiiGALFramebufferNull(xiiGALDeviceNull* pDeviceNull, const xiiGALFramebufferCreationDescription& creationDescription) :
+xiiGALFramebufferNull::xiiGALFramebufferNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALFramebufferCreationDescription& creationDescription) :
   xiiGALFramebuffer(pDeviceNull, creationDescription)
 {
 }

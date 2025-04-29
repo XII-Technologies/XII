@@ -3,7 +3,7 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/PipelineStateNull.h>
 
-xiiGALPipelineStateNull::xiiGALPipelineStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALPipelineStateCreationDescription& creationDescription) :
+xiiGALPipelineStateNull::xiiGALPipelineStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALPipelineStateCreationDescription& creationDescription) :
   xiiGALPipelineState(pDeviceNull, creationDescription)
 {
 }

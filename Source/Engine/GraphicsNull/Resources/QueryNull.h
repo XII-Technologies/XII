@@ -15,7 +15,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALQueryNull(xiiGALDeviceNull* pDeviceNull, const xiiGALQueryCreationDescription& creationDescription);
+  xiiGALQueryNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALQueryCreationDescription& creationDescription);
 
   virtual ~xiiGALQueryNull();
 
@@ -23,5 +23,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/Resources/Implementation/QueryNull_inl.h>

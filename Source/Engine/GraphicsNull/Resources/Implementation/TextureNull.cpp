@@ -2,8 +2,9 @@
 
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/TextureNull.h>
+#include <GraphicsNull/Resources/TextureViewNull.h>
 
-xiiGALTextureNull::xiiGALTextureNull(xiiGALDeviceNull* pDeviceNull, const xiiGALTextureCreationDescription& creationDescription) :
+xiiGALTextureNull::xiiGALTextureNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceNull, creationDescription)
 {
 }
@@ -19,6 +20,25 @@ xiiResult xiiGALTextureNull::InitPlatform(const xiiGALTextureData* pInitialData)
 xiiResult xiiGALTextureNull::DeInitPlatform()
 {
   return XII_SUCCESS;
+}
+
+xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureNull::CreateViewPlatform(const xiiGALTextureViewCreationDescription& description)
+{
+  xiiSharedPtr<xiiGALDeviceNull>                 pDeviceNull     = m_pDevice.Downcast<xiiGALDeviceNull>();
+  xiiInternal::NewInstance<xiiGALTextureViewNull> pTextureViewNull = XII_NEW(pDeviceNull->GetAllocator(), xiiGALTextureViewNull, pDeviceNull, xiiSharedPtr<xiiGALTexture>(this, pDeviceNull->GetAllocator()), description);
+
+  if (pTextureViewNull->InitPlatform().Succeeded())
+    return pTextureViewNull;
+
+  XII_DELETE(pTextureViewNull.m_pAllocator, pTextureViewNull.m_pInstance);
+
+  return pTextureViewNull;
+}
+
+const xiiGALSparseTextureProperties& xiiGALTextureNull::GetSparseProperties() const
+{
+  static xiiGALSparseTextureProperties temporary;
+  return temporary;
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Resources_Implementation_TextureNull);

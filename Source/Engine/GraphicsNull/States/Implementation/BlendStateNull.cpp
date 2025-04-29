@@ -3,7 +3,7 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/BlendStateNull.h>
 
-xiiGALBlendStateNull::xiiGALBlendStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALBlendStateCreationDescription& creationDescription) :
+xiiGALBlendStateNull::xiiGALBlendStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALBlendStateCreationDescription& creationDescription) :
   xiiGALBlendState(pDeviceNull, creationDescription)
 {
 }

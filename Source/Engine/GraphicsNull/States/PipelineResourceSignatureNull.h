@@ -13,7 +13,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALPipelineResourceSignatureNull(xiiGALDeviceNull* pDeviceNull, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
+  xiiGALPipelineResourceSignatureNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineResourceSignatureNull();
 
@@ -21,5 +21,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/States/Implementation/PipelineResourceSignatureNull_inl.h>

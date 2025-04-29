@@ -11,7 +11,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALRasterizerStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALRasterizerStateCreationDescription& creationDescription);
+  xiiGALRasterizerStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALRasterizerStateCreationDescription& creationDescription);
 
   virtual ~xiiGALRasterizerStateNull();
 
@@ -19,5 +19,3 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 };
-
-#include <GraphicsNull/States/Implementation/RasterizerStateNull_inl.h>

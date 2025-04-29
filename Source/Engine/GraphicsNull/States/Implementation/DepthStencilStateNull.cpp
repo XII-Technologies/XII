@@ -3,7 +3,7 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/DepthStencilStateNull.h>
 
-xiiGALDepthStencilStateNull::xiiGALDepthStencilStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+xiiGALDepthStencilStateNull::xiiGALDepthStencilStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
   xiiGALDepthStencilState(pDeviceNull, creationDescription)
 {
 }

@@ -3,7 +3,7 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/RasterizerStateNull.h>
 
-xiiGALRasterizerStateNull::xiiGALRasterizerStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALRasterizerStateCreationDescription& creationDescription) :
+xiiGALRasterizerStateNull::xiiGALRasterizerStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALRasterizerStateCreationDescription& creationDescription) :
   xiiGALRasterizerState(pDeviceNull, creationDescription)
 {
 }

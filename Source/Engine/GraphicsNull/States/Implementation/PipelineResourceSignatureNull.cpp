@@ -3,7 +3,7 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/PipelineResourceSignatureNull.h>
 
-xiiGALPipelineResourceSignatureNull::xiiGALPipelineResourceSignatureNull(xiiGALDeviceNull* pDeviceNull, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
+xiiGALPipelineResourceSignatureNull::xiiGALPipelineResourceSignatureNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
   xiiGALPipelineResourceSignature(pDeviceNull, creationDescription)
 {
 }
@@ -18,6 +18,12 @@ xiiResult xiiGALPipelineResourceSignatureNull::InitPlatform()
 xiiResult xiiGALPipelineResourceSignatureNull::DeInitPlatform()
 {
   return XII_SUCCESS;
+}
+
+bool xiiGALPipelineResourceSignatureNull::IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const
+{
+  XII_IGNORE_UNUSED(pPipelineResourceSignature);
+  return true;
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_States_Implementation_PipelineResourceSignatureNull);

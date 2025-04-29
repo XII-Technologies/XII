@@ -3,7 +3,7 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/RenderPassNull.h>
 
-xiiGALRenderPassNull::xiiGALRenderPassNull(xiiGALDeviceNull* pDeviceNull, const xiiGALRenderPassCreationDescription& creationDescription) :
+xiiGALRenderPassNull::xiiGALRenderPassNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALRenderPassCreationDescription& creationDescription) :
   xiiGALRenderPass(pDeviceNull, creationDescription)
 {
 }

@@ -4,7 +4,7 @@
 #include <GraphicsNull/Resources/BufferNull.h>
 #include <GraphicsNull/Resources/BufferViewNull.h>
 
-xiiGALBufferViewNull::xiiGALBufferViewNull(xiiGALDeviceNull* pDeviceNull, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
+xiiGALBufferViewNull::xiiGALBufferViewNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pDeviceNull, pBuffer, creationDescription)
 {
 }

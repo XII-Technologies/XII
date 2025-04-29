@@ -22,17 +22,11 @@ protected:
   friend class xiiMemoryUtils;
   friend class xiiGALTexture;
 
-  xiiGALSwapChainNull(xiiGALDeviceNull* pDeviceNull, const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChainNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChainNull();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
-  xiiResult CreateBackBufferInternal(xiiGALDeviceNull* pDeviceNull);
-
-  void DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNull);
+  xiiResult CreateBackBufferInternal();
 };
-
-#include <GraphicsNull/Device/Implementation/SwapChainNull_inl.h>
