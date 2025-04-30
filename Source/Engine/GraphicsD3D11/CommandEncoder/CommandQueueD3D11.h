@@ -19,7 +19,7 @@ public:
 
   virtual xiiUInt64 WaitForIdle() override final;
 
-  virtual xiiGALCommandList* BeginCommandList() override final;
+  virtual xiiSharedPtr<xiiGALCommandList> BeginCommandList() override final;
 
 protected:
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
@@ -33,13 +33,9 @@ protected:
 
   virtual ~xiiGALCommandQueueD3D11();
 
-  void InitializePlatform();
-
-  void DeInitializePlatform();
-
 private:
   ID3D11DeviceContext4*                m_pImmediateContext = nullptr;
-  xiiUniquePtr<xiiGALCommandListD3D11> m_pCommandListD3D11;
+  xiiInternal::NewInstance<xiiGALCommandListD3D11> m_pCommandListD3D11 = {nullptr, nullptr};
 
   // A value that will be signaled by the command queue next.
   std::atomic<xiiUInt64> m_NextFenceValue{1};

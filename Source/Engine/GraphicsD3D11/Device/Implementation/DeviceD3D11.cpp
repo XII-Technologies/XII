@@ -78,11 +78,7 @@ xiiGALDeviceD3D11::xiiGALDeviceD3D11(xiiAllocatorBase* pAllocator, const xiiGALD
 
 xiiGALDeviceD3D11::~xiiGALDeviceD3D11()
 {
-  if (m_pGraphicsCommandQueue != nullptr)
-  {
-    m_pGraphicsCommandQueue->DeInitializePlatform();
-    m_pGraphicsCommandQueue.Clear();
-  }
+  m_pGraphicsCommandQueue.Clear();
 
   for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
   {
@@ -329,8 +325,6 @@ xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
 
         if (pCommandQueueD3D11 != nullptr)
         {
-          pCommandQueueD3D11->InitializePlatform();
-
           xiiStringBuilder sb;
           sb.SetFormat("Command Queue ({})", sName);
           pCommandQueueD3D11->SetDebugName(sb);
