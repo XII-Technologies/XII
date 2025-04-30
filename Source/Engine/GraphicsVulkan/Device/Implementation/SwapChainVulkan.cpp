@@ -31,7 +31,25 @@ xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pD
 {
 }
 
-xiiGALSwapChainVulkan::~xiiGALSwapChainVulkan() = default;
+xiiGALSwapChainVulkan::~xiiGALSwapChainVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Instance                     vkInstance    = pDeviceVulkan->GetVulkanInstance();
+
+  if (m_vkSwapChain != VK_NULL_HANDLE)
+  {
+    ReleaseSwapChainResources(true);
+
+    XII_ASSERT_DEV(m_vkSwapChain == VK_NULL_HANDLE, "The Vulkan swap chain has not yet been released!");
+
+    m_Description.m_pWindow->RemoveReference();
+  }
+
+  if (m_vkSurface != VK_NULL_HANDLE)
+  {
+    vkInstance.destroySurfaceKHR(m_vkSurface, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
+}
 
 xiiResult xiiGALSwapChainVulkan::InitPlatform()
 {
@@ -56,31 +74,10 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALSwapChainVulkan::DeInitPlatform()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Instance        vkInstance    = pDeviceVulkan->GetVulkanInstance();
-
-  if (m_vkSwapChain != VK_NULL_HANDLE)
-  {
-    ReleaseSwapChainResources(true);
-
-    XII_ASSERT_DEV(m_vkSwapChain == VK_NULL_HANDLE, "The Vulkan swap chain has not yet been released!");
-
-    m_Description.m_pWindow->RemoveReference();
-  }
-
-  if (m_vkSurface != VK_NULL_HANDLE)
-  {
-    vkInstance.destroySurfaceKHR(m_vkSurface, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-  }
-  return XII_SUCCESS;
-}
-
 void xiiGALSwapChainVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp;
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkSwapChain, sName.GetData(tmp));
 }
@@ -88,7 +85,7 @@ void xiiGALSwapChainVulkan::SetDebugNamePlatform(xiiStringView sName)
 xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Instance        vkInstance    = pDeviceVulkan->GetVulkanInstance();
+  vk::Instance                     vkInstance    = pDeviceVulkan->GetVulkanInstance();
 
   if (m_vkSurface != VK_NULL_HANDLE)
   {
@@ -169,8 +166,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
 xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
-  vk::Device          vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+  vk::Device                       vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // Retrieve the list of vk::Formats that are supported.
   xiiUInt32 uiFormatCount = 0U;
@@ -466,8 +463,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 xiiResult xiiGALSwapChainVulkan::RecreateVulkanSwapChain()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
-  vk::Device          vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+  vk::Device                       vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // Do not release the Vulakn swap chain as we will use use it as oldSwapchain paramter.
   ReleaseSwapChainResources(false);
@@ -502,25 +499,16 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
     return;
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // VERIFY: Flush to submit all pending commands and semaphores to the queue.
 
   // All references to the swap chain must be released before it can be destroyed.
   for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
   {
-    if (!m_SwapChainTextures[i].IsInvalidated())
-    {
-      pDeviceVulkan->DestroyTexture(m_SwapChainTextures[i]);
-
-      m_SwapChainTextures[i].Invalidate();
-    }
+    m_SwapChainTextures.Clear();
   }
-
-  if (!m_hBackBufferTexture.IsInvalidated())
-  {
-    m_hBackBufferTexture.Invalidate();
-  }
+  m_pBackBufferTexture.Clear();
 
   // We need to explicitly wait for all submitted Image Acquired Fences to signal.
   // Just idling the GPU is not enough and results in validation warnings.
@@ -570,7 +558,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   {
@@ -583,7 +571,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 #endif
 
   m_SwapChainImages.SetCountUninitialized(m_Description.m_uiBufferCount);
-  m_SwapChainTextures.SetCountUninitialized(m_Description.m_uiBufferCount);
+  m_SwapChainTextures.SetCount(m_Description.m_uiBufferCount);
   m_SwapChainImagesInitialized.SetCount(m_Description.m_uiBufferCount, false);
   m_ImageAcquiredFenceSubmitted.SetCount(m_Description.m_uiBufferCount, false);
 
@@ -609,11 +597,11 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     textureCreationDescription.m_pExisitingNativeObject = m_SwapChainImages[i];
 
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
-    XII_ASSERT_RELEASE(!m_SwapChainTextures[i].IsInvalidated(), "Failed to create native backbuffer texture object!");
+    XII_ASSERT_RELEASE(m_SwapChainTextures[i] != nullptr, "Failed to create native backbuffer texture object!");
 
     sb.SetFormat("Main Back Buffer ({})", m_SwapChainTextures.GetCount());
 
-    pDeviceVulkan->GetTexture(m_SwapChainTextures[i])->SetDebugName(sb);
+    m_SwapChainTextures[i]->SetDebugName(sb);
   }
   return XII_SUCCESS;
 }
@@ -621,7 +609,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // Applications should not rely on vkAcquireNextImageKHR blocking in order to meter their rendering speed.
   // The implementation may return from this function immediately regardless of how many presentation requests are queued,
@@ -676,7 +664,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
         // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
         if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
         {
-          pCommandListVulkan->ClearRenderTargetView(pDeviceVulkan->GetTexture(m_SwapChainTextures[m_uiBackBufferIndex])->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+          pCommandListVulkan->ClearRenderTargetView(m_SwapChainTextures[m_uiBackBufferIndex]->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
 
           m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
         }
@@ -686,7 +674,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     }
   }
 
-  m_hBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
+  m_pBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
 
   return result;
 }
@@ -694,7 +682,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
   {
@@ -715,9 +703,9 @@ void xiiGALSwapChainVulkan::Present()
   if (m_bIsMinimized)
     return;
 
-  xiiGALDeviceVulkan*       pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan* pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
-  xiiGALTextureVulkan*      pCurrentBackbufferVulkan = static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_hBackBufferTexture));
+  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiGALCommandQueueVulkan*         pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
+  xiiSharedPtr<xiiGALTextureVulkan> pCurrentBackbufferVulkan = m_pBackBufferTexture.Downcast<xiiGALTextureVulkan>();
 
   if (xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueueVulkan->BeginCommandList()))
   {
@@ -797,7 +785,7 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
   if (m_vkSurface != VK_NULL_HANDLE)
   {
     xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-    vk::PhysicalDevice  vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+    vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
 
     // Check orientation.
     vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
