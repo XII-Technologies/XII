@@ -32,8 +32,6 @@ public:
   void                       ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
   void                       RecycleCommandLists();
 
-
-
 private:
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
 
@@ -71,7 +69,7 @@ private:
   vk::PipelineStageFlags                    m_vkSupportedStageFlags;
   vk::AccessFlags                           m_vkSupportedAccessFlags;
 
-  xiiGALFenceVulkan*               m_pQueueFence      = nullptr;
+  xiiSharedPtr<xiiGALFenceVulkan>  m_pQueueFence;
   std::atomic<xiiUInt64>           m_uiNextFenceValue = 1U;
   xiiGALFenceVulkan::SyncPointData m_LastSyncPoint;
 };
