@@ -26,7 +26,7 @@ private:
     XII_DISALLOW_COPY_AND_ASSIGN(QueryPoolInformation);
 
   public:
-    QueryPoolInformation(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan);
+    QueryPoolInformation(xiiGALDeviceVulkan* pDeviceVulkan);
     ~QueryPoolInformation();
 
     void Initialize(const vk::QueryPoolCreateInfo& vkQueryPoolCreateInfo, xiiGALQueryType::Enum queryType);
@@ -56,7 +56,7 @@ private:
     xiiDynamicArray<xiiUInt32> m_StaleQueries;
   };
 
-  xiiGALQueryPoolVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALQueueInformationVulkan queueInformation);
+  xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALQueueInformationVulkan queueInformation);
   ~xiiGALQueryPoolVulkan();
 
   xiiGALDeviceVulkan*                                                             m_pDeviceVulkan;

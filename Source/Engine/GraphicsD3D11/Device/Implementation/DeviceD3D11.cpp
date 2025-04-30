@@ -319,7 +319,7 @@ xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
         xiiGALCommandQueueD3D11* pCommandQueueD3D11 = nullptr;
         if (queueType == xiiGALCommandQueueType::Graphics)
         {
-          m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, xiiSharedPtr<xiiGALDeviceD3D11>(this, m_Allocator.GetParent()), queueDescription);
+          m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
           pCommandQueueD3D11      = m_pGraphicsCommandQueue.Borrow();
         }
         else

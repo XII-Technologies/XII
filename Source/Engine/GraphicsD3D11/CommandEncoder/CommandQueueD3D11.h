@@ -29,7 +29,7 @@ protected:
   friend class xiiMemoryUtils;
   friend class xiiGALCommandListD3D11;
 
-  xiiGALCommandQueueD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueD3D11();
 

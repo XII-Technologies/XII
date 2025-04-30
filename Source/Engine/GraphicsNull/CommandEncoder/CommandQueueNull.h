@@ -28,7 +28,7 @@ protected:
   friend class xiiMemoryUtils;
   friend class xiiGALCommandListNull;
 
-  xiiGALCommandQueueNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueNull();
 

@@ -9,7 +9,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueueD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALCommandQueueD3D11::xiiGALCommandQueueD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALCommandQueueCreationDescription& creationDescription) :
+xiiGALCommandQueueD3D11::xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandQueueCreationDescription& creationDescription) :
   xiiGALCommandQueue(pDeviceD3D11, creationDescription), m_pImmediateContext(pDeviceD3D11->GetImmediateContext()), m_WaitForGPUEventHandle{CreateEvent(nullptr, false, false, nullptr)}
 {
 }
@@ -18,7 +18,7 @@ xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11() = default;
 
 void xiiGALCommandQueueD3D11::InitializePlatform()
 {
-  xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11 = m_pDevice.Downcast<xiiGALDeviceD3D11>();
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   D3D11_FENCE_FLAG fenceFlags = D3D11_FENCE_FLAG_NONE;
   XII_HRESULT_TO_ASSERT(pDeviceD3D11->GetD3D11Device()->CreateFence(0U, fenceFlags, IID_PPV_ARGS(&m_pD3D11DFence)));

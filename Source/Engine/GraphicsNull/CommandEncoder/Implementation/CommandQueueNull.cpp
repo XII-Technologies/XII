@@ -4,7 +4,7 @@
 #include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 
-xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription) :
+xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription) :
   xiiGALCommandQueue(pDeviceNull, creationDescription)
 {
   xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};

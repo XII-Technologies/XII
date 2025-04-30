@@ -5,7 +5,7 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/QueryNull.h>
 
-xiiGALCommandListNull::xiiGALCommandListNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, xiiGALCommandQueueNull* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
+xiiGALCommandListNull::xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, xiiGALCommandQueueNull* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceNull, pCommandQueue, creationDescription)
 {
 }
