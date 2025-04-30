@@ -712,47 +712,23 @@ void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xi
 
   XII_VERIFY_COMMAND_LIST((uiStartSlot + pVertexBuffers.GetCount()) <= XII_GAL_MAX_VERTEX_BUFFER_COUNT, "The number of vertex buffers to set, exceeds the maximum amount.");
 
-  if (flags.IsSet(xiiGALSetVertexBufferFlags::Reset))
-  {
-    // Reset only the buffer slots that are not being set.
-    for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
-    {
-      m_CommittedVertexBuffers[i]       = VK_NULL_HANDLE;
-      m_CommittedVertexBufferOffsets[i] = 0U;
-    }
+  XII_IGNORE_UNUSED(flags);
 
-    if (uiStartSlot > 0)
-    {
-      m_vkCommandBuffer.bindVertexBuffers(0, uiStartSlot, m_CommittedVertexBuffers, m_CommittedVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-    }
-
-    for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
-    {
-      m_CommittedVertexBuffers[i]       = VK_NULL_HANDLE;
-      m_CommittedVertexBufferOffsets[i] = 0U;
-    }
-
-    if ((XII_GAL_MAX_VERTEX_BUFFER_COUNT - (uiStartSlot + pVertexBuffers.GetCount())) > 0)
-    {
-      xiiUInt32 uiFirstBinding = uiStartSlot + pVertexBuffers.GetCount();
-      xiiUInt32 uiBindingCount = (XII_GAL_MAX_VERTEX_BUFFER_COUNT - (uiStartSlot + pVertexBuffers.GetCount()));
-
-      m_vkCommandBuffer.bindVertexBuffers(uiFirstBinding, uiBindingCount, m_CommittedVertexBuffers, m_CommittedVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-    }
-  }
+  vk::Buffer     vkVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
+  vk::DeviceSize vkVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
 
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
   {
     xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = pVertexBuffers[i].Downcast<xiiGALBufferVulkan>();
     xiiUInt32                        uiVertexBufferSlot  = i + uiStartSlot;
 
-    m_CommittedVertexBuffers[uiVertexBufferSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
-    m_CommittedVertexBufferOffsets[uiVertexBufferSlot] = (i < pByteOffsets.GetCount() ? pByteOffsets[i] : 0);
+    vkVertexBuffers[uiVertexBufferSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
+    vkVertexBufferOffsets[uiVertexBufferSlot] = (i < pByteOffsets.GetCount()) ? pByteOffsets[i] : 0U;
   }
 
   if (!pVertexBuffers.IsEmpty())
   {
-    m_vkCommandBuffer.bindVertexBuffers(uiStartSlot, pVertexBuffers.GetCount(), m_CommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    m_vkCommandBuffer.bindVertexBuffers(uiStartSlot, pVertexBuffers.GetCount(), vkVertexBuffers + uiStartSlot, vkVertexBufferOffsets + uiStartSlot, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
   }
 }
 
