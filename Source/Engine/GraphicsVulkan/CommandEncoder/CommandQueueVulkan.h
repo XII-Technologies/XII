@@ -23,16 +23,15 @@ public:
   XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return m_pQueueFence->GetCompletedValue(); }
 
   XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
-  XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
-  virtual xiiGALCommandList* BeginCommandList() override final;
-  void                       ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
-  void                       RecycleCommandLists();
+  virtual xiiSharedPtr<xiiGALCommandList> BeginCommandList() override final;
 
 private:
+  vk::CommandBuffer RequestCommandBuffer();
+
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
 
 protected:
@@ -40,34 +39,23 @@ protected:
   friend class xiiMemoryUtils;
   friend class xiiGALCommandListVulkan;
 
-  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription, const xiiGALQueueInformationVulkan& queueInformation);
 
   virtual ~xiiGALCommandQueueVulkan();
-
-  void InitializePlatform(const xiiGALQueueInformationVulkan& queueInformation);
-
-  void DeInitializePlatform();
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
-  struct CommandListReleaseInfo
+  struct InternalQueueFence
   {
-    XII_DECLARE_POD_TYPE();
 
-    xiiGALCommandListVulkan* m_pCommandListVulkan = nullptr;
-    xiiUInt64                m_uiFenceValue       = 0U;
   };
 
-  xiiMutex                     m_QueueMutex;
-  xiiGALQueueInformationVulkan m_QueueInformation;
+  xiiGALQueueInformationVulkan                                   m_QueueInformation;
+  xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_CommandBufferPool;
 
-  vk::CommandPool                           m_vkCommandPool;
-  xiiDynamicArray<xiiGALCommandListVulkan*> m_CommandLists;
-  xiiDeque<xiiGALCommandListVulkan*>        m_QueuedCommandLists;
-  xiiDeque<CommandListReleaseInfo>          m_CommandListsToReset;
-  vk::PipelineStageFlags                    m_vkSupportedStageFlags;
-  vk::AccessFlags                           m_vkSupportedAccessFlags;
+  vk::PipelineStageFlags m_vkSupportedStageFlags;
+  vk::AccessFlags        m_vkSupportedAccessFlags;
 
   xiiSharedPtr<xiiGALFenceVulkan>  m_pQueueFence;
   std::atomic<xiiUInt64>           m_uiNextFenceValue = 1U;

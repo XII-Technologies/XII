@@ -2,38 +2,25 @@
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
+#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueueVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription) :
-  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_CommandLists(pDeviceVulkan->GetAllocator()), m_QueuedCommandLists(pDeviceVulkan->GetAllocator()), m_CommandListsToReset(pDeviceVulkan->GetAllocator())
+xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription, const xiiGALQueueInformationVulkan& queueInformation) :
+  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_QueueInformation(queueInformation), m_vkSupportedStageFlags(pDeviceVulkan->GetVulkanLogicalDeviceSupportedStagesFlags(m_QueueInformation.m_uiQueueFamilyIndex)), m_vkSupportedAccessFlags(pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(m_QueueInformation.m_uiQueueFamilyIndex))
 {
-}
-
-xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
-
-void xiiGALCommandQueueVulkan::InitializePlatform(const xiiGALQueueInformationVulkan& queueInformation)
-{
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
-  m_QueueInformation = queueInformation;
-
-  vk::CommandPoolCreateInfo commandPoolCreationDescription = {};
-  commandPoolCreationDescription.pNext                     = nullptr;
-  commandPoolCreationDescription.flags                     = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-  commandPoolCreationDescription.queueFamilyIndex          = m_QueueInformation.m_uiQueueFamilyIndex;
-
-  VK_ASSERT_DEV(vkLogicalDevice.createCommandPool(&commandPoolCreationDescription, nullptr, &m_vkCommandPool, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-  m_vkSupportedStageFlags  = pDeviceVulkan->GetVulkanLogicalDeviceSupportedStagesFlags(m_QueueInformation.m_uiQueueFamilyIndex);
-  m_vkSupportedAccessFlags = pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(m_QueueInformation.m_uiQueueFamilyIndex);
-
   xiiGALFenceCreationDescription fenceDescription = {.m_Type = xiiGALFenceType::CpuWaitOnly};
   m_pQueueFence                                   = pDeviceVulkan->CreateFence(fenceDescription).Downcast<xiiGALFenceVulkan>();
+}
+
+xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
+{
+  m_pQueueFence.Clear();
+
+  m_CommandBufferPool.Clear();
 }
 
 void xiiGALCommandQueueVulkan::DeInitializePlatform()
@@ -147,6 +134,17 @@ void xiiGALCommandQueueVulkan::RecycleCommandLists()
 
     m_CommandListsToReset.PopFront();
   }
+}
+
+vk::CommandBuffer xiiGALCommandQueueVulkan::RequestCommandBuffer()
+{
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  if (m_CommandBufferPool.Contains(xiiThreadUtils::GetCurrentThreadID()))
+  {
+    return m_CommandBufferPool[xiiThreadUtils::GetCurrentThreadID()]->RequestCommandBuffer();
+  }
+  m_CommandBufferPool[xiiThreadUtils::GetCurrentThreadID()] = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCommandBufferPoolVulkan, pDeviceVulkan, m_QueueInformation, vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
 }
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList)

@@ -3,6 +3,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 #include <GraphicsVulkan/Resources/FramebufferVulkan.h>
@@ -504,16 +505,10 @@ void xiiGALCommandListVulkan::DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFenc
   m_WaitFences.PushBack(fenceInfo);
 }
 
-xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription)
+xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription), m_pCommandBufferPool(pCommandBufferPool)
 {
-  vk::CommandBufferAllocateInfo vkCommandBufferAllocateInfo = {};
-  vkCommandBufferAllocateInfo.pNext                         = nullptr;
-  vkCommandBufferAllocateInfo.commandPool                   = pCommandQueueVulkan->GetVulkanCommandPool();
-  vkCommandBufferAllocateInfo.level                         = vk::CommandBufferLevel::ePrimary;
-  vkCommandBufferAllocateInfo.commandBufferCount            = 1U;
-
-  VK_ASSERT_DEV(pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  m_vkCommandBuffer = pCommandBufferPool->RequestCommandBuffer();
 
   m_pDynamicBufferPoolVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALDynamicBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
   m_pUploadStagingBufferPool = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALStagingBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
@@ -523,8 +518,6 @@ xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALCommandQueueVulkan*        pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
-
-  pDeviceVulkan->GetVulkanLogicalDevice().freeCommandBuffers(pCommandQueueVulkan->GetVulkanCommandPool(), 1U, &m_vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   m_pDynamicBufferPoolVulkan.Clear();
   m_pUploadStagingBufferPool.Clear();

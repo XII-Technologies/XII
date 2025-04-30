@@ -263,7 +263,7 @@ private:
 
   struct PerFrameData
   {
-    xiiUInt64 m_uiFrameNumber = xiiInvalidIndex;
+    xiiUInt64 m_uiFenceValue = xiiInvalidIndex;
 
     xiiDeque<SafeReleaseDescription> m_SafeReleaseDescriptions;
     xiiDeque<SafeReclaimResource>    m_SafeReclaimResources;
@@ -314,7 +314,7 @@ private:
   xiiGALQueueInformationVulkan           m_ComputeQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pComputeCommandQueue;
 
-  // Graph Queue Information.
+  // Transfer Queue Information.
   xiiGALQueueInformationVulkan           m_TransferQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
 

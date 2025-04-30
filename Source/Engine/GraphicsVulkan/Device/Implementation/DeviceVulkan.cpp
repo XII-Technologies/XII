@@ -147,23 +147,17 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
   {
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
-      m_pTransferCommandQueue->DeInitializePlatform();
       m_pTransferCommandQueue.Clear();
-
       m_pTransferCommandQueueQueryPool.Clear();
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
-      m_pComputeCommandQueue->DeInitializePlatform();
       m_pComputeCommandQueue.Clear();
-
       m_pComputeCommandQueueQueryPool.Clear();
     }
 
-    m_pGraphicsCommandQueue->DeInitializePlatform();
     m_pGraphicsCommandQueue.Clear();
-
     m_pGraphicsCommandQueueQueryPool.Clear();
   }
 
@@ -1184,11 +1178,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
-      m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), queueDescription);
-
-      m_pGraphicsCommandQueue->InitializePlatform(m_GraphicsQueueInformation);
-
-      m_pGraphicsCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
+      m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_GraphicsQueueInformation);
+      m_pGraphicsCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
 
       m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
 
@@ -1200,11 +1191,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       m_LogicalDevice.getQueue(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_uiQueueIndex, &m_ComputeQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
-      m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), queueDescription);
-
-      m_pComputeCommandQueue->InitializePlatform(m_ComputeQueueInformation);
-
-      m_pComputeCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
+      m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_ComputeQueueInformation);
+      m_pComputeCommandQueueQueryPool                        = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
 
       m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
 
@@ -1216,11 +1204,8 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       m_LogicalDevice.getQueue(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_uiQueueIndex, &m_TransferQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
-      m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), queueDescription);
-
-      m_pTransferCommandQueue->InitializePlatform(m_TransferQueueInformation);
-
-      m_pTransferCommandQueueQueryPool = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
+      m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_TransferQueueInformation);
+      m_pTransferCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
 
       m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
 
@@ -1241,14 +1226,14 @@ void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObject
 {
   auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
 
-  perFrameData.m_uiFrameNumber = m_pGraphicsCommandQueue->GetCompletedFenceValue();
+  perFrameData.m_uiFenceValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
   if (m_pComputeCommandQueue)
   {
-    perFrameData.m_uiFrameNumber = xiiMath::Min(perFrameData.m_uiFrameNumber, m_pComputeCommandQueue->GetCompletedFenceValue());
+    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pComputeCommandQueue->GetCompletedFenceValue());
   }
   if (m_pTransferCommandQueue)
   {
-    perFrameData.m_uiFrameNumber = xiiMath::Min(perFrameData.m_uiFrameNumber, m_pTransferCommandQueue->GetCompletedFenceValue());
+    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pTransferCommandQueue->GetCompletedFenceValue());
   }
 
   auto& safeRelease           = perFrameData.m_SafeReleaseDescriptions.ExpandAndGetRef();
@@ -1261,7 +1246,15 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
 {
   auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
 
-  perFrameData.m_uiFrameNumber = m_uiFrameCounter;
+  perFrameData.m_uiFenceValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
+  if (m_pComputeCommandQueue)
+  {
+    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pComputeCommandQueue->GetCompletedFenceValue());
+  }
+  if (m_pTransferCommandQueue)
+  {
+    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pTransferCommandQueue->GetCompletedFenceValue());
+  }
 
   auto& safeReclaim          = perFrameData.m_SafeReclaimResources.ExpandAndGetRef();
   safeReclaim.m_vkObjectType = vkObjectType;
@@ -1270,7 +1263,7 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
 
 void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
 {
-  while (!m_PerFrameData.IsEmpty() && (m_PerFrameData.PeekFront().m_uiFrameNumber <= uiCompletedValue))
+  while (!m_PerFrameData.IsEmpty() && (m_PerFrameData.PeekFront().m_uiFenceValue <= uiCompletedValue))
   {
     auto& perFrameData = m_PerFrameData.PeekFront();
 
@@ -1431,14 +1424,10 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapCha
     pSwapChain->Present();
   }
 
-  m_pGraphicsCommandQueue->RecycleCommandLists();
-
   xiiUInt64 uiCompletedValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
 
   if (m_pComputeCommandQueue)
   {
-    m_pComputeCommandQueue->RecycleCommandLists();
-
     if (m_pComputeCommandQueue->GetCompletedFenceValue() > m_uiLastReleasedResourceCounter)
     {
       uiCompletedValue = xiiMath::Min(uiCompletedValue, m_pComputeCommandQueue->GetCompletedFenceValue());
@@ -1446,8 +1435,6 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapCha
   }
   if (m_pTransferCommandQueue)
   {
-    m_pTransferCommandQueue->RecycleCommandLists();
-
     if (m_pTransferCommandQueue->GetCompletedFenceValue() > m_uiLastReleasedResourceCounter)
     {
       uiCompletedValue = xiiMath::Min(uiCompletedValue, m_pTransferCommandQueue->GetCompletedFenceValue());
@@ -1684,17 +1671,6 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
     pTransferQueue->WaitForIdle();
 
   m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
-
-  m_pGraphicsCommandQueue->RecycleCommandLists();
-
-  if (m_pComputeCommandQueue)
-  {
-    m_pComputeCommandQueue->RecycleCommandLists();
-  }
-  if (m_pTransferCommandQueue)
-  {
-    m_pTransferCommandQueue->RecycleCommandLists();
-  }
 
   ReleasePerFrameResources(xiiMath::MaxValue<xiiUInt64>());
 }
