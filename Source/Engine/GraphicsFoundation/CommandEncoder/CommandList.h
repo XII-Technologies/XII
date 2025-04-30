@@ -77,16 +77,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public 
 };
 
 /// \brief Interface that defines methods to manipulate a command list object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALObject
+class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandList, xiiGALObject);
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandList, xiiGALDeviceObject);
 
 public:
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListCreationDescription& GetDescription() const { return m_Description; };
-
-  /// \brief This returns the device for this object.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDevice* GetDevice() const { return m_pDevice; };
 
   /// \brief This returns the command queue for this object.
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueue* GetCommandQueue() const { return m_pCommandQueue; };
@@ -447,7 +444,7 @@ protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandList(xiiGALDevice* pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandList();
 
@@ -529,7 +526,6 @@ protected:
 protected:
   xiiGALCommandListCreationDescription m_Description;
 
-  xiiGALDevice*       m_pDevice;
   xiiGALCommandQueue* m_pCommandQueue;
 
   RecordingState m_RecordingState = RecordingState::Reset;

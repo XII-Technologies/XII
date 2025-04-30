@@ -35,7 +35,7 @@ public:
   virtual xiiUInt64 WaitForIdle() = 0;
 
   /// \brief This begins a command list for recording commmands.
-  [[nodiscard]] virtual xiiGALCommandList* BeginCommandList() = 0;
+  [[nodiscard]] virtual xiiSharedPtr<xiiGALCommandList> BeginCommandList() = 0;
 
 protected:
   friend class xiiGALDevice;

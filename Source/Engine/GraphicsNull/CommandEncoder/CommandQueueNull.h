@@ -18,7 +18,7 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
-  virtual xiiGALCommandList* BeginCommandList() override final;
+  virtual xiiSharedPtr<xiiGALCommandList> BeginCommandList() override final;
 
 protected:
   xiiUInt64 Submit(xiiGALCommandList* pCommandList);
@@ -35,5 +35,5 @@ protected:
   xiiResult InitPlatform();
 
 protected:
-  xiiUniquePtr<xiiGALCommandListNull> m_pDefaultCommandList;
+  xiiInternal::NewInstance<xiiGALCommandListNull> m_pDefaultCommandList = {nullptr, nullptr};
 };

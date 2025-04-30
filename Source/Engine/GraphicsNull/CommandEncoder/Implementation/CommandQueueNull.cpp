@@ -8,19 +8,21 @@ xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, co
   xiiGALCommandQueue(pDeviceNull, creationDescription)
 {
   xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListNull, pDeviceNull, this, commandListDescription);
+  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListNull, xiiSharedPtr<xiiGALDeviceNull>(pDeviceNull, pDeviceNull->GetAllocator()), this, commandListDescription);
 }
 
 xiiGALCommandQueueNull::~xiiGALCommandQueueNull() = default;
 
 xiiResult xiiGALCommandQueueNull::InitPlatform()
 {
+  XII_DELETE(m_pDefaultCommandList.m_pAllocator, m_pDefaultCommandList.m_pInstance);
+
   return XII_SUCCESS;
 }
 
-xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList()
+xiiSharedPtr<xiiGALCommandList> xiiGALCommandQueueNull::BeginCommandList()
 {
-  return m_pDefaultCommandList.Borrow();
+  return m_pDefaultCommandList;
 }
 
 xiiUInt64 xiiGALCommandQueueNull::Submit(xiiGALCommandList* pCommandList)

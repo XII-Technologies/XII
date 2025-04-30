@@ -28,8 +28,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
     if (!(expression)) { return XII_FAILURE; }          \
   } while (false)
 
-xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALObject(), m_Description(creationDescription), m_pCommandQueue(pCommandQueue), m_pDevice(pDevice)
+xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALDeviceObject(pDevice), m_Description(creationDescription), m_pCommandQueue(pCommandQueue)
 {
 }
 

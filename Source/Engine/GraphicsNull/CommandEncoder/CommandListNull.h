@@ -12,7 +12,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, xiiGALCommandQueueNull* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, xiiGALCommandQueueNull* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListNull();
 
