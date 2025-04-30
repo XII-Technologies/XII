@@ -308,12 +308,9 @@ private:
   xiiUInt32                             m_uiBoundRenderTargetCount = 0U;
 
   xiiUInt32                                                          m_uiSubpassIndex = 0U;
-  xiiSharedPtr<xiiGALRenderPassVulkan>                               m_pRenderPassVulkan;
-  xiiSharedPtr<xiiGALFramebufferVulkan>                              m_pFramebufferVulkan;
   xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
-  xiiSharedPtr<xiiGALPipelineStateVulkan> m_pPipelineStateVulkan;
-  bool                                    m_bPipelineStateModified = false;
+  bool m_bPipelineStateModified = false;
 
   xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
   xiiHybridArray<vk::DescriptorSet, 4U>   m_DescriptorSets;

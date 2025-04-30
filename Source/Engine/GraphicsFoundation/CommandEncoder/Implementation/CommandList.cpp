@@ -194,6 +194,9 @@ xiiUInt64 xiiGALCommandList::Submit()
 
 void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
 {
+  if (m_pPipelineState == pPipelineState)
+    return;
+
   m_pPipelineState             = pPipelineState;
   m_pPipelineResourceSignature = nullptr;
 
@@ -201,6 +204,12 @@ void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipe
   {
     m_pPipelineResourceSignature = pPipelineState->GetDescription().m_pPipelineResourceSignature;
   }
+  else
+  {
+    m_pPipelineState = nullptr;
+    m_pPipelineResourceSignature = nullptr;
+  }
+
   SetPipelineStatePlatform(pPipelineState);
 }
 

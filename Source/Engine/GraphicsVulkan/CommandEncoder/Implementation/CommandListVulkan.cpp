@@ -598,14 +598,9 @@ xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform()
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
 {
-  xiiSharedPtr<xiiGALPipelineStateVulkan> pPipelineStateVulkan = pPipelineState.Downcast<xiiGALPipelineStateVulkan>();
+  XII_IGNORE_UNUSED(pPipelineState);
 
-  if (pPipelineStateVulkan != m_pPipelineStateVulkan)
-  {
-    m_pPipelineStateVulkan = pPipelineStateVulkan;
-
-    m_bPipelineStateModified = true;
-  }
+  m_bPipelineStateModified = true;
 }
 
 void xiiGALCommandListVulkan::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
@@ -852,24 +847,26 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
+  auto pPipelineStateVulkan = m_pPipelineState.Downcast<xiiGALPipelineStateVulkan>();
+
   if (m_bPipelineStateModified)
   {
-    if (m_pPipelineStateVulkan != nullptr)
+    if (pPipelineStateVulkan != nullptr)
     {
-      m_vkCommandBuffer.bindPipeline(m_pPipelineStateVulkan->GetVulkanPipelineBindPoint(), m_pPipelineStateVulkan->GetVulkanPipeline(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      m_vkCommandBuffer.bindPipeline(pPipelineStateVulkan->GetVulkanPipelineBindPoint(), pPipelineStateVulkan->GetVulkanPipeline(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
-      const auto& pipelineDescription = m_pPipelineStateVulkan->GetDescription();
+      const auto& pipelineDescription = pPipelineStateVulkan->GetDescription();
       if (pipelineDescription.IsAnyGraphicsPipeline())
       {
-        m_CommandListState.m_vkGraphicsPipeline = m_pPipelineStateVulkan->GetVulkanPipeline();
+        m_CommandListState.m_vkGraphicsPipeline = pPipelineStateVulkan->GetVulkanPipeline();
       }
       else if (pipelineDescription.IsComputePipeline())
       {
-        m_CommandListState.m_vkComputePipeline = m_pPipelineStateVulkan->GetVulkanPipeline();
+        m_CommandListState.m_vkComputePipeline = pPipelineStateVulkan->GetVulkanPipeline();
       }
       else if (pipelineDescription.IsRayTracingPipeline())
       {
-        m_CommandListState.m_vkRayTracingPipeline = m_pPipelineStateVulkan->GetVulkanPipeline();
+        m_CommandListState.m_vkRayTracingPipeline = pPipelineStateVulkan->GetVulkanPipeline();
       }
     }
 
@@ -882,9 +879,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
     m_DynamicUniformBuffers.Clear();
     m_DynamicUniformBufferOffsets.Clear();
 
-    if (m_pPipelineStateVulkan != nullptr)
+    if (pPipelineStateVulkan != nullptr)
     {
-      const auto& pipelineDescription = m_pPipelineStateVulkan->GetDescription();
+      const auto& pipelineDescription = pPipelineStateVulkan->GetDescription();
 
       xiiSharedPtr<xiiGALPipelineResourceSignatureVulkan> pResourceSignatureVulkan = pipelineDescription.m_pPipelineResourceSignature.Downcast<xiiGALPipelineResourceSignatureVulkan>();
 
@@ -1247,7 +1244,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
         }
       }
 
-      m_vkCommandBuffer.bindDescriptorSets(m_pPipelineStateVulkan->GetVulkanPipelineBindPoint(), m_pPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_DescriptorSets.GetCount(), m_DescriptorSets.GetData(), m_DynamicUniformBufferOffsets.GetCount(), m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      m_vkCommandBuffer.bindDescriptorSets(pPipelineStateVulkan->GetVulkanPipelineBindPoint(), pPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_DescriptorSets.GetCount(), m_DescriptorSets.GetData(), m_DynamicUniformBufferOffsets.GetCount(), m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
     }
 
     m_bDescriptorsModified = false;
@@ -1435,11 +1432,11 @@ void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiSharedPtr<xiiGALT
 
 void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
 {
-  xiiGALDeviceVulkan*                   pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALRenderPassVulkan*               pRenderPassVulkan      = pRenderPass.Downcast<xiiGALRenderPassVulkan>();
-  xiiSharedPtr<xiiGALFramebufferVulkan> pFramebufferVulkan     = pFramebuffer.Downcast<xiiGALFramebufferVulkan>();
-  const auto&                           renderPassDescription  = pRenderPassVulkan->GetDescription();
-  const auto&                           framebufferDescription = pFramebufferVulkan->GetDescription();
+  xiiGALDeviceVulkan* pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  auto                pRenderPassVulkan      = pRenderPass.Downcast<xiiGALRenderPassVulkan>();
+  auto                pFramebufferVulkan     = pFramebuffer.Downcast<xiiGALFramebufferVulkan>();
+  const auto&         renderPassDescription  = pRenderPassVulkan->GetDescription();
+  const auto&         framebufferDescription = pFramebufferVulkan->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "Current render pass has not yet been ended.");
