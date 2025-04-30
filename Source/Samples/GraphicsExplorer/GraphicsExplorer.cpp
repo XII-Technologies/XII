@@ -433,9 +433,8 @@ public:
     if (xiiGALDevice::GetDefaultDevice() == m_pDevice)
     {
       xiiGALDevice::SetDefaultDevice(nullptr);
-
-      m_pDevice.Clear();
     }
+    m_pDevice.Clear();
 
     // Finally destroy the window
     m_pWindow->Destroy().IgnoreResult();
