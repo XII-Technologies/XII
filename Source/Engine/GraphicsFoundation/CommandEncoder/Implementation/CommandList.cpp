@@ -206,7 +206,7 @@ void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipe
   }
   else
   {
-    m_pPipelineState = nullptr;
+    m_pPipelineState             = nullptr;
     m_pPipelineResourceSignature = nullptr;
   }
 
@@ -315,15 +315,18 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
     // Reset only the buffer slots that are not being set.
     for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
     {
-      m_VertexBuffers[i] = nullptr;
+      m_VertexBuffers.EnsureCount(i + 1);
+      m_VertexBuffersOffsets.EnsureCount(i + 1);
+
+      m_VertexBuffers[i]        = nullptr;
+      m_VertexBuffersOffsets[i] = 0;
     }
-    for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
+    for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < m_VertexBuffers.GetCount(); ++i)
     {
-      m_VertexBuffers[i] = nullptr;
+      m_VertexBuffers[i]        = nullptr;
+      m_VertexBuffersOffsets[i] = 0;
     }
   }
-
-  xiiHybridArray<xiiSharedPtr<xiiGALBuffer>, 2U> boundVertexBuffers;
 
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
   {
@@ -333,11 +336,12 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
 
       XII_VERIFY_COMMAND_LIST(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "SetVertexBuffer arguments are invalid. The Vertex buffer '{0}' was not created with the xiiGALBindFlags::VertexBuffer bind flag.", pVertexBuffers[i]->GetDebugName());
 
-      boundVertexBuffers.PushBack(pVertexBuffers[i]);
+      m_VertexBuffers[i]        = pVertexBuffers[i];
+      m_VertexBuffersOffsets[i] = pByteOffsets[i];
     }
   }
 
-  SetVertexBuffersPlatform(uiStartSlot, boundVertexBuffers, pByteOffsets, flags);
+  SetVertexBuffersPlatform(uiStartSlot, m_VertexBuffers, m_VertexBuffersOffsets, flags);
 }
 
 void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
@@ -1027,7 +1031,8 @@ void xiiGALCommandList::InvalidateState()
   m_pPipelineState             = nullptr;
   m_pPipelineResourceSignature = nullptr;
 
-  xiiMemoryUtils::Construct<ConstructAll>(m_VertexBuffers);
+  m_VertexBuffers.Clear();
+  m_VertexBuffersOffsets.Clear();
 
   m_pIndexBuffer      = nullptr;
   m_uiIndexDataOffset = 0;

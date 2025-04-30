@@ -537,7 +537,8 @@ protected:
   xiiSharedPtr<xiiGALPipelineState>             m_pPipelineState;
   xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineResourceSignature;
 
-  xiiSharedPtr<xiiGALBuffer> m_VertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiHybridArray<xiiSharedPtr<xiiGALBuffer>, 4U> m_VertexBuffers;
+  xiiHybridArray<xiiUInt64, 4U>                  m_VertexBuffersOffsets;
 
   xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;
   xiiUInt64                  m_uiIndexDataOffset = 0ULL;
