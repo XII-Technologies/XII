@@ -327,9 +327,9 @@ private:
   xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pTransferCommandQueueQueryPool;
 
   // Per Frame Data.
-  xiiUInt32                       m_uiFrameCounter = 0U;
-  xiiSharedPtr<xiiGALFenceVulkan> m_pFrameFence;
-  xiiDeque<PerFrameData>          m_PerFrameData;
+  xiiUInt32              m_uiFrameCounter                = 0U;
+  xiiUInt64              m_uiLastReleasedResourceCounter = 0U;
+  xiiDeque<PerFrameData> m_PerFrameData;
 
 private:
   vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;

@@ -137,8 +137,6 @@ xiiGALDeviceVulkan::xiiGALDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGA
 
 xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
 {
-  m_pFrameFence.Clear();
-
   WaitIdlePlatform();
 
   XII_ASSERT_DEV(m_PerFrameData.IsEmpty(), "There should be no pending per-frame data.");
@@ -1182,13 +1180,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   // Create command queues.
   {
-    // Create per-frame fence.
-    {
-      xiiGALFenceCreationDescription fenceDescription = {.m_Type = xiiGALFenceType::General};
-
-      m_pFrameFence = CreateFence(fenceDescription).Downcast<xiiGALFenceVulkan>();
-    }
-
     {
       m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
@@ -1250,7 +1241,15 @@ void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObject
 {
   auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
 
-  perFrameData.m_uiFrameNumber = m_uiFrameCounter;
+  perFrameData.m_uiFrameNumber = m_pGraphicsCommandQueue->GetCompletedFenceValue();
+  if (m_pComputeCommandQueue)
+  {
+    perFrameData.m_uiFrameNumber = xiiMath::Min(perFrameData.m_uiFrameNumber, m_pComputeCommandQueue->GetCompletedFenceValue());
+  }
+  if (m_pTransferCommandQueue)
+  {
+    perFrameData.m_uiFrameNumber = xiiMath::Min(perFrameData.m_uiFrameNumber, m_pTransferCommandQueue->GetCompletedFenceValue());
+  }
 
   auto& safeRelease           = perFrameData.m_SafeReleaseDescriptions.ExpandAndGetRef();
   safeRelease.m_vkObjectType  = vkObjectType;
@@ -1434,18 +1433,30 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapCha
 
   m_pGraphicsCommandQueue->RecycleCommandLists();
 
+  xiiUInt64 uiCompletedValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
+
   if (m_pComputeCommandQueue)
   {
     m_pComputeCommandQueue->RecycleCommandLists();
+
+    if (m_pComputeCommandQueue->GetCompletedFenceValue() > m_uiLastReleasedResourceCounter)
+    {
+      uiCompletedValue = xiiMath::Min(uiCompletedValue, m_pComputeCommandQueue->GetCompletedFenceValue());
+    }
   }
   if (m_pTransferCommandQueue)
   {
     m_pTransferCommandQueue->RecycleCommandLists();
+
+    if (m_pTransferCommandQueue->GetCompletedFenceValue() > m_uiLastReleasedResourceCounter)
+    {
+      uiCompletedValue = xiiMath::Min(uiCompletedValue, m_pTransferCommandQueue->GetCompletedFenceValue());
+    }
   }
 
-  ReleasePerFrameResources(m_pFrameFence->GetCompletedValue());
+  m_uiLastReleasedResourceCounter = uiCompletedValue;
 
-  m_pFrameFence->Signal(++m_uiFrameCounter);
+  ReleasePerFrameResources(uiCompletedValue);
 }
 
 xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const
@@ -1674,17 +1685,6 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
   m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
 
-  xiiUInt64 uiCompletedValue = xiiMath::MaxValue<xiiUInt64>();
-
-  if (m_pFrameFence != nullptr)
-  {
-    m_pFrameFence->Wait(m_uiFrameCounter);
-
-    uiCompletedValue = m_pFrameFence->GetCompletedValue();
-
-    XII_ASSERT_DEV(uiCompletedValue != xiiMath::MaxValue<xiiUInt64>(), "The completed fence value is invalid!");
-  }
-
   m_pGraphicsCommandQueue->RecycleCommandLists();
 
   if (m_pComputeCommandQueue)
@@ -1696,7 +1696,7 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
     m_pTransferCommandQueue->RecycleCommandLists();
   }
 
-  ReleasePerFrameResources(uiCompletedValue);
+  ReleasePerFrameResources(xiiMath::MaxValue<xiiUInt64>());
 }
 
 xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
