@@ -357,7 +357,7 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> p
   }
 }
 
-void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
+void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
 {
   XII_ASSERT_DEV((uiStartSlot + pVertexBuffers.GetCount()) <= XII_GAL_MAX_VERTEX_BUFFER_COUNT, "The number of vertex buffers to set, exceeds the maximum amount.");
 
@@ -382,7 +382,7 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
 
   for (xiiUInt32 i = 0; i < pVertexBuffers.GetCount(); ++i)
   {
-    auto pVertexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pVertexBuffers[i]);
+    auto pVertexBufferD3D11 = pVertexBuffers[i].Downcast<xiiGALBufferD3D11>();
 
     ID3D11Buffer* pD3D11VertexBuffer   = pVertexBufferD3D11 ? pVertexBufferD3D11->GetBuffer() : nullptr;
     xiiUInt32     uiVertexBufferOffset = pByteOffsets.IsEmpty() ? 0U : static_cast<xiiUInt32>(pByteOffsets[i]);

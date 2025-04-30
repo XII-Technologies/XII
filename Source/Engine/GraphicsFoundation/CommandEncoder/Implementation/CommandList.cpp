@@ -314,7 +314,7 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
     }
   }
 
-  xiiHybridArray<xiiGALBuffer*, 2U> boundVertexBuffers;
+  xiiHybridArray<xiiSharedPtr<xiiGALBuffer>, 2U> boundVertexBuffers;
 
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
   {

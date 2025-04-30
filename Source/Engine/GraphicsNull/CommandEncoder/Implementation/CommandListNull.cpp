@@ -102,7 +102,7 @@ void xiiGALCommandListNull::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pI
   XII_IGNORE_UNUSED(uiByteOffset);
 }
 
-void xiiGALCommandListNull::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
+void xiiGALCommandListNull::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
 {
   XII_IGNORE_UNUSED(uiStartSlot);
   XII_IGNORE_UNUSED(pVertexBuffers);
