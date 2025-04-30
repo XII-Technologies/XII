@@ -30,8 +30,6 @@ public:
 
   struct ImmutableSamplerStorage
   {
-    XII_DECLARE_POD_TYPE();
-
     void Initialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription);
     void DeInitialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan);
 
