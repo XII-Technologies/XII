@@ -17,10 +17,6 @@ public:
   /// \brief Initialize device.
   xiiResult Initialize();
 
-  /// \brief Shutdown device.
-  xiiResult Shutdown();
-
-
   /// \brief Adds a swapchain to be used for the next frame.
   ///
   /// This must be called before or during xiiGALDeviceEvent::BeforeBeginFrame event (xiiGALDevice::BeginFrame), and repeated every frame the swap chain is to be used.
@@ -254,7 +250,6 @@ protected:
 
   virtual xiiResult InitializePlatform()     = 0;
   virtual xiiResult PostInitializePlatform() = 0;
-  virtual xiiResult ShutdownPlatform()       = 0;
 
   virtual void BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains, const xiiUInt64 uiRenderFrame = 0U) = 0;
   virtual void EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains)                                       = 0;

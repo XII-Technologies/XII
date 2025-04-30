@@ -44,7 +44,6 @@ XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALDeviceEventType, 1)
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::Unknown),
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::AfterInitialization),
-  XII_ENUM_CONSTANT(xiiGALDeviceEventType::BeforeShutdown),
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::BeforeBeginFrame),
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::AfterBeginFrame),
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::BeforeEndFrame),

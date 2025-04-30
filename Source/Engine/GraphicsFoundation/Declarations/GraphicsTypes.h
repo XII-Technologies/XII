@@ -102,7 +102,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEventType
   {
     Unknown = -1,        ///< Unknown device event.
     AfterInitialization, ///< After initialization.
-    BeforeShutdown,      ///< Before shutdown.
     BeforeBeginFrame,    ///< Before begin frame.
     AfterBeginFrame,     ///< After begin frame.
     BeforeEndFrame,      ///< Before end frame.

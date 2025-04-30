@@ -47,9 +47,7 @@ xiiGALDevice::xiiGALDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreat
 {
 }
 
-xiiGALDevice::~xiiGALDevice()
-{
-}
+xiiGALDevice::~xiiGALDevice() = default;
 
 xiiResult xiiGALDevice::Initialize()
 {
@@ -89,28 +87,6 @@ xiiResult xiiGALDevice::Initialize()
 xiiResult xiiGALDevice::PostInitialize()
 {
   return PostInitializePlatform();
-}
-
-xiiResult xiiGALDevice::Shutdown()
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  XII_LOG_BLOCK("xiiGALDevice::Shutdown");
-
-  {
-    xiiGALDeviceEvent e;
-    e.m_pDevice = this;
-    e.m_Type    = xiiGALDeviceEventType::BeforeShutdown;
-    s_Events.Broadcast(e);
-  }
-
-  // Ensure we are not listed as the default device.
-  if (xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice() == this)
-  {
-    xiiGALDevice::SetDefaultDevice(nullptr);
-  }
-
-  return ShutdownPlatform();
 }
 
 void xiiGALDevice::EnqueueFrameSwapChain(xiiSharedPtr<xiiGALSwapChain> pSwapChain)

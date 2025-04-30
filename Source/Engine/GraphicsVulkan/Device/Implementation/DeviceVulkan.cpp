@@ -135,7 +135,74 @@ xiiGALDeviceVulkan::xiiGALDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGA
 {
 }
 
-xiiGALDeviceVulkan::~xiiGALDeviceVulkan() = default;
+xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
+{
+  m_pFrameFence.Clear();
+
+  WaitIdlePlatform();
+
+  XII_ASSERT_DEV(m_PerFrameData.IsEmpty(), "There should be no pending per-frame data.");
+
+  m_PerFrameData.Clear();
+  m_PerFrameData.Compact();
+
+  {
+    if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
+    {
+      m_pTransferCommandQueue->DeInitializePlatform();
+      m_pTransferCommandQueue.Clear();
+
+      m_pTransferCommandQueueQueryPool.Clear();
+    }
+
+    if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
+    {
+      m_pComputeCommandQueue->DeInitializePlatform();
+      m_pComputeCommandQueue.Clear();
+
+      m_pComputeCommandQueueQueryPool.Clear();
+    }
+
+    m_pGraphicsCommandQueue->DeInitializePlatform();
+    m_pGraphicsCommandQueue.Clear();
+
+    m_pGraphicsCommandQueueQueryPool.Clear();
+  }
+
+  {
+    m_pDescriptorSetPool.Clear();
+    m_pFencePool.Clear();
+    m_pSemaphorePool.Clear();
+  }
+
+  if (m_vkVmaAllocator != VK_NULL_HANDLE)
+  {
+    vmaDestroyAllocator(m_vkVmaAllocator);
+  }
+
+  if (m_LogicalDevice != VK_NULL_HANDLE)
+  {
+    m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
+  }
+
+  if (m_DebugMode != DebugMode::Disabled && m_Instance != VK_NULL_HANDLE)
+  {
+    if (m_DebugMessenger != VK_NULL_HANDLE)
+    {
+      m_Instance.destroyDebugUtilsMessengerEXT(m_DebugMessenger, nullptr, m_InstanceDispatchLoader);
+    }
+
+    if (m_DebugCallback != VK_NULL_HANDLE)
+    {
+      m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
+    }
+  }
+
+  if (m_Instance != VK_NULL_HANDLE)
+  {
+    m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
+  }
+}
 
 xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
@@ -1175,77 +1242,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   // We use xiiClipSpaceYMode::Regular and rely in the Vulkan 1.1 feature that a negative height performs y-inversion of the clip-space to framebuffer-space transform.
   // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VK_KHR_maintenance1.html
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
-{
-  m_pFrameFence.Clear();
-
-  WaitIdlePlatform();
-
-  XII_ASSERT_DEV(m_PerFrameData.IsEmpty(), "There should be no pending per-frame data.");
-
-  m_PerFrameData.Clear();
-  m_PerFrameData.Compact();
-
-  {
-    if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
-    {
-      m_pTransferCommandQueue->DeInitializePlatform();
-      m_pTransferCommandQueue.Clear();
-
-      m_pTransferCommandQueueQueryPool.Clear();
-    }
-
-    if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
-    {
-      m_pComputeCommandQueue->DeInitializePlatform();
-      m_pComputeCommandQueue.Clear();
-
-      m_pComputeCommandQueueQueryPool.Clear();
-    }
-
-    m_pGraphicsCommandQueue->DeInitializePlatform();
-    m_pGraphicsCommandQueue.Clear();
-
-    m_pGraphicsCommandQueueQueryPool.Clear();
-  }
-
-  {
-    m_pDescriptorSetPool.Clear();
-    m_pFencePool.Clear();
-    m_pSemaphorePool.Clear();
-  }
-
-  if (m_vkVmaAllocator != VK_NULL_HANDLE)
-  {
-    vmaDestroyAllocator(m_vkVmaAllocator);
-  }
-
-  if (m_LogicalDevice != VK_NULL_HANDLE)
-  {
-    m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
-  }
-
-  if (m_DebugMode != DebugMode::Disabled && m_Instance != VK_NULL_HANDLE)
-  {
-    if (m_DebugMessenger != VK_NULL_HANDLE)
-    {
-      m_Instance.destroyDebugUtilsMessengerEXT(m_DebugMessenger, nullptr, m_InstanceDispatchLoader);
-    }
-
-    if (m_DebugCallback != VK_NULL_HANDLE)
-    {
-      m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
-    }
-  }
-
-  if (m_Instance != VK_NULL_HANDLE)
-  {
-    m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
-  }
 
   return XII_SUCCESS;
 }

@@ -188,7 +188,6 @@ public:
 protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult PostInitializePlatform() override final;
-  virtual xiiResult ShutdownPlatform() override final;
 
   virtual void BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains, const xiiUInt64 uiRenderFrame) override final;
   virtual void EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains) override final;

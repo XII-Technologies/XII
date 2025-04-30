@@ -87,11 +87,6 @@ xiiResult xiiGALDeviceNull::PostInitializePlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALDeviceNull::ShutdownPlatform()
-{
-  return XII_SUCCESS;
-}
-
 void xiiGALDeviceNull::BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains, const xiiUInt64 uiRenderFrame)
 {
   XII_IGNORE_UNUSED(swapchains);

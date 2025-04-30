@@ -61,7 +61,6 @@ public:
 protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult PostInitializePlatform() override final;
-  virtual xiiResult ShutdownPlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 

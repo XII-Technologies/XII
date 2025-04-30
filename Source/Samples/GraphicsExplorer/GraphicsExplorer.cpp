@@ -430,10 +430,12 @@ public:
     // and that it therefore needs to cleanup anything that depends on that
     xiiStartup::ShutdownHighLevelSystems();
 
-    // Now we can shutdown the graphics device.
-    m_pDevice->Shutdown().IgnoreResult();
+    if (xiiGALDevice::GetDefaultDevice() == m_pDevice)
+    {
+      xiiGALDevice::SetDefaultDevice(nullptr);
 
-    m_pDevice.Clear();
+      m_pDevice.Clear();
+    }
 
     // Finally destroy the window
     m_pWindow->Destroy().IgnoreResult();

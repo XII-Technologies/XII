@@ -12,8 +12,8 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::Framebuffer GetVulkanFramebuffer() const { return m_vkFramebuffer; }
 
 protected:
-  friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceVulkan;
 
   xiiGALFramebufferVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALFramebufferCreationDescription& creationDescription);
 

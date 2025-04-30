@@ -76,7 +76,43 @@ xiiGALDeviceD3D11::xiiGALDeviceD3D11(xiiAllocatorBase* pAllocator, const xiiGALD
 {
 }
 
-xiiGALDeviceD3D11::~xiiGALDeviceD3D11() = default;
+xiiGALDeviceD3D11::~xiiGALDeviceD3D11()
+{
+  if (m_pGraphicsCommandQueue != nullptr)
+  {
+    m_pGraphicsCommandQueue->DeInitializePlatform();
+    m_pGraphicsCommandQueue.Clear();
+  }
+
+  for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
+  {
+    for (auto it = m_FreeTempResources[type].GetIterator(); it.IsValid(); ++it)
+    {
+      xiiDynamicArray<ID3D11Resource*>& resources = it.Value();
+      for (auto pResource : resources)
+      {
+        XII_GAL_D3D11_RELEASE(pResource);
+      }
+    }
+    m_FreeTempResources[type].Clear();
+
+    for (auto& tempResource : m_UsedTempResources[type])
+    {
+      XII_GAL_D3D11_RELEASE(tempResource.m_pResource);
+    }
+    m_UsedTempResources[type].Clear();
+  }
+
+  XII_GAL_D3D11_RELEASE(m_pDeviceContext);
+  XII_GAL_D3D11_RELEASE(m_pDebugD3D11);
+  XII_GAL_D3D11_RELEASE(m_pDeviceD3D11);
+  XII_GAL_D3D11_RELEASE(m_pDXGIAdapter);
+  XII_GAL_D3D11_RELEASE(m_pDXGIFactory);
+
+  m_DisplayModes.Clear();
+
+  ReportLiveGPUObjects();
+}
 
 xiiResult xiiGALDeviceD3D11::InitializePlatform()
 {
@@ -256,46 +292,6 @@ void xiiGALDeviceD3D11::ReportLiveGPUObjects()
     pDXGIDebug->Release();
   }
 #endif
-}
-
-xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
-{
-  if (m_pGraphicsCommandQueue != nullptr)
-  {
-    m_pGraphicsCommandQueue->DeInitializePlatform();
-    m_pGraphicsCommandQueue.Clear();
-  }
-
-  for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
-  {
-    for (auto it = m_FreeTempResources[type].GetIterator(); it.IsValid(); ++it)
-    {
-      xiiDynamicArray<ID3D11Resource*>& resources = it.Value();
-      for (auto pResource : resources)
-      {
-        XII_GAL_D3D11_RELEASE(pResource);
-      }
-    }
-    m_FreeTempResources[type].Clear();
-
-    for (auto& tempResource : m_UsedTempResources[type])
-    {
-      XII_GAL_D3D11_RELEASE(tempResource.m_pResource);
-    }
-    m_UsedTempResources[type].Clear();
-  }
-
-  XII_GAL_D3D11_RELEASE(m_pDeviceContext);
-  XII_GAL_D3D11_RELEASE(m_pDebugD3D11);
-  XII_GAL_D3D11_RELEASE(m_pDeviceD3D11);
-  XII_GAL_D3D11_RELEASE(m_pDXGIAdapter);
-  XII_GAL_D3D11_RELEASE(m_pDXGIFactory);
-
-  m_DisplayModes.Clear();
-
-  ReportLiveGPUObjects();
-
-  return XII_SUCCESS;
 }
 
 xiiResult xiiGALDeviceD3D11::PostInitializePlatform()
