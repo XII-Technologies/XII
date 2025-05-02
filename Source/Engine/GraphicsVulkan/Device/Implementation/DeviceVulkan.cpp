@@ -12,6 +12,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -30,7 +31,6 @@
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
-#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 
 #include <bitset>
 
@@ -140,10 +140,7 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
 {
   WaitIdlePlatform();
 
-  XII_ASSERT_DEV(m_PerFrameData.IsEmpty(), "There should be no pending per-frame data.");
-
-  m_PerFrameData.Clear();
-  m_PerFrameData.Compact();
+  XII_ASSERT_DEV(m_pDeferredDeletionQueue->IsEmpty(), "There should be no pending deferred deletion resources at this stage.");
 
   {
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -163,6 +160,7 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
   }
 
   {
+    m_pDeferredDeletionQueue.Clear();
     m_pDescriptorSetPool.Clear();
     m_pFencePool.Clear();
     m_pSemaphorePool.Clear();
@@ -1168,9 +1166,10 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   // Create pools.
   {
-    m_pFencePool         = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
-    m_pSemaphorePool     = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
-    m_pDescriptorSetPool = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
+    m_pFencePool             = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
+    m_pSemaphorePool         = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
+    m_pDescriptorSetPool     = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
+    m_pDeferredDeletionQueue = XII_NEW(&m_Allocator, DeferredDeletionQueue, this);
   }
 
   // Create command queues.
@@ -1225,215 +1224,43 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
 void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
 {
-  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
-
-  perFrameData.m_uiFenceValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
-  if (m_pComputeCommandQueue)
+  if (vmaAllocation != VK_NULL_HANDLE)
   {
-    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pComputeCommandQueue->GetCompletedFenceValue());
+    m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, vkObjectType, pObject, vmaAllocation);
   }
-  if (m_pTransferCommandQueue)
+  else
   {
-    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pTransferCommandQueue->GetCompletedFenceValue());
+    m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, vkObjectType, pObject);
   }
-
-  auto& safeRelease           = perFrameData.m_SafeReleaseDescriptions.ExpandAndGetRef();
-  safeRelease.m_vkObjectType  = vkObjectType;
-  safeRelease.m_pObject       = pObject;
-  safeRelease.m_VmaAllocation = vmaAllocation;
 }
 
 void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject)
 {
-  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
-
-  perFrameData.m_uiFenceValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
-  if (m_pComputeCommandQueue)
+  switch (vkObjectType)
   {
-    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pComputeCommandQueue->GetCompletedFenceValue());
-  }
-  if (m_pTransferCommandQueue)
-  {
-    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pTransferCommandQueue->GetCompletedFenceValue());
-  }
+    case vk::ObjectType::eSemaphore:
+    {
+      m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, m_pSemaphorePool.Borrow(), reinterpret_cast<vk::Semaphore&>(pObject));
+    }
+    break;
+    case vk::ObjectType::eFence:
+    {
+      m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, m_pFencePool.Borrow(), reinterpret_cast<vk::Fence&>(pObject));
+    }
+    break;
+    case vk::ObjectType::eDescriptorPool:
+    {
+      m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, m_pDescriptorSetPool.Borrow(), reinterpret_cast<vk::DescriptorPool&>(pObject));
+    }
+    break;
 
-  auto& safeReclaim          = perFrameData.m_SafeReclaimResources.ExpandAndGetRef();
-  safeReclaim.m_vkObjectType = vkObjectType;
-  safeReclaim.m_pObject      = pObject;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
 }
 
-void xiiGALDeviceVulkan::ReclaimCommandBufferLater(vk::CommandBuffer&& vkCommandBuffer, xiiGALCommandBufferPoolVulkan* pCommandBufferPool)
+void xiiGALDeviceVulkan::ReclaimCommandBufferLater(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer)
 {
-  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
-
-  perFrameData.m_uiFenceValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
-  if (m_pComputeCommandQueue)
-  {
-    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pComputeCommandQueue->GetCompletedFenceValue());
-  }
-  if (m_pTransferCommandQueue)
-  {
-    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pTransferCommandQueue->GetCompletedFenceValue());
-  }
-
-  auto& safeReclaim = perFrameData.m_SafeReclaimCommandBuffers.ExpandAndGetRef();
-  safeReclaim.m_pCommandBufferPool = pCommandBufferPool;
-  safeReclaim.m_vkCommandBuffer    = std::move(vkCommandBuffer);
-}
-
-void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
-{
-  while (!m_PerFrameData.IsEmpty() && (m_PerFrameData.PeekFront().m_uiFenceValue <= uiCompletedValue))
-  {
-    auto& perFrameData = m_PerFrameData.PeekFront();
-
-    for (SafeReleaseDescription& safeReleaseDescription : perFrameData.m_SafeReleaseDescriptions)
-    {
-      switch (safeReleaseDescription.m_vkObjectType)
-      {
-        case vk::ObjectType::eSemaphore:
-        {
-          m_LogicalDevice.destroySemaphore(reinterpret_cast<vk::Semaphore&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eFence:
-        {
-          m_LogicalDevice.destroyFence(reinterpret_cast<vk::Fence&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eBuffer:
-        {
-          if (safeReleaseDescription.m_VmaAllocation != VK_NULL_HANDLE)
-          {
-            vmaDestroyBuffer(m_vkVmaAllocator, reinterpret_cast<vk::Buffer&>(safeReleaseDescription.m_pObject), safeReleaseDescription.m_VmaAllocation);
-          }
-          else
-          {
-            m_LogicalDevice.destroyBuffer(reinterpret_cast<vk::Buffer&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-          }
-        }
-        break;
-        case vk::ObjectType::eImage:
-        {
-          if (safeReleaseDescription.m_VmaAllocation != VK_NULL_HANDLE)
-          {
-            vmaDestroyImage(m_vkVmaAllocator, reinterpret_cast<vk::Image&>(safeReleaseDescription.m_pObject), safeReleaseDescription.m_VmaAllocation);
-          }
-          else
-          {
-            m_LogicalDevice.destroyImage(reinterpret_cast<vk::Image&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-          }
-        }
-        break;
-        case vk::ObjectType::eEvent:
-        {
-          m_LogicalDevice.destroyEvent(reinterpret_cast<vk::Event&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eQueryPool:
-        {
-          m_LogicalDevice.destroyQueryPool(reinterpret_cast<vk::QueryPool&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eBufferView:
-        {
-          m_LogicalDevice.destroyBufferView(reinterpret_cast<vk::BufferView&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eImageView:
-        {
-          m_LogicalDevice.destroyImageView(reinterpret_cast<vk::ImageView&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eShaderModule:
-        {
-          m_LogicalDevice.destroyShaderModule(reinterpret_cast<vk::ShaderModule&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::ePipelineCache:
-        {
-          m_LogicalDevice.destroyPipelineCache(reinterpret_cast<vk::PipelineCache&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::ePipelineLayout:
-        {
-          m_LogicalDevice.destroyPipelineLayout(reinterpret_cast<vk::PipelineLayout&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eRenderPass:
-        {
-          m_LogicalDevice.destroyRenderPass(reinterpret_cast<vk::RenderPass&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::ePipeline:
-        {
-          m_LogicalDevice.destroyPipeline(reinterpret_cast<vk::Pipeline&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eDescriptorSetLayout:
-        {
-          m_LogicalDevice.destroyDescriptorSetLayout(reinterpret_cast<vk::DescriptorSetLayout&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eSampler:
-        {
-          m_LogicalDevice.destroySampler(reinterpret_cast<vk::Sampler&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eDescriptorPool:
-        {
-          m_LogicalDevice.destroyDescriptorPool(reinterpret_cast<vk::DescriptorPool&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eFramebuffer:
-        {
-          m_LogicalDevice.destroyFramebuffer(reinterpret_cast<vk::Framebuffer&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-        case vk::ObjectType::eCommandPool:
-        {
-          m_LogicalDevice.destroyCommandPool(reinterpret_cast<vk::CommandPool&>(safeReleaseDescription.m_pObject), nullptr, m_InstanceDispatchLoader);
-        }
-        break;
-
-          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-      }
-    }
-
-    for (SafeReclaimResource& safeReclaimResource : perFrameData.m_SafeReclaimResources)
-    {
-      switch (safeReclaimResource.m_vkObjectType)
-      {
-        case vk::ObjectType::eSemaphore:
-        {
-          m_pSemaphorePool->ReclaimSemaphore(reinterpret_cast<vk::Semaphore&>(safeReclaimResource.m_pObject));
-        }
-        break;
-        case vk::ObjectType::eFence:
-        {
-          m_pFencePool->ReclaimFence(reinterpret_cast<vk::Fence&>(safeReclaimResource.m_pObject));
-        }
-        break;
-        case vk::ObjectType::eDescriptorPool:
-        {
-          m_pDescriptorSetPool->ReclaimDescriptorPool(reinterpret_cast<vk::DescriptorPool&>(safeReclaimResource.m_pObject));
-        }
-        break;
-
-          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-      }
-    }
-
-    for (SafeReclaimCommandBuffer& safeReclaimCommandBuffer : perFrameData.m_SafeReclaimCommandBuffers)
-    {
-      safeReclaimCommandBuffer.m_pCommandBufferPool->ReclaimCommandBuffer(std::move(safeReclaimCommandBuffer.m_vkCommandBuffer));
-    }
-
-    perFrameData.m_SafeReleaseDescriptions.Clear();
-    perFrameData.m_SafeReclaimResources.Clear();
-
-    m_PerFrameData.PopFront();
-  }
+  m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, pCommandBufferPool, vkCommandBuffer);
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains, const xiiUInt64 uiRenderFrame)
@@ -1449,26 +1276,7 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapCha
     pSwapChain->Present();
   }
 
-  xiiUInt64 uiCompletedValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
-
-  if (m_pComputeCommandQueue)
-  {
-    if (m_pComputeCommandQueue->GetCompletedFenceValue() > m_uiLastReleasedResourceCounter)
-    {
-      uiCompletedValue = xiiMath::Min(uiCompletedValue, m_pComputeCommandQueue->GetCompletedFenceValue());
-    }
-  }
-  if (m_pTransferCommandQueue)
-  {
-    if (m_pTransferCommandQueue->GetCompletedFenceValue() > m_uiLastReleasedResourceCounter)
-    {
-      uiCompletedValue = xiiMath::Min(uiCompletedValue, m_pTransferCommandQueue->GetCompletedFenceValue());
-    }
-  }
-
-  m_uiLastReleasedResourceCounter = uiCompletedValue;
-
-  ReleasePerFrameResources(uiCompletedValue);
+  m_pDeferredDeletionQueue->ReleaseResources();
 }
 
 xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const
@@ -1697,7 +1505,7 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
   m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
 
-  ReleasePerFrameResources(xiiMath::MaxValue<xiiUInt64>());
+  m_pDeferredDeletionQueue->ReleaseResources(true);
 }
 
 xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
@@ -2870,5 +2678,299 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArra
 
   return uiQueueFamilyIndex;
 }
+
+
+///////////////////////////////////////////////////////////////////////////
+
+xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan) :
+  m_pDeviceVulkan(pDeviceVulkan)
+{
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, vk::ObjectType vkObjectType, void* pObject)
+{
+  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
+  XII_ASSERT_DEV(vkObjectType != vk::ObjectType::eUnknown, "Vulkan object type must be valid.");
+  XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
+
+  XII_LOCK(m_DeletionQueueMutex);
+
+  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+  entry.m_vkFence                             = vkFence;
+  entry.m_pObject                             = pObject;
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+{
+  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
+  XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid VMA Allocation.");
+  XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
+  XII_ASSERT_DEV(vmaAllocation != nullptr, "VMA allocation must be valid.");
+
+  XII_LOCK(m_DeletionQueueMutex);
+
+  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+  entry.m_vkFence                             = vkFence;
+  entry.m_pObject                             = pObject;
+  entry.m_VmaAllocation                       = vmaAllocation;
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer)
+{
+  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
+  XII_ASSERT_DEV(pCommandBufferPool != nullptr, "Command buffer pool must be valid.");
+  XII_ASSERT_DEV(vkCommandBuffer != VK_NULL_HANDLE, "Command buffer must be valid.");
+
+  XII_LOCK(m_DeletionQueueMutex);
+
+  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+  entry.m_vkFence                             = vkFence;
+  entry.m_pObject                             = pCommandBufferPool;
+  entry.m_vkCommandBuffer                     = vkCommandBuffer;
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore)
+{
+  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
+  XII_ASSERT_DEV(pSemaphorePool != nullptr, "Semaphore pool must be valid.");
+  XII_ASSERT_DEV(vkSemaphore != VK_NULL_HANDLE, "Semaphore must be valid.");
+
+  XII_LOCK(m_DeletionQueueMutex);
+
+  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+  entry.m_vkFence                             = vkFence;
+  entry.m_pSemaphorePool                      = pSemaphorePool;
+  entry.m_vkSemaphore                         = vkSemaphore;
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool)
+{
+  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
+  XII_ASSERT_DEV(pDescriptorSetPool != nullptr, "Descriptor set pool must be valid.");
+  XII_ASSERT_DEV(vkDescriptorPool != VK_NULL_HANDLE, "Descriptor pool must be valid.");
+
+  XII_LOCK(m_DeletionQueueMutex);
+
+  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+  entry.m_vkFence                             = vkFence;
+  entry.m_pDescriptorSetPool                  = pDescriptorSetPool;
+  entry.m_vkDescriptorPool                    = vkDescriptorPool;
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, xiiGALFencePoolVulkan* pFencePool, vk::Fence vkReclaimFence)
+{
+  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
+  XII_ASSERT_DEV(pFencePool != nullptr, "Fence pool must be valid.");
+  XII_ASSERT_DEV(vkReclaimFence != VK_NULL_HANDLE, "Reclaim fence must be valid.");
+
+  XII_LOCK(m_DeletionQueueMutex);
+
+  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+  entry.m_vkFence                             = vkFence;
+  entry.m_pFencePool                          = pFencePool;
+  entry.m_vkReclaimFence                      = vkReclaimFence;
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceReleaseAll)
+{
+  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+
+  if (bForceReleaseAll)
+  {
+    XII_LOCK(m_DeletionQueueMutex);
+
+    // Release all resources.
+    for (auto& entry : m_DeletionQueue)
+    {
+      if (entry.m_pCommandBufferPool != nullptr)
+      {
+        DestroyCommandBuffer(entry.m_pCommandBufferPool, std::move(entry.m_vkCommandBuffer));
+      }
+      else if (entry.m_VmaAllocation != VK_NULL_HANDLE)
+      {
+        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VmaAllocation);
+      }
+      else
+      {
+        DestroyObject(vkLogicalDevice, entry.m_vkObjectType, entry.m_pObject);
+      }
+    }
+    m_DeletionQueue.Clear();
+  }
+  else
+  {
+    XII_LOCK(m_DeletionQueueMutex);
+
+    // Release only resources that are not in use.
+    for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
+    {
+      // If the fence returns eSuccess, then all GPU work using this resource are completed.
+      vk::Result vkStatus = vkLogicalDevice.getFenceStatus(it->m_vkFence, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+      if (vkStatus == vk::Result::eSuccess)
+      {
+        if (it->m_pCommandBufferPool != nullptr)
+        {
+          DestroyCommandBuffer(it->m_pCommandBufferPool, std::move(it->m_vkCommandBuffer));
+        }
+        else if (it->m_VmaAllocation != VK_NULL_HANDLE)
+        {
+          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VmaAllocation);
+        }
+        else
+        {
+          DestroyObject(vkLogicalDevice, it->m_vkObjectType, it->m_pObject);
+        }
+
+        m_DeletionQueue.RemoveAndCopy(*it);
+        it = begin(m_DeletionQueue);
+      }
+      else
+      {
+        ++it;
+      }
+    }
+  }
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogicalDevice, vk::ObjectType vkObjectType, void* pObject)
+{
+  switch (vkObjectType)
+  {
+    case vk::ObjectType::eSemaphore:
+    {
+      vkLogicalDevice.destroySemaphore(reinterpret_cast<vk::Semaphore&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eFence:
+    {
+      vkLogicalDevice.destroyFence(reinterpret_cast<vk::Fence&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eBuffer:
+    {
+      XII_REPORT_FAILURE("Buffer must be destroyed using the VMA allocator.");
+    }
+    break;
+    case vk::ObjectType::eImage:
+    {
+      XII_REPORT_FAILURE("Image must be destroyed using the VMA allocator.");
+    }
+    break;
+    case vk::ObjectType::eEvent:
+    {
+      vkLogicalDevice.destroyEvent(reinterpret_cast<vk::Event&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eQueryPool:
+    {
+      vkLogicalDevice.destroyQueryPool(reinterpret_cast<vk::QueryPool&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eBufferView:
+    {
+      vkLogicalDevice.destroyBufferView(reinterpret_cast<vk::BufferView&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eImageView:
+    {
+      vkLogicalDevice.destroyImageView(reinterpret_cast<vk::ImageView&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eShaderModule:
+    {
+      vkLogicalDevice.destroyShaderModule(reinterpret_cast<vk::ShaderModule&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::ePipelineCache:
+    {
+      vkLogicalDevice.destroyPipelineCache(reinterpret_cast<vk::PipelineCache&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::ePipelineLayout:
+    {
+      vkLogicalDevice.destroyPipelineLayout(reinterpret_cast<vk::PipelineLayout&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eRenderPass:
+    {
+      vkLogicalDevice.destroyRenderPass(reinterpret_cast<vk::RenderPass&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::ePipeline:
+    {
+      vkLogicalDevice.destroyPipeline(reinterpret_cast<vk::Pipeline&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eDescriptorSetLayout:
+    {
+      vkLogicalDevice.destroyDescriptorSetLayout(reinterpret_cast<vk::DescriptorSetLayout&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eSampler:
+    {
+      vkLogicalDevice.destroySampler(reinterpret_cast<vk::Sampler&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eDescriptorPool:
+    {
+      vkLogicalDevice.destroyDescriptorPool(reinterpret_cast<vk::DescriptorPool&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eFramebuffer:
+    {
+      vkLogicalDevice.destroyFramebuffer(reinterpret_cast<vk::Framebuffer&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eCommandPool:
+    {
+      vkLogicalDevice.destroyCommandPool(reinterpret_cast<vk::CommandPool&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+{
+  switch (vkObjectType)
+  {
+    case vk::ObjectType::eBuffer:
+    {
+      vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<vk::Buffer&>(pObject), vmaAllocation);
+    }
+    break;
+    case vk::ObjectType::eImage:
+    {
+      vmaDestroyImage(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<vk::Image&>(pObject), vmaAllocation);
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyCommandBuffer(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer)
+{
+  pCommandBufferPool->ReclaimCommandBuffer(std::move(vkCommandBuffer));
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore)
+{
+  pSemaphorePool->ReclaimSemaphore(std::move(vkSemaphore));
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyFence(xiiGALFencePoolVulkan* pFencePool, vk::Fence&& vkReclaimFence)
+{
+  pFencePool->ReclaimFence(std::move(vkReclaimFence));
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyDescriptorPool(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool&& vkDescriptorPool)
+{
+  pDescriptorSetPool->ReclaimDescriptorPool(std::move(vkDescriptorPool));
+}
+
+///////////////////////////////////////////////////////////////////////////
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Device_Implementation_DeviceVulkan);

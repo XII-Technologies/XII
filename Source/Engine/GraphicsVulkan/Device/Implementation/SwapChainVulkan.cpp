@@ -527,20 +527,20 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
   for (xiiUInt32 i = 0; i < m_DrawCompleteSemaphores.GetCount(); ++i)
   {
-    pSemaphorePool->ReclaimSemaphore(m_DrawCompleteSemaphores[i]);
+    pSemaphorePool->ReclaimSemaphore(std::move(m_DrawCompleteSemaphores[i]));
   }
   m_DrawCompleteSemaphores.Clear();
 
   for (xiiUInt32 i = 0; i < m_ImageAcquiredSemaphores.GetCount(); ++i)
   {
-    pSemaphorePool->ReclaimSemaphore(m_ImageAcquiredSemaphores[i]);
+    pSemaphorePool->ReclaimSemaphore(std::move(m_ImageAcquiredSemaphores[i]));
   }
   m_ImageAcquiredSemaphores.Clear();
 
   auto pFencePool = pDeviceVulkan->GetVulkanFencePool();
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
   {
-    pFencePool->ReclaimFence(m_ImageAcquiredFences[i]);
+    pFencePool->ReclaimFence(std::move(m_ImageAcquiredFences[i]));
 
     m_ImageAcquiredFences[i] = VK_NULL_HANDLE;
   }

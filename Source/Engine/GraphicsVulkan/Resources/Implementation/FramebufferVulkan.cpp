@@ -20,9 +20,7 @@ xiiGALFramebufferVulkan::~xiiGALFramebufferVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkFramebuffer);
-
-  m_vkFramebuffer = VK_NULL_HANDLE;
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkFramebuffer));
 }
 
 xiiResult xiiGALFramebufferVulkan::InitPlatform()

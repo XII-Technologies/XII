@@ -3,8 +3,8 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/BufferVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
+#include <GraphicsVulkan/Resources/BufferVulkan.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferVulkan, 1, xiiRTTINoAllocator)
@@ -22,7 +22,7 @@ xiiGALBufferVulkan::~xiiGALBufferVulkan()
 
   if (m_vkBuffer != VK_NULL_HANDLE)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkBuffer, m_BufferMemoryAllocation);
+    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBuffer), std::move(m_BufferMemoryAllocation));
 
     m_vkBuffer               = VK_NULL_HANDLE;
     m_BufferMemoryAllocation = VK_NULL_HANDLE;
@@ -237,7 +237,7 @@ xiiInternal::NewInstance<xiiGALBufferView> xiiGALBufferVulkan::CreateViewPlatfor
 void xiiGALBufferVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp;
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkBuffer, sName.GetData(tmp));
 }

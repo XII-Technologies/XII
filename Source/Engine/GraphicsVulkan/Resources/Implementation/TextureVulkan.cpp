@@ -32,21 +32,12 @@ xiiGALTextureVulkan::~xiiGALTextureVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  if (m_vkStagingBuffer != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer, m_StagingBufferMemoryAllocation);
-
-    m_vkStagingBuffer               = VK_NULL_HANDLE;
-    m_StagingBufferMemoryAllocation = {};
-  }
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer), std::move(m_StagingBufferMemoryAllocation));
 
   // Prevent releasing the native object.
   if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkImage, m_ImageMemoryAllocation);
-
-    m_vkImage               = VK_NULL_HANDLE;
-    m_ImageMemoryAllocation = {};
+    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), std::move(m_ImageMemoryAllocation));
   }
 }
 

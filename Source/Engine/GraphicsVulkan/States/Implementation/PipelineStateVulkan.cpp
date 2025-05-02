@@ -24,24 +24,9 @@ xiiGALPipelineStateVulkan::~xiiGALPipelineStateVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  if (m_vkPipelineCache != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipelineCache);
-
-    m_vkPipelineCache = nullptr;
-  }
-  if (m_vkPipeline != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipeline);
-
-    m_vkPipeline = VK_NULL_HANDLE;
-  }
-  if (m_vkPipelineLayout != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkPipelineLayout);
-
-    m_vkPipelineLayout = VK_NULL_HANDLE;
-  }
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkPipelineCache));
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkPipeline));
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkPipelineLayout));
 }
 
 xiiResult xiiGALPipelineStateVulkan::InitPlatform()

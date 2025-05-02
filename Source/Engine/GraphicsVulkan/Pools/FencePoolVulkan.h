@@ -9,7 +9,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALFencePoolVulkan
 public:
   vk::Fence RequestFence();
 
-  void ReclaimFence(vk::Fence& vkFence);
+  void ReclaimFence(vk::Fence&& vkFence);
 
 private:
   friend class xiiMemoryUtils;

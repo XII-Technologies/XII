@@ -21,9 +21,9 @@ public:
     vk::Fence m_vkFence;
   };
 
- [[nodiscard]] XII_ALWAYS_INLINE vk::Semaphore GetVulkanTimelineSemaphore() const { return m_vkTimelineSemaphore; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Semaphore GetVulkanTimelineSemaphore() const { return m_vkTimelineSemaphore; }
 
- [[nodiscard]] XII_ALWAYS_INLINE bool IsTimelineSemaphore() const { return m_vkTimelineSemaphore != nullptr; }
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsTimelineSemaphore() const { return m_vkTimelineSemaphore != nullptr; }
 
   virtual xiiUInt64 GetCompletedValue() override final;
 

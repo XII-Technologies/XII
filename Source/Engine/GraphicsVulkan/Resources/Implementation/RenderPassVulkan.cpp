@@ -17,9 +17,7 @@ xiiGALRenderPassVulkan::~xiiGALRenderPassVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkRenderPass);
-
-  m_vkRenderPass = VK_NULL_HANDLE;
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkRenderPass));
 }
 
 xiiResult xiiGALRenderPassVulkan::InitPlatform()
@@ -70,7 +68,7 @@ xiiResult xiiGALRenderPassVulkan::InitPlatform()
 void xiiGALRenderPassVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp;
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkRenderPass, sName.GetData(tmp));
 }

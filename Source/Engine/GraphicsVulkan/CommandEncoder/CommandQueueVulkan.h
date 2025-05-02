@@ -48,7 +48,6 @@ protected:
 private:
   struct InternalQueueFence
   {
-
   };
 
   xiiGALQueueInformationVulkan                                   m_QueueInformation;

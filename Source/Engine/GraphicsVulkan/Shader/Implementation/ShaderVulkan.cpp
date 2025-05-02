@@ -18,7 +18,7 @@ xiiGALShaderVulkan::~xiiGALShaderVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkShaderModule);
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkShaderModule));
 }
 
 xiiResult xiiGALShaderVulkan::InitPlatform()

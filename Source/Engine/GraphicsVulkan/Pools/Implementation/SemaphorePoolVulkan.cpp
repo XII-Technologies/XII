@@ -49,7 +49,7 @@ vk::Semaphore xiiGALSemaphorePoolVulkan::RequestSemaphore()
   return vkSemaphore;
 }
 
-void xiiGALSemaphorePoolVulkan::ReclaimSemaphore(vk::Semaphore& vkSemaphore)
+void xiiGALSemaphorePoolVulkan::ReclaimSemaphore(vk::Semaphore&& vkSemaphore)
 {
   XII_LOCK(m_PoolMutex);
 

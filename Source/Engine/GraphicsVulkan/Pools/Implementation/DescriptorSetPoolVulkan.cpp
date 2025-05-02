@@ -87,7 +87,7 @@ vk::DescriptorSet xiiGALDescriptorSetPoolVulkan::RequestDescriptorSet(vk::Descri
   return vkDescriptorSet;
 }
 
-void xiiGALDescriptorSetPoolVulkan::ReclaimDescriptorPool(vk::DescriptorPool vkDescriptorPool)
+void xiiGALDescriptorSetPoolVulkan::ReclaimDescriptorPool(vk::DescriptorPool&& vkDescriptorPool)
 {
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
 

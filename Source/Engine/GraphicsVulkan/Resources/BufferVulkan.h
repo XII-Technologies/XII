@@ -21,10 +21,10 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer    GetVulkanBuffer() const { return m_vkBuffer; }
   [[nodiscard]] XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
 
-  [[nodiscard]]  vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
+  [[nodiscard]] vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
 
-  void                   SetAccessFlags(vk::AccessFlags accessFlags);
-  [[nodiscard]] vk::AccessFlags GetAccessFlags() const;
+  void                                 SetAccessFlags(vk::AccessFlags accessFlags);
+  [[nodiscard]] vk::AccessFlags        GetAccessFlags() const;
   [[nodiscard]] XII_ALWAYS_INLINE bool CheckAccessFlags(vk::AccessFlags accessFlags) const { return (GetAccessFlags() & accessFlags) == accessFlags; }
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiEnum<xiiGALValueType> GetIndexFormat() const { return m_IndexFormat; };

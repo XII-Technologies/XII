@@ -53,7 +53,7 @@ xiiGALPipelineResourceSignatureVulkan::~xiiGALPipelineResourceSignatureVulkan()
   {
     if (m_DescriptorSetLayouts[i] != VK_NULL_HANDLE)
     {
-      pDeviceVulkan->SafeReleaseDeviceObject(m_DescriptorSetLayouts[i]);
+      pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_DescriptorSetLayouts[i]));
 
       m_DescriptorSetLayouts[i] = VK_NULL_HANDLE;
     }
@@ -73,7 +73,7 @@ xiiGALPipelineResourceSignatureVulkan::~xiiGALPipelineResourceSignatureVulkan()
 xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   // First build set layout and resource binding description.
   for (xiiUInt32 uiResource = 0; uiResource < m_Description.m_Resources.GetCount(); ++uiResource)
@@ -173,7 +173,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp(sName);
+  xiiStringBuilder                 tmp(sName);
 
   for (xiiUInt32 i = 0; i < m_DescriptorSetLayouts.GetCount(); ++i)
   {

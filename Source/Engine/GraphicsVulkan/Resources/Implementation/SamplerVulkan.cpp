@@ -17,12 +17,7 @@ xiiGALSamplerVulkan::~xiiGALSamplerVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  if (m_vkSampler != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkSampler);
-
-    m_vkSampler = VK_NULL_HANDLE;
-  }
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkSampler));
 }
 
 xiiResult xiiGALSamplerVulkan::InitPlatform()

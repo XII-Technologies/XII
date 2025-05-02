@@ -9,7 +9,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALSemaphorePoolVulkan
 public:
   vk::Semaphore RequestSemaphore();
 
-  void ReclaimSemaphore(vk::Semaphore& vkSemaphore);
+  void ReclaimSemaphore(vk::Semaphore&& vkSemaphore);
 
 private:
   friend class xiiMemoryUtils;

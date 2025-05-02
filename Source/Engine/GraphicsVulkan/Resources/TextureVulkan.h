@@ -26,7 +26,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE bool IsNativeObjectWrapper() const { return m_Description.m_pExisitingNativeObject != nullptr; }
 
   [[nodiscard]] vk::ImageLayout GetVulkanImageLayout() const;
-  void            SetVulkanImageLayout(vk::ImageLayout vkImageLayout);
+  void                          SetVulkanImageLayout(vk::ImageLayout vkImageLayout);
 
   // For non-compressed color format buffer, the offset must be a multiple of the format's texel block size.
   // For compressed format buffer, the offset must be a multiple of the compressed texel block size in bytes.

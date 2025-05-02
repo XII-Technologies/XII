@@ -49,7 +49,7 @@ vk::Fence xiiGALFencePoolVulkan::RequestFence()
   return vkFence;
 }
 
-void xiiGALFencePoolVulkan::ReclaimFence(vk::Fence& vkFence)
+void xiiGALFencePoolVulkan::ReclaimFence(vk::Fence&& vkFence)
 {
   XII_LOCK(m_PoolMutex);
 

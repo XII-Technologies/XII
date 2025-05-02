@@ -18,16 +18,14 @@ xiiGALBufferViewVulkan::~xiiGALBufferViewVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkBufferView);
-
-  m_vkBufferView = VK_NULL_HANDLE;
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBufferView));
 }
 
 xiiResult xiiGALBufferViewVulkan::InitPlatform()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan     = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan    = m_pBuffer.Downcast<xiiGALBufferVulkan>();
-  const auto&                       bufferDescription = pBufferVulkan->GetDescription();
+  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan     = m_pBuffer.Downcast<xiiGALBufferVulkan>();
+  const auto&                      bufferDescription = pBufferVulkan->GetDescription();
 
   if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted)
   {
@@ -57,7 +55,7 @@ xiiResult xiiGALBufferViewVulkan::InitPlatform()
 void xiiGALBufferViewVulkan::SetDebugNamePlatform(xiiStringView sName)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiStringBuilder    tmp;
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkBufferView, sName.GetData(tmp));
 }

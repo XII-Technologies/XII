@@ -556,7 +556,7 @@ void xiiGALCommandListVulkan::ResetPlatform()
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  pDeviceVulkan->ReclaimCommandBufferLater(std::move(m_vkCommandBuffer), m_pCommandBufferPool);
+  pDeviceVulkan->ReclaimCommandBufferLater(m_pCommandBufferPool, std::move(m_vkCommandBuffer));
 
   InvalidateState();
 

@@ -10,7 +10,7 @@
     if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                       \
     {                                                                                                                                                                             \
       xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
-      return VK_NULL_HANDLE;                                                                                                                                                                     \
+      return VK_NULL_HANDLE;                                                                                                                                                      \
     }                                                                                                                                                                             \
   } while (false)
 
