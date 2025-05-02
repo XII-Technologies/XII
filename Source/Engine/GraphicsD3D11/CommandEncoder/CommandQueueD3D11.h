@@ -34,7 +34,7 @@ protected:
   virtual ~xiiGALCommandQueueD3D11();
 
 private:
-  ID3D11DeviceContext4*                m_pImmediateContext = nullptr;
+  ID3D11DeviceContext4*                            m_pImmediateContext = nullptr;
   xiiInternal::NewInstance<xiiGALCommandListD3D11> m_pCommandListD3D11 = {nullptr, nullptr};
 
   // A value that will be signaled by the command queue next.

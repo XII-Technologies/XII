@@ -19,7 +19,7 @@ xiiResult xiiGALTextureNull::InitPlatform(const xiiGALTextureData* pInitialData)
 
 xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureNull::CreateViewPlatform(const xiiGALTextureViewCreationDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceNull>                 pDeviceNull     = m_pDevice.Downcast<xiiGALDeviceNull>();
+  xiiSharedPtr<xiiGALDeviceNull>                  pDeviceNull      = m_pDevice.Downcast<xiiGALDeviceNull>();
   xiiInternal::NewInstance<xiiGALTextureViewNull> pTextureViewNull = XII_NEW(pDeviceNull->GetAllocator(), xiiGALTextureViewNull, pDeviceNull, xiiSharedPtr<xiiGALTexture>(this, pDeviceNull->GetAllocator()), description);
 
   if (pTextureViewNull->InitPlatform().Succeeded())

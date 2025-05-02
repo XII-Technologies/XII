@@ -249,7 +249,7 @@ void xiiGALTextureD3D11::InitializeSparseTextureProperties()
     return;
 
   xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11  = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  ID3D11Device2*     pD3D11Device2 = nullptr;
+  ID3D11Device2*                  pD3D11Device2 = nullptr;
 
   if (FAILED(pDeviceD3D11->GetD3D11Device()->QueryInterface(__uuidof(ID3D11Device2), (void**)&pD3D11Device2)))
   {

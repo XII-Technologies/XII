@@ -1,8 +1,8 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
 #include <GraphicsNull/Device/DeviceNull.h>
-#include <GraphicsNull/Shader/ShaderNull.h>
 #include <GraphicsNull/Shader/InputLayoutNull.h>
+#include <GraphicsNull/Shader/ShaderNull.h>
 
 xiiGALShaderNull::xiiGALShaderNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALShader(pDeviceNull, creationDescription)

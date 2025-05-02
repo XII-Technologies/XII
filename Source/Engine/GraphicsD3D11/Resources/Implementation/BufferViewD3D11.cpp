@@ -181,7 +181,7 @@ xiiGALSparseBufferProperties xiiGALBufferD3D11::GetSparseProperties() const
   XII_ASSERT_DEV(m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse, "xiiGALBuffer::GetSparseProperties() should only be used for sparse buffer.");
 
   xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11   = m_pDevice.Downcast<xiiGALDeviceD3D11>();
-  ID3D11Device2*     pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
+  ID3D11Device2*                  pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
 
   xiiUInt32        uiTileCountForEntireResource      = 0;
   D3D11_TILE_SHAPE standardTileShapeForNonPackedMips = {};

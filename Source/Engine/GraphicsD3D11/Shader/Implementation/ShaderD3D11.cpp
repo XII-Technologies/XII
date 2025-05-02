@@ -1,8 +1,8 @@
 #include <GraphicsD3D11/GraphicsD3D11PCH.h>
 
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
-#include <GraphicsD3D11/Shader/ShaderD3D11.h>
 #include <GraphicsD3D11/Shader/InputLayoutD3D11.h>
+#include <GraphicsD3D11/Shader/ShaderD3D11.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderD3D11, 1, xiiRTTINoAllocator)

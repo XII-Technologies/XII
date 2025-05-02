@@ -20,7 +20,6 @@ private:
   virtual ~xiiGALDeviceNull();
 
 public:
-
   [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
 
 public:
