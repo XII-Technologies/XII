@@ -79,13 +79,6 @@ vk::CommandBuffer xiiGALCommandBufferPoolVulkan::RequestCommandBuffer(xiiStringV
     XII_GAL_POOL_CHECK_AND_RETURN(m_pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &vkCommandBuffer, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
 
-  vk::CommandBufferBeginInfo vkCommandBufferBeginInfo = {};
-  vkCommandBufferBeginInfo.pNext                      = nullptr;
-  vkCommandBufferBeginInfo.flags                      = vk::CommandBufferUsageFlagBits::eOneTimeSubmit; // Each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
-  vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr;                                        // Ignored for a primary command buffer.
-
-  XII_GAL_POOL_CHECK_AND_RETURN(vkCommandBuffer.begin(&vkCommandBufferBeginInfo, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   ++m_BufferCounter;
 #endif
