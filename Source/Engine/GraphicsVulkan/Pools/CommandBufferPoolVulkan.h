@@ -19,6 +19,8 @@ private:
   xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALQueueInformationVulkan& queueInformation, vk::CommandPoolCreateFlags vkCommandPoolCreateFlags);
   ~xiiGALCommandBufferPoolVulkan();
 
+  void SetDebugName(xiiStringView sName);
+
   xiiGALDeviceVulkan* m_pDeviceVulkan;
 
   xiiMutex                    m_PoolMutex;

@@ -187,7 +187,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     {
       if (auto pGraphicsQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
       {
-        if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueue->BeginCommandList()))
+        if (auto pCommandListVulkan = pGraphicsQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
         {
           // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
           auto stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pInitialData->m_uiDataSize);

@@ -30,6 +30,7 @@
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
+#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 
 #include <bitset>
 
@@ -1261,6 +1262,25 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
   safeReclaim.m_pObject      = pObject;
 }
 
+void xiiGALDeviceVulkan::ReclaimCommandBufferLater(vk::CommandBuffer&& vkCommandBuffer, xiiGALCommandBufferPoolVulkan* pCommandBufferPool)
+{
+  auto& perFrameData = m_PerFrameData.ExpandAndGetRef();
+
+  perFrameData.m_uiFenceValue = m_pGraphicsCommandQueue->GetCompletedFenceValue();
+  if (m_pComputeCommandQueue)
+  {
+    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pComputeCommandQueue->GetCompletedFenceValue());
+  }
+  if (m_pTransferCommandQueue)
+  {
+    perFrameData.m_uiFenceValue = xiiMath::Min(perFrameData.m_uiFenceValue, m_pTransferCommandQueue->GetCompletedFenceValue());
+  }
+
+  auto& safeReclaim = perFrameData.m_SafeReclaimCommandBuffers.ExpandAndGetRef();
+  safeReclaim.m_pCommandBufferPool = pCommandBufferPool;
+  safeReclaim.m_vkCommandBuffer    = std::move(vkCommandBuffer);
+}
+
 void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
 {
   while (!m_PerFrameData.IsEmpty() && (m_PerFrameData.PeekFront().m_uiFenceValue <= uiCompletedValue))
@@ -1402,6 +1422,11 @@ void xiiGALDeviceVulkan::ReleasePerFrameResources(xiiUInt64 uiCompletedValue)
 
           XII_DEFAULT_CASE_NOT_IMPLEMENTED;
       }
+    }
+
+    for (SafeReclaimCommandBuffer& safeReclaimCommandBuffer : perFrameData.m_SafeReclaimCommandBuffers)
+    {
+      safeReclaimCommandBuffer.m_pCommandBufferPool->ReclaimCommandBuffer(std::move(safeReclaimCommandBuffer.m_vkCommandBuffer));
     }
 
     perFrameData.m_SafeReleaseDescriptions.Clear();

@@ -3,6 +3,17 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 
+#define XII_GAL_POOL_CHECK_AND_RETURN(code)                                                                                                                                       \
+  do                                                                                                                                                                              \
+  {                                                                                                                                                                               \
+    auto s = (code);                                                                                                                                                              \
+    if (static_cast<vk::Result>(s) != vk::Result::eSuccess)                                                                                                                       \
+    {                                                                                                                                                                             \
+      xiiLog::Error("Vulkan call '{0}' failed with: {1} in {2}:{3}", XII_PP_STRINGIFY(code), vk::to_string(static_cast<vk::Result>(s)).data(), XII_SOURCE_FILE, XII_SOURCE_LINE); \
+      return VK_NULL_HANDLE;                                                                                                                                                                     \
+    }                                                                                                                                                                             \
+  } while (false)
+
 xiiGALCommandBufferPoolVulkan::xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALQueueInformationVulkan& queueInformation, vk::CommandPoolCreateFlags vkCommandPoolCreateFlags) :
   m_pDeviceVulkan(pDeviceVulkan), m_vkSupportedStageFlags(pDeviceVulkan->GetVulkanLogicalDeviceSupportedStagesFlags(queueInformation.m_uiQueueFamilyIndex)), m_vkSupportedAccessFlags(pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(queueInformation.m_uiQueueFamilyIndex))
 {
@@ -32,6 +43,12 @@ xiiGALCommandBufferPoolVulkan::~xiiGALCommandBufferPoolVulkan()
   vkLogicalDevice.destroyCommandPool(m_vkCommandPool, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
+void xiiGALCommandBufferPoolVulkan::SetDebugName(xiiStringView sName)
+{
+  xiiStringBuilder tmp;
+  m_pDeviceVulkan->SetVulkanObjectDebugName(m_vkCommandPool, sName.GetData(tmp));
+}
+
 vk::CommandBuffer xiiGALCommandBufferPoolVulkan::RequestCommandBuffer(xiiStringView sDebugName)
 {
   vk::CommandBuffer vkCommandBuffer = VK_NULL_HANDLE;
@@ -59,7 +76,7 @@ vk::CommandBuffer xiiGALCommandBufferPoolVulkan::RequestCommandBuffer(xiiStringV
     vkCommandBufferAllocateInfo.level                         = vk::CommandBufferLevel::ePrimary;
     vkCommandBufferAllocateInfo.commandBufferCount            = 1U;
 
-    VK_ASSERT_DEV(m_pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &vkCommandBuffer, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    XII_GAL_POOL_CHECK_AND_RETURN(m_pDeviceVulkan->GetVulkanLogicalDevice().allocateCommandBuffers(&vkCommandBufferAllocateInfo, &vkCommandBuffer, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
 
   vk::CommandBufferBeginInfo vkCommandBufferBeginInfo = {};
@@ -67,11 +84,17 @@ vk::CommandBuffer xiiGALCommandBufferPoolVulkan::RequestCommandBuffer(xiiStringV
   vkCommandBufferBeginInfo.flags                      = vk::CommandBufferUsageFlagBits::eOneTimeSubmit; // Each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
   vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr;                                        // Ignored for a primary command buffer.
 
-  VK_ASSERT_DEV(vkCommandBuffer.begin(&vkCommandBufferBeginInfo, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  XII_GAL_POOL_CHECK_AND_RETURN(vkCommandBuffer.begin(&vkCommandBufferBeginInfo, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   ++m_BufferCounter;
 #endif
+
+  if (!sDebugName.IsEmpty())
+  {
+    xiiStringBuilder tmp;
+    m_pDeviceVulkan->SetVulkanObjectDebugName(vkCommandBuffer, sDebugName.GetData(tmp));
+  }
 
   return vkCommandBuffer;
 }
@@ -88,3 +111,5 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCommandBuffer(vk::CommandBuffer&& vkC
   --m_BufferCounter;
 #endif
 }
+
+#undef XII_GAL_POOL_CHECK_AND_RETURN

@@ -2,8 +2,6 @@
 
 #include <GraphicsNull/GraphicsNullDLL.h>
 
-#include <Foundation/Types/UniquePtr.h>
-
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 class XII_GRAPHICSNULL_DLL xiiGALCommandQueueNull final : public xiiGALCommandQueue

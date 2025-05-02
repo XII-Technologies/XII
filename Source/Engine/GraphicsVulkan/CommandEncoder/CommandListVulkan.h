@@ -129,7 +129,6 @@ protected:
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
-  void         ResetInternal();
 
   virtual xiiUInt64 SubmitPlatform() override final;
 

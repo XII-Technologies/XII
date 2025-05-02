@@ -88,8 +88,6 @@ xiiUInt64 xiiGALCommandQueueD3D11::SubmitCommandList(xiiGALCommandList* pCommand
   // Signal the fence. This must be done atomically with command list submission.
   m_pImmediateContext->Signal(m_pD3D11DFence, uiFenceValue);
 
-  pCommandList->Reset();
-
   return uiFenceValue;
 }
 

@@ -27,10 +27,8 @@ xiiSharedPtr<xiiGALCommandList> xiiGALCommandQueueNull::BeginCommandList()
 
 xiiUInt64 xiiGALCommandQueueNull::Submit(xiiGALCommandList* pCommandList)
 {
-  if (pCommandList)
-  {
-    pCommandList->Reset();
-  }
+  XII_IGNORE_UNUSED(pCommandList);
+
   return 0U;
 }
 

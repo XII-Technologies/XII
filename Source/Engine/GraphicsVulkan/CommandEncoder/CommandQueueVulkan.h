@@ -29,9 +29,9 @@ public:
 
   virtual xiiSharedPtr<xiiGALCommandList> BeginCommandList() override final;
 
-private:
-  vk::CommandBuffer RequestCommandBuffer();
+  xiiGALCommandBufferPoolVulkan* GetCommandBufferPool();
 
+private:
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
 
 protected:

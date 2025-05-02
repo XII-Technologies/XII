@@ -506,21 +506,15 @@ void xiiGALCommandListVulkan::DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFenc
 }
 
 xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription), m_pCommandBufferPool(pCommandBufferPool)
+  xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription), m_pCommandBufferPool(pCommandBufferPool), m_vkCommandBuffer(m_pCommandBufferPool->RequestCommandBuffer())
 {
-  m_vkCommandBuffer = pCommandBufferPool->RequestCommandBuffer();
-
   m_pDynamicBufferPoolVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALDynamicBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
   m_pUploadStagingBufferPool = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALStagingBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*        pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
-
-  m_pDynamicBufferPoolVulkan.Clear();
-  m_pUploadStagingBufferPool.Clear();
+  Reset();
 }
 
 void xiiGALCommandListVulkan::BeginPlatform()
@@ -560,17 +554,9 @@ void xiiGALCommandListVulkan::ResetPlatform()
 {
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue());
-  pCommandQueueVulkan->ResetCommandList(this);
-}
-
-void xiiGALCommandListVulkan::ResetInternal()
-{
-  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  m_vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  pDeviceVulkan->ReclaimCommandBufferLater(std::move(m_vkCommandBuffer), m_pCommandBufferPool);
 
   InvalidateState();
 

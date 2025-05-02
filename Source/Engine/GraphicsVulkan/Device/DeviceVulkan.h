@@ -124,6 +124,8 @@ public:
     ReclaimLaterInternal(vkObject.objectType, (void*)vkObject);
   }
 
+  void ReclaimCommandBufferLater(vk::CommandBuffer&& vkCommandBuffer, xiiGALCommandBufferPoolVulkan* pCommandBufferPool);
+
   // Internal objects retrieval.
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
@@ -261,12 +263,21 @@ private:
     void*          m_pObject      = nullptr;
   };
 
+  struct SafeReclaimCommandBuffer
+  {
+    XII_DECLARE_POD_TYPE();
+
+    xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool = nullptr;
+    vk::CommandBuffer              m_vkCommandBuffer    = VK_NULL_HANDLE;
+  };
+
   struct PerFrameData
   {
     xiiUInt64 m_uiFenceValue = xiiInvalidIndex;
 
-    xiiDeque<SafeReleaseDescription> m_SafeReleaseDescriptions;
-    xiiDeque<SafeReclaimResource>    m_SafeReclaimResources;
+    xiiDeque<SafeReleaseDescription>   m_SafeReleaseDescriptions;
+    xiiDeque<SafeReclaimResource>      m_SafeReclaimResources;
+    xiiDeque<SafeReclaimCommandBuffer> m_SafeReclaimCommandBuffers;
   };
 
   // Vulkan Instance Information.

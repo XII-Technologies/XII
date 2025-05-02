@@ -8,9 +8,9 @@ class XII_GRAPHICSNULL_DLL xiiGALCommandListNull final : public xiiGALCommandLis
 {
 public:
 protected:
-  friend class xiiGALCommandQueueNull;
-  friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceNull;
+  friend class xiiGALCommandQueueNull;
 
   xiiGALCommandListNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, xiiGALCommandQueueNull* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
 
