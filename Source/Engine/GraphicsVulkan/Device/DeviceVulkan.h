@@ -191,6 +191,8 @@ public:
     return nullptr;
   }
 
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetFrameNumber() const { return m_uiFrameCounter; }
+
   // These functions are implemented by a graphics API implementation.
 protected:
   virtual xiiResult InitializePlatform() override final;
@@ -227,8 +229,6 @@ private:
     DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan);
     ~DeferredDeletionQueue();
 
-    void EndFrame(xiiUInt64 uiFrameNumber);
-
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject);
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
 
@@ -244,7 +244,7 @@ private:
   private:
     struct DeletionEntry
     {
-      xiiUInt64 m_uiFrameNumber = 0ULL;
+      xiiUInt64 m_uiFenceValue = 0ULL;
 
       vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
       void*          m_pObject       = VK_NULL_HANDLE;
@@ -279,9 +279,6 @@ private:
     xiiGALDeviceVulkan*     m_pDeviceVulkan;
     xiiDeque<DeletionEntry> m_DeletionQueue;
     xiiMutex                m_DeletionQueueMutex;
-
-    xiiUInt64                                  m_uiCurrentDeletionFrameNumber = 0ULL;
-    xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan> m_pCpuWaitOnlyFence;
   };
 
   void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);

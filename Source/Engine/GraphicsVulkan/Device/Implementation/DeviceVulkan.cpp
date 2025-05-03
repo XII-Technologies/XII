@@ -1277,7 +1277,6 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapCha
     pSwapChain->Present();
   }
 
-  m_pDeferredDeletionQueue->EndFrame(m_uiFrameCounter);
   m_pDeferredDeletionQueue->ReleaseResources();
 }
 
@@ -2687,26 +2686,9 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArra
 xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan) :
   m_pDeviceVulkan(pDeviceVulkan)
 {
-  m_pCpuWaitOnlyFence = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCpuWaitOnlyFenceVulkan, pDeviceVulkan);
 }
 
-xiiGALDeviceVulkan::DeferredDeletionQueue::~DeferredDeletionQueue()
-{
-  m_pCpuWaitOnlyFence.Clear();
-}
-
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EndFrame(xiiUInt64 uiFrameNumber)
-{
-  auto& syncPoint = m_pCpuWaitOnlyFence->CreateSyncPoint(++m_uiCurrentDeletionFrameNumber);
-
-  if (auto pCommandQueue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
-  {
-    if (auto pCommandListVulkan = pCommandQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
-    {
-      pCommandListVulkan->EnqueueSignal(syncPoint.m_vkFence, syncPoint.m_uiSyncPoint);
-    }
-  }
-}
+xiiGALDeviceVulkan::DeferredDeletionQueue::~DeferredDeletionQueue() = default;
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject)
 {
@@ -2716,7 +2698,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pObject                             = pObject;
 }
 
@@ -2729,7 +2711,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pObject                             = pObject;
   entry.m_VmaAllocation                       = vmaAllocation;
 }
@@ -2742,7 +2724,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALCommandBuf
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pObject                             = pCommandBufferPool;
   entry.m_vkCommandBuffer                     = vkCommandBuffer;
 }
@@ -2755,7 +2737,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphoreP
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pSemaphorePool                      = pSemaphorePool;
   entry.m_vkSemaphore                         = vkSemaphore;
 }
@@ -2768,7 +2750,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALDescriptor
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pDescriptorSetPool                  = pDescriptorSetPool;
   entry.m_vkDescriptorPool                    = vkDescriptorPool;
 }
@@ -2781,7 +2763,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALFencePoolV
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pFencePool                          = pFencePool;
   entry.m_vkFence                             = vkFence;
 }
@@ -2814,18 +2796,14 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
   }
   else
   {
-    // Wait for the fence to be signaled.
-    // The fence is signaled when the GPU has completed all work that was submitted before the fence was created.
-    m_pCpuWaitOnlyFence->Wait(m_uiCurrentDeletionFrameNumber);
-
     XII_LOCK(m_DeletionQueueMutex);
 
     // Release only resources that are not in use.
     for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
     {
-      const xiiUInt64 uiCompletedFenceValue = m_pCpuWaitOnlyFence->GetCompletedValue();
+      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false)->GetCompletedFenceValue();
 
-      if (it->m_uiFrameNumber <= uiCompletedFenceValue)
+      if (it->m_uiFenceValue <= uiCompletedFenceValue)
       {
         if (it->m_pCommandBufferPool != nullptr)
         {
