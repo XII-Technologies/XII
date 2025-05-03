@@ -110,6 +110,7 @@ class xiiGALQueryPoolVulkan;
 class xiiGALDescriptorSetPoolVulkan;
 class xiiGALStagingBufferPoolVulkan;
 class xiiGALCommandBufferPoolVulkan;
+class xiiGALCpuWaitOnlyFenceVulkan;
 
 struct xiiGALQueueInformationVulkan
 {

@@ -14,6 +14,7 @@
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
+#include <GraphicsVulkan/Resources/FenceVulkan.h>
 
 #define XII_VERIFY_COMMAND_LIST(expression, ...) \
   do                                             \

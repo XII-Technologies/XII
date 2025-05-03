@@ -5,7 +5,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/FenceVulkan.h>
+#include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
 {
@@ -46,17 +46,13 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 private:
-  struct InternalQueueFence
-  {
-  };
-
   xiiGALQueueInformationVulkan                                   m_QueueInformation;
   xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_CommandBufferPool;
 
   vk::PipelineStageFlags m_vkSupportedStageFlags;
   vk::AccessFlags        m_vkSupportedAccessFlags;
 
-  xiiSharedPtr<xiiGALFenceVulkan>  m_pQueueFence;
-  std::atomic<xiiUInt64>           m_uiNextFenceValue = 1U;
-  xiiGALFenceVulkan::SyncPointData m_LastSyncPoint;
+  xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan>  m_pQueueFence;
+  std::atomic<xiiUInt64>                      m_uiNextFenceValue = 1U;
+  xiiGALCpuWaitOnlyFenceVulkan::SyncPointData m_LastSyncPoint;
 };

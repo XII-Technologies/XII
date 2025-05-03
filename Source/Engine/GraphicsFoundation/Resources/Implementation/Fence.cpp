@@ -41,6 +41,8 @@ void xiiGALFence::ValidateFenceSignal(xiiUInt64 uiValue)
   {
     // If exchange fails, uiCompletedValue will hold the actual value of m_LastCompletedFenceValue.
   }
+#else
+  XII_IGNORE_UNUSED(uiValue);
 #endif
 }
 
@@ -53,6 +55,8 @@ void xiiGALFence::ValidateDeviceWaitForFence(xiiUInt64 uiValue)
 
     XII_ASSERT_DEV(uiValue <= uiEnqueuedValue, "Can not wait for value {} that is greater than the last enqueued for signal value ({}). This is not supported when NativeFence feature is disabled.", uiValue, uiEnqueuedValue);
   }
+#else
+  XII_IGNORE_UNUSED(uiValue);
 #endif
 }
 
