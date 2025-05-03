@@ -2706,7 +2706,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 {
   XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid VMA Allocation.");
   XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
-  XII_ASSERT_DEV(vmaAllocation != nullptr, "VMA allocation must be valid.");
+  XII_ASSERT_DEV(vmaAllocation != VK_NULL_HANDLE, "VMA allocation must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
@@ -2725,7 +2725,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALCommandBuf
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
   entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
-  entry.m_pObject                             = pCommandBufferPool;
+  entry.m_pCommandBufferPool                  = pCommandBufferPool;
   entry.m_vkCommandBuffer                     = vkCommandBuffer;
 }
 
@@ -2783,6 +2783,18 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       {
         DestroyCommandBuffer(entry.m_pCommandBufferPool, std::move(entry.m_vkCommandBuffer));
       }
+      else if (entry.m_pSemaphorePool != nullptr)
+      {
+        DestroySemaphore(entry.m_pSemaphorePool, std::move(entry.m_vkSemaphore));
+      }
+      else if (entry.m_pDescriptorSetPool != nullptr)
+      {
+        DestroyDescriptorSetPool(entry.m_pDescriptorSetPool, std::move(entry.m_vkDescriptorPool));
+      }
+      else if (entry.m_pFencePool != nullptr)
+      {
+        DestroyFence(entry.m_pFencePool, std::move(entry.m_vkFence));
+      }
       else if (entry.m_VmaAllocation != VK_NULL_HANDLE)
       {
         DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VmaAllocation);
@@ -2808,6 +2820,18 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
         if (it->m_pCommandBufferPool != nullptr)
         {
           DestroyCommandBuffer(it->m_pCommandBufferPool, std::move(it->m_vkCommandBuffer));
+        }
+        else if (it->m_pSemaphorePool != nullptr)
+        {
+          DestroySemaphore(it->m_pSemaphorePool, std::move(it->m_vkSemaphore));
+        }
+        else if (it->m_pDescriptorSetPool != nullptr)
+        {
+          DestroyDescriptorSetPool(it->m_pDescriptorSetPool, std::move(it->m_vkDescriptorPool));
+        }
+        else if (it->m_pFencePool != nullptr)
+        {
+          DestroyFence(it->m_pFencePool, std::move(it->m_vkFence));
         }
         else if (it->m_VmaAllocation != VK_NULL_HANDLE)
         {
@@ -2963,7 +2987,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyFence(xiiGALFencePoolVulk
   pFencePool->ReclaimFence(std::move(vkReclaimFence));
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyDescriptorPool(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool&& vkDescriptorPool)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyDescriptorSetPool(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool&& vkDescriptorPool)
 {
   pDescriptorSetPool->ReclaimDescriptorPool(std::move(vkDescriptorPool));
 }
