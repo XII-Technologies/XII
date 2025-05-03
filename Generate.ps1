@@ -68,20 +68,6 @@ if ($Target -eq "Win64vs2022") {
   $CMAKE_ARGS += "-B"
   $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2022x64"
 }
-elseif ($Target -eq "Uwp64vs2022") {
-
-  Write-Host "=== Generating Solution for Visual Studio 2022 x64 UWP ==="
-
-  $CMAKE_ARGS += "Visual Studio 17 2022"
-  $CMAKE_ARGS += "-A"
-  $CMAKE_ARGS += "x64"
-  $CMAKE_ARGS += "-B"
-  $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2022x64uwp"
-  $CMAKE_ARGS += "-DCMAKE_TOOLCHAIN_FILE=$PSScriptRoot\Source\BuildSystem\CMake\toolchain-winstore.cmake"
-
-  $CMAKE_ARGS += "-DXII_ENABLE_QT_SUPPORT:BOOL=OFF"
-  $CMAKE_ARGS += "-DXII_BUILD_FILTER='UwpProjects'"
-}
 else {
   throw "Unknown target '$Target'."
 }
