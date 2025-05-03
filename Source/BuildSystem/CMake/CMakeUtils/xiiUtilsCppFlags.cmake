@@ -247,6 +247,8 @@ function(xii_set_simd_build_flags TARGET_NAME)
       list(REMOVE_ITEM MSVC_OPTIONS "/fp:except")
       set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${MSVC_OPTIONS}")
 
+      get_property(XII_CMAKE_CPU_ID_FLAGS GLOBAL XII_CMAKE_CPU_ID_FLAGS)
+
       # For MSVC, you cannot mix multiple /arch options.
       # Instead, select the highest supported flag based on MSVC version.
       if(XII_DETECTED_MSVC_VER GREATER_EQUAL 1929)
