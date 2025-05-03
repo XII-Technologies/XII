@@ -498,6 +498,13 @@ void xiiGALCommandListVulkan::EnqueueSignal(xiiSharedPtr<xiiGALFence> pFence, xi
   m_SignalFences.PushBack(fenceInfo);
 }
 
+void xiiGALCommandListVulkan::EnqueueSignal(vk::Fence vkFence, xiiUInt64 uiValue)
+{
+  FenceInfo fenceInfo = {.m_vkFenceVulkan = vkFence, .m_uiWaitValue = uiValue};
+
+  m_SignalFences.PushBack(fenceInfo);
+}
+
 void xiiGALCommandListVulkan::DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
 {
   xiiSharedPtr<xiiGALFenceVulkan> pFenceVulkan = pFence.Downcast<xiiGALFenceVulkan>();

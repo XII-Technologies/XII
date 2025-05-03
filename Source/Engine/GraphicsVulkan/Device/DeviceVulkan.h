@@ -225,14 +225,17 @@ private:
   {
   public:
     DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan);
+    ~DeferredDeletionQueue();
 
-    void EnqueueResource(vk::Fence vkFence, vk::ObjectType vkObjectType, void* pObject);
-    void EnqueueResource(vk::Fence vkFence, vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+    void EndFrame(xiiUInt64 uiFrameNumber);
 
-    void EnqueueResource(vk::Fence vkFence, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer);
-    void EnqueueResource(vk::Fence vkFence, xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore);
-    void EnqueueResource(vk::Fence vkFence, xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool);
-    void EnqueueResource(vk::Fence vkFence, xiiGALFencePoolVulkan* pFencePool, vk::Fence vkReclaimFence);
+    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject);
+    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+
+    void EnqueueResource(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer);
+    void EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore);
+    void EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool);
+    void EnqueueResource(xiiGALFencePoolVulkan* pFencePool, vk::Fence vkFence);
 
     void ReleaseResources(bool bForceReleaseAll = false);
 
@@ -241,7 +244,8 @@ private:
   private:
     struct DeletionEntry
     {
-      vk::Fence      m_vkFence       = VK_NULL_HANDLE;
+      xiiUInt64 m_uiFrameNumber = 0ULL;
+
       vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
       void*          m_pObject       = VK_NULL_HANDLE;
       VmaAllocation  m_VmaAllocation = VK_NULL_HANDLE;
@@ -252,17 +256,15 @@ private:
       xiiGALSemaphorePoolVulkan* m_pSemaphorePool = nullptr;
       vk::Semaphore              m_vkSemaphore    = VK_NULL_HANDLE;
 
-      xiiGALFencePoolVulkan* m_pFencePool     = nullptr;
-      vk::Fence              m_vkReclaimFence = VK_NULL_HANDLE;
+      xiiGALFencePoolVulkan* m_pFencePool = nullptr;
+      vk::Fence              m_vkFence    = VK_NULL_HANDLE;
 
       xiiGALDescriptorSetPoolVulkan* m_pDescriptorSetPool = nullptr;
       vk::DescriptorPool             m_vkDescriptorPool   = VK_NULL_HANDLE;
 
       XII_ALWAYS_INLINE constexpr bool operator==(const DeletionEntry& rhs) const
       {
-        return m_vkObjectType == rhs.m_vkObjectType && m_pObject == rhs.m_pObject && m_VmaAllocation == rhs.m_VmaAllocation &&
-          m_vkCommandBuffer == rhs.m_vkCommandBuffer && m_vkFence == rhs.m_vkFence && m_vkSemaphore == rhs.m_vkSemaphore &&
-          m_vkReclaimFence == rhs.m_vkReclaimFence && m_vkDescriptorPool == rhs.m_vkDescriptorPool;
+        return m_vkObjectType == rhs.m_vkObjectType && m_pObject == rhs.m_pObject && m_VmaAllocation == rhs.m_VmaAllocation && m_vkCommandBuffer == rhs.m_vkCommandBuffer && m_vkFence == rhs.m_vkFence && m_vkSemaphore == rhs.m_vkSemaphore && m_vkDescriptorPool == rhs.m_vkDescriptorPool;
       }
     };
 
@@ -277,6 +279,9 @@ private:
     xiiGALDeviceVulkan*     m_pDeviceVulkan;
     xiiDeque<DeletionEntry> m_DeletionQueue;
     xiiMutex                m_DeletionQueueMutex;
+
+    xiiUInt64                                  m_uiCurrentDeletionFrameNumber = 0ULL;
+    xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan> m_pCpuWaitOnlyFence;
   };
 
   void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);

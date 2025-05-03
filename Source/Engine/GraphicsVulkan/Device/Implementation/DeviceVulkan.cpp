@@ -31,6 +31,7 @@
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
+#include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
 #include <bitset>
 
@@ -1226,11 +1227,11 @@ void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObject
 {
   if (vmaAllocation != VK_NULL_HANDLE)
   {
-    m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, vkObjectType, pObject, vmaAllocation);
+    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, vmaAllocation);
   }
   else
   {
-    m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, vkObjectType, pObject);
+    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject);
   }
 }
 
@@ -1240,17 +1241,17 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
   {
     case vk::ObjectType::eSemaphore:
     {
-      m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, m_pSemaphorePool.Borrow(), reinterpret_cast<vk::Semaphore&>(pObject));
+      m_pDeferredDeletionQueue->EnqueueResource(m_pSemaphorePool.Borrow(), reinterpret_cast<vk::Semaphore&>(pObject));
     }
     break;
     case vk::ObjectType::eFence:
     {
-      m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, m_pFencePool.Borrow(), reinterpret_cast<vk::Fence&>(pObject));
+      m_pDeferredDeletionQueue->EnqueueResource(m_pFencePool.Borrow(), reinterpret_cast<vk::Fence&>(pObject));
     }
     break;
     case vk::ObjectType::eDescriptorPool:
     {
-      m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, m_pDescriptorSetPool.Borrow(), reinterpret_cast<vk::DescriptorPool&>(pObject));
+      m_pDeferredDeletionQueue->EnqueueResource(m_pDescriptorSetPool.Borrow(), reinterpret_cast<vk::DescriptorPool&>(pObject));
     }
     break;
 
@@ -1260,7 +1261,7 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
 
 void xiiGALDeviceVulkan::ReclaimCommandBufferLater(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer)
 {
-  m_pDeferredDeletionQueue->EnqueueResource(vk::Fence{}, pCommandBufferPool, vkCommandBuffer);
+  m_pDeferredDeletionQueue->EnqueueResource(pCommandBufferPool, vkCommandBuffer);
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains, const xiiUInt64 uiRenderFrame)
@@ -1276,6 +1277,7 @@ void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapCha
     pSwapChain->Present();
   }
 
+  m_pDeferredDeletionQueue->EndFrame(m_uiFrameCounter);
   m_pDeferredDeletionQueue->ReleaseResources();
 }
 
@@ -2685,24 +2687,41 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArra
 xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan) :
   m_pDeviceVulkan(pDeviceVulkan)
 {
+  m_pCpuWaitOnlyFence = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCpuWaitOnlyFenceVulkan, pDeviceVulkan);
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, vk::ObjectType vkObjectType, void* pObject)
+xiiGALDeviceVulkan::DeferredDeletionQueue::~DeferredDeletionQueue()
 {
-  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
+  m_pCpuWaitOnlyFence.Clear();
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EndFrame(xiiUInt64 uiFrameNumber)
+{
+  auto& syncPoint = m_pCpuWaitOnlyFence->CreateSyncPoint(++m_uiCurrentDeletionFrameNumber);
+
+  if (auto pCommandQueue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
+  {
+    if (auto pCommandListVulkan = pCommandQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
+    {
+      pCommandListVulkan->EnqueueSignal(syncPoint.m_vkFence, syncPoint.m_uiSyncPoint);
+    }
+  }
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject)
+{
   XII_ASSERT_DEV(vkObjectType != vk::ObjectType::eUnknown, "Vulkan object type must be valid.");
   XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_vkFence                             = vkFence;
+  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
   entry.m_pObject                             = pObject;
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
 {
-  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
   XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid VMA Allocation.");
   XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
   XII_ASSERT_DEV(vmaAllocation != nullptr, "VMA allocation must be valid.");
@@ -2710,65 +2729,61 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFenc
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_vkFence                             = vkFence;
+  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
   entry.m_pObject                             = pObject;
   entry.m_VmaAllocation                       = vmaAllocation;
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer)
 {
-  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
   XII_ASSERT_DEV(pCommandBufferPool != nullptr, "Command buffer pool must be valid.");
   XII_ASSERT_DEV(vkCommandBuffer != VK_NULL_HANDLE, "Command buffer must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_vkFence                             = vkFence;
+  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
   entry.m_pObject                             = pCommandBufferPool;
   entry.m_vkCommandBuffer                     = vkCommandBuffer;
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore)
 {
-  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
   XII_ASSERT_DEV(pSemaphorePool != nullptr, "Semaphore pool must be valid.");
   XII_ASSERT_DEV(vkSemaphore != VK_NULL_HANDLE, "Semaphore must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_vkFence                             = vkFence;
+  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
   entry.m_pSemaphorePool                      = pSemaphorePool;
   entry.m_vkSemaphore                         = vkSemaphore;
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool)
 {
-  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
   XII_ASSERT_DEV(pDescriptorSetPool != nullptr, "Descriptor set pool must be valid.");
   XII_ASSERT_DEV(vkDescriptorPool != VK_NULL_HANDLE, "Descriptor pool must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_vkFence                             = vkFence;
+  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
   entry.m_pDescriptorSetPool                  = pDescriptorSetPool;
   entry.m_vkDescriptorPool                    = vkDescriptorPool;
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::Fence vkFence, xiiGALFencePoolVulkan* pFencePool, vk::Fence vkReclaimFence)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALFencePoolVulkan* pFencePool, vk::Fence vkFence)
 {
-  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Fence must be valid.");
   XII_ASSERT_DEV(pFencePool != nullptr, "Fence pool must be valid.");
-  XII_ASSERT_DEV(vkReclaimFence != VK_NULL_HANDLE, "Reclaim fence must be valid.");
+  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "Reclaim fence must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_vkFence                             = vkFence;
+  entry.m_uiFrameNumber                       = m_uiCurrentDeletionFrameNumber + 1;
   entry.m_pFencePool                          = pFencePool;
-  entry.m_vkReclaimFence                      = vkReclaimFence;
+  entry.m_vkFence                             = vkFence;
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceReleaseAll)
@@ -2799,15 +2814,18 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
   }
   else
   {
+    // Wait for the fence to be signaled.
+    // The fence is signaled when the GPU has completed all work that was submitted before the fence was created.
+    m_pCpuWaitOnlyFence->Wait(m_uiCurrentDeletionFrameNumber);
+
     XII_LOCK(m_DeletionQueueMutex);
 
     // Release only resources that are not in use.
     for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
     {
-      // If the fence returns eSuccess, then all GPU work using this resource are completed.
-      vk::Result vkStatus = vkLogicalDevice.getFenceStatus(it->m_vkFence, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      const xiiUInt64 uiCompletedFenceValue = m_pCpuWaitOnlyFence->GetCompletedValue();
 
-      if (vkStatus == vk::Result::eSuccess)
+      if (it->m_uiFrameNumber <= uiCompletedFenceValue)
       {
         if (it->m_pCommandBufferPool != nullptr)
         {
@@ -2827,7 +2845,8 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       }
       else
       {
-        ++it;
+        // ++it;
+        break;
       }
     }
   }

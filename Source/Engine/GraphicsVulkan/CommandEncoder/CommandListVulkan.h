@@ -95,6 +95,7 @@ public:
   void AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue = 0ULL);
 
   void EnqueueSignal(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue);
+  void EnqueueSignal(vk::Fence vkFence, xiiUInt64 uiValue);
   void DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue);
 
   XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_pUploadStagingBufferPool.Borrow(); }
@@ -282,8 +283,9 @@ private:
 
   struct FenceInfo
   {
-    xiiSharedPtr<xiiGALFenceVulkan> m_pFenceVulkan = nullptr;
-    xiiUInt64                       m_uiWaitValue  = 0U;
+    xiiSharedPtr<xiiGALFenceVulkan> m_pFenceVulkan;
+    vk::Fence                       m_vkFenceVulkan = VK_NULL_HANDLE;
+    xiiUInt64                       m_uiWaitValue   = 0U;
   };
 
   struct ResourceSetBindings
