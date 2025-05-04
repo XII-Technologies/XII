@@ -275,9 +275,9 @@ function(xii_detect_cpuid_flags)
 
   set_property(GLOBAL PROPERTY XII_CMAKE_CPU_ID_FLAGS "")
 
-  set(FILE_TO_COMPILE "${XII_ROOT}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdDetect.c")
-  if(EXISTS "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdDetect.c")
-    set(FILE_TO_COMPILE "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdDetect.c")
+  set(FILE_TO_COMPILE "${XII_ROOT}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdFlagsDetect.c")
+  if(EXISTS "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdFlagsDetect.c")
+    set(FILE_TO_COMPILE "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdFlagsDetect.c")
   endif()
 
   # Check if we need to run detection.
