@@ -1303,6 +1303,12 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineSt
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
+  XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::Graphics || description.m_PipelineType == xiiGALPipelineType::Mesh, "The pipeline type for a graphics pipeline must be of type xiiGALPipelineType::Graphics or xiiGALPipelineType::Mesh.");
+  XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
+  XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_pRasterizerState != nullptr, "A valid rasterizer state is required on a graphics pipeline.");
+
+  // XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.)
+
   return CreateGraphicsPipelineStatePlatform(description);
 }
 
@@ -1321,6 +1327,11 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGALDevice::CreateComputePipelineStat
 xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipelineState(const xiiGALRayTracingPipelineStateCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::RayTracing, "The pipeline type for a ray tracing pipeline must be of type xiiGALPipelineType::RayTracing.");
+  XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
+
+  /// \todo Validate ray tracing pipeline state description.
 
   return CreateRayTracingPipelineStatePlatform(description);
 }
