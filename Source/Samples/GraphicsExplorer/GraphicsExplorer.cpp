@@ -606,6 +606,9 @@ public:
 
   void FreeCachedRenderPasses()
   {
+    m_pCurrentRenderPass  = nullptr;
+    m_pCurrentFramebuffer = nullptr;
+
     m_Framebuffers.Clear();
     m_RenderPasses.Clear();
   }
