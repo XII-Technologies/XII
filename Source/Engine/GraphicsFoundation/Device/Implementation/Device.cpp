@@ -1164,7 +1164,7 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
       }
       else
       {
-        XII_GAL_DEVICE_CHECK(triangle.m_IndexType == xiiGALValueType::UInt32 || triangle.m_IndexType == xiiGALValueType::UInt16, "The Index Type specified in triangle {0} must be xiiGALValueType::UInt16 or xiiGALValueType::UInt32.");
+        XII_GAL_DEVICE_CHECK(triangle.m_IndexType == xiiGALValueType::UInt32 || triangle.m_IndexType == xiiGALValueType::UInt16, "The Index Type specified in triangle {0} must be xiiGALValueType::UInt16 or xiiGALValueType::UInt32.", i);
       }
     }
 
@@ -1172,8 +1172,8 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
     {
       const auto& boundingBox = description.m_BoundingBoxes[i];
 
-      XII_GAL_DEVICE_CHECK(!boundingBox.m_sGeometryName.IsEmpty(), "The Geometry Name in bounding box {0} must not be empty.");
-      XII_GAL_DEVICE_CHECK(boundingBox.m_uiMaxBoxCount > 0U, "The Max Box Count in bounding box {0} must be greater than zero.");
+      XII_GAL_DEVICE_CHECK(!boundingBox.m_sGeometryName.IsEmpty(), "The Geometry Name in bounding box {0} must not be empty.", i);
+      XII_GAL_DEVICE_CHECK(boundingBox.m_uiMaxBoxCount > 0U, "The Max Box Count in bounding box {0} must be greater than zero.", i);
     }
   }
 
