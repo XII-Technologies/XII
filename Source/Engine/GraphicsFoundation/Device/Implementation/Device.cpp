@@ -1310,6 +1310,10 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGALDevice::CreateComputePipelineStat
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
+  XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::Compute, "The pipeline type for a compute pipeline must be of type xiiGALPipelineType::Compute.");
+  XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
+  XII_GAL_DEVICE_CHECK(description.m_pComputeShader != nullptr, "The compute shader for a compute pipeline state must not be null.");
+  XII_GAL_DEVICE_CHECK(description.m_pComputeShader->GetDescription().m_ShaderType == xiiGALShaderType::Compute, "The shader for a compute pipeline state must be of type xiiGALShaderType::Compute.");
 
   return CreateComputePipelineStatePlatform(description);
 }
