@@ -28,6 +28,18 @@ XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALGraphicsPipelineState, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALComputePipelineState, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRayTracingPipelineState, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTilePipelineState, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
 xiiGALPipelineState::xiiGALPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineStateCreationDescription& creationDescription) :
@@ -36,5 +48,42 @@ xiiGALPipelineState::xiiGALPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, con
 }
 
 xiiGALPipelineState::~xiiGALPipelineState() = default;
+
+////////////////////////////////////////////////////////////////////////////////
+
+xiiGALGraphicsPipelineState::xiiGALGraphicsPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALGraphicsPipelineStateCreationDescription& creationDescription) :
+  xiiGALPipelineState(pDevice, creationDescription), m_Description(creationDescription)
+{
+}
+
+xiiGALGraphicsPipelineState::~xiiGALGraphicsPipelineState() = default;
+
+////////////////////////////////////////////////////////////////////////////////
+
+xiiGALComputePipelineState::xiiGALComputePipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALComputePipelineStateCreationDescription& creationDescription) :
+  xiiGALPipelineState(pDevice, creationDescription), m_Description(creationDescription)
+{
+}
+
+
+xiiGALComputePipelineState::~xiiGALComputePipelineState() = default;
+
+////////////////////////////////////////////////////////////////////////////////
+
+xiiGALRayTracingPipelineState::xiiGALRayTracingPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRayTracingPipelineStateCreationDescription& creationDescription) :
+  xiiGALPipelineState(pDevice, creationDescription), m_Description(creationDescription)
+{
+}
+
+xiiGALRayTracingPipelineState::~xiiGALRayTracingPipelineState() = default;
+
+////////////////////////////////////////////////////////////////////////////////
+
+xiiGALTilePipelineState::xiiGALTilePipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTilePipelineStateCreationDescription& creationDescription) :
+  xiiGALPipelineState(pDevice, creationDescription), m_Description(creationDescription)
+{
+}
+
+xiiGALTilePipelineState::~xiiGALTilePipelineState() = default;
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineState);

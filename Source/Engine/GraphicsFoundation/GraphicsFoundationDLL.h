@@ -68,6 +68,10 @@ struct xiiGALStencilOperationDescription;
 struct xiiGALDepthStencilStateCreationDescription;
 struct xiiGALRasterizerStateCreationDescription;
 struct xiiGALPipelineStateCreationDescription;
+struct xiiGALGraphicsPipelineStateCreationDescription;
+struct xiiGALComputePipelineStateCreationDescription;
+struct xiiGALRayTracingPipelineStateCreationDescription;
+struct xiiGALTilePipelineStateCreationDescription;
 struct xiiGALPipelineResourceSignatureCreationDescription;
 
 class xiiGALCommandList;
@@ -95,6 +99,10 @@ class xiiGALBlendState;
 class xiiGALDepthStencilState;
 class xiiGALPipelineResourceSignature;
 class xiiGALPipelineState;
+class xiiGALGraphicsPipelineState;
+class xiiGALComputePipelineState;
+class xiiGALRayTracingPipelineState;
+class xiiGALTilePipelineState;
 class xiiGALRasterizerState;
 
 struct xiiGALPipelineResourceDescription;
