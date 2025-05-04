@@ -1306,8 +1306,21 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineSt
   XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::Graphics || description.m_PipelineType == xiiGALPipelineType::Mesh, "The pipeline type for a graphics pipeline must be of type xiiGALPipelineType::Graphics or xiiGALPipelineType::Mesh.");
   XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
   XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_pRasterizerState != nullptr, "A valid rasterizer state is required on a graphics pipeline.");
+  XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_uiViewportCount > 0, "The number of viewports for a graphics pipeline state must be greater than zero.");
 
-  // XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.)
+  if (description.m_GraphicsPipeline.m_ShadingRateFlags.IsAnyFlagSet())
+  {
+    if (m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::SampleMask))
+    {
+      const xiiUInt32 uiRequiredMask = (1U << description.m_GraphicsPipeline.m_SampleDescription.m_uiCount) - 1U;
+
+      XII_GAL_DEVICE_CHECK(((description.m_GraphicsPipeline.m_uiSampleMask & uiRequiredMask) == uiRequiredMask), "Sample mask with zero bits is used with shading rate flags, which requires the xiiGALShadingRateCapabilityFlags::SampleMask capability.");
+    }
+    if (description.m_GraphicsPipeline.m_ShadingRateFlags.IsSet(xiiGALPipelineShadingRateFlags::PerPrimitive) && description.m_GraphicsPipeline.m_uiViewportCount > 1)
+    {
+      XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::PerPrimitiveWithMultipleViewports), "Multiple viewports with variable shading rate require the xiiGALShadingRateCapabilityFlags::PerPrimitiveWithMultipleViewports capability.");
+    }
+  }
 
   return CreateGraphicsPipelineStatePlatform(description);
 }
