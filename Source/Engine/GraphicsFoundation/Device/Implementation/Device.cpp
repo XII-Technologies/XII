@@ -1289,7 +1289,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
     }
   }
 
-  /// \todo GraphicsFoundation: Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.
+  /// \todo Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.
 
   // Finally, sort the resources by their ascending set index.
   description.m_Resources.Sort([](const xiiGALPipelineResourceDescription& lhs, const xiiGALPipelineResourceDescription& rhs) -> bool {
@@ -1328,6 +1328,11 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
 xiiSharedPtr<xiiGALTilePipelineState> xiiGALDevice::CreateTilePipelineState(const xiiGALTilePipelineStateCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::Tile, "The pipeline type for a tile pipeline must be of type xiiGALPipelineType::Tile.");
+  XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
+  XII_GAL_DEVICE_CHECK(description.m_pTileShader != nullptr, "The tile shader for a tile pipeline state must not be null.");
+  XII_GAL_DEVICE_CHECK(description.m_pTileShader->GetDescription().m_ShaderType == xiiGALShaderType::Tile, "The shader for a tile pipeline state must be of type xiiGALShaderType::Tile.");
 
   return CreateTilePipelineStatePlatform(description);
 }
