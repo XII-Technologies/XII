@@ -1299,11 +1299,33 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
   return CreatePipelineResourceSignaturePlatform(description);
 }
 
-xiiSharedPtr<xiiGALPipelineState> xiiGALDevice::CreatePipelineState(const xiiGALPipelineStateCreationDescription& description)
+xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineState(const xiiGALGraphicsPipelineStateCreationDescription& description)
 {
-  /// \todo GraphicsFoundation: Verify pipeline state description.
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  return CreatePipelineStatePlatform(description);
+  return CreateGraphicsPipelineStatePlatform(description);
+}
+
+xiiSharedPtr<xiiGALComputePipelineState> xiiGALDevice::CreateComputePipelineState(const xiiGALComputePipelineStateCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+
+  return CreateComputePipelineStatePlatform(description);
+}
+
+xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipelineState(const xiiGALRayTracingPipelineStateCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  return CreateRayTracingPipelineStatePlatform(description);
+}
+
+xiiSharedPtr<xiiGALTilePipelineState> xiiGALDevice::CreateTilePipelineState(const xiiGALTilePipelineStateCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  return CreateTilePipelineStatePlatform(description);
 }
 
 void xiiGALDevice::WaitIdle()

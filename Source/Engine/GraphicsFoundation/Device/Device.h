@@ -168,12 +168,36 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALPipelineResourceSignature> CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description);
 
 
-  /// \brief This creates a new pipeline state object.
+  /// \brief This creates a new graphics pipeline state object.
   ///
-  /// \param description - The pipeline state description. See xiiGALPipelineStateCreationDescription.
+  /// \param description - The graphics pipeline state description. See xiiGALGraphicsPipelineStateCreationDescription.
   ///
-  /// \return The reference-counted pointer to the created pipeline state object.
-  [[nodiscard]] xiiSharedPtr<xiiGALPipelineState> CreatePipelineState(const xiiGALPipelineStateCreationDescription& description);
+  /// \return The reference-counted pointer to the created graphics pipeline state object.
+  [[nodiscard]] xiiSharedPtr<xiiGALGraphicsPipelineState> CreateGraphicsPipelineState(const xiiGALGraphicsPipelineStateCreationDescription& description);
+
+
+  /// \brief This creates a new compute pipeline state object.
+  ///
+  /// \param description - The compute pipeline state description. See xiiGALComputePipelineStateCreationDescription.
+  ///
+  /// \return The reference-counted pointer to the created compute pipeline state object.
+  [[nodiscard]] xiiSharedPtr<xiiGALComputePipelineState> CreateComputePipelineState(const xiiGALComputePipelineStateCreationDescription& description);
+
+
+  /// \brief This creates a new ray tracing pipeline state object.
+  ///
+  /// \param description - The ray tracing pipeline state description. See xiiGALRayTracingPipelineStateCreationDescription.
+  ///
+  /// \return The reference-counted pointer to the created ray tracing pipeline state object.
+  [[nodiscard]] xiiSharedPtr<xiiGALRayTracingPipelineState> CreateRayTracingPipelineState(const xiiGALRayTracingPipelineStateCreationDescription& description);
+
+
+  /// \brief This creates a new tile pipeline state object.
+  ///
+  /// \param description - The tile pipeline state description. See xiiGALTilePipelineStateCreationDescription.
+  ///
+  /// \return The reference-counted pointer to the created tile pipeline state object.
+  [[nodiscard]] xiiSharedPtr<xiiGALTilePipelineState> CreateTilePipelineState(const xiiGALTilePipelineStateCreationDescription& description);
 
 
   /// \brief Waits until all outstanding operations on the GPU are complete and destroys any pending resources and GPU objects.
@@ -269,7 +293,10 @@ protected:
   virtual xiiInternal::NewInstance<xiiGALBottomLevelAS>             CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)                                      = 0;
   virtual xiiInternal::NewInstance<xiiGALTopLevelAS>                CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)                                            = 0;
   virtual xiiInternal::NewInstance<xiiGALPipelineResourceSignature> CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)              = 0;
-  virtual xiiInternal::NewInstance<xiiGALPipelineState>             CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)                                      = 0;
+  virtual xiiInternal::NewInstance<xiiGALGraphicsPipelineState>     CreateGraphicsPipelineStatePlatform(const xiiGALGraphicsPipelineStateCreationDescription& description)                      = 0;
+  virtual xiiInternal::NewInstance<xiiGALComputePipelineState>      CreateComputePipelineStatePlatform(const xiiGALComputePipelineStateCreationDescription& description)                        = 0;
+  virtual xiiInternal::NewInstance<xiiGALRayTracingPipelineState>   CreateRayTracingPipelineStatePlatform(const xiiGALRayTracingPipelineStateCreationDescription& description)                  = 0;
+  virtual xiiInternal::NewInstance<xiiGALTilePipelineState>         CreateTilePipelineStatePlatform(const xiiGALTilePipelineStateCreationDescription& description)                              = 0;
 
   virtual void WaitIdlePlatform() = 0;
 
