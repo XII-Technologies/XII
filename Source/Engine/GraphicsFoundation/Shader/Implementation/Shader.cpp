@@ -28,6 +28,11 @@ xiiSharedPtr<xiiGALInputLayout> xiiGALShader::CreateInputLayout(const xiiGALInpu
 {
   XII_GAL_SHADER_CHECK(m_Description.m_ShaderType == xiiGALShaderType::Vertex, "An Input Layout must be created with shaders of type xiiGALShaderType::Vertex.");
 
+  for (xiiUInt32 i = 0; i < description.m_LayoutElements.GetCount(); ++i)
+  {
+    XII_GAL_SHADER_CHECK(description.m_LayoutElements[i].m_uiBufferSlot != xiiInvalidIndex, "Input Layout element {} buffer slot {} is invalid.", i, description.m_LayoutElements[i]);
+  }
+
   return CreateInputLayoutPlatform(description);
 }
 
