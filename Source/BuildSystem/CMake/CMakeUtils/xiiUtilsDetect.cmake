@@ -90,7 +90,7 @@ function(xii_detect_compiler_and_architecture)
 
   if(PREFIX)
     # has already run before and XII_CMAKE_COMPILER_POSTFIX is already set
-    # message (STATUS "Redundant call to xii_detect_compiler()")
+    # message(SEND_ERROR "Redundant call to xii_detect_compiler()")
     return()
   endif()
 
@@ -268,14 +268,18 @@ endfunction()
 function(xii_detect_cpuid_flags)
   # Early return if flags are already detected.
   get_property(PREFIX GLOBAL PROPERTY XII_CMAKE_CPU_ID_FLAGS)
+
   if(PREFIX)
+    # Has already run before and XII_CMAKE_CPU_ID_FLAGS is already set.
+    # message(SEND_ERROR "Redundant call to xii_detect_cpuid_flags()")
     return()
   endif()
 
   set_property(GLOBAL PROPERTY XII_CMAKE_CPU_ID_FLAGS "")
 
   set(FILE_TO_COMPILE "${XII_ROOT}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdFlagsDetect.c")
-  if(EXISTS "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdFlagsDetect.c")
+
+  if (XII_SDK_DIR)
     set(FILE_TO_COMPILE "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdFlagsDetect.c")
   endif()
 
@@ -283,13 +287,14 @@ function(xii_detect_cpuid_flags)
   if(NOT XII_DETECTED_CPU_ID_FLAGS)
     # Configure try_compile.
     set(CMAKE_TRY_COMPILE_TARGET_TYPE "EXECUTABLE")
+
     try_compile(
       COMPILE_RESULT
       ${CMAKE_CURRENT_BINARY_DIR}
       ${FILE_TO_COMPILE}
       CMAKE_FLAGS -DCMAKE_C_FLAGS="/W4"
       OUTPUT_VARIABLE COMPILE_OUTPUT
-      COPY_FILE ${CMAKE_CACHEFILE_DIR}/xiiCPUIdFlagsDetect.exe
+      COPY_FILE ${CMAKE_BINARY_DIR}/xiiCPUIdFlagsDetect
     )
 
     if(NOT COMPILE_RESULT)
@@ -298,7 +303,7 @@ function(xii_detect_cpuid_flags)
     endif()
 
     execute_process(
-      COMMAND ${CMAKE_CACHEFILE_DIR}/xiiCPUIdFlagsDetect.exe
+      COMMAND ${CMAKE_BINARY_DIR}/xiiCPUIdFlagsDetect
       OUTPUT_VARIABLE XII_CPU_ID_FLAGS_DETECT
       ERROR_VARIABLE XII_CPU_ID_FLAGS_DETECT_ERRORS
       RESULT_VARIABLE XII_CPU_ID_FLAGS_DETECT_RESULT
