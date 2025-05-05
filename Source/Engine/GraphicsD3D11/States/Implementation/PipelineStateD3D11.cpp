@@ -1,14 +1,6 @@
 #include <GraphicsD3D11/GraphicsD3D11PCH.h>
 
-#include <Foundation/Containers/IterateBits.h>
-
-#include <GraphicsD3D11/CommandEncoder/CommandListD3D11.h>
-#include <GraphicsD3D11/Resources/BufferD3D11.h>
-#include <GraphicsD3D11/Resources/BufferViewD3D11.h>
 #include <GraphicsD3D11/Resources/RenderPassD3D11.h>
-#include <GraphicsD3D11/Resources/SamplerD3D11.h>
-#include <GraphicsD3D11/Resources/TextureD3D11.h>
-#include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 #include <GraphicsD3D11/Shader/InputLayoutD3D11.h>
 #include <GraphicsD3D11/Shader/ShaderD3D11.h>
 #include <GraphicsD3D11/States/PipelineResourceSignatureD3D11.h>
@@ -58,28 +50,6 @@ xiiResult xiiGALGraphicsPipelineStateD3D11::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiGALGraphicsPipelineStateD3D11::ShaderType::Enum xiiGALGraphicsPipelineStateD3D11::ShaderType::GetIndex(xiiBitflags<xiiGALShaderType> type)
-{
-  switch (type.GetValue())
-  {
-    case xiiGALShaderType::Vertex:
-      return ShaderType::Vertex;
-    case xiiGALShaderType::Pixel:
-      return ShaderType::Pixel;
-    case xiiGALShaderType::Geometry:
-      return ShaderType::Geometry;
-    case xiiGALShaderType::Hull:
-      return ShaderType::Hull;
-    case xiiGALShaderType::Domain:
-      return ShaderType::Domain;
-    case xiiGALShaderType::Compute:
-      return ShaderType::Compute;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-  return ShaderType::Unknown;
-}
-
 ///////////////////////////////////////////////////////////////////
 
 xiiGALComputePipelineStateD3D11::xiiGALComputePipelineStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALComputePipelineStateCreationDescription& creationDescription) :
@@ -125,6 +95,30 @@ xiiGALTilePipelineStateD3D11::~xiiGALTilePipelineStateD3D11() = default;
 xiiResult xiiGALTilePipelineStateD3D11::InitPlatform()
 {
   return XII_FAILURE;
+}
+
+///////////////////////////////////////////////////////////////////
+
+xiiGALD3D11ShaderType::Enum xiiGALD3D11ShaderType::GetIndex(xiiBitflags<xiiGALShaderType> type)
+{
+  switch (type.GetValue())
+  {
+    case xiiGALShaderType::Vertex:
+      return xiiGALD3D11ShaderType::Vertex;
+    case xiiGALShaderType::Pixel:
+      return xiiGALD3D11ShaderType::Pixel;
+    case xiiGALShaderType::Geometry:
+      return xiiGALD3D11ShaderType::Geometry;
+    case xiiGALShaderType::Hull:
+      return xiiGALD3D11ShaderType::Hull;
+    case xiiGALShaderType::Domain:
+      return xiiGALD3D11ShaderType::Domain;
+    case xiiGALShaderType::Compute:
+      return xiiGALD3D11ShaderType::Compute;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALD3D11ShaderType::Unknown;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_States_Implementation_PipelineStateD3D11);

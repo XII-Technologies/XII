@@ -19,31 +19,33 @@ struct ID3D11DomainShader;
 struct ID3D11HullShader;
 struct ID3D11ComputeShader;
 
+struct XII_GRAPHICSD3D11_DLL xiiGALD3D11ShaderType
+{
+  using StorageType = xiiInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = -1,
+    Vertex,
+    Pixel,
+    Compute,
+    Domain,
+    Hull,
+    Geometry,
+
+    ENUM_COUNT
+  };
+
+  static xiiGALD3D11ShaderType::Enum GetIndex(xiiBitflags<xiiGALShaderType> type);
+};
+
+///////////////////////////////////////////////////////////////////
+
 class XII_GRAPHICSD3D11_DLL xiiGALGraphicsPipelineStateD3D11 final : public xiiGALGraphicsPipelineState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALGraphicsPipelineStateD3D11, xiiGALGraphicsPipelineState);
 
 public:
-  struct ShaderType
-  {
-    using StorageType = xiiInt8;
-
-    enum Enum : StorageType
-    {
-      Unknown = -1,
-      Vertex,
-      Pixel,
-      Compute,
-      Domain,
-      Hull,
-      Geometry,
-
-      ENUM_COUNT
-    };
-
-    static ShaderType::Enum GetIndex(xiiBitflags<xiiGALShaderType> type);
-  };
-
   XII_ALWAYS_INLINE ID3D11BlendState* GetD3D11BlendState() const { return m_pBlendStateD3D11 ? m_pBlendStateD3D11->GetBlendState() : nullptr; };
   XII_ALWAYS_INLINE ID3D11RasterizerState* GetD3D11RasterizerState() const { return m_pRasterizerStateD3D11 ? m_pRasterizerStateD3D11->GetRasterizerState() : nullptr; };
   XII_ALWAYS_INLINE ID3D11DepthStencilState* GetD3D11DepthStencilState() const { return m_pDepthStencilStateD3D11 ? m_pDepthStencilStateD3D11->GetDepthStencilState() : nullptr; };

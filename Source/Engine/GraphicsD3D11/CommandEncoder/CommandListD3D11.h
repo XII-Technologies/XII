@@ -126,8 +126,6 @@ private:
 
   // Bound objects for deferred state flushes
 
-  xiiSharedPtr<xiiGALPipelineStateD3D11> m_pCommittedPipelineState = nullptr;
-
   ID3D11Buffer*         m_pCommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]      = {};
   xiiUInt32             m_CommittedVertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   xiiUInt32             m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
@@ -157,21 +155,21 @@ private:
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
 
   ID3D11Buffer*         m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALD3D11ShaderType::ENUM_COUNT];
 
-  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT] = {};
-  xiiHybridArray<const xiiGALResource*, 16>     m_ResourcesForResourceViews[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
-  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
+  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALD3D11ShaderType::ENUM_COUNT] = {};
+  xiiHybridArray<const xiiGALResource*, 16>     m_ResourcesForResourceViews[xiiGALD3D11ShaderType::ENUM_COUNT];
+  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALD3D11ShaderType::ENUM_COUNT];
 
   xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnorderedAccessViews;
   xiiHybridArray<const xiiGALResource*, 16>      m_ResourcesForUnorderedAccessViews;
   xiiGAL::ModifiedRange                          m_BoundUnorderedAccessViewsRange;
 
-  ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT];
+  ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALD3D11ShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALD3D11ShaderType::ENUM_COUNT];
 
-  ID3D11DeviceChild* m_CommittedShaders[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT]                  = {};
-  bool               m_CommittedShaderModificationStates[xiiGALPipelineStateD3D11::ShaderType::ENUM_COUNT] = {};
+  ID3D11DeviceChild* m_CommittedShaders[xiiGALD3D11ShaderType::ENUM_COUNT]                  = {};
+  bool               m_CommittedShaderModificationStates[xiiGALD3D11ShaderType::ENUM_COUNT] = {};
 
   xiiMap<xiiGALBufferD3D11*, ID3D11DeviceContext4*>  m_MappedBuffers;
   xiiMap<xiiGALTextureD3D11*, ID3D11DeviceContext4*> m_MappedTextureSubresources;
