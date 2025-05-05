@@ -30,7 +30,7 @@ xiiSharedPtr<xiiGALInputLayout> xiiGALShader::CreateInputLayout(const xiiGALInpu
 
   for (xiiUInt32 i = 0; i < description.m_LayoutElements.GetCount(); ++i)
   {
-    XII_GAL_SHADER_CHECK(description.m_LayoutElements[i].m_uiBufferSlot != xiiInvalidIndex, "Input Layout element {} buffer slot {} is invalid.", i, description.m_LayoutElements[i]);
+    XII_GAL_SHADER_CHECK(description.m_LayoutElements[i].m_uiBufferSlot != xiiInvalidIndex, "LayoutElements[{}].uiBufferSlot('{}'}) is invalid.", i, description.m_LayoutElements[i].m_uiBufferSlot);
   }
 
   return CreateInputLayoutPlatform(description);
