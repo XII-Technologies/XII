@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE xiiGALScopedDebugGroup::xiiGALScopedDebugGroup() noexcept :
 {
 }
 
-XII_ALWAYS_INLINE xiiGALScopedDebugGroup::xiiGALScopedDebugGroup(xiiGALCommandList* pCommandList, xiiStringView sName, xiiColor color) :
+XII_ALWAYS_INLINE xiiGALScopedDebugGroup::xiiGALScopedDebugGroup(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiStringView sName, xiiColor color) :
   m_pCommandList(pCommandList)
 {
   if (m_pCommandList)
@@ -31,8 +31,7 @@ XII_ALWAYS_INLINE xiiGALScopedDebugGroup& xiiGALScopedDebugGroup::operator=(xiiG
 {
   if (this != &rhs)
   {
-    m_pCommandList     = rhs.m_pCommandList;
-    rhs.m_pCommandList = nullptr;
+    m_pCommandList = std::move(rhs.m_pCommandList);
   }
   return *this;
 }

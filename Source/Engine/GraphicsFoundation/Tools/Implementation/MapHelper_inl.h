@@ -6,18 +6,16 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper() :
 }
 
 template <typename DataType>
-XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags) :
-  m_pCommandList(pCommandList), m_hBuffer(hBuffer), m_pMappedData(nullptr), m_MapType(mapType), m_MapFlags(mapFlags)
+XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags) :
+  m_pCommandList(pCommandList), m_pBuffer(pBuffer), m_pMappedData(nullptr), m_MapType(mapType), m_MapFlags(mapFlags)
 {
-  Map(pCommandList, hBuffer, mapType, mapFlags).IgnoreResult();
+  Map(pCommandList, pBuffer, mapType, mapFlags).IgnoreResult();
 }
 
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALMapHelper&& other) noexcept :
-  m_pCommandList(other.m_pCommandList), m_hBuffer(other.m_hBuffer), m_pMappedData(other.m_pMappedData), m_MapType(other.m_MapType), m_MapFlags(other.m_MapFlags)
+  m_pCommandList(other.m_pCommandList), m_pBuffer(other.m_pBuffer), m_pMappedData(other.m_pMappedData), m_MapType(other.m_MapType), m_MapFlags(other.m_MapFlags)
 {
-  other.m_pCommandList = nullptr;
-  other.m_hBuffer      = xiiGALBufferHandle();
   other.m_pMappedData  = nullptr;
   other.m_MapType      = xiiGALMapType::Default;
   other.m_MapFlags     = xiiGALMapFlags::None;
@@ -26,20 +24,18 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALMapHelper&& o
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::~xiiGALMapHelper()
 {
-  Unmap(m_pCommandList, m_hBuffer).IgnoreResult();
+  Unmap(m_pCommandList, m_pBuffer).IgnoreResult();
 }
 
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator=(xiiGALMapHelper&& other) noexcept
 {
   m_pCommandList = std::move(other.m_pCommandList);
-  m_hBuffer      = std::move(other.m_hBuffer);
+  m_pBuffer      = std::move(other.m_pBuffer);
   m_pMappedData  = std::move(other.m_pMappedData);
   m_MapType      = std::move(other.m_MapType);
   m_MapFlags     = std::move(other.m_MapFlags);
 
-  other.m_pCommandList = nullptr;
-  other.m_hBuffer      = xiiGALBufferHandle();
   other.m_pMappedData  = nullptr;
   other.m_MapType      = xiiGALMapType::Default;
   other.m_MapFlags     = xiiGALMapFlags::None;
@@ -48,15 +44,15 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator
 }
 
 template <typename DataType>
-XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags)
+XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
-  XII_ASSERT_DEV(!hBuffer.IsInvalidated() && !m_pMappedData && !m_pCommandList, "Buffer is already mapped or invalidated.");
+  XII_ASSERT_DEV(!pBuffer.IsInvalidated() && !m_pMappedData && !m_pCommandList, "Buffer is already mapped or invalidated.");
 
   Unmap().IgnoreResult();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   {
-    const auto& bufferDescription = pCommandList->GetDevice()->GetBuffer(hBuffer)->GetDescription();
+    const auto& bufferDescription = pCommandList->GetDevice()->GetBuffer(pBuffer)->GetDescription();
 
     XII_IGNORE_UNUSED(bufferDescription);
 
@@ -64,7 +60,7 @@ XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiGALCommandList* pC
   }
 #endif
 
-  if (pCommandList->MapBuffer(hBuffer, mapType, mapFlags, reinterpret_cast<void**>(&m_pMappedData)).Failed())
+  if (pCommandList->MapBuffer(pBuffer, mapType, mapFlags, reinterpret_cast<void**>(&m_pMappedData)).Failed())
   {
     m_pMappedData = nullptr;
 
@@ -72,7 +68,7 @@ XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiGALCommandList* pC
   }
 
   m_pCommandList = pCommandList;
-  m_hBuffer      = hBuffer;
+  m_pBuffer      = pBuffer;
   m_MapType      = mapType;
   m_MapFlags     = mapFlags;
 
@@ -80,13 +76,13 @@ XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiGALCommandList* pC
 }
 
 template <typename DataType>
-XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Unmap(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer)
+XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Unmap(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer)
 {
-  if (m_pMappedData != nullptr && !m_hBuffer.IsInvalidated())
+  if (m_pMappedData != nullptr && !m_pBuffer.IsInvalidated())
   {
-    m_pCommandList->UnmapBuffer(m_hBuffer, m_pMappedData, m_MapType, m_MapFlags).IgnoreResult();
+    m_pCommandList->UnmapBuffer(m_pBuffer, m_pMappedData, m_MapType, m_MapFlags).IgnoreResult();
 
-    m_hBuffer  = xiiGALBufferHandle();
+    m_pBuffer  = nullptr;
     m_MapType  = xiiGALMapType::Default;
     m_MapFlags = xiiGALMapFlags::None;
   }

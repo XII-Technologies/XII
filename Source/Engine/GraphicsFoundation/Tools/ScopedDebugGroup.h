@@ -36,7 +36,7 @@ public:
   /// \param pCommandList - Pointer to the command list where the debug group is applied.
   /// \param sName        - Name of the debug group for debugging and profiling purposes.
   /// \param color        - Color used for visual representation (defaults to black).
-  xiiGALScopedDebugGroup(xiiGALCommandList* pCommandList, xiiStringView sName, xiiColor color = xiiColor::Black);
+  xiiGALScopedDebugGroup(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiStringView sName, xiiColor color = xiiColor::Black);
 
   /// \brief Destructor, automatically ends the debug group.
   ~xiiGALScopedDebugGroup();
@@ -54,7 +54,7 @@ public:
   xiiGALScopedDebugGroup& operator=(xiiGALScopedDebugGroup&& rhs) noexcept;
 
 private:
-  xiiGALCommandList* m_pCommandList; ///< Pointer to the command list associated with this debug group.
+  xiiSharedPtr<xiiGALCommandList> m_pCommandList; ///< Pointer to the command list associated with this debug group.
 };
 
 #include <GraphicsFoundation/Tools/Implementation/ScopedDebugGroup_inl.h>

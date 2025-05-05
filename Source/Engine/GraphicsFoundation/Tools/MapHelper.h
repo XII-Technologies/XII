@@ -34,7 +34,7 @@ public:
   /// \param hBuffer      - Handle to the buffer resource.
   /// \param mapType      - Type of mapping operation.
   /// \param mapFlags     - Mapping flags.
-  xiiGALMapHelper(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
+  xiiGALMapHelper(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
 
   /// \brief Move constructor.
   ///
@@ -59,7 +59,7 @@ public:
   /// \param mapFlags     - Mapping flags.
   ///
   /// \return Result of the operation.
-  xiiResult Map(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
+  xiiResult Map(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
 
   /// \brief Unmaps the specified resource.
   ///
@@ -67,7 +67,7 @@ public:
   /// \param hBuffer      - Handle to the buffer resource.
   ///
   /// \return Result of the operation.
-  xiiResult Unmap(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer);
+  xiiResult Unmap(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer);
 
   /// \brief Implicit conversion to DataType pointer.
   operator DataType*();
@@ -86,11 +86,11 @@ public:
   const DataType* operator->() const;
 
 private:
-  xiiGALCommandList*          m_pCommandList; ///< Pointer to the command list.
-  xiiGALBufferHandle          m_hBuffer;      ///< Handle to the buffer resource.
-  DataType*                   m_pMappedData;  ///< Pointer to the mapped data.
-  xiiEnum<xiiGALMapType>      m_MapType;      ///< Type of mapping operation.
-  xiiBitflags<xiiGALMapFlags> m_MapFlags;     ///< Mapping flags.
+  xiiSharedPtr<xiiGALCommandList> m_pCommandList; ///< Pointer to the command list.
+  xiiSharedPtr<xiiGALBuffer>      m_pBuffer;      ///< Handle to the buffer resource.
+  DataType*                       m_pMappedData;  ///< Pointer to the mapped data.
+  xiiEnum<xiiGALMapType>          m_MapType;      ///< Type of mapping operation.
+  xiiBitflags<xiiGALMapFlags>     m_MapFlags;     ///< Mapping flags.
 };
 
 #include <GraphicsFoundation/Tools/Implementation/MapHelper_inl.h>
