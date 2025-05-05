@@ -60,24 +60,6 @@ float3x3 TransformToRotation(Transform t)
       ;                              \
       [[vk::push_constant]] XII_PP_CONCAT(Name, _PushConstants) Name;
 #    define GET_PUSH_CONSTANT(Name, Constant) Name.Constant
-
-#  elif XII_ENABLED(PLATFORM_D3D11)
-// D3D11 does not support push constants, so we just emulate them via a normal constant buffer.
-
-#    define DECLARE_CONSTANT_BUFFER(Name, Slot, Set)            cbuffer Name : register(b##Slot)
-#    define DECLARE_TEXTURE(Name, Type, Slot, Set)              Type Name : register(t##Slot)
-#    define DECLARE_SAMPLER(Name, Slot, Set)                    SamplerState Name : register(s##Slot)
-#    define DECLARE_BUFFER(Name, Type, Slot, Set)               Buffer<Type> Name : register(u##Slot)
-#    define DECLARE_STRUCTURED_BUFFER(Name, Type, Slot, Set)    StructuredBuffer<Type> Name : register(u##Slot)
-#    define DECLARE_RW_STRUCTURED_BUFFER(Name, Type, Slot, Set) RWStructuredBuffer<Type> Name : register(u##Slot)
-#    define DECLARE_BYTE_ADDRESS_BUFFER(Name, Slot, Set)        ByteAddressBuffer Name : register(t##Slot)
-#    define DECLARE_RW_BYTE_ADDRESS_BUFFER(Name, Slot, Set)     RWByteAddressBuffer Name : register(u##Slot)
-#    define DECLARE_COMBINED_IMAGE_SAMPLER(Name, Type, Slot, Set) \
-      Type         Name : register(t##Slot);                      \
-      SamplerState Name##_AutoSampler : register(s##Slot)
-#    define BEGIN_PUSH_CONSTANTS(Name)        cbuffer Name
-#    define END_PUSH_CONSTANTS(Name)          ;
-#    define GET_PUSH_CONSTANT(Name, Constant) Constant
 #  endif
 
 #  define FLOAT1(Name)                            float Name

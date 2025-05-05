@@ -200,10 +200,6 @@ function(xii_set_common_target_definitions TARGET_NAME)
   string(TOUPPER ${TARGET_NAME} PROJECT_NAME_UPPER)
   target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_BUILDING_${PROJECT_NAME_UPPER}_LIB)
 
-  if(XII_BUILD_D3D11)
-    target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_D3D11_SUPPORT)
-  endif()
-
   if(XII_BUILD_VULKAN)
     target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_VULKAN_SUPPORT)
   endif()
