@@ -1322,6 +1322,37 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineSt
     }
   }
 
+  if (description.m_PipelineType == xiiGALPipelineType::Graphics)
+  {
+    XII_GAL_DEVICE_CHECK(description.m_pVertexShader != nullptr, "A graphics pipeline must contain a valid vertex shader.");
+    XII_GAL_DEVICE_CHECK(description.m_pAmplificationShader == nullptr && description.m_pMeshShader == nullptr, "Mesh shaders are not supported in a graphics pipeline.");
+  }
+  else if (description.m_PipelineType == xiiGALPipelineType::Mesh)
+  {
+    XII_GAL_DEVICE_CHECK(description.m_pMeshShader != nullptr, "A mesh pipeline must contain a valid mesh shader.");
+    XII_GAL_DEVICE_CHECK(description.m_pVertexShader == nullptr && description.m_pGeometryShader == nullptr && description.m_pDomainShader == nullptr && description.m_pHullShader == nullptr, "Vertex, Geometry, and Tessellation shaders are not supported in a mesh pipeline.");
+    XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_pInputLayout == nullptr, "An input layout is ignored in a mesh pipeline.");
+    XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::TriangleList || description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::Undefined, "A primitive topology is ignored in a mesh pipeline. Set it to xiiGALPrimitiveTopology::Undefined or keep default value (xiiGALPrimitiveTopology::TriangleList).");
+  }
+
+  XII_GAL_DEVICE_CHECK(description.m_pVertexShader == nullptr || description.m_pVertexShader->GetDescription().m_ShaderType == xiiGALShaderType::Vertex, "The pipeline vertex shader must be of type xiiGALShaderType::Vertex.");
+  XII_GAL_DEVICE_CHECK(description.m_pPixelShader == nullptr || description.m_pPixelShader->GetDescription().m_ShaderType == xiiGALShaderType::Pixel, "The pipeline vertex shader must be of type xiiGALShaderType::Pixel.");
+  XII_GAL_DEVICE_CHECK(description.m_pGeometryShader == nullptr || description.m_pGeometryShader->GetDescription().m_ShaderType == xiiGALShaderType::Geometry, "The pipeline vertex shader must be of type xiiGALShaderType::Geometry.");
+  XII_GAL_DEVICE_CHECK(description.m_pHullShader == nullptr || description.m_pHullShader->GetDescription().m_ShaderType == xiiGALShaderType::Hull, "The pipeline vertex shader must be of type xiiGALShaderType::Hull.");
+  XII_GAL_DEVICE_CHECK(description.m_pDomainShader == nullptr || description.m_pDomainShader->GetDescription().m_ShaderType == xiiGALShaderType::Domain, "The pipeline vertex shader must be of type xiiGALShaderType::Domain.");
+  XII_GAL_DEVICE_CHECK(description.m_pAmplificationShader == nullptr || description.m_pAmplificationShader->GetDescription().m_ShaderType == xiiGALShaderType::Amplification, "The pipeline vertex shader must be of type xiiGALShaderType::Amplification.");
+  XII_GAL_DEVICE_CHECK(description.m_pMeshShader == nullptr || description.m_pMeshShader->GetDescription().m_ShaderType == xiiGALShaderType::Mesh, "The pipeline vertex shader must be of type xiiGALShaderType::Mesh.");
+
+  if (description.m_GraphicsPipeline.m_pRenderPass != nullptr)
+  {
+    XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_uiSubpassIndex < description.m_GraphicsPipeline.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), "Subpass index ({}) exceeds the number of subpasses ({}) in render pass '{}'.", description.m_GraphicsPipeline.m_uiSubpassIndex, description.m_GraphicsPipeline.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), description.m_GraphicsPipeline.m_pRenderPass->GetDebugName());
+  }
+
+  if (description.m_GraphicsPipeline.m_ShadingRateFlags.IsAnyFlagSet())
+  {
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "Shading rate flags ({}) require VariableRateShading device feature.", description.m_GraphicsPipeline.m_ShadingRateFlags.GetValue());
+  }
+
   return CreateGraphicsPipelineStatePlatform(description);
 }
 
