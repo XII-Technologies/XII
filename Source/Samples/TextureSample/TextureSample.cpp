@@ -284,8 +284,6 @@ public:
 
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-#elif BUILDSYSTEM_ENABLE_D3D11_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "D3D11";
 #else
     constexpr const char* szDefaultGraphicsAPI = "Null";
 #endif
