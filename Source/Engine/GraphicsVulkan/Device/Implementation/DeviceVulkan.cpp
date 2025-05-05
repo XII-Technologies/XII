@@ -29,7 +29,10 @@
 #include <GraphicsVulkan/States/BlendStateVulkan.h>
 #include <GraphicsVulkan/States/DepthStencilStateVulkan.h>
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
-#include <GraphicsVulkan/States/PipelineStateVulkan.h>
+#include <GraphicsVulkan/States/GraphicsPipelineStateVulkan.h>
+#include <GraphicsVulkan/States/ComputePipelineStateVulkan.h>
+#include <GraphicsVulkan/States/RayTracingPipelineStateVulkan.h>
+#include <GraphicsVulkan/States/TilePipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 #include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
@@ -1481,16 +1484,52 @@ xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceVulkan::Cr
   return pPipelineResourceSignatureVulkan;
 }
 
-xiiInternal::NewInstance<xiiGALPipelineState> xiiGALDeviceVulkan::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
+xiiInternal::NewInstance<xiiGALGraphicsPipelineState> xiiGALDeviceVulkan::CreateGraphicsPipelineStatePlatform(const xiiGALGraphicsPipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALPipelineStateVulkan> pPipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALGraphicsPipelineStateVulkan> pGraphicsPipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALGraphicsPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pPipelineStateVulkan->InitPlatform().Succeeded())
-    return pPipelineStateVulkan;
+  if (pGraphicsPipelineStateVulkan->InitPlatform().Succeeded())
+    return pGraphicsPipelineStateVulkan;
 
-  XII_DELETE(&m_Allocator, pPipelineStateVulkan.m_pInstance);
+  XII_DELETE(&m_Allocator, pGraphicsPipelineStateVulkan.m_pInstance);
 
-  return pPipelineStateVulkan;
+  return pGraphicsPipelineStateVulkan;
+}
+
+xiiInternal::NewInstance<xiiGALComputePipelineState> xiiGALDeviceVulkan::CreateComputePipelineStatePlatform(const xiiGALComputePipelineStateCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALComputePipelineStateVulkan> pComputePipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALComputePipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+
+  if (pComputePipelineStateVulkan->InitPlatform().Succeeded())
+    return pComputePipelineStateVulkan;
+
+  XII_DELETE(&m_Allocator, pComputePipelineStateVulkan.m_pInstance);
+
+  return pComputePipelineStateVulkan;
+}
+
+xiiInternal::NewInstance<xiiGALRayTracingPipelineState> xiiGALDeviceVulkan::CreateRayTracingPipelineStatePlatform(const xiiGALRayTracingPipelineStateCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALRayTracingPipelineStateVulkan> pRayTracingPipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALRayTracingPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+
+  if (pRayTracingPipelineStateVulkan->InitPlatform().Succeeded())
+    return pRayTracingPipelineStateVulkan;
+
+  XII_DELETE(&m_Allocator, pRayTracingPipelineStateVulkan.m_pInstance);
+
+  return pRayTracingPipelineStateVulkan;
+}
+
+xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceVulkan::CreateTilePipelineStatePlatform(const xiiGALTilePipelineStateCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALTilePipelineStateVulkan> pTilePipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALTilePipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+
+  if (pTilePipelineStateVulkan->InitPlatform().Succeeded())
+    return pTilePipelineStateVulkan;
+
+  XII_DELETE(&m_Allocator, pTilePipelineStateVulkan.m_pInstance);
+
+  return pTilePipelineStateVulkan;
 }
 
 void xiiGALDeviceVulkan::WaitIdlePlatform()

@@ -6,15 +6,17 @@
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
+#include <GraphicsVulkan/Resources/FenceVulkan.h>
 #include <GraphicsVulkan/Resources/FramebufferVulkan.h>
 #include <GraphicsVulkan/Resources/QueryVulkan.h>
 #include <GraphicsVulkan/Resources/RenderPassVulkan.h>
 #include <GraphicsVulkan/Resources/SamplerVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
+#include <GraphicsVulkan/States/ComputePipelineStateVulkan.h>
+#include <GraphicsVulkan/States/GraphicsPipelineStateVulkan.h>
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
-#include <GraphicsVulkan/States/PipelineStateVulkan.h>
-#include <GraphicsVulkan/Resources/FenceVulkan.h>
+#include <GraphicsVulkan/States/RayTracingPipelineStateVulkan.h>
 
 #define XII_VERIFY_COMMAND_LIST(expression, ...) \
   do                                             \
@@ -810,26 +812,35 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  auto pPipelineStateVulkan = m_pPipelineState.Downcast<xiiGALPipelineStateVulkan>();
-
   if (m_bPipelineStateModified)
   {
-    if (pPipelineStateVulkan != nullptr)
+    if (m_pPipelineState != nullptr)
     {
-      m_vkCommandBuffer.bindPipeline(pPipelineStateVulkan->GetVulkanPipelineBindPoint(), pPipelineStateVulkan->GetVulkanPipeline(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      const auto& pipelineDescription = m_pPipelineState->GetDescription();
 
-      const auto& pipelineDescription = pPipelineStateVulkan->GetDescription();
       if (pipelineDescription.IsAnyGraphicsPipeline())
       {
-        m_CommandListState.m_vkGraphicsPipeline = pPipelineStateVulkan->GetVulkanPipeline();
+        auto pGraphicsPipelineStateVulkan = m_pPipelineState.Downcast<xiiGALGraphicsPipelineStateVulkan>();
+
+        m_CommandListState.m_vkGraphicsPipeline = pGraphicsPipelineStateVulkan->GetVulkanPipeline();
+
+        m_vkCommandBuffer.bindPipeline(pGraphicsPipelineStateVulkan->GetVulkanPipelineBindPoint(), pGraphicsPipelineStateVulkan->GetVulkanPipeline(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
       }
       else if (pipelineDescription.IsComputePipeline())
       {
-        m_CommandListState.m_vkComputePipeline = pPipelineStateVulkan->GetVulkanPipeline();
+        auto pComputePipelineStateVulkan = m_pPipelineState.Downcast<xiiGALComputePipelineStateVulkan>();
+
+        m_CommandListState.m_vkComputePipeline = pComputePipelineStateVulkan->GetVulkanPipeline();
+
+        m_vkCommandBuffer.bindPipeline(pComputePipelineStateVulkan->GetVulkanPipelineBindPoint(), pComputePipelineStateVulkan->GetVulkanPipeline(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
       }
       else if (pipelineDescription.IsRayTracingPipeline())
       {
-        m_CommandListState.m_vkRayTracingPipeline = pPipelineStateVulkan->GetVulkanPipeline();
+        auto pRayTracingPipelineStateVulkan = m_pPipelineState.Downcast<xiiGALRayTracingPipelineStateVulkan>();
+
+        m_CommandListState.m_vkRayTracingPipeline = pRayTracingPipelineStateVulkan->GetVulkanPipeline();
+
+        m_vkCommandBuffer.bindPipeline(pRayTracingPipelineStateVulkan->GetVulkanPipelineBindPoint(), pRayTracingPipelineStateVulkan->GetVulkanPipeline(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
       }
     }
 
@@ -842,11 +853,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
     m_DynamicUniformBuffers.Clear();
     m_DynamicUniformBufferOffsets.Clear();
 
-    if (pPipelineStateVulkan != nullptr)
+    if (m_pPipelineResourceSignature != nullptr)
     {
-      const auto& pipelineDescription = pPipelineStateVulkan->GetDescription();
-
-      xiiSharedPtr<xiiGALPipelineResourceSignatureVulkan> pResourceSignatureVulkan = pipelineDescription.m_pPipelineResourceSignature.Downcast<xiiGALPipelineResourceSignatureVulkan>();
+      xiiSharedPtr<xiiGALPipelineResourceSignatureVulkan> pResourceSignatureVulkan = m_pPipelineResourceSignature.Downcast<xiiGALPipelineResourceSignatureVulkan>();
 
       m_DescriptorSets.SetCountUninitialized(pResourceSignatureVulkan->GetVulkanDescriptorSetLayoutCount());
 
@@ -1207,7 +1216,26 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
         }
       }
 
-      m_vkCommandBuffer.bindDescriptorSets(pPipelineStateVulkan->GetVulkanPipelineBindPoint(), pPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_DescriptorSets.GetCount(), m_DescriptorSets.GetData(), m_DynamicUniformBufferOffsets.GetCount(), m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      const auto& pipelineDescription = m_pPipelineState->GetDescription();
+
+      if (pipelineDescription.IsAnyGraphicsPipeline())
+      {
+        auto pGraphicsPipelineStateVulkan = m_pPipelineState.Downcast<xiiGALGraphicsPipelineStateVulkan>();
+
+        m_vkCommandBuffer.bindDescriptorSets(pGraphicsPipelineStateVulkan->GetVulkanPipelineBindPoint(), pGraphicsPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_DescriptorSets.GetCount(), m_DescriptorSets.GetData(), m_DynamicUniformBufferOffsets.GetCount(), m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
+      else if (pipelineDescription.IsComputePipeline())
+      {
+        auto pComputePipelineStateVulkan = m_pPipelineState.Downcast<xiiGALComputePipelineStateVulkan>();
+
+        m_vkCommandBuffer.bindDescriptorSets(pComputePipelineStateVulkan->GetVulkanPipelineBindPoint(), pComputePipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_DescriptorSets.GetCount(), m_DescriptorSets.GetData(), m_DynamicUniformBufferOffsets.GetCount(), m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
+      else if (pipelineDescription.IsRayTracingPipeline())
+      {
+        auto pRayTracingPipelineStateVulkan = m_pPipelineState.Downcast<xiiGALRayTracingPipelineStateVulkan>();
+
+        m_vkCommandBuffer.bindDescriptorSets(pRayTracingPipelineStateVulkan->GetVulkanPipelineBindPoint(), pRayTracingPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_DescriptorSets.GetCount(), m_DescriptorSets.GetData(), m_DynamicUniformBufferOffsets.GetCount(), m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
     }
 
     m_bDescriptorsModified = false;

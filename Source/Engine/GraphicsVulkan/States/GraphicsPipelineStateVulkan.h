@@ -9,9 +9,9 @@ namespace vk
   class Pipeline;
 }
 
-class XII_GRAPHICSVULKAN_DLL xiiGALPipelineStateVulkan final : public xiiGALPipelineState
+class XII_GRAPHICSVULKAN_DLL xiiGALGraphicsPipelineStateVulkan final : public xiiGALGraphicsPipelineState
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineStateVulkan, xiiGALPipelineState);
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALGraphicsPipelineStateVulkan, xiiGALGraphicsPipelineState);
 
 public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::Pipeline GetVulkanPipeline() const { return m_vkPipeline; }
@@ -23,9 +23,9 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALPipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALPipelineStateCreationDescription& creationDescription);
+  xiiGALGraphicsPipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALGraphicsPipelineStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALPipelineStateVulkan();
+  virtual ~xiiGALGraphicsPipelineStateVulkan();
 
   virtual xiiResult InitPlatform() override final;
 
