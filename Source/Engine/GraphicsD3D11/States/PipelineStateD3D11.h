@@ -19,9 +19,9 @@ struct ID3D11DomainShader;
 struct ID3D11HullShader;
 struct ID3D11ComputeShader;
 
-class XII_GRAPHICSD3D11_DLL xiiGALPipelineStateD3D11 final : public xiiGALPipelineState
+class XII_GRAPHICSD3D11_DLL xiiGALGraphicsPipelineStateD3D11 final : public xiiGALGraphicsPipelineState
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineStateD3D11, xiiGALPipelineState);
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALGraphicsPipelineStateD3D11, xiiGALGraphicsPipelineState);
 
 public:
   struct ShaderType
@@ -59,9 +59,9 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALPipelineStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALPipelineStateCreationDescription& creationDescription);
+  xiiGALGraphicsPipelineStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALGraphicsPipelineStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALPipelineStateD3D11();
+  virtual ~xiiGALGraphicsPipelineStateD3D11();
 
   virtual xiiResult InitPlatform() override final;
 
@@ -79,4 +79,64 @@ private:
 
   xiiSharedPtr<xiiGALRenderPassD3D11>                m_pRenderPassD3D11;
   xiiSharedPtr<xiiGALPipelineResourceSignatureD3D11> m_pPipelineResourceSignatureD3D11;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class XII_GRAPHICSD3D11_DLL xiiGALComputePipelineStateD3D11 final : public xiiGALComputePipelineState
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALComputePipelineStateD3D11, xiiGALComputePipelineState);
+
+public:
+  XII_ALWAYS_INLINE ID3D11ComputeShader* GetD3D11ComputeShader() const { return m_pComputeShaderD3D11 != nullptr ? static_cast<ID3D11ComputeShader*>(m_pComputeShaderD3D11->GetD3D11Shader()) : nullptr; };
+
+protected:
+  friend class xiiGALDeviceD3D11;
+  friend class xiiMemoryUtils;
+
+  xiiGALComputePipelineStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALComputePipelineStateCreationDescription& creationDescription);
+
+  virtual ~xiiGALComputePipelineStateD3D11();
+
+  virtual xiiResult InitPlatform() override final;
+
+private:
+  xiiSharedPtr<xiiGALPipelineResourceSignatureD3D11> m_pPipelineResourceSignatureD3D11;
+  xiiSharedPtr<xiiGALShaderD3D11>                    m_pComputeShaderD3D11;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class XII_GRAPHICSD3D11_DLL xiiGALRayTracingPipelineStateD3D11 final : public xiiGALRayTracingPipelineState
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRayTracingPipelineStateD3D11, xiiGALRayTracingPipelineState);
+
+public:
+protected:
+  friend class xiiGALDeviceD3D11;
+  friend class xiiMemoryUtils;
+
+  xiiGALRayTracingPipelineStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALRayTracingPipelineStateCreationDescription& creationDescription);
+
+  virtual ~xiiGALRayTracingPipelineStateD3D11();
+
+  virtual xiiResult InitPlatform() override final;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class XII_GRAPHICSD3D11_DLL xiiGALTilePipelineStateD3D11 final : public xiiGALTilePipelineState
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTilePipelineStateD3D11, xiiGALTilePipelineState);
+
+public:
+protected:
+  friend class xiiGALDeviceD3D11;
+  friend class xiiMemoryUtils;
+
+  xiiGALTilePipelineStateD3D11(xiiSharedPtr<xiiGALDeviceD3D11> pDeviceD3D11, const xiiGALTilePipelineStateCreationDescription& creationDescription);
+
+  virtual ~xiiGALTilePipelineStateD3D11();
+
+  virtual xiiResult InitPlatform() override final;
 };

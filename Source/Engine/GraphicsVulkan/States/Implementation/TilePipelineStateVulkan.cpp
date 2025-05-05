@@ -1,13 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/RenderPassVulkan.h>
-#include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
-#include <GraphicsVulkan/Shader/ShaderVulkan.h>
-#include <GraphicsVulkan/States/BlendStateVulkan.h>
-#include <GraphicsVulkan/States/DepthStencilStateVulkan.h>
-#include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
-#include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 #include <GraphicsVulkan/States/TilePipelineStateVulkan.h>
 
 // clang-format off
