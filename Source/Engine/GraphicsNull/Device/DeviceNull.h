@@ -49,7 +49,10 @@ protected:
   virtual xiiInternal::NewInstance<xiiGALBottomLevelAS>             CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALTopLevelAS>                CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALPipelineResourceSignature> CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description) override final;
-  virtual xiiInternal::NewInstance<xiiGALPipelineState>             CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALGraphicsPipelineState>     CreateGraphicsPipelineStatePlatform(const xiiGALGraphicsPipelineStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALComputePipelineState>      CreateComputePipelineStatePlatform(const xiiGALComputePipelineStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALRayTracingPipelineState>   CreateRayTracingPipelineStatePlatform(const xiiGALRayTracingPipelineStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALTilePipelineState>         CreateTilePipelineStatePlatform(const xiiGALTilePipelineStateCreationDescription& description) override final;
   virtual void                                                      WaitIdlePlatform() override final;
 
   virtual xiiResult FillCapabilitiesPlatform() override final;

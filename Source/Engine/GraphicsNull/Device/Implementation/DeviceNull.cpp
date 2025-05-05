@@ -283,16 +283,52 @@ xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceNull::Crea
   return pPipelineResourceSignatureNull;
 }
 
-xiiInternal::NewInstance<xiiGALPipelineState> xiiGALDeviceNull::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
+xiiInternal::NewInstance<xiiGALGraphicsPipelineState> xiiGALDeviceNull::CreateGraphicsPipelineStatePlatform(const xiiGALGraphicsPipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALPipelineStateNull> pPipelineStateNull = XII_NEW(&m_Allocator, xiiGALPipelineStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALGraphicsPipelineStateNull> pGraphicsPipelineStateNull = XII_NEW(&m_Allocator, xiiGALGraphicsPipelineStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
 
-  if (pPipelineStateNull->InitPlatform().Succeeded())
-    return pPipelineStateNull;
+  if (pGraphicsPipelineStateNull->InitPlatform().Succeeded())
+    return pGraphicsPipelineStateNull;
 
-  XII_DELETE(&m_Allocator, pPipelineStateNull.m_pInstance);
+  XII_DELETE(&m_Allocator, pGraphicsPipelineStateNull.m_pInstance);
 
-  return pPipelineStateNull;
+  return pGraphicsPipelineStateNull;
+}
+
+xiiInternal::NewInstance<xiiGALComputePipelineState> xiiGALDeviceNull::CreateComputePipelineStatePlatform(const xiiGALComputePipelineStateCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALComputePipelineStateNull> pComputePipelineStateNull = XII_NEW(&m_Allocator, xiiGALComputePipelineStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
+
+  if (pComputePipelineStateNull->InitPlatform().Succeeded())
+    return pComputePipelineStateNull;
+
+  XII_DELETE(&m_Allocator, pComputePipelineStateNull.m_pInstance);
+
+  return pComputePipelineStateNull;
+}
+
+xiiInternal::NewInstance<xiiGALRayTracingPipelineState> xiiGALDeviceNull::CreateRayTracingPipelineStatePlatform(const xiiGALRayTracingPipelineStateCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALRayTracingPipelineStateNull> pRayTracingPipelineStateNull = XII_NEW(&m_Allocator, xiiGALRayTracingPipelineStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
+
+  if (pRayTracingPipelineStateNull->InitPlatform().Succeeded())
+    return pRayTracingPipelineStateNull;
+
+  XII_DELETE(&m_Allocator, pRayTracingPipelineStateNull.m_pInstance);
+
+  return pRayTracingPipelineStateNull;
+}
+
+xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceNull::CreateTilePipelineStatePlatform(const xiiGALTilePipelineStateCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALTilePipelineStateNull> pTilePipelineStateNull = XII_NEW(&m_Allocator, xiiGALTilePipelineStateNull, xiiSharedPtr<xiiGALDeviceNull>(this, m_Allocator.GetParent()), description);
+
+  if (pTilePipelineStateNull->InitPlatform().Succeeded())
+    return pTilePipelineStateNull;
+
+  XII_DELETE(&m_Allocator, pTilePipelineStateNull.m_pInstance);
+
+  return pTilePipelineStateNull;
 }
 
 void xiiGALDeviceNull::WaitIdlePlatform()

@@ -37,4 +37,7 @@ class xiiGALBlendStateNull;
 class xiiGALDepthStencilStateNull;
 class xiiGALRasterizerStateNull;
 class xiiGALPipelineResourceSignatureNull;
-class xiiGALPipelineStateNull;
+class xiiGALGraphicsPipelineStateNull;
+class xiiGALComputePipelineStateNull;
+class xiiGALRayTracingPipelineStateNull;
+class xiiGALTilePipelineStateNull;
