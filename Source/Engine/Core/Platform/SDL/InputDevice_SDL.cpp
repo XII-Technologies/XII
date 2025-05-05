@@ -317,10 +317,10 @@ void xiiStandardInputDevice::WindowMessage(void* pMessage)
     {
       s_iMouseIsOverWindowNumber = m_uiWindowNumber;
 
-      const float fPosX    = static_cast<float>(event.motion.x);
-      const float fPosY    = static_cast<float>(event.motion.y);
-      const float fRelPosX = static_cast<float>(event.motion.xrel);
-      const float fRelPosY = static_cast<float>(event.motion.yrel);
+      const float fPosX    = event.motion.x;
+      const float fPosY    = event.motion.y;
+      const float fRelPosX = event.motion.xrel;
+      const float fRelPosY = event.motion.yrel;
 
       xiiInt32 iWindowWidth;
       xiiInt32 iWindowHeight;

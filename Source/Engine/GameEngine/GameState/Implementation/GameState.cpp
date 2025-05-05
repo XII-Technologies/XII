@@ -492,8 +492,6 @@ xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 
   xiiUniquePtr<xiiGameStateWindow> pWindow = XII_DEFAULT_NEW(xiiGameStateWindow, wndDesc, [] {});
   pWindow->ResetOnClickClose([this]() { this->RequestQuit(); });
-  if (pWindow->GetInputDevice())
-    pWindow->GetInputDevice()->SetMouseSpeed(xiiVec2(0.002f));
 
   return pWindow;
 }
