@@ -2,30 +2,30 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
-
 #include <GraphicsNull/CommandEncoder/CommandListNull.h>
 #include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Device/SwapChainNull.h>
 #include <GraphicsNull/Resources/BottomLevelASNull.h>
 #include <GraphicsNull/Resources/BufferNull.h>
-#include <GraphicsNull/Resources/BufferViewNull.h>
 #include <GraphicsNull/Resources/FenceNull.h>
 #include <GraphicsNull/Resources/FramebufferNull.h>
 #include <GraphicsNull/Resources/QueryNull.h>
 #include <GraphicsNull/Resources/RenderPassNull.h>
 #include <GraphicsNull/Resources/SamplerNull.h>
 #include <GraphicsNull/Resources/TextureNull.h>
-#include <GraphicsNull/Resources/TextureViewNull.h>
 #include <GraphicsNull/Resources/TopLevelASNull.h>
-#include <GraphicsNull/Shader/InputLayoutNull.h>
 #include <GraphicsNull/Shader/ShaderNull.h>
 #include <GraphicsNull/States/BlendStateNull.h>
 #include <GraphicsNull/States/DepthStencilStateNull.h>
 #include <GraphicsNull/States/PipelineResourceSignatureNull.h>
 #include <GraphicsNull/States/PipelineStateNull.h>
 #include <GraphicsNull/States/RasterizerStateNull.h>
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiInternal::NewInstance<xiiGALDevice> CreateNullDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {

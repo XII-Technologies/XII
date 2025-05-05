@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALCommandListNull final : public xiiGALCommandList
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListNull, xiiGALCommandList);
+
 public:
 protected:
   friend class xiiMemoryUtils;

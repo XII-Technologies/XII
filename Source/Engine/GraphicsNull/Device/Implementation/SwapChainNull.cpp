@@ -1,10 +1,13 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
 #include <Core/System/Window.h>
-#include <Foundation/Profiling/Profiling.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Device/SwapChainNull.h>
-#include <GraphicsNull/Resources/TextureNull.h>
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiGALSwapChainNull::xiiGALSwapChainNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(pDeviceNull, creationDescription)

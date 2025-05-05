@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALTopLevelASNull final : public xiiGALTopLevelAS
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTopLevelASNull, xiiGALTopLevelAS);
+
 public:
   virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const override final;
 

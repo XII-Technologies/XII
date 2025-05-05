@@ -3,6 +3,11 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/FenceNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALFenceNull::xiiGALFenceNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALFenceCreationDescription& creationDescription) :
   xiiGALFence(pDeviceNull, creationDescription)
 {

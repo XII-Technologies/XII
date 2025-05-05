@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALQueryNull final : public xiiGALQuery
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALQueryNull, xiiGALQuery);
+
 public:
   virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) override final;
 

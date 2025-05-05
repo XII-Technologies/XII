@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALDepthStencilStateNull final : public xiiGALDepthStencilState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALDepthStencilStateNull, xiiGALDepthStencilState);
+
 public:
 protected:
   friend class xiiGALDeviceNull;

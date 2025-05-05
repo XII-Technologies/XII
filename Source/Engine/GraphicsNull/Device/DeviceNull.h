@@ -10,6 +10,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALDeviceNull final : public xiiGALDevice
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALDeviceNull, xiiGALDevice);
+
 private:
   friend class xiiMemoryUtils;
 

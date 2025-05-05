@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALGraphicsPipelineStateNull final : public xiiGALGraphicsPipelineState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALGraphicsPipelineStateNull, xiiGALGraphicsPipelineState);
+
 public:
 protected:
   friend class xiiGALDeviceNull;
@@ -22,6 +24,8 @@ protected:
 
 class XII_GRAPHICSNULL_DLL xiiGALComputePipelineStateNull final : public xiiGALComputePipelineState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALComputePipelineStateNull, xiiGALComputePipelineState);
+
 public:
 protected:
   friend class xiiGALDeviceNull;
@@ -38,6 +42,8 @@ protected:
 
 class XII_GRAPHICSNULL_DLL xiiGALRayTracingPipelineStateNull final : public xiiGALRayTracingPipelineState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRayTracingPipelineStateNull, xiiGALRayTracingPipelineState);
+
 public:
 protected:
   friend class xiiGALDeviceNull;
@@ -54,6 +60,8 @@ protected:
 
 class XII_GRAPHICSNULL_DLL xiiGALTilePipelineStateNull final : public xiiGALTilePipelineState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTilePipelineStateNull, xiiGALTilePipelineState);
+
 public:
 protected:
   friend class xiiGALDeviceNull;

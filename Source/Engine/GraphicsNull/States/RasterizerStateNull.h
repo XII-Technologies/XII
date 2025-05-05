@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALRasterizerStateNull final : public xiiGALRasterizerState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRasterizerStateNull, xiiGALRasterizerState);
+
 public:
 protected:
   friend class xiiGALDeviceNull;

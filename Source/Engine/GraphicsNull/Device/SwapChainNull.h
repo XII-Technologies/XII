@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALSwapChainNull final : public xiiGALSwapChain
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSwapChainNull, xiiGALSwapChain);
+
 public:
   virtual void Present() override final;
 

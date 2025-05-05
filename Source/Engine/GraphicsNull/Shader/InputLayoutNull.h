@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALInputLayoutNull final : public xiiGALInputLayout
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayoutNull, xiiGALInputLayout);
+
 public:
 protected:
   friend class xiiMemoryUtils;

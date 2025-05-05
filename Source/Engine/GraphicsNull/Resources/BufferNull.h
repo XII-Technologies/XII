@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALBufferNull final : public xiiGALBuffer
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferNull, xiiGALBuffer);
+
 public:
   virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
 

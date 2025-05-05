@@ -3,6 +3,11 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/PipelineResourceSignatureNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineResourceSignatureNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALPipelineResourceSignatureNull::xiiGALPipelineResourceSignatureNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
   xiiGALPipelineResourceSignature(pDeviceNull, creationDescription)
 {

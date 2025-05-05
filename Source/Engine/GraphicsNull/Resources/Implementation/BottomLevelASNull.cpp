@@ -3,6 +3,11 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/BottomLevelASNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelASNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALBottomLevelASNull::xiiGALBottomLevelASNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALBottomLevelASCreationDescription& creationDescription) :
   xiiGALBottomLevelAS(pDeviceNull, creationDescription)
 {

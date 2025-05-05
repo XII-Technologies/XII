@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALTextureNull final : public xiiGALTexture
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureNull, xiiGALTexture);
+
 public:
   virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final;
 

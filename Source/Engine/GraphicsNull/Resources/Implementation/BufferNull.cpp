@@ -4,6 +4,11 @@
 #include <GraphicsNull/Resources/BufferNull.h>
 #include <GraphicsNull/Resources/BufferViewNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALBufferNull::xiiGALBufferNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALBufferCreationDescription& creationDescription) :
   xiiGALBuffer(pDeviceNull, creationDescription)
 {

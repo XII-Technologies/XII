@@ -4,6 +4,11 @@
 #include <GraphicsNull/Resources/TextureNull.h>
 #include <GraphicsNull/Resources/TextureViewNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALTextureNull::xiiGALTextureNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceNull, creationDescription)
 {

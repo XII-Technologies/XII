@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALFenceNull final : public xiiGALFence
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALFenceNull, xiiGALFence);
+
 public:
   virtual xiiUInt64 GetCompletedValue() override final;
 

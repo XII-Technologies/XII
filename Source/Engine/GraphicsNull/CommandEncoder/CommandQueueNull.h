@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALCommandQueueNull final : public xiiGALCommandQueue
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueueNull, xiiGALCommandQueue);
+
 public:
   /// \brief This returns the value of the internal fence that will be signaled the next time.
   virtual xiiUInt64 GetNextFenceValue() const override final;

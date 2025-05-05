@@ -3,6 +3,11 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/PipelineStateNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALGraphicsPipelineStateNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALGraphicsPipelineStateNull::xiiGALGraphicsPipelineStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALGraphicsPipelineStateCreationDescription& creationDescription) :
   xiiGALGraphicsPipelineState(pDeviceNull, creationDescription)
 {
@@ -16,6 +21,11 @@ xiiResult xiiGALGraphicsPipelineStateNull::InitPlatform()
 }
 
 ///////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALComputePipelineStateNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiGALComputePipelineStateNull::xiiGALComputePipelineStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALComputePipelineStateCreationDescription& creationDescription) :
   xiiGALComputePipelineState(pDeviceNull, creationDescription)
@@ -31,6 +41,11 @@ xiiResult xiiGALComputePipelineStateNull::InitPlatform()
 
 ///////////////////////////////////////////////////////////////////
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRayTracingPipelineStateNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALRayTracingPipelineStateNull::xiiGALRayTracingPipelineStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALRayTracingPipelineStateCreationDescription& creationDescription) :
   xiiGALRayTracingPipelineState(pDeviceNull, creationDescription)
 {
@@ -44,6 +59,11 @@ xiiResult xiiGALRayTracingPipelineStateNull::InitPlatform()
 }
 
 ///////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTilePipelineStateNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiGALTilePipelineStateNull::xiiGALTilePipelineStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALTilePipelineStateCreationDescription& creationDescription) :
   xiiGALTilePipelineState(pDeviceNull, creationDescription)

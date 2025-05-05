@@ -3,6 +3,11 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/QueryNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQueryNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALQueryNull::xiiGALQueryNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALQueryCreationDescription& creationDescription) :
   xiiGALQuery(pDeviceNull, creationDescription)
 {

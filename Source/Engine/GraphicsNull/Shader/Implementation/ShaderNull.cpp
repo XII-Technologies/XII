@@ -4,6 +4,11 @@
 #include <GraphicsNull/Shader/InputLayoutNull.h>
 #include <GraphicsNull/Shader/ShaderNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALShaderNull::xiiGALShaderNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALShader(pDeviceNull, creationDescription)
 {

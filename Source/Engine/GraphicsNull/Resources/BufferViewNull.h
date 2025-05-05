@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALBufferViewNull final : public xiiGALBufferView
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferViewNull, xiiGALBufferView);
+
 public:
 protected:
   friend class xiiMemoryUtils;

@@ -7,6 +7,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALShaderNull final : public xiiGALShader
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderNull, xiiGALShader);
+
 public:
 protected:
   friend class xiiGALDeviceNull;

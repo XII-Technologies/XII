@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALBlendStateNull final : public xiiGALBlendState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBlendStateNull, xiiGALBlendState);
+
 public:
 protected:
   friend class xiiGALDeviceNull;

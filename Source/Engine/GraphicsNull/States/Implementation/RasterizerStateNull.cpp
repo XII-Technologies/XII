@@ -3,6 +3,11 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/RasterizerStateNull.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALRasterizerStateNull::xiiGALRasterizerStateNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALRasterizerStateCreationDescription& creationDescription) :
   xiiGALRasterizerState(pDeviceNull, creationDescription)
 {

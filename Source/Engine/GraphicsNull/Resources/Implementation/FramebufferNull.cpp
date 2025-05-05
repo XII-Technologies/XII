@@ -2,9 +2,11 @@
 
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/FramebufferNull.h>
-#include <GraphicsNull/Resources/RenderPassNull.h>
-#include <GraphicsNull/Resources/TextureNull.h>
-#include <GraphicsNull/Resources/TextureViewNull.h>
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFramebufferNull, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiGALFramebufferNull::xiiGALFramebufferNull(xiiSharedPtr<xiiGALDeviceNull> pDeviceNull, const xiiGALFramebufferCreationDescription& creationDescription) :
   xiiGALFramebuffer(pDeviceNull, creationDescription)

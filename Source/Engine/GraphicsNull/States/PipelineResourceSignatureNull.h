@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALPipelineResourceSignatureNull final : public xiiGALPipelineResourceSignature
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignatureNull, xiiGALPipelineResourceSignature);
+
 public:
   virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final;
 

@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALSamplerNull final : public xiiGALSampler
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSamplerNull, xiiGALSampler);
+
 public:
 protected:
   friend class xiiGALDeviceNull;

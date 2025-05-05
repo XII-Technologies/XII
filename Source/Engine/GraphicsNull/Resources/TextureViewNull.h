@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALTextureViewNull final : public xiiGALTextureView
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureViewNull, xiiGALTextureView);
+
 public:
 protected:
   friend class xiiMemoryUtils;

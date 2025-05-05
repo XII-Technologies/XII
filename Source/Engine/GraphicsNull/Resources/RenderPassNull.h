@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALRenderPassNull final : public xiiGALRenderPass
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRenderPassNull, xiiGALRenderPass);
+
 public:
 protected:
   friend class xiiGALDeviceNull;

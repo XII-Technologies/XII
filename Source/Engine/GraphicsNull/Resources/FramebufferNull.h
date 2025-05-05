@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSNULL_DLL xiiGALFramebufferNull final : public xiiGALFramebuffer
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALFramebufferNull, xiiGALFramebuffer);
+
 public:
 protected:
   friend class xiiGALDeviceNull;
