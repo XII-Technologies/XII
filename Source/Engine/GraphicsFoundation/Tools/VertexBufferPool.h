@@ -15,9 +15,9 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiUInt64 m_uiChunkIndex = 0; ///< Index into the pool's internal chunks.
-    xiiUInt64 m_uiOffset     = 0; ///< Offset within the chunk.
-    xiiUInt64 m_uiCount      = 0; ///< Number of vertices allocated.
+    xiiUInt32 m_uiChunkIndex = 0; ///< Index into the pool's internal chunks.
+    xiiUInt32 m_uiOffset     = 0; ///< Offset within the chunk.
+    xiiUInt32 m_uiCount      = 0; ///< Number of vertices allocated.
   };
 
   /// \brief Aggregated usage statistics for the pool.
@@ -42,13 +42,13 @@ public:
   /// \param uiCount - The number of vertices requested.
   ///
   /// \return An AllocationHandle that describes where the vertices live.
-  AllocationHandle Allocate(xiiUInt32 uiCount)
+  AllocationHandle Allocate(xiiUInt32 uiCount);
 
-    /// \brief Updates the data stored in a given allocation.
-    ///
-    /// \param handle - The allocation handle previously returned by Allocate().
-    /// \param pData  - An array containing the new vertex data.
-    void Update(const AllocationHandle& handle, xiiArrayPtr<const VertexType> pData);
+  /// \brief Updates the data stored in a given allocation.
+  ///
+  /// \param handle - The allocation handle previously returned by Allocate().
+  /// \param pData  - An array containing the new vertex data.
+  void Update(const AllocationHandle& handle, xiiArrayPtr<const VertexType> pData);
 
   /// \brief Returns a read-only pointer to the allocated vertex data.
   ///
