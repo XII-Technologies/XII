@@ -13,7 +13,7 @@ template <typename VertexType, typename MutexType, typename AllocatorWrapper>
 XII_ALWAYS_INLINE xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper>::~xiiGALVertexBufferPool() = default;
 
 template <typename VertexType, typename MutexType, typename AllocatorWrapper>
-XII_ALWAYS_INLINE void xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper>::Update(const AllocationHandle& handle, xiiArrayPtr<const VertexType> pData)
+XII_ALWAYS_INLINE void xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper>::Update(const AllocationHandle& handle, xiiArrayPtr<const VertexType> pData, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   XII_ASSERT_DEV(pData.GetCount() == handle.m_uiCount, "The data size does not match the allocation count.");
 
@@ -26,7 +26,10 @@ XII_ALWAYS_INLINE void xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWr
 
   XII_ASSERT_DEV(handle.m_uiOffset + handle.m_uiCount < chunk.m_uiCount, "Chunk allocation handle exceeds the used size of the chunk.");
 
+  // Copy data into the CPU-side storage.
   memcpy(chunk.m_Vertices.GetData() + handle.m_uiOffset, pData.GetPtr(), pData.GetCount());
+
+  // Update the GPU buffer 
 }
 
 template <typename VertexType, typename MutexType, typename AllocatorWrapper>
@@ -40,6 +43,16 @@ XII_ALWAYS_INLINE xiiArrayPtr<const VertexType> xiiGALVertexBufferPool<VertexTyp
   XII_ASSERT_DEV(handle.m_uiOffset + handle.m_uiCount < chunk.m_uiCount, "Chunk allocation handle exceeds the used size of the chunk.");
 
   return chunk.m_Vertices.GetArrayPtr().GetSubArray(handle.m_uiOffset);
+}
+
+template <typename VertexType, typename MutexType, typename AllocatorWrapper>
+XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper>::GetGPUBuffer(const AllocationHandle& handle) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(handle.m_uiChunkIndex < m_Chunks.GetCount(), "Invalid chunk index in allocation handle.");
+
+  return m_Chunks[handle.m_uiChunkIndex].m_pBuffer;
 }
 
 template <typename VertexType, typename MutexType, typename AllocatorWrapper>
