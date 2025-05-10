@@ -6,7 +6,7 @@ XII_ALWAYS_INLINE xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper
   XII_ASSERT_DEV(uiInitialChunkSize > 0, "Initial chunk size must be greater than zero.");
 
   // Create the first memory chunk.
-  m_Chunks.PushBack(Chunk(&m_Allocator, uiInitialChunkSize));
+  m_Chunks.PushBack(xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper>::Chunk(&m_Allocator, uiInitialChunkSize, nullptr));
 }
 
 template <typename VertexType, typename MutexType, typename AllocatorWrapper>
@@ -83,5 +83,5 @@ XII_ALWAYS_INLINE xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper
     stats.m_uiUsageCount += m_Allocations[i].m_uiUsageCount;
   }
 
-  return UsageStatistics();
+  return stats;
 }
