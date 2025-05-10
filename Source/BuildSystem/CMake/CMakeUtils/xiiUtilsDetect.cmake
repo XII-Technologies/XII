@@ -292,7 +292,7 @@ function(xii_detect_cpuid_flags)
       COMPILE_RESULT
       ${CMAKE_CURRENT_BINARY_DIR}
       ${FILE_TO_COMPILE}
-      CMAKE_FLAGS -DCMAKE_C_FLAGS="/W4"
+      CMAKE_FLAGS -DCMAKE_C_FLAGS="/EHsc /W4"
       OUTPUT_VARIABLE COMPILE_OUTPUT
       COPY_FILE ${CMAKE_BINARY_DIR}/xiiCPUIdFlagsDetect
     )
