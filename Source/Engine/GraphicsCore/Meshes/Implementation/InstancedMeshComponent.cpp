@@ -10,6 +10,9 @@
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/ObjectConstants.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMeshInstanceData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMeshInstanceData>)
@@ -62,8 +65,8 @@ xiiVec3 xiiMeshInstanceData::GetLocalScaling() const
   return m_transform.m_vScale;
 }
 
-static const xiiTypeVersion s_MeshInstanceDataVersion = 1;
-xiiResult                   xiiMeshInstanceData::Serialize(xiiStreamWriter& ref_writer) const
+static constexpr xiiTypeVersion s_MeshInstanceDataVersion = 1;
+xiiResult                       xiiMeshInstanceData::Serialize(xiiStreamWriter& ref_writer) const
 {
   ref_writer.WriteVersion(s_MeshInstanceDataVersion);
 
@@ -127,25 +130,25 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+  if (auto pCommandQueue = pDevice->GetDefaultCommandQueue())
   {
-    auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
+    auto pCommandList = pCommandQueue->BeginCommandList();
 
-    pCommandList->BeginDebugGroup("xiiInstanceData Update");
+    pCommandList->BeginDebugGroup("Update Instanced Mesh Data");
     {
       for (const auto& componentToUpdate : m_RequireUpdate)
       {
-        xiiInstancedMeshComponent* pInstancedMeshComponent = nullptr;
-        if (!TryGetComponent(componentToUpdate.m_hComponent, pInstancedMeshComponent))
+        xiiInstancedMeshComponent* pComp = nullptr;
+        if (!TryGetComponent(componentToUpdate.m_hComponent, pComp))
           continue;
 
-        if (pInstancedMeshComponent->m_pExplicitInstanceData)
+        if (pComp->m_pExplicitInstanceData)
         {
           xiiUInt32 uiOffset     = 0;
-          auto      instanceData = pInstancedMeshComponent->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
+          auto      instanceData = pComp->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
           instanceData.CopyFrom(componentToUpdate.m_InstanceData);
 
-          pInstancedMeshComponent->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, instanceData.GetCount());
+          pComp->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, instanceData.GetCount());
         }
       }
     }
@@ -349,6 +352,7 @@ xiiArrayPtr<xiiPerInstanceData> xiiInstancedMeshComponent::GetInstanceData() con
     instanceData[i].BoundingSphereRadius = fBoundingSphereRadius * m_RawInstancedData[i].m_transform.GetMaxScale();
 
     instanceData[i].Color = m_Color * m_RawInstancedData[i].m_color;
+    instanceData[i].CustomData.SetZero(); // unused
   }
 
   return instanceData;

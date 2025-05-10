@@ -65,6 +65,7 @@ public:
   /// \brief Returns the material that is used for rendering.
   xiiMaterialResourceHandle GetMaterial() const;
 
+  // Adds SetMaterialFile() and GetMaterialFile() for convenience
   XII_ADD_RESOURCEHANDLE_ACCESSORS(Material, m_hMaterial);
 
   /// \brief Sets the mesh instance color.

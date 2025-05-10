@@ -17,6 +17,4 @@ public:
 
 protected:
   virtual void SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const override;
-
-  static xiiUInt32 s_uiSkinningBufferUpdates;
 };

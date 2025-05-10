@@ -13,9 +13,7 @@ class XII_GRAPHICSCORE_DLL xiiSkinnedMeshRenderData : public xiiMeshRenderData
 public:
   virtual bool CanBatch(const xiiRenderData& other) const override { return false; }
 
-  xiiGALBufferHandle          m_hSkinningTransforms;
-  xiiArrayPtr<const xiiUInt8> m_pNewSkinningTransformData;
-  std::shared_ptr<bool>       m_bTransformsUpdated;
+  xiiGALBufferHandle m_hSkinningTransforms;
 };
 
 struct XII_GRAPHICSCORE_DLL xiiSkinningState
@@ -31,9 +29,5 @@ struct XII_GRAPHICSCORE_DLL xiiSkinningState
   /// \brief Call this, after modifying m_Transforms, to make the renderer apply the update.
   void TransformsChanged();
 
-  void FillSkinnedMeshRenderData(xiiSkinnedMeshRenderData& ref_renderData) const;
-
-private:
-  xiiGALBufferHandle    m_hGpuBuffer;
-  std::shared_ptr<bool> m_bTransformsUpdated[2];
+  xiiGALBufferHandle m_hGpuBuffer;
 };

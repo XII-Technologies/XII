@@ -62,9 +62,9 @@ xiiBasisAxis::Enum xiiMeshImportTransform::GetRightDir(xiiMeshImportTransform::E
   switch (transform)
   {
     case xiiMeshImportTransform::Blender_YUp:
-      return xiiBasisAxis::PositiveX;
+      return xiiBasisAxis::NegativeX;
     case xiiMeshImportTransform::Blender_ZUp:
-      return xiiBasisAxis::PositiveX;
+      return xiiBasisAxis::NegativeX;
     case xiiMeshImportTransform::Custom:
       return dir;
 
@@ -96,9 +96,9 @@ bool xiiMeshImportTransform::GetFlipForward(xiiMeshImportTransform::Enum transfo
   switch (transform)
   {
     case xiiMeshImportTransform::Blender_YUp:
-      return true;
+      return false;
     case xiiMeshImportTransform::Blender_ZUp:
-      return true;
+      return false;
     case xiiMeshImportTransform::Custom:
       return bFlip;
 

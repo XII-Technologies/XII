@@ -450,11 +450,12 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
       // Version 2
       if (ci.m_uiChunkVersion >= 2)
       {
-        bCalculateBounds = false;
         chunk >> m_Bounds.m_vCenter;
         chunk >> m_Bounds.m_vBoxHalfExtents;
         chunk >> m_Bounds.m_fSphereRadius;
+        bCalculateBounds = !m_Bounds.IsValid();
       }
+
       if (ci.m_uiChunkVersion >= 4)
       {
         chunk >> m_fMaxBoneVertexOffset;
@@ -529,6 +530,11 @@ void xiiMeshResourceDescriptor::ComputeBounds()
   else
   {
     m_Bounds = m_MeshBufferDescriptor.ComputeBounds();
+  }
+
+  if (!m_Bounds.IsValid())
+  {
+    m_Bounds = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(0.1f), 0.1f);
   }
 }
 

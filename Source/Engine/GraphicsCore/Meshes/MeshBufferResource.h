@@ -38,7 +38,7 @@ public:
   void Clear();
 
   /// \brief Use this function to add vertex streams to the mesh buffer. The return value is the index of the just added stream.
-  xiiUInt32 AddStream(xiiEnum<xiiGALInputLayoutSemantic> semantic, xiiEnum<xiiGALResourceFormat> format);
+  xiiUInt32 AddStream(xiiGALInputLayoutSemantic::Enum semantic, xiiGALResourceFormat::Enum format);
 
   /// \brief Adds common vertex streams to the mesh buffer.
   ///
@@ -51,11 +51,11 @@ public:
 
   /// \brief After all streams are added, call this to allocate the data for the streams. If uiNumPrimitives is 0, the mesh buffer will not
   /// use indexed rendering.
-  void AllocateStreams(xiiUInt32 uiNumVertices, xiiEnum<xiiGALPrimitiveTopology> topology = xiiGALPrimitiveTopology::TriangleList, xiiUInt32 uiNumPrimitives = 0, bool bZeroFill = false);
+  void AllocateStreams(xiiUInt32 uiNumVertices, xiiGALPrimitiveTopology::Enum topology = xiiGALPrimitiveTopology::TriangleList, xiiUInt32 uiNumPrimitives = 0, bool bZeroFill = false);
 
   /// \brief Creates streams and fills them with data from the xiiGeometry. Only the geometry matching the given topology is used.
   ///  Streams that do not match any of the data inside the xiiGeometry directly are skipped.
-  void AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiEnum<xiiGALPrimitiveTopology> topology = xiiGALPrimitiveTopology::TriangleList);
+  void AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiGALPrimitiveTopology::Enum topology = xiiGALPrimitiveTopology::TriangleList);
 
   /// \brief Gives read access to the allocated vertex data
   xiiArrayPtr<const xiiUInt8> GetVertexBufferData() const;
@@ -137,11 +137,7 @@ class XII_GRAPHICSCORE_DLL xiiMeshBufferResource : public xiiResource
   XII_RESOURCE_DECLARE_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDescriptor);
 
 public:
-  xiiMeshBufferResource() :
-    xiiResource(DoUpdate::OnAnyThread, 1)
-  {
-  }
-
+  xiiMeshBufferResource();
   ~xiiMeshBufferResource();
 
   XII_ALWAYS_INLINE xiiUInt32 GetPrimitiveCount() const { return m_uiPrimitiveCount; }

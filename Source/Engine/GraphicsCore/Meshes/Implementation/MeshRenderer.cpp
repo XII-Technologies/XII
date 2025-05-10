@@ -53,11 +53,11 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
   // This can happen when the resource has been reloaded and now has fewer submeshes.
   const auto& subMeshes = pMesh->GetSubMeshes();
   if (subMeshes.GetCount() <= uiPartIndex)
+  {
     return;
+  }
 
   xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
-
-  pInstanceData->BindResources(pContext);
 
   if (pRenderData->m_uiFlipWinding)
   {
@@ -73,11 +73,11 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
   SetAdditionalData(renderViewContext, pRenderData);
 
+  pInstanceData->BindResources(pContext);
+
   if (!bHasExplicitInstanceData)
   {
-    xiiGALDevice* pDevice      = xiiGALDevice::GetDefaultDevice();
-    xiiUInt32     uiStartIndex = 0;
-
+    xiiUInt32 uiStartIndex = 0;
     while (uiStartIndex < batch.GetCount())
     {
       const xiiUInt32 uiRemainingInstances = batch.GetCount() - uiStartIndex;
@@ -90,13 +90,7 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       if (uiFilteredCount > 0) // Instance data might be empty if all render data was filtered.
       {
-        auto pCommandList = pContext->GetCommandList();
-
-        pCommandList->BeginDebugGroup("xiiInstanceData Update");
-        {
-          pInstanceData->UpdateInstanceData(pCommandList, uiFilteredCount);
-        }
-        pCommandList->EndDebugGroup();
+        pInstanceData->UpdateInstanceData(pContext->GetCommandList(), uiFilteredCount);
 
         const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];
 
