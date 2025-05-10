@@ -4,41 +4,11 @@
 
 #include <Foundation/Threading/AtomicUtils.h>
 
-template <xiiInt32 T>
-struct xiiAtomicStorageType
-{
-};
-
-template <>
-struct xiiAtomicStorageType<1>
-{
-  using Type = xiiInt32;
-};
-
-template <>
-struct xiiAtomicStorageType<2>
-{
-  using Type = xiiInt32;
-};
-
-template <>
-struct xiiAtomicStorageType<4>
-{
-  using Type = xiiInt32;
-};
-
-template <>
-struct xiiAtomicStorageType<8>
-{
-  using Type = xiiInt64;
-};
-
 /// \brief Integer class that can be manipulated in an atomic (i.e. thread-safe) fashion.
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 class xiiAtomicInteger
 {
-  using UnderlyingType = typename xiiAtomicStorageType<sizeof(T)>::Type;
-
 public:
   XII_DECLARE_POD_TYPE();
 
@@ -92,7 +62,7 @@ public:
   operator T() const; // [tested]
 
 private:
-  UnderlyingType m_Value;
+  xii_atomic_underlying_t<T> m_Value;
 };
 
 /// \brief An atomic boolean variable. This is just a wrapper around an atomic int32 for convenience.
@@ -132,8 +102,7 @@ private:
 // Include inline file
 #include <Foundation/Threading/Implementation/AtomicInteger_inl.h>
 
-using xiiAtomicInteger32 = xiiAtomicInteger<xiiInt32>; // [tested]
-using xiiAtomicInteger64 = xiiAtomicInteger<xiiInt64>; // [tested]
-
-static_assert(sizeof(xiiAtomicInteger32) == sizeof(xiiInt32));
-static_assert(sizeof(xiiAtomicInteger64) == sizeof(xiiInt64));
+using xiiAtomicInteger32  = xiiAtomicInteger<xiiInt32>;  // [tested]
+using xiiAtomicIntegerU32 = xiiAtomicInteger<xiiUInt32>; // [tested]
+using xiiAtomicInteger64  = xiiAtomicInteger<xiiInt64>;  // [tested]
+using xiiAtomicIntegerU64 = xiiAtomicInteger<xiiUInt64>; // [tested]

@@ -1,23 +1,27 @@
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE xiiAtomicInteger<T>::xiiAtomicInteger() :
   m_Value(0)
 {
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE xiiAtomicInteger<T>::xiiAtomicInteger(T value) :
-  m_Value(static_cast<UnderlyingType>(value))
+  m_Value(value)
 {
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE xiiAtomicInteger<T>::xiiAtomicInteger(const xiiAtomicInteger<T>& value) :
   m_Value(xiiAtomicUtils::Read(value.m_Value))
 {
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE xiiAtomicInteger<T>& xiiAtomicInteger<T>::operator=(const T value)
 {
   Set(value);
@@ -25,6 +29,7 @@ XII_ALWAYS_INLINE xiiAtomicInteger<T>& xiiAtomicInteger<T>::operator=(const T va
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE xiiAtomicInteger<T>& xiiAtomicInteger<T>::operator=(const xiiAtomicInteger<T>& value)
 {
   Set(xiiAtomicUtils::Read(value.m_Value));
@@ -32,93 +37,124 @@ XII_ALWAYS_INLINE xiiAtomicInteger<T>& xiiAtomicInteger<T>::operator=(const xiiA
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE T xiiAtomicInteger<T>::Increment()
 {
-  return static_cast<T>(xiiAtomicUtils::Increment(m_Value));
+  return xiiAtomicUtils::Increment(m_Value);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE T xiiAtomicInteger<T>::Decrement()
 {
-  return static_cast<T>(xiiAtomicUtils::Decrement(m_Value));
+  return xiiAtomicUtils::Decrement(m_Value);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE T xiiAtomicInteger<T>::PostIncrement()
 {
-  return static_cast<T>(xiiAtomicUtils::PostIncrement(m_Value));
+  return xiiAtomicUtils::PostIncrement(m_Value);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE T xiiAtomicInteger<T>::PostDecrement()
 {
-  return static_cast<T>(xiiAtomicUtils::PostDecrement(m_Value));
+  return xiiAtomicUtils::PostDecrement(m_Value);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Add(T x)
 {
-  xiiAtomicUtils::Add(m_Value, static_cast<UnderlyingType>(x));
+  m_Value = xiiAtomicUtils::Add(m_Value, x);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Subtract(T x)
 {
-  xiiAtomicUtils::Add(m_Value, -static_cast<UnderlyingType>(x));
+  m_Value = xiiAtomicUtils::Subtract(m_Value, x);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::And(T x)
 {
-  xiiAtomicUtils::And(m_Value, static_cast<UnderlyingType>(x));
+  m_Value = xiiAtomicUtils::And(m_Value, x);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Or(T x)
 {
-  xiiAtomicUtils::Or(m_Value, static_cast<UnderlyingType>(x));
+  m_Value = xiiAtomicUtils::Or(m_Value, x);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Xor(T x)
 {
-  xiiAtomicUtils::Xor(m_Value, static_cast<UnderlyingType>(x));
+  m_Value = xiiAtomicUtils::Xor(m_Value, x);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Min(T x)
 {
-  xiiAtomicUtils::Min(m_Value, static_cast<UnderlyingType>(x));
+  T current = xiiAtomicUtils::Read(m_Value);
+  while (current > x)
+  {
+    T expected = current;
+    if (xiiAtomicUtils::CompareExchange(m_Value, expected, x))
+      break;
+    current = expected;
+  }
+  xiiAtomicUtils::Min(m_Value, x);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Max(T x)
 {
-  xiiAtomicUtils::Max(m_Value, static_cast<UnderlyingType>(x));
+  T current = xiiAtomicUtils::Read(m_Value);
+  while (current < x)
+  {
+    T expected = current;
+    if (xiiAtomicUtils::CompareExchange(m_Value, expected, x))
+      break;
+    current = expected;
+  }
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE T xiiAtomicInteger<T>::Set(T x)
 {
-  return static_cast<T>(xiiAtomicUtils::Set(m_Value, static_cast<UnderlyingType>(x)));
+  return xiiAtomicUtils::Exchange(m_Value, x);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE bool xiiAtomicInteger<T>::TestAndSet(T expected, T x)
 {
-  return xiiAtomicUtils::TestAndSet(m_Value, static_cast<UnderlyingType>(expected), static_cast<UnderlyingType>(x));
+  return xiiAtomicUtils::CompareExchange(m_Value, expected, x);
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE T xiiAtomicInteger<T>::CompareAndSwap(T expected, T x)
 {
-  return static_cast<T>(xiiAtomicUtils::CompareAndSwap(m_Value, static_cast<UnderlyingType>(expected), static_cast<UnderlyingType>(x)));
+  return xiiAtomicUtils::CompareExchange(m_Value, expected, x);
+  return expected;
 }
 
 template <typename T>
+  requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE xiiAtomicInteger<T>::operator T() const
 {
-  return static_cast<T>(xiiAtomicUtils::Read(m_Value));
+  return xiiAtomicUtils::Read(m_Value);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -2,6 +2,31 @@
 
 #include <Foundation/Basics.h>
 
+/// \brief Custom trait to determine if a type is a 32-bit integer.
+template <typename T>
+struct xiiAtomicIs32BitInteger : std::bool_constant<std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32>>
+{
+  using UnderlyingType = std::conditional_t<std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32>, int32_t, void>;
+};
+
+/// \brief Custom trait to determine if a type is a 64-bit integer.
+template <typename T>
+struct xiiAtomicIs64BitInteger : std::bool_constant<std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64>>
+{
+  using UnderlyingType = std::conditional_t<std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64>, int64_t, void>;
+};
+
+/// \brief General trait to check atomic compatibility (only 32-bit or 64-bit integers).
+template <typename T>
+struct xiiAtomicCompatible : std::bool_constant<xiiAtomicIs32BitInteger<T>::value || xiiAtomicIs64BitInteger<T>::value>
+{
+  using UnderlyingType = std::conditional_t<xiiAtomicIs32BitInteger<T>::value, typename xiiAtomicIs32BitInteger<T>::UnderlyingType,
+                                            std::conditional_t<xiiAtomicIs64BitInteger<T>::value, typename xiiAtomicIs64BitInteger<T>::UnderlyingType, void>>;
+};
+
+template <typename T> constexpr bool xii_is_atomic_compatible_v = xiiAtomicCompatible<T>::value;
+template <typename T> using xii_atomic_underlying_t             = typename xiiAtomicCompatible<T>::UnderlyingType;
+
 /// \brief This class provides functions to do atomic operations.
 ///
 /// Atomic operations are generally faster than mutexes, and should therefore be preferred whenever possible.
@@ -13,97 +38,134 @@
 /// integer instructions.
 struct XII_FOUNDATION_DLL xiiAtomicUtils
 {
-  /// \brief Returns src as an atomic operation and returns its value.
-  static xiiInt32 Read(const xiiInt32& iSrc); // [tested]
+  /// Helper variable templates for easier usage
+  /// \brief Reads the atomic value.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  ///
+  /// \return The current value.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T Read(const T& ref_value);
 
-  /// \brief Returns src as an atomic operation and returns its value.
-  static xiiInt64 Read(const xiiInt64& iSrc); // [tested]
+  /// \brief Atomically exchanges the value and returns the old one.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  /// \param newValue  - The new value to store.
+  ///
+  /// \return The old value before the exchange.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T Exchange(T& ref_value, T newValue);
 
-  /// \brief Increments dest as an atomic operation and returns the new value.
-  static xiiInt32 Increment(xiiInt32& ref_iDest); // [tested]
+  /// \brief Atomically increments the value and returns the new value.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  ///
+  /// \return The new value after incrementing.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T Increment(T& ref_value);
 
-  /// \brief Increments dest as an atomic operation and returns the new value.
-  static xiiInt64 Increment(xiiInt64& ref_iDest); // [tested]
+  /// \brief Atomically decrements the value and returns the new value.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  ///
+  /// \return The new value after decrementing.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T Decrement(T& ref_value);
 
-  /// \brief Decrements dest as an atomic operation and returns the new value.
-  static xiiInt32 Decrement(xiiInt32& ref_iDest); // [tested]
+  /// \brief Atomically increments the value and returns the original value.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  ///
+  /// \return The original value before incrementing.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T PostIncrement(T& ref_value);
 
-  /// \brief Decrements dest as an atomic operation and returns the new value.
-  static xiiInt64 Decrement(xiiInt64& ref_iDest); // [tested]
+  /// \brief Atomically decrements the value and returns the original value.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  ///
+  /// \return The original value before decrementing.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T PostDecrement(T& ref_value);
 
-  /// \brief Increments dest as an atomic operation and returns the old value.
-  static xiiInt32 PostIncrement(xiiInt32& ref_iDest); // [tested]
+  /// \brief Atomically adds a value to the reference and returns the new value.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  /// \param addend    - Value to add.
+  ///
+  /// \return The new value after addition.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T Add(T& ref_value, T addend);
 
-  /// \brief Increments dest as an atomic operation and returns the old value.
-  static xiiInt64 PostIncrement(xiiInt64& ref_iDest); // [tested]
+  /// \brief Atomically subtracts a value from the reference and returns the new value.
+  ///
+  /// \tparam T         - Type of the atomic value.
+  /// \param ref_value  - Reference to the atomic value.
+  /// \param subtrahend - Value to subtract.
+  ///
+  /// \return The new value after subtraction.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T Subtract(T& ref_value, T subtrahend);
 
-  /// \brief Decrements dest as an atomic operation and returns the old value.
-  static xiiInt32 PostDecrement(xiiInt32& ref_iDest); // [tested]
+  /// \brief Performs an atomic bitwise AND operation.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  /// \param operand   - Value to AND with.
+  ///
+  /// \return The result of the AND operation.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T And(T& ref_value, T operand);
 
-  /// \brief Decrements dest as an atomic operation and returns the old value.
-  static xiiInt64 PostDecrement(xiiInt64& ref_iDest); // [tested]
+  /// \brief Performs an atomic bitwise OR operation.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  /// \param operand   - Value to OR with.
+  ///
+  /// \return The result of the OR operation.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T Or(T& ref_value, T operand);
 
-  /// \brief Adds value to dest as an atomic operation.
-  static void Add(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
+  /// \brief Performs an atomic bitwise XOR operation.
+  ///
+  /// \tparam T        - Type of the atomic value.
+  /// \param ref_value - Reference to the atomic value.
+  /// \param operand   - Value to XOR with.
+  ///
+  /// \return The result of the XOR operation.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static T Xor(T& ref_value, T operand);
 
-  /// \brief Adds value to dest as an atomic operation.
-  static void Add(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
-
-  /// \brief Performs an atomic bitwise AND on dest using value.
-  static void And(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
-
-  /// \brief Performs an atomic bitwise AND on dest using value.
-  static void And(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
-
-  /// \brief Performs an atomic bitwise OR on dest using value.
-  static void Or(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
-
-  /// \brief Performs an atomic bitwise OR on dest using value.
-  static void Or(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
-
-  /// \brief Performs an atomic bitwise XOR on dest using value.
-  static void Xor(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
-
-  /// \brief Performs an atomic bitwise XOR on dest using value.
-  static void Xor(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
-
-  /// \brief Performs an atomic min operation on dest using value.
-  static void Min(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
-
-  /// \brief Performs an atomic min operation on dest using value.
-  static void Min(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
-
-  /// \brief Performs an atomic max operation on dest using value.
-  static void Max(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
-
-  /// \brief Performs an atomic max operation on dest using value.
-  static void Max(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
-
-  /// \brief Sets dest to value as an atomic operation and returns the original value of dest.
-  static xiiInt32 Set(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
-
-  /// \brief Sets dest to value as an atomic operation and returns the original value of dest.
-  static xiiInt64 Set(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
-
-  /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value* and returns true. Otherwise *dest* will not be modified and the
-  /// function returns false.
-  static bool TestAndSet(xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value); // [tested]
-
-  /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value* and returns true. Otherwise *dest* will not be modified and the
-  /// function returns false.
-  static bool TestAndSet(xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value); // [tested]
-
-  /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value* and returns true. Otherwise *dest* will not be modified and the
-  /// function returns false.
-  static bool TestAndSet(void** pDest, void* pExpected, void* value); // [tested]
-
-  /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value*. Otherwise *dest* will not be modified. Always returns the value
-  /// of *dest* before the modification.
-  static xiiInt32 CompareAndSwap(xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value); // [tested]
-
-  /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value*. Otherwise *dest* will not be modified. Always returns the value
-  /// of *dest* before the modification.
-  static xiiInt64 CompareAndSwap(xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value); // [tested]
+  /// \brief Performs an atomic compare-and-exchange operation.
+  ///
+  /// \tparam T           - Type of the atomic value.
+  /// \param ref_value    - Reference to the atomic value.
+  /// \param ref_expected - Reference to the expected value.
+  /// \param desired      - Value to set if comparison succeeds.
+  ///
+  /// \return True if the exchange was performed; false otherwise.
+  template <typename T>
+    requires xii_is_atomic_compatible_v<T>
+  static bool CompareExchange(T& ref_value, T& ref_expected, T desired);
 };
 
 // Include inline file

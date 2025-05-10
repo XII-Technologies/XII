@@ -2,14 +2,16 @@
 
 // ***** Definition of types *****
 
-using xiiUInt8  = unsigned char;
-using xiiUInt16 = unsigned short;
-using xiiUInt32 = unsigned int;
+#include <cstdint>
+
+using xiiUInt8  = uint8_t;
+using xiiUInt16 = uint16_t;
+using xiiUInt32 = uint32_t;
 using xiiUInt64 = unsigned long long;
 
-using xiiInt8  = signed char;
-using xiiInt16 = signed short;
-using xiiInt32 = signed int;
+using xiiInt8  = int8_t;
+using xiiInt16 = int16_t;
+using xiiInt32 = int32_t;
 using xiiInt64 = signed long long;
 
 #if XII_ENABLED(XII_DOUBLE_PRECISION)
@@ -26,11 +28,11 @@ static_assert(sizeof(double) == 8);
 static_assert(sizeof(xiiInt8) == 1);
 static_assert(sizeof(xiiInt16) == 2);
 static_assert(sizeof(xiiInt32) == 4);
-static_assert(sizeof(xiiInt64) == 8); // Must be defined in the specific compiler header
+static_assert(sizeof(xiiInt64) == 8); // Must be defined in the specific compiler header.
 static_assert(sizeof(xiiUInt8) == 1);
 static_assert(sizeof(xiiUInt16) == 2);
 static_assert(sizeof(xiiUInt32) == 4);
-static_assert(sizeof(xiiUInt64) == 8); // Must be defined in the specific compiler header
+static_assert(sizeof(xiiUInt64) == 8); // Must be defined in the specific compiler header.
 static_assert(sizeof(long long int) == 8);
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
