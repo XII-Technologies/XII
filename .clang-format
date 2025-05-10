@@ -29,6 +29,9 @@ AlignConsecutiveMacros: true
 # #define foo(x)           (x * x)
 # #define bar(y, z)        (y + z)
 
+# If true, the empty line at the start of blocks is kept.
+KeepEmptyLinesAtTheStartOfBlocks: true
+
 MacroBlockBegin: "^XII_BEGIN_.*|BEGIN_SUBSYSTEM_DEPENDENCIES$"
 MacroBlockEnd: "^XII_END_.*|END_SUBSYSTEM_DEPENDENCIES$"
 
@@ -362,11 +365,6 @@ IndentWrappedFunctionNames: false
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 
-# If true, the empty line at the start of blocks is kept.
-KeepEmptyLinesAtTheStartOfBlocks: true
-MacroBlockBegin: ''
-MacroBlockEnd:   ''
-
 # The maximum number of consecutive empty lines to keep.
 MaxEmptyLinesToKeep: 3
 
@@ -409,6 +407,8 @@ SpaceAfterTemplateKeyword: true
 # true:
 # template <typename>
 
+RequiresClausePosition: OwnLine
+BreakBeforeConceptDeclarations: Always
 
 SpaceBeforeAssignmentOperators: true
 # true:
