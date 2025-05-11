@@ -92,6 +92,45 @@ struct xiiGetStrongestTypeClass : public xiiTraitInt<(T1::value == 0 || T2::valu
 {
 };
 
+/// \brief Helper trait to determine if a type is an enum and provide its underlying type.
+template <typename T, typename = void>
+struct xiiEnumUnderlyingType : std::false_type
+{
+  using UnderlyingType = void; // Default to void for non-enum types.
+};
+
+template <typename T>
+struct xiiEnumUnderlyingType<T, std::enable_if_t<std::is_enum_v<T>>> : std::true_type
+{
+  using UnderlyingType = std::underlying_type_t<T>;
+};
+
+/// \brief Custom trait to determine if a type is a valid atomic-compatible integer or has an underlying type.
+template <typename T>
+struct xiiAtomicIntegerTraits
+{
+private:
+  static constexpr bool IsEnum     = xiiEnumUnderlyingType<T>::value;
+  static constexpr bool IsIntegral = std::is_integral_v<T>;
+  using EnumUnderlyingType         = typename xiiEnumUnderlyingType<T>::UnderlyingType;
+
+public:
+  static constexpr bool value = IsIntegral || IsEnum;
+  using UnderlyingType        = std::conditional_t<IsEnum, EnumUnderlyingType, T>;
+};
+
+/// \brief General trait to check atomic compatibility (only valid integral types or enums).
+template <typename T>
+struct xiiAtomicCompatible
+{
+public:
+  static constexpr bool value = xiiAtomicIntegerTraits<T>::value;
+  using UnderlyingType        = typename xiiAtomicIntegerTraits<T>::UnderlyingType;
+};
+
+template <typename T> constexpr bool xii_is_atomic_compatible_v = xiiAtomicCompatible<T>::value;
+template <typename T> using xii_atomic_underlying_t             = typename xiiAtomicCompatible<T>::UnderlyingType;
+
 
 #ifdef __INTELLISENSE__
 
