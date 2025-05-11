@@ -316,37 +316,33 @@ XII_ALWAYS_INLINE T xiiAtomicUtils::Xor(T& ref_value, T operand)
 
 template <typename T>
   requires xii_is_atomic_compatible_v<T>
-XII_ALWAYS_INLINE bool xiiAtomicUtils::CompareExchange(T& ref_value, T& ref_expected, T desired)
+XII_ALWAYS_INLINE T xiiAtomicUtils::CompareExchange(T& ref_value, T expected, T desired)
 {
   using AtomicType = xii_atomic_underlying_t<T>;
 
-  AtomicType original = 0;
   if constexpr (sizeof(AtomicType) == 1)
   {
-    original = _InterlockedCompareExchange8(reinterpret_cast<volatile char*>(&ref_value), static_cast<char>(desired), static_cast<char>(ref_expected));
+    return static_cast<T>(_InterlockedCompareExchange8(reinterpret_cast<volatile char*>(&ref_value), static_cast<char>(desired), static_cast<char>(expected)));
   }
   else if constexpr (sizeof(AtomicType) == 2)
   {
-    original = _InterlockedCompareExchange16(reinterpret_cast<volatile short*>(&ref_value), static_cast<short>(desired), static_cast<short>(ref_expected));
+    return static_cast<T>(_InterlockedCompareExchange16(reinterpret_cast<volatile short*>(&ref_value), static_cast<short>(desired), static_cast<short>(expected)));
   }
   else if constexpr (sizeof(AtomicType) == 4)
   {
-    original = _InterlockedCompareExchange(reinterpret_cast<volatile long*>(&ref_value), static_cast<long>(desired), static_cast<long>(ref_expected));
+    return static_cast<T>(_InterlockedCompareExchange(reinterpret_cast<volatile long*>(&ref_value), static_cast<long>(desired), static_cast<long>(expected)));
   }
   else if constexpr (sizeof(AtomicType) == 8)
   {
-    original = _InterlockedCompareExchange64(reinterpret_cast<volatile __int64*>(&ref_value), static_cast<__int64>(desired), static_cast<__int64>(ref_expected));
+    return static_cast<T>(_InterlockedCompareExchange64(reinterpret_cast<volatile __int64*>(&ref_value), static_cast<__int64>(desired), static_cast<__int64>(expected)));
   }
   else
   {
     XII_ASSERT_NOT_IMPLEMENTED;
   }
+}
 
-  // If the original value matches ref_expected then the exchange succeeded.
-  bool bSuccess = (original == static_cast<AtomicType>(ref_expected));
-
-  // Update ref_expected with the observed value.
-  ref_expected = static_cast<T>(original);
-
-  return bSuccess;
+XII_ALWAYS_INLINE bool xiiAtomicUtils::CompareExchangePointer(void** pDestination, void* pExpected, void* pValue)
+{
+  return _InterlockedCompareExchangePointer(pDestination, pValue, pExpected);
 }

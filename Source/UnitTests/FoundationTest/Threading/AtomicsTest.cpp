@@ -110,7 +110,7 @@ namespace
         ++g_iTestAndSetCounter64;
       }
 
-      if (xiiAtomicUtils::TestAndSet(&g_pTestAndSetPointer, nullptr, this))
+      if (xiiAtomicUtils::CompareExchangePointer(&g_pTestAndSetPointer, nullptr, this))
       {
         ++g_iTestAndSetPointerCounter;
       }

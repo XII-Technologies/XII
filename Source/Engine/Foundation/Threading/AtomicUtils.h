@@ -140,7 +140,16 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
   /// \return True if the exchange was performed; false otherwise.
   template <typename T>
     requires xii_is_atomic_compatible_v<T>
-  static bool CompareExchange(T& ref_value, T& ref_expected, T desired);
+  static T CompareExchange(T& ref_value, T expected, T desired);
+
+  // \brief Performs an atomic compare-and-exchange operation.
+  ///
+  /// \param pDestination - Pointer to the atomic value.
+  /// \param pExpected    - Pointer to the expected value.
+  /// \param pValue       - Pointer to the value to set if comparison succeeds.
+  ///
+  /// \return True if the exchange was performed; false otherwise.
+  static bool CompareExchangePointer(void** pDestination, void* pExpected, void* pValue);
 };
 
 // Include inline file

@@ -102,6 +102,10 @@ private:
 // Include inline file
 #include <Foundation/Threading/Implementation/AtomicInteger_inl.h>
 
+using xiiAtomicInteger8   = xiiAtomicInteger<xiiInt8>;   // [tested]
+using xiiAtomicIntegerU8  = xiiAtomicInteger<xiiUInt8>;  // [tested]
+using xiiAtomicInteger16  = xiiAtomicInteger<xiiInt16>;  // [tested]
+using xiiAtomicIntegerU16 = xiiAtomicInteger<xiiUInt16>; // [tested]
 using xiiAtomicInteger32  = xiiAtomicInteger<xiiInt32>;  // [tested]
 using xiiAtomicIntegerU32 = xiiAtomicInteger<xiiUInt32>; // [tested]
 using xiiAtomicInteger64  = xiiAtomicInteger<xiiInt64>;  // [tested]

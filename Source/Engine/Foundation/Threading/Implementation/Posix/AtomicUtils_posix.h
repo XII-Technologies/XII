@@ -4,7 +4,6 @@
 
 #define XII_ATOMICUTLS_POSIX_INL_H_INCLUDED
 
-
 #include <Foundation/Math/Math.h>
 
 XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Read(const xiiInt32& src)
