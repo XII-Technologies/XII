@@ -2,26 +2,33 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief Custom trait to determine if a type is a 32-bit integer.
+/// \brief Custom trait to determine if a type is a 32-bit integer or has a 32-bit underlying type.
 template <typename T>
-struct xiiAtomicIs32BitInteger : std::bool_constant<std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32>>
+struct xiiAtomicIs32BitInteger : std::bool_constant<std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32> || (std::is_enum_v<T> && (std::is_same_v<std::underlying_type_t<T>, xiiInt32> || std::is_same_v<std::underlying_type_t<T>, xiiUInt32>))>
 {
-  using UnderlyingType = std::conditional_t<std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32>, int32_t, void>;
+  using UnderlyingType = std::conditional_t<
+    (std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32> ||
+     (std::is_enum_v<T> && (std::is_same_v<std::underlying_type_t<T>, xiiInt32> || std::is_same_v<std::underlying_type_t<T>, xiiUInt32>))),
+    xiiInt32, void>;
 };
 
-/// \brief Custom trait to determine if a type is a 64-bit integer.
+/// \brief Custom trait to determine if a type is a 64-bit integer or has a 64-bit underlying type.
 template <typename T>
-struct xiiAtomicIs64BitInteger : std::bool_constant<std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64>>
+struct xiiAtomicIs64BitInteger : std::bool_constant<std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64> || (std::is_enum_v<T> && (std::is_same_v<std::underlying_type_t<T>, xiiInt64> || std::is_same_v<std::underlying_type_t<T>, xiiUInt64>))>
 {
-  using UnderlyingType = std::conditional_t<std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64>, int64_t, void>;
+  using UnderlyingType = std::conditional_t<
+    (std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64> ||
+     (std::is_enum_v<T> && (std::is_same_v<std::underlying_type_t<T>, xiiInt64> || std::is_same_v<std::underlying_type_t<T>, xiiUInt64>))),
+    xiiInt64, void>;
 };
 
 /// \brief General trait to check atomic compatibility (only 32-bit or 64-bit integers).
 template <typename T>
 struct xiiAtomicCompatible : std::bool_constant<xiiAtomicIs32BitInteger<T>::value || xiiAtomicIs64BitInteger<T>::value>
 {
-  using UnderlyingType = std::conditional_t<xiiAtomicIs32BitInteger<T>::value, typename xiiAtomicIs32BitInteger<T>::UnderlyingType,
-                                            std::conditional_t<xiiAtomicIs64BitInteger<T>::value, typename xiiAtomicIs64BitInteger<T>::UnderlyingType, void>>;
+  using UnderlyingType = std::conditional_t<
+    xiiAtomicIs32BitInteger<T>::value, typename xiiAtomicIs32BitInteger<T>::UnderlyingType,
+    std::conditional_t<xiiAtomicIs64BitInteger<T>::value, typename xiiAtomicIs64BitInteger<T>::UnderlyingType, void>>;
 };
 
 template <typename T> constexpr bool xii_is_atomic_compatible_v = xiiAtomicCompatible<T>::value;
