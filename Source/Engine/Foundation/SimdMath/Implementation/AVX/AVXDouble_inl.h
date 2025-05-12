@@ -60,7 +60,7 @@ XII_ALWAYS_INLINE xiiSimdDouble::xiiSimdDouble(xiiInternal::QuadDouble v)
 
 XII_ALWAYS_INLINE xiiSimdDouble::operator double() const
 {
-  double f[4];
+  alignas(32) double f[4];
   _mm256_store_pd(f, m_v);
   return f[0];
 }
