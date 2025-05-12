@@ -104,12 +104,18 @@ template <typename T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Min(T x)
 {
   T current = static_cast<T>(xiiAtomicUtils::Read(m_Value));
-  while (current > x)
+  while (true)
   {
-    T expected = current;
-    if (xiiAtomicUtils::CompareExchange(m_Value, static_cast<xii_atomic_underlying_t<T>>(expected), static_cast<xii_atomic_underlying_t<T>>(x)) == expected)
+    if (current <= x)
       break;
-    current = expected;
+
+    T expected = current;
+    T newValue = x;
+
+    current = xiiAtomicUtils::CompareExchange(m_Value, static_cast<xii_atomic_underlying_t<T>>(expected), static_cast<xii_atomic_underlying_t<T>>(newValue));
+
+    if (current == expected)
+      break;
   }
 }
 
@@ -118,12 +124,18 @@ template <typename T>
 XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Max(T x)
 {
   T current = static_cast<T>(xiiAtomicUtils::Read(m_Value));
-  while (current < x)
+  while (true)
   {
-    T expected = current;
-    if (xiiAtomicUtils::CompareExchange(m_Value, static_cast<xii_atomic_underlying_t<T>>(expected), static_cast<xii_atomic_underlying_t<T>>(x)) == expected)
+    if (current >= x)
       break;
-    current = expected;
+
+    T expected = current;
+    T newValue = x;
+
+    current = xiiAtomicUtils::CompareExchange(m_Value, static_cast<xii_atomic_underlying_t<T>>(expected), static_cast<xii_atomic_underlying_t<T>>(newValue));
+
+    if (current == expected)
+      break;
   }
 }
 
