@@ -4,8 +4,6 @@
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 
-#include <atomic>
-
 /// \brief This describes the fence type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFenceType
 {
@@ -91,9 +89,9 @@ protected:
 protected:
   xiiGALFenceCreationDescription m_Description;
 
-  std::atomic<xiiUInt64> m_LastCompletedFenceValue;
+  xiiAtomicIntegerU64 m_LastCompletedFenceValue;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  std::atomic<xiiUInt64> m_EnqueuedFenceValue{0};
+  xiiAtomicIntegerU64 m_EnqueuedFenceValue;
 #endif
 };

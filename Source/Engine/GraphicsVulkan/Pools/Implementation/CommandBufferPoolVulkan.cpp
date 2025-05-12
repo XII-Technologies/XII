@@ -80,7 +80,7 @@ vk::CommandBuffer xiiGALCommandBufferPoolVulkan::RequestCommandBuffer(xiiStringV
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  ++m_BufferCounter;
+  m_BufferCounter.Increment();
 #endif
 
   if (!sDebugName.IsEmpty())
@@ -101,7 +101,7 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCommandBuffer(vk::CommandBuffer&& vkC
   vkCommandBuffer = VK_NULL_HANDLE;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  --m_BufferCounter;
+  m_BufferCounter.Decrement();
 #endif
 }
 

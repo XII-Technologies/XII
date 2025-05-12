@@ -2,6 +2,7 @@
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
+#include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
 
@@ -28,7 +29,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   // Update last completed fence value to unlock all waiting events.
-  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
+  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
 
   m_QueueInformation.m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
@@ -153,7 +154,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
   }
 
   // Increment the value before submitting the buffer to be overly safe.
-  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.fetch_add(1);
+  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
   {
     const auto& syncPoint = m_pQueueFence->CreateSyncPoint(uiFenceValue);
 

@@ -123,7 +123,7 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
     }
   }
 
-  return m_LastCompletedFenceValue.load();
+  return m_LastCompletedFenceValue;
 }
 
 void xiiGALFenceVulkan::Signal(xiiUInt64 uiValue)
@@ -162,8 +162,7 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
   {
     XII_LOCK(m_SyncPointGuard);
 
-    xiiUInt64 uiLastCompletedValue = m_LastCompletedFenceValue.load();
-    XII_ASSERT_DEV(uiValue >= uiLastCompletedValue, "Resetting fence '{}' to the value ({}) that is smaller than the last completed value ({}).", GetDebugName(), uiValue, uiLastCompletedValue);
+    XII_ASSERT_DEV(uiValue >= m_LastCompletedFenceValue, "Resetting fence '{}' to the value ({}) that is smaller than the last completed value ({}).", GetDebugName(), uiValue, m_LastCompletedFenceValue);
 
     UpdateLastCompletedFenceValue(uiValue);
   }
@@ -184,7 +183,7 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   {
-    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? m_LastCompletedFenceValue.load() : m_SyncPoints.PeekBack().m_uiValue;
+    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? (const xiiUInt64)m_LastCompletedFenceValue : m_SyncPoints.PeekBack().m_uiValue;
 
     XII_ASSERT_DEV(uiFenceValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that is smaller than the last completed value ({}).", uiFenceValue, uiLastCompletedValue);
   }

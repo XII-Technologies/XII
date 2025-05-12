@@ -57,24 +57,19 @@ xiiUInt64 xiiGALCpuWaitOnlyFenceVulkan::InternalGetCompletedValue()
     }
   }
 
-  return m_LastCompletedFenceValue.load();
+  return m_LastCompletedFenceValue;
 }
 
 void xiiGALCpuWaitOnlyFenceVulkan::UpdateLastCompletedFenceValue(xiiUInt64 uiValue)
 {
-  auto uiLastCompletedValue = m_LastCompletedFenceValue.load();
-  while (!m_LastCompletedFenceValue.compare_exchange_weak(uiLastCompletedValue, xiiMath::Max(uiLastCompletedValue, uiValue)))
-  {
-    // If exchange fails, uiCompletedValue will hold the actual value of m_LastCompletedFenceValue.
-  }
+  m_LastCompletedFenceValue.Max(uiValue);
 }
 
 void xiiGALCpuWaitOnlyFenceVulkan::Reset(xiiUInt64 uiValue)
 {
   XII_LOCK(m_SyncPointGuard);
 
-  xiiUInt64 uiLastCompletedValue = m_LastCompletedFenceValue.load();
-  XII_ASSERT_DEV(uiValue >= uiLastCompletedValue, "Resetting cpu wait only fence to the value ({}) that is smaller than the last completed value ({}).", uiValue, uiLastCompletedValue);
+  XII_ASSERT_DEV(uiValue >= m_LastCompletedFenceValue, "Resetting cpu wait only fence to the value ({}) that is smaller than the last completed value ({}).", uiValue, m_LastCompletedFenceValue);
 
   UpdateLastCompletedFenceValue(uiValue);
 }
@@ -85,7 +80,7 @@ const xiiGALCpuWaitOnlyFenceVulkan::SyncPointData& xiiGALCpuWaitOnlyFenceVulkan:
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   {
-    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? m_LastCompletedFenceValue.load() : m_SyncPoints.PeekBack().m_uiValue;
+    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? (const xiiUInt64)m_LastCompletedFenceValue : m_SyncPoints.PeekBack().m_uiValue;
 
     XII_ASSERT_DEV(uiFenceValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that is smaller than the last completed value ({}).", uiFenceValue, uiLastCompletedValue);
   }

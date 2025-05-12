@@ -4,7 +4,6 @@
 
 #include <Foundation/Profiling/Profiling.h>
 
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/Buffer.h>

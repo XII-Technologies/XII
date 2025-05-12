@@ -41,7 +41,7 @@ private:
   xiiMutex                m_SyncPointGuard;
   xiiDeque<SyncPointData> m_SyncPoints;
 
-  std::atomic<xiiUInt64> m_LastCompletedFenceValue;
+  xiiAtomicIntegerU64 m_LastCompletedFenceValue;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiUInt64 m_uiMaxSyncPoints = 0U;

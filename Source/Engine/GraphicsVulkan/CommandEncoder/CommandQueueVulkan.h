@@ -4,7 +4,6 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
-#include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
@@ -17,7 +16,7 @@ public:
 
 public:
   /// \brief This returns the value of the internal fence that will be signaled the next time.
-  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue.load(); }
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue; }
 
   /// \brief This returns the last completed value of the internal fence.
   XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return m_pQueueFence->GetCompletedValue(); }
@@ -53,6 +52,6 @@ private:
   vk::AccessFlags        m_vkSupportedAccessFlags;
 
   xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan>  m_pQueueFence;
-  std::atomic<xiiUInt64>                      m_uiNextFenceValue = 1U;
+  xiiAtomicIntegerU64                         m_uiNextFenceValue{1ULL};
   xiiGALCpuWaitOnlyFenceVulkan::SyncPointData m_LastSyncPoint;
 };

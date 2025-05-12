@@ -31,6 +31,6 @@ private:
   const vk::AccessFlags        m_vkSupportedAccessFlags;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  std::atomic<xiiUInt32> m_BufferCounter = 0;
+  xiiAtomicIntegerU32 m_BufferCounter = 0;
 #endif
 };
