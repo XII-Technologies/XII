@@ -34,7 +34,7 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() = 0;
 
-  /// \brief This begins a command list for recording commmands.
+  /// \brief This begins a command list for recording commands.
   [[nodiscard]] virtual xiiSharedPtr<xiiGALCommandList> BeginCommandList() = 0;
 
 protected:
