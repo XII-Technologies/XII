@@ -5,11 +5,34 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Query.h>
-#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSetVertexBufferFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::Reset),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStateTransitionType, 1)
+  XII_ENUM_CONSTANT(xiiGALStateTransitionType::Immediate),
+  XII_ENUM_CONSTANT(xiiGALStateTransitionType::Begin),
+  XII_ENUM_CONSTANT(xiiGALStateTransitionType::End),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALStateTransitionFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::UpdateState),
+  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::DiscardContent),
+  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::Aliasing),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStateTransitionMode, 1)
+  XII_ENUM_CONSTANT(xiiGALStateTransitionMode::None),
+  XII_ENUM_CONSTANT(xiiGALStateTransitionMode::Transition),
+  XII_ENUM_CONSTANT(xiiGALStateTransitionMode::Verify),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandList, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
@@ -26,6 +49,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   {                                                     \
     XII_ASSERT_DEV((expression), __VA_ARGS__);          \
     if (!(expression)) { return XII_FAILURE; }          \
+  } while (false)
+
+#define XII_VERIFY_COMMAND_LIST_BOOL(expression, ...) \
+  do                                                  \
+  {                                                   \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);        \
+    if (!(expression)) { return false; }              \
   } while (false)
 
 xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
@@ -752,6 +782,14 @@ void xiiGALCommandList::EndQuery(xiiSharedPtr<xiiGALQuery> pQuery)
   EndQueryPlatform(pQuery);
 }
 
+void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)
+{
+  if (pResourceBarriers.IsEmpty())
+    return;
+
+  TransitionResourceStatesPlatform(pResourceBarriers);
+}
+
 void xiiGALCommandList::BeginDebugGroup(xiiStringView sName, const xiiColor& color)
 {
   XII_ASSERT_DEV(!sName.IsEmpty(), "The debug group name must not be empty.");
@@ -803,7 +841,7 @@ void xiiGALCommandList::UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt
     XII_VERIFY_COMMAND_LIST((uiDestinationOffset % graphicsAdapterProperties.m_BufferProperties.m_uiStructuredBufferOffsetAlignment) == 0, "Offset must be aligned to {} bytes.", graphicsAdapterProperties.m_BufferProperties.m_uiStructuredBufferOffsetAlignment);
   }
 
-  XII_VERIFY_COMMAND_LIST(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Default || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Sparse, "UpdateBuffer command arguments are invalid. Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Sparse may be updated with this method.");
+  XII_VERIFY_COMMAND_LIST(bufferDescription.m_Usage == xiiGALResourceUsage::Default || bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "UpdateBuffer command arguments are invalid. Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Sparse may be updated with this method.");
   XII_VERIFY_COMMAND_LIST(uiDestinationOffset < bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the destination offset ({1}) exceeds the buffer size ({2}).", pBuffer->GetDebugName(), uiDestinationOffset, bufferDescription.m_uiSize);
   XII_VERIFY_COMMAND_LIST((uiDestinationOffset + pSourceData.GetCount()) <= bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the update region [{1}, {2}) is out of buffer bounds [0, {3}).", pBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + pSourceData.GetCount(), bufferDescription.m_uiSize);
 
@@ -857,20 +895,20 @@ xiiResult xiiGALCommandList::MapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEn
   {
     case xiiGALMapType::Read:
     {
-      XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for reading.");
+      XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for reading.");
       XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Buffer being mapped for reading was not created with the xiiGALCPUAccessFlag::Read flag.");
       XII_VERIFY_COMMAND_LIST_RESULT(!mapFlags.IsSet(xiiGALMapFlags::Discard), "xiiGALMapFlags::Discard is not a valid map flag when mapping a buffer for reading.");
     }
     break;
     case xiiGALMapType::Write:
     {
-      XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Dynamic or xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for writing.");
+      XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic || bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Dynamic or xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for writing.");
       XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Buffer being mapped for reading was not created with the xiiGALCPUAccessFlag::Write flag.");
     }
     break;
     case xiiGALMapType::ReadWrite:
     {
-      XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for reading and writing.");
+      XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for reading and writing.");
       XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Buffer being mapped for reading and writing was not created with the xiiGALCPUAccessFlag::Read flag.");
       XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Buffer being mapped for reading and writing was not created with the xiiGALCPUAccessFlag::Write flag.");
       XII_VERIFY_COMMAND_LIST_RESULT(!mapFlags.IsSet(xiiGALMapFlags::Discard), "xiiGALMapFlags::Discard is not a valid map flag when mapping a buffer for reading and writing.");
@@ -880,7 +918,7 @@ xiiResult xiiGALCommandList::MapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEn
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic)
+  if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
   {
     XII_VERIFY_COMMAND_LIST_RESULT(mapFlags.IsAnySet(xiiGALMapFlags::Discard | xiiGALMapFlags::NoOverWrite) && mapType == xiiGALMapType::Write, "Dynamic buffers can only be mapped for writing with the xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.");
     XII_VERIFY_COMMAND_LIST_RESULT((mapFlags.IsStrictlyAnySet(xiiGALMapFlags::Discard) || mapFlags.IsStrictlyAnySet(xiiGALMapFlags::NoOverWrite)), "Dynamic buffers can only be mapped for writing with the xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.");
@@ -888,7 +926,7 @@ xiiResult xiiGALCommandList::MapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEn
 
   if (mapFlags.IsSet(xiiGALMapFlags::Discard))
   {
-    XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging, "Only buffers with xiiGALResourceUsage::Dynamic or xiiGALResourceUsage::Staging can be mapped with the xiiGALMapFlags::Discard flag.");
+    XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic || bufferDescription.m_Usage == xiiGALResourceUsage::Staging, "Only buffers with xiiGALResourceUsage::Dynamic or xiiGALResourceUsage::Staging can be mapped with the xiiGALMapFlags::Discard flag.");
     XII_VERIFY_COMMAND_LIST_RESULT(mapType == xiiGALMapType::Write, "xiiGALMapType::Write is only valid when mapping buffer for writing.");
   }
 
@@ -1055,7 +1093,156 @@ void xiiGALCommandList::InvalidateState()
   InvalidateStatePlatform();
 }
 
-#undef XII_VERIFY_COMMAND_LIST
+bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const
+{
+  bool bResult = true;
+  for (auto state : stateFlags)
+  {
+    switch (state)
+    {
+      case xiiGALResourceStateFlags::Undefined:
+      case xiiGALResourceStateFlags::CopySource:
+      case xiiGALResourceStateFlags::CopyDestination:
+      case xiiGALResourceStateFlags::Common:
+      {
+        if (!queueType.IsSet(xiiGALCommandQueueType::Transfer))
+        {
+          bResult = false;
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueType.GetValue());
+        }
+      }
+      break;
+      case xiiGALResourceStateFlags::ConstantBuffer:
+      case xiiGALResourceStateFlags::UnorderedAccess:
+      case xiiGALResourceStateFlags::ShaderResource:
+      case xiiGALResourceStateFlags::IndirectArgument:
+      case xiiGALResourceStateFlags::BuildASRead:
+      case xiiGALResourceStateFlags::BuildASWrite:
+      case xiiGALResourceStateFlags::RayTracing:
+      {
+        if (!queueType.IsSet(xiiGALCommandQueueType::Compute))
+        {
+          bResult = false;
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueType.GetValue());
+        }
+      }
+      break;
+      case xiiGALResourceStateFlags::VertexBuffer:
+      case xiiGALResourceStateFlags::IndexBuffer:
+      case xiiGALResourceStateFlags::RenderTarget:
+      case xiiGALResourceStateFlags::DepthWrite:
+      case xiiGALResourceStateFlags::DepthRead:
+      case xiiGALResourceStateFlags::StreamOut:
+      case xiiGALResourceStateFlags::ResolveSource:
+      case xiiGALResourceStateFlags::ResolveDestination:
+      case xiiGALResourceStateFlags::InputAttachment:
+      case xiiGALResourceStateFlags::Present:
+      case xiiGALResourceStateFlags::ShadingRate:
+      {
+        if (!queueType.IsSet(xiiGALCommandQueueType::Graphics))
+        {
+          bResult = false;
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueType.GetValue());
+        }
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+  return bResult;
+}
+
+bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const
+{
+#define XII_VERIFY_EXCLUSIVE_STATE(exclusiveState)                                                                                                       \
+  if (!stateFlags.IsStrictlyAnySet((xiiGALResourceStateFlags::exclusiveState)))                                                                          \
+  {                                                                                                                                                      \
+    xiiLog::Error("State {} is invalid: {} can not be combined with any other state.", stateFlags.GetValue(), xiiGALResourceStateFlags::exclusiveState); \
+  }
+
+  XII_VERIFY_EXCLUSIVE_STATE(Common);
+  XII_VERIFY_EXCLUSIVE_STATE(Undefined);
+  XII_VERIFY_EXCLUSIVE_STATE(UnorderedAccess);
+  XII_VERIFY_EXCLUSIVE_STATE(RenderTarget);
+  XII_VERIFY_EXCLUSIVE_STATE(DepthWrite);
+  XII_VERIFY_EXCLUSIVE_STATE(CopyDestination);
+  XII_VERIFY_EXCLUSIVE_STATE(ResolveDestination);
+  XII_VERIFY_EXCLUSIVE_STATE(Present);
+  XII_VERIFY_EXCLUSIVE_STATE(BuildASWrite);
+  XII_VERIFY_EXCLUSIVE_STATE(RayTracing);
+  XII_VERIFY_EXCLUSIVE_STATE(ShadingRate);
+
+#undef XII_VERIFY_EXCLUSIVE_STATE
+
+  if (bIsTexture)
+  {
+    if (stateFlags.IsAnySet(xiiGALResourceStateFlags::VertexBuffer | xiiGALResourceStateFlags::ConstantBuffer | xiiGALResourceStateFlags::IndexBuffer | xiiGALResourceStateFlags::StreamOut | xiiGALResourceStateFlags::IndirectArgument))
+    {
+      xiiLog::Error("State {} is invalid: states xiiGALResourceStateFlags::VertexBuffer, xiiGALResourceStateFlags::ConstantBuffer, xiiGALResourceStateFlags::IndexBuffer, xiiGALResourceStateFlags::StreamOut, xiiGALResourceStateFlags::IndirectArgument are not applicable to textures.", stateFlags.GetValue());
+      return false;
+    }
+  }
+  else
+  {
+    if (stateFlags.IsAnySet(xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::Present | xiiGALResourceStateFlags::ShadingRate | xiiGALResourceStateFlags::InputAttachment))
+    {
+      xiiLog::Error("State {} is invalid: states xiiGALResourceStateFlags::RenderTarget, xiiGALResourceStateFlags::DepthWrite, xiiGALResourceStateFlags::DepthRead, xiiGALResourceStateFlags::ResolveSource, xiiGALResourceStateFlags::ResolveDestination, xiiGALResourceStateFlags::Present, xiiGALResourceStateFlags::ShadingRate, xiiGALResourceStateFlags::InputAttachment are not applicable to buffers.", stateFlags.GetValue());
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool xiiGALCommandList::VerifyAliasingBarrierDescription(const xiiGALStateTransitionDescription& description) const
+{
+  XII_VERIFY_COMMAND_LIST_BOOL(description.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::Aliasing), "The transition description does not have the aliasing flag.");
+
+  auto VerifySparseAliasedResource = [](xiiGALResource* pResource) -> xiiGALResourceDimension::Enum {
+    if (pResource == nullptr)
+      return xiiGALResourceDimension::Undefined;
+
+    if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(pResource))
+    {
+      const auto& textureDescription = pTexture->GetDescription();
+
+      XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Sparse, "Texture '{}' used in aliasing barrier is not a sparse resource.", pTexture->GetDebugName());
+      XII_ASSERT_DEV(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::SparseAlias), "Texture '{}' used in aliasing barrier was not created with xiiGALMiscTextureFlags::SparseAlias flag.", pTexture->GetDebugName());
+
+      return textureDescription.m_Type;
+    }
+    else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(pResource))
+    {
+      const auto& bufferDescription = pBuffer->GetDescription();
+
+      XII_ASSERT_DEV(bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "Buffer '{}' used in aliasing barrier is not a sparse resource.", pBuffer->GetDebugName());
+      XII_ASSERT_DEV(bufferDescription.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias), "Buffer '{}' used in aliasing barrier was not created with xiiGALMiscBufferFlags::SparseAlias flag.", pBuffer->GetDebugName());
+
+      return xiiGALResourceDimension::Buffer;
+    }
+    else
+    {
+      XII_ASSERT_DEV(false, "Only textures and buffers are permitted in aliasing barriers.");
+      return xiiGALResourceDimension::Undefined;
+    }
+  };
+
+  xiiGALResourceDimension::Enum previousDimension = VerifySparseAliasedResource(description.m_pPreviousResource.Borrow());
+  xiiGALResourceDimension::Enum currentDimension  = VerifySparseAliasedResource(description.m_pResource.Borrow());
+  if (previousDimension != xiiGALResourceDimension::Undefined && currentDimension != xiiGALResourceDimension::Undefined)
+  {
+    XII_ASSERT_DEV((previousDimension == xiiGALResourceDimension::Buffer) == (currentDimension == xiiGALResourceDimension::Buffer), "Both previous- and current-resources must either be buffers or textures. Sparse aliasing between textures and buffers are not permitted.");
+  }
+
+  XII_ASSERT_DEV(description.m_OldState == xiiGALResourceStateFlags::Unknown && description.m_NewState == xiiGALResourceStateFlags::Unknown, "Aliasing buffer is applied to all subresource. OldState and NewState must be xiiGALResourceStateFlags::Unknown.");
+  XII_ASSERT_DEV(description.m_uiFirstArraySlice == 0 && description.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS && description.m_uiFirstArraySlice == 0 && description.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES, "Aliasing barrier is applied to all subresources. FirstMipLevel, MipLevelCount, FirstArraySlice, ArraySliceCount must be set as default.");
+
+  return true;
+}
+
+#undef XII_VERIFY_COMMAND_LIST_BOOL
 #undef XII_VERIFY_COMMAND_LIST_RESULT
+#undef XII_VERIFY_COMMAND_LIST
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_CommandEncoder_Implementation_CommandList);

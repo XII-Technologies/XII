@@ -8,7 +8,6 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
 /// \brief This describes the pipeline state shading rate flags.
@@ -32,6 +31,56 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
 
 XII_DECLARE_FLAGS_OPERATORS(xiiGALSetVertexBufferFlags);
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSetVertexBufferFlags);
+
+/// \brief This describes the resource state transition type.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Immediate = 0, ///< Perform the state transition immediately.
+    Begin,         ///< Begin split barrier. This mode only has effect in Direct3D12 backend, and corresponds to [D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY](https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/ne-d3d12-d3d12_resource_barrier_flags) flag. See https://docs.microsoft.com/en-us/windows/desktop/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#split-barriers. In other implementations, begin-split barriers are ignored.
+    End,           ///< End split barrier. This mode only has effect in Direct3D12 backend, and corresponds to [D3D12_RESOURCE_BARRIER_FLAG_END_ONLY](https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/ne-d3d12-d3d12_resource_barrier_flags) flag. See https://docs.microsoft.com/en-us/windows/desktop/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#split-barriers. In other backends, this mode is similar to xiiGALStateTransitionType::Immediate.
+
+    ENUM_COUNT,
+
+    Default = Immediate
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALStateTransitionType);
+
+/// \brief Resource state transition flags.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None        = 0U,            ///< No state transition flags.
+    UpdateState = XII_BIT(0),    ///< Indicates that the internal resource state should be updated to the new state specified by xiiGALStateTransitionDescription, and the GAL should take over the resource state management. If an application was managing the resource state manually, it is responsible for making sure that all subresources are indeed in the designated state. If not used, internal resource state will be unchanged.
+                                 ///
+                                 ///  \note This flag cannot be used when xiiGALStateTransitionDescription.m_TransitionType is xiiGALStateTransitionType::Begin.
+    DiscardContent = XII_BIT(1), ///< If set, the contents of the resource will be discarded, when possible. This may avoid potentially expensive operations such as render target decompression or a pipeline stall when transitioning to xiiGALResourceStateFlags::Common or xiiGALResourceStateFlags::UnorderedAccess state.
+    Aliasing       = XII_BIT(2), ///< Indicates state transition between aliased resources that share the same memory. Currently, it is only supported for sparse resources that were created with aliasing flag.
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType UpdateState : 1;
+    StorageType DiscardContent : 1;
+    StorageType Aliasing : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALStateTransitionFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALStateTransitionFlags);
+
 /// \brief This describes the resource state transition mode.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionMode
 {
@@ -41,23 +90,36 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionMode
   {
     None = 0,   ///< Perform no state transitions and no validation. Resource states are not accessed (either read or written) by the command.
     Transition, ///< Transition resources to the states required by the specific command. Resources in unknown state are ignored.
-    Verify,     /// Do not transition, but verify that states are correct. No validation is performed on Shipping builds.
+                ///
+                /// \note Any method that uses this mode may alter the state of the resources it works with.
+                ///       As automatic state management is not thread-safe, no other thread is allowed to read or write the state of the resources being transitioned.
+                ///       If the application intends to use the same resources in other threads simultaneously, it needs to explicitly manage the states using xiiGALCommandList::TransitionResourceStates() method.
+                ///
+                /// \note If a resource is used in multiple threads by multiple command lists, there will be race condition accessing internal resource state. An application should use manual resource state management in this case.
+    Verify,     ///< Do not transition, but verify that states are correct. No validation is performed if the state is unknown to the GAL. This mode only has effect in debug and development builds. No validation is performed in shipping builds.
+                ///
+                /// \note Any method that uses this mode will read the state of resources it works with. As automatic state management is not thread-safe, no other thread is allowed to alter
+                ///       the state of resources being used by the command. It is safe to read these states.
+
+    ENUM_COUNT,
 
     Default = None
   };
 };
 
-/// \brief This describes the viewport.
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALStateTransitionMode);
+
+/// \brief This describes the viewport. A viewport defines the rendering area within a graphical output. It specifies the position, size, and depth range of the viewport to control how the scene is displayed.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiGALViewport>
 {
   XII_DECLARE_POD_TYPE();
 
-  float m_fTopLeftX = 0.0f;
-  float m_fTopLeftY = 0.0f;
-  float m_fWidth    = 0.0f;
-  float m_fHeight   = 0.0f;
-  float m_fMinDepth = 0.0f;
-  float m_fMaxDepth = 1.0f;
+  float m_fTopLeftX = 0.0f; ///< X-coordinate of the top-left corner of the viewport.
+  float m_fTopLeftY = 0.0f; ///< Y-coordinate of the top-left corner of the viewport.
+  float m_fWidth    = 0.0f; ///< Width of the viewport.
+  float m_fHeight   = 0.0f; ///< Height of the viewport.
+  float m_fMinDepth = 0.0f; ///< Minimum depth of the viewport range. The near clipping plane's depth value. Typically set to 0.0.
+  float m_fMaxDepth = 1.0f; ///< Maximum depth of the viewport range. The far clipping plane's depth value. Typically set to 1.0.
 };
 
 /// \brief This describes the viewport.
@@ -66,6 +128,31 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiH
   xiiSharedPtr<xiiGALRenderPass>                                            m_pRenderPass;
   xiiSharedPtr<xiiGALFramebuffer>                                           m_pFramebuffer;
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_ClearValues;
+};
+
+/// \brief This describes the resource state barrier description.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionDescription
+{
+  xiiSharedPtr<xiiGALResource> m_pPreviousResource = nullptr;                                    ///< Previous resource for aliasing transition. This member is only used for aliasing transition (xiiGALStateTransitionFlags::Aliasing flag is set), and ignored otherwise, and must point to a texture or a buffer object.
+                                                                                                 ///
+                                                                                                 ///  \note pPreviousResource may be null, which indicates that any sparse or normal resource could cause aliasing.
+  xiiSharedPtr<xiiGALResource> m_pResource = nullptr;                                            ///< Resource to transition. Can be xiiGALTexture, xiiGALBuffer, xiiGALBottomLevelAS, xiiGALTopLevelAS.
+                                                                                                 ///
+                                                                                                 ///  \note For aliasing transition (xiiGALStateTransitionFlags::Aliasing flag is set), pResource may be null, which indicates that any sparse or normal resource could cause aliasing.
+  xiiUInt32                             m_uiFirstMipLevel   = 0U;                                ///< When transitioning a texture, first mip level of the subresource range to transition.
+  xiiUInt32                             m_uiMipLevelCount   = XII_GAL_REMAINING_MIP_LEVELS;      ///< When transitioning a texture, number of mip levels of the subresource range to transition.
+  xiiUInt32                             m_uiFirstArraySlice = 0U;                                ///< When transitioning a texture, first array slice of the subresource range to transition.
+  xiiUInt32                             m_uiArraySliceCount = XII_GAL_REMAINING_ARRAY_SLICES;    ///< When transitioning a texture, number of array slices of the subresource range to transition.
+  xiiBitflags<xiiGALResourceStateFlags> m_OldState          = xiiGALResourceStateFlags::Unknown; ///< Resource state before transition. If this value is xiiGALResourceState::Unknown, internal resource state will be used, which must be defined in this case.
+                                                                                                 ///
+                                                                                                 ///  \note Resource state must be compatible with the command list queue type.
+  xiiBitflags<xiiGALResourceStateFlags> m_NewState = xiiGALResourceStateFlags::Unknown;          ///< Resource state after transition. This must not be xiiGALResourceState::Unknown or xiiGALResourceState::Undefined.
+                                                                                                 ///
+                                                                                                 ///  \note Resource state must be compatible with the command list queue type.
+  xiiEnum<xiiGALStateTransitionType> m_TransitionType = xiiGALStateTransitionType::Immediate;    ///< State transition type, see xiiGALStateTransitionType.
+                                                                                                 ///
+                                                                                                 ///  \note When issuing UAV barrier (i.e. OldState and NewState equal xiiGALResourceState::UnorderedAccess), the transition type must be xiiGALStateTransitionType::Immediate.
+  xiiBitflags<xiiGALStateTransitionFlags> m_TransitionFlags = xiiGALStateTransitionFlags::None;  ///< State transition flags, see xiiGALStateTransitionFlags.
 };
 
 /// \brief This describes the command list creation description.
@@ -391,6 +478,25 @@ public:
   /// \param textureMipLevelData - Specifies the subresource to unmap.
   xiiResult UnmapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData);
 
+  /// \brief Transitions the resource states.
+  ///
+  /// \param pResourceBarriers - Pointer to the array of resource barriers.
+  ///
+  /// \remarks When both old and new states are xiiGALResourceState::UnorderedAccess, the GAL executes UAV barrier on the resource. The barrier makes sure that all UAV accesses (reads or writes) are complete before any future UAV accesses (read or write) can begin.\n
+  ///
+  ///          There are two main usage scenarios for this method:
+  ///          1. An application knows specifics of resource state transitions not available to the GAL. For example, only single mip level needs to be transitioned.
+  ///          2. An application manages resource states in multiple threads in parallel.
+  ///
+  ///          The method always reads the states of all resources to transition. If the state of a resource is managed by multiple threads in parallel, the resource must first be transitioned to unknown state (xiiGALResourceState::Unknown) to disable automatic state management in the GAL.
+  ///
+  ///          When xiiGALStateTransitionFlags::UpdateState is set, the method may update the state of the corresponding resource which is not thread safe. No other threads should read or write the state of that resource.
+  ///
+  /// \note  Resource states for shader access (e.g. xiiGALResourceState::ConstantBuffer, xiiGALResourceState::UnorderedAccess, xiiGALResourceState::ShaderResource) may map to different native state depending on what command queue type is used (see xiiGALCommandListCreationDescription).
+  ///        To synchronize write access in compute shader in a compute queue with a pixel shader read in graphics queue, an application should call TransitionResourceStates() in graphics queue.
+  ///        Using TransitionResourceStates() with NewState = xiiGALResourceState::ShaderResource will not invalidate cache in graphics shaders and may cause undefined behaviour.
+  void TransitionResourceStates(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers);
+
   // Debug functions.
 
   /// \brief Begins a new debug group with a specified name and color.
@@ -515,6 +621,8 @@ protected:
   virtual xiiResult MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)                                     = 0;
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)                                                                                                                                                                                     = 0;
 
+  virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) = 0;
+
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)  = 0;
   virtual void EndDebugGroupPlatform()                                              = 0;
   virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color) = 0;
@@ -522,6 +630,11 @@ protected:
   virtual void InvalidateStatePlatform() = 0;
 
   /// \endcond
+
+  bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const;
+  bool VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const;
+
+  bool VerifyAliasingBarrierDescription(const xiiGALStateTransitionDescription& description) const;
 
 protected:
   xiiGALCommandListCreationDescription m_Description;
