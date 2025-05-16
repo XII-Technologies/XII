@@ -74,7 +74,7 @@ xiiGALBufferHandle xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferS
   desc.m_uiElementByteStride = sizeof(xiiPerSpriteData);
   desc.m_uiSize              = desc.m_uiElementByteStride * uiBufferSize;
   desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-  desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+  desc.m_Usage       = xiiGALResourceUsage::Dynamic;
   desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
   desc.m_Mode                = xiiGALBufferMode::Structured;
 

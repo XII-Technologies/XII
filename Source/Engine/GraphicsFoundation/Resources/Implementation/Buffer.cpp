@@ -118,7 +118,7 @@ void xiiGALBuffer::VerifyFlushMappedRangeArguments(xiiUInt64 uiStartOffset, xiiU
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(GetMemoryProperties().IsSet(xiiGALMemoryPropertyFlags::HostCoherent), "Coherent memory does not need to be flushed.");
-  XII_ASSERT_DEV(m_Description.m_ResourceUsage != xiiGALResourceUsage::Dynamic, "Dynamic buffer mapped memory must never be flushed.");
+  XII_ASSERT_DEV(m_Description.m_Usage != xiiGALResourceUsage::Dynamic, "Dynamic buffer mapped memory must never be flushed.");
   XII_ASSERT_DEV((uiStartOffset + uiSize) <= m_Description.m_uiSize, "Memory range is out of buffer bounds.");
 #else
   XII_IGNORE_UNUSED(uiStartOffset);
@@ -130,7 +130,7 @@ void xiiGALBuffer::VerifyInvalidateMappedRangeArguments(xiiUInt64 uiStartOffset,
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(GetMemoryProperties().IsSet(xiiGALMemoryPropertyFlags::HostCoherent), "Coherent memory does not need to be invalidated.");
-  XII_ASSERT_DEV(m_Description.m_ResourceUsage != xiiGALResourceUsage::Dynamic, "Dynamic buffer mapped memory must never be invalidated.");
+  XII_ASSERT_DEV(m_Description.m_Usage != xiiGALResourceUsage::Dynamic, "Dynamic buffer mapped memory must never be invalidated.");
   XII_ASSERT_DEV((uiStartOffset + uiSize) <= m_Description.m_uiSize, "Memory range is out of buffer bounds.");
 #else
   XII_IGNORE_UNUSED(uiStartOffset);

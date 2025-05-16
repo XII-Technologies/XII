@@ -56,7 +56,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
 
   xiiUInt64                          m_uiSize              = 0U;                           ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16. The default is 0.
   xiiBitflags<xiiGALBindFlags>       m_BindFlags           = xiiGALBindFlags::None;        ///< The bind flags. Allowed flags are Vertex, Index, Uniform (Constant), Shader Resource, Stream Output, Unordered Access, Indirect Draw Args, Ray Tracing. Allowed flags for sparse resources are stored in the allowed sparse resource properties. The default is None.
-  xiiEnum<xiiGALResourceUsage>       m_ResourceUsage       = xiiGALResourceUsage::Default; ///< The resource usage. The default is Default.
+  xiiEnum<xiiGALResourceUsage>       m_Usage               = xiiGALResourceUsage::Default; ///< The resource usage. The default is Default.
   xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;    ///< The CPU access flags or None if no CPU access is allowed. The default is None.
   xiiEnum<xiiGALBufferMode>          m_Mode                = xiiGALBufferMode::Undefined;  ///< The buffer mode. The default is Undefined.
   xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags           = xiiGALMiscBufferFlags::None;  ///< The miscellaneous flags. The default is None.

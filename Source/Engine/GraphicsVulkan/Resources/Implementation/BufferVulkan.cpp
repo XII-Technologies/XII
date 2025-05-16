@@ -135,7 +135,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     // Read-only storage buffers (aka structured buffers) don't need a backing buffer.
     ((vkBufferCreateInfo.usage & vk::BufferUsageFlagBits::eStorageBuffer) && m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess));
 
-  if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse)
+  if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
   {
     vkBufferCreateInfo.flags = vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency | (m_Description.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias) ? vk::BufferCreateFlagBits::eSparseAliased : static_cast<vk::BufferCreateFlagBits>(0U));
 
@@ -147,7 +147,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 
     SetResourceState(xiiGALResourceStateFlags::Undefined);
   }
-  else if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Dynamic && !bRequiresBackingBuffer)
+  else if (m_Description.m_Usage == xiiGALResourceUsage::Dynamic && !bRequiresBackingBuffer)
   {
     XII_ASSERT_DEV(vkBufferCreateInfo.sharingMode == vk::SharingMode::eExclusive, "Sharing mode is not supported for dynamic buffers, this should have caused buffer creation failure.");
 
@@ -176,7 +176,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
   }
   else
   {
-    XII_ASSERT_DEV(m_Description.m_ResourceUsage != xiiGALResourceUsage::Dynamic && xiiMath::CountBits(m_Description.m_uiCommandQueueMask) <= 1U, "The command queue mask must contain a single set bit, this error should have been caught in buffer validation.");
+    XII_ASSERT_DEV(m_Description.m_Usage != xiiGALResourceUsage::Dynamic && xiiMath::CountBits(m_Description.m_uiCommandQueueMask) <= 1U, "The command queue mask must contain a single set bit, this error should have been caught in buffer validation.");
 
     VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
     vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
@@ -268,7 +268,7 @@ void xiiGALBufferVulkan::InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt6
 
 xiiGALSparseBufferProperties xiiGALBufferVulkan::GetSparseProperties() const
 {
-  XII_ASSERT_DEV(m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse, "xiiGALBuffer::GetSparseProperties() must be used for sparse buffer.");
+  XII_ASSERT_DEV(m_Description.m_Usage == xiiGALResourceUsage::Sparse, "xiiGALBuffer::GetSparseProperties() must be used for sparse buffer.");
 
   xiiGALDeviceVulkan*    pDeviceVulkan        = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::MemoryRequirements vkMemoryRequirements = pDeviceVulkan->GetVulkanLogicalDevice().getBufferMemoryRequirements(GetVulkanBuffer(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());

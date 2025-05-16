@@ -950,10 +950,10 @@ XII_ALWAYS_INLINE vk::ImageLayout xiiVulkanTypeConversions::GetImageLayout(xiiBi
       return vk::ImageLayout::eShaderReadOnlyOptimal;
     case xiiGALResourceStateFlags::Present:
       return vk::ImageLayout::ePresentSrcKHR;
-    case xiiGALResourceStateFlags::BuildAsRead:
+    case xiiGALResourceStateFlags::BuildASRead:
       XII_ASSERT_DEV(false, "Invalid resource state!");
       return vk::ImageLayout::eUndefined;
-    case xiiGALResourceStateFlags::BuildAsWrite:
+    case xiiGALResourceStateFlags::BuildASWrite:
       XII_ASSERT_DEV(false, "Invalid resource state!");
       return vk::ImageLayout::eUndefined;
     case xiiGALResourceStateFlags::RayTracing:
@@ -1101,9 +1101,9 @@ XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineSt
     pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
   if (e.IsSet(xiiGALResourceStateFlags::Present))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eBottomOfPipe;
-  if (e.IsSet(xiiGALResourceStateFlags::BuildAsRead))
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASRead))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
-  if (e.IsSet(xiiGALResourceStateFlags::BuildAsWrite))
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
   if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eRayTracingShaderKHR;
@@ -1209,9 +1209,9 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
     vkAccessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
   if (e.IsSet(xiiGALResourceStateFlags::Present))
     vkAccessFlags |= static_cast<vk::AccessFlagBits>(0);
-  if (e.IsSet(xiiGALResourceStateFlags::BuildAsRead))
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASRead))
     vkAccessFlags |= vk::AccessFlagBits::eShaderRead;
-  if (e.IsSet(xiiGALResourceStateFlags::BuildAsWrite))                                                                       // for vertex, index, transform, AABB, instance buffers
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))                                                                       // for vertex, index, transform, AABB, instance buffers
     vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR; // for scratch buffer
   if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
     vkAccessFlags |= vk::AccessFlagBits::eShaderRead; // for SBT

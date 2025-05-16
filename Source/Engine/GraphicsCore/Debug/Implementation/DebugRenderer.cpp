@@ -246,7 +246,7 @@ namespace
       desc.m_uiSize              = DEBUG_BUFFER_SIZE;
       desc.m_Mode                = xiiGALBufferMode::Structured;
       desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-      desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+      desc.m_Usage       = xiiGALResourceUsage::Dynamic;
       desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
       s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
@@ -261,7 +261,7 @@ namespace
       desc.m_uiElementByteStride = uiVertexSize;
       desc.m_uiSize              = DEBUG_BUFFER_SIZE;
       desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
-      desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+      desc.m_Usage       = xiiGALResourceUsage::Dynamic;
       desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
       s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);

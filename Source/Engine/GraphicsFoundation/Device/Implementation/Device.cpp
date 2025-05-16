@@ -297,7 +297,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
     XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirect), "xiiGALBindFlags::IndirectDrawArguments flag cannot be used when the xiiGALDrawCommandCapabilityFlags::DrawIndirect capability is not supported.");
   }
 
-  switch (description.m_ResourceUsage)
+  switch (description.m_Usage)
   {
     case xiiGALResourceUsage::Immutable:
     case xiiGALResourceUsage::Default:
@@ -351,7 +351,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
       return {};
   }
 
-  if (description.m_ResourceUsage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiCommandQueueMask) > 1U)
+  if (description.m_Usage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiCommandQueueMask) > 1U)
   {
     const bool bNeedsBackingResource = (description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess) || description.m_Mode == xiiGALBufferMode::Formatted);
     XII_GAL_DEVICE_CHECK(!bNeedsBackingResource, "xiiGALResourceUsage::Dynamic buffers that use the Unordered Access flag or Formatted mode requires an internal backing resource. "
@@ -360,7 +360,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
                                                  "which can be shared between device contexts.");
   }
 
-  if (description.m_ResourceUsage != xiiGALResourceUsage::Sparse)
+  if (description.m_Usage != xiiGALResourceUsage::Sparse)
   {
     XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation == 0U || description.m_uiSize <= m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation, "Non-sparse buffer size ({0}) must not exceed the maximum allocation size ({1}).", description.m_uiSize, m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation);
     XII_GAL_DEVICE_CHECK(description.m_MiscFlags.AreNoneSet(xiiGALMiscBufferFlags::SparseAlias), "Miscellaneous flags must not have xiiGALMiscBufferFlags::SparseAlias if the buffer usage is not xiiGALResourceUsage::Sparse.");
@@ -370,27 +370,27 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
 
   const bool bHasInitialData = (pInitialData != nullptr && pInitialData->m_pData != nullptr);
 
-  if (description.m_ResourceUsage == xiiGALResourceUsage::Immutable && !bHasInitialData)
+  if (description.m_Usage == xiiGALResourceUsage::Immutable && !bHasInitialData)
   {
     XII_GAL_DEVICE_CHECK(false, "The initial data must not be nullptr, as immutable buffers must be initialized at creation time.");
   }
-  if (description.m_ResourceUsage == xiiGALResourceUsage::Dynamic && bHasInitialData)
+  if (description.m_Usage == xiiGALResourceUsage::Dynamic && bHasInitialData)
   {
     XII_GAL_DEVICE_CHECK(false, "The initial data must be nullptr for dynamic buffers.");
   }
-  if (description.m_ResourceUsage == xiiGALResourceUsage::Sparse && bHasInitialData)
+  if (description.m_Usage == xiiGALResourceUsage::Sparse && bHasInitialData)
   {
     XII_GAL_DEVICE_CHECK(false, "The initial data must be nullptr for sparse buffers.");
   }
 
-  if (description.m_ResourceUsage == xiiGALResourceUsage::Staging)
+  if (description.m_Usage == xiiGALResourceUsage::Staging)
   {
     if (description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
     {
       XII_GAL_DEVICE_CHECK(bHasInitialData, "Staging buffers with CPU write access must be updated via map.");
     }
   }
-  else if (description.m_ResourceUsage == xiiGALResourceUsage::Unified)
+  else if (description.m_Usage == xiiGALResourceUsage::Unified)
   {
     XII_GAL_DEVICE_CHECK(description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write) && bHasInitialData, "xiiGALCPUAccessFlag::Write is required to initialize a unified buffer.");
   }

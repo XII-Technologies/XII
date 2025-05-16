@@ -75,7 +75,7 @@ private:
       xiiGALBufferCreationDescription description;
       description.m_uiSize        = uiCapacity * sizeof(VertexType);
       description.m_BindFlags     = xiiGALBindFlags::VertexBuffer;
-      description.m_ResourceUsage = xiiGALResourceUsage::Dynamic;
+      description.m_Usage = xiiGALResourceUsage::Dynamic;
 
       m_pBuffer = pDevice->CreateBuffer(description);
     }

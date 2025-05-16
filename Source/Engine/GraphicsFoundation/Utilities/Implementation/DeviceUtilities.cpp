@@ -45,7 +45,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevic
   bufferDescription.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
   bufferDescription.m_uiElementByteStride = uiVertexSize;
   bufferDescription.m_uiSize              = uiVertexSize * xiiMath::Max(1U, uiVertexCount);
-  bufferDescription.m_ResourceUsage       = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_Usage       = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
   bufferDescription.m_CPUAccessFlags      = bIsImmutable ? xiiGALCPUAccessFlag::None : xiiGALCPUAccessFlag::Write;
 
   xiiGALBufferData initialData;
@@ -73,7 +73,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice
   bufferDescription.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
   bufferDescription.m_uiElementByteStride = uiIndexSize;
   bufferDescription.m_uiSize              = uiIndexSize * xiiMath::Max(1U, uiIndexCount);
-  bufferDescription.m_ResourceUsage       = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_Usage       = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
   bufferDescription.m_CPUAccessFlags      = bIsImmutable ? xiiGALCPUAccessFlag::None : xiiGALCPUAccessFlag::Write;
 
   xiiGALBufferData initialData;
@@ -91,7 +91,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDev
   bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
   bufferDescription.m_uiElementByteStride = 0U;
   bufferDescription.m_uiSize              = uiBufferSize;
-  bufferDescription.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_Usage       = xiiGALResourceUsage::Dynamic;
   bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
   return pDevice->CreateBuffer(bufferDescription);

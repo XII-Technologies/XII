@@ -62,7 +62,7 @@ void xiiGridRenderer::CreateVertexBuffer()
     desc.m_uiElementByteStride = sizeof(GridVertex);
     desc.m_uiSize              = s_uiBufferSize;
     desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_Usage       = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);

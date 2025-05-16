@@ -276,7 +276,7 @@ struct xiiShadowPool::Data
       desc.m_uiSize              = desc.m_uiElementByteStride * MAX_SHADOW_DATA;
       desc.m_Mode                = xiiGALBufferMode::Structured;
       desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-      desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+      desc.m_Usage       = xiiGALResourceUsage::Dynamic;
       desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
       m_hShadowDataBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);

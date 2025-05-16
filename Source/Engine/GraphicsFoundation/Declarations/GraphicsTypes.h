@@ -1774,8 +1774,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
     ResolveSource      = XII_BIT(14), ///< The resource is used as the source in a resolve operation.
     InputAttachment    = XII_BIT(15), ///< The resource is used as an input attachment in a render pass sub pass.
     Present            = XII_BIT(16), ///< The resource is used for present.
-    BuildAsRead        = XII_BIT(17), ///< The resource is used as vertex/index/instance buffer in an amplification shader building operation or as an acceleration structure source in an amplification shader copy operation.
-    BuildAsWrite       = XII_BIT(18), ///< The resource is used as the target for AS building or AS copy operations.
+    BuildASRead        = XII_BIT(17), ///< The resource is used as vertex/index/instance buffer in an amplification shader building operation or as an acceleration structure source in an amplification shader copy operation.
+    BuildASWrite       = XII_BIT(18), ///< The resource is used as the target for AS building or AS copy operations.
     RayTracing         = XII_BIT(19), ///< The resource is used as a top-level AS shader resource in a trace rays operation.
     Common             = XII_BIT(20), ///< The resource state is used for read operations, but access to the resource may be slower compared to the specialized state. A transition to the common state is always a pipeline stall and can often induce a cache flush and render target decompress operation.
     ShadingRate        = XII_BIT(21), ///< The resource is used as the source when variable shading rate rendering.
@@ -1804,8 +1804,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
     StorageType ResolveSource : 1;
     StorageType InputAttachment : 1;
     StorageType Present : 1;
-    StorageType BuildAsRead : 1;
-    StorageType BuildAsWrite : 1;
+    StorageType BuildASRead : 1;
+    StorageType BuildASWrite : 1;
     StorageType RayTracing : 1;
     StorageType Common : 1;
     StorageType ShadingRate : 1;

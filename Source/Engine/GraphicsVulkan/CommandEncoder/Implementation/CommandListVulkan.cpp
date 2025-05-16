@@ -1856,7 +1856,7 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> 
 
   if (mapType == xiiGALMapType::Read)
   {
-    XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "The buffer must be created with resource usage xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified to be mapped for reading.");
+    XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified, "The buffer must be created with resource usage xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified to be mapped for reading.");
 
     if (!mapFlags.IsSet(xiiGALMapFlags::DoNotWait))
     {
@@ -1868,12 +1868,12 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> 
   }
   else if (mapType == xiiGALMapType::Write)
   {
-    if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
+    if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
     {
       VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), &pMappedData));
       VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
     }
-    else if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic)
+    else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
     {
       XII_VERIFY_COMMAND_LIST_RESULT(mapFlags.IsAnySet(xiiGALMapFlags::Discard | xiiGALMapFlags::NoOverWrite), "Failed to map buffer '{}': Vulkan buffer must be mapped for writing with xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.", pBufferVulkan->GetDebugName());
 
@@ -1928,7 +1928,7 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer
 
     if (mapType == xiiGALMapType::Read)
     {
-      if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
+      if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
       {
         VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
 
@@ -1937,13 +1937,13 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer
     }
     else if (mapType == xiiGALMapType::Write)
     {
-      if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified)
+      if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
       {
         VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
 
         vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
       }
-      else if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic)
+      else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
       {
         VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), mappedBuffer->m_DynamicAllocation.m_VmaAllocation, mappedBuffer->m_DynamicAllocation.m_uiOffset, pBufferVulkan->GetSize()));
 
@@ -2572,7 +2572,7 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)
 
 [[nodiscard]] inline bool ResourceStateHasWriteAccess(xiiBitflags<xiiGALResourceStateFlags> flags)
 {
-  xiiBitflags<xiiGALResourceStateFlags> writeAccessStates = xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::BuildAsWrite;
+  xiiBitflags<xiiGALResourceStateFlags> writeAccessStates = xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::BuildASWrite;
 
   return writeAccessStates.IsAnySet(flags);
 }

@@ -29,7 +29,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDynamicBuffer::Resize(xiiSharedPtr<xiiGALComman
   {
     m_uiPendingSize = uiNewSize;
 
-    if (m_Description.m_ResourceUsage != xiiGALResourceUsage::Sparse)
+    if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
     {
       if (!m_pStaleBuffer)
       {
@@ -80,12 +80,12 @@ void xiiGALDynamicBuffer::InitializeBuffer()
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "Device is invalid.");
 
-  if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Default && m_uiPendingSize > 0U)
+  if (m_Description.m_Usage == xiiGALResourceUsage::Default && m_uiPendingSize > 0U)
   {
     xiiGALBufferCreationDescription description = m_Description;
     description.m_uiSize                        = m_uiPendingSize;
 
-    XII_ASSERT_DEV(description.m_ResourceUsage != xiiGALResourceUsage::Sparse, "Sparse buffers are not yet supported by xiiGALDynamicBuffer.");
+    XII_ASSERT_DEV(description.m_Usage != xiiGALResourceUsage::Sparse, "Sparse buffers are not yet supported by xiiGALDynamicBuffer.");
 
     m_pBuffer = m_pDevice->CreateBuffer(description);
 
@@ -119,7 +119,7 @@ void xiiGALDynamicBuffer::ResolvePendingResize(xiiSharedPtr<xiiGALCommandList> p
   {
     if (pCommandList != nullptr)
     {
-      if (m_Description.m_ResourceUsage != xiiGALResourceUsage::Sparse)
+      if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
       {
         ResizeDefaultBuffer(pCommandList);
       }

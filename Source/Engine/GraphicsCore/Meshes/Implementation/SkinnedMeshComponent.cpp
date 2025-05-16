@@ -47,7 +47,7 @@ void xiiSkinningState::TransformsChanged()
     bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * m_Transforms.GetCount();
     bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
     bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-    bufferDescription.m_ResourceUsage       = xiiGALResourceUsage::Staging;
+    bufferDescription.m_Usage       = xiiGALResourceUsage::Staging;
     bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     xiiGALBufferData initData;
