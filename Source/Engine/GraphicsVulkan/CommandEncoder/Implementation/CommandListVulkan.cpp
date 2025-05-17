@@ -4,6 +4,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+#include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
@@ -13,6 +14,7 @@
 #include <GraphicsVulkan/Resources/SamplerVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
+#include <GraphicsVulkan/Resources/TopLevelASVulkan.h>
 #include <GraphicsVulkan/States/ComputePipelineStateVulkan.h>
 #include <GraphicsVulkan/States/GraphicsPipelineStateVulkan.h>
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
@@ -35,13 +37,6 @@
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALStateTransitionFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::None),
-  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::UpdateState),
-  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::DiscardContent),
-  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::Aliasing),
-XII_END_STATIC_REFLECTED_BITFLAGS;
 // clang-format on
 
 [[nodiscard]] vk::AccessFlags AccessFlagsFromImageLayout(vk::ImageLayout vkImageLayout, bool bIsDestinationMask)
@@ -2489,6 +2484,83 @@ xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiSharedPtr<
   }
 
   return XII_SUCCESS;
+}
+
+void xiiGALCommandListVulkan::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)
+{
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+
+  for (xiiUInt32 uiBarrierIndex = 0; uiBarrierIndex < pResourceBarriers.GetCount(); ++uiBarrierIndex)
+  {
+    const auto& barrier = pResourceBarriers[uiBarrierIndex];
+
+    if (barrier.m_TransitionType == xiiGALStateTransitionType::Begin)
+    {
+      // Skip begin split-barriers.
+      XII_VERIFY_COMMAND_LIST(!barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState), "Resource state can not be updated in a begin-split barrier.");
+      continue;
+    }
+    if (barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::Aliasing))
+    {
+      auto GetResourceBindFlags = [](xiiGALResource* pResource) -> xiiBitflags<xiiGALBindFlags> {
+        if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(pResource))
+        {
+          return pTexture->GetDescription().m_BindFlags;
+        }
+        else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(pResource))
+        {
+          return pBuffer->GetDescription().m_BindFlags;
+        }
+        else
+        {
+          return xiiGALBindFlags::BindAll;
+        }
+      };
+
+      vk::PipelineStageFlags vkSourcePipelineStageFlags = static_cast<vk::PipelineStageFlagBits>(0);
+      vk::AccessFlags        vkSourceAccessFlags        = vk::AccessFlagBits::eNone;
+      xiiVulkanTypeConversions::GetPermittedStagesAndAccessFlags(GetResourceBindFlags(barrier.m_pPreviousResource.Borrow()), vkSourcePipelineStageFlags, vkSourceAccessFlags);
+
+      vk::PipelineStageFlags vkDestinationPipelineStageFlags = static_cast<vk::PipelineStageFlagBits>(0);
+      vk::AccessFlags        vkDestinationAccessFlags        = vk::AccessFlagBits::eNone;
+      xiiVulkanTypeConversions::GetPermittedStagesAndAccessFlags(GetResourceBindFlags(barrier.m_pResource.Borrow()), vkDestinationPipelineStageFlags, vkDestinationAccessFlags);
+
+      MemoryBarrier(vkSourceAccessFlags, vkDestinationAccessFlags, vkSourcePipelineStageFlags, vkDestinationPipelineStageFlags);
+    }
+    else
+    {
+      XII_VERIFY_COMMAND_LIST(barrier.m_TransitionType == xiiGALStateTransitionType::Immediate || barrier.m_TransitionType == xiiGALStateTransitionType::End, "Unexpected barrier type.");
+
+      if (xiiGALTextureVulkan* pTextureVulkan = xiiDynamicCast<xiiGALTextureVulkan*>(barrier.m_pResource.Borrow()))
+      {
+        vk::ImageSubresourceRange vkImageSubresourceRange = {};
+        vkImageSubresourceRange.aspectMask                = vk::ImageAspectFlagBits::eNone;
+        vkImageSubresourceRange.baseMipLevel              = barrier.m_uiFirstMipLevel;
+        vkImageSubresourceRange.levelCount                = (barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS) ? VK_REMAINING_ARRAY_LAYERS : barrier.m_uiMipLevelCount;
+        vkImageSubresourceRange.baseArrayLayer            = barrier.m_uiFirstArraySlice;
+        vkImageSubresourceRange.layerCount                = (barrier.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES) ? VK_REMAINING_ARRAY_LAYERS : barrier.m_uiArraySliceCount;
+
+        TransitionTextureState(barrier.m_pResource.Downcast<xiiGALTextureVulkan>(), barrier.m_OldState, barrier.m_NewState, barrier.m_TransitionFlags, &vkImageSubresourceRange);
+      }
+      else if (xiiGALBufferVulkan* pBufferVulkan = xiiDynamicCast<xiiGALBufferVulkan*>(barrier.m_pResource.Borrow()))
+      {
+        TransitionBufferState(barrier.m_pResource.Downcast<xiiGALBufferVulkan>(), barrier.m_OldState, barrier.m_NewState, barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState));
+      }
+      else if (xiiGALBottomLevelASVulkan* pBottomLevelASVulkan = xiiDynamicCast<xiiGALBottomLevelASVulkan*>(barrier.m_pResource.Borrow()))
+      {
+        XII_ASSERT_NOT_IMPLEMENTED;
+      }
+      else if (xiiGALTopLevelASVulkan* pTopLevelASVulkan = xiiDynamicCast<xiiGALTopLevelASVulkan*>(barrier.m_pResource.Borrow()))
+      {
+        XII_ASSERT_NOT_IMPLEMENTED;
+      }
+      else
+      {
+        XII_REPORT_FAILURE("Unsupported resource type.");
+      }
+    }
+  }
 }
 
 void xiiGALCommandListVulkan::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)

@@ -271,6 +271,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindFlags
     RayTracing            = XII_BIT(10), ///< A buffer may be used as a scratch buffer or as the source of primitive data for acceleration structure building.
     ShadingRate           = XII_BIT(11), ///< A texture may be used as shading rate texture.
 
+    BindAll = VertexBuffer | IndexBuffer | UniformBuffer | ShaderResource | StreamOutput | RenderTarget | DepthStencil | UnorderedAccess | IndirectDrawArguments | InputAttachment | RayTracing | ShadingRate, ///< All bind flags.
+
     Default = None
   };
 

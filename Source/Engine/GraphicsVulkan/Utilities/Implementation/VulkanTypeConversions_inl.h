@@ -1230,6 +1230,91 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions
   return xiiBitflags<xiiGALResourceStateFlags>();
 }
 
+XII_ALWAYS_INLINE void xiiVulkanTypeConversions::GetPermittedStagesAndAccessFlags(xiiBitflags<xiiGALBindFlags> e, vk::PipelineStageFlags& vkStageFlags, vk::AccessFlags& vkAccessFlags)
+{
+  vkStageFlags  = vk::PipelineStageFlagBits::eTransfer;
+  vkAccessFlags = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite;
+
+  for (auto v : e)
+  {
+    switch (v)
+    {
+      case xiiGALBindFlags::VertexBuffer:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+        vkAccessFlags |= vk::AccessFlagBits::eVertexAttributeRead;
+      }
+      break;
+      case xiiGALBindFlags::IndexBuffer:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+        vkAccessFlags |= vk::AccessFlagBits::eIndexRead;
+      }
+      break;
+      case xiiGALBindFlags::UniformBuffer:
+      {
+        vkStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+        vkAccessFlags |= vk::AccessFlagBits::eUniformRead;
+      }
+      break;
+      case xiiGALBindFlags::ShaderResource:
+      {
+        vkStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+        vkAccessFlags |= vk::AccessFlagBits::eShaderRead;
+      }
+      break;
+      case xiiGALBindFlags::RenderTarget:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        vkAccessFlags |= vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+      }
+      break;
+      case xiiGALBindFlags::DepthStencil:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+        vkAccessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+      }
+      break;
+      case xiiGALBindFlags::UnorderedAccess:
+      {
+        vkStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+        vkAccessFlags |= vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
+      }
+      break;
+      case xiiGALBindFlags::IndirectDrawArguments:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eDrawIndirect;
+        vkAccessFlags |= vk::AccessFlagBits::eIndirectCommandRead;
+      }
+      break;
+      case xiiGALBindFlags::InputAttachment:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
+        vkAccessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
+      }
+      break;
+      case xiiGALBindFlags::RayTracing:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+        vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR;
+      }
+      break;
+      case xiiGALBindFlags::ShadingRate:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eFragmentDensityProcessEXT | vk::PipelineStageFlagBits::eFragmentShadingRateAttachmentKHR;
+        vkAccessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT | vk::AccessFlagBits::eFragmentShadingRateAttachmentReadKHR;
+      }
+      break;
+
+      case xiiGALBindFlags::None:
+      case xiiGALBindFlags::StreamOutput:
+      default:
+        XII_REPORT_FAILURE("Unexpected bind flag.");
+        break;
+    }
+  }
+}
+
 XII_ALWAYS_INLINE vk::ComponentSwizzle xiiVulkanTypeConversions::GetComponentSwizzle(xiiGALTextureComponentSwizzle::Enum e)
 {
   switch (e)

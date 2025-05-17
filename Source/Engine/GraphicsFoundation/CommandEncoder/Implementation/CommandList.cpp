@@ -53,13 +53,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
     if (!(expression)) { return XII_FAILURE; }          \
   } while (false)
 
-#define XII_VERIFY_COMMAND_LIST_BOOL(expression, ...) \
-  do                                                  \
-  {                                                   \
-    XII_ASSERT_DEV((expression), __VA_ARGS__);        \
-    if (!(expression)) { return false; }              \
-  } while (false)
-
 xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALDeviceObject(pDevice), m_Description(creationDescription), m_pCommandQueue(pCommandQueue)
 {
@@ -1325,7 +1318,6 @@ bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlag
   return true;
 }
 
-#undef XII_VERIFY_COMMAND_LIST_BOOL
 #undef XII_VERIFY_COMMAND_LIST_RESULT
 #undef XII_VERIFY_COMMAND_LIST
 

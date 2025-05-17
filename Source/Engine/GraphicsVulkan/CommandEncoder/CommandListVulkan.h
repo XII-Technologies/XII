@@ -7,51 +7,6 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-/// \brief Resource state transition flags.
-struct XII_GRAPHICSVULKAN_DLL xiiGALStateTransitionFlags
-{
-  using StorageType = xiiUInt32;
-
-  enum Enum : StorageType
-  {
-    None           = 0U,         ///< Undefined binding.
-    UpdateState    = XII_BIT(0), ///< A buffer may be bound as a vertex buffer.
-    DiscardContent = XII_BIT(1), ///< A buffer may be bound as an index buffer.
-    Aliasing       = XII_BIT(2), ///< A buffer may be bound as a uniform buffer. Note that this flag may not be combined with any other bind flag.
-
-    Default = None
-  };
-
-  struct Bits
-  {
-    StorageType UpdateState : 1;
-    StorageType DiscardContent : 1;
-    StorageType Aliasing : 1;
-  };
-};
-
-XII_DECLARE_FLAGS_OPERATORS(xiiGALStateTransitionFlags);
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiGALStateTransitionFlags);
-
-/// \brief This describes the optimized depth-stencil clear value.
-struct XII_GRAPHICSVULKAN_DLL xiiGALStateTransitionDescription : public xiiHashableStruct<xiiGALStateTransitionDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiGALResource*                         m_pResourceBefore   = nullptr;
-  xiiGALResource*                         m_pResource         = nullptr;
-  xiiUInt32                               m_uiFirstMipLevel   = 0;
-  xiiUInt32                               m_uiMipLevelCount   = XII_GAL_REMAINING_MIP_LEVELS;
-  xiiUInt32                               m_uiFirstArraySlice = 0;
-  xiiUInt32                               m_uiArraySliceCount = XII_GAL_REMAINING_ARRAY_SLICES;
-  xiiBitflags<xiiGALResourceStateFlags>   m_OldState          = xiiGALResourceStateFlags::Unknown;
-  xiiBitflags<xiiGALResourceStateFlags>   m_NewState          = xiiGALResourceStateFlags::Unknown;
-  xiiBitflags<xiiGALStateTransitionFlags> m_TransitionFlags   = xiiGALStateTransitionFlags::None;
-
-  /// \todo GraphicsVulkan: Introduce transition type {Immediate (Vulkan, D3D11, D3D12 - Only), Begin, End} for D3D12 if this makes it to the graphics abstraction layer (GAL).
-};
-
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListVulkan, xiiGALCommandList);
@@ -185,6 +140,8 @@ protected:
   virtual void      GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureView> pTextureView) override final;
   virtual xiiResult MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData) override final;
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData) override final;
+
+  virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) override final;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color) override final;
   virtual void EndDebugGroupPlatform() override final;
