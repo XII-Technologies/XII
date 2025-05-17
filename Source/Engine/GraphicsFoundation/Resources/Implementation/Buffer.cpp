@@ -4,7 +4,6 @@
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALBufferMode, 1)
   XII_ENUM_CONSTANT(xiiGALBufferMode::Undefined),
   XII_ENUM_CONSTANT(xiiGALBufferMode::Formatted),
@@ -19,7 +18,6 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBuffer, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
 #define XII_GAL_BUFFER_CHECK(expression, ...)  \

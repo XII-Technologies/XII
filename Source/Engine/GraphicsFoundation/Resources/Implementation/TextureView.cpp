@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALUnorderedAccessViewFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Unspecified),
   XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Read),
@@ -28,7 +27,6 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
 xiiGALTextureView::xiiGALTextureView(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :

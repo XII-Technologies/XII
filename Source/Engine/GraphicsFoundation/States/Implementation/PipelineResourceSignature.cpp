@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALPipelineResourceFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::NoDynamicBuffers),
@@ -15,7 +14,6 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineResourceSignature, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
 xiiGALPipelineResourceSignature::xiiGALPipelineResourceSignature(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :

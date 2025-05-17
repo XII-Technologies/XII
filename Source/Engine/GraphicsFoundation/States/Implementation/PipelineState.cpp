@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/States/PipelineState.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderVariableFlags, 1)
   XII_ENUM_CONSTANT(xiiGALShaderVariableFlags::None),
   XII_ENUM_CONSTANT(xiiGALShaderVariableFlags::NoDynamicBuffers),
@@ -39,7 +38,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTilePipelineState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
 xiiGALPipelineState::xiiGALPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineStateCreationDescription& creationDescription) :

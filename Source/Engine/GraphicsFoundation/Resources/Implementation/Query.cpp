@@ -3,8 +3,10 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Query.h>
 
+// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQuery, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiGALQuery::xiiGALQuery(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALQueryCreationDescription& creationDescription) :
   xiiGALDeviceObject(pDevice), m_Description(creationDescription)

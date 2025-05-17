@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingBuildASFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::AllowUpdate),
@@ -15,7 +14,6 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelAS, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
 xiiGALBottomLevelAS::xiiGALBottomLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription) :
