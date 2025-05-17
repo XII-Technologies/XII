@@ -478,6 +478,8 @@ public:
   /// \param textureMipLevelData - Specifies the subresource to unmap.
   xiiResult UnmapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData);
 
+  // Resource methods.
+
   /// \brief Transitions the resource states.
   ///
   /// \param pResourceBarriers - Pointer to the array of resource barriers.
