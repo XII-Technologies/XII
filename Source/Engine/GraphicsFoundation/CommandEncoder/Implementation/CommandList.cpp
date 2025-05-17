@@ -2,11 +2,11 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
-#include <GraphicsFoundation/Resources/TopLevelAS.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Query.h>
+#include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
@@ -846,15 +846,48 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
 
       if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(barrier.m_pResource.Borrow()))
       {
+        const auto& textureDescription = pTexture->GetDescription();
+
+        XII_VERIFY_COMMAND_LIST(previousState != xiiGALResourceStateFlags::Unknown, "pResourceBarriers[{}].OldState for texture '{}' is unknown to the engine and is not explicitly specified in the barrier.", uiBarrierIndex, pTexture->GetDebugName());
+        XII_VERIFY_COMMAND_LIST(VerifyResourceStates(previousState, true), "pResourceBarriers[{}].OldState is invalid for texture '{}'.", uiBarrierIndex, pTexture->GetDebugName());
+        XII_VERIFY_COMMAND_LIST(VerifyResourceStates(barrier.m_NewState, true), "pResourceBarriers[{}].NewState is invalid for texture '{}'.", uiBarrierIndex, pTexture->GetDebugName());
+
+        XII_VERIFY_COMMAND_LIST(barrier.m_uiFirstMipLevel < textureDescription.m_uiMipLevels, "pResourceBarriers[{}].FirstMipLevel ({}) is out of range. Texture '{}' has only {} mip level (s).", uiBarrierIndex, barrier.m_uiFirstMipLevel, pTexture->GetDebugName(), textureDescription.m_uiMipLevels);
+        XII_VERIFY_COMMAND_LIST(barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS || (barrier.m_uiFirstMipLevel + barrier.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "pResourceBarriers[{}] mip level range [{}, {}] is out of range. Texture '{}' has only {} mip level (s).", uiBarrierIndex, barrier.m_uiFirstMipLevel, barrier.m_uiMipLevelCount - 1, pTexture->GetDebugName(), textureDescription.m_uiMipLevels);
+
+        XII_VERIFY_COMMAND_LIST(barrier.m_uiFirstArraySlice < textureDescription.GetArraySize(), "pResourceBarriers[{}].FirstArraySlice ({}) is out of range. Array size of texture '{}' is {}.", uiBarrierIndex, barrier.m_uiFirstArraySlice, pTexture->GetDebugName(), textureDescription.GetArraySize());
+        XII_VERIFY_COMMAND_LIST(barrier.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES || (barrier.m_uiFirstArraySlice + barrier.m_uiArraySliceCount) <= textureDescription.GetArraySize(), "pResourceBarriers[{}] array slice range [{}, {}] is out of range. Array size of texture '{}' is {}.", uiBarrierIndex, barrier.m_uiFirstArraySlice, barrier.m_uiArraySliceCount - 1, pTexture->GetDebugName(), textureDescription.GetArraySize());
+
+        xiiEnum<xiiGALGraphicsDeviceType> adapterType = m_pDevice->GetDescription().m_GraphicsDeviceType;
+        if (adapterType != xiiGALGraphicsDeviceType::Vulkan && adapterType != xiiGALGraphicsDeviceType::Direct3D12)
+        {
+          XII_VERIFY_COMMAND_LIST(barrier.m_uiFirstMipLevel == 0 && (barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS || barrier.m_uiMipLevelCount == textureDescription.m_uiMipLevels), "Failed to transition texture '{}' in pResourceBarriers[{}], only whole resources can be transitioned on this device.", pTexture->GetDebugName(), uiBarrierIndex);
+          XII_VERIFY_COMMAND_LIST(barrier.m_uiFirstArraySlice == 0 && (barrier.m_uiArraySliceCount == XII_GAL_REMAINING_MIP_LEVELS || barrier.m_uiArraySliceCount == textureDescription.GetArraySize()), "Failed to transition texture '{}' in pResourceBarriers[{}], only whole resources can be transitioned on this device.", pTexture->GetDebugName(), uiBarrierIndex);
+        }
       }
       else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(barrier.m_pResource.Borrow()))
       {
+        previousState = barrier.m_OldState != xiiGALResourceStateFlags::Unknown ? barrier.m_OldState : pBuffer->GetResourceState();
+
+        XII_VERIFY_COMMAND_LIST(previousState != xiiGALResourceStateFlags::Unknown, "pResourceBarriers[{}].OldState for buffer '{}' is unknown to the engine and is not explicitly specified in the barrier.", uiBarrierIndex, pBuffer->GetDebugName());
+        XII_VERIFY_COMMAND_LIST(VerifyResourceStates(previousState, false), "pResourceBarriers[{}].OldState is invalid for buffer '{}'.", uiBarrierIndex, pBuffer->GetDebugName());
+        XII_VERIFY_COMMAND_LIST(VerifyResourceStates(barrier.m_NewState, false), "pResourceBarriers[{}].NewState is invalid for buffer '{}'.", uiBarrierIndex, pBuffer->GetDebugName());
       }
       else if (xiiGALBottomLevelAS* pBottomLevelAS = xiiDynamicCast<xiiGALBottomLevelAS*>(barrier.m_pResource.Borrow()))
       {
+        previousState = barrier.m_OldState != xiiGALResourceStateFlags::Unknown ? barrier.m_OldState : pBottomLevelAS->GetResourceState();
+
+        XII_VERIFY_COMMAND_LIST(previousState != xiiGALResourceStateFlags::Unknown, "pResourceBarriers[{}].OldState for BLAS '{}' is unknown to the engine and is not explicitly specified in the barrier.", uiBarrierIndex, pBottomLevelAS->GetDebugName());
+        XII_VERIFY_COMMAND_LIST(barrier.m_NewState == xiiGALResourceStateFlags::BuildASRead || barrier.m_NewState == xiiGALResourceStateFlags::BuildASWrite || barrier.m_NewState == xiiGALResourceStateFlags::RayTracing, "pResourceBarriers[{}].NewState for BLAS '{}' is invalid.", uiBarrierIndex, pBottomLevelAS->GetDebugName());
+        XII_VERIFY_COMMAND_LIST(barrier.m_TransitionType == xiiGALStateTransitionType::Immediate, "pResourceBarriers[{}].TransitionType for BLAS '{}' is invalid. xiiGALStateTransitionType::Immediate must be used as split barriers are not supported for BLAS.", uiBarrierIndex, pBottomLevelAS->GetDebugName());
       }
       else if (xiiGALTopLevelAS* pTopLevelAS = xiiDynamicCast<xiiGALTopLevelAS*>(barrier.m_pResource.Borrow()))
       {
+        previousState = barrier.m_OldState != xiiGALResourceStateFlags::Unknown ? barrier.m_OldState : pTopLevelAS->GetResourceState();
+
+        XII_VERIFY_COMMAND_LIST(previousState != xiiGALResourceStateFlags::Unknown, "pResourceBarriers[{}].OldState for TLAS '{}' is unknown to the engine and is not explicitly specified in the barrier.", uiBarrierIndex, pTopLevelAS->GetDebugName());
+        XII_VERIFY_COMMAND_LIST(barrier.m_NewState == xiiGALResourceStateFlags::BuildASRead || barrier.m_NewState == xiiGALResourceStateFlags::BuildASWrite || barrier.m_NewState == xiiGALResourceStateFlags::RayTracing, "pResourceBarriers[{}].NewState for TLAS '{}' is invalid.", uiBarrierIndex, pTopLevelAS->GetDebugName());
+        XII_VERIFY_COMMAND_LIST(barrier.m_TransitionType == xiiGALStateTransitionType::Immediate, "pResourceBarriers[{}].TransitionType for TLAS '{}' is invalid. xiiGALStateTransitionType::Immediate must be used as split barriers are not supported for TLAS.", uiBarrierIndex, pTopLevelAS->GetDebugName());
       }
       else
       {
