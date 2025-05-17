@@ -3,6 +3,8 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/BottomLevelAS.h>
+#include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
@@ -768,7 +770,7 @@ void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 
   XII_VERIFY_COMMAND_LIST(queryDescription.m_Type != xiiGALQueryType::Timestamp, "BeginQuery cannot be called on timestamp queries. Use EndQuery instead to set the timestamp.");
 
-  /// \todo GraphicsFoundation: Assert command queue compatibiliity.
+  /// \todo GraphicsFoundation: Assert command queue compatibility.
 
   BeginQueryPlatform(pQuery);
 }
@@ -777,7 +779,7 @@ void xiiGALCommandList::EndQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   XII_VERIFY_COMMAND_LIST(pQuery != nullptr, "EndQuery must not be called on an invalidated query.");
 
-  /// \todo GraphicsFoundation: Assert command queue compatibiliity.
+  /// \todo GraphicsFoundation: Assert command queue compatibility.
 
   EndQueryPlatform(pQuery);
 }
@@ -786,6 +788,101 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
 {
   if (pResourceBarriers.IsEmpty())
     return;
+
+  for (xiiUInt32 uiBarrierIndex = 0; uiBarrierIndex < pResourceBarriers.GetCount(); ++uiBarrierIndex)
+  {
+    const auto& barrier = pResourceBarriers[uiBarrierIndex];
+
+    if (barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::Aliasing))
+    {
+      XII_VERIFY_COMMAND_LIST(barrier.m_TransitionFlags.IsStrictlyAnySet(xiiGALStateTransitionFlags::Aliasing), "pResourceBarriers[{}].TransitionFlags has flag xiiGALStateTransitionFlags::Aliasing that incompatible with other flags.", uiBarrierIndex);
+
+      auto VerifySparseAliasedResource = [](xiiGALResource* pResource) -> xiiGALResourceDimension::Enum {
+        if (pResource == nullptr)
+          return xiiGALResourceDimension::Undefined;
+
+        if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(pResource))
+        {
+          const auto& textureDescription = pTexture->GetDescription();
+
+          XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Sparse, "Texture '{}' used in aliasing barrier is not a sparse resource.", pTexture->GetDebugName());
+          XII_ASSERT_DEV(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::SparseAlias), "Texture '{}' used in aliasing barrier was not created with xiiGALMiscTextureFlags::SparseAlias flag.", pTexture->GetDebugName());
+
+          return textureDescription.m_Type;
+        }
+        else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(pResource))
+        {
+          const auto& bufferDescription = pBuffer->GetDescription();
+
+          XII_ASSERT_DEV(bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "Buffer '{}' used in aliasing barrier is not a sparse resource.", pBuffer->GetDebugName());
+          XII_ASSERT_DEV(bufferDescription.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias), "Buffer '{}' used in aliasing barrier was not created with xiiGALMiscBufferFlags::SparseAlias flag.", pBuffer->GetDebugName());
+
+          return xiiGALResourceDimension::Buffer;
+        }
+        else
+        {
+          XII_ASSERT_DEV(false, "Only textures and buffers are permitted in aliasing barriers.");
+          return xiiGALResourceDimension::Undefined;
+        }
+      };
+
+      xiiGALResourceDimension::Enum previousDimension = VerifySparseAliasedResource(barrier.m_pPreviousResource.Borrow());
+      xiiGALResourceDimension::Enum currentDimension  = VerifySparseAliasedResource(barrier.m_pResource.Borrow());
+      if (previousDimension != xiiGALResourceDimension::Undefined && currentDimension != xiiGALResourceDimension::Undefined)
+      {
+        XII_VERIFY_COMMAND_LIST((previousDimension == xiiGALResourceDimension::Buffer) == (currentDimension == xiiGALResourceDimension::Buffer), "In pResourceBarriers[{}], both previous- and current-resources must either be buffers or textures. Sparse aliasing between textures and buffers are not permitted.", uiBarrierIndex);
+      }
+
+      XII_VERIFY_COMMAND_LIST(barrier.m_OldState == xiiGALResourceStateFlags::Unknown && barrier.m_NewState == xiiGALResourceStateFlags::Unknown, "In pResourceBarriers[{}], Aliasing buffer is applied to all subresource. OldState and NewState must be xiiGALResourceStateFlags::Unknown.", uiBarrierIndex);
+      XII_VERIFY_COMMAND_LIST(barrier.m_uiFirstArraySlice == 0 && barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS && barrier.m_uiFirstArraySlice == 0 && barrier.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES, "In pResourceBarriers[{}], Aliasing barrier is applied to all subresources. FirstMipLevel, MipLevelCount, FirstArraySlice, ArraySliceCount must be set as default.", uiBarrierIndex);
+    }
+    else
+    {
+      XII_VERIFY_COMMAND_LIST(barrier.m_pPreviousResource == nullptr, "In pResourceBarriers[{}].pPreviousResource is only used for aliasing barrier and must be null otherwise.", uiBarrierIndex);
+      XII_VERIFY_COMMAND_LIST(barrier.m_NewState != xiiGALResourceStateFlags::Unknown && barrier.m_NewState != xiiGALResourceStateFlags::Undefined, "In pResourceBarriers[{}].NewState must not be xiiGALResourceStateFlags::Unknown or xiiGALResourceStateFlags::Undefined.", uiBarrierIndex);
+      XII_VERIFY_COMMAND_LIST(barrier.m_pResource != nullptr, "In pResourceBarriers[{}].pResource must not be null.", uiBarrierIndex);
+
+      xiiBitflags<xiiGALResourceStateFlags> previousState = xiiGALResourceStateFlags::Unknown;
+
+      if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(barrier.m_pResource.Borrow()))
+      {
+      }
+      else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(barrier.m_pResource.Borrow()))
+      {
+      }
+      else if (xiiGALBottomLevelAS* pBottomLevelAS = xiiDynamicCast<xiiGALBottomLevelAS*>(barrier.m_pResource.Borrow()))
+      {
+      }
+      else if (xiiGALTopLevelAS* pTopLevelAS = xiiDynamicCast<xiiGALTopLevelAS*>(barrier.m_pResource.Borrow()))
+      {
+      }
+      else
+      {
+        XII_REPORT_FAILURE("Unexpected resource type.");
+      }
+
+      if (barrier.m_OldState == xiiGALResourceStateFlags::UnorderedAccess && barrier.m_NewState == xiiGALResourceStateFlags::UnorderedAccess)
+      {
+        XII_VERIFY_COMMAND_LIST(barrier.m_TransitionType == xiiGALStateTransitionType::Immediate, "pResourceBarriers[{}].TransitionType must be xiiGALStateTransitionType::Immediate for UAV barriers.", uiBarrierIndex);
+      }
+
+      switch (barrier.m_TransitionType)
+      {
+        case xiiGALStateTransitionType::Immediate:
+          break;
+        case xiiGALStateTransitionType::Begin:
+          XII_VERIFY_COMMAND_LIST(!barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState), "pResourceBarriers[{}].TransitionFlags can not be updated in a begin-split barrier with xiiGALStateTransitionFlags::UpdateState.", uiBarrierIndex);
+          break;
+        case xiiGALStateTransitionType::End:
+          break;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+
+      XII_VERIFY_COMMAND_LIST(VerifyResourceState(barrier.m_OldState, m_Description.m_QueueType, "OldState"), "");
+      XII_VERIFY_COMMAND_LIST(VerifyResourceState(barrier.m_NewState, m_Description.m_QueueType, "NewState"), "");
+    }
+  }
 
   TransitionResourceStatesPlatform(pResourceBarriers);
 }
@@ -1191,52 +1288,6 @@ bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlag
       return false;
     }
   }
-
-  return true;
-}
-
-bool xiiGALCommandList::VerifyAliasingBarrierDescription(const xiiGALStateTransitionDescription& description) const
-{
-  XII_VERIFY_COMMAND_LIST_BOOL(description.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::Aliasing), "The transition description does not have the aliasing flag.");
-
-  auto VerifySparseAliasedResource = [](xiiGALResource* pResource) -> xiiGALResourceDimension::Enum {
-    if (pResource == nullptr)
-      return xiiGALResourceDimension::Undefined;
-
-    if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(pResource))
-    {
-      const auto& textureDescription = pTexture->GetDescription();
-
-      XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Sparse, "Texture '{}' used in aliasing barrier is not a sparse resource.", pTexture->GetDebugName());
-      XII_ASSERT_DEV(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::SparseAlias), "Texture '{}' used in aliasing barrier was not created with xiiGALMiscTextureFlags::SparseAlias flag.", pTexture->GetDebugName());
-
-      return textureDescription.m_Type;
-    }
-    else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(pResource))
-    {
-      const auto& bufferDescription = pBuffer->GetDescription();
-
-      XII_ASSERT_DEV(bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "Buffer '{}' used in aliasing barrier is not a sparse resource.", pBuffer->GetDebugName());
-      XII_ASSERT_DEV(bufferDescription.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias), "Buffer '{}' used in aliasing barrier was not created with xiiGALMiscBufferFlags::SparseAlias flag.", pBuffer->GetDebugName());
-
-      return xiiGALResourceDimension::Buffer;
-    }
-    else
-    {
-      XII_ASSERT_DEV(false, "Only textures and buffers are permitted in aliasing barriers.");
-      return xiiGALResourceDimension::Undefined;
-    }
-  };
-
-  xiiGALResourceDimension::Enum previousDimension = VerifySparseAliasedResource(description.m_pPreviousResource.Borrow());
-  xiiGALResourceDimension::Enum currentDimension  = VerifySparseAliasedResource(description.m_pResource.Borrow());
-  if (previousDimension != xiiGALResourceDimension::Undefined && currentDimension != xiiGALResourceDimension::Undefined)
-  {
-    XII_ASSERT_DEV((previousDimension == xiiGALResourceDimension::Buffer) == (currentDimension == xiiGALResourceDimension::Buffer), "Both previous- and current-resources must either be buffers or textures. Sparse aliasing between textures and buffers are not permitted.");
-  }
-
-  XII_ASSERT_DEV(description.m_OldState == xiiGALResourceStateFlags::Unknown && description.m_NewState == xiiGALResourceStateFlags::Unknown, "Aliasing buffer is applied to all subresource. OldState and NewState must be xiiGALResourceStateFlags::Unknown.");
-  XII_ASSERT_DEV(description.m_uiFirstArraySlice == 0 && description.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS && description.m_uiFirstArraySlice == 0 && description.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES, "Aliasing barrier is applied to all subresources. FirstMipLevel, MipLevelCount, FirstArraySlice, ArraySliceCount must be set as default.");
 
   return true;
 }

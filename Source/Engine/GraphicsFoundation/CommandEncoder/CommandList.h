@@ -554,11 +554,14 @@ protected:
   /// \remarks This method can be called only if the command list has not yet been submitted for execution.
   void Reset();
 
-  // Deactivate Doxygen document generation for the following block. (API abstraction only)
-  /// \cond
-
   void ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box);
   void ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData);
+
+  bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const;
+  bool VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const;
+
+  // Deactivate Doxygen document generation for the following block. (API abstraction only)
+  /// \cond
 
   // These functions need to be implemented by a graphics API abstraction.
 protected:
@@ -630,11 +633,6 @@ protected:
   virtual void InvalidateStatePlatform() = 0;
 
   /// \endcond
-
-  bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const;
-  bool VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const;
-
-  bool VerifyAliasingBarrierDescription(const xiiGALStateTransitionDescription& description) const;
 
 protected:
   xiiGALCommandListCreationDescription m_Description;
