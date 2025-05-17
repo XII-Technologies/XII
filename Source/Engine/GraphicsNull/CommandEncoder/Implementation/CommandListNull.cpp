@@ -319,6 +319,11 @@ xiiResult xiiGALCommandListNull::UnmapTextureSubresourcePlatform(xiiSharedPtr<xi
   return XII_SUCCESS;
 }
 
+void xiiGALCommandListNull::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)
+{
+  XII_IGNORE_UNUSED(pResourceBarriers);
+}
+
 void xiiGALCommandListNull::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
   XII_IGNORE_UNUSED(sName);
