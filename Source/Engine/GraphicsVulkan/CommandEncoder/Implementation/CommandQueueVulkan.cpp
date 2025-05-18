@@ -89,8 +89,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
   bool bTimelineSemaphoreInUse = false;
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {
-    XII_ASSERT_DEV((fenceInfo.m_pFenceVulkan != nullptr) != (fenceInfo.m_vkFenceVulkan != VK_NULL_HANDLE), "Exactly one fence type must be set.");
-
     if (fenceInfo.m_pFenceVulkan == nullptr || !fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
       continue;
 
@@ -165,8 +163,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
 
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {
-    XII_ASSERT_DEV((fenceInfo.m_pFenceVulkan != nullptr) != (fenceInfo.m_vkFenceVulkan != VK_NULL_HANDLE), "Exactly one fence type must be set.");
-
     if (fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
       continue;
 

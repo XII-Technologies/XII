@@ -487,29 +487,6 @@ void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore, xiiUIn
   m_vkSignalSemaphoreValues.PushBack(uiValue); // Ignored for binary semaphore.
 }
 
-void xiiGALCommandListVulkan::EnqueueSignal(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
-{
-  xiiSharedPtr<xiiGALFenceVulkan> pFenceVulkan = pFence.Downcast<xiiGALFenceVulkan>();
-  FenceInfo                       fenceInfo    = {.m_pFenceVulkan = pFenceVulkan, .m_uiWaitValue = uiValue};
-
-  m_SignalFences.PushBack(fenceInfo);
-}
-
-void xiiGALCommandListVulkan::EnqueueSignal(vk::Fence vkFence, xiiUInt64 uiValue)
-{
-  FenceInfo fenceInfo = {.m_vkFenceVulkan = vkFence, .m_uiWaitValue = uiValue};
-
-  m_SignalFences.PushBack(fenceInfo);
-}
-
-void xiiGALCommandListVulkan::DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
-{
-  xiiSharedPtr<xiiGALFenceVulkan> pFenceVulkan = pFence.Downcast<xiiGALFenceVulkan>();
-  FenceInfo                       fenceInfo    = {.m_pFenceVulkan = pFenceVulkan, .m_uiWaitValue = uiValue};
-
-  m_WaitFences.PushBack(fenceInfo);
-}
-
 xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription), m_pCommandBufferPool(pCommandBufferPool), m_vkCommandBuffer(m_pCommandBufferPool->RequestCommandBuffer())
 {
@@ -2561,6 +2538,22 @@ void xiiGALCommandListVulkan::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGA
       }
     }
   }
+}
+
+void xiiGALCommandListVulkan::EnqueueSignalPlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
+{
+  xiiSharedPtr<xiiGALFenceVulkan> pFenceVulkan = pFence.Downcast<xiiGALFenceVulkan>();
+  FenceInfo                       fenceInfo    = {.m_pFenceVulkan = pFenceVulkan, .m_uiWaitValue = uiValue};
+
+  m_SignalFences.PushBack(fenceInfo);
+}
+
+void xiiGALCommandListVulkan::DeviceWaitForFencePlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
+{
+  xiiSharedPtr<xiiGALFenceVulkan> pFenceVulkan = pFence.Downcast<xiiGALFenceVulkan>();
+  FenceInfo                       fenceInfo    = {.m_pFenceVulkan = pFenceVulkan, .m_uiWaitValue = uiValue};
+
+  m_WaitFences.PushBack(fenceInfo);
 }
 
 void xiiGALCommandListVulkan::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)

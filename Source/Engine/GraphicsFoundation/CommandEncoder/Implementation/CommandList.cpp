@@ -4,6 +4,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
@@ -762,8 +763,7 @@ void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
   const auto& queryDescription = pQuery->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(queryDescription.m_Type != xiiGALQueryType::Timestamp, "BeginQuery cannot be called on timestamp queries. Use EndQuery instead to set the timestamp.");
-
-  /// \todo GraphicsFoundation: Assert command queue compatibility.
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueType::Transfer : xiiGALCommandQueueType::Graphics), "BeginQuery command arguments are invalid. Invalid command queue of query type.");
 
   BeginQueryPlatform(pQuery);
 }
@@ -772,7 +772,9 @@ void xiiGALCommandList::EndQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   XII_VERIFY_COMMAND_LIST(pQuery != nullptr, "EndQuery must not be called on an invalidated query.");
 
-  /// \todo GraphicsFoundation: Assert command queue compatibility.
+  const auto& queryDescription = pQuery->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueType::Transfer : xiiGALCommandQueueType::Graphics), "EndQuery command arguments are invalid. Invalid command queue of query type.");
 
   EndQueryPlatform(pQuery);
 }
@@ -911,6 +913,21 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
   }
 
   TransitionResourceStatesPlatform(pResourceBarriers);
+}
+
+void xiiGALCommandList::EnqueueSignal(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
+{
+  XII_VERIFY_COMMAND_LIST(pFence != nullptr, "The given fence to signal must not be null.");
+
+  EnqueueSignalPlatform(pFence, uiValue);
+}
+
+void xiiGALCommandList::DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
+{
+  XII_VERIFY_COMMAND_LIST(pFence != nullptr, "The given fence to wait for must not be null.");
+  XII_VERIFY_COMMAND_LIST(pFence->GetDescription().m_Type == xiiGALFenceType::General, "The given fence to wait for must be created with xiiGALFenceType::General.");
+
+  DeviceWaitForFencePlatform(pFence, uiValue);
 }
 
 void xiiGALCommandList::BeginDebugGroup(xiiStringView sName, const xiiColor& color)

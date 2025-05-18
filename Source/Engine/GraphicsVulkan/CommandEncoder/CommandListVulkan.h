@@ -49,10 +49,6 @@ public:
   void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
   void AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue = 0ULL);
 
-  void EnqueueSignal(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue);
-  void EnqueueSignal(vk::Fence vkFence, xiiUInt64 uiValue);
-  void DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue);
-
   XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_pUploadStagingBufferPool.Borrow(); }
 
   struct CommandListState
@@ -142,6 +138,9 @@ protected:
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData) override final;
 
   virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) override final;
+
+  virtual void EnqueueSignalPlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue) override final;
+  virtual void DeviceWaitForFencePlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue) override final;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color) override final;
   virtual void EndDebugGroupPlatform() override final;
@@ -241,8 +240,7 @@ private:
   struct FenceInfo
   {
     xiiSharedPtr<xiiGALFenceVulkan> m_pFenceVulkan;
-    vk::Fence                       m_vkFenceVulkan = VK_NULL_HANDLE;
-    xiiUInt64                       m_uiWaitValue   = 0U;
+    xiiUInt64                       m_uiWaitValue = 0U;
   };
 
   struct ResourceSetBindings

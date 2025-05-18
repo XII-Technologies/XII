@@ -80,6 +80,9 @@ protected:
 
   virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) override final;
 
+  virtual void EnqueueSignalPlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue) override final;
+  virtual void DeviceWaitForFencePlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue) override final;
+
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color) override final;
   virtual void EndDebugGroupPlatform() override final;
   virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color) override final;

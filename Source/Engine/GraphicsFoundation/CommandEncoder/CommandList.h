@@ -499,6 +499,26 @@ public:
   ///        Using TransitionResourceStates() with NewState = xiiGALResourceState::ShaderResource will not invalidate cache in graphics shaders and may cause undefined behaviour.
   void TransitionResourceStates(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers);
 
+  // Fence functions.
+
+  /// \brief Tells the GPU to set a fence to a specified value after all previous work has completed.
+  ///
+  /// \param pFence  - The fence to signal.
+  /// \param uiValue - The value to set the fence to. This value must be greater than the previously signalled value on the same fence.
+  ///
+  /// \note The fence will be signalled when the command list is submitted. If an application needs to wait for the fence in a loop, it must submit the command list after signalling the fence.
+  void EnqueueSignal(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue);
+
+  /// \brief Waits until the specified fence reaches or exceeds the specified value, on the device.
+  ///
+  /// \param pFence  - The fence to wait. The fence must be created with type xiiGALFenceType::General.
+  /// \param uiValue - The value that the command list is waiting for the fence to reach.
+  ///
+  /// \note if NativeFence feature is not enabled (see xiiGALDeviceFeatures), then uiValue must be less than or equal to the last signalled or pending value. uiValue becomes pending when the command list is submitted. Waiting for a value that is greater than any pending value will cause a deadlock.
+  ///
+  /// \note If NativeFence feature is enabled (see xiiGALDeviceFeatures), then waiting for a value that is greater than any pending value will cause a GPU stall.
+  void DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue);
+
   // Debug functions.
 
   /// \brief Begins a new debug group with a specified name and color.
@@ -627,6 +647,9 @@ protected:
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)                                                                                                                                                                                     = 0;
 
   virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) = 0;
+
+  virtual void EnqueueSignalPlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)      = 0;
+  virtual void DeviceWaitForFencePlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue) = 0;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)  = 0;
   virtual void EndDebugGroupPlatform()                                              = 0;

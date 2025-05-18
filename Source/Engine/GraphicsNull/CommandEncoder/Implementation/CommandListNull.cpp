@@ -3,6 +3,7 @@
 #include <GraphicsNull/CommandEncoder/CommandListNull.h>
 #include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
+#include <GraphicsNull/Resources/FenceNull.h>
 #include <GraphicsNull/Resources/QueryNull.h>
 
 // clang-format off
@@ -322,6 +323,18 @@ xiiResult xiiGALCommandListNull::UnmapTextureSubresourcePlatform(xiiSharedPtr<xi
 void xiiGALCommandListNull::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)
 {
   XII_IGNORE_UNUSED(pResourceBarriers);
+}
+
+void xiiGALCommandListNull::EnqueueSignalPlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
+{
+  XII_IGNORE_UNUSED(pFence);
+  XII_IGNORE_UNUSED(uiValue);
+}
+
+void xiiGALCommandListNull::DeviceWaitForFencePlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
+{
+  XII_IGNORE_UNUSED(pFence);
+  XII_IGNORE_UNUSED(uiValue);
 }
 
 void xiiGALCommandListNull::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
