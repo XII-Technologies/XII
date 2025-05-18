@@ -35,8 +35,8 @@ public:
   /// \brief How long it takes to sample the entire color gradient.
   xiiTime m_Duration; // [ property ]
 
-  void                    SetColorGradient(const xiiColorGradientResourceHandle& hResource);               // [ property ]
-  XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; } // [ property ]
+  void                                                    SetColorGradient(const xiiColorGradientResourceHandle& hResource); // [ property ]
+  XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; }                   // [ property ]
 
   /// \brief How the animation should be played and looped.
   xiiEnum<xiiPropertyAnimMode> m_AnimationMode; // [ property ]

@@ -75,8 +75,10 @@ void xiiRenderModeAction::Execute(const xiiVariant& value)
 // xiiPerspectiveAction
 ////////////////////////////////////////////////////////////////////////
 
+// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPerspectiveAction, 1, xiiRTTINoAllocator);
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiPerspectiveAction::xiiPerspectiveAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
   xiiEnumerationMenuAction(context, szName, szIconPath)
@@ -107,7 +109,7 @@ void xiiPerspectiveAction::Execute(const xiiVariant& value)
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewAction, 1, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiViewAction::xiiViewAction(const xiiActionContext& context, const char* szName, ButtonType button) :

@@ -92,9 +92,9 @@ private:
     return m_pManager->GetDeductedType(pObject);
   }
 
-  xiiUInt32         GetPinId(const xiiVisualScriptPin* pPin);
-  DataOutput&       GetDataOutput(const DataInput& dataInput);
-  AstNode&          CreateAstNode(xiiVisualScriptNodeDescription::Type::Enum type, xiiVisualScriptDataType::Enum deductedDataType = xiiVisualScriptDataType::Invalid, bool bImplicitExecution = false);
+  xiiUInt32                  GetPinId(const xiiVisualScriptPin* pPin);
+  DataOutput&                GetDataOutput(const DataInput& dataInput);
+  AstNode&                   CreateAstNode(xiiVisualScriptNodeDescription::Type::Enum type, xiiVisualScriptDataType::Enum deductedDataType = xiiVisualScriptDataType::Invalid, bool bImplicitExecution = false);
   XII_ALWAYS_INLINE AstNode& CreateAstNode(xiiVisualScriptNodeDescription::Type::Enum type, bool bImplicitExecution)
   {
     return CreateAstNode(type, xiiVisualScriptDataType::Invalid, bImplicitExecution);

@@ -213,8 +213,8 @@ struct xiiVariantAdapter<T, xiiEnum<S>, 0, 0>
       m_realValue = static_cast<typename S::Enum>(m_value.ConvertTo<xiiInt64>());
   }
 
-  operator const xiiEnum<S> &() { return m_realValue; }
-  operator const xiiEnum<S> *() { return m_value.IsValid() ? &m_realValue : nullptr; }
+  operator const xiiEnum<S>&() { return m_realValue; }
+  operator const xiiEnum<S>*() { return m_value.IsValid() ? &m_realValue : nullptr; }
 
   xiiVariant& m_value;
   xiiEnum<S>  m_realValue;
@@ -237,8 +237,8 @@ struct xiiVariantAdapter<T, xiiEnum<S>, 0, 1>
       m_value = static_cast<xiiInt64>(m_realValue.GetValue());
   }
 
-  operator xiiEnum<S> &() { return m_realValue; }
-  operator xiiEnum<S> *() { return m_value.IsValid() ? &m_realValue : nullptr; }
+  operator xiiEnum<S>&() { return m_realValue; }
+  operator xiiEnum<S>*() { return m_value.IsValid() ? &m_realValue : nullptr; }
 
   xiiVariant& m_value;
   xiiEnum<S>  m_realValue;
@@ -256,8 +256,8 @@ struct xiiVariantAdapter<T, xiiBitflags<S>, 0, 0>
       m_realValue.SetValue(static_cast<typename S::StorageType>(m_value.ConvertTo<xiiInt64>()));
   }
 
-  operator const xiiBitflags<S> &() { return m_realValue; }
-  operator const xiiBitflags<S> *() { return m_value.IsValid() ? &m_realValue : nullptr; }
+  operator const xiiBitflags<S>&() { return m_realValue; }
+  operator const xiiBitflags<S>*() { return m_value.IsValid() ? &m_realValue : nullptr; }
 
   xiiVariant&    m_value;
   xiiBitflags<S> m_realValue;
@@ -280,8 +280,8 @@ struct xiiVariantAdapter<T, xiiBitflags<S>, 0, 1>
       m_value = static_cast<xiiInt64>(m_realValue.GetValue());
   }
 
-  operator xiiBitflags<S> &() { return m_realValue; }
-  operator xiiBitflags<S> *() { return m_value.IsValid() ? &m_realValue : nullptr; }
+  operator xiiBitflags<S>&() { return m_realValue; }
+  operator xiiBitflags<S>*() { return m_value.IsValid() ? &m_realValue : nullptr; }
 
   xiiVariant&    m_value;
   xiiBitflags<S> m_realValue;

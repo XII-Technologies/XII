@@ -6,7 +6,7 @@
 #include <EditorFramework/Gizmos/DrawBoxGizmo.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDrawBoxGizmo, 1, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDrawBoxGizmo, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiDrawBoxGizmo::xiiDrawBoxGizmo()

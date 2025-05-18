@@ -38,8 +38,8 @@ public:
   xiiPropertyAnimComponent();
   ~xiiPropertyAnimComponent();
 
-  void                    SetPropertyAnim(const xiiPropertyAnimResourceHandle& hResource);                   // [ property ]
-  XII_ALWAYS_INLINE const xiiPropertyAnimResourceHandle& GetPropertyAnim() const { return m_hPropertyAnim; } // [ property ]
+  void                                                   SetPropertyAnim(const xiiPropertyAnimResourceHandle& hResource); // [ property ]
+  XII_ALWAYS_INLINE const xiiPropertyAnimResourceHandle& GetPropertyAnim() const { return m_hPropertyAnim; }              // [ property ]
 
   /// \brief Sets the animation playback range and resets the playing position to the range start position. Also activates the component if it isn't.
   void PlayAnimationRange(xiiTime rangeLow, xiiTime rangeHigh); // [ scriptable ]

@@ -173,7 +173,7 @@ void xiiQtDocumentTreeModel::AddAdapter(xiiQtDocumentTreeModelAdapter* pAdapter)
       return;
 
     QModelIndex idx2 = index.siblingAtColumn(columnCount() - 1); // mark the entire row as modified
-    Q_EMIT      dataChanged(index, idx2, roles);
+    Q_EMIT dataChanged(index, idx2, roles);
   });
   m_Adapters.Insert(pAdapter->GetType(), pAdapter);
   beginResetModel();

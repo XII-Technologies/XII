@@ -319,7 +319,7 @@ void xiiQtAssetBrowserModel::HandleEntry(const VisibleEntry& entry, AssetOp op)
     if (uiInsertIndex < m_EntriesToDisplay.GetCount() && !cmp.Less(*pLB, entry) && !cmp.Less(entry, *pLB))
     {
       QModelIndex idx = index(uiInsertIndex, 0);
-      Q_EMIT      dataChanged(idx, idx);
+      Q_EMIT dataChanged(idx, idx);
     }
     else
     {
@@ -351,7 +351,7 @@ void xiiQtAssetBrowserModel::ThumbnailLoaded(QString sPath, QModelIndex index, Q
     if (m_EntriesToDisplay[i].m_Guid == guid)
     {
       QModelIndex idx = createIndex(i, 0);
-      Q_EMIT      dataChanged(idx, idx);
+      Q_EMIT dataChanged(idx, idx);
       return;
     }
   }
@@ -364,7 +364,7 @@ void xiiQtAssetBrowserModel::ThumbnailInvalidated(QString sPath, xiiUInt32 uiIma
     if (m_EntriesToDisplay[i].m_uiThumbnailID == uiImageID)
     {
       QModelIndex idx = createIndex(i, 0);
-      Q_EMIT      dataChanged(idx, idx);
+      Q_EMIT dataChanged(idx, idx);
       return;
     }
   }

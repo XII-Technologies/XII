@@ -75,7 +75,7 @@ public:
 
   void RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter());
 
-  XII_ALWAYS_INLINE xiiRenderPipeline* GetPipeline() { return m_pPipeline; }
+  XII_ALWAYS_INLINE xiiRenderPipeline*       GetPipeline() { return m_pPipeline; }
   XII_ALWAYS_INLINE const xiiRenderPipeline* GetPipeline() const { return m_pPipeline; }
 
 private:

@@ -291,8 +291,8 @@ xiiLocalBlackboardComponent::xiiLocalBlackboardComponent()
   m_pBoard = xiiBlackboard::Create();
 }
 
-xiiLocalBlackboardComponent::xiiLocalBlackboardComponent(xiiLocalBlackboardComponent&& other) = default;
-xiiLocalBlackboardComponent::~xiiLocalBlackboardComponent()                                   = default;
+xiiLocalBlackboardComponent::xiiLocalBlackboardComponent(xiiLocalBlackboardComponent&& other)            = default;
+xiiLocalBlackboardComponent::~xiiLocalBlackboardComponent()                                              = default;
 xiiLocalBlackboardComponent& xiiLocalBlackboardComponent::operator=(xiiLocalBlackboardComponent&& other) = default;
 
 void xiiLocalBlackboardComponent::Initialize()
@@ -505,9 +505,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiGlobalBlackboardComponent, 1, xiiComponentMode::Stat
 XII_END_DYNAMIC_REFLECTED_TYPE
 // clang-format on
 
-xiiGlobalBlackboardComponent::xiiGlobalBlackboardComponent()                                     = default;
-xiiGlobalBlackboardComponent::xiiGlobalBlackboardComponent(xiiGlobalBlackboardComponent&& other) = default;
-xiiGlobalBlackboardComponent::~xiiGlobalBlackboardComponent()                                    = default;
+xiiGlobalBlackboardComponent::xiiGlobalBlackboardComponent()                                                = default;
+xiiGlobalBlackboardComponent::xiiGlobalBlackboardComponent(xiiGlobalBlackboardComponent&& other)            = default;
+xiiGlobalBlackboardComponent::~xiiGlobalBlackboardComponent()                                               = default;
 xiiGlobalBlackboardComponent& xiiGlobalBlackboardComponent::operator=(xiiGlobalBlackboardComponent&& other) = default;
 
 void xiiGlobalBlackboardComponent::Initialize()

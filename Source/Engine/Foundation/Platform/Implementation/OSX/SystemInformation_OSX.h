@@ -67,7 +67,7 @@ void xiiSystemInformation::Initialize()
 #if XII_ENABLED(XII_PLATFORM_64BIT)
   s_SystemInformation.m_bB64BitOS = true;
 #else
-  s_SystemInformation.m_bB64BitOS            = false;
+  s_SystemInformation.m_bB64BitOS = false;
 #  error "32 Bit builds are not supported on OSX"
 #endif
 

@@ -33,8 +33,8 @@ class xiiPropertyAnimationTrackGroup : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiPropertyAnimationTrackGroup, xiiReflectedClass);
 
 public:
-  xiiPropertyAnimationTrackGroup()                                      = default;
-  xiiPropertyAnimationTrackGroup(const xiiPropertyAnimationTrackGroup&) = delete;
+  xiiPropertyAnimationTrackGroup()                                                     = default;
+  xiiPropertyAnimationTrackGroup(const xiiPropertyAnimationTrackGroup&)                = delete;
   xiiPropertyAnimationTrackGroup& operator=(const xiiPropertyAnimationTrackGroup& rhs) = delete;
   ~xiiPropertyAnimationTrackGroup();
 

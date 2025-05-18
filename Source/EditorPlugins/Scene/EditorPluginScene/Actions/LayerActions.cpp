@@ -7,11 +7,8 @@
 #include <GuiFoundation/Action/ActionMapManager.h>
 #include <QInputDialog>
 
-
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLayerAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiActionDescriptorHandle xiiLayerActions::s_hLayerCategory;
 xiiActionDescriptorHandle xiiLayerActions::s_hCreateLayer;
@@ -23,20 +20,13 @@ xiiActionDescriptorHandle xiiLayerActions::s_hLayerVisible;
 
 void xiiLayerActions::RegisterActions()
 {
-  s_hLayerCategory = XII_REGISTER_CATEGORY("LayerCategory");
-
-  s_hCreateLayer     = XII_REGISTER_ACTION_1("Layer.CreateLayer", xiiActionScope::Document, "Scene - Layer", "",
-                                         xiiLayerAction, xiiLayerAction::ActionType::CreateLayer);
-  s_hDeleteLayer     = XII_REGISTER_ACTION_1("Layer.DeleteLayer", xiiActionScope::Document, "Scene - Layer", "",
-                                         xiiLayerAction, xiiLayerAction::ActionType::DeleteLayer);
-  s_hSaveLayer       = XII_REGISTER_ACTION_1("Layer.SaveLayer", xiiActionScope::Document, "Scene - Layer", "",
-                                       xiiLayerAction, xiiLayerAction::ActionType::SaveLayer);
-  s_hSaveActiveLayer = XII_REGISTER_ACTION_1("Layer.SaveActiveLayer", xiiActionScope::Document, "Scene - Layer", "Ctrl+S",
-                                             xiiLayerAction, xiiLayerAction::ActionType::SaveActiveLayer);
-  s_hLayerLoaded     = XII_REGISTER_ACTION_1("Layer.LayerLoaded", xiiActionScope::Document, "Scene - Layer", "",
-                                         xiiLayerAction, xiiLayerAction::ActionType::LayerLoaded);
-  s_hLayerVisible    = XII_REGISTER_ACTION_1("Layer.LayerVisible", xiiActionScope::Document, "Scene - Layer", "",
-                                          xiiLayerAction, xiiLayerAction::ActionType::LayerVisible);
+  s_hLayerCategory   = XII_REGISTER_CATEGORY("LayerCategory");
+  s_hCreateLayer     = XII_REGISTER_ACTION_1("Layer.CreateLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::CreateLayer);
+  s_hDeleteLayer     = XII_REGISTER_ACTION_1("Layer.DeleteLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::DeleteLayer);
+  s_hSaveLayer       = XII_REGISTER_ACTION_1("Layer.SaveLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::SaveLayer);
+  s_hSaveActiveLayer = XII_REGISTER_ACTION_1("Layer.SaveActiveLayer", xiiActionScope::Document, "Scene - Layer", "Ctrl+S", xiiLayerAction, xiiLayerAction::ActionType::SaveActiveLayer);
+  s_hLayerLoaded     = XII_REGISTER_ACTION_1("Layer.LayerLoaded", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::LayerLoaded);
+  s_hLayerVisible    = XII_REGISTER_ACTION_1("Layer.LayerVisible", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::LayerVisible);
 }
 
 void xiiLayerActions::UnregisterActions()

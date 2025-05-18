@@ -26,7 +26,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 ///////////////////////////////////// xiiEditorEngineMsg /////////////////////////////////////
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorEngineMsg, 1, xiiRTTINoAllocator )
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorEngineMsg, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiUpdateReflectionTypeMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiUpdateReflectionTypeMsgToEditor>)

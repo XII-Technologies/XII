@@ -569,16 +569,18 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///   The enum struct used by xiiEnum for which reflection should be defined.
 /// \param Version
 ///   The version of \a Type. Must be increased when the class changes.
-#define XII_BEGIN_STATIC_REFLECTED_ENUM(Type, Version)                             \
-  XII_BEGIN_STATIC_REFLECTED_TYPE(Type, xiiEnumBase, Version, xiiRTTINoAllocator); \
-  using Storage = Type::StorageType;                                               \
-  XII_BEGIN_PROPERTIES                                                             \
-  {                                                                                \
-    XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Type::Default), (Storage)Type::Default),
+#define XII_BEGIN_STATIC_REFLECTED_ENUM(Type, Version)                            \
+  XII_BEGIN_STATIC_REFLECTED_TYPE(Type, xiiEnumBase, Version, xiiRTTINoAllocator) \
+    ;                                                                             \
+    using Storage = Type::StorageType;                                            \
+    XII_BEGIN_PROPERTIES                                                          \
+      {                                                                           \
+        XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Type::Default), (Storage)Type::Default),
 
 #define XII_END_STATIC_REFLECTED_ENUM \
   }                                   \
-  XII_END_PROPERTIES;                 \
+  XII_END_PROPERTIES                  \
+  ;                                   \
   flags |= xiiTypeFlags::IsEnum;      \
   flags.Remove(xiiTypeFlags::Class);  \
   XII_END_STATIC_REFLECTED_TYPE
@@ -590,16 +592,18 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///   The bitflags struct used by xiiBitflags for which reflection should be defined.
 /// \param Version
 ///   The version of \a Type. Must be increased when the class changes.
-#define XII_BEGIN_STATIC_REFLECTED_BITFLAGS(Type, Version)                             \
-  XII_BEGIN_STATIC_REFLECTED_TYPE(Type, xiiBitflagsBase, Version, xiiRTTINoAllocator); \
-  using Storage = Type::StorageType;                                                   \
-  XII_BEGIN_PROPERTIES                                                                 \
-  {                                                                                    \
-    XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Type::Default), (Storage)Type::Default),
+#define XII_BEGIN_STATIC_REFLECTED_BITFLAGS(Type, Version)                            \
+  XII_BEGIN_STATIC_REFLECTED_TYPE(Type, xiiBitflagsBase, Version, xiiRTTINoAllocator) \
+    ;                                                                                 \
+    using Storage = Type::StorageType;                                                \
+    XII_BEGIN_PROPERTIES                                                              \
+      {                                                                               \
+        XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Type::Default), (Storage)Type::Default),
 
 #define XII_END_STATIC_REFLECTED_BITFLAGS \
   }                                       \
-  XII_END_PROPERTIES;                     \
+  XII_END_PROPERTIES                      \
+  ;                                       \
   flags |= xiiTypeFlags::Bitflags;        \
   flags.Remove(xiiTypeFlags::Class);      \
   XII_END_STATIC_REFLECTED_TYPE
@@ -646,7 +650,6 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///   The name of the member variable that should get exposed as a message sender.
 ///
 /// \note A message sender must be derived from xiiMessageSenderBase.
-#define XII_MESSAGE_SENDER(MemberName)                                                   \
-  {                                                                                      \
-#    MemberName, xiiGetStaticRTTI < XII_MEMBER_TYPE(OwnType, MemberName)::MessageType>() \
-  }
+#define XII_MESSAGE_SENDER(MemberName) \
+  {                                    \
+    #MemberName, xiiGetStaticRTTI<XII_MEMBER_TYPE(OwnType, MemberName)::MessageType>()}

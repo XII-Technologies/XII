@@ -28,7 +28,7 @@ public:
 
   // Can't use regular assignment operators since we need to pass an allocator. Use CopyFrom or MoveFrom methods instead.
   void operator=(const xiiSmallArrayBase<T, Size>& rhs) = delete;
-  void operator=(xiiSmallArrayBase<T, Size>&& rhs) = delete;
+  void operator=(xiiSmallArrayBase<T, Size>&& rhs)      = delete;
 
   /// \brief Copies the data from some other array into this one.
   void CopyFrom(const xiiArrayPtr<const T>& other, xiiAllocatorBase* pAllocator); // [tested]

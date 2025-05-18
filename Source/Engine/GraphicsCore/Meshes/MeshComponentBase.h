@@ -72,8 +72,8 @@ public:
   ~xiiMeshComponentBase();
 
   /// \brief Changes which mesh to render.
-  void                    SetMesh(const xiiMeshResourceHandle& hMesh);               // [ property ]
-  XII_ALWAYS_INLINE const xiiMeshResourceHandle& GetMesh() const { return m_hMesh; } // [ property ]
+  void                                           SetMesh(const xiiMeshResourceHandle& hMesh); // [ property ]
+  XII_ALWAYS_INLINE const xiiMeshResourceHandle& GetMesh() const { return m_hMesh; }          // [ property ]
 
   // adds SetMeshFile() and GetMeshFile() for convenience
   XII_ADD_RESOURCEHANDLE_ACCESSORS_WITH_SETTER(Mesh, m_hMesh, SetMesh);

@@ -240,7 +240,7 @@ void xiiOSFile::InternalSetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enu
 
 // this might not be defined on Windows
 #ifndef S_ISDIR
-#  define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
+#  define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 bool xiiOSFile::InternalExistsFile(xiiStringView sFile)

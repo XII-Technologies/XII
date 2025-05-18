@@ -306,14 +306,7 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
     xiiStringView sRoot = sAbsolutePath.GetSubString(0, static_cast<xiiUInt32>(szFirst - sTemp.GetData()) + 1);
 
     WCHAR szFileSystemName[8];
-    BOOL  res        = GetVolumeInformationW(xiiStringWChar(sRoot),
-                                     nullptr,
-                                     0,
-                                     nullptr,
-                                     nullptr,
-                                     nullptr,
-                                     szFileSystemName,
-                                     sizeof(szFileSystemName));
+    BOOL  res        = GetVolumeInformationW(xiiStringWChar(sRoot), nullptr, 0, nullptr, nullptr, nullptr, szFileSystemName, sizeof(szFileSystemName));
     m_pImpl->m_bNTFS = res == TRUE && xiiStringUtf8(szFileSystemName).GetView() == "NTFS" && !cvar_ForceNonNTFS.GetValue();
   }
 

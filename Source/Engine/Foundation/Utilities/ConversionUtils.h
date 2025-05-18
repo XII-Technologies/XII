@@ -344,7 +344,7 @@ namespace xiiConversionUtils
 
   /// \brief The inverse of GetColorByName.
   XII_FOUNDATION_DLL xiiString GetColorName(const xiiColor& col); // [tested]
-};                                                                // namespace xiiConversionUtils
+}; // namespace xiiConversionUtils
 
 template <typename APPEND_CONTAINER_LAMBDA>
 inline void xiiConversionUtils::ConvertBinaryToHex(const void* pBinaryData, xiiUInt32 uiBytes, APPEND_CONTAINER_LAMBDA append) // [tested]

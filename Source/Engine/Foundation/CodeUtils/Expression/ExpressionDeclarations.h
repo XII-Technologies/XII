@@ -17,7 +17,7 @@ namespace xiiExpression
   {
     XII_DECLARE_POD_TYPE();
 
-    Register(){}; // NOLINT: "= default" does not work here.
+    Register() {}; // NOLINT: "= default" does not work here.
 
     union
     {

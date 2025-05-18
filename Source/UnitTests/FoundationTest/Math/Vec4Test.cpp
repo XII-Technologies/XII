@@ -138,7 +138,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     {
       xiiMathTestType TypeNaN     = xiiMath::NaN<xiiMathTestType>();
       const xiiVec4T  nanArray[4] = {xiiVec4T(TypeNaN, 0.0f, 0.0f, 0.0f), xiiVec4T(0.0f, TypeNaN, 0.0f, 0.0f), xiiVec4T(0.0f, 0.0f, TypeNaN, 0.0f),
-                                    xiiVec4T(0.0f, 0.0f, 0.0f, TypeNaN)};
+                                     xiiVec4T(0.0f, 0.0f, 0.0f, TypeNaN)};
 
       // IsNaN
       for (int i = 0; i < 4; ++i)

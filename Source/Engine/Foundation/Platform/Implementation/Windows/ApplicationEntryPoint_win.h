@@ -11,7 +11,7 @@
 
 namespace xiiApplicationDetails
 {
-  XII_FOUNDATION_DLL void SetConsoleCtrlHandler(xiiMinWindows::BOOL(XII_WINDOWS_WINAPI* consoleHandler)(xiiMinWindows::DWORD dwCtrlType));
+  XII_FOUNDATION_DLL void      SetConsoleCtrlHandler(xiiMinWindows::BOOL(XII_WINDOWS_WINAPI* consoleHandler)(xiiMinWindows::DWORD dwCtrlType));
   XII_FOUNDATION_DLL xiiMutex& GetShutdownMutex();
 
   template <typename AppClass, typename... Args>

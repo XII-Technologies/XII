@@ -33,8 +33,8 @@ public:
   xiiCollectionComponent();
   ~xiiCollectionComponent();
 
-  void                    SetCollection(const xiiCollectionResourceHandle& hPrefab);                   // [ property ]
-  XII_ALWAYS_INLINE const xiiCollectionResourceHandle& GetCollection() const { return m_hCollection; } // [ property ]
+  void                                                 SetCollection(const xiiCollectionResourceHandle& hPrefab); // [ property ]
+  XII_ALWAYS_INLINE const xiiCollectionResourceHandle& GetCollection() const { return m_hCollection; }            // [ property ]
 
 protected:
   /// \brief Triggers the preload on the referenced xiiCollectionResource

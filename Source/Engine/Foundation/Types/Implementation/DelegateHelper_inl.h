@@ -9,10 +9,10 @@ struct XII_FOUNDATION_DLL xiiLambdaDelegateStorageBase
   virtual void                          InplaceMove(xiiUInt8* pBuffer)            = 0;
 
 private:
-  xiiLambdaDelegateStorageBase(const xiiLambdaDelegateStorageBase&) = delete;
+  xiiLambdaDelegateStorageBase(const xiiLambdaDelegateStorageBase&)            = delete;
   xiiLambdaDelegateStorageBase& operator=(const xiiLambdaDelegateStorageBase&) = delete;
   xiiLambdaDelegateStorageBase(xiiLambdaDelegateStorageBase&&)                 = delete;
-  xiiLambdaDelegateStorageBase& operator=(xiiLambdaDelegateStorageBase&&) = delete;
+  xiiLambdaDelegateStorageBase& operator=(xiiLambdaDelegateStorageBase&&)      = delete;
 };
 
 template <typename Function>

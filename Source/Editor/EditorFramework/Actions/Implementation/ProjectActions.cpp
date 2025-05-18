@@ -372,7 +372,7 @@ void xiiRecentProjectsMenuAction::Execute(const xiiVariant& value)
 // xiiProjectAction
 ////////////////////////////////////////////////////////////////////////
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProjectAction, 1, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProjectAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* szName, ButtonType button) :

@@ -532,7 +532,7 @@ void xiiTransformGizmoActions::MapToolbarActions(xiiStringView sMapping)
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransformGizmoAction, 0, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransformGizmoAction, 0, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiTransformGizmoAction::xiiTransformGizmoAction(const xiiActionContext& context, const char* szName, ActionType type) :

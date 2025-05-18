@@ -4,8 +4,8 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/BakedProbes/ProbeTreeSectorResource.h>
 
-xiiProbeTreeSectorResourceDescriptor::xiiProbeTreeSectorResourceDescriptor()        = default;
-xiiProbeTreeSectorResourceDescriptor::~xiiProbeTreeSectorResourceDescriptor()       = default;
+xiiProbeTreeSectorResourceDescriptor::xiiProbeTreeSectorResourceDescriptor()                                                        = default;
+xiiProbeTreeSectorResourceDescriptor::~xiiProbeTreeSectorResourceDescriptor()                                                       = default;
 xiiProbeTreeSectorResourceDescriptor& xiiProbeTreeSectorResourceDescriptor::operator=(xiiProbeTreeSectorResourceDescriptor&& other) = default;
 
 void xiiProbeTreeSectorResourceDescriptor::Clear()
@@ -56,12 +56,10 @@ xiiResult xiiProbeTreeSectorResourceDescriptor::Deserialize(xiiStreamReader& ino
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProbeTreeSectorResource, 1, xiiRTTIDefaultAllocator<xiiProbeTreeSectorResource>);
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiProbeTreeSectorResource);
-// clang-format on
 
 xiiProbeTreeSectorResource::xiiProbeTreeSectorResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)

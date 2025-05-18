@@ -78,7 +78,7 @@ void* xiiLuaWrapper::lua_allocator(void* ud, void* ptr, size_t osize, size_t nsi
 
   if (nsize == 0)
   {
-    delete[](xiiUInt8*) ptr;
+    delete[] (xiiUInt8*)ptr;
     return (nullptr);
   }
 
@@ -88,7 +88,7 @@ void* xiiLuaWrapper::lua_allocator(void* ud, void* ptr, size_t osize, size_t nsi
   {
     xiiMemoryUtils::Copy(ucPtr, (xiiUInt8*)ptr, xiiUInt32(osize < nsize ? osize : nsize));
 
-    delete[](xiiUInt8*) ptr;
+    delete[] (xiiUInt8*)ptr;
   }
 
   return ((void*)ucPtr);

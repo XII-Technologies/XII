@@ -111,7 +111,7 @@ xiiCommandLineOptionPath   opt_CompareActual("_TexConv", "-cmpImg", "Path to an 
 xiiCommandLineOptionPath   opt_CompareExpected("_TexConv", "-cmpRef", "Path to a reference image to compare against.", "");
 xiiCommandLineOptionInt    opt_CompareThreshold("_TexConv", "-cmpMSE", "The error threshold for the comparison to be considered as failed.\n\
   No output files are written, if the image difference is below this value.",
-                                             100, 0);
+                                                100, 0);
 xiiCommandLineOptionBool   opt_CompareRelaxed("_TexConv", "-cmpRelaxed", "Use a more lenient comparison method.\nUseful for images with single-pixel wide rasterized lines.", false);
 
 

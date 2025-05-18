@@ -4,13 +4,11 @@
 #include <EditorFramework/Document/GameObjectDocument.h>
 #include <EditorFramework/Preferences/ScenePreferences.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameObjectDocumentAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCameraSpeedSliderAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hGameObjectCategory;
 xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hRenderSelectionOverlay;

@@ -111,8 +111,8 @@ public:
   {
     using InsertionType = IntType;
 
-    XII_ALWAYS_INLINE      UtfInserter(Container* pContainer) { m_pContainer = pContainer; }
-    XII_ALWAYS_INLINE void operator++() {}
+    XII_ALWAYS_INLINE              UtfInserter(Container* pContainer) { m_pContainer = pContainer; }
+    XII_ALWAYS_INLINE void         operator++() {}
     XII_ALWAYS_INLINE UtfInserter& operator++(xiiInt32) { return *this; }
     XII_ALWAYS_INLINE void         operator=(IntType rhs) { m_pContainer->PushBack(rhs); }
     XII_ALWAYS_INLINE UtfInserter& operator*() { return *this; }

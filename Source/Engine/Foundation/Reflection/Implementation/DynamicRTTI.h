@@ -75,7 +75,7 @@ public:                                                  \
 /// \brief Same as XII_BEGIN_DYNAMIC_REFLECTED_TYPE but forces the type to be treated as abstract by reflection even though it might not be abstract from a C++ perspective.
 #define XII_BEGIN_ABSTRACT_DYNAMIC_REFLECTED_TYPE(Type, Version)      \
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(Type, Version, xiiRTTINoAllocator) \
-  flags.Add(xiiTypeFlags::Abstract);
+    flags.Add(xiiTypeFlags::Abstract);
 
 #define XII_END_ABSTRACT_DYNAMIC_REFLECTED_TYPE XII_END_DYNAMIC_REFLECTED_TYPE
 

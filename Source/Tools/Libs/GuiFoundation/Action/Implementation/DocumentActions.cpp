@@ -13,8 +13,10 @@
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
+// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentAction, 1, xiiRTTINoAllocator);
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 ////////////////////////////////////////////////////////////////////////
 // xiiDocumentActions

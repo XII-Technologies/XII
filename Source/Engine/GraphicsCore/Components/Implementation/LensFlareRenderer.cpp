@@ -68,7 +68,7 @@ xiiGALBufferHandle xiiLensFlareRenderer::CreateLensFlareDataBuffer(xiiUInt32 uiB
   desc.m_uiSize              = desc.m_uiElementByteStride * uiBufferSize;
   desc.m_Mode                = xiiGALBufferMode::Structured;
   desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-  desc.m_Usage       = xiiGALResourceUsage::Dynamic;
+  desc.m_Usage               = xiiGALResourceUsage::Dynamic;
   desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
   return xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(desc);
 }

@@ -11,7 +11,7 @@
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderToTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiRenderToTexture2DResource>);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderToTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiRenderToTexture2DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, Texture2D)
