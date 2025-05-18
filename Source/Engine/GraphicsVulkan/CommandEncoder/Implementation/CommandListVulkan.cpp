@@ -2562,17 +2562,20 @@ void xiiGALCommandListVulkan::BeginDebugGroupPlatform(xiiStringView sName, const
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  xiiStringBuilder tmp;
+  if (pDeviceVulkan->GetDebugMode() == xiiGALDeviceVulkan::DebugMode::Utils)
+  {
+    xiiStringBuilder tmp;
 
-  vk::DebugUtilsLabelEXT vkDebugUtilsLabel = {};
-  vkDebugUtilsLabel.pNext                  = nullptr;
-  vkDebugUtilsLabel.pLabelName             = sName.GetData(tmp);
-  vkDebugUtilsLabel.color[0]               = color.r;
-  vkDebugUtilsLabel.color[1]               = color.g;
-  vkDebugUtilsLabel.color[2]               = color.b;
-  vkDebugUtilsLabel.color[3]               = color.a;
+    vk::DebugUtilsLabelEXT vkDebugUtilsLabel = {};
+    vkDebugUtilsLabel.pNext                  = nullptr;
+    vkDebugUtilsLabel.pLabelName             = sName.GetData(tmp);
+    vkDebugUtilsLabel.color[0]               = color.r;
+    vkDebugUtilsLabel.color[1]               = color.g;
+    vkDebugUtilsLabel.color[2]               = color.b;
+    vkDebugUtilsLabel.color[3]               = color.a;
 
-  m_vkCommandBuffer.beginDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    m_vkCommandBuffer.beginDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
 }
 
 void xiiGALCommandListVulkan::EndDebugGroupPlatform()
@@ -2581,7 +2584,10 @@ void xiiGALCommandListVulkan::EndDebugGroupPlatform()
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  m_vkCommandBuffer.endDebugUtilsLabelEXT(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (pDeviceVulkan->GetDebugMode() == xiiGALDeviceVulkan::DebugMode::Utils)
+  {
+    m_vkCommandBuffer.endDebugUtilsLabelEXT(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
 }
 
 void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
@@ -2590,17 +2596,20 @@ void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, cons
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  xiiStringBuilder tmp;
+  if (pDeviceVulkan->GetDebugMode() == xiiGALDeviceVulkan::DebugMode::Utils)
+  {
+    xiiStringBuilder tmp;
 
-  vk::DebugUtilsLabelEXT vkDebugUtilsLabel = {};
-  vkDebugUtilsLabel.pNext                  = nullptr;
-  vkDebugUtilsLabel.pLabelName             = sName.GetData(tmp);
-  vkDebugUtilsLabel.color[0]               = color.r;
-  vkDebugUtilsLabel.color[1]               = color.g;
-  vkDebugUtilsLabel.color[2]               = color.b;
-  vkDebugUtilsLabel.color[3]               = color.a;
+    vk::DebugUtilsLabelEXT vkDebugUtilsLabel = {};
+    vkDebugUtilsLabel.pNext                  = nullptr;
+    vkDebugUtilsLabel.pLabelName             = sName.GetData(tmp);
+    vkDebugUtilsLabel.color[0]               = color.r;
+    vkDebugUtilsLabel.color[1]               = color.g;
+    vkDebugUtilsLabel.color[2]               = color.b;
+    vkDebugUtilsLabel.color[3]               = color.a;
 
-  m_vkCommandBuffer.insertDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    m_vkCommandBuffer.insertDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
 }
 
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
