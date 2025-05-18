@@ -2537,7 +2537,7 @@ void xiiGALCommandListVulkan::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGA
         vk::ImageSubresourceRange vkImageSubresourceRange = {};
         vkImageSubresourceRange.aspectMask                = vk::ImageAspectFlagBits::eNone;
         vkImageSubresourceRange.baseMipLevel              = barrier.m_uiFirstMipLevel;
-        vkImageSubresourceRange.levelCount                = (barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS) ? VK_REMAINING_ARRAY_LAYERS : barrier.m_uiMipLevelCount;
+        vkImageSubresourceRange.levelCount                = (barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS) ? VK_REMAINING_MIP_LEVELS : barrier.m_uiMipLevelCount;
         vkImageSubresourceRange.baseArrayLayer            = barrier.m_uiFirstArraySlice;
         vkImageSubresourceRange.layerCount                = (barrier.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES) ? VK_REMAINING_ARRAY_LAYERS : barrier.m_uiArraySliceCount;
 
