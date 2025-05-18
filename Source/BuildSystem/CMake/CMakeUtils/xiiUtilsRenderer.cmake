@@ -10,7 +10,7 @@ endmacro()
 # ## Add all required libraries and dependencies to the given target so it has access to all available renderers.
 # #####################################
 function(xii_add_renderers TARGET_NAME)
-  set(ARG_OPTIONS EXCLUDE_SHADER_COMPILER EXCLUDE_NULL EXCLUDE_VULKAN)
+  set(ARG_OPTIONS EXCLUDE_SHADER_COMPILER EXCLUDE_VULKAN)
   set(ARG_ONEVALUEARGS "")
   set(ARG_MULTIVALUEARGS "")
   cmake_parse_arguments(ARG "${ARG_OPTIONS}" "${ARG_ONEVALUEARGS}" "${ARG_MULTIVALUEARGS}" ${ARGN})
@@ -20,10 +20,6 @@ function(xii_add_renderers TARGET_NAME)
   endif()
 
   target_link_libraries(${TARGET_NAME} PRIVATE GraphicsFoundation)
-
-  if(NOT ARG_EXCLUDE_NULL)
-    add_dependencies(${TARGET_NAME} GraphicsNull)
-  endif()
 
   if(XII_BUILD_VULKAN AND NOT ARG_EXCLUDE_VULKAN)
     if(TARGET GraphicsVulkan)
