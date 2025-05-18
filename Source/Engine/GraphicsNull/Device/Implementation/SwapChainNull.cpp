@@ -50,7 +50,7 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal()
   textureDescription.m_ClearValue.m_DepthStencil.m_uiStencil = 0U;
   textureDescription.m_uiCommandQueueMask                    = XII_BIT(0);
 
-  textureDescription.m_pExisitingNativeObject = nullptr;
+  textureDescription.m_pExistingNativeObject = nullptr;
 
   m_pBackBufferTexture = pDeviceNull->CreateTexture(textureDescription);
   XII_ASSERT_RELEASE(m_pBackBufferTexture != nullptr, "Couldn't create native backbuffer texture object!");

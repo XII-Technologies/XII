@@ -16,9 +16,9 @@ template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALMapHelper&& other) noexcept :
   m_pCommandList(other.m_pCommandList), m_pBuffer(other.m_pBuffer), m_pMappedData(other.m_pMappedData), m_MapType(other.m_MapType), m_MapFlags(other.m_MapFlags)
 {
-  other.m_pMappedData  = nullptr;
-  other.m_MapType      = xiiGALMapType::Default;
-  other.m_MapFlags     = xiiGALMapFlags::None;
+  other.m_pMappedData = nullptr;
+  other.m_MapType     = xiiGALMapType::Default;
+  other.m_MapFlags    = xiiGALMapFlags::None;
 }
 
 template <typename DataType>
@@ -36,9 +36,9 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator
   m_MapType      = std::move(other.m_MapType);
   m_MapFlags     = std::move(other.m_MapFlags);
 
-  other.m_pMappedData  = nullptr;
-  other.m_MapType      = xiiGALMapType::Default;
-  other.m_MapFlags     = xiiGALMapFlags::None;
+  other.m_pMappedData = nullptr;
+  other.m_MapType     = xiiGALMapType::Default;
+  other.m_MapFlags    = xiiGALMapFlags::None;
 
   return *this;
 }

@@ -583,18 +583,18 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
     xiiGALTextureCreationDescription textureCreationDescription;
-    textureCreationDescription.m_Type                   = xiiGALResourceDimension::Texture2D;
-    textureCreationDescription.m_Size.width             = m_Description.m_Resolution.width;
-    textureCreationDescription.m_Size.height            = m_Description.m_Resolution.height;
-    textureCreationDescription.m_Format                 = m_Description.m_ColorBufferFormat;
-    textureCreationDescription.m_uiArraySizeOrDepth     = 1U;
-    textureCreationDescription.m_uiMipLevels            = 1U;
-    textureCreationDescription.m_uiSampleCount          = 1U;
-    textureCreationDescription.m_BindFlags              = xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(m_Description.m_UsageFlags);
-    textureCreationDescription.m_Usage                  = xiiGALResourceUsage::Default;
-    textureCreationDescription.m_CPUAccessFlags         = xiiGALCPUAccessFlag::None;
-    textureCreationDescription.m_MiscFlags              = xiiGALMiscTextureFlags::None;
-    textureCreationDescription.m_pExisitingNativeObject = m_SwapChainImages[i];
+    textureCreationDescription.m_Type                  = xiiGALResourceDimension::Texture2D;
+    textureCreationDescription.m_Size.width            = m_Description.m_Resolution.width;
+    textureCreationDescription.m_Size.height           = m_Description.m_Resolution.height;
+    textureCreationDescription.m_Format                = m_Description.m_ColorBufferFormat;
+    textureCreationDescription.m_uiArraySizeOrDepth    = 1U;
+    textureCreationDescription.m_uiMipLevels           = 1U;
+    textureCreationDescription.m_uiSampleCount         = 1U;
+    textureCreationDescription.m_BindFlags             = xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(m_Description.m_UsageFlags);
+    textureCreationDescription.m_Usage                 = xiiGALResourceUsage::Default;
+    textureCreationDescription.m_CPUAccessFlags        = xiiGALCPUAccessFlag::None;
+    textureCreationDescription.m_MiscFlags             = xiiGALMiscTextureFlags::None;
+    textureCreationDescription.m_pExistingNativeObject = m_SwapChainImages[i];
 
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
     XII_ASSERT_RELEASE(m_SwapChainTextures[i] != nullptr, "Failed to create native backbuffer texture object!");

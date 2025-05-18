@@ -29,7 +29,7 @@ XII_ALWAYS_INLINE void xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWr
   // Copy data into the CPU-side storage.
   memcpy(chunk.m_Vertices.GetData() + handle.m_uiOffset, pData.GetPtr(), pData.GetCount());
 
-  // Update the GPU buffer 
+  // Update the GPU buffer
 }
 
 template <typename VertexType, typename MutexType, typename AllocatorWrapper>

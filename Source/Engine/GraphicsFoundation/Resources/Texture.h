@@ -61,7 +61,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiGALOptimizedClearValue           m_ClearValue;                                              ///< Optimized clear value.
   xiiUInt64                           m_uiCommandQueueMask = XII_BIT(0);                         ///< Defines which command queues are allowed to execute commands that use this texture. The default is the main command queue.
                                                                                                  ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
-  void* m_pExisitingNativeObject = nullptr;                                                      ///< Can be used to encapsulate existing native textures in objects usable by the GAL
+  void* m_pExistingNativeObject = nullptr;                                                       ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 
   constexpr XII_ALWAYS_INLINE bool      IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
   constexpr XII_ALWAYS_INLINE bool      Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }

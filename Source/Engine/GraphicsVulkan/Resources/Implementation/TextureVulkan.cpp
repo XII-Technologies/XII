@@ -35,7 +35,7 @@ xiiGALTextureVulkan::~xiiGALTextureVulkan()
   pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer), std::move(m_StagingBufferMemoryAllocation));
 
   // Prevent releasing the native object.
-  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
+  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExistingNativeObject == nullptr)
   {
     pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), std::move(m_ImageMemoryAllocation));
   }
@@ -66,9 +66,9 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
   const auto& resourceFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
 
-  if (m_Description.m_pExisitingNativeObject != nullptr)
+  if (m_Description.m_pExistingNativeObject != nullptr)
   {
-    m_vkImage = static_cast<VkImage>(m_Description.m_pExisitingNativeObject);
+    m_vkImage = static_cast<VkImage>(m_Description.m_pExistingNativeObject);
 
     SetResourceState(xiiGALResourceStateFlags::Undefined);
 

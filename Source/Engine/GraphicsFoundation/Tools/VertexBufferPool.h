@@ -2,8 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 
 /// \brief A templated vertex buffer pool that manages dynamic vertex allocations.
 /// This divides its memory into one or more chunks to minimize reallocation and supports thread-safe allocation, update, and tracking of vertex usage.
@@ -73,9 +73,9 @@ private:
       m_Vertices.SetCount(uiCapacity);
 
       xiiGALBufferCreationDescription description;
-      description.m_uiSize        = uiCapacity * sizeof(VertexType);
-      description.m_BindFlags     = xiiGALBindFlags::VertexBuffer;
-      description.m_Usage = xiiGALResourceUsage::Dynamic;
+      description.m_uiSize    = uiCapacity * sizeof(VertexType);
+      description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+      description.m_Usage     = xiiGALResourceUsage::Dynamic;
 
       m_pBuffer = pDevice->CreateBuffer(description);
     }

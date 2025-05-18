@@ -23,7 +23,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer    GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
   [[nodiscard]] XII_ALWAYS_INLINE VmaAllocation GetStagingBufferAllocationDescription() const { return m_StagingBufferMemoryAllocation; }
 
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsNativeObjectWrapper() const { return m_Description.m_pExisitingNativeObject != nullptr; }
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsNativeObjectWrapper() const { return m_Description.m_pExistingNativeObject != nullptr; }
 
   [[nodiscard]] vk::ImageLayout GetVulkanImageLayout() const;
   void                          SetVulkanImageLayout(vk::ImageLayout vkImageLayout);

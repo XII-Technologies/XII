@@ -93,7 +93,7 @@ public:
       vk::DebugUtilsObjectNameInfoEXT vkDebugObjectNameInfo = {};
       vkDebugObjectNameInfo.pNext                           = nullptr;
       vkDebugObjectNameInfo.objectType                      = vkObject.objectType;
-      vkDebugObjectNameInfo.objectHandle                    = (uint64_t) static_cast<typename ObjectHandle::NativeType>(vkObject);
+      vkDebugObjectNameInfo.objectHandle                    = (uint64_t)static_cast<typename ObjectHandle::NativeType>(vkObject);
       vkDebugObjectNameInfo.pObjectName                     = szDebugName;
 
       m_LogicalDevice.setDebugUtilsObjectNameEXT(vkDebugObjectNameInfo, m_InstanceDispatchLoader);
@@ -168,8 +168,8 @@ public:
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan* GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*         GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan*     GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDescriptorSetPoolVulkan* GetVulkanDescriptorSetPool() const { return m_pDescriptorSetPool.Borrow(); }
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanGraphicsCommandQueueQueryPool() const { return m_pGraphicsCommandQueueQueryPool.Borrow(); }
