@@ -17,18 +17,18 @@ public:
   xiiUInt32                   m_uiSkyIrradianceIndex = 0;
   xiiEnum<xiiCameraUsageHint> m_cameraUsageHint      = xiiCameraUsageHint::Default;
 
-  xiiGALBufferHandle m_hLightDataBuffer;
-  xiiGALBufferHandle m_hDecalDataBuffer;
-  xiiGALBufferHandle m_hReflectionProbeDataBuffer;
-  xiiGALBufferHandle m_hClusterDataBuffer;
-  xiiGALBufferHandle m_hClusterItemBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pLightDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pDecalDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pReflectionProbeDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pClusterDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pClusterItemBuffer;
 
   xiiConstantBufferStorageHandle m_hConstantBuffer;
 
-  xiiGALSamplerHandle m_hShadowSampler;
+  xiiSharedPtr<xiiGALSampler> m_pShadowSampler;
 
   xiiDecalAtlasResourceHandle m_hDecalAtlas;
-  xiiGALSamplerHandle         m_hDecalAtlasSampler;
+  xiiSharedPtr<xiiGALSampler> m_pDecalAtlasSampler;
 
   void BindResources(xiiRenderContext* pRenderContext);
 };

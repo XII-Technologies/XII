@@ -61,10 +61,7 @@ public:
 
   void                         SetCubeMapFile(xiiStringView sFile); // [ property ]
   xiiStringView                GetCubeMapFile() const;              // [ property ]
-  xiiTextureCubeResourceHandle GetCubeMap() const
-  {
-    return m_hCubeMap;
-  }
+  xiiTextureCubeResourceHandle GetCubeMap() const { return m_hCubeMap; }
 
   float GetNearPlane() const { return m_Desc.m_fNearPlane; } // [ property ]
   void  SetNearPlane(float fNearPlane);                      // [ property ]
