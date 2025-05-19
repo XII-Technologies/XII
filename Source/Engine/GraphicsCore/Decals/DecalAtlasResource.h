@@ -1,9 +1,10 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/Math/Rect.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <Texture/Utils/TextureAtlasDesc.h>
 
 using xiiDecalAtlasResourceHandle = xiiTypedResourceHandle<class xiiDecalAtlasResource>;

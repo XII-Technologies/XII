@@ -49,12 +49,10 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalAtlasResource, 1, xiiRTTIDefaultAllocator<xiiDecalAtlasResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalAtlasResource);
-// clang-format on
 
 xiiUInt32 xiiDecalAtlasResource::s_uiDecalAtlasResources = 0;
 

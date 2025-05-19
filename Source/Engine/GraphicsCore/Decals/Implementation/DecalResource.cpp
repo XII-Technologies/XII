@@ -46,12 +46,10 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalResource, 1, xiiRTTIDefaultAllocator<xiiDecalResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalResource);
-// clang-format on
 
 xiiDecalResource::xiiDecalResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
@@ -115,7 +113,5 @@ bool xiiDecalResourceLoader::IsResourceOutdated(const xiiResource* pResource) co
   // decals are never outdated
   return false;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Decals_Implementation_DecalResource);
