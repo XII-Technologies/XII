@@ -14,3 +14,5 @@
 #endif
 
 #define XII_EMBED_FONT_FILE XII_ON
+
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>

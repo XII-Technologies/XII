@@ -16,15 +16,15 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipMapping, 1, xiiRTTIDefaultAlloc
     XII_ACCESSOR_PROPERTY("ClipName", GetClipName, SetClipName)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
     XII_RESOURCE_MEMBER_PROPERTY("Clip", m_hClip)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Animation")),
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphResource, 1, xiiRTTIDefaultAllocator<xiiAnimGraphResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiAnimGraphResource);
-// clang-format on
 
 xiiAnimGraphResource::xiiAnimGraphResource() :
   xiiResource(xiiResource::DoUpdate::OnAnyThread, 0)

@@ -76,5 +76,5 @@ private:
   struct RenderDebugViewTask;
   xiiSharedPtr<RenderDebugViewTask> m_pRenderDebugViewTask;
 
-  xiiGALTextureHandle m_hDebugViewTexture;
+  xiiSharedPtr<xiiGALTexture> m_pDebugViewTexture;
 };

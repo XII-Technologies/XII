@@ -14,10 +14,6 @@
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 struct xiiBakedProbesComponent::RenderDebugViewTask : public xiiTask
 {
@@ -110,24 +106,26 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
     {
       task->m_bHasNewData = false;
 
-      xiiGALDevice*       pGALDevice       = xiiGALDevice::GetDefaultDevice();
-      xiiGALCommandQueue* pGALCommandQueue = pGALDevice->GetDefaultCommandQueue();
+      xiiSharedPtr<xiiGALDevice> pGALDevice       = xiiGALDevice::GetDefaultDevice();
+      xiiGALCommandQueue*        pGALCommandQueue = pGALDevice->GetDefaultCommandQueue();
 
-      xiiGALCommandList* pGALCommandList = pGALCommandQueue->BeginCommandList();
+      if (xiiSharedPtr<xiiGALCommandList> pGALCommandList = pGALCommandQueue->BeginCommandList())
+      {
+        {
+          xiiGALScopedDebugGroup group(pGALCommandList, "BakingDebugView");
 
-      pGALCommandList->BeginDebugGroup("BakingDebugViewUpdate");
+          xiiBoundingBoxU32 destBox;
+          destBox.m_vMin.SetZero();
+          destBox.m_vMax = xiiVec3U32(task->m_uiWidth, task->m_uiHeight, 1);
 
-      xiiBoundingBoxU32 destBox;
-      destBox.m_vMin.SetZero();
-      destBox.m_vMax = xiiVec3U32(task->m_uiWidth, task->m_uiHeight, 1);
+          xiiGALTextureSubResourceData sourceData;
+          sourceData.m_pData    = task->m_PixelData.GetByteArrayPtr();
+          sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
-      xiiGALTextureSubResourceData sourceData;
-      sourceData.m_pData    = task->m_PixelData.GetByteArrayPtr();
-      sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
-
-      pGALCommandList->UpdateTexture(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
-      pGALCommandList->EndDebugGroup();
-      pGALCommandList->Submit();
+          pGALCommandList->UpdateTexture(pComponent->m_pDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+        }
+        pGALCommandList->Submit();
+      }
     }
   }
 }
@@ -435,33 +433,30 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
 
   xiiUInt32 uiTextureWidth  = 0;
   xiiUInt32 uiTextureHeight = 0;
-  if (const xiiGALTexture* pTexture = pDevice->GetTexture(m_hDebugViewTexture))
+  if (m_pDebugViewTexture)
   {
-    uiTextureWidth  = pTexture->GetDescription().m_Size.width;
-    uiTextureHeight = pTexture->GetDescription().m_Size.height;
+    uiTextureWidth  = m_pDebugViewTexture->GetDescription().m_Size.width;
+    uiTextureHeight = m_pDebugViewTexture->GetDescription().m_Size.height;
   }
 
   if (uiTextureWidth != uiWidth || uiTextureHeight != uiHeight)
   {
-    if (!m_hDebugViewTexture.IsInvalidated())
-    {
-      pDevice->DestroyTexture(m_hDebugViewTexture);
-    }
+    m_pDebugViewTexture.Clear();
 
-    xiiGALTextureCreationDescription desc;
-    desc.m_Type        = xiiGALResourceDimension::Texture2D;
-    desc.m_Size.width  = uiWidth;
-    desc.m_Size.height = uiHeight;
-    desc.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-    desc.m_BindFlags   = xiiGALBindFlags::ShaderResource;
-    desc.m_Usage       = xiiGALResourceUsage::Default;
+    xiiGALTextureCreationDescription textureDescription;
+    textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
+    textureDescription.m_Size.width  = uiWidth;
+    textureDescription.m_Size.height = uiHeight;
+    textureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+    textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource;
+    textureDescription.m_Usage       = xiiGALResourceUsage::Default;
 
-    m_hDebugViewTexture = pDevice->CreateTexture(desc);
+    m_pDebugViewTexture = pDevice->CreateTexture(textureDescription);
   }
 
   xiiRectFloat rectInPixel = xiiRectFloat(10.0f, 10.0f, static_cast<float>(uiWidth), static_cast<float>(uiHeight));
 
-  xiiDebugRenderer::Draw2DRectangle(pView->GetHandle(), rectInPixel, 0.0f, xiiColor::White, pDevice->GetTexture(m_hDebugViewTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+  xiiDebugRenderer::Draw2DRectangle(pView->GetHandle(), rectInPixel, 0.0f, xiiColor::White, m_pDebugViewTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 }
 
 void xiiBakedProbesComponent::OnObjectCreated(const xiiAbstractObjectNode& node)

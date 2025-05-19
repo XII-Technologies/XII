@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Foundation/Algorithm/HashingUtils.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Algorithm/HashingUtils.h>
 
 class xiiWorld;
 class xiiViewHandle;

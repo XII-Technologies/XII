@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Texture/Image/Image.h>
 
 namespace xiiGraphicsUtils
