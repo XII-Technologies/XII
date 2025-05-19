@@ -70,7 +70,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDynamicBuffer::Update(xiiSharedPtr<xiiGALComman
 
     m_uiLastAfterResizeFenceValue = m_uiNextAfterResizeFenceValue - 1;
 
-    // pCommandList->DeviceWaitForFence();
+    pCommandList->DeviceWaitForFence(m_pAfterResizeFence, m_uiLastAfterResizeFenceValue);
   }
 
   return m_pBuffer ? m_pBuffer : nullptr;
