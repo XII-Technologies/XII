@@ -3,16 +3,13 @@
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiTexture2DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiCVarInt cvar_RenderingOffscreenTargetResolution1("Rendering.Offscreen.TargetResolution1", 256, xiiCVarFlags::Default, "Configurable render target resolution");
 xiiCVarInt cvar_RenderingOffscreenTargetResolution2("Rendering.Offscreen.TargetResolution2", 512, xiiCVarFlags::Default, "Configurable render target resolution");
@@ -37,13 +34,7 @@ xiiResourceLoadDesc xiiTexture2DResource::UnloadData(Unload WhatToUnload)
     {
       --m_uiLoadedTextures;
 
-      if (!m_hGALTexture[m_uiLoadedTextures].IsInvalidated())
-      {
-        xiiGALDevice::GetDefaultDevice()->DestroyTexture(m_hGALTexture[m_uiLoadedTextures]);
-        m_hGALTexture[m_uiLoadedTextures].Invalidate();
-      }
-
-      m_uiMemoryGPU[m_uiLoadedTextures] = 0;
+      m_pGALTexture[m_uiLoadedTextures].Clear();
 
       if (WhatToUnload == Unload::OneQualityLevel || m_uiLoadedTextures == 0)
         break;
@@ -52,11 +43,7 @@ xiiResourceLoadDesc xiiTexture2DResource::UnloadData(Unload WhatToUnload)
 
   if (WhatToUnload == Unload::AllQualityLevels)
   {
-    if (!m_hSampler.IsInvalidated())
-    {
-      xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSampler);
-      m_hSampler.Invalidate();
-    }
+    m_pSampler.Clear();
   }
 
   xiiResourceLoadDesc res;
@@ -264,22 +251,18 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
 
   xiiGALTextureData textureData;
   textureData.m_SubResources        = descriptor.m_InitialContent;
-  m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
+  m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
 
-  XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture Data could not be uploaded to the GPU");
+  XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture Data could not be uploaded to the GPU");
 
   xiiStringBuilder sDebugName;
   sDebugName.SetFormat("{} ([{}] - {}x{})", GetResourceIdOrDescription(), m_uiLoadedTextures, m_uiWidth, m_uiHeight);
-  pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(sDebugName);
+  m_pGALTexture[m_uiLoadedTextures]->SetDebugName(sDebugName);
 
-  if (!m_hSampler.IsInvalidated())
-  {
-    pDevice->DestroySampler(m_hSampler);
-  }
+  m_pSampler.Clear();
+  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
 
-  m_hSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
-
-  XII_ASSERT_DEV(!m_hSampler.IsInvalidated(), "Sampler state error");
+  XII_ASSERT_DEV(m_pSampler != nullptr, "Sampler state error");
 
   ++m_uiLoadedTextures;
 

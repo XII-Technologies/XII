@@ -33,13 +33,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UnloadData(Unload WhatToUnload)
     {
       --m_uiLoadedTextures;
 
-      if (!m_hGALTexture[m_uiLoadedTextures].IsInvalidated())
-      {
-        xiiGALDevice::GetDefaultDevice()->DestroyTexture(m_hGALTexture[m_uiLoadedTextures]);
-        m_hGALTexture[m_uiLoadedTextures].Invalidate();
-      }
-
-      m_uiMemoryGPU[m_uiLoadedTextures] = 0;
+      m_pGALTexture[m_uiLoadedTextures].Clear();
 
       if (WhatToUnload == Unload::OneQualityLevel || m_uiLoadedTextures == 0)
         break;
@@ -48,11 +42,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UnloadData(Unload WhatToUnload)
 
   if (WhatToUnload == Unload::AllQualityLevels)
   {
-    if (!m_hSampler.IsInvalidated())
-    {
-      xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSampler);
-      m_hSampler.Invalidate();
-    }
+    m_pSampler.Clear();
   }
 
   xiiResourceLoadDesc res;
@@ -219,20 +209,16 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResource
   xiiGALTextureData textureData;
   textureData.m_SubResources = descriptor.m_InitialContent;
   descriptor.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
-  m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
+  m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
 
-  XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture Data could not be uploaded to the GPU");
+  XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture Data could not be uploaded to the GPU");
 
-  pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
+  m_pGALTexture[m_uiLoadedTextures]->SetDebugName(GetResourceDescription());
 
-  if (!m_hSampler.IsInvalidated())
-  {
-    pDevice->DestroySampler(m_hSampler);
-  }
+  m_pSampler.Clear();
+  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
 
-  m_hSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
-
-  XII_ASSERT_DEV(!m_hSampler.IsInvalidated(), "Sampler error");
+  XII_ASSERT_DEV(m_pSampler != nullptr, "Sampler error");
 
   ++m_uiLoadedTextures;
 

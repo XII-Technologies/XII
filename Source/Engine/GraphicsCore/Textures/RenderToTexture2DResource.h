@@ -24,7 +24,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderToTexture2DResource : public xiiTexture2DRes
   XII_RESOURCE_DECLARE_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTexture2DResourceDescriptor);
 
 public:
-  xiiGALTextureViewHandle               GetRenderTargetView() const;
+  xiiSharedPtr<xiiGALTexture>           GetRenderTargetView() const;
   void                                  AddRenderView(xiiViewHandle hView);
   void                                  RemoveRenderView(xiiViewHandle hView);
   const xiiDynamicArray<xiiViewHandle>& GetAllRenderViews() const;

@@ -51,20 +51,20 @@ public:
   XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetFormat() const { return m_Format; }
   XII_ALWAYS_INLINE xiiUInt32                     GetWidthAndHeight() const { return m_uiWidthAndHeight; }
 
-  const xiiGALTextureHandle& GetGALTexture() const { return m_hGALTexture[m_uiLoadedTextures - 1]; }
-  const xiiGALSamplerHandle& GetGALSampler() const { return m_hSampler; }
+  xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pGALTexture[m_uiLoadedTextures - 1]; }
+  xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pSampler; }
 
 protected:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
-  xiiUInt8            m_uiLoadedTextures;
-  xiiGALTextureHandle m_hGALTexture[2];
-  xiiUInt32           m_uiMemoryGPU[2];
+  xiiUInt8                    m_uiLoadedTextures;
+  xiiSharedPtr<xiiGALTexture> m_pGALTexture[2];
+  xiiUInt32                   m_uiMemoryGPU[2];
 
   xiiEnum<xiiGALResourceFormat> m_Format;
   xiiUInt32                     m_uiWidthAndHeight;
 
-  xiiGALSamplerHandle m_hSampler;
+  xiiSharedPtr<xiiGALSampler> m_pSampler;
 };

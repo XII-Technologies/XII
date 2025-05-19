@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Foundation/Containers/DynamicArray.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Containers/DynamicArray.h>
 
 class XII_GRAPHICSCORE_DLL xiiConstantBufferStorageBase
 {
@@ -18,12 +19,12 @@ public:
 
   void UploadData(xiiGALCommandList* pCommandList);
 
-  XII_ALWAYS_INLINE xiiGALBufferHandle GetGALBufferHandle() const { return m_hGALConstantBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetGALBuffer() const { return m_pGALConstantBuffer; }
 
 protected:
-  bool               m_bHasBeenModified = false;
-  xiiUInt32          m_uiLastHash       = 0;
-  xiiGALBufferHandle m_hGALConstantBuffer;
+  bool                       m_bHasBeenModified = false;
+  xiiUInt32                  m_uiLastHash       = 0;
+  xiiSharedPtr<xiiGALBuffer> m_pGALConstantBuffer;
 
   xiiArrayPtr<xiiUInt8> m_Data;
 };
@@ -34,16 +35,16 @@ class xiiConstantBufferStorage : public xiiConstantBufferStorageBase
 public:
   XII_FORCE_INLINE T& GetDataForWriting()
   {
-    xiiArrayPtr<xiiUInt8> rawData = GetRawDataForWriting();
-    XII_ASSERT_DEV(rawData.GetCount() == sizeof(T), "Invalid data size");
-    return *reinterpret_cast<T*>(rawData.GetPtr());
+    xiiArrayPtr<xiiUInt8> pRawData = GetRawDataForWriting();
+    XII_ASSERT_DEV(pRawData.GetCount() == sizeof(T), "Invalid data size");
+    return *reinterpret_cast<T*>(pRawData.GetPtr());
   }
 
   XII_FORCE_INLINE const T& GetDataForReading() const
   {
-    xiiArrayPtr<const xiiUInt8> rawData = GetRawDataForReading();
-    XII_ASSERT_DEV(rawData.GetCount() == sizeof(T), "Invalid data size");
-    return *reinterpret_cast<const T*>(rawData.GetPtr());
+    xiiArrayPtr<const xiiUInt8> pRawData = GetRawDataForReading();
+    XII_ASSERT_DEV(pRawData.GetCount() == sizeof(T), "Invalid data size");
+    return *reinterpret_cast<const T*>(pRawData.GetPtr());
   }
 };
 

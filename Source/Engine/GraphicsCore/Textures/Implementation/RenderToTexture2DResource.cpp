@@ -5,7 +5,6 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Device/Device.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
@@ -22,7 +21,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, Texture2D)
 
   ON_CORESYSTEMS_STARTUP
   {
-    xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiRenderToTexture2DResource>(), [](const xiiStringBuilder& sResourceID) -> bool  {
+    xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiRenderToTexture2DResource>(), [](const xiiStringBuilder& sResourceID) -> bool {
       return sResourceID.HasExtension(".xiiBinRenderTarget");
     });
   }
@@ -63,20 +62,16 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
 
   xiiGALTextureData textureData;
   textureData.m_SubResources        = descriptor.m_InitialContent;
-  m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descGAL, &textureData);
+  m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descGAL, &textureData);
 
-  XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture data could not be uploaded to the GPU");
+  XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture data could not be uploaded to the GPU.");
 
-  pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
+  m_pGALTexture[m_uiLoadedTextures]->SetDebugName(GetResourceDescription());
 
-  if (!m_hSampler.IsInvalidated())
-  {
-    pDevice->DestroySampler(m_hSampler);
-  }
+  m_pSampler.Clear();
+  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
 
-  m_hSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
-
-  XII_ASSERT_DEV(!m_hSampler.IsInvalidated(), "Sampler state error");
+  XII_ASSERT_DEV(m_pSampler != nullptr, "Sampler state error");
 
   ++m_uiLoadedTextures;
 
@@ -87,22 +82,12 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UnloadData(Unload WhatToUnload
 {
   for (xiiInt32 r = 0; r < 2; ++r)
   {
-    if (!m_hGALTexture[r].IsInvalidated())
-    {
-      xiiGALDevice::GetDefaultDevice()->DestroyTexture(m_hGALTexture[r]);
-      m_hGALTexture[r].Invalidate();
-    }
-
-    m_uiMemoryGPU[r] = 0;
+    m_pGALTexture[r].Clear();
   }
 
   m_uiLoadedTextures = 0;
 
-  if (!m_hSampler.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSampler);
-    m_hSampler.Invalidate();
-  }
+  m_pSampler.Clear();
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = m_uiLoadedTextures;
@@ -111,9 +96,9 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UnloadData(Unload WhatToUnload
   return res;
 }
 
-xiiGALTextureViewHandle xiiRenderToTexture2DResource::GetRenderTargetView() const
+xiiSharedPtr<xiiGALTexture> xiiRenderToTexture2DResource::GetRenderTargetView() const
 {
-  return xiiGALDevice::GetDefaultDevice()->GetTexture(m_hGALTexture[0])->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  return m_pGALTexture[0]->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 }
 
 void xiiRenderToTexture2DResource::AddRenderView(xiiViewHandle hView)
