@@ -5,12 +5,12 @@
 
 bool xiiGALRenderTargets::operator==(const xiiGALRenderTargets& other) const
 {
-  if (m_hDSTarget != other.m_hDSTarget)
+  if (m_pDSTarget != other.m_pDSTarget)
     return false;
 
   for (xiiUInt8 uiRTIndex = 0; uiRTIndex < XII_GAL_MAX_RENDERTARGET_COUNT; ++uiRTIndex)
   {
-    if (m_hRTs[uiRTIndex] != other.m_hRTs[uiRTIndex])
+    if (m_pRTs[uiRTIndex] != other.m_pRTs[uiRTIndex])
       return false;
   }
   return true;
@@ -18,27 +18,27 @@ bool xiiGALRenderTargets::operator==(const xiiGALRenderTargets& other) const
 
 xiiGALRenderTargetSetup::xiiGALRenderTargetSetup() = default;
 
-xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetRenderTarget(xiiUInt8 uiIndex, xiiGALTextureViewHandle hRenderTarget)
+xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetRenderTarget(xiiUInt8 uiIndex, xiiSharedPtr<xiiGALTexture> pRenderTarget)
 {
   XII_ASSERT_DEV(uiIndex < XII_GAL_MAX_RENDERTARGET_COUNT, "Render target index out of bounds - this should be less than XII_GAL_MAX_RENDERTARGET_COUNT.");
 
-  m_hRTs[uiIndex] = hRenderTarget;
+  m_pRTs[uiIndex] = pRenderTarget;
 
   m_uiRTCount = xiiMath::Max(m_uiRTCount, static_cast<xiiUInt8>(uiIndex + 1U));
 
   return *this;
 }
 
-xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetDepthStencilTarget(xiiGALTextureViewHandle hDSTarget)
+xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetDepthStencilTarget(xiiSharedPtr<xiiGALTexture> pDSTarget)
 {
-  m_hDSTarget = hDSTarget;
+  m_pDSTarget = pDSTarget;
 
   return *this;
 }
 
 bool xiiGALRenderTargetSetup::operator==(const xiiGALRenderTargetSetup& other) const
 {
-  if (m_hDSTarget != other.m_hDSTarget)
+  if (m_pDSTarget != other.m_pDSTarget)
     return false;
 
   if (m_uiRTCount != other.m_uiRTCount)
@@ -46,7 +46,7 @@ bool xiiGALRenderTargetSetup::operator==(const xiiGALRenderTargetSetup& other) c
 
   for (xiiUInt8 uiRTIndex = 0; uiRTIndex < m_uiRTCount; ++uiRTIndex)
   {
-    if (m_hRTs[uiRTIndex] != other.m_hRTs[uiRTIndex])
+    if (m_pRTs[uiRTIndex] != other.m_pRTs[uiRTIndex])
       return false;
   }
 
@@ -55,23 +55,16 @@ bool xiiGALRenderTargetSetup::operator==(const xiiGALRenderTargetSetup& other) c
 
 void xiiGALRenderTargetSetup::DestroyAllAttachedViews()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiArrayPtr<xiiGALTextureViewHandle> colorViews(m_hRTs);
-  for (xiiGALTextureViewHandle& hView : colorViews)
+  xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> colorViews(m_pRTs);
+  for (xiiSharedPtr<xiiGALTexture>& pView : colorViews)
   {
-    if (!hView.IsInvalidated())
-    {
-      pDevice->DestroyTextureView(hView);
-      hView.Invalidate();
-    }
+    pView.Clear();
   }
 
-  if (!m_hDSTarget.IsInvalidated())
-  {
-    pDevice->DestroyTextureView(m_hDSTarget);
-    m_hDSTarget.Invalidate();
-  }
+  m_pDSTarget.Clear();
+
   m_uiRTCount = 0;
 }
 
