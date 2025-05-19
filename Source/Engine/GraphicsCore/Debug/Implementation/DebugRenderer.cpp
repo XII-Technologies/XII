@@ -37,15 +37,11 @@ xiiDebugRendererContext::xiiDebugRendererContext(const xiiViewHandle& hView) :
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiDebugTextHAlign, 1)
   XII_ENUM_CONSTANTS(xiiDebugTextHAlign::Left, xiiDebugTextHAlign::Center, xiiDebugTextHAlign::Right)
 XII_END_STATIC_REFLECTED_ENUM;
-// clang-format on
 
-// clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiDebugTextVAlign, 1)
   XII_ENUM_CONSTANTS(xiiDebugTextVAlign::Top, xiiDebugTextVAlign::Center, xiiDebugTextVAlign::Bottom)
 XII_END_STATIC_REFLECTED_ENUM;
-// clang-format on
 
-// clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiDebugTextPlacement, 1)
   XII_ENUM_CONSTANTS(xiiDebugTextPlacement::TopLeft, xiiDebugTextPlacement::TopCenter, xiiDebugTextPlacement::TopRight)
   XII_ENUM_CONSTANTS(xiiDebugTextPlacement::BottomLeft, xiiDebugTextPlacement::BottomCenter, xiiDebugTextPlacement::BottomRight)
@@ -68,7 +64,7 @@ namespace
   {
     xiiVec3          m_vPosition;
     xiiColorLinearUB m_Color;
-    xiiVec2          m_texCoord;
+    xiiVec2          m_fTexCoord;
     float            padding[2];
   };
 
@@ -76,7 +72,7 @@ namespace
 
   struct alignas(16) BoxData
   {
-    xiiShaderTransform m_transform;
+    xiiShaderTransform m_Transform;
     xiiColor           m_Color;
   };
 
@@ -86,8 +82,8 @@ namespace
   {
     xiiVec2          m_vTopLeftCorner;
     xiiColorLinearUB m_Color;
-    xiiUInt16        m_glyphIndex;
-    xiiUInt16        m_sizeInPixel;
+    xiiUInt16        m_uiGlyphIndex;
+    xiiUInt16        m_uiSizeInPixel;
   };
 
   static_assert(sizeof(GlyphData) == 16);
@@ -107,23 +103,23 @@ namespace
 
   struct InfoTextData
   {
-    xiiString m_group;
+    xiiString m_sGroup;
     xiiString m_sText;
     xiiColor  m_Color;
   };
 
   struct PerContextData
   {
-    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                     m_lineVertices;
-    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                     m_triangleVertices;
-    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                     m_triangle2DVertices;
-    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                     m_line2DVertices;
-    xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                    m_lineBoxes;
-    xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                    m_solidBoxes;
-    xiiMap<xiiGALTextureViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle2DVertices;
-    xiiMap<xiiGALTextureViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle3DVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_LineVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_TriangleVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_Triangle2DVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_Line2DVertices;
+    xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                            m_LineBoxes;
+    xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                            m_SolidBoxes;
+    xiiMap<xiiSharedPtr<xiiGALTextureView>, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_TexturedTriangle2DVertices;
+    xiiMap<xiiSharedPtr<xiiGALTextureView>, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_TexturedTriangle3DVertices;
 
-    xiiDynamicArray<InfoTextData>                          m_infoTextData[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT];
+    xiiDynamicArray<InfoTextData>                          m_InfoTextData[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT];
     xiiDynamicArray<TextLineData2D>                        m_sTextLines2D;
     xiiDynamicArray<TextLineData3D>                        m_sTextLines3D;
     xiiDynamicArray<GlyphData, xiiAlignedAllocatorWrapper> m_Glyphs;
@@ -169,20 +165,20 @@ namespace
       PerContextData* pData = it.Value().m_pData[xiiRenderWorld::GetDataIndexForRendering()].Borrow();
       if (pData)
       {
-        pData->m_lineVertices.Clear();
-        pData->m_line2DVertices.Clear();
-        pData->m_lineBoxes.Clear();
-        pData->m_solidBoxes.Clear();
-        pData->m_triangleVertices.Clear();
-        pData->m_triangle2DVertices.Clear();
-        pData->m_texTriangle2DVertices.Clear();
-        pData->m_texTriangle3DVertices.Clear();
+        pData->m_LineVertices.Clear();
+        pData->m_Line2DVertices.Clear();
+        pData->m_LineBoxes.Clear();
+        pData->m_SolidBoxes.Clear();
+        pData->m_TriangleVertices.Clear();
+        pData->m_Triangle2DVertices.Clear();
+        pData->m_TexturedTriangle2DVertices.Clear();
+        pData->m_TexturedTriangle3DVertices.Clear();
         pData->m_sTextLines2D.Clear();
         pData->m_sTextLines3D.Clear();
 
         for (xiiUInt32 i = 0; i < (xiiUInt32)xiiDebugTextPlacement::ENUM_COUNT; ++i)
         {
-          pData->m_infoTextData[i].Clear();
+          pData->m_InfoTextData[i].Clear();
         }
       }
     }
@@ -214,7 +210,7 @@ namespace
     };
   };
 
-  static xiiGALBufferHandle s_hDataBuffer[BufferType::Count];
+  static xiiSharedPtr<xiiGALBuffer> s_pDataBuffer[BufferType::Count];
 
   static xiiMeshBufferResourceHandle s_hLineBoxMeshBuffer;
   static xiiMeshBufferResourceHandle s_hSolidBoxMeshBuffer;
@@ -239,45 +235,38 @@ namespace
 
   static void CreateDataBuffer(BufferType::Enum bufferType, xiiUInt32 uiStructSize)
   {
-    if (s_hDataBuffer[bufferType].IsInvalidated())
+    if (s_pDataBuffer[bufferType] == nullptr)
     {
-      xiiGALBufferCreationDescription desc;
-      desc.m_uiElementByteStride = uiStructSize;
-      desc.m_uiSize              = DEBUG_BUFFER_SIZE;
-      desc.m_Mode                = xiiGALBufferMode::Structured;
-      desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-      desc.m_Usage               = xiiGALResourceUsage::Dynamic;
-      desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+      xiiGALBufferCreationDescription bufferDescription;
+      bufferDescription.m_uiElementByteStride = uiStructSize;
+      bufferDescription.m_uiSize              = DEBUG_BUFFER_SIZE;
+      bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+      bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+      bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+      bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-      s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
+      s_pDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(bufferDescription);
     }
   }
 
   static void CreateVertexBuffer(BufferType::Enum bufferType, xiiUInt32 uiVertexSize)
   {
-    if (s_hDataBuffer[bufferType].IsInvalidated())
+    if (s_pDataBuffer[bufferType] == nullptr)
     {
-      xiiGALBufferCreationDescription desc;
-      desc.m_uiElementByteStride = uiVertexSize;
-      desc.m_uiSize              = DEBUG_BUFFER_SIZE;
-      desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
-      desc.m_Usage               = xiiGALResourceUsage::Dynamic;
-      desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+      xiiGALBufferCreationDescription bufferDescription;
+      bufferDescription.m_uiElementByteStride = uiVertexSize;
+      bufferDescription.m_uiSize              = DEBUG_BUFFER_SIZE;
+      bufferDescription.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
+      bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+      bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-      s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
+      s_pDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(bufferDescription);
     }
   }
 
   static void DestroyBuffer(BufferType::Enum bufferType)
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-    if (!s_hDataBuffer[bufferType].IsInvalidated())
-    {
-      pDevice->DestroyBuffer(s_hDataBuffer[bufferType]);
-
-      s_hDataBuffer[bufferType].Invalidate();
-    }
+    s_pDataBuffer[bufferType].Clear();
   }
 
   template <typename AddFunc>
@@ -411,8 +400,8 @@ namespace
       auto& glyphData            = ref_glyphs.ExpandAndGetRef();
       glyphData.m_vTopLeftCorner = currentPos;
       glyphData.m_Color          = textLine.m_Color;
-      glyphData.m_glyphIndex     = uiCharacter < 128 ? static_cast<xiiUInt16>(uiCharacter) : 0;
-      glyphData.m_sizeInPixel    = (xiiUInt16)xiiMath::Ceil(textLine.m_uiSizeInPixel * cvar_DebugTextScale);
+      glyphData.m_uiGlyphIndex   = uiCharacter < 128 ? static_cast<xiiUInt16>(uiCharacter) : 0;
+      glyphData.m_uiSizeInPixel  = (xiiUInt16)xiiMath::Ceil(textLine.m_uiSizeInPixel * cvar_DebugTextScale);
 
       currentPos.x += fGlyphWidth;
     }
@@ -423,33 +412,33 @@ namespace
 
   struct PersistentCrossData
   {
-    float        m_fSize;
-    xiiColor     m_Color;
-    xiiTransform m_Transform;
-    xiiTime      m_Timeout;
+    float    m_fSize;
+    xiiColor m_Color;
+    xiiMat4  m_Transform;
+    xiiTime  m_Timeout;
   };
 
   struct PersistentSphereData
   {
-    float        m_fRadius;
-    xiiColor     m_Color;
-    xiiTransform m_Transform;
-    xiiTime      m_Timeout;
+    float    m_fRadius;
+    xiiColor m_Color;
+    xiiMat4  m_Transform;
+    xiiTime  m_Timeout;
   };
 
   struct PersistentBoxData
   {
-    xiiVec3      m_vHalfSize;
-    xiiColor     m_Color;
-    xiiTransform m_Transform;
-    xiiTime      m_Timeout;
+    xiiVec3  m_vHalfSize;
+    xiiColor m_Color;
+    xiiMat4  m_Transform;
+    xiiTime  m_Timeout;
   };
 
   struct PersistentLineData
   {
     xiiHybridArray<xiiDebugRendererLine, 32> m_Lines;
     xiiColor                                 m_Color;
-    xiiTransform                             m_Transform;
+    xiiMat4                                  m_Transform;
     xiiTime                                  m_Timeout;
   };
 
@@ -497,7 +486,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 // static
-void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform /*= xiiMat4::MakeIdentity()*/)
 {
   if (lines.IsEmpty())
     return;
@@ -513,8 +502,8 @@ void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArra
 
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
-      auto& vertex       = data.m_lineVertices.ExpandAndGetRef();
-      vertex.m_vPosition = transform.TransformPosition(pPositions[i]);
+      auto& vertex       = data.m_LineVertices.ExpandAndGetRef();
+      vertex.m_vPosition = mTransform.m_Mat4.TransformPosition(pPositions[i]);
       vertex.m_Color     = pColors[i] * color;
     }
   }
@@ -535,7 +524,7 @@ void xiiDebugRenderer::Draw2DLines(const xiiDebugRendererContext& context, xiiAr
 
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
-      auto& vertex       = data.m_line2DVertices.ExpandAndGetRef();
+      auto& vertex       = data.m_Line2DVertices.ExpandAndGetRef();
       vertex.m_vPosition = pPositions[i];
       vertex.m_Color     = color;
     }
@@ -543,7 +532,7 @@ void xiiDebugRenderer::Draw2DLines(const xiiDebugRendererContext& context, xiiAr
 }
 
 // static
-void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, xiiMatOrTransform mTransform /*= xiiMat4::MakeIdentity()*/)
 {
   if (fLineLength <= 0.0f)
     return;
@@ -553,38 +542,44 @@ void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const x
   const xiiVec3 yAxis           = xiiVec3::MakeAxisY() * fHalfLineLength;
   const xiiVec3 zAxis           = xiiVec3::MakeAxisZ() * fHalfLineLength;
 
+  const xiiMat4& transform = mTransform.m_Mat4;
+
   XII_LOCK(s_Mutex);
 
   auto& data = GetDataForExtraction(context);
 
-  data.m_lineVertices.PushBack({transform.TransformPosition(vGlobalPosition - xAxis), color});
-  data.m_lineVertices.PushBack({transform.TransformPosition(vGlobalPosition + xAxis), color});
+  data.m_LineVertices.PushBack({transform.TransformPosition(vGlobalPosition - xAxis), color});
+  data.m_LineVertices.PushBack({transform.TransformPosition(vGlobalPosition + xAxis), color});
 
-  data.m_lineVertices.PushBack({transform.TransformPosition(vGlobalPosition - yAxis), color});
-  data.m_lineVertices.PushBack({transform.TransformPosition(vGlobalPosition + yAxis), color});
+  data.m_LineVertices.PushBack({transform.TransformPosition(vGlobalPosition - yAxis), color});
+  data.m_LineVertices.PushBack({transform.TransformPosition(vGlobalPosition + yAxis), color});
 
-  data.m_lineVertices.PushBack({transform.TransformPosition(vGlobalPosition - zAxis), color});
-  data.m_lineVertices.PushBack({transform.TransformPosition(vGlobalPosition + zAxis), color});
+  data.m_LineVertices.PushBack({transform.TransformPosition(vGlobalPosition - zAxis), color});
+  data.m_LineVertices.PushBack({transform.TransformPosition(vGlobalPosition + zAxis), color});
 }
 
 // static
-void xiiDebugRenderer::DrawLineBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform)
+void xiiDebugRenderer::DrawLineBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, xiiMatOrTransform mTransform)
 {
   XII_LOCK(s_Mutex);
 
+  const xiiMat4& transform = mTransform.m_Mat4;
+
   auto& data = GetDataForExtraction(context);
 
-  auto& boxData = data.m_lineBoxes.ExpandAndGetRef();
+  auto& boxData = data.m_LineBoxes.ExpandAndGetRef();
 
   xiiTransform boxTransform(box.GetCenter(), xiiQuat::MakeIdentity(), box.GetHalfExtents());
 
-  boxData.m_transform = transform * boxTransform;
+  boxData.m_Transform = transform * boxTransform.GetAsMat4();
   boxData.m_Color     = color;
 }
 
 // static
-void xiiDebugRenderer::DrawLineBoxCorners(const xiiDebugRendererContext& context, const xiiBoundingBox& box, float fCornerFraction, const xiiColor& color, const xiiTransform& transform)
+void xiiDebugRenderer::DrawLineBoxCorners(const xiiDebugRendererContext& context, const xiiBoundingBox& box, float fCornerFraction, const xiiColor& color, xiiMatOrTransform mTransform)
 {
+  const xiiMat4& transform = mTransform.m_Mat4;
+
   fCornerFraction = xiiMath::Clamp(fCornerFraction, 0.0f, 1.0f) * 0.5f;
 
   xiiVec3 corners[8];
@@ -627,7 +622,7 @@ void xiiDebugRenderer::DrawLineBoxCorners(const xiiDebugRendererContext& context
 }
 
 // static
-void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, xiiMatOrTransform mTransform /*= xiiMat4::MakeIdentity()*/)
 {
   enum
   {
@@ -637,6 +632,8 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
   const xiiVec3  vCenter   = sphere.m_vCenter;
   const float    fRadius   = sphere.m_fRadius;
   const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
+
+  const xiiMat4& transform = mTransform.m_Mat4;
 
   XII_LOCK(s_Mutex);
 
@@ -653,19 +650,19 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
     const float fSin1 = xiiMath::Sin(fS1 * stepAngle);
     const float fSin2 = xiiMath::Sin(fS2 * stepAngle);
 
-    data.m_lineVertices.PushBack({transform * (vCenter + xiiVec3(0.0f, fCos1, fSin1) * fRadius), color});
-    data.m_lineVertices.PushBack({transform * (vCenter + xiiVec3(0.0f, fCos2, fSin2) * fRadius), color});
+    data.m_LineVertices.PushBack({transform * (vCenter + xiiVec3(0.0f, fCos1, fSin1) * fRadius), color});
+    data.m_LineVertices.PushBack({transform * (vCenter + xiiVec3(0.0f, fCos2, fSin2) * fRadius), color});
 
-    data.m_lineVertices.PushBack({transform * (vCenter + xiiVec3(fCos1, 0.0f, fSin1) * fRadius), color});
-    data.m_lineVertices.PushBack({transform * (vCenter + xiiVec3(fCos2, 0.0f, fSin2) * fRadius), color});
+    data.m_LineVertices.PushBack({transform * (vCenter + xiiVec3(fCos1, 0.0f, fSin1) * fRadius), color});
+    data.m_LineVertices.PushBack({transform * (vCenter + xiiVec3(fCos2, 0.0f, fSin2) * fRadius), color});
 
-    data.m_lineVertices.PushBack({transform * (vCenter + xiiVec3(fCos1, fSin1, 0.0f) * fRadius), color});
-    data.m_lineVertices.PushBack({transform * (vCenter + xiiVec3(fCos2, fSin2, 0.0f) * fRadius), color});
+    data.m_LineVertices.PushBack({transform * (vCenter + xiiVec3(fCos1, fSin1, 0.0f) * fRadius), color});
+    data.m_LineVertices.PushBack({transform * (vCenter + xiiVec3(fCos2, fSin2, 0.0f) * fRadius), color});
   }
 }
 
 
-void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, xiiMatOrTransform mTransform /*= xiiMat4::MakeIdentity()*/)
 {
   enum
   {
@@ -673,6 +670,8 @@ void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, 
     NUM_HALF_SEGMENTS = 16,
     NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4,
   };
+
+  const xiiMat4& transform = mTransform.m_Mat4;
 
   const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
 
@@ -755,7 +754,7 @@ void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, 
   DrawLines(context, lines, color);
 }
 
-void xiiDebugRenderer::DrawLineCylinderZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawLineCylinderZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, xiiMatOrTransform mTransform /*= xiiMat4::MakeIdentity()*/)
 {
   enum
   {
@@ -763,6 +762,8 @@ void xiiDebugRenderer::DrawLineCylinderZ(const xiiDebugRendererContext& context,
     NUM_HALF_SEGMENTS = 16,
     NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + 4,
   };
+
+  const xiiMat4& transform = mTransform.m_Mat4;
 
   const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
 
@@ -889,17 +890,19 @@ void xiiDebugRenderer::DrawLineFrustum(const xiiDebugRendererContext& context, c
 }
 
 // static
-void xiiDebugRenderer::DrawSolidBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform)
+void xiiDebugRenderer::DrawSolidBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, xiiMatOrTransform mTransform)
 {
+  const xiiMat4& transform = mTransform.m_Mat4;
+
   XII_LOCK(s_Mutex);
 
   auto& data = GetDataForExtraction(context);
 
-  auto& boxData = data.m_solidBoxes.ExpandAndGetRef();
+  auto& boxData = data.m_SolidBoxes.ExpandAndGetRef();
 
   xiiTransform boxTransform(box.GetCenter(), xiiQuat::MakeIdentity(), box.GetHalfExtents());
 
-  boxData.m_transform = transform * boxTransform;
+  boxData.m_Transform = transform * boxTransform.GetAsMat4();
   boxData.m_Color     = color;
 }
 
@@ -919,7 +922,7 @@ void xiiDebugRenderer::DrawSolidTriangles(const xiiDebugRendererContext& context
 
     for (xiiUInt32 i = 0; i < 3; ++i)
     {
-      auto& vertex       = data.m_triangleVertices.ExpandAndGetRef();
+      auto& vertex       = data.m_TriangleVertices.ExpandAndGetRef();
       vertex.m_vPosition = triangle.m_vPosition[i];
       vertex.m_Color     = col;
     }
@@ -932,11 +935,11 @@ void xiiDebugRenderer::DrawTexturedTriangles(const xiiDebugRendererContext& cont
     return;
 
   xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, xiiResourceAcquireMode::AllowLoadingFallback);
-  auto                                  hResourceView = xiiGALDevice::GetDefaultDevice()->GetTexture(pTexture->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  auto                                  pResourceView = pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
   XII_LOCK(s_Mutex);
 
-  auto& data = GetDataForExtraction(context).m_texTriangle3DVertices[hResourceView];
+  auto& data = GetDataForExtraction(context).m_TexturedTriangle3DVertices[pResourceView];
 
   for (auto& triangle : triangles)
   {
@@ -946,7 +949,7 @@ void xiiDebugRenderer::DrawTexturedTriangles(const xiiDebugRendererContext& cont
     {
       auto& vertex       = data.ExpandAndGetRef();
       vertex.m_vPosition = triangle.m_vPosition[i];
-      vertex.m_texCoord  = triangle.m_vTexCoord[i];
+      vertex.m_fTexCoord = triangle.m_vTexCoord[i];
       vertex.m_Color     = col;
     }
   }
@@ -968,48 +971,46 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
     vertices[i].m_Color = color;
   }
 
-
   XII_LOCK(s_Mutex);
 
   auto& data = GetDataForExtraction(context);
 
-  data.m_triangle2DVertices.PushBackRange(xiiMakeArrayPtr(vertices));
+  data.m_Triangle2DVertices.PushBackRange(xiiMakeArrayPtr(vertices));
 }
 
 void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale)
 {
   xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, xiiResourceAcquireMode::AllowLoadingFallback);
-  Draw2DRectangle(context, rectInPixel, fDepth, color, xiiGALDevice::GetDefaultDevice()->GetTexture(pTexture->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource), vScale);
+  Draw2DRectangle(context, rectInPixel, fDepth, color, pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource), vScale);
 }
 
-void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALTextureViewHandle hResourceView, xiiVec2 vScale)
+void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale)
 {
   TexVertex vertices[6];
 
   vertices[0].m_vPosition = xiiVec3(rectInPixel.Left(), rectInPixel.Top(), fDepth);
-  vertices[0].m_texCoord  = xiiVec2(0, 0).CompMul(vScale);
+  vertices[0].m_fTexCoord = xiiVec2(0, 0).CompMul(vScale);
   vertices[1].m_vPosition = xiiVec3(rectInPixel.Right(), rectInPixel.Bottom(), fDepth);
-  vertices[1].m_texCoord  = xiiVec2(1, 1).CompMul(vScale);
+  vertices[1].m_fTexCoord = xiiVec2(1, 1).CompMul(vScale);
   vertices[2].m_vPosition = xiiVec3(rectInPixel.Left(), rectInPixel.Bottom(), fDepth);
-  vertices[2].m_texCoord  = xiiVec2(0, 1).CompMul(vScale);
+  vertices[2].m_fTexCoord = xiiVec2(0, 1).CompMul(vScale);
   vertices[3].m_vPosition = xiiVec3(rectInPixel.Left(), rectInPixel.Top(), fDepth);
-  vertices[3].m_texCoord  = xiiVec2(0, 0).CompMul(vScale);
+  vertices[3].m_fTexCoord = xiiVec2(0, 0).CompMul(vScale);
   vertices[4].m_vPosition = xiiVec3(rectInPixel.Right(), rectInPixel.Top(), fDepth);
-  vertices[4].m_texCoord  = xiiVec2(1, 0).CompMul(vScale);
+  vertices[4].m_fTexCoord = xiiVec2(1, 0).CompMul(vScale);
   vertices[5].m_vPosition = xiiVec3(rectInPixel.Right(), rectInPixel.Bottom(), fDepth);
-  vertices[5].m_texCoord  = xiiVec2(1, 1).CompMul(vScale);
+  vertices[5].m_fTexCoord = xiiVec2(1, 1).CompMul(vScale);
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(vertices); ++i)
   {
     vertices[i].m_Color = color;
   }
 
-
   XII_LOCK(s_Mutex);
 
   auto& data = GetDataForExtraction(context);
 
-  data.m_texTriangle2DVertices[hResourceView].PushBackRange(xiiMakeArrayPtr(vertices));
+  data.m_TexturedTriangle2DVertices[pTextureView].PushBackRange(xiiMakeArrayPtr(vertices));
 }
 
 void xiiDebugRenderer::Draw2DLineRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color)
@@ -1050,10 +1051,10 @@ void xiiDebugRenderer::DrawInfoText(const xiiDebugRendererContext& context, xiiD
 
   xiiStringBuilder tmp;
 
-  auto& e   = data.m_infoTextData[(xiiUInt8)placement].ExpandAndGetRef();
-  e.m_group = sGroupName;
-  e.m_sText = text.GetText(tmp);
-  e.m_Color = color;
+  auto& e    = data.m_InfoTextData[(xiiUInt8)placement].ExpandAndGetRef();
+  e.m_sGroup = sGroupName;
+  e.m_sText  = text.GetText(tmp);
+  e.m_Color  = color;
 }
 
 void xiiDebugRenderer::AddPersistentInfoText(const xiiDebugRendererContext& context, xiiDebugTextPlacement::Enum placement, const xiiFormatString& text, xiiTime duration, const xiiColor& color)
@@ -1082,56 +1083,58 @@ xiiUInt32 xiiDebugRenderer::Draw3DText(const xiiDebugRendererContext& context, c
   });
 }
 
-void xiiDebugRenderer::AddPersistentCross(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration)
+void xiiDebugRenderer::AddPersistentCross(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, xiiMatOrTransform mTransform, xiiTime duration)
 {
   XII_LOCK(s_Mutex);
 
   auto& data       = s_PersistentPerContextData[context];
   auto& item       = data.m_Crosses.ExpandAndGetRef();
-  item.m_Transform = transform;
+  item.m_Transform = mTransform.m_Mat4;
   item.m_Color     = color;
   item.m_fSize     = fSize;
   item.m_Timeout   = data.m_Now + duration;
 }
 
-void xiiDebugRenderer::AddPersistentLineSphere(const xiiDebugRendererContext& context, float fRadius, const xiiColor& color, const xiiTransform& transform, xiiTime duration)
+void xiiDebugRenderer::AddPersistentLineSphere(const xiiDebugRendererContext& context, float fRadius, const xiiColor& color, xiiMatOrTransform mTransform, xiiTime duration)
 {
   XII_LOCK(s_Mutex);
 
   auto& data       = s_PersistentPerContextData[context];
   auto& item       = data.m_Spheres.ExpandAndGetRef();
-  item.m_Transform = transform;
+  item.m_Transform = mTransform.m_Mat4;
   item.m_Color     = color;
   item.m_fRadius   = fRadius;
   item.m_Timeout   = data.m_Now + duration;
 }
 
-void xiiDebugRenderer::AddPersistentLineBox(const xiiDebugRendererContext& context, const xiiVec3& vHalfSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration)
+void xiiDebugRenderer::AddPersistentLineBox(const xiiDebugRendererContext& context, const xiiVec3& vHalfSize, const xiiColor& color, xiiMatOrTransform mTransform, xiiTime duration)
 {
   XII_LOCK(s_Mutex);
 
   auto& data       = s_PersistentPerContextData[context];
   auto& item       = data.m_Boxes.ExpandAndGetRef();
-  item.m_Transform = transform;
+  item.m_Transform = mTransform.m_Mat4;
   item.m_Color     = color;
   item.m_vHalfSize = vHalfSize;
   item.m_Timeout   = data.m_Now + duration;
 }
 
-void xiiDebugRenderer::AddPersistentLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, const xiiTransform& transform, xiiTime duration)
+void xiiDebugRenderer::AddPersistentLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform, xiiTime duration)
 {
   XII_LOCK(s_Mutex);
 
   auto& data       = s_PersistentPerContextData[context];
   auto& item       = data.m_Lines.ExpandAndGetRef();
-  item.m_Transform = transform;
+  item.m_Transform = mTransform.m_Mat4;
   item.m_Color     = color;
   item.m_Lines     = lines;
   item.m_Timeout   = data.m_Now + duration;
 }
 
-void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/, xiiVec3 vRotationAxis /*= xiiVec3::MakeAxisZ()*/)
+void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, xiiMatOrTransform mTransform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/, xiiVec3 vRotationAxis /*= xiiVec3::MakeAxisZ()*/)
 {
+  const xiiMat4& transform = mTransform.m_Mat4;
+
   xiiHybridArray<xiiDebugRendererTriangle, 64> tris;
   xiiHybridArray<xiiDebugRendererLine, 64>     lines;
 
@@ -1165,12 +1168,12 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
     if (solidColor.a > 0)
     {
       xiiDebugRendererTriangle& tri1 = tris.ExpandAndGetRef();
-      tri1.m_vPosition[0]            = transform.m_vPosition;
+      tri1.m_vPosition[0]            = transform.GetTranslationVector();
       tri1.m_vPosition[1]            = transform.TransformPosition(vNextDir);
       tri1.m_vPosition[2]            = transform.TransformPosition(vCurDir);
 
       xiiDebugRendererTriangle& tri2 = tris.ExpandAndGetRef();
-      tri2.m_vPosition[0]            = transform.m_vPosition;
+      tri2.m_vPosition[0]            = transform.GetTranslationVector();
       tri2.m_vPosition[1]            = transform.TransformPosition(vCurDir);
       tri2.m_vPosition[2]            = transform.TransformPosition(vNextDir);
     }
@@ -1193,8 +1196,10 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   DrawLines(context, lines, lineColor, transform);
 }
 
-void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/)
+void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, xiiMatOrTransform mTransform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/)
 {
+  const xiiMat4& transform = mTransform.m_Mat4;
+
   xiiHybridArray<xiiDebugRendererTriangle, 64> trisInside;
   xiiHybridArray<xiiDebugRendererTriangle, 64> trisOutside;
 
@@ -1218,7 +1223,7 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
     if (colorInside.a > 0)
     {
       xiiDebugRendererTriangle& tri = trisInside.ExpandAndGetRef();
-      tri.m_vPosition[0]            = transform.m_vPosition;
+      tri.m_vPosition[0]            = transform.GetTranslationVector();
       tri.m_vPosition[1]            = transform.TransformPosition(vCurDir);
       tri.m_vPosition[2]            = transform.TransformPosition(vNextDir);
     }
@@ -1226,7 +1231,7 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
     if (colorOutside.a > 0)
     {
       xiiDebugRendererTriangle& tri = trisOutside.ExpandAndGetRef();
-      tri.m_vPosition[0]            = transform.m_vPosition;
+      tri.m_vPosition[0]            = transform.GetTranslationVector();
       tri.m_vPosition[1]            = transform.TransformPosition(vNextDir);
       tri.m_vPosition[2]            = transform.TransformPosition(vCurDir);
     }
@@ -1239,12 +1244,11 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
   DrawSolidTriangles(context, trisOutside, colorOutside);
 }
 
-void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xiiAngle halfAngle1, xiiAngle halfAngle2, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform)
+void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xiiAngle halfAngle1, xiiAngle halfAngle2, const xiiColor& solidColor, const xiiColor& lineColor, xiiMatOrTransform mTransform)
 {
-  enum
-  {
-    NUM_LINES = 32
-  };
+  const xiiMat4& transform = mTransform.m_Mat4;
+
+  constexpr xiiUInt32 NUM_LINES = 32U;
 
   xiiHybridArray<xiiDebugRendererLine, NUM_LINES * 2>     lines;
   xiiHybridArray<xiiDebugRendererTriangle, NUM_LINES * 2> tris;
@@ -1282,12 +1286,12 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
       if (solidColor.a > 0)
       {
         auto& t1          = tris.ExpandAndGetRef();
-        t1.m_vPosition[0] = transform.m_vPosition;
+        t1.m_vPosition[0] = transform.GetTranslationVector();
         t1.m_vPosition[1] = transform.TransformPosition(prev);
         t1.m_vPosition[2] = transform.TransformPosition(a);
 
         auto& t2          = tris.ExpandAndGetRef();
-        t2.m_vPosition[0] = transform.m_vPosition;
+        t2.m_vPosition[0] = transform.GetTranslationVector();
         t2.m_vPosition[1] = transform.TransformPosition(a);
         t2.m_vPosition[2] = transform.TransformPosition(prev);
       }
@@ -1300,15 +1304,12 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
   DrawLines(context, lines, lineColor, transform);
 }
 
-void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform0, bool bCapStart /*= false*/, bool bCapEnd /*= false*/, xiiBasisAxis::Enum cylinderAxis /*= xiiBasisAxis::PositiveX*/)
+void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, xiiMatOrTransform mTransform0, bool bCapStart /*= false*/, bool bCapEnd /*= false*/, xiiBasisAxis::Enum cylinderAxis /*= xiiBasisAxis::PositiveX*/)
 {
-  enum
-  {
-    NUM_SEGMENTS = 16,
-  };
+  constexpr xiiUInt32 NUM_SEGMENTS = 16U;
 
-  const xiiQuat      tilt      = xiiBasisAxis::GetBasisRotation(xiiBasisAxis::PositiveX, cylinderAxis);
-  const xiiTransform transform = transform0 * tilt;
+  const xiiQuat tilt      = xiiBasisAxis::GetBasisRotation(xiiBasisAxis::PositiveX, cylinderAxis);
+  const xiiMat4 transform = mTransform0.m_Mat4 * tilt.GetAsMat4();
 
   xiiHybridArray<xiiDebugRendererLine, NUM_SEGMENTS * 3>         lines;
   xiiHybridArray<xiiDebugRendererTriangle, NUM_SEGMENTS * 2 * 2> tris;
@@ -1367,11 +1368,11 @@ void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, floa
   DrawLines(context, lines, lineColor, transform);
 }
 
-void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/)
+void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, xiiMatOrTransform mTransform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/)
 {
   vForwardAxis.Normalize();
-  const xiiVec3 right     = vForwardAxis.GetOrthogonalVector();
-  const xiiVec3 up        = vForwardAxis.CrossRH(right);
+  const xiiVec3 right     = vForwardAxis.GetOrthogonalVector().GetNormalized();
+  const xiiVec3 up        = vForwardAxis.CrossRH(right).GetNormalized();
   const xiiVec3 endPoint  = vForwardAxis * fSize;
   const xiiVec3 endPoint2 = vForwardAxis * fSize * 0.9f;
   const float   tipSize   = fSize * 0.1f;
@@ -1387,7 +1388,7 @@ void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float f
   lines[7] = xiiDebugRendererLine(lines[3].m_vEnd, lines[4].m_vEnd);
   lines[8] = xiiDebugRendererLine(lines[4].m_vEnd, lines[1].m_vEnd);
 
-  DrawLines(context, lines, color, transform);
+  DrawLines(context, lines, color, mTransform);
 }
 
 // static
@@ -1531,26 +1532,26 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
   if (pData == nullptr)
     return;
 
-  xiiGALDevice*      pDevice         = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
+  xiiSharedPtr<xiiGALDevice>      pDevice         = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALCommandList> pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
 
   // SolidBoxes
   {
-    xiiUInt32 uiNumSolidBoxes = pData->m_solidBoxes.GetCount();
+    xiiUInt32 uiNumSolidBoxes = pData->m_SolidBoxes.GetCount();
     if (uiNumSolidBoxes != 0)
     {
       CreateDataBuffer(BufferType::SolidBoxes, sizeof(BoxData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
-      renderViewContext.m_pRenderContext->BindBuffer("boxData", pDevice->GetBuffer(s_hDataBuffer[BufferType::SolidBoxes])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+      renderViewContext.m_pRenderContext->BindBuffer("boxData", s_pDataBuffer[BufferType::SolidBoxes]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindMeshBuffer(s_hSolidBoxMeshBuffer);
 
-      const BoxData* pSolidBoxData = pData->m_solidBoxes.GetData();
+      const BoxData* pSolidBoxData = pData->m_SolidBoxes.GetData();
       while (uiNumSolidBoxes > 0)
       {
         const xiiUInt32 uiNumSolidBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumSolidBoxes, BOXES_PER_BATCH);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray()).AssertSuccess();
 
         unsigned int uiRenderedInstances = uiNumSolidBoxesInBatch;
         if (renderViewContext.m_pCamera->IsStereoscopic())
@@ -1566,7 +1567,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
 
   // Triangles
   {
-    xiiUInt32 uiNumTriangleVertices = pData->m_triangleVertices.GetCount();
+    xiiUInt32 uiNumTriangleVertices = pData->m_TriangleVertices.GetCount();
     if (uiNumTriangleVertices != 0)
     {
       CreateVertexBuffer(BufferType::Triangles3D, sizeof(Vertex));
@@ -1574,15 +1575,15 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
       renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
 
-      const Vertex* pTriangleData = pData->m_triangleVertices.GetData();
+      const Vertex* pTriangleData = pData->m_TriangleVertices.GetData();
       while (uiNumTriangleVertices > 0)
       {
         const xiiUInt32 uiNumTriangleVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumTriangleVertices, TRIANGLE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumTriangleVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumTriangleVerticesInBatch / 3);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Triangles3D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumTriangleVerticesInBatch / 3);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1594,7 +1595,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
 
   // Textured 3D triangles
   {
-    for (auto itTex = pData->m_texTriangle3DVertices.GetIterator(); itTex.IsValid(); ++itTex)
+    for (auto itTex = pData->m_TexturedTriangle3DVertices.GetIterator(); itTex.IsValid(); ++itTex)
     {
       renderViewContext.m_pRenderContext->BindTexture2D("BaseTexture", itTex.Key());
 
@@ -1614,9 +1615,9 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
           const xiiUInt32 uiNumVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
           XII_ASSERT_DEV(uiNumVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray()).AssertSuccess();
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray()).AssertSuccess();
 
-          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumVerticesInBatch / 3);
+          renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::TexTriangles3D], {}, &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumVerticesInBatch / 3);
 
           renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1629,7 +1630,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
 
   // 3D Lines
   {
-    xiiUInt32 uiNumLineVertices = pData->m_lineVertices.GetCount();
+    xiiUInt32 uiNumLineVertices = pData->m_LineVertices.GetCount();
     if (uiNumLineVertices != 0)
     {
       CreateVertexBuffer(BufferType::Lines, sizeof(Vertex));
@@ -1637,15 +1638,15 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
       renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
 
-      const Vertex* pLineData = pData->m_lineVertices.GetData();
+      const Vertex* pLineData = pData->m_LineVertices.GetData();
       while (uiNumLineVertices > 0)
       {
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Lines], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1657,21 +1658,21 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
 
   // LineBoxes
   {
-    xiiUInt32 uiNumLineBoxes = pData->m_lineBoxes.GetCount();
+    xiiUInt32 uiNumLineBoxes = pData->m_LineBoxes.GetCount();
     if (uiNumLineBoxes != 0)
     {
       CreateDataBuffer(BufferType::LineBoxes, sizeof(BoxData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
-      renderViewContext.m_pRenderContext->BindBuffer("boxData", pDevice->GetBuffer(s_hDataBuffer[BufferType::LineBoxes])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+      renderViewContext.m_pRenderContext->BindBuffer("boxData", s_pDataBuffer[BufferType::LineBoxes]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindMeshBuffer(s_hLineBoxMeshBuffer);
 
-      const BoxData* pLineBoxData = pData->m_lineBoxes.GetData();
+      const BoxData* pLineBoxData = pData->m_LineBoxes.GetData();
       while (uiNumLineBoxes > 0)
       {
         const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiNumLineBoxesInBatch).IgnoreResult();
 
@@ -1705,7 +1706,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       CreateDataBuffer(BufferType::Glyphs, sizeof(GlyphData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
-      renderViewContext.m_pRenderContext->BindBuffer("glyphData", pDevice->GetBuffer(s_hDataBuffer[BufferType::Glyphs])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+      renderViewContext.m_pRenderContext->BindBuffer("glyphData", s_pDataBuffer[BufferType::Glyphs]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindTexture2D("FontTexture", s_hDebugFontTexture);
 
       const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
@@ -1713,9 +1714,9 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       {
         const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer({}, {}, nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1814,10 +1815,10 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
 
     for (xiiUInt32 corner = 0; corner < (xiiUInt32)xiiDebugTextPlacement::ENUM_COUNT; ++corner)
     {
-      auto& cd = pData->m_infoTextData[corner];
+      auto& cd = pData->m_InfoTextData[corner];
 
       // InsertionSort is stable
-      xiiSorting::InsertionSort(cd, [](const InfoTextData& lhs, const InfoTextData& rhs) -> bool { return lhs.m_group < rhs.m_group; });
+      xiiSorting::InsertionSort(cd, [](const InfoTextData& lhs, const InfoTextData& rhs) -> bool { return lhs.m_sGroup < rhs.m_sGroup; });
 
       xiiVec2I32 pos    = anchor[corner];
       xiiInt32   offset = offset = va[corner] == xiiDebugTextVAlign::Top ? lineHeight : -lineHeight;
@@ -1825,7 +1826,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       for (xiiUInt32 i = 0; i < cd.GetCount(); ++i)
       {
         // add some space between groups
-        if (i > 0 && cd[i - 1].m_group != cd[i].m_group)
+        if (i > 0 && cd[i - 1].m_sGroup != cd[i].m_sGroup)
           pos.y += offset;
 
         pos.y += offset * Draw2DText(context, cd[i].m_sText.GetData(), pos, cd[i].m_Color, 16, ha[corner], va[corner]);
@@ -1841,7 +1842,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
 
   // 2D Lines
   {
-    xiiUInt32 uiNumLineVertices = pData->m_line2DVertices.GetCount();
+    xiiUInt32 uiNumLineVertices = pData->m_Line2DVertices.GetCount();
     if (uiNumLineVertices != 0)
     {
       CreateVertexBuffer(BufferType::Lines2D, sizeof(Vertex));
@@ -1849,15 +1850,15 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
       renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
 
-      const Vertex* pLineData = pData->m_line2DVertices.GetData();
+      const Vertex* pLineData = pData->m_Line2DVertices.GetData();
       while (uiNumLineVertices > 0)
       {
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Lines2D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1869,7 +1870,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
 
   // 2D Rectangles
   {
-    xiiUInt32 uiNum2DVertices = pData->m_triangle2DVertices.GetCount();
+    xiiUInt32 uiNum2DVertices = pData->m_Triangle2DVertices.GetCount();
     if (uiNum2DVertices != 0)
     {
       CreateVertexBuffer(BufferType::Triangles2D, sizeof(Vertex));
@@ -1877,15 +1878,15 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
       renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
 
-      const Vertex* pTriangleData = pData->m_triangle2DVertices.GetData();
+      const Vertex* pTriangleData = pData->m_Triangle2DVertices.GetData();
       while (uiNum2DVertices > 0)
       {
         const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TRIANGLE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Triangles2D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1897,7 +1898,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
 
   // Textured 2D triangles
   {
-    for (auto itTex = pData->m_texTriangle2DVertices.GetIterator(); itTex.IsValid(); ++itTex)
+    for (auto itTex = pData->m_TexturedTriangle2DVertices.GetIterator(); itTex.IsValid(); ++itTex)
     {
       renderViewContext.m_pRenderContext->BindTexture2D("BaseTexture", itTex.Key());
 
@@ -1917,9 +1918,9 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
           const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
           XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
 
-          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
+          renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::TexTriangles2D], {}, &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
           renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1945,7 +1946,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       CreateDataBuffer(BufferType::Glyphs, sizeof(GlyphData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
-      renderViewContext.m_pRenderContext->BindBuffer("glyphData", pDevice->GetBuffer(s_hDataBuffer[BufferType::Glyphs])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+      renderViewContext.m_pRenderContext->BindBuffer("glyphData", s_pDataBuffer[BufferType::Glyphs]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindTexture2D("FontTexture", s_hDebugFontTexture);
 
       const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
@@ -1953,9 +1954,9 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       {
         const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer({}, {}, nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 

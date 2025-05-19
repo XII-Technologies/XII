@@ -139,10 +139,11 @@ public:
     return ComputeScope(*viewContext.m_pRenderContext, pCommandList);
   }
 
-  XII_ALWAYS_INLINE xiiGALCommandList* GetCommandList()
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALCommandList> GetCommandList()
   {
     XII_ASSERT_DEBUG(m_pCommandList != nullptr, "Outside the scope of BeginCommandList/EndCommandList or command list has not yet been set.");
-    return m_pCommandList;
+    // return m_pCommandList;
+    return {};
   }
 
   XII_ALWAYS_INLINE void SetCommandList(xiiGALCommandList* pCommandList)
@@ -161,19 +162,19 @@ public:
   void BindTexture3D(const xiiTempHashedString& sSlotName, const xiiTexture3DResourceHandle& hTexture, xiiResourceAcquireMode acquireMode = xiiResourceAcquireMode::AllowLoadingFallback);
   void BindTextureCube(const xiiTempHashedString& sSlotName, const xiiTextureCubeResourceHandle& hTexture, xiiResourceAcquireMode acquireMode = xiiResourceAcquireMode::AllowLoadingFallback);
 
-  void BindTexture2D(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView);
-  void BindTexture3D(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView);
-  void BindTextureCube(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView);
+  void BindTexture2D(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTextureView> hResourceView);
+  void BindTexture3D(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTextureView> hResourceView);
+  void BindTextureCube(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTextureView> hResourceView);
 
   /// Binds a read+write texture or buffer
-  void BindBufferUAV(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hUnorderedAccessViewHandle);
-  void BindTextureUAV(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hUnorderedAccessViewHandle);
+  void BindBufferUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBufferView> hUnorderedAccessViewHandle);
+  void BindTextureUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTextureView> hUnorderedAccessViewHandle);
 
-  void BindSampler(const xiiTempHashedString& sSlotName, xiiGALSamplerHandle hSamplerSate);
+  void BindSampler(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALSampler> hSamplerSate);
 
-  void BindBuffer(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hResourceView);
+  void BindBuffer(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBufferView> hResourceView);
 
-  void BindConstantBuffer(const xiiTempHashedString& sSlotName, xiiGALBufferHandle hConstantBuffer);
+  void BindConstantBuffer(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBuffer> hConstantBuffer);
   void BindConstantBuffer(const xiiTempHashedString& sSlotName, xiiConstantBufferStorageHandle hConstantBufferStorage);
 
   /// \brief Sets the currently active shader on the given render context.
@@ -183,10 +184,10 @@ public:
 
   void                   BindMeshBuffer(const xiiDynamicMeshBufferResourceHandle& hDynamicMeshBuffer);
   void                   BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBuffer);
-  void                   BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2 = {}, xiiGALBufferHandle hVertexBuffer3 = {}, xiiGALBufferHandle hVertexBuffer4 = {});
+  void                   BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> hVertexBuffer, xiiSharedPtr<xiiGALBuffer> hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiSharedPtr<xiiGALBuffer> hVertexBuffer2 = {}, xiiSharedPtr<xiiGALBuffer> hVertexBuffer3 = {}, xiiSharedPtr<xiiGALBuffer> hVertexBuffer4 = {});
   XII_ALWAYS_INLINE void BindNullMeshBuffer(xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount)
   {
-    BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, topology, uiPrimitiveCount);
+    BindMeshBuffer(xiiSharedPtr<xiiGALBuffer>(), xiiSharedPtr<xiiGALBuffer>(), nullptr, topology, uiPrimitiveCount);
   }
 
   xiiResult DrawMeshBuffer(xiiUInt32 uiPrimitiveCount = 0xFFFFFFFFU, xiiUInt32 uiFirstPrimitive = 0U, xiiUInt32 uiInstanceCount = 1U);
@@ -274,7 +275,7 @@ public:
   }
 
   // Default sampler state
-  static xiiGALSamplerHandle GetDefaultSampler(xiiBitflags<xiiDefaultSamplerFlags> flags);
+  static xiiSharedPtr<xiiGALSampler> GetDefaultSampler(xiiBitflags<xiiDefaultSamplerFlags> flags);
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RendererContext);
@@ -333,8 +334,8 @@ private:
 
   xiiBitflags<xiiShaderBindFlags> m_ShaderBindFlags;
 
-  xiiGALBufferHandle               m_hVertexBuffers[4];
-  xiiGALBufferHandle               m_hIndexBuffer;
+  xiiSharedPtr<xiiGALBuffer>               m_hVertexBuffers[4];
+  xiiSharedPtr<xiiGALBuffer>               m_hIndexBuffer;
   xiiGALInputLayoutHandle          m_hInputLayout;
   const xiiInputLayoutInfo*        m_pInputLayoutInfo = nullptr;
   xiiEnum<xiiGALPrimitiveTopology> m_Topology;
@@ -355,20 +356,20 @@ private:
     };
 
     Enum                    m_Type = Invalid;
-    xiiGALBufferViewHandle  m_hBufferView;
-    xiiGALTextureViewHandle m_hTextureView;
+    xiiSharedPtr<xiiGALBufferView>  m_hBufferView;
+    xiiSharedPtr<xiiGALTextureView> m_hTextureView;
   };
 
   xiiHashTable<xiiUInt64, ResourceBinding>     m_BoundResources;
   xiiHashTable<xiiUInt64, ResourceBinding>     m_BoundUAVs;
-  xiiHashTable<xiiUInt64, xiiGALSamplerHandle> m_BoundSamplers;
+  xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALSampler>> m_BoundSamplers;
 
   struct BoundConstantBuffer
   {
     XII_DECLARE_POD_TYPE();
 
     BoundConstantBuffer() = default;
-    BoundConstantBuffer(xiiGALBufferHandle hConstantBuffer) :
+    BoundConstantBuffer(xiiSharedPtr<xiiGALBuffer> hConstantBuffer) :
       m_hConstantBuffer(hConstantBuffer)
     {
     }
@@ -377,7 +378,7 @@ private:
     {
     }
 
-    xiiGALBufferHandle             m_hConstantBuffer;
+    xiiSharedPtr<xiiGALBuffer>             m_hConstantBuffer;
     xiiConstantBufferStorageHandle m_hConstantBufferStorage;
   };
 
@@ -413,7 +414,7 @@ private:
   static xiiIdTable<xiiConstantBufferStorageId, xiiConstantBufferStorageBase*> s_ConstantBufferStorageTable;
   static xiiMap<xiiUInt32, xiiDynamicArray<xiiConstantBufferStorageBase*>>     s_FreeConstantBufferStorage;
 
-  static xiiGALSamplerHandle s_hDefaultSamplers[4];
+  static xiiSharedPtr<xiiGALSampler> s_hDefaultSamplers[4];
 
   xiiHashTable<xiiGALRenderingSetup, xiiGALRenderPassHandle, xiiRenderContext::ResourceCacheHash>              m_RenderPassCache;
   xiiHashTable<xiiGALRenderingSetup, RenderPassFrameBufferInfo, xiiRenderContext::ResourceCacheHash>           m_FramebufferCache;

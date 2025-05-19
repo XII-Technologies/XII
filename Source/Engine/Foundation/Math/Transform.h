@@ -47,7 +47,7 @@ public:
   xiiTransformTemplate() = default;
 
   /// \brief Initializes the transform from the given position, rotation and scale.
-  xiiTransformTemplate(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation = xiiQuatTemplate<Type>::MakeIdentity(), const xiiVec3Template<Type>& vScale = xiiVec3Template<Type>(1)); // [tested]
+  explicit xiiTransformTemplate(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation = xiiQuatTemplate<Type>::MakeIdentity(), const xiiVec3Template<Type>& vScale = xiiVec3Template<Type>(1)); // [tested]
 
   /// \brief Creates a transform from the given position, rotation and scale.
   [[nodiscard]] static xiiTransformTemplate<Type> Make(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation = xiiQuatTemplate<Type>::MakeIdentity(), const xiiVec3Template<Type>& vScale = xiiVec3Template<Type>(1));

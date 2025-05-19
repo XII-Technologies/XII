@@ -106,6 +106,28 @@ struct XII_GRAPHICSCORE_DLL xiiDebugRendererTexturedTriangle
   xiiColor m_Color = xiiColor::White;
 };
 
+/// \brief Enables a function to take an xiiMat3, xiiMat4 or xiiTransfrom.
+struct XII_GRAPHICSCORE_DLL xiiMatOrTransform
+{
+  xiiMatOrTransform(const xiiMat4& mMat4) :
+    m_Mat4(mMat4)
+  {
+  }
+
+  xiiMatOrTransform(const xiiMat3& mMat3)
+  {
+    m_Mat4.SetIdentity();
+    m_Mat4.SetRotationalPart(mMat3);
+  }
+
+  xiiMatOrTransform(const xiiTransform& transform)
+  {
+    m_Mat4 = transform.GetAsMat4();
+  }
+
+  xiiMat4 m_Mat4;
+};
+
 /// \brief Draws simple shapes into the scene or view.
 ///
 /// Shapes can be rendered for a single frame, or 'persistent' for a certain duration.
@@ -115,34 +137,34 @@ class XII_GRAPHICSCORE_DLL xiiDebugRenderer
 {
 public:
   /// \brief Renders the given set of lines for one frame.
-  static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// \brief Renders the given set of lines in 2D (screen-space) for one frame.
   static void Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color);
 
   /// \brief Renders a cross for one frame.
-  static void DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// \brief Renders a wireframe box for one frame.
-  static void DrawLineBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawLineBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// \brief Renders the corners of a wireframe box for one frame.
-  static void DrawLineBoxCorners(const xiiDebugRendererContext& context, const xiiBoundingBox& box, float fCornerFraction, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawLineBoxCorners(const xiiDebugRendererContext& context, const xiiBoundingBox& box, float fCornerFraction, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// \brief Renders a wireframe sphere for one frame.
-  static void DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// \brief Renders an upright wireframe capsule for one frame.
-  static void DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// \brief Renders an upright wireframe cylinder for one frame.
-  static void DrawLineCylinderZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawLineCylinderZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// \brief Renders a wireframe frustum for one frame.
   static void DrawLineFrustum(const xiiDebugRendererContext& context, const xiiFrustum& frustum, const xiiColor& color, bool bDrawPlaneNormals = false);
 
   /// \brief Renders a solid box for one frame.
-  static void DrawSolidBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+  static void DrawSolidBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// \brief Renders the set of filled triangles for one frame.
   static void DrawSolidTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<xiiDebugRendererTriangle> triangles, const xiiColor& color);
@@ -157,7 +179,7 @@ public:
   static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale = xiiVec2(1, 1));
 
   /// \brief Renders a textured 2D rectangle in screen-space for one frame.
-  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALTextureViewHandle hResourceView, xiiVec2 vScale = xiiVec2(1, 1));
+  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale = xiiVec2(1, 1));
 
   /// \brief Renders a wireframe 2D rectangle in screen-space for one frame.
   static void Draw2DLineRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color);
@@ -194,41 +216,41 @@ public:
   static xiiUInt32 Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel = 16, xiiDebugTextHAlign::Enum horizontalAlignment = xiiDebugTextHAlign::Center, xiiDebugTextVAlign::Enum verticalAlignment = xiiDebugTextVAlign::Bottom);
 
   /// \brief Renders a cross at the given location for as many frames until \a duration has passed.
-  static void AddPersistentCross(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
+  static void AddPersistentCross(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, xiiMatOrTransform mTransform, xiiTime duration);
 
   /// \brief Renders a wireframe sphere at the given location for as many frames until \a duration has passed.
-  static void AddPersistentLineSphere(const xiiDebugRendererContext& context, float fRadius, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
+  static void AddPersistentLineSphere(const xiiDebugRendererContext& context, float fRadius, const xiiColor& color, xiiMatOrTransform mTransform, xiiTime duration);
 
   /// \brief Renders a wireframe box at the given location for as many frames until \a duration has passed.
-  static void AddPersistentLineBox(const xiiDebugRendererContext& context, const xiiVec3& vHalfSize, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
+  static void AddPersistentLineBox(const xiiDebugRendererContext& context, const xiiVec3& vHalfSize, const xiiColor& color, xiiMatOrTransform mTransform, xiiTime duration);
 
   /// \brief Renders lines at the given location for as many frames until \a duration has passed.
-  static void AddPersistentLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
+  static void AddPersistentLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform, xiiTime duration);
 
   /// \brief Renders a solid 2D cone in a plane with a given angle.
   ///
   /// The rotation goes around the given \a rotationAxis.
   /// An angle of zero is pointing into forwardAxis direction.
   /// Both angles may be negative.
-  static void DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX(), xiiVec3 vRotationAxis = xiiVec3::MakeAxisZ());
+  static void DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, xiiMatOrTransform mTransform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX(), xiiVec3 vRotationAxis = xiiVec3::MakeAxisZ());
 
   /// \brief Renders a cone with the tip at the center position, opening up with the given angle.
-  static void DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
+  static void DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, xiiMatOrTransform mTransform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
 
   /// \brief Renders a bent cone with the tip at the center position, pointing into the +X direction opening up with halfAngle1 and halfAngle2 along the Y and Z axis.
   ///
   /// If solidColor.a > 0, the cone is rendered with as solid triangles.
   /// If lineColor.a > 0, the cone is rendered as lines.
   /// Both can be combined.
-  static void DrawLimitCone(const xiiDebugRendererContext& context, xiiAngle halfAngle1, xiiAngle halfAngle2, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform);
+  static void DrawLimitCone(const xiiDebugRendererContext& context, xiiAngle halfAngle1, xiiAngle halfAngle2, const xiiColor& solidColor, const xiiColor& lineColor, xiiMatOrTransform mTransform);
 
   /// \brief Renders a cylinder starting at the center position, along the +X axis.
   ///
   /// If the start and end radius are different, a cone or arrow can be created.
-  static void DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, bool bCapStart = false, bool bCapEnd = false, xiiBasisAxis::Enum cylinderAxis = xiiBasisAxis::PositiveX);
+  static void DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, xiiMatOrTransform mTransform, bool bCapStart = false, bool bCapEnd = false, xiiBasisAxis::Enum cylinderAxis = xiiBasisAxis::PositiveX);
 
   /// \brief Renders a line arrow.
-  static void DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
+  static void DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, xiiMatOrTransform mTransform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
 
   /// \brief Returns the width of single glyph in pixels for the given text size
   static float GetTextGlyphWidth(xiiUInt32 uiSizeInPixel = 16U);
