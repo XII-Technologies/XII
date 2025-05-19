@@ -25,9 +25,9 @@ public:
   virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
 protected:
-  xiiGALBufferHandle CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const;
-  void               DeleteSpriteDataBuffer(xiiGALBufferHandle hBuffer) const;
-  virtual void       FillSpriteData(const xiiRenderDataBatch& batch) const;
+  xiiSharedPtr<xiiGALBuffer> CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const;
+  void                       DeleteSpriteDataBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer) const;
+  virtual void               FillSpriteData(const xiiRenderDataBatch& batch) const;
 
   xiiShaderResourceHandle                                               m_hShader;
   mutable xiiDynamicArray<xiiPerSpriteData, xiiAlignedAllocatorWrapper> m_SpriteData;

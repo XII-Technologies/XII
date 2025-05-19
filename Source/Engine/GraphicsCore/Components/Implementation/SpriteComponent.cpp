@@ -31,10 +31,8 @@ xiiTempHashedString xiiSpriteBlendMode::GetPermutationValue(Enum blendMode)
   return "";
 }
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSpriteRenderData, 1, xiiRTTIDefaultAllocator<xiiSpriteRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiSpriteRenderData::FillSortingKey()
 {

@@ -41,17 +41,17 @@ void xiiSpriteRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRende
 
 void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiGALDevice*     pDevice  = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>     pDevice  = xiiGALDevice::GetDefaultDevice();
   xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
 
   const xiiSpriteRenderData* pRenderData = batch.GetFirstData<xiiSpriteRenderData>();
 
   const xiiUInt32    uiBufferSize = xiiMath::RoundUp(batch.GetCount(), 128u);
-  xiiGALBufferHandle hSpriteData  = CreateSpriteDataBuffer(uiBufferSize);
-  XII_SCOPE_EXIT(DeleteSpriteDataBuffer(hSpriteData));
+  xiiSharedPtr<xiiGALBuffer> pSpriteData  = CreateSpriteDataBuffer(uiBufferSize);
+  XII_SCOPE_EXIT(DeleteSpriteDataBuffer(pSpriteData));
 
   pContext->BindShader(m_hShader);
-  pContext->BindBuffer("spriteData", pDevice->GetBuffer(hSpriteData)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pContext->BindBuffer("spriteData", pSpriteData->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pContext->BindTexture2D("SpriteTexture", pRenderData->m_hTexture);
 
   pContext->SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));
@@ -61,27 +61,27 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
 
   if (m_SpriteData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pContext->GetCommandList(), hSpriteData, 0, m_SpriteData.GetByteArrayPtr()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pContext->GetCommandList(), pSpriteData, 0, m_SpriteData.GetByteArrayPtr()).AssertSuccess();
 
-    pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2);
+    pContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
   }
 }
 
-xiiGALBufferHandle xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const
+xiiSharedPtr<xiiGALBuffer> xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const
 {
-  xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride = sizeof(xiiPerSpriteData);
-  desc.m_uiSize              = desc.m_uiElementByteStride * uiBufferSize;
-  desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-  desc.m_Usage               = xiiGALResourceUsage::Dynamic;
-  desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-  desc.m_Mode                = xiiGALBufferMode::Structured;
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_uiElementByteStride = sizeof(xiiPerSpriteData);
+  bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * uiBufferSize;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
 
-  return xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(desc);
+  return xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(bufferDescription);
 }
 
-void xiiSpriteRenderer::DeleteSpriteDataBuffer(xiiGALBufferHandle hBuffer) const
+void xiiSpriteRenderer::DeleteSpriteDataBuffer(xiiSharedPtr<xiiGALBuffer> hBuffer) const
 {
   xiiGPUResourcePool::GetDefaultInstance()->ReturnBuffer(hBuffer);
 }

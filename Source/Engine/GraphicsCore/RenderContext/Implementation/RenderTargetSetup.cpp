@@ -1,7 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 bool xiiGALRenderTargets::operator==(const xiiGALRenderTargets& other) const
 {
@@ -18,7 +17,7 @@ bool xiiGALRenderTargets::operator==(const xiiGALRenderTargets& other) const
 
 xiiGALRenderTargetSetup::xiiGALRenderTargetSetup() = default;
 
-xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetRenderTarget(xiiUInt8 uiIndex, xiiSharedPtr<xiiGALTexture> pRenderTarget)
+xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetRenderTarget(xiiUInt8 uiIndex, xiiSharedPtr<xiiGALTextureView> pRenderTarget)
 {
   XII_ASSERT_DEV(uiIndex < XII_GAL_MAX_RENDERTARGET_COUNT, "Render target index out of bounds - this should be less than XII_GAL_MAX_RENDERTARGET_COUNT.");
 
@@ -29,7 +28,7 @@ xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetRenderTarget(xiiUInt8 uiInd
   return *this;
 }
 
-xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetDepthStencilTarget(xiiSharedPtr<xiiGALTexture> pDSTarget)
+xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetDepthStencilTarget(xiiSharedPtr<xiiGALTextureView> pDSTarget)
 {
   m_pDSTarget = pDSTarget;
 
@@ -57,8 +56,8 @@ void xiiGALRenderTargetSetup::DestroyAllAttachedViews()
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> colorViews(m_pRTs);
-  for (xiiSharedPtr<xiiGALTexture>& pView : colorViews)
+  xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> colorViews(m_pRTs);
+  for (xiiSharedPtr<xiiGALTextureView>& pView : colorViews)
   {
     pView.Clear();
   }

@@ -9,8 +9,6 @@
 #include <GraphicsCore/Components/BeamComponent.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
-#include <GraphicsFoundation/Device/Device.h>
-
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiBeamComponent, 1, xiiComponentMode::Static)
@@ -127,7 +125,6 @@ xiiResult xiiBeamComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, boo
 
   return XII_FAILURE;
 }
-
 
 void xiiBeamComponent::OnActivated()
 {

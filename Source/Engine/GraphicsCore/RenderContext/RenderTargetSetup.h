@@ -9,8 +9,8 @@ struct XII_GRAPHICSCORE_DLL xiiGALRenderTargets
 {
   bool operator==(const xiiGALRenderTargets& other) const;
 
-  xiiSharedPtr<xiiGALTexture> m_pRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
-  xiiSharedPtr<xiiGALTexture> m_pDSTarget;
+  xiiSharedPtr<xiiGALTextureView> m_pRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
+  xiiSharedPtr<xiiGALTextureView> m_pDSTarget;
 };
 
 // \brief This class can be used to construct render target setups on the stack.
@@ -19,21 +19,21 @@ class XII_GRAPHICSCORE_DLL xiiGALRenderTargetSetup
 public:
   xiiGALRenderTargetSetup();
 
-  xiiGALRenderTargetSetup& SetRenderTarget(xiiUInt8 uiIndex, xiiSharedPtr<xiiGALTexture> pRenderTarget);
-  xiiGALRenderTargetSetup& SetDepthStencilTarget(xiiSharedPtr<xiiGALTexture> pDSTarget);
+  xiiGALRenderTargetSetup& SetRenderTarget(xiiUInt8 uiIndex, xiiSharedPtr<xiiGALTextureView> pRenderTarget);
+  xiiGALRenderTargetSetup& SetDepthStencilTarget(xiiSharedPtr<xiiGALTextureView> pDSTarget);
 
   bool operator==(const xiiGALRenderTargetSetup& other) const;
 
   inline xiiUInt8 GetRenderTargetCount() const;
 
-  inline xiiSharedPtr<xiiGALTexture> GetRenderTarget(xiiUInt8 uiIndex) const;
-  inline xiiSharedPtr<xiiGALTexture> GetDepthStencilTarget() const;
+  inline xiiSharedPtr<xiiGALTextureView> GetRenderTarget(xiiUInt8 uiIndex) const;
+  inline xiiSharedPtr<xiiGALTextureView> GetDepthStencilTarget() const;
 
   void DestroyAllAttachedViews();
 
 protected:
-  xiiSharedPtr<xiiGALTexture> m_pRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
-  xiiSharedPtr<xiiGALTexture> m_pDSTarget;
+  xiiSharedPtr<xiiGALTextureView> m_pRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
+  xiiSharedPtr<xiiGALTextureView> m_pDSTarget;
 
   xiiUInt8 m_uiRTCount = 0;
 };

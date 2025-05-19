@@ -25,9 +25,9 @@ public:
   virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
 protected:
-  xiiGALBufferHandle CreateLensFlareDataBuffer(xiiUInt32 uiBufferSize) const;
-  void               DeleteLensFlareDataBuffer(xiiGALBufferHandle hBuffer) const;
-  virtual void       FillLensFlareData(const xiiRenderDataBatch& batch) const;
+  xiiSharedPtr<xiiGALBuffer> CreateLensFlareDataBuffer(xiiUInt32 uiBufferSize) const;
+  void                       DeleteLensFlareDataBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer) const;
+  virtual void               FillLensFlareData(const xiiRenderDataBatch& batch) const;
 
   xiiShaderResourceHandle                                                  m_hShader;
   mutable xiiDynamicArray<xiiPerLensFlareData, xiiAlignedAllocatorWrapper> m_LensFlareData;

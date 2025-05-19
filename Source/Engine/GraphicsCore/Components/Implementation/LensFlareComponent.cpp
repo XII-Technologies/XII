@@ -10,10 +10,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLensFlareRenderData, 1, xiiRTTIDefaultAllocator<xiiLensFlareRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiLensFlareRenderData::FillSortingKey()
 {
