@@ -70,7 +70,7 @@ void xiiMsaaUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Setup render target
   xiiGALRenderingSetup renderingSetup;

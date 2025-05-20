@@ -112,7 +112,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   if (pDepthInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiUInt32 uiWidth  = pDepthInput->m_TextureDescription.m_Size.width;
   xiiUInt32 uiHeight = pDepthInput->m_TextureDescription.m_Size.height;
@@ -297,7 +297,7 @@ void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, c
   if (pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderingSetup renderingSetup;
   renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));

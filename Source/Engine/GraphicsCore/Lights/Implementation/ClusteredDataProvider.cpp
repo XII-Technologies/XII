@@ -17,7 +17,7 @@
 
 xiiClusteredDataGPU::xiiClusteredDataGPU()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   {
     xiiGALBufferCreationDescription desc;
@@ -30,35 +30,35 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
       desc.m_uiElementByteStride = sizeof(xiiPerLightData);
       desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_LIGHT_DATA;
 
-      m_hLightDataBuffer = pDevice->CreateBuffer(desc);
+      m_pLightDataBuffer = pDevice->CreateBuffer(desc);
     }
 
     {
       desc.m_uiElementByteStride = sizeof(xiiPerDecalData);
       desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_DECAL_DATA;
 
-      m_hDecalDataBuffer = pDevice->CreateBuffer(desc);
+      m_pDecalDataBuffer = pDevice->CreateBuffer(desc);
     }
 
     {
       desc.m_uiElementByteStride = sizeof(xiiPerReflectionProbeData);
       desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA;
 
-      m_hReflectionProbeDataBuffer = pDevice->CreateBuffer(desc);
+      m_pReflectionProbeDataBuffer = pDevice->CreateBuffer(desc);
     }
 
     {
       desc.m_uiElementByteStride = sizeof(xiiPerClusterData);
       desc.m_uiSize              = desc.m_uiElementByteStride * NUM_CLUSTERS;
 
-      m_hClusterDataBuffer = pDevice->CreateBuffer(desc);
+      m_pClusterDataBuffer = pDevice->CreateBuffer(desc);
     }
 
     {
       desc.m_uiElementByteStride = sizeof(xiiUInt32);
       desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_ITEMS_PER_CLUSTER * NUM_CLUSTERS;
 
-      m_hClusterItemBuffer = pDevice->CreateBuffer(desc);
+      m_pClusterItemBuffer = pDevice->CreateBuffer(desc);
     }
   }
 
@@ -79,7 +79,7 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     desc.m_fMaxLOD            = 42000.0f;
     desc.m_uiMaxAnisotropy    = 4U;
 
-    m_hShadowSampler = pDevice->CreateSampler(desc);
+    m_pShadowSampler = pDevice->CreateSampler(desc);
   }
 
   m_hDecalAtlas = xiiDecalAtlasResource::GetDecalAtlasResource();
@@ -102,72 +102,70 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::DefaultQuality, desc);
     desc.m_uiMaxAnisotropy = xiiMath::Min(desc.m_uiMaxAnisotropy, 4u);
 
-    m_hDecalAtlasSampler = pDevice->CreateSampler(desc);
+    m_pDecalAtlasSampler = pDevice->CreateSampler(desc);
   }
 }
 
 xiiClusteredDataGPU::~xiiClusteredDataGPU()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  pDevice->DestroyBuffer(m_hLightDataBuffer);
-  pDevice->DestroyBuffer(m_hDecalDataBuffer);
-  pDevice->DestroyBuffer(m_hReflectionProbeDataBuffer);
-  pDevice->DestroyBuffer(m_hClusterDataBuffer);
-  pDevice->DestroyBuffer(m_hClusterItemBuffer);
-  pDevice->DestroySampler(m_hShadowSampler);
-  pDevice->DestroySampler(m_hDecalAtlasSampler);
+  m_pLightDataBuffer.Clear();
+  m_pDecalDataBuffer.Clear();
+  m_pReflectionProbeDataBuffer.Clear();
+  m_pClusterDataBuffer.Clear();
+  m_pClusterItemBuffer.Clear();
+  m_pShadowSampler.Clear();
+  m_pDecalAtlasSampler.Clear();
 
   xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
 }
 
 void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto hShadowDataBufferView = xiiGALBufferViewHandle();
-  if (xiiGALBuffer* pBuffer = pDevice->GetBuffer(xiiShadowPool::GetShadowDataBuffer()))
+  xiiSharedPtr<xiiGALBufferView> pShadowDataBufferView;
+  if (xiiSharedPtr<xiiGALBuffer> pBuffer = xiiShadowPool::GetShadowDataBuffer())
   {
-    hShadowDataBufferView = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+    pShadowDataBufferView = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
   }
 
-  auto hShadowAtlasTextureView = xiiGALTextureViewHandle();
-  if (xiiGALTexture* pTexture = pDevice->GetTexture(xiiShadowPool::GetShadowAtlasTexture()))
+  xiiSharedPtr<xiiGALTextureView> pShadowAtlasTextureView;
+  if (xiiSharedPtr<xiiGALTexture> pTexture = xiiShadowPool::GetShadowAtlasTexture())
   {
-    hShadowAtlasTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+    pShadowAtlasTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   }
 
-  auto hReflectionSpecularTextureView = pDevice->GetTexture(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint))->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-  auto hSkyIrradianceTextureView      = pDevice->GetTexture(xiiReflectionPool::GetSkyIrradianceTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  xiiSharedPtr<xiiGALTextureView> pReflectionSpecularTextureView = xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  xiiSharedPtr<xiiGALTextureView> pSkyIrradianceTextureView      = xiiReflectionPool::GetSkyIrradianceTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
-  pRenderContext->BindBuffer("perLightDataBuffer", pDevice->GetBuffer(m_hLightDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindBuffer("perDecalDataBuffer", pDevice->GetBuffer(m_hDecalDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindBuffer("perPerReflectionProbeDataBuffer", pDevice->GetBuffer(m_hReflectionProbeDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindBuffer("perClusterDataBuffer", pDevice->GetBuffer(m_hClusterDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindBuffer("clusterItemBuffer", pDevice->GetBuffer(m_hClusterItemBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("perLightDataBuffer", m_pLightDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("perDecalDataBuffer", m_pDecalDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("perPerReflectionProbeDataBuffer", m_pReflectionProbeDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("perClusterDataBuffer", m_pClusterDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("clusterItemBuffer", m_pClusterItemBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
 
-  pRenderContext->BindBuffer("shadowDataBuffer", hShadowDataBufferView);
-  pRenderContext->BindTexture2D("ShadowAtlasTexture", hShadowAtlasTextureView);
-  pRenderContext->BindSampler("ShadowSampler", m_hShadowSampler);
+  pRenderContext->BindBuffer("shadowDataBuffer", pShadowDataBufferView);
+  pRenderContext->BindTexture2D("ShadowAtlasTexture", pShadowAtlasTextureView);
+  pRenderContext->BindSampler("ShadowSampler", m_pShadowSampler);
 
   xiiResourceLock<xiiDecalAtlasResource> pDecalAtlas(m_hDecalAtlas, xiiResourceAcquireMode::AllowLoadingFallback);
   pRenderContext->BindTexture2D("DecalAtlasBaseColorTexture", pDecalAtlas->GetBaseColorTexture());
   pRenderContext->BindTexture2D("DecalAtlasNormalTexture", pDecalAtlas->GetNormalTexture());
   pRenderContext->BindTexture2D("DecalAtlasORMTexture", pDecalAtlas->GetORMTexture());
-  pRenderContext->BindSampler("DecalAtlasSampler", m_hDecalAtlasSampler);
+  pRenderContext->BindSampler("DecalAtlasSampler", m_pDecalAtlasSampler);
 
-  pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
-  pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
+  pRenderContext->BindTextureCube("ReflectionSpecularTexture", pReflectionSpecularTextureView);
+  pRenderContext->BindTexture2D("SkyIrradianceTexture", pSkyIrradianceTextureView);
 
   pRenderContext->BindConstantBuffer("xiiClusteredDataConstants", m_hConstantBuffer);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClusteredDataProvider, 1, xiiRTTIDefaultAllocator<xiiClusteredDataProvider>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiClusteredDataProvider::xiiClusteredDataProvider() = default;
 
@@ -175,7 +173,7 @@ xiiClusteredDataProvider::~xiiClusteredDataProvider() = default;
 
 void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   if (auto pData = extractedData.GetFrameData<xiiClusteredDataCPU>())
   {
@@ -191,23 +189,23 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
       {
         if (!pData->m_LightData.IsEmpty())
         {
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hLightDataBuffer, 0, pData->m_LightData.ToByteArray()).AssertSuccess();
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pLightDataBuffer, 0, pData->m_LightData.ToByteArray()).AssertSuccess();
         }
 
         if (!pData->m_DecalData.IsEmpty())
         {
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hDecalDataBuffer, 0, pData->m_DecalData.ToByteArray()).AssertSuccess();
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pDecalDataBuffer, 0, pData->m_DecalData.ToByteArray()).AssertSuccess();
         }
 
         if (!pData->m_ReflectionProbeData.IsEmpty())
         {
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray()).AssertSuccess();
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray()).AssertSuccess();
         }
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray()).AssertSuccess();
       }
 
-      xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_hClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray()).AssertSuccess();
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray()).AssertSuccess();
     }
     pCommandList->EndDebugGroup();
 

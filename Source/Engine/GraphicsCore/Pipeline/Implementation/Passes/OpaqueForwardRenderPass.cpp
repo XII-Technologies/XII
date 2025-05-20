@@ -54,7 +54,7 @@ void xiiOpaqueForwardRenderPass::SetupResources(const xiiRenderViewContext& rend
 {
   SUPER::SetupResources(renderViewContext, inputs, outputs);
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // SSAO texture
   if (m_ShadingQuality == xiiForwardRenderShadingQuality::Normal)

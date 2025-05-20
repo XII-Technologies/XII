@@ -199,7 +199,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResource
   ret.m_uiQualityLevelsLoadable    = descriptor.m_uiQualityLevelsLoadable;
   ret.m_State                      = xiiResourceState::Loaded;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   XII_ASSERT_DEV(descriptor.m_DescGAL.m_Size.width == descriptor.m_DescGAL.m_Size.height, "Cubemap width and height must be identical");
 

@@ -58,7 +58,7 @@ void xiiBlendPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 {
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
     xiiConstantBufferStorage<xiiBlendConstants>* pBlendConstantBuffer;
     xiiConstantBufferStorageHandle               hBlendConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(pBlendConstantBuffer);

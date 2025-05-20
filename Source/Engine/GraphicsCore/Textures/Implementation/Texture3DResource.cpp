@@ -234,7 +234,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDesc
   ret.m_uiQualityLevelsLoadable    = descriptor.m_uiQualityLevelsLoadable;
   ret.m_State                      = xiiResourceState::Loaded;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   m_Type     = descriptor.m_DescGAL.m_Type;
   m_Format   = descriptor.m_DescGAL.m_Format;

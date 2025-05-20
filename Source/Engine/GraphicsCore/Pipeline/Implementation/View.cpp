@@ -64,7 +64,7 @@ void xiiView::SetSwapChain(xiiGALSwapChainHandle hSwapChain)
 {
   if (m_Data.m_hSwapChain != hSwapChain)
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
     // Swap chain and render target setup are mutually exclusive.
     m_Data.m_hSwapChain                       = hSwapChain;
@@ -94,7 +94,7 @@ void xiiView::SetRenderTargets(const xiiGALRenderTargets& renderTargets)
 
 const xiiGALRenderTargets& xiiView::GetActiveRenderTargets() const
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(m_Data.m_hSwapChain))
   {
     xiiGALTextureViewHandle hBackbufferRT = pDevice->GetTexture(pSwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);

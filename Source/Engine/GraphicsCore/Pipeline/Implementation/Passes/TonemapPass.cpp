@@ -66,7 +66,7 @@ xiiTonemapPass::~xiiTonemapPass()
 
 bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
-  xiiGALDevice*              pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>              pDevice       = xiiGALDevice::GetDefaultDevice();
   const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   // Color
@@ -109,7 +109,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
   if (pColorInput == nullptr || pColorOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Setup render target
   xiiGALRenderingSetup renderingSetup;

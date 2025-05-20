@@ -73,7 +73,7 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 {
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
     // Setup render target
     xiiGALRenderingSetup renderingSetup;

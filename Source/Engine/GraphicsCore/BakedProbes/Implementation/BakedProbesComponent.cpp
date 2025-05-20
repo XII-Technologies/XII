@@ -407,7 +407,7 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
     return;
   }
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiRectFloat viewport = pView->GetViewport();
   xiiUInt32    uiWidth  = static_cast<xiiUInt32>(xiiMath::Ceil(viewport.width / 3.0f));

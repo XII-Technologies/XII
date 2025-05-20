@@ -130,7 +130,7 @@ xiiRenderContext::xiiRenderContext()
 
 xiiRenderContext::~xiiRenderContext()
 {
-  xiiGALDevice* pGALDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pGALDevice = xiiGALDevice::GetDefaultDevice();
 
   for (auto& framebufferInfo : m_FramebufferCache)
   {
@@ -183,7 +183,7 @@ void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup
   m_bNeedsClear           = (renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
   m_bStereoRendering      = bStereoSupport;
 
-  xiiGALDevice*           pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>           pDevice = xiiGALDevice::GetDefaultDevice();
   xiiGALTextureViewHandle hRTV;
   {
     if (renderingSetup.m_RenderTargetSetup.GetRenderTargetCount() > 0)
@@ -794,7 +794,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       m_StateFlags.Remove(xiiRenderContextFlags::MeshBufferBindingChanged);
     }
 
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
     bool bPipelineStateInvalidated = SetupPipelineStates(pShaderPermutation);
 
@@ -1134,7 +1134,7 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
 {
   // XII_ASSERT_DEV(out_hRenderPass.IsInvalidated() && out_hFramebuffer.IsInvalidated(), "Render pass and frame buffer are still active.");
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   RenderPassFrameBufferInfo frameBufferInfo;
   if (!m_FramebufferCache.TryGetValue(renderingSetup, frameBufferInfo))
@@ -1333,7 +1333,7 @@ bool xiiRenderContext::SetupPipelineStates(xiiShaderPermutationResource* pShader
   if (pShaderPermutation == nullptr)
     return false;
 
-  xiiGALDevice* pDevice                   = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice                   = xiiGALDevice::GetDefaultDevice();
   bool          bPipelineStateInvalidated = false;
 
   // Set render state from shader.
@@ -1417,7 +1417,7 @@ bool xiiRenderContext::SetupPipelineStates(xiiShaderPermutationResource* pShader
 
 void xiiRenderContext::FlushPipelineStateCache()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   for (auto iter : m_PipelineStateCache)
   {
@@ -1505,7 +1505,7 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hVertexShader, c
 
   if (!bExisted)
   {
-    xiiGALDevice*       pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice>       pDevice = xiiGALDevice::GetDefaultDevice();
     const xiiGALShader* pShader = pDevice->GetShader(hVertexShader);
 
     xiiGALInputLayoutCreationDescription vd;
@@ -1685,7 +1685,7 @@ xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
 
 void xiiRenderContext::ApplyConstantBufferBindings()
 {
-  xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>                    pDevice            = xiiGALDevice::GetDefaultDevice();
   xiiGALPipelineState*             pPipelineState     = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
@@ -1733,7 +1733,7 @@ void xiiRenderContext::ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceTyp
 {
   XII_ASSERT_DEV(type == xiiGALShaderResourceType::BufferSRV || type == xiiGALShaderResourceType::TextureSRV, "");
 
-  xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>                    pDevice            = xiiGALDevice::GetDefaultDevice();
   xiiGALPipelineState*             pPipelineState     = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
@@ -1757,7 +1757,7 @@ void xiiRenderContext::ApplyResourceViewBindings(xiiEnum<xiiGALShaderResourceTyp
 
 void xiiRenderContext::ApplyUnorderedAccessViewBindings()
 {
-  xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>                    pDevice            = xiiGALDevice::GetDefaultDevice();
   xiiGALPipelineState*             pPipelineState     = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 
@@ -1781,7 +1781,7 @@ void xiiRenderContext::ApplyUnorderedAccessViewBindings()
 
 void xiiRenderContext::ApplySamplerBindings()
 {
-  xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>                    pDevice            = xiiGALDevice::GetDefaultDevice();
   xiiGALPipelineState*             pPipelineState     = pDevice->GetPipelineState(m_hCurrentPipelineState);
   xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
 

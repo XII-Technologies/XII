@@ -20,7 +20,7 @@ xiiInstanceData::xiiInstanceData(xiiUInt32 uiMaxInstanceCount /*= 1024*/)
 
 xiiInstanceData::~xiiInstanceData()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   pDevice->DestroyBuffer(m_hInstanceDataBuffer);
 
@@ -29,7 +29,7 @@ xiiInstanceData::~xiiInstanceData()
 
 void xiiInstanceData::BindResources(xiiRenderContext* pRenderContext)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   pRenderContext->BindBuffer("perInstanceData", pDevice->GetBuffer(m_hInstanceDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pRenderContext->BindConstantBuffer("xiiObjectConstants", m_hConstantBuffer);
@@ -68,7 +68,7 @@ void xiiInstanceData::CreateBuffer(xiiUInt32 uiSize)
   m_uiBufferSize = uiSize;
   m_PerInstanceData.SetCountUninitialized(m_uiBufferSize);
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALBufferCreationDescription bufferDescription;
   bufferDescription.m_Mode                = xiiGALBufferMode::Structured;

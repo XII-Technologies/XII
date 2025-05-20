@@ -141,7 +141,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   if (outputs[m_PinOutput.m_uiOutputIndex] == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderingSetup renderingSetup;
   xiiGALTextureHandle  tempTexture;
@@ -245,7 +245,7 @@ void xiiLSAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext,
   if (pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderingSetup renderingSetup;
   renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
@@ -317,7 +317,7 @@ void xiiLSAOPass::SetOcclusionFalloff(float fFalloff)
 
 void xiiLSAOPass::DestroyLineSweepData()
 {
-  xiiGALDevice* device = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> device = xiiGALDevice::GetDefaultDevice();
 
   if (!m_hLineSweepOutputUAV.IsInvalidated())
     device->DestroyBufferView(m_hLineSweepOutputUAV);
@@ -395,7 +395,7 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
   cb->TotalNumberOfSamples = totalNumberOfSamples;
   // Allocate and upload data structures to GPU
   {
-    xiiGALDevice* device = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> device = xiiGALDevice::GetDefaultDevice();
     DestroyLineSweepData();
 
     // Output UAV for line sweep pass.

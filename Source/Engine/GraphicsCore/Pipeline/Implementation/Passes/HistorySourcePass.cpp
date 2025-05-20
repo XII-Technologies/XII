@@ -38,7 +38,7 @@ void xiiHistorySourcePassTextureDataProvider::ResetTexture(xiiStringView sSource
 {
   if (xiiGALTextureHandle* pHandle = m_Data.GetValue(sSourcePassName))
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
     pDevice->DestroyTexture(*pHandle);
     m_Data.Remove(sSourcePassName);
   }
@@ -50,7 +50,7 @@ xiiGALTextureHandle xiiHistorySourcePassTextureDataProvider::GetOrCreateTexture(
   xiiGALTextureHandle& hTexture = m_Data.FindOrAdd(sSourcePassName, &bExisted);
   if (!bExisted)
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
     hTexture              = pDevice->CreateTexture(desc);
     if (hTexture.IsInvalidated())
     {
@@ -95,7 +95,7 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
 
   m_bFirstExecute = false;
 
-  xiiGALDevice* pDevice              = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice              = xiiGALDevice::GetDefaultDevice();
   bool          bRecreateRenderPass  = true;
   bool          bRecreateFramebuffer = true;
   const bool    bIsDepthAttachment   = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
@@ -258,7 +258,7 @@ xiiResult xiiHistorySourcePass::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiHistorySourcePass::FreeCachedRenderPasses()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   if (!m_hRenderPass.IsInvalidated())
   {

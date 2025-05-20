@@ -62,7 +62,7 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   xiiUInt32 uiWidth  = static_cast<xiiUInt32>(view.GetViewport().width);
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
 
-  xiiGALDevice*              pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>              pDevice       = xiiGALDevice::GetDefaultDevice();
   const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   xiiGALTextureCreationDescription textureDescription{.m_Type = xiiGALResourceDimension::Texture2D};
@@ -156,7 +156,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
   if (pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice              = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice              = xiiGALDevice::GetDefaultDevice();
   bool          bRecreateRenderPass  = true;
   bool          bRecreateFramebuffer = true;
   const bool    bIsDepthAttachment   = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
@@ -315,7 +315,7 @@ xiiResult xiiSourcePass::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiSourcePass::FreeCachedRenderPasses()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   if (!m_hRenderPass.IsInvalidated())
   {

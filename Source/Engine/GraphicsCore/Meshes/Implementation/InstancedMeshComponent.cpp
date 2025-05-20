@@ -128,7 +128,7 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
   if (m_RequireUpdate.IsEmpty())
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   if (auto pCommandQueue = pDevice->GetDefaultCommandQueue())
   {

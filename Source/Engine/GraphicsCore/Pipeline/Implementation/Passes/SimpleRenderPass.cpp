@@ -37,7 +37,7 @@ xiiSimpleRenderPass::~xiiSimpleRenderPass() = default;
 
 bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
-  xiiGALDevice*              pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>              pDevice       = xiiGALDevice::GetDefaultDevice();
   const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   // Color
@@ -74,7 +74,7 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
 
 void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Setup render target
   xiiGALRenderingSetup renderingSetup;

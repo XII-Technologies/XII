@@ -6,10 +6,8 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Lights/LightComponent.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLightRenderData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiLightRenderData::FillBatchIdAndSortingKey(float fScreenSpaceSize)
 {

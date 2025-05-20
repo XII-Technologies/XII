@@ -72,7 +72,7 @@ xiiGALTextureViewHandle xiiTargetPass::QueryTextureProvider(const xiiRenderPipel
   }
   else
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
     if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(m_hSwapChain))
     {
       if (pPin->m_uiInputIndex == 0)
@@ -92,7 +92,7 @@ void xiiTargetPass::Execute(const xiiRenderViewContext& renderViewContext, const
 
 bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiStringView sPinName)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   const xiiRenderPipelineNodePin* pPin = GetPinByName(sPinName);
   if (inputs[pPin->m_uiInputIndex])

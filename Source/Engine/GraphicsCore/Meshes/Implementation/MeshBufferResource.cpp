@@ -575,7 +575,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   m_uiPrimitiveCount = descriptor.GetPrimitiveCount();
   m_Topology         = descriptor.GetTopology();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   m_hVertexBuffer = xiiGALDeviceUtilities::CreateVertexBuffer(pDevice, descriptor.GetVertexDataSize(), descriptor.GetVertexCount(), descriptor.GetVertexBufferData().GetArrayPtr());
 

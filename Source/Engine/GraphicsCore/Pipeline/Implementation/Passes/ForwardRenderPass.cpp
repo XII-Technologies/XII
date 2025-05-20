@@ -70,7 +70,7 @@ bool xiiForwardRenderPass::GetRenderTargetDescriptions(const xiiView& view, cons
 
 void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   SetupResources(renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
@@ -104,7 +104,7 @@ xiiResult xiiForwardRenderPass::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Setup render target
   xiiGALRenderingSetup renderingSetup;

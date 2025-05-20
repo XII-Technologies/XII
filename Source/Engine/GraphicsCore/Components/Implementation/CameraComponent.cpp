@@ -636,7 +636,7 @@ void xiiCameraComponent::ActivateRenderToTexture()
 
   XII_ASSERT_DEV(m_hRenderTargetView.IsInvalidated(), "Render target view is already created");
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiStringBuilder name;
   name.SetFormat("Camera RT: {0}", GetOwner()->GetName());

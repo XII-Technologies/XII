@@ -117,7 +117,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     m_VertexDeclaration.ComputeHash();
   }
 
-  xiiGALDevice*    pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>    pDevice = xiiGALDevice::GetDefaultDevice();
   xiiStringBuilder sName;
   {
     xiiGALBufferCreationDescription vertexDesc;

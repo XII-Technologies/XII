@@ -76,7 +76,7 @@ bool xiiReflectionFilterPass::GetRenderTargetDescriptions(const xiiView& view, c
 
 void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   auto pInputCubemap = pDevice->GetTexture(m_hInputCubemap);
   if (pInputCubemap == nullptr)

@@ -22,30 +22,30 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
 {
   m_globalTransform.SetIdentity();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   {
-    xiiGALTextureCreationDescription desc;
-    desc.m_Type               = xiiGALResourceDimension::TextureCube;
-    desc.m_Format             = xiiGALResourceFormat::RGBA16Float;
-    desc.m_Size.width         = s_uiReflectionCubeMapSize;
-    desc.m_Size.height        = s_uiReflectionCubeMapSize;
-    desc.m_uiMipLevels        = GetMipLevels();
-    desc.m_uiArraySizeOrDepth = 6U;
-    desc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-    desc.m_MiscFlags          = xiiGALMiscTextureFlags::GenerateMips;
+    xiiGALTextureCreationDescription textureDescription;
+    textureDescription.m_Type               = xiiGALResourceDimension::TextureCube;
+    textureDescription.m_Format             = xiiGALResourceFormat::RGBA16Float;
+    textureDescription.m_Size.width         = s_uiReflectionCubeMapSize;
+    textureDescription.m_Size.height        = s_uiReflectionCubeMapSize;
+    textureDescription.m_uiMipLevels        = GetMipLevels();
+    textureDescription.m_uiArraySizeOrDepth = 6U;
+    textureDescription.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+    textureDescription.m_MiscFlags          = xiiGALMiscTextureFlags::GenerateMips;
 
-    m_hCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
-    pDevice->GetTexture(m_hCubemap)->SetDebugName("Reflection Cubemap");
+    m_pCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(textureDescription);
+
+    m_pCubemap->SetDebugName("Reflection Cubemap");
   }
 
   auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList();
 
   xiiStringBuilder sName;
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapFaceRenderTargets); ++i)
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCubemapFaceRenderTargets); ++i)
   {
     xiiGALTextureViewCreationDescription viewDesc;
-    viewDesc.m_hTexture                  = m_hCubemap;
     viewDesc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
     viewDesc.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
     viewDesc.m_uiFirstArrayOrDepthSlice  = i;
@@ -53,14 +53,14 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     viewDesc.m_uiMipLevelCount           = 1;
     viewDesc.m_uiMostDetailedMip         = 0;
 
-    m_hCubemapFaceRenderTargets[i] = pDevice->CreateTextureView(viewDesc);
+    m_pCubemapFaceRenderTargets[i] = m_pCubemap->CreateView(viewDesc);
 
-    XII_ASSERT_DEV(!m_hCubemapFaceRenderTargets[i].IsInvalidated(), "");
+    XII_ASSERT_DEV(m_pCubemapFaceRenderTargets[i] != nullptr, "");
 
     sName.SetFormat("Reflection Cubemap View {}", i);
-    pDevice->GetTextureView(m_hCubemapFaceRenderTargets[i])->SetDebugName(sName);
+    m_pCubemapFaceRenderTargets[i]->SetDebugName(sName);
 
-    pCommandList->ClearRenderTargetView(m_hCubemapFaceRenderTargets[i], xiiColor::Black);
+    pCommandList->ClearRenderTargetView(m_pCubemapFaceRenderTargets[i], xiiColor::Black);
   }
 
   pCommandList->Submit();
@@ -68,20 +68,16 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
 
 xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
 {
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapFaceRenderTargets); ++i)
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCubemapFaceRenderTargets); ++i)
   {
-    if (!m_hCubemapFaceRenderTargets[i].IsInvalidated())
-    {
-      xiiGALDevice::GetDefaultDevice()->DestroyTextureView(m_hCubemapFaceRenderTargets[i]);
-    }
+    m_pCubemapFaceRenderTargets[i].Clear();
   }
 
-  if (!m_hCubemap.IsInvalidated())
+  if (m_pCubemap != nullptr)
   {
-    xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(m_hCubemap);
+    xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(m_pCubemap);
   }
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 /// xiiReflectionProbeUpdater
@@ -116,21 +112,21 @@ xiiUInt32 xiiReflectionProbeUpdater::GetFreeUpdateSlots(xiiDynamicArray<xiiRefle
 
 xiiResult xiiReflectionProbeUpdater::StartDynamicUpdate(const xiiReflectionProbeRef& probe, const xiiReflectionProbeDesc& desc, const xiiTransform& globalTransform, const TargetSlot& target)
 {
-  XII_ASSERT_DEBUG(target.m_hIrradianceOutputTexture.IsInvalidated() == (target.m_iIrradianceOutputIndex == -1), "Invalid irradiance output settings.");
-  XII_ASSERT_DEBUG(!target.m_hSpecularOutputTexture.IsInvalidated() && target.m_iSpecularOutputIndex != -1, "Specular output invalid.");
+  XII_ASSERT_DEBUG((target.m_pIrradianceOutputTexture == nullptr) == (target.m_iIrradianceOutputIndex == -1), "Invalid irradiance output settings.");
+  XII_ASSERT_DEBUG((target.m_pSpecularOutputTexture != nullptr) && target.m_iSpecularOutputIndex != -1, "Specular output invalid.");
+
   for (auto& slot : m_DynamicUpdates)
   {
     if (!slot->m_bInUse)
     {
-      slot->m_flags           = target.m_iIrradianceOutputIndex != -1 ? xiiReflectionProbeUpdaterFlags::SkyLight : xiiReflectionProbeUpdaterFlags::Default;
-      slot->m_probe           = probe;
-      slot->m_desc            = desc;
-      slot->m_globalTransform = globalTransform;
-      // Ignore scale when rendering the probe. Zero scaled components will otherwise cause asserts.
-      slot->m_globalTransform.m_vScale = xiiVec3(1.0f);
+      slot->m_flags                    = target.m_iIrradianceOutputIndex != -1 ? xiiReflectionProbeUpdaterFlags::SkyLight : xiiReflectionProbeUpdaterFlags::Default;
+      slot->m_probe                    = probe;
+      slot->m_desc                     = desc;
+      slot->m_globalTransform          = globalTransform;
+      slot->m_globalTransform.m_vScale = xiiVec3(1.0f); // Ignore scale when rendering the probe. Zero scaled components will otherwise cause asserts.
+      slot->m_TargetSlot               = target;
+      slot->m_bInUse                   = true;
       slot->m_sourceTexture.Invalidate();
-      slot->m_TargetSlot = target;
-      slot->m_bInUse     = true;
       return XII_SUCCESS;
     }
   }
@@ -139,8 +135,9 @@ xiiResult xiiReflectionProbeUpdater::StartDynamicUpdate(const xiiReflectionProbe
 
 xiiResult xiiReflectionProbeUpdater::StartFilterUpdate(const xiiReflectionProbeRef& probe, const xiiReflectionProbeDesc& desc, xiiTextureCubeResourceHandle hSourceTexture, const TargetSlot& target)
 {
-  XII_ASSERT_DEBUG(target.m_hIrradianceOutputTexture.IsInvalidated() == (target.m_iIrradianceOutputIndex == -1), "Invalid irradiance output settings.");
-  XII_ASSERT_DEBUG(!target.m_hSpecularOutputTexture.IsInvalidated() && target.m_iSpecularOutputIndex != -1, "Specular output invalid.");
+  XII_ASSERT_DEBUG((target.m_pIrradianceOutputTexture == nullptr) == (target.m_iIrradianceOutputIndex == -1), "Invalid irradiance output settings.");
+  XII_ASSERT_DEBUG((target.m_pSpecularOutputTexture != nullptr) && target.m_iSpecularOutputIndex != -1, "Specular output invalid.");
+
   for (auto& slot : m_DynamicUpdates)
   {
     if (!slot->m_bInUse)
@@ -150,12 +147,12 @@ xiiResult xiiReflectionProbeUpdater::StartFilterUpdate(const xiiReflectionProbeR
       {
         slot->m_flags.Add(xiiReflectionProbeUpdaterFlags::SkyLight);
       }
-      slot->m_probe = probe;
-      slot->m_desc  = desc;
-      slot->m_globalTransform.SetIdentity();
+      slot->m_probe         = probe;
+      slot->m_desc          = desc;
       slot->m_sourceTexture = hSourceTexture;
       slot->m_TargetSlot    = target;
       slot->m_bInUse        = true;
+      slot->m_globalTransform.SetIdentity();
       return XII_SUCCESS;
     }
   }
@@ -367,7 +364,7 @@ void xiiReflectionProbeUpdater::ResetProbeUpdateInfo(xiiUInt32 uiInfo)
 
 void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& step, ProbeUpdateInfo& updateInfo)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiVec3 vForward[6] = {
     xiiVec3(1.0f, 0.0f, 0.0f),
@@ -413,18 +410,18 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     xiiGALRenderTargets renderTargets;
     if (step.m_UpdateStep == UpdateStep::Filter)
     {
-      renderTargets.m_hRTs[0] = pDevice->GetTexture(updateInfo.m_TargetSlot.m_hSpecularOutputTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+      renderTargets.m_pRTs[0] = updateInfo.m_TargetSlot.m_pSpecularOutputTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 
       if (updateInfo.m_flags.IsSet(xiiReflectionProbeUpdaterFlags::SkyLight))
       {
-        renderTargets.m_hRTs[2] = pDevice->GetTexture(updateInfo.m_TargetSlot.m_hIrradianceOutputTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+        renderTargets.m_pRTs[2] = updateInfo.m_TargetSlot.m_pIrradianceOutputTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
       }
       pView->SetRenderPassProperty("ReflectionFilterPass", "Intensity", updateInfo.m_desc.m_fIntensity);
       pView->SetRenderPassProperty("ReflectionFilterPass", "Saturation", updateInfo.m_desc.m_fSaturation);
       pView->SetRenderPassProperty("ReflectionFilterPass", "SpecularOutputIndex", updateInfo.m_TargetSlot.m_iSpecularOutputIndex);
       pView->SetRenderPassProperty("ReflectionFilterPass", "IrradianceOutputIndex", updateInfo.m_TargetSlot.m_iIrradianceOutputIndex);
 
-      xiiGALTextureHandle hSourceTexture = updateInfo.m_hCubemap;
+      xiiSharedPtr<xiiGALTexture> pSourceTexture = updateInfo.m_pCubemap;
       if (updateInfo.m_desc.m_Mode == xiiReflectionProbeMode::Static)
       {
         if (updateInfo.m_flags.IsSet(xiiReflectionProbeUpdaterFlags::HasCustomCubeMap))
@@ -433,15 +430,16 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
           //#TODO Currently even in static mode we render the 6 sides and only change the filter stage to point to the static texture if available. Rendering the 6 sides is intended only in the editor as a preview for non-baked probes. We will need to find a way to quickly determine if we need to do this fallback at a much earlier stage.
           if (pTexture->GetLoadingState() == xiiResourceState::Loaded && pTexture->GetResourceHandle() == updateInfo.m_sourceTexture)
           {
-            hSourceTexture = pTexture->GetGALTexture();
+            pSourceTexture = pTexture->GetGALTexture();
           }
         }
       }
-      pView->SetRenderPassProperty("ReflectionFilterPass", "InputCubemap", hSourceTexture.GetInternalID().m_Data);
+      /// \todo This is a bit of a hack. We should be able to set the input cubemap in the render pipeline resource.
+      pView->SetRenderPassProperty("ReflectionFilterPass", "InputCubemap", pSourceTexture.Borrow());
     }
     else
     {
-      renderTargets.m_hRTs[0] = updateInfo.m_hCubemapFaceRenderTargets[uiFaceIndex];
+      renderTargets.m_pRTs[0] = updateInfo.m_pCubemapFaceRenderTargets[uiFaceIndex];
     }
     pView->SetRenderTargets(renderTargets);
 

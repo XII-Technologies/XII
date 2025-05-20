@@ -74,7 +74,7 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
   if (renderDataBatchList.GetBatchCount() == 0)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALTextureHandle hDepthTexture;
 

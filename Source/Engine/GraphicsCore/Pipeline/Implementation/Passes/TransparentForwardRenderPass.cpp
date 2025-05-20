@@ -45,7 +45,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   {
     SetupResources(renderViewContext, inputs, outputs);
@@ -69,7 +69,7 @@ void xiiTransparentForwardRenderPass::SetupResources(const xiiRenderViewContext&
 {
   SUPER::SetupResources(renderViewContext, inputs, outputs);
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   if (inputs[m_PinResolvedDepth.m_uiInputIndex])
   {

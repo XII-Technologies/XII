@@ -234,18 +234,8 @@ struct xiiShadowPool::Data
       xiiRenderWorld::DeleteView(shadowView.m_hView);
     }
 
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-    if (!m_hShadowAtlasTexture.IsInvalidated())
-    {
-      pDevice->DestroyTexture(m_hShadowAtlasTexture);
-      m_hShadowAtlasTexture.Invalidate();
-    }
-
-    if (!m_hShadowDataBuffer.IsInvalidated())
-    {
-      pDevice->DestroyBuffer(m_hShadowDataBuffer);
-      m_hShadowDataBuffer.Invalidate();
-    }
+    m_pShadowAtlasTexture.Clear();
+    m_pShadowDataBuffer.Clear();
   }
 
   enum
@@ -255,31 +245,31 @@ struct xiiShadowPool::Data
 
   void CreateShadowAtlasTexture()
   {
-    if (m_hShadowAtlasTexture.IsInvalidated())
+    if (m_pShadowAtlasTexture == nullptr)
     {
-      xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+      xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
       xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight), xiiGALResourceFormat::D16UNormalized, xiiGALMSAASampleCount::OneSample);
 
-      m_hShadowAtlasTexture = pDevice->CreateTexture(desc);
+      m_pShadowAtlasTexture = pDevice->CreateTexture(desc);
 
-      pDevice->GetTexture(m_hShadowAtlasTexture)->SetDebugName("Shadow Atlas Texture");
+      m_pShadowAtlasTexture->SetDebugName("Shadow Atlas Texture");
     }
   }
 
   void CreateShadowDataBuffer()
   {
-    if (m_hShadowDataBuffer.IsInvalidated())
+    if (m_pShadowDataBuffer == nullptr)
     {
-      xiiGALBufferCreationDescription desc;
-      desc.m_uiElementByteStride = sizeof(xiiVec4);
-      desc.m_uiSize              = desc.m_uiElementByteStride * MAX_SHADOW_DATA;
-      desc.m_Mode                = xiiGALBufferMode::Structured;
-      desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-      desc.m_Usage               = xiiGALResourceUsage::Dynamic;
-      desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+      xiiGALBufferCreationDescription bufferDescription;
+      bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+      bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * MAX_SHADOW_DATA;
+      bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+      bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+      bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+      bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-      m_hShadowDataBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
+      m_pShadowDataBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(bufferDescription);
     }
   }
 
@@ -288,7 +278,7 @@ struct xiiShadowPool::Data
     CreateShadowAtlasTexture();
     CreateShadowDataBuffer();
 
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
     xiiView*      pView = nullptr;
     xiiViewHandle hView = xiiRenderWorld::CreateView("Unknown", pView);
@@ -296,7 +286,7 @@ struct xiiShadowPool::Data
     pView->SetCameraUsageHint(xiiCameraUsageHint::Shadow);
 
     xiiGALRenderTargets renderTargets;
-    renderTargets.m_hDSTarget = pDevice->GetTexture(m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
+    renderTargets.m_pDSTarget = m_pShadowAtlasTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil);
     pView->SetRenderTargets(renderTargets);
 
     XII_ASSERT_DEV(m_ShadowViewsMutex.IsLocked(), "m_ShadowViewsMutex must be locked at this point.");
@@ -393,8 +383,8 @@ struct xiiShadowPool::Data
   xiiDynamicArray<xiiVec4, xiiAlignedAllocatorWrapper> m_PackedShadowData[2];
   xiiUInt32                                            m_uiUsedPackedShadowData = 0; // in 16 bytes steps (sizeof(xiiVec4))
 
-  xiiGALTextureHandle m_hShadowAtlasTexture;
-  xiiGALBufferHandle  m_hShadowDataBuffer;
+  xiiSharedPtr<xiiGALTexture> m_pShadowAtlasTexture;
+  xiiSharedPtr<xiiGALBuffer>  m_pShadowDataBuffer;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -658,15 +648,15 @@ xiiUInt32 xiiShadowPool::AddSpotLight(const xiiSpotLightComponent* pSpotLight, f
 }
 
 // static
-xiiGALTextureHandle xiiShadowPool::GetShadowAtlasTexture()
+xiiSharedPtr<xiiGALTexture> xiiShadowPool::GetShadowAtlasTexture()
 {
-  return s_pData->m_hShadowAtlasTexture;
+  return s_pData->m_pShadowAtlasTexture;
 }
 
 // static
-xiiGALBufferHandle xiiShadowPool::GetShadowDataBuffer()
+xiiSharedPtr<xiiGALBuffer> xiiShadowPool::GetShadowDataBuffer()
 {
-  return s_pData->m_hShadowDataBuffer;
+  return s_pData->m_pShadowDataBuffer;
 }
 
 // static
@@ -976,10 +966,10 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   if (e.m_Type != xiiRenderWorldRenderEvent::Type::BeginRender)
     return;
 
-  if (s_pData->m_hShadowAtlasTexture.IsInvalidated() || s_pData->m_hShadowDataBuffer.IsInvalidated())
+  if (s_pData->m_pShadowAtlasTexture == nullptr || s_pData->m_pShadowDataBuffer == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
   {
@@ -987,7 +977,7 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
     pCommandList->BeginDebugGroup("Shadow Atlas");
     {
-      pCommandList->ClearDepthStencilView(pDevice->GetTexture(s_pData->m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
+      pCommandList->ClearDepthStencilView(s_pData->m_pShadowAtlasTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
 
       xiiUInt32 uiDataIndex      = xiiRenderWorld::GetDataIndexForRendering();
       auto&     packedShadowData = s_pData->m_PackedShadowData[uiDataIndex];
@@ -996,7 +986,7 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
       {
         XII_PROFILE_SCOPE("Shadow Data Buffer Update");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pData->m_pShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr()).AssertSuccess();
       }
     }
     pCommandList->EndDebugGroup();

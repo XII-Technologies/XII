@@ -52,7 +52,7 @@ xiiRenderPipeline::~xiiRenderPipeline()
 {
   if (!m_hOcclusionDebugViewTexture.IsInvalidated())
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
     pDevice->DestroyTexture(m_hOcclusionDebugViewTexture);
     m_hOcclusionDebugViewTexture.Invalidate();
   }
@@ -505,7 +505,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
   m_ConnectionToTextureIndex.Clear();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Gather all connections that share the same path-through texture and their first and last usage pass index.
   for (xiiUInt16 i = 0; i < static_cast<xiiUInt16>(m_Passes.GetCount()); ++i)
@@ -1098,7 +1098,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   XII_ASSERT_DEV(m_uiLastRenderFrame != xiiRenderWorld::GetFrameCounter(), "Render must not be called multiple times per frame.");
   m_uiLastRenderFrame = xiiRenderWorld::GetFrameCounter();
 
-  xiiGALDevice*      pDevice    = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>      pDevice    = xiiGALDevice::GetDefaultDevice();
   auto&              data       = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
   const xiiCamera*   pCamera    = &data.GetCamera();
   const xiiCamera*   pLodCamera = &data.GetLodCamera();
@@ -1426,7 +1426,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   // so either this has to be done elsewhere, or nested passes have to be allowed
   if (false)
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
     // check whether we need to re-create the texture
     if (!m_hOcclusionDebugViewTexture.IsInvalidated())

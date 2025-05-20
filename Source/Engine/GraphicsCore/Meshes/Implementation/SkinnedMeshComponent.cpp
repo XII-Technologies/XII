@@ -22,7 +22,7 @@ xiiSkinningState::~xiiSkinningState()
 
 void xiiSkinningState::Clear()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   if (!m_hGpuBuffer.IsInvalidated())
   {
@@ -35,7 +35,7 @@ void xiiSkinningState::Clear()
 
 void xiiSkinningState::TransformsChanged()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   if (m_hGpuBuffer.IsInvalidated())
   {

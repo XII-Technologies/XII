@@ -88,7 +88,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
   if (pColorInput == nullptr || pColorOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiUInt32 uiWidth        = pColorInput->m_TextureDescription.m_Size.width;
   xiiUInt32 uiHeight       = pColorInput->m_TextureDescription.m_Size.height;
@@ -252,7 +252,7 @@ void xiiBloomPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext
   if (pColorOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderingSetup renderingSetup;
   renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pColorOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));

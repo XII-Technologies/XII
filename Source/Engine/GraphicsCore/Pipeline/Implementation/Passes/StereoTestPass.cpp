@@ -65,7 +65,7 @@ void xiiStereoTestPass::Execute(const xiiRenderViewContext& renderViewContext, c
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Setup render target
   xiiGALRenderingSetup renderingSetup;

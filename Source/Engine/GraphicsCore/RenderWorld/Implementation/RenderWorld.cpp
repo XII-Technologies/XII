@@ -601,7 +601,7 @@ void xiiRenderWorld::BeginFrame()
 
   RebuildPipelines();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   auto& filteredRenderPipelines = s_FilteredRenderPipelines[GetDataIndexForRendering()];
   for (auto& pRenderPipeline : filteredRenderPipelines)

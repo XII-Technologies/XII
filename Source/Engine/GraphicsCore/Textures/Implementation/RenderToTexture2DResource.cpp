@@ -43,7 +43,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
   ret.m_uiQualityLevelsLoadable    = 0;
   ret.m_State                      = xiiResourceState::Loaded;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   m_Type     = xiiGALResourceDimension::Texture2D;
   m_Format   = descriptor.m_Format;
