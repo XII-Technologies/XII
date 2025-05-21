@@ -41,8 +41,8 @@ public:
   /// \brief Sets the swapchain that this view will be rendering into. Can be invalid in case the render target is an off-screen buffer in which case SetRenderTargets needs to be called.
   /// Setting the swap-chain is necessary in order to acquire and present the image to the window.
   /// SetSwapChain and SetRenderTargets are mutually exclusive. Calling this function will reset the render targets.
-  void                  SetSwapChain(xiiGALSwapChainHandle hSwapChain);
-  xiiGALSwapChainHandle GetSwapChain() const;
+  void                          SetSwapChain(xiiSharedPtr<xiiGALSwapChain> pSwapChain);
+  xiiSharedPtr<xiiGALSwapChain> GetSwapChain() const;
 
   /// \brief Sets the off-screen render targets. Use SetSwapChain if rendering to a window.
   /// SetSwapChain and SetRenderTargets are mutually exclusive. Calling this function will reset the swap chain.

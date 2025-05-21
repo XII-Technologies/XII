@@ -17,7 +17,7 @@ public:
   xiiInstanceData(xiiUInt32 uiMaxInstanceCount = 1024);
   ~xiiInstanceData();
 
-  xiiGALBufferHandle m_hInstanceDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pInstanceDataBuffer;
 
   xiiConstantBufferStorageHandle m_hConstantBuffer;
 

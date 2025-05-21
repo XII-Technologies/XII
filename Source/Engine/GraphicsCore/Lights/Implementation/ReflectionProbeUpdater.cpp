@@ -7,10 +7,6 @@
 #include <GraphicsCore/Lights/Implementation/ReflectionPoolData.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 xiiCVarInt cvar_RenderingReflectionPoolMaxRenderViews("Rendering.ReflectionPool.MaxRenderViews", 1, xiiCVarFlags::Default, "The maximum number of render views for reflection probes each frame");
 xiiCVarInt cvar_RenderingReflectionPoolMaxFilterViews("Rendering.ReflectionPool.MaxFilterViews", 1, xiiCVarFlags::Default, "The maximum number of filter views for reflection probes each frame");

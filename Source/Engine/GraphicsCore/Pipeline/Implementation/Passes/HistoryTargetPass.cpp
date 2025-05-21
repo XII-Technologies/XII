@@ -32,10 +32,10 @@ bool xiiHistoryTargetPass::GetRenderTargetDescriptions(const xiiView& view, cons
   return true;
 }
 
-xiiGALTextureViewHandle xiiHistoryTargetPass::QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc)
+xiiSharedPtr<xiiGALTextureView> xiiHistoryTargetPass::QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc)
 {
   auto pData = GetPipeline()->GetFrameDataProvider<xiiHistorySourcePassTextureDataProvider>();
-  return xiiGALDevice::GetDefaultDevice()->GetTexture(pData->GetOrCreateTexture(m_sSourcePassName, desc))->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  return pData->GetOrCreateTexture(m_sSourcePassName, desc)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 }
 
 void xiiHistoryTargetPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)

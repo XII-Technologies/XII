@@ -73,11 +73,9 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 {
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
     // Setup render target
     xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, outputs[m_PinOutput.m_uiOutputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
     renderingSetup.m_uiRenderTargetClearMask = xiiInvalidIndex;
     renderingSetup.m_ClearColor              = xiiColor(1.0f, 0.0f, 0.0f);
 
@@ -86,13 +84,12 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 
     // Setup input view and sampler
     xiiGALTextureViewCreationDescription rvcd;
-    rvcd.m_hTexture                       = inputs[m_PinInput.m_uiInputIndex]->m_TextureHandle;
-    xiiGALTextureViewHandle hResourceView = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
+    xiiSharedPtr<xiiGALTextureView>      pResourceView = inputs[m_PinInput.m_uiInputIndex]->m_pTexture->CreateView(rvcd);
 
     // Bind shader and inputs
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-    renderViewContext.m_pRenderContext->BindTexture2D("Input", hResourceView);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
+    renderViewContext.m_pRenderContext->BindTexture2D("Input", pResourceView);
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiBlurConstants", m_hBlurCB);
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();

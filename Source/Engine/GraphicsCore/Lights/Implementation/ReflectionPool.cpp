@@ -16,8 +16,6 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -310,8 +308,8 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto                                   pGALCommandQueue = pDevice->GetDefaultCommandQueue();
-  auto                                   pGALCommandList  = pGALCommandQueue->BeginCommandList();
+  auto                                           pGALCommandQueue = pDevice->GetDefaultCommandQueue();
+  auto                                           pGALCommandList  = pGALCommandQueue->BeginCommandList();
   xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 4> atlasToClear;
 
   pGALCommandList->BeginDebugGroup("Sky Irradiance Texture Update");

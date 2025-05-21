@@ -58,11 +58,9 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice>        pDevice             = xiiGALDevice::GetDefaultDevice();
-  const xiiGALTexture* pDestinationTexture = pDevice->GetTexture(pOutput->m_TextureHandle);
-  const xiiGALTexture* pSourceTexture      = pDevice->GetTexture(pInput->m_TextureHandle);
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (pDestinationTexture->GetDescription().m_Format != pSourceTexture->GetDescription().m_Format)
+  if (pOutput->m_pTexture->GetDescription().m_Format != pInput->m_pTexture->GetDescription().m_Format)
   {
     /// \todo GraphicsCore: Use a shader when the format is not an exact match.
 
@@ -76,7 +74,7 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
 
       pCommandList->BeginDebugGroup(GetName());
       {
-        pCommandList->CopyTexture(pInput->m_TextureHandle, pOutput->m_TextureHandle);
+        pCommandList->CopyTexture(pInput->m_pTexture, pOutput->m_pTexture);
       }
       pCommandList->EndDebugGroup();
       pCommandList->Submit();

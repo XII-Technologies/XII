@@ -1,9 +1,10 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/Containers/HashTable.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
 class xiiRenderPipeline;
@@ -27,7 +28,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineResource : public xiiResource
 public:
   xiiRenderPipelineResource();
 
-  XII_ALWAYS_INLINE const xiiRenderPipelineResourceDescriptor& GetDescriptor() { return m_Desc; }
+  XII_ALWAYS_INLINE const xiiRenderPipelineResourceDescriptor& GetDescriptor() { return m_Description; }
 
   xiiInternal::NewInstance<xiiRenderPipeline> CreateRenderPipeline() const;
 
@@ -40,5 +41,5 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
-  xiiRenderPipelineResourceDescriptor m_Desc;
+  xiiRenderPipelineResourceDescriptor m_Description;
 };

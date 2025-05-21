@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
 #include <GraphicsFoundation/Shader/Types.h>
-#include <memory>
 
 class xiiShaderTransform;
 
@@ -13,7 +12,7 @@ class XII_GRAPHICSCORE_DLL xiiSkinnedMeshRenderData : public xiiMeshRenderData
 public:
   virtual bool CanBatch(const xiiRenderData& other) const override { return false; }
 
-  xiiGALBufferHandle m_hSkinningTransforms;
+  xiiSharedPtr<xiiGALBuffer> m_pSkinningTransforms;
 };
 
 struct XII_GRAPHICSCORE_DLL xiiSkinningState
@@ -29,5 +28,5 @@ struct XII_GRAPHICSCORE_DLL xiiSkinningState
   /// \brief Call this, after modifying m_Transforms, to make the renderer apply the update.
   void TransformsChanged();
 
-  xiiGALBufferHandle m_hGpuBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pGpuBuffer;
 };

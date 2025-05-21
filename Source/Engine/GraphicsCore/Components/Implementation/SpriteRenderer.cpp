@@ -41,12 +41,12 @@ void xiiSpriteRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRende
 
 void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiSharedPtr<xiiGALDevice>     pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
+  xiiSharedPtr<xiiGALDevice> pDevice  = xiiGALDevice::GetDefaultDevice();
+  xiiRenderContext*          pContext = renderViewContext.m_pRenderContext;
 
   const xiiSpriteRenderData* pRenderData = batch.GetFirstData<xiiSpriteRenderData>();
 
-  const xiiUInt32    uiBufferSize = xiiMath::RoundUp(batch.GetCount(), 128u);
+  const xiiUInt32            uiBufferSize = xiiMath::RoundUp(batch.GetCount(), 128u);
   xiiSharedPtr<xiiGALBuffer> pSpriteData  = CreateSpriteDataBuffer(uiBufferSize);
   XII_SCOPE_EXIT(DeleteSpriteDataBuffer(pSpriteData));
 

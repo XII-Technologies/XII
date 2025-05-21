@@ -81,11 +81,9 @@ void xiiAntialiasingPass::Execute(const xiiRenderViewContext& renderViewContext,
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
   // Bind render target and viewport
   auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
@@ -94,8 +92,8 @@ void xiiAntialiasingPass::Execute(const xiiRenderViewContext& renderViewContext,
 
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
 
-  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-  renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetTexture(pInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+  renderViewContext.m_pRenderContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
+  renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 }

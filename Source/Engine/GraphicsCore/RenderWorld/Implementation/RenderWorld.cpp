@@ -10,8 +10,6 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 
 xiiCVarBool cvar_RenderingMultithreading("Rendering.Multithreading", true, xiiCVarFlags::Default, "Enables multi-threaded update and rendering.");
 xiiCVarBool cvar_RenderingCachingStaticObjects("Rendering.Caching.StaticObjects", true, xiiCVarFlags::Default, "Enables render data caching of static objects.");
@@ -606,10 +604,9 @@ void xiiRenderWorld::BeginFrame()
   auto& filteredRenderPipelines = s_FilteredRenderPipelines[GetDataIndexForRendering()];
   for (auto& pRenderPipeline : filteredRenderPipelines)
   {
-    xiiGALSwapChainHandle hSwapChain = pRenderPipeline->GetRenderData().GetViewData().m_hSwapChain;
-    if (!hSwapChain.IsInvalidated())
+    if (xiiSharedPtr<xiiGALSwapChain> pSwapChain = pRenderPipeline->GetRenderData().GetViewData().m_pSwapChain)
     {
-      pDevice->EnqueueFrameSwapChain(hSwapChain);
+      pDevice->EnqueueFrameSwapChain(pSwapChain);
     }
   }
 
@@ -645,7 +642,6 @@ bool xiiRenderWorld::GetUseMultithreadedRendering()
 {
   return cvar_RenderingMultithreading;
 }
-
 
 bool xiiRenderWorld::IsRenderingThread()
 {

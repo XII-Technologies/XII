@@ -23,8 +23,6 @@
 #include <GraphicsCore/Rasterizer/RasterizerView.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 xiiCVarBool xiiRenderPipeline::cvar_SpatialCullingVis("Spatial.Culling.Vis", false, xiiCVarFlags::Default, "Enables debug visualization of visibility culling");
@@ -33,7 +31,7 @@ xiiCVarBool cvar_SpatialCullingShowStats("Spatial.Culling.ShowStats", false, xii
 
 xiiCVarBool  cvar_SpatialCullingOcclusionEnable("Spatial.Occlusion.Enable", true, xiiCVarFlags::Default, "Use software rasterization for occlusion culling.");
 xiiCVarBool  cvar_SpatialCullingOcclusionVisView("Spatial.Occlusion.VisView", false, xiiCVarFlags::Default, "Render the occlusion framebuffer as an overlay.");
-xiiCVarFloat cvar_SpatialCullingOcclusionBoundsInlation("Spatial.Occlusion.BoundsInflation", 0.5f, xiiCVarFlags::Default, "How much to inflate bounds during occlusion check.");
+xiiCVarFloat cvar_SpatialCullingOcclusionBoundsInflation("Spatial.Occlusion.BoundsInflation", 0.5f, xiiCVarFlags::Default, "How much to inflate bounds during occlusion check.");
 xiiCVarFloat cvar_SpatialCullingOcclusionFarPlane("Spatial.Occlusion.FarPlane", 50.0f, xiiCVarFlags::Default, "Far plane distance for finding occluders.");
 
 xiiRenderPipeline::xiiRenderPipeline()
@@ -50,12 +48,7 @@ xiiRenderPipeline::xiiRenderPipeline()
 
 xiiRenderPipeline::~xiiRenderPipeline()
 {
-  if (!m_hOcclusionDebugViewTexture.IsInvalidated())
-  {
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-    pDevice->DestroyTexture(m_hOcclusionDebugViewTexture);
-    m_hOcclusionDebugViewTexture.Invalidate();
-  }
+  m_pOcclusionDebugViewTexture.Clear();
 
   m_Data[0].Clear();
   m_Data[1].Clear();
@@ -505,8 +498,6 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
   m_ConnectionToTextureIndex.Clear();
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
   // Gather all connections that share the same path-through texture and their first and last usage pass index.
   for (xiiUInt16 i = 0; i < static_cast<xiiUInt16>(m_Passes.GetCount()); ++i)
   {
@@ -588,15 +579,15 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
     if (pTextureProvider)
     {
-      auto                    pPass        = xiiDynamicCast<xiiRenderPipelinePass*>(pTextureProvider->m_pParent);
-      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
-      if (hTextureView.IsInvalidated())
+      auto                            pPass        = xiiDynamicCast<xiiRenderPipelinePass*>(pTextureProvider->m_pParent);
+      xiiSharedPtr<xiiGALTextureView> pTextureView = pPass->QueryTextureProvider(pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
+      if (!pTextureView)
       {
         // In this case, e.g. xiiTargetPass does not provide a render target for the connection but if the descriptor is set, we can instead use the pool to supplement the missing texture later.
         textureUsageData.m_pTextureProvider = nullptr;
         for (auto pUsedByConnection : textureUsageData.m_UsedBy)
         {
-          pUsedByConnection->m_TextureHandle.Invalidate();
+          pUsedByConnection->m_pTexture.Clear();
         }
       }
       else
@@ -604,7 +595,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
         textureUsageData.m_pTextureProvider = pTextureProvider;
         for (auto pUsedByConnection : textureUsageData.m_UsedBy)
         {
-          pUsedByConnection->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
+          pUsedByConnection->m_pTexture = pTextureView->GetTexture();
         }
       }
     }
@@ -832,10 +823,7 @@ void xiiRenderPipeline::ClearRenderPassGraphTextures()
       if (pConnection)
       {
         pConnection->m_TextureDescription = xiiGALTextureCreationDescription();
-        if (!pConnection->m_TextureHandle.IsInvalidated())
-        {
-          pConnection->m_TextureHandle.Invalidate();
-        }
+        pConnection->m_pTexture.Clear();
       }
     }
   }
@@ -1024,7 +1012,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
       const xiiSimdVec4f c     = aabb.GetCenter();
       const xiiSimdVec4f e     = aabb.GetHalfExtents();
-      const xiiSimdBBox  aabb2 = xiiSimdBBox::MakeFromCenterAndHalfExtents(c, e.CompMul(xiiSimdVec4f(1.0f + cvar_SpatialCullingOcclusionBoundsInlation)));
+      const xiiSimdBBox  aabb2 = xiiSimdBBox::MakeFromCenterAndHalfExtents(c, e.CompMul(xiiSimdVec4f(1.0f + cvar_SpatialCullingOcclusionBoundsInflation)));
 
       return !pRasterizer->IsVisible(aabb2);
     };
@@ -1098,11 +1086,11 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   XII_ASSERT_DEV(m_uiLastRenderFrame != xiiRenderWorld::GetFrameCounter(), "Render must not be called multiple times per frame.");
   m_uiLastRenderFrame = xiiRenderWorld::GetFrameCounter();
 
-  xiiSharedPtr<xiiGALDevice>      pDevice    = xiiGALDevice::GetDefaultDevice();
-  auto&              data       = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
-  const xiiCamera*   pCamera    = &data.GetCamera();
-  const xiiCamera*   pLodCamera = &data.GetLodCamera();
-  const xiiViewData* pViewData  = &data.GetViewData();
+  xiiSharedPtr<xiiGALDevice> pDevice    = xiiGALDevice::GetDefaultDevice();
+  auto&                      data       = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
+  const xiiCamera*           pCamera    = &data.GetCamera();
+  const xiiCamera*           pLodCamera = &data.GetLodCamera();
+  const xiiViewData*         pViewData  = &data.GetViewData();
 
   auto& gc = pRenderContext->WriteGlobalConstants();
   for (xiiInt32 i = 0; i < 2; ++i)
@@ -1193,11 +1181,11 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
       if (!textureUsageData.m_pTextureProvider)
         continue;
 
-      auto                    pPass        = static_cast<xiiRenderPipelinePass*>(textureUsageData.m_pTextureProvider->m_pParent);
-      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(textureUsageData.m_pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
+      auto                            pPass        = static_cast<xiiRenderPipelinePass*>(textureUsageData.m_pTextureProvider->m_pParent);
+      xiiSharedPtr<xiiGALTextureView> pTextureView = pPass->QueryTextureProvider(textureUsageData.m_pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
       for (xiiRenderPipelinePassConnection* pUsedByConnection : textureUsageData.m_UsedBy)
       {
-        pUsedByConnection->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
+        pUsedByConnection->m_pTexture = pTextureView->GetTexture();
       }
     }
 
@@ -1216,11 +1204,11 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         TextureUsageData& usageData          = m_TextureUsage[uiCurrentUsageData];
         if (usageData.m_uiFirstUsageIdx == i)
         {
-          xiiGALTextureHandle hTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(usageData.m_UsedBy[0]->m_TextureDescription);
-          XII_ASSERT_DEV(!hTexture.IsInvalidated(), "GPU pool returned an invalidated texture!");
+          xiiSharedPtr<xiiGALTexture> pTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(usageData.m_UsedBy[0]->m_TextureDescription);
+          XII_ASSERT_DEV(pTexture != nullptr, "GPU pool returned an invalidated texture!");
           for (xiiRenderPipelinePassConnection* pConnection : usageData.m_UsedBy)
           {
-            pConnection->m_TextureHandle = hTexture;
+            pConnection->m_pTexture = pTexture;
           }
           ++uiCurrentFirstUsageIdx;
         }
@@ -1251,10 +1239,10 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         TextureUsageData& usageData          = m_TextureUsage[uiCurrentUsageData];
         if (usageData.m_uiLastUsageIdx == i)
         {
-          xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(usageData.m_UsedBy[0]->m_TextureHandle);
+          xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(usageData.m_UsedBy[0]->m_pTexture);
           for (xiiRenderPipelinePassConnection* pConnection : usageData.m_UsedBy)
           {
-            pConnection->m_TextureHandle.Invalidate();
+            pConnection->m_pTexture.Clear();
           }
           ++uiCurrentLastUsageIdx;
         }
@@ -1426,55 +1414,55 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   // so either this has to be done elsewhere, or nested passes have to be allowed
   if (false)
   {
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
     // check whether we need to re-create the texture
-    if (!m_hOcclusionDebugViewTexture.IsInvalidated())
+    if (m_pOcclusionDebugViewTexture)
     {
-      const xiiGALTexture* pTexture = pDevice->GetTexture(m_hOcclusionDebugViewTexture);
+      const auto& textureDescription = m_pOcclusionDebugViewTexture->GetDescription();
 
-      if (pTexture->GetDescription().m_Size.width != uiImgWidth || pTexture->GetDescription().m_Size.height != uiImgHeight)
+      if (textureDescription.m_Size.width != uiImgWidth || textureDescription.m_Size.height != uiImgHeight)
       {
-        pDevice->DestroyTexture(m_hOcclusionDebugViewTexture);
-        m_hOcclusionDebugViewTexture.Invalidate();
+        m_pOcclusionDebugViewTexture.Clear();
       }
     }
 
-    // create the texture
-    if (m_hOcclusionDebugViewTexture.IsInvalidated())
-    {
-      xiiGALTextureCreationDescription desc;
-      desc.m_Type           = xiiGALResourceDimension::Texture2D;
-      desc.m_Size.width     = uiImgWidth;
-      desc.m_Size.height    = uiImgHeight;
-      desc.m_Format         = xiiGALResourceFormat::RGBA8UNormalized;
-      desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-      desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
-      desc.m_Usage          = xiiGALResourceUsage::Default;
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-      m_hOcclusionDebugViewTexture = pDevice->CreateTexture(desc);
+    // create the texture
+    if (m_pOcclusionDebugViewTexture)
+    {
+      xiiGALTextureCreationDescription textureDescription;
+      textureDescription.m_Type           = xiiGALResourceDimension::Texture2D;
+      textureDescription.m_Size.width     = uiImgWidth;
+      textureDescription.m_Size.height    = uiImgHeight;
+      textureDescription.m_Format         = xiiGALResourceFormat::RGBA8UNormalized;
+      textureDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      textureDescription.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+      textureDescription.m_Usage          = xiiGALResourceUsage::Default;
+
+      m_pOcclusionDebugViewTexture = pDevice->CreateTexture(textureDescription);
     }
 
     // upload the image to the texture
     {
       xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
       auto                pCommandList     = pGALCommandQueue->BeginCommandList();
-      pCommandList->BeginDebugGroup("RasterizerDebugViewUpdate");
+      {
+        xiiGALScopedDebugGroup debugGroup(pCommandList, "RasterizerDebugViewUpdate");
 
-      xiiBoundingBoxU32 destBox;
-      destBox.m_vMin.SetZero();
-      destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
+        xiiBoundingBoxU32 destBox;
+        destBox.m_vMin.SetZero();
+        destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
 
-      xiiGALTextureSubResourceData sourceData;
-      sourceData.m_pData    = fb.GetByteArrayPtr();
-      sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
+        xiiGALTextureSubResourceData sourceData;
+        sourceData.m_pData    = fb.GetByteArrayPtr();
+        sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
 
-      pCommandList->UpdateTexture(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
-      pCommandList->EndDebugGroup();
+        pCommandList->UpdateTexture(m_pOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+      }
       pCommandList->Submit();
     }
 
-    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, pDevice->GetTexture(m_hOcclusionDebugViewTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
+    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, m_pOcclusionDebugViewTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
   }
   else
   {

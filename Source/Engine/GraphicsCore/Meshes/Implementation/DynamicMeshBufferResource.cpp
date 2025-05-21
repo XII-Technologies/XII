@@ -3,15 +3,11 @@
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicMeshBufferResource, 1, xiiRTTIDefaultAllocator<xiiDynamicMeshBufferResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDynamicMeshBufferResource);
-// clang-format on
 
 xiiDynamicMeshBufferResource::xiiDynamicMeshBufferResource() :
   xiiResource(DoUpdate::OnGraphicsResourceThreads, 1)
@@ -117,8 +113,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     m_VertexDeclaration.ComputeHash();
   }
 
-  xiiSharedPtr<xiiGALDevice>    pDevice = xiiGALDevice::GetDefaultDevice();
-  xiiStringBuilder sName;
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiStringBuilder           sName;
   {
     xiiGALBufferCreationDescription vertexDesc;
     vertexDesc.m_uiStructSize                = sizeof(xiiDynamicMeshVertex);

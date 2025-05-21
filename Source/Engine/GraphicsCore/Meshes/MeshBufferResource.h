@@ -142,9 +142,9 @@ public:
 
   XII_ALWAYS_INLINE xiiUInt32 GetPrimitiveCount() const { return m_uiPrimitiveCount; }
 
-  XII_ALWAYS_INLINE xiiGALBufferHandle GetVertexBuffer() const { return m_hVertexBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetVertexBuffer() const { return m_pVertexBuffer; }
 
-  XII_ALWAYS_INLINE xiiGALBufferHandle GetIndexBuffer() const { return m_hIndexBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetIndexBuffer() const { return m_pIndexBuffer; }
 
   XII_ALWAYS_INLINE xiiEnum<xiiGALPrimitiveTopology> GetTopology() const { return m_Topology; }
 
@@ -162,7 +162,7 @@ private:
   xiiBoundingBoxSphere             m_Bounds;
   xiiInputLayoutInfo               m_InputLayout;
   xiiUInt32                        m_uiPrimitiveCount = 0;
-  xiiGALBufferHandle               m_hVertexBuffer;
-  xiiGALBufferHandle               m_hIndexBuffer;
+  xiiSharedPtr<xiiGALBuffer>       m_pVertexBuffer;
+  xiiSharedPtr<xiiGALBuffer>       m_pIndexBuffer;
   xiiEnum<xiiGALPrimitiveTopology> m_Topology;
 };

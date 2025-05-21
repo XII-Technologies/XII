@@ -64,7 +64,6 @@ public:
   float GetOcclusionFalloff() const;
   void  SetOcclusionFalloff(float fFalloff);
 
-
 protected:
   /// Destroys all GPU data that might have been created in in SetupLineSweepData
   void DestroyLineSweepData();
@@ -81,13 +80,13 @@ protected:
   bool m_bConstantsDirty = true;
 
   /// Output of the line sweep pass.
-  xiiGALBufferHandle     m_hLineSweepOutputBuffer;
-  xiiGALBufferViewHandle m_hLineSweepOutputUAV;
-  xiiGALBufferViewHandle m_hLineSweepOutputSRV;
+  xiiSharedPtr<xiiGALBuffer>     m_pLineSweepOutputBuffer;
+  xiiSharedPtr<xiiGALBufferView> m_pLineSweepOutputUAV;
+  xiiSharedPtr<xiiGALBufferView> m_pLineSweepOutputSRV;
 
   /// Structured buffer containing instructions for every single line to trace.
-  xiiGALBufferHandle     m_hLineInfoBuffer;
-  xiiGALBufferViewHandle m_hLineSweepInfoSRV;
+  xiiSharedPtr<xiiGALBuffer>     m_pLineInfoBuffer;
+  xiiSharedPtr<xiiGALBufferView> m_pLineSweepInfoSRV;
 
   /// Total number of lines to be traced.
   xiiUInt32 m_uiNumSweepLines = 0;

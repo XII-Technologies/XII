@@ -22,7 +22,7 @@ struct xiiRenderPipelinePassConnection
   }
 
   xiiGALTextureCreationDescription                   m_TextureDescription;
-  xiiGALTextureHandle                                m_TextureHandle;
+  xiiSharedPtr<xiiGALTexture>                        m_pTexture;
   const xiiRenderPipelineNodePin*                    m_pOutput; ///< The output pin that this connection spawns from.
   xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;  ///< The various input pins this connection is connected to.
 };
@@ -54,7 +54,7 @@ public:
   /// \param pPin - The member pin for which the texture is requested.
   /// \param desc - The format of the texture that should be provided.
   /// \return The texture view to use for this pin's connections. Or invalid, in which case it reverts to a regular input / output pin.
-  virtual xiiGALTextureViewHandle QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) { return {}; }
+  virtual xiiSharedPtr<xiiGALTextureView> QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) { return {}; }
 
   /// \brief After GetRenderTargetDescriptions was called successfully for each pass, this function is called
   /// with the inputs and outputs for review. Disconnected pins have a nullptr value in the passed in arrays.

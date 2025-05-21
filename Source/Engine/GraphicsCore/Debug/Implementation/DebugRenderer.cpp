@@ -1837,8 +1837,8 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
   // update the frame counter
   pDoubleBufferedContextData->m_uiLastRenderedFrame = xiiRenderWorld::GetFrameCounter();
 
-  xiiSharedPtr<xiiGALDevice>      pDevice         = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
+  xiiSharedPtr<xiiGALDevice> pDevice         = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandList*         pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
 
   // 2D Lines
   {

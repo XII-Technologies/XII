@@ -9,8 +9,6 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
-#include <GraphicsFoundation/Resources/Texture.h>
-
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 1, xiiRTTINoAllocator)
 {
@@ -104,18 +102,16 @@ xiiResult xiiForwardRenderPass::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
   if (inputs[m_PinColor.m_uiInputIndex])
   {
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(inputs[m_PinColor.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, inputs[m_PinColor.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
 
   if (inputs[m_PinDepthStencil.m_uiInputIndex])
   {
-    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(inputs[m_PinDepthStencil.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(inputs[m_PinDepthStencil.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   }
 
   renderViewContext.m_pRenderContext->BeginRendering(std::move(renderingSetup), renderViewContext.m_pViewData->m_ViewPortRect, "", renderViewContext.m_pCamera->IsStereoscopic());

@@ -22,8 +22,8 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
 {
   // Don't call base class implementation here since the state will be overwritten in this method anyways.
 
-  xiiSharedPtr<xiiGALDevice>     pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
+  xiiSharedPtr<xiiGALDevice> pDevice  = xiiGALDevice::GetDefaultDevice();
+  xiiRenderContext*          pContext = renderViewContext.m_pRenderContext;
 
   auto pSkinnedRenderData = static_cast<const xiiSkinnedMeshRenderData*>(pRenderData);
 

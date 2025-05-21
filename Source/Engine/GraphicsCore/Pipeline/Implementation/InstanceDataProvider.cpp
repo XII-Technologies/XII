@@ -20,18 +20,14 @@ xiiInstanceData::xiiInstanceData(xiiUInt32 uiMaxInstanceCount /*= 1024*/)
 
 xiiInstanceData::~xiiInstanceData()
 {
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  pDevice->DestroyBuffer(m_hInstanceDataBuffer);
-
   xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
+
+  m_pInstanceDataBuffer.Clear();
 }
 
 void xiiInstanceData::BindResources(xiiRenderContext* pRenderContext)
 {
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  pRenderContext->BindBuffer("perInstanceData", pDevice->GetBuffer(m_hInstanceDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("perInstanceData", m_pInstanceDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pRenderContext->BindConstantBuffer("xiiObjectConstants", m_hConstantBuffer);
 }
 
@@ -55,7 +51,7 @@ void xiiInstanceData::UpdateInstanceData(xiiGALCommandList* pCommandList, xiiUIn
   auto                        pSourceData  = m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
   xiiBitflags<xiiGALMapFlags> mapFlags     = (m_uiBufferOffset == 0) ? xiiGALMapFlags::Discard : xiiGALMapFlags::NoOverWrite;
 
-  xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray()).AssertSuccess();
+  xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_pInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray()).AssertSuccess();
 
   xiiObjectConstants* pConstants = xiiRenderContext::GetConstantBufferData<xiiObjectConstants>(m_hConstantBuffer);
   pConstants->InstanceDataOffset = m_uiBufferOffset;
@@ -78,7 +74,7 @@ void xiiInstanceData::CreateBuffer(xiiUInt32 uiSize)
   bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
   bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-  m_hInstanceDataBuffer = pDevice->CreateBuffer(bufferDescription);
+  m_pInstanceDataBuffer = pDevice->CreateBuffer(bufferDescription);
 }
 
 void xiiInstanceData::Reset()

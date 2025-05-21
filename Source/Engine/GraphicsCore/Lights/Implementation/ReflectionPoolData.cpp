@@ -7,8 +7,6 @@
 #include <GraphicsCore/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Lights/SphereReflectionProbeComponent.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 //////////////////////////////////////////////////////////////////////////
 /// xiiReflectionPool::Data

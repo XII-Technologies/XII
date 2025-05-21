@@ -35,7 +35,7 @@ protected:
   xiiUInt32 m_uiSpecularOutputIndex   = 0;
   xiiUInt32 m_uiIrradianceOutputIndex = 0;
 
-  xiiGALTextureHandle m_hInputCubemap;
+  xiiSharedPtr<xiiGALTexture> m_pInputCubemap;
 
   xiiConstantBufferStorageHandle m_hFilteredSpecularConstantBuffer;
   xiiShaderResourceHandle        m_hFilteredSpecularShader;

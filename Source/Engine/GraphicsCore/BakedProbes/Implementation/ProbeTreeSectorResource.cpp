@@ -56,7 +56,8 @@ xiiResult xiiProbeTreeSectorResourceDescriptor::Deserialize(xiiStreamReader& ino
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProbeTreeSectorResource, 1, xiiRTTIDefaultAllocator<xiiProbeTreeSectorResource>);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProbeTreeSectorResource, 1, xiiRTTIDefaultAllocator<xiiProbeTreeSectorResource>)
+  ;
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiProbeTreeSectorResource);

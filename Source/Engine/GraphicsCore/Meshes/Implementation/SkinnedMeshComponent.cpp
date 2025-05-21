@@ -4,8 +4,6 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/Types.h>
 
 // clang-format off

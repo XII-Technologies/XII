@@ -2,8 +2,6 @@
 
 #include <GraphicsCore/Lights/Implementation/ReflectionPoolData.h>
 #include <GraphicsCore/Lights/Implementation/ReflectionProbeMapping.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   m_uiAtlasSize(uiAtlasSize)

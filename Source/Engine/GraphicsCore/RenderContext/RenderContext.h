@@ -5,9 +5,6 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Strings/String.h>
 
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 
@@ -334,8 +331,8 @@ private:
 
   xiiBitflags<xiiShaderBindFlags> m_ShaderBindFlags;
 
-  xiiSharedPtr<xiiGALBuffer>               m_hVertexBuffers[4];
-  xiiSharedPtr<xiiGALBuffer>               m_hIndexBuffer;
+  xiiSharedPtr<xiiGALBuffer>       m_hVertexBuffers[4];
+  xiiSharedPtr<xiiGALBuffer>       m_hIndexBuffer;
   xiiGALInputLayoutHandle          m_hInputLayout;
   const xiiInputLayoutInfo*        m_pInputLayoutInfo = nullptr;
   xiiEnum<xiiGALPrimitiveTopology> m_Topology;
@@ -355,13 +352,13 @@ private:
       Texture
     };
 
-    Enum                    m_Type = Invalid;
+    Enum                            m_Type = Invalid;
     xiiSharedPtr<xiiGALBufferView>  m_hBufferView;
     xiiSharedPtr<xiiGALTextureView> m_hTextureView;
   };
 
-  xiiHashTable<xiiUInt64, ResourceBinding>     m_BoundResources;
-  xiiHashTable<xiiUInt64, ResourceBinding>     m_BoundUAVs;
+  xiiHashTable<xiiUInt64, ResourceBinding>             m_BoundResources;
+  xiiHashTable<xiiUInt64, ResourceBinding>             m_BoundUAVs;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALSampler>> m_BoundSamplers;
 
   struct BoundConstantBuffer
@@ -378,7 +375,7 @@ private:
     {
     }
 
-    xiiSharedPtr<xiiGALBuffer>             m_hConstantBuffer;
+    xiiSharedPtr<xiiGALBuffer>     m_hConstantBuffer;
     xiiConstantBufferStorageHandle m_hConstantBufferStorage;
   };
 

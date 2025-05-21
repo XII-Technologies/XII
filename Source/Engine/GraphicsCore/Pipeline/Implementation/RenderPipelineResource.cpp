@@ -33,7 +33,7 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResource::CreateRen
     return xiiInternal::NewInstance<xiiRenderPipeline>(nullptr, nullptr);
   }
 
-  return xiiRenderPipelineResourceLoader::CreateRenderPipeline(m_Desc);
+  return xiiRenderPipelineResourceLoader::CreateRenderPipeline(m_Description);
 }
 
 // static
@@ -74,7 +74,7 @@ xiiRenderPipelineResourceHandle xiiRenderPipelineResource::CreateMissingPipeline
 
 xiiResourceLoadDesc xiiRenderPipelineResource::UnloadData(Unload WhatToUnload)
 {
-  m_Desc.Clear();
+  m_Description.Clear();
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -86,7 +86,7 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* Stream)
 {
-  m_Desc.Clear();
+  m_Description.Clear();
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -124,8 +124,8 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
     xiiUInt32 uiSize = 0;
     (*Stream) >> uiSize;
 
-    m_Desc.m_SerializedPipeline.SetCountUninitialized(uiSize);
-    Stream->ReadBytes(m_Desc.m_SerializedPipeline.GetData(), uiSize);
+    m_Description.m_SerializedPipeline.SetCountUninitialized(uiSize);
+    Stream->ReadBytes(m_Description.m_SerializedPipeline.GetData(), uiSize);
 
     XII_ASSERT_DEV(uiSize > 0, "RenderPipeline resourse contains no pipeline data!");
   }
@@ -139,14 +139,14 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
 
 void xiiRenderPipelineResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
-  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiRenderPipelineResource) + (xiiUInt32)(m_Desc.m_SerializedPipeline.GetCount());
+  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiRenderPipelineResource) + (xiiUInt32)(m_Description.m_SerializedPipeline.GetCount());
 
   out_NewMemoryUsage.m_uiMemoryGPU = 0;
 }
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineResourceDescriptor)
 {
-  m_Desc = descriptor;
+  m_Description = descriptor;
 
   xiiResourceLoadDesc res;
   res.m_State                      = xiiResourceState::Loaded;

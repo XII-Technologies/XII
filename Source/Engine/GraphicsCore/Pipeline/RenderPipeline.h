@@ -150,5 +150,5 @@ private: // Member data
   xiiDynamicArray<xiiPermutationVar> m_PermutationVars;
 
   // Occlusion Culling
-  xiiGALTextureHandle m_hOcclusionDebugViewTexture;
+  xiiSharedPtr<xiiGALTexture> m_pOcclusionDebugViewTexture;
 };

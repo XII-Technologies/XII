@@ -51,7 +51,7 @@ xiiGALTextureHandle xiiHistorySourcePassTextureDataProvider::GetOrCreateTexture(
   if (!bExisted)
   {
     xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-    hTexture              = pDevice->CreateTexture(desc);
+    hTexture                           = pDevice->CreateTexture(desc);
     if (hTexture.IsInvalidated())
     {
       xiiLog::Error("Failed to create history source pass texture.");
@@ -96,9 +96,9 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
   m_bFirstExecute = false;
 
   xiiSharedPtr<xiiGALDevice> pDevice              = xiiGALDevice::GetDefaultDevice();
-  bool          bRecreateRenderPass  = true;
-  bool          bRecreateFramebuffer = true;
-  const bool    bIsDepthAttachment   = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
+  bool                       bRecreateRenderPass  = true;
+  bool                       bRecreateFramebuffer = true;
+  const bool                 bIsDepthAttachment   = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 
   if (!m_hRenderPass.IsInvalidated())
   {

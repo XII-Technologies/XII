@@ -11,7 +11,6 @@
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Shader/Types.h>
 
 xiiCVarBool cvar_FeatureRopesVisBones("Feature.Ropes.VisBones", false, xiiCVarFlags::Default, "Enables debug visualization of rope bones");

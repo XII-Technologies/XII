@@ -49,7 +49,7 @@ protected:
 
   xiiTexture2DResourceHandle m_hNoiseTexture;
 
-  xiiGALSamplerHandle m_hSSAOSampler;
+  xiiSharedPtr<xiiGALSampler> m_pSSAOSampler;
 
   xiiShaderResourceHandle m_hDownscaleShader;
   xiiShaderResourceHandle m_hSSAOShader;

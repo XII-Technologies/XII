@@ -13,7 +13,6 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <RendererFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 3, xiiComponentMode::Static)
@@ -26,7 +25,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 3, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Color", GetColor, SetColor)->AddAttributes(new xiiExposeColorAlphaAttribute()),
-    XII_ACCESSOR_PROPERTY("CustomData", GetCustomData, SetCustomData)->AddAttributes(new xiiDefaultValueAttribute(xiiVec4(0, 1, 0, 1))),
     XII_RESOURCE_MEMBER_PROPERTY("Material", m_hMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material")),
   }
   XII_END_PROPERTIES;
@@ -35,8 +33,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 3, xiiComponentMode::Static)
     XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
     XII_MESSAGE_HANDLER(xiiMsgSetMeshMaterial, OnMsgSetMeshMaterial),
     XII_MESSAGE_HANDLER(xiiMsgSetColor, OnMsgSetColor),
-    XII_MESSAGE_HANDLER(xiiMsgSetCustomData, OnMsgSetCustomData),
-  } XII_END_MESSAGEHANDLERS;
+  }
+  XII_END_MESSAGEHANDLERS;
 }
 XII_END_COMPONENT_TYPE
 // clang-format on

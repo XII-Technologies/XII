@@ -54,6 +54,6 @@ protected:
   float                                   m_fDepthClearValue                = 1.0f;
   xiiUInt8                                m_uiStencilClearValue             = 0U;
 
-  xiiGALRenderPassHandle  m_hRenderPass;
-  xiiGALFramebufferHandle m_hFramebuffer;
+  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
 };

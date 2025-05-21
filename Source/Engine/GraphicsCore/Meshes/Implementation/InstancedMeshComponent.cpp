@@ -10,9 +10,6 @@
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/ObjectConstants.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMeshInstanceData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMeshInstanceData>)

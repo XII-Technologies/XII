@@ -3,17 +3,13 @@
 #include <Core/Graphics/Geometry.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshBufferResource, 1, xiiRTTIDefaultAllocator<xiiMeshBufferResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshBufferResource);
-// clang-format on
 
 xiiMeshBufferResourceDescriptor::xiiMeshBufferResourceDescriptor()
 {
@@ -518,27 +514,18 @@ xiiMeshBufferResource::xiiMeshBufferResource() :
 
 xiiMeshBufferResource::~xiiMeshBufferResource()
 {
-  XII_ASSERT_DEBUG(m_hVertexBuffer.IsInvalidated(), "Implementation error");
-  XII_ASSERT_DEBUG(m_hIndexBuffer.IsInvalidated(), "Implementation error");
+  XII_ASSERT_DEBUG(m_pVertexBuffer == nullptr, "Implementation error");
+  XII_ASSERT_DEBUG(m_pIndexBuffer == nullptr, "Implementation error");
 }
 
 xiiResourceLoadDesc xiiMeshBufferResource::UnloadData(Unload WhatToUnload)
 {
-  if (!m_hVertexBuffer.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyBuffer(m_hVertexBuffer);
-    m_hVertexBuffer.Invalidate();
-  }
-
-  if (!m_hIndexBuffer.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyBuffer(m_hIndexBuffer);
-    m_hIndexBuffer.Invalidate();
-  }
+  m_pVertexBuffer.Clear();
+  m_pIndexBuffer.Clear();
 
   m_uiPrimitiveCount = 0;
 
-  // we cannot compute this in UpdateMemoryUsage(), so we only read the data there, therefore we need to update this information here
+  // We cannot compute this in UpdateMemoryUsage(), so we only read the data there, therefore we need to update this information here.
   ModifyMemoryUsage().m_uiMemoryGPU = 0;
 
   xiiResourceLoadDesc res;
@@ -566,8 +553,8 @@ void xiiMeshBufferResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDescriptor)
 {
-  XII_ASSERT_DEBUG(m_hVertexBuffer.IsInvalidated(), "Implementation error");
-  XII_ASSERT_DEBUG(m_hIndexBuffer.IsInvalidated(), "Implementation error");
+  XII_ASSERT_DEBUG(m_pVertexBuffer == nullptr, "Implementation error");
+  XII_ASSERT_DEBUG(m_pIndexBuffer == nullptr, "Implementation error");
 
   m_InputLayout = descriptor.GetInputLayout();
   m_InputLayout.ComputeHash();
@@ -577,19 +564,19 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  m_hVertexBuffer = xiiGALDeviceUtilities::CreateVertexBuffer(pDevice, descriptor.GetVertexDataSize(), descriptor.GetVertexCount(), descriptor.GetVertexBufferData().GetArrayPtr());
+  m_pVertexBuffer = xiiGALDeviceUtilities::CreateVertexBuffer(pDevice, descriptor.GetVertexDataSize(), descriptor.GetVertexCount(), descriptor.GetVertexBufferData().GetArrayPtr());
 
   xiiStringBuilder sName;
   sName.SetFormat("{0} Vertex Buffer", GetResourceDescription());
-  pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
+  m_pVertexBuffer->SetDebugName(sName);
 
   if (descriptor.HasIndexBuffer())
   {
     const xiiUInt32 uiIndexCount = xiiGALPrimitiveTopology::GetIndexCount(m_Topology, m_uiPrimitiveCount);
-    m_hIndexBuffer               = xiiGALDeviceUtilities::CreateIndexBuffer(pDevice, descriptor.Uses32BitIndices() ? xiiGALDeviceUtilities::IndexType::UInt : xiiGALDeviceUtilities::IndexType::UShort, uiIndexCount, descriptor.GetIndexBufferData());
+    m_pIndexBuffer               = xiiGALDeviceUtilities::CreateIndexBuffer(pDevice, descriptor.Uses32BitIndices() ? xiiGALDeviceUtilities::IndexType::UInt : xiiGALDeviceUtilities::IndexType::UShort, uiIndexCount, descriptor.GetIndexBufferData());
 
     sName.SetFormat("{0} Index Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
+    m_pIndexBuffer->SetDebugName(sName);
 
     // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again
     ModifyMemoryUsage().m_uiMemoryGPU = descriptor.GetVertexBufferData().GetCount() + descriptor.GetIndexBufferData().GetCount();

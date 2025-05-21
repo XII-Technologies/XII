@@ -5,7 +5,6 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -41,10 +40,8 @@ void xiiMsgSetMeshMaterial::Deserialize(xiiStreamReader& inout_stream, xiiUInt8 
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiMeshRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiMeshRenderData::FillSortingKey()
 {
@@ -80,7 +77,8 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 4)
     XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
     XII_MESSAGE_HANDLER(xiiMsgSetMeshMaterial, OnMsgSetMeshMaterial),
     XII_MESSAGE_HANDLER(xiiMsgSetColor, OnMsgSetColor),
-  } XII_END_MESSAGEHANDLERS;
+  }
+  XII_END_MESSAGEHANDLERS;
 }
 XII_END_ABSTRACT_COMPONENT_TYPE;
 // clang-format on

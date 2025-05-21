@@ -3,8 +3,6 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Core/World/Declarations.h>
-#include <Foundation/Reflection/Reflection.h>
-#include <GraphicsFoundation/Declarations/Descriptors.h>
 
 class xiiCamera;
 class xiiExtractedRenderData;
@@ -37,7 +35,7 @@ namespace xiiInternal
 
     XII_ALWAYS_INLINE bool operator==(const RenderDataCacheEntry& other) const { return m_pRenderData == other.m_pRenderData && m_uiCategory == other.m_uiCategory && m_uiComponentIndex == other.m_uiComponentIndex && m_uiPartIndex == other.m_uiPartIndex; }
 
-    // Cache entries need to be sorted by component index and then by part index
+    /// \brief Cache entries need to be sorted by component index and then by part index.
     XII_ALWAYS_INLINE bool operator<(const RenderDataCacheEntry& other) const
     {
       if (m_uiComponentIndex == other.m_uiComponentIndex)

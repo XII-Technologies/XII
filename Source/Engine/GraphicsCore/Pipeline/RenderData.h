@@ -21,7 +21,8 @@ public:
     explicit Category(xiiUInt16 uiValue);
 
     bool operator==(const Category& other) const;
-    bool IsValid() const { return m_uiValue != 0xFFFF; }
+
+    XII_ALWAYS_INLINE bool IsValid() const { return m_uiValue != 0xFFFF; }
 
     xiiUInt16 m_uiValue = 0xFFFF;
   };
