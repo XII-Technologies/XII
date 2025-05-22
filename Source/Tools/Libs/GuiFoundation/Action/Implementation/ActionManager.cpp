@@ -62,7 +62,7 @@ xiiActionDescriptorHandle xiiActionManager::RegisterAction(const xiiActionDescri
 
   auto it = s_CategoryPathToActions.FindOrAdd(pDesc->m_sCategoryPath);
   it.Value().m_Actions.Insert(hType);
-  it.Value().m_ActionNameToHandle[pDesc->m_sActionName.GetData()] = hType;
+  it.Value().m_ActionNameToHandle[pDesc->m_sActionName] = hType;
 
   {
     Event msg;

@@ -1,10 +1,10 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/PropertyGrid/DynamicEnumPropertyWidget.moc.h>
+#include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/UIServices/DynamicEnums.h>
 
-xiiQtDynamicEnumPropertyWidget::xiiQtDynamicEnumPropertyWidget() :
-  xiiQtStandardPropertyWidget()
+xiiQtDynamicEnumPropertyWidget::xiiQtDynamicEnumPropertyWidget() : xiiQtStandardPropertyWidget()
 {
   m_pLayout = new QHBoxLayout(this);
   m_pLayout->setContentsMargins(0, 0, 0, 0);
@@ -24,14 +24,19 @@ void xiiQtDynamicEnumPropertyWidget::OnInit()
 
   const xiiDynamicEnumAttribute* pAttr = m_pProp->GetAttributeByType<xiiDynamicEnumAttribute>();
 
-  const auto& denum     = xiiDynamicEnum::GetDynamicEnum(pAttr->GetDynamicEnumName());
-  const auto& AllValues = denum.GetAllValidValues();
+  m_pDynamicEnum            = &xiiDynamicEnum::GetDynamicEnum(pAttr->GetDynamicEnumName());
+  const auto& allEnumValues = m_pDynamicEnum->GetAllValidValues();
 
   xiiQtScopedBlockSignals bs(m_pWidget);
 
-  for (auto it = AllValues.GetIterator(); it.IsValid(); ++it)
+  for (auto it = allEnumValues.GetIterator(); it.IsValid(); ++it)
   {
     m_pWidget->addItem(QString::fromUtf8(it.Value().GetData()), it.Key());
+  }
+
+  if (!m_pDynamicEnum->GetEditCommand().IsEmpty())
+  {
+    m_pWidget->addItem("< Edit Values... >", QString("<cmd>"));
   }
 }
 
@@ -41,18 +46,29 @@ void xiiQtDynamicEnumPropertyWidget::InternalSetValue(const xiiVariant& value)
 
   if (value.IsValid())
   {
-    xiiInt32 iIndex = m_pWidget->findData(value.ConvertTo<xiiInt64>());
-    // XII_ASSERT_DEV(iIndex != -1, "Enum widget is set to an invalid value!"); // 'invalid value'
-    m_pWidget->setCurrentIndex(iIndex);
+    m_iLastIndex = m_pWidget->findData(value.ConvertTo<xiiInt64>());
   }
   else
   {
-    m_pWidget->setCurrentIndex(-1);
+    m_iLastIndex = -1;
   }
+
+  m_pWidget->setCurrentIndex(m_iLastIndex);
 }
 
 void xiiQtDynamicEnumPropertyWidget::on_CurrentEnum_changed(int iEnum)
 {
+  if (m_pWidget->currentData() == QString("<cmd>"))
+  {
+    iEnum = m_iLastIndex;
+    m_pWidget->setCurrentIndex(iEnum);
+
+    xiiActionManager::ExecuteAction({}, m_pDynamicEnum->GetEditCommand(), xiiActionContext(const_cast<xiiDocument*>(m_pGrid->GetDocument())), m_pDynamicEnum->GetEditCommandValue()).AssertSuccess();
+
+    return;
+  }
+
+  m_iLastIndex    = m_pWidget->currentIndex();
   xiiInt64 iValue = m_pWidget->itemData(iEnum).toLongLong();
   BroadcastValueChanged(iValue);
 }
