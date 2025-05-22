@@ -2,7 +2,6 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
-#include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Color8UNorm.h>
@@ -12,7 +11,6 @@
 #include <Foundation/SimdMath/SimdBBox.h>
 #include <Foundation/Time/Clock.h>
 #include <Foundation/Utilities/DGMLWriter.h>
-#include <GraphicsCore/Components/AlwaysVisibleComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Extractor.h>
@@ -21,8 +19,8 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Rasterizer/RasterizerView.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 xiiCVarBool xiiRenderPipeline::cvar_SpatialCullingVis("Spatial.Culling.Vis", false, xiiCVarFlags::Default, "Enables debug visualization of visibility culling");
@@ -54,6 +52,7 @@ xiiRenderPipeline::~xiiRenderPipeline()
   m_Data[1].Clear();
 
   ClearRenderPassGraphTextures();
+
   while (!m_Passes.IsEmpty())
   {
     RemovePass(m_Passes.PeekBack().Borrow());
@@ -818,6 +817,7 @@ void xiiRenderPipeline::ClearRenderPassGraphTextures()
   for (auto it = m_Connections.GetIterator(); it.IsValid(); ++it)
   {
     auto& connection = it.Value();
+
     for (auto pConnection : connection.m_Outputs)
     {
       if (pConnection)
@@ -836,6 +836,7 @@ bool xiiRenderPipeline::AreInputDescriptionsAvailable(const xiiRenderPipelinePas
   for (xiiUInt32 i = 0; i < data.m_Inputs.GetCount(); ++i)
   {
     const xiiRenderPipelinePassConnection* pConnection = data.m_Inputs[i];
+
     if (pConnection != nullptr)
     {
       // If the connections source is not done yet, the connections output is undefined yet and the inputs can't be processed yet.
@@ -857,9 +858,11 @@ bool xiiRenderPipeline::ArePassThroughInputsDone(const xiiRenderPipelinePass* pP
   for (xiiUInt32 i = 0; i < inputs.GetCount(); ++i)
   {
     const xiiRenderPipelineNodePin* pPin = inputs[i];
+
     if (pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough))
     {
       const xiiRenderPipelinePassConnection* pConnection = data.m_Inputs[pPin->m_uiInputIndex];
+
       if (pConnection != nullptr)
       {
         for (const xiiRenderPipelineNodePin* pInputPin : pConnection->m_Inputs)
@@ -1071,9 +1074,8 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 #endif
 }
 
-void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
+void xiiRenderPipeline::Render()
 {
-  // XII_PROFILE_AND_MARKER(pRenderContext->GetCommandList(), m_sName.GetData());
   XII_PROFILE_SCOPE(m_sName.GetData());
 
   XII_ASSERT_DEV(m_PipelineState != PipelineState::Uninitialized, "Pipeline must be rebuild before rendering.");
@@ -1092,6 +1094,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   const xiiCamera*           pLodCamera = &data.GetLodCamera();
   const xiiViewData*         pViewData  = &data.GetViewData();
 
+#ifdef CORE_ENABLE
   auto& gc = pRenderContext->WriteGlobalConstants();
   for (xiiInt32 i = 0; i < 2; ++i)
   {
@@ -1120,15 +1123,16 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
 
   gc.Exposure   = pCamera->GetExposure();
   gc.RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
+#endif
 
   xiiRenderViewContext renderViewContext;
   renderViewContext.m_pCamera            = pCamera;
   renderViewContext.m_pLodCamera         = pLodCamera;
   renderViewContext.m_pViewData          = pViewData;
-  renderViewContext.m_pRenderContext     = pRenderContext;
   renderViewContext.m_pWorldDebugContext = &data.GetWorldDebugContext();
   renderViewContext.m_pViewDebugContext  = &data.GetViewDebugContext();
 
+#ifdef CORE_ENABLE
   // Set camera mode permutation variable here since it doesn't change throughout the frame
   static xiiHashedString sCameraMode  = xiiMakeHashedString("CAMERA_MODE");
   static xiiHashedString sOrtho       = xiiMakeHashedString("CAMERA_MODE_ORTHO");
@@ -1159,6 +1163,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   {
     pRenderContext->SetShaderPermutationVariable(var.m_sName, var.m_sValue);
   }
+#endif
 
   xiiRenderWorldRenderEvent renderEvent;
   renderEvent.m_Type               = xiiRenderWorldRenderEvent::Type::BeforePipelineExecution;
@@ -1170,10 +1175,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     xiiRenderWorld::s_RenderEvent.Broadcast(renderEvent);
   }
 
-  xiiGALCommandQueue* pCommandQueue = pDevice->GetDefaultCommandQueue();
-  xiiGALCommandList*  pCommandList  = pCommandQueue->BeginCommandList();
-
-  pRenderContext->SetCommandList(pCommandList);
   {
     // Update textures from texture providers as these can change every frame (e.g. swap chain textures).
     for (TextureUsageData& textureUsageData : m_TextureUsage)
@@ -1257,17 +1258,12 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     XII_ASSERT_DEV(uiCurrentFirstUsageIdx == m_TextureUsageIdxSortedByFirstUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
     XII_ASSERT_DEV(uiCurrentLastUsageIdx == m_TextureUsageIdxSortedByLastUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
   }
-  pRenderContext->SetCommandList(nullptr);
-
-  pCommandList->Submit();
 
   renderEvent.m_Type = xiiRenderWorldRenderEvent::Type::AfterPipelineExecution;
   {
     XII_PROFILE_SCOPE("AfterPipelineExecution");
     xiiRenderWorld::s_RenderEvent.Broadcast(renderEvent);
   }
-
-  pRenderContext->ResetContextState();
 
   data.Clear();
 
@@ -1428,7 +1424,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
     xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
     // create the texture
-    if (m_pOcclusionDebugViewTexture)
+    if (!m_pOcclusionDebugViewTexture)
     {
       xiiGALTextureCreationDescription textureDescription;
       textureDescription.m_Type           = xiiGALResourceDimension::Texture2D;

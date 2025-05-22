@@ -1,12 +1,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Graphics/Camera.h>
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/Passes/SourcePass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Resources/Framebuffer.h>
-#include <GraphicsFoundation/Resources/RenderPass.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSourcePass, 1, xiiRTTIDefaultAllocator<xiiSourcePass>)
@@ -54,10 +50,11 @@ xiiSourcePass::xiiSourcePass(xiiStringView sName) :
 
 xiiSourcePass::~xiiSourcePass()
 {
-  FreeCachedRenderPasses();
+  m_pFramebuffer.Clear();
+  m_pRenderPass.Clear();
 }
 
-xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiView& view, xiiEnum<xiiSourceFormat> format, xiiEnum<xiiGALMSAASampleCount> msaaMode)
+xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiView& view, xiiEnum<xiiSourceFormat> format, xiiEnum<xiiGALMSAASampleCount> msaaSampleCount)
 {
   xiiUInt32 uiWidth  = static_cast<xiiUInt32>(view.GetViewport().width);
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
@@ -65,7 +62,8 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
   const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
-  xiiGALTextureCreationDescription textureDescription{.m_Type = xiiGALResourceDimension::Texture2D};
+  xiiGALTextureCreationDescription textureDescription;
+  textureDescription.m_Type = xiiGALResourceDimension::Texture2DArray;
 
   // Color
   if (format == xiiSourceFormat::Color4Channel8BitNormalized || format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
@@ -138,60 +136,28 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
 
   textureDescription.m_Size.width         = uiWidth;
   textureDescription.m_Size.height        = uiHeight;
-  textureDescription.m_uiSampleCount      = msaaMode;
+  textureDescription.m_uiSampleCount      = msaaSampleCount.GetValue();
   textureDescription.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2 : 1;
   textureDescription.m_BindFlags          = ((!xiiGALResourceFormat::IsDepthFormat(textureDescription.m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil) | xiiGALBindFlags::ShaderResource);
-
-  if (textureDescription.m_uiArraySizeOrDepth > 1 || textureDescription.m_uiSampleCount > xiiGALMSAASampleCount::OneSample)
-    textureDescription.m_Type = xiiGALResourceDimension::Texture2DArray;
 
   return textureDescription;
 }
 
-bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
+bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> pInputs, xiiArrayPtr<xiiGALTextureCreationDescription> pOutputs)
 {
-  outputs[m_PinOutput.m_uiOutputIndex] = GetOutputDescription(view, m_Format, m_SampleCount);
+  pOutputs[m_PinOutput.m_uiOutputIndex] = GetOutputDescription(view, m_Format, m_SampleCount);
   return true;
 }
 
-void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiSourcePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
-  if (pOutput == nullptr)
-    return;
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiSharedPtr<xiiGALDevice> pDevice              = xiiGALDevice::GetDefaultDevice();
-  bool                       bRecreateRenderPass  = true;
-  bool                       bRecreateFramebuffer = true;
-  const bool                 bIsDepthAttachment   = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
-
-  if (m_pRenderPass)
+  // Create render pass.
+  if (auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex])
   {
-    const auto&       attachmentDescription = m_pRenderPass->GetDescription().m_Attachments.PeekBack();
-
-    if (attachmentDescription.m_Format == pOutput->m_TextureDescription.m_Format && attachmentDescription.m_uiSampleCount == m_SampleCount.GetValue())
-    {
-      bRecreateRenderPass = false;
-    }
-  }
-
-  if (m_pFramebuffer)
-  {
-    const auto&        pAttachmentView = pOutput->m_pTexture->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
-
-    if (m_pFramebuffer->GetDescription().m_Attachments.PeekBack() == pAttachmentView)
-    {
-      bRecreateFramebuffer = false;
-    }
-  }
-
-  if (bRecreateRenderPass)
-  {
-    bRecreateFramebuffer = true;
-
-    FreeCachedRenderPasses();
-
     const auto& textureDescription = pOutput->m_pTexture->GetDescription();
+    const bool  bIsDepthAttachment = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 
     xiiGALRenderPassCreationDescription renderPassDescription;
     auto&                               subpassDescription    = renderPassDescription.m_SubPasses.ExpandAndGetRef();
@@ -234,8 +200,31 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
     XII_ASSERT_DEV(m_pRenderPass != nullptr, "Failed to create render pass.");
   }
+}
 
-  if (bRecreateFramebuffer)
+void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+{
+  auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
+  if (pOutput == nullptr)
+    return;
+
+  if (!m_pRenderPass)
+    return;
+
+  xiiSharedPtr<xiiGALDevice> pDevice            = xiiGALDevice::GetDefaultDevice();
+  const bool                 bIsDepthAttachment = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
+
+  if (m_pFramebuffer)
+  {
+    const auto& pAttachmentView = pOutput->m_pTexture->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
+
+    if (m_pFramebuffer->GetDescription().m_Attachments.PeekBack() != pAttachmentView)
+    {
+      m_pFramebuffer.Clear();
+    }
+  }
+
+  if (!m_pFramebuffer)
   {
     const auto& attachmentDescription     = pOutput->m_pTexture->GetDescription();
     const auto& pAttachmentView           = pOutput->m_pTexture->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
@@ -268,14 +257,15 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     clearValue.m_ClearColor     = m_ClearColor;
   }
 
-  auto pCommandList = renderViewContext.m_pRenderContext->GetCommandList();
-
-  pCommandList->BeginDebugGroup(GetName());
+  if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
   {
-    pCommandList->BeginRenderPass(renderPassDescription);
-    pCommandList->EndRenderPass();
+    pCommandList->BeginDebugGroup(GetName());
+    {
+      pCommandList->BeginRenderPass(renderPassDescription);
+      pCommandList->EndRenderPass();
+    }
+    pCommandList->EndDebugGroup();
   }
-  pCommandList->EndDebugGroup();
 }
 
 xiiResult xiiSourcePass::Serialize(xiiStreamWriter& inout_stream) const
@@ -313,12 +303,6 @@ xiiResult xiiSourcePass::Deserialize(xiiStreamReader& inout_stream)
   inout_stream >> m_uiStencilClearValue;
 
   return XII_SUCCESS;
-}
-
-void xiiSourcePass::FreeCachedRenderPasses()
-{
-  m_pFramebuffer.Clear();
-  m_pRenderPass.Clear();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SourcePass);

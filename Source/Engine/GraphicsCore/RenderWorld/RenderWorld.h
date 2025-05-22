@@ -63,7 +63,7 @@ public:
 
   static void ExtractMainViews();
 
-  static void Render(xiiRenderContext* pRenderContext);
+  static void Render();
 
   static void BeginFrame();
   static void EndFrame();

@@ -51,7 +51,6 @@ struct xiiRenderViewContext
   const xiiCamera*   m_pCamera        = nullptr;
   const xiiCamera*   m_pLodCamera     = nullptr;
   const xiiViewData* m_pViewData      = nullptr;
-  xiiRenderContext*  m_pRenderContext = nullptr;
 
   const xiiDebugRendererContext* m_pWorldDebugContext = nullptr;
   const xiiDebugRendererContext* m_pViewDebugContext  = nullptr;
