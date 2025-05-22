@@ -11,6 +11,8 @@
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
+#include <Foundation/Utilities/Stats.h>
+
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSetVertexBufferFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::None),
@@ -207,6 +209,8 @@ xiiUInt64 xiiGALCommandList::Submit()
   XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Commandlist is already reset.");
   XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Submitted, "Commandlist is already submitted!");
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiSubmit;
+
   if (m_RecordingState == xiiGALCommandList::RecordingState::Recording)
   {
     End();
@@ -236,6 +240,8 @@ void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipe
     m_pPipelineResourceSignature = nullptr;
   }
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiSetPipelineState;
+
   SetPipelineStatePlatform(pPipelineState);
 }
 
@@ -246,6 +252,8 @@ void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
   if (m_uiStencilRef != uiStencilRef)
   {
     m_uiStencilRef = uiStencilRef;
+
+    ++m_CommandListStatistics.m_CommandListCounters.m_uiSetStencilRef;
 
     SetStencilRefPlatform(m_uiStencilRef);
   }
@@ -258,6 +266,8 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
   if (blendFactor != m_BlendFactors)
   {
     m_BlendFactors = blendFactor;
+
+    ++m_CommandListStatistics.m_CommandListCounters.m_uiSetBlendFactors;
 
     SetBlendFactorPlatform(m_BlendFactors);
   }
@@ -288,6 +298,8 @@ void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiGALViewport> pViewports)
     XII_VERIFY_COMMAND_LIST(viewport.m_fMaxDepth >= viewport.m_fMinDepth, "SetViewports arguments are invalid. Incorrect viewport depth range [{0}, {1}] for index {2}.", viewport.m_fMinDepth, viewport.m_fMaxDepth, i);
   }
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiSetViewports;
+
   SetViewportsPlatform(m_Viewports);
 }
 
@@ -306,6 +318,8 @@ void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects)
 
   m_ScissorRects.Clear();
   m_ScissorRects.PushBackRange(pRects);
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiSetScissorRects;
 
   SetScissorRectsPlatform(m_ScissorRects);
 }
@@ -326,6 +340,8 @@ void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, 
 
   m_pIndexBuffer      = pIndexBuffer;
   m_uiIndexDataOffset = uiByteOffset;
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiSetIndexBuffer;
 
   SetIndexBufferPlatform(pIndexBuffer, m_uiIndexDataOffset);
 }
@@ -366,6 +382,8 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
       m_VertexBuffersOffsets[i] = pByteOffsets[i];
     }
   }
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiSetVertexBuffers;
 
   SetVertexBuffersPlatform(uiStartSlot, m_VertexBuffers, m_VertexBuffersOffsets, flags);
 }
@@ -527,6 +545,8 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
 
 xiiResult xiiGALCommandList::CommitShaderResources(xiiEnum<xiiGALStateTransitionMode> mode)
 {
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCommitShaderResources;
+
   return CommitShaderResourcesPlatform(mode);
 }
 
@@ -538,6 +558,8 @@ void xiiGALCommandList::ClearRenderTargetView(xiiSharedPtr<xiiGALTextureView> pR
   const auto& viewDescription = pRenderTargetView->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The texture view '{0}' was not created with the xiiGALTextureViewType::RenderTarget.", pRenderTargetView->GetDebugName());
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiClearRenderTarget;
 
   ClearRenderTargetViewPlatform(pRenderTargetView, clearColor);
 }
@@ -551,6 +573,8 @@ void xiiGALCommandList::ClearDepthStencilView(xiiSharedPtr<xiiGALTextureView> pD
 
   XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The texture view '{0}' was not created with the xiiGALTextureViewType::DepthStencil.", pDepthStencilView->GetDebugName());
   XII_VERIFY_COMMAND_LIST(bClearDepth || bClearStencil, "At least one of bClearDepth or bClearStencil must be set.");
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiClearDepthStencil;
 
   ClearDepthStencilViewPlatform(pDepthStencilView, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
 }
@@ -591,6 +615,8 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
   m_pRenderPass  = beginRenderPass.m_pRenderPass;
   m_pFramebuffer = beginRenderPass.m_pFramebuffer;
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiBeginRenderPass;
+
   BeginRenderPassPlatform(m_pRenderPass, m_pFramebuffer, beginRenderPass.m_ClearValues.GetArrayPtr());
 }
 
@@ -599,6 +625,8 @@ void xiiGALCommandList::NextSubpass()
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass != nullptr, "NextSubpass: Render pass handle is invalid.");
   XII_VERIFY_COMMAND_LIST(m_pFramebuffer != nullptr, "NextSubpass: Framebuffer handle is invalid.");
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiNextSubPass;
 
   NextSubpassPlatform();
 }
@@ -617,33 +645,31 @@ void xiiGALCommandList::EndRenderPass()
 
 xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
-  CountDrawCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawCommand arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawCommand arguments are invalid. No pipeline state is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawCommand arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_VERIFY_COMMAND_LIST_RESULT(uiVertexCount != 0, "DrawCommand vertex count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDraw;
 
   return DrawPlatform(uiVertexCount, uiStartVertex);
 }
 
 xiiResult xiiGALCommandList::DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)
 {
-  CountDrawCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexed command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexed command arguments are invalid. No pipeline state is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_VERIFY_COMMAND_LIST_RESULT(m_pIndexBuffer != nullptr, "DrawIndexed command arguments are invalid. No index buffer is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiIndexCount != 0, "DrawIndexed index count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDraw;
+
   return DrawIndexedPlatform(uiIndexCount, uiStartIndex, uiBaseVertex);
 }
 
 xiiResult xiiGALCommandList::DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
 {
-  CountDrawCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstanced command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstanced command arguments are invalid. No pipeline state is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstanced command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
@@ -651,13 +677,13 @@ xiiResult xiiGALCommandList::DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInsta
   XII_VERIFY_COMMAND_LIST_RESULT(uiIndexCountPerInstance != 0, "DrawIndexedInstanced index count per instance is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiInstanceCount != 0, "DrawIndexedInstanced instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndexed;
+
   return DrawIndexedInstancedPlatform(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance);
 }
 
 xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  CountDrawCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstancedIndirect command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. No pipeline state is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstancedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
@@ -668,27 +694,27 @@ xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiSharedPtr<xiiGALBuf
   XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentBuffer->GetDebugName());
 
   /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndexedIndirect;
 
   return DrawIndexedInstancedIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
 }
 
 xiiResult xiiGALCommandList::DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
 {
-  CountDrawCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawInstanced command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawInstanced command arguments are invalid. No pipeline state is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawInstanced command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_VERIFY_COMMAND_LIST_RESULT(uiVertexCountPerInstance != 0, "DrawInstanced vertex count per instance is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiInstanceCount != 0, "DrawInstanced instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDraw;
+
   return DrawInstancedPlatform(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance);
 }
 
 xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  CountDrawCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstancedIndirect command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. No pipeline state is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstancedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
@@ -700,13 +726,13 @@ xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pI
 
   /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndirect;
+
   return DrawInstancedIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
 }
 
 xiiResult xiiGALCommandList::DrawMesh(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
-  CountDrawCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMesh command arguments are invalid. Mesh shaders are not supported by this device.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawMesh command arguments are invalid. No pipeline state is bound.");
@@ -721,25 +747,25 @@ xiiResult xiiGALCommandList::DrawMesh(xiiUInt32 uiThreadGroupCountX, xiiUInt32 u
   const auto uiTotalThreadGroupCount = uiThreadGroupCountX + uiThreadGroupCountY + uiThreadGroupCountZ;
   XII_VERIFY_COMMAND_LIST_RESULT(uiTotalThreadGroupCount <= meshProperties.m_uiMaxThreadGroupTotalCount, "DrawMesh command arguments are invalid. The total thread group count ({0}) exceeds the maximum supported by the device ({1}).", uiTotalThreadGroupCount, meshProperties.m_uiMaxThreadGroupTotalCount);
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawMesh;
+
   return DrawMeshPlatform(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 }
 
 xiiResult xiiGALCommandList::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
-  CountDispatchCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "Dispatch command arguments are invalid. No pipeline state is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
   XII_VERIFY_COMMAND_LIST_RESULT(m_pRenderPass == nullptr, "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiThreadGroupCountX != 0U && uiThreadGroupCountY != 0U && uiThreadGroupCountZ != 0U, "Dispatch command arguments are invalid. At least one of the thread group counts are zero, this is OK as the dispatch command will be ignored, but may be unintentional.");
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDispatchCompute;
 
   return DispatchPlatform(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 }
 
 xiiResult xiiGALCommandList::DispatchIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
 {
-  CountDispatchCall();
-
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DispatchIndirect command arguments are invalid. No pipeline state is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "DispatchIndirect command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
   XII_VERIFY_COMMAND_LIST_RESULT(m_pRenderPass == nullptr, "DispatchIndirect command arguments are invalid. DispatchIndirect command must be performed outside of render pass.");
@@ -753,6 +779,8 @@ xiiResult xiiGALCommandList::DispatchIndirect(xiiSharedPtr<xiiGALBuffer> pIndire
   const xiiUInt32 uiOffset = ((sizeof(xiiUInt32) * 3) + uiArgumentOffsetInBytes);
   XII_VERIFY_COMMAND_LIST_RESULT(uiOffset <= bufferDescription.m_uiSize, "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' offset in bytes must be at least {1} bytes.", pIndirectArgumentBuffer->GetDebugName());
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDispatchComputeIndirect;
+
   return DispatchIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
 }
 
@@ -764,6 +792,8 @@ void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 
   XII_VERIFY_COMMAND_LIST(queryDescription.m_Type != xiiGALQueryType::Timestamp, "BeginQuery cannot be called on timestamp queries. Use EndQuery instead to set the timestamp.");
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueType::Transfer : xiiGALCommandQueueType::Graphics), "BeginQuery command arguments are invalid. Invalid command queue of query type.");
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiBeginQuery;
 
   BeginQueryPlatform(pQuery);
 }
@@ -985,6 +1015,8 @@ void xiiGALCommandList::UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt
   XII_VERIFY_COMMAND_LIST(uiDestinationOffset < bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the destination offset ({1}) exceeds the buffer size ({2}).", pBuffer->GetDebugName(), uiDestinationOffset, bufferDescription.m_uiSize);
   XII_VERIFY_COMMAND_LIST((uiDestinationOffset + pSourceData.GetCount()) <= bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the update region [{1}, {2}) is out of buffer bounds [0, {3}).", pBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + pSourceData.GetCount(), bufferDescription.m_uiSize);
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiUpdateBuffer;
+
   UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData);
 }
 
@@ -999,6 +1031,8 @@ void xiiGALCommandList::CopyBuffer(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xii
   const auto& destinationBufferDescription = pDestinationBuffer->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(sourceBufferDescription.m_uiSize <= destinationBufferDescription.m_uiSize, "CopyBuffer command arguments are invalid. The source buffer bounds exceeds the bounds of the destination buffer.");
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyBuffer;
 
   CopyBufferPlatform(pSourceBuffer, pDestinationBuffer);
 }
@@ -1015,6 +1049,8 @@ void xiiGALCommandList::CopyBufferRegion(xiiSharedPtr<xiiGALBuffer> pSourceBuffe
 
   XII_VERIFY_COMMAND_LIST((uiSourceOffset + uiSize) <= sourceBufferDescription.m_uiSize, "CopyBufferRegion command arguments are invalid. Failed to copy buffer '{0}' to '{1}', the destination range [{2}, {3}) is out of buffer bounds [0, {4}).", pSourceBuffer->GetDebugName(), pDestinationBuffer->GetDebugName(), uiSourceOffset, uiSourceOffset + uiSize, sourceBufferDescription.m_uiSize);
   XII_VERIFY_COMMAND_LIST((uiDestinationOffset + uiSize) <= destinationBufferDescription.m_uiSize, "CopyBufferRegion command arguments are invalid. Failed to copy buffer '{0}' to '{1}', the destination range [{2}, {3}) is out of buffer bounds [0, {4}).", pSourceBuffer->GetDebugName(), pDestinationBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + uiSize, destinationBufferDescription.m_uiSize);
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyBuffer;
 
   CopyBufferPlatform(pSourceBuffer, pDestinationBuffer);
 }
@@ -1070,6 +1106,8 @@ xiiResult xiiGALCommandList::MapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEn
     XII_VERIFY_COMMAND_LIST_RESULT(mapType == xiiGALMapType::Write, "xiiGALMapType::Write is only valid when mapping buffer for writing.");
   }
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiMapBuffer;
+
   if (MapBufferPlatform(pBuffer, mapType, mapFlags, pMappedData).Failed())
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -1105,6 +1143,8 @@ void xiiGALCommandList::UpdateTexture(xiiSharedPtr<xiiGALTexture> pTexture, cons
 
   ValidateTextureUpdateRegion(pTexture->GetDescription(), textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureBox, subresourceData);
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiUpdateTexture;
+
   UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
 
@@ -1120,6 +1160,8 @@ void xiiGALCommandList::CopyTexture(xiiSharedPtr<xiiGALTexture> pSourceTexture, 
 
   ValidateTextureRegion(pSourceTexture->GetDescription(), 0, 0, sourceBox);
   ValidateTextureRegion(pDestinationTexture->GetDescription(), 0, 0, sourceBox);
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyTexture;
 
   CopyTexturePlatform(pSourceTexture, pDestinationTexture);
 }
@@ -1137,6 +1179,8 @@ void xiiGALCommandList::CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTex
 
   ValidateTextureRegion(pDestinationTexture->GetDescription(), destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, destinationBox);
 
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyTexture;
+
   CopyTextureRegionPlatform(pSourceTexture, sourceMipLevelData, box, pDestinationTexture, destinationMipLevelData, vDestinationPoint);
 }
 
@@ -1148,6 +1192,8 @@ void xiiGALCommandList::ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pS
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "ResolveTextureSubResource command must be used outside of render pass.");
 
   /// \todo GraphicsFoundation: Validate resolve texture parameters.
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiResolveTextureSubresource;
 
   ResolveTextureSubResourcePlatform(pSourceTexture, sourceMipLevelData, pDestinationTexture, destinationMipLevelData);
 }
@@ -1164,6 +1210,8 @@ void xiiGALCommandList::GenerateMips(xiiSharedPtr<xiiGALTextureView> pTextureVie
   XII_VERIFY_COMMAND_LIST(textureViewDescription.m_ViewType == xiiGALTextureViewType::ShaderResource, "GenerateMips arguments are invalid. Texture view '{0}' is not of type xiiGALTextureViewType::ShaderResource.", pTextureView->GetDebugName());
   XII_VERIFY_COMMAND_LIST(textureViewDescription.m_Flags.IsSet(xiiGALTextureViewFlags::AllowMipGeneration), "GenerateMips arguments are invalid. Texture view '{0}' does not have xiiGALTextureViewFlags::AllowMipGeneration flag.", pTextureView->GetDebugName());
 #endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiGenerateMips;
 
   GenerateMipsPlatform(pTextureView);
 }
@@ -1189,6 +1237,8 @@ xiiResult xiiGALCommandList::MapTextureSubresource(xiiSharedPtr<xiiGALTexture> p
   {
     ValidateTextureRegion(textureDescription, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, *pTextureBox);
   }
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiMapTextureSubresource;
 
   return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, pTextureBox, mappedData);
 }
@@ -1223,8 +1273,6 @@ void xiiGALCommandList::InvalidateState()
 
   m_Viewports.Clear();
   m_ScissorRects.Clear();
-
-  ClearStatisticCounters();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_MappedBuffers.IsEmpty(), "Mapped buffers have not yet been released.");
@@ -1337,5 +1385,66 @@ bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlag
 
 #undef XII_VERIFY_COMMAND_LIST_RESULT
 #undef XII_VERIFY_COMMAND_LIST
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+void xiiGALCommandListStatistics::SetStatistics()
+{
+  // clang-format off
+  xiiStats::SetStat("CommandList/Submit", m_CommandListCounters.m_uiSubmit);
+
+  xiiStats::SetStat("CommandList/Primitives/TotalTriangleCount", GetTotalTriangleCount());
+  xiiStats::SetStat("CommandList/Primitives/TotalLineCount",     GetTotalLineCount());
+  xiiStats::SetStat("CommandList/Primitives/TotalPointCount",    GetTotalPointCount());
+
+  xiiStats::SetStat("CommandList/Pipeline/SetPipelineState",      m_CommandListCounters.m_uiSetPipelineState);
+  xiiStats::SetStat("CommandList/Pipeline/CommitShaderResources", m_CommandListCounters.m_uiCommitShaderResources);
+  xiiStats::SetStat("CommandList/Pipeline/SetVertexBuffers",      m_CommandListCounters.m_uiSetVertexBuffers);
+  xiiStats::SetStat("CommandList/Pipeline/SetIndexBuffer",        m_CommandListCounters.m_uiSetIndexBuffer);
+  xiiStats::SetStat("CommandList/Pipeline/SetBlendFactors",       m_CommandListCounters.m_uiSetBlendFactors);
+  xiiStats::SetStat("CommandList/Pipeline/SetStencilRef",         m_CommandListCounters.m_uiSetStencilRef);
+  xiiStats::SetStat("CommandList/Pipeline/SetViewports",          m_CommandListCounters.m_uiSetViewports);
+  xiiStats::SetStat("CommandList/Pipeline/SetScissorRects",       m_CommandListCounters.m_uiSetScissorRects);
+  xiiStats::SetStat("CommandList/Pipeline/BeginRenderPass",       m_CommandListCounters.m_uiBeginRenderPass);
+  xiiStats::SetStat("CommandList/Pipeline/NextSubPass",           m_CommandListCounters.m_uiNextSubPass);
+  xiiStats::SetStat("CommandList/Pipeline/ClearRenderTarget",     m_CommandListCounters.m_uiClearRenderTarget);
+  xiiStats::SetStat("CommandList/Pipeline/ClearDepthStencil",     m_CommandListCounters.m_uiClearDepthStencil);
+
+  xiiStats::SetStat("CommandList/Draw/Draw",                m_CommandListCounters.m_uiDraw);
+  xiiStats::SetStat("CommandList/Draw/DrawIndexed",         m_CommandListCounters.m_uiDrawIndexed);
+  xiiStats::SetStat("CommandList/Draw/DrawIndirect",        m_CommandListCounters.m_uiDrawIndirect);
+  xiiStats::SetStat("CommandList/Draw/DrawIndexedIndirect", m_CommandListCounters.m_uiDrawIndexedIndirect);
+  xiiStats::SetStat("CommandList/Draw/MultiDraw",           m_CommandListCounters.m_uiMultiDraw);
+  xiiStats::SetStat("CommandList/Draw/MultiDrawIndexed",    m_CommandListCounters.m_uiMultiDrawIndexed);
+  xiiStats::SetStat("CommandList/Draw/DrawMesh",            m_CommandListCounters.m_uiDrawMesh);
+  xiiStats::SetStat("CommandList/Draw/DrawMeshIndirect",    m_CommandListCounters.m_uiDrawMeshIndirect);
+
+  xiiStats::SetStat("CommandList/Dispatch/DispatchCompute",         m_CommandListCounters.m_uiDispatchCompute);
+  xiiStats::SetStat("CommandList/Dispatch/DispatchComputeIndirect", m_CommandListCounters.m_uiDispatchComputeIndirect);
+  xiiStats::SetStat("CommandList/Dispatch/DispatchTile",            m_CommandListCounters.m_uiDispatchTile);
+
+  xiiStats::SetStat("CommandList/Operations/BuildBLAS",                 m_CommandListCounters.m_uiBuildBLAS);
+  xiiStats::SetStat("CommandList/Operations/BuildTLAS",                 m_CommandListCounters.m_uiBuildTLAS);
+  xiiStats::SetStat("CommandList/Operations/CopyBLAS",                  m_CommandListCounters.m_uiCopyBLAS);
+  xiiStats::SetStat("CommandList/Operations/CopyTLAS",                  m_CommandListCounters.m_uiCopyTLAS);
+  xiiStats::SetStat("CommandList/Operations/WriteBLASCompactedSize",    m_CommandListCounters.m_uiWriteBLASCompactedSize);
+  xiiStats::SetStat("CommandList/Operations/WriteTLASCompactedSize",    m_CommandListCounters.m_uiWriteTLASCompactedSize);
+  xiiStats::SetStat("CommandList/Operations/TraceRays",                 m_CommandListCounters.m_uiTraceRays);
+  xiiStats::SetStat("CommandList/Operations/TraceRaysIndirect",         m_CommandListCounters.m_uiTraceRaysIndirect);
+  xiiStats::SetStat("CommandList/Operations/UpdateSBT",                 m_CommandListCounters.m_uiUpdateSBT);
+  xiiStats::SetStat("CommandList/Operations/UpdateBuffer",              m_CommandListCounters.m_uiUpdateBuffer);
+  xiiStats::SetStat("CommandList/Operations/CopyBuffer",                m_CommandListCounters.m_uiCopyBuffer);
+  xiiStats::SetStat("CommandList/Operations/MapBuffer",                 m_CommandListCounters.m_uiMapBuffer);
+  xiiStats::SetStat("CommandList/Operations/UpdateTexture",             m_CommandListCounters.m_uiUpdateTexture);
+  xiiStats::SetStat("CommandList/Operations/CopyTexture",               m_CommandListCounters.m_uiCopyTexture);
+  xiiStats::SetStat("CommandList/Operations/MapTextureSubresource",     m_CommandListCounters.m_uiMapTextureSubresource);
+  xiiStats::SetStat("CommandList/Operations/BeginQuery",                m_CommandListCounters.m_uiBeginQuery);
+  xiiStats::SetStat("CommandList/Operations/GenerateMips",              m_CommandListCounters.m_uiGenerateMips);
+  xiiStats::SetStat("CommandList/Operations/ResolveTextureSubresource", m_CommandListCounters.m_uiResolveTextureSubresource);
+  xiiStats::SetStat("CommandList/Operations/BindSparseResourceMemory",  m_CommandListCounters.m_uiBindSparseResourceMemory);
+  // clang-format on
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_CommandEncoder_Implementation_CommandList);

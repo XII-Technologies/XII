@@ -155,6 +155,104 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionDescription
   xiiBitflags<xiiGALStateTransitionFlags> m_TransitionFlags = xiiGALStateTransitionFlags::None;  ///< State transition flags, see xiiGALStateTransitionFlags.
 };
 
+/// \brief This describes the command list API call counters.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiSetPipelineState          = 0U; ///< The total number of SetPipelineState calls.
+  xiiUInt32 m_uiCommitShaderResources     = 0U; ///< The total number of CommitShaderResources calls.
+  xiiUInt32 m_uiSetVertexBuffers          = 0U; ///< The total number of SetVertexBuffers calls.
+  xiiUInt32 m_uiSetIndexBuffer            = 0U; ///< The total number of SetIndexBuffer calls.
+  xiiUInt32 m_uiSetBlendFactors           = 0U; ///< The total number of SetBlendFactors calls.
+  xiiUInt32 m_uiSetStencilRef             = 0U; ///< The total number of SetStencilRef calls.
+  xiiUInt32 m_uiSetViewports              = 0U; ///< The total number of SetViewports calls.
+  xiiUInt32 m_uiSetScissorRects           = 0U; ///< The total number of SetScissorRects calls.
+  xiiUInt32 m_uiBeginRenderPass           = 0U; ///< The total number of BeginRenderPass calls.
+  xiiUInt32 m_uiNextSubPass               = 0U; ///< The total number of NextSubPass calls.
+  xiiUInt32 m_uiClearRenderTarget         = 0U; ///< The total number of ClearRenderTarget calls.
+  xiiUInt32 m_uiClearDepthStencil         = 0U; ///< The total number of ClearDepthStencil calls.
+  xiiUInt32 m_uiDraw                      = 0U; ///< The total number of Draw calls.
+  xiiUInt32 m_uiDrawIndexed               = 0U; ///< The total number of DrawIndexed calls.
+  xiiUInt32 m_uiDrawIndirect              = 0U; ///< The total number of indirect DrawIndirect calls.
+  xiiUInt32 m_uiDrawIndexedIndirect       = 0U; ///< The total number of indexed indirect DrawIndexedIndirect calls.
+  xiiUInt32 m_uiMultiDraw                 = 0U; ///< The total number of MultiDraw calls.
+  xiiUInt32 m_uiMultiDrawIndexed          = 0U; ///< The total number of MultiDrawIndexed calls.
+  xiiUInt32 m_uiDispatchCompute           = 0U; ///< The total number of DispatchCompute calls.
+  xiiUInt32 m_uiDispatchComputeIndirect   = 0U; ///< The total number of DispatchComputeIndirect calls.
+  xiiUInt32 m_uiDispatchTile              = 0U; ///< The total number of DispatchTile calls.
+  xiiUInt32 m_uiDrawMesh                  = 0U; ///< The total number of DrawMesh calls.
+  xiiUInt32 m_uiDrawMeshIndirect          = 0U; ///< The total number of DrawMeshIndirect calls.
+  xiiUInt32 m_uiBuildBLAS                 = 0U; ///< The total number of BuildBLAS calls.
+  xiiUInt32 m_uiBuildTLAS                 = 0U; ///< The total number of BuildTLAS calls.
+  xiiUInt32 m_uiCopyBLAS                  = 0U; ///< The total number of CopyBLAS calls.
+  xiiUInt32 m_uiCopyTLAS                  = 0U; ///< The total number of CopyTLAS calls.
+  xiiUInt32 m_uiWriteBLASCompactedSize    = 0U; ///< The total number of WriteBLASCompactedSize calls.
+  xiiUInt32 m_uiWriteTLASCompactedSize    = 0U; ///< The total number of WriteTLASCompactedSize calls.
+  xiiUInt32 m_uiTraceRays                 = 0U; ///< The total number of TraceRays calls.
+  xiiUInt32 m_uiTraceRaysIndirect         = 0U; ///< The total number of TraceRaysIndirect calls.
+  xiiUInt32 m_uiUpdateSBT                 = 0U; ///< The total number of UpdateSBT calls.
+  xiiUInt32 m_uiUpdateBuffer              = 0U; ///< The total number of UpdateBuffer calls.
+  xiiUInt32 m_uiCopyBuffer                = 0U; ///< The total number of CopyBuffer calls.
+  xiiUInt32 m_uiMapBuffer                 = 0U; ///< The total number of MapBuffer calls.
+  xiiUInt32 m_uiUpdateTexture             = 0U; ///< The total number of UpdateTexture calls.
+  xiiUInt32 m_uiCopyTexture               = 0U; ///< The total number of CopyTexture calls.
+  xiiUInt32 m_uiMapTextureSubresource     = 0U; ///< The total number of MapTextureSubresource calls.
+  xiiUInt32 m_uiBeginQuery                = 0U; ///< The total number of BeginQuery calls.
+  xiiUInt32 m_uiGenerateMips              = 0U; ///< The total number of GenerateMips calls.
+  xiiUInt32 m_uiResolveTextureSubresource = 0U; ///< The total number of ResolveTextureSubresource calls.
+  xiiUInt32 m_uiBindSparseResourceMemory  = 0U; ///< The total number of BindSparseResourceMemory calls.
+  xiiUInt32 m_uiSubmit                    = 0U; ///< The total number of Submit calls.
+
+  XII_ALWAYS_INLINE void operator+=(const xiiGALCommandListCounters& rhs)
+  {
+    const xiiUInt32  uiCount      = sizeof(xiiGALCommandListCounters) / sizeof(xiiUInt32);
+    xiiUInt32*       pDestination = reinterpret_cast<xiiUInt32*>(this);
+    const xiiUInt32* pSource      = reinterpret_cast<const xiiUInt32*>(&rhs);
+    for (xiiUInt32 i = 0; i < uiCount; ++i)
+    {
+      pDestination[i] += pSource[i];
+    }
+  }
+};
+
+/// \brief This describes the command list statistics.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListStatistics
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32                 m_PrimitiveCounters[xiiGALPrimitiveTopology::ENUM_COUNT] = {0U}; ///< Number of primitives drawn for each primitive topology.
+  xiiGALCommandListCounters m_CommandListCounters;                                           ///< Command list counters.
+
+  void SetStatistics();
+
+  XII_ALWAYS_INLINE void operator+=(const xiiGALCommandListStatistics& rhs)
+  {
+    for (xiiUInt32 i = 0; i < xiiGALPrimitiveTopology::ENUM_COUNT; ++i)
+      m_PrimitiveCounters[i] += rhs.m_PrimitiveCounters[i];
+
+    m_CommandListCounters += rhs.m_CommandListCounters;
+  }
+
+  /// \brief This returns the total number of triangles drawn.
+  XII_ALWAYS_INLINE constexpr xiiUInt32 GetTotalTriangleCount() const
+  {
+    return m_PrimitiveCounters[xiiGALPrimitiveTopology::TriangleList] + m_PrimitiveCounters[xiiGALPrimitiveTopology::TriangleStrip] + m_PrimitiveCounters[xiiGALPrimitiveTopology::TriangleStripAdjacent];
+  }
+
+  /// \brief This returns the total number of lines drawn.
+  XII_ALWAYS_INLINE constexpr xiiUInt32 GetTotalLineCount() const
+  {
+    return m_PrimitiveCounters[xiiGALPrimitiveTopology::LineList] + m_PrimitiveCounters[xiiGALPrimitiveTopology::LineStrip] + m_PrimitiveCounters[xiiGALPrimitiveTopology::LineStripAdjacent];
+  }
+
+  /// \brief This returns the total number of points drawn.
+  XII_ALWAYS_INLINE constexpr xiiUInt32 GetTotalPointCount() const
+  {
+    return m_PrimitiveCounters[xiiGALPrimitiveTopology::PointList];
+  }
+};
+
 /// \brief This describes the command list creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public xiiHashableStruct<xiiGALCommandListCreationDescription>
 {
@@ -551,7 +649,11 @@ public:
 
   XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };
 
-  XII_ALWAYS_INLINE RecordingState GetRecordingState() const { return m_RecordingState; };
+  /// \brief This returns the command list recording state.
+  [[nodiscard]] XII_ALWAYS_INLINE RecordingState GetRecordingState() const { return m_RecordingState; };
+
+  /// \brief This returns the command list statistics.
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListStatistics& GetStatistics() const { return m_CommandListStatistics; };
 
 protected:
   friend class xiiGALDevice;
@@ -685,17 +787,7 @@ protected:
   xiiHybridArray<xiiRectU32, 2U>     m_ScissorRects;
 
 private:
-  XII_ALWAYS_INLINE void CountDispatchCall() { ++m_uiDispatchCalls; };
-  XII_ALWAYS_INLINE void CountDrawCall() { ++m_uiDrawCalls; };
-  XII_ALWAYS_INLINE void ClearStatisticCounters()
-  {
-    m_uiDrawCalls     = 0;
-    m_uiDispatchCalls = 0;
-  };
-
-  // Statistic variables.
-  xiiUInt32 m_uiDrawCalls     = 0U;
-  xiiUInt32 m_uiDispatchCalls = 0U;
+  xiiGALCommandListStatistics m_CommandListStatistics;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiUInt32 m_uiDebugGroupCount = 0;
