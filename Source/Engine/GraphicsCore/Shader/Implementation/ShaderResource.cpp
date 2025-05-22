@@ -3,12 +3,10 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderResource, 1, xiiRTTIDefaultAllocator<xiiShaderResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiShaderResource);
-// clang-format on
 
 xiiShaderResource::xiiShaderResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)

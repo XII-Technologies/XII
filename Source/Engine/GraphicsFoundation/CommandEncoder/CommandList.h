@@ -615,7 +615,7 @@ public:
   /// \param pFence  - The fence to wait. The fence must be created with type xiiGALFenceType::General.
   /// \param uiValue - The value that the command list is waiting for the fence to reach.
   ///
-  /// \note if NativeFence feature is not enabled (see xiiGALDeviceFeatures), then uiValue must be less than or equal to the last signalled or pending value. uiValue becomes pending when the command list is submitted. Waiting for a value that is greater than any pending value will cause a deadlock.
+  /// \note If NativeFence feature is not enabled (see xiiGALDeviceFeatures), then uiValue must be less than or equal to the last signalled or pending value. uiValue becomes pending when the command list is submitted. Waiting for a value that is greater than any pending value will cause a deadlock.
   ///
   /// \note If NativeFence feature is enabled (see xiiGALDeviceFeatures), then waiting for a value that is greater than any pending value will cause a GPU stall.
   void DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue);

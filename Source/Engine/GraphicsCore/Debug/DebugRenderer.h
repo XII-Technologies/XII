@@ -13,7 +13,6 @@ using xiiRectFloat = xiiRectTemplate<float>;
 
 class xiiFormatString;
 class xiiFrustum;
-struct xiiRenderViewContext;
 
 /// \brief Horizontal alignment of debug text.
 struct xiiDebugTextHAlign

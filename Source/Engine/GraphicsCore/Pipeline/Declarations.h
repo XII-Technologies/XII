@@ -48,12 +48,21 @@ namespace xiiInternal
 
 struct xiiRenderViewContext
 {
-  const xiiCamera*   m_pCamera        = nullptr;
-  const xiiCamera*   m_pLodCamera     = nullptr;
-  const xiiViewData* m_pViewData      = nullptr;
+  const xiiCamera*   m_pCamera    = nullptr;
+  const xiiCamera*   m_pLodCamera = nullptr;
+  const xiiViewData* m_pViewData  = nullptr;
 
   const xiiDebugRendererContext* m_pWorldDebugContext = nullptr;
   const xiiDebugRendererContext* m_pViewDebugContext  = nullptr;
+
+  void SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue);
+  void SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue);
+  void SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue);
+
+private:
+  void SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue);
+
+  xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
 };
 
 using xiiViewId = xiiGenericId<24, 8>;
