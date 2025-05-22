@@ -1,9 +1,5 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsFoundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Resources/Sampler.h>
-
 #include <GraphicsCore/Decals/DecalAtlasResource.h>
 #include <GraphicsCore/Lights/ClusteredDataExtractor.h>
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
@@ -13,6 +9,7 @@
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 xiiClusteredDataGPU::xiiClusteredDataGPU()
