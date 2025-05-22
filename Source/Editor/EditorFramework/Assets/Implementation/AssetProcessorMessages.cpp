@@ -29,4 +29,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessAssetResponseMsg, 1, xiiRTTIDefaultAl
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFreeAllResourcesMsg, 1, xiiRTTIDefaultAllocator<xiiFreeAllResourcesMsg>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

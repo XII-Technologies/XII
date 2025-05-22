@@ -28,3 +28,8 @@ public:
   xiiTransformStatus                   m_Status;
   mutable xiiDynamicArray<xiiLogEntry> m_LogEntries;
 };
+
+class XII_EDITORFRAMEWORK_DLL xiiFreeAllResourcesMsg : public xiiProcessMessage
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiFreeAllResourcesMsg, xiiProcessMessage);
+};

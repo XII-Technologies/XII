@@ -6,27 +6,34 @@
 #include <Foundation/Logging/ETWWriter.h>
 #include <Foundation/Profiling/ProfilingUtils.h>
 #include <Foundation/System/CrashHandler.h>
+#include <Foundation/System/StackTracer.h>
 #include <Foundation/System/SystemInformation.h>
+#include <Foundation/Utilities/CommandLineOptions.h>
 
 #include <Core/Console/QuakeConsole.h>
+#include <Core/ResourceManager/ResourceManager.h>
 #include <EditorEngineProcess/EngineProcGameApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <shellscalingapi.h>
 #endif
 
+xiiCommandLineOptionPath   opt_OutputDir("_EditorEngineProcess", "-outputDir", "Output directory", "");
+xiiCommandLineOptionString opt_LogName("_EditorEngineProcess", "-logName", "Log File Prefix", "LogEngine");
+
 // Will forward assert messages and crash handler messages to the log system and then to the editor.
 // Note that this is unsafe as in some crash situation allocating memory will not be possible but it's better to have some logs compared to none.
 void EditorPrintFunction(const char* szText)
 {
-  xiiLog::Info("{}", szText);
+  xiiStringBuilder sError = szText;
+  sError.Trim();
+  xiiLog::Error("{}", sError.GetData());
 }
 
 static xiiAssertHandler g_PreviousAssertHandler = nullptr;
@@ -120,6 +127,12 @@ void xiiEngineProcessGameApplication::WaitForDebugger()
 bool xiiEngineProcessGameApplication::EditorAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg)
 {
   xiiLog::Error("*** Assertion ***:\nFile: \"{}\",\nLine: \"{}\",\nFunction: \"{}\",\nExpression: \"{}\",\nMessage: \"{}\"", szSourceFile, uiLine, szFunction, szExpression, szAssertMsg);
+
+  void*              pBuffer[64];
+  xiiArrayPtr<void*> tempTrace(pBuffer);
+  const xiiUInt32    uiNumTraces = xiiStackTracer::GetStackTrace(tempTrace, nullptr);
+  xiiStackTracer::ResolveStackTrace(tempTrace.GetSubArray(0, uiNumTraces), &xiiLog::Print);
+  xiiLog::Flush();
 
   // Wait for flush of IPC messages
   xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(500));
@@ -338,7 +351,6 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 
       xiiStartup::StartupHighLevelSystems();
 
-      xiiRenderContext::GetDefaultInstance()->SetAllowAsyncShaderLoading(true);
       xiiDebugRenderer::SetTextScale(pMsg->m_fDevicePixelRatio);
     }
 
@@ -379,6 +391,19 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     {
       xiiFileSystem::ReloadAllExternalDataDirectoryConfigs();
     }
+    else if (pMsg1->m_sWhatToDo == "FreeGalResources")
+    {
+      xiiRenderWorld::ClearMainViews();
+      RunOneFrame();
+      xiiGALDevice::GetDefaultDevice()->WaitIdle();
+    }
+    else if (pMsg1->m_sWhatToDo == "FreeAllResources")
+    {
+      xiiResourceManager::FreeAllUnusedResources();
+      xiiRenderWorld::ClearMainViews();
+      RunOneFrame();
+      xiiGALDevice::GetDefaultDevice()->WaitIdle();
+    }
     else if (pMsg1->m_sWhatToDo == "ReloadResources")
     {
       if (pMsg1->m_sPayload == "ReloadAllResources")
@@ -399,8 +424,10 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       }
       m_IPC.SendMessage(&response);
     }
-    else
+		else
+		{
       xiiLog::Warning("Unknown xiiSimpleConfigMsgToEngine '{0}'", pMsg1->m_sWhatToDo);
+		}
   }
   else if (const auto* pMsg2 = xiiDynamicCast<const xiiResourceUpdateMsgToEngine*>(e.m_pMessage))
   {
@@ -601,6 +628,11 @@ void xiiEngineProcessGameApplication::Init_FileSystem_ConfigureDataDirs()
   xiiStringBuilder sAppDir   = ">sdk/Data/Tools/EditorEngineProcess";
   xiiStringBuilder sUserData = ">user/XII/EditorEngineProcess";
 
+	if (opt_OutputDir.IsOptionSpecified(nullptr))
+  {
+    sUserData = opt_OutputDir.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+  }
+
   // make sure these directories exist
   xiiFileSystem::CreateDirectoryStructure(sAppDir).AssertSuccess();
   xiiFileSystem::CreateDirectoryStructure(sUserData).AssertSuccess();
@@ -615,10 +647,15 @@ void xiiEngineProcessGameApplication::Init_FileSystem_ConfigureDataDirs()
   m_CustomFileSystemConfig.Apply();
 
   {
+    xiiStringBuilder sLogName = "LogEngine";
+    if (opt_LogName.IsOptionSpecified(nullptr))
+    {
+      sLogName = opt_LogName.GetOptionValue(xiiCommandLineOption::LogMode::Never);
+    }
     // We need the file system before we can start the html logger.
     xiiOsProcessID   uiProcessID = xiiProcess::GetCurrentProcessID();
     xiiStringBuilder sLogFile;
-    sLogFile.SetFormat(":appdata/Log_{0}.htm", uiProcessID);
+    sLogFile.SetFormat(":appdata/Logs/{0}_{1}.htm", sLogName, uiProcessID);
     m_LogHTML.BeginLog(sLogFile, "EditorEngineProcess");
   }
 }

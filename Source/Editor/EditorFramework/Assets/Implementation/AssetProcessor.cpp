@@ -68,7 +68,6 @@ xiiAssetProcessor::xiiAssetProcessor() :
 {
 }
 
-
 xiiAssetProcessor::~xiiAssetProcessor()
 {
   if (m_pThread)
@@ -218,7 +217,6 @@ xiiProcessTask::~xiiProcessTask()
   XII_DEFAULT_DELETE(m_pIPC);
 }
 
-
 xiiResult xiiProcessTask::StartProcess()
 {
   const xiiRTTI* pFirstAllowedMessageType = nullptr;
@@ -234,6 +232,17 @@ xiiResult xiiProcessTask::StartProcess()
   args << xiiToolsProject::GetSingleton()->GetProjectFile().GetData();
   args << "-renderer";
   args << xiiGameApplication::GetActiveRenderer().GetData(tmp);
+
+  {
+    xiiStringBuilder sRelativeData;
+    sRelativeData = ":APPDATA";
+
+    xiiStringBuilder sAbsoluteData;
+    xiiFileSystem::ResolvePath(sRelativeData, &sAbsoluteData, nullptr).AssertSuccess("Failed to resolve APPDATA dir!");
+
+    args << "-outputDir";
+    args << sAbsoluteData.GetData();
+  }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   const char* EditorProcessorExecutable = "xiiEditorProcessor.exe";
@@ -367,7 +376,6 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
   return false;
 }
 
-
 void xiiProcessTask::OnProcessCrashed(xiiStringView message)
 {
   ShutdownProcess();
@@ -409,6 +417,14 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           {
             m_AssetGuid = xiiUuid();
             m_AssetPath.Clear();
+
+            if (m_pIPC->IsClientAlive() && m_pIPC->IsConnected())
+            {
+              // If we have nothing else to do, we might as well free some resource memory the process holds.
+              xiiFreeAllResourcesMsg msg;
+              m_pIPC->SendMessage(&msg);
+            }
+
             return bStartNewWork; // call again if we should be looking for new work
           }
 

@@ -135,6 +135,29 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
     args << xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-TelemetryPort", 0, "1050").GetData(tmp);
   }
 
+  {
+    xiiStringBuilder sRelativeData;
+    sRelativeData = ":APPDATA";
+
+    xiiStringBuilder sAbsoluteData;
+    xiiFileSystem::ResolvePath(sRelativeData, &sAbsoluteData, nullptr).AssertSuccess("Failed to resolve APPDATA dir!");
+
+    args << "-outputDir";
+    args << sAbsoluteData.GetData();
+    args << "-logName";
+
+    if (xiiQtEditorApp::GetSingleton()->IsInHeadlessMode())
+    {
+      tmp.SetFormat("LogEditorProcessor_{}_Engine", xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-appid", 0));
+      args << tmp.GetData();
+    }
+    else
+    {
+      tmp.SetFormat("LogEditor_{}_Engine", xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-appid", 0));
+      args << tmp.GetData();
+    }
+  }
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   const char* EditorEngineProcessExecutableName = "xiiEditorEngineProcess.exe";
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
