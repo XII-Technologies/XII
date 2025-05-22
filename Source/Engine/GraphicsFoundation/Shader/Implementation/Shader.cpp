@@ -3,10 +3,8 @@
 #include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShader, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 #define XII_GAL_SHADER_CHECK(expression, ...)  \
   do                                           \

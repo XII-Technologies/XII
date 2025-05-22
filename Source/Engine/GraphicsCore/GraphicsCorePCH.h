@@ -9,3 +9,5 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
+
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
