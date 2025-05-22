@@ -22,12 +22,11 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
 {
   // Don't call base class implementation here since the state will be overwritten in this method anyways.
 
-  xiiSharedPtr<xiiGALDevice> pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiRenderContext*          pContext = renderViewContext.m_pRenderContext;
+  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
 
   auto pSkinnedRenderData = static_cast<const xiiSkinnedMeshRenderData*>(pRenderData);
 
-  if (pSkinnedRenderData->m_hSkinningTransforms.IsInvalidated())
+  if (!pSkinnedRenderData->m_pSkinningTransforms)
   {
     pContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
   }
@@ -35,7 +34,7 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
   {
     pContext->SetShaderPermutationVariable("VERTEX_SKINNING", "TRUE");
 
-    pContext->BindBuffer("skinningTransforms", pDevice->GetBuffer(pSkinnedRenderData->m_hSkinningTransforms)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    pContext->BindBuffer("skinningTransforms", pSkinnedRenderData->m_pSkinningTransforms->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   }
 }
 

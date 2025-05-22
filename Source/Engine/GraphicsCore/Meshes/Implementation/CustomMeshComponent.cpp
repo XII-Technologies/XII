@@ -15,7 +15,7 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 3, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 2, xiiComponentMode::Static)
 {
   XII_BEGIN_ATTRIBUTES
   {
@@ -55,8 +55,6 @@ void xiiCustomMeshComponent::SerializeComponent(xiiWorldWriter& inout_stream) co
 
   s << m_Color;
   s << m_hMaterial;
-
-  s << m_vCustomData;
 }
 
 void xiiCustomMeshComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -74,11 +72,6 @@ void xiiCustomMeshComponent::DeserializeComponent(xiiWorldReader& inout_stream)
     xiiUInt32 uiCategory = 0;
     s >> uiCategory;
   }
-
-  if (uiVersion >= 3)
-  {
-    s >> m_vCustomData;
-  }
 }
 
 xiiResult xiiCustomMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
@@ -92,7 +85,7 @@ xiiResult xiiCustomMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bound
   return XII_FAILURE;
 }
 
-xiiDynamicMeshBufferResourceHandle xiiCustomMeshComponent::CreateMeshResource(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives, xiiGALIndexType::Enum indexType)
+xiiDynamicMeshBufferResourceHandle xiiCustomMeshComponent::CreateMeshResource(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives, xiiGALValueType::Enum indexType)
 {
   xiiDynamicMeshBufferResourceDescriptor desc;
   desc.m_Topology        = topology;
@@ -146,18 +139,6 @@ const xiiColor& xiiCustomMeshComponent::GetColor() const
   return m_Color;
 }
 
-void xiiCustomMeshComponent::SetCustomData(const xiiVec4& vData)
-{
-  m_vCustomData = vData;
-
-  InvalidateCachedRenderData();
-}
-
-const xiiVec4& xiiCustomMeshComponent::GetCustomData() const
-{
-  return m_vCustomData;
-}
-
 void xiiCustomMeshComponent::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg)
 {
   SetMaterial(ref_msg.m_hMaterial);
@@ -166,13 +147,6 @@ void xiiCustomMeshComponent::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg
 void xiiCustomMeshComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
 {
   ref_msg.ModifyColor(m_Color);
-
-  InvalidateCachedRenderData();
-}
-
-void xiiCustomMeshComponent::OnMsgSetCustomData(xiiMsgSetCustomData& ref_msg)
-{
-  m_vCustomData.Set(ref_msg.m_fData0, ref_msg.m_fData1, ref_msg.m_fData2, ref_msg.m_fData3);
 
   InvalidateCachedRenderData();
 }
@@ -197,7 +171,6 @@ void xiiCustomMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
     pRenderData->m_hMesh            = m_hDynamicMesh;
     pRenderData->m_hMaterial        = m_hMaterial;
     pRenderData->m_Color            = m_Color;
-    pRenderData->m_vCustomData      = m_vCustomData;
     pRenderData->m_uiUniqueID       = GetUniqueIdForRendering();
     pRenderData->m_uiFirstPrimitive = xiiMath::Min(m_uiFirstPrimitive, pMesh->GetDescriptor().m_uiMaxPrimitives);
     pRenderData->m_uiNumPrimitives  = xiiMath::Min(m_uiNumPrimitives, pMesh->GetDescriptor().m_uiMaxPrimitives - pRenderData->m_uiFirstPrimitive);
@@ -223,7 +196,7 @@ void xiiCustomMeshComponent::OnActivated()
     geo.TriangulatePolygons();
     geo.ComputeTangents();
 
-    auto hMesh = CreateMeshResource(xiiGALPrimitiveTopology::Triangles, geo.GetVertices().GetCount(), geo.GetPolygons().GetCount(), xiiGALIndexType::UInt);
+    auto hMesh = CreateMeshResource(xiiGALPrimitiveTopology::TriangleList, geo.GetVertices().GetCount(), geo.GetPolygons().GetCount(), xiiGALValueType::UInt32);
 
     xiiResourceLock<xiiDynamicMeshBufferResource> pMesh(hMesh, xiiResourceAcquireMode::BlockTillLoaded);
 
@@ -265,7 +238,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiCustomMeshRenderData::FillSortingKey()
 {
-  m_uiFlipWinding  = m_GlobalTransform.HasMirrorScaling() ? 1 : 0;
+  m_uiFlipWinding  = m_GlobalTransform.ContainsNegativeScale() ? 1 : 0;
   m_uiUniformScale = m_GlobalTransform.ContainsUniformScale() ? 1 : 0;
 
   const xiiUInt32 uiMeshIDHash     = xiiHashingUtils::StringHashTo32(m_hMesh.GetResourceIDHash());
@@ -309,8 +282,7 @@ void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
 
 void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiRenderContext*     pRenderContext     = renderViewContext.m_pRenderContext;
-  xiiGALCommandEncoder* pGALCommandEncoder = pRenderContext->GetCommandEncoder();
+  xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
 
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
   pInstanceData->BindResources(pRenderContext);
@@ -337,11 +309,10 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
     pRenderContext->BindMaterial(pRenderData->m_hMaterial);
 
     xiiUInt32                       uiInstanceDataOffset = 0;
-    xiiArrayPtr<xiiPerInstanceData> instanceData         = pInstanceData->GetInstanceData(pRenderContext, 1, uiInstanceDataOffset);
+    xiiArrayPtr<xiiPerInstanceData> instanceData         = pInstanceData->GetInstanceData(1, uiInstanceDataOffset);
 
     instanceData[0].GameObjectID  = pRenderData->m_uiUniqueID;
     instanceData[0].Color         = pRenderData->m_Color;
-    instanceData[0].CustomData    = pRenderData->m_vCustomData;
     instanceData[0].ObjectToWorld = pRenderData->m_GlobalTransform;
 
     if (pRenderData->m_uiUniformScale)
@@ -359,10 +330,10 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
       instanceData[0].ObjectToWorldNormal = mInverse.GetTranspose();
     }
 
-    pInstanceData->UpdateInstanceData(pRenderContext, 1);
+    pInstanceData->UpdateInstanceData(pRenderContext->GetCommandList(), 1);
 
     const auto& desc = pBuffer->GetDescriptor();
-    pBuffer->UpdateGpuBuffer(pGALCommandEncoder);
+    pBuffer->UpdateGpuBuffer(pRenderContext->GetCommandList());
 
     // redo this after the primitive count has changed
     pRenderContext->BindMeshBuffer(pRenderData->m_hMesh);

@@ -28,7 +28,6 @@ struct XII_GRAPHICSCORE_DLL xiiInputLayoutInfo
   xiiUInt32                              m_uiHash;
 };
 
-
 struct XII_GRAPHICSCORE_DLL xiiMeshBufferResourceDescriptor
 {
 public:

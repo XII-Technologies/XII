@@ -16,13 +16,16 @@ xiiDynamicMeshBufferResource::xiiDynamicMeshBufferResource() :
 
 xiiDynamicMeshBufferResource::~xiiDynamicMeshBufferResource()
 {
+  #if 0
   XII_ASSERT_DEBUG(!m_VertexBuffer.IsInitialized(), "Implementation error");
   XII_ASSERT_DEBUG(!m_IndexBuffer.IsInitialized(), "Implementation error");
   XII_ASSERT_DEBUG(!m_ColorBuffer.IsInitialized(), "Implementation error");
+  #endif
 }
 
 xiiResourceLoadDesc xiiDynamicMeshBufferResource::UnloadData(Unload WhatToUnload)
 {
+  #if 0
   if (m_VertexBuffer.IsInitialized())
   {
     m_VertexBuffer.Deinitialize();
@@ -47,6 +50,7 @@ xiiResourceLoadDesc xiiDynamicMeshBufferResource::UnloadData(Unload WhatToUnload
   res.m_State                      = xiiResourceState::Unloaded;
 
   return res;
+  #endif
 }
 
 xiiResourceLoadDesc xiiDynamicMeshBufferResource::UpdateContent(xiiStreamReader* Stream)
@@ -66,6 +70,7 @@ void xiiDynamicMeshBufferResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryU
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBufferResourceDescriptor)
 {
+  #if 0
   XII_ASSERT_DEBUG(!m_VertexBuffer.IsInitialized(), "Implementation error");
   XII_ASSERT_DEBUG(!m_IndexBuffer.IsInitialized(), "Implementation error");
   XII_ASSERT_DEBUG(!m_ColorBuffer.IsInitialized(), "Implementation error");
@@ -176,6 +181,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
   // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again
   ModifyMemoryUsage().m_uiMemoryGPU = m_VertexData.GetHeapMemoryUsage() + m_Index32Data.GetHeapMemoryUsage() + m_Index16Data.GetHeapMemoryUsage() + m_ColorData.GetHeapMemoryUsage();
 
+  #endif
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
@@ -184,8 +190,9 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
   return res;
 }
 
-void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCommandEncoder, xiiUInt32 uiFirstVertex, xiiUInt32 uiNumVertices, xiiUInt32 uiFirstIndex, xiiUInt32 uiNumIndices, bool bCreateNewBuffer)
+void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pCommandList, xiiUInt32 uiFirstVertex, xiiUInt32 uiNumVertices, xiiUInt32 uiFirstIndex, xiiUInt32 uiNumIndices, bool bCreateNewBuffer)
 {
+  #if 0
   if (m_bAccessedVB && uiNumVertices > 0)
   {
     xiiGALBufferHandle hVertexBuffer = m_VertexBuffer.GetCurrentBuffer();
@@ -253,6 +260,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCom
       pGALCommandEncoder->UpdateBuffer(hIndexBuffer, sizeof(xiiUInt32) * uiFirstIndex, m_Index32Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), xiiGALUpdateMode::AheadOfTime);
     }
   }
+  #endif
 }
 
 

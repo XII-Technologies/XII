@@ -57,9 +57,9 @@ public:
   ~xiiDynamicMeshBufferResource();
 
   XII_ALWAYS_INLINE const xiiDynamicMeshBufferResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
-  XII_ALWAYS_INLINE xiiGALBufferHandle                            GetVertexBuffer() const { return m_hVertexBuffer; }
-  XII_ALWAYS_INLINE xiiGALBufferHandle                            GetIndexBuffer() const { return m_hIndexBuffer; }
-  XII_ALWAYS_INLINE xiiGALBufferHandle                            GetColorBuffer() const { return m_hColorBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetVertexBuffer() const { return m_pVertexBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetIndexBuffer() const { return m_pIndexBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetColorBuffer() const { return m_pColorBuffer; }
 
   /// \brief Grants write access to the vertex data, and flags the data as 'dirty'.
   xiiArrayPtr<xiiDynamicMeshVertex> AccessVertexData()
@@ -118,9 +118,9 @@ private:
   bool m_bAccessedIB = false;
   bool m_bAccessedCB = false;
 
-  xiiGALBufferHandle                     m_hVertexBuffer;
-  xiiGALBufferHandle                     m_hIndexBuffer;
-  xiiGALBufferHandle                     m_hColorBuffer;
+  xiiSharedPtr<xiiGALBuffer>             m_pVertexBuffer;
+  xiiSharedPtr<xiiGALBuffer>             m_pIndexBuffer;
+  xiiSharedPtr<xiiGALBuffer>             m_pColorBuffer;
   xiiDynamicMeshBufferResourceDescriptor m_Descriptor;
 
   xiiInputLayoutInfo                                                m_InputLayout;

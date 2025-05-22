@@ -6,10 +6,8 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Shader/Types.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiSkinnedMeshRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiSkinningState::xiiSkinningState() = default;
 
@@ -20,14 +18,7 @@ xiiSkinningState::~xiiSkinningState()
 
 void xiiSkinningState::Clear()
 {
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  if (!m_hGpuBuffer.IsInvalidated())
-  {
-    pDevice->DestroyBuffer(m_hGpuBuffer);
-    m_hGpuBuffer.Invalidate();
-  }
-
+  m_pGpuBuffer.Clear();
   m_Transforms.Clear();
 }
 
@@ -35,7 +26,7 @@ void xiiSkinningState::TransformsChanged()
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (m_hGpuBuffer.IsInvalidated())
+  if (!m_pGpuBuffer)
   {
     if (m_Transforms.GetCount() == 0)
       return;
@@ -51,9 +42,9 @@ void xiiSkinningState::TransformsChanged()
     xiiGALBufferData initData;
     initData.m_pData      = m_Transforms.GetData();
     initData.m_uiDataSize = m_Transforms.GetArrayPtr().ToByteArray().GetCount();
-    m_hGpuBuffer          = pDevice->CreateBuffer(bufferDescription, &initData);
+    m_pGpuBuffer          = pDevice->CreateBuffer(bufferDescription, &initData);
 
-    pDevice->GetBuffer(m_hGpuBuffer)->SetDebugName("xiiSkinningState");
+    m_pGpuBuffer->SetDebugName("xiiSkinningState");
   }
   else
   {

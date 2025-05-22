@@ -349,7 +349,6 @@ xiiArrayPtr<xiiPerInstanceData> xiiInstancedMeshComponent::GetInstanceData() con
     instanceData[i].BoundingSphereRadius = fBoundingSphereRadius * m_RawInstancedData[i].m_transform.GetMaxScale();
 
     instanceData[i].Color = m_Color * m_RawInstancedData[i].m_color;
-    instanceData[i].CustomData.SetZero(); // unused
   }
 
   return instanceData;

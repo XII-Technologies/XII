@@ -3,12 +3,10 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Meshes/CpuMeshResource.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCpuMeshResource, 1, xiiRTTIDefaultAllocator<xiiCpuMeshResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiCpuMeshResource);
-// clang-format on
 
 xiiCpuMeshResource::xiiCpuMeshResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
@@ -82,7 +80,5 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiCpuMeshResource, xiiMeshResourceDescriptor)
 
   return res;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_CpuMeshResource);
