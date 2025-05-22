@@ -82,15 +82,16 @@ xiiQtAssetCuratorPanel::xiiQtAssetCuratorPanel(ads::CDockManager* pDockManager) 
   xiiAssetProcessor::GetSingleton()->AddLogWriter(xiiMakeDelegate(&xiiQtAssetCuratorPanel::LogWriter, this));
 
   m_pFilter = new xiiQtAssetCuratorFilter(this);
-  m_pModel  = new xiiQtAssetBrowserModel(this, m_pFilter);
+  m_pModel  = QSharedPointer<xiiQtAssetBrowserModel>(new xiiQtAssetBrowserModel(this, m_pFilter));
+  m_pModel->Initialize();
   m_pModel->SetIconMode(false);
 
   TransformLog->ShowControls(false);
 
-  ListAssets->setModel(m_pModel);
+  ListAssets->setModel(m_pModel.data());
   ListAssets->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
   XII_VERIFY(connect(ListAssets->selectionModel(), &QItemSelectionModel::selectionChanged, this, &xiiQtAssetCuratorPanel::OnAssetSelectionChanged) != nullptr, "signal/slot connection failed");
-  XII_VERIFY(connect(m_pModel, &QAbstractItemModel::dataChanged, this,
+  XII_VERIFY(connect(m_pModel.data(), &QAbstractItemModel::dataChanged, this,
                      [this](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
                        if (m_SelectedIndex.isValid() && topLeft.row() <= m_SelectedIndex.row() && m_SelectedIndex.row() <= bottomRight.row())
                        {
@@ -99,7 +100,7 @@ xiiQtAssetCuratorPanel::xiiQtAssetCuratorPanel(ads::CDockManager* pDockManager) 
                      }),
              "signal/slot connection failed");
 
-  XII_VERIFY(connect(m_pModel, &QAbstractItemModel::modelReset, this,
+  XII_VERIFY(connect(m_pModel.data(), &QAbstractItemModel::modelReset, this,
                      [this]() {
                        m_SelectedIndex = QPersistentModelIndex();
                        UpdateIssueInfo();

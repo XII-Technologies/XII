@@ -12,7 +12,7 @@ class xiiQtAssetBrowserModel;
 struct xiiAssetCuratorEvent;
 class xiiQtAssetBrowserModel;
 
-class xiiQtAssetBrowserWidget : public QWidget, public Ui_AssetBrowserWidget
+class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserWidget : public QWidget, public Ui_AssetBrowserWidget
 {
   Q_OBJECT
 public:
@@ -41,8 +41,8 @@ public:
   void dragLeaveEvent(QDragLeaveEvent* pEvent) override;
   void dropEvent(QDropEvent* pEvent) override;
 
-  xiiQtAssetBrowserModel*        GetAssetBrowserModel() { return m_pModel; }
-  const xiiQtAssetBrowserModel*  GetAssetBrowserModel() const { return m_pModel; }
+  xiiQtAssetBrowserModel*        GetAssetBrowserModel() { return m_pModel.data(); }
+  const xiiQtAssetBrowserModel*  GetAssetBrowserModel() const { return m_pModel.data(); }
   xiiQtAssetBrowserFilter*       GetAssetBrowserFilter() { return m_pFilter; }
   const xiiQtAssetBrowserFilter* GetAssetBrowserFilter() const { return m_pFilter; }
 
@@ -109,7 +109,7 @@ private:
   Mode                       m_Mode     = Mode::Browser;
   xiiQtToolBarActionMapView* m_pToolbar = nullptr;
   xiiString                  m_sAllTypesFilter;
-  xiiQtAssetBrowserModel*    m_pModel  = nullptr;
+  QSharedPointer<xiiQtAssetBrowserModel> m_pModel  = nullptr;
   xiiQtAssetBrowserFilter*   m_pFilter = nullptr;
 
   /// \brief After creating a new asset and renaming it, we want to open it as well.

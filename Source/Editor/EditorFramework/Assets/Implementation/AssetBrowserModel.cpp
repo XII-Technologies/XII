@@ -106,8 +106,19 @@ struct FileComparer
 xiiQtAssetBrowserModel::xiiQtAssetBrowserModel(QObject* pParent, xiiQtAssetFilter* pFilter) :
   QAbstractItemModel(pParent), m_pFilter(pFilter)
 {
-  XII_ASSERT_DEBUG(pFilter != nullptr, "xiiQtAssetBrowserModel requires a valid filter.");
-  connect(pFilter, &xiiQtAssetFilter::FilterChanged, this, [this]() { resetModel(); });
+}
+
+xiiQtAssetBrowserModel::~xiiQtAssetBrowserModel()
+{
+  xiiFileSystemModel::GetSingleton()->m_FileChangedEvents.RemoveEventHandler(m_FileChangedSubscription);
+  xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.RemoveEventHandler(m_FolderChangedSubscription);
+  xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::AssetCuratorEventHandler, this));
+}
+
+void xiiQtAssetBrowserModel::Initialize()
+{
+  XII_ASSERT_DEBUG(m_pFilter != nullptr, "xiiQtAssetBrowserModel requires a valid filter.");
+  connect(m_pFilter, &xiiQtAssetFilter::FilterChanged, this, [this]() { resetModel(); });
 
   xiiAssetCurator::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::AssetCuratorEventHandler, this));
 
@@ -117,15 +128,20 @@ xiiQtAssetBrowserModel::xiiQtAssetBrowserModel(QObject* pParent, xiiQtAssetFilte
   XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageLoaded, this, &xiiQtAssetBrowserModel::ThumbnailLoaded) != nullptr, "signal/slot connection failed");
   XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageInvalidated, this, &xiiQtAssetBrowserModel::ThumbnailInvalidated) != nullptr, "signal/slot connection failed");
 
-  xiiFileSystemModel::GetSingleton()->m_FileChangedEvents.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::FileSystemFileEventHandler, this));
-  xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::FileSystemFolderEventHandler, this));
-}
-
-xiiQtAssetBrowserModel::~xiiQtAssetBrowserModel()
-{
-  xiiFileSystemModel::GetSingleton()->m_FileChangedEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::FileSystemFileEventHandler, this));
-  xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::FileSystemFolderEventHandler, this));
-  xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::AssetCuratorEventHandler, this));
+  QWeakPointer<xiiQtAssetBrowserModel> pWeak = sharedFromThis();
+  m_FileChangedSubscription                  = xiiFileSystemModel::GetSingleton()->m_FileChangedEvents.AddEventHandler([pWeak](const xiiFileChangedEvent& e) {
+    if (QSharedPointer<xiiQtAssetBrowserModel> strong = pWeak.toStrongRef())
+    {
+      strong->FileSystemFileEventHandler(e);
+    }
+  });
+  m_FolderChangedSubscription                = xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.AddEventHandler([pWeak](const xiiFolderChangedEvent& e) {
+    if (QSharedPointer<xiiQtAssetBrowserModel> strong = pWeak.toStrongRef())
+    {
+      strong->FileSystemFolderEventHandler(e);
+    }
+  });
+  xiiAssetDocumentGenerator::GetSupportsFileTypes(m_ImportExtensions);
 }
 
 void xiiQtAssetBrowserModel::AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
@@ -137,6 +153,11 @@ void xiiQtAssetBrowserModel::AssetCuratorEventHandler(const xiiAssetCuratorEvent
       VisibleEntry ve;
       ve.m_Guid         = e.m_AssetGuid;
       ve.m_sAbsFilePath = e.m_pInfo->m_pAssetInfo->m_Path;
+      ve.m_Flags = xiiAssetBrowserItemFlags::File;
+      if (ve.m_Guid.IsValid())
+      {
+        ve.m_Flags |= xiiAssetBrowserItemFlags::Asset;
+      }
 
       HandleEntry(ve, AssetOp::Updated);
       break;
@@ -313,25 +334,29 @@ void xiiQtAssetBrowserModel::HandleEntry(const VisibleEntry& entry, AssetOp op)
       endRemoveRows();
     }
   }
-  else
+  else // Updated.
   {
-    // Equal?
+    // Updated entries can cause the filter function `IsAssetFiltered` to change its result, e.g. the transform issues list in the curator panel shows assets that were updated from a healthy state to an error state.
+    // Thus, updated entries could be missing in the list at this point, so we need to first check if the item already exists:
     if (uiInsertIndex < m_EntriesToDisplay.GetCount() && !cmp.Less(*pLB, entry) && !cmp.Less(entry, *pLB))
     {
+      // Already exists.
       QModelIndex idx = index(uiInsertIndex, 0);
       Q_EMIT dataChanged(idx, idx);
     }
     else
     {
+      // Item not found. Do an exhaustive search in case the name was changed in which the order is no longer the same.
       xiiInt32 oldIndex = FindAssetIndex(entry.m_Guid);
       if (oldIndex != -1)
       {
-        // Name has changed, remove old entry
+        // Order (most likely name) has changed, remove old entry and insert new one.
         beginRemoveRows(QModelIndex(), oldIndex, oldIndex);
         m_EntriesToDisplay.RemoveAtAndCopy(oldIndex);
         m_DisplayedEntries.Remove(entry.m_Guid);
         endRemoveRows();
       }
+      // Reinsert the updated entry.
       HandleEntry(entry, AssetOp::Add);
     }
   }
@@ -611,6 +636,9 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
 bool xiiQtAssetBrowserModel::setData(const QModelIndex& index, const QVariant& value, int iRole)
 {
   if (!index.isValid())
+    return false;
+
+  if (iRole != Qt::EditRole)
     return false;
 
   const xiiInt32 iRow = index.row();
