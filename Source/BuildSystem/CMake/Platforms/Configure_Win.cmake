@@ -142,9 +142,9 @@ macro(xii_platformhook_download_qt)
     endif()
 
     if((XII_QT_DIR STREQUAL "XII_QT_DIR-NOTFOUND") OR(XII_QT_DIR STREQUAL ""))
-      xii_download_and_extract("${XII_SDK_URL}" "${CMAKE_BINARY_DIR}" "${XII_SDK_VERSION}")
+      xii_download_and_extract("${XII_SDK_URL}" "${CMAKE_BINARY_DIR}/.." "${XII_SDK_VERSION}")
 
-      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation" FORCE)
+      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/../${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation" FORCE)
     endif()
   endif()
 endmacro()
