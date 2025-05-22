@@ -71,9 +71,9 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   if (format == xiiSourceFormat::Color4Channel8BitNormalized || format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
   {
     xiiGALResourceFormat::Enum preferredFormat = xiiGALResourceFormat::Unknown;
-    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hRTs[0]))
+    if (renderTargets.m_pRTs[0])
     {
-      auto rendertargetDesc = pTextureView->GetTexture()->GetDescription();
+      auto rendertargetDesc = renderTargets.m_pRTs[0]->GetTexture()->GetDescription();
 
       preferredFormat = rendertargetDesc.m_Format;
     }
@@ -83,6 +83,7 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
       case xiiGALResourceFormat::RGBA8UNormalized:
       case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
       default:
+      {
         if (format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
         {
           textureDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
@@ -91,9 +92,11 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
         {
           textureDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
         }
-        break;
+      }
+      break;
       case xiiGALResourceFormat::BGRA8UNormalized:
       case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      {
         if (format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
         {
           textureDescription.m_Format = xiiGALResourceFormat::BGRA8UNormalizedSRGB;
@@ -102,7 +105,8 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
         {
           textureDescription.m_Format = xiiGALResourceFormat::BGRA8UNormalized;
         }
-        break;
+      }
+      break;
     }
   }
   else
@@ -161,10 +165,9 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
   bool                       bRecreateFramebuffer = true;
   const bool                 bIsDepthAttachment   = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 
-  if (!m_hRenderPass.IsInvalidated())
+  if (m_pRenderPass)
   {
-    xiiGALRenderPass* pRenderPass           = pDevice->GetRenderPass(m_hRenderPass);
-    const auto&       attachmentDescription = pRenderPass->GetDescription().m_Attachments.PeekBack();
+    const auto&       attachmentDescription = m_pRenderPass->GetDescription().m_Attachments.PeekBack();
 
     if (attachmentDescription.m_Format == pOutput->m_TextureDescription.m_Format && attachmentDescription.m_uiSampleCount == m_SampleCount.GetValue())
     {
@@ -172,12 +175,11 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     }
   }
 
-  if (!m_hFramebuffer.IsInvalidated())
+  if (m_pFramebuffer)
   {
-    xiiGALFramebuffer* pFramebuffer    = pDevice->GetFramebuffer(m_hFramebuffer);
-    const auto&        hAttachmentView = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
+    const auto&        pAttachmentView = pOutput->m_pTexture->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
 
-    if (pDevice->GetFramebuffer(m_hFramebuffer)->GetDescription().m_Attachments.PeekBack() == hAttachmentView)
+    if (m_pFramebuffer->GetDescription().m_Attachments.PeekBack() == pAttachmentView)
     {
       bRecreateFramebuffer = false;
     }
@@ -189,7 +191,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
 
     FreeCachedRenderPasses();
 
-    const auto& textureDescription = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription();
+    const auto& textureDescription = pOutput->m_pTexture->GetDescription();
 
     xiiGALRenderPassCreationDescription renderPassDescription;
     auto&                               subpassDescription    = renderPassDescription.m_SubPasses.ExpandAndGetRef();
@@ -229,28 +231,28 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
       dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::RenderTargetWrite;
     }
 
-    m_hRenderPass = pDevice->CreateRenderPass(renderPassDescription);
-    XII_ASSERT_DEV(!m_hRenderPass.IsInvalidated(), "Failed to create render pass.");
+    m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+    XII_ASSERT_DEV(m_pRenderPass != nullptr, "Failed to create render pass.");
   }
 
   if (bRecreateFramebuffer)
   {
-    const auto& attachmentDescription     = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription();
-    const auto& hAttachmentView           = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
-    const auto& attachmentViewDescription = pDevice->GetTextureView(hAttachmentView)->GetDescription();
+    const auto& attachmentDescription     = pOutput->m_pTexture->GetDescription();
+    const auto& pAttachmentView           = pOutput->m_pTexture->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
+    const auto& attachmentViewDescription = pAttachmentView->GetDescription();
     xiiVec3U32  vSize                     = xiiGALTextureUtilities::GetMipLevelSize(attachmentViewDescription.m_uiMostDetailedMip, attachmentDescription);
 
     xiiGALFramebufferCreationDescription framebufferDescription;
-    framebufferDescription.m_hRenderPass       = m_hRenderPass;
+    framebufferDescription.m_pRenderPass       = m_pRenderPass;
     framebufferDescription.m_FramebufferSize   = {vSize.x, vSize.y};
     framebufferDescription.m_uiArraySliceCount = attachmentDescription.GetArraySize();
-    framebufferDescription.m_Attachments.PushBack(hAttachmentView);
+    framebufferDescription.m_Attachments.PushBack(pAttachmentView);
 
-    m_hFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
-    XII_ASSERT_DEV(!m_hFramebuffer.IsInvalidated(), "Failed to create frame buffer.");
+    m_pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+    XII_ASSERT_DEV(m_pFramebuffer != nullptr, "Failed to create frame buffer.");
   }
 
-  xiiGALBeginRenderPassDescription renderPassDescription = {.m_hRenderPass = m_hRenderPass, .m_hFramebuffer = m_hFramebuffer};
+  xiiGALBeginRenderPassDescription renderPassDescription = {.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
 
   if (bIsDepthAttachment)
   {
@@ -315,18 +317,8 @@ xiiResult xiiSourcePass::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiSourcePass::FreeCachedRenderPasses()
 {
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  if (!m_hRenderPass.IsInvalidated())
-  {
-    pDevice->DestroyRenderPass(m_hRenderPass);
-    m_hRenderPass.Invalidate();
-  }
-  if (!m_hFramebuffer.IsInvalidated())
-  {
-    pDevice->DestroyFramebuffer(m_hFramebuffer);
-    m_hFramebuffer.Invalidate();
-  }
+  m_pFramebuffer.Clear();
+  m_pRenderPass.Clear();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SourcePass);

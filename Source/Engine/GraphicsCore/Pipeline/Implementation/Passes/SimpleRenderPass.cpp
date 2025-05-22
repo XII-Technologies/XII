@@ -48,9 +48,9 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
   else
   {
     // If no input is available, we use the render target setup instead.
-    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hRTs[0]))
+    if (renderTargets.m_pRTs[0])
     {
-      outputs[m_PinColor.m_uiOutputIndex] = pTextureView->GetTexture()->GetDescription();
+      outputs[m_PinColor.m_uiOutputIndex] = renderTargets.m_pRTs[0]->GetTexture()->GetDescription();
       outputs[m_PinColor.m_uiOutputIndex].m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
     }
   }
@@ -63,9 +63,9 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
   else
   {
     // If no input is available, we use the render target setup instead.
-    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hDSTarget))
+    if (renderTargets.m_pDSTarget)
     {
-      outputs[m_PinDepthStencil.m_uiOutputIndex] = pTextureView->GetTexture()->GetDescription();
+      outputs[m_PinDepthStencil.m_uiOutputIndex] = renderTargets.m_pDSTarget->GetTexture()->GetDescription();
     }
   }
 
@@ -80,12 +80,12 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
   xiiGALRenderingSetup renderingSetup;
   if (inputs[m_PinColor.m_uiInputIndex])
   {
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(inputs[m_PinColor.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, inputs[m_PinColor.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
 
   if (inputs[m_PinDepthStencil.m_uiInputIndex])
   {
-    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(inputs[m_PinDepthStencil.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(inputs[m_PinDepthStencil.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   }
 
   auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());

@@ -60,7 +60,6 @@ XII_FORCE_INLINE xiiRenderDataBatch::Iterator<T>::Iterator(const SortableRenderD
   m_pEnd     = pEnd;
 }
 
-
 XII_ALWAYS_INLINE xiiUInt32 xiiRenderDataBatch::GetCount() const
 {
   return m_Data.GetCount();

@@ -100,43 +100,40 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
 
     // Setup input view and sampler
     xiiGALTextureViewCreationDescription rvcd;
-    rvcd.m_hTexture                              = inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_TextureHandle;
-    xiiGALTextureViewHandle hBlurSourceInputView = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
-    rvcd.m_hTexture                              = inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle;
-    xiiGALTextureViewHandle hDepthInputView      = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
+    xiiSharedPtr<xiiGALTextureView>      pBlurSourceInputView = inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_pTexture->CreateView(rvcd);
+    xiiSharedPtr<xiiGALTextureView>      pDepthInputView      = inputs[m_PinDepthInput.m_uiInputIndex]->m_pTexture->CreateView(rvcd);
 
     // Get temp texture for horizontal target / vertical source.
     xiiGALTextureCreationDescription tempTextureDesc = outputs[m_PinBlurSourceInput.m_uiInputIndex]->m_TextureDescription;
     tempTextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
-    xiiGALTextureHandle tempTexture           = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
-    rvcd.m_hTexture                           = tempTexture;
-    xiiGALTextureViewHandle hTempTextureRView = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
+    xiiSharedPtr<xiiGALTexture>     tempTexture       = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
+    xiiSharedPtr<xiiGALTextureView> pTempTextureRView = tempTexture->CreateView(rvcd);
 
     xiiGALRenderingSetup renderingSetup;
 
     // Bind shader and inputs
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-    renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", hDepthInputView);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
+    renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", pDepthInputView);
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiBilateralBlurConstants", m_hBilateralBlurCB);
 
     // Horizontal
     {
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, tempTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLUR_DIRECTION", "BLUR_DIRECTION_HORIZONTAL");
-      renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", hBlurSourceInputView);
+      renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", pBlurSourceInputView);
       renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
     }
 
     // Vertical
     {
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, outputs[m_PinOutput.m_uiOutputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLUR_DIRECTION", "BLUR_DIRECTION_VERTICAL");
-      renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", hTempTextureRView);
+      renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", pTempTextureRView);
       renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
     }
 

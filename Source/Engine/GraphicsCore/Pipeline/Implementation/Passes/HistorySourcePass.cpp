@@ -36,28 +36,28 @@ xiiHistorySourcePassTextureDataProvider::~xiiHistorySourcePassTextureDataProvide
 
 void xiiHistorySourcePassTextureDataProvider::ResetTexture(xiiStringView sSourcePassName)
 {
-  if (xiiGALTextureHandle* pHandle = m_Data.GetValue(sSourcePassName))
+  if (xiiSharedPtr<xiiGALTexture>* pTexture = m_Data.GetValue(sSourcePassName))
   {
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-    pDevice->DestroyTexture(*pHandle);
+    pTexture->Clear();
+
     m_Data.Remove(sSourcePassName);
   }
 }
 
-xiiGALTextureHandle xiiHistorySourcePassTextureDataProvider::GetOrCreateTexture(xiiStringView sSourcePassName, const xiiGALTextureCreationDescription& desc)
+xiiSharedPtr<xiiGALTexture> xiiHistorySourcePassTextureDataProvider::GetOrCreateTexture(xiiStringView sSourcePassName, const xiiGALTextureCreationDescription& desc)
 {
-  bool                 bExisted;
-  xiiGALTextureHandle& hTexture = m_Data.FindOrAdd(sSourcePassName, &bExisted);
+  bool                         bExisted;
+  xiiSharedPtr<xiiGALTexture>& pTexture = m_Data.FindOrAdd(sSourcePassName, &bExisted);
   if (!bExisted)
   {
     xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-    hTexture                           = pDevice->CreateTexture(desc);
-    if (hTexture.IsInvalidated())
+    pTexture                           = pDevice->CreateTexture(desc);
+    if (!pTexture)
     {
       xiiLog::Error("Failed to create history source pass texture.");
     }
   }
-  return hTexture;
+  return pTexture;
 }
 
 
@@ -81,10 +81,10 @@ bool xiiHistorySourcePass::GetRenderTargetDescriptions(const xiiView& view, cons
   return true;
 }
 
-xiiGALTextureViewHandle xiiHistorySourcePass::QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc)
+xiiSharedPtr<xiiGALTextureView> xiiHistorySourcePass::QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc)
 {
   auto pData = GetPipeline()->GetFrameDataProvider<xiiHistorySourcePassTextureDataProvider>();
-  return xiiGALDevice::GetDefaultDevice()->GetTexture(pData->GetOrCreateTexture(GetName(), desc))->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  return pData->GetOrCreateTexture(GetName(), desc)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 }
 
 void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
@@ -100,10 +100,9 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
   bool                       bRecreateFramebuffer = true;
   const bool                 bIsDepthAttachment   = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 
-  if (!m_hRenderPass.IsInvalidated())
+  if (m_pRenderPass)
   {
-    xiiGALRenderPass* pRenderPass           = pDevice->GetRenderPass(m_hRenderPass);
-    const auto&       attachmentDescription = pRenderPass->GetDescription().m_Attachments.PeekBack();
+    const auto& attachmentDescription = m_pRenderPass->GetDescription().m_Attachments.PeekBack();
 
     if (attachmentDescription.m_Format == pOutput->m_TextureDescription.m_Format && attachmentDescription.m_uiSampleCount == m_MsaaMode.GetValue())
     {
@@ -111,12 +110,11 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
     }
   }
 
-  if (!m_hFramebuffer.IsInvalidated())
+  if (m_pFramebuffer)
   {
-    xiiGALFramebuffer* pFramebuffer    = pDevice->GetFramebuffer(m_hFramebuffer);
-    const auto&        hAttachmentView = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
+    const auto& pAttachmentView = pOutput->m_pTexture->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
 
-    if (pDevice->GetFramebuffer(m_hFramebuffer)->GetDescription().m_Attachments.PeekBack() == hAttachmentView)
+    if (m_pFramebuffer->GetDescription().m_Attachments.PeekBack() == pAttachmentView)
     {
       bRecreateFramebuffer = false;
     }
@@ -128,7 +126,7 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
 
     FreeCachedRenderPasses();
 
-    const auto& attachmentDescription = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription();
+    const auto& attachmentDescription = pOutput->m_pTexture->GetDescription();
 
     xiiGALRenderPassCreationDescription renderPassDescription;
     auto&                               subpassDescription    = renderPassDescription.m_SubPasses.ExpandAndGetRef();
@@ -180,28 +178,28 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
       dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::RenderTargetWrite;
     }
 
-    m_hRenderPass = pDevice->CreateRenderPass(renderPassDescription);
-    XII_ASSERT_DEV(!m_hRenderPass.IsInvalidated(), "Failed to create render pass.");
+    m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+    XII_ASSERT_DEV(m_pRenderPass != nullptr, "Failed to create render pass.");
   }
 
   if (bRecreateFramebuffer)
   {
-    const auto& attachmentDescription     = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription();
-    const auto& hAttachmentView           = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
-    const auto& attachmentViewDescription = pDevice->GetTextureView(hAttachmentView)->GetDescription();
+    const auto& attachmentDescription     = pOutput->m_pTexture->GetDescription();
+    const auto& pAttachmentView           = pOutput->m_pTexture->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
+    const auto& attachmentViewDescription = pAttachmentView->GetDescription();
     xiiVec3U32  vSize                     = xiiGALTextureUtilities::GetMipLevelSize(attachmentViewDescription.m_uiMostDetailedMip, attachmentDescription);
 
     xiiGALFramebufferCreationDescription framebufferDescription;
-    framebufferDescription.m_hRenderPass       = m_hRenderPass;
+    framebufferDescription.m_pRenderPass       = m_pRenderPass;
     framebufferDescription.m_FramebufferSize   = {vSize.x, vSize.y};
     framebufferDescription.m_uiArraySliceCount = attachmentDescription.GetArraySize();
-    framebufferDescription.m_Attachments.PushBack(hAttachmentView);
+    framebufferDescription.m_Attachments.PushBack(pAttachmentView);
 
-    m_hFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
-    XII_ASSERT_DEV(!m_hFramebuffer.IsInvalidated(), "Failed to create frame buffer.");
+    m_pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+    XII_ASSERT_DEV(m_pFramebuffer != nullptr, "Failed to create frame buffer.");
   }
 
-  xiiGALBeginRenderPassDescription renderPassDescription = {.m_hRenderPass = m_hRenderPass, .m_hFramebuffer = m_hFramebuffer};
+  xiiGALBeginRenderPassDescription renderPassDescription = {.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
 
   if (bIsDepthAttachment)
   {
@@ -258,18 +256,8 @@ xiiResult xiiHistorySourcePass::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiHistorySourcePass::FreeCachedRenderPasses()
 {
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  if (!m_hRenderPass.IsInvalidated())
-  {
-    pDevice->DestroyRenderPass(m_hRenderPass);
-    m_hRenderPass.Invalidate();
-  }
-  if (!m_hFramebuffer.IsInvalidated())
-  {
-    pDevice->DestroyFramebuffer(m_hFramebuffer);
-    m_hFramebuffer.Invalidate();
-  }
+  m_pRenderPass.Clear();
+  m_pFramebuffer.Clear();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_HistorySourcePass);
