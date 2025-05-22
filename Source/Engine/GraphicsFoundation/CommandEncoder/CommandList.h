@@ -285,6 +285,9 @@ public:
   /// \brief This returns the active frame buffer handle for this object.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALFramebuffer> GetFramebuffer() const { return m_pFramebuffer; };
 
+  /// \brief This returns the command list statistics.
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListStatistics& GetCommandListStatistics() const { return m_CommandListStatistics; };
+
 public:
   /// \brief Submits a command list to the command queue for execution. The command list is reset after the execution on the command queue.
   ///

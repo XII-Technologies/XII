@@ -274,8 +274,8 @@ protected:
   virtual xiiResult InitializePlatform()     = 0;
   virtual xiiResult PostInitializePlatform() = 0;
 
-  virtual void BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains, const xiiUInt64 uiRenderFrame = 0U) = 0;
-  virtual void EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains)                                       = 0;
+  virtual void BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> pSwapChains, const xiiUInt64 uiRenderFrame = 0U) = 0;
+  virtual void EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> pSwapChains)                                       = 0;
 
   virtual xiiInternal::NewInstance<xiiGALSwapChain>                 CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)                                              = 0;
   virtual xiiInternal::NewInstance<xiiGALBlendState>                CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)                                            = 0;

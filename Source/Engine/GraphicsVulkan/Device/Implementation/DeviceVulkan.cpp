@@ -1267,15 +1267,15 @@ void xiiGALDeviceVulkan::ReclaimCommandBufferLater(xiiGALCommandBufferPoolVulkan
   m_pDeferredDeletionQueue->EnqueueResource(pCommandBufferPool, vkCommandBuffer);
 }
 
-void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains, const xiiUInt64 uiRenderFrame)
+void xiiGALDeviceVulkan::BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> pSwapChains, const xiiUInt64 uiRenderFrame)
 {
-  XII_IGNORE_UNUSED(swapchains);
+  XII_IGNORE_UNUSED(pSwapChains);
   XII_IGNORE_UNUSED(uiRenderFrame);
 }
 
-void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> swapchains)
+void xiiGALDeviceVulkan::EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> pSwapChains)
 {
-  for (auto pSwapChain : swapchains)
+  for (auto pSwapChain : pSwapChains)
   {
     pSwapChain->Present();
   }

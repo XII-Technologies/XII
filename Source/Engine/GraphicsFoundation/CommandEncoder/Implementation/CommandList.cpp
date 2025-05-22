@@ -1393,55 +1393,60 @@ void xiiGALCommandListStatistics::SetStatistics()
   // clang-format off
   xiiStats::SetStat("CommandList/Submit", m_CommandListCounters.m_uiSubmit);
 
+  // Primitive statistics, counts for geometry-related commands.
   xiiStats::SetStat("CommandList/Primitives/TotalTriangleCount", GetTotalTriangleCount());
   xiiStats::SetStat("CommandList/Primitives/TotalLineCount",     GetTotalLineCount());
   xiiStats::SetStat("CommandList/Primitives/TotalPointCount",    GetTotalPointCount());
 
-  xiiStats::SetStat("CommandList/Pipeline/SetPipelineState",      m_CommandListCounters.m_uiSetPipelineState);
-  xiiStats::SetStat("CommandList/Pipeline/CommitShaderResources", m_CommandListCounters.m_uiCommitShaderResources);
-  xiiStats::SetStat("CommandList/Pipeline/SetVertexBuffers",      m_CommandListCounters.m_uiSetVertexBuffers);
-  xiiStats::SetStat("CommandList/Pipeline/SetIndexBuffer",        m_CommandListCounters.m_uiSetIndexBuffer);
-  xiiStats::SetStat("CommandList/Pipeline/SetBlendFactors",       m_CommandListCounters.m_uiSetBlendFactors);
-  xiiStats::SetStat("CommandList/Pipeline/SetStencilRef",         m_CommandListCounters.m_uiSetStencilRef);
-  xiiStats::SetStat("CommandList/Pipeline/SetViewports",          m_CommandListCounters.m_uiSetViewports);
-  xiiStats::SetStat("CommandList/Pipeline/SetScissorRects",       m_CommandListCounters.m_uiSetScissorRects);
-  xiiStats::SetStat("CommandList/Pipeline/BeginRenderPass",       m_CommandListCounters.m_uiBeginRenderPass);
-  xiiStats::SetStat("CommandList/Pipeline/NextSubPass",           m_CommandListCounters.m_uiNextSubPass);
-  xiiStats::SetStat("CommandList/Pipeline/ClearRenderTarget",     m_CommandListCounters.m_uiClearRenderTarget);
-  xiiStats::SetStat("CommandList/Pipeline/ClearDepthStencil",     m_CommandListCounters.m_uiClearDepthStencil);
+  // Pipeline management, configuration of rendering pipeline.
+  xiiStats::SetStat("CommandList/Pipeline/StateManagement/SetPipelineState",      m_CommandListCounters.m_uiSetPipelineState);
+  xiiStats::SetStat("CommandList/Pipeline/StateManagement/CommitShaderResources", m_CommandListCounters.m_uiCommitShaderResources);
+  xiiStats::SetStat("CommandList/Pipeline/StateManagement/SetVertexBuffers",      m_CommandListCounters.m_uiSetVertexBuffers);
+  xiiStats::SetStat("CommandList/Pipeline/StateManagement/SetIndexBuffer",        m_CommandListCounters.m_uiSetIndexBuffer);
+  xiiStats::SetStat("CommandList/Pipeline/Blending/SetBlendFactors",              m_CommandListCounters.m_uiSetBlendFactors);
+  xiiStats::SetStat("CommandList/Pipeline/Stencil/SetStencilRef",                 m_CommandListCounters.m_uiSetStencilRef);
+  xiiStats::SetStat("CommandList/Pipeline/Viewports/SetViewports",                m_CommandListCounters.m_uiSetViewports);
+  xiiStats::SetStat("CommandList/Pipeline/Viewports/SetScissorRects",             m_CommandListCounters.m_uiSetScissorRects);
+  xiiStats::SetStat("CommandList/Pipeline/Passes/BeginRenderPass",                m_CommandListCounters.m_uiBeginRenderPass);
+  xiiStats::SetStat("CommandList/Pipeline/Passes/NextSubPass",                    m_CommandListCounters.m_uiNextSubPass);
+  xiiStats::SetStat("CommandList/Pipeline/Clears/ClearRenderTarget",              m_CommandListCounters.m_uiClearRenderTarget);
+  xiiStats::SetStat("CommandList/Pipeline/Clears/ClearDepthStencil",              m_CommandListCounters.m_uiClearDepthStencil);
 
-  xiiStats::SetStat("CommandList/Draw/Draw",                m_CommandListCounters.m_uiDraw);
-  xiiStats::SetStat("CommandList/Draw/DrawIndexed",         m_CommandListCounters.m_uiDrawIndexed);
-  xiiStats::SetStat("CommandList/Draw/DrawIndirect",        m_CommandListCounters.m_uiDrawIndirect);
-  xiiStats::SetStat("CommandList/Draw/DrawIndexedIndirect", m_CommandListCounters.m_uiDrawIndexedIndirect);
-  xiiStats::SetStat("CommandList/Draw/MultiDraw",           m_CommandListCounters.m_uiMultiDraw);
-  xiiStats::SetStat("CommandList/Draw/MultiDrawIndexed",    m_CommandListCounters.m_uiMultiDrawIndexed);
-  xiiStats::SetStat("CommandList/Draw/DrawMesh",            m_CommandListCounters.m_uiDrawMesh);
-  xiiStats::SetStat("CommandList/Draw/DrawMeshIndirect",    m_CommandListCounters.m_uiDrawMeshIndirect);
+  // Drawing commands, rendering-related commands.
+  xiiStats::SetStat("CommandList/Draw/Draw",                           m_CommandListCounters.m_uiDraw);
+  xiiStats::SetStat("CommandList/Draw/DrawIndexed",                    m_CommandListCounters.m_uiDrawIndexed);
+  xiiStats::SetStat("CommandList/Draw/DrawIndirect",                   m_CommandListCounters.m_uiDrawIndirect);
+  xiiStats::SetStat("CommandList/Draw/DrawIndexedIndirect",            m_CommandListCounters.m_uiDrawIndexedIndirect);
+  xiiStats::SetStat("CommandList/Draw/MultiDraw",                      m_CommandListCounters.m_uiMultiDraw);
+  xiiStats::SetStat("CommandList/Draw/MultiDrawIndexed",               m_CommandListCounters.m_uiMultiDrawIndexed);
+  xiiStats::SetStat("CommandList/Draw/MeshRendering/DrawMesh",         m_CommandListCounters.m_uiDrawMesh);
+  xiiStats::SetStat("CommandList/Draw/MeshRendering/DrawMeshIndirect", m_CommandListCounters.m_uiDrawMeshIndirect);
 
-  xiiStats::SetStat("CommandList/Dispatch/DispatchCompute",         m_CommandListCounters.m_uiDispatchCompute);
-  xiiStats::SetStat("CommandList/Dispatch/DispatchComputeIndirect", m_CommandListCounters.m_uiDispatchComputeIndirect);
-  xiiStats::SetStat("CommandList/Dispatch/DispatchTile",            m_CommandListCounters.m_uiDispatchTile);
+  // Compute dispatch, execution of compute workloads.
+  xiiStats::SetStat("CommandList/Compute/DispatchCompute",         m_CommandListCounters.m_uiDispatchCompute);
+  xiiStats::SetStat("CommandList/Compute/DispatchComputeIndirect", m_CommandListCounters.m_uiDispatchComputeIndirect);
+  xiiStats::SetStat("CommandList/Compute/TileDispatch",            m_CommandListCounters.m_uiDispatchTile);
 
-  xiiStats::SetStat("CommandList/Operations/BuildBLAS",                 m_CommandListCounters.m_uiBuildBLAS);
-  xiiStats::SetStat("CommandList/Operations/BuildTLAS",                 m_CommandListCounters.m_uiBuildTLAS);
-  xiiStats::SetStat("CommandList/Operations/CopyBLAS",                  m_CommandListCounters.m_uiCopyBLAS);
-  xiiStats::SetStat("CommandList/Operations/CopyTLAS",                  m_CommandListCounters.m_uiCopyTLAS);
-  xiiStats::SetStat("CommandList/Operations/WriteBLASCompactedSize",    m_CommandListCounters.m_uiWriteBLASCompactedSize);
-  xiiStats::SetStat("CommandList/Operations/WriteTLASCompactedSize",    m_CommandListCounters.m_uiWriteTLASCompactedSize);
-  xiiStats::SetStat("CommandList/Operations/TraceRays",                 m_CommandListCounters.m_uiTraceRays);
-  xiiStats::SetStat("CommandList/Operations/TraceRaysIndirect",         m_CommandListCounters.m_uiTraceRaysIndirect);
-  xiiStats::SetStat("CommandList/Operations/UpdateSBT",                 m_CommandListCounters.m_uiUpdateSBT);
-  xiiStats::SetStat("CommandList/Operations/UpdateBuffer",              m_CommandListCounters.m_uiUpdateBuffer);
-  xiiStats::SetStat("CommandList/Operations/CopyBuffer",                m_CommandListCounters.m_uiCopyBuffer);
-  xiiStats::SetStat("CommandList/Operations/MapBuffer",                 m_CommandListCounters.m_uiMapBuffer);
-  xiiStats::SetStat("CommandList/Operations/UpdateTexture",             m_CommandListCounters.m_uiUpdateTexture);
-  xiiStats::SetStat("CommandList/Operations/CopyTexture",               m_CommandListCounters.m_uiCopyTexture);
-  xiiStats::SetStat("CommandList/Operations/MapTextureSubresource",     m_CommandListCounters.m_uiMapTextureSubresource);
-  xiiStats::SetStat("CommandList/Operations/BeginQuery",                m_CommandListCounters.m_uiBeginQuery);
-  xiiStats::SetStat("CommandList/Operations/GenerateMips",              m_CommandListCounters.m_uiGenerateMips);
-  xiiStats::SetStat("CommandList/Operations/ResolveTextureSubresource", m_CommandListCounters.m_uiResolveTextureSubresource);
-  xiiStats::SetStat("CommandList/Operations/BindSparseResourceMemory",  m_CommandListCounters.m_uiBindSparseResourceMemory);
+  // Operations and memory management, other GPU tasks.
+  xiiStats::SetStat("CommandList/Memory/BLAS/Build",                                     m_CommandListCounters.m_uiBuildBLAS);
+  xiiStats::SetStat("CommandList/Memory/BLAS/Copy",                                      m_CommandListCounters.m_uiCopyBLAS);
+  xiiStats::SetStat("CommandList/Memory/BLAS/WriteCompactedSize",                        m_CommandListCounters.m_uiWriteBLASCompactedSize);
+  xiiStats::SetStat("CommandList/Memory/TLAS/Build",                                     m_CommandListCounters.m_uiBuildTLAS);
+  xiiStats::SetStat("CommandList/Memory/TLAS/Copy",                                      m_CommandListCounters.m_uiCopyTLAS);
+  xiiStats::SetStat("CommandList/Memory/TLAS/WriteCompactedSize",                        m_CommandListCounters.m_uiWriteTLASCompactedSize);
+  xiiStats::SetStat("CommandList/RayTracing/TraceRays",                                  m_CommandListCounters.m_uiTraceRays);
+  xiiStats::SetStat("CommandList/RayTracing/TraceRaysIndirect",                          m_CommandListCounters.m_uiTraceRaysIndirect);
+  xiiStats::SetStat("CommandList/RayTracing/UpdateSBT",                                  m_CommandListCounters.m_uiUpdateSBT);
+  xiiStats::SetStat("CommandList/Resources/BufferManagement/UpdateBuffer",               m_CommandListCounters.m_uiUpdateBuffer);
+  xiiStats::SetStat("CommandList/Resources/BufferManagement/CopyBuffer",                 m_CommandListCounters.m_uiCopyBuffer);
+  xiiStats::SetStat("CommandList/Resources/BufferManagement/MapBuffer",                  m_CommandListCounters.m_uiMapBuffer);
+  xiiStats::SetStat("CommandList/Resources/TextureManagement/UpdateTexture",             m_CommandListCounters.m_uiUpdateTexture);
+  xiiStats::SetStat("CommandList/Resources/TextureManagement/CopyTexture",               m_CommandListCounters.m_uiCopyTexture);
+  xiiStats::SetStat("CommandList/Resources/TextureManagement/MapTextureSubresource",     m_CommandListCounters.m_uiMapTextureSubresource);
+  xiiStats::SetStat("CommandList/Resources/TextureManagement/GenerateMips",              m_CommandListCounters.m_uiGenerateMips);
+  xiiStats::SetStat("CommandList/Resources/TextureManagement/ResolveTextureSubresource", m_CommandListCounters.m_uiResolveTextureSubresource);
+  xiiStats::SetStat("CommandList/Queries/BeginQuery",                                    m_CommandListCounters.m_uiBeginQuery);
+  xiiStats::SetStat("CommandList/SparseMemory/BindSparseResourceMemory",                 m_CommandListCounters.m_uiBindSparseResourceMemory);
   // clang-format on
 }
 
