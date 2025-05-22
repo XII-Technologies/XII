@@ -35,36 +35,16 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
   {
     auto& shaderData = it.Value();
 
-    if (!shaderData.m_hShader.IsInvalidated())
-    {
-      pDevice->DestroyShader(shaderData.m_hShader);
-      shaderData.m_hShader.Invalidate();
-    }
+    shaderData.m_pShader.Clear();
   }
 
-  if (!m_hPipelineResourceSignature.IsInvalidated())
-  {
-    pDevice->DestroyPipelineResourceSignature(m_hPipelineResourceSignature);
-    m_hPipelineResourceSignature.Invalidate();
-  }
+  m_pPipelineResourceSignature.Clear();
+  m_pBlendState.Clear();
+  m_pDepthStencilState.Clear();
+  m_pRasterizerState.Clear();
+  m_ShaderData.Clear();
 
-  if (!m_hBlendState.IsInvalidated())
-  {
-    pDevice->DestroyBlendState(m_hBlendState);
-    m_hBlendState.Invalidate();
-  }
-
-  if (!m_hDepthStencilState.IsInvalidated())
-  {
-    pDevice->DestroyDepthStencilState(m_hDepthStencilState);
-    m_hDepthStencilState.Invalidate();
-  }
-
-  if (!m_hRasterizerState.IsInvalidated())
-  {
-    pDevice->DestroyRasterizerState(m_hRasterizerState);
-    m_hRasterizerState.Invalidate();
-  }
+  m_ActiveShaderStages = xiiGALShaderType::Unknown;
 
   xiiResourceLoadDesc res;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -105,9 +85,9 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
   // get the shader render state object
   {
-    m_hBlendState        = pDevice->CreateBlendState(shaderPermutationBinary.m_StateDescriptor.m_BlendDescription);
-    m_hDepthStencilState = pDevice->CreateDepthStencilState(shaderPermutationBinary.m_StateDescriptor.m_DepthStencilDescription);
-    m_hRasterizerState   = pDevice->CreateRasterizerState(shaderPermutationBinary.m_StateDescriptor.m_RasterizerDescription);
+    m_pBlendState        = pDevice->CreateBlendState(shaderPermutationBinary.m_StateDescriptor.m_BlendDescription);
+    m_pDepthStencilState = pDevice->CreateDepthStencilState(shaderPermutationBinary.m_StateDescriptor.m_DepthStencilDescription);
+    m_pRasterizerState   = pDevice->CreateRasterizerState(shaderPermutationBinary.m_StateDescriptor.m_RasterizerDescription);
   }
 
   xiiGALPipelineResourceSignatureCreationDescription resourceSignatureDescription;
@@ -152,14 +132,14 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
       shaderDescription.m_ShaderType = it.Key();
       shaderDescription.m_ByteCode   = const_cast<xiiGALShaderByteCode*>(pStageBinary->GetByteCode().Borrow()); //TODO: Improve this and avoid const-cast.
 
-      pShaderData->m_hShader = pDevice->CreateShader(shaderDescription);
+      pShaderData->m_pShader = pDevice->CreateShader(shaderDescription);
 
-      if (pShaderData->m_hShader.IsInvalidated())
+      if (!pShaderData->m_pShader)
       {
         xiiLog::Error("Shader Permutation '{0}': Shader program creation for {1} shader failed.", GetResourceID(), xiiGALShaderType::Names[it.Key()]);
         return res;
       }
-      pDevice->GetShader(pShaderData->m_hShader)->SetDebugName(GetResourceID());
+      pShaderData->m_pShader->SetDebugName(GetResourceID());
 
       m_ActiveShaderStages |= it.Key();
 
@@ -180,9 +160,9 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     }
   }
 
-  m_hPipelineResourceSignature = pDevice->CreatePipelineResourceSignature(resourceSignatureDescription);
+  m_pPipelineResourceSignature = pDevice->CreatePipelineResourceSignature(resourceSignatureDescription);
 
-  if (m_hPipelineResourceSignature.IsInvalidated())
+  if (!m_pPipelineResourceSignature)
   {
     xiiLog::Error("Shader Permutation '{0}': Shader pipeline resource signature creation failed.", GetResourceID());
     return res;

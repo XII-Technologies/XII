@@ -25,14 +25,14 @@ public:
   xiiShaderPermutationResource();
 
   xiiBitflags<xiiGALShaderType> GetActiveShaderStages() const { return m_ActiveShaderStages; };
-  xiiGALShaderHandle            GetGALShader(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_hShader; }
+  xiiSharedPtr<xiiGALShader>    GetGALShader(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_pShader; }
   const xiiGALShaderByteCode*   GetShaderByteCode(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_pByteCode; }
 
-  xiiGALPipelineResourceSignatureHandle GetPipelineResourceSignature() const { return m_hPipelineResourceSignature; }
+  xiiSharedPtr<xiiGALPipelineResourceSignature> GetPipelineResourceSignature() const { return m_pPipelineResourceSignature; }
 
-  xiiGALBlendStateHandle        GetBlendState() const { return m_hBlendState; }
-  xiiGALDepthStencilStateHandle GetDepthStencilState() const { return m_hDepthStencilState; }
-  xiiGALRasterizerStateHandle   GetRasterizerState() const { return m_hRasterizerState; }
+  xiiSharedPtr<xiiGALBlendState>        GetBlendState() const { return m_pBlendState; }
+  xiiSharedPtr<xiiGALDepthStencilState> GetDepthStencilState() const { return m_pDepthStencilState; }
+  xiiSharedPtr<xiiGALRasterizerState>   GetRasterizerState() const { return m_pRasterizerState; }
 
   bool IsShaderValid() const { return m_bShaderPermutationValid; }
 
@@ -49,19 +49,19 @@ private:
 
   struct ShaderData
   {
-    xiiGALShaderHandle                       m_hShader;
+    xiiSharedPtr<xiiGALShader>               m_pShader;
     xiiSharedPtr<const xiiGALShaderByteCode> m_pByteCode;
   };
 
   xiiBitflags<xiiGALShaderType>              m_ActiveShaderStages;
   xiiMap<xiiGALShaderType::Enum, ShaderData> m_ShaderData;
 
-  bool                                  m_bShaderPermutationValid;
-  xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;
+  bool                                          m_bShaderPermutationValid;
+  xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineResourceSignature;
 
-  xiiGALBlendStateHandle        m_hBlendState;
-  xiiGALDepthStencilStateHandle m_hDepthStencilState;
-  xiiGALRasterizerStateHandle   m_hRasterizerState;
+  xiiSharedPtr<xiiGALBlendState>        m_pBlendState;
+  xiiSharedPtr<xiiGALDepthStencilState> m_pDepthStencilState;
+  xiiSharedPtr<xiiGALRasterizerState>   m_pRasterizerState;
 
   xiiHybridArray<xiiGALPermutationVariable, 16> m_PermutationVariables;
 };
