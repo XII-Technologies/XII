@@ -2,9 +2,6 @@
 
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/TransparentForwardRenderPass.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentForwardRenderPass, 1, xiiRTTIDefaultAllocator<xiiTransparentForwardRenderPass>)

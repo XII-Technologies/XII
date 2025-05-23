@@ -6,8 +6,6 @@
 
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
 
 #include <Shaders/Common/ObjectConstants.h>
 

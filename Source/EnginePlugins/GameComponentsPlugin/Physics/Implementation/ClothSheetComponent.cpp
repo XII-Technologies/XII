@@ -18,8 +18,6 @@
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 /* TODO:
  * cache render category

@@ -7,7 +7,6 @@
 #  include <GameEngine/DearImgui/DearImguiRenderer.h>
 #  include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #  include <GraphicsCore/Pipeline/View.h>
-#  include <GraphicsCore/RenderContext/RenderContext.h>
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Shader/ShaderResource.h>
 #  include <GraphicsFoundation/Device/Device.h>
@@ -16,7 +15,6 @@
 #  include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #  include <Imgui/imgui_internal.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImguiRenderData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -25,7 +23,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImguiRenderer, 1, xiiRTTIDefaultAllocator<xiiImguiRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiImguiExtractor::xiiImguiExtractor(xiiStringView sName) :
   xiiExtractor(sName)

@@ -5,7 +5,6 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/MemoryStream.h>
-#include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>

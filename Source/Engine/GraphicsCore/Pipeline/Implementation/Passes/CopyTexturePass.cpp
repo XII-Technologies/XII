@@ -1,10 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsFoundation/Resources/Texture.h>
-
 #include <GraphicsCore/Pipeline/Passes/CopyTexturePass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyTexturePass, 1, xiiRTTIDefaultAllocator<xiiCopyTexturePass>)

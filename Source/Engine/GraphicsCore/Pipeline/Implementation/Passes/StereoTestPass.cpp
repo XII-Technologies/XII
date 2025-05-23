@@ -1,10 +1,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <GraphicsCore/Pipeline/Passes/StereoTestPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <Core/Graphics/Camera.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStereoTestPass, 1, xiiRTTIDefaultAllocator<xiiStereoTestPass>)

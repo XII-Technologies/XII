@@ -253,6 +253,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
       pCommandList->EndRenderPass();
     }
     pCommandList->EndDebugGroup();
+    pCommandList->Submit();
   }
 }
 

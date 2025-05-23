@@ -8,7 +8,6 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/ObjectConstants.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 // clang-format off

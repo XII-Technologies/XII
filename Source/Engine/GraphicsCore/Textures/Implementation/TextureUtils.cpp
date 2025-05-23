@@ -1,11 +1,11 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Reflection/ReflectionUtils.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 
-bool xiiTextureUtils::s_bForceFullQualityAlways = false;
+bool                             xiiTextureUtils::s_bForceFullQualityAlways = false;
+xiiEnum<xiiTextureFilterSetting> xiiTextureUtils::s_DefaultTextureFilter    = xiiTextureFilterSetting::FixedAnisotropic4x;
 
 xiiEnum<xiiGALResourceFormat> xiiTextureUtils::ImageFormatToGalFormat(xiiEnum<xiiImageFormat> format, bool bSRGB)
 {
@@ -311,7 +311,7 @@ xiiEnum<xiiImageFormat> xiiTextureUtils::GalFormatToImageFormat(xiiEnum<xiiGALRe
 
 void xiiTextureUtils::ConfigureSampler(xiiEnum<xiiTextureFilterSetting> filter, xiiGALSamplerCreationDescription& out_sampler)
 {
-  const xiiEnum<xiiTextureFilterSetting> thisFilter = xiiRenderContext::GetDefaultInstance()->GetSpecificTextureFilter(filter);
+  const xiiEnum<xiiTextureFilterSetting> thisFilter = xiiTextureUtils::GetSpecificTextureFilter(filter);
 
   out_sampler.m_MinFilter       = xiiGALFilterType::Linear;
   out_sampler.m_MagFilter       = xiiGALFilterType::Linear;
@@ -375,6 +375,48 @@ xiiEnum<xiiGALTextureAddressMode> xiiTextureUtils::GALTextureAddressMode(xiiEnum
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return xiiEnum<xiiGALTextureAddressMode>();
+}
+
+void xiiTextureUtils::SetDefaultTextureFilter(xiiEnum<xiiTextureFilterSetting> filter)
+{
+  XII_ASSERT_DEBUG(filter >= xiiTextureFilterSetting::FixedBilinear && filter <= xiiTextureFilterSetting::FixedAnisotropic16x, "Invalid default texture filter");
+
+  filter = xiiMath::Clamp(static_cast<xiiTextureFilterSetting::Enum>(filter), xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
+
+  if (s_DefaultTextureFilter == filter)
+    return;
+
+  s_DefaultTextureFilter = filter;
+}
+
+xiiEnum<xiiTextureFilterSetting> xiiTextureUtils::GetSpecificTextureFilter(xiiEnum<xiiTextureFilterSetting> filter)
+{
+  if (filter >= xiiTextureFilterSetting::FixedNearest && filter <= xiiTextureFilterSetting::FixedAnisotropic16x)
+    return filter;
+
+  xiiInt32 iFilter = s_DefaultTextureFilter;
+
+  switch (filter)
+  {
+    case xiiTextureFilterSetting::LowestQuality:
+      iFilter -= 2;
+      break;
+    case xiiTextureFilterSetting::LowQuality:
+      iFilter -= 1;
+      break;
+    case xiiTextureFilterSetting::HighQuality:
+      iFilter += 1;
+      break;
+    case xiiTextureFilterSetting::HighestQuality:
+      iFilter += 2;
+      break;
+    default:
+      break;
+  }
+
+  iFilter = xiiMath::Clamp<xiiInt32>(iFilter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
+
+  return (xiiTextureFilterSetting::Enum)iFilter;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_TextureUtils);

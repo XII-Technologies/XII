@@ -4,9 +4,6 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/Renderer.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <GraphicsFoundation/Profiling/Profiling.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)

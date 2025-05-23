@@ -5,7 +5,6 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/LSAOPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 

@@ -4,7 +4,6 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/AOPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Sampler.h>

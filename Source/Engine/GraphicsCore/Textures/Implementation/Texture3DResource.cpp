@@ -1,4 +1,3 @@
-
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/CVar.h>
@@ -8,16 +7,12 @@
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexture3DResource, 1, xiiRTTIDefaultAllocator<xiiTexture3DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiTexture3DResource);
 

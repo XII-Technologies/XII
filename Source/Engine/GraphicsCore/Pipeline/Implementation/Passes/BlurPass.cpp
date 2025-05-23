@@ -3,7 +3,6 @@
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/Passes/BlurPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <Core/Graphics/Geometry.h>
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/BlurConstants.h>

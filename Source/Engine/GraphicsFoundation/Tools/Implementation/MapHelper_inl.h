@@ -46,7 +46,7 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator
 template <typename DataType>
 XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
-  XII_ASSERT_DEV(!pBuffer.IsInvalidated() && !m_pMappedData && !m_pCommandList, "Buffer is already mapped or invalidated.");
+  XII_ASSERT_DEV(!pBuffer && !m_pMappedData && !m_pCommandList, "Buffer is already mapped or invalidated.");
 
   Unmap().IgnoreResult();
 
@@ -78,7 +78,7 @@ XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiSharedPtr<xiiGALCo
 template <typename DataType>
 XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Unmap(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer)
 {
-  if (m_pMappedData != nullptr && !m_pBuffer.IsInvalidated())
+  if (m_pMappedData != nullptr && !m_pBuffer)
   {
     m_pCommandList->UnmapBuffer(m_pBuffer, m_pMappedData, m_MapType, m_MapFlags).IgnoreResult();
 

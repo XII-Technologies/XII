@@ -4,7 +4,6 @@
 #include <GraphicsCore/Lights/Implementation/ReflectionPool.h>
 #include <GraphicsCore/Pipeline/Passes/ReflectionFilterPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/ReflectionFilteredSpecularConstants.h>
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/ReflectionIrradianceConstants.h>

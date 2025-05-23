@@ -5,9 +5,6 @@
 #include <GraphicsCore/Pipeline/Passes/SelectionHighlightPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <GraphicsFoundation/Resources/Texture.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/SelectionHighlightConstants.h>
 

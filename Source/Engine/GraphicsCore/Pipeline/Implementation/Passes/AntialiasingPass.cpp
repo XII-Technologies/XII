@@ -1,11 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/IO/TypeVersionContext.h>
+
 #include <GraphicsCore/Pipeline/Passes/AntialiasingPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <Foundation/IO/TypeVersionContext.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAntialiasingPass, 1, xiiRTTIDefaultAllocator<xiiAntialiasingPass>)

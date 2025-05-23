@@ -7,7 +7,6 @@
 #include <GraphicsCore/Lights/Implementation/ReflectionPool.h>
 #include <GraphicsCore/Lights/Implementation/ShadowPool.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>

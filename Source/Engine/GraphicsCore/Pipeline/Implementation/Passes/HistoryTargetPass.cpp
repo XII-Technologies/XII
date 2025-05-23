@@ -3,7 +3,6 @@
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/Passes/HistoryTargetPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiHistoryTargetPass, 1, xiiRTTIDefaultAllocator<xiiHistoryTargetPass>)

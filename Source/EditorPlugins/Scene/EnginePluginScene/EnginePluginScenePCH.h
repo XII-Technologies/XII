@@ -15,4 +15,3 @@
 
 #include <EnginePluginScene/SceneContext/SceneContext.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>

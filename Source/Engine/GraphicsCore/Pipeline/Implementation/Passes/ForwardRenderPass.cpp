@@ -6,7 +6,6 @@
 #include <GraphicsCore/Lights/SimplifiedDataProvider.h>
 #include <GraphicsCore/Pipeline/Passes/ForwardRenderPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
 // clang-format off

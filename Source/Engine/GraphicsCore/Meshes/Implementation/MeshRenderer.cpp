@@ -7,12 +7,9 @@
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiMeshRenderer::xiiMeshRenderer()  = default;
 xiiMeshRenderer::~xiiMeshRenderer() = default;

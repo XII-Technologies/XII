@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicMeshBufferResource, 1, xiiRTTIDefaultAllocator<xiiDynamicMeshBufferResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;

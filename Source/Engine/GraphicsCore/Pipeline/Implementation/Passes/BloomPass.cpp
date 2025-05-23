@@ -4,7 +4,6 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/BloomPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/BloomConstants.h>

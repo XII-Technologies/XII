@@ -14,5 +14,6 @@
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>

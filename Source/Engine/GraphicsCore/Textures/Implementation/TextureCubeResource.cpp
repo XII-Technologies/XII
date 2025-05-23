@@ -1,19 +1,13 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
-#include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeResource, 1, xiiRTTIDefaultAllocator<xiiTextureCubeResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiTextureCubeResource);
-// clang-format on
 
 xiiTextureCubeResource::xiiTextureCubeResource() :
   xiiResource(DoUpdate::OnAnyThread, xiiTextureUtils::s_bForceFullQualityAlways ? 1 : 2)

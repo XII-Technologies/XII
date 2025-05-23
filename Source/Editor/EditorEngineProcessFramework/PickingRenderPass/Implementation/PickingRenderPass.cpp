@@ -3,7 +3,6 @@
 #include <EditorEngineProcessFramework/PickingRenderPass/PickingRenderPass.h>
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 

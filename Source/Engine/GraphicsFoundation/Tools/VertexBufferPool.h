@@ -8,7 +8,7 @@
 /// \brief A templated vertex buffer pool that manages dynamic vertex allocations.
 /// This divides its memory into one or more chunks to minimize reallocation and supports thread-safe allocation, update, and tracking of vertex usage.
 template <typename VertexType, typename MutexType = xiiNoMutex, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
-class XII_GRAPHICSFOUNDATION_DLL xiiGALVertexBufferPool
+class xiiGALVertexBufferPool
 {
 public:
   /// \brief A handle for a vertex allocation.

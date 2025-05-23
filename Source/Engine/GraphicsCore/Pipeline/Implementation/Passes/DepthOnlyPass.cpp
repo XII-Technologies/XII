@@ -3,7 +3,6 @@
 #include <GraphicsCore/Pipeline/Passes/DepthOnlyPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthOnlyPass, 1, xiiRTTIDefaultAllocator<xiiDepthOnlyPass>)

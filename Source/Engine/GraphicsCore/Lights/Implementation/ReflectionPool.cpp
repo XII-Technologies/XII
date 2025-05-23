@@ -13,7 +13,6 @@
 #include <GraphicsCore/Lights/Implementation/ReflectionProbeData.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/Resources/Texture.h>

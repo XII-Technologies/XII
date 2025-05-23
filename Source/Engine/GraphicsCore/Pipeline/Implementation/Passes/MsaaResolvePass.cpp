@@ -2,9 +2,6 @@
 
 #include <GraphicsCore/Pipeline/Passes/MsaaResolvePass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsaaResolvePass, 1, xiiRTTIDefaultAllocator<xiiMsaaResolvePass>)

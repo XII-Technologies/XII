@@ -2,13 +2,9 @@
 
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/Meshes/SkinnedMeshRenderer.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiSkinnedMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiSkinnedMeshRenderer::xiiSkinnedMeshRenderer()  = default;
 xiiSkinnedMeshRenderer::~xiiSkinnedMeshRenderer() = default;

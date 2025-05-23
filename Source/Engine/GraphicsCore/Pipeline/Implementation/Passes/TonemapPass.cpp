@@ -3,11 +3,8 @@
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/Passes/TonemapPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
-
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/TonemapConstants.h>
 

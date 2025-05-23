@@ -22,7 +22,7 @@
 /// }
 /// \endcode
 template <typename DataType>
-class XII_GRAPHICSFOUNDATION_DLL xiiGALMapHelper : public xiiReflectedClass
+class xiiGALMapHelper : public xiiReflectedClass
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALMapHelper);
 

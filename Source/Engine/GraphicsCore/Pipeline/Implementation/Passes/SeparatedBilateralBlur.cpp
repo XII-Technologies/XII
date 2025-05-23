@@ -4,7 +4,6 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/SeparatedBilateralBlur.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <Core/Graphics/Geometry.h>
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/BilateralBlurConstants.h>
