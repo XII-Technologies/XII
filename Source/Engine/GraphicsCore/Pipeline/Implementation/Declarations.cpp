@@ -23,7 +23,7 @@ void xiiRenderViewContext::SetShaderPermutationVariable(xiiStringView sName, con
   xiiHashedString sValue;
   if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sHashedName, sTempValue, sName0, sValue))
   {
-    SetShaderPermutationVariableInternal(sName, sValue);
+    SetShaderPermutationVariableInternal(sName0, sValue);
   }
 }
 

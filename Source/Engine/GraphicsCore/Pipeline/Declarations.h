@@ -55,6 +55,8 @@ struct xiiRenderViewContext
   const xiiDebugRendererContext* m_pWorldDebugContext = nullptr;
   const xiiDebugRendererContext* m_pViewDebugContext  = nullptr;
 
+  XII_ALWAYS_INLINE const xiiHashTable<xiiHashedString, xiiHashedString>& GetPermutationVariables() const { return m_PermutationVariables; }
+
   void SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue);
   void SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue);
   void SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue);
