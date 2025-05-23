@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 

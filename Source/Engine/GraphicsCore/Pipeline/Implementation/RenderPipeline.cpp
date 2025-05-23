@@ -1094,36 +1094,40 @@ void xiiRenderPipeline::Render()
   const xiiCamera*           pLodCamera = &data.GetLodCamera();
   const xiiViewData*         pViewData  = &data.GetViewData();
 
-#ifdef CORE_ENABLE
-  auto& gc = pRenderContext->WriteGlobalConstants();
-  for (xiiInt32 i = 0; i < 2; ++i)
+  if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
   {
-    gc.CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
-    gc.ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
-    gc.WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
-    gc.CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
-    gc.WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
-    gc.ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
+    xiiGALMapHelper<xiiGlobalConstants> gc(pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+    for (xiiInt32 i = 0; i < 2; ++i)
+    {
+      gc->CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
+      gc->ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
+      gc->WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
+      gc->CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
+      gc->WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
+      gc->ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
+    }
+
+    const xiiRectFloat& viewport = pViewData->m_ViewPortRect;
+    gc->ViewportSize             = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
+
+    float fNear    = pCamera->GetNearPlane();
+    float fFar     = pCamera->GetFarPlane();
+    gc->ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
+
+    const bool bIsDirectionalLightShadow = pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && pCamera->IsOrthographic();
+    gc->MaxZValue                        = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
+
+    // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
+    gc->DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
+    gc->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
+    gc->WorldTime  = (float)xiiMath::Mod(data.GetWorldTime().GetSeconds(), 20790.0);
+
+    gc->Exposure   = pCamera->GetExposure();
+    gc->RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
+
+    pCommandList->Submit();
   }
-
-  const xiiRectFloat& viewport = pViewData->m_ViewPortRect;
-  gc.ViewportSize              = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-
-  float fNear   = pCamera->GetNearPlane();
-  float fFar    = pCamera->GetFarPlane();
-  gc.ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
-
-  const bool bIsDirectionalLightShadow = pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && pCamera->IsOrthographic();
-  gc.MaxZValue                         = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
-
-  // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-  gc.DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
-  gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-  gc.WorldTime  = (float)xiiMath::Mod(data.GetWorldTime().GetSeconds(), 20790.0);
-
-  gc.Exposure   = pCamera->GetExposure();
-  gc.RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
-#endif
 
   xiiRenderViewContext renderViewContext;
   renderViewContext.m_pCamera            = pCamera;
@@ -1132,7 +1136,6 @@ void xiiRenderPipeline::Render()
   renderViewContext.m_pWorldDebugContext = &data.GetWorldDebugContext();
   renderViewContext.m_pViewDebugContext  = &data.GetViewDebugContext();
 
-#ifdef CORE_ENABLE
   // Set camera mode permutation variable here since it doesn't change throughout the frame
   static xiiHashedString sCameraMode  = xiiMakeHashedString("CAMERA_MODE");
   static xiiHashedString sOrtho       = xiiMakeHashedString("CAMERA_MODE_ORTHO");
@@ -1145,25 +1148,24 @@ void xiiRenderPipeline::Render()
   static xiiHashedString sFalse            = xiiMakeHashedString("FALSE");
 
   if (pCamera->IsOrthographic())
-    pRenderContext->SetShaderPermutationVariable(sCameraMode, sOrtho);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sOrtho);
   else if (pCamera->IsStereoscopic())
-    pRenderContext->SetShaderPermutationVariable(sCameraMode, sStereo);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sStereo);
   else
-    pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sPerspective);
 
   if (pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled)
-    pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
+    renderViewContext.SetShaderPermutationVariable(sVSRTAI, sTrue);
   else
-    pRenderContext->SetShaderPermutationVariable(sVSRTAI, sFalse);
+    renderViewContext.SetShaderPermutationVariable(sVSRTAI, sFalse);
 
-  pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
+  renderViewContext.SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
   // Also set pipeline specific permutation vars
   for (auto& var : m_PermutationVars)
   {
-    pRenderContext->SetShaderPermutationVariable(var.m_sName, var.m_sValue);
+    renderViewContext.SetShaderPermutationVariable(var.m_sName, var.m_sValue);
   }
-#endif
 
   xiiRenderWorldRenderEvent renderEvent;
   renderEvent.m_Type               = xiiRenderWorldRenderEvent::Type::BeforePipelineExecution;
@@ -1198,7 +1200,7 @@ void xiiRenderPipeline::Render()
       XII_PROFILE_SCOPE(pPass->GetName());
       xiiLogBlock passBlock("Render Pass", pPass->GetName());
 
-      // Create pool textures
+      // Create pool textures.
       for (; uiCurrentFirstUsageIdx < m_TextureUsageIdxSortedByFirstUsage.GetCount();)
       {
         xiiUInt16         uiCurrentUsageData = m_TextureUsageIdxSortedByFirstUsage[uiCurrentFirstUsageIdx];
@@ -1220,7 +1222,7 @@ void xiiRenderPipeline::Render()
         }
       }
 
-      // Execute pass block
+      // Execute pass block.
       {
         ConnectionData& connectionData = m_Connections[pPass.Borrow()];
         if (pPass->m_bActive)
@@ -1233,7 +1235,7 @@ void xiiRenderPipeline::Render()
         }
       }
 
-      // Release pool textures
+      // Release pool textures.
       for (; uiCurrentLastUsageIdx < m_TextureUsageIdxSortedByLastUsage.GetCount();)
       {
         xiiUInt16         uiCurrentUsageData = m_TextureUsageIdxSortedByLastUsage[uiCurrentLastUsageIdx];

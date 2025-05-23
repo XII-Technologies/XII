@@ -149,6 +149,9 @@ private: // Member data
 
   xiiDynamicArray<xiiPermutationVar> m_PermutationVars;
 
+  // Resources
+  xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
+
   // Occlusion Culling
   xiiSharedPtr<xiiGALTexture> m_pOcclusionDebugViewTexture;
 };
