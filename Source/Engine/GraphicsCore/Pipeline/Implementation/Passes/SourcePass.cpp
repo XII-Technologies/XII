@@ -81,30 +81,12 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
       case xiiGALResourceFormat::RGBA8UNormalized:
       case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
       default:
-      {
-        if (format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
-        {
-          textureDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-        }
-        else
-        {
-          textureDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
-        }
-      }
-      break;
+        textureDescription.m_Format = (format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB) ? xiiGALResourceFormat::RGBA8UNormalizedSRGB : xiiGALResourceFormat::RGBA8UNormalized;
+        break;
       case xiiGALResourceFormat::BGRA8UNormalized:
       case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
-      {
-        if (format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
-        {
-          textureDescription.m_Format = xiiGALResourceFormat::BGRA8UNormalizedSRGB;
-        }
-        else
-        {
-          textureDescription.m_Format = xiiGALResourceFormat::BGRA8UNormalized;
-        }
-      }
-      break;
+        textureDescription.m_Format = (format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB) ? xiiGALResourceFormat::BGRA8UNormalizedSRGB : xiiGALResourceFormat::BGRA8UNormalized;
+        break;
     }
   }
   else
@@ -145,12 +127,15 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
 
 bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> pInputs, xiiArrayPtr<xiiGALTextureCreationDescription> pOutputs)
 {
+  XII_IGNORE_UNUSED(pInputs);
   pOutputs[m_PinOutput.m_uiOutputIndex] = GetOutputDescription(view, m_Format, m_SampleCount);
   return true;
 }
 
 void xiiSourcePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(pInputs);
+
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Create render pass.
@@ -204,6 +189,9 @@ void xiiSourcePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePa
 
 void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(renderViewContext);
+  XII_IGNORE_UNUSED(pInputs);
+
   auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pOutput == nullptr)
     return;

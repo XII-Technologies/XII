@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
-struct xiiSourceFormat
+struct XII_GRAPHICSCORE_DLL xiiSourceFormat
 {
   using StorageType = xiiUInt8;
 
