@@ -150,6 +150,7 @@ private: // Member data
   xiiDynamicArray<xiiPermutationVar> m_PermutationVars;
 
   // Resources
+  xiiGlobalConstants         m_GlobalConstants;
   xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
 
   // Occlusion Culling

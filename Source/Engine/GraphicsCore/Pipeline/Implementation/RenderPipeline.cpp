@@ -42,10 +42,13 @@ xiiRenderPipeline::xiiRenderPipeline()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   m_AverageCullingTime = xiiTime::MakeFromSeconds(0.1f);
 #endif
+
+  m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants));
 }
 
 xiiRenderPipeline::~xiiRenderPipeline()
 {
+  m_pGlobalConstantsBuffer.Clear();
   m_pOcclusionDebugViewTexture.Clear();
 
   m_Data[0].Clear();
@@ -1094,39 +1097,38 @@ void xiiRenderPipeline::Render()
   const xiiCamera*           pLodCamera = &data.GetLodCamera();
   const xiiViewData*         pViewData  = &data.GetViewData();
 
-  if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
+  // Set Global Constants.
   {
-    xiiGALMapHelper<xiiGlobalConstants> gc(pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-
+    // Camera matrices.
     for (xiiInt32 i = 0; i < 2; ++i)
     {
-      gc->CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
-      gc->ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
-      gc->WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
-      gc->CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
-      gc->WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
-      gc->ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
+      m_GlobalConstants.CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
+      m_GlobalConstants.ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
+      m_GlobalConstants.WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
+      m_GlobalConstants.CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
+      m_GlobalConstants.WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
+      m_GlobalConstants.ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
     }
 
-    const xiiRectFloat& viewport = pViewData->m_ViewPortRect;
-    gc->ViewportSize             = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
+    // Viewport size.
+    const xiiRectFloat& viewport   = pViewData->m_ViewPortRect;
+    m_GlobalConstants.ViewportSize = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
 
-    float fNear    = pCamera->GetNearPlane();
-    float fFar     = pCamera->GetFarPlane();
-    gc->ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
+    // Clip planes.
+    float fNear                  = pCamera->GetNearPlane();
+    float fFar                   = pCamera->GetFarPlane();
+    m_GlobalConstants.ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
 
+    // Max Z value.
     const bool bIsDirectionalLightShadow = pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && pCamera->IsOrthographic();
-    gc->MaxZValue                        = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
+    m_GlobalConstants.MaxZValue          = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
 
     // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-    gc->DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
-    gc->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-    gc->WorldTime  = (float)xiiMath::Mod(data.GetWorldTime().GetSeconds(), 20790.0);
-
-    gc->Exposure   = pCamera->GetExposure();
-    gc->RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
-
-    pCommandList->Submit();
+    m_GlobalConstants.DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
+    m_GlobalConstants.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
+    m_GlobalConstants.WorldTime  = (float)xiiMath::Mod(data.GetWorldTime().GetSeconds(), 20790.0);
+    m_GlobalConstants.Exposure   = pCamera->GetExposure();
+    m_GlobalConstants.RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
   }
 
   xiiRenderViewContext renderViewContext;
