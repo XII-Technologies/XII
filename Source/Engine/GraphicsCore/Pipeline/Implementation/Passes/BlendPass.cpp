@@ -55,6 +55,7 @@ bool xiiBlendPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArr
 
 void xiiBlendPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
+#ifdef CORE_ENABLE
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
     xiiConstantBufferStorage<xiiBlendConstants>* pBlendConstantBuffer;
@@ -88,6 +89,7 @@ void xiiBlendPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
+#endif
 }
 
 xiiResult xiiBlendPass::Serialize(xiiStreamWriter& inout_stream) const
