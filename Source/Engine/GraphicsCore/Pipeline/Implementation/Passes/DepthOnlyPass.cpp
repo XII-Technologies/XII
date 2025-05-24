@@ -140,6 +140,15 @@ void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, co
       renderViewContext.SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_DEPTH_ONLY");
       renderViewContext.SetShaderPermutationVariable("SHADING_QUALITY", "SHADING_QUALITY_NORMAL");
 
+      if (m_pFramebuffer->GetDescription().m_Attachments.PeekBack()->GetTexture()->GetDescription().m_uiSampleCount > 1)
+      {
+        renderViewContext.SetShaderPermutationVariable("MSAA", "TRUE");
+      }
+      else
+      {
+        renderViewContext.SetShaderPermutationVariable("MSAA", "FALSE");
+      }
+
       RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitOpaque);
       RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitMasked);
     }

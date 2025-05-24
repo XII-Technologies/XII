@@ -54,7 +54,7 @@ bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const
     }
     else
     {
-      xiiLog::Error("Input is not a valid msaa target");
+      xiiLog::Error("Input is not a valid MSAA target.");
       return false;
     }
 
