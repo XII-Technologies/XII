@@ -133,6 +133,11 @@ void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, co
 
   xiiGALBeginRenderPassDescription renderPassDescription{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
 
+  auto& clearValue                      = renderPassDescription.m_ClearValues.ExpandAndGetRef();
+  clearValue.m_ResourceFormat           = pInput->m_TextureDescription.m_Format;
+  clearValue.m_DepthStencil.m_fDepth    = 1.0f;
+  clearValue.m_DepthStencil.m_uiStencil = 0U;
+
   if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
   {
     pCommandList->BeginDebugGroup(GetName());
