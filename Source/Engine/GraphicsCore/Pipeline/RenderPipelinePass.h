@@ -70,7 +70,7 @@ public:
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
-  void RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter());
+  void RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter());
 
   XII_ALWAYS_INLINE xiiRenderPipeline*       GetPipeline() { return m_pPipeline; }
   XII_ALWAYS_INLINE const xiiRenderPipeline* GetPipeline() const { return m_pPipeline; }

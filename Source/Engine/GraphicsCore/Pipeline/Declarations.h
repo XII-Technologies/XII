@@ -57,14 +57,14 @@ struct xiiRenderViewContext
 
   XII_ALWAYS_INLINE const xiiHashTable<xiiHashedString, xiiHashedString>& GetPermutationVariables() const { return m_PermutationVariables; }
 
-  void SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue);
-  void SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue);
-  void SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue);
+  void SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue) const;
+  void SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue) const;
+  void SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue) const;
 
 private:
-  void SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue);
+  void SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue) const;
 
-  xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
+  mutable xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
 };
 
 using xiiViewId = xiiGenericId<24, 8>;

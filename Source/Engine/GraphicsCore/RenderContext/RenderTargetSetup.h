@@ -12,5 +12,3 @@ struct XII_GRAPHICSCORE_DLL xiiGALRenderTargets
   xiiSharedPtr<xiiGALTextureView> m_pRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
   xiiSharedPtr<xiiGALTextureView> m_pDSTarget;
 };
-
-#include <GraphicsCore/RenderContext/Implementation/RenderTargetSetup_inl.h>

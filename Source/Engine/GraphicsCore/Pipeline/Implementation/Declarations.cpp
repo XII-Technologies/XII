@@ -3,7 +3,7 @@
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
-void xiiRenderViewContext::SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue)
+void xiiRenderViewContext::SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue) const
 {
   xiiTempHashedString sHashedName(szName);
 
@@ -15,7 +15,7 @@ void xiiRenderViewContext::SetShaderPermutationVariable(const char* szName, cons
   }
 }
 
-void xiiRenderViewContext::SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue)
+void xiiRenderViewContext::SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue) const
 {
   xiiTempHashedString sHashedName(sName);
 
@@ -27,7 +27,7 @@ void xiiRenderViewContext::SetShaderPermutationVariable(xiiStringView sName, con
   }
 }
 
-void xiiRenderViewContext::SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue)
+void xiiRenderViewContext::SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue) const
 {
   if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sValue))
   {
@@ -35,7 +35,7 @@ void xiiRenderViewContext::SetShaderPermutationVariable(const xiiHashedString& s
   }
 }
 
-void xiiRenderViewContext::SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue)
+void xiiRenderViewContext::SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue) const
 {
   xiiHashedString* pOldValue = nullptr;
   m_PermutationVariables.TryGetValue(sName, pOldValue);

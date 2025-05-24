@@ -72,9 +72,9 @@ xiiResult xiiRenderPipelinePass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
+void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
 {
-  XII_PROFILE_AND_MARKER(renderViewContext.m_pRenderContext->GetCommandList(), xiiRenderData::GetCategoryName(category));
+  xiiGALScopedDebugGroup renderGroup(pCommandList, xiiRenderData::GetCategoryName(category));
 
   auto            batchList    = m_pPipeline->GetRenderDataBatchesWithCategory(category, filter);
   const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
@@ -88,7 +88,7 @@ void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& r
 
       if (const xiiRenderer* pRenderer = xiiRenderData::GetCategoryRenderer(category, pType))
       {
-        pRenderer->RenderBatch(renderViewContext, this, batch);
+        pRenderer->RenderBatch(renderViewContext, pCommandList, this, batch);
       }
     }
   }
