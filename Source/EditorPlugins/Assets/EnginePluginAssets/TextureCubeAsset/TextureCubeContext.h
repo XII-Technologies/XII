@@ -10,7 +10,6 @@
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 
 class xiiObjectSelectionMsgToEngine;
-class xiiRenderContext;
 
 class XII_ENGINEPLUGINASSETS_DLL xiiTextureCubeContext : public xiiEngineProcessDocumentContext
 {

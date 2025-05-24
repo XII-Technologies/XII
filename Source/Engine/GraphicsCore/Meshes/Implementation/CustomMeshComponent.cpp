@@ -229,11 +229,8 @@ void xiiCustomMeshComponent::OnActivated()
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCustomMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiCustomMeshRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
 
 void xiiCustomMeshRenderData::FillSortingKey()
 {
@@ -258,10 +255,8 @@ bool xiiCustomMeshRenderData::CanBatch(const xiiRenderData& other0) const
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCustomMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiCustomMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiCustomMeshRenderer::xiiCustomMeshRenderer()  = default;
 xiiCustomMeshRenderer::~xiiCustomMeshRenderer() = default;

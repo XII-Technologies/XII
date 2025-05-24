@@ -1,8 +1,9 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Strings/HashedString.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 
 using xiiShaderResourceHandle = xiiTypedResourceHandle<class xiiShaderResource>;
 

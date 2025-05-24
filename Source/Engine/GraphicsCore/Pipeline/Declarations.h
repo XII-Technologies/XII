@@ -13,7 +13,6 @@ class xiiRenderData;
 class xiiRenderDataBatch;
 class xiiRenderPipeline;
 class xiiRenderPipelinePass;
-class xiiRenderContext;
 class xiiDebugRendererContext;
 
 struct xiiRenderPipelineNodePin;

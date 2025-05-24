@@ -110,7 +110,6 @@ private:
   xiiMaterialResourceDescriptor m_mOriginalDesc; // stores the state at loading, such that SetParameter etc. calls can be reset later
   xiiMaterialResourceDescriptor m_mDesc;
 
-  friend class xiiRenderContext;
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, MaterialResource);
 
   xiiEvent<const xiiMaterialResource*, xiiMutex> m_ModifiedEvent;

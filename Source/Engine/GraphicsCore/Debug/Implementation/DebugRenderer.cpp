@@ -9,7 +9,6 @@
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
