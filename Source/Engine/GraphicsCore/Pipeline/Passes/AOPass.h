@@ -12,10 +12,10 @@ public:
   xiiAOPass();
   ~xiiAOPass();
 
-  virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-
-  virtual void      Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
-  virtual void      ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> pInputs, xiiArrayPtr<xiiGALTextureCreationDescription> pOutputs) override;
+  virtual void      InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
+  virtual void      Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
+  virtual void      ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
 
@@ -43,8 +43,11 @@ protected:
   float m_fMipLevelScale      = 10.0f;
   float m_fDepthBlurThreshold = 2.0f;
 
-  xiiConstantBufferStorageHandle m_hDownscaleConstantBuffer;
-  xiiConstantBufferStorageHandle m_hSSAOConstantBuffer;
+  xiiSharedPtr<xiiGALRenderPass> m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
+
+  xiiSharedPtr<xiiGALBuffer> m_pDownscaleConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pSSAOConstantBuffer;
 
   xiiTexture2DResourceHandle m_hNoiseTexture;
 
