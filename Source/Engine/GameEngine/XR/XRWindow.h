@@ -4,7 +4,6 @@
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
 class xiiXRInterface;

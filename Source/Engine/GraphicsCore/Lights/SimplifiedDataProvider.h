@@ -4,7 +4,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 
 struct XII_GRAPHICSCORE_DLL xiiSimplifiedDataGPU
 {

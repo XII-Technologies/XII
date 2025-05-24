@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 
 struct xiiPerInstanceData;
 class xiiGALCommandList;

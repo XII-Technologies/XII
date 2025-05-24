@@ -3,9 +3,7 @@
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/LSAOConstants.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 /// \brief Defines the depth compare function to be used to decide sample weights.
 struct XII_GRAPHICSCORE_DLL xiiLSAODepthCompareFunction

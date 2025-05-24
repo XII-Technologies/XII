@@ -5,7 +5,6 @@
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
 using xiiMaterialResourceHandle    = xiiTypedResourceHandle<class xiiMaterialResource>;
