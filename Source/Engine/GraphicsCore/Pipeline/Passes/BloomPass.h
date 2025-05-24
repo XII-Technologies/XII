@@ -13,7 +13,7 @@ public:
   ~xiiBloomPass();
 
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-
+  virtual void InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
   virtual void      Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
   virtual void      ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;
@@ -31,6 +31,10 @@ protected:
   xiiColorGammaUB                m_InnerTintColor = xiiColor::White;
   xiiColorGammaUB                m_MidTintColor   = xiiColor::White;
   xiiColorGammaUB                m_OuterTintColor = xiiColor::White;
-  xiiConstantBufferStorageHandle m_hConstantBuffer;
   xiiShaderResourceHandle        m_hShader;
+
+  xiiSharedPtr<xiiGALRenderPass> m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
+
+  xiiSharedPtr<xiiGALBuffer> m_pBloomConstantBuffer;
 };
