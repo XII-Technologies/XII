@@ -35,15 +35,14 @@ xiiBlurPass::xiiBlurPass() :
     XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load blur shader!");
   }
 
-  {
-    m_hBlurCB = xiiRenderContext::CreateConstantBufferStorage<xiiBlurConstants>();
-  }
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pBlurConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiBlurConstants));
 }
 
 xiiBlurPass::~xiiBlurPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hBlurCB);
-  m_hBlurCB.Invalidate();
+  m_pBlurConstantBuffer.Clear();
 }
 
 bool xiiBlurPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -70,6 +69,7 @@ bool xiiBlurPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArra
 
 void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
+#ifdef CORE_ENABLE
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
     // Setup render target
@@ -93,6 +93,7 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
+#endif
 }
 
 xiiResult xiiBlurPass::Serialize(xiiStreamWriter& inout_stream) const
@@ -115,8 +116,10 @@ void xiiBlurPass::SetRadius(xiiInt32 iRadius)
 {
   m_iRadius = iRadius;
 
+  #ifdef CORE_ENABLE
   xiiBlurConstants* cb = xiiRenderContext::GetConstantBufferData<xiiBlurConstants>(m_hBlurCB);
   cb->BlurRadius       = m_iRadius;
+#endif
 }
 
 xiiInt32 xiiBlurPass::GetRadius() const
