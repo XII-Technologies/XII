@@ -2,6 +2,8 @@
 
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
+#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
+
 class XII_GRAPHICSCORE_DLL xiiTargetPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTargetPass, xiiRenderPipelinePass);

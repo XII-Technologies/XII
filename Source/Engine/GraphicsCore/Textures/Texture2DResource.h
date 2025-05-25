@@ -14,7 +14,6 @@
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsCore/Pipeline/Declarations.h>
-#include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
 
 class xiiImage;
 
