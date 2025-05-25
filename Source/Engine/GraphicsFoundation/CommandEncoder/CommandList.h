@@ -298,7 +298,7 @@ public:
 
   /// \brief Sets the pipeline state object for the command list.
   ///
-  /// \param hPipelineState - The handle to the pipeline state object.
+  /// \param pPipelineState - The handle to the pipeline state object.
   void SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState);
 
   /// \brief Sets the stencil reference value used in the stencil test.
@@ -323,7 +323,7 @@ public:
 
   /// \brief Sets the index buffer for the input-assembler stage of the pipeline. This contains the indices into the vertex buffers.
   ///
-  /// \param hIndexBuffer - The handle to the index buffer object. The index buffer must be created with the xiiGALBindFlags::IndexBuffer bind flag.
+  /// \param pIndexBuffer - The handle to the index buffer object. The index buffer must be created with the xiiGALBindFlags::IndexBuffer bind flag.
   /// \param uiByteOffset - The byte offset into the index buffer. That is, from the beginning of the buffer to the start of the index data.
   void SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset = 0U);
 
@@ -338,37 +338,37 @@ public:
   /// \brief This is used to set the constant (uniform) buffer for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
-  /// \param hConstantBuffer    - The handle to the constant (uniform) buffer object to set.
+  /// \param pConstantBuffer    - The handle to the constant (uniform) buffer object to set.
   void SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer);
 
   /// \brief This is used to set the buffer view for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
-  /// \param hBufferView        - The handle to the buffer view object to set.
+  /// \param pBufferView        - The handle to the buffer view object to set.
   void SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView);
 
   /// \brief This is used to set the texture view for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
-  /// \param hTextureView       - The handle to the texture view object to set.
+  /// \param pTextureView       - The handle to the texture view object to set.
   void SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView);
 
   /// This is used to set the buffer view for an unordered access.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
-  /// \param hBufferView        - The handle to the buffer view object to set.
+  /// \param pBufferView        - The handle to the buffer view object to set.
   void SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView);
 
   /// \brief This is used to set the texture view for an unordered access.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
-  /// \param hTextureView       - The handle to the texture view object to set.
+  /// \param pTextureView       - The handle to the texture view object to set.
   void SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView);
 
   /// \brief This is used to set the sampler for a sampler resource.
   ///
   /// \param bindingInformation - This describes the binding information for the sampler resource, see xiiGALPipelineResourceDescription for details.
-  /// \param hSampler           - The handle to the sampler object to set.
+  /// \param pSampler           - The handle to the sampler object to set.
   void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler);
 
   /// \brief This commits the pipeline shader resources to the GPU, and ensures that all necessary state transitions are performed.
@@ -378,13 +378,13 @@ public:
 
   /// \brief This clears the specified render target view to the specified color.
   ///
-  /// \param hRenderTargetView - The handle to the render target view object. The view must be a xiiGALTextureViewType::RenderTarget.
+  /// \param pRenderTargetView - The handle to the render target view object. The view must be a xiiGALTextureViewType::RenderTarget.
   /// \param clearColor        - The color to which to clear the render target view.
   void ClearRenderTargetView(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor);
 
   /// \brief This clears the specified depth stencil view to the specified depth and stencil values.
   ///
-  /// \param hDepthStencilView - The handle to the depth stencil view object. The view must be a xiiGALTextureViewType::DepthStencil.
+  /// \param pDepthStencilView - The handle to the depth stencil view object. The view must be a xiiGALTextureViewType::DepthStencil.
   /// \param bClearDepth       - Whether to clear the depth portion of the buffer.
   /// \param bClearStencil     - Whether to clear the stencil portion of the buffer.
   /// \param fDepthClear       - The value to which to clear the depth portion of the buffer with.
@@ -430,7 +430,7 @@ public:
 
   /// \brief Draws indexed, instanced primitives using an indirect argument buffer.
   ///
-  /// \param hIndirectArgumentBuffer - The handle to the indirect argument buffer object.
+  /// \param pIndirectArgumentBuffer - The handle to the indirect argument buffer object.
   /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
   xiiResult DrawIndexedInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
 
@@ -444,7 +444,7 @@ public:
 
   /// \brief Draws instanced primitives using an indirect argument buffer.
   ///
-  /// \param hIndirectArgumentBuffer - The handle to the indirect argument buffer object.
+  /// \param pIndirectArgumentBuffer - The handle to the indirect argument buffer object.
   /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
   xiiResult DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
 
@@ -468,7 +468,7 @@ public:
 
   /// \brief Dispatches a compute shader using an indirect argument buffer.
   ///
-  /// \param hIndirectArgumentBuffer - The handle to the indirect argument buffer object.
+  /// \param pIndirectArgumentBuffer - The handle to the indirect argument buffer object.
   /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
   xiiResult DispatchIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
 
@@ -476,41 +476,41 @@ public:
 
   /// \brief Begins a query.
   ///
-  /// \param hQuery - The handle to the query object.
+  /// \param pQuery - The handle to the query object.
   void BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery);
 
   /// \brief Ends a query.
   ///
-  /// \param hQuery - The handle to the query object.
+  /// \param pQuery - The handle to the query object.
   void EndQuery(xiiSharedPtr<xiiGALQuery> pQuery);
 
   // Buffer methods.
 
   /// \brief Updates a buffer.
   ///
-  /// \param hBuffer             - The handle to the buffer object.
+  /// \param pBuffer             - The handle to the buffer object.
   /// \param uiDestinationOffset - Byte offset into the buffer where the update should start.
   /// \param pSourceData         - Pointer to the source data.
   void UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData);
 
   /// \brief Copies the entire contents of the source buffer to the destination buffer.
   ///
-  /// \param hSourceBuffer      - The handle to the source buffer object.
-  /// \param hDestinationBuffer - The handle to the destination buffer object.
+  /// \param pSourceBuffer      - The handle to the source buffer object.
+  /// \param pDestinationBuffer - The handle to the destination buffer object.
   void CopyBuffer(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer);
 
   /// \brief Copies a region from the source buffer to the destination buffer.
   ///
-  /// \param hSourceBuffer       - The handle to the source buffer object.
+  /// \param pSourceBuffer       - The handle to the source buffer object.
   /// \param uiSourceOffset      - Byte offset into the source buffer where the copy should start.
-  /// \param hDestinationBuffer  - The handle to the destination buffer object.
+  /// \param pDestinationBuffer  - The handle to the destination buffer object.
   /// \param uiDestinationOffset - Byte offset into the destination buffer where the copy should start.
   /// \param uiSize              - Size in bytes of the region to copy.
   void CopyBufferRegion(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize);
 
   /// \brief Maps a buffer into the CPU's address space.
   ///
-  /// \param hBuffer     - The handle to the buffer object.
+  /// \param pBuffer     - The handle to the buffer object.
   /// \param mapType     - Specifies the CPU's access pattern for the map operation. See xiiGALMapType for details.
   /// \param mapFlags    - Flags specifying how the buffer should be mapped. See xiiGALMapFlags for details.
   /// \param pMappedData - Pointer to the mapped data.
@@ -518,7 +518,7 @@ public:
 
   /// \brief Unmaps a buffer from the CPU's address space.
   ///
-  /// \param hBuffer - The handle to the buffer object.
+  /// \param pBuffer - The handle to the buffer object.
   /// \param mapType - Specifies the CPU's access pattern for the map operation. See xiiGALMapType for details.
   xiiResult UnmapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType);
 
@@ -526,7 +526,7 @@ public:
 
   /// \brief Updates a texture.
   ///
-  /// \param hTexture            - The handle to the texture object.
+  /// \param pTexture            - The handle to the texture object.
   /// \param textureMiplevelData - Specifies the subresource to update. See xiiGALTextureMipLevelData for details.
   /// \param textureBox          - Specifies the region within the subresource to update.
   /// \param subresourceData     - Specifies the new data. See xiiGALTextureSubResourceData for details.
@@ -534,38 +534,38 @@ public:
 
   /// \brief Copies the entire contents of the source texture to the destination texture.
   ///
-  /// \param hSourceTexture      - The handle to the source texture object.
-  /// \param hDestinationTexture - The handle to the destination texture object.
+  /// \param pSourceTexture      - The handle to the source texture object.
+  /// \param pDestinationTexture - The handle to the destination texture object.
   void CopyTexture(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture);
 
   /// \brief Copies a region from the source texture to the destination texture.
   ///
-  /// \param hSourceTexture          - The handle to the source texture object.
+  /// \param pSourceTexture          - The handle to the source texture object.
   /// \param sourceMipLevelData      - Specifies the subresource in the source texture. See xiiGALTextureMipLevelData for details.
   /// \param box                     - Specifies the region within the source subresource to copy.
-  /// \param hDestinationTexture     - The handle to the destination texture object.
+  /// \param pDestinationTexture     - The handle to the destination texture object.
   /// \param destinationMipLevelData - Specifies the subresource in the destination texture. See xiiGALTextureMipLevelData for details.
   /// \param vDestinationPoint       - Specifies the point within the destination subresource where the region should be copied to.
   void CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint);
 
   /// \brief Resolves a multisampled source texture into a non-multisampled destination texture.
   ///
-  /// \param hSourceTexture          - The handle to the source texture object.
+  /// \param pSourceTexture          - The handle to the source texture object.
   /// \param sourceMipLevelData      - Specifies the subresource in the source texture. See xiiGALTextureMipLevelData for details.
-  /// \param hDestinationTexture     - The handle to the destination texture object.
+  /// \param pDestinationTexture     - The handle to the destination texture object.
   /// \param destinationMipLevelData - Specifies the subresource in the destination texture. See xiiGALTextureMipLevelData for details.
   void ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData);
 
   /// \brief Generates mipmap levels for a texture.
   ///
-  /// \param hTextureView - The handle to the texture view object. The texture view must be of type xiiGALTextureViewType::ShaderResource.
+  /// \param pTextureView - The handle to the texture view object. The texture view must be of type xiiGALTextureViewType::ShaderResource.
   ///
   /// \remarks This method must only be called on a shader resource view. The texture must be created with xiiGALMiscTextureFlags::GenerateMips.
   void GenerateMips(xiiSharedPtr<xiiGALTextureView> pTextureView);
 
   /// \brief Maps a texture subresource into the address space of the command list.
   ///
-  /// \param hTexture            - The handle to the texture object. This is the texture that contains the subresource to map.
+  /// \param pTexture            - The handle to the texture object. This is the texture that contains the subresource to map.
   /// \param textureMipLevelData - Specifies the subresource to map. This is the mipmap level of the texture to map.
   /// \param mapType             - Specifies the CPU's read and write access to a resource.
   /// \param mapFlags            - Specifies the behavior of the map operation.
@@ -575,7 +575,7 @@ public:
 
   /// \brief Unmaps a texture subresource from the address space of the command list.
   ///
-  /// \param hTexture            - The handle to the texture object.
+  /// \param pTexture            - The handle to the texture object.
   /// \param textureMipLevelData - Specifies the subresource to unmap.
   xiiResult UnmapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData);
 
