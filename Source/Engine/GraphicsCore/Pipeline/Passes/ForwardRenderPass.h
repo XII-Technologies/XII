@@ -33,11 +33,11 @@ public:
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
 
 protected:
-  virtual void SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs);
+  virtual void SetupResources(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs);
   virtual void SetupPermutationVars(const xiiRenderViewContext& renderViewContext);
-  void         SetupLighting(const xiiRenderViewContext& renderViewContext);
+  void         SetupLighting(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList);
 
-  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) = 0;
+  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList) = 0;
 
   xiiRenderPipelineNodePassThroughPin m_PinColor;
   xiiRenderPipelineNodePassThroughPin m_PinDepthStencil;

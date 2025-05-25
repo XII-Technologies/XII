@@ -12,9 +12,11 @@ xiiSkyRenderPass::xiiSkyRenderPass(xiiStringView sName) :
 
 xiiSkyRenderPass::~xiiSkyRenderPass() = default;
 
-void xiiSkyRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext)
+void xiiSkyRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Sky);
+  xiiGALScopedDebugGroup group(pCommandList, GetName());
+
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::Sky);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SkyRenderPass);

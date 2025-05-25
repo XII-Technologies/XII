@@ -16,89 +16,89 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   {
-    xiiGALBufferCreationDescription desc;
-    desc.m_Mode           = xiiGALBufferMode::Structured;
-    desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
-    desc.m_Usage          = xiiGALResourceUsage::Dynamic;
-    desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode           = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
 
     {
-      desc.m_uiElementByteStride = sizeof(xiiPerLightData);
-      desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_LIGHT_DATA;
+      bufferDescription.m_uiElementByteStride = sizeof(xiiPerLightData);
+      bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * xiiClusteredDataCPU::MAX_LIGHT_DATA;
 
-      m_pLightDataBuffer = pDevice->CreateBuffer(desc);
+      m_pLightDataBuffer = pDevice->CreateBuffer(bufferDescription);
     }
 
     {
-      desc.m_uiElementByteStride = sizeof(xiiPerDecalData);
-      desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_DECAL_DATA;
+      bufferDescription.m_uiElementByteStride = sizeof(xiiPerDecalData);
+      bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * xiiClusteredDataCPU::MAX_DECAL_DATA;
 
-      m_pDecalDataBuffer = pDevice->CreateBuffer(desc);
+      m_pDecalDataBuffer = pDevice->CreateBuffer(bufferDescription);
     }
 
     {
-      desc.m_uiElementByteStride = sizeof(xiiPerReflectionProbeData);
-      desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA;
+      bufferDescription.m_uiElementByteStride = sizeof(xiiPerReflectionProbeData);
+      bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA;
 
-      m_pReflectionProbeDataBuffer = pDevice->CreateBuffer(desc);
+      m_pReflectionProbeDataBuffer = pDevice->CreateBuffer(bufferDescription);
     }
 
     {
-      desc.m_uiElementByteStride = sizeof(xiiPerClusterData);
-      desc.m_uiSize              = desc.m_uiElementByteStride * NUM_CLUSTERS;
+      bufferDescription.m_uiElementByteStride = sizeof(xiiPerClusterData);
+      bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * NUM_CLUSTERS;
 
-      m_pClusterDataBuffer = pDevice->CreateBuffer(desc);
+      m_pClusterDataBuffer = pDevice->CreateBuffer(bufferDescription);
     }
 
     {
-      desc.m_uiElementByteStride = sizeof(xiiUInt32);
-      desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_ITEMS_PER_CLUSTER * NUM_CLUSTERS;
+      bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+      bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * xiiClusteredDataCPU::MAX_ITEMS_PER_CLUSTER * NUM_CLUSTERS;
 
-      m_pClusterItemBuffer = pDevice->CreateBuffer(desc);
+      m_pClusterItemBuffer = pDevice->CreateBuffer(bufferDescription);
     }
   }
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiClusteredDataConstants>();
+  m_pClusterDataConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiClusteredDataConstants));
 
   {
-    xiiGALSamplerCreationDescription desc;
-    desc.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-    desc.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-    desc.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-    desc.m_MinFilter          = xiiGALFilterType::ComparisonLinear;
-    desc.m_MagFilter          = xiiGALFilterType::ComparisonLinear;
-    desc.m_MipFilter          = xiiGALFilterType::ComparisonLinear;
-    desc.m_ComparisonFunction = xiiGALComparisonFunction::Less;
-    desc.m_BorderColor        = xiiColor::Black;
-    desc.m_fMipLODBias        = 0.0f;
-    desc.m_fMinLOD            = -1.0f;
-    desc.m_fMaxLOD            = 42000.0f;
-    desc.m_uiMaxAnisotropy    = 4U;
+    xiiGALSamplerCreationDescription samplerDescription;
+    samplerDescription.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    samplerDescription.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    samplerDescription.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    samplerDescription.m_MinFilter          = xiiGALFilterType::ComparisonLinear;
+    samplerDescription.m_MagFilter          = xiiGALFilterType::ComparisonLinear;
+    samplerDescription.m_MipFilter          = xiiGALFilterType::ComparisonLinear;
+    samplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Less;
+    samplerDescription.m_BorderColor        = xiiColor::Black;
+    samplerDescription.m_fMipLODBias        = 0.0f;
+    samplerDescription.m_fMinLOD            = -1.0f;
+    samplerDescription.m_fMaxLOD            = 42000.0f;
+    samplerDescription.m_uiMaxAnisotropy    = 4U;
 
-    m_pShadowSampler = pDevice->CreateSampler(desc);
+    m_pShadowSampler = pDevice->CreateSampler(samplerDescription);
   }
 
   m_hDecalAtlas = xiiDecalAtlasResource::GetDecalAtlasResource();
 
   {
-    xiiGALSamplerCreationDescription desc;
-    desc.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-    desc.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-    desc.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-    desc.m_MinFilter          = xiiGALFilterType::Linear;
-    desc.m_MagFilter          = xiiGALFilterType::Linear;
-    desc.m_MipFilter          = xiiGALFilterType::Linear;
-    desc.m_ComparisonFunction = xiiGALComparisonFunction::Never;
-    desc.m_BorderColor        = xiiColor::Black;
-    desc.m_fMipLODBias        = 0.0f;
-    desc.m_fMinLOD            = -1.0f;
-    desc.m_fMaxLOD            = 42000.0f;
-    desc.m_uiMaxAnisotropy    = 4U;
+    xiiGALSamplerCreationDescription samplerDescription;
+    samplerDescription.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    samplerDescription.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    samplerDescription.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    samplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
+    samplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
+    samplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
+    samplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+    samplerDescription.m_BorderColor        = xiiColor::Black;
+    samplerDescription.m_fMipLODBias        = 0.0f;
+    samplerDescription.m_fMinLOD            = -1.0f;
+    samplerDescription.m_fMaxLOD            = 42000.0f;
+    samplerDescription.m_uiMaxAnisotropy    = 4U;
 
-    xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::DefaultQuality, desc);
-    desc.m_uiMaxAnisotropy = xiiMath::Min(desc.m_uiMaxAnisotropy, 4u);
+    xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::DefaultQuality, samplerDescription);
+    samplerDescription.m_uiMaxAnisotropy = xiiMath::Min(samplerDescription.m_uiMaxAnisotropy, 4u);
 
-    m_pDecalAtlasSampler = pDevice->CreateSampler(desc);
+    m_pDecalAtlasSampler = pDevice->CreateSampler(samplerDescription);
   }
 }
 
@@ -113,12 +113,12 @@ xiiClusteredDataGPU::~xiiClusteredDataGPU()
   m_pClusterItemBuffer.Clear();
   m_pShadowSampler.Clear();
   m_pDecalAtlasSampler.Clear();
-
-  xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
+  m_pClusterDataConstantBuffer.Borrow();
 }
 
-void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
+void xiiClusteredDataGPU::BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
+#ifdef CORE_ENABLE
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiSharedPtr<xiiGALBufferView> pShadowDataBufferView;
@@ -156,6 +156,7 @@ void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
   pRenderContext->BindTexture2D("SkyIrradianceTexture", pSkyIrradianceTextureView);
 
   pRenderContext->BindConstantBuffer("xiiClusteredDataConstants", m_hConstantBuffer);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -167,7 +168,7 @@ xiiClusteredDataProvider::xiiClusteredDataProvider() = default;
 
 xiiClusteredDataProvider::~xiiClusteredDataProvider() = default;
 
-void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
+void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData)
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -175,8 +176,6 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
   {
     m_Data.m_uiSkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
     m_Data.m_cameraUsageHint      = pData->m_cameraUsageHint;
-
-    auto pCommandList = renderViewContext.m_pRenderContext->GetCommandList();
 
     pCommandList->BeginDebugGroup("xiiClusteredDataProvider Update");
     {
@@ -206,23 +205,26 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
     pCommandList->EndDebugGroup();
 
     // Update Constants
-    const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;
+    {
+      const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;
 
-    xiiClusteredDataConstants* pConstants = xiiRenderContext::GetConstantBufferData<xiiClusteredDataConstants>(m_Data.m_hConstantBuffer);
-    pConstants->DepthSliceScale           = s_fDepthSliceScale;
-    pConstants->DepthSliceBias            = s_fDepthSliceBias;
-    pConstants->InvTileSize               = xiiVec2(NUM_CLUSTERS_X / viewport.width, NUM_CLUSTERS_Y / viewport.height);
-    pConstants->NumLights                 = pData->m_LightData.GetCount();
-    pConstants->NumDecals                 = pData->m_DecalData.GetCount();
+      xiiGALMapHelper<xiiClusteredDataConstants> pConstants(pCommandList, m_Data.m_pClusterDataConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-    pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
+      pConstants->DepthSliceScale = s_fDepthSliceScale;
+      pConstants->DepthSliceBias  = s_fDepthSliceBias;
+      pConstants->InvTileSize     = xiiVec2(NUM_CLUSTERS_X / viewport.width, NUM_CLUSTERS_Y / viewport.height);
+      pConstants->NumLights       = pData->m_LightData.GetCount();
+      pConstants->NumDecals       = pData->m_DecalData.GetCount();
 
-    pConstants->FogHeight             = pData->m_fFogHeight;
-    pConstants->FogHeightFalloff      = pData->m_fFogHeightFalloff;
-    pConstants->FogDensityAtCameraPos = pData->m_fFogDensityAtCameraPos;
-    pConstants->FogDensity            = pData->m_fFogDensity;
-    pConstants->FogColor              = pData->m_FogColor;
-    pConstants->FogInvSkyDistance     = pData->m_fFogInvSkyDistance;
+      pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
+
+      pConstants->FogHeight             = pData->m_fFogHeight;
+      pConstants->FogHeightFalloff      = pData->m_fFogHeightFalloff;
+      pConstants->FogDensityAtCameraPos = pData->m_fFogDensityAtCameraPos;
+      pConstants->FogDensity            = pData->m_fFogDensity;
+      pConstants->FogColor              = pData->m_FogColor;
+      pConstants->FogInvSkyDistance     = pData->m_fFogInvSkyDistance;
+    }
   }
 
   return &m_Data;

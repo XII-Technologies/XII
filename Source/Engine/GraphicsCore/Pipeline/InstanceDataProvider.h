@@ -18,12 +18,12 @@ public:
 
   xiiSharedPtr<xiiGALBuffer> m_pInstanceDataBuffer;
 
-  xiiConstantBufferStorageHandle m_hConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pObjectConstantsBuffer;
 
-  void BindResources(xiiRenderContext* pRenderContext);
+  void BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList);
 
   xiiArrayPtr<xiiPerInstanceData> GetInstanceData(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
-  void                            UpdateInstanceData(xiiGALCommandList* pCommandList, xiiUInt32 uiCount);
+  void                            UpdateInstanceData(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiUInt32 uiCount);
 
 private:
   friend xiiInstanceDataProvider;

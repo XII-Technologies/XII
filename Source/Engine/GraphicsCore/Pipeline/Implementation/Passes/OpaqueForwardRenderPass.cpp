@@ -51,6 +51,7 @@ void xiiOpaqueForwardRenderPass::SetupResources(const xiiRenderViewContext& rend
 {
   SUPER::SetupResources(renderViewContext, inputs, outputs);
 
+  #ifdef CORE_ENABLE
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // SSAO texture
@@ -66,6 +67,7 @@ void xiiOpaqueForwardRenderPass::SetupResources(const xiiRenderViewContext& rend
       renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", m_hWhiteTexture, xiiResourceAcquireMode::BlockTillLoaded);
     }
   }
+  #endif
 }
 
 void xiiOpaqueForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& renderViewContext)
@@ -74,18 +76,18 @@ void xiiOpaqueForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext
 
   if (m_bWriteDepth)
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FORWARD_PASS_WRITE_DEPTH", "TRUE");
+    renderViewContext.SetShaderPermutationVariable("FORWARD_PASS_WRITE_DEPTH", "TRUE");
   }
   else
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FORWARD_PASS_WRITE_DEPTH", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("FORWARD_PASS_WRITE_DEPTH", "FALSE");
   }
 }
 
-void xiiOpaqueForwardRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext)
+void xiiOpaqueForwardRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque);
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked);
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitOpaque);
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitMasked);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_OpaqueForwardRenderPass);

@@ -70,6 +70,7 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
 
 void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
+#ifdef CORE_ENABLE
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Setup render target
@@ -115,6 +116,7 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::GUI);
 
   xiiDebugRenderer::RenderScreenSpace(renderViewContext);
+  #endif
 }
 
 xiiResult xiiSimpleRenderPass::Serialize(xiiStreamWriter& inout_stream) const

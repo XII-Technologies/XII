@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/TransparentForwardRenderPass.h>
+#include <GraphicsCore/Textures/TextureUtils.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentForwardRenderPass, 1, xiiRTTIDefaultAllocator<xiiTransparentForwardRenderPass>)
@@ -31,6 +32,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
   if (pColorInput == nullptr)
     return;
 
+#ifdef CORE_ENABLE
   CreateSampler();
 
   xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(pColorInput->m_TextureDescription.m_Size, pColorInput->m_TextureDescription.m_Format);
@@ -55,34 +57,35 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
     renderViewContext.m_pRenderContext->EndRendering();
   }
   xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(pSceneColor);
+#endif
 }
 
-void xiiTransparentForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiTransparentForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  SUPER::SetupResources(renderViewContext, inputs, outputs);
+  SUPER::SetupResources(renderViewContext, pCommandList, inputs, outputs);
 
+#ifdef CORE_ENABLE
   if (inputs[m_PinResolvedDepth.m_uiInputIndex])
   {
-    xiiSharedPtr<xiiGALTextureView> pDepthTextureView = inputs[m_PinResolvedDepth.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-
-    renderViewContext.m_pRenderContext->BindTexture2D("SceneDepth", pDepthTextureView);
+    pCommandList->SetShaderResourceTextureView("SceneDepth", pDepthTextureView);
   }
+#endif
 }
 
-void xiiTransparentForwardRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext)
+void xiiTransparentForwardRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitTransparent);
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitTransparent);
 
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+  renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitForeground);
 
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+  renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitForeground);
 
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitScreenFX);
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitScreenFX);
 }
 
-void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALTexture> pSceneColorTexture, xiiSharedPtr<xiiGALTexture> pCurrentColorTexture)
+void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALTexture> pSceneColorTexture, xiiSharedPtr<xiiGALTexture> pCurrentColorTexture)
 {
   const xiiGALTextureCreationDescription& textureDescription = pCurrentColorTexture->GetDescription();
 
@@ -92,11 +95,11 @@ void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderVie
     subresource.m_uiMipLevel   = 0;
     subresource.m_uiArraySlice = 0;
 
-    renderViewContext.m_pRenderContext->GetCommandList()->ResolveTextureSubResource(pCurrentColorTexture, subresource, pSceneColorTexture, subresource);
+    pCommandList->ResolveTextureSubResource(pCurrentColorTexture, subresource, pSceneColorTexture, subresource);
   }
   else
   {
-    renderViewContext.m_pRenderContext->GetCommandList()->CopyTexture(pCurrentColorTexture, pSceneColorTexture);
+    pCommandList->CopyTexture(pCurrentColorTexture, pSceneColorTexture);
   }
 }
 

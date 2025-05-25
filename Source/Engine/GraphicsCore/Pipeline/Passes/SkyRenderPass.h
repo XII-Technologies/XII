@@ -12,5 +12,5 @@ public:
   ~xiiSkyRenderPass();
 
 protected:
-  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) override;
+  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList) override;
 };

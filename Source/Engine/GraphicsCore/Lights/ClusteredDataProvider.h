@@ -21,15 +21,14 @@ public:
   xiiSharedPtr<xiiGALBuffer> m_pReflectionProbeDataBuffer;
   xiiSharedPtr<xiiGALBuffer> m_pClusterDataBuffer;
   xiiSharedPtr<xiiGALBuffer> m_pClusterItemBuffer;
-
-  xiiConstantBufferStorageHandle m_hConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pClusterDataConstantBuffer;
 
   xiiSharedPtr<xiiGALSampler> m_pShadowSampler;
 
   xiiDecalAtlasResourceHandle m_hDecalAtlas;
   xiiSharedPtr<xiiGALSampler> m_pDecalAtlasSampler;
 
-  void BindResources(xiiRenderContext* pRenderContext);
+  void BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList);
 };
 
 class XII_GRAPHICSCORE_DLL xiiClusteredDataProvider : public xiiFrameDataProvider<xiiClusteredDataGPU>
@@ -41,7 +40,7 @@ public:
   ~xiiClusteredDataProvider();
 
 private:
-  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData) override;
+  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData) override;
 
   xiiClusteredDataGPU m_Data;
 };
