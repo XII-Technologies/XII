@@ -11,18 +11,19 @@ XII_DEFINE_AS_POD_TYPE(xiiSimplifiedDataConstants);
 
 xiiSimplifiedDataGPU::xiiSimplifiedDataGPU()
 {
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiSimplifiedDataConstants>();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pSimplifiedDataConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiSimplifiedDataConstants));
 }
 
 xiiSimplifiedDataGPU::~xiiSimplifiedDataGPU()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
+  m_pSimplifiedDataConstantBuffer.Clear();
 }
 
-void xiiSimplifiedDataGPU::BindResources(xiiRenderContext* pRenderContext)
+void xiiSimplifiedDataGPU::BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
+  #ifdef CORE_ENABLE
   xiiSharedPtr<xiiGALTextureView> hReflectionSpecularTextureView = xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   xiiSharedPtr<xiiGALTextureView> hSkyIrradianceTextureView      = xiiReflectionPool::GetSkyIrradianceTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
@@ -30,14 +31,13 @@ void xiiSimplifiedDataGPU::BindResources(xiiRenderContext* pRenderContext)
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
 
   pRenderContext->BindConstantBuffer("xiiSimplifiedDataConstants", m_hConstantBuffer);
+  #endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimplifiedDataProvider, 1, xiiRTTIDefaultAllocator<xiiSimplifiedDataProvider>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiSimplifiedDataProvider::xiiSimplifiedDataProvider() = default;
 
@@ -45,6 +45,7 @@ xiiSimplifiedDataProvider::~xiiSimplifiedDataProvider() = default;
 
 void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
+#ifdef CORE_ENABLE
   if (auto pData = extractedData.GetFrameData<xiiSimplifiedDataCPU>())
   {
     m_Data.m_uiSkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
@@ -57,6 +58,7 @@ void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderVi
 
     pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
   }
+  #endif
 
   return &m_Data;
 }

@@ -15,9 +15,10 @@ public:
 
   xiiUInt32                      m_uiSkyIrradianceIndex = 0;
   xiiEnum<xiiCameraUsageHint>    m_cameraUsageHint      = xiiCameraUsageHint::Default;
-  xiiConstantBufferStorageHandle m_hConstantBuffer;
 
-  void BindResources(xiiRenderContext* pRenderContext);
+  xiiSharedPtr<xiiGALBuffer>     m_pSimplifiedDataConstantBuffer;
+
+  void BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList);
 };
 
 class XII_GRAPHICSCORE_DLL xiiSimplifiedDataProvider : public xiiFrameDataProvider<xiiSimplifiedDataGPU>
