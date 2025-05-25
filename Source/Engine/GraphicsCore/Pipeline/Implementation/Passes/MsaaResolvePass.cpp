@@ -68,8 +68,11 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
   if (m_bIsDepth)
   {
+#ifdef CORE_ENABLE
     // Setup render target
     xiiGALRenderingSetup renderingSetup;
     renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil));
@@ -85,25 +88,28 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+#endif
   }
   else
   {
-    auto pCommandList = renderViewContext.m_pRenderContext->GetCommandList();
-
-    pCommandList->BeginDebugGroup(GetName());
+    if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
     {
-      xiiGALTextureMipLevelData mipLevelData{.m_uiMipLevel = 0U, .m_uiArraySlice = 0U};
-
-      pCommandList->ResolveTextureSubResource(pInput->m_pTexture, mipLevelData, pOutput->m_pTexture, mipLevelData);
-
-      if (renderViewContext.m_pCamera->IsStereoscopic())
+      pCommandList->BeginDebugGroup(GetName());
       {
-        mipLevelData.m_uiArraySlice = 1U;
+        xiiGALTextureMipLevelData mipLevelData{.m_uiMipLevel = 0U, .m_uiArraySlice = 0U};
 
         pCommandList->ResolveTextureSubResource(pInput->m_pTexture, mipLevelData, pOutput->m_pTexture, mipLevelData);
+
+        if (renderViewContext.m_pCamera->IsStereoscopic())
+        {
+          mipLevelData.m_uiArraySlice = 1U;
+
+          pCommandList->ResolveTextureSubResource(pInput->m_pTexture, mipLevelData, pOutput->m_pTexture, mipLevelData);
+        }
       }
+      pCommandList->EndDebugGroup();
+      pCommandList->Submit();
     }
-    pCommandList->EndDebugGroup();
   }
 }
 
