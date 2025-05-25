@@ -36,9 +36,9 @@ protected:
 
   xiiSharedPtr<xiiGALTexture> m_pInputCubemap;
 
-  xiiConstantBufferStorageHandle m_hFilteredSpecularConstantBuffer;
-  xiiShaderResourceHandle        m_hFilteredSpecularShader;
+  xiiSharedPtr<xiiGALBuffer> m_pFilteredSpecularConstantBuffer;
+  xiiShaderResourceHandle    m_hFilteredSpecularShader;
 
-  xiiConstantBufferStorageHandle m_hIrradianceConstantBuffer;
-  xiiShaderResourceHandle        m_hIrradianceShader;
+  xiiSharedPtr<xiiGALBuffer> m_pIrradianceConstantBuffer;
+  xiiShaderResourceHandle    m_hIrradianceShader;
 };

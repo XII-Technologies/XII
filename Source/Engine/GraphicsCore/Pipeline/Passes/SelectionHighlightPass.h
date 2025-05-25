@@ -21,7 +21,7 @@ protected:
   xiiRenderPipelineNodeInputPin       m_PinDepthStencil;
 
   xiiShaderResourceHandle        m_hShader;
-  xiiConstantBufferStorageHandle m_hConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer>     m_pSelectionHighlightConstantsBuffer;
 
   xiiColor m_HighlightColor  = xiiColorScheme::LightUI(xiiColorScheme::Yellow);
   float    m_fOverlayOpacity = 0.1f;

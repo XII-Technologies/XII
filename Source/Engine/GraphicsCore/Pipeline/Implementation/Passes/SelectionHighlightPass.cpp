@@ -36,13 +36,14 @@ xiiSelectionHighlightPass::xiiSelectionHighlightPass(xiiStringView sName) :
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/SelectionHighlight.xiiShader");
   XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load selection highlight shader!");
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiSelectionHighlightConstants>();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pSelectionHighlightConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiSelectionHighlightConstants));
 }
 
 xiiSelectionHighlightPass::~xiiSelectionHighlightPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
-  m_hConstantBuffer.Invalidate();
+  m_pSelectionHighlightConstantsBuffer.Clear();
 }
 
 bool xiiSelectionHighlightPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -71,6 +72,7 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
   if (renderDataBatchList.GetBatchCount() == 0)
     return;
 
+  #ifdef CORE_ENABLE
   xiiSharedPtr<xiiGALTexture> pDepthTexture;
 
   // render all selection objects to depth target only
@@ -115,6 +117,7 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
 
     xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(pDepthTexture);
   }
+#endif
 }
 
 xiiResult xiiSelectionHighlightPass::Serialize(xiiStreamWriter& inout_stream) const

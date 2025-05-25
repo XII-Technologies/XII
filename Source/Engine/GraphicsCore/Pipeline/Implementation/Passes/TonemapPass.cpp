@@ -52,13 +52,14 @@ xiiTonemapPass::xiiTonemapPass() :
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Tonemap.xiiShader");
   XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load tonemap shader!");
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiTonemapConstants>();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pTonemapConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiTonemapConstants));
 }
 
 xiiTonemapPass::~xiiTonemapPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
-  m_hConstantBuffer.Invalidate();
+  m_pTonemapConstantsBuffer.Clear();
 }
 
 bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -105,6 +106,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
   if (pColorInput == nullptr || pColorOutput == nullptr)
     return;
 
+#ifdef CORE_ENABLE
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
   renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pColorOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
@@ -169,6 +171,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("LUT_MODE", sLUTModeValues[numLUTs]);
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+#endif
 }
 
 xiiResult xiiTonemapPass::Serialize(xiiStreamWriter& inout_stream) const

@@ -35,12 +35,14 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiReflectionFilterPass::xiiReflectionFilterPass() :
   xiiRenderPipelinePass("ReflectionFilterPass")
 {
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
   {
-    m_hFilteredSpecularConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiReflectionFilteredSpecularConstants>();
+    m_pFilteredSpecularConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiReflectionFilteredSpecularConstants));
     m_hFilteredSpecularShader         = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ReflectionFilteredSpecular.xiiShader");
     XII_ASSERT_DEV(m_hFilteredSpecularShader.IsValid(), "Could not load ReflectionFilteredSpecular shader!");
 
-    m_hIrradianceConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiReflectionIrradianceConstants>();
+    m_pIrradianceConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiReflectionIrradianceConstants));
     m_hIrradianceShader         = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ReflectionIrradiance.xiiShader");
     XII_ASSERT_DEV(m_hIrradianceShader.IsValid(), "Could not load ReflectionIrradiance shader!");
   }
@@ -48,8 +50,8 @@ xiiReflectionFilterPass::xiiReflectionFilterPass() :
 
 xiiReflectionFilterPass::~xiiReflectionFilterPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hIrradianceConstantBuffer);
-  m_hIrradianceConstantBuffer.Invalidate();
+  m_pFilteredSpecularConstantBuffer.Clear();
+  m_pIrradianceConstantBuffer.Clear();
 }
 
 bool xiiReflectionFilterPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -75,6 +77,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
   if (!m_pInputCubemap)
     return;
 
+  #ifdef CORE_ENABLE
   // We cannot allow the filter to work on fallback resources as the step will not be repeated for static cube maps. Thus, we force loading the shaders and disable async shader loading in this scope.
   xiiResourceManager::ForceLoadResourceNow(m_hFilteredSpecularShader);
   xiiResourceManager::ForceLoadResourceNow(m_hIrradianceShader);
@@ -156,6 +159,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
 
     renderViewContext.m_pRenderContext->Dispatch(1).IgnoreResult();
   }
+#endif
 }
 
 xiiResult xiiReflectionFilterPass::Serialize(xiiStreamWriter& inout_stream) const
@@ -196,19 +200,23 @@ void xiiReflectionFilterPass::SetInputCubemap(xiiUInt32 uiCubemapHandle)
 
 void xiiReflectionFilterPass::UpdateFilteredSpecularConstantBuffer(xiiUInt32 uiMipMapIndex, xiiUInt32 uiNumMipMaps)
 {
+#ifdef CORE_ENABLE
   auto constants        = xiiRenderContext::GetConstantBufferData<xiiReflectionFilteredSpecularConstants>(m_hFilteredSpecularConstantBuffer);
   constants->MipLevel   = uiMipMapIndex;
   constants->Intensity  = m_fIntensity;
   constants->Saturation = m_fSaturation;
+  #endif
 }
 
 void xiiReflectionFilterPass::UpdateIrradianceConstantBuffer()
 {
+#ifdef CORE_ENABLE
   auto constants         = xiiRenderContext::GetConstantBufferData<xiiReflectionIrradianceConstants>(m_hIrradianceConstantBuffer);
   constants->LodLevel    = 6; // TODO: calculate from cubemap size and number of samples
   constants->Intensity   = m_fIntensity;
   constants->Saturation  = m_fSaturation;
   constants->OutputIndex = m_uiIrradianceOutputIndex;
+#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_ReflectionFilterPass);

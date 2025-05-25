@@ -41,6 +41,6 @@ protected:
   float    m_fLut1Strength;
   float    m_fLut2Strength;
 
-  xiiConstantBufferStorageHandle m_hConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer>     m_pTonemapConstantsBuffer;
   xiiShaderResourceHandle        m_hShader;
 };
