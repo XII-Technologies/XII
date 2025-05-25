@@ -39,6 +39,6 @@ protected:
   xiiUInt32                      m_uiRadius       = 7;
   float                          m_fGaussianSigma = 3.5f;
   float                          m_fSharpness     = 120.0f;
-  xiiConstantBufferStorageHandle m_hBilateralBlurCB;
+  xiiSharedPtr<xiiGALBuffer> m_pBilateralBlurConstantBuffer;
   xiiShaderResourceHandle        m_hShader;
 };

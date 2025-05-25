@@ -41,15 +41,14 @@ xiiSeparatedBilateralBlurPass::xiiSeparatedBilateralBlurPass() :
     XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load blur shader!");
   }
 
-  {
-    m_hBilateralBlurCB = xiiRenderContext::CreateConstantBufferStorage<xiiBilateralBlurConstants>();
-  }
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pBilateralBlurConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiBilateralBlurConstants));
 }
 
 xiiSeparatedBilateralBlurPass::~xiiSeparatedBilateralBlurPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hBilateralBlurCB);
-  m_hBilateralBlurCB.Invalidate();
+  m_pBilateralBlurConstantBuffer.Clear();
 }
 
 bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -93,6 +92,7 @@ bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& v
 
 void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
+#ifdef CORE_ENABLE
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
     xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -139,6 +139,7 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
     // Give back temp texture.
     xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(tempTexture);
   }
+  #endif
 }
 
 xiiResult xiiSeparatedBilateralBlurPass::Serialize(xiiStreamWriter& inout_stream) const
@@ -165,8 +166,10 @@ void xiiSeparatedBilateralBlurPass::SetRadius(xiiUInt32 uiRadius)
 {
   m_uiRadius = uiRadius;
 
+  #ifdef CORE_ENABLE
   xiiBilateralBlurConstants* cb = xiiRenderContext::GetConstantBufferData<xiiBilateralBlurConstants>(m_hBilateralBlurCB);
   cb->BlurRadius                = m_uiRadius;
+  #endif
 }
 
 xiiUInt32 xiiSeparatedBilateralBlurPass::GetRadius() const
@@ -178,8 +181,10 @@ void xiiSeparatedBilateralBlurPass::SetGaussianSigma(const float fSigma)
 {
   m_fGaussianSigma = fSigma;
 
+  #ifdef CORE_ENABLE
   xiiBilateralBlurConstants* cb = xiiRenderContext::GetConstantBufferData<xiiBilateralBlurConstants>(m_hBilateralBlurCB);
   cb->GaussianFalloff           = 1.0f / (2.0f * m_fGaussianSigma * m_fGaussianSigma);
+  #endif
 }
 
 float xiiSeparatedBilateralBlurPass::GetGaussianSigma() const
@@ -191,8 +196,10 @@ void xiiSeparatedBilateralBlurPass::SetSharpness(const float fSharpness)
 {
   m_fSharpness = fSharpness;
 
+  #ifdef CORE_ENABLE
   xiiBilateralBlurConstants* cb = xiiRenderContext::GetConstantBufferData<xiiBilateralBlurConstants>(m_hBilateralBlurCB);
   cb->Sharpness                 = m_fSharpness;
+  #endif
 }
 
 float xiiSeparatedBilateralBlurPass::GetSharpness() const

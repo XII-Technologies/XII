@@ -60,6 +60,7 @@ void xiiStereoTestPass::Execute(const xiiRenderViewContext& renderViewContext, c
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
+  #ifdef CORE_ENABLE
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
   renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
@@ -73,6 +74,7 @@ void xiiStereoTestPass::Execute(const xiiRenderViewContext& renderViewContext, c
   renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+  #endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_StereoTestPass);
