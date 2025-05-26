@@ -11,8 +11,6 @@
 #include <Foundation/System/Screen.h>
 #include <Foundation/Time/Clock.h>
 
-#include <Core/Graphics/Camera.h>
-#include <Core/Graphics/Geometry.h>
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
@@ -25,7 +23,6 @@
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
@@ -322,8 +319,6 @@ public:
 
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-#else
-    constexpr const char* szDefaultGraphicsAPI = "Null";
 #endif
 
     {
@@ -379,16 +374,7 @@ public:
 #endif
 
       xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
-      xiiStringView sShaderModel     = {};
-      xiiStringView sShaderCompiler  = {};
-      xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
-
-#if TODO_ENABLE
-      xiiShaderManager::Configure(sShaderModel, true);
-      XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", sShaderCompiler);
-#endif
-
-      m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
+      m_pDevice                      = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
       XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
 
