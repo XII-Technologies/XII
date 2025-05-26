@@ -221,7 +221,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     for (const auto& layer : m_Layers)
     {
-      xiiLog::Info("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
+      xiiLog::Dev("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
     }
   }
 #endif
@@ -242,7 +242,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     for (const auto& extension : m_Extensions)
     {
-      xiiLog::Info("{} {}.{}.{}", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
+      xiiLog::Dev("{} {}.{}.{}", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
     }
 #endif
   }
@@ -504,7 +504,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
       for (const auto& queueFamilyProperty : m_PhysicalDeviceQueueFamilyProperties)
       {
-        xiiLog::Info("Queue Count: {},  Flags: {}", queueFamilyProperty.queueCount, vk::to_string(queueFamilyProperty.queueFlags).data());
+        xiiLog::Dev("Queue Count: {},  Flags: {}", queueFamilyProperty.queueCount, vk::to_string(queueFamilyProperty.queueFlags).data());
       }
     }
 #endif
@@ -530,7 +530,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         for (const auto& extensionProperty : m_PhysicalDeviceSupportedExtensions)
         {
-          xiiLog::Info("{} {}.{}.{}", extensionProperty.extensionName, VK_API_VERSION_MAJOR(extensionProperty.specVersion), VK_API_VERSION_MINOR(extensionProperty.specVersion), VK_API_VERSION_PATCH(extensionProperty.specVersion));
+          xiiLog::Dev("{} {}.{}.{}", extensionProperty.extensionName, VK_API_VERSION_MAJOR(extensionProperty.specVersion), VK_API_VERSION_MINOR(extensionProperty.specVersion), VK_API_VERSION_PATCH(extensionProperty.specVersion));
         }
       }
 #endif
