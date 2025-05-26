@@ -4,15 +4,12 @@
 #include <GraphicsVulkan/Resources/FramebufferVulkan.h>
 #include <GraphicsVulkan/Resources/RenderPassVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
-#include <GraphicsVulkan/Resources/TextureVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFramebufferVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALFramebufferVulkan::xiiGALFramebufferVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALFramebufferCreationDescription& creationDescription) :
-  xiiGALFramebuffer(pDeviceVulkan, creationDescription)
+  xiiGALFramebuffer(pDeviceVulkan, creationDescription), m_vkFramebuffer(VK_NULL_HANDLE)
 {
 }
 

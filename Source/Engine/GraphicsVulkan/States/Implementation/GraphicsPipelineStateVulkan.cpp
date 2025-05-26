@@ -10,10 +10,8 @@
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALGraphicsPipelineStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALGraphicsPipelineStateVulkan::xiiGALGraphicsPipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALGraphicsPipelineStateCreationDescription& creationDescription) :
   xiiGALGraphicsPipelineState(pDeviceVulkan, creationDescription), m_vkPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
@@ -175,11 +173,11 @@ xiiResult xiiGALGraphicsPipelineStateVulkan::InitPlatform()
 
   vk::PipelineColorBlendStateCreateInfo vkPipelineColorBlendStateCreateInfo = {};
   {
-    xiiArrayPtr<const vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+    xiiArrayPtr<const vk::PipelineColorBlendAttachmentState> pColorBlendAttachmentStates;
     if (xiiSharedPtr<xiiGALBlendStateVulkan> pBlendStateVulkan = m_Description.m_GraphicsPipeline.m_pBlendState.Downcast<xiiGALBlendStateVulkan>())
     {
       vkPipelineColorBlendStateCreateInfo = *pBlendStateVulkan->GetBlendState();
-      colorBlendAttachmentStates          = pBlendStateVulkan->GetBlendAttachmentStates();
+      pColorBlendAttachmentStates          = pBlendStateVulkan->GetBlendAttachmentStates();
     }
 
     xiiSharedPtr<xiiGALRenderPassVulkan> pRenderPassVulkan     = m_Description.m_GraphicsPipeline.m_pRenderPass.Downcast<xiiGALRenderPassVulkan>();
@@ -190,9 +188,9 @@ xiiResult xiiGALGraphicsPipelineStateVulkan::InitPlatform()
 
     if (vkPipelineColorBlendStateCreateInfo.attachmentCount > 0)
     {
-      XII_ASSERT_DEV(colorBlendAttachmentStates.GetCount() >= vkPipelineColorBlendStateCreateInfo.attachmentCount, "");
+      XII_ASSERT_DEV(pColorBlendAttachmentStates.GetCount() >= vkPipelineColorBlendStateCreateInfo.attachmentCount, "");
 
-      vkPipelineColorBlendStateCreateInfo.pAttachments = colorBlendAttachmentStates.GetPtr();
+      vkPipelineColorBlendStateCreateInfo.pAttachments = pColorBlendAttachmentStates.GetPtr();
     }
   }
   vkGraphicsPipelineCreateInfo.pColorBlendState = &vkPipelineColorBlendStateCreateInfo;
