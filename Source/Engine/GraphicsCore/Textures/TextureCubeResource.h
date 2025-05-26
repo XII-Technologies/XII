@@ -17,15 +17,17 @@ using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCube
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTextureCubeResource> to create textures from data in memory.
 struct xiiTextureCubeResourceDescriptor
 {
-  xiiTextureCubeResourceDescriptor()
+  xiiTextureCubeResourceDescriptor() :
+    m_DescGAL(xiiGALTextureUtilities::GetDefaultTextureCubeDescription()),
+    m_SamplerDesc(xiiGALGraphicsUtilities::GetDefaultSamplerDescription()),
+    m_uiQualityLevelsDiscardable(0),
+    m_uiQualityLevelsLoadable(0)
   {
-    m_uiQualityLevelsDiscardable = 0;
-    m_uiQualityLevelsLoadable    = 0;
   }
 
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL     = xiiGALTextureUtilities::GetDefaultTextureCubeDescription();
-  xiiGALSamplerCreationDescription m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
+  xiiGALTextureCreationDescription m_DescGAL;
+  xiiGALSamplerCreationDescription m_SamplerDesc;
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8 m_uiQualityLevelsDiscardable;
