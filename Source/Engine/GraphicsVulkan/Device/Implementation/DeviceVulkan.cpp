@@ -2738,6 +2738,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
   entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
+  entry.m_vkObjectType                        = vkObjectType;
   entry.m_pObject                             = pObject;
 }
 
@@ -2751,6 +2752,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
   entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
+  entry.m_vkObjectType                        = vkObjectType;
   entry.m_pObject                             = pObject;
   entry.m_VmaAllocation                       = vmaAllocation;
 }
