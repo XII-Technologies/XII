@@ -12,9 +12,7 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <GraphicsCore/Utils/CommandListUtilities.h>
 
 xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
 
@@ -126,11 +124,9 @@ namespace
 
   struct DoubleBufferedPerContextData
   {
-    DoubleBufferedPerContextData()
+    DoubleBufferedPerContextData() :
+      m_uiLastRenderedFrame(0), m_pData{nullptr, nullptr}
     {
-      m_uiLastRenderedFrame = 0;
-      m_pData[0]            = nullptr;
-      m_pData[1]            = nullptr;
     }
 
     xiiUInt64                    m_uiLastRenderedFrame;
@@ -1416,21 +1412,21 @@ void xiiDebugRenderer::SetTextScale(float fScale)
 }
 
 // static
-void xiiDebugRenderer::RenderWorldSpace(const xiiRenderViewContext& renderViewContext)
+void xiiDebugRenderer::RenderWorldSpace(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   if (renderViewContext.m_pWorldDebugContext != nullptr)
   {
-    RenderInternalWorldSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext);
+    RenderInternalWorldSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext, pCommandList);
   }
 
   if (renderViewContext.m_pViewDebugContext != nullptr)
   {
-    RenderInternalWorldSpace(*renderViewContext.m_pViewDebugContext, renderViewContext);
+    RenderInternalWorldSpace(*renderViewContext.m_pViewDebugContext, renderViewContext, pCommandList);
   }
 }
 
 // static
-void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext)
+void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   {
     XII_LOCK(s_Mutex);
@@ -1531,9 +1527,6 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
   if (pData == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice>      pDevice         = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
-
   // SolidBoxes
   {
     xiiUInt32 uiNumSolidBoxes = pData->m_SolidBoxes.GetCount();
@@ -1542,7 +1535,9 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       CreateDataBuffer(BufferType::SolidBoxes, sizeof(BoxData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
-      renderViewContext.m_pRenderContext->BindBuffer("boxData", s_pDataBuffer[BufferType::SolidBoxes]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+
+      xiiGALCommandListUtilities::BindBuffer(pCommandList, "boxData", s_pDataBuffer[BufferType::SolidBoxes]);
+
       renderViewContext.m_pRenderContext->BindMeshBuffer(s_hSolidBoxMeshBuffer);
 
       const BoxData* pSolidBoxData = pData->m_SolidBoxes.GetData();
@@ -1550,7 +1545,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       {
         const xiiUInt32 uiNumSolidBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumSolidBoxes, BOXES_PER_BATCH);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray()).AssertSuccess();
 
         unsigned int uiRenderedInstances = uiNumSolidBoxesInBatch;
         if (renderViewContext.m_pCamera->IsStereoscopic())
@@ -1571,7 +1566,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
     {
       CreateVertexBuffer(BufferType::Triangles3D, sizeof(Vertex));
 
-      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
+      renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
       renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
 
       const Vertex* pTriangleData = pData->m_TriangleVertices.GetData();
@@ -1580,7 +1575,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
         const xiiUInt32 uiNumTriangleVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumTriangleVertices, TRIANGLE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumTriangleVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Triangles3D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumTriangleVerticesInBatch / 3);
 
@@ -1605,7 +1600,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       {
         CreateVertexBuffer(BufferType::TexTriangles3D, sizeof(TexVertex));
 
-        renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
+        renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
         renderViewContext.m_pRenderContext->BindShader(s_hDebugTexturedPrimitiveShader);
 
         const TexVertex* pTriangleData = verts.GetData();
@@ -1634,7 +1629,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
     {
       CreateVertexBuffer(BufferType::Lines, sizeof(Vertex));
 
-      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
+      renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
       renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
 
       const Vertex* pLineData = pData->m_LineVertices.GetData();
@@ -1663,7 +1658,9 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       CreateDataBuffer(BufferType::LineBoxes, sizeof(BoxData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
-      renderViewContext.m_pRenderContext->BindBuffer("boxData", s_pDataBuffer[BufferType::LineBoxes]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+
+      xiiGALCommandListUtilities::BindBuffer(pCommandList, "boxData", s_pDataBuffer[BufferType::LineBoxes]);
+
       renderViewContext.m_pRenderContext->BindMeshBuffer(s_hLineBoxMeshBuffer);
 
       const BoxData* pLineBoxData = pData->m_LineBoxes.GetData();
@@ -1671,7 +1668,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       {
         const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiNumLineBoxesInBatch).IgnoreResult();
 
@@ -1706,14 +1703,15 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
       renderViewContext.m_pRenderContext->BindBuffer("glyphData", s_pDataBuffer[BufferType::Glyphs]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-      renderViewContext.m_pRenderContext->BindTexture2D("FontTexture", s_hDebugFontTexture);
+
+      xiiGALCommandListUtilities::BindTexture2D(pCommandList, "FontTexture", s_hDebugFontTexture);
 
       const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
       while (uiNumGlyphs > 0)
       {
         const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer({}, {}, nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
 
@@ -1727,21 +1725,21 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
 }
 
 // static
-void xiiDebugRenderer::RenderScreenSpace(const xiiRenderViewContext& renderViewContext)
+void xiiDebugRenderer::RenderScreenSpace(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   if (renderViewContext.m_pWorldDebugContext != nullptr)
   {
-    RenderInternalScreenSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext);
+    RenderInternalScreenSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext, pCommandList);
   }
 
   if (renderViewContext.m_pViewDebugContext != nullptr)
   {
-    RenderInternalScreenSpace(*renderViewContext.m_pViewDebugContext, renderViewContext);
+    RenderInternalScreenSpace(*renderViewContext.m_pViewDebugContext, renderViewContext, pCommandList);
   }
 }
 
 // static
-void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext)
+void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   {
     XII_LOCK(s_Mutex);
@@ -1836,9 +1834,6 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
   // update the frame counter
   pDoubleBufferedContextData->m_uiLastRenderedFrame = xiiRenderWorld::GetFrameCounter();
 
-  xiiSharedPtr<xiiGALDevice> pDevice         = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandList*         pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
-
   // 2D Lines
   {
     xiiUInt32 uiNumLineVertices = pData->m_Line2DVertices.GetCount();
@@ -1846,7 +1841,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
     {
       CreateVertexBuffer(BufferType::Lines2D, sizeof(Vertex));
 
-      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
+      renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
       renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
 
       const Vertex* pLineData = pData->m_Line2DVertices.GetData();
@@ -1855,7 +1850,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Lines2D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
@@ -1874,7 +1869,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
     {
       CreateVertexBuffer(BufferType::Triangles2D, sizeof(Vertex));
 
-      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
+      renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
       renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
 
       const Vertex* pTriangleData = pData->m_Triangle2DVertices.GetData();
@@ -1883,7 +1878,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
         const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TRIANGLE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Triangles2D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
@@ -1899,7 +1894,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
   {
     for (auto itTex = pData->m_TexturedTriangle2DVertices.GetIterator(); itTex.IsValid(); ++itTex)
     {
-      renderViewContext.m_pRenderContext->BindTexture2D("BaseTexture", itTex.Key());
+      xiiGALCommandListUtilities::BindTextureView(pCommandList, "BaseTexture", itTex.Key());
 
       const auto& verts = itTex.Value();
 
@@ -1908,7 +1903,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       {
         CreateVertexBuffer(BufferType::TexTriangles2D, sizeof(TexVertex));
 
-        renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
+        renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
         renderViewContext.m_pRenderContext->BindShader(s_hDebugTexturedPrimitiveShader);
 
         const TexVertex* pTriangleData = verts.GetData();
@@ -1917,7 +1912,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
           const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
           XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
 
           renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::TexTriangles2D], {}, &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
@@ -1945,15 +1940,16 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       CreateDataBuffer(BufferType::Glyphs, sizeof(GlyphData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
-      renderViewContext.m_pRenderContext->BindBuffer("glyphData", s_pDataBuffer[BufferType::Glyphs]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-      renderViewContext.m_pRenderContext->BindTexture2D("FontTexture", s_hDebugFontTexture);
+
+      xiiGALCommandListUtilities::BindBuffer(pCommandList, "glyphData", s_pDataBuffer[BufferType::Glyphs]);
+      xiiGALCommandListUtilities::BindTexture2D(pCommandList, "FontTexture", s_hDebugFontTexture);
 
       const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
       while (uiNumGlyphs > 0)
       {
         const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer({}, {}, nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
 
