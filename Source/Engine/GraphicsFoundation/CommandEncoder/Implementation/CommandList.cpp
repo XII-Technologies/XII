@@ -543,6 +543,97 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
   SetSamplerPlatform(bindingInformation, pSampler);
 }
 
+void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBuffer> pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ResolveAndSetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetConstantBuffer requires a pipeline state to be set.");
+
+  const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::ConstantBuffer && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+    {
+      return SetConstantBuffer(resource, pConstantBuffer);
+    }
+  }
+}
+
+void xiiGALCommandList::ResolveAndSetShaderResourceBufferView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBufferView> pBusfferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Compute), "ResolveAndSetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics or xiiGALCommandQueueType::Compute flag.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetShaderResourceBufferView requires a pipeline state to be set.");
+
+  const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::BufferSRV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+    {
+      return SetShaderResourceBufferView(resource, pBusfferView);
+    }
+  }
+}
+
+void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Compute), "ResolveAndSetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics or xiiGALCommandQueueType::Compute flag.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetShaderResourceTextureView requires a pipeline state to be set.");
+
+  const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == sResourceName && (resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+    {
+      return SetShaderResourceTextureView(resource, pTextureView);
+    }
+  }
+}
+
+void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBufferView> pBufferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Compute), "ResolveAndSetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics or xiiGALCommandQueueType::Compute flag.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetUnorderedAccessBufferView requires a pipeline state to be set.");
+
+  const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::BufferUAV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+    {
+      return SetUnorderedAccessBufferView(resource, pBufferView);
+    }
+  }
+}
+
+void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Compute), "ResolveAndSetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics or xiiGALCommandQueueType::Compute flag.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetUnorderedAccessTextureView requires a pipeline state to be set.");
+
+  const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::TextureUAV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+    {
+      return SetUnorderedAccessTextureView(resource, pTextureView);
+    }
+  }
+}
+
+void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALSampler> pSampler, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ResolveAndSetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetSampler requires a pipeline state to be set.");
+
+  const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+  for (const auto& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == sResourceName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+    {
+      return SetSampler(resource, pSampler);
+    }
+  }
+}
+
 xiiResult xiiGALCommandList::CommitShaderResources(xiiEnum<xiiGALStateTransitionMode> mode)
 {
   ++m_CommandListStatistics.m_CommandListCounters.m_uiCommitShaderResources;

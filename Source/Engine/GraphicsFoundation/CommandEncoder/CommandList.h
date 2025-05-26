@@ -371,6 +371,60 @@ public:
   /// \param pSampler           - The handle to the sampler object to set.
   void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler);
 
+  /// \brief Resolves and sets a constant buffer for the given resource name.
+  ///
+  /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
+  ///
+  /// \param sResourceName   - The hashed name of the resource to resolve.
+  /// \param pConstantBuffer - Shared pointer to the constant buffer to set.
+  /// \param shaderStages    - Bitflags specifying applicable shader stages (defaults to unknown).
+  void ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBuffer> pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
+  /// \brief Resolves and sets a shader resource buffer view for the given resource name.
+  ///
+  /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
+  ///
+  /// \param sResourceName - The hashed name of the resource to resolve.
+  /// \param pBufferView   - Shared pointer to the buffer view to set.
+  /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
+  void ResolveAndSetShaderResourceBufferView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBufferView> pBufferView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
+  /// \brief Resolves and sets a shader resource texture view for the given resource name.
+  ///
+  /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
+  ///
+  /// \param sResourceName - The hashed name of the resource to resolve.
+  /// \param pTextureView  - Shared pointer to the texture view to set.
+  /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
+  void ResolveAndSetShaderResourceTextureView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
+  /// \brief Resolves and sets an unordered access buffer view for the given resource name.
+  ///
+  /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
+  ///
+  /// \param sResourceName - The hashed name of the resource to resolve.
+  /// \param pBufferView   - Shared pointer to the unordered access buffer view to set.
+  /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
+  void ResolveAndSetUnorderedAccessBufferView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBufferView> pBufferView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
+  /// \brief Resolves and sets an unordered access texture view for the given resource name.
+  ///
+  /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
+  ///
+  /// \param sResourceName - The hashed name of the resource to resolve.
+  /// \param pTextureView  - Shared pointer to the unordered access texture view to set.
+  /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
+  void ResolveAndSetUnorderedAccessTextureView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
+  /// \brief Resolves and sets a sampler for the given resource name.
+  ///
+  /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
+  ///
+  /// \param sResourceName - The hashed name of the resource to resolve.
+  /// \param pSampler      - Shared pointer to the sampler to set.
+  /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
+  void ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALSampler> pSampler, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
   /// \brief This commits the pipeline shader resources to the GPU, and ensures that all necessary state transitions are performed.
   ///
   /// \param mode - The state transition mode. The default is xiiGALStateTransitionMode::Transition.
