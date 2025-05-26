@@ -6,10 +6,8 @@
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
@@ -24,7 +22,7 @@ void xiiGALTextureVulkan::SetVulkanImageLayout(vk::ImageLayout vkImageLayout)
 }
 
 xiiGALTextureVulkan::xiiGALTextureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
-  xiiGALTexture(pDeviceVulkan, creationDescription), m_ImageMemoryAllocation(nullptr), m_StagingBufferMemoryAllocation(nullptr)
+  xiiGALTexture(pDeviceVulkan, creationDescription), m_vkImage(VK_NULL_HANDLE), m_ImageMemoryAllocation(VK_NULL_HANDLE), m_vkStagingBuffer(VK_NULL_HANDLE), m_StagingBufferMemoryAllocation(VK_NULL_HANDLE)
 {
 }
 
@@ -206,9 +204,8 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
   vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
   vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-  vk::Buffer        vkStagingBuffer;
   VmaAllocationInfo stagingBufferAllocationInfo;
-  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
+  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
 
   XII_ASSERT_DEV(stagingBufferAllocationInfo.pMappedData != nullptr, "");
 
@@ -220,9 +217,9 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
     {
       for (xiiUInt32 uiMip = 0; uiMip < m_Description.m_uiMipLevels; ++uiMip)
       {
-        const auto& subresourceData                = pInitialData->m_SubResources[uiSubresourceIndex++];
-        auto        mipLevelProperty               = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
-        auto        uiDestinationSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, uiLayer, uiMip, s_uiStagingBufferOffsetAlignment);
+        const xiiGALTextureSubResourceData& subresourceData                = pInitialData->m_SubResources[uiSubresourceIndex++];
+        const xiiGALMipLevelProperties      mipLevelProperty               = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
+        const xiiUInt64                     uiDestinationSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, uiLayer, uiMip, s_uiStagingBufferOffsetAlignment);
 
         xiiGALTextureUtilities::CopyTextureSubresource(subresourceData, mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight, mipLevelProperty.m_uiDepth, mipLevelProperty.m_uiRowSize, xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, uiDestinationSubresourceOffset), mipLevelProperty.m_uiRowSize, mipLevelProperty.m_uiDepthSliceSize);
       }

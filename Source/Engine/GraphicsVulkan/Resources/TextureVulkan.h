@@ -57,11 +57,11 @@ private:
 
   static void ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo);
 
-  vk::Image     m_vkImage               = VK_NULL_HANDLE;
-  VmaAllocation m_ImageMemoryAllocation = {};
+  vk::Image     m_vkImage;
+  VmaAllocation m_ImageMemoryAllocation;
 
-  vk::Buffer    m_vkStagingBuffer               = VK_NULL_HANDLE;
-  VmaAllocation m_StagingBufferMemoryAllocation = {};
+  vk::Buffer    m_vkStagingBuffer;
+  VmaAllocation m_StagingBufferMemoryAllocation;
 
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 };
