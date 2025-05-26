@@ -13,8 +13,6 @@
 
 class xiiImage;
 
-using xiiTexture3DResourceHandle = xiiTypedResourceHandle<class xiiTexture3DResource>;
-
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTexture3DResource> to create textures from data in memory.
 struct XII_GRAPHICSCORE_DLL xiiTexture3DResourceDescriptor
 {
