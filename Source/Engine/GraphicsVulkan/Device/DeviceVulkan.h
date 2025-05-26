@@ -103,6 +103,10 @@ public:
         vmaSetAllocationUserData(m_vkVmaAllocator, vmaAllocation, (void*)vkDebugObjectNameInfo.pObjectName);
       }
     }
+#else
+    XII_IGNORE_UNUSED(vkObject);
+    XII_IGNORE_UNUSED(szDebugName);
+    XII_IGNORE_UNUSED(vmaAllocation);
 #endif
   }
 

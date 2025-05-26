@@ -103,6 +103,8 @@ void xiiGALDynamicBuffer::InitializeBuffer()
 
 void xiiGALDynamicBuffer::ResolvePendingResize(xiiSharedPtr<xiiGALCommandList> pCommandList, bool bPermitNull)
 {
+  XII_IGNORE_UNUSED(bPermitNull);
+
   if (!m_pBuffer && m_uiPendingSize > 0)
   {
     if (m_pDevice != nullptr)

@@ -69,6 +69,7 @@ bool xiiPipeChannel_win::CreatePipe(xiiStringView sAddress)
     ULONG_PTR key  = reinterpret_cast<ULONG_PTR>(this);
     HANDLE    port = CreateIoCompletionPort(m_hPipeHandle, pMsgLoopWin->GetPort(), key, 1);
     XII_ASSERT_DEBUG(pMsgLoopWin->GetPort() == port, "Failed to CreateIoCompletionPort: {0}", xiiArgErrorCode(GetLastError()));
+    XII_IGNORE_UNUSED(port);
   }
   return true;
 }

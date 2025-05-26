@@ -378,13 +378,15 @@ void xiiDirectoryWatcherImpl::DoRead()
 
   if (m_bNTFS)
   {
-    BOOL success = ReadDirectoryChangesExW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr, ReadDirectoryNotifyExtendedInformation);
-    XII_ASSERT_DEV(success, "ReadDirectoryChangesExW failed.");
+    BOOL bSucceeded = ReadDirectoryChangesExW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr, ReadDirectoryNotifyExtendedInformation);
+    XII_ASSERT_DEV(bSucceeded, "ReadDirectoryChangesExW failed.");
+    XII_IGNORE_UNUSED(bSucceeded);
   }
   else
   {
-    BOOL success = ReadDirectoryChangesW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr);
-    XII_ASSERT_DEV(success, "ReadDirectoryChangesW failed.");
+    BOOL bSucceeded = ReadDirectoryChangesW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr);
+    XII_ASSERT_DEV(bSucceeded, "ReadDirectoryChangesW failed.");
+    XII_IGNORE_UNUSED(bSucceeded);
   }
 }
 

@@ -225,7 +225,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
       if (bReplacementFormatFound)
       {
-        xiiLog::Info("Requested color buffer format '{}' is not supported by the surface and will be replaced with '{}'.", vk::to_string(m_vkColorFormat).data(), vk::to_string(vkReplacementColorFormat).data());
+        xiiLog::Dev("Requested color buffer format '{}' is not supported by the surface and will be replaced with '{}'.", vk::to_string(m_vkColorFormat).data(), vk::to_string(vkReplacementColorFormat).data());
 
         m_vkColorFormat                   = vkReplacementColorFormat;
         m_Description.m_ColorBufferFormat = xiiVulkanTypeConversions::GetGALResourceFormat(vkReplacementColorFormat);
@@ -276,7 +276,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     vkPreTransform               = surfaceCapabilities.currentTransform;
     m_Description.m_PreTransform = xiiVulkanTypeConversions::GetGALSurfaceTransform(vkPreTransform);
 
-    xiiLog::Info("Using {} swap chain pre-transform.", vk::to_string(vkPreTransform).data());
+    xiiLog::Dev("Using {} swap chain pre-transform.", vk::to_string(vkPreTransform).data());
   }
 
   vk::Extent2D swapchainExtent = {};
@@ -350,7 +350,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
       }
     }
 
-    xiiLog::Info("Using {} swap chain present mode.", vk::to_string(presentMode).data());
+    xiiLog::Dev("Using {} swap chain present mode.", vk::to_string(presentMode).data());
   }
 
   // Determine the number of VkImage's to use in the swap chain.
@@ -359,13 +359,13 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   m_uiDesiredBufferCount = m_Description.m_uiBufferCount;
   if (m_uiDesiredBufferCount < surfaceCapabilities.minImageCount)
   {
-    xiiLog::Info("Desired back buffer count ({}) is smaller than the minimal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.minImageCount, surfaceCapabilities.minImageCount);
+    xiiLog::Dev("Desired back buffer count ({}) is smaller than the minimal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.minImageCount, surfaceCapabilities.minImageCount);
 
     m_uiDesiredBufferCount = surfaceCapabilities.minImageCount;
   }
   if (surfaceCapabilities.maxImageCount != 0 && m_uiDesiredBufferCount > surfaceCapabilities.maxImageCount)
   {
-    xiiLog::Info("Desired back buffer count ({}) is greater than the maximal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.maxImageCount, surfaceCapabilities.maxImageCount);
+    xiiLog::Dev("Desired back buffer count ({}) is greater than the maximal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.maxImageCount, surfaceCapabilities.maxImageCount);
 
     m_uiDesiredBufferCount = surfaceCapabilities.maxImageCount;
   }
@@ -438,7 +438,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
   if (uiSwapChainImageCount != m_Description.m_uiBufferCount)
   {
-    xiiLog::Info("Created swap chain with {} images vs {} requested.", uiSwapChainImageCount, m_Description.m_uiBufferCount);
+    xiiLog::Dev("Created swap chain with {} images vs {} requested.", uiSwapChainImageCount, m_Description.m_uiBufferCount);
 
     m_Description.m_uiBufferCount = uiSwapChainImageCount;
   }
@@ -836,7 +836,7 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
     m_DesiredSurfaceTransform  = newTransform;
     bRecreateSwapChain         = true;
 
-    xiiLog::Info("Resizing swap chain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+    xiiLog::Dev("Resizing swap chain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
   }
 
   if (bRecreateSwapChain)

@@ -127,6 +127,11 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
     XII_VERIFY_COMMAND_LIST(box.m_vMin.z == 0, "Region min Z ({}) must be 0 for all but 3D textures.", box.m_vMin.z);
     XII_VERIFY_COMMAND_LIST(box.m_vMax.z == 1, "Region max Z ({}) must be 1 for all but 3D textures.", box.m_vMax.z);
   }
+#else
+  XII_IGNORE_UNUSED(textureDescription);
+  XII_IGNORE_UNUSED(uiMipLevel);
+  XII_IGNORE_UNUSED(uiSlice);
+  XII_IGNORE_UNUSED(box);
 #endif
 }
 
@@ -921,18 +926,20 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
         {
           const auto& textureDescription = pTexture->GetDescription();
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
           XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Sparse, "Texture '{}' used in aliasing barrier is not a sparse resource.", pTexture->GetDebugName());
           XII_ASSERT_DEV(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::SparseAlias), "Texture '{}' used in aliasing barrier was not created with xiiGALMiscTextureFlags::SparseAlias flag.", pTexture->GetDebugName());
-
+#endif
           return textureDescription.m_Type;
         }
         else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(pResource))
         {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
           const auto& bufferDescription = pBuffer->GetDescription();
 
           XII_ASSERT_DEV(bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "Buffer '{}' used in aliasing barrier is not a sparse resource.", pBuffer->GetDebugName());
           XII_ASSERT_DEV(bufferDescription.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias), "Buffer '{}' used in aliasing barrier was not created with xiiGALMiscBufferFlags::SparseAlias flag.", pBuffer->GetDebugName());
-
+#endif
           return xiiGALResourceDimension::Buffer;
         }
         else
@@ -1374,6 +1381,8 @@ void xiiGALCommandList::InvalidateState()
 
 bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const
 {
+  XII_IGNORE_UNUSED(szParameterName);
+
   bool bResult = true;
   for (auto state : stateFlags)
   {

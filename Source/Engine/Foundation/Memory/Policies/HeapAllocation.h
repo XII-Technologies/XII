@@ -15,6 +15,8 @@ namespace xiiMemoryPolicies
 
     XII_FORCE_INLINE void* Allocate(size_t uiSize, size_t uiAlign)
     {
+      XII_IGNORE_UNUSED(uiAlign);
+
       // malloc has no alignment guarantees, even though on many systems it returns 16 byte aligned data.
       // If these asserts fail, you need to check what container made the allocation and change it
       // to use an aligned allocator, e.g. xiiAlignedAllocatorWrapper

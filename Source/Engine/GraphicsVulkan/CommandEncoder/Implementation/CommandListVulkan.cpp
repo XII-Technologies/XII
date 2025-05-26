@@ -2815,6 +2815,7 @@ void xiiGALCommandListVulkan::TransitionImageLayout(xiiSharedPtr<xiiGALTextureVu
 void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::AccessFlagBits expectedAccessFlags, const char* szOperationName, bool bVerifyOnly)
 {
   XII_IGNORE_UNUSED(szOperationName);
+  XII_IGNORE_UNUSED(expectedAccessFlags);
 
   if (!bVerifyOnly)
   {
@@ -2836,6 +2837,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiSharedPtr<xiiGALB
 void xiiGALCommandListVulkan::TransitionOrVerifyTextureState(xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::ImageLayout expectedLayout, const char* szOperationName, bool bVerifyOnly)
 {
   XII_IGNORE_UNUSED(szOperationName);
+  XII_IGNORE_UNUSED(expectedLayout);
 
   if (!bVerifyOnly)
   {

@@ -155,6 +155,8 @@ namespace
 
   inline bool GetOcclusionQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, void* pData, xiiUInt32 uiDataSize)
   {
+    XII_IGNORE_UNUSED(uiDataSize);
+
     xiiStaticArray<xiiUInt64, 2U> results;
     results.SetCount(2U, 0ULL);
 
@@ -174,6 +176,8 @@ namespace
 
   inline bool GetBinaryOcclusionQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, void* pData, xiiUInt32 uiDataSize)
   {
+    XII_IGNORE_UNUSED(uiDataSize);
+
     xiiStaticArray<xiiUInt64, 2U> results;
     results.SetCount(2U, 0ULL);
 
@@ -193,6 +197,8 @@ namespace
 
   inline bool GetTimestampQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiUInt64 uiCounterFrequency, void* pData, xiiUInt32 uiDataSize)
   {
+    XII_IGNORE_UNUSED(uiDataSize);
+
     xiiStaticArray<xiiUInt64, 2U> results;
     results.SetCount(2U, 0ULL);
 
@@ -213,6 +219,8 @@ namespace
 
   inline bool GetDurationQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, const xiiStaticArray<xiiUInt32, 2>& queryIndex, xiiUInt64 uiCounterFrequency, void* pData, xiiUInt32 uiDataSize)
   {
+    XII_IGNORE_UNUSED(uiDataSize);
+
     xiiUInt64 uiStartCounter = 0ULL;
     xiiUInt64 uiEndCounter   = 0ULL;
 
@@ -244,6 +252,8 @@ namespace
 
   inline bool GetStatisticsQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, xiiUInt32 uiQueryIndex, xiiGALQueueInformationVulkan queueInformation, void* pData, xiiUInt32 uiDataSize)
   {
+    XII_IGNORE_UNUSED(uiDataSize);
+
     // Pipeline statistics queries write one integer value for each bit that is enabled in the pipelineStatistics when the pool is created, and the statistics values are written in bit
     // order starting from the least significant bit. (17.2)
 

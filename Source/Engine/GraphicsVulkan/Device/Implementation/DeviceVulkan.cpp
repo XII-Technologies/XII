@@ -38,10 +38,8 @@
 
 #include <bitset>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
@@ -217,6 +215,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     XII_ASSERT_DEV(m_Layers.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
   }
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   {
     XII_LOG_BLOCK("Available Vulkan Instance Layers");
 
@@ -225,6 +224,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       xiiLog::Info("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
     }
   }
+#endif
 
   // Enumerate available instance extensions.
   {
@@ -239,10 +239,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     XII_ASSERT_DEV(m_Extensions.GetCount() == uiExtensionCount, "Expected extension count ({0}) does not match the retrieved extension count ({1}).", uiExtensionCount, m_Extensions.GetCount());
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     for (const auto& extension : m_Extensions)
     {
       xiiLog::Info("{} {}.{}.{}", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
     }
+#endif
   }
 
 #if XII_ENABLED(XII_PLATFORM_OSX)
@@ -493,6 +495,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     XII_ASSERT_DEV(m_PhysicalDeviceQueueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     {
       xiiStringBuilder sb;
       sb.SetFormat("Device '{}' Queue Families", m_PhysicalDeviceProperties.deviceName);
@@ -504,6 +507,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         xiiLog::Info("Queue Count: {},  Flags: {}", queueFamilyProperty.queueCount, vk::to_string(queueFamilyProperty.queueFlags).data());
       }
     }
+#endif
 
     // Get list of supported extensions.
     xiiUInt32 uiExtensionCount = 0U;
@@ -517,6 +521,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
       XII_ASSERT_DEV(m_PhysicalDeviceSupportedExtensions.GetCount() == uiExtensionCount, "");
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       {
         xiiStringBuilder sb;
         sb.SetFormat("Device '{}' Supported Extensions", m_PhysicalDeviceProperties.deviceName);
@@ -528,13 +533,14 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
           xiiLog::Info("{} {}.{}.{}", extensionProperty.extensionName, VK_API_VERSION_MAJOR(extensionProperty.specVersion), VK_API_VERSION_MINOR(extensionProperty.specVersion), VK_API_VERSION_PATCH(extensionProperty.specVersion));
         }
       }
+#endif
     }
 
     if (m_PhysicalDevice != VK_NULL_HANDLE)
     {
       const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
 
-      xiiLog::Info("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
+      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
                    VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
                    VK_API_VERSION_MAJOR(deviceProperties.driverVersion), VK_API_VERSION_MINOR(deviceProperties.driverVersion), VK_API_VERSION_PATCH(deviceProperties.driverVersion));
     }
@@ -1187,7 +1193,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
 
-      xiiLog::Info("Created {}", m_pGraphicsCommandQueue->GetDebugName());
+      xiiLog::Dev("Created {}", m_pGraphicsCommandQueue->GetDebugName());
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1200,7 +1206,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
 
-      xiiLog::Info("Created {}", m_pComputeCommandQueue->GetDebugName());
+      xiiLog::Dev("Created {}", m_pComputeCommandQueue->GetDebugName());
     }
 
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
@@ -1213,7 +1219,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
 
-      xiiLog::Info("Created {}", m_pTransferCommandQueue->GetDebugName());
+      xiiLog::Dev("Created {}", m_pTransferCommandQueue->GetDebugName());
     }
   }
 

@@ -847,7 +847,7 @@ void xiiGALShaderParser::ApplyShaderResourceBindings(xiiStringView sPlatform, xi
     parts.PushBack(xiiStringView(szStart, resources[i].m_sDeclarationAndRegister.GetStartPointer()));
 
     xiiGALShaderResourceDescription* pBinding = nullptr;
-    XII_ASSERT_DEV(bindings.TryGetValue(resources[i].m_ResourceDescription.m_sName, pBinding), "Every resource should be present in the map.");
+    XII_VERIFY(bindings.TryGetValue(resources[i].m_ResourceDescription.m_sName, pBinding), "Every resource should be present in the map.");
     XII_ASSERT_DEV(pBinding->m_uiBindIndex != xiiInvalidIndex && pBinding->m_uiDescriptorSet != xiiInvalidIndex, "Unbound shader resource binding found: '{}', slot: {}, set: {}", pBinding->m_sName, pBinding->m_uiBindIndex, pBinding->m_uiDescriptorSet);
 
     createDeclaration(sPlatform, resources[i].m_sDeclaration, *pBinding, sDeclaration);

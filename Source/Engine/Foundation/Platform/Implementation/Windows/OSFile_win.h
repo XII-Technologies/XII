@@ -365,6 +365,7 @@ void xiiFileSystemIterator::StartSearch(xiiStringView sSearchStart, xiiBitflags<
   // Since the use of wildcard-ed file names will disable recursion, we ensure both are not used simultaneously.
   const bool bHasWildcard = sSearch.FindLastSubString("*") || sSearch.FindLastSubString("?");
   XII_ASSERT_DEV(flags.IsSet(xiiFileSystemIteratorFlags::Recursive) == false || bHasWildcard == false, "Recursive file iteration does not support wildcards. Either don't use recursion, or filter the filenames manually.");
+  XII_IGNORE_UNUSED(bHasWildcard);
 
   m_sCurPath = sSearch.GetFileDirectory();
 

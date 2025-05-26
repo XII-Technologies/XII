@@ -103,8 +103,9 @@ void xiiMessageLoop_win::WakeUp()
     return;
   }
   // wake up the loop
-  BOOL res = PostQueuedCompletionStatus(m_hPort, 0, reinterpret_cast<ULONG_PTR>(this), reinterpret_cast<OVERLAPPED*>(this));
-  XII_ASSERT_DEBUG(res, "Could not PostQueuedCompletionStatus: {0}", xiiArgErrorCode(GetLastError()));
+  BOOL bSucceeded = PostQueuedCompletionStatus(m_hPort, 0, reinterpret_cast<ULONG_PTR>(this), reinterpret_cast<OVERLAPPED*>(this));
+  XII_ASSERT_DEBUG(bSucceeded, "Could not PostQueuedCompletionStatus: {0}", xiiArgErrorCode(GetLastError()));
+  XII_IGNORE_UNUSED(bSucceeded);
 }
 
 #endif

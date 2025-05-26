@@ -65,6 +65,8 @@ void xiiGALQuery::CheckQueryDataPtr(void* pData, xiiUInt32 uiDataSize)
 {
   XII_ASSERT_DEV(m_QueryState == QueryState::Ended, "Attempting to get data of query '{}' that has not been ended.", GetDebugName());
 
+  XII_IGNORE_UNUSED(uiDataSize);
+
   if (pData != nullptr)
   {
     switch (m_Description.m_Type)

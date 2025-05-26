@@ -224,12 +224,6 @@ public:
     xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 #endif
 
-    {
-      xiiHybridArray<xiiScreenInfo, 2> screens;
-      xiiScreen::EnumerateScreens(screens).IgnoreResult();
-      xiiScreen::PrintScreenInfo(screens);
-    }
-
     // Register Input
     {
       xiiInputActionConfig cfg;
