@@ -19,6 +19,9 @@ public:
   xiiGALImageCapture(xiiSharedPtr<xiiGALDevice> pDevice);
   ~xiiGALImageCapture();
 
+  /// \brief Retrieves the device associated with this image capture instance.
+  [[nodiscard]] xiiSharedPtr<xiiGALDevice> GetDevice() const { return m_pDevice; }
+
   /// \brief Retrieves the oldest available capture texture, if any.
   [[nodiscard]] CaptureDescription GetCapture();
 

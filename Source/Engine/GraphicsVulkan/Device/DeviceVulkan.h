@@ -200,8 +200,8 @@ protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult PostInitializePlatform() override final;
 
-  virtual void BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> pSwapChains, const xiiUInt64 uiRenderFrame) override final;
-  virtual void EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> pSwapChains) override final;
+  virtual void BeginFramePlatform() override final;
+  virtual void EndFramePlatform() override final;
 
   virtual xiiInternal::NewInstance<xiiGALSwapChain>                 CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALBlendState>                CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;

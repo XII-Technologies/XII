@@ -90,14 +90,7 @@ xiiResult xiiGALDevice::PostInitialize()
   return PostInitializePlatform();
 }
 
-void xiiGALDevice::EnqueueFrameSwapChain(xiiSharedPtr<xiiGALSwapChain> pSwapChain)
-{
-  XII_ASSERT_DEV(!m_bBeginFrameCalled, "EnqueueFrameSwapChain must be called before or during xiiGALDeviceEvent::BeforeBeginFrame");
-
-  m_FrameSwapChains.PushBack(pSwapChain);
-}
-
-void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
+void xiiGALDevice::BeginFrame()
 {
   {
     XII_PROFILE_SCOPE("BeforeBeginFrame");
@@ -115,7 +108,7 @@ void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
 
     m_bBeginFrameCalled = true;
 
-    BeginFramePlatform(m_FrameSwapChains, uiRenderFrame);
+    BeginFramePlatform();
   }
 
   {
@@ -140,9 +133,7 @@ void xiiGALDevice::EndFrame()
 
     XII_ASSERT_DEV(m_bBeginFrameCalled, "You must have called xiiGALDevice::Begin before you can call xiiGALDevice::EndFrame");
 
-    EndFramePlatform(m_FrameSwapChains);
-
-    m_FrameSwapChains.Clear();
+    EndFramePlatform();
 
     m_bBeginFrameCalled = false;
   }

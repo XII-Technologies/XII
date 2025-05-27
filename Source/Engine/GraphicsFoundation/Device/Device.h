@@ -17,16 +17,8 @@ public:
   /// \brief Initialize device.
   xiiResult Initialize();
 
-  /// \brief Adds a swapchain to be used for the next frame.
-  ///
-  /// This must be called before or during xiiGALDeviceEvent::BeforeBeginFrame event (xiiGALDevice::BeginFrame), and repeated every frame the swap chain is to be used.
-  /// This approach gurantees that all swapchains of a frame, acquire and present at the same time, which improves frame pacing.
-  ///
-  /// \param pSwapChain - The swapchain to be used this frame. The device will acquire an image from the swapchain during xiiGALDevice::BeginFrame and present it when calling xiiGALDevice::EndFrame.
-  void EnqueueFrameSwapChain(xiiSharedPtr<xiiGALSwapChain> pSwapChain);
-
   /// \brief Begins a render frame.
-  void BeginFrame(const xiiUInt64 uiRenderFrame = 0U);
+  void BeginFrame();
 
   /// \brief Ends a render frame.
   void EndFrame();
@@ -274,8 +266,8 @@ protected:
   virtual xiiResult InitializePlatform()     = 0;
   virtual xiiResult PostInitializePlatform() = 0;
 
-  virtual void BeginFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> pSwapChains, const xiiUInt64 uiRenderFrame = 0U) = 0;
-  virtual void EndFramePlatform(xiiArrayPtr<xiiSharedPtr<xiiGALSwapChain>> pSwapChains)                                       = 0;
+  virtual void BeginFramePlatform() = 0;
+  virtual void EndFramePlatform()   = 0;
 
   virtual xiiInternal::NewInstance<xiiGALSwapChain>                 CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)                                              = 0;
   virtual xiiInternal::NewInstance<xiiGALBlendState>                CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)                                            = 0;
@@ -311,8 +303,7 @@ private:
   static xiiSharedPtr<xiiGALDevice> s_pDefaultDevice;
 
 private:
-  bool                                              m_bBeginFrameCalled = false;
-  xiiHybridArray<xiiSharedPtr<xiiGALSwapChain>, 8U> m_FrameSwapChains;
+  bool m_bBeginFrameCalled = false;
 };
 
 #include <GraphicsFoundation/Device/Implementation/Device_inl.h>

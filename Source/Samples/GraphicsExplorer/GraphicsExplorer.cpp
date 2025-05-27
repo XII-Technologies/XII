@@ -151,8 +151,7 @@ public:
 
     // Perform rendering.
     {
-      // Before starting to render in a frame call these functions
-      m_pDevice->EnqueueFrameSwapChain(m_pSwapChain);
+      // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
       auto pGraphicsQueue = m_pDevice->GetDefaultCommandQueue();
@@ -174,6 +173,8 @@ public:
 
         pCommandList->Submit();
       }
+
+      m_pSwapChain->Present();
 
       m_pDevice->EndFrame();
     }
@@ -305,10 +306,6 @@ public:
       m_pWindow->Initialize(WindowCreationDesc).AssertSuccess();
     }
 
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-#endif
-
     {
       xiiGALDeviceCreationDescription deviceCreationDescription;
       deviceCreationDescription.m_DeviceFeatures.m_SeparablePrograms                  = xiiGALDeviceFeatureState::Enabled;
@@ -361,7 +358,7 @@ public:
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
-      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
       m_pDevice                      = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
       XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");

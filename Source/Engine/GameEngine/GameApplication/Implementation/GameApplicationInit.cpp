@@ -33,7 +33,7 @@
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "Vulkan";
 #else
-constexpr const char* szDefaultGraphicsAPI = "Null";
+constexpr const char* szDefaultGraphicsAPI = "";
 #endif
 
 xiiCommandLineOptionString opt_Renderer("app", "-renderer", "The renderer implementation to use.", szDefaultGraphicsAPI);
@@ -313,7 +313,7 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
 #endif
 
   {
-    xiiGALDevice* pDevice = nullptr;
+    xiiSharedPtr<xiiGALDevice> pDevice;
 
     if (s_DefaultDeviceCreator.IsValid())
     {
@@ -328,6 +328,9 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
     }
 
     XII_VERIFY(pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
+
+    pDevice->SetDebugName("Master Graphics Device");
+
     xiiGALDevice::SetDefaultDevice(pDevice);
   }
 
@@ -370,10 +373,9 @@ void xiiGameApplication::Deinit_ShutdownGraphicsDevice()
 
   xiiResourceManager::FreeAllUnusedResources();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-  pDevice->Shutdown().IgnoreResult();
-  XII_DEFAULT_DELETE(pDevice);
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   xiiGALDevice::SetDefaultDevice(nullptr);
+  pDevice.Clear();
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameApplication_Implementation_GameApplicationInit);

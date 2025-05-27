@@ -204,8 +204,7 @@ public:
 
     // Perform rendering
     {
-      // Before starting to render in a frame call this function
-      m_pDevice->EnqueueFrameSwapChain(m_pSwapChain);
+      // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
       auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue();
@@ -280,6 +279,8 @@ public:
       }
 #endif
 
+      m_pSwapChain->Present();
+
       m_pDevice->EndFrame();
     }
 
@@ -337,10 +338,6 @@ public:
 
     m_pCamera = XII_DEFAULT_NEW(xiiCamera);
     m_pCamera->LookAt(xiiVec3(3, 3, 1.5), xiiVec3(0, 0, 0), xiiVec3(0, 1, 0));
-
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-#endif
 
     // Register Input
     {
@@ -481,7 +478,7 @@ public:
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
-      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
       xiiStringView sShaderModel     = {};
       xiiStringView sShaderCompiler  = {};
       xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);

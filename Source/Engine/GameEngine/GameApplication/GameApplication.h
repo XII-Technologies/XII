@@ -9,6 +9,7 @@
 #include <Foundation/Types/UniquePtr.h>
 
 class xiiQuakeConsole;
+struct xiiGALDeviceCreationDescription;
 
 // TODO: update comments below
 
@@ -99,7 +100,7 @@ protected:
   void                                UpdateWorldsAndExtractViews();
   xiiSharedPtr<xiiDelegateTask<void>> m_pUpdateTask;
 
-  static xiiDelegate<xiiGALDevice*(const xiiGALDeviceCreationDescription&)> s_DefaultDeviceCreator;
+  static xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> s_DefaultDeviceCreator;
 
   bool                          m_bShowConsole = false;
   xiiUniquePtr<xiiQuakeConsole> m_pConsole;

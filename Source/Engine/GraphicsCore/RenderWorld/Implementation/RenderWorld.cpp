@@ -599,20 +599,7 @@ void xiiRenderWorld::BeginFrame()
 
   RebuildPipelines();
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  auto& filteredRenderPipelines = s_FilteredRenderPipelines[GetDataIndexForRendering()];
-  for (auto& pRenderPipeline : filteredRenderPipelines)
-  {
-    if (xiiSharedPtr<xiiGALSwapChain> pSwapChain = pRenderPipeline->GetRenderData().GetViewData().m_pSwapChain)
-    {
-      pDevice->EnqueueFrameSwapChain(pSwapChain);
-    }
-  }
-
-  const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
-
-  pDevice->BeginFrame(uiRenderFrame);
+  xiiGALDevice::GetDefaultDevice()->BeginFrame();
 }
 
 void xiiRenderWorld::EndFrame()

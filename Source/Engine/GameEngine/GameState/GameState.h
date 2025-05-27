@@ -177,7 +177,7 @@ protected:
   virtual xiiUniquePtr<xiiWindowOutputTargetGAL> CreateMainOutputTarget(xiiWindow* pMainWindow);
 
   /// \brief Creates a default render view. Unless overridden, OnActivation() will do this for the main window.
-  virtual void SetupMainView(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 viewportSize);
+  virtual void SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 viewportSize);
 
   /// \brief Configures available input devices, e.g. sets mouse speed, cursor clipping, etc.
   /// Called by CreateActors() with the result of CreateMainWindow().

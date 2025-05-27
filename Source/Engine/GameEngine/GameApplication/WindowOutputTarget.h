@@ -13,7 +13,7 @@
 class XII_GAMEENGINE_DLL xiiWindowOutputTargetGAL : public xiiWindowOutputTargetBase
 {
 public:
-  using OnSwapChainChanged = xiiDelegate<void(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 size)>;
+  using OnSwapChainChanged = xiiDelegate<void(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 vSize)>;
 
   xiiWindowOutputTargetGAL(OnSwapChainChanged onSwapChainChanged = {});
   ~xiiWindowOutputTargetGAL();
@@ -28,6 +28,8 @@ public:
   xiiSizeU32                         m_Size = xiiSizeU32(0, 0);
   xiiEnum<xiiGALPresentMode>         m_PresentMode;
   xiiGALSwapChainCreationDescription m_CurrentDesc;
-  xiiGALSwapChainHandle              m_hSwapChain;
-  xiiGALTextureHandle                m_hBackbufferStagingTexture;
+  xiiSharedPtr<xiiGALSwapChain>      m_pSwapChain;
+
+  xiiUniquePtr<xiiGALImageCapture> m_pImageCapture;
+  xiiUInt32                        m_uiCurrentFrame = 0U;
 };

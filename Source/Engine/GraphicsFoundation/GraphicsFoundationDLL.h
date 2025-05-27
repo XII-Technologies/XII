@@ -105,3 +105,5 @@ class xiiGALTilePipelineState;
 class xiiGALRasterizerState;
 
 struct xiiGALPipelineResourceDescription;
+
+class xiiGALImageCapture;
