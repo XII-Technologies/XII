@@ -13,6 +13,7 @@ xiiGALImageCapture::xiiGALImageCapture(xiiSharedPtr<xiiGALDevice> pDevice) :
   xiiGALFenceCreationDescription fenceDescription;
   fenceDescription.m_Type = xiiGALFenceType::CpuWaitOnly;
   m_pFence                = m_pDevice->CreateFence(fenceDescription);
+  m_pFence->SetDebugName("Image Capture Fence");
 }
 
 xiiGALImageCapture::~xiiGALImageCapture() = default;
