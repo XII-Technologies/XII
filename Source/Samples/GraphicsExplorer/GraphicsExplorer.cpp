@@ -421,8 +421,6 @@ public:
 
   void UpdateSwapChain()
   {
-    bool bRecreateDepthTexture = false;
-
     // Create a Swapchain
     if (!m_pSwapChain)
     {
@@ -447,18 +445,12 @@ public:
 
       if (m_pSwapChain->GetCurrentSize() != currentSize)
       {
-        bRecreateDepthTexture = true;
-
         // Clear frame buffer cache since swap chain images and depth stencil will be recreated.
         m_FramebufferCache.Clear();
+        m_pDepthStencilTexture.Clear();
 
         m_pSwapChain->Resize(currentSize).IgnoreResult();
       }
-    }
-
-    if (bRecreateDepthTexture)
-    {
-      m_pDepthStencilTexture.Clear();
     }
 
     if (!m_pDepthStencilTexture)
