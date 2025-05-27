@@ -159,21 +159,15 @@ public:
 
       if (auto pCommandList = pGraphicsQueue->BeginCommandList())
       {
-        xiiGALBeginRenderPassDescription beginRenderPass{
-          .m_pRenderPass  = m_pRenderPass,
-          .m_pFramebuffer = GetCurrentFramebuffer(),
-        };
+        xiiGALBeginRenderPassDescription beginRenderPass{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = GetCurrentFramebuffer()};
 
-        auto& clearValue1                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        clearValue1.m_DepthStencil.m_fDepth    = 1.0f;
-        clearValue1.m_DepthStencil.m_uiStencil = 0U;
+        auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+        depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
+        depthClearValue.m_DepthStencil.m_uiStencil = 0U;
 
-        float fGlobalTime          = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-        auto& clearValue2          = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        clearValue2.m_ClearColor.r = tanf(fGlobalTime);
-        clearValue2.m_ClearColor.g = sinf(fGlobalTime);
-        clearValue2.m_ClearColor.b = cosf(fGlobalTime);
-        clearValue2.m_ClearColor.a = 1.0f;
+        float fGlobalTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+        auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+        colorClearValue.m_ClearColor = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
 
         pCommandList->BeginRenderPass(beginRenderPass);
         pCommandList->EndRenderPass();
