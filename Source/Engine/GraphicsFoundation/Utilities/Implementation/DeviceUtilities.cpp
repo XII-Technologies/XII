@@ -83,7 +83,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice
   return pDevice->CreateBuffer(bufferDescription, &initialData);
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName /*= {}*/)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -94,7 +94,33 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDev
   bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
   bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-  return pDevice->CreateBuffer(bufferDescription);
+  if (xiiSharedPtr<xiiGALBuffer> pConstantBuffer = pDevice->CreateBuffer(bufferDescription))
+  {
+    pConstantBuffer->SetDebugName(sDebugName);
+
+    return pConstantBuffer;
+  }
+  return nullptr;
+}
+
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateStagingBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName)
+{
+  XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
+
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  bufferDescription.m_uiElementByteStride = 0U;
+  bufferDescription.m_uiSize              = uiBufferSize;
+  bufferDescription.m_Usage               = xiiGALResourceUsage::Staging;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
+  if (xiiSharedPtr<xiiGALBuffer> pStagingBuffer = pDevice->CreateBuffer(bufferDescription))
+  {
+    pStagingBuffer->SetDebugName(sDebugName);
+
+    return pStagingBuffer;
+  }
+  return nullptr;
 }
 
 xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32 size, xiiGALResourceFormat::Enum format, xiiUInt32 uiSampleCount)

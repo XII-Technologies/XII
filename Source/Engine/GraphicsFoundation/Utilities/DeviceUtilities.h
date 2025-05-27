@@ -40,7 +40,15 @@ public:
   ///
   /// \param  pDevice     - The device associated with the buffer.
   /// \param uiBufferSize - The size of the buffer in bytes.
-  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize);
+  /// \param sDebugName   - Optional debug name for the buffer.
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName = {});
+
+  /// \brief Creates a staging buffer with the given size.
+  ///
+  /// \param  pDevice     - The device associated with the buffer.
+  /// \param uiBufferSize - The size of the buffer in bytes.
+  /// \param sDebugName   - Optional debug name for the buffer.
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateStagingBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName = {});
 
   /// \brief Creates a render target description with the given parameters.
   ///

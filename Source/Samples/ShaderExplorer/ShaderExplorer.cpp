@@ -23,11 +23,15 @@
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
 // Define this to force usage of fileserve functionality.
 // #define USE_FILESERVE XII_ON
@@ -204,52 +208,77 @@ public:
       m_pDevice->EnqueueFrameSwapChain(m_pSwapChain);
       m_pDevice->BeginFrame();
 
-      // Must always retrieve the current swapchain render target
-      const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
-      xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-      xiiGALTextureViewHandle hBBDSV            = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
+      auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue();
 
-      xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
-      renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-      renderingSetup.m_bClearDepth             = true;
-      renderingSetup.m_bClearStencil           = true;
-
-      if (auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue())
+      if (auto pCommandList = pDefaultQueue->BeginCommandList())
       {
-        xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
+        xiiGALBeginRenderPassDescription beginRenderPassDescription{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = GetCurrentFramebuffer()};
+        xiiGALOptimizedClearValue&       depthClearValue = beginRenderPassDescription.m_ClearValues.ExpandAndGetRef();
+        xiiGALOptimizedClearValue&       colorClearValue = beginRenderPassDescription.m_ClearValues.ExpandAndGetRef();
+        depthClearValue.m_DepthStencil.m_fDepth          = 1.0f;
+        depthClearValue.m_DepthStencil.m_uiStencil       = 0U;
+        colorClearValue.m_ClearColor                     = xiiColor::Black;
 
-        if (auto pCommandList = pDefaultQueue->BeginCommandList())
+        pCommandList->BeginDebugGroup("xiiShaderExplorerMainPass");
         {
-          pRenderContext->SetCommandList(pCommandList);
-          pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+          const xiiRectFloat viewportRect(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight);
+          {
+            xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-          auto& gc = pRenderContext->WriteGlobalConstants();
-          xiiMemoryUtils::ZeroFill(&gc, 1);
+            xiiMemoryUtils::ZeroFill(&pGlobalConstants, 1);
 
-          xiiMat4 m0, m1;
-          m0                        = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
-          m1                        = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
-          gc.WorldToCameraMatrix[0] = m0;
-          gc.WorldToCameraMatrix[1] = m1;
-          gc.CameraToWorldMatrix[0] = m0.GetInverse();
-          gc.CameraToWorldMatrix[1] = m1.GetInverse();
-          gc.ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
-          // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-          gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-          gc.WorldTime  = gc.GlobalTime;
+            xiiMat4 m0, m1;
+            m0                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
+            m1                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
+            pGlobalConstants->WorldToCameraMatrix[0] = m0;
+            pGlobalConstants->WorldToCameraMatrix[1] = m1;
+            pGlobalConstants->CameraToWorldMatrix[0] = m0.GetInverse();
+            pGlobalConstants->CameraToWorldMatrix[1] = m1.GetInverse();
+            pGlobalConstants->ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
+            // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
+            pGlobalConstants->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
+            pGlobalConstants->WorldTime  = pGlobalConstants->GlobalTime;
+
+            pGlobalConstants->ViewportSize   = xiiVec4(viewportRect.width, viewportRect.height, 1.0f / viewportRect.width, 1.0f / viewportRect.height);
+            pGlobalConstants->NumMsaaSamples = 1;
+          }
+
+          {
+            xiiGALViewport viewPort{viewportRect.x, viewportRect.y, viewportRect.width, viewportRect.height, 0.0f, 0.1f};
+
+            pCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1U));
+          }
+
+          pCommandList->BeginRenderPass(beginRenderPassDescription);
+          {
+            pCommandList->ResolveAndSetConstantBuffer("xiiGlobalConstants", m_pGlobalConstantsBuffer);
+          }
+          pCommandList->EndRenderPass();
+        }
+        pCommandList->EndDebugGroup();
+
+        pCommandList->Submit();
+      }
+
+#ifdef CORE_ENABLE
+
+      if (auto pCommandList = pDefaultQueue->BeginCommandList())
+      {
+        pRenderContext->SetCommandList(pCommandList);
+        pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+
+        ...
 
           pRenderContext->BindMaterial(m_hMaterial);
-          pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
-          pRenderContext->DrawMeshBuffer().IgnoreResult();
+        pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
+        pRenderContext->DrawMeshBuffer().IgnoreResult();
 
-          pRenderContext->EndRendering();
-          pRenderContext->SetCommandList(nullptr);
+        pRenderContext->EndRendering();
+        pRenderContext->SetCommandList(nullptr);
 
-          pCommandList->Submit();
-        }
-        pRenderContext->ResetContextState();
+        pCommandList->Submit();
       }
+#endif
 
       m_pDevice->EndFrame();
     }
@@ -476,6 +505,8 @@ public:
 
     CreateRenderPass();
 
+    CreateResources();
+
     // Setup Shaders and Materials
     {
       m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Materials/screen.xiiMaterial");
@@ -626,6 +657,12 @@ public:
     }
   }
 
+  void CreateResources()
+  {
+    // Create a global constants buffer.
+    m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(m_pDevice, sizeof(xiiGlobalConstants), "GlobalConstantsBuffer");
+  }
+
   void CreateRenderPass()
   {
     if (!m_pRenderPass)
@@ -733,6 +770,8 @@ private:
 
   xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
   xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
+
+  xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
 
   xiiMaterialResourceHandle   m_hMaterial;
   xiiMeshBufferResourceHandle m_hQuadMeshBuffer;
