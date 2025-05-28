@@ -12,8 +12,10 @@
 #  endif
 
 #  if defined(USE_ALPHA_TEST) && defined(MSAA)
-#    if MSAA == TRUE
-#      define USE_ALPHA_TEST_SUPER_SAMPLING
+#    if defined(MSAA)
+#      if MSAA == TRUE
+#        define USE_ALPHA_TEST_SUPER_SAMPLING
+#      endif
 #    endif
 #  endif
 
@@ -74,7 +76,7 @@ PS_OUT main(PS_IN Input)
   Output.Color = float4(litColor, matData.opacity);
 
 #elif RENDER_PASS == RENDER_PASS_EDITOR
-  Output.Color           = float4(litColor, matData.opacity);
+  Output.Color = float4(litColor, matData.opacity);
 #elif RENDER_PASS == RENDER_PASS_WIREFRAME
   Output.Color = float4(litColor, matData.opacity);
 #elif (RENDER_PASS == RENDER_PASS_PICKING || RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)

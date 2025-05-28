@@ -6,6 +6,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/Interfaces/RemoteToolingInterface.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <Foundation/Profiling/Profiling.h>
 
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
@@ -14,10 +15,8 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderProgramCompiler, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 namespace
 {
@@ -119,6 +118,8 @@ namespace
 
 xiiResult xiiGALShaderCompiler::FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& fileContent, xiiTimestamp& out_fileModification)
 {
+  XII_PROFILE_SCOPE("xiiGALShaderCompiler::FileOpen");
+
   if (sAbsoluteFile == "ShaderRenderState")
   {
     const xiiString& sData   = m_ShaderData.m_StateSource;
@@ -183,6 +184,8 @@ xiiResult xiiGALShaderCompiler::FileOpen(xiiStringView sAbsoluteFile, xiiDynamic
 
 xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVariables, xiiLogInterface* pLog, xiiStringView sPlatform)
 {
+  XII_PROFILE_SCOPE("xiiGALShaderCompiler::CompileShaderPermutationForPlatforms");
+
   if (xiiRemoteToolingInterface* pTooling = xiiSingletonRegistry::GetSingletonInstance<xiiRemoteToolingInterface>())
   {
     auto pNet = pTooling->GetRemoteInterface();
@@ -344,6 +347,8 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
 xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringView sPlatform, xiiGALShaderProgramCompiler* pCompiler, xiiLogInterface* pLog)
 {
+  XII_PROFILE_SCOPE("xiiGALShaderCompiler::RunShaderCompiler");
+
   XII_LOG_BLOCK(pLog, "Compiling Shader", sFile);
 
   xiiMap<xiiGALShaderType::Enum, xiiStringBuilder> processedSources;
@@ -590,6 +595,8 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
 
 void xiiGALShaderCompiler::WriteFailedShaderSource(xiiGALShaderProgramData& spd, xiiLogInterface* pLog)
 {
+  XII_PROFILE_SCOPE("xiiGALShaderCompiler::WriteFailedShaderSource");
+
   for (auto it : spd.m_StageData)
   {
     const auto& stageData = it.Value();

@@ -819,6 +819,7 @@ void xiiRenderWorld::OnEngineShutdown()
   }
 
   s_Views.Clear();
+  s_CameraConfigs.Clear();
 }
 
 void xiiRenderWorld::BeginModifyCameraConfigs()

@@ -4,7 +4,9 @@
 #  error "RENDER_PASS and BLEND_MODE permutations must be defined"
 #endif
 
-#define USE_WORLDPOS
+#ifndef USE_WORLDPOS
+#  define USE_WORLDPOS
+#endif
 
 #if SHADING_QUALITY == SHADING_QUALITY_NORMAL
 #  include <Shaders/Materials/MaterialPixelShaderNormal.h>
