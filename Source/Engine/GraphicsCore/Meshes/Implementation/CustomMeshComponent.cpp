@@ -285,14 +285,14 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
   if (pRenderData1st->m_uiFlipWinding)
   {
-    pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
+    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
   }
   else
   {
-    pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
   }
 
-  pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
 
   for (auto it = batch.GetIterator<xiiCustomMeshRenderData>(0, batch.GetCount()); it.IsValid(); ++it)
   {

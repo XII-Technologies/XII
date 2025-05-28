@@ -7,6 +7,7 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
+#include <GraphicsCore/Utils/CommandListUtilities.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
@@ -38,23 +39,22 @@ void xiiSpriteRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRende
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
-void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiSharedPtr<xiiGALDevice> pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiRenderContext*          pContext = renderViewContext.m_pRenderContext;
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  const xiiSpriteRenderData* pRenderData = batch.GetFirstData<xiiSpriteRenderData>();
-
+  const xiiSpriteRenderData* pRenderData  = batch.GetFirstData<xiiSpriteRenderData>();
   const xiiUInt32            uiBufferSize = xiiMath::RoundUp(batch.GetCount(), 128u);
   xiiSharedPtr<xiiGALBuffer> pSpriteData  = CreateSpriteDataBuffer(uiBufferSize);
   XII_SCOPE_EXIT(DeleteSpriteDataBuffer(pSpriteData));
 
   pContext->BindShader(m_hShader);
-  pContext->BindBuffer("spriteData", pSpriteData->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pContext->BindTexture2D("SpriteTexture", pRenderData->m_hTexture);
 
-  pContext->SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));
-  pContext->SetShaderPermutationVariable("SHAPE_ICON", pRenderData->m_BlendMode == xiiSpriteBlendMode::ShapeIcon ? xiiMakeHashedString("TRUE") : xiiMakeHashedString("FALSE"));
+  xiiGALCommandListUtilities::BindBuffer(pCommandList, "spriteData", pSpriteData);
+  xiiGALCommandListUtilities::BindTexture2D(pCommandList, "SpriteTexture", pRenderData->m_hTexture);
+
+  renderViewContext.SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));
+  renderViewContext.SetShaderPermutationVariable("SHAPE_ICON", pRenderData->m_BlendMode == xiiSpriteBlendMode::ShapeIcon ? xiiMakeHashedString("TRUE") : xiiMakeHashedString("FALSE"));
 
   FillSpriteData(batch);
 

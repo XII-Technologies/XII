@@ -183,7 +183,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
     xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
 
-    pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
     pRenderContext->BindShader(m_hShader);
 
     xiiUInt32         uiNumLineVertices = m_Vertices.GetCount();

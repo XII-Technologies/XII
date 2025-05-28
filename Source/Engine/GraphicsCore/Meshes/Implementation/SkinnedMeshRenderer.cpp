@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/Meshes/SkinnedMeshRenderer.h>
+#include <GraphicsCore/Utils/CommandListUtilities.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiSkinnedMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -14,23 +15,21 @@ void xiiSkinnedMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xi
   ref_types.PushBack(xiiGetStaticRTTI<xiiSkinnedMeshRenderData>());
 }
 
-void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const
+void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiMeshRenderData* pRenderData) const
 {
   // Don't call base class implementation here since the state will be overwritten in this method anyways.
-
-  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
 
   auto pSkinnedRenderData = static_cast<const xiiSkinnedMeshRenderData*>(pRenderData);
 
   if (!pSkinnedRenderData->m_pSkinningTransforms)
   {
-    pContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
   }
   else
   {
-    pContext->SetShaderPermutationVariable("VERTEX_SKINNING", "TRUE");
+    renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "TRUE");
 
-    pContext->BindBuffer("skinningTransforms", pSkinnedRenderData->m_pSkinningTransforms->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    xiiGALCommandListUtilities::BindBuffer(pCommandList, "skinningTransforms", pSkinnedRenderData->m_pSkinningTransforms);
   }
 }
 

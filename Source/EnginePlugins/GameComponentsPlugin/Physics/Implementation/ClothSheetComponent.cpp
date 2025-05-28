@@ -454,15 +454,14 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 {
   const bool bNeedsNormals = (renderViewContext.m_pViewData->m_CameraUsageHint != xiiCameraUsageHint::Shadow);
 
-
   xiiRenderContext*  pRenderContext  = renderViewContext.m_pRenderContext;
   xiiGALCommandList* pGALCommandList = pRenderContext->GetCommandList();
 
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
   pInstanceData->BindResources(pRenderContext);
 
-  pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
-  pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+  renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
+  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
 
   xiiResourceLock<xiiDynamicMeshBufferResource> pBuffer(m_hDynamicMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
 
