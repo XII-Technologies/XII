@@ -41,7 +41,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALPipelineState::xiiGALPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineStateCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 
@@ -50,7 +50,7 @@ xiiGALPipelineState::~xiiGALPipelineState() = default;
 ////////////////////////////////////////////////////////////////////////////////
 
 xiiGALGraphicsPipelineState::xiiGALGraphicsPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALGraphicsPipelineStateCreationDescription& creationDescription) :
-  xiiGALPipelineState(pDevice, creationDescription), m_Description(creationDescription)
+  xiiGALPipelineState(std::move(pDevice), creationDescription), m_Description(creationDescription)
 {
 }
 
@@ -59,7 +59,7 @@ xiiGALGraphicsPipelineState::~xiiGALGraphicsPipelineState() = default;
 ////////////////////////////////////////////////////////////////////////////////
 
 xiiGALComputePipelineState::xiiGALComputePipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALComputePipelineStateCreationDescription& creationDescription) :
-  xiiGALPipelineState(pDevice, creationDescription), m_Description(creationDescription)
+  xiiGALPipelineState(std::move(pDevice), creationDescription), m_Description(creationDescription)
 {
 }
 
@@ -69,7 +69,7 @@ xiiGALComputePipelineState::~xiiGALComputePipelineState() = default;
 ////////////////////////////////////////////////////////////////////////////////
 
 xiiGALRayTracingPipelineState::xiiGALRayTracingPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRayTracingPipelineStateCreationDescription& creationDescription) :
-  xiiGALPipelineState(pDevice, creationDescription), m_Description(creationDescription)
+  xiiGALPipelineState(std::move(pDevice), creationDescription), m_Description(creationDescription)
 {
 }
 
@@ -78,7 +78,7 @@ xiiGALRayTracingPipelineState::~xiiGALRayTracingPipelineState() = default;
 ////////////////////////////////////////////////////////////////////////////////
 
 xiiGALTilePipelineState::xiiGALTilePipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTilePipelineStateCreationDescription& creationDescription) :
-  xiiGALPipelineState(pDevice, creationDescription), m_Description(creationDescription)
+  xiiGALPipelineState(std::move(pDevice), creationDescription), m_Description(creationDescription)
 {
 }
 

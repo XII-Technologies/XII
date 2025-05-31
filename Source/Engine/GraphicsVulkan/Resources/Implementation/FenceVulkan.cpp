@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALFenceVulkan::xiiGALFenceVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription) :
-  xiiGALFence(pDeviceVulkan, creationDescription)
+  xiiGALFence(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -60,7 +58,7 @@ xiiResult xiiGALFenceVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

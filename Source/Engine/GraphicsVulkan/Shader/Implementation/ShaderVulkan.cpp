@@ -4,13 +4,11 @@
 #include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALShaderVulkan::xiiGALShaderVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALShaderCreationDescription& creationDescription) :
-  xiiGALShader(pDeviceVulkan, creationDescription)
+  xiiGALShader(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -52,7 +50,7 @@ xiiInternal::NewInstance<xiiGALInputLayout> xiiGALShaderVulkan::CreateInputLayou
   return pInputLayoutVulkan;
 }
 
-void xiiGALShaderVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALShaderVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

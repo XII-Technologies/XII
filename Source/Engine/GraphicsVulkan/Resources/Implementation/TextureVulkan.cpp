@@ -22,7 +22,7 @@ void xiiGALTextureVulkan::SetVulkanImageLayout(vk::ImageLayout vkImageLayout)
 }
 
 xiiGALTextureVulkan::xiiGALTextureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
-  xiiGALTexture(pDeviceVulkan, creationDescription), m_vkImage(VK_NULL_HANDLE), m_ImageMemoryAllocation(VK_NULL_HANDLE), m_vkStagingBuffer(VK_NULL_HANDLE), m_StagingBufferMemoryAllocation(VK_NULL_HANDLE)
+  xiiGALTexture(std::move(pDeviceVulkan), creationDescription), m_vkImage(VK_NULL_HANDLE), m_ImageMemoryAllocation(VK_NULL_HANDLE), m_vkStagingBuffer(VK_NULL_HANDLE), m_StagingBufferMemoryAllocation(VK_NULL_HANDLE)
 {
 }
 
@@ -141,7 +141,7 @@ xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureVulkan::CreateViewPlatf
   return pTextureViewVulkan;
 }
 
-void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

@@ -486,10 +486,10 @@ void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore, xiiUIn
 }
 
 xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceVulkan, pCommandQueueVulkan, creationDescription), m_pCommandBufferPool(pCommandBufferPool), m_vkCommandBuffer(m_pCommandBufferPool->RequestCommandBuffer())
+  xiiGALCommandList(std::move(pDeviceVulkan), pCommandQueueVulkan, creationDescription), m_pCommandBufferPool(pCommandBufferPool), m_vkCommandBuffer(m_pCommandBufferPool->RequestCommandBuffer())
 {
-  m_pDynamicBufferPoolVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALDynamicBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
-  m_pUploadStagingBufferPool = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALStagingBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
+  m_pDynamicBufferPoolVulkan = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALDynamicBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
+  m_pUploadStagingBufferPool = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALStagingBufferPoolVulkan, pDeviceVulkan, 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
@@ -2632,7 +2632,7 @@ void xiiGALCommandListVulkan::InvalidateStatePlatform()
   XII_ASSERT_DEV(m_MappedTextures.IsEmpty(), "There are outstanding textures that have not been unmapped.");
 }
 
-void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

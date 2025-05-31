@@ -174,7 +174,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
   return uiFenceValue;
 }
 
-void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   XII_IGNORE_UNUSED(sName);
 }

@@ -57,8 +57,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   } while (false)
 
 xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription), m_pCommandQueue(pCommandQueue)
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_pCommandQueue(pCommandQueue)
 {
+  XII_ASSERT_DEV(m_pCommandQueue != nullptr, "Invalid command queue provided.");
 }
 
 xiiGALCommandList::~xiiGALCommandList() = default;

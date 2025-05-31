@@ -28,7 +28,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   } while (false)
 
 xiiGALBuffer::xiiGALBuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBufferCreationDescription& creationDescription) :
-  xiiGALResource(pDevice), m_Description(creationDescription)
+  xiiGALResource(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

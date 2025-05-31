@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALInputLayoutVulkan::xiiGALInputLayoutVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALInputLayout(pDeviceVulkan, creationDescription), m_vkVertexAttributes(pDeviceVulkan->GetAllocator()), m_vkVertexInputBindings(pDeviceVulkan->GetAllocator())
+  xiiGALInputLayout(std::move(pDeviceVulkan), creationDescription), m_vkVertexAttributes(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_vkVertexInputBindings(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator())
 {
 }
 

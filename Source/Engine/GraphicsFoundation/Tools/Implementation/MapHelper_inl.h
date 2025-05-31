@@ -7,9 +7,9 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper() :
 
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags) :
-  m_pCommandList(pCommandList), m_pBuffer(pBuffer), m_pMappedData(nullptr), m_MapType(mapType), m_MapFlags(mapFlags)
+  m_pCommandList(std::move(pCommandList)), m_pBuffer(std::move(pBuffer)), m_pMappedData(nullptr), m_MapType(mapType), m_MapFlags(mapFlags)
 {
-  Map(pCommandList, pBuffer, mapType, mapFlags).IgnoreResult();
+  Map(m_pCommandList, m_pBuffer, m_MapType, m_MapFlags).IgnoreResult();
 }
 
 template <typename DataType>

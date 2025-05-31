@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/SamplerVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALSamplerVulkan::xiiGALSamplerVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALSampler(pDeviceVulkan, creationDescription)
+  xiiGALSampler(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -110,7 +108,7 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALSamplerVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALSamplerVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

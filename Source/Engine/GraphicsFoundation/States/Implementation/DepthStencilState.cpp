@@ -20,7 +20,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALDepthStencilState::xiiGALDepthStencilState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

@@ -2,16 +2,14 @@
 
 #include <GraphicsFoundation/Declarations/Object.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALObject, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE
-// clang-format on
 
 xiiGALObject::xiiGALObject() = default;
 
 xiiGALObject::~xiiGALObject() = default;
 
-void xiiGALObject::SetDebugName(xiiStringView sDebugName)
+void xiiGALObject::SetDebugName(xiiStringView sDebugName) const
 {
   m_sDebugName.Assign(sDebugName);
 

@@ -4,13 +4,11 @@
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 #include <GraphicsVulkan/States/RayTracingPipelineStateVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRayTracingPipelineStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALRayTracingPipelineStateVulkan::xiiGALRayTracingPipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALRayTracingPipelineStateCreationDescription& creationDescription) :
-  xiiGALRayTracingPipelineState(pDeviceVulkan, creationDescription), m_vkPipelineBindPoint(vk::PipelineBindPoint::eRayTracingKHR)
+  xiiGALRayTracingPipelineState(std::move(pDeviceVulkan), creationDescription), m_vkPipelineBindPoint(vk::PipelineBindPoint::eRayTracingKHR)
 {
 }
 
@@ -46,7 +44,7 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
   return XII_FAILURE;
 }
 
-void xiiGALRayTracingPipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALRayTracingPipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   if (m_vkPipeline == VK_NULL_HANDLE)
     return;

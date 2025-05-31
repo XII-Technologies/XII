@@ -42,7 +42,7 @@ protected:
 
   virtual ~xiiGALCommandQueueVulkan();
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   xiiGALQueueInformationVulkan                                   m_QueueInformation;

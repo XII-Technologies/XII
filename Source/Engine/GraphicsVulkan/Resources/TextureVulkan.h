@@ -47,7 +47,7 @@ protected:
 
   virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(const xiiGALTextureViewCreationDescription& description) override;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   vk::Result CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties);

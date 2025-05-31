@@ -51,7 +51,7 @@ protected:
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   xiiHybridArray<xiiHybridArray<xiiGALPipelineResourceDescriptionVulkan, 1U>, 1U> m_PipelineResourceSetLayouts;

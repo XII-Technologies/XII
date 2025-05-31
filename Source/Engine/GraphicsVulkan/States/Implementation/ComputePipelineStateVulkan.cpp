@@ -5,13 +5,11 @@
 #include <GraphicsVulkan/States/ComputePipelineStateVulkan.h>
 #include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALComputePipelineStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALComputePipelineStateVulkan::xiiGALComputePipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALComputePipelineStateCreationDescription& creationDescription) :
-  xiiGALComputePipelineState(pDeviceVulkan, creationDescription), m_vkPipelineBindPoint(vk::PipelineBindPoint::eCompute)
+  xiiGALComputePipelineState(std::move(pDeviceVulkan), creationDescription), m_vkPipelineBindPoint(vk::PipelineBindPoint::eCompute)
 {
 }
 
@@ -84,7 +82,7 @@ xiiResult xiiGALComputePipelineStateVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALComputePipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALComputePipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   if (m_vkPipeline == VK_NULL_HANDLE)
     return;

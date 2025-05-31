@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/TilePipelineStateVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTilePipelineStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALTilePipelineStateVulkan::xiiGALTilePipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTilePipelineStateCreationDescription& creationDescription) :
-  xiiGALTilePipelineState(pDeviceVulkan, creationDescription)
+  xiiGALTilePipelineState(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -29,7 +27,7 @@ xiiResult xiiGALTilePipelineStateVulkan::InitPlatform()
   return XII_FAILURE;
 }
 
-void xiiGALTilePipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALTilePipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   if (m_vkPipeline == VK_NULL_HANDLE)
     return;

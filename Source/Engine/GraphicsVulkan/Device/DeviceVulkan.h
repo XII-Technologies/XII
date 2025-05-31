@@ -79,10 +79,10 @@ public:
 public:
   virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
   template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>
-  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {})
+  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {}) const
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     if (m_DebugMode != DebugMode::Disabled)

@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelASVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALBottomLevelASVulkan::xiiGALBottomLevelASVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALBottomLevelASCreationDescription& creationDescription) :
-  xiiGALBottomLevelAS(pDeviceVulkan, creationDescription)
+  xiiGALBottomLevelAS(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -20,7 +18,7 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
   return XII_FAILURE;
 }
 
-void xiiGALBottomLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALBottomLevelASVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   XII_IGNORE_UNUSED(sName);
 }

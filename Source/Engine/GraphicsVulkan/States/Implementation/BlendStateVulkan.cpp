@@ -7,7 +7,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALBlendStateVulkan::xiiGALBlendStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALBlendStateCreationDescription& creationDescription) :
-  xiiGALBlendState(pDeviceVulkan, creationDescription)
+  xiiGALBlendState(std::move(pDeviceVulkan), creationDescription)
 {
 }
 

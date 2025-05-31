@@ -11,14 +11,14 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALResource::xiiGALResource(xiiSharedPtr<xiiGALDevice> pDevice) :
-  xiiGALDeviceObject(pDevice)
+  xiiGALDeviceObject(std::move(pDevice))
 {
 }
 
 xiiGALResource::~xiiGALResource() = default;
 
 xiiGALResourceView::xiiGALResourceView(xiiSharedPtr<xiiGALDevice> pDevice) :
-  xiiGALDeviceObject(pDevice)
+  xiiGALDeviceObject(std::move(pDevice))
 {
 }
 

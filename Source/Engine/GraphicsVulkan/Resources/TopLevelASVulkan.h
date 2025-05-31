@@ -25,7 +25,7 @@ protected:
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
 };

@@ -24,7 +24,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   } while (false)
 
 xiiGALTexture::xiiGALTexture(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTextureCreationDescription& creationDescription) :
-  xiiGALResource(pDevice), m_Description(creationDescription)
+  xiiGALResource(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

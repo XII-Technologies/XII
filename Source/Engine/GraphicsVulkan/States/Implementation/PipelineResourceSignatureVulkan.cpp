@@ -36,7 +36,7 @@ xiiUInt32 FindImmutableSampler(const xiiGALPipelineResourceSignatureCreationDesc
 }
 
 xiiGALPipelineResourceSignatureVulkan::xiiGALPipelineResourceSignatureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
-  xiiGALPipelineResourceSignature(pDeviceVulkan, creationDescription), m_DescriptorSetLayouts(pDeviceVulkan->GetAllocator()), m_ImmutableSamplers(pDeviceVulkan->GetAllocator())
+  xiiGALPipelineResourceSignature(std::move(pDeviceVulkan), creationDescription), m_DescriptorSetLayouts(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_ImmutableSamplers(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator())
 {
 }
 
@@ -168,7 +168,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp(sName);

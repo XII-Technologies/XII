@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALBufferVulkan::xiiGALBufferVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALBufferCreationDescription& creationDescription) :
-  xiiGALBuffer(pDeviceVulkan, creationDescription)
+  xiiGALBuffer(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -232,7 +232,7 @@ xiiInternal::NewInstance<xiiGALBufferView> xiiGALBufferVulkan::CreateViewPlatfor
   return pBufferViewVulkan;
 }
 
-void xiiGALBufferVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALBufferVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

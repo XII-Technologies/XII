@@ -16,7 +16,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiDelegate<void(xiiShaderUtilities::xiiBuiltinShaderType type, xiiShaderUtilities::xiiBuiltinShader& out_shader)> xiiShaderUtilities::g_RequestBuiltinShaderCallback;
 
 xiiGALShader::xiiGALShader(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALShaderCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

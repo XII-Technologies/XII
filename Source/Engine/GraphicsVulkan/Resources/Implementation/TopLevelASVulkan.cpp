@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/TopLevelASVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelASVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALTopLevelASVulkan::xiiGALTopLevelASVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTopLevelASCreationDescription& creationDescription) :
-  xiiGALTopLevelAS(pDeviceVulkan, creationDescription)
+  xiiGALTopLevelAS(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -20,7 +18,7 @@ xiiResult xiiGALTopLevelASVulkan::InitPlatform()
   return XII_FAILURE;
 }
 
-void xiiGALTopLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALTopLevelASVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   XII_IGNORE_UNUSED(sName);
 }

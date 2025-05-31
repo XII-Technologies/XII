@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALRasterizerStateVulkan::xiiGALRasterizerStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALRasterizerStateCreationDescription& creationDescription) :
-  xiiGALRasterizerState(pDeviceVulkan, creationDescription)
+  xiiGALRasterizerState(std::move(pDeviceVulkan), creationDescription)
 {
 }
 

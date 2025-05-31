@@ -14,7 +14,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALSampler::xiiGALSampler(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

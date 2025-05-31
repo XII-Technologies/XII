@@ -13,7 +13,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALFence::xiiGALFence(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALFenceCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription), m_LastCompletedFenceValue(0)
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_LastCompletedFenceValue(0)
 {
 }
 

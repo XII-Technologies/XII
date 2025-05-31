@@ -12,7 +12,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiStringView GetDebugName() const { return m_sDebugName.GetView(); }
 
   /// \brief Sets the debug name for this resource.
-  void SetDebugName(xiiStringView sDebugName);
+  void SetDebugName(xiiStringView sDebugName) const;
 
 protected:
   friend class xiiMemoryUtils;
@@ -20,7 +20,7 @@ protected:
   xiiGALObject();
   virtual ~xiiGALObject();
 
-  XII_ALWAYS_INLINE virtual void SetDebugNamePlatform(xiiStringView sName) { XII_IGNORE_UNUSED(sName); };
+  XII_ALWAYS_INLINE virtual void SetDebugNamePlatform(xiiStringView sName) const { XII_IGNORE_UNUSED(sName); };
 
 private:
   mutable xiiHashedString m_sDebugName;

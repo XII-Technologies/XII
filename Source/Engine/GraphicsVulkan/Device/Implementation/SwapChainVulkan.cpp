@@ -21,13 +21,11 @@
 #  include <xcb/xcb.h>
 #endif
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALSwapChain(pDeviceVulkan, creationDescription), m_ImageAcquiredSemaphores(pDeviceVulkan->GetAllocator()), m_DrawCompleteSemaphores(pDeviceVulkan->GetAllocator()), m_ImageAcquiredFences(pDeviceVulkan->GetAllocator()), m_SwapChainImages(pDeviceVulkan->GetAllocator()), m_SwapChainTextures(pDeviceVulkan->GetAllocator()), m_SwapChainImagesInitialized(pDeviceVulkan->GetAllocator()), m_ImageAcquiredFenceSubmitted(pDeviceVulkan->GetAllocator())
+  xiiGALSwapChain(std::move(pDeviceVulkan), creationDescription), m_ImageAcquiredSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_DrawCompleteSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_ImageAcquiredFences(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainImages(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainTextures(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainImagesInitialized(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_ImageAcquiredFenceSubmitted(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator())
 {
 }
 
@@ -74,7 +72,7 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALSwapChainVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALSwapChainVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/DepthStencilStateVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALDepthStencilStateVulkan::xiiGALDepthStencilStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
-  xiiGALDepthStencilState(pDeviceVulkan, creationDescription)
+  xiiGALDepthStencilState(std::move(pDeviceVulkan), creationDescription)
 {
 }
 

@@ -7,7 +7,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRenderPassVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALRenderPassVulkan::xiiGALRenderPassVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALRenderPassCreationDescription& creationDescription) :
-  xiiGALRenderPass(pDeviceVulkan, creationDescription), m_vkRenderPass(VK_NULL_HANDLE)
+  xiiGALRenderPass(std::move(pDeviceVulkan), creationDescription), m_vkRenderPass(VK_NULL_HANDLE)
 {
 }
 
@@ -63,7 +63,7 @@ xiiResult xiiGALRenderPassVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALRenderPassVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALRenderPassVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

@@ -14,7 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALGraphicsPipelineStateVulkan, 1, xiiRTTINo
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALGraphicsPipelineStateVulkan::xiiGALGraphicsPipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALGraphicsPipelineStateCreationDescription& creationDescription) :
-  xiiGALGraphicsPipelineState(pDeviceVulkan, creationDescription), m_vkPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+  xiiGALGraphicsPipelineState(std::move(pDeviceVulkan), creationDescription), m_vkPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
 {
 }
 
@@ -255,7 +255,7 @@ xiiResult xiiGALGraphicsPipelineStateVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALGraphicsPipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALGraphicsPipelineStateVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   if (m_vkPipeline == VK_NULL_HANDLE)
     return;

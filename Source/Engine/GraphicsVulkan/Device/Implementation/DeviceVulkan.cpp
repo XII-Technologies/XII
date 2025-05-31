@@ -1296,7 +1296,7 @@ xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGA
   return bAllowGraphicsCommandQueueFallback ? GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false) : nullptr;
 }
 
-void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiStringBuilder tmp;
 

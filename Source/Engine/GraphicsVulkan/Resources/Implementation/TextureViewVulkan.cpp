@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureViewVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALTextureViewVulkan::xiiGALTextureViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
-  xiiGALTextureView(pDeviceVulkan, pTexture, creationDescription)
+  xiiGALTextureView(std::move(pDeviceVulkan), pTexture, creationDescription)
 {
 }
 
@@ -250,7 +250,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALTextureViewVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALTextureViewVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiStringBuilder                 tmp;

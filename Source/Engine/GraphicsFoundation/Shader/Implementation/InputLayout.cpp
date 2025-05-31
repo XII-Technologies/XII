@@ -44,7 +44,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALInputLayout::xiiGALInputLayout(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

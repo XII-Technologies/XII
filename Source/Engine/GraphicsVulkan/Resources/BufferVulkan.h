@@ -41,7 +41,7 @@ protected:
 
   virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) override;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   vk::Buffer    m_vkBuffer               = VK_NULL_HANDLE;
