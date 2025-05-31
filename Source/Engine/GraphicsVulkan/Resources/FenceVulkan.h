@@ -21,9 +21,9 @@ public:
     vk::Fence m_vkFence;
   };
 
-  XII_ALWAYS_INLINE vk::Semaphore GetVulkanTimelineSemaphore() const { return m_vkTimelineSemaphore; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Semaphore GetVulkanTimelineSemaphore() const { return m_vkTimelineSemaphore; }
 
-  XII_ALWAYS_INLINE bool IsTimelineSemaphore() const { return m_vkTimelineSemaphore != nullptr; }
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsTimelineSemaphore() const { return m_vkTimelineSemaphore != nullptr; }
 
   virtual xiiUInt64 GetCompletedValue() override final;
 
@@ -33,21 +33,19 @@ public:
 
   void Reset(xiiUInt64 uiValue);
 
-  const xiiGALFenceVulkan::SyncPointData& CreateSyncPoint(const xiiUInt64 uiFenceValue);
+  [[nodiscard]] const xiiGALFenceVulkan::SyncPointData& CreateSyncPoint(const xiiUInt64 uiFenceValue);
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALFenceVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFenceVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFenceVulkan();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   void ReleaseResourcesImmediately();

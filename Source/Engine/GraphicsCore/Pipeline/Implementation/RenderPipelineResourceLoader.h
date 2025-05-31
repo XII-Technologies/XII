@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Foundation/Serialization/RttiConverter.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Serialization/RttiConverter.h>
 
 class xiiRenderPipeline;
 struct xiiRenderPipelineResourceDescriptor;

@@ -91,6 +91,7 @@ public:
   static vk::AccessFlags                       GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
   static vk::AccessFlags                       GetAccessFlags(xiiBitflags<xiiGALResourceStateFlags> e);
   static xiiBitflags<xiiGALResourceStateFlags> GetResourceState(vk::AccessFlags e);
+  static void                                  GetPermittedStagesAndAccessFlags(xiiBitflags<xiiGALBindFlags> e, vk::PipelineStageFlags& vkStageFlags, vk::AccessFlags& vkAccessFlags);
 
   static vk::ComponentSwizzle GetComponentSwizzle(xiiGALTextureComponentSwizzle::Enum e);
   static vk::ComponentMapping GetComponentMapping(const xiiGALTextureComponentMapping& mapping);

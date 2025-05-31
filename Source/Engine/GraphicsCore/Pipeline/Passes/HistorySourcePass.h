@@ -15,11 +15,11 @@ public:
   xiiHistorySourcePass(xiiStringView sName = "HistorySourcePass");
   ~xiiHistorySourcePass();
 
-  virtual bool                    GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-  virtual xiiGALTextureViewHandle QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) override;
-  virtual void                    Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
-  virtual xiiResult               Serialize(xiiStreamWriter& inout_stream) const override;
-  virtual xiiResult               Deserialize(xiiStreamReader& inout_stream) override;
+  virtual bool                            GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
+  virtual xiiSharedPtr<xiiGALTextureView> QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) override;
+  virtual void                            Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual xiiResult                       Serialize(xiiStreamWriter& inout_stream) const override;
+  virtual xiiResult                       Deserialize(xiiStreamReader& inout_stream) override;
 
   void FreeCachedRenderPasses();
 
@@ -30,8 +30,8 @@ protected:
   xiiEnum<xiiGALMSAASampleCount> m_MsaaMode   = xiiGALMSAASampleCount::OneSample;
   xiiColor                       m_ClearColor = xiiColor::Black;
 
-  xiiGALRenderPassHandle  m_hRenderPass;
-  xiiGALFramebufferHandle m_hFramebuffer;
+  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
 
   bool m_bFirstExecute = true;
 };
@@ -44,11 +44,11 @@ public:
   xiiHistorySourcePassTextureDataProvider();
   ~xiiHistorySourcePassTextureDataProvider();
 
-  void                ResetTexture(xiiStringView sSourcePassName);
-  xiiGALTextureHandle GetOrCreateTexture(xiiStringView sSourcePassName, const xiiGALTextureCreationDescription& desc);
+  void                        ResetTexture(xiiStringView sSourcePassName);
+  xiiSharedPtr<xiiGALTexture> GetOrCreateTexture(xiiStringView sSourcePassName, const xiiGALTextureCreationDescription& desc);
 
 public:
-  xiiHashTable<xiiString, xiiGALTextureHandle> m_Data;
+  xiiHashTable<xiiString, xiiSharedPtr<xiiGALTexture>> m_Data;
 
 private:
   // We ignore the frame-based logic for this data provider as we only want to store cross frame data.

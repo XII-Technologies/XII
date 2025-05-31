@@ -36,7 +36,7 @@ macro(xii_platformhook_link_target_vulkan)
   unset(_dll_location)
 endmacro()
 
-macro(xii_platformhook_set_build_flags_clang)
+macro(xii_platformhook_set_build_flags_clang TARGET_NAME)
   target_compile_options(${TARGET_NAME} PRIVATE -fPIC)
 
   # Look for the super fast ld compatible linker called "mold". If present we want to use it.

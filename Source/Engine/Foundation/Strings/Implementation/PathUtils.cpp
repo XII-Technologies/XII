@@ -123,36 +123,27 @@ xiiStringView xiiPathUtils::GetFileDirectory(xiiStringView sPath)
   return xiiStringView(sPath.GetStartPointer(), szSeparator + 1);
 }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-const char xiiPathUtils::OsSpecificPathSeparator = '\\';
-#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-const char xiiPathUtils::OsSpecificPathSeparator = '/';
-#elif XII_ENABLED(XII_PLATFORM_OSX)
-const char xiiPathUtils::OsSpecificPathSeparator = '/';
-#else
-#  error "Unknown platform."
-#endif
+const char xiiPathUtils::OsSpecificPathSeparator = XII_PLATFORM_PATH_SEPARATOR;
 
 bool xiiPathUtils::IsAbsolutePath(xiiStringView sPath)
 {
-  if (sPath.GetElementCount() < 2)
+  if (sPath.GetElementCount() < 1)
     return false;
 
   const char* szPath = sPath.GetStartPointer();
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (sPath.GetElementCount() < 2)
+    return false;
+
   // szPath[0] will not be \0 -> so we can access szPath[1] without problems
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   /// if it is an absolute path, character 0 must be ASCII (A - Z)
   /// checks for local paths, i.e. 'C:\stuff' and UNC paths, i.e. '\\server\stuff'
   /// not sure if we should handle '//' identical to '\\' (currently we do)
   return ((szPath[1] == ':') || (IsPathSeparator(szPath[0]) && IsPathSeparator(szPath[1])));
-#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-  return (szPath[0] == '/');
-#elif XII_ENABLED(XII_PLATFORM_OSX)
-  return (szPath[0] == '/');
 #else
-#  error "Unknown platform."
+  return (szPath[0] == '/');
 #endif
 }
 

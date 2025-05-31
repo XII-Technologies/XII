@@ -103,7 +103,7 @@ public:                                                                         
                                                                                 \
 protected:                                                                      \
   idType m_InternalId;                                                          \
-  operator idType()                                                             \
+         operator idType()                                                      \
   {                                                                             \
     return m_InternalId;                                                        \
   }                                                                             \

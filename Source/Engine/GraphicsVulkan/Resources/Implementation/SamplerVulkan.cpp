@@ -3,21 +3,24 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/SamplerVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALSamplerVulkan::xiiGALSamplerVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALSampler(pDeviceVulkan, creationDescription)
+xiiGALSamplerVulkan::xiiGALSamplerVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& creationDescription) :
+  xiiGALSampler(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
-xiiGALSamplerVulkan::~xiiGALSamplerVulkan() = default;
+xiiGALSamplerVulkan::~xiiGALSamplerVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkSampler));
+}
 
 xiiResult xiiGALSamplerVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan*                 pDeviceVulkan              = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*                 pDeviceVulkan              = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                          vkLogicalDevice            = pDeviceVulkan->GetVulkanLogicalDevice();
   const vk::PhysicalDeviceProperties& vkPhysicalDeviceProperties = pDeviceVulkan->GetVulkanPhysicalDeviceProperties();
 
@@ -100,33 +103,17 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
     vkSamplerCreateInfo.flags |= vk::SamplerCreateFlagBits::eSubsampledCoarseReconstructionEXT;
   }
 
-  m_vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eUndefined;
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSampler(&vkSamplerCreateInfo, nullptr, &m_vkDescriptorImageInfo.sampler, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSampler(&vkSamplerCreateInfo, nullptr, &m_vkSampler, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALSamplerVulkan::DeInitPlatform()
+void xiiGALSamplerVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiStringBuilder                 tmp;
 
-  if (m_vkDescriptorImageInfo.sampler != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkDescriptorImageInfo.sampler);
-
-    m_vkDescriptorImageInfo = vk::DescriptorImageInfo{};
-  }
-
-  return XII_SUCCESS;
-}
-
-void xiiGALSamplerVulkan::SetDebugNamePlatform(xiiStringView sName)
-{
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiStringBuilder    tmp;
-
-  pDeviceVulkan->SetVulkanObjectDebugName(m_vkDescriptorImageInfo.sampler, sName.GetData(tmp));
+  pDeviceVulkan->SetVulkanObjectDebugName(m_vkSampler, sName.GetData(tmp));
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Resources_Implementation_SamplerVulkan);

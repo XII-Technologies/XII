@@ -3,17 +3,13 @@
 #include <Core/Graphics/Geometry.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshBufferResource, 1, xiiRTTIDefaultAllocator<xiiMeshBufferResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshBufferResource);
-// clang-format on
 
 xiiMeshBufferResourceDescriptor::xiiMeshBufferResourceDescriptor()
 {
@@ -47,17 +43,15 @@ xiiArrayPtr<const xiiUInt8> xiiMeshBufferResourceDescriptor::GetIndexBufferData(
 
 xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper>& xiiMeshBufferResourceDescriptor::GetVertexBufferData()
 {
-  XII_ASSERT_DEV(!m_VertexStreamData.IsEmpty(), "The vertex data must be allocated first");
   return m_VertexStreamData;
 }
 
 xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper>& xiiMeshBufferResourceDescriptor::GetIndexBufferData()
 {
-  XII_ASSERT_DEV(!m_IndexBufferData.IsEmpty(), "The index data must be allocated first");
   return m_IndexBufferData;
 }
 
-xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSemantic> semantic, xiiEnum<xiiGALResourceFormat> format)
+xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiGALInputLayoutSemantic::Enum semantic, xiiGALResourceFormat::Enum format)
 {
   XII_ASSERT_DEV(m_VertexStreamData.IsEmpty(), "This function can only be called before 'AllocateStreams' is called");
 
@@ -92,7 +86,7 @@ void xiiMeshBufferResourceDescriptor::AddCommonStreams()
   AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::Default));
 }
 
-void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiNumPrimitives, bool bZeroFill /*= false*/)
+void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiNumPrimitives, bool bZeroFill /*= false*/)
 {
   XII_ASSERT_DEV(!m_InputLayout.m_VertexStreams.IsEmpty(), "You have to add streams via 'AddStream' before calling this function");
 
@@ -112,7 +106,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, x
   if (uiNumPrimitives > 0)
   {
     // use an index buffer at all
-    xiiUInt32 uiIndexBufferSize = uiNumPrimitives * xiiGALPrimitiveTopology::VerticesPerPrimitive(topology);
+    xiiUInt32 uiIndexBufferSize = xiiGALPrimitiveTopology::GetIndexCount(topology, uiNumPrimitives);
 
     if (Uses32BitIndices())
     {
@@ -127,7 +121,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, x
   }
 }
 
-void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiEnum<xiiGALPrimitiveTopology> topology)
+void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiGALPrimitiveTopology::Enum topology)
 {
   xiiLogBlock _("Allocate Streams From Geometry");
 
@@ -365,6 +359,7 @@ void xiiMeshBufferResourceDescriptor::SetLineIndices(xiiUInt32 uiLine, xiiUInt32
 void xiiMeshBufferResourceDescriptor::SetTriangleIndices(xiiUInt32 uiTriangle, xiiUInt32 uiVertex0, xiiUInt32 uiVertex1, xiiUInt32 uiVertex2)
 {
   XII_ASSERT_DEBUG(m_Topology == xiiGALPrimitiveTopology::TriangleList, "Wrong topology");
+  XII_ASSERT_DEBUG(uiVertex0 < m_uiVertexCount && uiVertex1 < m_uiVertexCount && uiVertex2 < m_uiVertexCount, "Vertex indices out of range.");
 
   if (Uses32BitIndices())
   {
@@ -415,9 +410,16 @@ xiiBoundingBoxSphere xiiMeshBufferResourceDescriptor::ComputeBounds() const
       {
         bounds = xiiBoundingBoxSphere::MakeFromPoints(reinterpret_cast<const xiiVec3*>(&m_VertexStreamData[offset]), m_uiVertexCount, m_uiVertexSize);
       }
+
       return bounds;
     }
   }
+
+  if (!bounds.IsValid())
+  {
+    bounds = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(0.1f), 0.1f);
+  }
+
   return bounds;
 }
 
@@ -426,10 +428,10 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
   if (m_Topology != xiiGALPrimitiveTopology::TriangleList)
     return XII_FAILURE; // normals not needed
 
-  const xiiUInt32               uiVertexSize  = m_uiVertexSize;
-  const xiiUInt8*               pPositions    = nullptr;
-  xiiUInt8*                     pNormals      = nullptr;
-  xiiEnum<xiiGALResourceFormat> normalsFormat = xiiGALResourceFormat::RGB32Float;
+  const xiiUInt32            uiVertexSize  = m_uiVertexSize;
+  const xiiUInt8*            pPositions    = nullptr;
+  xiiUInt8*                  pNormals      = nullptr;
+  xiiGALResourceFormat::Enum normalsFormat = xiiGALResourceFormat::RGB32Float;
 
   for (xiiUInt32 i = 0; i < m_InputLayout.m_VertexStreams.GetCount(); ++i)
   {
@@ -505,29 +507,25 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
+xiiMeshBufferResource::xiiMeshBufferResource() :
+  xiiResource(DoUpdate::OnGraphicsResourceThreads, 1)
+{
+}
+
 xiiMeshBufferResource::~xiiMeshBufferResource()
 {
-  XII_ASSERT_DEBUG(m_hVertexBuffer.IsInvalidated(), "Implementation error");
-  XII_ASSERT_DEBUG(m_hIndexBuffer.IsInvalidated(), "Implementation error");
+  XII_ASSERT_DEBUG(m_pVertexBuffer == nullptr, "Implementation error");
+  XII_ASSERT_DEBUG(m_pIndexBuffer == nullptr, "Implementation error");
 }
 
 xiiResourceLoadDesc xiiMeshBufferResource::UnloadData(Unload WhatToUnload)
 {
-  if (!m_hVertexBuffer.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyBuffer(m_hVertexBuffer);
-    m_hVertexBuffer.Invalidate();
-  }
-
-  if (!m_hIndexBuffer.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyBuffer(m_hIndexBuffer);
-    m_hIndexBuffer.Invalidate();
-  }
+  m_pVertexBuffer.Clear();
+  m_pIndexBuffer.Clear();
 
   m_uiPrimitiveCount = 0;
 
-  // we cannot compute this in UpdateMemoryUsage(), so we only read the data there, therefore we need to update this information here
+  // We cannot compute this in UpdateMemoryUsage(), so we only read the data there, therefore we need to update this information here.
   ModifyMemoryUsage().m_uiMemoryGPU = 0;
 
   xiiResourceLoadDesc res;
@@ -555,8 +553,8 @@ void xiiMeshBufferResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDescriptor)
 {
-  XII_ASSERT_DEBUG(m_hVertexBuffer.IsInvalidated(), "Implementation error");
-  XII_ASSERT_DEBUG(m_hIndexBuffer.IsInvalidated(), "Implementation error");
+  XII_ASSERT_DEBUG(m_pVertexBuffer == nullptr, "Implementation error");
+  XII_ASSERT_DEBUG(m_pIndexBuffer == nullptr, "Implementation error");
 
   m_InputLayout = descriptor.GetInputLayout();
   m_InputLayout.ComputeHash();
@@ -564,20 +562,21 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   m_uiPrimitiveCount = descriptor.GetPrimitiveCount();
   m_Topology         = descriptor.GetTopology();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  m_hVertexBuffer = xiiGALDeviceUtilities::CreateVertexBuffer(pDevice, descriptor.GetVertexDataSize(), descriptor.GetVertexCount(), descriptor.GetVertexBufferData().GetArrayPtr());
+  m_pVertexBuffer = xiiGALDeviceUtilities::CreateVertexBuffer(pDevice, descriptor.GetVertexDataSize(), descriptor.GetVertexCount(), descriptor.GetVertexBufferData().GetArrayPtr());
 
   xiiStringBuilder sName;
   sName.SetFormat("{0} Vertex Buffer", GetResourceDescription());
-  pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
+  m_pVertexBuffer->SetDebugName(sName);
 
   if (descriptor.HasIndexBuffer())
   {
-    m_hIndexBuffer = xiiGALDeviceUtilities::CreateIndexBuffer(pDevice, descriptor.Uses32BitIndices() ? xiiGALDeviceUtilities::IndexType::UInt : xiiGALDeviceUtilities::IndexType::UShort, m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology), descriptor.GetIndexBufferData());
+    const xiiUInt32 uiIndexCount = xiiGALPrimitiveTopology::GetIndexCount(m_Topology, m_uiPrimitiveCount);
+    m_pIndexBuffer               = xiiGALDeviceUtilities::CreateIndexBuffer(pDevice, descriptor.Uses32BitIndices() ? xiiGALDeviceUtilities::IndexType::UInt : xiiGALDeviceUtilities::IndexType::UShort, uiIndexCount, descriptor.GetIndexBufferData());
 
     sName.SetFormat("{0} Index Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
+    m_pIndexBuffer->SetDebugName(sName);
 
     // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again
     ModifyMemoryUsage().m_uiMemoryGPU = descriptor.GetVertexBufferData().GetCount() + descriptor.GetIndexBufferData().GetCount();
@@ -587,7 +586,6 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
     // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again
     ModifyMemoryUsage().m_uiMemoryGPU = descriptor.GetVertexBufferData().GetCount();
   }
-
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;

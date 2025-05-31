@@ -19,9 +19,9 @@ XII_ALWAYS_INLINE const xiiWorld* xiiView::GetWorld() const
   return m_pWorld;
 }
 
-XII_ALWAYS_INLINE xiiGALSwapChainHandle xiiView::GetSwapChain() const
+XII_ALWAYS_INLINE xiiSharedPtr<xiiGALSwapChain> xiiView::GetSwapChain() const
 {
-  return m_Data.m_hSwapChain;
+  return m_Data.m_pSwapChain;
 }
 
 XII_ALWAYS_INLINE const xiiGALRenderTargets& xiiView::GetRenderTargets() const

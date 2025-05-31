@@ -10,10 +10,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLensFlareRenderData, 1, xiiRTTIDefaultAllocator<xiiLensFlareRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiLensFlareRenderData::FillSortingKey()
 {
@@ -256,7 +254,7 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   if (auto pDirectionalLight = xiiDynamicCast<const xiiDirectionalLightComponent*>(pLightComponent))
   {
     xiiTransform localOffset = xiiTransform::MakeIdentity();
-    localOffset.m_vPosition  = xiiVec3(pCamera->GetFarPlane() * -0.999, 0, 0);
+    localOffset.m_vPosition  = xiiVec3(pCamera->GetFarPlane() * -0.999f, 0.0f, 0.0f);
 
     globalTransform = xiiTransform::MakeGlobalTransform(globalTransform, localOffset);
     globalTransform.m_vPosition += pCamera->GetCenterPosition();

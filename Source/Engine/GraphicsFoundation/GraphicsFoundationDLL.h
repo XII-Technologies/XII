@@ -15,8 +15,8 @@
 
 #include <Foundation/Algorithm/HashableStruct.h>
 #include <Foundation/Reflection/Reflection.h>
-#include <Foundation/Types/Id.h>
 #include <Foundation/Types/RefCounted.h>
+#include <Foundation/Types/SharedPtr.h>
 
 ////////// Forward Declarations //////////
 
@@ -67,6 +67,10 @@ struct xiiGALStencilOperationDescription;
 struct xiiGALDepthStencilStateCreationDescription;
 struct xiiGALRasterizerStateCreationDescription;
 struct xiiGALPipelineStateCreationDescription;
+struct xiiGALGraphicsPipelineStateCreationDescription;
+struct xiiGALComputePipelineStateCreationDescription;
+struct xiiGALRayTracingPipelineStateCreationDescription;
+struct xiiGALTilePipelineStateCreationDescription;
 struct xiiGALPipelineResourceSignatureCreationDescription;
 
 class xiiGALCommandList;
@@ -94,6 +98,12 @@ class xiiGALBlendState;
 class xiiGALDepthStencilState;
 class xiiGALPipelineResourceSignature;
 class xiiGALPipelineState;
+class xiiGALGraphicsPipelineState;
+class xiiGALComputePipelineState;
+class xiiGALRayTracingPipelineState;
+class xiiGALTilePipelineState;
 class xiiGALRasterizerState;
 
 struct xiiGALPipelineResourceDescription;
+
+class xiiGALImageCapture;

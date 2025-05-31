@@ -131,7 +131,7 @@ xiiResult xiiPreprocessor::Process(xiiStringView sMainFile, TokenStream& ref_tok
     MacroDefinition md;
     md.m_MacroIdentifier = &m_TokenFile;
     md.m_bIsFunction     = false;
-    md.m_iNumParameters  = 0;
+    md.m_uiNumParameters = 0;
     md.m_bHasVarArgs     = false;
 
     m_Macros.Insert("__FILE__", md);
@@ -145,7 +145,7 @@ xiiResult xiiPreprocessor::Process(xiiStringView sMainFile, TokenStream& ref_tok
     MacroDefinition md;
     md.m_MacroIdentifier = &m_TokenLine;
     md.m_bIsFunction     = false;
-    md.m_iNumParameters  = 0;
+    md.m_uiNumParameters = 0;
     md.m_bHasVarArgs     = false;
 
     m_Macros.Insert("__LINE__", md);
@@ -352,6 +352,8 @@ xiiResult xiiPreprocessor::HandleLine(const TokenStream& Tokens, xiiUInt32 uiCur
 
 xiiResult xiiPreprocessor::HandleIfdef(const TokenStream& Tokens, xiiUInt32 uiCurToken, xiiUInt32 uiDirectiveToken, bool bIsIfdef)
 {
+  XII_IGNORE_UNUSED(uiDirectiveToken);
+
   if (m_IfdefActiveStack.PeekBack().m_ActiveState != IfDefActivity::IsActive)
   {
     m_IfdefActiveStack.PushBack(IfDefActivity::IsInactive);
@@ -380,6 +382,8 @@ xiiResult xiiPreprocessor::HandleIfdef(const TokenStream& Tokens, xiiUInt32 uiCu
 
 xiiResult xiiPreprocessor::HandleElse(const TokenStream& Tokens, xiiUInt32 uiCurToken, xiiUInt32 uiDirectiveToken)
 {
+  XII_IGNORE_UNUSED(uiCurToken);
+
   const IfDefActivity bCur = m_IfdefActiveStack.PeekBack().m_ActiveState;
   m_IfdefActiveStack.PopBack();
 
@@ -413,6 +417,8 @@ xiiResult xiiPreprocessor::HandleElse(const TokenStream& Tokens, xiiUInt32 uiCur
 
 xiiResult xiiPreprocessor::HandleIf(const TokenStream& Tokens, xiiUInt32 uiCurToken, xiiUInt32 uiDirectiveToken)
 {
+  XII_IGNORE_UNUSED(uiDirectiveToken);
+
   if (m_IfdefActiveStack.PeekBack().m_ActiveState != IfDefActivity::IsActive)
   {
     m_IfdefActiveStack.PushBack(IfDefActivity::IsInactive);
@@ -488,6 +494,8 @@ xiiResult xiiPreprocessor::HandleEndif(const TokenStream& Tokens, xiiUInt32 uiCu
 
 xiiResult xiiPreprocessor::HandleUndef(const TokenStream& Tokens, xiiUInt32 uiCurToken, xiiUInt32 uiDirectiveToken)
 {
+  XII_IGNORE_UNUSED(uiDirectiveToken);
+
   xiiUInt32 uiIdentifierToken = uiCurToken;
 
   if (Expect(Tokens, uiCurToken, xiiTokenType::Identifier, &uiIdentifierToken).Failed())

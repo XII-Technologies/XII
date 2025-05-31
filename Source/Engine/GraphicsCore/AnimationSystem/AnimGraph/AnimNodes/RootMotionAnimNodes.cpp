@@ -80,4 +80,4 @@ void xiiRootRotationAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGra
   ref_controller.SetRootMotion(vRootMotion, rootRotationX, rootRotationY, rootRotationZ);
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes_ModelPoseOutputAnimNode);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes_RootMotionAnimNodes);

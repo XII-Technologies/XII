@@ -20,10 +20,10 @@ public:
 
   struct xiiBuiltinShader
   {
-    xiiGALShaderHandle            m_hActiveGALShaders[xiiGALShaderType::ENUM_COUNT];
-    xiiGALBlendStateHandle        m_hBlendState;
-    xiiGALDepthStencilStateHandle m_hDepthStencilState;
-    xiiGALRasterizerStateHandle   m_hRasterizerState;
+    xiiSharedPtr<xiiGALShader>            m_pActiveGALShaders[xiiGALShaderType::ENUM_COUNT];
+    xiiSharedPtr<xiiGALBlendState>        m_pBlendState;
+    xiiSharedPtr<xiiGALDepthStencilState> m_pDepthStencilState;
+    xiiSharedPtr<xiiGALRasterizerState>   m_pRasterizerState;
   };
 
   /// \brief Converts a 3-component 32-bit vector into the RGB10 format.

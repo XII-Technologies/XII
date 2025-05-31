@@ -24,6 +24,16 @@ private:
   xiiDeque<xiiComponentHandle> m_ComponentsToUpdate;
 };
 
+/// \brief Instantiates a mesh that can be animated through skeletal animation.
+///
+/// The referenced mesh has to contain skinning information.
+///
+/// This component only creates an animated mesh for rendering. It does not animate the mesh in any way.
+/// The component handles messages of type xiiMsgAnimationPoseUpdated. Using this message other systems can set a new pose
+/// for the animated mesh.
+///
+/// For example the xiiSkeletonPoseComponent, xiiSimpleAnimationComponent and xiiAnimationControllerComponent do this
+/// to change the pose of the animated mesh.
 class XII_GAMEENGINE_DLL xiiAnimatedMeshComponent : public xiiMeshComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiAnimatedMeshComponent, xiiMeshComponentBase, xiiAnimatedMeshComponentManager);

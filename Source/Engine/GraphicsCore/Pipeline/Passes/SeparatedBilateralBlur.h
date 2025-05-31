@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
 /// \brief Depth aware blur on input and writes it to an output buffer of the same format.
@@ -40,6 +39,6 @@ protected:
   xiiUInt32                      m_uiRadius       = 7;
   float                          m_fGaussianSigma = 3.5f;
   float                          m_fSharpness     = 120.0f;
-  xiiConstantBufferStorageHandle m_hBilateralBlurCB;
+  xiiSharedPtr<xiiGALBuffer> m_pBilateralBlurConstantBuffer;
   xiiShaderResourceHandle        m_hShader;
 };

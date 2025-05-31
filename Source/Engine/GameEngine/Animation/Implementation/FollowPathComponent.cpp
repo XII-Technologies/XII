@@ -27,7 +27,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiFollowPathComponent, 1, xiiComponentMode::Dynamic)
     XII_MEMBER_PROPERTY("Speed", m_fSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_MEMBER_PROPERTY("LookAhead", m_fLookAhead)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 10.0f)),
     XII_MEMBER_PROPERTY("Smoothing", m_fSmoothing)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_ENUM_MEMBER_PROPERTY("FollowMode", xiiFollowPathMode, m_FollowMode),  
+    XII_ENUM_MEMBER_PROPERTY("FollowMode", xiiFollowPathMode, m_FollowMode),
     XII_MEMBER_PROPERTY("TiltAmount", m_fTiltAmount)->AddAttributes(new xiiDefaultValueAttribute(5.0f)),
     XII_MEMBER_PROPERTY("MaxTilt", m_MaxTilt)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(90.0f))),
   }
@@ -166,10 +166,9 @@ void xiiFollowPathComponent::Update(bool bForce)
       xiiAngle    tiltAngle     = xiiMath::Min(vLastTarget.GetAngleBetween(vTarget) * xiiMath::Abs(m_fTiltAmount), m_MaxTilt);
       deltaAngle                = xiiMath::Lerp(tiltAngle * fTiltStrength, m_LastTiltAngle, 0.85f); // this smooths out the tilting from being jittery
 
-      xiiQuat rot;
-      rot    = xiiQuat::MakeFromAxisAndAngle(vTarget, deltaAngle);
-      vUp    = rot * vUp;
-      vRight = rot * vRight;
+      xiiQuat rot = xiiQuat::MakeFromAxisAndAngle(vTarget, deltaAngle);
+      vUp         = rot * vUp;
+      vRight      = rot * vRight;
     }
   }
 
@@ -337,3 +336,6 @@ bool xiiFollowPathComponent::IsDirectionForwards() const
 {
   return m_bIsRunningForwards;
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Animation_Implementation_FollowPathComponent);

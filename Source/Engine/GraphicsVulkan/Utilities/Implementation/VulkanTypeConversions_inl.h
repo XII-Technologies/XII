@@ -950,10 +950,10 @@ XII_ALWAYS_INLINE vk::ImageLayout xiiVulkanTypeConversions::GetImageLayout(xiiBi
       return vk::ImageLayout::eShaderReadOnlyOptimal;
     case xiiGALResourceStateFlags::Present:
       return vk::ImageLayout::ePresentSrcKHR;
-    case xiiGALResourceStateFlags::BuildAsRead:
+    case xiiGALResourceStateFlags::BuildASRead:
       XII_ASSERT_DEV(false, "Invalid resource state!");
       return vk::ImageLayout::eUndefined;
-    case xiiGALResourceStateFlags::BuildAsWrite:
+    case xiiGALResourceStateFlags::BuildASWrite:
       XII_ASSERT_DEV(false, "Invalid resource state!");
       return vk::ImageLayout::eUndefined;
     case xiiGALResourceStateFlags::RayTracing:
@@ -1101,9 +1101,9 @@ XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineSt
     pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
   if (e.IsSet(xiiGALResourceStateFlags::Present))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eBottomOfPipe;
-  if (e.IsSet(xiiGALResourceStateFlags::BuildAsRead))
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASRead))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
-  if (e.IsSet(xiiGALResourceStateFlags::BuildAsWrite))
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
   if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eRayTracingShaderKHR;
@@ -1209,9 +1209,9 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
     vkAccessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
   if (e.IsSet(xiiGALResourceStateFlags::Present))
     vkAccessFlags |= static_cast<vk::AccessFlagBits>(0);
-  if (e.IsSet(xiiGALResourceStateFlags::BuildAsRead))
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASRead))
     vkAccessFlags |= vk::AccessFlagBits::eShaderRead;
-  if (e.IsSet(xiiGALResourceStateFlags::BuildAsWrite))                                                                       // for vertex, index, transform, AABB, instance buffers
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))                                                                       // for vertex, index, transform, AABB, instance buffers
     vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR; // for scratch buffer
   if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
     vkAccessFlags |= vk::AccessFlagBits::eShaderRead; // for SBT
@@ -1225,8 +1225,94 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceState(vk::AccessFlags e)
 {
+  XII_IGNORE_UNUSED(e);
   XII_ASSERT_NOT_IMPLEMENTED;
   return xiiBitflags<xiiGALResourceStateFlags>();
+}
+
+XII_ALWAYS_INLINE void xiiVulkanTypeConversions::GetPermittedStagesAndAccessFlags(xiiBitflags<xiiGALBindFlags> e, vk::PipelineStageFlags& vkStageFlags, vk::AccessFlags& vkAccessFlags)
+{
+  vkStageFlags  = vk::PipelineStageFlagBits::eTransfer;
+  vkAccessFlags = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite;
+
+  for (auto v : e)
+  {
+    switch (v)
+    {
+      case xiiGALBindFlags::VertexBuffer:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+        vkAccessFlags |= vk::AccessFlagBits::eVertexAttributeRead;
+      }
+      break;
+      case xiiGALBindFlags::IndexBuffer:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+        vkAccessFlags |= vk::AccessFlagBits::eIndexRead;
+      }
+      break;
+      case xiiGALBindFlags::UniformBuffer:
+      {
+        vkStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+        vkAccessFlags |= vk::AccessFlagBits::eUniformRead;
+      }
+      break;
+      case xiiGALBindFlags::ShaderResource:
+      {
+        vkStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+        vkAccessFlags |= vk::AccessFlagBits::eShaderRead;
+      }
+      break;
+      case xiiGALBindFlags::RenderTarget:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        vkAccessFlags |= vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+      }
+      break;
+      case xiiGALBindFlags::DepthStencil:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+        vkAccessFlags |= vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+      }
+      break;
+      case xiiGALBindFlags::UnorderedAccess:
+      {
+        vkStageFlags |= VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+        vkAccessFlags |= vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
+      }
+      break;
+      case xiiGALBindFlags::IndirectDrawArguments:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eDrawIndirect;
+        vkAccessFlags |= vk::AccessFlagBits::eIndirectCommandRead;
+      }
+      break;
+      case xiiGALBindFlags::InputAttachment:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
+        vkAccessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
+      }
+      break;
+      case xiiGALBindFlags::RayTracing:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+        vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR;
+      }
+      break;
+      case xiiGALBindFlags::ShadingRate:
+      {
+        vkStageFlags |= vk::PipelineStageFlagBits::eFragmentDensityProcessEXT | vk::PipelineStageFlagBits::eFragmentShadingRateAttachmentKHR;
+        vkAccessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT | vk::AccessFlagBits::eFragmentShadingRateAttachmentReadKHR;
+      }
+      break;
+
+      case xiiGALBindFlags::None:
+      case xiiGALBindFlags::StreamOutput:
+      default:
+        XII_REPORT_FAILURE("Unexpected bind flag.");
+        break;
+    }
+  }
 }
 
 XII_ALWAYS_INLINE vk::ComponentSwizzle xiiVulkanTypeConversions::GetComponentSwizzle(xiiGALTextureComponentSwizzle::Enum e)
@@ -1301,10 +1387,10 @@ XII_ALWAYS_INLINE xiiGALDescriporTypeVulkan xiiVulkanTypeConversions::GetDescrip
 {
   XII_ASSERT_DEV(resourceDescription.m_PipelineResourceFlags.IsStrictlyAnySet(xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resourceDescription.m_ResourceType)) || resourceDescription.m_PipelineResourceFlags.IsNoFlagSet(), "Invalid resource flags, implementation error!");
 
-  const bool bWithDynamicOffset = !resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers);
-  const bool bCombinedSampler   = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::CombinedSampler);
-  const bool bUseTexelBuffer    = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::Formattedbuffer);
-  const bool bGeneralInputAtt   = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment);
+  const bool bWithDynamicOffset      = !resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers);
+  const bool bCombinedSampler        = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::CombinedSampler);
+  const bool bUseTexelBuffer         = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::Formattedbuffer);
+  const bool bGeneralInputAttachment = resourceDescription.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment);
 
   switch (resourceDescription.m_ResourceType)
   {
@@ -1321,7 +1407,7 @@ XII_ALWAYS_INLINE xiiGALDescriporTypeVulkan xiiVulkanTypeConversions::GetDescrip
     case xiiGALShaderResourceType::Sampler:
       return xiiGALDescriporTypeVulkan::Sampler;
     case xiiGALShaderResourceType::InputAttachment:
-      return xiiGALDescriporTypeVulkan::InputAttachment;
+      return bGeneralInputAttachment ? xiiGALDescriporTypeVulkan::InputAttachmentGeneral : xiiGALDescriporTypeVulkan::InputAttachment;
     case xiiGALShaderResourceType::AccelerationStructure:
       return xiiGALDescriporTypeVulkan::AccelerationStructure;
     case xiiGALShaderResourceType::TextureAndSampler:

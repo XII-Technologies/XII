@@ -1,24 +1,28 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALShaderVulkan::xiiGALShaderVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALShaderCreationDescription& creationDescription) :
-  xiiGALShader(pDeviceVulkan, creationDescription)
+xiiGALShaderVulkan::xiiGALShaderVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALShaderCreationDescription& creationDescription) :
+  xiiGALShader(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
-xiiGALShaderVulkan::~xiiGALShaderVulkan() = default;
+xiiGALShaderVulkan::~xiiGALShaderVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkShaderModule));
+}
 
 xiiResult xiiGALShaderVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   vk::ShaderModuleCreateInfo vkShaderModuleCreateInfo = {};
   vkShaderModuleCreateInfo.flags                      = {};
@@ -33,19 +37,23 @@ xiiResult xiiGALShaderVulkan::InitPlatform()
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALShaderVulkan::DeInitPlatform()
+xiiInternal::NewInstance<xiiGALInputLayout> xiiGALShaderVulkan::CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan>                  pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiInternal::NewInstance<xiiGALInputLayoutVulkan> pInputLayoutVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALInputLayoutVulkan, pDeviceVulkan, description);
 
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkShaderModule);
+  if (pInputLayoutVulkan->InitPlatform(this).Succeeded())
+    return pInputLayoutVulkan;
 
-  return XII_SUCCESS;
+  XII_DELETE(pDeviceVulkan->GetAllocator(), pInputLayoutVulkan.m_pInstance);
+
+  return pInputLayoutVulkan;
 }
 
-void xiiGALShaderVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALShaderVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiStringBuilder    tmp;
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkShaderModule, sName.GetData(tmp));
 }

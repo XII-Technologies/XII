@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/Resources/RenderPass.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALAttachmentLoadOperation, 1)
   XII_ENUM_CONSTANT(xiiGALAttachmentLoadOperation::Load),
   XII_ENUM_CONSTANT(xiiGALAttachmentLoadOperation::Clear),
@@ -17,11 +16,10 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRenderPass, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
-xiiGALRenderPass::xiiGALRenderPass(xiiGALDevice* pDevice, const xiiGALRenderPassCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+xiiGALRenderPass::xiiGALRenderPass(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRenderPassCreationDescription& creationDescription) :
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

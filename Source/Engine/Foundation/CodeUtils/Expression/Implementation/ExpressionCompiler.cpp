@@ -155,7 +155,7 @@ xiiResult xiiExpressionCompiler::Compile(xiiExpressionAST& ref_ast, xiiExpressio
 
   XII_SUCCEED_OR_RETURN(TransformAndOptimizeAST(ref_ast, sDebugAstOutputPath));
   XII_SUCCEED_OR_RETURN(BuildNodeInstructions(ref_ast));
-  XII_SUCCEED_OR_RETURN(UpdateRegisterLifetime(ref_ast));
+  XII_SUCCEED_OR_RETURN(UpdateRegisterLifetime());
   XII_SUCCEED_OR_RETURN(AssignRegisters());
   XII_SUCCEED_OR_RETURN(GenerateByteCode(ref_ast, out_byteCode));
 
@@ -282,7 +282,7 @@ xiiResult xiiExpressionCompiler::BuildNodeInstructions(const xiiExpressionAST& a
   return XII_SUCCESS;
 }
 
-xiiResult xiiExpressionCompiler::UpdateRegisterLifetime(const xiiExpressionAST& ast)
+xiiResult xiiExpressionCompiler::UpdateRegisterLifetime()
 {
   xiiUInt32 uiNumInstructions = m_NodeInstructions.GetCount();
   for (xiiUInt32 uiInstructionIndex = 0; uiInstructionIndex < uiNumInstructions; ++uiInstructionIndex)

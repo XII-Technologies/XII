@@ -275,7 +275,7 @@ void xiiGameState::ConfigureMainWindowInputDevices(xiiWindow* pWindow) {}
 
 void xiiGameState::ConfigureInputActions() {}
 
-void xiiGameState::SetupMainView(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 viewportSize)
+void xiiGameState::SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 viewportSize)
 {
   xiiView* pView = nullptr;
   if (!xiiRenderWorld::TryGetView(m_hMainView, pView))
@@ -299,7 +299,7 @@ void xiiGameState::SetupMainView(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 vi
       const auto* pConfig        = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
       auto        renderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sMainRenderPipeline);
       pView->SetRenderPipelineResource(renderPipeline);
-      pView->SetSwapChain(hSwapChain);
+      pView->SetSwapChain(pSwapChain);
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)viewportSize.width, (float)viewportSize.height));
       pView->ForceUpdate();
     }
@@ -492,16 +492,14 @@ xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 
   xiiUniquePtr<xiiGameStateWindow> pWindow = XII_DEFAULT_NEW(xiiGameStateWindow, wndDesc, [] {});
   pWindow->ResetOnClickClose([this]() { this->RequestQuit(); });
-  if (pWindow->GetInputDevice())
-    pWindow->GetInputDevice()->SetMouseSpeed(xiiVec2(0.002f));
 
   return pWindow;
 }
 
 xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiWindow* pMainWindow)
 {
-  xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, [this](xiiGALSwapChainHandle hSwapChain, xiiSizeU32 size) {
-    SetupMainView(hSwapChain, size);
+  xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, [this](xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 vSize) -> void {
+    SetupMainView(pSwapChain, vSize);
   });
 
   xiiGALSwapChainCreationDescription desc;

@@ -11,6 +11,7 @@ struct xiiInputLayoutInfo;
 using xiiTexture2DResourceHandle         = xiiTypedResourceHandle<class xiiTexture2DResource>;
 using xiiRenderToTexture2DResourceHandle = xiiTypedResourceHandle<class xiiRenderToTexture2DResource>;
 using xiiTextureCubeResourceHandle       = xiiTypedResourceHandle<class xiiTextureCubeResource>;
+using xiiTexture3DResourceHandle         = xiiTypedResourceHandle<class xiiTexture3DResource>;
 using xiiMeshBufferResourceHandle        = xiiTypedResourceHandle<class xiiMeshBufferResource>;
 using xiiDynamicMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiDynamicMeshBufferResource>;
 using xiiMeshResourceHandle              = xiiTypedResourceHandle<class xiiMeshResource>;

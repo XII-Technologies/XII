@@ -27,6 +27,10 @@ xiiDataDirectory::ArchiveType::~ArchiveType() = default;
 
 xiiDataDirectoryType* xiiDataDirectory::ArchiveType::Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiDataDirUsage usage)
 {
+  XII_IGNORE_UNUSED(sGroup);
+  XII_IGNORE_UNUSED(sRootName);
+  XII_IGNORE_UNUSED(usage);
+
   ArchiveType* pDataDir = XII_DEFAULT_NEW(ArchiveType);
 
   if (pDataDir->InitializeDataDirectory(sDataDirectory) == XII_SUCCESS)
@@ -38,6 +42,8 @@ xiiDataDirectoryType* xiiDataDirectory::ArchiveType::Factory(xiiStringView sData
 
 xiiDataDirectoryReader* xiiDataDirectory::ArchiveType::OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir)
 {
+  XII_IGNORE_UNUSED(bSpecificallyThisDataDir);
+
   const xiiArchiveTOC& toc          = m_ArchiveReader.GetArchiveTOC();
   xiiStringBuilder     sArchivePath = m_sArchiveSubFolder;
   sArchivePath.AppendPath(sFile);
@@ -133,6 +139,8 @@ void xiiDataDirectory::ArchiveType::RemoveDataDirectory()
 
 bool xiiDataDirectory::ArchiveType::ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir)
 {
+  XII_IGNORE_UNUSED(bOneSpecificDataDir);
+
   xiiStringBuilder sArchivePath = m_sArchiveSubFolder;
   sArchivePath.AppendPath(sFile);
   sArchivePath.MakeCleanPath();
@@ -141,6 +149,8 @@ bool xiiDataDirectory::ArchiveType::ExistsFile(xiiStringView sFile, bool bOneSpe
 
 xiiResult xiiDataDirectory::ArchiveType::GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats)
 {
+  XII_IGNORE_UNUSED(bOneSpecificDataDir);
+
   const xiiArchiveTOC& toc          = m_ArchiveReader.GetArchiveTOC();
   xiiStringBuilder     sArchivePath = m_sArchiveSubFolder;
   sArchivePath.AppendPath(sFileOrFolder);
@@ -288,9 +298,11 @@ xiiUInt64 xiiDataDirectory::ArchiveReaderUncompressed::Read(void* pBuffer, xiiUI
   return m_MemStreamReader.ReadBytes(pBuffer, uiBytes);
 }
 
-xiiResult xiiDataDirectory::ArchiveReaderUncompressed::InternalOpen(xiiFileShareMode::Enum FileShareMode)
+xiiResult xiiDataDirectory::ArchiveReaderUncompressed::InternalOpen(xiiFileShareMode::Enum fileShareMode)
 {
-  XII_ASSERT_DEBUG(FileShareMode != xiiFileShareMode::Exclusive, "Archives only support shared reading of files. Exclusive access cannot be guaranteed.");
+  XII_IGNORE_UNUSED(fileShareMode);
+
+  XII_ASSERT_DEBUG(fileShareMode != xiiFileShareMode::Exclusive, "Archives only support shared reading of files. Exclusive access cannot be guaranteed.");
 
   // nothing to do
   return XII_SUCCESS;
@@ -315,9 +327,11 @@ xiiUInt64 xiiDataDirectory::ArchiveReaderZstd::Read(void* pBuffer, xiiUInt64 uiB
   return m_CompressedStreamReader.ReadBytes(pBuffer, uiBytes);
 }
 
-xiiResult xiiDataDirectory::ArchiveReaderZstd::InternalOpen(xiiFileShareMode::Enum FileShareMode)
+xiiResult xiiDataDirectory::ArchiveReaderZstd::InternalOpen(xiiFileShareMode::Enum fileShareMode)
 {
-  XII_ASSERT_DEBUG(FileShareMode != xiiFileShareMode::Exclusive, "Archives only support shared reading of files. Exclusive access cannot be guaranteed.");
+  XII_IGNORE_UNUSED(fileShareMode);
+
+  XII_ASSERT_DEBUG(fileShareMode != xiiFileShareMode::Exclusive, "Archives only support shared reading of files. Exclusive access cannot be guaranteed.");
 
   m_CompressedStreamReader.SetInputStream(&m_MemStreamReader);
   return XII_SUCCESS;
@@ -345,9 +359,11 @@ xiiUInt64 xiiDataDirectory::ArchiveReaderZip::Read(void* pBuffer, xiiUInt64 uiBy
   return m_CompressedStreamReader.ReadBytes(pBuffer, uiBytes);
 }
 
-xiiResult xiiDataDirectory::ArchiveReaderZip::InternalOpen(xiiFileShareMode::Enum FileShareMode)
+xiiResult xiiDataDirectory::ArchiveReaderZip::InternalOpen(xiiFileShareMode::Enum fileShareMode)
 {
-  XII_ASSERT_DEBUG(FileShareMode != xiiFileShareMode::Exclusive, "Archives only support shared reading of files. Exclusive access cannot be guaranteed.");
+  XII_IGNORE_UNUSED(fileShareMode);
+
+  XII_ASSERT_DEBUG(fileShareMode != xiiFileShareMode::Exclusive, "Archives only support shared reading of files. Exclusive access cannot be guaranteed.");
 
   m_CompressedStreamReader.SetInputStream(&m_MemStreamReader, m_uiCompressedSize);
   return XII_SUCCESS;

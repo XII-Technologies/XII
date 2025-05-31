@@ -47,7 +47,7 @@ public:
   {
   }
 
-  virtual void Execute(const xiiVariant& value) override{};
+  virtual void Execute(const xiiVariant& value) override {};
 };
 
 /// \brief An action that represents a sub-menu. Can be within a menu bar, or the menu of a tool button).
@@ -64,7 +64,7 @@ public:
   {
   }
 
-  virtual void Execute(const xiiVariant& value) override{};
+  virtual void Execute(const xiiVariant& value) override {};
 };
 
 /// \brief A menu action whose content is determined when opening the menu.

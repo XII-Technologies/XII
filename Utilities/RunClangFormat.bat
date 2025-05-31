@@ -1,5 +1,5 @@
 @powershell -NoProfile -ExecutionPolicy ByPass python %~dp0\ClangFormat\RunClangFormat.py ^
---clang-format-binary="%~dp0..\Source\BuildTools\FormatValidation\clang-format_10.0.0.exe" ^
+--clang-format-binary="%~dp0..\Data\Tools\Precompiled\clang-format\clang-format.exe" ^
 %~dp0..\Source\BuildSystem ^
 %~dp0..\Source\BuildTools ^
 %~dp0..\Source\Editor ^

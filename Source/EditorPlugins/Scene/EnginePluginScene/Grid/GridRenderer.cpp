@@ -62,7 +62,7 @@ void xiiGridRenderer::CreateVertexBuffer()
     desc.m_uiElementByteStride = sizeof(GridVertex);
     desc.m_uiSize              = s_uiBufferSize;
     desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_Usage               = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
@@ -183,7 +183,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
     xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
 
-    pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
     pRenderContext->BindShader(m_hShader);
 
     xiiUInt32         uiNumLineVertices = m_Vertices.GetCount();

@@ -1770,11 +1770,11 @@ static void generate_instances_for_node(
   {
     case k_nodetype_transform:
     {
-      ogt_vox_transform new_transform = (bGenerate_groups) ? node->u.transform.transform // don't multiply by the parent transform. caller wants the group-relative transform
-                                                             :
-                                                             _vox_transform_multiply(node->u.transform.transform, transform); // flatten the transform if we're not generating groups: child transform * parent transform
-      const char* new_transform_name = node->u.transform.name[0] ? node->u.transform.name : NULL;
-      szTransform_last_name          = new_transform_name ? new_transform_name : szTransform_last_name; // if this node has a name, use it instead of our parent name
+      ogt_vox_transform new_transform      = (bGenerate_groups) ? node->u.transform.transform // don't multiply by the parent transform. caller wants the group-relative transform
+                                                                  :
+                                                                  _vox_transform_multiply(node->u.transform.transform, transform); // flatten the transform if we're not generating groups: child transform * parent transform
+      const char*       new_transform_name = node->u.transform.name[0] ? node->u.transform.name : NULL;
+      szTransform_last_name                = new_transform_name ? new_transform_name : szTransform_last_name; // if this node has a name, use it instead of our parent name
       generate_instances_for_node(nodes, node->u.transform.child_node_id, child_id_array, node->u.transform.layer_id, new_transform, model_ptrs, szTransform_last_name, node->u.transform.hidden, ref_instances, ref_string_data, ref_groups, group_index, bGenerate_groups);
       break;
     }
@@ -1841,7 +1841,8 @@ static int _vox_ordered_compare_instance(const void* p_lhs, const void* p_rhs)
 {
   const ogt_vox_instance* lhs = (const ogt_vox_instance*)p_lhs;
   const ogt_vox_instance* rhs = (const ogt_vox_instance*)p_rhs;
-  return lhs->model_index < rhs->model_index ? -1 : lhs->model_index > rhs->model_index ? 1 : 0;
+  return lhs->model_index < rhs->model_index ? -1 : lhs->model_index > rhs->model_index ? 1 :
+                                                                                          0;
 }
 
 // returns true if the 2 models are content-wise identical.
@@ -2806,7 +2807,9 @@ static void compute_scene_bounding_box_x(const ogt_vox_scene* pScene, int32_t& o
       // model's local x, y or z size is aligned along the world x axis.
       // One of the column vectors of the transform must have a non-zero in its
       // x field and the dimension associated with that column is the correct choice of rus.
-      int32_t max_dim  = instance_transform.m00 != 0.0f ? model->size_x : instance_transform.m10 != 0.0f ? model->size_y : instance_transform.m20 != 0.0f ? model->size_z : model->size_x;
+      int32_t max_dim  = instance_transform.m00 != 0.0f ? model->size_x : instance_transform.m10 != 0.0f ? model->size_y :
+         instance_transform.m20 != 0.0f                                                                  ? model->size_z :
+                                                                                                           model->size_x;
       int32_t half_dim = max_dim / 2;
       int32_t min_x    = (int32_t)instance_transform.m30 - half_dim;
       int32_t max_x    = (int32_t)instance_transform.m30 + half_dim;

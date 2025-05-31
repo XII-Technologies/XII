@@ -74,14 +74,13 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALSampler(xiiGALDevice* pDevice, const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSampler(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSampler();
 
   virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALSamplerCreationDescription m_Description;

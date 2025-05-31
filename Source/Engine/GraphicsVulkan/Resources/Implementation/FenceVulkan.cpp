@@ -3,47 +3,23 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALFenceVulkan::xiiGALFenceVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription) :
-  xiiGALFence(pDeviceVulkan, creationDescription)
+xiiGALFenceVulkan::xiiGALFenceVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription) :
+  xiiGALFence(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
-xiiGALFenceVulkan::~xiiGALFenceVulkan() = default;
-
-xiiResult xiiGALFenceVulkan::InitPlatform()
+xiiGALFenceVulkan::~xiiGALFenceVulkan()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
-  if (m_Description.m_Type == xiiGALFenceType::General && pDeviceVulkan->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled)
-  {
-    vk::SemaphoreTypeCreateInfo vkTimelineCreateInfo = {};
-    vkTimelineCreateInfo.semaphoreType               = vk::SemaphoreType::eTimeline;
-    vkTimelineCreateInfo.initialValue                = 0U;
-
-    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
-    vkSemaphoreCreateInfo.pNext                   = &vkTimelineCreateInfo;
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkTimelineSemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-  }
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALFenceVulkan::DeInitPlatform()
-{
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   if (IsTimelineSemaphore())
   {
     XII_ASSERT_DEV(m_SyncPoints.IsEmpty(), "Sync points are not permitted with timeline semaphores.");
 
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkTimelineSemaphore);
+    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkTimelineSemaphore));
   }
   else if (!m_SyncPoints.IsEmpty())
   {
@@ -60,33 +36,49 @@ xiiResult xiiGALFenceVulkan::DeInitPlatform()
     xiiLog::Warning("Max queue size of pending fences is too large. This may indicate that none of the GetCompletedValue(), Wait(), or ExtractSignalSemaphore() methods have been used.");
   }
 #endif
+}
+
+xiiResult xiiGALFenceVulkan::InitPlatform()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  if (m_Description.m_Type == xiiGALFenceType::General && pDeviceVulkan->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled)
+  {
+    vk::SemaphoreTypeCreateInfo vkTimelineCreateInfo = {};
+    vkTimelineCreateInfo.semaphoreType               = vk::SemaphoreType::eTimeline;
+    vkTimelineCreateInfo.initialValue                = 0U;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkTimelineCreateInfo;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkTimelineSemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  }
 
   return XII_SUCCESS;
 }
 
-void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALFenceVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiStringBuilder    tmp;
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkTimelineSemaphore, sName.GetData(tmp));
 }
 
 void xiiGALFenceVulkan::ReleaseResourcesImmediately()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  pDeviceVulkan->SafeReleaseDeviceObject(m_vkTimelineSemaphore);
-
-  m_vkTimelineSemaphore = VK_NULL_HANDLE;
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkTimelineSemaphore));
 }
 
 xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 {
   if (IsTimelineSemaphore())
   {
-    xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-    vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+    vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
     // GetSemaphoreCounter() is thread safe.
 
@@ -107,8 +99,8 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 {
   XII_ASSERT_DEV(!IsTimelineSemaphore(), "The fence must have no timeline semaphore.");
 
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   while (!m_SyncPoints.IsEmpty())
   {
@@ -119,7 +111,7 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
     {
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
 
-      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(syncData.m_vkFence);
+      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(std::move(syncData.m_vkFence));
 
       m_SyncPoints.PopFront();
     }
@@ -129,7 +121,7 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
     }
   }
 
-  return m_LastCompletedFenceValue.load();
+  return m_LastCompletedFenceValue;
 }
 
 void xiiGALFenceVulkan::Signal(xiiUInt64 uiValue)
@@ -147,8 +139,8 @@ void xiiGALFenceVulkan::Signal(xiiUInt64 uiValue)
     vkSignalInformation.semaphore               = m_vkTimelineSemaphore;
     vkSignalInformation.value                   = uiValue;
 
-    xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-    vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+    vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
     VK_ASSERT_DEV(vkLogicalDevice.signalSemaphoreKHR(&vkSignalInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
@@ -168,8 +160,7 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
   {
     XII_LOCK(m_SyncPointGuard);
 
-    xiiUInt64 uiLastCompletedValue = m_LastCompletedFenceValue.load();
-    XII_ASSERT_DEV(uiValue >= uiLastCompletedValue, "Resetting fence '{}' to the value ({}) that is smaller than the last completed value ({}).", GetDebugName(), uiValue, uiLastCompletedValue);
+    XII_ASSERT_DEV(uiValue >= m_LastCompletedFenceValue, "Resetting fence '{}' to the value ({}) that is smaller than the last completed value ({}).", GetDebugName(), uiValue, m_LastCompletedFenceValue);
 
     UpdateLastCompletedFenceValue(uiValue);
   }
@@ -177,7 +168,24 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
 
 const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const xiiUInt64 uiFenceValue)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  if (IsTimelineSemaphore())
+  {
+    XII_REPORT_FAILURE("CreateSyncPoint() is not supported for timeline semaphore.");
+  }
+
+  ValidateFenceSignal(uiFenceValue);
+
+  XII_LOCK(m_SyncPointGuard);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  {
+    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? (const xiiUInt64)m_LastCompletedFenceValue : m_SyncPoints.PeekBack().m_uiValue;
+
+    XII_ASSERT_DEV(uiFenceValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that is smaller than the last completed value ({}).", uiFenceValue, uiLastCompletedValue);
+  }
+#endif
 
   // If fence is used only for synchronization between queues it will accumulate many more sync points.
   // We need to check VkFence and remove already reached sync points.
@@ -195,8 +203,8 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
 
 void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan   = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  vk::Device          vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   if (IsTimelineSemaphore())
   {
@@ -220,17 +228,17 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
       if (syncData.m_uiValue > uiValue)
         break;
 
-      vk::Result status = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      if (status == vk::Result::eNotReady)
+      vk::Result vkFenceStatus = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      if (vkFenceStatus == vk::Result::eNotReady)
       {
-        status = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        vkFenceStatus = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
       }
 
-      XII_ASSERT_DEV(status == vk::Result::eSuccess, "All pending fences must now be complete!");
+      XII_ASSERT_DEV(vkFenceStatus == vk::Result::eSuccess, "All pending fences must now be complete!");
 
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
 
-      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(syncData.m_vkFence);
+      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(std::move(syncData.m_vkFence));
 
       m_SyncPoints.PopFront();
     }

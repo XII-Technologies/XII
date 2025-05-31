@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 
@@ -42,6 +41,6 @@ protected:
   float    m_fLut1Strength;
   float    m_fLut2Strength;
 
-  xiiConstantBufferStorageHandle m_hConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer>     m_pTonemapConstantsBuffer;
   xiiShaderResourceHandle        m_hShader;
 };

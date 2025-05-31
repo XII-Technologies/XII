@@ -28,7 +28,7 @@ xiiRotorComponent::~xiiRotorComponent() = default;
 
 void xiiRotorComponent::Update()
 {
-  if (m_Flags.IsAnySet(xiiTransformComponentFlags::Running) && m_fAnimationSpeed > 0.0f)
+  if (m_Flags.IsAnySet(xiiTransformComponentFlags::CurrentlyRunning) && m_fAnimationSpeed > 0.0f)
   {
     if (m_Flags.IsAnySet(xiiTransformComponentFlags::AnimationReversed))
       m_AnimationTime -= GetWorld()->GetClock().GetTimeDiff();
@@ -40,8 +40,7 @@ void xiiRotorComponent::Update()
       const float fNewDistance =
         CalculateAcceleratedMovement((float)m_iDegreeToRotate, m_fAcceleration, m_fAnimationSpeed, m_fDeceleration, m_AnimationTime);
 
-      xiiQuat qRotation;
-      qRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(fNewDistance));
+      xiiQuat qRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(fNewDistance));
 
       GetOwner()->SetLocalRotation(GetOwner()->GetLocalRotation() * m_qLastRotation.GetInverse() * qRotation);
 
@@ -53,7 +52,7 @@ void xiiRotorComponent::Update()
         {
           if (!m_Flags.IsSet(xiiTransformComponentFlags::AutoReturnEnd))
           {
-            m_Flags.Remove(xiiTransformComponentFlags::Running);
+            m_Flags.Remove(xiiTransformComponentFlags::CurrentlyRunning);
           }
 
           m_Flags.Add(xiiTransformComponentFlags::AnimationReversed);
@@ -69,7 +68,7 @@ void xiiRotorComponent::Update()
         {
           if (!m_Flags.IsSet(xiiTransformComponentFlags::AutoReturnStart))
           {
-            m_Flags.Remove(xiiTransformComponentFlags::Running);
+            m_Flags.Remove(xiiTransformComponentFlags::CurrentlyRunning);
           }
 
           m_Flags.Remove(xiiTransformComponentFlags::AnimationReversed);
@@ -84,8 +83,7 @@ void xiiRotorComponent::Update()
     {
       /// \todo This will probably give precision issues pretty quickly
 
-      xiiQuat qRotation;
-      qRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(m_fAnimationSpeed * GetWorld()->GetClock().GetTimeDiff().AsFloatInSeconds()));
+      xiiQuat qRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(m_fAnimationSpeed * GetWorld()->GetClock().GetTimeDiff().AsFloatInSeconds()));
 
       GetOwner()->SetLocalRotation(GetOwner()->GetLocalRotation() * qRotation);
     }

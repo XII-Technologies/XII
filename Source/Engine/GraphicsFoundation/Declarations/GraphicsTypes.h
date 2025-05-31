@@ -102,7 +102,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEventType
   {
     Unknown = -1,        ///< Unknown device event.
     AfterInitialization, ///< After initialization.
-    BeforeShutdown,      ///< Before shutdown.
     BeforeBeginFrame,    ///< Before begin frame.
     AfterBeginFrame,     ///< After begin frame.
     BeforeEndFrame,      ///< Before end frame.
@@ -271,6 +270,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindFlags
     InputAttachment       = XII_BIT(9),  ///< A texture may be bound as a render pass input argument.
     RayTracing            = XII_BIT(10), ///< A buffer may be used as a scratch buffer or as the source of primitive data for acceleration structure building.
     ShadingRate           = XII_BIT(11), ///< A texture may be used as shading rate texture.
+
+    BindAll = VertexBuffer | IndexBuffer | UniformBuffer | ShaderResource | StreamOutput | RenderTarget | DepthStencil | UnorderedAccess | IndirectDrawArguments | InputAttachment | RayTracing | ShadingRate, ///< All bind flags.
 
     Default = None
   };
@@ -840,6 +841,47 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
     return 0;
+  }
+
+  XII_ALWAYS_INLINE static xiiUInt32 GetIndexCount(xiiGALPrimitiveTopology::Enum e, xiiUInt32 uiPrimitiveCount)
+  {
+    if (uiPrimitiveCount == 0)
+      return 0;
+
+    if (e >= xiiGALPrimitiveTopology::ControlPointPatchList1 && e <= xiiGALPrimitiveTopology::ControlPointPatchList32)
+    {
+      xiiUInt32 uiVerticesPerPrimitive = VerticesPerPrimitive(e);
+      return uiPrimitiveCount * uiVerticesPerPrimitive; // Each primitive requires 'uiVerticesPerPrimitive' indices.
+    }
+
+    switch (e)
+    {
+      case xiiGALPrimitiveTopology::PointList:
+        return uiPrimitiveCount; // 1 index per primitive.
+
+      case xiiGALPrimitiveTopology::LineList:
+      case xiiGALPrimitiveTopology::LineStrip:
+        return uiPrimitiveCount * 2; // 2 indices per primitive.
+
+      case xiiGALPrimitiveTopology::TriangleList:
+        return uiPrimitiveCount * 3; // 3 indices per primitive.
+
+      case xiiGALPrimitiveTopology::TriangleStrip:
+        return uiPrimitiveCount + 2; // First two indices are shared.
+
+      case xiiGALPrimitiveTopology::TriangleListAdjacent:
+        return uiPrimitiveCount * 6; // 6 indices per primitive.
+
+      case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+        return uiPrimitiveCount + 4; // Adjusted for adjacency.
+
+      case xiiGALPrimitiveTopology::LineListAdjacent:
+      case xiiGALPrimitiveTopology::LineStripAdjacent:
+        return uiPrimitiveCount * 4; // 4 indices per primitive.
+
+      default:
+        return 0;
+    }
   }
 
   static const char* Names[ENUM_COUNT];
@@ -1734,8 +1776,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
     ResolveSource      = XII_BIT(14), ///< The resource is used as the source in a resolve operation.
     InputAttachment    = XII_BIT(15), ///< The resource is used as an input attachment in a render pass sub pass.
     Present            = XII_BIT(16), ///< The resource is used for present.
-    BuildAsRead        = XII_BIT(17), ///< The resource is used as vertex/index/instance buffer in an amplification shader building operation or as an acceleration structure source in an amplification shader copy operation.
-    BuildAsWrite       = XII_BIT(18), ///< The resource is used as the target for AS building or AS copy operations.
+    BuildASRead        = XII_BIT(17), ///< The resource is used as vertex/index/instance buffer in an amplification shader building operation or as an acceleration structure source in an amplification shader copy operation.
+    BuildASWrite       = XII_BIT(18), ///< The resource is used as the target for AS building or AS copy operations.
     RayTracing         = XII_BIT(19), ///< The resource is used as a top-level AS shader resource in a trace rays operation.
     Common             = XII_BIT(20), ///< The resource state is used for read operations, but access to the resource may be slower compared to the specialized state. A transition to the common state is always a pipeline stall and can often induce a cache flush and render target decompress operation.
     ShadingRate        = XII_BIT(21), ///< The resource is used as the source when variable shading rate rendering.
@@ -1764,8 +1806,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
     StorageType ResolveSource : 1;
     StorageType InputAttachment : 1;
     StorageType Present : 1;
-    StorageType BuildAsRead : 1;
-    StorageType BuildAsWrite : 1;
+    StorageType BuildASRead : 1;
+    StorageType BuildASWrite : 1;
     StorageType RayTracing : 1;
     StorageType Common : 1;
     StorageType ShadingRate : 1;
@@ -1795,176 +1837,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPresentMode);
-
-namespace xiiGAL
-{
-  using xii16_16Id = xiiGenericId<16, 16>;
-  using xii18_14Id = xiiGenericId<18, 14>;
-  using xii20_12Id = xiiGenericId<20, 12>;
-  using xii24_8Id  = xiiGenericId<24, 8>;
-} // namespace xiiGAL
-
-// Swap Chain
-
-class xiiGALSwapChainHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALSwapChainHandle, xiiGAL::xii16_16Id);
-
-  friend class xiiGALDevice;
-};
-
-// Resources
-
-class xiiGALBottomLevelASHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALBottomLevelASHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALBufferHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALBufferHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALBufferViewHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALBufferViewHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALFenceHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALFenceHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALFramebufferHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALFramebufferHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALQueryHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALQueryHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALRenderPassHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALRenderPassHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALSamplerHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALSamplerHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALTextureHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALTextureHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALTextureViewHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALTextureViewHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALTopLevelASHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALTopLevelASHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-// Shader
-
-class xiiGALInputLayoutHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALInputLayoutHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALShaderHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALShaderHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALShaderBindingTableHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALShaderBindingTableHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALShaderByteCodeHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALShaderByteCodeHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALShaderResourceBindingHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALShaderResourceBindingHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-// States
-
-class xiiGALBlendStateHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALBlendStateHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALDepthStencilStateHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALDepthStencilStateHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALPipelineResourceSignatureHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALPipelineResourceSignatureHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALPipelineStateHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALPipelineStateHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALRasterizerStateHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALRasterizerStateHandle, xiiGAL::xii24_8Id);
-
-  friend class xiiGALDevice;
-};
 
 namespace xiiGAL
 {

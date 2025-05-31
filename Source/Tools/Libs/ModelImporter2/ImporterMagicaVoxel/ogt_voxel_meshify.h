@@ -832,8 +832,8 @@ void _greedy_meshify_voxels_in_face_direction(
 
   ogt_mesh_vec3 normal = _transform_vector(transform, _make_vec3(0.0f, 0.0f, 1.0f));
 
-#  define VOXELDATA_INDEX(_x, _y, _z) ((_x)*k_stride_x) + ((_y)*k_stride_y) + ((_z)*k_stride_z)
-#  define LOCALDATA_INDEX(_x, _y)     ((_x) + ((_y)*size_x))
+#  define VOXELDATA_INDEX(_x, _y, _z) ((_x) * k_stride_x) + ((_y) * k_stride_y) + ((_z) * k_stride_z)
+#  define LOCALDATA_INDEX(_x, _y)     ((_x) + ((_y) * size_x))
 
   // use this to remap parity where necessary.
   uint32_t base_index_start = out_pMesh->index_count;
@@ -1145,7 +1145,8 @@ ogt_mesh_vec2i get_cardinal_unit_vector(const ogt_mesh_vec2i& vec)
 int32_t get_cardinal_vector_length(const ogt_mesh_vec2i& vec)
 {
   assert((vec.x == 0 && vec.y != 0) || (vec.y == 0 && vec.x != 0));
-  return vec.x == 0 ? abs(vec.y) : vec.y == 0 ? abs(vec.x) : 0;
+  return vec.x == 0 ? abs(vec.y) : vec.y == 0 ? abs(vec.x) :
+                                                0;
 }
 
 // gets the signed area of the triangle

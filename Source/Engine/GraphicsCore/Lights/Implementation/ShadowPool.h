@@ -5,8 +5,6 @@
 class xiiDirectionalLightComponent;
 class xiiPointLightComponent;
 class xiiSpotLightComponent;
-class xiiGALTextureHandle;
-class xiiGALBufferHandle;
 class xiiView;
 struct xiiRenderWorldExtractionEvent;
 struct xiiRenderWorldRenderEvent;
@@ -18,8 +16,8 @@ public:
   static xiiUInt32 AddPointLight(const xiiPointLightComponent* pPointLight, float fScreenSpaceSize, const xiiView* pReferenceView);
   static xiiUInt32 AddSpotLight(const xiiSpotLightComponent* pSpotLight, float fScreenSpaceSize, const xiiView* pReferenceView);
 
-  static xiiGALTextureHandle GetShadowAtlasTexture();
-  static xiiGALBufferHandle  GetShadowDataBuffer();
+  static xiiSharedPtr<xiiGALTexture> GetShadowAtlasTexture();
+  static xiiSharedPtr<xiiGALBuffer>  GetShadowDataBuffer();
 
   /// \brief All exclude tags on this white list are copied from the reference views to the shadow views.
   static void AddExcludeTagToWhiteList(const xiiTag& tag);

@@ -8,13 +8,11 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
 
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewLightButtonAction, 1, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewLightButtonAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewLightSliderAction, 1, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewLightSliderAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiActionDescriptorHandle xiiViewLightActions::s_hLightMenu;
 xiiActionDescriptorHandle xiiViewLightActions::s_hSkyBox;

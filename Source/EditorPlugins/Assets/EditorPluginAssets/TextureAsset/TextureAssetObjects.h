@@ -1,7 +1,6 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
 #include <Texture/TexConv/TexConvEnums.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 

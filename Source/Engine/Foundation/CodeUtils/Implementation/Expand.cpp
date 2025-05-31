@@ -236,7 +236,7 @@ xiiToken* xiiPreprocessor::CreateStringifiedParameter(xiiUInt32 uiParam, const x
   else
   {
     // if we want to stringify the var-args parameters
-    if (Macro.m_bHasVarArgs && uiParam + 1 == Macro.m_iNumParameters)
+    if (Macro.m_bHasVarArgs && uiParam + 1 == Macro.m_uiNumParameters)
     {
       xiiStringBuilder sOneParam;
 
@@ -348,7 +348,7 @@ void xiiPreprocessor::MergeTokens(const xiiToken* pFirst, const xiiToken* pSecon
     if (uiParam < m_MacroParamStack.PeekBack()->GetCount())
     {
       // lovely var-args
-      if (Macro.m_bHasVarArgs && uiParam + 1 == Macro.m_iNumParameters)
+      if (Macro.m_bHasVarArgs && uiParam + 1 == Macro.m_uiNumParameters)
       {
         for (xiiUInt32 i = uiParam; i < m_MacroParamStack.PeekBack()->GetCount() - 1; ++i)
         {
@@ -383,7 +383,7 @@ void xiiPreprocessor::MergeTokens(const xiiToken* pFirst, const xiiToken* pSecon
         Output.PushBack((*m_MacroParamStack.PeekBack())[uiParam][i]);
 
       // lovely var-args
-      if (Macro.m_bHasVarArgs && uiParam + 1 == Macro.m_iNumParameters)
+      if (Macro.m_bHasVarArgs && uiParam + 1 == Macro.m_uiNumParameters)
       {
         for (xiiUInt32 i = uiParam + 1; i < m_MacroParamStack.PeekBack()->GetCount(); ++i)
         {
@@ -567,7 +567,7 @@ xiiResult xiiPreprocessor::ExpandMacroParam(const xiiToken& MacroToken, xiiUInt3
     PP_LOG(Warning, "Trying to access parameter {0}, but only {1} parameters were passed along", (&MacroToken), uiParam, ParamsExpanded.GetCount());
     return XII_SUCCESS;
   }
-  else if (uiParam + 1 == Macro.m_iNumParameters && Macro.m_bHasVarArgs)
+  else if (uiParam + 1 == Macro.m_uiNumParameters && Macro.m_bHasVarArgs)
   {
     // insert all vararg parameters here
 

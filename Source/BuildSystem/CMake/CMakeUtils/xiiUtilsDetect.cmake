@@ -32,7 +32,6 @@ macro(xii_pull_platform_vars)
   get_property(XII_CMAKE_PLATFORM_PREFIX GLOBAL PROPERTY XII_CMAKE_PLATFORM_PREFIX)
   get_property(XII_CMAKE_PLATFORM_POSTFIX GLOBAL PROPERTY XII_CMAKE_PLATFORM_POSTFIX)
   get_property(XII_CMAKE_PLATFORM_POSIX GLOBAL PROPERTY XII_CMAKE_PLATFORM_POSIX)
-  get_property(XII_CMAKE_PLATFORM_SUPPORTS_D3D11 GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_D3D11)
   get_property(XII_CMAKE_PLATFORM_SUPPORTS_VULKAN GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_VULKAN)
   get_property(XII_CMAKE_PLATFORM_SUPPORTS_EDITOR GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_EDITOR)
 
@@ -91,7 +90,7 @@ function(xii_detect_compiler_and_architecture)
 
   if(PREFIX)
     # has already run before and XII_CMAKE_COMPILER_POSTFIX is already set
-    # message (STATUS "Redundant call to xii_detect_compiler()")
+    # message(SEND_ERROR "Redundant call to xii_detect_compiler()")
     return()
   endif()
 
@@ -264,10 +263,72 @@ function(xii_detect_compiler_and_architecture)
 endfunction()
 
 # #####################################
+# ## xii_detect_cpuid_flags()
+# #####################################
+function(xii_detect_cpuid_flags)
+  # Early return if flags are already detected.
+  get_property(PREFIX GLOBAL PROPERTY XII_CMAKE_CPU_ID_FLAGS)
+
+  if(PREFIX)
+    # Has already run before and XII_CMAKE_CPU_ID_FLAGS is already set.
+    # message(SEND_ERROR "Redundant call to xii_detect_cpuid_flags()")
+    return()
+  endif()
+
+  set_property(GLOBAL PROPERTY XII_CMAKE_CPU_ID_FLAGS "")
+
+  set(FILE_TO_COMPILE "${XII_ROOT}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdFlagsDetect.c")
+
+  if (XII_SDK_DIR)
+    set(FILE_TO_COMPILE "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}/ProbingSrc/CpuIdFlagsDetect.c")
+  endif()
+
+  # Check if we need to run detection.
+  if(NOT XII_DETECTED_CPU_ID_FLAGS)
+    # Configure try_compile.
+    set(CMAKE_TRY_COMPILE_TARGET_TYPE "EXECUTABLE")
+
+    try_compile(
+      COMPILE_RESULT
+      ${CMAKE_CURRENT_BINARY_DIR}
+      ${FILE_TO_COMPILE}
+      CMAKE_FLAGS -DCMAKE_C_FLAGS="/EHsc /W4"
+      OUTPUT_VARIABLE COMPILE_OUTPUT
+      COPY_FILE ${CMAKE_BINARY_DIR}/xiiCPUIdFlagsDetect
+    )
+
+    if(NOT COMPILE_RESULT)
+      message(FATAL_ERROR "Failed to detect CPU ID flags. Compiler output: ${COMPILE_OUTPUT}")
+      return()
+    endif()
+
+    execute_process(
+      COMMAND ${CMAKE_BINARY_DIR}/xiiCPUIdFlagsDetect
+      OUTPUT_VARIABLE XII_CPU_ID_FLAGS_DETECT
+      ERROR_VARIABLE XII_CPU_ID_FLAGS_DETECT_ERRORS
+      RESULT_VARIABLE XII_CPU_ID_FLAGS_DETECT_RESULT
+      COMMAND_ERROR_IS_FATAL ANY
+    )
+
+    if(NOT XII_CPU_ID_FLAGS_DETECT_RESULT EQUAL 0)
+      message(SEND_ERROR "CPU ID flags test failed. Output: ${XII_CPU_ID_FLAGS_DETECT}")
+      return()
+    endif()
+
+    string(REGEX REPLACE "\n" ";" XII_CPU_ID_FLAGS_DETECT_LIST "${XII_CPU_ID_FLAGS_DETECT}")
+    set(XII_DETECTED_CPU_ID_FLAGS ${XII_CPU_ID_FLAGS_DETECT_LIST} CACHE INTERNAL "")
+  endif()
+
+  set_property(GLOBAL PROPERTY XII_CMAKE_CPU_ID_FLAGS "${XII_DETECTED_CPU_ID_FLAGS}")
+  message(STATUS "CPU ID Flags (XII_CMAKE_CPU_ID_FLAGS) are ${XII_DETECTED_CPU_ID_FLAGS}")
+endfunction()
+
+# #####################################
 # ## xii_pull_compiler_vars()
 # #####################################
 macro(xii_pull_compiler_and_architecture_vars)
   xii_detect_compiler_and_architecture()
+  xii_detect_cpuid_flags()
 
   get_property(XII_CMAKE_COMPILER_POSTFIX GLOBAL PROPERTY XII_CMAKE_COMPILER_POSTFIX)
   get_property(XII_CMAKE_COMPILER_MSVC GLOBAL PROPERTY XII_CMAKE_COMPILER_MSVC)

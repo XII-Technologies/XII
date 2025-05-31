@@ -61,7 +61,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiGALOptimizedClearValue           m_ClearValue;                                              ///< Optimized clear value.
   xiiUInt64                           m_uiCommandQueueMask = XII_BIT(0);                         ///< Defines which command queues are allowed to execute commands that use this texture. The default is the main command queue.
                                                                                                  ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
-  void* m_pExisitingNativeObject = nullptr;                                                      ///< Can be used to encapsulate existing native textures in objects usable by the GAL
+  void* m_pExistingNativeObject = nullptr;                                                       ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 
   constexpr XII_ALWAYS_INLINE bool      IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
   constexpr XII_ALWAYS_INLINE bool      Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }
@@ -142,36 +142,55 @@ public:
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief This returns the handle of the default view.
+  /// \brief Returns the calculated memory consumption for texture.
+  [[nodiscard]] virtual xiiUInt64 GetMemoryConsumption() const;
+
+  /// \brief This returns the reference-counted pointer of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALTextureViewType.
   ///
-  /// \return The handle to the buffer view.
+  /// \return The reference-counted pointer to the texture view.
   ///
-  /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
-  [[nodiscard]] xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
+  /// \note The function **increases** the reference counter for the returned interface.
+  [[nodiscard]] xiiSharedPtr<xiiGALTextureView> GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
   /// \brief This returns the sparse texture properties.
   [[nodiscard]] virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
 
+  /// \brief This creates a new texture view.
+  ///
+  /// \param description - The texture view description. See xiiGALTextureViewCreationDescription.
+  ///
+  /// \return The reference-counted pointer to the texture view.
+  ///
+  /// \remarks To create a shader resource view addressing the entire texture, set only xiiGALTextureViewCreationDescription::m_ViewType member of the description parameter to xiiGALTextureViewType::ShaderResource and leave all other
+  ///          members in their default values. Using the same method, you can create render target or depth stencil view addressing the largest mip level.\n
+  ///          If texture view format is xiiGALResourceFormat::Unknown, the view format will match the texture format.\n
+  ///          If texture view type is xiiGALTextureViewType::Undefined, the type will match the texture type.\n
+  ///          If the number of mip levels is 0, and the view type is shader resource, the view will address all mip levels. For other view types it will address one mip level.\n
+  ///          If the number of slices is 0, all slices from m_uiFirstArraySlice or m_uiFirstDepthSlice will be referenced by the view.
+  ///          For non-array textures, the only allowed values for the number of slices are 0 and 1.\n
+  ///          Texture view will contain strong reference to the texture, so the texture will not be destroyed until all views are released.\n
+  ///
+  [[nodiscard]] xiiSharedPtr<xiiGALTextureView> CreateView(xiiGALTextureViewCreationDescription& description);
+
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALTexture(xiiGALDevice* pDevice, const xiiGALTextureCreationDescription& creationDescription);
+  xiiGALTexture(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTextureCreationDescription& creationDescription);
 
   virtual ~xiiGALTexture();
 
   virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData) = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
+  virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(const xiiGALTextureViewCreationDescription& description) = 0;
 
 protected:
   xiiGALTextureCreationDescription m_Description;
 
-  xiiHashTable<xiiUInt32, xiiGALTextureViewHandle> m_TextureViews;
-
-  xiiGALTextureViewHandle m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
+  xiiSharedPtr<xiiGALTextureView> m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
 
 private:
-  void CreateDefaultResourceViews(xiiGALTextureHandle hTexture);
+  void CreateDefaultResourceViews();
 };

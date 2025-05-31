@@ -169,6 +169,8 @@ void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& type, const xii
   // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() && value.CanConvertTo(m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType()), "The given value does not match the type at the given path.");
 
   WriteProperty(pRootObject, type, [&value](void* pLeaf, const xiiRTTI& type, const xiiAbstractProperty* pProp, const xiiVariant& index) {
+    XII_IGNORE_UNUSED(type);
+
     switch (pProp->GetCategory())
     {
       case xiiPropertyCategory::Member:
@@ -191,6 +193,8 @@ void xiiPropertyPath::GetValue(void* pRootObject, const xiiRTTI& type, xiiVarian
   // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() && m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType() != xiiVariantType::Invalid, "The property path of value {} cannot be stored in a xiiVariant.", m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeName());
 
   ReadProperty(pRootObject, type, [&out_value](void* pLeaf, const xiiRTTI& type, const xiiAbstractProperty* pProp, const xiiVariant& index) {
+    XII_IGNORE_UNUSED(type);
+
     switch (pProp->GetCategory())
     {
       case xiiPropertyCategory::Member:

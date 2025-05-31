@@ -12,6 +12,9 @@
 #include <Foundation/Basics/Platform/DetectArchitecture.h>
 #include <Foundation/Basics/Platform/DetectPlatform.h>
 
+// Here all the different features that each platform supports are declared.
+#include <Foundation/Basics/Platform/PlatformFeatures.h>
+
 // Build override definitions.
 #include <Foundation/UserConfig.h>
 
@@ -31,27 +34,10 @@
 
 #include <Foundation/FoundationInternal.h>
 
-// include the different headers for the supported platforms.
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Windows/Platform_win.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX)
-#  include <Foundation/Basics/Platform/OSX/Platform_OSX.h>
-#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Basics/Platform/Linux/Platform_Linux.h>
-#else
-#  error "Undefined platform!"
-#endif
-
 // Include headers for the supported compilers.
 #include <Foundation/Basics/Compiler/Clang.h>
 #include <Foundation/Basics/Compiler/GCC.h>
 #include <Foundation/Basics/Compiler/MSVC.h>
-
-// Here all the different features that each platform supports are declared.
-#include <Foundation/Basics/Platform/PlatformFeatures.h>
-
-// Include this last, it will ensure the previous includes have setup everything correctly.
-#include <Foundation/Basics/Platform/CheckDefinitions.h>
 
 // Include common definitions and macros (e.g. static_assert).
 #include <Foundation/Basics/Platform/Common.h>

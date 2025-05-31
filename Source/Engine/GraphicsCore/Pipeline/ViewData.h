@@ -26,12 +26,12 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
     }
   }
 
-  xiiGALRenderTargets         m_RenderTargets;
-  xiiGALRenderTargets         m_SwapChainRenderTargets;
-  xiiGALSwapChainHandle       m_hSwapChain;
-  xiiRectFloat                m_ViewPortRect;
-  xiiEnum<xiiViewRenderMode>  m_ViewRenderMode;
-  xiiEnum<xiiCameraUsageHint> m_CameraUsageHint;
+  xiiGALRenderTargets           m_RenderTargets;
+  xiiGALRenderTargets           m_SwapChainRenderTargets;
+  xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
+  xiiRectFloat                  m_ViewPortRect;
+  xiiEnum<xiiViewRenderMode>    m_ViewRenderMode;
+  xiiEnum<xiiCameraUsageHint>   m_CameraUsageHint;
 
   // Each matrix is there for both left and right camera lens.
   xiiMat4 m_ViewMatrix[2];

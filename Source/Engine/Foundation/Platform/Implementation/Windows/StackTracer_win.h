@@ -107,7 +107,7 @@ namespace
   {
     if (s_pImplementation == nullptr)
     {
-      alignas(XII_ALIGNMENT_OF(StackTracerImplementation)) static xiiUInt8 ImplementationBuffer[sizeof(StackTracerImplementation)];
+      alignas(alignof(StackTracerImplementation)) static xiiUInt8 ImplementationBuffer[sizeof(StackTracerImplementation)];
       s_pImplementation = new (ImplementationBuffer) StackTracerImplementation();
       XII_ASSERT_DEV(s_pImplementation != nullptr, "StackTracer initialization failed");
     }

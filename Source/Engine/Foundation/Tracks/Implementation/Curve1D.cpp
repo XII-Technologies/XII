@@ -109,12 +109,12 @@ double xiiCurve1D::Evaluate(double x) const
     const xiiUInt32 numCPs        = m_LinearApproximation.GetCount();
     const xiiInt32  iControlPoint = FindApproxControlPoint(x);
 
-    if (iControlPoint == -1)
+    if (iControlPoint < 0)
     {
       // clamp to left value
       return m_LinearApproximation[0].y;
     }
-    else if (iControlPoint == numCPs - 1)
+    else if (xiiUInt32(iControlPoint) == numCPs - 1)
     {
       // clamp to right value
       return m_LinearApproximation[numCPs - 1].y;

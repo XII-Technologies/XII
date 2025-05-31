@@ -18,18 +18,17 @@ public:
   XII_ALWAYS_INLINE const vk::DescriptorBufferInfo* GetVulkanDescriptorBufferInfo() const { return &m_vkDescriptorBufferInfo; }
 
 protected:
-  friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceVulkan;
+  friend class xiiGALBufferVulkan;
 
-  xiiGALBufferViewVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
+  xiiGALBufferViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferViewVulkan();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   vk::BufferView m_vkBufferView;

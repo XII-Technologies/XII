@@ -2,8 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
-#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 
 /// \brief Provides utility functions that are common with interfacing with the GAL device.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceUtilities
@@ -19,7 +18,7 @@ public:
   /// \param uiVertexCount  - The number of vertices in the buffer.
   /// \param pInitialData   - The initial data in bytes, that the buffer should contain after creation.
   /// \param bDataIsMutable - Specifies whether the buffer should be considered immutable in its usage.
-  [[nodiscard]] static xiiGALBufferHandle CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false);
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false);
 
   enum class IndexType
   {
@@ -35,13 +34,21 @@ public:
   /// \param uiIndexCount   - The number of indices in the buffer.
   /// \param pInitialData   - The initial data in bytes, that the buffer should contain after creation.
   /// \param bDataIsMutable - Specifies whether the buffer should be considered immutable in its usage.
-  [[nodiscard]] static xiiGALBufferHandle CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false);
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false);
 
   /// \brief Creates a constant buffer with the given size.
   ///
   /// \param  pDevice     - The device associated with the buffer.
   /// \param uiBufferSize - The size of the buffer in bytes.
-  [[nodiscard]] static xiiGALBufferHandle CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize);
+  /// \param sDebugName   - Optional debug name for the buffer.
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName = {});
+
+  /// \brief Creates a staging buffer with the given size.
+  ///
+  /// \param  pDevice     - The device associated with the buffer.
+  /// \param uiBufferSize - The size of the buffer in bytes.
+  /// \param sDebugName   - Optional debug name for the buffer.
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateStagingBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName = {});
 
   /// \brief Creates a render target description with the given parameters.
   ///
@@ -58,5 +65,5 @@ public:
   /// \param pSourceData         - Array pointer to the source data to be copied.
   /// \param mapFlags            - Flags specifying the mapping behavior. Default is xiiGALMapFlags::Discard.
   /// \return xiiResult indicating the success or failure of the operation.
-  static xiiResult MapAndUpdateBuffer(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard);
+  static xiiResult MapAndUpdateBuffer(xiiGALCommandList* pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard);
 };

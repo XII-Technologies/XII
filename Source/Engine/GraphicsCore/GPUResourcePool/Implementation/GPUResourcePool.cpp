@@ -3,9 +3,6 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 #  include <Foundation/Utilities/Stats.h>
@@ -30,14 +27,14 @@ xiiGPUResourcePool::~xiiGPUResourcePool()
   RunGC(0);
 }
 
-xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc)
+xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc)
 {
   XII_LOCK(m_Lock);
 
   if (!textureDesc.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
   {
     xiiLog::Error("Texture description for render target or depth stencil needs to be created with xiiGALBindFlags::RenderTarget or xiiGALBindFlags::DepthStencil!");
-    return xiiGALTextureHandle();
+    return nullptr;
   }
 
   const xiiUInt32 uiTextureDescHash = textureDesc.CalculateHash();
@@ -49,14 +46,14 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
     xiiDynamicArray<TextureHandleWithAge>& textures = it.Value();
     if (!textures.IsEmpty())
     {
-      xiiGALTextureHandle hTexture = textures.PeekBack().m_hTexture;
+      xiiSharedPtr<xiiGALTexture> pTexture = textures.PeekBack().m_pTexture;
       textures.PopBack();
 
-      XII_ASSERT_DEV(m_pDevice->GetTexture(hTexture) != nullptr, "Invalid texture in resource pool");
+      XII_ASSERT_DEV(pTexture != nullptr, "Invalid texture in resource pool");
 
-      m_TexturesInUse.Insert(hTexture);
+      m_TexturesInUse.Insert(pTexture);
 
-      return hTexture;
+      return pTexture;
     }
   }
 
@@ -64,26 +61,26 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
   // first since we need to allocate memory now
   CheckAndPotentiallyRunGC();
 
-  xiiGALTextureHandle hNewTexture = m_pDevice->CreateTexture(textureDesc);
+  xiiSharedPtr<xiiGALTexture> pNewTexture = m_pDevice->CreateTexture(textureDesc);
 
-  if (hNewTexture.IsInvalidated())
+  if (pNewTexture == nullptr)
   {
     xiiLog::Error("GPU resource pool couldn't create new texture for given desc (size: {0} x {1}, format: {2})", textureDesc.m_Size.width, textureDesc.m_Size.height, textureDesc.m_Format);
-    return xiiGALTextureHandle();
+    return nullptr;
   }
 
   // Also track the new created texture
-  m_TexturesInUse.Insert(hNewTexture);
+  m_TexturesInUse.Insert(pNewTexture);
 
   m_uiNumAllocationsSinceLastGC++;
-  m_uiCurrentlyAllocatedMemory += m_pDevice->GetMemoryConsumptionForTexture(textureDesc);
+  m_uiCurrentlyAllocatedMemory += pNewTexture->GetMemoryConsumption();
 
   UpdateMemoryStats();
 
-  return hNewTexture;
+  return pNewTexture;
 }
 
-xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
+xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
 {
   xiiGALTextureCreationDescription TextureDesc;
   TextureDesc.m_Format             = format;
@@ -106,14 +103,14 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUI
   return GetRenderTarget(TextureDesc);
 }
 
-void xiiGPUResourcePool::ReturnRenderTarget(xiiGALTextureHandle hRenderTarget)
+void xiiGPUResourcePool::ReturnRenderTarget(xiiSharedPtr<xiiGALTexture> pRenderTarget)
 {
   XII_LOCK(m_Lock);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 
   // First check if this texture actually came from the pool
-  if (!m_TexturesInUse.Contains(hRenderTarget))
+  if (!m_TexturesInUse.Contains(pRenderTarget))
   {
     xiiLog::Error("Returning a texture to the GPU resource pool which wasn't created by the pool is not valid!");
     return;
@@ -121,11 +118,11 @@ void xiiGPUResourcePool::ReturnRenderTarget(xiiGALTextureHandle hRenderTarget)
 
 #endif
 
-  m_TexturesInUse.Remove(hRenderTarget);
+  m_TexturesInUse.Remove(pRenderTarget);
 
-  if (const xiiGALTexture* pTexture = m_pDevice->GetTexture(hRenderTarget))
+  if (pRenderTarget != nullptr)
   {
-    const xiiUInt32 uiTextureDescHash = pTexture->GetDescription().CalculateHash();
+    const xiiUInt32 uiTextureDescHash = pRenderTarget->GetDescription().CalculateHash();
 
     auto it = m_AvailableTextures.Find(uiTextureDescHash);
     if (!it.IsValid())
@@ -133,11 +130,11 @@ void xiiGPUResourcePool::ReturnRenderTarget(xiiGALTextureHandle hRenderTarget)
       it = m_AvailableTextures.Insert(uiTextureDescHash, xiiDynamicArray<TextureHandleWithAge>());
     }
 
-    it.Value().PushBack({hRenderTarget, xiiRenderWorld::GetFrameCounter()});
+    it.Value().PushBack({pRenderTarget, xiiRenderWorld::GetFrameCounter()});
   }
 }
 
-xiiGALBufferHandle xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescription& bufferDesc)
+xiiSharedPtr<xiiGALBuffer> xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescription& bufferDesc)
 {
   XII_LOCK(m_Lock);
 
@@ -150,14 +147,14 @@ xiiGALBufferHandle xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescr
     xiiDynamicArray<BufferHandleWithAge>& buffers = it.Value();
     if (!buffers.IsEmpty())
     {
-      xiiGALBufferHandle hBuffer = buffers.PeekBack().m_hBuffer;
+      xiiSharedPtr<xiiGALBuffer> pBuffer = buffers.PeekBack().m_pBuffer;
       buffers.PopBack();
 
-      XII_ASSERT_DEV(m_pDevice->GetBuffer(hBuffer) != nullptr, "Invalid buffer in resource pool");
+      XII_ASSERT_DEV(pBuffer != nullptr, "Invalid buffer in resource pool");
 
-      m_BuffersInUse.Insert(hBuffer);
+      m_BuffersInUse.Insert(pBuffer);
 
-      return hBuffer;
+      return pBuffer;
     }
   }
 
@@ -165,33 +162,33 @@ xiiGALBufferHandle xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescr
   // first since we need to allocate memory now
   CheckAndPotentiallyRunGC();
 
-  xiiGALBufferHandle hNewBuffer = m_pDevice->CreateBuffer(bufferDesc);
+  xiiSharedPtr<xiiGALBuffer> pNewBuffer = m_pDevice->CreateBuffer(bufferDesc);
 
-  if (hNewBuffer.IsInvalidated())
+  if (pNewBuffer == nullptr)
   {
     xiiLog::Error("GPU resource pool couldn't create new buffer for given desc (size: {0})", bufferDesc.m_uiSize);
-    return xiiGALBufferHandle();
+    return nullptr;
   }
 
   // Also track the new created buffer
-  m_BuffersInUse.Insert(hNewBuffer);
+  m_BuffersInUse.Insert(pNewBuffer);
 
   m_uiNumAllocationsSinceLastGC++;
-  m_uiCurrentlyAllocatedMemory += m_pDevice->GetMemoryConsumptionForBuffer(bufferDesc);
+  m_uiCurrentlyAllocatedMemory += pNewBuffer->GetMemoryConsumption();
 
   UpdateMemoryStats();
 
-  return hNewBuffer;
+  return pNewBuffer;
 }
 
-void xiiGPUResourcePool::ReturnBuffer(xiiGALBufferHandle hBuffer)
+void xiiGPUResourcePool::ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer)
 {
   XII_LOCK(m_Lock);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 
   // First check if this texture actually came from the pool
-  if (!m_BuffersInUse.Contains(hBuffer))
+  if (!m_BuffersInUse.Contains(pBuffer))
   {
     xiiLog::Error("Returning a buffer to the GPU resource pool which wasn't created by the pool is not valid!");
     return;
@@ -199,9 +196,9 @@ void xiiGPUResourcePool::ReturnBuffer(xiiGALBufferHandle hBuffer)
 
 #endif
 
-  m_BuffersInUse.Remove(hBuffer);
+  m_BuffersInUse.Remove(pBuffer);
 
-  if (const xiiGALBuffer* pBuffer = m_pDevice->GetBuffer(hBuffer))
+  if (pBuffer != nullptr)
   {
     const xiiUInt32 uiBufferDescHash = pBuffer->GetDescription().CalculateHash();
 
@@ -211,7 +208,7 @@ void xiiGPUResourcePool::ReturnBuffer(xiiGALBufferHandle hBuffer)
       it = m_AvailableBuffers.Insert(uiBufferDescHash, xiiDynamicArray<BufferHandleWithAge>());
     }
 
-    it.Value().PushBack({hBuffer, xiiRenderWorld::GetFrameCounter()});
+    it.Value().PushBack({pBuffer, xiiRenderWorld::GetFrameCounter()});
   }
 }
 
@@ -231,12 +228,12 @@ void xiiGPUResourcePool::RunGC(xiiUInt32 uiMinimumAge)
         TextureHandleWithAge& texture = textures[i];
         if (texture.m_uiLastUsed + uiMinimumAge <= uiCurrentFrame)
         {
-          if (const xiiGALTexture* pTexture = m_pDevice->GetTexture(texture.m_hTexture))
+          if (texture.m_pTexture != nullptr)
           {
-            m_uiCurrentlyAllocatedMemory -= m_pDevice->GetMemoryConsumptionForTexture(pTexture->GetDescription());
+            m_uiCurrentlyAllocatedMemory -= texture.m_pTexture->GetMemoryConsumption();
           }
+          texture.m_pTexture.Clear();
 
-          m_pDevice->DestroyTexture(texture.m_hTexture);
           textures.RemoveAtAndCopy(i);
         }
         else
@@ -268,12 +265,12 @@ void xiiGPUResourcePool::RunGC(xiiUInt32 uiMinimumAge)
         BufferHandleWithAge& buffer = buffers[i];
         if (buffer.m_uiLastUsed + uiMinimumAge <= uiCurrentFrame)
         {
-          if (const xiiGALBuffer* pBuffer = m_pDevice->GetBuffer(buffer.m_hBuffer))
+          if (buffer.m_pBuffer != nullptr)
           {
-            m_uiCurrentlyAllocatedMemory -= m_pDevice->GetMemoryConsumptionForBuffer(pBuffer->GetDescription());
+            m_uiCurrentlyAllocatedMemory -= buffer.m_pBuffer->GetMemoryConsumption();
           }
+          buffer.m_pBuffer.Clear();
 
-          m_pDevice->DestroyBuffer(buffer.m_hBuffer);
           buffers.RemoveAtAndCopy(i);
         }
         else
@@ -300,8 +297,6 @@ void xiiGPUResourcePool::RunGC(xiiUInt32 uiMinimumAge)
   UpdateMemoryStats();
 }
 
-
-
 xiiGPUResourcePool* xiiGPUResourcePool::GetDefaultInstance()
 {
   return s_pDefaultInstance;
@@ -312,7 +307,6 @@ void xiiGPUResourcePool::SetDefaultInstance(xiiGPUResourcePool* pDefaultInstance
   XII_DEFAULT_DELETE(s_pDefaultInstance);
   s_pDefaultInstance = pDefaultInstance;
 }
-
 
 void xiiGPUResourcePool::CheckAndPotentiallyRunGC()
 {

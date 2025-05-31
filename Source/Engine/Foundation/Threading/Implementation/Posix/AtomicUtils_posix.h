@@ -4,197 +4,94 @@
 
 #define XII_ATOMICUTLS_POSIX_INL_H_INCLUDED
 
-
-#include <Foundation/Math/Math.h>
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Read(const xiiInt32& src)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Read(const T& ref_value)
 {
-  return __sync_fetch_and_or(const_cast<xiiInt32*>(&src), 0);
+  return __atomic_load_n(&ref_value, __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Read(const xiiInt64& src)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Exchange(T& ref_value, T newValue)
 {
-  return __sync_fetch_and_or_8(const_cast<xiiInt64*>(&src), 0);
+  return __atomic_exchange_n(&ref_value, newValue, __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Increment(xiiInt32& dest)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Increment(T& ref_value)
 {
-  return __sync_add_and_fetch(&dest, 1);
+  return __atomic_add_fetch(&ref_value, static_cast<T>(1), __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Increment(xiiInt64& dest)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Decrement(T& ref_value)
 {
-  return __sync_add_and_fetch_8(&dest, 1);
+  return __atomic_sub_fetch(&ref_value, static_cast<T>(1), __ATOMIC_SEQ_CST);
 }
 
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Decrement(xiiInt32& dest)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::PostIncrement(T& ref_value)
 {
-  return __sync_sub_and_fetch(&dest, 1);
+  return __atomic_fetch_add(&ref_value, static_cast<T>(1), __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Decrement(xiiInt64& dest)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::PostDecrement(T& ref_value)
 {
-  return __sync_sub_and_fetch_8(&dest, 1);
+  return __atomic_fetch_sub(&ref_value, static_cast<T>(1), __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::PostIncrement(xiiInt32& dest)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Add(T& ref_value, T addend)
 {
-  return __sync_fetch_and_add(&dest, 1);
+  return __atomic_add_fetch(&ref_value, addend, __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostIncrement(xiiInt64& dest)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Subtract(T& ref_value, T subtrahend)
 {
-  return __sync_fetch_and_add_8(&dest, 1);
+  return __atomic_sub_fetch(&ref_value, subtrahend, __ATOMIC_SEQ_CST);
 }
 
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::PostDecrement(xiiInt32& dest)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::And(T& ref_value, T operand)
 {
-  return __sync_fetch_and_sub(&dest, 1);
+  return __atomic_and_fetch(&ref_value, operand, __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostDecrement(xiiInt64& dest)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Or(T& ref_value, T operand)
 {
-  return __sync_fetch_and_sub_8(&dest, 1);
+  return __atomic_or_fetch(&ref_value, operand, __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::Add(xiiInt32& dest, xiiInt32 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Xor(T& ref_value, T operand)
 {
-  __sync_fetch_and_add(&dest, value);
+  return __atomic_xor_fetch(&ref_value, operand, __ATOMIC_SEQ_CST);
 }
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::Add(xiiInt64& dest, xiiInt64 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::CompareExchange(T& ref_value, T expected, T desired)
 {
-  __sync_fetch_and_add_8(&dest, value);
+  T original = expected;
+  __atomic_compare_exchange_n(&ref_value, &original, desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+  return original;
 }
 
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::And(xiiInt32& dest, xiiInt32 value)
+XII_ALWAYS_INLINE bool xiiAtomicUtils::CompareExchangePointer(void** pDestination, void* pExpected, void* pValue)
 {
-  __sync_fetch_and_and(&dest, value);
-}
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::And(xiiInt64& dest, xiiInt64 value)
-{
-  __sync_fetch_and_and_8(&dest, value);
-}
-
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Or(xiiInt32& dest, xiiInt32 value)
-{
-  __sync_fetch_and_or(&dest, value);
-}
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Or(xiiInt64& dest, xiiInt64 value)
-{
-  __sync_fetch_and_or_8(&dest, value);
-}
-
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(xiiInt32& dest, xiiInt32 value)
-{
-  __sync_fetch_and_xor(&dest, value);
-}
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(xiiInt64& dest, xiiInt64 value)
-{
-  __sync_fetch_and_xor_8(&dest, value);
-}
-
-
-XII_FORCE_INLINE void xiiAtomicUtils::Min(xiiInt32& dest, xiiInt32 value)
-{
-  // tries to exchange dest with the new value as long as the oldValue is not what we expected
-  while (true)
-  {
-    xiiInt32 iOldValue = dest;
-    xiiInt32 iNewValue = xiiMath::Min(iOldValue, value);
-
-    if (__sync_bool_compare_and_swap(&dest, iOldValue, iNewValue))
-      break;
-  }
-}
-
-XII_FORCE_INLINE void xiiAtomicUtils::Min(xiiInt64& dest, xiiInt64 value)
-{
-  // tries to exchange dest with the new value as long as the oldValue is not what we expected
-  while (true)
-  {
-    xiiInt64 iOldValue = dest;
-    xiiInt64 iNewValue = xiiMath::Min(iOldValue, value);
-
-    if (__sync_bool_compare_and_swap_8(&dest, iOldValue, iNewValue))
-      break;
-  }
-}
-
-
-XII_FORCE_INLINE void xiiAtomicUtils::Max(xiiInt32& dest, xiiInt32 value)
-{
-  // tries to exchange dest with the new value as long as the oldValue is not what we expected
-  while (true)
-  {
-    xiiInt32 iOldValue = dest;
-    xiiInt32 iNewValue = xiiMath::Max(iOldValue, value);
-
-    if (__sync_bool_compare_and_swap(&dest, iOldValue, iNewValue))
-      break;
-  }
-}
-
-XII_FORCE_INLINE void xiiAtomicUtils::Max(xiiInt64& dest, xiiInt64 value)
-{
-  // tries to exchange dest with the new value as long as the oldValue is not what we expected
-  while (true)
-  {
-    xiiInt64 iOldValue = dest;
-    xiiInt64 iNewValue = xiiMath::Max(iOldValue, value);
-
-    if (__sync_bool_compare_and_swap_8(&dest, iOldValue, iNewValue))
-      break;
-  }
-}
-
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Set(xiiInt32& dest, xiiInt32 value)
-{
-  return __sync_lock_test_and_set(&dest, value);
-}
-
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Set(xiiInt64& dest, xiiInt64 value)
-{
-  return __sync_lock_test_and_set_8(&dest, value);
-}
-
-
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(xiiInt32& dest, xiiInt32 expected, xiiInt32 value)
-{
-  return __sync_bool_compare_and_swap(&dest, expected, value);
-}
-
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(xiiInt64& dest, xiiInt64 expected, xiiInt64 value)
-{
-  return __sync_bool_compare_and_swap_8(&dest, expected, value);
-}
-
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(void** dest, void* expected, void* value)
-{
-#if XII_ENABLED(XII_PLATFORM_64BIT)
-  xiiUInt64* puiTemp = reinterpret_cast<xiiUInt64*>(dest);
-  return __sync_bool_compare_and_swap(puiTemp, reinterpret_cast<xiiUInt64>(expected), reinterpret_cast<xiiUInt64>(value));
-#else
-  xiiUInt32* puiTemp = reinterpret_cast<xiiUInt32*>(dest);
-  return __sync_bool_compare_and_swap(puiTemp, reinterpret_cast<xiiUInt32>(expected), reinterpret_cast<xiiUInt32>(value));
-#endif
-}
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::CompareAndSwap(xiiInt32& dest, xiiInt32 expected, xiiInt32 value)
-{
-  return __sync_val_compare_and_swap(&dest, expected, value);
-}
-
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::CompareAndSwap(xiiInt64& dest, xiiInt64 expected, xiiInt64 value)
-{
-  return __sync_val_compare_and_swap_8(&dest, expected, value);
+  void* expected = pExpected;
+  return __atomic_compare_exchange_n(pDestination, &expected, pValue, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 }

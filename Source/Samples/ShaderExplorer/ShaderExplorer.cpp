@@ -23,12 +23,15 @@
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
 // Define this to force usage of fileserve functionality.
 // #define USE_FILESERVE XII_ON
@@ -201,56 +204,82 @@ public:
 
     // Perform rendering
     {
-      // Before starting to render in a frame call this function
-      m_pDevice->EnqueueFrameSwapChain(m_hSwapChain);
+      // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      // Must always retrieve the current swapchain render target
-      const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
-      xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-      xiiGALTextureViewHandle hBBDSV            = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
+      auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue();
 
-      xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
-      renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-      renderingSetup.m_bClearDepth             = true;
-      renderingSetup.m_bClearStencil           = true;
-
-      if (auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue())
+      if (auto pCommandList = pDefaultQueue->BeginCommandList())
       {
-        xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
+        xiiGALBeginRenderPassDescription beginRenderPassDescription{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = GetCurrentFramebuffer()};
+        xiiGALOptimizedClearValue&       depthClearValue = beginRenderPassDescription.m_ClearValues.ExpandAndGetRef();
+        xiiGALOptimizedClearValue&       colorClearValue = beginRenderPassDescription.m_ClearValues.ExpandAndGetRef();
+        depthClearValue.m_DepthStencil.m_fDepth          = 1.0f;
+        depthClearValue.m_DepthStencil.m_uiStencil       = 0U;
+        colorClearValue.m_ClearColor                     = xiiColor::Black;
 
-        if (auto pCommandList = pDefaultQueue->BeginCommandList())
+        pCommandList->BeginDebugGroup("xiiShaderExplorerMainPass");
         {
-          pRenderContext->SetCommandList(pCommandList);
-          pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+          const xiiRectFloat viewportRect(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight);
+          {
+            xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-          auto& gc = pRenderContext->WriteGlobalConstants();
-          xiiMemoryUtils::ZeroFill(&gc, 1);
+            xiiMemoryUtils::ZeroFill(&pGlobalConstants, 1);
 
-          xiiMat4 m0, m1;
-          m0                        = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
-          m1                        = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
-          gc.WorldToCameraMatrix[0] = m0;
-          gc.WorldToCameraMatrix[1] = m1;
-          gc.CameraToWorldMatrix[0] = m0.GetInverse();
-          gc.CameraToWorldMatrix[1] = m1.GetInverse();
-          gc.ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
-          // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-          gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-          gc.WorldTime  = gc.GlobalTime;
+            xiiMat4 m0, m1;
+            m0                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
+            m1                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
+            pGlobalConstants->WorldToCameraMatrix[0] = m0;
+            pGlobalConstants->WorldToCameraMatrix[1] = m1;
+            pGlobalConstants->CameraToWorldMatrix[0] = m0.GetInverse();
+            pGlobalConstants->CameraToWorldMatrix[1] = m1.GetInverse();
+            pGlobalConstants->ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
+            // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
+            pGlobalConstants->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
+            pGlobalConstants->WorldTime  = pGlobalConstants->GlobalTime;
+
+            pGlobalConstants->ViewportSize   = xiiVec4(viewportRect.width, viewportRect.height, 1.0f / viewportRect.width, 1.0f / viewportRect.height);
+            pGlobalConstants->NumMsaaSamples = 1;
+          }
+
+          {
+            xiiGALViewport viewPort{viewportRect.x, viewportRect.y, viewportRect.width, viewportRect.height, 0.0f, 0.1f};
+
+            pCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1U));
+          }
+
+          pCommandList->BeginRenderPass(beginRenderPassDescription);
+          {
+            pCommandList->ResolveAndSetConstantBuffer("xiiGlobalConstants", m_pGlobalConstantsBuffer);
+          }
+          pCommandList->EndRenderPass();
+        }
+        pCommandList->EndDebugGroup();
+
+        pCommandList->Submit();
+      }
+
+#ifdef CORE_ENABLE
+
+      if (auto pCommandList = pDefaultQueue->BeginCommandList())
+      {
+        pRenderContext->SetCommandList(pCommandList);
+        pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+
+        ...
 
           pRenderContext->BindMaterial(m_hMaterial);
-          pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
-          pRenderContext->DrawMeshBuffer().IgnoreResult();
+        pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
+        pRenderContext->DrawMeshBuffer().IgnoreResult();
 
-          pRenderContext->EndRendering();
-          pRenderContext->SetCommandList(nullptr);
+        pRenderContext->EndRendering();
+        pRenderContext->SetCommandList(nullptr);
 
-          pCommandList->Submit();
-        }
-        pRenderContext->ResetContextState();
+        pCommandList->Submit();
       }
+#endif
+
+      m_pSwapChain->Present();
 
       m_pDevice->EndFrame();
     }
@@ -275,7 +304,7 @@ public:
   virtual void AfterCoreSystemsStartup() override
   {
 #if XII_ENABLED(USE_FILESERVE)
-    xuuPlugin::LoadPlugin("xuuFileservePlugin").AssertSuccess("Failed to load FileServe plugin.");
+    xiiPlugin::LoadPlugin("xiiFileservePlugin").AssertSuccess("Failed to load FileServe plugin.");
 #endif
 
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/ShaderExplorer";
@@ -309,14 +338,6 @@ public:
 
     m_pCamera = XII_DEFAULT_NEW(xiiCamera);
     m_pCamera->LookAt(xiiVec3(3, 3, 1.5), xiiVec3(0, 0, 0), xiiVec3(0, 1, 0));
-
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-#elif BUILDSYSTEM_ENABLE_D3D11_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "D3D11";
-#else
-    constexpr const char* szDefaultGraphicsAPI = "Null";
-#endif
 
     // Register Input
     {
@@ -457,12 +478,12 @@ public:
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
-      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
       xiiStringView sShaderModel     = {};
       xiiStringView sShaderCompiler  = {};
       xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
 
-      xiiShaderManager::Configure(sShaderModel, true);
+      xiiGALShaderManager::Configure(sShaderModel, true);
       XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", sShaderCompiler);
 
       m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
@@ -479,63 +500,16 @@ public:
 
     UpdateSwapChain();
 
+    CreateRenderPass();
+
+    CreateResources();
+
     // Setup Shaders and Materials
     {
       m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Materials/screen.xiiMaterial");
 
       // Create the mesh that we use for rendering
       CreateScreenQuad();
-    }
-  }
-
-  void UpdateSwapChain()
-  {
-    // Create a Swapchain
-    if (m_hSwapChain.IsInvalidated())
-    {
-      xiiGALSwapChainCreationDescription swapChainDesc;
-      swapChainDesc.m_pWindow               = m_pWindow;
-      swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
-      swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
-      swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDesc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
-      swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-      swapChainDesc.m_uiBufferCount         = 2U;
-      swapChainDesc.m_fDefaultDepthValue    = 1.0f;
-      swapChainDesc.m_uiDefaultStencilValue = 0U;
-
-      m_hSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
-    }
-    else
-    {
-      auto pSwapChain  = m_pDevice->GetSwapChain(m_hSwapChain);
-      auto currentSize = xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight);
-
-      if (pSwapChain->GetCurrentSize() != currentSize)
-      {
-        pSwapChain->Resize(currentSize).IgnoreResult();
-      }
-    }
-
-    // Do not destroy the texture if the swapchain is minimized
-    if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated() && m_pWindow->GetClientAreaSize().HasNonZeroArea())
-    {
-      m_pDevice->DestroyTexture(m_hDepthStencilTexture);
-
-      m_hDepthStencilTexture.Invalidate();
-    }
-
-    // Create depth texture
-    if (m_pWindow->GetClientAreaSize().HasNonZeroArea())
-    {
-      xiiGALTextureCreationDescription texDesc;
-      texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
-      texDesc.m_Size.width  = g_uiWindowWidth;
-      texDesc.m_Size.height = g_uiWindowHeight;
-      texDesc.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
-      texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
-
-      m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
     }
   }
 
@@ -593,25 +567,28 @@ public:
     m_pDirectoryWatcher.Clear();
 #endif
 
-    m_pDevice->DestroyTexture(m_hDepthStencilTexture);
-    m_hDepthStencilTexture.Invalidate();
-
     m_hMaterial.Invalidate();
     m_hQuadMeshBuffer.Invalidate();
-    m_pDevice->DestroySwapChain(m_hSwapChain);
-    m_hSwapChain.Invalidate();
+
+    m_FramebufferCache.Clear();
+    m_pRenderPass.Clear();
+    m_pDepthStencilTexture.Clear();
+    m_pSwapChain.Clear();
 
     // Tell the engine that we are about to destroy window and graphics device and that it therefore needs to cleanup anything that depends on that.
     xiiStartup::ShutdownHighLevelSystems();
 
-    // Now we can shutdown the graphics device.
-    m_pDevice->Shutdown().IgnoreResult();
+    if (xiiGALDevice::GetDefaultDevice() == m_pDevice)
+    {
+      xiiGALDevice::SetDefaultDevice(nullptr);
+    }
 
-    XII_DEFAULT_DELETE(m_pDevice);
+    // Now we can shutdown the graphics device.
+    m_pDevice.Clear();
 
     // Finally destroy the window
     m_pWindow->Destroy().IgnoreResult();
-    XII_DEFAULT_DELETE(m_pWindow);
+    m_pWindow.Clear();
 
     m_pCamera.Clear();
   }
@@ -628,13 +605,170 @@ public:
     SUPER::BeforeCoreSystemsShutdown();
   }
 
+  void UpdateSwapChain()
+  {
+    // Create a Swapchain
+    if (!m_pSwapChain)
+    {
+      xiiGALSwapChainCreationDescription swapChainDesc;
+      swapChainDesc.m_pWindow               = m_pWindow.Borrow();
+      swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
+      swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
+      swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+      swapChainDesc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
+      swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+      swapChainDesc.m_uiBufferCount         = 2U;
+      swapChainDesc.m_fDefaultDepthValue    = 1.0f;
+      swapChainDesc.m_uiDefaultStencilValue = 0U;
+
+      m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
+
+      m_pSwapChain->SetPresentMode(xiiGALPresentMode::VSync);
+    }
+    else
+    {
+      auto currentSize = xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight);
+
+      if (m_pSwapChain->GetCurrentSize() != currentSize)
+      {
+        // Clear frame buffer cache since swap chain images and depth stencil will be recreated.
+        m_FramebufferCache.Clear();
+        m_pDepthStencilTexture.Clear();
+
+        m_pSwapChain->Resize(currentSize).IgnoreResult();
+      }
+    }
+
+    if (!m_pDepthStencilTexture)
+    {
+      xiiGALTextureCreationDescription texDesc;
+      texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
+      texDesc.m_Size.width  = g_uiWindowWidth;
+      texDesc.m_Size.height = g_uiWindowHeight;
+      texDesc.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
+      texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
+
+      m_pDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
+
+      m_pDepthStencilTexture->SetDebugName("Depth Stencil");
+    }
+  }
+
+  void CreateResources()
+  {
+    // Create a global constants buffer.
+    m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(m_pDevice, sizeof(xiiGlobalConstants), "GlobalConstantsBuffer");
+  }
+
+  void CreateRenderPass()
+  {
+    if (!m_pRenderPass)
+    {
+      xiiSharedPtr<xiiGALTexture> pBackBuffer           = m_pSwapChain->GetBackBufferTexture();
+      const auto&                 backBufferTextureDesc = pBackBuffer->GetDescription();
+
+      xiiGALRenderPassCreationDescription renderPassDesc;
+
+      const auto& depthTextureDesc    = m_pDepthStencilTexture->GetDescription();
+      auto&       depthAttachmentDesc = renderPassDesc.m_Attachments.ExpandAndGetRef();
+
+      depthAttachmentDesc.m_Format                = depthTextureDesc.m_Format;
+      depthAttachmentDesc.m_uiSampleCount         = static_cast<xiiUInt8>(depthTextureDesc.m_uiSampleCount);
+      depthAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::DepthWrite;
+      depthAttachmentDesc.m_FinalStateFlags       = xiiGALResourceStateFlags::DepthWrite;
+      depthAttachmentDesc.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
+      depthAttachmentDesc.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
+      depthAttachmentDesc.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Clear;
+      depthAttachmentDesc.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
+
+      auto& colorAttachmentDesc = renderPassDesc.m_Attachments.ExpandAndGetRef();
+
+      colorAttachmentDesc.m_Format                = backBufferTextureDesc.m_Format;
+      colorAttachmentDesc.m_uiSampleCount         = static_cast<xiiUInt8>(backBufferTextureDesc.m_uiSampleCount);
+      colorAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::RenderTarget;
+      colorAttachmentDesc.m_FinalStateFlags       = xiiGALResourceStateFlags::RenderTarget;
+      colorAttachmentDesc.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
+      colorAttachmentDesc.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
+      colorAttachmentDesc.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Discard;
+      colorAttachmentDesc.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Discard;
+
+      xiiGALSubPassDescription& subpassDesc = renderPassDesc.m_SubPasses.ExpandAndGetRef();
+      {
+        auto& depthAttachmentRef                = subpassDesc.m_DepthStencilAttachment.ExpandAndGetRef();
+        depthAttachmentRef.m_ResourceStateFlags = xiiGALResourceStateFlags::DepthWrite;
+        depthAttachmentRef.m_uiAttachmentIndex  = 0U;
+
+        auto& colorAttachmentRef                = subpassDesc.m_RenderTargetAttachments.ExpandAndGetRef();
+        colorAttachmentRef.m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget;
+        colorAttachmentRef.m_uiAttachmentIndex  = 1U;
+      }
+
+      xiiGALSubPassDependencyDescription& dependencyDesc = renderPassDesc.m_Dependencies.ExpandAndGetRef();
+      dependencyDesc.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
+      dependencyDesc.m_uiDestinationSubPass              = 0U;
+      dependencyDesc.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+      dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+      dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::DepthStencilWrite | xiiGALAccessFlags::RenderTargetWrite;
+
+      m_pRenderPass = m_pDevice->CreateRenderPass(renderPassDesc);
+      XII_ASSERT_DEV(m_pRenderPass != nullptr, "Failed to create render pass.");
+    }
+  }
+
+  xiiSharedPtr<xiiGALFramebuffer> CreateFramebuffer(xiiSharedPtr<xiiGALTextureView> pDestinationRenderTarget, xiiSharedPtr<xiiGALTextureView> pDestinationDepthStencil)
+  {
+    XII_ASSERT_DEV(pDestinationRenderTarget != nullptr, "Destination render target must not be null.");
+    XII_ASSERT_DEV(m_pRenderPass != nullptr, "Render pass must be created before creating a framebuffer.");
+
+    const auto& textureDescription = pDestinationRenderTarget->GetTexture()->GetDescription();
+    const auto& viewDescription    = pDestinationRenderTarget->GetDescription();
+
+    xiiVec3U32 vSize = xiiGALTextureUtilities::GetMipLevelSize(viewDescription.m_uiMostDetailedMip, textureDescription);
+
+    xiiGALFramebufferCreationDescription framebufferDescription;
+    framebufferDescription.m_pRenderPass       = m_pRenderPass;
+    framebufferDescription.m_FramebufferSize   = {vSize.x, vSize.y};
+    framebufferDescription.m_uiArraySliceCount = viewDescription.m_uiArrayOrDepthSlicesCount;
+    framebufferDescription.m_Attachments.PushBack(pDestinationDepthStencil);
+    framebufferDescription.m_Attachments.PushBack(pDestinationRenderTarget);
+
+    xiiSharedPtr<xiiGALFramebuffer> pFramebuffer = m_pDevice->CreateFramebuffer(framebufferDescription);
+    XII_ASSERT_DEV(pFramebuffer != nullptr, "Failed to create framebuffer.");
+
+    m_FramebufferCache.PushBack(pFramebuffer);
+
+    return pFramebuffer;
+  }
+
+  xiiSharedPtr<xiiGALFramebuffer> GetCurrentFramebuffer()
+  {
+    auto pBackBufferTexture = m_pSwapChain->GetBackBufferTexture();
+    auto pBackBufferView    = pBackBufferTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+
+    for (xiiUInt32 i = 0; i < m_FramebufferCache.GetCount(); ++i)
+    {
+      const auto& framebufferDescription = m_FramebufferCache[i]->GetDescription();
+
+      if (framebufferDescription.m_pRenderPass == m_pRenderPass && framebufferDescription.m_Attachments[1] == pBackBufferView)
+      {
+        return m_FramebufferCache[i];
+      }
+    }
+    return CreateFramebuffer(m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget), m_pDepthStencilTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+  }
+
 private:
-  xiiShaderExplorer* m_pWindow = nullptr;
+  xiiUniquePtr<xiiShaderExplorer> m_pWindow;
 
-  xiiGALDevice* m_pDevice = nullptr;
+  xiiSharedPtr<xiiGALDevice> m_pDevice;
 
-  xiiGALSwapChainHandle m_hSwapChain;
-  xiiGALTextureHandle   m_hDepthStencilTexture;
+  xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
+  xiiSharedPtr<xiiGALTexture>   m_pDepthStencilTexture;
+
+  xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
+  xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
+
+  xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
 
   xiiMaterialResourceHandle   m_hMaterial;
   xiiMeshBufferResourceHandle m_hQuadMeshBuffer;

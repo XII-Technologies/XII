@@ -8,6 +8,11 @@
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiResetTransformComponent, 1, xiiComponentMode::Dynamic)
 {
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("Animation"),
+  }
+  XII_END_ATTRIBUTES;
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("ResetPositionX", m_bResetLocalPositionX)->AddAttributes(new xiiDefaultValueAttribute(true)),
@@ -92,3 +97,6 @@ void xiiResetTransformComponent::DeserializeComponent(xiiWorldReader& inout_stre
   s >> m_bResetLocalScaling;
   s >> m_fLocalUniformScaling;
 }
+
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Animation_Implementation_ResetTransformComponent);

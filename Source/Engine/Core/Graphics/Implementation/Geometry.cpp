@@ -107,7 +107,6 @@ void xiiGeometry::AddLine(xiiUInt32 uiStartVertex, xiiUInt32 uiEndVertex)
   m_Lines.PushBack(l);
 }
 
-
 void xiiGeometry::TriangulatePolygons(xiiUInt32 uiMaxVerticesInPolygon /*= 3*/)
 {
   uiMaxVerticesInPolygon = xiiMath::Max<xiiUInt32>(uiMaxVerticesInPolygon, 3);

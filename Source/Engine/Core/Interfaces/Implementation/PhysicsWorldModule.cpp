@@ -89,5 +89,4 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgBuildStaticMesh, 1, xiiRTTIDefaultAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-
 XII_STATICLINK_FILE(Core, Core_Interfaces_Implementation_PhysicsWorldModule);

@@ -2,7 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/Descriptors.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 
 /// \brief Provides hash functions for GAL descriptor objects.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDescriptorHash
@@ -10,6 +10,18 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALDescriptorHash
 public:
   static xiiUInt32 Hash(const xiiGALPipelineStateCreationDescription& description);
   static bool      Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b);
+
+  static xiiUInt32 Hash(const xiiGALGraphicsPipelineStateCreationDescription& description);
+  static bool      Equal(const xiiGALGraphicsPipelineStateCreationDescription& a, const xiiGALGraphicsPipelineStateCreationDescription& b);
+
+  static xiiUInt32 Hash(const xiiGALComputePipelineStateCreationDescription& description);
+  static bool      Equal(const xiiGALComputePipelineStateCreationDescription& a, const xiiGALComputePipelineStateCreationDescription& b);
+
+  static xiiUInt32 Hash(const xiiGALRayTracingPipelineStateCreationDescription& description);
+  static bool      Equal(const xiiGALRayTracingPipelineStateCreationDescription& a, const xiiGALRayTracingPipelineStateCreationDescription& b);
+
+  static xiiUInt32 Hash(const xiiGALTilePipelineStateCreationDescription& description);
+  static bool      Equal(const xiiGALTilePipelineStateCreationDescription& a, const xiiGALTilePipelineStateCreationDescription& b);
 
   static xiiUInt32 Hash(const xiiGALPipelineResourceSignatureCreationDescription& description);
   static bool      Equal(const xiiGALPipelineResourceSignatureCreationDescription& a, const xiiGALPipelineResourceSignatureCreationDescription& b);

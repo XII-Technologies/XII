@@ -768,13 +768,13 @@ XII_CREATE_SIMPLE_TEST(World, World)
     {
       xiiUInt32 i                      = pObject->GetHandle().GetInternalID().m_InstanceIndex;
       xiiVec3   expectedLastPos        = xiiVec3(0, 0, 5);
-      xiiVec3   expectedPos            = xiiVec3(i * 10, 0, 0);
-      xiiVec3   expectedLinearVelocity = xiiVec3(i * 100, 0, -50);
+      xiiVec3   expectedPos            = xiiVec3(i * 10.0f, 0, 0);
+      xiiVec3   expectedLinearVelocity = xiiVec3(i * 100.0f, 0, -50);
       XII_TEST_VEC3(pObject->GetLastGlobalTransform().m_vPosition, expectedLastPos, xiiMath::DefaultEpsilon<float>());
       XII_TEST_VEC3(pObject->GetGlobalPosition(), expectedPos, xiiMath::DefaultEpsilon<float>());
       XII_TEST_VEC3(pObject->GetLinearVelocity(), expectedLinearVelocity, xiiMath::DefaultEpsilon<float>());
 
-      xiiVec3 expectedAngularVelocity = xiiVec3(0, 0, (xiiAngle::MakeFromDegree(i * 30) - xiiAngle::MakeFromDegree(90)).GetRadian() * 10);
+      xiiVec3 expectedAngularVelocity = xiiVec3(0, 0, (xiiAngle::MakeFromDegree(i * 30.0f) - xiiAngle::MakeFromDegree(90.0f)).GetRadian() * 10.0f);
       xiiVec3 angularVelocity         = pObject->GetAngularVelocity();
       XII_TEST_VEC3(angularVelocity, expectedAngularVelocity, xiiMath::DefaultEpsilon<float>());
     }
@@ -787,7 +787,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     for (auto& pObject : pObjects)
     {
       xiiUInt32 i                      = pObject->GetHandle().GetInternalID().m_InstanceIndex;
-      xiiVec3   expectedLastPos        = xiiVec3(i * 10, 0, 0);
+      xiiVec3   expectedLastPos        = xiiVec3(i * 10.0f, 0, 0);
       xiiVec3   expectedLinearVelocity = xiiVec3(i * -100.0f, 0, 0);
       XII_TEST_VEC3(pObject->GetLastGlobalTransform().m_vPosition, expectedLastPos, xiiMath::DefaultEpsilon<float>());
       XII_TEST_VEC3(pObject->GetGlobalPosition(), xiiVec3::MakeZero(), xiiMath::DefaultEpsilon<float>());

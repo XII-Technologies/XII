@@ -5,7 +5,6 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/MemoryStream.h>
-#include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -18,15 +17,17 @@ using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCube
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTextureCubeResource> to create textures from data in memory.
 struct xiiTextureCubeResourceDescriptor
 {
-  xiiTextureCubeResourceDescriptor()
+  xiiTextureCubeResourceDescriptor() :
+    m_DescGAL(xiiGALTextureUtilities::GetDefaultTextureCubeDescription()),
+    m_SamplerDesc(xiiGALGraphicsUtilities::GetDefaultSamplerDescription()),
+    m_uiQualityLevelsDiscardable(0),
+    m_uiQualityLevelsLoadable(0)
   {
-    m_uiQualityLevelsDiscardable = 0;
-    m_uiQualityLevelsLoadable    = 0;
   }
 
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL     = xiiGALTextureUtilities::GetDefaultTextureCubeDescription();
-  xiiGALSamplerCreationDescription m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
+  xiiGALTextureCreationDescription m_DescGAL;
+  xiiGALSamplerCreationDescription m_SamplerDesc;
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8 m_uiQualityLevelsDiscardable;
@@ -51,20 +52,20 @@ public:
   XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetFormat() const { return m_Format; }
   XII_ALWAYS_INLINE xiiUInt32                     GetWidthAndHeight() const { return m_uiWidthAndHeight; }
 
-  const xiiGALTextureHandle& GetGALTexture() const { return m_hGALTexture[m_uiLoadedTextures - 1]; }
-  const xiiGALSamplerHandle& GetGALSampler() const { return m_hSampler; }
+  xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pGALTexture[m_uiLoadedTextures - 1]; }
+  xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pSampler; }
 
 protected:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
-  xiiUInt8            m_uiLoadedTextures;
-  xiiGALTextureHandle m_hGALTexture[2];
-  xiiUInt32           m_uiMemoryGPU[2];
+  xiiUInt8                    m_uiLoadedTextures;
+  xiiSharedPtr<xiiGALTexture> m_pGALTexture[2];
+  xiiUInt32                   m_uiMemoryGPU[2];
 
   xiiEnum<xiiGALResourceFormat> m_Format;
   xiiUInt32                     m_uiWidthAndHeight;
 
-  xiiGALSamplerHandle m_hSampler;
+  xiiSharedPtr<xiiGALSampler> m_pSampler;
 };

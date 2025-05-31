@@ -7,7 +7,6 @@
 #include <SharedPluginScene/Common/Messages.h>
 
 class xiiObjectSelectionMsgToEngine;
-class xiiRenderContext;
 class xiiGameStateBase;
 class xiiGameModeMsgToEngine;
 class xiiWorldSettingsMsgToEngine;

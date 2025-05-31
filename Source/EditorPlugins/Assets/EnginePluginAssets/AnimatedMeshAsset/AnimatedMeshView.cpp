@@ -54,7 +54,7 @@ void xiiAnimatedMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 
     auto& bufferDesc = xiiGALDevice::GetDefaultDevice()->GetBuffer(pAnimatedMeshBuffer->GetVertexBuffer())->GetDescription();
 
-    xiiUInt32             uiNumVertices  = bufferDesc.m_uiSize / bufferDesc.m_uiElementByteStride;
+    xiiUInt32             uiNumVertices  = static_cast<xiiUInt32>(bufferDesc.m_uiSize / bufferDesc.m_uiElementByteStride);
     xiiUInt32             uiNumTriangles = pAnimatedMeshBuffer->GetPrimitiveCount();
     const xiiBoundingBox& bbox           = pAnimatedMeshBuffer->GetBounds().GetBox();
 

@@ -18,21 +18,21 @@ public:
 
   /// \brief Returns a render target handle for the given texture description
   /// Note that you should return the handle to the pool and never destroy it directly with the device.
-  xiiGALTextureHandle GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc);
+  xiiSharedPtr<xiiGALTexture> GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc);
 
   /// \brief Convenience functions which creates a texture description fit for a 2d render target without a mip chains.
-  xiiGALTextureHandle GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount = xiiGALMSAASampleCount::OneSample, xiiUInt32 uiSliceColunt = 1, bool bIsArray = false);
+  xiiSharedPtr<xiiGALTexture> GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount = xiiGALMSAASampleCount::OneSample, xiiUInt32 uiSliceColunt = 1, bool bIsArray = false);
 
   /// \brief Returns a render target to the pool so other consumers can use it.
   /// Note that targets which are returned to the pool are susceptible to destruction due to garbage collection.
-  void ReturnRenderTarget(xiiGALTextureHandle hRenderTarget);
+  void ReturnRenderTarget(xiiSharedPtr<xiiGALTexture> hRenderTarget);
 
 
   /// \brief Returns a buffer handle for the given buffer description
-  xiiGALBufferHandle GetBuffer(const xiiGALBufferCreationDescription& bufferDesc);
+  xiiSharedPtr<xiiGALBuffer> GetBuffer(const xiiGALBufferCreationDescription& bufferDesc);
 
   /// \brief Returns a buffer to the pool so other consumers can use it.
-  void ReturnBuffer(xiiGALBufferHandle hBuffer);
+  void ReturnBuffer(xiiSharedPtr<xiiGALBuffer> hBuffer);
 
 
   /// \brief Tries to free resources which are currently in the pool.
@@ -52,14 +52,14 @@ protected:
 
   struct TextureHandleWithAge
   {
-    xiiGALTextureHandle m_hTexture;
-    xiiUInt64           m_uiLastUsed = 0;
+    xiiSharedPtr<xiiGALTexture> m_pTexture;
+    xiiUInt64                   m_uiLastUsed = 0;
   };
 
   struct BufferHandleWithAge
   {
-    xiiGALBufferHandle m_hBuffer;
-    xiiUInt64          m_uiLastUsed = 0;
+    xiiSharedPtr<xiiGALBuffer> m_pBuffer;
+    xiiUInt64                  m_uiLastUsed = 0;
   };
 
   xiiEventSubscriptionID m_GALDeviceEventSubscriptionID;
@@ -71,14 +71,14 @@ protected:
   xiiUInt16              m_uiFramesSinceLastGC            = 0;
 
   xiiMap<xiiUInt32, xiiDynamicArray<TextureHandleWithAge>> m_AvailableTextures;
-  xiiSet<xiiGALTextureHandle>                              m_TexturesInUse;
+  xiiSet<xiiSharedPtr<xiiGALTexture>>                      m_TexturesInUse;
 
   xiiMap<xiiUInt32, xiiDynamicArray<BufferHandleWithAge>> m_AvailableBuffers;
-  xiiSet<xiiGALBufferHandle>                              m_BuffersInUse;
+  xiiSet<xiiSharedPtr<xiiGALBuffer>>                      m_BuffersInUse;
 
   xiiMutex m_Lock;
 
-  xiiGALDevice* m_pDevice;
+  xiiSharedPtr<xiiGALDevice> m_pDevice;
 
 private:
   static xiiGPUResourcePool* s_pDefaultInstance;

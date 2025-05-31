@@ -3,7 +3,6 @@ include("${CMAKE_CURRENT_LIST_DIR}/Configure_Default.cmake")
 message(STATUS "Configuring Platform: Windows")
 
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_WINDOWS ON)
-set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_D3D11 ON)
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_VULKAN ON)
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_EDITOR ON)
 
@@ -32,7 +31,7 @@ macro(xii_platform_pull_properties)
   get_property(XII_CMAKE_WINDOWS_SDK_VERSION GLOBAL PROPERTY XII_CMAKE_WINDOWS_SDK_VERSION)
 endmacro()
 
-macro (xii_platformhook_set_build_flags_clang)
+macro (xii_platformhook_set_build_flags_clang TARGET_NAME)
   # Disable the warning that clang doesn't support pragma optimize.
   target_compile_options(${TARGET_NAME} PRIVATE -Wno-ignored-pragma-optimize -Wno-pragma-pack)
 endmacro()
@@ -143,9 +142,9 @@ macro(xii_platformhook_download_qt)
     endif()
 
     if((XII_QT_DIR STREQUAL "XII_QT_DIR-NOTFOUND") OR(XII_QT_DIR STREQUAL ""))
-      xii_download_and_extract("${XII_SDK_URL}" "${CMAKE_BINARY_DIR}" "${XII_SDK_VERSION}")
+      xii_download_and_extract("${XII_SDK_URL}" "${CMAKE_BINARY_DIR}/.." "${XII_SDK_VERSION}")
 
-      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation" FORCE)
+      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/../${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation" FORCE)
     endif()
   endif()
 endmacro()

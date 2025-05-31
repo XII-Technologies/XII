@@ -2,7 +2,6 @@
 
 #include <Foundation/IO/JSONReader.h>
 
-
 xiiJSONReader::xiiJSONReader()
 {
   m_bParsingError = false;
@@ -155,6 +154,11 @@ void xiiJSONReader::OnEndArray()
 
 void xiiJSONReader::OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)
 {
+  XII_IGNORE_UNUSED(sMessage);
+  XII_IGNORE_UNUSED(bFatal);
+  XII_IGNORE_UNUSED(uiLine);
+  XII_IGNORE_UNUSED(uiColumn);
+
   m_bParsingError = true;
 }
 

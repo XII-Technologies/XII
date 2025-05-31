@@ -55,7 +55,7 @@ void xiiSystemInformation::Initialize()
 #if XII_ENABLED(XII_PLATFORM_64BIT)
   s_SystemInformation.m_bB64BitOS = true;
 #else
-  s_SystemInformation.m_bB64BitOS            = false;
+  s_SystemInformation.m_bB64BitOS = false;
 #  if XII_ENABLED(XII_PLATFORM_OSX)
 #    error "32 Bit builds are not supported on OSX"
 #  endif
@@ -71,7 +71,7 @@ void xiiSystemInformation::Initialize()
 #if XII_ENABLED(XII_PLATFORM_LINUX)
   s_SystemInformation.m_szPlatformName = "Linux";
 #elif XII_ENABLED(XII_PLATFORM_ANDROID)
-  s_SystemInformation.m_szPlatformName       = "Android";
+  s_SystemInformation.m_szPlatformName = "Android";
 #else
 #  error "Platform name not defined on current posix platform"
 #endif

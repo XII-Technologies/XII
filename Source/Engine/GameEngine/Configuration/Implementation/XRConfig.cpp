@@ -46,8 +46,8 @@ void xiiXRConfig::LoadRuntimeData(xiiChunkStreamReader& inout_stream)
 
 //////////////////////////////////////////////////////////////////////////
 
-#include <Foundation/Serialization/GraphPatch.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
 
 class xiiVRConfig_1_2 : public xiiGraphPatch
 {

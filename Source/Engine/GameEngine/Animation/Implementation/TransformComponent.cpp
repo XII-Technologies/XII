@@ -62,18 +62,19 @@ void xiiTransformComponent::OnSimulationStarted()
 
   // reset to start state
   m_AnimationTime = xiiTime::MakeZero();
-  m_Flags.Add(xiiTransformComponentFlags::Running);
+  m_Flags.AddOrRemove(xiiTransformComponentFlags::CurrentlyRunning, m_Flags.IsSet(xiiTransformComponentFlags::Running));
   m_Flags.Remove(xiiTransformComponentFlags::AnimationReversed);
 }
 
 bool xiiTransformComponent::IsRunning(void) const
 {
-  return m_Flags.IsAnySet(xiiTransformComponentFlags::Running);
+  return m_Flags.IsAnySet(xiiTransformComponentFlags::CurrentlyRunning);
 }
 
 void xiiTransformComponent::SetRunning(bool b)
 {
   m_Flags.AddOrRemove(xiiTransformComponentFlags::Running, b);
+  m_Flags.AddOrRemove(xiiTransformComponentFlags::CurrentlyRunning, b);
 }
 
 bool xiiTransformComponent::GetReverseAtStart(void) const

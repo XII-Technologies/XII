@@ -80,14 +80,13 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALRasterizerState(xiiGALDevice* pDevice, const xiiGALRasterizerStateCreationDescription& creationDescription);
+  xiiGALRasterizerState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRasterizerStateCreationDescription& creationDescription);
 
   virtual ~xiiGALRasterizerState();
 
   virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALRasterizerStateCreationDescription m_Description;

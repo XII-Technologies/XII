@@ -29,22 +29,29 @@ protected:
 
 //////////////////////////////////////////////////////////////////////////
 
+/// \brief Which pose to apply to an animated mesh.
 struct xiiSkeletonPoseMode
 {
   using StorageType = xiiUInt8;
 
   enum Enum
   {
-    CustomPose,
-    RestPose,
-    Disabled,
+    CustomPose, ///< Set a custom pose on the mesh.
+    RestPose,   ///< Set the rest pose (bind pose) on the mesh.
+    Disabled,   ///< Don't set any pose.
     Default = CustomPose
   };
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSkeletonPoseMode);
 
-
+/// \brief Used in conjunction with a xiiAnimatedMeshComponent to set a specific pose for the animated mesh.
+///
+/// This component is used to set one, static pose for an animated mesh. The pose is applied once at startup.
+/// This can be used to either just pose a mesh in a certain way, or to set a start pose that is then used
+/// by other systems, for example a ragdoll component, to generate further poses.
+///
+/// The component needs to be attached to the same game object where the animated mesh component is attached.
 class XII_GRAPHICSCORE_DLL xiiSkeletonPoseComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSkeletonPoseComponent, xiiComponent, xiiSkeletonPoseComponentManager);
@@ -67,18 +74,21 @@ public:
   xiiSkeletonPoseComponent();
   ~xiiSkeletonPoseComponent();
 
+  /// \brief Sets the xiiSkeletonResource to use.
   void                             SetSkeleton(const xiiSkeletonResourceHandle& hResource); // [ property ]
   const xiiSkeletonResourceHandle& GetSkeleton() const { return m_hSkeleton; }              // [ property ]
 
-  xiiEnum<xiiSkeletonPoseMode> GetPoseMode() const { return m_PoseMode; }
+  /// \brief Configures which pose to apply to the animated mesh.
   void                         SetPoseMode(xiiEnum<xiiSkeletonPoseMode> mode);
+  xiiEnum<xiiSkeletonPoseMode> GetPoseMode() const { return m_PoseMode; }
 
+  const xiiRangeView<xiiStringView, xiiUInt32> GetBones() const;                                    // [ property ] (exposed bones)
+  void                                         SetBone(xiiStringView, const xiiVariant& value);     // [ property ] (exposed bones)
+  void                                         RemoveBone(xiiStringView);                           // [ property ] (exposed bones)
+  bool                                         GetBone(xiiStringView, xiiVariant& out_value) const; // [ property ] (exposed bones)
+
+  /// \brief Instructs the component to apply the pose to the animated mesh again.
   void ResendPose();
-
-  const xiiRangeView<xiiStringView, xiiUInt32> GetBones() const;                                         // [ property ] (exposed bones)
-  void                                         SetBone(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed bones)
-  void                                         RemoveBone(xiiStringView sKey);                           // [ property ] (exposed bones)
-  bool                                         GetBone(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed bones)
 
 protected:
   void Update();

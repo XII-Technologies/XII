@@ -7,7 +7,6 @@
 #  include <GameEngine/DearImgui/DearImguiRenderer.h>
 #  include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #  include <GraphicsCore/Pipeline/View.h>
-#  include <GraphicsCore/RenderContext/RenderContext.h>
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Shader/ShaderResource.h>
 #  include <GraphicsFoundation/Device/Device.h>
@@ -16,7 +15,6 @@
 #  include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #  include <Imgui/imgui_internal.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImguiRenderData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -25,7 +23,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImguiRenderer, 1, xiiRTTIDefaultAllocator<xiiImguiRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiImguiExtractor::xiiImguiExtractor(xiiStringView sName) :
   xiiExtractor(sName)
@@ -200,7 +197,7 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
       {
         auto rect = imGuiBatch.m_ScissorRect;
 
-        pCommandList->SetScissorRects(xiiMakeArrayPtr(&rect, 1U), 0U, 0U);
+        pCommandList->SetScissorRects(xiiMakeArrayPtr(&rect, 1U));
         pRenderContext->BindTexture2D("BaseTexture", textures[imGuiBatch.m_uiTextureID]);
         pRenderContext->DrawMeshBuffer(imGuiBatch.m_uiVertexCount / 3, uiFirstIndex / 3).IgnoreResult();
       }
@@ -226,7 +223,7 @@ void xiiImguiRenderer::SetupRenderer()
     desc.m_uiElementByteStride = sizeof(xiiImguiVertex);
     desc.m_uiSize              = s_uiVertexBufferSize * desc.m_uiElementByteStride;
     desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_Usage               = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
@@ -238,7 +235,7 @@ void xiiImguiRenderer::SetupRenderer()
     desc.m_uiElementByteStride = sizeof(ImDrawIdx);
     desc.m_uiSize              = s_uiIndexBufferSize * desc.m_uiElementByteStride;
     desc.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_Usage               = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     m_hIndexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);

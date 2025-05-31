@@ -69,6 +69,7 @@ bool xiiPipeChannel_win::CreatePipe(xiiStringView sAddress)
     ULONG_PTR key  = reinterpret_cast<ULONG_PTR>(this);
     HANDLE    port = CreateIoCompletionPort(m_hPipeHandle, pMsgLoopWin->GetPort(), key, 1);
     XII_ASSERT_DEBUG(pMsgLoopWin->GetPort() == port, "Failed to CreateIoCompletionPort: {0}", xiiArgErrorCode(GetLastError()));
+    XII_IGNORE_UNUSED(port);
   }
   return true;
 }
@@ -312,6 +313,8 @@ bool xiiPipeChannel_win::ProcessOutgoingMessages(DWORD uiBytesWritten)
 
 void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfered, DWORD uiError)
 {
+  XII_IGNORE_UNUSED(uiError);
+
   XII_ASSERT_DEBUG(m_ThreadId == xiiThreadUtils::GetCurrentThreadID(), "Function must be called from worker thread!");
   bool bRes = true;
   if (pContext == &m_InputState.Context)

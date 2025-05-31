@@ -310,7 +310,7 @@ typename xiiBitflags<T>::ConstIterator cend(const xiiBitflags<T>& container)
   {                                                                                              \
     static constexpr xiiUInt32 Count = XII_VA_NUM_ARGS(__VA_ARGS__);                             \
     using StorageType                = InternalStorageType;                                      \
-    enum Enum                                                                                    \
+    enum Enum : StorageType                                                                      \
     {                                                                                            \
       XII_EXPAND_ARGS_WITH_INDEX(XII_DECLARE_FLAGS_ENUM, ##__VA_ARGS__) Default = DefaultValue   \
     };                                                                                           \

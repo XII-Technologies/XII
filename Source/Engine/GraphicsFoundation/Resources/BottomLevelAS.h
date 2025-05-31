@@ -124,14 +124,13 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALBottomLevelAS(xiiGALDevice* pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription);
+  xiiGALBottomLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelAS();
 
   virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALBottomLevelASCreationDescription m_Description;

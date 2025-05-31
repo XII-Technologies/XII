@@ -153,7 +153,7 @@ private:
   /// is going to be deleted afterwards.
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) = 0;
 
-  void CallUpdateContent(xiiStreamReader* Stream);
+  void CallUpdateContent(xiiStreamReader* pStream);
 
   /// \brief Called whenever more data for the resource is available. The resource must read the stream to update it's data.
   ///

@@ -245,11 +245,11 @@ xiiReflectedFunctionDescriptor::~xiiReflectedFunctionDescriptor() = default;
 
 void xiiReflectedFunctionDescriptor::operator=(const xiiReflectedFunctionDescriptor& rhs)
 {
-  m_sName                     = rhs.m_sName;
-  m_Flags                     = rhs.m_Flags;
-  m_Type                      = rhs.m_Type;
-  m_ReturnValue               = rhs.m_ReturnValue;
-  m_Arguments                 = rhs.m_Arguments;
+  m_sName       = rhs.m_sName;
+  m_Flags       = rhs.m_Flags;
+  m_Type        = rhs.m_Type;
+  m_ReturnValue = rhs.m_ReturnValue;
+  m_Arguments   = rhs.m_Arguments;
   xiiAttributeHolder::operator=(rhs);
 }
 

@@ -117,6 +117,7 @@ namespace
     xiiVariantFromProperty(xiiVariant& value, const xiiAbstractProperty* pProp) :
       m_value(value)
     {
+      XII_IGNORE_UNUSED(pProp);
     }
     ~xiiVariantFromProperty()
     {
@@ -140,6 +141,7 @@ namespace
     xiiVariantFromProperty(xiiVariant& value, const xiiAbstractProperty* pProp) :
       m_value(value)
     {
+      XII_IGNORE_UNUSED(pProp);
     }
 
     operator void*()
@@ -157,21 +159,22 @@ namespace
     xiiVariantFromProperty(xiiVariant& value, const xiiAbstractProperty* pProp) :
       m_value(value), m_pProp(pProp)
     {
+      XII_IGNORE_UNUSED(pProp);
     }
     ~xiiVariantFromProperty()
     {
       if (m_bSuccess)
-        m_value = xiiVariant(m_ptr, m_pProp->GetSpecificType());
+        m_value = xiiVariant(m_pPtr, m_pProp->GetSpecificType());
     }
 
     operator void*()
     {
-      return &m_ptr;
+      return &m_pPtr;
     }
 
     xiiVariant&                m_value;
     const xiiAbstractProperty* m_pProp    = nullptr;
-    void*                      m_ptr      = nullptr;
+    void*                      m_pPtr     = nullptr;
     bool                       m_bSuccess = true;
   };
 
@@ -181,24 +184,24 @@ namespace
     xiiVariantFromProperty(xiiVariant& value, const xiiAbstractProperty* pProp) :
       m_value(value), m_pProp(pProp)
     {
-      m_ptr = m_pProp->GetSpecificType()->GetAllocator()->Allocate<void>();
+      m_pPtr = m_pProp->GetSpecificType()->GetAllocator()->Allocate<void>();
     }
     ~xiiVariantFromProperty()
     {
       if (m_bSuccess)
-        m_value.MoveTypedObject(m_ptr, m_pProp->GetSpecificType());
+        m_value.MoveTypedObject(m_pPtr, m_pProp->GetSpecificType());
       else
-        m_pProp->GetSpecificType()->GetAllocator()->Deallocate(m_ptr);
+        m_pProp->GetSpecificType()->GetAllocator()->Deallocate(m_pPtr);
     }
 
     operator void*()
     {
-      return m_ptr;
+      return m_pPtr;
     }
 
     xiiVariant&                m_value;
     const xiiAbstractProperty* m_pProp    = nullptr;
-    void*                      m_ptr      = nullptr;
+    void*                      m_pPtr     = nullptr;
     bool                       m_bSuccess = true;
   };
 
@@ -209,6 +212,8 @@ namespace
   {
     xiiVariantToProperty(const xiiVariant& value, const xiiAbstractProperty* pProp)
     {
+      XII_IGNORE_UNUSED(pProp);
+
       m_tempValue = value.ConvertTo<typename xiiPropertyValue<T>::StorageType>();
     }
 
@@ -225,6 +230,8 @@ namespace
   {
     xiiVariantToProperty(const xiiVariant& value, const xiiAbstractProperty* pProp)
     {
+      XII_IGNORE_UNUSED(pProp);
+
       m_sData  = value.ConvertTo<xiiString>();
       m_pValue = m_sData;
     }
@@ -243,6 +250,7 @@ namespace
     xiiVariantToProperty(const xiiVariant& value, const xiiAbstractProperty* pProp) :
       m_value(value)
     {
+      XII_IGNORE_UNUSED(pProp);
     }
 
     operator const void*()
@@ -258,16 +266,19 @@ namespace
   {
     xiiVariantToProperty(const xiiVariant& value, const xiiAbstractProperty* pProp)
     {
-      m_ptr = value.Get<xiiTypedPointer>();
-      XII_ASSERT_DEBUG(!m_ptr.m_pType || m_ptr.m_pType->IsDerivedFrom(pProp->GetSpecificType()), "Pointer of type '{0}' does not derive from '{}'", m_ptr.m_pType->GetTypeName(), pProp->GetSpecificType()->GetTypeName());
+      XII_IGNORE_UNUSED(pProp);
+
+      m_pPtr = value.Get<xiiTypedPointer>();
+
+      XII_ASSERT_DEBUG(!m_pPtr.m_pType || m_pPtr.m_pType->IsDerivedFrom(pProp->GetSpecificType()), "Pointer of type '{0}' does not derive from '{}'", m_pPtr.m_pType->GetTypeName(), pProp->GetSpecificType()->GetTypeName());
     }
 
     operator const void*()
     {
-      return &m_ptr.m_pObject;
+      return &m_pPtr.m_pObject;
     }
 
-    xiiTypedPointer m_ptr;
+    xiiTypedPointer m_pPtr;
   };
 
 
@@ -276,6 +287,8 @@ namespace
   {
     xiiVariantToProperty(const xiiVariant& value, const xiiAbstractProperty* pProp)
     {
+      XII_IGNORE_UNUSED(pProp);
+
       m_pPtr = value.GetData();
     }
 
@@ -398,7 +411,13 @@ namespace
   template <typename T>
   struct SetComponentValueImpl
   {
-    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue) { XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType()); }
+    XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
+    {
+      XII_IGNORE_UNUSED(pVector);
+      XII_IGNORE_UNUSED(uiComponent);
+      XII_IGNORE_UNUSED(fValue);
+      XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType());
+    }
   };
 
   template <typename T>
@@ -482,22 +501,28 @@ namespace
   template <typename T>
   struct GetComponentValueImpl
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& ref_fValue) { XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType()); }
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
+    {
+      XII_IGNORE_UNUSED(pVector);
+      XII_IGNORE_UNUSED(uiComponent);
+      XII_IGNORE_UNUSED(out_fValue);
+      XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType());
+    }
   };
 
   template <typename T>
   struct GetComponentValueImpl<xiiVec2Template<T>>
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& ref_fValue)
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
       const auto& vec = pVector->Get<xiiVec2Template<T>>();
       switch (uiComponent)
       {
         case 0:
-          ref_fValue = static_cast<double>(vec.x);
+          out_fValue = static_cast<double>(vec.x);
           break;
         case 1:
-          ref_fValue = static_cast<double>(vec.y);
+          out_fValue = static_cast<double>(vec.y);
           break;
       }
     }
@@ -506,19 +531,19 @@ namespace
   template <typename T>
   struct GetComponentValueImpl<xiiVec3Template<T>>
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& ref_fValue)
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
       const auto& vec = pVector->Get<xiiVec3Template<T>>();
       switch (uiComponent)
       {
         case 0:
-          ref_fValue = static_cast<double>(vec.x);
+          out_fValue = static_cast<double>(vec.x);
           break;
         case 1:
-          ref_fValue = static_cast<double>(vec.y);
+          out_fValue = static_cast<double>(vec.y);
           break;
         case 2:
-          ref_fValue = static_cast<double>(vec.z);
+          out_fValue = static_cast<double>(vec.z);
           break;
       }
     }
@@ -527,22 +552,22 @@ namespace
   template <typename T>
   struct GetComponentValueImpl<xiiVec4Template<T>>
   {
-    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& ref_fValue)
+    XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
       const auto& vec = pVector->Get<xiiVec4Template<T>>();
       switch (uiComponent)
       {
         case 0:
-          ref_fValue = static_cast<double>(vec.x);
+          out_fValue = static_cast<double>(vec.x);
           break;
         case 1:
-          ref_fValue = static_cast<double>(vec.y);
+          out_fValue = static_cast<double>(vec.y);
           break;
         case 2:
-          ref_fValue = static_cast<double>(vec.z);
+          out_fValue = static_cast<double>(vec.z);
           break;
         case 3:
-          ref_fValue = static_cast<double>(vec.w);
+          out_fValue = static_cast<double>(vec.w);
           break;
       }
     }
@@ -1719,6 +1744,8 @@ namespace
   {
     static XII_ALWAYS_INLINE xiiResult Func(xiiVariant& value, const xiiClampValueAttribute* pAttrib)
     {
+      XII_IGNORE_UNUSED(value);
+      XII_IGNORE_UNUSED(pAttrib);
       return XII_FAILURE;
     }
   };

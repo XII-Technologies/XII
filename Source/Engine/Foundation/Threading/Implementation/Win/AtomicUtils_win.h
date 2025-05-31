@@ -1,276 +1,348 @@
 #ifdef XII_ATOMICUTLS_WIN_INL_H_INCLUDED
-#  error "This file must not be included twice."
+#  error "This file must not be included more than once."
 #endif
 
 #define XII_ATOMICUTLS_WIN_INL_H_INCLUDED
 
 #include <intrin.h>
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Read(const xiiInt32& iSrc)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Read(const T& ref_value)
 {
-  return _InterlockedOr((long*)(&iSrc), 0);
-}
+  using AtomicType = xii_atomic_underlying_t<T>;
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Read(const xiiInt64& iSrc)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
+  if constexpr (sizeof(AtomicType) == 1)
   {
-    old = iSrc;
-  } while (_InterlockedCompareExchange64(const_cast<xiiInt64*>(&iSrc), old, old) != old);
-  return old;
-#else
-  return _InterlockedOr64(const_cast<xiiInt64*>(&iSrc), 0);
-#endif
-}
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Increment(xiiInt32& ref_iDest)
-{
-  return _InterlockedIncrement(reinterpret_cast<long*>(&ref_iDest));
-}
-
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Increment(xiiInt64& ref_iDest)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
+    return static_cast<T>(_InterlockedCompareExchange8(reinterpret_cast<volatile char*>(const_cast<T*>(&ref_value)), 0, 0));
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
   {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, old + 1, old) != old);
-  return old + 1;
-#else
-  return _InterlockedIncrement64(&ref_iDest);
-#endif
-}
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Decrement(xiiInt32& ref_iDest)
-{
-  return _InterlockedDecrement(reinterpret_cast<long*>(&ref_iDest));
-}
-
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Decrement(xiiInt64& ref_iDest)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
+    return static_cast<T>(_InterlockedCompareExchange16(reinterpret_cast<volatile short*>(const_cast<T*>(&ref_value)), 0, 0));
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
   {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, old - 1, old) != old);
-  return old - 1;
-#else
-  return _InterlockedDecrement64(&ref_iDest);
-#endif
-}
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::PostIncrement(xiiInt32& ref_iDest)
-{
-  return _InterlockedExchangeAdd(reinterpret_cast<long*>(&ref_iDest), 1);
-}
-
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostIncrement(xiiInt64& ref_iDest)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
+    return static_cast<T>(_InterlockedCompareExchange(reinterpret_cast<volatile long*>(const_cast<T*>(&ref_value)), 0, 0));
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
   {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, old + 1, old) != old);
-  return old;
-#else
-  return _InterlockedExchangeAdd64(&ref_iDest, 1);
-#endif
-}
-
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::PostDecrement(xiiInt32& ref_iDest)
-{
-  return _InterlockedExchangeAdd(reinterpret_cast<long*>(&ref_iDest), -1);
-}
-
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostDecrement(xiiInt64& ref_iDest)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
+    return static_cast<T>(_InterlockedCompareExchange64(reinterpret_cast<volatile __int64*>(const_cast<T*>(&ref_value)), 0, 0));
+  }
+  else
   {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, old - 1, old) != old);
-  return old;
-#else
-  return _InterlockedExchangeAdd64(&ref_iDest, -1);
-#endif
-}
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Add(xiiInt32& ref_iDest, xiiInt32 value)
-{
-  _InterlockedExchangeAdd(reinterpret_cast<long*>(&ref_iDest), value);
-}
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Add(xiiInt64& ref_iDest, xiiInt64 value)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
-  {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, old + value, old) != old);
-#else
-  _InterlockedExchangeAdd64(&ref_iDest, value);
-#endif
-}
-
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::And(xiiInt32& ref_iDest, xiiInt32 value)
-{
-  _InterlockedAnd(reinterpret_cast<long*>(&ref_iDest), value);
-}
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::And(xiiInt64& ref_iDest, xiiInt64 value)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
-  {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, old & value, old) != old);
-#else
-  _InterlockedAnd64(&ref_iDest, value);
-#endif
-}
-
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Or(xiiInt32& ref_iDest, xiiInt32 value)
-{
-  _InterlockedOr(reinterpret_cast<long*>(&ref_iDest), value);
-}
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Or(xiiInt64& ref_iDest, xiiInt64 value)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
-  {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, old | value, old) != old);
-#else
-  _InterlockedOr64(&ref_iDest, value);
-#endif
-}
-
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(xiiInt32& ref_iDest, xiiInt32 value)
-{
-  _InterlockedXor(reinterpret_cast<long*>(&ref_iDest), value);
-}
-
-XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(xiiInt64& ref_iDest, xiiInt64 value)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
-  {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, old ^ value, old) != old);
-#else
-  _InterlockedXor64(&ref_iDest, value);
-#endif
-}
-
-
-inline void xiiAtomicUtils::Min(xiiInt32& ref_iDest, xiiInt32 value)
-{
-  // tries to exchange dest with the new value as long as the oldValue is not what we expected
-  while (true)
-  {
-    xiiInt32 iOldValue = ref_iDest;
-    xiiInt32 iNewValue = value < iOldValue ? value : iOldValue; // do Min manually here, to break #include cycles
-
-    if (_InterlockedCompareExchange(reinterpret_cast<long*>(&ref_iDest), iNewValue, iOldValue) == iOldValue)
-      break;
+    XII_ASSERT_NOT_IMPLEMENTED;
   }
 }
 
-inline void xiiAtomicUtils::Min(xiiInt64& ref_iDest, xiiInt64 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Exchange(T& ref_value, T newValue)
 {
-  // tries to exchange dest with the new value as long as the oldValue is not what we expected
-  while (true)
-  {
-    xiiInt64 iOldValue = ref_iDest;
-    xiiInt64 iNewValue = value < iOldValue ? value : iOldValue; // do Min manually here, to break #include cycles
+  using AtomicType = xii_atomic_underlying_t<T>;
 
-    if (_InterlockedCompareExchange64(&ref_iDest, iNewValue, iOldValue) == iOldValue)
-      break;
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedExchange8(reinterpret_cast<volatile char*>(&ref_value), static_cast<char>(newValue)));
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedExchange16(reinterpret_cast<volatile short*>(&ref_value), static_cast<short>(newValue)));
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedExchange(reinterpret_cast<volatile long*>(&ref_value), static_cast<long>(newValue)));
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedExchange64(reinterpret_cast<volatile __int64*>(&ref_value), static_cast<__int64>(newValue)));
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
   }
 }
 
-inline void xiiAtomicUtils::Max(xiiInt32& ref_iDest, xiiInt32 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Increment(T& ref_value)
 {
-  // tries to exchange dest with the new value as long as the oldValue is not what we expected
-  while (true)
-  {
-    xiiInt32 iOldValue = ref_iDest;
-    xiiInt32 iNewValue = iOldValue < value ? value : iOldValue; // do Max manually here, to break #include cycles
+  using AtomicType = xii_atomic_underlying_t<T>;
 
-    if (_InterlockedCompareExchange(reinterpret_cast<long*>(&ref_iDest), iNewValue, iOldValue) == iOldValue)
-      break;
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd8(reinterpret_cast<volatile char*>(&ref_value), 1) + 1);
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd16(reinterpret_cast<volatile short*>(&ref_value), 1) + 1);
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_value), 1) + 1);
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(&ref_value), 1) + 1);
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
   }
 }
 
-inline void xiiAtomicUtils::Max(xiiInt64& ref_iDest, xiiInt64 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Decrement(T& ref_value)
 {
-  // tries to exchange dest with the new value as long as the oldValue is not what we expected
-  while (true)
-  {
-    xiiInt64 iOldValue = ref_iDest;
-    xiiInt64 iNewValue = iOldValue < value ? value : iOldValue; // do Max manually here, to break #include cycles
+  using AtomicType = xii_atomic_underlying_t<T>;
 
-    if (_InterlockedCompareExchange64(&ref_iDest, iNewValue, iOldValue) == iOldValue)
-      break;
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd8(reinterpret_cast<volatile char*>(&ref_value), -1) - 1);
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd16(reinterpret_cast<volatile short*>(&ref_value), -1) - 1);
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_value), -1) - 1);
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(&ref_value), -1) - 1);
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
   }
 }
 
-
-inline xiiInt32 xiiAtomicUtils::Set(xiiInt32& ref_iDest, xiiInt32 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::PostIncrement(T& ref_value)
 {
-  return _InterlockedExchange(reinterpret_cast<long*>(&ref_iDest), value);
-}
+  using AtomicType = xii_atomic_underlying_t<T>;
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Set(xiiInt64& ref_iDest, xiiInt64 value)
-{
-#if XII_ENABLED(XII_PLATFORM_32BIT)
-  xiiInt64 old;
-  do
+  if constexpr (sizeof(AtomicType) == 1)
   {
-    old = ref_iDest;
-  } while (_InterlockedCompareExchange64(&ref_iDest, value, old) != old);
-  return old;
-#else
-  return _InterlockedExchange64(&ref_iDest, value);
-#endif
+    return static_cast<T>(_InterlockedExchangeAdd8(reinterpret_cast<volatile char*>(&ref_value), 1));
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd16(reinterpret_cast<volatile short*>(&ref_value), 1));
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_value), 1));
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(&ref_value), 1));
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
 }
 
-
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::PostDecrement(T& ref_value)
 {
-  return _InterlockedCompareExchange(reinterpret_cast<long*>(&ref_iDest), value, iExpected) == iExpected;
+  using AtomicType = xii_atomic_underlying_t<T>;
+
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd8(reinterpret_cast<volatile char*>(&ref_value), -1));
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd16(reinterpret_cast<volatile short*>(&ref_value), -1));
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_value), -1));
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(&ref_value), -1));
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
 }
 
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Add(T& ref_value, T addend)
 {
-  return _InterlockedCompareExchange64(&ref_iDest, value, iExpected) == iExpected;
+  using AtomicType = xii_atomic_underlying_t<T>;
+
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd8(reinterpret_cast<volatile char*>(&ref_value), static_cast<char>(addend)) + addend);
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd16(reinterpret_cast<volatile short*>(&ref_value), static_cast<short>(addend)) + addend);
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_value), static_cast<long>(addend)) + addend);
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(&ref_value), static_cast<__int64>(addend)) + addend);
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
 }
 
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(void** pDest, void* pExpected, void* value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Subtract(T& ref_value, T subtrahend)
 {
-  return _InterlockedCompareExchangePointer(pDest, value, pExpected) == pExpected;
+  using AtomicType = xii_atomic_underlying_t<T>;
+
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd8(reinterpret_cast<volatile char*>(&ref_value), -static_cast<char>(subtrahend)) - subtrahend);
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd16(reinterpret_cast<volatile short*>(&ref_value), -static_cast<short>(subtrahend)) - subtrahend);
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_value), -static_cast<long>(subtrahend)) - subtrahend);
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(&ref_value), -static_cast<__int64>(subtrahend)) - subtrahend);
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::CompareAndSwap(xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::And(T& ref_value, T operand)
 {
-  return _InterlockedCompareExchange(reinterpret_cast<long*>(&ref_iDest), value, iExpected);
+  using AtomicType = xii_atomic_underlying_t<T>;
+
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedAnd8(reinterpret_cast<volatile char*>(&ref_value), static_cast<char>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedAnd16(reinterpret_cast<volatile short*>(&ref_value), static_cast<short>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedAnd(reinterpret_cast<volatile long*>(&ref_value), static_cast<long>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedAnd64(reinterpret_cast<volatile __int64*>(&ref_value), static_cast<__int64>(operand)));
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::CompareAndSwap(xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value)
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Or(T& ref_value, T operand)
 {
-  return _InterlockedCompareExchange64(&ref_iDest, value, iExpected);
+  using AtomicType = xii_atomic_underlying_t<T>;
+
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedOr8(reinterpret_cast<volatile char*>(&ref_value), static_cast<char>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedOr16(reinterpret_cast<volatile short*>(&ref_value), static_cast<short>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedOr(reinterpret_cast<volatile long*>(&ref_value), static_cast<long>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedOr64(reinterpret_cast<volatile __int64*>(&ref_value), static_cast<__int64>(operand)));
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
+}
+
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::Xor(T& ref_value, T operand)
+{
+  using AtomicType = xii_atomic_underlying_t<T>;
+
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedXor8(reinterpret_cast<volatile char*>(&ref_value), static_cast<char>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedXor16(reinterpret_cast<volatile short*>(&ref_value), static_cast<short>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedXor(reinterpret_cast<volatile long*>(&ref_value), static_cast<long>(operand)));
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedXor64(reinterpret_cast<volatile __int64*>(&ref_value), static_cast<__int64>(operand)));
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
+}
+
+template <typename T>
+  requires xii_is_atomic_compatible_v<T>
+XII_ALWAYS_INLINE T xiiAtomicUtils::CompareExchange(T& ref_value, T expected, T desired)
+{
+  using AtomicType = xii_atomic_underlying_t<T>;
+
+  if constexpr (sizeof(AtomicType) == 1)
+  {
+    return static_cast<T>(_InterlockedCompareExchange8(reinterpret_cast<volatile char*>(&ref_value), static_cast<char>(desired), static_cast<char>(expected)));
+  }
+  else if constexpr (sizeof(AtomicType) == 2)
+  {
+    return static_cast<T>(_InterlockedCompareExchange16(reinterpret_cast<volatile short*>(&ref_value), static_cast<short>(desired), static_cast<short>(expected)));
+  }
+  else if constexpr (sizeof(AtomicType) == 4)
+  {
+    return static_cast<T>(_InterlockedCompareExchange(reinterpret_cast<volatile long*>(&ref_value), static_cast<long>(desired), static_cast<long>(expected)));
+  }
+  else if constexpr (sizeof(AtomicType) == 8)
+  {
+    return static_cast<T>(_InterlockedCompareExchange64(reinterpret_cast<volatile __int64*>(&ref_value), static_cast<__int64>(desired), static_cast<__int64>(expected)));
+  }
+  else
+  {
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
+}
+
+XII_ALWAYS_INLINE bool xiiAtomicUtils::CompareExchangePointer(void** pDestination, void* pExpected, void* pValue)
+{
+  return _InterlockedCompareExchangePointer(pDestination, pValue, pExpected);
 }

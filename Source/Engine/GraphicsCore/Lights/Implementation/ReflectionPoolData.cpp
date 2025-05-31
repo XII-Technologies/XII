@@ -7,8 +7,6 @@
 #include <GraphicsCore/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Lights/SphereReflectionProbeComponent.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 //////////////////////////////////////////////////////////////////////////
 /// xiiReflectionPool::Data
@@ -22,11 +20,7 @@ xiiReflectionPool::Data::Data()
 
 xiiReflectionPool::Data::~Data()
 {
-  if (!m_hFallbackReflectionSpecularTexture.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyTexture(m_hFallbackReflectionSpecularTexture);
-    m_hFallbackReflectionSpecularTexture.Invalidate();
-  }
+  m_pFallbackReflectionSpecularTexture.Clear();
 
   xiiUInt32 uiWorldReflectionCount = m_WorldReflectionData.GetCount();
   for (xiiUInt32 i = 0; i < uiWorldReflectionCount; ++i)
@@ -36,11 +30,7 @@ xiiReflectionPool::Data::~Data()
   }
   m_WorldReflectionData.Clear();
 
-  if (!m_hSkyIrradianceTexture.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyTexture(m_hSkyIrradianceTexture);
-    m_hSkyIrradianceTexture.Invalidate();
-  }
+  m_pSkyIrradianceTexture.Clear();
 }
 
 xiiReflectionProbeId xiiReflectionPool::Data::AddProbe(const xiiWorld* pWorld, ProbeData&& probeData)
@@ -252,12 +242,12 @@ void xiiReflectionPool::Data::PreExtraction()
       ProbeData&                                    probeData = data.m_Probes.GetValueUnchecked(nextUpdate.m_Id.m_InstanceIndex);
 
       xiiReflectionProbeUpdater::TargetSlot target;
-      target.m_hSpecularOutputTexture = data.m_mapping.GetTexture();
+      target.m_pSpecularOutputTexture = data.m_mapping.GetTexture();
       target.m_iSpecularOutputIndex   = data.m_mapping.GetReflectionIndex(nextUpdate.m_Id);
 
       if (probeData.m_Flags.IsSet(xiiProbeFlags::SkyLight))
       {
-        target.m_hIrradianceOutputTexture = m_hSkyIrradianceTexture;
+        target.m_pIrradianceOutputTexture = m_pSkyIrradianceTexture;
         target.m_iIrradianceOutputIndex   = nextUpdate.m_uiWorldIndex;
       }
 
@@ -294,24 +284,25 @@ void xiiReflectionPool::Data::PostExtraction()
 
 void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
 {
-  if (m_hFallbackReflectionSpecularTexture.IsInvalidated())
+  if (m_pFallbackReflectionSpecularTexture == nullptr)
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-    xiiGALTextureCreationDescription desc;
-    desc.m_Type               = xiiGALResourceDimension::TextureCubeArray;
-    desc.m_Format             = xiiGALResourceFormat::RGBA16Float;
-    desc.m_uiArraySizeOrDepth = 6;
-    desc.m_uiMipLevels        = GetMipLevels();
-    desc.m_Size.width         = s_uiReflectionCubeMapSize;
-    desc.m_Size.height        = s_uiReflectionCubeMapSize;
-    desc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    desc.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
+    xiiGALTextureCreationDescription textureDescription;
+    textureDescription.m_Type               = xiiGALResourceDimension::TextureCubeArray;
+    textureDescription.m_Format             = xiiGALResourceFormat::RGBA16Float;
+    textureDescription.m_uiArraySizeOrDepth = 6;
+    textureDescription.m_uiMipLevels        = GetMipLevels();
+    textureDescription.m_Size.width         = s_uiReflectionCubeMapSize;
+    textureDescription.m_Size.height        = s_uiReflectionCubeMapSize;
+    textureDescription.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    textureDescription.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
 
-    m_hFallbackReflectionSpecularTexture = pDevice->CreateTexture(desc);
-    if (!m_hFallbackReflectionSpecularTexture.IsInvalidated())
+    m_pFallbackReflectionSpecularTexture = pDevice->CreateTexture(textureDescription);
+
+    if (m_pFallbackReflectionSpecularTexture != nullptr)
     {
-      pDevice->GetTexture(m_hFallbackReflectionSpecularTexture)->SetDebugName("Reflection Fallback Specular Texture");
+      m_pFallbackReflectionSpecularTexture->SetDebugName("Reflection Fallback Specular Texture");
     }
   }
 
@@ -395,23 +386,23 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
 
 void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
 {
-  if (m_hSkyIrradianceTexture.IsInvalidated())
+  if (m_pSkyIrradianceTexture == nullptr)
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-    xiiGALTextureCreationDescription desc;
-    desc.m_Type        = xiiGALResourceDimension::Texture2D;
-    desc.m_Format      = xiiGALResourceFormat::RGBA16Float;
-    desc.m_Size.width  = 6;
-    desc.m_Size.height = 64;
-    desc.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    desc.m_Usage       = xiiGALResourceUsage::Default;
+    xiiGALTextureCreationDescription textureDescription;
+    textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
+    textureDescription.m_Format      = xiiGALResourceFormat::RGBA16Float;
+    textureDescription.m_Size.width  = 6;
+    textureDescription.m_Size.height = 64;
+    textureDescription.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    textureDescription.m_Usage       = xiiGALResourceUsage::Default;
 
-    m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
+    m_pSkyIrradianceTexture = pDevice->CreateTexture(textureDescription);
 
-    if (!m_hSkyIrradianceTexture.IsInvalidated())
+    if (m_pSkyIrradianceTexture != nullptr)
     {
-      pDevice->GetTexture(m_hSkyIrradianceTexture)->SetDebugName("Sky Irradiance Texture");
+      m_pSkyIrradianceTexture->SetDebugName("Sky Irradiance Texture");
     }
   }
 }

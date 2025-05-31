@@ -13,8 +13,8 @@ xiiResult xiiProfilingUtils::SaveProfilingCapture(xiiStringView sCapturePath)
   {
     xiiProfilingSystem::ProfilingData profilingData;
     xiiProfilingSystem::Capture(profilingData);
-    // Set sort index to -1 so that the editor is always on top when opening the trace.
-    profilingData.m_uiProcessSortIndex = -1;
+    // Set sort index to xiiInvalidIndex so that the runtime process is always at the bottom and editor is always on top when opening the trace.
+    profilingData.m_uiProcessSortIndex = xiiInvalidIndex;
     if (profilingData.Write(fileWriter).Failed())
     {
       xiiLog::Error("Failed to write profiling capture: {0}.", sCapturePath);

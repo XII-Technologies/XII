@@ -35,6 +35,8 @@ namespace xiiMemoryPolicies
 
     XII_FORCE_INLINE void* Allocate(size_t uiSize, size_t uiAlign)
     {
+      XII_IGNORE_UNUSED(uiAlign);
+
       XII_ASSERT_DEV(uiAlign <= Alignment && Alignment % uiAlign == 0, "Unsupported alignment {0}", ((xiiUInt32)uiAlign));
       uiSize = xiiMemoryUtils::AlignSize(uiSize, (size_t)Alignment);
 
@@ -84,6 +86,8 @@ namespace xiiMemoryPolicies
 
     XII_FORCE_INLINE void Deallocate(void* pPtr)
     {
+      XII_IGNORE_UNUSED(pPtr);
+
       // Individual deallocation is not supported by this allocator
     }
 

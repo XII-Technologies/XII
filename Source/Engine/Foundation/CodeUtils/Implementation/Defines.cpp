@@ -29,7 +29,7 @@ xiiResult xiiPreprocessor::StoreDefine(const xiiToken* pMacroNameToken, const To
   MacroDefinition md;
   md.m_MacroIdentifier = pMacroNameToken;
   md.m_bIsFunction     = iNumParameters >= 0;
-  md.m_iNumParameters  = xiiMath::Max(0, iNumParameters);
+  md.m_uiNumParameters = xiiMath::Max(0, iNumParameters);
   md.m_bHasVarArgs     = bUsesVarArgs;
 
   // removes whitespace at start and end, skips comments, newlines, etc.

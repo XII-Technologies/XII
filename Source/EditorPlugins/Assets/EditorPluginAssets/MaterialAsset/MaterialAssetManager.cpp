@@ -5,7 +5,7 @@
 #include <EditorPluginAssets/MaterialAsset/MaterialAssetWindow.moc.h>
 #include <ToolsFoundation/Assets/AssetFileExtensionWhitelist.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocumentManager, 1, xiiRTTIDefaultAllocator<xiiMaterialAssetDocumentManager>);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocumentManager, 1, xiiRTTIDefaultAllocator<xiiMaterialAssetDocumentManager>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 const char* const xiiMaterialAssetDocumentManager::s_szShaderOutputTag = "VISUAL_SHADER";

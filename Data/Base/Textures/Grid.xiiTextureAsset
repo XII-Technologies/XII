@@ -25,6 +25,7 @@ o
 		{
 			s{"Textures/Grid.png"}
 		}
+		s %Tags{""}
 	}
 }
 }

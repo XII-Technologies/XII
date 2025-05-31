@@ -5,6 +5,9 @@
 struct xiiMsgExtractGeometry;
 using xiiMeshComponentManager = xiiComponentManager<class xiiMeshComponent, xiiBlockStorageType::Compact>;
 
+/// \brief Renders a single instance of a static mesh.
+///
+/// This is the main component to use for rendering regular meshes.
 class XII_GRAPHICSCORE_DLL xiiMeshComponent : public xiiMeshComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiMeshComponent, xiiMeshComponentBase, xiiMeshComponentManager);

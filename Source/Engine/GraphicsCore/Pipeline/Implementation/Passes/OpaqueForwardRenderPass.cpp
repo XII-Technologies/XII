@@ -1,10 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/OpaqueForwardRenderPass.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-
-#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiOpaqueForwardRenderPass, 1, xiiRTTIDefaultAllocator<xiiOpaqueForwardRenderPass>)
@@ -54,21 +51,23 @@ void xiiOpaqueForwardRenderPass::SetupResources(const xiiRenderViewContext& rend
 {
   SUPER::SetupResources(renderViewContext, inputs, outputs);
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  #ifdef CORE_ENABLE
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // SSAO texture
   if (m_ShadingQuality == xiiForwardRenderShadingQuality::Normal)
   {
     if (inputs[m_PinSSAO.m_uiInputIndex])
     {
-      xiiGALTextureViewHandle ssaoResourceViewHandle = pDevice->GetTexture(inputs[m_PinSSAO.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-      renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", ssaoResourceViewHandle);
+      xiiSharedPtr<xiiGALTextureView> pSSAOResourceView = inputs[m_PinSSAO.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+      renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", pSSAOResourceView);
     }
     else
     {
       renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", m_hWhiteTexture, xiiResourceAcquireMode::BlockTillLoaded);
     }
   }
+  #endif
 }
 
 void xiiOpaqueForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& renderViewContext)
@@ -77,18 +76,18 @@ void xiiOpaqueForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext
 
   if (m_bWriteDepth)
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FORWARD_PASS_WRITE_DEPTH", "TRUE");
+    renderViewContext.SetShaderPermutationVariable("FORWARD_PASS_WRITE_DEPTH", "TRUE");
   }
   else
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FORWARD_PASS_WRITE_DEPTH", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("FORWARD_PASS_WRITE_DEPTH", "FALSE");
   }
 }
 
-void xiiOpaqueForwardRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext)
+void xiiOpaqueForwardRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque);
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked);
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitOpaque);
+  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitMasked);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_OpaqueForwardRenderPass);

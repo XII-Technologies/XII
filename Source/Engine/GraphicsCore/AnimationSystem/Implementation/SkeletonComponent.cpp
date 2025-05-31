@@ -6,6 +6,7 @@
 #include <GraphicsCore/AnimationSystem/SkeletonComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
+
 #include <ozz/animation/runtime/local_to_model_job.h>
 #include <ozz/animation/runtime/skeleton_utils.h>
 #include <ozz/base/containers/vector.h>
@@ -48,7 +49,7 @@ xiiResult xiiSkeletonComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds,
   if (m_MaxBounds.IsValid())
   {
     xiiBoundingBox bbox = m_MaxBounds;
-    ref_bounds          = xiiBoundingBoxSphere(bbox);
+    ref_bounds          = xiiBoundingBoxSphere::MakeFromBox(bbox);
     ref_bounds.Transform(m_RootTransform.GetAsMat4());
     return XII_SUCCESS;
   }
@@ -413,8 +414,8 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
     {
       auto& shape       = m_SpheresShapes.ExpandAndGetRef();
       shape.m_Transform = st;
-      shape.m_Color     = hlS;
       shape.m_Shape     = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), geo.m_Transform.m_vScale.z);
+      shape.m_Color     = hlS;
     }
 
     if (geo.m_Type == xiiSkeletonJointGeometryType::Box)
@@ -430,7 +431,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
       st.m_vPosition += qFinalBoneRot * xiiVec3(geo.m_Transform.m_vScale.x * 0.5f, 0, 0);
 
       shape.m_Transform = st;
-      shape.m_Shape     = xiiBoundingBox(xiiVec3::MakeZero(), ext);
+      shape.m_Shape     = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3::MakeZero(), ext);
       shape.m_Color     = hlS;
     }
 
@@ -619,10 +620,8 @@ void xiiSkeletonComponent::BuildJointVisualization(xiiMsgAnimationPoseUpdated& m
         vDirRef.Normalize();
 
         const xiiVec3 vRotDir = shape.m_Transform.m_qRotation * qBoneDir * xiiVec3(1, 0, 0);
-
-        xiiQuat qRotRef;
-        qRotRef = xiiQuat::MakeFromAxisAndAngle(vRotDir, thisJoint.GetTwistLimitCenterAngle());
-        vDirRef = qRotRef * vDirRef;
+        xiiQuat       qRotRef = xiiQuat::MakeFromAxisAndAngle(vRotDir, thisJoint.GetTwistLimitCenterAngle());
+        vDirRef               = qRotRef * vDirRef;
 
         // if the current twist is outside the twist limit range, highlight the bone
         if (vDir.GetAngleBetween(vDirRef) > thisJoint.GetTwistLimitHalfAngle())

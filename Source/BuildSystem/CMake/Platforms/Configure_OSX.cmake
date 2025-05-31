@@ -9,7 +9,7 @@ macro(xii_platform_pull_properties)
   get_property(XII_CMAKE_PLATFORM_OSX GLOBAL PROPERTY XII_CMAKE_PLATFORM_OSX)
 endmacro()
 
-macro (xii_platformhook_set_build_flags_clang)
+macro (xii_platformhook_set_build_flags_clang TARGET_NAME)
   target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
   target_link_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
 endmacro()

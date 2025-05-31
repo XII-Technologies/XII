@@ -79,8 +79,8 @@ struct xiiReflectionPool::Data
   xiiHybridArray<xiiUniquePtr<WorldReflectionData>, 2> m_WorldReflectionData;
 
   // GPU storage
-  xiiGALTextureHandle                                   m_hFallbackReflectionSpecularTexture;
-  xiiGALTextureHandle                                   m_hSkyIrradianceTexture;
+  xiiSharedPtr<xiiGALTexture>                           m_pFallbackReflectionSpecularTexture;
+  xiiSharedPtr<xiiGALTexture>                           m_pSkyIrradianceTexture;
   xiiHybridArray<xiiAmbientCube<xiiColorLinear16f>, 64> m_SkyIrradianceStorage;
 
   // Debug data

@@ -2,7 +2,7 @@
 # ## xii_requires_renderer()
 # #####################################
 macro(xii_requires_renderer)
-  xii_requires_one_of(XII_BUILD_D3D11 XII_BUILD_VULKAN)
+  xii_requires_one_of(XII_BUILD_VULKAN)
 endmacro()
 
 # #####################################
@@ -10,7 +10,7 @@ endmacro()
 # ## Add all required libraries and dependencies to the given target so it has access to all available renderers.
 # #####################################
 function(xii_add_renderers TARGET_NAME)
-  set(ARG_OPTIONS EXCLUDE_SHADER_COMPILER EXCLUDE_NULL EXCLUDE_D3D11 EXCLUDE_VULKAN)
+  set(ARG_OPTIONS EXCLUDE_SHADER_COMPILER EXCLUDE_VULKAN)
   set(ARG_ONEVALUEARGS "")
   set(ARG_MULTIVALUEARGS "")
   cmake_parse_arguments(ARG "${ARG_OPTIONS}" "${ARG_ONEVALUEARGS}" "${ARG_MULTIVALUEARGS}" ${ARGN})
@@ -21,23 +21,12 @@ function(xii_add_renderers TARGET_NAME)
 
   target_link_libraries(${TARGET_NAME} PRIVATE GraphicsFoundation)
 
-  if(NOT ARG_EXCLUDE_NULL)
-    add_dependencies(${TARGET_NAME} GraphicsNull)
-  endif()
-
-  if(XII_BUILD_D3D11 AND NOT ARG_EXCLUDE_D3D11)
-    if(TARGET GraphicsD3D11)
-      add_dependencies(${TARGET_NAME} GraphicsD3D11)
-    endif()
-  endif()
-
   if(XII_BUILD_VULKAN AND NOT ARG_EXCLUDE_VULKAN)
     if(TARGET GraphicsVulkan)
       add_dependencies(${TARGET_NAME} GraphicsVulkan)
     endif()
-  endif()
-
-  if(NOT ARG_EXCLUDE_SHADER_COMPILER)
-    add_dependencies(${TARGET_NAME} ShaderCompiler)
+    if(TARGET ShaderCompilerSPIRV AND NOT ARG_EXCLUDE_SHADER_COMPILER)
+      add_dependencies(${TARGET_NAME} ShaderCompilerSPIRV)
+    endif()
   endif()
 endfunction()

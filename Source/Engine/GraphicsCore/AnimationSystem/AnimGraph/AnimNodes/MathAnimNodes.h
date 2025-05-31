@@ -70,6 +70,7 @@ private:
   xiiAnimGraphNumberInputPin m_InNumber;    // [ property ]
   xiiAnimGraphNumberInputPin m_InReference; // [ property ]
   xiiAnimGraphBoolOutputPin  m_OutIsTrue;   // [ property ]
+  xiiAnimGraphBoolOutputPin  m_OutIsFalse;  // [ property ]
 };
 
 
@@ -103,4 +104,40 @@ public:
 private:
   xiiAnimGraphBoolInputPin    m_InValue;   // [ property ]
   xiiAnimGraphNumberOutputPin m_OutNumber; // [ property ]
+};
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+class XII_GRAPHICSCORE_DLL xiiBoolToTriggerAnimNode : public xiiAnimGraphNode
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiBoolToTriggerAnimNode, xiiAnimGraphNode);
+
+  //////////////////////////////////////////////////////////////////////////
+  // xiiAnimGraphNode
+
+protected:
+  virtual xiiResult SerializeNode(xiiStreamWriter& stream) const override;
+  virtual xiiResult DeserializeNode(xiiStreamReader& stream) override;
+
+  virtual void Step(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, const xiiSkeletonResource* pSkeleton, xiiGameObject* pTarget) const override;
+  virtual bool GetInstanceDataDesc(xiiInstanceDataDesc& out_desc) const override;
+
+  //////////////////////////////////////////////////////////////////////////
+  // xiiBoolToNumberAnimNode
+
+public:
+  xiiBoolToTriggerAnimNode();
+  ~xiiBoolToTriggerAnimNode();
+
+private:
+  xiiAnimGraphBoolInputPin     m_InValue;    // [ property ]
+  xiiAnimGraphTriggerOutputPin m_OutOnTrue;  // [ property ]
+  xiiAnimGraphTriggerOutputPin m_OutOnFalse; // [ property ]
+
+  struct InstanceData
+  {
+    xiiInt8 m_iIsTrue = -1; // -1 == undefined, 0 == false, 1 == true
+  };
 };

@@ -48,7 +48,7 @@ public:
   /// \name Operators
   ///@{
 
-  operator xiiStringView() const;
+       operator xiiStringView() const;
   bool operator==(xiiStringView rhs) const;
   bool operator!=(xiiStringView rhs) const;
 

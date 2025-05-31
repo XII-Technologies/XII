@@ -10,9 +10,11 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+// clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiPropertyAnimComponent, 3, xiiComponentMode::Dynamic)
 {
-  XII_BEGIN_PROPERTIES{
+  XII_BEGIN_PROPERTIES
+  {
     XII_RESOURCE_MEMBER_PROPERTY("Animation", m_hPropertyAnim)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Property_Animation")),
     XII_MEMBER_PROPERTY("Playing", m_bPlaying)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("Mode", xiiPropertyAnimMode, m_AnimationMode),
@@ -20,18 +22,29 @@ XII_BEGIN_COMPONENT_TYPE(xiiPropertyAnimComponent, 3, xiiComponentMode::Dynamic)
     XII_MEMBER_PROPERTY("Speed", m_fSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(-10.0f, +10.0f)),
     XII_MEMBER_PROPERTY("RangeLow", m_AnimationRangeLow)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant())),
     XII_MEMBER_PROPERTY("RangeHigh", m_AnimationRangeHigh)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant()), new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(60 * 60))),
-  } XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES{
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
     new xiiCategoryAttribute("Animation"),
-  } XII_END_ATTRIBUTES;
-  XII_BEGIN_MESSAGEHANDLERS{
+  }
+  XII_END_ATTRIBUTES;
+  XII_BEGIN_MESSAGEHANDLERS
+  {
     XII_MESSAGE_HANDLER(xiiMsgSetPlaying, OnMsgSetPlaying),
-  } XII_END_MESSAGEHANDLERS;
-  XII_BEGIN_MESSAGESENDERS{
+  }
+  XII_END_MESSAGEHANDLERS;
+  XII_BEGIN_MESSAGESENDERS
+  {
     XII_MESSAGE_SENDER(m_EventTrackMsgSender),
     XII_MESSAGE_SENDER(m_ReachedEndMsgSender),
-  } XII_END_MESSAGESENDERS;
-  XII_BEGIN_FUNCTIONS{XII_SCRIPT_FUNCTION_PROPERTY(PlayAnimationRange, In, "RangeLow", In, "RangeHigh")} XII_END_FUNCTIONS;
+  }
+  XII_END_MESSAGESENDERS;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(PlayAnimationRange, In, "RangeLow", In, "RangeHigh")
+  }
+  XII_END_FUNCTIONS;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
@@ -571,7 +584,7 @@ void xiiPropertyAnimComponent::StartPlayback()
   if (!m_RandomOffset.IsZero() && m_pAnimDesc->m_AnimationDuration.IsPositive())
   {
     // should the random offset also be scaled by the speed factor? I guess not
-    m_AnimationTime += xiiMath::Abs(m_fSpeed) * xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomOffset.GetSeconds()));
+    m_AnimationTime += xiiMath::Abs(m_fSpeed) * xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleMinMax(0.0, m_RandomOffset.GetSeconds()));
 
     const xiiTime duration = m_AnimationRangeHigh - m_AnimationRangeLow;
 

@@ -9,9 +9,13 @@ class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDeviceVulkan, xiiGALDevice);
 
 private:
+  friend class xiiMemoryUtils;
+
   friend xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
 
-  xiiGALDeviceVulkan(const xiiGALDeviceCreationDescription& description);
+  xiiGALDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+
+  virtual ~xiiGALDeviceVulkan();
 
 public:
   enum class DebugMode
@@ -72,15 +76,13 @@ public:
     vk::PhysicalDeviceCustomBorderColorPropertiesEXT      m_CustomBorderColor;
   };
 
-  ~xiiGALDeviceVulkan();
-
 public:
   virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
   template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>
-  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {})
+  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {}) const
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     if (m_DebugMode != DebugMode::Disabled)
@@ -91,7 +93,7 @@ public:
       vk::DebugUtilsObjectNameInfoEXT vkDebugObjectNameInfo = {};
       vkDebugObjectNameInfo.pNext                           = nullptr;
       vkDebugObjectNameInfo.objectType                      = vkObject.objectType;
-      vkDebugObjectNameInfo.objectHandle                    = (uint64_t) static_cast<typename ObjectHandle::NativeType>(vkObject);
+      vkDebugObjectNameInfo.objectHandle                    = (uint64_t)static_cast<typename ObjectHandle::NativeType>(vkObject);
       vkDebugObjectNameInfo.pObjectName                     = szDebugName;
 
       m_LogicalDevice.setDebugUtilsObjectNameEXT(vkDebugObjectNameInfo, m_InstanceDispatchLoader);
@@ -101,72 +103,83 @@ public:
         vmaSetAllocationUserData(m_vkVmaAllocator, vmaAllocation, (void*)vkDebugObjectNameInfo.pObjectName);
       }
     }
+#else
+    XII_IGNORE_UNUSED(vkObject);
+    XII_IGNORE_UNUSED(szDebugName);
+    XII_IGNORE_UNUSED(vmaAllocation);
 #endif
   }
 
+  template <typename T, typename = void>
+  struct HasObjectType : std::false_type
+  {};
+
   template <typename T>
-  void SafeReleaseDeviceObject(T& vkObject, VmaAllocation vmaAlloaction)
+  struct HasObjectType<T, std::void_t<decltype(T::objectType)>> : std::true_type
+  {};
+
+  template <typename T, typename = std::enable_if_t<std::is_class_v<T> && HasObjectType<T>::value>>
+  void SafeReleaseDeviceObject(T&& vkObject, VmaAllocation&& vmaAllocation = nullptr)
   {
-    SafeReleaseDeviceObjectInternal(vkObject.objectType, (void*)vkObject, vmaAlloaction);
+    if (vkObject == VK_NULL_HANDLE)
+      return;
+
+    SafeReleaseDeviceObjectInternal(vkObject.objectType, static_cast<void*>(vkObject), vmaAllocation);
   }
 
   template <typename T>
-  void SafeReleaseDeviceObject(T& vkObject)
-  {
-    SafeReleaseDeviceObjectInternal(vkObject.objectType, (void*)vkObject, nullptr);
-  }
-
-  template <typename T>
-  void ReclaimLater(T& vkObject)
+  void ReclaimLater(T&& vkObject)
   {
     ReclaimLaterInternal(vkObject.objectType, (void*)vkObject);
   }
 
+  void ReclaimCommandBufferLater(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer);
+
   // Internal objects retrieval.
 
-  XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
-  XII_ALWAYS_INLINE VmaAllocator      GetVulkanMemoryAllocator() const { return m_vkVmaAllocator; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE VmaAllocator      GetVulkanMemoryAllocator() const { return m_vkVmaAllocator; }
 
-  XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
-  XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
-  XII_ALWAYS_INLINE const vk::detail::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
+  [[nodiscard]] XII_ALWAYS_INLINE const vk::detail::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
 
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::LayerProperties> GetVulkanInstanceLayers() const { return m_Layers; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() const { return m_Extensions; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const char* const> GetVulkanInstanceEnabledExtensions() const { return m_EnabledExtensions; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::PhysicalDevice> GetVulkanPhysicalDevices() const { return m_PhysicalDevices; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::LayerProperties> GetVulkanInstanceLayers() const { return m_Layers; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() const { return m_Extensions; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const char* const> GetVulkanInstanceEnabledExtensions() const { return m_EnabledExtensions; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::PhysicalDevice> GetVulkanPhysicalDevices() const { return m_PhysicalDevices; }
 
-  XII_ALWAYS_INLINE vk::PhysicalDevice GetVulkanPhysicalDevice() const { return m_PhysicalDevice; }
-  XII_ALWAYS_INLINE const vk::PhysicalDeviceProperties& GetVulkanPhysicalDeviceProperties() const { return m_PhysicalDeviceProperties; }
-  XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanPhysicalDeviceFeatures() const { return m_PhysicalDeviceFeatures; }
-  XII_ALWAYS_INLINE const vk::PhysicalDeviceMemoryProperties& GetVulkanPhysicalDeviceMemoryProperties() const { return m_PhysicalDeviceMemoryProperties; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::QueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties() const { return m_PhysicalDeviceQueueFamilyProperties; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetPhysicalDeviceSupportedExtensions() const { return m_PhysicalDeviceSupportedExtensions; }
-  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetPhysicalDeviceExtensionFeatures() const { return m_PhysicalDeviceExtensionFeatures; }
-  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionProperties& GetPhysicalDeviceExtensionProperties() const { return m_PhysicalDeviceExtensionProperties; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::PhysicalDevice GetVulkanPhysicalDevice() const { return m_PhysicalDevice; }
+  [[nodiscard]] XII_ALWAYS_INLINE const vk::PhysicalDeviceProperties& GetVulkanPhysicalDeviceProperties() const { return m_PhysicalDeviceProperties; }
+  [[nodiscard]] XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanPhysicalDeviceFeatures() const { return m_PhysicalDeviceFeatures; }
+  [[nodiscard]] XII_ALWAYS_INLINE const vk::PhysicalDeviceMemoryProperties& GetVulkanPhysicalDeviceMemoryProperties() const { return m_PhysicalDeviceMemoryProperties; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::QueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties() const { return m_PhysicalDeviceQueueFamilyProperties; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetPhysicalDeviceSupportedExtensions() const { return m_PhysicalDeviceSupportedExtensions; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetPhysicalDeviceExtensionFeatures() const { return m_PhysicalDeviceExtensionFeatures; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionProperties& GetPhysicalDeviceExtensionProperties() const { return m_PhysicalDeviceExtensionProperties; }
 
-  XII_ALWAYS_INLINE vk::Device GetVulkanLogicalDevice() const { return m_LogicalDevice; }
-  XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanLogicalDeviceFeatures() const { return m_LogicalDeviceFeatures; }
-  XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetVulkanLogicalDeviceExtensionFeatures() const { return m_LogicalDeviceExtensionFeatures; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::PipelineStageFlags> GetVulkanLogicalDeviceSupportedStagesFlags() const { return m_LogicalDeviceSupportedStagesFlags; }
-  XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanLogicalDeviceSupportedStagesFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedStagesFlags[uiQueueFamilyIndex]; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() const { return m_LogicalDeviceSupportedAccessFlags; }
-  XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Device GetVulkanLogicalDevice() const { return m_LogicalDevice; }
+  [[nodiscard]] XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanLogicalDeviceFeatures() const { return m_LogicalDeviceFeatures; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetVulkanLogicalDeviceExtensionFeatures() const { return m_LogicalDeviceExtensionFeatures; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::PipelineStageFlags> GetVulkanLogicalDeviceSupportedStagesFlags() const { return m_LogicalDeviceSupportedStagesFlags; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::PipelineStageFlags GetVulkanLogicalDeviceSupportedStagesFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedStagesFlags[uiQueueFamilyIndex]; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() const { return m_LogicalDeviceSupportedAccessFlags; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
 
-  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
-  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }
-  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetTransferQueueInformation() const { return m_TransferQueueInformation; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetTransferQueueInformation() const { return m_TransferQueueInformation; }
 
-  XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
 
-  XII_ALWAYS_INLINE xiiGALFencePoolVulkan* GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
-  XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
-  XII_ALWAYS_INLINE xiiGALDescriptorSetPoolVulkan* GetVulkanDescriptorSetPool() const { return m_pDescriptorSetPool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*         GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan*     GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDescriptorSetPoolVulkan* GetVulkanDescriptorSetPool() const { return m_pDescriptorSetPool.Borrow(); }
 
-  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanGraphicsCommandQueueQueryPool() const { return m_pGraphicsCommandQueueQueryPool.Borrow(); }
-  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanComputeCommandQueueQueryPool() const { return m_pComputeCommandQueueQueryPool.Borrow(); }
-  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanTransferCommandQueueQueryPool() const { return m_pTransferCommandQueueQueryPool.Borrow(); }
-  XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetQueryPoolForCommandQueue(xiiGALCommandQueueVulkan* pCommandQueueVulkan) const
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanGraphicsCommandQueueQueryPool() const { return m_pGraphicsCommandQueueQueryPool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanComputeCommandQueueQueryPool() const { return m_pComputeCommandQueueQueryPool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanTransferCommandQueueQueryPool() const { return m_pTransferCommandQueueQueryPool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetQueryPoolForCommandQueue(xiiGALCommandQueueVulkan* pCommandQueueVulkan) const
   {
     if (m_pGraphicsCommandQueue == pCommandQueueVulkan)
       return m_pGraphicsCommandQueueQueryPool.Borrow();
@@ -180,85 +193,99 @@ public:
     return nullptr;
   }
 
-  xiiGALFenceVulkan* CreateFenceInternal(const xiiGALFenceCreationDescription& description);
-  void               DestroyFenceInternal(xiiGALFence* pFence);
-
-  xiiGALSamplerVulkan* CreateSamplerInternal(const xiiGALSamplerCreationDescription& description);
-  void                 DestroySamplerInternal(xiiGALSampler* pSampler);
-
-  void ReleasePerFrameResources(xiiUInt64 uiCompletedValue);
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetFrameNumber() const { return m_uiFrameCounter; }
 
   // These functions are implemented by a graphics API implementation.
 protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult PostInitializePlatform() override final;
-  virtual xiiResult ShutdownPlatform() override final;
 
-  virtual void BeginFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains, const xiiUInt64 uiRenderFrame) override final;
-  virtual void EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchains) override final;
+  virtual void BeginFramePlatform() override final;
+  virtual void EndFramePlatform() override final;
 
-  virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
-  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
-  virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
-
-  virtual xiiGALDepthStencilState* CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) override final;
-  virtual void                     DestroyDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState) override final;
-
-  virtual xiiGALRasterizerState* CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) override final;
-  virtual void                   DestroyRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState) override final;
-
-  virtual xiiGALShader* CreateShaderPlatform(const xiiGALShaderCreationDescription& description) override final;
-  virtual void          DestroyShaderPlatform(xiiGALShader* pShader) override final;
-
-  virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) override final;
-  virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer) override final;
-
-  virtual xiiGALBufferView* CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) override final;
-  virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView) override final;
-
-  virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) override final;
-  virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture) override final;
-
-  virtual xiiGALTextureView* CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) override final;
-  virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView) override final;
-
-  virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override final;
-  virtual void           DestroySamplerPlatform(xiiGALSampler* pSampler) override final;
-
-  virtual xiiGALInputLayout* CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) override final;
-  virtual void               DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout) override final;
-
-  virtual xiiGALQuery* CreateQueryPlatform(const xiiGALQueryCreationDescription& description) override final;
-  virtual void         DestroyQueryPlatform(xiiGALQuery* pQuery) override final;
-
-  virtual xiiGALFence* CreateFencePlatform(const xiiGALFenceCreationDescription& description) override final;
-  virtual void         DestroyFencePlatform(xiiGALFence* pFence) override final;
-
-  virtual xiiGALRenderPass* CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description) override final;
-  virtual void              DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass) override final;
-
-  virtual xiiGALFramebuffer* CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description) override final;
-  virtual void               DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuffer) override final;
-
-  virtual xiiGALBottomLevelAS* CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) override final;
-  virtual void                 DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBottomLevelAS) override final;
-
-  virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override final;
-  virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS) override final;
-
-  virtual xiiGALPipelineResourceSignature* CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description) override final;
-  virtual void                             DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature) override final;
-
-  virtual xiiGALPipelineState* CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description) override final;
-  virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
+  virtual xiiInternal::NewInstance<xiiGALSwapChain>                 CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALBlendState>                CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALDepthStencilState>         CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALRasterizerState>           CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALShader>                    CreateShaderPlatform(const xiiGALShaderCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALBuffer>                    CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) override final;
+  virtual xiiInternal::NewInstance<xiiGALTexture>                   CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) override final;
+  virtual xiiInternal::NewInstance<xiiGALSampler>                   CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALQuery>                     CreateQueryPlatform(const xiiGALQueryCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALFence>                     CreateFencePlatform(const xiiGALFenceCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALRenderPass>                CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALFramebuffer>               CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALBottomLevelAS>             CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALTopLevelAS>                CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALPipelineResourceSignature> CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALGraphicsPipelineState>     CreateGraphicsPipelineStatePlatform(const xiiGALGraphicsPipelineStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALComputePipelineState>      CreateComputePipelineStatePlatform(const xiiGALComputePipelineStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALRayTracingPipelineState>   CreateRayTracingPipelineStatePlatform(const xiiGALRayTracingPipelineStateCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALTilePipelineState>         CreateTilePipelineStatePlatform(const xiiGALTilePipelineStateCreationDescription& description) override final;
 
   virtual void WaitIdlePlatform() override final;
 
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
+  class DeferredDeletionQueue
+  {
+  public:
+    DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan);
+    ~DeferredDeletionQueue();
+
+    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject);
+    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+
+    void EnqueueResource(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer);
+    void EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore);
+    void EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool);
+    void EnqueueResource(xiiGALFencePoolVulkan* pFencePool, vk::Fence vkFence);
+
+    void ReleaseResources(bool bForceReleaseAll = false);
+
+    XII_ALWAYS_INLINE bool IsEmpty() const { return m_DeletionQueue.IsEmpty(); }
+
+  private:
+    struct DeletionEntry
+    {
+      xiiUInt64 m_uiFenceValue = 0ULL;
+
+      vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
+      void*          m_pObject       = VK_NULL_HANDLE;
+      VmaAllocation  m_VmaAllocation = VK_NULL_HANDLE;
+
+      xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool = nullptr;
+      vk::CommandBuffer              m_vkCommandBuffer    = VK_NULL_HANDLE;
+
+      xiiGALSemaphorePoolVulkan* m_pSemaphorePool = nullptr;
+      vk::Semaphore              m_vkSemaphore    = VK_NULL_HANDLE;
+
+      xiiGALFencePoolVulkan* m_pFencePool = nullptr;
+      vk::Fence              m_vkFence    = VK_NULL_HANDLE;
+
+      xiiGALDescriptorSetPoolVulkan* m_pDescriptorSetPool = nullptr;
+      vk::DescriptorPool             m_vkDescriptorPool   = VK_NULL_HANDLE;
+
+      XII_ALWAYS_INLINE constexpr bool operator==(const DeletionEntry& rhs) const
+      {
+        return m_vkObjectType == rhs.m_vkObjectType && m_pObject == rhs.m_pObject && m_VmaAllocation == rhs.m_VmaAllocation && m_vkCommandBuffer == rhs.m_vkCommandBuffer && m_vkFence == rhs.m_vkFence && m_vkSemaphore == rhs.m_vkSemaphore && m_vkDescriptorPool == rhs.m_vkDescriptorPool;
+      }
+    };
+
+    void DestroyObject(vk::Device vkLogicalDevice, vk::ObjectType vkObjectType, void* pObject);
+    void DestroyObject(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+
+    void DestroyCommandBuffer(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer);
+    void DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore);
+    void DestroyFence(xiiGALFencePoolVulkan* pFencePool, vk::Fence&& vkReclaimFence);
+    void DestroyDescriptorSetPool(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool&& vkDescriptorPool);
+
+    xiiGALDeviceVulkan*     m_pDeviceVulkan;
+    xiiDeque<DeletionEntry> m_DeletionQueue;
+    xiiMutex                m_DeletionQueueMutex;
+  };
+
   void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
   void ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject);
 
@@ -306,12 +333,21 @@ private:
     void*          m_pObject      = nullptr;
   };
 
+  struct SafeReclaimCommandBuffer
+  {
+    XII_DECLARE_POD_TYPE();
+
+    xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool = nullptr;
+    vk::CommandBuffer              m_vkCommandBuffer    = VK_NULL_HANDLE;
+  };
+
   struct PerFrameData
   {
-    xiiUInt64 m_uiFrameNumber = xiiInvalidIndex;
+    xiiUInt64 m_uiFenceValue = xiiInvalidIndex;
 
-    xiiDeque<SafeReleaseDescription> m_SafeReleaseDescriptions;
-    xiiDeque<SafeReclaimResource>    m_SafeReclaimResources;
+    xiiDeque<SafeReleaseDescription>   m_SafeReleaseDescriptions;
+    xiiDeque<SafeReclaimResource>      m_SafeReclaimResources;
+    xiiDeque<SafeReclaimCommandBuffer> m_SafeReclaimCommandBuffers;
   };
 
   // Vulkan Instance Information.
@@ -359,7 +395,7 @@ private:
   xiiGALQueueInformationVulkan           m_ComputeQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pComputeCommandQueue;
 
-  // Graph Queue Information.
+  // Transfer Queue Information.
   xiiGALQueueInformationVulkan           m_TransferQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
 
@@ -371,10 +407,11 @@ private:
   xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pComputeCommandQueueQueryPool;
   xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pTransferCommandQueueQueryPool;
 
+  // Deletion Queue.
+  xiiUniquePtr<DeferredDeletionQueue> m_pDeferredDeletionQueue;
+
   // Per Frame Data.
-  xiiUInt32              m_uiFrameCounter = 0U;
-  xiiGALFenceVulkan*     m_pFrameFence    = nullptr;
-  xiiDeque<PerFrameData> m_PerFrameData;
+  xiiUInt32 m_uiFrameCounter = 0U;
 
 private:
   vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;

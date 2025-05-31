@@ -6,6 +6,7 @@
 
 class QHBoxLayout;
 class QComboBox;
+class xiiDynamicEnum;
 
 /// *** Asset Browser ***
 
@@ -16,7 +17,6 @@ class XII_EDITORFRAMEWORK_DLL xiiQtDynamicEnumPropertyWidget : public xiiQtStand
 public:
   xiiQtDynamicEnumPropertyWidget();
 
-
 protected slots:
   void on_CurrentEnum_changed(int iEnum);
 
@@ -25,6 +25,8 @@ protected:
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  QComboBox*   m_pWidget;
-  QHBoxLayout* m_pLayout;
+  QComboBox*      m_pWidget;
+  QHBoxLayout*    m_pLayout;
+  xiiDynamicEnum* m_pDynamicEnum = nullptr;
+  xiiInt32        m_iLastIndex   = -1;
 };

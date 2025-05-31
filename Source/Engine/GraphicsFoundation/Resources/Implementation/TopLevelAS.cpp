@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALHitGroupBindingMode, 1)
   XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::PerGeometry),
   XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::PerInstance),
@@ -13,11 +12,10 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelAS, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
-xiiGALTopLevelAS::xiiGALTopLevelAS(xiiGALDevice* pDevice, const xiiGALTopLevelASCreationDescription& creationDescription) :
-  xiiGALResource(pDevice), m_Description(creationDescription)
+xiiGALTopLevelAS::xiiGALTopLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTopLevelASCreationDescription& creationDescription) :
+  xiiGALResource(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

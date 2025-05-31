@@ -26,13 +26,11 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALQueryVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALQueryCreationDescription& creationDescription);
+  xiiGALQueryVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALQueryCreationDescription& creationDescription);
 
   virtual ~xiiGALQueryVulkan();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 
 private:
   bool AllocateQueries();

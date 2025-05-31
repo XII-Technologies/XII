@@ -80,14 +80,13 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALDepthStencilState(xiiGALDevice* pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription);
+  xiiGALDepthStencilState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription);
 
   virtual ~xiiGALDepthStencilState();
 
   virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALDepthStencilStateCreationDescription m_Description;

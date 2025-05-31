@@ -54,16 +54,24 @@ public:
     return {};
   }
 
+  /// \brief This creates a new input layout object.
+  ///
+  /// \param description - The input layout description. See xiiGALInputLayoutCreationDescription.
+  ///
+  /// \return The reference-counted pointer to the created input layout object.
+  [[nodiscard]] xiiSharedPtr<xiiGALInputLayout> CreateInputLayout(const xiiGALInputLayoutCreationDescription& description);
+
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALShader(xiiGALDevice* pDevice, const xiiGALShaderCreationDescription& creationDescription);
+  xiiGALShader(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALShaderCreationDescription& creationDescription);
 
   virtual ~xiiGALShader();
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
+  virtual xiiInternal::NewInstance<xiiGALInputLayout> CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) = 0;
 
 protected:
   xiiGALShaderCreationDescription m_Description;

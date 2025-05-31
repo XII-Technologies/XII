@@ -68,3 +68,6 @@ void xiiRestPoseAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraphIn
     m_OutPose.SetPose(ref_graph, pLocalTransforms);
   }
 }
+
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes2_RestPoseAnimNode);

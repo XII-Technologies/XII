@@ -50,7 +50,7 @@ public:
   xiiFloat16Vec2(const xiiVec2& vVec);
 
   void operator=(const xiiVec2& vVec);
-  operator xiiVec2() const;
+       operator xiiVec2() const;
 
   xiiFloat16 x, y;
 };
@@ -66,7 +66,7 @@ public:
   xiiFloat16Vec3(const xiiVec3& vVec);
 
   void operator=(const xiiVec3& vVec);
-  operator xiiVec3() const;
+       operator xiiVec3() const;
 
   xiiFloat16 x, y, z;
 };
@@ -82,7 +82,7 @@ public:
   xiiFloat16Vec4(const xiiVec4& vVec);
 
   void operator=(const xiiVec4& vVec);
-  operator xiiVec4() const;
+       operator xiiVec4() const;
 
   xiiFloat16 x, y, z, w;
 };

@@ -36,9 +36,9 @@ private:
 
   struct InstanceData
   {
-    float   m_fStartWeight = 1.0f;
-    float   m_fEndWeight   = 1.0f;
-    xiiTime m_PlayTime;
-    xiiTime m_EndTime;
+    float   m_fStartWeight = 0.0f;
+    float   m_fEndWeight   = 0.0f;
+    xiiTime m_PlayTime     = xiiTime::MakeZero();
+    xiiTime m_EndTime      = xiiTime::MakeZero();
   };
 };

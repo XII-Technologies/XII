@@ -16,7 +16,7 @@ public:
 private:
   xiiResult TransformAndOptimizeAST(xiiExpressionAST& ast, xiiStringView sDebugAstOutputPath);
   xiiResult BuildNodeInstructions(const xiiExpressionAST& ast);
-  xiiResult UpdateRegisterLifetime(const xiiExpressionAST& ast);
+  xiiResult UpdateRegisterLifetime();
   xiiResult AssignRegisters();
   xiiResult GenerateByteCode(const xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode);
   xiiResult GenerateConstantByteCode(const xiiExpressionAST::Constant* pConstant);

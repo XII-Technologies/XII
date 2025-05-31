@@ -47,7 +47,11 @@ public:
 
   /// \brief Returns a series of strings with the names of the subsystem, which this subsystem depends on. nullptr indicates the last entry.
   /// Must be overridden.
-  virtual xiiStringView GetDependency(xiiInt32 iDep) { return {}; }
+  virtual xiiStringView GetDependency(xiiInt32 iDep)
+  {
+    XII_IGNORE_UNUSED(iDep);
+    return {};
+  }
 
   /// \brief Returns the plugin name to which this subsystem belongs.
   xiiStringView GetPluginName() const { return m_sPluginName; }

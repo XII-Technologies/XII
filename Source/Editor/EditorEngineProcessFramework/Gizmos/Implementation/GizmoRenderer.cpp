@@ -5,7 +5,6 @@
 #include <EditorEngineProcessFramework/PickingRenderPass/PickingRenderPass.h>
 
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Editor/GizmoConstants.h>
 

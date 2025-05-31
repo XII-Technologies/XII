@@ -47,7 +47,7 @@ public:
   }
 
   void operator=(const xiiFd&) = delete;
-  void operator                =(xiiFd&& other)
+  void operator=(xiiFd&& other)
   {
     Close();
     m_fd       = other.m_fd;

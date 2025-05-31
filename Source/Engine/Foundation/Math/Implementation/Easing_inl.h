@@ -6,26 +6,36 @@ namespace xiiMath
 {
   XII_ALWAYS_INLINE double EaseConstantZero(double t)
   {
+    XII_IGNORE_UNUSED(t);
+
     return 0.0;
   }
 
   XII_ALWAYS_INLINE double EaseConstantQuarter(double t)
   {
+    XII_IGNORE_UNUSED(t);
+
     return 0.25;
   }
 
   XII_ALWAYS_INLINE double EaseConstantHalf(double t)
   {
+    XII_IGNORE_UNUSED(t);
+
     return 0.5;
   }
 
   XII_ALWAYS_INLINE double EaseConstantThreeFourths(double t)
   {
+    XII_IGNORE_UNUSED(t);
+
     return 0.75;
   }
 
   XII_ALWAYS_INLINE double EaseConstantOne(double t)
   {
+    XII_IGNORE_UNUSED(t);
+
     return 1.0;
   }
 

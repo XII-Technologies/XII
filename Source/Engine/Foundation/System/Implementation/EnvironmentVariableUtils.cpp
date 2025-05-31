@@ -9,7 +9,6 @@
 // The POSIX functions are not thread safe by definition.
 static xiiMutex s_EnvVarMutex;
 
-
 xiiString xiiEnvironmentVariableUtils::GetValueString(xiiStringView sName, xiiStringView sDefault /*= nullptr*/)
 {
   XII_ASSERT_DEV(!sName.IsEmpty(), "Null or empty name passed to xiiEnvironmentVariableUtils::GetValueString()");

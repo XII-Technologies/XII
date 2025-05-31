@@ -60,10 +60,21 @@ public:
   ///
   /// Note that PackageForTransfer() will automatically include the xiiRTTI type version into the stream
   /// and ReplicatePackedMessage() will pass this into Deserialize(). Use this if the serialization changes.
-  virtual void Serialize(xiiStreamWriter& ref_stream) const { XII_ASSERT_NOT_IMPLEMENTED; }
+  virtual void Serialize(xiiStreamWriter& ref_stream) const
+  {
+    XII_IGNORE_UNUSED(ref_stream);
+
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
 
   /// \see Serialize()
-  virtual void Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion) { XII_ASSERT_NOT_IMPLEMENTED; }
+  virtual void Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion)
+  {
+    XII_IGNORE_UNUSED(ref_stream);
+    XII_IGNORE_UNUSED(uiTypeVersion);
+
+    XII_ASSERT_NOT_IMPLEMENTED;
+  }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   /// set to true while debugging a message routing problem

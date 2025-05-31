@@ -7,12 +7,9 @@
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiMeshRenderer::xiiMeshRenderer()  = default;
 xiiMeshRenderer::~xiiMeshRenderer() = default;
@@ -37,10 +34,8 @@ void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderD
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
-void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
-
   const xiiMeshRenderData* pRenderData = batch.GetFirstData<xiiMeshRenderData>();
 
   const xiiMeshResourceHandle&     hMesh                    = pRenderData->m_hMesh;
@@ -57,27 +52,25 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
   xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
 
-  pInstanceData->BindResources(pContext);
-
   if (pRenderData->m_uiFlipWinding)
   {
-    pContext->SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
+    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
   }
   else
   {
-    pContext->SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
   }
 
   pContext->BindMaterial(hMaterial);
   pContext->BindMeshBuffer(pMesh->GetMeshBuffer());
 
-  SetAdditionalData(renderViewContext, pRenderData);
+  SetAdditionalData(renderViewContext, pCommandList, pRenderData);
+
+  pInstanceData->BindResources(pContext);
 
   if (!bHasExplicitInstanceData)
   {
-    xiiGALDevice* pDevice      = xiiGALDevice::GetDefaultDevice();
-    xiiUInt32     uiStartIndex = 0;
-
+    xiiUInt32 uiStartIndex = 0;
     while (uiStartIndex < batch.GetCount())
     {
       const xiiUInt32 uiRemainingInstances = batch.GetCount() - uiStartIndex;
@@ -90,13 +83,7 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       if (uiFilteredCount > 0) // Instance data might be empty if all render data was filtered.
       {
-        auto pCommandList = pContext->GetCommandList();
-
-        pCommandList->BeginDebugGroup("xiiInstanceData Update");
-        {
-          pInstanceData->UpdateInstanceData(pCommandList, uiFilteredCount);
-        }
-        pCommandList->EndDebugGroup();
+        pInstanceData->UpdateInstanceData(pContext->GetCommandList(), uiFilteredCount);
 
         const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];
 
@@ -128,19 +115,22 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
   }
 }
 
-void xiiMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const
+void xiiMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiMeshRenderData* pRenderData) const
 {
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+
+  XII_IGNORE_UNUSED(pCommandList);
+  XII_IGNORE_UNUSED(pRenderData);
 }
 
-void xiiMeshRenderer::FillPerInstanceData(xiiArrayPtr<xiiPerInstanceData> instanceData, const xiiRenderDataBatch& batch, xiiUInt32 uiStartIndex, xiiUInt32& out_uiFilteredCount) const
+void xiiMeshRenderer::FillPerInstanceData(xiiArrayPtr<xiiPerInstanceData> pInstanceData, const xiiRenderDataBatch& batch, xiiUInt32 uiStartIndex, xiiUInt32& out_uiFilteredCount) const
 {
-  xiiUInt32 uiCount        = xiiMath::Min<xiiUInt32>(instanceData.GetCount(), batch.GetCount() - uiStartIndex);
+  xiiUInt32 uiCount        = xiiMath::Min<xiiUInt32>(pInstanceData.GetCount(), batch.GetCount() - uiStartIndex);
   xiiUInt32 uiCurrentIndex = 0;
 
   for (auto it = batch.GetIterator<xiiMeshRenderData>(uiStartIndex, uiCount); it.IsValid(); ++it)
   {
-    xiiInternal::FillPerInstanceData(instanceData[uiCurrentIndex], it);
+    xiiInternal::FillPerInstanceData(pInstanceData[uiCurrentIndex], it);
 
     ++uiCurrentIndex;
   }

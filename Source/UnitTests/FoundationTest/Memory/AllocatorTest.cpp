@@ -39,7 +39,7 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
   xiiAllocatorBase* pAllocator = xiiFoundation::GetAlignedAllocator();
   XII_TEST_BOOL(pAllocator != nullptr);
 
-  size_t uiAlignment = XII_ALIGNMENT_OF(T);
+  size_t uiAlignment = alignof(T);
   XII_TEST_INT(uiAlignment, uiExpectedAlignment);
 
   T testOnStack = T();

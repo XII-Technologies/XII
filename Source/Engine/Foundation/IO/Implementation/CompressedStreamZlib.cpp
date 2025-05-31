@@ -9,11 +9,15 @@
 
 static voidpf zLibAlloc OF((voidpf opaque, uInt items, uInt size))
 {
+  XII_IGNORE_UNUSED(opaque);
+
   return XII_DEFAULT_NEW_RAW_BUFFER(xiiUInt8, xiiMath::SafeConvertToSizeT(xiiMath::SafeMultiply64(items, size)));
 }
 
 static void zLibFree OF((voidpf opaque, voidpf address))
 {
+  XII_IGNORE_UNUSED(opaque);
+
   xiiUInt8* pData = (xiiUInt8*)address;
   XII_DEFAULT_DELETE_RAW_BUFFER(pData);
 }

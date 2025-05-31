@@ -37,14 +37,13 @@ private:
   friend class xiiMemoryUtils;
   friend class xiiGALTexture;
 
-  xiiGALSwapChainVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChainVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChainVulkan();
 
   virtual xiiResult InitPlatform() override final;
-  virtual xiiResult DeInitPlatform() override final;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
   xiiResult CreateVulkanSurface();
   xiiResult CreateVulkanSwapChain();
@@ -78,12 +77,12 @@ private:
   xiiDynamicArray<vk::Semaphore> m_DrawCompleteSemaphores;
   xiiDynamicArray<vk::Fence>     m_ImageAcquiredFences;
 
-  xiiDynamicArray<vk::Image>           m_SwapChainImages;
-  xiiDynamicArray<xiiGALTextureHandle> m_SwapChainTextures;
-  xiiDynamicArray<bool>                m_SwapChainImagesInitialized;
-  xiiDynamicArray<bool>                m_ImageAcquiredFenceSubmitted;
-  xiiUInt32                            m_uiBackBufferIndex = 0U;
-  xiiUInt32                            m_uiSemaphoreIndex  = 0U;
+  xiiDynamicArray<vk::Image>                   m_SwapChainImages;
+  xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_SwapChainTextures;
+  xiiDynamicArray<bool>                        m_SwapChainImagesInitialized;
+  xiiDynamicArray<bool>                        m_ImageAcquiredFenceSubmitted;
+  xiiUInt32                                    m_uiBackBufferIndex = 0U;
+  xiiUInt32                                    m_uiSemaphoreIndex  = 0U;
 
   bool m_bIsMinimized    = false;
   bool m_bIsVSyncEnabled = false;

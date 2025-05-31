@@ -9,13 +9,13 @@
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSampleAnimClipAnimNode, 1, xiiRTTIDefaultAllocator<xiiSampleAnimClipAnimNode>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSampleAnimClipAnimNode, 2, xiiRTTIDefaultAllocator<xiiSampleAnimClipAnimNode>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("Loop", m_bLoop)->AddAttributes(new xiiDefaultValueAttribute(true)),
       XII_MEMBER_PROPERTY("PlaybackSpeed", m_fPlaybackSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, {})),
-      XII_MEMBER_PROPERTY("ApplyRootMotion", m_bApplyRootMotion),
+      XII_MEMBER_PROPERTY("RootMotionAmount", m_fRootMotionAmount)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 100.0f)),
       XII_ACCESSOR_PROPERTY("Clip", GetClip, SetClip)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
 
       XII_MEMBER_PROPERTY("InStart", m_InStart)->AddAttributes(new xiiHiddenAttribute()),
@@ -43,13 +43,13 @@ xiiSampleAnimClipAnimNode::~xiiSampleAnimClipAnimNode() = default;
 
 xiiResult xiiSampleAnimClipAnimNode::SerializeNode(xiiStreamWriter& stream) const
 {
-  stream.WriteVersion(1);
+  stream.WriteVersion(2);
 
   XII_SUCCEED_OR_RETURN(SUPER::SerializeNode(stream));
 
   stream << m_sClip;
   stream << m_bLoop;
-  stream << m_bApplyRootMotion;
+  stream << m_fRootMotionAmount;
   stream << m_fPlaybackSpeed;
 
   XII_SUCCEED_OR_RETURN(m_InStart.Serialize(stream));
@@ -64,13 +64,24 @@ xiiResult xiiSampleAnimClipAnimNode::SerializeNode(xiiStreamWriter& stream) cons
 
 xiiResult xiiSampleAnimClipAnimNode::DeserializeNode(xiiStreamReader& stream)
 {
-  const auto version = stream.ReadVersion(1);
+  const auto version = stream.ReadVersion(2);
 
   XII_SUCCEED_OR_RETURN(SUPER::DeserializeNode(stream));
 
   stream >> m_sClip;
   stream >> m_bLoop;
-  stream >> m_bApplyRootMotion;
+
+  if (version == 1)
+  {
+    bool bApplyRootMotion = false;
+    stream >> bApplyRootMotion;
+    m_fRootMotionAmount = bApplyRootMotion ? 1.0f : 0.0f;
+  }
+  else if (version >= 2)
+  {
+    stream >> m_fRootMotionAmount;
+  }
+
   stream >> m_fPlaybackSpeed;
 
   XII_SUCCEED_OR_RETURN(m_InStart.Deserialize(stream));
@@ -90,22 +101,23 @@ void xiiSampleAnimClipAnimNode::Step(xiiAnimController& ref_controller, xiiAnimG
   if (!clipInfo.m_hClip.IsValid() || !m_OutPose.IsConnected())
     return;
 
-  InstanceState* pState = ref_graph.GetAnimNodeInstanceData<InstanceState>(*this);
-
-  if ((!m_InStart.IsConnected() && !pState->m_bPlaying) || m_InStart.IsTriggered(ref_graph))
-  {
-    pState->m_PlaybackTime = xiiTime::MakeZero();
-    pState->m_bPlaying     = true;
-
-    m_OutOnStarted.SetTriggered(ref_graph);
-  }
-
-  if (!pState->m_bPlaying)
-    return;
-
   xiiResourceLock<xiiAnimationClipResource> pAnimClip(clipInfo.m_hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (pAnimClip.GetAcquireResult() != xiiResourceAcquireResult::Final)
     return;
+
+  InstanceState* pState = ref_graph.GetAnimNodeInstanceData<InstanceState>(*this);
+
+  if (!m_InStart.IsConnected() && pState->m_PlaybackTime > xiiTime::MakeFromHours(10))
+  {
+    pState->m_PlaybackTime = xiiTime::MakeZero();
+  }
+
+  if (m_InStart.IsTriggered(ref_graph))
+  {
+    pState->m_PlaybackTime = xiiTime::MakeZero();
+
+    m_OutOnStarted.SetTriggered(ref_graph);
+  }
 
   const xiiTime tDuration    = pAnimClip->GetDescriptor().GetDuration();
   const float   fInvDuration = 1.0f / tDuration.AsFloatInSeconds();
@@ -122,11 +134,26 @@ void xiiSampleAnimClipAnimNode::Step(xiiAnimController& ref_controller, xiiAnimG
   auto&       cmd     = ref_controller.GetPoseGenerator().AllocCommandSampleTrack(xiiHashingUtils::xxHash32(&pThis, sizeof(pThis)));
   cmd.m_EventSampling = xiiAnimPoseEventTrackSampleMode::OnlyBetween;
 
-  if (bLoop && pState->m_PlaybackTime > tDuration)
+  if (pState->m_PlaybackTime >= tDuration)
   {
-    pState->m_PlaybackTime -= tDuration;
-    cmd.m_EventSampling = xiiAnimPoseEventTrackSampleMode::LoopAtEnd;
-    m_OutOnStarted.SetTriggered(ref_graph);
+    if (bLoop)
+    {
+      pState->m_PlaybackTime -= tDuration;
+      cmd.m_EventSampling = xiiAnimPoseEventTrackSampleMode::LoopAtEnd;
+      m_OutOnStarted.SetTriggered(ref_graph);
+    }
+    else
+    {
+      if (tPrevSamplePos < tDuration)
+      {
+        m_OutOnFinished.SetTriggered(ref_graph);
+      }
+      else
+      {
+        // if we are already holding the last frame, we can skip event sampling
+        cmd.m_EventSampling = xiiAnimPoseEventTrackSampleMode::None;
+      }
+    }
   }
 
   cmd.m_hAnimationClip               = clipInfo.m_hClip;
@@ -137,18 +164,17 @@ void xiiSampleAnimClipAnimNode::Step(xiiAnimController& ref_controller, xiiAnimG
     xiiAnimGraphPinDataLocalTransforms* pLocalTransforms = ref_controller.AddPinDataLocalTransforms();
 
     pLocalTransforms->m_pWeights       = nullptr;
-    pLocalTransforms->m_bUseRootMotion = m_bApplyRootMotion;
     pLocalTransforms->m_fOverallWeight = 1.0f;
-    pLocalTransforms->m_vRootMotion    = pAnimClip->GetDescriptor().m_vConstantRootMotion * tDiff.AsFloatInSeconds() * fPlaySpeed;
     pLocalTransforms->m_CommandID      = cmd.GetCommandID();
 
-    m_OutPose.SetPose(ref_graph, pLocalTransforms);
-  }
+    if (m_fRootMotionAmount != 0.0f)
+    {
+      pLocalTransforms->m_bUseRootMotion = true;
 
-  if (cmd.m_fNormalizedSamplePos >= 1.0f && !bLoop)
-  {
-    m_OutOnFinished.SetTriggered(ref_graph);
-    pState->m_bPlaying = false;
+      pLocalTransforms->m_vRootMotion = pAnimClip->GetDescriptor().m_vConstantRootMotion * tDiff.AsFloatInSeconds() * fPlaySpeed * m_fRootMotionAmount;
+    }
+
+    m_OutPose.SetPose(ref_graph, pLocalTransforms);
   }
 }
 
@@ -167,3 +193,37 @@ bool xiiSampleAnimClipAnimNode::GetInstanceDataDesc(xiiInstanceDataDesc& out_des
   out_desc.FillFromType<InstanceState>();
   return true;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
+
+class xiiSampleAnimClipAnimNodePatch_1_2 : public xiiGraphPatch
+{
+public:
+  xiiSampleAnimClipAnimNodePatch_1_2() :
+    xiiGraphPatch("xiiSampleAnimClipAnimNode", 2)
+  {
+  }
+
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  {
+    if (auto pProp = pNode->FindProperty("ApplyRootMotion"))
+    {
+      if (pProp->m_Value.IsA<bool>())
+      {
+        const bool bApply = pProp->m_Value.Get<bool>();
+
+        if (bApply)
+        {
+          pNode->AddProperty("RootMotionAmount", 1.0f);
+        }
+      }
+    }
+  }
+};
+
+xiiSampleAnimClipAnimNodePatch_1_2 g_xiiSampleAnimClipAnimNodePatch_1_2;
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes2_SampleAnimClipAnimNode);

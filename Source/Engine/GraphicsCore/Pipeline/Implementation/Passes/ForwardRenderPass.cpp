@@ -6,10 +6,7 @@
 #include <GraphicsCore/Lights/SimplifiedDataProvider.h>
 #include <GraphicsCore/Pipeline/Passes/ForwardRenderPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-
-#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 1, xiiRTTINoAllocator)
@@ -70,15 +67,23 @@ bool xiiForwardRenderPass::GetRenderTargetDescriptions(const xiiView& view, cons
 
 void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  #if 0
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  SetupResources(renderViewContext, inputs, outputs);
-  SetupPermutationVars(renderViewContext);
-  SetupLighting(renderViewContext);
+  if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
+  {
+    pCommandList->BeginDebugGroup(GetName());
 
-  RenderObjects(renderViewContext);
+    SetupResources(renderViewContext, inputs, outputs);
+    SetupPermutationVars(renderViewContext);
+    SetupLighting(renderViewContext, pCommandList);
 
-  renderViewContext.m_pRenderContext->EndRendering();
+    RenderObjects(renderViewContext);
+
+    pCommandList->EndDebugGroup();
+    pCommandList->Submit();
+  }
+  #endif
 }
 
 xiiResult xiiForwardRenderPass::Serialize(xiiStreamWriter& inout_stream) const
@@ -102,23 +107,23 @@ xiiResult xiiForwardRenderPass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-void xiiForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
+#ifdef CORE_ENABLE
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
   if (inputs[m_PinColor.m_uiInputIndex])
   {
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(inputs[m_PinColor.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, inputs[m_PinColor.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
 
   if (inputs[m_PinDepthStencil.m_uiInputIndex])
   {
-    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(inputs[m_PinDepthStencil.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(inputs[m_PinDepthStencil.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   }
 
   renderViewContext.m_pRenderContext->BeginRendering(std::move(renderingSetup), renderViewContext.m_pViewData->m_ViewPortRect, "", renderViewContext.m_pCamera->IsStereoscopic());
+#endif
 }
 
 void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& renderViewContext)
@@ -129,7 +134,7 @@ void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& rend
     sRenderPass = xiiViewRenderMode::GetPermutationValue(renderViewContext.m_pViewData->m_ViewRenderMode);
   }
 
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", sRenderPass);
+  renderViewContext.SetShaderPermutationVariable("RENDER_PASS", sRenderPass);
 
   xiiStringBuilder sDebugText;
   xiiViewRenderMode::GetDebugText(renderViewContext.m_pViewData->m_ViewRenderMode, sDebugText);
@@ -141,11 +146,11 @@ void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& rend
   // Set permutation for shading quality
   if (m_ShadingQuality == xiiForwardRenderShadingQuality::Normal)
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("SHADING_QUALITY", "SHADING_QUALITY_NORMAL");
+    renderViewContext.SetShaderPermutationVariable("SHADING_QUALITY", "SHADING_QUALITY_NORMAL");
   }
   else if (m_ShadingQuality == xiiForwardRenderShadingQuality::Simplified)
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("SHADING_QUALITY", "SHADING_QUALITY_SIMPLIFIED");
+    renderViewContext.SetShaderPermutationVariable("SHADING_QUALITY", "SHADING_QUALITY_SIMPLIFIED");
   }
   else
   {
@@ -153,19 +158,19 @@ void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& rend
   }
 }
 
-void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewContext)
+void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   // Setup clustered data
   if (m_ShadingQuality == xiiForwardRenderShadingQuality::Normal)
   {
     auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
-    pClusteredData->BindResources(renderViewContext.m_pRenderContext);
+    pClusteredData->BindResources(pCommandList);
   }
   // Or other light properties.
   else
   {
     auto pSimplifiedData = GetPipeline()->GetFrameDataProvider<xiiSimplifiedDataProvider>()->GetData(renderViewContext);
-    pSimplifiedData->BindResources(renderViewContext.m_pRenderContext);
+    pSimplifiedData->BindResources(pCommandList);
     // todo
   }
 }

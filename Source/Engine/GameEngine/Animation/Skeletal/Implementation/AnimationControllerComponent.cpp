@@ -12,7 +12,7 @@
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiAnimationControllerComponent, 2, xiiComponentMode::Static);
+XII_BEGIN_COMPONENT_TYPE(xiiAnimationControllerComponent, 3, xiiComponentMode::Static);
 {
   XII_BEGIN_PROPERTIES
   {
@@ -20,6 +20,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiAnimationControllerComponent, 2, xiiComponentMode::S
 
     XII_ENUM_MEMBER_PROPERTY("RootMotionMode", xiiRootMotionMode, m_RootMotionMode),
     XII_ENUM_MEMBER_PROPERTY("InvisibleUpdateRate", xiiAnimationInvisibleUpdateRate, m_InvisibleUpdateRate),
+    XII_MEMBER_PROPERTY("EnableIK", m_bEnableIK),
   }
   XII_END_PROPERTIES;
 
@@ -43,6 +44,7 @@ void xiiAnimationControllerComponent::SerializeComponent(xiiWorldWriter& inout_s
   s << m_hAnimGraph;
   s << m_RootMotionMode;
   s << m_InvisibleUpdateRate;
+  s << m_bEnableIK;
 }
 
 void xiiAnimationControllerComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -57,6 +59,11 @@ void xiiAnimationControllerComponent::DeserializeComponent(xiiWorldReader& inout
   if (uiVersion >= 2)
   {
     s >> m_InvisibleUpdateRate;
+  }
+
+  if (uiVersion >= 3)
+  {
+    s >> m_bEnableIK;
   }
 }
 
@@ -79,7 +86,7 @@ void xiiAnimationControllerComponent::OnSimulationStarted()
 
 void xiiAnimationControllerComponent::Update()
 {
-  xiiTime            tMinStep = xiiTime::MakeFromSeconds(0);
+  xiiTime                  tMinStep = xiiTime::MakeFromSeconds(0);
   xiiVisibilityState::Enum visType  = GetOwner()->GetVisibilityState();
 
   if (visType != xiiVisibilityState::Direct)
@@ -95,7 +102,7 @@ void xiiAnimationControllerComponent::Update()
   if (m_ElapsedTimeSinceUpdate < tMinStep)
     return;
 
-  m_AnimController.Update(m_ElapsedTimeSinceUpdate, GetOwner());
+  m_AnimController.Update(m_ElapsedTimeSinceUpdate, GetOwner(), m_bEnableIK);
   m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
 
   xiiVec3  translation;
@@ -105,6 +112,80 @@ void xiiAnimationControllerComponent::Update()
   m_AnimController.GetRootMotion(translation, rotationX, rotationY, rotationZ);
 
   xiiRootMotionMode::Apply(m_RootMotionMode, GetOwner(), translation, rotationX, rotationY, rotationZ);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+
+xiiAnimationControllerComponentManager::xiiAnimationControllerComponentManager(xiiWorld* pWorld) :
+  xiiComponentManager<class xiiAnimationControllerComponent, xiiBlockStorageType::FreeList>(pWorld)
+{
+}
+
+void xiiAnimationControllerComponentManager::Initialize()
+{
+  auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiAnimationControllerComponentManager::Update, this);
+  desc.m_bOnlyUpdateWhenSimulating = true;
+  desc.m_Phase                     = xiiWorldUpdatePhase::PreAsync; // TODO: currently can't run in Async phase
+
+  this->RegisterUpdateFunction(desc);
+
+  xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&xiiAnimationControllerComponentManager::ResourceEvent, this));
+}
+
+void xiiAnimationControllerComponentManager::Deinitialize()
+{
+  xiiResourceManager::GetResourceEvents().RemoveEventHandler(xiiMakeDelegate(&xiiAnimationControllerComponentManager::ResourceEvent, this));
+}
+
+void xiiAnimationControllerComponentManager::Update(const xiiWorldModule::UpdateContext& context)
+{
+  {
+    for (auto hComponent : m_ComponentsToReset)
+    {
+      xiiAnimationControllerComponent* pComp;
+      if (GetWorld()->TryGetComponent(hComponent, pComp))
+      {
+        pComp->OnSimulationStarted(); // just run this again
+      }
+    }
+
+    m_ComponentsToReset.Clear();
+  }
+
+  for (auto it = this->m_ComponentStorage.GetIterator(context.m_uiFirstComponentIndex, context.m_uiComponentCount); it.IsValid(); ++it)
+  {
+    ComponentType* pComponent = it;
+    if (pComponent->IsActiveAndInitialized())
+    {
+      pComponent->Update();
+    }
+  }
+}
+
+void xiiAnimationControllerComponentManager::ResourceEvent(const xiiResourceEvent& e)
+{
+  if (e.m_Type == xiiResourceEvent::Type::ResourceContentUnloading)
+  {
+    if (e.m_pResource->GetDynamicRTTI() == xiiGetStaticRTTI<xiiAnimGraphResource>())
+    {
+      xiiAnimGraphResourceHandle hResource((xiiAnimGraphResource*)(e.m_pResource));
+
+      for (auto it = GetComponents(); it.IsValid(); it.Next())
+      {
+        if (!it->IsActiveAndSimulating())
+          continue;
+
+        if (it->m_hAnimGraph == hResource)
+        {
+          if (!m_ComponentsToReset.Contains(it->GetHandle()))
+          {
+            m_ComponentsToReset.PushBack(it->GetHandle());
+          }
+        }
+      }
+    }
+  }
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Animation_Skeletal_Implementation_AnimationControllerComponent);

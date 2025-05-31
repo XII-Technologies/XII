@@ -59,8 +59,8 @@ public:
   xiiPrefabReferenceComponent();
   ~xiiPrefabReferenceComponent();
 
-  void                    SetPrefab(const xiiPrefabResourceHandle& hPrefab);               // [ property ]
-  XII_ALWAYS_INLINE const xiiPrefabResourceHandle& GetPrefab() const { return m_hPrefab; } // [ property ]
+  void                                             SetPrefab(const xiiPrefabResourceHandle& hPrefab); // [ property ]
+  XII_ALWAYS_INLINE const xiiPrefabResourceHandle& GetPrefab() const { return m_hPrefab; }            // [ property ]
 
   const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                         // [ property ] (exposed parameter)
   void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)

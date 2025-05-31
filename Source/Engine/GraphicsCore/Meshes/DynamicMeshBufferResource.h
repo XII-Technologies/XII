@@ -1,9 +1,7 @@
 #pragma once
 
 #include <Core/ResourceManager/Resource.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 using xiiDynamicMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiDynamicMeshBufferResource>;
 
@@ -24,7 +22,7 @@ struct XII_GRAPHICSCORE_DLL xiiDynamicMeshVertex
   xiiVec2 m_vTexCoord;
   xiiVec3 m_vEncodedNormal;
   xiiVec4 m_vEncodedTangent;
-  //xiiColorLinearUB m_Color;
+  // xiiColorLinearUB m_Color;
 
   XII_ALWAYS_INLINE void EncodeNormal(const xiiVec3& vNormal)
   {
@@ -32,7 +30,7 @@ struct XII_GRAPHICSCORE_DLL xiiDynamicMeshVertex
     m_vEncodedNormal = vNormal * 0.5f + xiiVec3(0.5f);
 
     // this is the same
-    //xiiMeshBufferUtils::EncodeNormal(normal, xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(&m_vEncodedNormal), sizeof(xiiVec3)), xiiMeshNormalPrecision::_32Bit).IgnoreResult();
+    // xiiMeshBufferUtils::EncodeNormal(normal, xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(&m_vEncodedNormal), sizeof(xiiVec3)), xiiMeshNormalPrecision::_32Bit).IgnoreResult();
   }
 
   XII_ALWAYS_INLINE void EncodeTangent(const xiiVec3& vTangent, float fBitangentSign)
@@ -44,7 +42,7 @@ struct XII_GRAPHICSCORE_DLL xiiDynamicMeshVertex
     m_vEncodedTangent.w = fBitangentSign < 0.0f ? 0.0f : 1.0f;
 
     // this is the same
-    //xiiMeshBufferUtils::EncodeTangent(tangent, bitangentSign, xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(&m_vEncodedTangent), sizeof(xiiVec4)), xiiMeshNormalPrecision::_32Bit).IgnoreResult();
+    // xiiMeshBufferUtils::EncodeTangent(tangent, bitangentSign, xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(&m_vEncodedTangent), sizeof(xiiVec4)), xiiMeshNormalPrecision::_32Bit).IgnoreResult();
   }
 };
 
@@ -59,9 +57,9 @@ public:
   ~xiiDynamicMeshBufferResource();
 
   XII_ALWAYS_INLINE const xiiDynamicMeshBufferResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
-  XII_ALWAYS_INLINE xiiGALBufferHandle                            GetVertexBuffer() const { return m_hVertexBuffer; }
-  XII_ALWAYS_INLINE xiiGALBufferHandle                            GetIndexBuffer() const { return m_hIndexBuffer; }
-  XII_ALWAYS_INLINE xiiGALBufferHandle                            GetColorBuffer() const { return m_hColorBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetVertexBuffer() const { return m_pVertexBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetIndexBuffer() const { return m_pIndexBuffer; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetColorBuffer() const { return m_pColorBuffer; }
 
   /// \brief Grants write access to the vertex data, and flags the data as 'dirty'.
   xiiArrayPtr<xiiDynamicMeshVertex> AccessVertexData()
@@ -120,9 +118,9 @@ private:
   bool m_bAccessedIB = false;
   bool m_bAccessedCB = false;
 
-  xiiGALBufferHandle                     m_hVertexBuffer;
-  xiiGALBufferHandle                     m_hIndexBuffer;
-  xiiGALBufferHandle                     m_hColorBuffer;
+  xiiSharedPtr<xiiGALBuffer>             m_pVertexBuffer;
+  xiiSharedPtr<xiiGALBuffer>             m_pIndexBuffer;
+  xiiSharedPtr<xiiGALBuffer>             m_pColorBuffer;
   xiiDynamicMeshBufferResourceDescriptor m_Descriptor;
 
   xiiInputLayoutInfo                                                m_InputLayout;

@@ -463,7 +463,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
     // the average point cloud center should be within at least 10% of the sphere's center
     // otherwise the points aren't equally distributed
-    XII_TEST_BOOL(avg.IsZero(0.1));
+    XII_TEST_BOOL(avg.IsZero(static_cast<xiiMathTestType>(0.1)));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDirection (float)")

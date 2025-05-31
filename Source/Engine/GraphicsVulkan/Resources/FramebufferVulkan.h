@@ -9,21 +9,19 @@ class XII_GRAPHICSVULKAN_DLL xiiGALFramebufferVulkan final : public xiiGALFrameb
   XII_ADD_DYNAMIC_REFLECTION(xiiGALFramebufferVulkan, xiiGALFramebuffer);
 
 public:
-  XII_ALWAYS_INLINE vk::Framebuffer GetVulkanFramebuffer() const { return m_vkFramebuffer; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Framebuffer GetVulkanFramebuffer() const { return m_vkFramebuffer; }
 
 protected:
-  friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceVulkan;
 
-  xiiGALFramebufferVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFramebufferCreationDescription& creationDescription);
+  xiiGALFramebufferVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALFramebufferCreationDescription& creationDescription);
 
   virtual ~xiiGALFramebufferVulkan();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   vk::Framebuffer m_vkFramebuffer;

@@ -13,4 +13,8 @@
 #  define XII_GRAPHICSCORE_DLL
 #endif
 
+#include <Foundation/Containers/IdTable.h>
+
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+
 #define XII_EMBED_FONT_FILE XII_ON

@@ -44,7 +44,6 @@ XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALDeviceEventType, 1)
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::Unknown),
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::AfterInitialization),
-  XII_ENUM_CONSTANT(xiiGALDeviceEventType::BeforeShutdown),
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::BeforeBeginFrame),
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::AfterBeginFrame),
   XII_ENUM_CONSTANT(xiiGALDeviceEventType::BeforeEndFrame),
@@ -737,8 +736,8 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALResourceStateFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::ResolveSource),
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::InputAttachment),
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::Present),
-  XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::BuildAsRead),
-  XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::BuildAsWrite),
+  XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::BuildASRead),
+  XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::BuildASWrite),
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::RayTracing),
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::Common),
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::ShadingRate),

@@ -19,12 +19,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipMapping, 1, xiiRTTIDefaultAlloc
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphResource, 1, xiiRTTIDefaultAllocator<xiiAnimGraphResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiAnimGraphResource);
-// clang-format on
 
 xiiAnimGraphResource::xiiAnimGraphResource() :
   xiiResource(xiiResource::DoUpdate::OnAnyThread, 0)
@@ -54,11 +54,9 @@ xiiResourceLoadDesc xiiAnimGraphResource::UpdateContent(xiiStreamReader* Stream)
     return res;
   }
 
-  // skip the absolute file path data that the standard file reader writes into the stream
-  {
-    xiiStringBuilder sAbsFilePath;
-    (*Stream) >> sAbsFilePath;
-  }
+  // the standard file reader writes the absolute file path into the stream
+  xiiStringBuilder sAbsFilePath;
+  (*Stream) >> sAbsFilePath;
 
   xiiAssetFileHeader AssetHash;
   AssetHash.Read(*Stream).AssertSuccess();

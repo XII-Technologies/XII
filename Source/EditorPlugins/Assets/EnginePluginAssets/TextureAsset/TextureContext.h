@@ -10,7 +10,6 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
 class xiiObjectSelectionMsgToEngine;
-class xiiRenderContext;
 
 class XII_ENGINEPLUGINASSETS_DLL xiiTextureContext : public xiiEngineProcessDocumentContext
 {

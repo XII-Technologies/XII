@@ -93,9 +93,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiPostProcessingComponent, 1, xiiComponentMode::Static
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiPostProcessingComponent::xiiPostProcessingComponent()                                   = default;
-xiiPostProcessingComponent::xiiPostProcessingComponent(xiiPostProcessingComponent&& other) = default;
-xiiPostProcessingComponent::~xiiPostProcessingComponent()                                  = default;
+xiiPostProcessingComponent::xiiPostProcessingComponent()                                              = default;
+xiiPostProcessingComponent::xiiPostProcessingComponent(xiiPostProcessingComponent&& other)            = default;
+xiiPostProcessingComponent::~xiiPostProcessingComponent()                                             = default;
 xiiPostProcessingComponent& xiiPostProcessingComponent::operator=(xiiPostProcessingComponent&& other) = default;
 
 void xiiPostProcessingComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

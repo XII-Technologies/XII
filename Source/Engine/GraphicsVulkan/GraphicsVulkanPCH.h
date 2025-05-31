@@ -81,6 +81,9 @@ XII_DEFINE_AS_POD_TYPE(vk::DescriptorType);
 XII_DEFINE_AS_POD_TYPE(vk::DescriptorSet);
 XII_DEFINE_AS_POD_TYPE(vk::WriteDescriptorSet);
 
+#define VK_REMAINING_ARRAY_LAYERS (~0U)
+#define VK_REMAINING_MIP_LEVELS   (~0U)
+
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 
 #include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>

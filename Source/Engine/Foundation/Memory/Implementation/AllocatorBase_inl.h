@@ -74,7 +74,7 @@ namespace xiiInternal
   XII_FORCE_INLINE T* CreateRawBuffer(xiiAllocatorBase* pAllocator, size_t uiCount)
   {
     xiiUInt64 safeAllocationSize = xiiMath::SafeMultiply64(uiCount, sizeof(T));
-    return static_cast<T*>(pAllocator->Allocate(static_cast<size_t>(safeAllocationSize), XII_ALIGNMENT_OF(T))); // Down-cast to size_t for 32-bit
+    return static_cast<T*>(pAllocator->Allocate(static_cast<size_t>(safeAllocationSize), alignof(T))); // Down-cast to size_t for 32-bit
   }
 
   XII_FORCE_INLINE void DeleteRawBuffer(xiiAllocatorBase* pAllocator, void* pPtr)
@@ -108,13 +108,13 @@ namespace xiiInternal
   template <typename T>
   XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsPod)
   {
-    return (T*)pAllocator->Reallocate(pPtr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), XII_ALIGNMENT_OF(T));
+    return (T*)pAllocator->Reallocate(pPtr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), alignof(T));
   }
 
   template <typename T>
   XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsMemRelocatable)
   {
-    return (T*)pAllocator->Reallocate(pPtr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), XII_ALIGNMENT_OF(T));
+    return (T*)pAllocator->Reallocate(pPtr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), alignof(T));
   }
 
   template <typename T>

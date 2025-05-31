@@ -57,6 +57,8 @@ XII_FORCE_INLINE const T* xiiStaticArray<T, C>::GetStaticArray() const
 template <typename T, xiiUInt32 C>
 XII_FORCE_INLINE void xiiStaticArray<T, C>::Reserve(xiiUInt32 uiCapacity)
 {
+  XII_IGNORE_UNUSED(uiCapacity);
+
   XII_ASSERT_DEV(uiCapacity <= C, "The static array has a fixed capacity of {0}, cannot reserve more elements than that.", C);
   // Nothing to do here
 }

@@ -21,7 +21,6 @@
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -29,7 +28,7 @@
 #include <Texture/Image/Image.h>
 
 xiiGameApplication*                                                xiiGameApplication::s_pGameApplicationInstance = nullptr;
-xiiDelegate<xiiGALDevice*(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
+xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
 
 xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Enables V-Sync");
 xiiCVarBool xiiGameApplication::cvar_AppShowFPS("App.ShowFPS", false, xiiCVarFlags::Save, "Show frames per second counter");
@@ -122,7 +121,7 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
   RenderFps();
   RenderConsole();
 
-  xiiRenderWorld::Render(xiiRenderContext::GetDefaultInstance());
+  xiiRenderWorld::Render();
 
   if (xiiRenderWorld::GetUseMultithreadedRendering())
   {

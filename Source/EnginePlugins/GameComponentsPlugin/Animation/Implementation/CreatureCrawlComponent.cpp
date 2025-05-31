@@ -138,7 +138,7 @@ void xiiCreatureCrawlComponent::Update()
   // TODO: make step height configurable
   const xiiTime tStepDuration = xiiTime::MakeFromMilliseconds(150);
   const float   fStepHeight   = 0.3f;
-  const float   fMoveAdd      = xiiMath::Min<float>(1.0f, GetWorld()->GetClock().GetTimeDiff().AsFloatInSeconds() / tStepDuration.GetSeconds());
+  const float   fMoveAdd      = xiiMath::Min<float>(1.0f, GetWorld()->GetClock().GetTimeDiff().AsFloatInSeconds() / tStepDuration.AsFloatInSeconds());
 
   xiiHybridArray<bool, 8> bLegMoving;
   bLegMoving.SetCount(uiNumLegs);

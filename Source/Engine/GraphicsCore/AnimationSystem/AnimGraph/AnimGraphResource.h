@@ -7,6 +7,7 @@
 #include <Foundation/Memory/InstanceDataAllocator.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraph.h>
+#include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 
 class xiiAnimGraphInstance;
 class xiiAnimGraphNode;

@@ -4,7 +4,6 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <GameEngine/XR/XRInterface.h>
 #include <GameEngine/XR/XRWindow.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/Resource.h>

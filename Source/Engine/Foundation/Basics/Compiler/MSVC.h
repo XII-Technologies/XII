@@ -28,9 +28,6 @@
 #    define XII_FORCE_INLINE __forceinline
 #  endif
 
-// Workaround for MSVC compiler issue with alignment determination of dependent types
-#  define XII_ALIGNMENT_OF(type) XII_COMPILE_TIME_MAX(XII_ALIGNMENT_MINIMUM, XII_COMPILE_TIME_MIN(sizeof(type), __alignof(type)))
-
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG) || (_MSC_VER >= 1929 /* Was broken in early VS2019 but works again in VS2022 and later 2019 versions*/)
 
 #    define XII_DEBUG_BREAK \
@@ -70,8 +67,7 @@
 
 #  define XII_WARNING_PUSH()           __pragma(warning(push))
 #  define XII_WARNING_POP()            __pragma(warning(pop))
-#  define XII_WARNING_DISABLE_MSVC(_x) __pragma(warning(disable \
-                                                        : _x))
+#  define XII_WARNING_DISABLE_MSVC(_x) __pragma(warning(disable : _x))
 
 #  define XII_DECL_EXPORT        __declspec(dllexport)
 #  define XII_DECL_IMPORT        __declspec(dllimport)
@@ -81,9 +77,8 @@
 // These use the __pragma version to control the warnings so that they can be used within other macros etc.
 #  define XII_MSVC_ANALYSIS_WARNING_PUSH                   __pragma(warning(push))
 #  define XII_MSVC_ANALYSIS_WARNING_POP                    __pragma(warning(pop))
-#  define XII_MSVC_ANALYSIS_WARNING_DISABLE(warningNumber) __pragma(warning(disable \
-                                                                            : warningNumber))
-#  define XII_MSVC_ANALYSIS_ASSUME(expression) __assume(expression)
+#  define XII_MSVC_ANALYSIS_WARNING_DISABLE(warningNumber) __pragma(warning(disable : warningNumber))
+#  define XII_MSVC_ANALYSIS_ASSUME(expression)             __assume(expression)
 
 #else
 

@@ -9,7 +9,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewCreationDescription : public x
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALBufferHandle            m_hBuffer;                                        ///< The handle to the buffer of which the view is created.
   xiiEnum<xiiGALBufferViewType> m_ViewType     = xiiGALBufferViewType::Undefined; ///< The view type. The default is Undefined.
   xiiEnum<xiiGALResourceFormat> m_Format       = xiiGALResourceFormat::Unknown;   ///< The format of the view. This member is only used for formatted and raw buffers. To create raw view of a raw buffer, set to xiiGALResourceFormat::Unknown. The default is xiiGALResourceFormat::Unknown.
   xiiUInt64                     m_uiByteOffset = 0U;                              ///< The offset in bytes from the beginning of the buffer to the start of the buffer region referenced by the view.
@@ -28,21 +27,20 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferViewCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief Returns the buffer of which the buffer view is created with.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALBuffer* GetBuffer() const { return m_pBuffer; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetBuffer() const { return m_pBuffer; }
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALBufferView(xiiGALDevice* pDevice, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
+  xiiGALBufferView(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferView();
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
 protected:
-  xiiGALBuffer* m_pBuffer = nullptr;
+  xiiSharedPtr<xiiGALBuffer> m_pBuffer;
 
   xiiGALBufferViewCreationDescription m_Description;
 };

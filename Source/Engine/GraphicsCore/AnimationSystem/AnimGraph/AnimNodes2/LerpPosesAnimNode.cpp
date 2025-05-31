@@ -135,3 +135,6 @@ void xiiLerpPosesAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraphI
     m_OutPose.SetPose(ref_graph, pPinData);
   }
 }
+
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes2_LerpPosesAnimNode);

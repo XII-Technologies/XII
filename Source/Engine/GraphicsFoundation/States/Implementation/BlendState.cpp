@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/States/BlendState.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALBlendFactor, 1)
   XII_ENUM_CONSTANT(xiiGALBlendFactor::Undefined),
   XII_ENUM_CONSTANT(xiiGALBlendFactor::Zero),
@@ -66,11 +65,10 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
-xiiGALBlendState::xiiGALBlendState(xiiGALDevice* pDevice, const xiiGALBlendStateCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+xiiGALBlendState::xiiGALBlendState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBlendStateCreationDescription& creationDescription) :
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

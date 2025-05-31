@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/States/DepthStencilState.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStencilOperation, 1)
   XII_ENUM_CONSTANT(xiiGALStencilOperation::Undefined),
   XII_ENUM_CONSTANT(xiiGALStencilOperation::Keep),
@@ -18,11 +17,10 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
-xiiGALDepthStencilState::xiiGALDepthStencilState(xiiGALDevice* pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+xiiGALDepthStencilState::xiiGALDepthStencilState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

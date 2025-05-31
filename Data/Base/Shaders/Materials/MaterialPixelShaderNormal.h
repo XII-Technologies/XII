@@ -12,8 +12,10 @@
 #  endif
 
 #  if defined(USE_ALPHA_TEST) && defined(MSAA)
-#    if MSAA == TRUE
-#      define USE_ALPHA_TEST_SUPER_SAMPLING
+#    if defined(MSAA)
+#      if MSAA == TRUE
+#        define USE_ALPHA_TEST_SUPER_SAMPLING
+#      endif
 #    endif
 #  endif
 

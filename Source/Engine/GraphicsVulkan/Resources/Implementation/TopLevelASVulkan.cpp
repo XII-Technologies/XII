@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/TopLevelASVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelASVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALTopLevelASVulkan::xiiGALTopLevelASVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTopLevelASCreationDescription& creationDescription) :
-  xiiGALTopLevelAS(pDeviceVulkan, creationDescription)
+xiiGALTopLevelASVulkan::xiiGALTopLevelASVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTopLevelASCreationDescription& creationDescription) :
+  xiiGALTopLevelAS(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -17,24 +15,18 @@ xiiGALTopLevelASVulkan::~xiiGALTopLevelASVulkan() = default;
 
 xiiResult xiiGALTopLevelASVulkan::InitPlatform()
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
-
   return XII_FAILURE;
 }
 
-xiiResult xiiGALTopLevelASVulkan::DeInitPlatform()
+void xiiGALTopLevelASVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return XII_SUCCESS;
-}
-
-void xiiGALTopLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)
-{
+  XII_IGNORE_UNUSED(sName);
 }
 
 xiiGALTopLevelASInstanceDescription xiiGALTopLevelASVulkan::GetInstanceDescription(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
+
   return xiiGALTopLevelASInstanceDescription();
 }
 

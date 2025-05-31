@@ -1,8 +1,9 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 
 using xiiDecalResourceHandle = xiiTypedResourceHandle<class xiiDecalResource>;
 

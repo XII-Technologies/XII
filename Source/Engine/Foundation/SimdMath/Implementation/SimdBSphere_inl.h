@@ -18,7 +18,8 @@ XII_ALWAYS_INLINE xiiSimdBSphere xiiSimdBSphere::MakeZero()
 XII_ALWAYS_INLINE xiiSimdBSphere xiiSimdBSphere::MakeInvalid(const xiiSimdVec4f& vCenter /*= xiiSimdVec4f::MakeZero()*/)
 {
   xiiSimdBSphere res;
-  res.m_CenterAndRadius.Set(0.0f, 0.0f, 0.0f, -xiiMath::SmallEpsilon<float>());
+  res.m_CenterAndRadius = vCenter;
+  res.m_CenterAndRadius.SetW(-xiiMath::SmallEpsilon<float>());
   return res;
 }
 

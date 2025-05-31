@@ -10,8 +10,6 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 
 xiiCVarBool cvar_RenderingMultithreading("Rendering.Multithreading", true, xiiCVarFlags::Default, "Enables multi-threaded update and rendering.");
 xiiCVarBool cvar_RenderingCachingStaticObjects("Rendering.Caching.StaticObjects", true, xiiCVarFlags::Default, "Enables render data caching of static objects.");
@@ -526,7 +524,7 @@ void xiiRenderWorld::ExtractMainViews()
   s_bInExtract = false;
 }
 
-void xiiRenderWorld::Render(xiiRenderContext* pRenderContext)
+void xiiRenderWorld::Render()
 {
   const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
 
@@ -575,7 +573,7 @@ void xiiRenderWorld::Render(xiiRenderContext* pRenderContext)
     // If we are the only one holding a reference to the pipeline skip rendering. The pipeline is not needed anymore and will be deleted soon.
     if (pRenderPipeline->GetRefCount() > 1)
     {
-      pRenderPipeline->Render(pRenderContext);
+      pRenderPipeline->Render();
     }
     pRenderPipeline = nullptr;
   }
@@ -601,21 +599,7 @@ void xiiRenderWorld::BeginFrame()
 
   RebuildPipelines();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  auto& filteredRenderPipelines = s_FilteredRenderPipelines[GetDataIndexForRendering()];
-  for (auto& pRenderPipeline : filteredRenderPipelines)
-  {
-    xiiGALSwapChainHandle hSwapChain = pRenderPipeline->GetRenderData().GetViewData().m_hSwapChain;
-    if (!hSwapChain.IsInvalidated())
-    {
-      pDevice->EnqueueFrameSwapChain(hSwapChain);
-    }
-  }
-
-  const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
-
-  pDevice->BeginFrame(uiRenderFrame);
+  xiiGALDevice::GetDefaultDevice()->BeginFrame();
 }
 
 void xiiRenderWorld::EndFrame()
@@ -645,7 +629,6 @@ bool xiiRenderWorld::GetUseMultithreadedRendering()
 {
   return cvar_RenderingMultithreading;
 }
-
 
 bool xiiRenderWorld::IsRenderingThread()
 {
@@ -836,6 +819,7 @@ void xiiRenderWorld::OnEngineShutdown()
   }
 
   s_Views.Clear();
+  s_CameraConfigs.Clear();
 }
 
 void xiiRenderWorld::BeginModifyCameraConfigs()

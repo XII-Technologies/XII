@@ -2,8 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/Descriptors.h>
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 /// \brief Interface that defines methods to manipulate a swap chain object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALDeviceObject
@@ -15,7 +14,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSwapChainCreationDescription& GetDescription() const { return m_Description; };
 
   /// \brief This retrieves the current back buffer texture.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALTextureHandle GetBackBufferTexture() const { return m_hBackBufferTexture; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const { return m_pBackBufferTexture; };
 
   /// \brief This retrieves the current swap chain size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_Description.m_Resolution; };
@@ -48,21 +47,19 @@ public:
   /// This value is only relevant for DirectX11 and DirectX12 backends and ignored for others. By default it matches the number of buffers in the swap chain. For example, for a 2-buffer
   /// swap chain, the CPU can enqueue frames 0 and 1, but Present command of frame 2 will block until frame 0 is presented. If in the example above the maximum frame latency is set
   /// to 1, then Present command of frame 1 will block until Present of frame 0 is complete.
-  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency){};
+  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) { XII_IGNORE_UNUSED(uiMaxLatency); };
 
 protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALSwapChain(xiiGALDevice* pDevice, const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChain(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChain();
 
   virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
-
-  xiiGALTextureHandle m_hBackBufferTexture;
+  xiiSharedPtr<xiiGALTexture> m_pBackBufferTexture;
 
   xiiEnum<xiiGALPresentMode> m_PresentMode = xiiGALPresentMode::VSync;
 

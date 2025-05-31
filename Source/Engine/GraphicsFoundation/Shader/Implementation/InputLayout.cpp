@@ -43,8 +43,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayout, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALInputLayout::xiiGALInputLayout(xiiGALDevice* pDevice, const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+xiiGALInputLayout::xiiGALInputLayout(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALInputLayoutCreationDescription& creationDescription) :
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 

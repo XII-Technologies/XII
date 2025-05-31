@@ -197,7 +197,7 @@ private:
 };
 
 
-template <typename Class, typename Container, Container Class::*Member>
+template <typename Class, typename Container, Container Class::* Member>
 struct xiiMapPropertyAccessor
 {
   using ContainerType = typename xiiTypeTraits<Container>::NonConstReferenceType;
@@ -215,7 +215,7 @@ class xiiMemberMapProperty : public xiiTypedMapProperty<typename xiiTypeTraits<T
 public:
   using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
-  using GetContainerFunc      = Container& (*)(Class* pInstance);
+  using GetContainerFunc      = Container& (*)(Class * pInstance);
 
   xiiMemberMapProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
     xiiTypedMapProperty<RealType>(sPropertyName)

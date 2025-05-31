@@ -56,7 +56,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiAssetBrowserItemFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiAssetBrowserItemFlags);
 
 /// \brief Model of the item view in the asset browser.
-class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserModel : public QAbstractItemModel
+class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserModel : public QAbstractItemModel, public QEnableSharedFromThis<xiiQtAssetBrowserModel>
 {
   Q_OBJECT
 public:
@@ -74,6 +74,8 @@ public:
 
   xiiQtAssetBrowserModel(QObject* pParent, xiiQtAssetFilter* pFilter);
   ~xiiQtAssetBrowserModel();
+
+  void Initialize();
 
   void resetModel();
 
@@ -140,6 +142,9 @@ private:
   xiiQtAssetFilter* m_pFilter   = nullptr;
   bool              m_bIconMode = true;
   xiiSet<xiiString> m_ImportExtensions;
+
+  xiiEventSubscriptionID m_FileChangedSubscription   = 0;
+  xiiEventSubscriptionID m_FolderChangedSubscription = 0;
 
   xiiMutex                 m_Mutex;
   xiiDynamicArray<FsEvent> m_QueuedFileSystemEvents;

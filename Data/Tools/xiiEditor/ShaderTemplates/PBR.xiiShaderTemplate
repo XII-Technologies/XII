@@ -139,7 +139,7 @@ Texture2D OrmTexture;
 // The values of the variables in the MATERIALPARAMETER section are written to this constant buffer.
 // The constant buffer is available to all shader stages and these variables
 // can be read anywhere like global variables.
-DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 1, 0)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
 {
   COLOR4F(BaseColor);
   COLOR4F(EmissiveColor);

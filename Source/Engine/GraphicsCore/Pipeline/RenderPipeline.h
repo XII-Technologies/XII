@@ -91,7 +91,7 @@ private:
   void ExtractData(const xiiView& view);
   void FindVisibleObjects(const xiiView& view);
 
-  void Render(xiiRenderContext* pRenderer);
+  void Render();
 
   xiiRasterizerView* PrepareOcclusionCulling(const xiiFrustum& frustum, const xiiView& view);
   void               PreviewOcclusionBuffer(const xiiRasterizerView& rasterizer, const xiiView& view);
@@ -149,6 +149,10 @@ private: // Member data
 
   xiiDynamicArray<xiiPermutationVar> m_PermutationVars;
 
+  // Resources
+  xiiGlobalConstants         m_GlobalConstants;
+  xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
+
   // Occlusion Culling
-  xiiGALTextureHandle m_hOcclusionDebugViewTexture;
+  xiiSharedPtr<xiiGALTexture> m_pOcclusionDebugViewTexture;
 };

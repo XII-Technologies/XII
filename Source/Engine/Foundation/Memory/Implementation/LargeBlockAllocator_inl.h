@@ -83,7 +83,7 @@ XII_FORCE_INLINE xiiDataBlock<T, BlockSize> xiiLargeBlockAllocator<BlockSize>::A
 
   static_assert(Helper::BLOCK_CAPACITY >= 1, "Type is too big for block allocation. Consider using regular heap allocation instead or increase the block size.");
 
-  xiiDataBlock<T, BlockSize> block(static_cast<T*>(Allocate(XII_ALIGNMENT_OF(T))), 0);
+  xiiDataBlock<T, BlockSize> block(static_cast<T*>(Allocate(alignof(T))), 0);
   return block;
 }
 

@@ -30,7 +30,7 @@ xiiMutex                              xiiResourceManager::s_ResourceMutex;
 XII_BEGIN_SUBSYSTEM_DECLARATION(Core, ResourceManager)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-  "Foundation"
+    "Foundation"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP

@@ -22,6 +22,7 @@ o
 		{
 			s{"Textures/MissingCubeMap.dds"}
 		}
+		s %Tags{""}
 	}
 }
 }

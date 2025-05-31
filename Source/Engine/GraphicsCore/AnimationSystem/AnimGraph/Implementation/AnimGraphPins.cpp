@@ -16,13 +16,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphPin, 1, xiiRTTINoAllocator)
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphInputPin, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphOutputPin, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiResult xiiAnimGraphPin::Serialize(xiiStreamWriter& inout_stream) const
 {
@@ -40,13 +40,11 @@ xiiResult xiiAnimGraphPin::Deserialize(xiiStreamReader& inout_stream)
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphTriggerInputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphTriggerInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphTriggerOutputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphTriggerOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiAnimGraphTriggerOutputPin::SetTriggered(xiiAnimGraphInstance& ref_graph) const
 {
@@ -80,13 +78,11 @@ bool xiiAnimGraphTriggerInputPin::AreAllTriggered(xiiAnimGraphInstance& ref_grap
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphNumberInputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphNumberInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphNumberOutputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphNumberOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 double xiiAnimGraphNumberInputPin::GetNumber(xiiAnimGraphInstance& ref_graph, double fFallback /*= 0.0*/) const
 {
@@ -112,13 +108,11 @@ void xiiAnimGraphNumberOutputPin::SetNumber(xiiAnimGraphInstance& ref_graph, dou
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphBoolInputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphBoolInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphBoolOutputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphBoolOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 bool xiiAnimGraphBoolInputPin::GetBool(xiiAnimGraphInstance& ref_graph, bool bFallback /*= false */) const
 {
@@ -144,13 +138,11 @@ void xiiAnimGraphBoolOutputPin::SetBool(xiiAnimGraphInstance& ref_graph, bool bV
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphBoneWeightsInputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphBoneWeightsInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphBoneWeightsOutputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphBoneWeightsOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiAnimGraphPinDataBoneWeights* xiiAnimGraphBoneWeightsInputPin::GetWeights(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph) const
 {
@@ -176,7 +168,6 @@ void xiiAnimGraphBoneWeightsOutputPin::SetWeights(xiiAnimGraphInstance& ref_grap
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphLocalPoseInputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphLocalPoseInputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -185,7 +176,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimGraphLocalPoseOutputPin, 1, xiiRTTIDefaultAllocator<xiiAnimGraphLocalPoseOutputPin>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiAnimGraphPinDataLocalTransforms* xiiAnimGraphLocalPoseInputPin::GetPose(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph) const
 {

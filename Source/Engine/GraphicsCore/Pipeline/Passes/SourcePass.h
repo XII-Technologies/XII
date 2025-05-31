@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
-struct xiiSourceFormat
+struct XII_GRAPHICSCORE_DLL xiiSourceFormat
 {
   using StorageType = xiiUInt8;
 
@@ -33,13 +33,12 @@ public:
   xiiSourcePass(xiiStringView sName = "SourcePass");
   ~xiiSourcePass();
 
-  static xiiGALTextureCreationDescription GetOutputDescription(const xiiView& view, xiiEnum<xiiSourceFormat> format, xiiEnum<xiiGALMSAASampleCount> msaaMode);
-  virtual bool                            GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-  virtual void                            Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  static xiiGALTextureCreationDescription GetOutputDescription(const xiiView& view, xiiEnum<xiiSourceFormat> format, xiiEnum<xiiGALMSAASampleCount> msaaSampleCount);
+  virtual bool                            GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> pInputs, xiiArrayPtr<xiiGALTextureCreationDescription> pOutputs) override;
+  virtual void                            InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
+  virtual void                            Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
   virtual xiiResult                       Serialize(xiiStreamWriter& inout_stream) const override;
   virtual xiiResult                       Deserialize(xiiStreamReader& inout_stream) override;
-
-  void FreeCachedRenderPasses();
 
 protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
@@ -54,6 +53,6 @@ protected:
   float                                   m_fDepthClearValue                = 1.0f;
   xiiUInt8                                m_uiStencilClearValue             = 0U;
 
-  xiiGALRenderPassHandle  m_hRenderPass;
-  xiiGALFramebufferHandle m_hFramebuffer;
+  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
 };

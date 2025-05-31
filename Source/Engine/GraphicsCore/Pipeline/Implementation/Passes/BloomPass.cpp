@@ -4,8 +4,6 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/BloomPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/BloomConstants.h>
 
@@ -42,35 +40,34 @@ xiiBloomPass::xiiBloomPass() :
     XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load bloom shader!");
   }
 
-  {
-    m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiBloomConstants>();
-  }
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pBloomConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiBloomConstants));
 }
 
 xiiBloomPass::~xiiBloomPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
-  m_hConstantBuffer.Invalidate();
+  m_pBloomConstantBuffer.Clear();
 }
 
-bool xiiBloomPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
+bool xiiBloomPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> pInputs, xiiArrayPtr<xiiGALTextureCreationDescription> pOutputs)
 {
   // Color
-  if (inputs[m_PinInput.m_uiInputIndex])
+  if (pInputs[m_PinInput.m_uiInputIndex])
   {
-    if (!inputs[m_PinInput.m_uiInputIndex]->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+    if (!pInputs[m_PinInput.m_uiInputIndex]->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     {
       xiiLog::Error("'{0}' input must allow shader resource view.", GetName());
       return false;
     }
 
     // Output is half-res
-    xiiGALTextureCreationDescription desc = *inputs[m_PinInput.m_uiInputIndex];
+    xiiGALTextureCreationDescription desc = *pInputs[m_PinInput.m_uiInputIndex];
     desc.m_Size.width                     = desc.m_Size.width / 2;
     desc.m_Size.height                    = desc.m_Size.height / 2;
     desc.m_Format                         = xiiGALResourceFormat::RG11B10Float;
 
-    outputs[m_PinOutput.m_uiOutputIndex] = desc;
+    pOutputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
   else
   {
@@ -81,14 +78,58 @@ bool xiiBloomPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArr
   return true;
 }
 
-void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiBloomPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  auto pColorInput  = inputs[m_PinInput.m_uiInputIndex];
-  auto pColorOutput = outputs[m_PinOutput.m_uiOutputIndex];
+  XII_IGNORE_UNUSED(pInputs);
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  // Create render pass.
+  if (auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex])
+  {
+    const auto& textureDescription = pOutput->m_pTexture->GetDescription();
+
+    xiiGALRenderPassCreationDescription renderPassDescription;
+    auto&                               subpassDescription    = renderPassDescription.m_SubPasses.ExpandAndGetRef();
+    auto&                               dependencyDescription = renderPassDescription.m_Dependencies.ExpandAndGetRef();
+    auto&                               attachmentDescription = renderPassDescription.m_Attachments.ExpandAndGetRef();
+
+    dependencyDescription.m_uiSourceSubPass       = XII_GAL_SUBPASS_EXTERNAL;
+    dependencyDescription.m_uiDestinationSubPass  = 0U;
+    dependencyDescription.m_SourceStageFlags      = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+    dependencyDescription.m_DestinationStageFlags = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+
+    attachmentDescription.m_Format                = textureDescription.m_Format;
+    attachmentDescription.m_uiSampleCount         = textureDescription.m_uiSampleCount;
+    attachmentDescription.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
+    attachmentDescription.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
+    attachmentDescription.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Clear;
+    attachmentDescription.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
+    attachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::RenderTarget;
+    attachmentDescription.m_FinalStateFlags       = xiiGALResourceStateFlags::RenderTarget;
+
+    auto& colorAttachmentReference                = subpassDescription.m_RenderTargetAttachments.ExpandAndGetRef();
+    colorAttachmentReference.m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget;
+    colorAttachmentReference.m_uiAttachmentIndex  = 0U;
+
+    dependencyDescription.m_SourceAccessFlags      = xiiGALAccessFlags::RenderTargetWrite;
+    dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::RenderTargetWrite;
+
+    m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+    XII_ASSERT_DEV(m_pRenderPass != nullptr, "Failed to create render pass.");
+  }
+}
+
+void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+{
+  auto pColorInput  = pInputs[m_PinInput.m_uiInputIndex];
+  auto pColorOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pColorInput == nullptr || pColorOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+#ifdef CORE_ENABLE
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiUInt32 uiWidth        = pColorInput->m_TextureDescription.m_Size.width;
   xiiUInt32 uiHeight       = pColorInput->m_TextureDescription.m_Size.height;
@@ -244,22 +285,63 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
       xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(hTexture);
     }
   }
+#endif
 }
 
-void xiiBloomPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiBloomPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  auto pColorOutput = outputs[m_PinOutput.m_uiOutputIndex];
+  auto pColorOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pColorOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pColorOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-  renderingSetup.m_ClearColor              = xiiColor::Black;
+  // Setup Framebuffer.
+  {
+    if (m_pFramebuffer)
+    {
+      const auto& pRenderTargetView = pColorOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 
-  auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "Clear");
+      if (m_pFramebuffer->GetDescription().m_Attachments.PeekBack() != pRenderTargetView)
+      {
+        m_pFramebuffer.Clear();
+      }
+    }
+
+    if (!m_pFramebuffer)
+    {
+      const auto& attachmentDescription     = pColorOutput->m_pTexture->GetDescription();
+      const auto& pRenderTargetView         = pColorOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+      const auto& attachmentViewDescription = pRenderTargetView->GetDescription();
+      xiiVec3U32  vSize                     = xiiGALTextureUtilities::GetMipLevelSize(attachmentViewDescription.m_uiMostDetailedMip, attachmentDescription);
+
+      xiiGALFramebufferCreationDescription framebufferDescription;
+      framebufferDescription.m_pRenderPass       = m_pRenderPass;
+      framebufferDescription.m_FramebufferSize   = {vSize.x, vSize.y};
+      framebufferDescription.m_uiArraySliceCount = attachmentDescription.GetArraySize();
+      framebufferDescription.m_Attachments.PushBack(pRenderTargetView);
+
+      m_pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+      XII_ASSERT_DEV(m_pFramebuffer != nullptr, "Failed to create frame buffer.");
+    }
+  }
+
+  if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
+  {
+    pCommandList->BeginDebugGroup(GetName());
+    {
+      xiiGALBeginRenderPassDescription renderPassDescription{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
+
+      auto& clearValue            = renderPassDescription.m_ClearValues.ExpandAndGetRef();
+      clearValue.m_ResourceFormat = pColorOutput->m_TextureDescription.m_Format;
+      clearValue.m_ClearColor     = xiiColor::Black;
+
+      pCommandList->BeginRenderPass(renderPassDescription);
+      pCommandList->EndRenderPass();
+    }
+    pCommandList->EndDebugGroup();
+    pCommandList->Submit();
+  }
 }
 
 xiiResult xiiBloomPass::Serialize(xiiStreamWriter& inout_stream) const
@@ -290,12 +372,14 @@ xiiResult xiiBloomPass::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiBloomPass::UpdateConstantBuffer(xiiVec2 pixelSize, const xiiColor& tintColor)
 {
+#ifdef CORE_ENABLE
   xiiBloomConstants* constants = xiiRenderContext::GetConstantBufferData<xiiBloomConstants>(m_hConstantBuffer);
   constants->PixelSize         = pixelSize;
   constants->BloomThreshold    = m_fThreshold;
   constants->BloomIntensity    = m_fIntensity;
 
   constants->TintColor = tintColor;
+#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_BloomPass);

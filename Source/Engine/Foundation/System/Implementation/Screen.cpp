@@ -20,7 +20,7 @@ void xiiScreen::PrintScreenInfo(const xiiHybridArray<xiiScreenInfo, 2>& screens,
 {
   XII_LOG_BLOCK(pLog, "Screens");
 
-  xiiLog::Info(pLog, "Found {0} screens", screens.GetCount());
+  xiiLog::Dev(pLog, "Found {0} screens", screens.GetCount());
 
   for (const auto& screen : screens)
   {

@@ -5,9 +5,6 @@
 #include <GraphicsCore/Pipeline/Passes/SelectionHighlightPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <GraphicsFoundation/Resources/Texture.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/SelectionHighlightConstants.h>
 
@@ -39,13 +36,14 @@ xiiSelectionHighlightPass::xiiSelectionHighlightPass(xiiStringView sName) :
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/SelectionHighlight.xiiShader");
   XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load selection highlight shader!");
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiSelectionHighlightConstants>();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pSelectionHighlightConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiSelectionHighlightConstants));
 }
 
 xiiSelectionHighlightPass::~xiiSelectionHighlightPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
-  m_hConstantBuffer.Invalidate();
+  m_pSelectionHighlightConstantsBuffer.Clear();
 }
 
 bool xiiSelectionHighlightPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -74,9 +72,8 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
   if (renderDataBatchList.GetBatchCount() == 0)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiGALTextureHandle hDepthTexture;
+  #ifdef CORE_ENABLE
+  xiiSharedPtr<xiiGALTexture> pDepthTexture;
 
   // render all selection objects to depth target only
   {
@@ -85,10 +82,10 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
     xiiEnum<xiiGALMSAASampleCount> sampleCount  = (xiiGALMSAASampleCount::Enum)pColorOutput->m_TextureDescription.m_uiSampleCount;
     xiiUInt32                      uiSliceCount = pColorOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
-    hDepthTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::D24UNormalizedS8UInt, sampleCount, uiSliceCount);
+    pDepthTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::D24UNormalizedS8UInt, sampleCount, uiSliceCount);
 
     xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDepthTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil));
     renderingSetup.m_bClearDepth   = true;
     renderingSetup.m_bClearStencil = true;
 
@@ -106,20 +103,21 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
     constants->OverlayOpacity = m_fOverlayOpacity;
 
     xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pColorOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pColorOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
     auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSelectionHighlightConstants", m_hConstantBuffer);
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-    renderViewContext.m_pRenderContext->BindTexture2D("SelectionDepthTexture", pDevice->GetTexture(hDepthTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-    renderViewContext.m_pRenderContext->BindTexture2D("SceneDepthTexture", pDevice->GetTexture(pDepthInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    renderViewContext.m_pRenderContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
+    renderViewContext.m_pRenderContext->BindTexture2D("SelectionDepthTexture", pDepthTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    renderViewContext.m_pRenderContext->BindTexture2D("SceneDepthTexture", pDepthInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
-    xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(hDepthTexture);
+    xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(pDepthTexture);
   }
+#endif
 }
 
 xiiResult xiiSelectionHighlightPass::Serialize(xiiStreamWriter& inout_stream) const

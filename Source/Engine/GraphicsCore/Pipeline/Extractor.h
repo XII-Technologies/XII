@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Foundation/Strings/HashedString.h>
+
 #include <GraphicsCore/Pipeline/RenderData.h>
 
 class xiiStreamWriter;
@@ -49,7 +50,6 @@ protected:
   mutable xiiUInt32 m_uiNumUncachedRenderData;
 #endif
 };
-
 
 class XII_GRAPHICSCORE_DLL xiiVisibleObjectsExtractor : public xiiExtractor
 {

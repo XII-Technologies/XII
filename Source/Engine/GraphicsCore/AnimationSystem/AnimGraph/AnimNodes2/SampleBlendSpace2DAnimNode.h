@@ -41,12 +41,12 @@ public:
   const char* GetCenterClipFile() const;
 
 private:
-  xiiHashedString                       m_sCenterClip;                                           // [ property ]
-  xiiHybridArray<xiiAnimationClip2D, 8> m_Clips;                                                 // [ property ]
-  xiiTime                               m_InputResponse    = xiiTime::MakeFromMilliseconds(100); // [ property ]
-  bool                                  m_bLoop            = true;                               // [ property ]
-  bool                                  m_bApplyRootMotion = false;                              // [ property ]
-  float                                 m_fPlaybackSpeed   = 1.0f;                               // [ property ]
+  xiiHashedString                       m_sCenterClip;                                            // [ property ]
+  xiiHybridArray<xiiAnimationClip2D, 8> m_Clips;                                                  // [ property ]
+  xiiTime                               m_InputResponse     = xiiTime::MakeFromMilliseconds(100); // [ property ]
+  bool                                  m_bLoop             = true;                               // [ property ]
+  float                                 m_fRootMotionAmount = 0.0f;                               // [ property ]
+  float                                 m_fPlaybackSpeed    = 1.0f;                               // [ property ]
 
   xiiAnimGraphTriggerInputPin    m_InStart;       // [ property ]
   xiiAnimGraphBoolInputPin       m_InLoop;        // [ property ]
@@ -61,14 +61,14 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiUInt32 m_uiIndex;
-    float     m_fWeight = 1.0f;
+    xiiUInt32                              m_uiIndex;
+    float                                  m_fWeight   = 1.0f;
+    const xiiAnimController::AnimClipInfo* m_pClipInfo = nullptr;
   };
 
   struct InstanceState
   {
-    bool    m_bPlaying = false;
-    xiiTime m_CenterPlaybackTime;
+    xiiTime m_CenterPlaybackTime    = xiiTime::MakeFromHours(1000);
     float   m_fOtherPlaybackPosNorm = 0.0f;
     float   m_fLastValueX           = 0.0f;
     float   m_fLastValueY           = 0.0f;
@@ -76,5 +76,5 @@ private:
 
   void UpdateCenterClipPlaybackTime(const xiiAnimController::AnimClipInfo& centerInfo, InstanceState* pState, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, xiiAnimPoseEventTrackSampleMode& out_eventSamplingCenter) const;
   void PlayClips(xiiAnimController& ref_controller, const xiiAnimController::AnimClipInfo& centerInfo, InstanceState* pState, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, xiiArrayPtr<ClipToPlay> clips, xiiUInt32 uiMaxWeightClip) const;
-  void ComputeClipsAndWeights(const xiiAnimController::AnimClipInfo& centerInfo, const xiiVec2& p, xiiDynamicArray<ClipToPlay>& out_Clips, xiiUInt32& out_uiMaxWeightClip) const;
+  void ComputeClipsAndWeights(xiiAnimController& ref_controller, const xiiAnimController::AnimClipInfo& centerInfo, const xiiVec2& p, xiiDynamicArray<ClipToPlay>& out_Clips, xiiUInt32& out_uiMaxWeightClip) const;
 };

@@ -3,17 +3,16 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
-  xiiGALDeviceVulkan* pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  const auto&         fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  const auto&                      fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
   return xiiVulkanTypeConversions::GetImageLayout(GetResourceState(), false, fragmentDensityMap.fragmentDensityMap != vk::False);
 }
 
@@ -22,16 +21,27 @@ void xiiGALTextureVulkan::SetVulkanImageLayout(vk::ImageLayout vkImageLayout)
   SetResourceState(xiiVulkanTypeConversions::GetResourceState(vkImageLayout));
 }
 
-xiiGALTextureVulkan::xiiGALTextureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
-  xiiGALTexture(pDeviceVulkan, creationDescription), m_ImageMemoryAllocation(nullptr), m_StagingBufferMemoryAllocation(nullptr)
+xiiGALTextureVulkan::xiiGALTextureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription) :
+  xiiGALTexture(std::move(pDeviceVulkan), creationDescription), m_vkImage(VK_NULL_HANDLE), m_ImageMemoryAllocation(VK_NULL_HANDLE), m_vkStagingBuffer(VK_NULL_HANDLE), m_StagingBufferMemoryAllocation(VK_NULL_HANDLE)
 {
 }
 
-xiiGALTextureVulkan::~xiiGALTextureVulkan() = default;
+xiiGALTextureVulkan::~xiiGALTextureVulkan()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer), std::move(m_StagingBufferMemoryAllocation));
+
+  // Prevent releasing the native object.
+  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExistingNativeObject == nullptr)
+  {
+    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), std::move(m_ImageMemoryAllocation));
+  }
+}
 
 xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   if (m_Description.m_Usage == xiiGALResourceUsage::Immutable && (pInitialData == nullptr || pInitialData->m_SubResources.IsEmpty()))
   {
@@ -54,9 +64,9 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
   const auto& resourceFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
 
-  if (m_Description.m_pExisitingNativeObject != nullptr)
+  if (m_Description.m_pExistingNativeObject != nullptr)
   {
-    m_vkImage = static_cast<VkImage>(m_Description.m_pExisitingNativeObject);
+    m_vkImage = static_cast<VkImage>(m_Description.m_pExistingNativeObject);
 
     SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -118,42 +128,31 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTextureVulkan::DeInitPlatform()
+xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureVulkan::CreateViewPlatform(const xiiGALTextureViewCreationDescription& description)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan>                  pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiInternal::NewInstance<xiiGALTextureViewVulkan> pTextureViewVulkan = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALTextureViewVulkan, pDeviceVulkan, xiiSharedPtr<xiiGALTexture>(this, pDeviceVulkan->GetAllocator()), description);
 
-  if (m_vkStagingBuffer != VK_NULL_HANDLE)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkStagingBuffer, m_StagingBufferMemoryAllocation);
+  if (pTextureViewVulkan->InitPlatform().Succeeded())
+    return pTextureViewVulkan;
 
-    m_vkStagingBuffer               = VK_NULL_HANDLE;
-    m_StagingBufferMemoryAllocation = {};
-  }
+  XII_DELETE(pTextureViewVulkan.m_pAllocator, pTextureViewVulkan.m_pInstance);
 
-  // Prevent releasing the native object.
-  if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExisitingNativeObject == nullptr)
-  {
-    pDeviceVulkan->SafeReleaseDeviceObject(m_vkImage, m_ImageMemoryAllocation);
-
-    m_vkImage               = VK_NULL_HANDLE;
-    m_ImageMemoryAllocation = {};
-  }
-
-  return XII_SUCCESS;
+  return pTextureViewVulkan;
 }
 
-void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiStringBuilder    tmp;
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiStringBuilder                 tmp;
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkImage, sName.GetData(tmp));
 }
 
 vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  const bool          bInitializeTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  const bool                       bInitializeTexture = (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty());
 
   vk::BufferCreateInfo vkStagingBufferCreateInfo = {};
   vkStagingBufferCreateInfo.pNext                = nullptr;
@@ -203,10 +202,10 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
   VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
   vmaAllocationCreateInfo.requiredFlags           = static_cast<VkMemoryPropertyFlags>(vkMemoryPropertyFlags);
   vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+  vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-  vk::Buffer        vkStagingBuffer;
   VmaAllocationInfo stagingBufferAllocationInfo;
-  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
+  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
 
   XII_ASSERT_DEV(stagingBufferAllocationInfo.pMappedData != nullptr, "");
 
@@ -218,9 +217,9 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
     {
       for (xiiUInt32 uiMip = 0; uiMip < m_Description.m_uiMipLevels; ++uiMip)
       {
-        const auto& subresourceData                = pInitialData->m_SubResources[uiSubresourceIndex++];
-        auto        mipLevelProperty               = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
-        auto        uiDestinationSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, uiLayer, uiMip, s_uiStagingBufferOffsetAlignment);
+        const xiiGALTextureSubResourceData& subresourceData                = pInitialData->m_SubResources[uiSubresourceIndex++];
+        const xiiGALMipLevelProperties      mipLevelProperty               = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
+        const xiiUInt64                     uiDestinationSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, uiLayer, uiMip, s_uiStagingBufferOffsetAlignment);
 
         xiiGALTextureUtilities::CopyTextureSubresource(subresourceData, mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight, mipLevelProperty.m_uiDepth, mipLevelProperty.m_uiRowSize, xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, uiDestinationSubresourceOffset), mipLevelProperty.m_uiRowSize, mipLevelProperty.m_uiDepthSliceSize);
       }
@@ -233,7 +232,7 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 {
   XII_ASSERT_DEV(m_Description.m_Usage == xiiGALResourceUsage::Sparse, "");
 
-  xiiGALDeviceVulkan*    pDeviceVulkan        = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALDeviceVulkan*    pDeviceVulkan        = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device             vkLogicalDevice      = pDeviceVulkan->GetVulkanLogicalDevice();
   vk::MemoryRequirements vkMemoryRequirements = vkLogicalDevice.getImageMemoryRequirements(m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
@@ -296,7 +295,7 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 #endif
 }
 
-void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo)
+void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo)
 {
   const bool  bIsMemoryLess         = creationDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless);
   const auto& formatProperties      = xiiGALTextureUtilities::GetResourceFormatProperties(creationDescription.m_Format);
@@ -417,13 +416,13 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiGALDeviceVulkan* pDe
 
 void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   // Vulkan validation layers do not like uninitialized memory, so if no initial data is provided, we will clear the memory.
 
   if (auto pGraphicsQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
   {
-    if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pGraphicsQueue->BeginCommandList()))
+    if (auto pCommandListVulkan = pGraphicsQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
     {
       vk::ImageAspectFlags imageAspectFlags = {};
       if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
@@ -473,7 +472,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
           vk::BufferImageCopy      vkCopyRegion     = {};
           xiiGALMipLevelProperties mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
 
-          // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
+          // The allocation will stay in the upload heap until the command list is reset, at which point all upload pages will be discarded.
           auto stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(mipLevelProperty.m_uiMipSize);
 
           void* pMappedMemory = nullptr;
@@ -483,7 +482,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
           pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
 
           // bufferOffset must be a multiple of 4 (18.4)
-          vkCopyRegion.bufferOffset = stagingBufferAllocation.m_uiOffset; // offset in bytes from the start of the buffer object.
+          vkCopyRegion.bufferOffset = stagingBufferAllocation.m_uiOffset; // Offset in bytes from the start of the buffer object.
 
           // bufferRowLength and bufferImageHeight specify the data in buffer memory as a subregion of a larger two- or three-dimensional image, and control the addressing calculations of
           // data in buffer memory. If either of these values is zero, that aspect of the buffer memory is considered to be tightly packed according to the imageExtent. (18.4)

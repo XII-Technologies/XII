@@ -148,8 +148,8 @@ void TestLoops(const STRING& value, const char* szStart, const char* szEnd)
 {
   xiiStringUtf8 sUtf8(L"A単語F");
   xiiUInt32     characters[] = {xiiUnicodeUtils::ConvertUtf8ToUtf32(xiiStringUtf8(L"A").GetData()),
-                            xiiUnicodeUtils::ConvertUtf8ToUtf32(xiiStringUtf8(L"単").GetData()), xiiUnicodeUtils::ConvertUtf8ToUtf32(xiiStringUtf8(L"語").GetData()),
-                            xiiUnicodeUtils::ConvertUtf8ToUtf32(xiiStringUtf8(L"F").GetData())};
+                                xiiUnicodeUtils::ConvertUtf8ToUtf32(xiiStringUtf8(L"単").GetData()), xiiUnicodeUtils::ConvertUtf8ToUtf32(xiiStringUtf8(L"語").GetData()),
+                                xiiUnicodeUtils::ConvertUtf8ToUtf32(xiiStringUtf8(L"F").GetData())};
 
   // Forward
   xiiInt32 iIndex = 0;

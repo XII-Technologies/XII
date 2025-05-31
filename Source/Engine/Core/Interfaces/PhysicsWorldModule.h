@@ -31,15 +31,27 @@ public:
 
   virtual bool SweepTestSphere(xiiPhysicsCastResult& out_result, float fSphereRadius, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
-  virtual bool SweepTestBox(xiiPhysicsCastResult& out_result, xiiVec3 vBoxExtends, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
+  virtual bool SweepTestBox(xiiPhysicsCastResult& out_result, const xiiVec3& vBoxExtents, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
   virtual bool SweepTestCapsule(xiiPhysicsCastResult& out_result, float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
+  virtual bool SweepTestCylinder(xiiPhysicsCastResult& out_result, float fCylinderRadius, float fCylinderHeight, const xiiTransform& transform, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
+
   virtual bool OverlapTestSphere(float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const = 0;
+
+  virtual bool OverlapTestBox(const xiiVec3& vBoxExtents, const xiiVec3& vPosition, const xiiTransform& transform, const xiiPhysicsQueryParameters& params) const = 0;
 
   virtual bool OverlapTestCapsule(float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiPhysicsQueryParameters& params) const = 0;
 
+  virtual bool OverlapTestCylinder(float fCylinderRadius, float fCylinderHeight, const xiiTransform& transform, const xiiPhysicsQueryParameters& params) const = 0;
+
   virtual void QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_results, float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const = 0;
+
+  virtual void QueryShapesInBox(xiiPhysicsOverlapResultArray& out_results, const xiiVec3& vBoxExtents, const xiiTransform& transform, const xiiPhysicsQueryParameters& params) const = 0;
+
+  virtual void QueryShapesInCapsule(xiiPhysicsOverlapResultArray& out_results, float fCapsuleRadius, float fCapsuleHeight, const xiiTransform& transform, const xiiPhysicsQueryParameters& params) const = 0;
+
+  virtual void QueryShapesInCylinder(xiiPhysicsOverlapResultArray& out_results, float fCylinderRadius, float fCylinderHeight, const xiiTransform& transform, const xiiPhysicsQueryParameters& params) const = 0;
 
   virtual xiiVec3 GetGravity() const = 0;
 
@@ -139,8 +151,6 @@ struct XII_CORE_DLL xiiMsgReleaseObjectGrab : public xiiMessage
 };
 
 //////////////////////////////////////////////////////////////////////////
-
-#include <Foundation/Communication/Message.h>
 
 struct XII_CORE_DLL xiiSmcTriangle
 {

@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/BlendStateVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALBlendStateVulkan::xiiGALBlendStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBlendStateCreationDescription& creationDescription) :
-  xiiGALBlendState(pDeviceVulkan, creationDescription)
+xiiGALBlendStateVulkan::xiiGALBlendStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALBlendStateCreationDescription& creationDescription) :
+  xiiGALBlendState(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -17,8 +15,8 @@ xiiGALBlendStateVulkan::~xiiGALBlendStateVulkan() = default;
 
 xiiResult xiiGALBlendStateVulkan::InitPlatform()
 {
-  // \note The blend state attachment count is known and set when the number of render targets are given.
-  // \note The attachment count must be equal to the color attachment count in the subpass where this blend state is used.
+  /// \note The blend state attachment count is known and set when the number of render targets are given.
+  /// \note The attachment count must be equal to the color attachment count in the subpass where this blend state is used.
 
   if (m_Description.m_RenderTargets.IsEmpty())
     return XII_SUCCESS;
@@ -69,11 +67,6 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform()
     }
   }
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALBlendStateVulkan::DeInitPlatform()
-{
   return XII_SUCCESS;
 }
 

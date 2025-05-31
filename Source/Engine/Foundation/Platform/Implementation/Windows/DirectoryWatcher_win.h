@@ -306,14 +306,7 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
     xiiStringView sRoot = sAbsolutePath.GetSubString(0, static_cast<xiiUInt32>(szFirst - sTemp.GetData()) + 1);
 
     WCHAR szFileSystemName[8];
-    BOOL  res        = GetVolumeInformationW(xiiStringWChar(sRoot),
-                                     nullptr,
-                                     0,
-                                     nullptr,
-                                     nullptr,
-                                     nullptr,
-                                     szFileSystemName,
-                                     sizeof(szFileSystemName));
+    BOOL  res        = GetVolumeInformationW(xiiStringWChar(sRoot), nullptr, 0, nullptr, nullptr, nullptr, szFileSystemName, sizeof(szFileSystemName));
     m_pImpl->m_bNTFS = res == TRUE && xiiStringUtf8(szFileSystemName).GetView() == "NTFS" && !cvar_ForceNonNTFS.GetValue();
   }
 
@@ -385,15 +378,15 @@ void xiiDirectoryWatcherImpl::DoRead()
 
   if (m_bNTFS)
   {
-    BOOL success =
-      ReadDirectoryChangesExW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr, ReadDirectoryNotifyExtendedInformation);
-    XII_ASSERT_DEV(success, "ReadDirectoryChangesExW failed.");
+    BOOL bSucceeded = ReadDirectoryChangesExW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr, ReadDirectoryNotifyExtendedInformation);
+    XII_ASSERT_DEV(bSucceeded, "ReadDirectoryChangesExW failed.");
+    XII_IGNORE_UNUSED(bSucceeded);
   }
   else
   {
-    BOOL success =
-      ReadDirectoryChangesW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr);
-    XII_ASSERT_DEV(success, "ReadDirectoryChangesW failed.");
+    BOOL bSucceeded = ReadDirectoryChangesW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr);
+    XII_ASSERT_DEV(bSucceeded, "ReadDirectoryChangesW failed.");
+    XII_IGNORE_UNUSED(bSucceeded);
   }
 }
 

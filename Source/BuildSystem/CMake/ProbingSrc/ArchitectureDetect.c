@@ -20,7 +20,7 @@
 #  endif
 #elif defined(_MSC_VER)
 #  define STRINGIFY(s)       STRINGFY_HELPER(s)
-#  define STRINGFY_HELPER(s) #  s
+#  define STRINGFY_HELPER(s) #s
 
 #  pragma message("COMPILER:'msvc'")
 #  pragma message("MSC_VER:'" STRINGIFY(_MSC_VER) "'")

@@ -23,7 +23,7 @@ public:
   void operator=(const wchar_t* pUtf32);
   void operator=(xiiStringView sUtf8);
 
-  XII_ALWAYS_INLINE       operator const wchar_t*() const { return &m_Data[0]; }
+  XII_ALWAYS_INLINE                operator const wchar_t*() const { return &m_Data[0]; }
   XII_ALWAYS_INLINE const wchar_t* GetData() const { return &m_Data[0]; }
   XII_ALWAYS_INLINE xiiUInt32      GetElementCount() const { return m_Data.GetCount() - 1; /* exclude the '\0' terminator */ }
 

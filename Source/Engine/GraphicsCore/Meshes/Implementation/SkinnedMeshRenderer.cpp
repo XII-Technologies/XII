@@ -2,16 +2,10 @@
 
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/Meshes/SkinnedMeshRenderer.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsCore/Utils/CommandListUtilities.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiSkinnedMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
-xiiUInt32 xiiSkinnedMeshRenderer::s_uiSkinningBufferUpdates = 0;
 
 xiiSkinnedMeshRenderer::xiiSkinnedMeshRenderer()  = default;
 xiiSkinnedMeshRenderer::~xiiSkinnedMeshRenderer() = default;
@@ -21,36 +15,23 @@ void xiiSkinnedMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xi
   ref_types.PushBack(xiiGetStaticRTTI<xiiSkinnedMeshRenderData>());
 }
 
-void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const
+void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiMeshRenderData* pRenderData) const
 {
   // Don't call base class implementation here since the state will be overwritten in this method anyways.
 
-  xiiGALDevice*     pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
-
   auto pSkinnedRenderData = static_cast<const xiiSkinnedMeshRenderData*>(pRenderData);
 
-  if (pSkinnedRenderData->m_hSkinningTransforms.IsInvalidated())
+  if (!pSkinnedRenderData->m_pSkinningTransforms)
   {
-    pContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
   }
   else
   {
-    pContext->SetShaderPermutationVariable("VERTEX_SKINNING", "TRUE");
+    renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "TRUE");
 
-    if (pSkinnedRenderData->m_bTransformsUpdated != nullptr && *pSkinnedRenderData->m_bTransformsUpdated == false)
-    {
-      // if this is the first renderer that is supposed to actually render the skinned mesh, upload the skinning matrices
-      *pSkinnedRenderData->m_bTransformsUpdated = true;
-
-      xiiGALDeviceUtilities::MapAndUpdateBuffer(pContext->GetCommandList(), pSkinnedRenderData->m_hSkinningTransforms, 0, pSkinnedRenderData->m_pNewSkinningTransformData).AssertSuccess();
-
-      // TODO: could expose this somewhere (xiiStats?)
-      s_uiSkinningBufferUpdates++;
-    }
-
-    pContext->BindBuffer("skinningTransforms", pDevice->GetBuffer(pSkinnedRenderData->m_hSkinningTransforms)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    xiiGALCommandListUtilities::BindBuffer(pCommandList, "skinningTransforms", pSkinnedRenderData->m_pSkinningTransforms);
   }
 }
+
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_SkinnedMeshRenderer);

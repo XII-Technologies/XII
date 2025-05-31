@@ -6,7 +6,6 @@
 #include <GraphicsCore/Components/LensFlareRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
@@ -37,43 +36,44 @@ void xiiLensFlareRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRe
 
 void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiGALDevice*     pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
+  xiiSharedPtr<xiiGALDevice> pDevice  = xiiGALDevice::GetDefaultDevice();
+  xiiRenderContext*          pContext = renderViewContext.m_pRenderContext;
 
   const xiiLensFlareRenderData* pRenderData = batch.GetFirstData<xiiLensFlareRenderData>();
 
-  const xiiUInt32    uiBufferSize   = xiiMath::RoundUp(batch.GetCount(), 128u);
-  xiiGALBufferHandle hLensFlareData = CreateLensFlareDataBuffer(uiBufferSize);
-  XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(hLensFlareData));
+  const xiiUInt32            uiBufferSize   = xiiMath::RoundUp(batch.GetCount(), 128u);
+  xiiSharedPtr<xiiGALBuffer> pLensFlareData = CreateLensFlareDataBuffer(uiBufferSize);
+  XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(pLensFlareData));
 
   pContext->BindShader(m_hShader);
-  pContext->BindBuffer("lensFlareData", pDevice->GetBuffer(hLensFlareData)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pContext->BindBuffer("lensFlareData", pLensFlareData->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pContext->BindTexture2D("LensFlareTexture", pRenderData->m_hTexture);
 
   FillLensFlareData(batch);
 
   if (m_LensFlareData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pContext->GetCommandList(), hLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pContext->GetCommandList(), pLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
 
-    pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
+    pContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
   }
 }
 
-xiiGALBufferHandle xiiLensFlareRenderer::CreateLensFlareDataBuffer(xiiUInt32 uiBufferSize) const
+xiiSharedPtr<xiiGALBuffer> xiiLensFlareRenderer::CreateLensFlareDataBuffer(xiiUInt32 uiBufferSize) const
 {
-  xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride = sizeof(xiiPerLensFlareData);
-  desc.m_uiSize              = desc.m_uiElementByteStride * uiBufferSize;
-  desc.m_Mode                = xiiGALBufferMode::Structured;
-  desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-  desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
-  desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-  return xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(desc);
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_uiElementByteStride = sizeof(xiiPerLensFlareData);
+  bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * uiBufferSize;
+  bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+
+  return xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(bufferDescription);
 }
 
-void xiiLensFlareRenderer::DeleteLensFlareDataBuffer(xiiGALBufferHandle hBuffer) const
+void xiiLensFlareRenderer::DeleteLensFlareDataBuffer(xiiSharedPtr<xiiGALBuffer> hBuffer) const
 {
   xiiGPUResourcePool::GetDefaultInstance()->ReturnBuffer(hBuffer);
 }

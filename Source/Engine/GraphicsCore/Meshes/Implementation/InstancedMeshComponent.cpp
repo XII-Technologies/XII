@@ -8,7 +8,6 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/ObjectConstants.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 // clang-format off
@@ -62,8 +61,8 @@ xiiVec3 xiiMeshInstanceData::GetLocalScaling() const
   return m_transform.m_vScale;
 }
 
-static const xiiTypeVersion s_MeshInstanceDataVersion = 1;
-xiiResult                   xiiMeshInstanceData::Serialize(xiiStreamWriter& ref_writer) const
+static constexpr xiiTypeVersion s_MeshInstanceDataVersion = 1;
+xiiResult                       xiiMeshInstanceData::Serialize(xiiStreamWriter& ref_writer) const
 {
   ref_writer.WriteVersion(s_MeshInstanceDataVersion);
 
@@ -125,27 +124,27 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
   if (m_RequireUpdate.IsEmpty())
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+  if (auto pCommandQueue = pDevice->GetDefaultCommandQueue())
   {
-    auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
+    auto pCommandList = pCommandQueue->BeginCommandList();
 
-    pCommandList->BeginDebugGroup("xiiInstanceData Update");
+    pCommandList->BeginDebugGroup("Update Instanced Mesh Data");
     {
       for (const auto& componentToUpdate : m_RequireUpdate)
       {
-        xiiInstancedMeshComponent* pInstancedMeshComponent = nullptr;
-        if (!TryGetComponent(componentToUpdate.m_hComponent, pInstancedMeshComponent))
+        xiiInstancedMeshComponent* pComp = nullptr;
+        if (!TryGetComponent(componentToUpdate.m_hComponent, pComp))
           continue;
 
-        if (pInstancedMeshComponent->m_pExplicitInstanceData)
+        if (pComp->m_pExplicitInstanceData)
         {
           xiiUInt32 uiOffset     = 0;
-          auto      instanceData = pInstancedMeshComponent->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
+          auto      instanceData = pComp->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
           instanceData.CopyFrom(componentToUpdate.m_InstanceData);
 
-          pInstancedMeshComponent->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, instanceData.GetCount());
+          pComp->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, instanceData.GetCount());
         }
       }
     }

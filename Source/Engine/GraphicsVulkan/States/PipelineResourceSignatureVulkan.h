@@ -23,39 +23,35 @@ class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : publi
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignatureVulkan, xiiGALPipelineResourceSignature);
 
 public:
-  XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan> GetPipelineResourceSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_PipelineResourceSetLayouts.GetCount()) ? m_PipelineResourceSetLayouts[uiSet].GetArrayPtr() : xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan>(); }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::DescriptorSetLayout> GetVulkanDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
-  XII_ALWAYS_INLINE vk::DescriptorSetLayout GetVulkanDescriptorSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_DescriptorSetLayouts.GetCount()) ? m_DescriptorSetLayouts[uiSet] : VK_NULL_HANDLE; }
-  XII_ALWAYS_INLINE xiiUInt32               GetVulkanDescriptorSetLayoutCount() const { return m_DescriptorSetLayouts.GetCount(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan> GetPipelineResourceSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_PipelineResourceSetLayouts.GetCount()) ? m_PipelineResourceSetLayouts[uiSet].GetArrayPtr() : xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan>(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::DescriptorSetLayout> GetVulkanDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::DescriptorSetLayout GetVulkanDescriptorSetLayout(xiiUInt32 uiSet) const { return (uiSet < m_DescriptorSetLayouts.GetCount()) ? m_DescriptorSetLayouts[uiSet] : VK_NULL_HANDLE; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32               GetVulkanDescriptorSetLayoutCount() const { return m_DescriptorSetLayouts.GetCount(); }
 
   struct ImmutableSamplerStorage
   {
-    XII_DECLARE_POD_TYPE();
-
-    void Initialize(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription);
-    void DeInitialize(xiiGALDeviceVulkan* pDeviceVulkan);
+    void Initialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription);
+    void DeInitialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan);
 
     XII_ALWAYS_INLINE explicit operator bool() const { return m_pSamplerVulkan != nullptr; }
 
-    XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_pSamplerVulkan->GetVulkanSampler(); }
+    [[nodiscard]] XII_ALWAYS_INLINE vk::Sampler GetVulkanSampler() const { return m_pSamplerVulkan->GetVulkanSampler(); }
 
   private:
-    xiiGALSamplerVulkan* m_pSamplerVulkan = nullptr;
+    xiiSharedPtr<xiiGALSamplerVulkan> m_pSamplerVulkan;
   };
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALPipelineResourceSignatureVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
+  xiiGALPipelineResourceSignatureVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineResourceSignatureVulkan();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   xiiHybridArray<xiiHybridArray<xiiGALPipelineResourceDescriptionVulkan, 1U>, 1U> m_PipelineResourceSetLayouts;

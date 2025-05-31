@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Core/World/World.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Core/World/World.h>
 
 struct xiiMsgExtractRenderData;
 

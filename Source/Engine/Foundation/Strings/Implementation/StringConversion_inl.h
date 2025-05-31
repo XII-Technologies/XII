@@ -30,7 +30,8 @@ inline xiiStringWChar::xiiStringWChar(const wchar_t* pWChar, xiiAllocatorBase* p
   *this = pWChar;
 }
 
-inline xiiStringWChar::xiiStringWChar(xiiStringView sUtf8, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
+inline xiiStringWChar::xiiStringWChar(xiiStringView sUtf8, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/) :
+  m_Data(pAllocator)
 {
   *this = sUtf8;
 }

@@ -4,7 +4,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 
 struct XII_GRAPHICSCORE_DLL xiiClusteredDataGPU
 {
@@ -17,20 +16,19 @@ public:
   xiiUInt32                   m_uiSkyIrradianceIndex = 0;
   xiiEnum<xiiCameraUsageHint> m_cameraUsageHint      = xiiCameraUsageHint::Default;
 
-  xiiGALBufferHandle m_hLightDataBuffer;
-  xiiGALBufferHandle m_hDecalDataBuffer;
-  xiiGALBufferHandle m_hReflectionProbeDataBuffer;
-  xiiGALBufferHandle m_hClusterDataBuffer;
-  xiiGALBufferHandle m_hClusterItemBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pLightDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pDecalDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pReflectionProbeDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pClusterDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pClusterItemBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pClusterDataConstantBuffer;
 
-  xiiConstantBufferStorageHandle m_hConstantBuffer;
-
-  xiiGALSamplerHandle m_hShadowSampler;
+  xiiSharedPtr<xiiGALSampler> m_pShadowSampler;
 
   xiiDecalAtlasResourceHandle m_hDecalAtlas;
-  xiiGALSamplerHandle         m_hDecalAtlasSampler;
+  xiiSharedPtr<xiiGALSampler> m_pDecalAtlasSampler;
 
-  void BindResources(xiiRenderContext* pRenderContext);
+  void BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList);
 };
 
 class XII_GRAPHICSCORE_DLL xiiClusteredDataProvider : public xiiFrameDataProvider<xiiClusteredDataGPU>
@@ -42,7 +40,7 @@ public:
   ~xiiClusteredDataProvider();
 
 private:
-  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData) override;
+  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData) override;
 
   xiiClusteredDataGPU m_Data;
 };

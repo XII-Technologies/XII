@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelASVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALBottomLevelASVulkan::xiiGALBottomLevelASVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBottomLevelASCreationDescription& creationDescription) :
-  xiiGALBottomLevelAS(pDeviceVulkan, creationDescription)
+xiiGALBottomLevelASVulkan::xiiGALBottomLevelASVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALBottomLevelASCreationDescription& creationDescription) :
+  xiiGALBottomLevelAS(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -17,29 +15,23 @@ xiiGALBottomLevelASVulkan::~xiiGALBottomLevelASVulkan() = default;
 
 xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
-
   return XII_FAILURE;
 }
 
-xiiResult xiiGALBottomLevelASVulkan::DeInitPlatform()
+void xiiGALBottomLevelASVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return XII_SUCCESS;
-}
-
-void xiiGALBottomLevelASVulkan::SetDebugNamePlatform(xiiStringView sName)
-{
+  XII_IGNORE_UNUSED(sName);
 }
 
 xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryDescriptionIndex(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   return xiiUInt32();
 }
 
 xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryIndex(xiiStringView sName) const
 {
+  XII_IGNORE_UNUSED(sName);
   return xiiUInt32();
 }
 

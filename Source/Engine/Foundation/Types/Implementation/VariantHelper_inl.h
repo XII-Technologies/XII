@@ -753,8 +753,8 @@ class xiiVariantHelper
     {
       const V1& v = value.Cast<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.Element(0, 0)), static_cast<typename T::ComponentType>(v.Element(1, 0)), static_cast<typename T::ComponentType>(v.Element(2, 0)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)));
+                      static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)),
+                      static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)));
     }
     else
     {
@@ -776,9 +776,9 @@ class xiiVariantHelper
     {
       const V1& v = value.Cast<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.Element(0, 0)), static_cast<typename T::ComponentType>(v.Element(1, 0)), static_cast<typename T::ComponentType>(v.Element(2, 0)), static_cast<typename T::ComponentType>(v.Element(3, 0)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)), static_cast<typename T::ComponentType>(v.Element(3, 1)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)), static_cast<typename T::ComponentType>(v.Element(3, 2)),
-                 static_cast<typename T::ComponentType>(v.Element(0, 3)), static_cast<typename T::ComponentType>(v.Element(1, 3)), static_cast<typename T::ComponentType>(v.Element(2, 3)), static_cast<typename T::ComponentType>(v.Element(3, 3)));
+                      static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)), static_cast<typename T::ComponentType>(v.Element(3, 1)),
+                      static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)), static_cast<typename T::ComponentType>(v.Element(3, 2)),
+                      static_cast<typename T::ComponentType>(v.Element(0, 3)), static_cast<typename T::ComponentType>(v.Element(1, 3)), static_cast<typename T::ComponentType>(v.Element(2, 3)), static_cast<typename T::ComponentType>(v.Element(3, 3)));
     }
     else
     {
@@ -862,6 +862,9 @@ class xiiVariantHelper
   template <typename T>
   static void To(const xiiVariant& value, T& result, bool& bSuccessful)
   {
+    XII_IGNORE_UNUSED(value);
+    XII_IGNORE_UNUSED(result);
+
     XII_REPORT_FAILURE("Conversion function not implemented for target type '{0}'", xiiVariant::TypeDeduction<T>::value);
 
     bSuccessful = false;

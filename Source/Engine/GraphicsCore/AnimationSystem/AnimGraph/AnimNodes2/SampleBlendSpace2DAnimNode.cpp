@@ -22,15 +22,15 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAnimationClip2D, xiiNoBase, 1, xiiRTTIDefault
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSampleBlendSpace2DAnimNode, 1, xiiRTTIDefaultAllocator<xiiSampleBlendSpace2DAnimNode>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSampleBlendSpace2DAnimNode, 2, xiiRTTIDefaultAllocator<xiiSampleBlendSpace2DAnimNode>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("Loop", m_bLoop)->AddAttributes(new xiiDefaultValueAttribute(true)),
       XII_MEMBER_PROPERTY("PlaybackSpeed", m_fPlaybackSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, {})),
-      XII_MEMBER_PROPERTY("ApplyRootMotion", m_bApplyRootMotion),
+      XII_MEMBER_PROPERTY("RootMotionAmount", m_fRootMotionAmount)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 100.0f)),
       XII_MEMBER_PROPERTY("InputResponse", m_InputResponse)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::MakeFromMilliseconds(100))),
-      XII_ACCESSOR_PROPERTY("CenterClip", GetCenterClipFile, SetCenterClipFile)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
+    XII_ACCESSOR_PROPERTY("CenterClip", GetCenterClipFile, SetCenterClipFile)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
       XII_ARRAY_MEMBER_PROPERTY("Clips", m_Clips),
 
       XII_MEMBER_PROPERTY("InStart", m_InStart)->AddAttributes(new xiiHiddenAttribute()),
@@ -70,7 +70,7 @@ xiiSampleBlendSpace2DAnimNode::~xiiSampleBlendSpace2DAnimNode() = default;
 
 xiiResult xiiSampleBlendSpace2DAnimNode::SerializeNode(xiiStreamWriter& stream) const
 {
-  stream.WriteVersion(1);
+  stream.WriteVersion(3);
 
   XII_SUCCEED_OR_RETURN(SUPER::SerializeNode(stream));
 
@@ -84,7 +84,7 @@ xiiResult xiiSampleBlendSpace2DAnimNode::SerializeNode(xiiStreamWriter& stream) 
   }
 
   stream << m_bLoop;
-  stream << m_bApplyRootMotion;
+  stream << m_fRootMotionAmount;
   stream << m_fPlaybackSpeed;
   stream << m_InputResponse;
 
@@ -102,7 +102,7 @@ xiiResult xiiSampleBlendSpace2DAnimNode::SerializeNode(xiiStreamWriter& stream) 
 
 xiiResult xiiSampleBlendSpace2DAnimNode::DeserializeNode(xiiStreamReader& stream)
 {
-  const auto version = stream.ReadVersion(1);
+  const auto version = stream.ReadVersion(3);
 
   XII_SUCCEED_OR_RETURN(SUPER::DeserializeNode(stream));
 
@@ -118,7 +118,19 @@ xiiResult xiiSampleBlendSpace2DAnimNode::DeserializeNode(xiiStreamReader& stream
   }
 
   stream >> m_bLoop;
-  stream >> m_bApplyRootMotion;
+
+  if (version <= 2)
+  {
+    bool bApplyRootMotion = false;
+    stream >> bApplyRootMotion;
+    m_fRootMotionAmount = bApplyRootMotion ? 1.0f : 0.0f;
+  }
+
+  if (version >= 2)
+  {
+    stream >> m_fRootMotionAmount;
+  }
+
   stream >> m_fPlaybackSpeed;
   stream >> m_InputResponse;
 
@@ -151,17 +163,19 @@ void xiiSampleBlendSpace2DAnimNode::Step(xiiAnimController& ref_controller, xiiA
 
   InstanceState* pState = ref_graph.GetAnimNodeInstanceData<InstanceState>(*this);
 
-  if ((!m_InStart.IsConnected() && !pState->m_bPlaying) || m_InStart.IsTriggered(ref_graph))
+  if (!m_InStart.IsConnected() && pState->m_CenterPlaybackTime > xiiTime::MakeFromHours(10))
   {
     pState->m_CenterPlaybackTime    = xiiTime::MakeZero();
     pState->m_fOtherPlaybackPosNorm = 0.0f;
-    pState->m_bPlaying              = true;
+  }
+
+  if (m_InStart.IsTriggered(ref_graph))
+  {
+    pState->m_CenterPlaybackTime    = xiiTime::MakeZero();
+    pState->m_fOtherPlaybackPosNorm = 0.0f;
 
     m_OutOnStarted.SetTriggered(ref_graph);
   }
-
-  if (!pState->m_bPlaying)
-    return;
 
   const float x = static_cast<float>(m_InCoordX.GetNumber(ref_graph));
   const float y = static_cast<float>(m_InCoordY.GetNumber(ref_graph));
@@ -182,19 +196,21 @@ void xiiSampleBlendSpace2DAnimNode::Step(xiiAnimController& ref_controller, xiiA
 
   xiiUInt32                     uiMaxWeightClip = 0;
   xiiHybridArray<ClipToPlay, 8> clips;
-  ComputeClipsAndWeights(centerInfo, xiiVec2(pState->m_fLastValueX, pState->m_fLastValueY), clips, uiMaxWeightClip);
+  ComputeClipsAndWeights(ref_controller, centerInfo, xiiVec2(pState->m_fLastValueX, pState->m_fLastValueY), clips, uiMaxWeightClip);
 
   PlayClips(ref_controller, centerInfo, pState, ref_graph, tDiff, clips, uiMaxWeightClip);
 }
 
-void xiiSampleBlendSpace2DAnimNode::ComputeClipsAndWeights(const xiiAnimController::AnimClipInfo& centerInfo, const xiiVec2& p, xiiDynamicArray<ClipToPlay>& clips, xiiUInt32& out_uiMaxWeightClip) const
+void xiiSampleBlendSpace2DAnimNode::ComputeClipsAndWeights(xiiAnimController& ref_controller, const xiiAnimController::AnimClipInfo& centerInfo, const xiiVec2& p, xiiDynamicArray<ClipToPlay>& clips, xiiUInt32& out_uiMaxWeightClip) const
 {
   out_uiMaxWeightClip = 0;
   float fMaxWeight    = -1.0f;
 
   if (m_Clips.GetCount() == 1 && !centerInfo.m_hClip.IsValid())
   {
-    clips.ExpandAndGetRef().m_uiIndex = 0;
+    auto& clip       = clips.ExpandAndGetRef();
+    clip.m_uiIndex   = 0;
+    clip.m_pClipInfo = &centerInfo;
   }
   else
   {
@@ -205,6 +221,10 @@ void xiiSampleBlendSpace2DAnimNode::ComputeClipsAndWeights(const xiiAnimControll
 
     for (xiiUInt32 i = 0; i < m_Clips.GetCount(); ++i)
     {
+      const auto& clipInfo = ref_controller.GetAnimationClipInfo(m_Clips[i].m_sClip);
+      if (!clipInfo.m_hClip.IsValid())
+        continue;
+
       const xiiVec2 pi         = m_Clips[i].m_vPosition;
       float         fMinWeight = 1.0f;
 
@@ -239,9 +259,10 @@ void xiiSampleBlendSpace2DAnimNode::ComputeClipsAndWeights(const xiiAnimControll
 
       if (fMinWeight > 0.0f)
       {
-        auto& c     = clips.ExpandAndGetRef();
-        c.m_uiIndex = i;
-        c.m_fWeight = fMinWeight;
+        auto& c       = clips.ExpandAndGetRef();
+        c.m_uiIndex   = i;
+        c.m_fWeight   = fMinWeight;
+        c.m_pClipInfo = &clipInfo;
 
         fWeightNormalization += fMinWeight;
       }
@@ -269,9 +290,10 @@ void xiiSampleBlendSpace2DAnimNode::ComputeClipsAndWeights(const xiiAnimControll
 
       if (fMinWeight > 0.0f)
       {
-        auto& c     = clips.ExpandAndGetRef();
-        c.m_uiIndex = 0xFFFFFFFF;
-        c.m_fWeight = fMinWeight;
+        auto& c       = clips.ExpandAndGetRef();
+        c.m_uiIndex   = 0xFFFFFFFF;
+        c.m_fWeight   = fMinWeight;
+        c.m_pClipInfo = &centerInfo;
 
         fWeightNormalization += fMinWeight;
       }
@@ -313,7 +335,7 @@ void xiiSampleBlendSpace2DAnimNode::PlayClips(xiiAnimController& ref_controller,
 
     const xiiHashedString sClip = c.m_uiIndex >= 0xFF ? m_sCenterClip : m_Clips[c.m_uiIndex].m_sClip;
 
-    const auto& clipInfo = ref_controller.GetAnimationClipInfo(sClip);
+    const auto& clipInfo = *clips[i].m_pClipInfo;
 
     xiiResourceLock<xiiAnimationClipResource> pClip(clipInfo.m_hClip, xiiResourceAcquireMode::BlockTillLoaded);
 
@@ -361,8 +383,16 @@ void xiiSampleBlendSpace2DAnimNode::PlayClips(xiiAnimController& ref_controller,
     else
     {
       pState->m_fOtherPlaybackPosNorm = 1.0f;
-      pState->m_bPlaying              = false;
-      m_OutOnFinished.SetTriggered(ref_graph);
+
+      if (fPrevPlaybackPosNorm < 1.0f)
+      {
+        m_OutOnFinished.SetTriggered(ref_graph);
+      }
+      else
+      {
+        eventSampling = xiiAnimPoseEventTrackSampleMode::None;
+      }
+
       break;
     }
   }
@@ -387,13 +417,13 @@ void xiiSampleBlendSpace2DAnimNode::PlayClips(xiiAnimController& ref_controller,
 
   xiiAnimGraphPinDataLocalTransforms* pOutputTransform = ref_controller.AddPinDataLocalTransforms();
 
-  if (m_bApplyRootMotion)
+  if (m_fRootMotionAmount != 0.0f)
   {
     pOutputTransform->m_bUseRootMotion = true;
 
     const float fSpeed = static_cast<float>(m_InSpeed.GetNumber(ref_graph, m_fPlaybackSpeed));
 
-    pOutputTransform->m_vRootMotion = tDiff.AsFloatInSeconds() * vRootMotion * fSpeed;
+    pOutputTransform->m_vRootMotion = tDiff.AsFloatInSeconds() * vRootMotion * fSpeed * m_fRootMotionAmount;
   }
 
   if (clips.GetCount() == 1)
@@ -444,3 +474,37 @@ bool xiiSampleBlendSpace2DAnimNode::GetInstanceDataDesc(xiiInstanceDataDesc& out
   out_desc.FillFromType<InstanceState>();
   return true;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
+
+class xiiSampleBlendSpace2DAnimNodePatch_1_2 : public xiiGraphPatch
+{
+public:
+  xiiSampleBlendSpace2DAnimNodePatch_1_2() :
+    xiiGraphPatch("xiiSampleBlendSpace2DAnimNode", 2)
+  {
+  }
+
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  {
+    if (auto pProp = pNode->FindProperty("ApplyRootMotion"))
+    {
+      if (pProp->m_Value.IsA<bool>())
+      {
+        const bool bApply = pProp->m_Value.Get<bool>();
+
+        if (bApply)
+        {
+          pNode->AddProperty("RootMotionAmount", 1.0f);
+        }
+      }
+    }
+  }
+};
+
+xiiSampleBlendSpace2DAnimNodePatch_1_2 g_xiiSampleBlendSpace2DAnimNodePatch_1_2;
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes2_SampleBlendSpace2DAnimNode);

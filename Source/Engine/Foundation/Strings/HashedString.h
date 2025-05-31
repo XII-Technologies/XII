@@ -128,12 +128,21 @@ public:
   /// \brief Returns a pointer to the internal Utf8 string.
   XII_ALWAYS_INLINE operator const char*() const { return GetData(); }
 
+  // \brief Since we allow to cast implicitly to const char*, we need these overloads to not do a pure pointer comparison.
+  XII_ALWAYS_INLINE bool operator==(const char* sz) const { return GetString().GetView() == xiiStringView(sz); }
+
 private:
   static void       InitHashedString();
   static HashedType AddHashedString(xiiStringView sString, xiiUInt64 uiHash);
 
   HashedType m_Data;
 };
+
+// \brief Since we allow to cast implicitly to const char*, we need these overloads to not do a pure pointer comparison.
+XII_ALWAYS_INLINE bool operator==(const char* sz, const xiiHashedString& rhs)
+{
+  return rhs.GetView() == xiiStringView(sz);
+}
 
 /// \brief Helper function to create a xiiHashedString. This can be used to initialize static hashed string variables.
 template <size_t N>

@@ -12,8 +12,6 @@
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 2, xiiComponentMode::Static)
@@ -34,7 +32,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 2, xiiComponentMode::Static)
     XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
     XII_MESSAGE_HANDLER(xiiMsgSetMeshMaterial, OnMsgSetMeshMaterial),
     XII_MESSAGE_HANDLER(xiiMsgSetColor, OnMsgSetColor),
-  } XII_END_MESSAGEHANDLERS;
+  }
+  XII_END_MESSAGEHANDLERS;
 }
 XII_END_COMPONENT_TYPE
 // clang-format on
@@ -187,6 +186,8 @@ void xiiCustomMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
 
 void xiiCustomMeshComponent::OnActivated()
 {
+  SUPER::OnActivated();
+
   if (false)
   {
     xiiGeometry geo;
@@ -228,11 +229,8 @@ void xiiCustomMeshComponent::OnActivated()
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCustomMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiCustomMeshRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
 
 void xiiCustomMeshRenderData::FillSortingKey()
 {
@@ -257,10 +255,8 @@ bool xiiCustomMeshRenderData::CanBatch(const xiiRenderData& other0) const
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCustomMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiCustomMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiCustomMeshRenderer::xiiCustomMeshRenderer()  = default;
 xiiCustomMeshRenderer::~xiiCustomMeshRenderer() = default;
@@ -280,8 +276,7 @@ void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
 
 void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiRenderContext*  pRenderContext  = renderViewContext.m_pRenderContext;
-  xiiGALCommandList* pGALCommandList = pRenderContext->GetCommandList();
+  xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
 
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
   pInstanceData->BindResources(pRenderContext);
@@ -290,16 +285,14 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
   if (pRenderData1st->m_uiFlipWinding)
   {
-    pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
+    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
   }
   else
   {
-    pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
   }
 
-  pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
-
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
 
   for (auto it = batch.GetIterator<xiiCustomMeshRenderData>(0, batch.GetCount()); it.IsValid(); ++it)
   {
@@ -331,20 +324,10 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
       instanceData[0].ObjectToWorldNormal = mInverse.GetTranspose();
     }
 
-    if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
-    {
-      auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
-
-      pCommandList->BeginDebugGroup("xiiInstanceData Update");
-      {
-        pInstanceData->UpdateInstanceData(pCommandList, 1);
-      }
-      pCommandList->EndDebugGroup();
-      pCommandList->Submit();
-    }
+    pInstanceData->UpdateInstanceData(pRenderContext->GetCommandList(), 1);
 
     const auto& desc = pBuffer->GetDescriptor();
-    pBuffer->UpdateGpuBuffer(pGALCommandList);
+    pBuffer->UpdateGpuBuffer(pRenderContext->GetCommandList());
 
     // redo this after the primitive count has changed
     pRenderContext->BindMeshBuffer(pRenderData->m_hMesh);
@@ -352,5 +335,6 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
     renderViewContext.m_pRenderContext->DrawMeshBuffer(pRenderData->m_uiNumPrimitives, pRenderData->m_uiFirstPrimitive).IgnoreResult();
   }
 }
+
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_CustomMeshComponent);

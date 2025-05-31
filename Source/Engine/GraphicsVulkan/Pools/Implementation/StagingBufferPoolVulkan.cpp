@@ -124,15 +124,15 @@ void xiiGALStagingBufferPoolVulkan::Reset()
   m_uiPageAllocationCounter   = 0;
   m_uiOffsetAllocationCounter = 0;
 
-  for (const auto& stagingBufferPages : m_StagingBufferPages)
+  for (auto& stagingBufferPages : m_StagingBufferPages)
   {
-    m_pDeviceVulkan->SafeReleaseDeviceObject(stagingBufferPages.m_vkBuffer, stagingBufferPages.m_VmaAllocation);
+    m_pDeviceVulkan->SafeReleaseDeviceObject(std::move(stagingBufferPages.m_vkBuffer), std::move(stagingBufferPages.m_VmaAllocation));
   }
   m_StagingBufferPages.Clear();
 
-  for (const auto& largeAllocation : m_LargeAllocations)
+  for (auto& largeAllocation : m_LargeAllocations)
   {
-    m_pDeviceVulkan->SafeReleaseDeviceObject(largeAllocation.m_vkBuffer, largeAllocation.m_VmaAllocation);
+    m_pDeviceVulkan->SafeReleaseDeviceObject(std::move(largeAllocation.m_vkBuffer), std::move(largeAllocation.m_VmaAllocation));
   }
   m_LargeAllocations.Clear();
 }

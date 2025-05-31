@@ -4,7 +4,6 @@
 #include <GraphicsCore/Lights/SimplifiedDataExtractor.h>
 #include <GraphicsCore/Lights/SimplifiedDataProvider.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/LightDataSimplified.h>
@@ -12,33 +11,33 @@ XII_DEFINE_AS_POD_TYPE(xiiSimplifiedDataConstants);
 
 xiiSimplifiedDataGPU::xiiSimplifiedDataGPU()
 {
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiSimplifiedDataConstants>();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pSimplifiedDataConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiSimplifiedDataConstants));
 }
 
 xiiSimplifiedDataGPU::~xiiSimplifiedDataGPU()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
+  m_pSimplifiedDataConstantBuffer.Clear();
 }
 
-void xiiSimplifiedDataGPU::BindResources(xiiRenderContext* pRenderContext)
+void xiiSimplifiedDataGPU::BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  auto hReflectionSpecularTextureView = pDevice->GetTexture(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint))->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-  auto hSkyIrradianceTextureView      = pDevice->GetTexture(xiiReflectionPool::GetSkyIrradianceTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  #ifdef CORE_ENABLE
+  xiiSharedPtr<xiiGALTextureView> hReflectionSpecularTextureView = xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  xiiSharedPtr<xiiGALTextureView> hSkyIrradianceTextureView      = xiiReflectionPool::GetSkyIrradianceTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
   pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
 
   pRenderContext->BindConstantBuffer("xiiSimplifiedDataConstants", m_hConstantBuffer);
+  #endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimplifiedDataProvider, 1, xiiRTTIDefaultAllocator<xiiSimplifiedDataProvider>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiSimplifiedDataProvider::xiiSimplifiedDataProvider() = default;
 
@@ -46,6 +45,7 @@ xiiSimplifiedDataProvider::~xiiSimplifiedDataProvider() = default;
 
 void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
+#ifdef CORE_ENABLE
   if (auto pData = extractedData.GetFrameData<xiiSimplifiedDataCPU>())
   {
     m_Data.m_uiSkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
@@ -58,6 +58,7 @@ void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderVi
 
     pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
   }
+  #endif
 
   return &m_Data;
 }

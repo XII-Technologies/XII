@@ -4,7 +4,6 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/SeparatedBilateralBlur.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <Core/Graphics/Geometry.h>
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/BilateralBlurConstants.h>
@@ -42,15 +41,14 @@ xiiSeparatedBilateralBlurPass::xiiSeparatedBilateralBlurPass() :
     XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load blur shader!");
   }
 
-  {
-    m_hBilateralBlurCB = xiiRenderContext::CreateConstantBufferStorage<xiiBilateralBlurConstants>();
-  }
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pBilateralBlurConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiBilateralBlurConstants));
 }
 
 xiiSeparatedBilateralBlurPass::~xiiSeparatedBilateralBlurPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hBilateralBlurCB);
-  m_hBilateralBlurCB.Invalidate();
+  m_pBilateralBlurConstantBuffer.Clear();
 }
 
 bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -94,55 +92,54 @@ bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& v
 
 void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
+#ifdef CORE_ENABLE
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
     // Setup input view and sampler
     xiiGALTextureViewCreationDescription rvcd;
-    rvcd.m_hTexture                              = inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_TextureHandle;
-    xiiGALTextureViewHandle hBlurSourceInputView = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
-    rvcd.m_hTexture                              = inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle;
-    xiiGALTextureViewHandle hDepthInputView      = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
+    xiiSharedPtr<xiiGALTextureView>      pBlurSourceInputView = inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_pTexture->CreateView(rvcd);
+    xiiSharedPtr<xiiGALTextureView>      pDepthInputView      = inputs[m_PinDepthInput.m_uiInputIndex]->m_pTexture->CreateView(rvcd);
 
     // Get temp texture for horizontal target / vertical source.
     xiiGALTextureCreationDescription tempTextureDesc = outputs[m_PinBlurSourceInput.m_uiInputIndex]->m_TextureDescription;
     tempTextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
-    xiiGALTextureHandle tempTexture           = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
-    rvcd.m_hTexture                           = tempTexture;
-    xiiGALTextureViewHandle hTempTextureRView = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
+    xiiSharedPtr<xiiGALTexture>     tempTexture       = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
+    xiiSharedPtr<xiiGALTextureView> pTempTextureRView = tempTexture->CreateView(rvcd);
 
     xiiGALRenderingSetup renderingSetup;
 
     // Bind shader and inputs
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-    renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", hDepthInputView);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
+    renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", pDepthInputView);
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiBilateralBlurConstants", m_hBilateralBlurCB);
 
     // Horizontal
     {
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, tempTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLUR_DIRECTION", "BLUR_DIRECTION_HORIZONTAL");
-      renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", hBlurSourceInputView);
+      renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", pBlurSourceInputView);
       renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
     }
 
     // Vertical
     {
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, outputs[m_PinOutput.m_uiOutputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLUR_DIRECTION", "BLUR_DIRECTION_VERTICAL");
-      renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", hTempTextureRView);
+      renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", pTempTextureRView);
       renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
     }
 
     // Give back temp texture.
     xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(tempTexture);
   }
+  #endif
 }
 
 xiiResult xiiSeparatedBilateralBlurPass::Serialize(xiiStreamWriter& inout_stream) const
@@ -169,8 +166,10 @@ void xiiSeparatedBilateralBlurPass::SetRadius(xiiUInt32 uiRadius)
 {
   m_uiRadius = uiRadius;
 
+  #ifdef CORE_ENABLE
   xiiBilateralBlurConstants* cb = xiiRenderContext::GetConstantBufferData<xiiBilateralBlurConstants>(m_hBilateralBlurCB);
   cb->BlurRadius                = m_uiRadius;
+  #endif
 }
 
 xiiUInt32 xiiSeparatedBilateralBlurPass::GetRadius() const
@@ -182,8 +181,10 @@ void xiiSeparatedBilateralBlurPass::SetGaussianSigma(const float fSigma)
 {
   m_fGaussianSigma = fSigma;
 
+  #ifdef CORE_ENABLE
   xiiBilateralBlurConstants* cb = xiiRenderContext::GetConstantBufferData<xiiBilateralBlurConstants>(m_hBilateralBlurCB);
   cb->GaussianFalloff           = 1.0f / (2.0f * m_fGaussianSigma * m_fGaussianSigma);
+  #endif
 }
 
 float xiiSeparatedBilateralBlurPass::GetGaussianSigma() const
@@ -195,8 +196,10 @@ void xiiSeparatedBilateralBlurPass::SetSharpness(const float fSharpness)
 {
   m_fSharpness = fSharpness;
 
+  #ifdef CORE_ENABLE
   xiiBilateralBlurConstants* cb = xiiRenderContext::GetConstantBufferData<xiiBilateralBlurConstants>(m_hBilateralBlurCB);
   cb->Sharpness                 = m_fSharpness;
+  #endif
 }
 
 float xiiSeparatedBilateralBlurPass::GetSharpness() const

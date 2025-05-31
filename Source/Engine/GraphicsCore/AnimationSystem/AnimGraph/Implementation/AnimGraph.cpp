@@ -226,31 +226,31 @@ void xiiAnimGraph::PrepareForUse()
   // EXTEND THIS if a new type is introduced
   {
     xiiInstanceDataDesc desc;
-    desc.m_uiTypeAlignment                                    = XII_ALIGNMENT_OF(xiiInt8);
+    desc.m_uiTypeAlignment                                    = alignof(xiiInt8);
     desc.m_uiTypeSize                                         = sizeof(xiiInt8) * m_uiInputPinCounts[xiiAnimGraphPin::Type::Trigger];
     m_uiPinInstanceDataOffset[xiiAnimGraphPin::Type::Trigger] = m_InstanceDataAllocator.AddDesc(desc);
   }
   {
     xiiInstanceDataDesc desc;
-    desc.m_uiTypeAlignment                                   = XII_ALIGNMENT_OF(double);
+    desc.m_uiTypeAlignment                                   = alignof(double);
     desc.m_uiTypeSize                                        = sizeof(double) * m_uiInputPinCounts[xiiAnimGraphPin::Type::Number];
     m_uiPinInstanceDataOffset[xiiAnimGraphPin::Type::Number] = m_InstanceDataAllocator.AddDesc(desc);
   }
   {
     xiiInstanceDataDesc desc;
-    desc.m_uiTypeAlignment                                 = XII_ALIGNMENT_OF(bool);
+    desc.m_uiTypeAlignment                                 = alignof(bool);
     desc.m_uiTypeSize                                      = sizeof(bool) * m_uiInputPinCounts[xiiAnimGraphPin::Type::Bool];
     m_uiPinInstanceDataOffset[xiiAnimGraphPin::Type::Bool] = m_InstanceDataAllocator.AddDesc(desc);
   }
   {
     xiiInstanceDataDesc desc;
-    desc.m_uiTypeAlignment                                        = XII_ALIGNMENT_OF(xiiUInt16);
+    desc.m_uiTypeAlignment                                        = alignof(xiiUInt16);
     desc.m_uiTypeSize                                             = sizeof(xiiUInt16) * m_uiInputPinCounts[xiiAnimGraphPin::Type::BoneWeights];
     m_uiPinInstanceDataOffset[xiiAnimGraphPin::Type::BoneWeights] = m_InstanceDataAllocator.AddDesc(desc);
   }
   {
     xiiInstanceDataDesc desc;
-    desc.m_uiTypeAlignment                                      = XII_ALIGNMENT_OF(xiiUInt16);
+    desc.m_uiTypeAlignment                                      = alignof(xiiUInt16);
     desc.m_uiTypeSize                                           = sizeof(xiiUInt16) * m_uiInputPinCounts[xiiAnimGraphPin::Type::ModelPose];
     m_uiPinInstanceDataOffset[xiiAnimGraphPin::Type::ModelPose] = m_InstanceDataAllocator.AddDesc(desc);
   }
@@ -350,5 +350,3 @@ xiiResult xiiAnimGraph::Deserialize(xiiStreamReader& inout_stream)
   m_bPreparedForUse = false;
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_Implementation_AnimGraph);

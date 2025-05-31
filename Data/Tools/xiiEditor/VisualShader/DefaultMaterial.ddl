@@ -63,7 +63,7 @@ VERTEX_SKINNING=FALSE
 #include <Shaders/Materials/MaterialVertexShader.h>
 #include <Shaders/Common/VisualShaderUtil.h>
 
-DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
 {
   FLOAT1(MaskThreshold);
 
@@ -155,7 +155,7 @@ float MaskThreshold @Default($prop0);
   string %CodePixelConstants { "" }
   string %CodePixelBody { "
 
-DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 1)
+DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)
 {
   FLOAT1(MaskThreshold);
 

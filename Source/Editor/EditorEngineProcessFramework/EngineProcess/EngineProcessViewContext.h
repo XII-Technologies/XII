@@ -10,7 +10,6 @@ class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
 class xiiViewRedrawMsgToEngine;
 class xiiEditorEngineViewMsg;
-class xiiGALRenderTargetSetup;
 class xiiActor;
 struct xiiGALRenderTargets;
 

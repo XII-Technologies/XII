@@ -105,7 +105,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct
 /// \brief This describes the input layout creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutCreationDescription : public xiiHashableStruct<xiiGALInputLayoutCreationDescription>
 {
-  xiiGALShaderHandle                                               m_hVertexShader;  ///< The handle to the vertex shader.
   xiiStaticArray<xiiGALLayoutElement, XII_GAL_MAX_LAYOUT_ELEMENTS> m_LayoutElements; ///< The input layout elements.
 };
 
@@ -120,14 +119,13 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALInputLayout(xiiGALDevice* pDevice, const xiiGALInputLayoutCreationDescription& creationDescription);
+  xiiGALInputLayout(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALInputLayoutCreationDescription& creationDescription);
 
   virtual ~xiiGALInputLayout();
 
-  virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
+  virtual xiiResult InitPlatform(xiiGALShader* pShader) = 0;
 
 protected:
   xiiGALInputLayoutCreationDescription m_Description;

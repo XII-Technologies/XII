@@ -25,6 +25,7 @@ o
 		{
 			s{"Textures/BlueNoise.dds"}
 		}
+		s %Tags{""}
 	}
 }
 }

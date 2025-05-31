@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
 class XII_GRAPHICSCORE_DLL xiiReflectionFilterPass : public xiiRenderPipelinePass
@@ -35,11 +34,11 @@ protected:
   xiiUInt32 m_uiSpecularOutputIndex   = 0;
   xiiUInt32 m_uiIrradianceOutputIndex = 0;
 
-  xiiGALTextureHandle m_hInputCubemap;
+  xiiSharedPtr<xiiGALTexture> m_pInputCubemap;
 
-  xiiConstantBufferStorageHandle m_hFilteredSpecularConstantBuffer;
-  xiiShaderResourceHandle        m_hFilteredSpecularShader;
+  xiiSharedPtr<xiiGALBuffer> m_pFilteredSpecularConstantBuffer;
+  xiiShaderResourceHandle    m_hFilteredSpecularShader;
 
-  xiiConstantBufferStorageHandle m_hIrradianceConstantBuffer;
-  xiiShaderResourceHandle        m_hIrradianceShader;
+  xiiSharedPtr<xiiGALBuffer> m_pIrradianceConstantBuffer;
+  xiiShaderResourceHandle    m_hIrradianceShader;
 };

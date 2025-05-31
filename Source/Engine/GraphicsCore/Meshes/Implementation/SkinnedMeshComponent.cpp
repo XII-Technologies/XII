@@ -4,14 +4,10 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/Types.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiSkinnedMeshRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiSkinningState::xiiSkinningState() = default;
 
@@ -22,20 +18,15 @@ xiiSkinningState::~xiiSkinningState()
 
 void xiiSkinningState::Clear()
 {
-  if (!m_hGpuBuffer.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyBuffer(m_hGpuBuffer);
-    m_hGpuBuffer.Invalidate();
-  }
-
-  m_bTransformsUpdated[0] = nullptr;
-  m_bTransformsUpdated[1] = nullptr;
+  m_pGpuBuffer.Clear();
   m_Transforms.Clear();
 }
 
 void xiiSkinningState::TransformsChanged()
 {
-  if (m_hGpuBuffer.IsInvalidated())
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  if (!m_pGpuBuffer)
   {
     if (m_Transforms.GetCount() == 0)
       return;
@@ -45,37 +36,22 @@ void xiiSkinningState::TransformsChanged()
     bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * m_Transforms.GetCount();
     bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
     bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-    bufferDescription.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Staging;
     bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     xiiGALBufferData initData;
     initData.m_pData      = m_Transforms.GetData();
     initData.m_uiDataSize = m_Transforms.GetArrayPtr().ToByteArray().GetCount();
-    m_hGpuBuffer          = xiiGALDevice::GetDefaultDevice()->CreateBuffer(bufferDescription, &initData);
+    m_pGpuBuffer          = pDevice->CreateBuffer(bufferDescription, &initData);
 
-    m_bTransformsUpdated[0] = std::make_shared<bool>(true);
-    m_bTransformsUpdated[1] = std::make_shared<bool>(true);
+    m_pGpuBuffer->SetDebugName("xiiSkinningState");
   }
   else
   {
-    const xiiUInt32 uiRenIdx        = xiiRenderWorld::GetDataIndexForExtraction();
-    *m_bTransformsUpdated[uiRenIdx] = false;
-  }
-}
+    // \todo Implement updating buffer for next frame.
+    // xiiGALDevice::GetDefaultDevice()->UpdateBufferForNextFrame(m_hGpuBuffer, m_Transforms.GetByteArrayPtr());
 
-void xiiSkinningState::FillSkinnedMeshRenderData(xiiSkinnedMeshRenderData& ref_renderData) const
-{
-  ref_renderData.m_hSkinningTransforms = m_hGpuBuffer;
-
-  const xiiUInt32 uiExIdx = xiiRenderWorld::GetDataIndexForExtraction();
-
-  if (m_bTransformsUpdated[uiExIdx] && *m_bTransformsUpdated[uiExIdx] == false)
-  {
-    auto pSkinningMatrices = XII_NEW_ARRAY(xiiFrameAllocator::GetCurrentAllocator(), xiiShaderTransform, m_Transforms.GetCount());
-    pSkinningMatrices.CopyFrom(m_Transforms);
-
-    ref_renderData.m_pNewSkinningTransformData = pSkinningMatrices.ToByteArray();
-    ref_renderData.m_bTransformsUpdated        = m_bTransformsUpdated[uiExIdx];
+    XII_IGNORE_UNUSED(pDevice);
   }
 }
 

@@ -14,22 +14,21 @@ class XII_GRAPHICSVULKAN_DLL xiiGALTextureViewVulkan final : public xiiGALTextur
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureViewVulkan, xiiGALTextureView);
 
 public:
-  XII_ALWAYS_INLINE vk::ImageView GetVulkanImageView() const { return m_vkImageView; }
-  XII_ALWAYS_INLINE const vk::DescriptorImageInfo* GetVulkanDescriptorImageInfo() const { return &m_vkDescriptorImageInfo; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::ImageView GetVulkanImageView() const { return m_vkImageView; }
+  [[nodiscard]] XII_ALWAYS_INLINE const vk::DescriptorImageInfo* GetVulkanDescriptorImageInfo() const { return &m_vkDescriptorImageInfo; }
 
 protected:
-  friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceVulkan;
+  friend class xiiGALTextureVulkan;
 
-  xiiGALTextureViewVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
+  xiiGALTextureViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureViewVulkan();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   vk::ImageView m_vkImageView;

@@ -17,6 +17,8 @@ xiiResult xiiDataDirectoryType::InitializeDataDirectory(xiiStringView sDataDirPa
 
 bool xiiDataDirectoryType::ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir)
 {
+  XII_IGNORE_UNUSED(bOneSpecificDataDir);
+
   xiiStringBuilder sRedirectedAsset;
   ResolveAssetRedirection(sFile, sRedirectedAsset);
 

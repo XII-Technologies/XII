@@ -1,9 +1,8 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsFoundation/Resources/TextureView.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALUnorderedAccessViewFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Unspecified),
   XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Read),
@@ -28,11 +27,10 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
-xiiGALTextureView::xiiGALTextureView(xiiGALDevice* pDevice, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
-  xiiGALResourceView(pDevice), m_pTexture(pTexture), m_Description(creationDescription)
+xiiGALTextureView::xiiGALTextureView(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
+  xiiGALResourceView(std::move(pDevice)), m_pTexture(pTexture), m_Description(creationDescription)
 {
   XII_ASSERT_DEV(m_pTexture != nullptr, "The given texture must not be nullptr.");
 }

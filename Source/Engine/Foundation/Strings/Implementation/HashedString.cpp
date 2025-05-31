@@ -64,7 +64,7 @@ void xiiHashedString::InitHashedString()
   if (s_pHSData != nullptr)
     return;
 
-  alignas(XII_ALIGNMENT_OF(HashedStringData)) static xiiUInt8 HashedStringDataBuffer[sizeof(HashedStringData)];
+  alignas(alignof(HashedStringData)) static xiiUInt8 HashedStringDataBuffer[sizeof(HashedStringData)];
   s_pHSData = new (HashedStringDataBuffer) HashedStringData();
 
   // makes sure the empty string exists for the default constructor to use

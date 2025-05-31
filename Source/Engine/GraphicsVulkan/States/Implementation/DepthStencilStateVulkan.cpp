@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/DepthStencilStateVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALDepthStencilStateVulkan::xiiGALDepthStencilStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
-  xiiGALDepthStencilState(pDeviceVulkan, creationDescription)
+xiiGALDepthStencilStateVulkan::xiiGALDepthStencilStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+  xiiGALDepthStencilState(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -45,11 +43,6 @@ xiiResult xiiGALDepthStencilStateVulkan::InitPlatform()
   m_DepthStencilState.back.depthFailOp = xiiVulkanTypeConversions::GetStencilOp(m_Description.m_BackFace.m_StencilDepthFailOperation);
   m_DepthStencilState.back.reference   = 0U;
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALDepthStencilStateVulkan::DeInitPlatform()
-{
   return XII_SUCCESS;
 }
 

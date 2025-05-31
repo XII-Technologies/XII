@@ -19,5 +19,4 @@
 #include <Foundation/Strings/StringBuilder.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <SharedPluginAssets/Common/Messages.h>

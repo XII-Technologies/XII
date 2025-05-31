@@ -335,7 +335,7 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue, xiiD
       // Create the plugin specific file.
       sTemp.SetFormat("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
 
-      LoadCVarsFromFileInternal(sTemp.GetView(), it.Value(), bOnlyNewOnes, bSetAsCurrentValue, pOutCVars);
+      LoadCVarsFromFileInternal(sTemp.GetView(), it.Value(), bSetAsCurrentValue, pOutCVars);
 
       // continue with the next plugin
       ++it;
@@ -361,10 +361,10 @@ void xiiCVar::LoadCVarsFromFile(xiiStringView sPath, bool bOnlyNewOnes, bool bSe
     pCVar->m_bHasNeverBeenLoaded = false;
   }
 
-  LoadCVarsFromFileInternal(sPath, allCVars, bOnlyNewOnes, bSetAsCurrentValue, pOutCVars);
+  LoadCVarsFromFileInternal(sPath, allCVars, bSetAsCurrentValue, pOutCVars);
 }
 
-void xiiCVar::LoadCVarsFromFileInternal(xiiStringView path, const xiiDynamicArray<xiiCVar*>& vars, bool bOnlyNewOnes, bool bSetAsCurrentValue, xiiDynamicArray<xiiCVar*>* pOutCVars)
+void xiiCVar::LoadCVarsFromFileInternal(xiiStringView path, const xiiDynamicArray<xiiCVar*>& vars, bool bSetAsCurrentValue, xiiDynamicArray<xiiCVar*>* pOutCVars)
 {
   xiiFileReader    File;
   xiiStringBuilder sTemp;

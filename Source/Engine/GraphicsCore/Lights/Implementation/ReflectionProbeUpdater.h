@@ -5,7 +5,6 @@
 #include <Core/Graphics/Camera.h>
 #include <GraphicsCore/Lights/Implementation/ReflectionProbeData.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 XII_DECLARE_FLAGS(xiiUInt8, xiiReflectionProbeUpdaterFlags, SkyLight, HasCustomCubeMap);
 
@@ -17,10 +16,10 @@ public:
   /// \brief Defines the target specular reflection probe atlas and index as well as the sky irradiance atlas and index in case the rendered cube map is a sky light.
   struct TargetSlot
   {
-    xiiGALTextureHandle m_hSpecularOutputTexture;      ///< Must be a valid cube map texture array handle.
-    xiiGALTextureHandle m_hIrradianceOutputTexture;    ///< Optional. Must be set if m_iIrradianceOutputIndex != -1.
-    xiiInt32            m_iSpecularOutputIndex   = -1; ///< Must be a valid index into the atlas texture.
-    xiiInt32            m_iIrradianceOutputIndex = -1; ///< If -1, no irradiance is computed.
+    xiiSharedPtr<xiiGALTexture> m_pSpecularOutputTexture;      ///< Must be a valid cube map texture array handle.
+    xiiSharedPtr<xiiGALTexture> m_pIrradianceOutputTexture;    ///< Optional. Must be set if m_iIrradianceOutputIndex != -1.
+    xiiInt32                    m_iSpecularOutputIndex   = -1; ///< Must be a valid index into the atlas texture.
+    xiiInt32                    m_iIrradianceOutputIndex = -1; ///< If -1, no irradiance is computed.
   };
 
 public:
@@ -112,8 +111,8 @@ private:
 
     xiiHybridArray<Step, 8> m_UpdateSteps;
 
-    xiiGALTextureHandle     m_hCubemap;
-    xiiGALTextureViewHandle m_hCubemapFaceRenderTargets[6];
+    xiiSharedPtr<xiiGALTexture>     m_pCubemap;
+    xiiSharedPtr<xiiGALTextureView> m_pCubemapFaceRenderTargets[6];
   };
 
 private:

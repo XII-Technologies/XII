@@ -7,18 +7,11 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 
-#include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
-#include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsCore/Pipeline/Declarations.h>
-#include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
 
 class xiiImage;
-
-using xiiTexture3DResourceHandle = xiiTypedResourceHandle<class xiiTexture3DResource>;
 
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTexture3DResource> to create textures from data in memory.
 struct XII_GRAPHICSCORE_DLL xiiTexture3DResourceDescriptor
@@ -56,8 +49,8 @@ public:
 
   static void FillOutDescriptor(xiiTexture3DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
 
-  const xiiGALTextureHandle& GetGALTexture() const { return m_hGALTexture[m_uiLoadedTextures - 1]; }
-  const xiiGALSamplerHandle& GetGALSampler() const { return m_hSampler; }
+  xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pGALTexture[m_uiLoadedTextures - 1]; }
+  xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pSampler; }
 
 protected:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
@@ -66,9 +59,9 @@ protected:
 
   xiiTexture3DResource(DoUpdate ResourceUpdateThread);
 
-  xiiUInt8            m_uiLoadedTextures = 0;
-  xiiGALTextureHandle m_hGALTexture[2];
-  xiiUInt32           m_uiMemoryGPU[2] = {0, 0};
+  xiiUInt8                    m_uiLoadedTextures = 0;
+  xiiSharedPtr<xiiGALTexture> m_pGALTexture[2];
+  xiiUInt32                   m_uiMemoryGPU[2] = {0, 0};
 
   xiiEnum<xiiGALResourceDimension> m_Type     = xiiGALResourceDimension::Undefined;
   xiiEnum<xiiGALResourceFormat>    m_Format   = xiiGALResourceFormat::Unknown;
@@ -76,5 +69,5 @@ protected:
   xiiUInt32                        m_uiHeight = 0;
   xiiUInt32                        m_uiDepth  = 0;
 
-  xiiGALSamplerHandle m_hSampler;
+  xiiSharedPtr<xiiGALSampler> m_pSampler;
 };

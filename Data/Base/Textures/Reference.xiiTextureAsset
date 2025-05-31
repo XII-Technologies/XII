@@ -25,6 +25,7 @@ o
 		{
 			s{"Textures/Reference_D.dds"}
 		}
+		s %Tags{""}
 	}
 }
 }

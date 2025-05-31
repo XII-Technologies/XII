@@ -4,8 +4,7 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
-#include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/FenceVulkan.h>
+#include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
 {
@@ -17,20 +16,19 @@ public:
 
 public:
   /// \brief This returns the value of the internal fence that will be signaled the next time.
-  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue.load(); }
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue; }
 
   /// \brief This returns the last completed value of the internal fence.
   XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return m_pQueueFence->GetCompletedValue(); }
 
+  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
+
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
-  virtual xiiGALCommandList* BeginCommandList() override final;
-  void                       ResetCommandList(xiiGALCommandListVulkan* pCommandListVulkan);
-  void                       RecycleCommandLists();
+  virtual xiiSharedPtr<xiiGALCommandList> BeginCommandList() override final;
 
-  XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
-  XII_ALWAYS_INLINE vk::CommandPool GetVulkanCommandPool() const { return m_vkCommandPool; };
+  xiiGALCommandBufferPoolVulkan* GetCommandBufferPool();
 
 private:
   xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
@@ -40,36 +38,20 @@ protected:
   friend class xiiMemoryUtils;
   friend class xiiGALCommandListVulkan;
 
-  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription, const xiiGALQueueInformationVulkan& queueInformation);
 
   virtual ~xiiGALCommandQueueVulkan();
 
-  void InitializePlatform(const xiiGALQueueInformationVulkan& queueInformation);
-
-  void DeInitializePlatform();
-
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  struct CommandListReleaseInfo
-  {
-    XII_DECLARE_POD_TYPE();
+  xiiGALQueueInformationVulkan                                   m_QueueInformation;
+  xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_CommandBufferPool;
 
-    xiiGALCommandListVulkan* m_pCommandListVulkan = nullptr;
-    xiiUInt64                m_uiFenceValue       = 0U;
-  };
+  vk::PipelineStageFlags m_vkSupportedStageFlags;
+  vk::AccessFlags        m_vkSupportedAccessFlags;
 
-  xiiMutex                     m_QueueMutex;
-  xiiGALQueueInformationVulkan m_QueueInformation;
-
-  vk::CommandPool                           m_vkCommandPool;
-  xiiDynamicArray<xiiGALCommandListVulkan*> m_CommandLists;
-  xiiDeque<xiiGALCommandListVulkan*>        m_QueuedCommandLists;
-  xiiDeque<CommandListReleaseInfo>          m_CommandListsToReset;
-  vk::PipelineStageFlags                    m_vkSupportedStageFlags;
-  vk::AccessFlags                           m_vkSupportedAccessFlags;
-
-  xiiGALFenceVulkan*               m_pQueueFence      = nullptr;
-  std::atomic<xiiUInt64>           m_uiNextFenceValue = 1U;
-  xiiGALFenceVulkan::SyncPointData m_LastSyncPoint;
+  xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan>  m_pQueueFence;
+  xiiAtomicIntegerU64                         m_uiNextFenceValue{1ULL};
+  xiiGALCpuWaitOnlyFenceVulkan::SyncPointData m_LastSyncPoint;
 };

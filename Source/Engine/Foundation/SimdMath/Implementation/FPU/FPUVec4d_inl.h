@@ -504,12 +504,6 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetOrthogonalVector() const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MakeZero()
-{
-  return xiiVec4d::MakeZero();
-}
-
-// static
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulAdd(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c)
 {
   return a.CompMul(b) + c;

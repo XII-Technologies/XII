@@ -10,13 +10,13 @@
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSampleAnimClipSequenceAnimNode, 1, xiiRTTIDefaultAllocator<xiiSampleAnimClipSequenceAnimNode>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSampleAnimClipSequenceAnimNode, 2, xiiRTTIDefaultAllocator<xiiSampleAnimClipSequenceAnimNode>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("PlaybackSpeed", m_fPlaybackSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, {})),
       XII_MEMBER_PROPERTY("Loop", m_bLoop),
-      //XII_MEMBER_PROPERTY("ApplyRootMotion", m_bApplyRootMotion),
+      XII_MEMBER_PROPERTY("RootMotionAmount", m_fRootMotionAmount)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 100.0f)),
       XII_ACCESSOR_PROPERTY("StartClip", GetStartClip, SetStartClip)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
       XII_ARRAY_ACCESSOR_PROPERTY("MiddleClips", Clips_GetCount, Clips_GetValue, Clips_SetValue, Clips_Insert, Clips_Remove)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
       XII_ACCESSOR_PROPERTY("EndClip", GetEndClip, SetEndClip)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
@@ -48,14 +48,14 @@ xiiSampleAnimClipSequenceAnimNode::~xiiSampleAnimClipSequenceAnimNode() = defaul
 
 xiiResult xiiSampleAnimClipSequenceAnimNode::SerializeNode(xiiStreamWriter& stream) const
 {
-  stream.WriteVersion(1);
+  stream.WriteVersion(2);
 
   XII_SUCCEED_OR_RETURN(SUPER::SerializeNode(stream));
 
   stream << m_sStartClip;
   XII_SUCCEED_OR_RETURN(stream.WriteArray(m_Clips));
   stream << m_sEndClip;
-  stream << m_bApplyRootMotion;
+  stream << m_fRootMotionAmount;
   stream << m_bLoop;
   stream << m_fPlaybackSpeed;
 
@@ -73,14 +73,25 @@ xiiResult xiiSampleAnimClipSequenceAnimNode::SerializeNode(xiiStreamWriter& stre
 
 xiiResult xiiSampleAnimClipSequenceAnimNode::DeserializeNode(xiiStreamReader& stream)
 {
-  const auto version = stream.ReadVersion(1);
+  const auto version = stream.ReadVersion(2);
 
   XII_SUCCEED_OR_RETURN(SUPER::DeserializeNode(stream));
 
   stream >> m_sStartClip;
   XII_SUCCEED_OR_RETURN(stream.ReadArray(m_Clips));
   stream >> m_sEndClip;
-  stream >> m_bApplyRootMotion;
+
+  if (version == 1)
+  {
+    bool bApplyRootMotion = false;
+    stream >> bApplyRootMotion;
+    m_fRootMotionAmount = bApplyRootMotion ? 1.0f : 0.0f;
+  }
+  else if (version >= 2)
+  {
+    stream >> m_fRootMotionAmount;
+  }
+
   stream >> m_bLoop;
   stream >> m_fPlaybackSpeed;
 
@@ -130,14 +141,21 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
 
   InstanceState* pState = ref_graph.GetAnimNodeInstanceData<InstanceState>(*this);
 
-  if ((!m_InStart.IsConnected() && pState->m_uiState == 0) || m_InStart.IsTriggered(ref_graph))
+  if (pState->m_PlaybackTime > xiiTime::MakeFromHours(10))
   {
+    if (!m_InStart.IsConnected())
+    {
+      pState->m_State = State::Start;
+    }
+
     pState->m_PlaybackTime = xiiTime::MakeZero();
-    pState->m_uiState      = 1;
   }
 
-  if (pState->m_uiState == 0)
-    return;
+  if (m_InStart.IsTriggered(ref_graph))
+  {
+    pState->m_PlaybackTime = xiiTime::MakeZero();
+    pState->m_State        = State::Start;
+  }
 
   const bool bLoop = m_InLoop.GetBool(ref_graph, m_bLoop);
 
@@ -150,9 +168,9 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
   xiiAnimationClipResourceHandle hCurClip;
   xiiTime                        tCurDuration;
 
-  while (pState->m_uiState != 0)
+  while (pState->m_State != State::Off)
   {
-    if (pState->m_uiState == 1)
+    if (pState->m_State == State::Start)
     {
       const auto& startClip = ref_controller.GetAnimationClipInfo(m_sStartClip);
 
@@ -160,14 +178,14 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       {
         if (!m_Clips.IsEmpty())
         {
-          pState->m_uiMiddleClipIdx = m_ClipIndexPin.GetNumber(ref_graph, 0xFF);
+          pState->m_uiMiddleClipIdx = static_cast<xiiUInt8>(m_ClipIndexPin.GetNumber(ref_graph, 0xFF));
           if (pState->m_uiMiddleClipIdx >= m_Clips.GetCount())
           {
             pState->m_uiMiddleClipIdx = pTarget->GetWorld()->GetRandomNumberGenerator().UIntInRange(m_Clips.GetCount());
           }
         }
 
-        pState->m_uiState = 2;
+        pState->m_State = State::Middle;
         m_OutOnMiddleStarted.SetTriggered(ref_graph);
         continue;
       }
@@ -177,14 +195,14 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       {
         if (!m_Clips.IsEmpty())
         {
-          pState->m_uiMiddleClipIdx = m_ClipIndexPin.GetNumber(ref_graph, 0xFF);
+          pState->m_uiMiddleClipIdx = static_cast<xiiUInt8>(m_ClipIndexPin.GetNumber(ref_graph, 0xFF));
           if (pState->m_uiMiddleClipIdx >= m_Clips.GetCount())
           {
             pState->m_uiMiddleClipIdx = pTarget->GetWorld()->GetRandomNumberGenerator().UIntInRange(m_Clips.GetCount());
           }
         }
 
-        pState->m_uiState = 2;
+        pState->m_State = State::Middle;
         m_OutOnMiddleStarted.SetTriggered(ref_graph);
         continue;
       }
@@ -198,11 +216,11 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
         m_OutOnMiddleStarted.SetTriggered(ref_graph);
         tPrevSamplePos = xiiTime::MakeZero();
         pState->m_PlaybackTime -= tCurDuration;
-        pState->m_uiState = 2;
+        pState->m_State = State::Middle;
 
         if (!m_Clips.IsEmpty())
         {
-          pState->m_uiMiddleClipIdx = m_ClipIndexPin.GetNumber(ref_graph, 0xFF);
+          pState->m_uiMiddleClipIdx = static_cast<xiiUInt8>(m_ClipIndexPin.GetNumber(ref_graph, 0xFF));
           if (pState->m_uiMiddleClipIdx >= m_Clips.GetCount())
           {
             pState->m_uiMiddleClipIdx = pTarget->GetWorld()->GetRandomNumberGenerator().UIntInRange(m_Clips.GetCount());
@@ -215,13 +233,20 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       break;
     }
 
-    if (pState->m_uiState == 2)
+    if (pState->m_State == State::Middle)
     {
+      if (m_Clips.IsEmpty())
+      {
+        pState->m_State = State::End;
+        m_OutOnEndStarted.SetTriggered(ref_graph);
+        continue;
+      }
+
       const auto& clipInfo = ref_controller.GetAnimationClipInfo(m_Clips[pState->m_uiMiddleClipIdx]);
 
-      if (m_Clips.IsEmpty() || !clipInfo.m_hClip.IsValid())
+      if (!clipInfo.m_hClip.IsValid())
       {
-        pState->m_uiState = 3;
+        pState->m_State = State::End;
         m_OutOnEndStarted.SetTriggered(ref_graph);
         continue;
       }
@@ -229,7 +254,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       xiiResourceLock<xiiAnimationClipResource> pAnimClip(clipInfo.m_hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
       if (pAnimClip.GetAcquireResult() != xiiResourceAcquireResult::Final)
       {
-        pState->m_uiState = 3;
+        pState->m_State = State::End;
         m_OutOnEndStarted.SetTriggered(ref_graph);
         continue;
       }
@@ -246,9 +271,9 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
         if (bLoop)
         {
           m_OutOnMiddleStarted.SetTriggered(ref_graph);
-          pState->m_uiState = 2;
+          pState->m_State = State::Middle;
 
-          pState->m_uiMiddleClipIdx = m_ClipIndexPin.GetNumber(ref_graph, 0xFF);
+          pState->m_uiMiddleClipIdx = static_cast<xiiUInt8>(m_ClipIndexPin.GetNumber(ref_graph, 0xFF));
           if (pState->m_uiMiddleClipIdx >= m_Clips.GetCount())
           {
             pState->m_uiMiddleClipIdx = pTarget->GetWorld()->GetRandomNumberGenerator().UIntInRange(m_Clips.GetCount());
@@ -257,7 +282,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
         else
         {
           m_OutOnEndStarted.SetTriggered(ref_graph);
-          pState->m_uiState = 3;
+          pState->m_State = State::End;
         }
         continue;
       }
@@ -266,13 +291,13 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       break;
     }
 
-    if (pState->m_uiState == 3)
+    if (pState->m_State == State::End)
     {
       const auto& endClip = ref_controller.GetAnimationClipInfo(m_sEndClip);
 
       if (!endClip.m_hClip.IsValid())
       {
-        pState->m_uiState = 0;
+        pState->m_State = State::HoldMiddleFrame;
         m_OutOnFinished.SetTriggered(ref_graph);
         continue;
       }
@@ -280,7 +305,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       xiiResourceLock<xiiAnimationClipResource> pAnimClip(endClip.m_hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
       if (pAnimClip.GetAcquireResult() != xiiResourceAcquireResult::Final)
       {
-        pState->m_uiState = 0;
+        pState->m_State = State::HoldMiddleFrame;
         m_OutOnFinished.SetTriggered(ref_graph);
         continue;
       }
@@ -292,11 +317,76 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       {
         // TODO: sample anim events of previous clip
         m_OutOnFinished.SetTriggered(ref_graph);
-        pState->m_uiState = 0;
+        pState->m_State = State::HoldEndFrame;
         continue;
       }
 
       hCurClip = endClip.m_hClip;
+      break;
+    }
+
+    if (pState->m_State == State::HoldEndFrame)
+    {
+      const auto& endClip = ref_controller.GetAnimationClipInfo(m_sEndClip);
+      hCurClip            = endClip.m_hClip;
+
+      xiiResourceLock<xiiAnimationClipResource> pAnimClip(endClip.m_hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      tCurDuration           = pAnimClip->GetDescriptor().GetDuration();
+      pState->m_PlaybackTime = tCurDuration;
+      break;
+    }
+
+    if (pState->m_State == State::HoldMiddleFrame)
+    {
+      if (m_Clips.IsEmpty() || pState->m_uiMiddleClipIdx >= m_Clips.GetCount())
+      {
+        pState->m_State = State::HoldStartFrame;
+        continue;
+      }
+
+      const auto& clipInfo = ref_controller.GetAnimationClipInfo(m_Clips[pState->m_uiMiddleClipIdx]);
+
+      if (!clipInfo.m_hClip.IsValid())
+      {
+        pState->m_State = State::HoldStartFrame;
+        continue;
+      }
+
+      xiiResourceLock<xiiAnimationClipResource> pAnimClip(clipInfo.m_hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (pAnimClip.GetAcquireResult() != xiiResourceAcquireResult::Final)
+      {
+        pState->m_State = State::HoldStartFrame;
+        continue;
+      }
+
+      tCurDuration           = pAnimClip->GetDescriptor().GetDuration();
+      pState->m_PlaybackTime = tCurDuration;
+      hCurClip               = clipInfo.m_hClip;
+      break;
+    }
+
+    if (pState->m_State == State::HoldStartFrame)
+    {
+      const auto& startClip = ref_controller.GetAnimationClipInfo(m_sStartClip);
+
+      if (!startClip.m_hClip.IsValid())
+      {
+        pState->m_State = State::Off;
+        continue;
+      }
+
+      xiiResourceLock<xiiAnimationClipResource> pAnimClip(startClip.m_hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (pAnimClip.GetAcquireResult() != xiiResourceAcquireResult::Final)
+      {
+        pState->m_State = State::Off;
+        continue;
+      }
+
+      tCurDuration = pAnimClip->GetDescriptor().GetDuration();
+      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::MakeFromMilliseconds(5), "Too short clip");
+
+      hCurClip               = startClip.m_hClip;
+      pState->m_PlaybackTime = tCurDuration;
       break;
     }
   }
@@ -318,10 +408,16 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
     xiiAnimGraphPinDataLocalTransforms* pLocalTransforms = ref_controller.AddPinDataLocalTransforms();
 
     pLocalTransforms->m_pWeights       = nullptr;
-    pLocalTransforms->m_bUseRootMotion = false; // m_bApplyRootMotion;
     pLocalTransforms->m_fOverallWeight = 1.0f;
-    // pLocalTransforms->m_vRootMotion = pAnimClip->GetDescriptor().m_vConstantRootMotion * tDiff.AsFloatInSeconds() * fPlaySpeed;
-    pLocalTransforms->m_CommandID = cmd.GetCommandID();
+    pLocalTransforms->m_CommandID      = cmd.GetCommandID();
+
+    if (m_fRootMotionAmount != 0.0f)
+    {
+      pLocalTransforms->m_bUseRootMotion = true;
+
+      xiiResourceLock<xiiAnimationClipResource> pAnimClip(hCurClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      pLocalTransforms->m_vRootMotion = pAnimClip->GetDescriptor().m_vConstantRootMotion * tDiff.AsFloatInSeconds() * fPlaySpeed;
+    }
 
     m_OutPose.SetPose(ref_graph, pLocalTransforms);
   }
@@ -352,3 +448,37 @@ bool xiiSampleAnimClipSequenceAnimNode::GetInstanceDataDesc(xiiInstanceDataDesc&
   out_desc.FillFromType<InstanceState>();
   return true;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
+
+class xiiSampleAnimClipSequenceAnimNodePatch_1_2 : public xiiGraphPatch
+{
+public:
+  xiiSampleAnimClipSequenceAnimNodePatch_1_2() :
+    xiiGraphPatch("xiiSampleAnimClipSequenceAnimNode", 2)
+  {
+  }
+
+  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
+  {
+    if (auto pProp = pNode->FindProperty("ApplyRootMotion"))
+    {
+      if (pProp->m_Value.IsA<bool>())
+      {
+        const bool bApply = pProp->m_Value.Get<bool>();
+
+        if (bApply)
+        {
+          pNode->AddProperty("RootMotionAmount", 1.0f);
+        }
+      }
+    }
+  }
+};
+
+xiiSampleAnimClipSequenceAnimNodePatch_1_2 g_xiiSampleAnimClipSequenceAnimNodePatch_1_2;
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes2_SampleAnimClipSequenceAnimNode);

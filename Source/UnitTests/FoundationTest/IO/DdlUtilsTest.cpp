@@ -899,7 +899,7 @@ TempHashedString $v14 { uint64 { 2720389094277464445 } }\
   // This test also covers all the types that Variant supports.
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreVariant")
   {
-    alignas(XII_ALIGNMENT_OF(float)) xiiUInt8 rawData[sizeof(float) * 16]; // Enough for mat4
+    alignas(alignof(float)) xiiUInt8 rawData[sizeof(float) * 16]; // Enough for mat4
 
     for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(rawData); ++i)
     {

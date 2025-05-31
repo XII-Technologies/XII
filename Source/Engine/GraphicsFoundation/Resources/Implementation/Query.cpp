@@ -6,8 +6,8 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQuery, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGALQuery::xiiGALQuery(xiiGALDevice* pDevice, const xiiGALQueryCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+xiiGALQuery::xiiGALQuery(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALQueryCreationDescription& creationDescription) :
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
 }
 
@@ -62,6 +62,8 @@ void xiiGALQuery::OnEndQuery(xiiGALCommandList* pCommandList)
 void xiiGALQuery::CheckQueryDataPtr(void* pData, xiiUInt32 uiDataSize)
 {
   XII_ASSERT_DEV(m_QueryState == QueryState::Ended, "Attempting to get data of query '{}' that has not been ended.", GetDebugName());
+
+  XII_IGNORE_UNUSED(uiDataSize);
 
   if (pData != nullptr)
   {

@@ -52,7 +52,6 @@ void xiiTranslationLookup::AddTranslator(xiiUniquePtr<xiiTranslator> pTranslator
   s_Translators.PushBack(std::move(pTranslator));
 }
 
-
 xiiStringView xiiTranslationLookup::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
   for (xiiUInt32 i = s_Translators.GetCount(); i > 0; --i)
@@ -201,6 +200,8 @@ void xiiTranslatorStorage::StoreTranslation(xiiStringView sString, xiiUInt64 uiS
 
 xiiStringView xiiTranslatorStorage::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
+  XII_IGNORE_UNUSED(sString);
+
   auto it = m_Translations[(xiiUInt32)usage].Find(uiStringHash);
   if (it.IsValid())
     return it.Value().GetData();

@@ -118,7 +118,7 @@ private:
 
 
 
-template <typename Class, typename Container, Container Class::*Member>
+template <typename Class, typename Container, Container Class::* Member>
 struct xiiSetPropertyAccessor
 {
   using ContainerType = typename xiiTypeTraits<Container>::NonConstReferenceType;
@@ -136,7 +136,7 @@ class xiiMemberSetProperty : public xiiTypedSetProperty<typename xiiTypeTraits<T
 public:
   using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
-  using GetContainerFunc      = Container& (*)(Class* pInstance);
+  using GetContainerFunc      = Container& (*)(Class * pInstance);
 
   xiiMemberSetProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
     xiiTypedSetProperty<RealType>(sPropertyName)

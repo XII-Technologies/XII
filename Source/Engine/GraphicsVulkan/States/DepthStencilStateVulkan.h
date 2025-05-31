@@ -14,19 +14,17 @@ class XII_GRAPHICSVULKAN_DLL xiiGALDepthStencilStateVulkan final : public xiiGAL
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDepthStencilStateVulkan, xiiGALDepthStencilState);
 
 public:
-  XII_ALWAYS_INLINE const vk::PipelineDepthStencilStateCreateInfo* GetDepthStencilState() const { return &m_DepthStencilState; }
+  [[nodiscard]] XII_ALWAYS_INLINE const vk::PipelineDepthStencilStateCreateInfo* GetDepthStencilState() const { return &m_DepthStencilState; }
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALDepthStencilStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALDepthStencilStateCreationDescription& creationDescription);
+  xiiGALDepthStencilStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALDepthStencilStateCreationDescription& creationDescription);
 
   virtual ~xiiGALDepthStencilStateVulkan();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 
 private:
   vk::PipelineDepthStencilStateCreateInfo m_DepthStencilState = {};

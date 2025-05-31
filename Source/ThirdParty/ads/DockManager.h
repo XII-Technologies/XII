@@ -398,7 +398,7 @@ public:
    * into the CenterDockWidgetArea. The following code shows this:
    * \code
    * DockManager->addDockWidget(ads::CenterDockWidgetArea, NewDockWidget,
-   *      ExisitingDockArea);
+   *      ExistingDockArea);
    * \endcode
    * \return Returns the dock area widget that contains the new DockWidget
    */

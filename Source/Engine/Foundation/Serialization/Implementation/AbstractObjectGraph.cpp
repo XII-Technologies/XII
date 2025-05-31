@@ -45,7 +45,6 @@ void xiiAbstractObjectGraph::Clear()
   m_Strings.Clear();
 }
 
-
 xiiAbstractObjectNode* xiiAbstractObjectGraph::Clone(xiiAbstractObjectGraph& ref_cloneTarget, const xiiAbstractObjectNode* pRootNode, FilterFunction filter) const
 {
   ref_cloneTarget.Clear();
@@ -219,6 +218,8 @@ xiiResult xiiAbstractObjectNode::InlineProperty(xiiStringView sName)
       public:
         void RegisterObject(const xiiUuid& guid, const xiiRTTI* pRtti, void* pObject) override
         {
+          XII_IGNORE_UNUSED(pRtti);
+          XII_IGNORE_UNUSED(pObject);
           m_SubTree.PushBack(guid);
         }
         xiiHybridArray<xiiUuid, 1> m_SubTree;

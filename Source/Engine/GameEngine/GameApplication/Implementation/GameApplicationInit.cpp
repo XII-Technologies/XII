@@ -22,20 +22,18 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
-#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
-constexpr const char* szDefaultGraphicsAPI = "D3D11";
-#elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "Vulkan";
 #else
-constexpr const char* szDefaultGraphicsAPI = "Null";
+constexpr const char* szDefaultGraphicsAPI = "";
 #endif
 
 xiiCommandLineOptionString opt_Renderer("app", "-renderer", "The renderer implementation to use.", szDefaultGraphicsAPI);
@@ -315,7 +313,7 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
 #endif
 
   {
-    xiiGALDevice* pDevice = nullptr;
+    xiiSharedPtr<xiiGALDevice> pDevice;
 
     if (s_DefaultDeviceCreator.IsValid())
     {
@@ -330,6 +328,9 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
     }
 
     XII_VERIFY(pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
+
+    pDevice->SetDebugName("Master Graphics Device");
+
     xiiGALDevice::SetDefaultDevice(pDevice);
   }
 
@@ -347,7 +348,7 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
   xiiStringView sShaderCompiler  = {};
   xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
 
-  xiiShaderManager::Configure(sShaderModel, true);
+  xiiGALShaderManager::Configure(sShaderModel, true);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
@@ -372,10 +373,9 @@ void xiiGameApplication::Deinit_ShutdownGraphicsDevice()
 
   xiiResourceManager::FreeAllUnusedResources();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-  pDevice->Shutdown().IgnoreResult();
-  XII_DEFAULT_DELETE(pDevice);
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   xiiGALDevice::SetDefaultDevice(nullptr);
+  pDevice.Clear();
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameApplication_Implementation_GameApplicationInit);

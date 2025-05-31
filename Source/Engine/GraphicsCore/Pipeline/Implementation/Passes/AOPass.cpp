@@ -4,10 +4,8 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/AOPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/DownscaleDepthConstants.h>
@@ -54,28 +52,22 @@ xiiAOPass::xiiAOPass() :
   m_hBlurShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/SSAOBlur.xiiShader");
   XII_ASSERT_DEV(m_hBlurShader.IsValid(), "Could not load SSAO shader!");
 
-  m_hDownscaleConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiDownscaleDepthConstants>();
-  m_hSSAOConstantBuffer      = xiiRenderContext::CreateConstantBufferStorage<xiiSSAOConstants>();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pDownscaleConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiDownscaleDepthConstants));
+  m_pSSAOConstantBuffer      = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiSSAOConstants));
 }
 
 xiiAOPass::~xiiAOPass()
 {
-  if (!m_hSSAOSampler.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSSAOSampler);
-    m_hSSAOSampler.Invalidate();
-  }
-
-  xiiRenderContext::DeleteConstantBufferStorage(m_hDownscaleConstantBuffer);
-  m_hDownscaleConstantBuffer.Invalidate();
-
-  xiiRenderContext::DeleteConstantBufferStorage(m_hSSAOConstantBuffer);
-  m_hSSAOConstantBuffer.Invalidate();
+  m_pSSAOSampler.Clear();
+  m_pDownscaleConstantBuffer.Clear();
+  m_pSSAOConstantBuffer.Clear();
 }
 
-bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
+bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> pInputs, xiiArrayPtr<xiiGALTextureCreationDescription> pOutputs)
 {
-  if (auto pDepthInput = inputs[m_PinDepthInput.m_uiInputIndex])
+  if (auto pDepthInput = pInputs[m_PinDepthInput.m_uiInputIndex])
   {
     if (!pDepthInput->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     {
@@ -94,7 +86,7 @@ bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayP
     desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
     desc.m_BindFlags.Remove(xiiGALBindFlags::DepthStencil);
 
-    outputs[m_PinOutput.m_uiOutputIndex] = desc;
+    pOutputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
   else
   {
@@ -105,14 +97,54 @@ bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayP
   return true;
 }
 
-void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiAOPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  auto pDepthInput = inputs[m_PinDepthInput.m_uiInputIndex];
-  auto pOutput     = outputs[m_PinOutput.m_uiOutputIndex];
+  XII_IGNORE_UNUSED(pInputs);
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  // Create render pass.
+  if (auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex])
+  {
+    const auto& textureDescription = pOutput->m_pTexture->GetDescription();
+
+    xiiGALRenderPassCreationDescription renderPassDescription;
+    auto&                               subpassDescription    = renderPassDescription.m_SubPasses.ExpandAndGetRef();
+    auto&                               dependencyDescription = renderPassDescription.m_Dependencies.ExpandAndGetRef();
+    auto&                               attachmentDescription = renderPassDescription.m_Attachments.ExpandAndGetRef();
+
+    dependencyDescription.m_uiSourceSubPass       = XII_GAL_SUBPASS_EXTERNAL;
+    dependencyDescription.m_uiDestinationSubPass  = 0U;
+    dependencyDescription.m_SourceStageFlags      = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+    dependencyDescription.m_DestinationStageFlags = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+
+    attachmentDescription.m_Format                = textureDescription.m_Format;
+    attachmentDescription.m_uiSampleCount         = textureDescription.m_uiSampleCount;
+    attachmentDescription.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
+    attachmentDescription.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
+    attachmentDescription.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Clear;
+    attachmentDescription.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
+    attachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::RenderTarget;
+    attachmentDescription.m_FinalStateFlags       = xiiGALResourceStateFlags::RenderTarget;
+
+    auto& colorAttachmentReference                = subpassDescription.m_RenderTargetAttachments.ExpandAndGetRef();
+    colorAttachmentReference.m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget;
+    colorAttachmentReference.m_uiAttachmentIndex  = 0U;
+
+    dependencyDescription.m_SourceAccessFlags      = xiiGALAccessFlags::RenderTargetWrite;
+    dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::RenderTargetWrite;
+
+    m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+    XII_ASSERT_DEV(m_pRenderPass != nullptr, "Failed to create render pass.");
+  }
+}
+
+void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+{
+  auto pDepthInput = pInputs[m_PinDepthInput.m_uiInputIndex];
+  auto pOutput     = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pDepthInput == nullptr || pOutput == nullptr)
     return;
-
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiUInt32 uiWidth  = pDepthInput->m_TextureDescription.m_Size.width;
   xiiUInt32 uiHeight = pDepthInput->m_TextureDescription.m_Size.height;
@@ -125,12 +157,12 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   float fHzbScaleY = (float)uiHeight / uiHzbHeight;
 
   // Find temp targets
-  xiiGALTextureHandle                        hzbTexture;
-  xiiHybridArray<xiiVec2, 8>                 hzbSizes;
-  xiiHybridArray<xiiGALTextureViewHandle, 8> hzbResourceViews;
-  xiiHybridArray<xiiGALTextureViewHandle, 8> hzbRenderTargetViews;
+  xiiSharedPtr<xiiGALTexture>                        pHzbTexture;
+  xiiHybridArray<xiiVec2, 8>                         hzbSizes;
+  xiiHybridArray<xiiSharedPtr<xiiGALTextureView>, 8> hzbResourceViews;
+  xiiHybridArray<xiiSharedPtr<xiiGALTextureView>, 8> hzbRenderTargetViews;
 
-  xiiGALTextureHandle tempSSAOTexture;
+  xiiSharedPtr<xiiGALTexture> pTempSSAOTexture;
 
   {
     {
@@ -143,7 +175,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       desc.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
       desc.m_uiArraySizeOrDepth = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
-      hzbTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
+      pHzbTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
     }
 
     for (xiiUInt32 i = 0; i < uiNumMips; ++i)
@@ -157,154 +189,212 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
         xiiGALTextureViewCreationDescription desc;
         desc.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
         desc.m_Format                    = xiiGALResourceFormat::R16Float;
-        desc.m_hTexture                  = hzbTexture;
         desc.m_uiMostDetailedMip         = i;
         desc.m_uiMipLevelCount           = 1;
         desc.m_uiArrayOrDepthSlicesCount = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
-        hzbResourceViews.PushBack(pDevice->CreateTextureView(desc));
+        hzbResourceViews.PushBack(pHzbTexture->CreateView(desc));
       }
 
       {
         xiiGALTextureViewCreationDescription desc;
         desc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
         desc.m_Format                    = xiiGALResourceFormat::R16Float;
-        desc.m_hTexture                  = hzbTexture;
         desc.m_uiMostDetailedMip         = i;
         desc.m_uiMipLevelCount           = 1;
         desc.m_uiArrayOrDepthSlicesCount = pOutput->m_TextureDescription.m_uiArraySizeOrDepth;
 
-        hzbRenderTargetViews.PushBack(pDevice->CreateTextureView(desc));
+        hzbRenderTargetViews.PushBack(pHzbTexture->CreateView(desc));
       }
     }
 
-    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_TextureDescription.m_uiArraySizeOrDepth, true);
+    pTempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_TextureDescription.m_uiArraySizeOrDepth, true);
   }
 
-  // Mip map passes
-  {
-    CreateSampler();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-    for (xiiUInt32 i = 0; i < uiNumMips; ++i)
+  if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
+  {
+    pCommandList->BeginDebugGroup(GetName());
     {
-      xiiGALTextureViewHandle hInputView;
-      xiiVec2                 pixelSize;
-
-      if (i == 0)
+      // Mip map passes
       {
-        hInputView = pDevice->GetTexture(pDepthInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-        pixelSize  = xiiVec2(1.0f / uiWidth, 1.0f / uiHeight);
+        CreateSampler();
+
+        for (xiiUInt32 i = 0; i < uiNumMips; ++i)
+        {
+          xiiSharedPtr<xiiGALTextureView> pInputView;
+          xiiVec2                         pixelSize;
+
+          if (i == 0)
+          {
+            pInputView = pDepthInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+            pixelSize  = xiiVec2(1.0f / uiWidth, 1.0f / uiHeight);
+          }
+          else
+          {
+            pInputView = hzbResourceViews[i - 1];
+            pixelSize  = xiiVec2(1.0f).CompDiv(hzbSizes[i - 1]);
+          }
+
+          xiiSharedPtr<xiiGALTextureView> pOutputView = hzbRenderTargetViews[i];
+          xiiVec2                         targetSize  = hzbSizes[i];
+
+#ifdef CORE_ENABLE
+          xiiGALRenderingSetup renderingSetup;
+          renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pOutputView);
+          renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "SSAOMipMaps", renderViewContext.m_pCamera->IsStereoscopic());
+
+          xiiDownscaleDepthConstants* constants = xiiRenderContext::GetConstantBufferData<xiiDownscaleDepthConstants>(m_hDownscaleConstantBuffer);
+          constants->PixelSize                  = pixelSize;
+          constants->LinearizeDepth             = (i == 0);
+
+          renderViewContext.m_pRenderContext->BindConstantBuffer("xiiDownscaleDepthConstants", m_hDownscaleConstantBuffer);
+          renderViewContext.m_pRenderContext->BindShader(m_hDownscaleShader);
+
+          renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pInputView);
+          renderViewContext.m_pRenderContext->BindSampler("DepthSampler", m_pSSAOSampler);
+
+          renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
+
+          renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+
+          renderViewContext.m_pRenderContext->EndRendering();
+#endif
+        }
       }
-      else
+
+      // Update constants
       {
-        hInputView = hzbResourceViews[i - 1];
-        pixelSize  = xiiVec2(1.0f).CompDiv(hzbSizes[i - 1]);
+        float fadeOutScale  = -1.0f / xiiMath::Max(0.001f, (m_fFadeOutEnd - m_fFadeOutStart));
+        float fadeOutOffset = -fadeOutScale * m_fFadeOutStart + 1.0f;
+
+        xiiGALMapHelper<xiiSSAOConstants> pSSAOConstants(pCommandList, m_pSSAOConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+        pSSAOConstants->TexCoordsScale       = xiiVec2(fHzbScaleX, fHzbScaleY);
+        pSSAOConstants->FadeOutParams        = xiiVec2(fadeOutScale, fadeOutOffset);
+        pSSAOConstants->WorldRadius          = m_fRadius;
+        pSSAOConstants->MaxScreenSpaceRadius = m_fMaxScreenSpaceRadius;
+        pSSAOConstants->Contrast             = m_fContrast;
+        pSSAOConstants->Intensity            = m_fIntensity;
+        pSSAOConstants->PositionBias         = m_fPositionBias / 1000.0f;
+        pSSAOConstants->MipLevelScale        = m_fMipLevelScale;
+        pSSAOConstants->DepthBlurScale       = 1.0f / m_fDepthBlurThreshold;
       }
 
-      xiiGALTextureViewHandle hOutputView = hzbRenderTargetViews[i];
-      xiiVec2                 targetSize  = hzbSizes[i];
+      // SSAO pass
+      {
+#ifdef CORE_ENABLE
+        xiiGALRenderingSetup renderingSetup;
+        renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pTempSSAOTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+        auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
 
-      xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hOutputView);
-      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "SSAOMipMaps", renderViewContext.m_pCamera->IsStereoscopic());
+        renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
+        renderViewContext.m_pRenderContext->BindShader(m_hSSAOShader);
 
-      xiiDownscaleDepthConstants* constants = xiiRenderContext::GetConstantBufferData<xiiDownscaleDepthConstants>(m_hDownscaleConstantBuffer);
-      constants->PixelSize                  = pixelSize;
-      constants->LinearizeDepth             = (i == 0);
+        renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDepthInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+        renderViewContext.m_pRenderContext->BindTexture2D("LowResDepthTexture", pHzbTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+        renderViewContext.m_pRenderContext->BindSampler("DepthSampler", m_pSSAOSampler);
 
-      renderViewContext.m_pRenderContext->BindConstantBuffer("xiiDownscaleDepthConstants", m_hDownscaleConstantBuffer);
-      renderViewContext.m_pRenderContext->BindShader(m_hDownscaleShader);
+        renderViewContext.m_pRenderContext->BindTexture2D("NoiseTexture", m_hNoiseTexture, xiiResourceAcquireMode::BlockTillLoaded);
 
-      renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", hInputView);
-      renderViewContext.m_pRenderContext->BindSampler("DepthSampler", m_hSSAOSampler);
+        renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
 
-      renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
+        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+#endif
+      }
 
-      renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+      // Blur pass
+      {
+#ifdef CORE_ENABLE
+        xiiGALRenderingSetup renderingSetup;
+        renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+        auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
 
-      renderViewContext.m_pRenderContext->EndRendering();
+        renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
+        renderViewContext.m_pRenderContext->BindShader(m_hBlurShader);
+
+        renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", pTempSSAOTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+
+        renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
+
+        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+#endif
+      }
     }
-  }
-
-  // Update constants
-  {
-    float fadeOutScale  = -1.0f / xiiMath::Max(0.001f, (m_fFadeOutEnd - m_fFadeOutStart));
-    float fadeOutOffset = -fadeOutScale * m_fFadeOutStart + 1.0f;
-
-    xiiSSAOConstants* constants     = xiiRenderContext::GetConstantBufferData<xiiSSAOConstants>(m_hSSAOConstantBuffer);
-    constants->TexCoordsScale       = xiiVec2(fHzbScaleX, fHzbScaleY);
-    constants->FadeOutParams        = xiiVec2(fadeOutScale, fadeOutOffset);
-    constants->WorldRadius          = m_fRadius;
-    constants->MaxScreenSpaceRadius = m_fMaxScreenSpaceRadius;
-    constants->Contrast             = m_fContrast;
-    constants->Intensity            = m_fIntensity;
-    constants->PositionBias         = m_fPositionBias / 1000.0f;
-    constants->MipLevelScale        = m_fMipLevelScale;
-    constants->DepthBlurScale       = 1.0f / m_fDepthBlurThreshold;
-  }
-
-  // SSAO pass
-  {
-    xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempSSAOTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
-
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
-    renderViewContext.m_pRenderContext->BindShader(m_hSSAOShader);
-
-    renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetTexture(pDepthInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-    renderViewContext.m_pRenderContext->BindTexture2D("LowResDepthTexture", pDevice->GetTexture(hzbTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-    renderViewContext.m_pRenderContext->BindSampler("DepthSampler", m_hSSAOSampler);
-
-    renderViewContext.m_pRenderContext->BindTexture2D("NoiseTexture", m_hNoiseTexture, xiiResourceAcquireMode::BlockTillLoaded);
-
-    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
-
-    renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
-  }
-
-  // Blur pass
-  {
-    xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
-
-    renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
-    renderViewContext.m_pRenderContext->BindShader(m_hBlurShader);
-
-    renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", pDevice->GetTexture(tempSSAOTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-
-    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
-
-    renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+    pCommandList->EndDebugGroup();
+    pCommandList->Submit();
   }
 
   // Return temp targets
-  if (!hzbTexture.IsInvalidated())
   {
-    xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(hzbTexture);
-  }
+    auto pGPUResourcePool = xiiGPUResourcePool::GetDefaultInstance();
 
-  if (!tempSSAOTexture.IsInvalidated())
-  {
-    xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(tempSSAOTexture);
+    if (pHzbTexture)
+    {
+      pGPUResourcePool->ReturnRenderTarget(pHzbTexture);
+    }
+    if (pTempSSAOTexture)
+    {
+      pGPUResourcePool->ReturnRenderTarget(pTempSSAOTexture);
+    }
   }
 }
 
-void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  auto pOutput = outputs[m_PinOutput.m_uiOutputIndex];
+  auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-  renderingSetup.m_ClearColor              = xiiColor::White;
+  // Setup Framebuffer.
+  {
+    if (m_pFramebuffer)
+    {
+      const auto& pRenderTargetView = pOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 
-  auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName());
+      if (m_pFramebuffer->GetDescription().m_Attachments.PeekBack() != pRenderTargetView)
+      {
+        m_pFramebuffer.Clear();
+      }
+    }
+
+    if (!m_pFramebuffer)
+    {
+      const auto& attachmentDescription     = pOutput->m_pTexture->GetDescription();
+      const auto& pRenderTargetView         = pOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+      const auto& attachmentViewDescription = pRenderTargetView->GetDescription();
+      xiiVec3U32  vSize                     = xiiGALTextureUtilities::GetMipLevelSize(attachmentViewDescription.m_uiMostDetailedMip, attachmentDescription);
+
+      xiiGALFramebufferCreationDescription framebufferDescription;
+      framebufferDescription.m_pRenderPass       = m_pRenderPass;
+      framebufferDescription.m_FramebufferSize   = {vSize.x, vSize.y};
+      framebufferDescription.m_uiArraySliceCount = attachmentDescription.GetArraySize();
+      framebufferDescription.m_Attachments.PushBack(pRenderTargetView);
+
+      m_pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+      XII_ASSERT_DEV(m_pFramebuffer != nullptr, "Failed to create frame buffer.");
+    }
+  }
+
+  if (auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList())
+  {
+    pCommandList->BeginDebugGroup(GetName());
+    {
+      xiiGALBeginRenderPassDescription renderPassDescription{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
+
+      auto& clearValue            = renderPassDescription.m_ClearValues.ExpandAndGetRef();
+      clearValue.m_ResourceFormat = pOutput->m_TextureDescription.m_Format;
+      clearValue.m_ClearColor     = xiiColor::White;
+
+      pCommandList->BeginRenderPass(renderPassDescription);
+      pCommandList->EndRenderPass();
+    }
+    pCommandList->EndDebugGroup();
+    pCommandList->Submit();
+  }
 }
 
 xiiResult xiiAOPass::Serialize(xiiStreamWriter& inout_stream) const
@@ -361,11 +451,7 @@ void xiiAOPass::SetFadeOutEnd(float fEnd)
 
   m_fFadeOutEnd = xiiMath::Max(fEnd, m_fFadeOutStart);
 
-  if (!m_hSSAOSampler.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSSAOSampler);
-    m_hSSAOSampler.Invalidate();
-  }
+  m_pSSAOSampler.Clear();
 }
 
 float xiiAOPass::GetFadeOutEnd() const
@@ -375,7 +461,7 @@ float xiiAOPass::GetFadeOutEnd() const
 
 void xiiAOPass::CreateSampler()
 {
-  if (m_hSSAOSampler.IsInvalidated())
+  if (!m_pSSAOSampler)
   {
     xiiGALSamplerCreationDescription desc;
     desc.m_MinFilter          = xiiGALFilterType::Point;
@@ -391,7 +477,7 @@ void xiiAOPass::CreateSampler()
     desc.m_fMaxLOD            = 42000.0f;
     desc.m_uiMaxAnisotropy    = 4U;
 
-    m_hSSAOSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
+    m_pSSAOSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
   }
 }
 

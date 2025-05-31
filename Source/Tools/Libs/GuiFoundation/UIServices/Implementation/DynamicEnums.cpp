@@ -34,6 +34,12 @@ xiiStringView xiiDynamicEnum::GetValueName(xiiInt32 iValue) const
   return it.Value();
 }
 
+void xiiDynamicEnum::SetEditCommand(xiiStringView sCmd, const xiiVariant& value)
+{
+  m_sEditCommand     = sCmd;
+  m_EditCommandValue = value;
+}
+
 xiiDynamicEnum& xiiDynamicEnum::GetDynamicEnum(xiiStringView sEnumName)
 {
   return s_DynamicEnums[sEnumName];

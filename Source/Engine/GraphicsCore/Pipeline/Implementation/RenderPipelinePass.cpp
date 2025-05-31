@@ -4,9 +4,6 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/Renderer.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <GraphicsFoundation/Profiling/Profiling.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)
@@ -50,9 +47,9 @@ xiiStringView xiiRenderPipelinePass::GetName() const
   return m_sName.GetView();
 }
 
-void xiiRenderPipelinePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) {}
+void xiiRenderPipelinePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}
 
-void xiiRenderPipelinePass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) {}
+void xiiRenderPipelinePass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}
 
 void xiiRenderPipelinePass::ReadBackProperties(xiiView* pView) {}
 
@@ -75,9 +72,9 @@ xiiResult xiiRenderPipelinePass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
+void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
 {
-  XII_PROFILE_AND_MARKER(renderViewContext.m_pRenderContext->GetCommandList(), xiiRenderData::GetCategoryName(category));
+  xiiGALScopedDebugGroup renderGroup(pCommandList, xiiRenderData::GetCategoryName(category));
 
   auto            batchList    = m_pPipeline->GetRenderDataBatchesWithCategory(category, filter);
   const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
@@ -91,7 +88,7 @@ void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& r
 
       if (const xiiRenderer* pRenderer = xiiRenderData::GetCategoryRenderer(category, pType))
       {
-        pRenderer->RenderBatch(renderViewContext, this, batch);
+        pRenderer->RenderBatch(renderViewContext, pCommandList, this, batch);
       }
     }
   }

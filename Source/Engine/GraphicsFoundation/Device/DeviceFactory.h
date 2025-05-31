@@ -3,7 +3,8 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Types/Delegate.h>
-#include <GraphicsFoundation/Declarations/Descriptors.h>
+
+#include <GraphicsFoundation/Device/Device.h>
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceImplementationDescription
 {
@@ -16,7 +17,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFactory
 {
   using CreatorFunc = xiiDelegate<xiiInternal::NewInstance<xiiGALDevice>(xiiAllocatorBase*, const xiiGALDeviceCreationDescription&)>;
 
-  static xiiInternal::NewInstance<xiiGALDevice> CreateDevice(xiiStringView sImplementationName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+  static xiiSharedPtr<xiiGALDevice> CreateDevice(xiiStringView sImplementationName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
 
   static void RegisterImplementation(xiiStringView sImplementationName, const CreatorFunc& func, const xiiGALDeviceImplementationDescription& description);
 

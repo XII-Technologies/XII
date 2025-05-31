@@ -35,7 +35,7 @@ xiiEnum<xiiGALGraphicsAdapterVendor> xiiGALDeviceUtilities::GetVendorFromID(xiiU
   return xiiGALGraphicsAdapterVendor::Unknown;
 }
 
-xiiGALBufferHandle xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -45,7 +45,7 @@ xiiGALBufferHandle xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevi
   bufferDescription.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
   bufferDescription.m_uiElementByteStride = uiVertexSize;
   bufferDescription.m_uiSize              = uiVertexSize * xiiMath::Max(1U, uiVertexCount);
-  bufferDescription.m_ResourceUsage       = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_Usage               = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
   bufferDescription.m_CPUAccessFlags      = bIsImmutable ? xiiGALCPUAccessFlag::None : xiiGALCPUAccessFlag::Write;
 
   xiiGALBufferData initialData;
@@ -55,7 +55,7 @@ xiiGALBufferHandle xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevi
   return pDevice->CreateBuffer(bufferDescription, &initialData);
 }
 
-xiiGALBufferHandle xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -73,7 +73,7 @@ xiiGALBufferHandle xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice* pDevic
   bufferDescription.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
   bufferDescription.m_uiElementByteStride = uiIndexSize;
   bufferDescription.m_uiSize              = uiIndexSize * xiiMath::Max(1U, uiIndexCount);
-  bufferDescription.m_ResourceUsage       = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_Usage               = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
   bufferDescription.m_CPUAccessFlags      = bIsImmutable ? xiiGALCPUAccessFlag::None : xiiGALCPUAccessFlag::Write;
 
   xiiGALBufferData initialData;
@@ -83,7 +83,7 @@ xiiGALBufferHandle xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice* pDevic
   return pDevice->CreateBuffer(bufferDescription, &initialData);
 }
 
-xiiGALBufferHandle xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName /*= {}*/)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
@@ -91,10 +91,36 @@ xiiGALBufferHandle xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice* pDe
   bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
   bufferDescription.m_uiElementByteStride = 0U;
   bufferDescription.m_uiSize              = uiBufferSize;
-  bufferDescription.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
   bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-  return pDevice->CreateBuffer(bufferDescription);
+  if (xiiSharedPtr<xiiGALBuffer> pConstantBuffer = pDevice->CreateBuffer(bufferDescription))
+  {
+    pConstantBuffer->SetDebugName(sDebugName);
+
+    return pConstantBuffer;
+  }
+  return nullptr;
+}
+
+xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateStagingBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName)
+{
+  XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
+
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  bufferDescription.m_uiElementByteStride = 0U;
+  bufferDescription.m_uiSize              = uiBufferSize;
+  bufferDescription.m_Usage               = xiiGALResourceUsage::Staging;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
+  if (xiiSharedPtr<xiiGALBuffer> pStagingBuffer = pDevice->CreateBuffer(bufferDescription))
+  {
+    pStagingBuffer->SetDebugName(sDebugName);
+
+    return pStagingBuffer;
+  }
+  return nullptr;
 }
 
 xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32 size, xiiGALResourceFormat::Enum format, xiiUInt32 uiSampleCount)
@@ -112,12 +138,11 @@ xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescri
   };
 }
 
-xiiResult xiiGALDeviceUtilities::MapAndUpdateBuffer(xiiGALCommandList* pCommandList, xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags /*= xiiGALMapFlags::Discard*/)
+xiiResult xiiGALDeviceUtilities::MapAndUpdateBuffer(xiiGALCommandList* pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags /*= xiiGALMapFlags::Discard*/)
 {
   XII_ASSERT_DEV(pCommandList != nullptr, "Invalid command list.");
 
   xiiGALDevice* pDevice                   = pCommandList->GetDevice();
-  xiiGALBuffer* pBuffer                   = pDevice->GetBuffer(hBuffer);
   const auto&   graphicsAdapterProperties = pDevice->GetGraphicsDeviceAdapterProperties();
   const auto&   bufferDescription         = pBuffer->GetDescription();
 
@@ -133,11 +158,11 @@ xiiResult xiiGALDeviceUtilities::MapAndUpdateBuffer(xiiGALCommandList* pCommandL
   }
 
   void* pMappedData = nullptr;
-  XII_SUCCEED_OR_RETURN(pCommandList->MapBuffer(hBuffer, xiiGALMapType::Write, mapFlags, pMappedData));
+  XII_SUCCEED_OR_RETURN(pCommandList->MapBuffer(pBuffer, xiiGALMapType::Write, mapFlags, pMappedData));
 
   memcpy(xiiMemoryUtils::AddByteOffset(pMappedData, uiDestinationOffset), pSourceData.GetPtr(), pSourceData.GetCount());
 
-  pCommandList->UnmapBuffer(hBuffer, xiiGALMapType::Write).AssertSuccess("Failed to unmap buffer.");
+  pCommandList->UnmapBuffer(pBuffer, xiiGALMapType::Write).AssertSuccess("Failed to unmap buffer.");
 
   return XII_SUCCESS;
 }

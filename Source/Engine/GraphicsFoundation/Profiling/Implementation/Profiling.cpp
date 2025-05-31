@@ -1,12 +1,5 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <Foundation/Configuration/Startup.h>
-#include <Foundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/Resources/Query.h>
-
 #if XII_ENABLED(XII_USE_PROFILING)
 
 #  if 0

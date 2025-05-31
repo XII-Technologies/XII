@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
 /// \brief Blends the two inputs by the given blend factor and writes the result to output.

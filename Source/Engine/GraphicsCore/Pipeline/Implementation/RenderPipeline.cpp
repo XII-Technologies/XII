@@ -2,7 +2,6 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
-#include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Color8UNorm.h>
@@ -12,7 +11,6 @@
 #include <Foundation/SimdMath/SimdBBox.h>
 #include <Foundation/Time/Clock.h>
 #include <Foundation/Utilities/DGMLWriter.h>
-#include <GraphicsCore/Components/AlwaysVisibleComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Extractor.h>
@@ -21,10 +19,8 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Rasterizer/RasterizerView.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 xiiCVarBool xiiRenderPipeline::cvar_SpatialCullingVis("Spatial.Culling.Vis", false, xiiCVarFlags::Default, "Enables debug visualization of visibility culling");
@@ -33,7 +29,7 @@ xiiCVarBool cvar_SpatialCullingShowStats("Spatial.Culling.ShowStats", false, xii
 
 xiiCVarBool  cvar_SpatialCullingOcclusionEnable("Spatial.Occlusion.Enable", true, xiiCVarFlags::Default, "Use software rasterization for occlusion culling.");
 xiiCVarBool  cvar_SpatialCullingOcclusionVisView("Spatial.Occlusion.VisView", false, xiiCVarFlags::Default, "Render the occlusion framebuffer as an overlay.");
-xiiCVarFloat cvar_SpatialCullingOcclusionBoundsInlation("Spatial.Occlusion.BoundsInflation", 0.5f, xiiCVarFlags::Default, "How much to inflate bounds during occlusion check.");
+xiiCVarFloat cvar_SpatialCullingOcclusionBoundsInflation("Spatial.Occlusion.BoundsInflation", 0.5f, xiiCVarFlags::Default, "How much to inflate bounds during occlusion check.");
 xiiCVarFloat cvar_SpatialCullingOcclusionFarPlane("Spatial.Occlusion.FarPlane", 50.0f, xiiCVarFlags::Default, "Far plane distance for finding occluders.");
 
 xiiRenderPipeline::xiiRenderPipeline()
@@ -46,21 +42,20 @@ xiiRenderPipeline::xiiRenderPipeline()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   m_AverageCullingTime = xiiTime::MakeFromSeconds(0.1f);
 #endif
+
+  m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants));
 }
 
 xiiRenderPipeline::~xiiRenderPipeline()
 {
-  if (!m_hOcclusionDebugViewTexture.IsInvalidated())
-  {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-    pDevice->DestroyTexture(m_hOcclusionDebugViewTexture);
-    m_hOcclusionDebugViewTexture.Invalidate();
-  }
+  m_pGlobalConstantsBuffer.Clear();
+  m_pOcclusionDebugViewTexture.Clear();
 
   m_Data[0].Clear();
   m_Data[1].Clear();
 
   ClearRenderPassGraphTextures();
+
   while (!m_Passes.IsEmpty())
   {
     RemovePass(m_Passes.PeekBack().Borrow());
@@ -505,8 +500,6 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
   m_ConnectionToTextureIndex.Clear();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   // Gather all connections that share the same path-through texture and their first and last usage pass index.
   for (xiiUInt16 i = 0; i < static_cast<xiiUInt16>(m_Passes.GetCount()); ++i)
   {
@@ -588,15 +581,15 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
     if (pTextureProvider)
     {
-      auto                    pPass        = xiiDynamicCast<xiiRenderPipelinePass*>(pTextureProvider->m_pParent);
-      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
-      if (hTextureView.IsInvalidated())
+      auto                            pPass        = xiiDynamicCast<xiiRenderPipelinePass*>(pTextureProvider->m_pParent);
+      xiiSharedPtr<xiiGALTextureView> pTextureView = pPass->QueryTextureProvider(pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
+      if (!pTextureView)
       {
         // In this case, e.g. xiiTargetPass does not provide a render target for the connection but if the descriptor is set, we can instead use the pool to supplement the missing texture later.
         textureUsageData.m_pTextureProvider = nullptr;
         for (auto pUsedByConnection : textureUsageData.m_UsedBy)
         {
-          pUsedByConnection->m_TextureHandle.Invalidate();
+          pUsedByConnection->m_pTexture.Clear();
         }
       }
       else
@@ -604,7 +597,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
         textureUsageData.m_pTextureProvider = pTextureProvider;
         for (auto pUsedByConnection : textureUsageData.m_UsedBy)
         {
-          pUsedByConnection->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
+          pUsedByConnection->m_pTexture = pTextureView->GetTexture();
         }
       }
     }
@@ -827,15 +820,13 @@ void xiiRenderPipeline::ClearRenderPassGraphTextures()
   for (auto it = m_Connections.GetIterator(); it.IsValid(); ++it)
   {
     auto& connection = it.Value();
+
     for (auto pConnection : connection.m_Outputs)
     {
       if (pConnection)
       {
         pConnection->m_TextureDescription = xiiGALTextureCreationDescription();
-        if (!pConnection->m_TextureHandle.IsInvalidated())
-        {
-          pConnection->m_TextureHandle.Invalidate();
-        }
+        pConnection->m_pTexture.Clear();
       }
     }
   }
@@ -848,6 +839,7 @@ bool xiiRenderPipeline::AreInputDescriptionsAvailable(const xiiRenderPipelinePas
   for (xiiUInt32 i = 0; i < data.m_Inputs.GetCount(); ++i)
   {
     const xiiRenderPipelinePassConnection* pConnection = data.m_Inputs[i];
+
     if (pConnection != nullptr)
     {
       // If the connections source is not done yet, the connections output is undefined yet and the inputs can't be processed yet.
@@ -869,9 +861,11 @@ bool xiiRenderPipeline::ArePassThroughInputsDone(const xiiRenderPipelinePass* pP
   for (xiiUInt32 i = 0; i < inputs.GetCount(); ++i)
   {
     const xiiRenderPipelineNodePin* pPin = inputs[i];
+
     if (pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough))
     {
       const xiiRenderPipelinePassConnection* pConnection = data.m_Inputs[pPin->m_uiInputIndex];
+
       if (pConnection != nullptr)
       {
         for (const xiiRenderPipelineNodePin* pInputPin : pConnection->m_Inputs)
@@ -1024,7 +1018,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
       const xiiSimdVec4f c     = aabb.GetCenter();
       const xiiSimdVec4f e     = aabb.GetHalfExtents();
-      const xiiSimdBBox  aabb2 = xiiSimdBBox::MakeFromCenterAndHalfExtents(c, e.CompMul(xiiSimdVec4f(1.0f + cvar_SpatialCullingOcclusionBoundsInlation)));
+      const xiiSimdBBox  aabb2 = xiiSimdBBox::MakeFromCenterAndHalfExtents(c, e.CompMul(xiiSimdVec4f(1.0f + cvar_SpatialCullingOcclusionBoundsInflation)));
 
       return !pRasterizer->IsVisible(aabb2);
     };
@@ -1083,9 +1077,8 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 #endif
 }
 
-void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
+void xiiRenderPipeline::Render()
 {
-  // XII_PROFILE_AND_MARKER(pRenderContext->GetCommandList(), m_sName.GetData());
   XII_PROFILE_SCOPE(m_sName.GetData());
 
   XII_ASSERT_DEV(m_PipelineState != PipelineState::Uninitialized, "Pipeline must be rebuild before rendering.");
@@ -1098,46 +1091,50 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   XII_ASSERT_DEV(m_uiLastRenderFrame != xiiRenderWorld::GetFrameCounter(), "Render must not be called multiple times per frame.");
   m_uiLastRenderFrame = xiiRenderWorld::GetFrameCounter();
 
-  xiiGALDevice*      pDevice    = xiiGALDevice::GetDefaultDevice();
-  auto&              data       = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
-  const xiiCamera*   pCamera    = &data.GetCamera();
-  const xiiCamera*   pLodCamera = &data.GetLodCamera();
-  const xiiViewData* pViewData  = &data.GetViewData();
+  xiiSharedPtr<xiiGALDevice> pDevice    = xiiGALDevice::GetDefaultDevice();
+  auto&                      data       = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
+  const xiiCamera*           pCamera    = &data.GetCamera();
+  const xiiCamera*           pLodCamera = &data.GetLodCamera();
+  const xiiViewData*         pViewData  = &data.GetViewData();
 
-  auto& gc = pRenderContext->WriteGlobalConstants();
-  for (xiiInt32 i = 0; i < 2; ++i)
+  // Set Global Constants.
   {
-    gc.CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
-    gc.ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
-    gc.WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
-    gc.CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
-    gc.WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
-    gc.ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
+    // Camera matrices.
+    for (xiiInt32 i = 0; i < 2; ++i)
+    {
+      m_GlobalConstants.CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
+      m_GlobalConstants.ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
+      m_GlobalConstants.WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
+      m_GlobalConstants.CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
+      m_GlobalConstants.WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
+      m_GlobalConstants.ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
+    }
+
+    // Viewport size.
+    const xiiRectFloat& viewport   = pViewData->m_ViewPortRect;
+    m_GlobalConstants.ViewportSize = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
+
+    // Clip planes.
+    float fNear                  = pCamera->GetNearPlane();
+    float fFar                   = pCamera->GetFarPlane();
+    m_GlobalConstants.ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
+
+    // Max Z value.
+    const bool bIsDirectionalLightShadow = pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && pCamera->IsOrthographic();
+    m_GlobalConstants.MaxZValue          = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
+
+    // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
+    m_GlobalConstants.DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
+    m_GlobalConstants.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
+    m_GlobalConstants.WorldTime  = (float)xiiMath::Mod(data.GetWorldTime().GetSeconds(), 20790.0);
+    m_GlobalConstants.Exposure   = pCamera->GetExposure();
+    m_GlobalConstants.RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
   }
-
-  const xiiRectFloat& viewport = pViewData->m_ViewPortRect;
-  gc.ViewportSize              = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-
-  float fNear   = pCamera->GetNearPlane();
-  float fFar    = pCamera->GetFarPlane();
-  gc.ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
-
-  const bool bIsDirectionalLightShadow = pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && pCamera->IsOrthographic();
-  gc.MaxZValue                         = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
-
-  // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-  gc.DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
-  gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-  gc.WorldTime  = (float)xiiMath::Mod(data.GetWorldTime().GetSeconds(), 20790.0);
-
-  gc.Exposure   = pCamera->GetExposure();
-  gc.RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
 
   xiiRenderViewContext renderViewContext;
   renderViewContext.m_pCamera            = pCamera;
   renderViewContext.m_pLodCamera         = pLodCamera;
   renderViewContext.m_pViewData          = pViewData;
-  renderViewContext.m_pRenderContext     = pRenderContext;
   renderViewContext.m_pWorldDebugContext = &data.GetWorldDebugContext();
   renderViewContext.m_pViewDebugContext  = &data.GetViewDebugContext();
 
@@ -1153,23 +1150,23 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   static xiiHashedString sFalse            = xiiMakeHashedString("FALSE");
 
   if (pCamera->IsOrthographic())
-    pRenderContext->SetShaderPermutationVariable(sCameraMode, sOrtho);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sOrtho);
   else if (pCamera->IsStereoscopic())
-    pRenderContext->SetShaderPermutationVariable(sCameraMode, sStereo);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sStereo);
   else
-    pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sPerspective);
 
   if (pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled)
-    pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
+    renderViewContext.SetShaderPermutationVariable(sVSRTAI, sTrue);
   else
-    pRenderContext->SetShaderPermutationVariable(sVSRTAI, sFalse);
+    renderViewContext.SetShaderPermutationVariable(sVSRTAI, sFalse);
 
-  pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
+  renderViewContext.SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
   // Also set pipeline specific permutation vars
   for (auto& var : m_PermutationVars)
   {
-    pRenderContext->SetShaderPermutationVariable(var.m_sName, var.m_sValue);
+    renderViewContext.SetShaderPermutationVariable(var.m_sName, var.m_sValue);
   }
 
   xiiRenderWorldRenderEvent renderEvent;
@@ -1182,10 +1179,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     xiiRenderWorld::s_RenderEvent.Broadcast(renderEvent);
   }
 
-  xiiGALCommandQueue* pCommandQueue = pDevice->GetDefaultCommandQueue();
-  xiiGALCommandList*  pCommandList  = pCommandQueue->BeginCommandList();
-
-  pRenderContext->SetCommandList(pCommandList);
   {
     // Update textures from texture providers as these can change every frame (e.g. swap chain textures).
     for (TextureUsageData& textureUsageData : m_TextureUsage)
@@ -1193,11 +1186,11 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
       if (!textureUsageData.m_pTextureProvider)
         continue;
 
-      auto                    pPass        = static_cast<xiiRenderPipelinePass*>(textureUsageData.m_pTextureProvider->m_pParent);
-      xiiGALTextureViewHandle hTextureView = pPass->QueryTextureProvider(textureUsageData.m_pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
+      auto                            pPass        = static_cast<xiiRenderPipelinePass*>(textureUsageData.m_pTextureProvider->m_pParent);
+      xiiSharedPtr<xiiGALTextureView> pTextureView = pPass->QueryTextureProvider(textureUsageData.m_pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
       for (xiiRenderPipelinePassConnection* pUsedByConnection : textureUsageData.m_UsedBy)
       {
-        pUsedByConnection->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
+        pUsedByConnection->m_pTexture = pTextureView->GetTexture();
       }
     }
 
@@ -1209,18 +1202,18 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
       XII_PROFILE_SCOPE(pPass->GetName());
       xiiLogBlock passBlock("Render Pass", pPass->GetName());
 
-      // Create pool textures
+      // Create pool textures.
       for (; uiCurrentFirstUsageIdx < m_TextureUsageIdxSortedByFirstUsage.GetCount();)
       {
         xiiUInt16         uiCurrentUsageData = m_TextureUsageIdxSortedByFirstUsage[uiCurrentFirstUsageIdx];
         TextureUsageData& usageData          = m_TextureUsage[uiCurrentUsageData];
         if (usageData.m_uiFirstUsageIdx == i)
         {
-          xiiGALTextureHandle hTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(usageData.m_UsedBy[0]->m_TextureDescription);
-          XII_ASSERT_DEV(!hTexture.IsInvalidated(), "GPU pool returned an invalidated texture!");
+          xiiSharedPtr<xiiGALTexture> pTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(usageData.m_UsedBy[0]->m_TextureDescription);
+          XII_ASSERT_DEV(pTexture != nullptr, "GPU pool returned an invalidated texture!");
           for (xiiRenderPipelinePassConnection* pConnection : usageData.m_UsedBy)
           {
-            pConnection->m_TextureHandle = hTexture;
+            pConnection->m_pTexture = pTexture;
           }
           ++uiCurrentFirstUsageIdx;
         }
@@ -1231,7 +1224,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         }
       }
 
-      // Execute pass block
+      // Execute pass block.
       {
         ConnectionData& connectionData = m_Connections[pPass.Borrow()];
         if (pPass->m_bActive)
@@ -1244,17 +1237,17 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         }
       }
 
-      // Release pool textures
+      // Release pool textures.
       for (; uiCurrentLastUsageIdx < m_TextureUsageIdxSortedByLastUsage.GetCount();)
       {
         xiiUInt16         uiCurrentUsageData = m_TextureUsageIdxSortedByLastUsage[uiCurrentLastUsageIdx];
         TextureUsageData& usageData          = m_TextureUsage[uiCurrentUsageData];
         if (usageData.m_uiLastUsageIdx == i)
         {
-          xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(usageData.m_UsedBy[0]->m_TextureHandle);
+          xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(usageData.m_UsedBy[0]->m_pTexture);
           for (xiiRenderPipelinePassConnection* pConnection : usageData.m_UsedBy)
           {
-            pConnection->m_TextureHandle.Invalidate();
+            pConnection->m_pTexture.Clear();
           }
           ++uiCurrentLastUsageIdx;
         }
@@ -1269,17 +1262,12 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     XII_ASSERT_DEV(uiCurrentFirstUsageIdx == m_TextureUsageIdxSortedByFirstUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
     XII_ASSERT_DEV(uiCurrentLastUsageIdx == m_TextureUsageIdxSortedByLastUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
   }
-  pRenderContext->SetCommandList(nullptr);
-
-  pCommandList->Submit();
 
   renderEvent.m_Type = xiiRenderWorldRenderEvent::Type::AfterPipelineExecution;
   {
     XII_PROFILE_SCOPE("AfterPipelineExecution");
     xiiRenderWorld::s_RenderEvent.Broadcast(renderEvent);
   }
-
-  pRenderContext->ResetContextState();
 
   data.Clear();
 
@@ -1350,7 +1338,8 @@ xiiRasterizerView* xiiRenderPipeline::PrepareOcclusionCulling(const xiiFrustum& 
   if (!cvar_SpatialCullingOcclusionEnable)
     return nullptr;
 
-  if (!xiiSystemInformation::Get().GetCpuFeatures().IsAvx1Available())
+  auto& cpuFeatures = xiiSystemInformation::Get().GetCpuFeatures();
+  if (!cpuFeatures.IsAvx1Available() || !cpuFeatures.HW_FMA3)
     return nullptr;
 
   xiiRasterizerView* pRasterizer = nullptr;
@@ -1425,55 +1414,55 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   // so either this has to be done elsewhere, or nested passes have to be allowed
   if (false)
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
     // check whether we need to re-create the texture
-    if (!m_hOcclusionDebugViewTexture.IsInvalidated())
+    if (m_pOcclusionDebugViewTexture)
     {
-      const xiiGALTexture* pTexture = pDevice->GetTexture(m_hOcclusionDebugViewTexture);
+      const auto& textureDescription = m_pOcclusionDebugViewTexture->GetDescription();
 
-      if (pTexture->GetDescription().m_Size.width != uiImgWidth || pTexture->GetDescription().m_Size.height != uiImgHeight)
+      if (textureDescription.m_Size.width != uiImgWidth || textureDescription.m_Size.height != uiImgHeight)
       {
-        pDevice->DestroyTexture(m_hOcclusionDebugViewTexture);
-        m_hOcclusionDebugViewTexture.Invalidate();
+        m_pOcclusionDebugViewTexture.Clear();
       }
     }
 
-    // create the texture
-    if (m_hOcclusionDebugViewTexture.IsInvalidated())
-    {
-      xiiGALTextureCreationDescription desc;
-      desc.m_Type           = xiiGALResourceDimension::Texture2D;
-      desc.m_Size.width     = uiImgWidth;
-      desc.m_Size.height    = uiImgHeight;
-      desc.m_Format         = xiiGALResourceFormat::RGBA8UNormalized;
-      desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-      desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
-      desc.m_Usage          = xiiGALResourceUsage::Default;
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-      m_hOcclusionDebugViewTexture = pDevice->CreateTexture(desc);
+    // create the texture
+    if (!m_pOcclusionDebugViewTexture)
+    {
+      xiiGALTextureCreationDescription textureDescription;
+      textureDescription.m_Type           = xiiGALResourceDimension::Texture2D;
+      textureDescription.m_Size.width     = uiImgWidth;
+      textureDescription.m_Size.height    = uiImgHeight;
+      textureDescription.m_Format         = xiiGALResourceFormat::RGBA8UNormalized;
+      textureDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      textureDescription.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+      textureDescription.m_Usage          = xiiGALResourceUsage::Default;
+
+      m_pOcclusionDebugViewTexture = pDevice->CreateTexture(textureDescription);
     }
 
     // upload the image to the texture
     {
       xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
       auto                pCommandList     = pGALCommandQueue->BeginCommandList();
-      pCommandList->BeginDebugGroup("RasterizerDebugViewUpdate");
+      {
+        xiiGALScopedDebugGroup debugGroup(pCommandList, "RasterizerDebugViewUpdate");
 
-      xiiBoundingBoxU32 destBox;
-      destBox.m_vMin.SetZero();
-      destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
+        xiiBoundingBoxU32 destBox;
+        destBox.m_vMin.SetZero();
+        destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
 
-      xiiGALTextureSubResourceData sourceData;
-      sourceData.m_pData    = fb.GetByteArrayPtr();
-      sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
+        xiiGALTextureSubResourceData sourceData;
+        sourceData.m_pData    = fb.GetByteArrayPtr();
+        sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
 
-      pCommandList->UpdateTexture(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
-      pCommandList->EndDebugGroup();
+        pCommandList->UpdateTexture(m_pOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+      }
       pCommandList->Submit();
     }
 
-    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, pDevice->GetTexture(m_hOcclusionDebugViewTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
+    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, m_pOcclusionDebugViewTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
   }
   else
   {

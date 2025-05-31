@@ -2,8 +2,6 @@
 
 #include <GraphicsCore/Lights/Implementation/ReflectionPoolData.h>
 #include <GraphicsCore/Lights/Implementation/ReflectionProbeMapping.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   m_uiAtlasSize(uiAtlasSize)
@@ -13,29 +11,30 @@ xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   m_UnusedProbeSlots.Reserve(m_uiAtlasSize);
   m_AddProbes.Reserve(m_uiAtlasSize);
 
-  XII_ASSERT_DEV(m_hReflectionSpecularTexture.IsInvalidated(), "World data already created.");
+  XII_ASSERT_DEV(m_pReflectionSpecularTexture == nullptr, "World data already created.");
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiGALTextureCreationDescription desc;
-  desc.m_Type               = xiiGALResourceDimension::TextureCubeArray;
-  desc.m_Format             = xiiGALResourceFormat::RGBA16Float;
-  desc.m_Size.width         = s_uiReflectionCubeMapSize;
-  desc.m_Size.height        = s_uiReflectionCubeMapSize;
-  desc.m_uiMipLevels        = GetMipLevels();
-  desc.m_uiArraySizeOrDepth = s_uiNumReflectionProbeCubeMaps * 6;
-  desc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  desc.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
+  xiiGALTextureCreationDescription textureDescription;
+  textureDescription.m_Type               = xiiGALResourceDimension::TextureCubeArray;
+  textureDescription.m_Format             = xiiGALResourceFormat::RGBA16Float;
+  textureDescription.m_Size.width         = s_uiReflectionCubeMapSize;
+  textureDescription.m_Size.height        = s_uiReflectionCubeMapSize;
+  textureDescription.m_uiMipLevels        = GetMipLevels();
+  textureDescription.m_uiArraySizeOrDepth = s_uiNumReflectionProbeCubeMaps * 6;
+  textureDescription.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  textureDescription.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
 
-  m_hReflectionSpecularTexture = pDevice->CreateTexture(desc);
-  pDevice->GetTexture(m_hReflectionSpecularTexture)->SetDebugName("Reflection Specular Texture");
+  m_pReflectionSpecularTexture = pDevice->CreateTexture(textureDescription);
+
+  m_pReflectionSpecularTexture->SetDebugName("Reflection Specular Texture");
 }
 
 xiiReflectionProbeMapping::~xiiReflectionProbeMapping()
 {
-  XII_ASSERT_DEV(!m_hReflectionSpecularTexture.IsInvalidated(), "World data not created.");
-  xiiGALDevice::GetDefaultDevice()->DestroyTexture(m_hReflectionSpecularTexture);
-  m_hReflectionSpecularTexture.Invalidate();
+  XII_ASSERT_DEV(m_pReflectionSpecularTexture != nullptr, "World data not created.");
+
+  m_pReflectionSpecularTexture.Clear();
 }
 
 void xiiReflectionProbeMapping::AddProbe(xiiReflectionProbeId probe, xiiBitflags<xiiProbeFlags> flags)

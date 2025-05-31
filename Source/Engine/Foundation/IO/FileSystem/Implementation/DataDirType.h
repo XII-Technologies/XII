@@ -51,7 +51,7 @@ public:
   /// \brief Some data directory types may use external configuration files (e.g. asset lookup tables)
   ///        that may get updated, while the directory is mounted. This function allows each directory type to implement
   ///        reloading and reapplying of configurations, without dismounting and remounting the data directory.
-  virtual void ReloadExternalConfigs(){};
+  virtual void ReloadExternalConfigs() {};
 
 protected:
   friend class xiiFileSystem;
@@ -76,7 +76,12 @@ protected:
   /// opened.
   ///
   /// If it always returns nullptr (default) the data directory is read-only (at least through this type).
-  virtual xiiDataDirectoryWriter* OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) { return nullptr; }
+  virtual xiiDataDirectoryWriter* OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum fileShareMode)
+  {
+    XII_IGNORE_UNUSED(sFile);
+    XII_IGNORE_UNUSED(fileShareMode);
+    return nullptr;
+  }
 
   /// \brief This function is called by the filesystem when a data directory is removed.
   ///
@@ -84,7 +89,7 @@ protected:
   virtual void RemoveDataDirectory() = 0;
 
   /// \brief If a Data Directory Type supports it, this function will remove the given file from it.
-  virtual void DeleteFile(xiiStringView sFile) {}
+  virtual void DeleteFile(xiiStringView sFile) { XII_IGNORE_UNUSED(sFile); }
 
   /// \brief This function checks whether the given file exists in this data directory.
   ///
@@ -97,7 +102,12 @@ protected:
 
   /// \brief If this data directory knows how to redirect the given path, it should do so and return true.
   /// Called by xiiFileSystem::ResolveAssetRedirection
-  virtual bool ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection) { return false; }
+  virtual bool ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection)
+  {
+    XII_IGNORE_UNUSED(sPathOrAssetGuid);
+    XII_IGNORE_UNUSED(out_sRedirection);
+    return false;
+  }
 
 protected:
   friend class xiiDataDirectoryReaderWriterBase;
@@ -106,7 +116,7 @@ protected:
   ///
   /// It allows the xiiDataDirectoryType to return the reader/writer to a pool of reusable objects, or to destroy it
   /// using the proper allocator.
-  virtual void OnReaderWriterClose(xiiDataDirectoryReaderWriterBase* pClosed) {}
+  virtual void OnReaderWriterClose(xiiDataDirectoryReaderWriterBase* pClosed) { XII_IGNORE_UNUSED(pClosed); }
 
   /// \brief This function should only be used by a Factory (which should be a static function in the respective xiiDataDirectoryType).
   ///

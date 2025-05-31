@@ -3,7 +3,6 @@
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/Passes/BlendPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <Core/Graphics/Geometry.h>
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/BlendConstants.h>
@@ -56,10 +55,9 @@ bool xiiBlendPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArr
 
 void xiiBlendPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
+#ifdef CORE_ENABLE
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
-    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
     xiiConstantBufferStorage<xiiBlendConstants>* pBlendConstantBuffer;
     xiiConstantBufferStorageHandle               hBlendConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(pBlendConstantBuffer);
     XII_SCOPE_EXIT(xiiRenderContext::DeleteConstantBufferStorage(hBlendConstantBuffer));
@@ -71,7 +69,7 @@ void xiiBlendPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
     // Setup render target
     xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, outputs[m_PinOutput.m_uiOutputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
     renderingSetup.m_uiRenderTargetClearMask = xiiInvalidIndex;
     renderingSetup.m_ClearColor              = xiiColor(1.0f, 0.0f, 0.0f);
 
@@ -80,19 +78,18 @@ void xiiBlendPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
     // Setup input view and sampler
     xiiGALTextureViewCreationDescription resourceViewDescription;
-    resourceViewDescription.m_hTexture     = inputs[m_PinInputA.m_uiInputIndex]->m_TextureHandle;
-    xiiGALTextureViewHandle hResourceViewA = pDevice->CreateTextureView(resourceViewDescription);
-    resourceViewDescription.m_hTexture     = inputs[m_PinInputB.m_uiInputIndex]->m_TextureHandle;
-    xiiGALTextureViewHandle hResourceViewB = pDevice->CreateTextureView(resourceViewDescription);
+    xiiSharedPtr<xiiGALTextureView>      pResourceViewA = inputs[m_PinInputA.m_uiInputIndex]->m_pTexture->CreateView(resourceViewDescription);
+    xiiSharedPtr<xiiGALTextureView>      pResourceViewB = inputs[m_PinInputB.m_uiInputIndex]->m_pTexture->CreateView(resourceViewDescription);
 
     // Bind shader and inputs
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-    renderViewContext.m_pRenderContext->BindTexture2D("InputA", hResourceViewA);
-    renderViewContext.m_pRenderContext->BindTexture2D("InputB", hResourceViewB);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
+    renderViewContext.m_pRenderContext->BindTexture2D("InputA", pResourceViewA);
+    renderViewContext.m_pRenderContext->BindTexture2D("InputB", pResourceViewB);
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
+#endif
 }
 
 xiiResult xiiBlendPass::Serialize(xiiStreamWriter& inout_stream) const

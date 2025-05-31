@@ -1,14 +1,12 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Shader/ShaderResource.h>
-#include <GraphicsCore/ShaderCompiler/ShaderParser.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderResource, 1, xiiRTTIDefaultAllocator<xiiShaderResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiShaderResource);
-// clang-format on
 
 xiiShaderResource::xiiShaderResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
@@ -43,14 +41,14 @@ xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* stream)
     return res;
   }
 
-  // skip the absolute file path data that the standard file reader writes into the stream
+  // Skip the absolute file path data that the standard file reader writes into the stream.
   {
     xiiStringBuilder sAbsFilePath;
     (*stream) >> sAbsFilePath;
   }
 
-  xiiHybridArray<xiiPermutationVar, 16> fixedPermVars; // ignored here
-  xiiShaderParser::ParsePermutationSection(*stream, m_PermutationVarsUsed, fixedPermVars);
+  xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermutationVariables; // ignored here
+  xiiGALShaderParser::ParsePermutationSection(*stream, m_PermutationVarsUsed, fixedPermutationVariables);
 
   res.m_State              = xiiResourceState::Loaded;
   m_bShaderResourceIsValid = true;

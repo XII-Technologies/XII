@@ -80,7 +80,13 @@ protected:
   /// If bFatal is true, the error has left the parser in an unrecoverable state and thus it will not continue parsing.
   /// In that case client code will need to clean up it's open state, as no further callbacks will be called.
   /// If bFatal is false, the document is not entirely valid, but the parser is still able to continue.
-  virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) {}
+  virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)
+  {
+    XII_IGNORE_UNUSED(sMessage);
+    XII_IGNORE_UNUSED(bFatal);
+    XII_IGNORE_UNUSED(uiLine);
+    XII_IGNORE_UNUSED(uiColumn);
+  }
 
   /// \brief Called when a new object is encountered.
   virtual void OnBeginObject(xiiStringView sType, xiiStringView sName, bool bGlobalName) = 0;

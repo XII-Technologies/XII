@@ -1,5 +1,3 @@
-#pragma once
-
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Declarations/Object.h>
@@ -7,7 +5,11 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALObject, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE
 
-void xiiGALObject::SetDebugName(xiiStringView sDebugName)
+xiiGALObject::xiiGALObject() = default;
+
+xiiGALObject::~xiiGALObject() = default;
+
+void xiiGALObject::SetDebugName(xiiStringView sDebugName) const
 {
   m_sDebugName.Assign(sDebugName);
 

@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
 /// \brief Blurs input and writes it to an output buffer of the same format.
@@ -27,7 +26,7 @@ protected:
   xiiRenderPipelineNodeInputPin  m_PinInput;
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  xiiInt32                       m_iRadius = 15;
-  xiiConstantBufferStorageHandle m_hBlurCB;
-  xiiShaderResourceHandle        m_hShader;
+  xiiInt32                   m_iRadius = 15;
+  xiiSharedPtr<xiiGALBuffer> m_pBlurConstantBuffer;
+  xiiShaderResourceHandle    m_hShader;
 };

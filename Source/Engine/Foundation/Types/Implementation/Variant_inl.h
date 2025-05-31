@@ -225,7 +225,7 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const T& value)
   const constexpr bool forceSharing = TypeDeduction<T>::forceSharing;
   const constexpr bool inlineSized  = sizeof(T) <= InlinedStruct::DataSize;
   const constexpr bool isPOD        = xiiIsPodType<T>::value;
-  InitTypedObject(value, xiiTraitInt < (!forceSharing && inlineSized && isPOD) ? 1 : 0 > ());
+  InitTypedObject(value, xiiTraitInt<(!forceSharing && inlineSized && isPOD) ? 1 : 0>());
 }
 
 template <typename T>

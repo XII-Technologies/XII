@@ -1,11 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/IO/TypeVersionContext.h>
+
 #include <GraphicsCore/Pipeline/Passes/AntialiasingPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <Foundation/IO/TypeVersionContext.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAntialiasingPass, 1, xiiRTTIDefaultAllocator<xiiAntialiasingPass>)
@@ -42,21 +40,21 @@ bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_uiSampleCount == (xiiUInt32)xiiGALMSAASampleCount::TwoSamples)
+    if (pInput->m_uiSampleCount == static_cast<xiiUInt32>(xiiGALMSAASampleCount::TwoSamples))
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_TWO");
     }
-    else if (pInput->m_uiSampleCount == (xiiUInt32)xiiGALMSAASampleCount::FourSamples)
+    else if (pInput->m_uiSampleCount == static_cast<xiiUInt32>(xiiGALMSAASampleCount::FourSamples))
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_FOUR");
     }
-    else if (pInput->m_uiSampleCount == (xiiUInt32)xiiGALMSAASampleCount::EightSamples)
+    else if (pInput->m_uiSampleCount == static_cast<xiiUInt32>(xiiGALMSAASampleCount::EightSamples))
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_EIGHT");
     }
     else
     {
-      xiiLog::Error("Input is not a valid msaa target");
+      xiiLog::Error("Input is not a valid MSAA target.");
       return false;
     }
 
@@ -81,11 +79,10 @@ void xiiAntialiasingPass::Execute(const xiiRenderViewContext& renderViewContext,
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
+#ifdef CORE_ENABLE
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
   // Bind render target and viewport
   auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
@@ -94,10 +91,11 @@ void xiiAntialiasingPass::Execute(const xiiRenderViewContext& renderViewContext,
 
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
 
-  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-  renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetTexture(pInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+  renderViewContext.m_pRenderContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
+  renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+#endif
 }
 
 xiiResult xiiAntialiasingPass::Serialize(xiiStreamWriter& inout_stream) const

@@ -14,7 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSetBlackboardNumberAnimNode, 1, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry),
+    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardKeysEnum")),
     XII_MEMBER_PROPERTY("Number", m_fNumber),
 
     XII_MEMBER_PROPERTY("InActivate", m_InActivate)->AddAttributes(new xiiHiddenAttribute()),
@@ -74,7 +74,7 @@ const char* xiiSetBlackboardNumberAnimNode::GetBlackboardEntry() const
 
 void xiiSetBlackboardNumberAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, const xiiSkeletonResource* pSkeleton, xiiGameObject* pTarget) const
 {
-  if (!m_InActivate.IsTriggered(ref_graph))
+  if (m_InActivate.IsConnected() && !m_InActivate.IsTriggered(ref_graph))
     return;
 
   auto pBlackboard = ref_controller.GetBlackboard();
@@ -93,7 +93,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGetBlackboardNumberAnimNode, 1, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry),
+    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardKeysEnum")),
 
     XII_MEMBER_PROPERTY("OutNumber", m_OutNumber)->AddAttributes(new xiiHiddenAttribute()),
   }
@@ -174,13 +174,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCompareBlackboardNumberAnimNode, 1, xiiRTTID
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry),
+    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardKeysEnum")),
     XII_MEMBER_PROPERTY("ReferenceValue", m_fReferenceValue),
     XII_ENUM_MEMBER_PROPERTY("Comparison", xiiComparisonOperator, m_Comparison),
 
     XII_MEMBER_PROPERTY("OutOnTrue", m_OutOnTrue)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("OutOnFalse", m_OutOnFalse)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("OutIsTrue", m_OutIsTrue)->AddAttributes(new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("OutIsFalse", m_OutIsFalse)->AddAttributes(new xiiHiddenAttribute()),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -196,7 +197,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiResult xiiCompareBlackboardNumberAnimNode::SerializeNode(xiiStreamWriter& stream) const
 {
-  stream.WriteVersion(2);
+  stream.WriteVersion(3);
 
   XII_SUCCEED_OR_RETURN(SUPER::SerializeNode(stream));
 
@@ -207,13 +208,14 @@ xiiResult xiiCompareBlackboardNumberAnimNode::SerializeNode(xiiStreamWriter& str
   XII_SUCCEED_OR_RETURN(m_OutOnTrue.Serialize(stream));
   XII_SUCCEED_OR_RETURN(m_OutOnFalse.Serialize(stream));
   XII_SUCCEED_OR_RETURN(m_OutIsTrue.Serialize(stream));
+  XII_SUCCEED_OR_RETURN(m_OutIsFalse.Serialize(stream));
 
   return XII_SUCCESS;
 }
 
 xiiResult xiiCompareBlackboardNumberAnimNode::DeserializeNode(xiiStreamReader& stream)
 {
-  const auto version = stream.ReadVersion(2);
+  const auto version = stream.ReadVersion(3);
 
   XII_SUCCEED_OR_RETURN(SUPER::DeserializeNode(stream));
 
@@ -224,6 +226,11 @@ xiiResult xiiCompareBlackboardNumberAnimNode::DeserializeNode(xiiStreamReader& s
   XII_SUCCEED_OR_RETURN(m_OutOnTrue.Deserialize(stream));
   XII_SUCCEED_OR_RETURN(m_OutOnFalse.Deserialize(stream));
   XII_SUCCEED_OR_RETURN(m_OutIsTrue.Deserialize(stream));
+
+  if (version >= 3)
+  {
+    XII_SUCCEED_OR_RETURN(m_OutIsFalse.Deserialize(stream));
+  }
 
   return XII_SUCCESS;
 }
@@ -262,6 +269,7 @@ void xiiCompareBlackboardNumberAnimNode::Step(xiiAnimController& ref_controller,
   const xiiInt8 iIsTrueNow = bIsTrueNow ? 1 : 0;
 
   m_OutIsTrue.SetBool(ref_graph, bIsTrueNow);
+  m_OutIsFalse.SetBool(ref_graph, !bIsTrueNow);
 
   // we use a tri-state bool here to ensure that OnTrue or OnFalse get fired right away
   if (pInstance->m_iIsTrue != iIsTrueNow)
@@ -295,7 +303,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCheckBlackboardBoolAnimNode, 1, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry),
+    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardKeysEnum")),
 
     XII_MEMBER_PROPERTY("OutOnTrue", m_OutOnTrue)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("OutOnFalse", m_OutOnFalse)->AddAttributes(new xiiHiddenAttribute()),
@@ -409,7 +417,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSetBlackboardBoolAnimNode, 1, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry),
+    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardKeysEnum")),
     XII_MEMBER_PROPERTY("Bool", m_bBool),
 
     XII_MEMBER_PROPERTY("InActivate", m_InActivate)->AddAttributes(new xiiHiddenAttribute()),
@@ -488,7 +496,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGetBlackboardBoolAnimNode, 1, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry),
+    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardKeysEnum")),
 
     XII_MEMBER_PROPERTY("OutBool", m_OutBool)->AddAttributes(new xiiHiddenAttribute()),
   }
@@ -570,7 +578,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiOnBlackboardValueChangedAnimNode, 1, xiiRTTI
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry),
+    XII_ACCESSOR_PROPERTY("BlackboardEntry", GetBlackboardEntry, SetBlackboardEntry)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardKeysEnum")),
 
     XII_MEMBER_PROPERTY("OutOnValueChanged", m_OutOnValueChanged)->AddAttributes(new xiiHiddenAttribute()),
   }

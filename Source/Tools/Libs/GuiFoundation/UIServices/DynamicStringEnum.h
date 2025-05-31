@@ -1,8 +1,9 @@
 #pragma once
 
+#include <GuiFoundation/GuiFoundationDLL.h>
+
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Strings/String.h>
-#include <GuiFoundation/GuiFoundationDLL.h>
 
 /// \brief Stores the valid values and names for 'dynamic' enums.
 ///
@@ -49,6 +50,14 @@ public:
   /// \brief The file where values will be stored.
   xiiStringView GetStorageFile() const { return m_sStorageFile; }
 
+  /// \brief If specified, the widget shows an "edit" option, which will run xiiActionManager::ExecuteAction(sCmd, value).
+  ///
+  /// This is meant to be used to open existing config dialogs.
+  /// There is currently no way to report back a selection, so after making changes, the user has to make another selection.
+  void             SetEditCommand(xiiStringView sCmd, const xiiVariant& value);
+  xiiStringView     GetEditCommand() const { return m_sEditCommand; }
+  const xiiVariant& GetEditCommandValue() const { return m_EditCommandValue; }
+
   void ReadFromStorage();
 
   void SaveToStorage();
@@ -61,6 +70,9 @@ public:
 private:
   xiiHybridArray<xiiString, 16> m_ValidValues;
   xiiString                     m_sStorageFile;
+
+  xiiString  m_sEditCommand;
+  xiiVariant m_EditCommandValue;
 
   static xiiMap<xiiString, xiiDynamicStringEnum> s_DynamicEnums;
 };

@@ -3,11 +3,8 @@
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/Passes/TonemapPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
-
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/TonemapConstants.h>
 
@@ -55,36 +52,36 @@ xiiTonemapPass::xiiTonemapPass() :
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Tonemap.xiiShader");
   XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load tonemap shader!");
 
-  m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiTonemapConstants>();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pTonemapConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiTonemapConstants));
 }
 
 xiiTonemapPass::~xiiTonemapPass()
 {
-  xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
-  m_hConstantBuffer.Invalidate();
+  m_pTonemapConstantsBuffer.Clear();
 }
 
 bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
-  xiiGALDevice*              pDevice       = xiiGALDevice::GetDefaultDevice();
   const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   // Color
   auto pColorInput = inputs[m_PinColorInput.m_uiInputIndex];
   if (pColorInput != nullptr)
   {
-    if (const xiiGALTexture* pTexture = pDevice->GetTextureView(renderTargets.m_hRTs[0])->GetTexture())
+    if (renderTargets.m_pRTs[0])
     {
-      const xiiGALTextureCreationDescription& desc = pTexture->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = renderTargets.m_pRTs[0]->GetTexture()->GetDescription();
 #if 0
-      if (desc.m_uiWidth != pColorInput->m_uiWidth || desc.m_uiHeight != pColorInput->m_uiHeight)
+      if (textureDescription.m_uiWidth != pColorInput->m_uiWidth || textureDescription.m_uiHeight != pColorInput->m_uiHeight)
       {
         xiiLog::Error("Render target sizes don't match");
         return false;
       }
 #endif
 
-      outputs[m_PinOutput.m_uiOutputIndex]                      = xiiGALDeviceUtilities::CreateRenderTargetDescription(pColorInput->m_Size, desc.m_Format);
+      outputs[m_PinOutput.m_uiOutputIndex]                      = xiiGALDeviceUtilities::CreateRenderTargetDescription(pColorInput->m_Size, textureDescription.m_Format);
       outputs[m_PinOutput.m_uiOutputIndex].m_uiArraySizeOrDepth = pColorInput->GetArraySize();
     }
     else
@@ -109,11 +106,10 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
   if (pColorInput == nullptr || pColorOutput == nullptr)
     return;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
+#ifdef CORE_ENABLE
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pColorOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pColorOutput->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
   // Bind render target and viewport
   auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName(), renderViewContext.m_pCamera->IsStereoscopic());
@@ -154,20 +150,20 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
     constants->ContrastParams = xiiVec4(a, b, m, 0.0f);
   }
 
-  xiiGALTextureViewHandle hBloomTextureView;
-  auto                    pBloomInput = inputs[m_PinBloomInput.m_uiInputIndex];
+  xiiSharedPtr<xiiGALTextureView> pBloomTextureView;
+  auto                            pBloomInput = inputs[m_PinBloomInput.m_uiInputIndex];
   if (pBloomInput != nullptr)
   {
-    hBloomTextureView = pDevice->GetTexture(pBloomInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+    pBloomTextureView = pBloomInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   }
 
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
   renderViewContext.m_pRenderContext->BindConstantBuffer("xiiTonemapConstants", m_hConstantBuffer);
-  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
+  renderViewContext.m_pRenderContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
   renderViewContext.m_pRenderContext->BindTexture2D("VignettingTexture", m_hVignettingTexture, xiiResourceAcquireMode::BlockTillLoaded);
   renderViewContext.m_pRenderContext->BindTexture2D("NoiseTexture", m_hNoiseTexture, xiiResourceAcquireMode::BlockTillLoaded);
-  renderViewContext.m_pRenderContext->BindTexture2D("SceneColorTexture", pDevice->GetTexture(pColorInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-  renderViewContext.m_pRenderContext->BindTexture2D("BloomTexture", hBloomTextureView);
+  renderViewContext.m_pRenderContext->BindTexture2D("SceneColorTexture", pColorInput->m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+  renderViewContext.m_pRenderContext->BindTexture2D("BloomTexture", pBloomTextureView);
   renderViewContext.m_pRenderContext->BindTexture3D("Lut1Texture", luts[0]);
   renderViewContext.m_pRenderContext->BindTexture3D("Lut2Texture", luts[1]);
 
@@ -175,6 +171,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("LUT_MODE", sLUTModeValues[numLUTs]);
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+#endif
 }
 
 xiiResult xiiTonemapPass::Serialize(xiiStreamWriter& inout_stream) const

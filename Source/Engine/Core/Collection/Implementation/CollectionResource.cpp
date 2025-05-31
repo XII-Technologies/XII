@@ -157,11 +157,13 @@ xiiResourceLoadDesc xiiCollectionResource::UnloadData(Unload WhatToUnload)
 
   {
     UnregisterNames();
+
     // This lock unnecessary as this function is only called when the reference count is 0, i.e. if we deallocate this.
     // It is intentionally removed as it caused this lock and the resource manager lock to be locked in reverse order.
     // To prevent potential deadlocks and be able to sanity check our locking the entire codebase should never lock any
     // locks in reverse order, even if this lock is probably fine it prevents us from reasoning over the entire system.
     // XII_LOCK(m_preloadMutex);
+
     m_PreloadedResources.Clear();
     m_Collection.m_Resources.Clear();
 

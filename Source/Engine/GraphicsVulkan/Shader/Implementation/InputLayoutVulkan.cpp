@@ -4,22 +4,20 @@
 #include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALInputLayoutVulkan::xiiGALInputLayoutVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALInputLayout(pDeviceVulkan, creationDescription), m_vkVertexAttributes(pDeviceVulkan->GetAllocator()), m_vkVertexInputBindings(pDeviceVulkan->GetAllocator())
+xiiGALInputLayoutVulkan::xiiGALInputLayoutVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALInputLayoutCreationDescription& creationDescription) :
+  xiiGALInputLayout(std::move(pDeviceVulkan), creationDescription), m_vkVertexAttributes(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_vkVertexInputBindings(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator())
 {
 }
 
 xiiGALInputLayoutVulkan::~xiiGALInputLayoutVulkan() = default;
 
-xiiResult xiiGALInputLayoutVulkan::InitPlatform()
+xiiResult xiiGALInputLayoutVulkan::InitPlatform(xiiGALShader* pShader)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALShaderVulkan* pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pDeviceVulkan->GetShader(m_Description.m_hVertexShader));
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiGALShaderVulkan*              pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pShader);
 
   xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputAttributes(pShaderVulkan->GetVertexInputLayout());
   auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum semantic, xiiGALResourceFormat::Enum format) -> xiiUInt32 {
@@ -91,14 +89,6 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform()
     xiiLog::Error("Vertex attributes do not cover all vertex attributes defined in the shader!");
     return XII_FAILURE;
   }
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALInputLayoutVulkan::DeInitPlatform()
-{
-  m_vkVertexAttributes.Clear();
-  m_vkVertexInputBindings.Clear();
 
   return XII_SUCCESS;
 }

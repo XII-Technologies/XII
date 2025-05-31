@@ -74,7 +74,7 @@ void xiiQtExtractGeometryDlg::on_BrowseButton_clicked()
 {
   QString allFilters = "OBJ (*.obj)";
   QString sFile      = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Destination file"), s_sDestinationFile, allFilters,
-                                               nullptr, QFileDialog::Option::DontResolveSymlinks);
+                                                    nullptr, QFileDialog::Option::DontResolveSymlinks);
 
   if (sFile.isEmpty())
     return;

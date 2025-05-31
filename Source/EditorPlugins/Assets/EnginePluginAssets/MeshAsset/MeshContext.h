@@ -7,7 +7,6 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 
 class xiiObjectSelectionMsgToEngine;
-class xiiRenderContext;
 
 class XII_ENGINEPLUGINASSETS_DLL xiiMeshContext : public xiiEngineProcessDocumentContext
 {

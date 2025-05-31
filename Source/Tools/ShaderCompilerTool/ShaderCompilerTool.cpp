@@ -4,31 +4,31 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 
-#include <GraphicsCore/ShaderCompiler/ShaderCompiler.h>
-#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
-#include <GraphicsCore/ShaderCompiler/ShaderParser.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
-// clang-format off
 xiiCommandLineOptionString opt_Shader("_ShaderCompiler", "-shader", "\
 One or multiple paths to shader files or folders containing shaders.\n\
 Paths are separated with semicolons.\n\
 Paths may be absolute or relative to the -project directory.\n\
 If a path to a folder is specified, all .xiiShader files in that folder are compiled.\n\
 \n\
-This option has to be specified.", "");
+This option has to be specified.",
+                                      "");
 
 xiiCommandLineOptionPath opt_Project("_ShaderCompiler", "-project", "\
-Path to the folder of the project, for which shaders should be compiled.", "");
+Path to the folder of the project, for which shaders should be compiled.",
+                                     "");
 
 xiiCommandLineOptionString opt_Platform("_ShaderCompiler", "-platform", "The name of the platform for which to compile the shaders.\n\
 Examples:\n\
-  -platform D3D_SM50\n\
-  -platform D3D_SM60\n\
   -platform VK_SM60\n\
   -platform ALL",
-"D3D_SM50");
+                                        "VK_SM60");
 
 xiiCommandLineOptionBool opt_IgnoreErrors("_ShaderCompiler", "-IgnoreErrors", "If set, a compile error won't stop other shaders from being compiled.", false);
 
@@ -40,8 +40,8 @@ Examples:\n\
   -perm TWO_SIDED=FALSE MSAA=TRUE\n\
 \n\
 If a permutation variable is not set to a fixed value, all shader permutations for that variable will generated and compiled.\n\
-", "");
-// clang-format on
+",
+                                 "");
 
 xiiShaderCompilerApplication::xiiShaderCompilerApplication() :
   xiiGameApplication("xiiShaderCompiler", nullptr)
@@ -115,25 +115,46 @@ void xiiShaderCompilerApplication::AfterCoreSystemsStartup()
 
 xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
 {
+  XII_PROFILE_SCOPE("xiiShaderCompilerApplication::CompileShader");
+
   XII_LOG_BLOCK("Compiling Shader", sShaderFile);
 
   if (ExtractPermutationVarValues(sShaderFile).Failed())
     return XII_FAILURE;
 
-  xiiHybridArray<xiiPermutationVar, 16> permVars;
-
   const xiiUInt32 uiMaxPerms = m_PermutationGenerator.GetPermutationCount();
 
   xiiLog::Info("Shader has {0} permutations", uiMaxPerms);
 
-  for (xiiUInt32 perm = 0; perm < uiMaxPerms; ++perm)
-  {
-    XII_LOG_BLOCK("Compiling Permutation");
+  bool bContinue = true;
 
-    m_PermutationGenerator.GetPermutation(perm, permVars);
-    xiiShaderCompiler sc;
-    if (sc.CompileShaderPermutationForPlatforms(sShaderFile, permVars, xiiLog::GetThreadLocalLogSystem(), m_sPlatforms).Failed())
-      return XII_FAILURE;
+  xiiTaskSystem::ParallelForIndexed(0, uiMaxPerms, [&](xiiUInt32 uiIndex, xiiUInt32 uiCount) {
+    if (!bContinue)
+      return;
+
+    xiiHybridArray<xiiGALPermutationVariable, 16> permutationVariables;
+
+    for (xiiUInt32 uiPermutationIndex = uiIndex; uiPermutationIndex < uiCount; ++uiPermutationIndex)
+    {
+      XII_PROFILE_SCOPE("CompilePermutation");
+
+      XII_LOG_BLOCK("Compiling Permutation");
+
+      m_PermutationGenerator.GetPermutation(uiPermutationIndex, permutationVariables);
+
+      xiiGALShaderCompiler shaderCompiler;
+      if (shaderCompiler.CompileShaderPermutationForPlatforms(sShaderFile, permutationVariables, xiiLog::GetThreadLocalLogSystem(), m_sPlatforms).Failed())
+      {
+        bContinue = false;
+        return;
+      }
+    }
+  });
+
+  if (!bContinue)
+  {
+    xiiLog::Error("Failed to compile shader '{0}'", sShaderFile);
+    return XII_FAILURE;
   }
 
   xiiLog::Success("Compiled Shader '{0}'", sShaderFile);
@@ -142,6 +163,8 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
 
 xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringView sShaderFile)
 {
+  XII_PROFILE_SCOPE("xiiShaderCompilerApplication::ExtractPermutationVarValues");
+
   m_PermutationGenerator.Clear();
 
   xiiFileReader shaderFile;
@@ -151,9 +174,9 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
     return XII_FAILURE;
   }
 
-  xiiHybridArray<xiiHashedString, 16>   permVars;
-  xiiHybridArray<xiiPermutationVar, 16> fixedPermVars;
-  xiiShaderParser::ParsePermutationSection(shaderFile, permVars, fixedPermVars);
+  xiiHybridArray<xiiHashedString, 16>           permVars;
+  xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermVars;
+  xiiGALShaderParser::ParsePermutationSection(shaderFile, permVars, fixedPermVars);
 
   {
     XII_LOG_BLOCK("Permutation Vars");
@@ -168,7 +191,7 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
     for (const auto& s : permVars)
     {
       xiiHybridArray<xiiHashedString, 16> values;
-      xiiShaderManager::GetPermutationValues(s, values);
+      xiiGALShaderManager::GetPermutationValues(s, values);
 
       for (const auto& val : values)
       {
@@ -217,65 +240,82 @@ xiiApplication::Execution xiiShaderCompilerApplication::Run()
 {
   PrintConfig();
 
-  xiiStringBuilder files = m_sShaderFiles;
+  XII_LOG_BLOCK("Compile All Shaders");
 
   xiiDynamicArray<xiiString> shadersToCompile;
 
+  xiiStringBuilder files = m_sShaderFiles;
+
   xiiDynamicArray<xiiStringView> allFiles;
+  if (m_sShaderFiles.IsEmpty())
+  {
+    xiiStringBuilder sPath, sPath2;
+    for (xiiUInt32 dirIdx = 0; dirIdx < xiiFileSystem::GetNumDataDirectories(); ++dirIdx)
+    {
+      sPath = xiiFileSystem::GetDataDirectory(dirIdx)->GetDataDirectoryPath();
+
+      if (sPath.IsEmpty())
+        continue;
+
+      if (xiiFileSystem::ResolveSpecialDirectory(sPath, sPath2).Failed())
+        continue;
+
+      files.AppendWithSeparator(";", sPath2);
+    }
+  }
+
   files.Split(false, allFiles, ";");
 
   for (const xiiStringView& shader : allFiles)
   {
     xiiStringBuilder file = shader;
-    xiiStringBuilder relPath;
+    xiiStringBuilder relPath, absPath;
 
-    if (xiiFileSystem::ResolvePath(file, nullptr, &relPath).Succeeded())
+    if (xiiFileSystem::ResolvePath(file, &absPath, &relPath).Succeeded())
     {
-      shadersToCompile.PushBack(relPath);
-    }
-    else
-    {
-      if (xiiPathUtils::IsRelativePath(file))
+      if (absPath.HasExtension("xiiShader"))
       {
-        file.Prepend(m_sAppProjectPath, "/");
+        shadersToCompile.PushBack(relPath);
       }
-
-      file.TrimWordEnd("*");
-      file.MakeCleanPath();
-
-      if (xiiOSFile::ExistsDirectory(file))
+      else if (xiiOSFile::ExistsDirectory(absPath))
       {
         xiiFileSystemIterator fsIt;
-        for (fsIt.StartSearch(file, xiiFileSystemIteratorFlags::ReportFilesRecursive); fsIt.IsValid(); fsIt.Next())
+        for (fsIt.StartSearch(absPath, xiiFileSystemIteratorFlags::ReportFilesRecursive); fsIt.IsValid(); fsIt.Next())
         {
           if (xiiPathUtils::HasExtension(fsIt.GetStats().m_sName, "xiiShader"))
           {
             fsIt.GetStats().GetFullPath(relPath);
 
-            if (relPath.MakeRelativeTo(m_sAppProjectPath).Succeeded())
+            if (relPath.MakeRelativeTo(absPath).Succeeded())
             {
               shadersToCompile.PushBack(relPath);
             }
           }
         }
       }
-      else
-      {
-        xiiLog::Error("Could not resolve path to shader '{0}'", file);
-      }
+    }
+    else
+    {
+      xiiLog::Error("Failed to resolve path: '{0}'", file);
     }
   }
 
+  xiiUInt32 uiErrors = 0U;
   for (const auto& shader : shadersToCompile)
   {
     if (CompileShader(shader).Failed())
     {
-      if (!m_bIgnoreErrors)
+      ++uiErrors;
+      if (!opt_IgnoreErrors.GetOptionValue(xiiCommandLineOption::LogMode::Never))
       {
+        SetReturnCode(uiErrors);
+
         return xiiApplication::Execution::Quit;
       }
     }
   }
+
+  SetReturnCode(uiErrors);
 
   return xiiApplication::Execution::Quit;
 }

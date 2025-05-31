@@ -13,12 +13,10 @@ void xiiRenderPipelineResourceDescriptor::CreateFromRenderPipeline(const xiiRend
   xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(pPipeline, *this);
 }
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineResource, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiRenderPipelineResource);
-// clang-format on
 
 xiiRenderPipelineResource::xiiRenderPipelineResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
@@ -33,7 +31,7 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResource::CreateRen
     return xiiInternal::NewInstance<xiiRenderPipeline>(nullptr, nullptr);
   }
 
-  return xiiRenderPipelineResourceLoader::CreateRenderPipeline(m_Desc);
+  return xiiRenderPipelineResourceLoader::CreateRenderPipeline(m_Description);
 }
 
 // static
@@ -74,7 +72,7 @@ xiiRenderPipelineResourceHandle xiiRenderPipelineResource::CreateMissingPipeline
 
 xiiResourceLoadDesc xiiRenderPipelineResource::UnloadData(Unload WhatToUnload)
 {
-  m_Desc.Clear();
+  m_Description.Clear();
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -86,7 +84,7 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* Stream)
 {
-  m_Desc.Clear();
+  m_Description.Clear();
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -119,19 +117,19 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
       xiiLog::Error("Failed to load old xiiRenderPipelineResource '{}'. Needs re-transform.", sAbsFilePath);
       return res;
     }
-    XII_ASSERT_DEV(uiVersion == 2, "Unknown xiiBinRenderPipeline version {0}", uiVersion);
+    XII_ASSERT_DEV(uiVersion == 2, "Unknown xiiBinRenderPipeline version {0}.", uiVersion);
 
     xiiUInt32 uiSize = 0;
     (*Stream) >> uiSize;
 
-    m_Desc.m_SerializedPipeline.SetCountUninitialized(uiSize);
-    Stream->ReadBytes(m_Desc.m_SerializedPipeline.GetData(), uiSize);
+    m_Description.m_SerializedPipeline.SetCountUninitialized(uiSize);
+    Stream->ReadBytes(m_Description.m_SerializedPipeline.GetData(), uiSize);
 
     XII_ASSERT_DEV(uiSize > 0, "RenderPipeline resourse contains no pipeline data!");
   }
   else
   {
-    XII_REPORT_FAILURE("The file '{0}' is unsupported, only '.xiiBinRenderPipeline' files can be loaded as xiiRenderPipelineResource", sAbsFilePath);
+    XII_REPORT_FAILURE("The file '{0}' is unsupported, only '.xiiBinRenderPipeline' files can be loaded as xiiRenderPipelineResource.", sAbsFilePath);
   }
 
   return res;
@@ -139,14 +137,14 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
 
 void xiiRenderPipelineResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
-  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiRenderPipelineResource) + (xiiUInt32)(m_Desc.m_SerializedPipeline.GetCount());
+  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiRenderPipelineResource) + (xiiUInt32)(m_Description.m_SerializedPipeline.GetCount());
 
   out_NewMemoryUsage.m_uiMemoryGPU = 0;
 }
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineResourceDescriptor)
 {
-  m_Desc = descriptor;
+  m_Description = descriptor;
 
   xiiResourceLoadDesc res;
   res.m_State                      = xiiResourceState::Loaded;

@@ -5,7 +5,6 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -41,10 +40,8 @@ void xiiMsgSetMeshMaterial::Deserialize(xiiStreamReader& inout_stream, xiiUInt8 
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiMeshRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiMeshRenderData::FillSortingKey()
 {
@@ -68,7 +65,7 @@ bool xiiMeshRenderData::CanBatch(const xiiRenderData& other0) const
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 3)
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 4)
 {
   XII_BEGIN_ATTRIBUTES
   {
@@ -80,7 +77,8 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 3)
     XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
     XII_MESSAGE_HANDLER(xiiMsgSetMeshMaterial, OnMsgSetMeshMaterial),
     XII_MESSAGE_HANDLER(xiiMsgSetColor, OnMsgSetColor),
-  } XII_END_MESSAGEHANDLERS;
+  }
+  XII_END_MESSAGEHANDLERS;
 }
 XII_END_ABSTRACT_COMPONENT_TYPE;
 // clang-format on
@@ -216,6 +214,12 @@ void xiiMeshComponentBase::SetMesh(const xiiMeshResourceHandle& hMesh)
 
 void xiiMeshComponentBase::SetMaterial(xiiUInt32 uiIndex, const xiiMaterialResourceHandle& hMaterial)
 {
+  if (uiIndex >= 1024)
+  {
+    xiiLog::Error("Invalid material slot index used to change mesh component material.");
+    return;
+  }
+
   m_Materials.EnsureCount(uiIndex + 1);
 
   if (m_Materials[uiIndex] != hMaterial)
@@ -236,9 +240,12 @@ xiiMaterialResourceHandle xiiMeshComponentBase::GetMaterial(xiiUInt32 uiIndex) c
 
 void xiiMeshComponentBase::SetColor(const xiiColor& color)
 {
-  m_Color = color;
+  if (m_Color != color)
+  {
+    m_Color = color;
 
-  InvalidateCachedRenderData();
+    InvalidateCachedRenderData();
+  }
 }
 
 const xiiColor& xiiMeshComponentBase::GetColor() const
@@ -265,9 +272,15 @@ void xiiMeshComponentBase::OnMsgSetMeshMaterial(xiiMsgSetMeshMaterial& ref_msg)
 
 void xiiMeshComponentBase::OnMsgSetColor(xiiMsgSetColor& ref_msg)
 {
-  ref_msg.ModifyColor(m_Color);
+  xiiColor newColor = m_Color;
+  ref_msg.ModifyColor(newColor);
 
-  InvalidateCachedRenderData();
+  if (m_Color != newColor)
+  {
+    m_Color = newColor;
+
+    InvalidateCachedRenderData();
+  }
 }
 
 xiiMeshRenderData* xiiMeshComponentBase::CreateRenderData() const

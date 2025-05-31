@@ -448,6 +448,7 @@ void xiiGameApplicationBase::RunOneFrame()
 
     Run_PresentImage();
   }
+
   xiiClock::GetGlobalClock()->Update();
   UpdateFrameTime();
 

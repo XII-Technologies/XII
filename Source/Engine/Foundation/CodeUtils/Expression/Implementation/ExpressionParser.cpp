@@ -674,7 +674,8 @@ bool xiiExpressionParser::AcceptOperator(xiiStringView sName)
 
   for (xiiUInt32 charIndex = 0; charIndex < uiOperatorLength; ++charIndex)
   {
-    if (m_TokenStream[m_uiCurrentToken + charIndex]->m_DataView.GetCharacter() != sName.GetStartPointer()[charIndex])
+    const xiiUInt32 c = sName.GetStartPointer()[charIndex];
+    if (m_TokenStream[m_uiCurrentToken + charIndex]->m_DataView.GetCharacter() != c)
     {
       return false;
     }

@@ -20,7 +20,7 @@ public:
 
   vk::DescriptorSet RequestDescriptorSet(vk::DescriptorSetLayout vkDescriptorSetLayout);
 
-  void ReclaimDescriptorPool(vk::DescriptorPool vkDescriptorPool);
+  void ReclaimDescriptorPool(vk::DescriptorPool&& vkDescriptorPool);
 
 private:
   friend class xiiMemoryUtils;

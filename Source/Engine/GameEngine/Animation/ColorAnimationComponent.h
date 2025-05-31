@@ -12,12 +12,8 @@ using xiiColorAnimationComponentManager = xiiComponentManagerSimple<class xiiCol
 
 /// \brief Samples a color gradient and sends a xiiMsgSetColor to the object it is attached to
 ///
-/// The color gradient is samples linearly over time. This can be used to animate the color of a light source or mesh.
-/// \todo Expose the xiiSetColorMode of the xiiMsgSetColor
-/// \todo Add speed parameter
-/// \todo Add loop mode (once, back-and-forth, loop)
-/// \todo Add option to send message to whole sub-tree (SendMessageRecursive)
-/// \todo Add on-finished (loop point) event
+/// The color gradient is sampled linearly over time.
+/// This can be used to animate the color of a light source or mesh.
 class XII_GAMEENGINE_DLL xiiColorAnimationComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiColorAnimationComponent, xiiComponent, xiiColorAnimationComponentManager);
@@ -36,13 +32,17 @@ protected:
 public:
   xiiColorAnimationComponent();
 
+  /// \brief How long it takes to sample the entire color gradient.
   xiiTime m_Duration; // [ property ]
 
-  void                    SetColorGradient(const xiiColorGradientResourceHandle& hResource);               // [ property ]
-  XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; } // [ property ]
+  void                                                    SetColorGradient(const xiiColorGradientResourceHandle& hResource); // [ property ]
+  XII_ALWAYS_INLINE const xiiColorGradientResourceHandle& GetColorGradient() const { return m_hGradient; }                   // [ property ]
 
+  /// \brief How the animation should be played and looped.
   xiiEnum<xiiPropertyAnimMode> m_AnimationMode; // [ property ]
-  xiiEnum<xiiSetColorMode>     m_SetColorMode;  // [ property ]
+
+  /// \brief How the color should be applied to the target.
+  xiiEnum<xiiSetColorMode> m_SetColorMode; // [ property ]
 
   bool GetApplyRecursive() const;     // [ property ]
   void SetApplyRecursive(bool value); // [ property ]

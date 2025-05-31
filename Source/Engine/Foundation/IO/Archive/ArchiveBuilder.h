@@ -54,5 +54,13 @@ protected:
   /// Override this to get a progress report for writing a single file to the output
   virtual bool WriteFileProgressCallback(xiiUInt64 bytesWritten, xiiUInt64 bytesTotal) const;
   /// Override this to get a callback after a file has been processed. Gets additional information about the compression result and duration.
-  virtual void WriteFileResultCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile, xiiUInt64 uiSourceSize, xiiUInt64 uiStoredSize, xiiTime duration) const {}
+  virtual void WriteFileResultCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile, xiiUInt64 uiSourceSize, xiiUInt64 uiStoredSize, xiiTime duration) const
+  {
+    XII_IGNORE_UNUSED(uiCurEntry);
+    XII_IGNORE_UNUSED(uiMaxEntries);
+    XII_IGNORE_UNUSED(sSourceFile);
+    XII_IGNORE_UNUSED(uiSourceSize);
+    XII_IGNORE_UNUSED(uiStoredSize);
+    XII_IGNORE_UNUSED(duration);
+  }
 };

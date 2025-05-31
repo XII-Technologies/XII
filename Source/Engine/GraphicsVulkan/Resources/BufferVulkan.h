@@ -18,30 +18,30 @@ public:
   virtual void                         InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
-  XII_ALWAYS_INLINE vk::Buffer    GetVulkanBuffer() const { return m_vkBuffer; }
-  XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer    GetVulkanBuffer() const { return m_vkBuffer; }
+  [[nodiscard]] XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
 
-  vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
+  [[nodiscard]] vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
 
-  void                   SetAccessFlags(vk::AccessFlags accessFlags);
-  vk::AccessFlags        GetAccessFlags() const;
-  XII_ALWAYS_INLINE bool CheckAccessFlags(vk::AccessFlags accessFlags) const { return (GetAccessFlags() & accessFlags) == accessFlags; }
+  void                                 SetAccessFlags(vk::AccessFlags accessFlags);
+  [[nodiscard]] vk::AccessFlags        GetAccessFlags() const;
+  [[nodiscard]] XII_ALWAYS_INLINE bool CheckAccessFlags(vk::AccessFlags accessFlags) const { return (GetAccessFlags() & accessFlags) == accessFlags; }
 
-  XII_ALWAYS_INLINE xiiEnum<xiiGALValueType> GetIndexFormat() const { return m_IndexFormat; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiEnum<xiiGALValueType> GetIndexFormat() const { return m_IndexFormat; };
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALBufferVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBufferCreationDescription& creationDescription);
+  xiiGALBufferVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALBufferCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferVulkan();
 
   virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) override final;
 
-  virtual xiiResult DeInitPlatform() override final;
+  virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) override;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
   vk::Buffer    m_vkBuffer               = VK_NULL_HANDLE;

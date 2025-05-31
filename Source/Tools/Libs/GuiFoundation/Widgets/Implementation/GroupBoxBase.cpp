@@ -118,7 +118,7 @@ void xiiQtGroupBoxBase::HeaderMouseMove(QMouseEvent* me)
     me->accept();
 
     QMimeData* mimeData = new QMimeData;
-    Q_EMIT     DragStarted(*mimeData);
+    Q_EMIT DragStarted(*mimeData);
 
     QDrag* drag = new QDrag(this);
     drag->setMimeData(mimeData);

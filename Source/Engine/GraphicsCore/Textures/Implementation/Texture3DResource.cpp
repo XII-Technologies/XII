@@ -1,4 +1,3 @@
-
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/CVar.h>
@@ -8,16 +7,12 @@
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexture3DResource, 1, xiiRTTIDefaultAllocator<xiiTexture3DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiTexture3DResource);
 
@@ -39,13 +34,7 @@ xiiResourceLoadDesc xiiTexture3DResource::UnloadData(Unload WhatToUnload)
     {
       --m_uiLoadedTextures;
 
-      if (!m_hGALTexture[m_uiLoadedTextures].IsInvalidated())
-      {
-        xiiGALDevice::GetDefaultDevice()->DestroyTexture(m_hGALTexture[m_uiLoadedTextures]);
-        m_hGALTexture[m_uiLoadedTextures].Invalidate();
-      }
-
-      m_uiMemoryGPU[m_uiLoadedTextures] = 0;
+      m_pGALTexture[m_uiLoadedTextures].Clear();
 
       if (WhatToUnload == Unload::OneQualityLevel || m_uiLoadedTextures == 0)
         break;
@@ -54,11 +43,7 @@ xiiResourceLoadDesc xiiTexture3DResource::UnloadData(Unload WhatToUnload)
 
   if (WhatToUnload == Unload::AllQualityLevels)
   {
-    if (!m_hSampler.IsInvalidated())
-    {
-      xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSampler);
-      m_hSampler.Invalidate();
-    }
+    m_pSampler.Clear();
   }
 
   xiiResourceLoadDesc res;
@@ -107,21 +92,22 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
         xiiGALTextureSubResourceData& id = ref_initData.ExpandAndGetRef();
         id.m_pData                       = pImage->GetSubImageView(mip, face, arrayIndex).GetByteBlobPtr();
 
+        XII_ASSERT_DEV(pImage->GetDepthPitch(mip) < xiiMath::MaxValue<xiiUInt64>(), "Depth pitch exceeds xiiGAL limits.");
+
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 2 / 8;
+          const xiiUInt64 uiMemPitchFactor = formatProperties.GetElementSize() * 2 / 8;
 
           id.m_uiStride = xiiMath::Max<xiiUInt32>(4, pImage->GetWidth(mip)) * uiMemPitchFactor;
         }
         else
         {
-          id.m_uiStride = static_cast<xiiUInt32>(pImage->GetRowPitch(mip));
+          id.m_uiStride = pImage->GetRowPitch(mip);
         }
 
-        XII_ASSERT_DEV(pImage->GetDepthPitch(mip) < xiiMath::MaxValue<xiiUInt32>(), "Depth pitch exceeds xiiGAL limits.");
-        id.m_uiDepthStride = static_cast<xiiUInt32>(pImage->GetDepthPitch(mip));
+        id.m_uiDepthStride = pImage->GetDepthPitch(mip);
 
-        out_uiMemoryUsed += id.m_uiDepthStride;
+        out_uiMemoryUsed += static_cast<xiiUInt32>(id.m_uiDepthStride);
       }
     }
   }
@@ -130,7 +116,6 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 
   ref_td.m_InitialContent = InitDataPtr;
 }
-
 
 xiiResourceLoadDesc xiiTexture3DResource::UpdateContent(xiiStreamReader* Stream)
 {
@@ -244,7 +229,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDesc
   ret.m_uiQualityLevelsLoadable    = descriptor.m_uiQualityLevelsLoadable;
   ret.m_State                      = xiiResourceState::Loaded;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   m_Type     = descriptor.m_DescGAL.m_Type;
   m_Format   = descriptor.m_DescGAL.m_Format;
@@ -255,20 +240,16 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDesc
   xiiGALTextureData textureData;
   descriptor.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   textureData.m_SubResources        = descriptor.m_InitialContent;
-  m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
+  m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
 
-  XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture Data could not be uploaded to the GPU");
+  XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture Data could not be uploaded to the GPU");
 
-  pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
+  m_pGALTexture[m_uiLoadedTextures]->SetDebugName(GetResourceDescription());
 
-  if (!m_hSampler.IsInvalidated())
-  {
-    pDevice->DestroySampler(m_hSampler);
-  }
+  m_pSampler.Clear();
+  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
 
-  m_hSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
-
-  XII_ASSERT_DEV(!m_hSampler.IsInvalidated(), "Sampler state error");
+  XII_ASSERT_DEV(m_pSampler != nullptr, "Sampler state error");
 
   ++m_uiLoadedTextures;
 

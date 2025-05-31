@@ -118,6 +118,8 @@ namespace
 
   static void Random(Inputs inputs, Output output, const GlobalData& globalData)
   {
+    XII_IGNORE_UNUSED(globalData);
+
     const Register* pPositions    = inputs[0].GetPtr();
     const Register* pPositionsEnd = inputs[0].GetEndPtr();
     Register*       pOutput       = output.GetPtr();
@@ -157,6 +159,8 @@ namespace
 
   static void PerlinNoise(Inputs inputs, Output output, const GlobalData& globalData)
   {
+    XII_IGNORE_UNUSED(globalData);
+
     const Register* pPosX    = inputs[0].GetPtr();
     const Register* pPosY    = inputs[1].GetPtr();
     const Register* pPosZ    = inputs[2].GetPtr();

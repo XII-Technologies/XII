@@ -11,7 +11,7 @@ namespace DirectoryWatcherTestHelpers
 {
   struct ExpectedEvent
   {
-    ~ExpectedEvent(){}; // NOLINT: Ensure that the structure is non POD.
+    ~ExpectedEvent() {}; // NOLINT: Ensure that the structure is non POD.
 
     const char*               path;
     xiiDirectoryWatcherAction action;

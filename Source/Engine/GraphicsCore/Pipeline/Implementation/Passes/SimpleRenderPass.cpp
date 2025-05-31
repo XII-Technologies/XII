@@ -1,13 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/IO/TypeVersionContext.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <GraphicsFoundation/Resources/Texture.h>
-
-#include <GraphicsCore/Debug/DebugRenderer.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleRenderPass, 1, xiiRTTIDefaultAllocator<xiiSimpleRenderPass>)
@@ -37,7 +33,7 @@ xiiSimpleRenderPass::~xiiSimpleRenderPass() = default;
 
 bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
-  xiiGALDevice*              pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
   const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   // Color
@@ -48,9 +44,9 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
   else
   {
     // If no input is available, we use the render target setup instead.
-    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hRTs[0]))
+    if (renderTargets.m_pRTs[0])
     {
-      outputs[m_PinColor.m_uiOutputIndex] = pTextureView->GetTexture()->GetDescription();
+      outputs[m_PinColor.m_uiOutputIndex] = renderTargets.m_pRTs[0]->GetTexture()->GetDescription();
       outputs[m_PinColor.m_uiOutputIndex].m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
     }
   }
@@ -63,9 +59,9 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
   else
   {
     // If no input is available, we use the render target setup instead.
-    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hDSTarget))
+    if (renderTargets.m_pDSTarget)
     {
-      outputs[m_PinDepthStencil.m_uiOutputIndex] = pTextureView->GetTexture()->GetDescription();
+      outputs[m_PinDepthStencil.m_uiOutputIndex] = renderTargets.m_pDSTarget->GetTexture()->GetDescription();
     }
   }
 
@@ -74,18 +70,19 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
 
 void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+#ifdef CORE_ENABLE
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
   if (inputs[m_PinColor.m_uiInputIndex])
   {
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(inputs[m_PinColor.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, inputs[m_PinColor.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
 
   if (inputs[m_PinDepthStencil.m_uiInputIndex])
   {
-    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(inputs[m_PinDepthStencil.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(inputs[m_PinDepthStencil.m_uiInputIndex]->m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   }
 
   auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
@@ -119,6 +116,7 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::GUI);
 
   xiiDebugRenderer::RenderScreenSpace(renderViewContext);
+  #endif
 }
 
 xiiResult xiiSimpleRenderPass::Serialize(xiiStreamWriter& inout_stream) const

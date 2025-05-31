@@ -2,9 +2,9 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
-#include <GraphicsFoundation/Shader/Shader.h>
+#include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 /// \brief This describes the pipeline resource property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceFlags
@@ -96,14 +96,13 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALPipelineResourceSignature(xiiGALDevice* pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
+  xiiGALPipelineResourceSignature(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineResourceSignature();
 
   virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALPipelineResourceSignatureCreationDescription m_Description;

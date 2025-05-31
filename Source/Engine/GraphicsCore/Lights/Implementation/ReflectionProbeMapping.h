@@ -56,7 +56,7 @@ public:
 
   /// \brief Returns the atlas texture.
   /// \return The texture handle of the cube map atlas.
-  xiiGALTextureHandle GetTexture() const { return m_hReflectionSpecularTexture; }
+  xiiSharedPtr<xiiGALTexture> GetTexture() const { return m_pReflectionSpecularTexture; }
 
   ///@}
   /// \name Compute atlas mapping
@@ -143,7 +143,7 @@ private:
   xiiDynamicArray<xiiReflectionProbeId> m_MappedCubes;
 
   // GPU Data
-  xiiGALTextureHandle m_hReflectionSpecularTexture;
+  xiiSharedPtr<xiiGALTexture> m_pReflectionSpecularTexture;
 
   // Cleared every frame:
   xiiDynamicArray<SortedProbes> m_SortedProbes;     // All probes exiting in the scene, sorted by priority.

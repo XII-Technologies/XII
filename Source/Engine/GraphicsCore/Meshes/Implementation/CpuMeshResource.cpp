@@ -3,12 +3,10 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Meshes/CpuMeshResource.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCpuMeshResource, 1, xiiRTTIDefaultAllocator<xiiCpuMeshResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiCpuMeshResource);
-// clang-format on
 
 xiiCpuMeshResource::xiiCpuMeshResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
@@ -48,11 +46,9 @@ xiiResourceLoadDesc xiiCpuMeshResource::UpdateContent(xiiStreamReader* Stream)
     return res;
   }
 
-  // skip the absolute file path data that the standard file reader writes into the stream
-  {
-    xiiStringBuilder sAbsFilePath;
-    (*Stream) >> sAbsFilePath;
-  }
+  // the standard file reader writes the absolute file path into the stream
+  xiiStringBuilder sAbsFilePath;
+  (*Stream) >> sAbsFilePath;
 
   xiiAssetFileHeader AssetHash;
   AssetHash.Read(*Stream).IgnoreResult();

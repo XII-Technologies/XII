@@ -42,7 +42,7 @@ public:
     }
   }
 
-  XII_ALWAYS_INLINE RESOURCE_TYPE* operator->() { return m_pResource; }
+  XII_ALWAYS_INLINE RESOURCE_TYPE*       operator->() { return m_pResource; }
   XII_ALWAYS_INLINE const RESOURCE_TYPE* operator->() const { return m_pResource; }
 
   XII_ALWAYS_INLINE bool     IsValid() const { return m_pResource != nullptr; }
@@ -51,7 +51,7 @@ public:
   XII_ALWAYS_INLINE xiiResourceAcquireResult GetAcquireResult() const { return m_AcquireResult; }
 
   XII_ALWAYS_INLINE const RESOURCE_TYPE* GetPointer() const { return m_pResource; }
-  XII_ALWAYS_INLINE RESOURCE_TYPE* GetPointerNonConst() const { return m_pResource; }
+  XII_ALWAYS_INLINE RESOURCE_TYPE*       GetPointerNonConst() const { return m_pResource; }
 
 private:
   xiiResourceAcquireResult m_AcquireResult;

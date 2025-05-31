@@ -17,7 +17,7 @@ protected:
   virtual void SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
   virtual void SetupPermutationVars(const xiiRenderViewContext& renderViewContext) override;
 
-  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) override;
+  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList) override;
 
   xiiRenderPipelineNodeInputPin m_PinSSAO;
   // xiiRenderPipelineNodeOutputPin m_PinNormal;

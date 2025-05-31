@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief This describes the occlusion query data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataOcclusion : public xiiHashableStruct<xiiGALQueryDataOcclusion>
@@ -105,15 +104,14 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
   friend class xiiGALCommandList;
 
-  xiiGALQuery(xiiGALDevice* pDevice, const xiiGALQueryCreationDescription& creationDescription);
+  xiiGALQuery(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALQueryCreationDescription& creationDescription);
 
   virtual ~xiiGALQuery();
 
   virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
 
   void OnBeginQuery(xiiGALCommandList* pCommandList);
   void OnEndQuery(xiiGALCommandList* pCommandList);

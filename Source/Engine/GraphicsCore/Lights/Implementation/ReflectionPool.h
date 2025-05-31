@@ -4,8 +4,6 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 
-class xiiGALTextureHandle;
-class xiiGALBufferHandle;
 class xiiView;
 class xiiWorld;
 class xiiComponent;
@@ -36,9 +34,9 @@ public:
   static void SetConstantSkyIrradiance(const xiiWorld* pWorld, const xiiAmbientCube<xiiColor>& skyIrradiance);
   static void ResetConstantSkyIrradiance(const xiiWorld* pWorld);
 
-  static xiiUInt32           GetReflectionCubeMapSize();
-  static xiiGALTextureHandle GetReflectionSpecularTexture(xiiUInt32 uiWorldIndex, xiiEnum<xiiCameraUsageHint> cameraUsageHint);
-  static xiiGALTextureHandle GetSkyIrradianceTexture();
+  static xiiUInt32                   GetReflectionCubeMapSize();
+  static xiiSharedPtr<xiiGALTexture> GetReflectionSpecularTexture(xiiUInt32 uiWorldIndex, xiiEnum<xiiCameraUsageHint> cameraUsageHint);
+  static xiiSharedPtr<xiiGALTexture> GetSkyIrradianceTexture();
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, ReflectionPool);

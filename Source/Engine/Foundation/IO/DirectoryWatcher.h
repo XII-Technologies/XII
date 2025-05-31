@@ -64,7 +64,7 @@ public:
   xiiDirectoryWatcher(xiiDirectoryWatcher&&) noexcept = delete;
   ~xiiDirectoryWatcher();
 
-  xiiDirectoryWatcher& operator=(const xiiDirectoryWatcher&) = delete;
+  xiiDirectoryWatcher& operator=(const xiiDirectoryWatcher&)     = delete;
   xiiDirectoryWatcher& operator=(xiiDirectoryWatcher&&) noexcept = delete;
 
   /// \brief

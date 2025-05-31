@@ -3,13 +3,11 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALRasterizerStateVulkan::xiiGALRasterizerStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALRasterizerStateCreationDescription& creationDescription) :
-  xiiGALRasterizerState(pDeviceVulkan, creationDescription)
+xiiGALRasterizerStateVulkan::xiiGALRasterizerStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALRasterizerStateCreationDescription& creationDescription) :
+  xiiGALRasterizerState(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -33,11 +31,6 @@ xiiResult xiiGALRasterizerStateVulkan::InitPlatform()
   m_RasterizerState.depthBiasSlopeFactor    = m_Description.m_fSlopeScaledDepthBias;
   m_RasterizerState.lineWidth               = 1.0f;
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALRasterizerStateVulkan::DeInitPlatform()
-{
   return XII_SUCCESS;
 }
 

@@ -81,7 +81,7 @@ xiiIdTableBase<IdType, ValueType>::xiiIdTableBase(xiiAllocatorBase* pAllocator)
   m_pEntries        = nullptr;
   m_Count           = 0;
   m_Capacity        = 0;
-  m_FreelistEnqueue = -1;
+  m_FreelistEnqueue = IndexType(-1);
   m_FreelistDequeue = 0;
   m_pAllocator      = pAllocator;
 }
@@ -92,7 +92,7 @@ xiiIdTableBase<IdType, ValueType>::xiiIdTableBase(const xiiIdTableBase<IdType, V
   m_pEntries        = nullptr;
   m_Count           = 0;
   m_Capacity        = 0;
-  m_FreelistEnqueue = -1;
+  m_FreelistEnqueue = IndexType(-1);
   m_FreelistDequeue = 0;
   m_pAllocator      = pAllocator;
 

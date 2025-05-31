@@ -278,9 +278,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiStateMachineComponent, 2, xiiComponentMode::Static)
 XII_END_DYNAMIC_REFLECTED_TYPE
 // clang-format on
 
-xiiStateMachineComponent::xiiStateMachineComponent()                                 = default;
-xiiStateMachineComponent::xiiStateMachineComponent(xiiStateMachineComponent&& other) = default;
-xiiStateMachineComponent::~xiiStateMachineComponent()                                = default;
+xiiStateMachineComponent::xiiStateMachineComponent()                                            = default;
+xiiStateMachineComponent::xiiStateMachineComponent(xiiStateMachineComponent&& other)            = default;
+xiiStateMachineComponent::~xiiStateMachineComponent()                                           = default;
 xiiStateMachineComponent& xiiStateMachineComponent::operator=(xiiStateMachineComponent&& other) = default;
 
 void xiiStateMachineComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

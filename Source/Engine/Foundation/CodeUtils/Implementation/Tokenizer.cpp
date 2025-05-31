@@ -113,7 +113,7 @@ void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* p
   {
     m_CurMode      = xiiTokenType::Unknown;
     m_uiCurLine    = 1;
-    m_uiCurColumn  = -1;
+    m_uiCurColumn  = xiiInvalidIndex;
     m_uiCurChar    = '\0';
     m_uiNextChar   = '\0';
     m_uiLastLine   = 1;
@@ -301,7 +301,7 @@ void xiiTokenizer::HandleString(char terminator)
   while (m_uiCurChar != '\0')
   {
     // Escaped quote \"
-    if ((m_uiCurChar == '\\') && (m_uiNextChar == terminator))
+    if ((m_uiCurChar == '\\') && (m_uiNextChar == xiiUInt32(terminator)))
     {
       // skip this one
       NextChar();
@@ -352,7 +352,7 @@ void xiiTokenizer::HandleString(char terminator)
       return;
     }
     // end of string
-    else if (m_uiCurChar == terminator)
+    else if (m_uiCurChar == xiiUInt32(terminator))
     {
       NextChar();
       AddToken();

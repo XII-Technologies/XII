@@ -56,7 +56,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
 
   xiiUInt64                          m_uiSize              = 0U;                           ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16. The default is 0.
   xiiBitflags<xiiGALBindFlags>       m_BindFlags           = xiiGALBindFlags::None;        ///< The bind flags. Allowed flags are Vertex, Index, Uniform (Constant), Shader Resource, Stream Output, Unordered Access, Indirect Draw Args, Ray Tracing. Allowed flags for sparse resources are stored in the allowed sparse resource properties. The default is None.
-  xiiEnum<xiiGALResourceUsage>       m_ResourceUsage       = xiiGALResourceUsage::Default; ///< The resource usage. The default is Default.
+  xiiEnum<xiiGALResourceUsage>       m_Usage               = xiiGALResourceUsage::Default; ///< The resource usage. The default is Default.
   xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;    ///< The CPU access flags or None if no CPU access is allowed. The default is None.
   xiiEnum<xiiGALBufferMode>          m_Mode                = xiiGALBufferMode::Undefined;  ///< The buffer mode. The default is Undefined.
   xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags           = xiiGALMiscBufferFlags::None;  ///< The miscellaneous flags. The default is None.
@@ -99,6 +99,9 @@ public:
   /// \brief This returns the buffer size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetSize() const { return m_Description.m_uiSize; }
 
+  /// \brief Returns the calculated memory consumption for buffer.
+  [[nodiscard]] XII_ALWAYS_INLINE virtual xiiUInt64 GetMemoryConsumption() const { return m_Description.m_uiSize; }
+
   /// \brief This returns the handle of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALBufferViewType.
@@ -108,7 +111,7 @@ public:
   /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
   ///
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
-  [[nodiscard]] xiiGALBufferViewHandle GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType);
+  [[nodiscard]] xiiSharedPtr<xiiGALBufferView> GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType);
 
   /// \brief This returns the buffer memory properties.
   ///
@@ -139,19 +142,31 @@ public:
   /// \note This method must not be called for Dynamic buffers. When a mapped buffer is unmapped, it is automatically flushed by the engine if necessary.
   virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) = 0;
 
+  /// \brief This creates a new buffer view.
+  ///
+  /// \param description - The buffer view description. See xiiGALBufferViewCreationDescription.
+  ///
+  /// \return The reference-counted pointer to the buffer view.
+  ///
+  /// \remarks To create a view addressing the entire buffer, set only xiiGALBufferViewCreationDescription::m_ViewType member of the ViewDesc structure and leave all other members in their default values.
+  ///          The buffer view will contain strong reference to the buffer, so the buffer will not be destroyed until all views are released.
+  ///
+  [[nodiscard]] xiiSharedPtr<xiiGALBufferView> CreateView(xiiGALBufferViewCreationDescription& description);
+
   /// \brief This returns the sparse buffer memory properties.
   [[nodiscard]] virtual xiiGALSparseBufferProperties GetSparseProperties() const = 0;
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
-  xiiGALBuffer(xiiGALDevice* pDevice, const xiiGALBufferCreationDescription& creationDescription);
+  xiiGALBuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBufferCreationDescription& creationDescription);
 
   virtual ~xiiGALBuffer();
 
   virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) = 0;
 
-  virtual xiiResult DeInitPlatform() = 0;
+  virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) = 0;
 
   void VerifyFlushMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const;
   void VerifyInvalidateMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const;
@@ -161,10 +176,8 @@ protected:
 
   xiiBitflags<xiiGALMemoryPropertyFlags> m_MemoryPropertyFlags;
 
-  xiiHashTable<xiiUInt32, xiiGALBufferViewHandle> m_BufferViews;
-
-  xiiGALBufferViewHandle m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];
+  xiiSharedPtr<xiiGALBufferView> m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];
 
 private:
-  void CreateDefaultResourceViews(xiiGALBufferHandle hBuffer);
+  void CreateDefaultResourceViews();
 };

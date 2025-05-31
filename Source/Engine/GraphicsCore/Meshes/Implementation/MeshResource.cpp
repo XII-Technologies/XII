@@ -14,7 +14,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshResource);
 xiiUInt32 xiiMeshResource::s_uiMeshBufferNameSuffix = 0;
 
 xiiMeshResource::xiiMeshResource() :
-  xiiResource(DoUpdate::OnAnyThread, 1)
+  xiiResource(DoUpdate::OnGraphicsResourceThreads, 1)
 {
   m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
 }
@@ -60,11 +60,9 @@ xiiResourceLoadDesc xiiMeshResource::UpdateContent(xiiStreamReader* Stream)
     return res;
   }
 
-  // skip the absolute file path data that the standard file reader writes into the stream
-  {
-    xiiStringBuilder sAbsFilePath;
-    (*Stream) >> sAbsFilePath;
-  }
+  // the standard file reader writes the absolute file path into the stream
+  xiiStringBuilder sAbsFilePath;
+  (*Stream) >> sAbsFilePath;
 
   xiiAssetFileHeader AssetHash;
   AssetHash.Read(*Stream).IgnoreResult();

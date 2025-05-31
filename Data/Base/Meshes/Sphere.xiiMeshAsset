@@ -11,7 +11,7 @@ o
 		s %AssetType{"Mesh"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{2103140589558521791,5741224228062947139}}
-		u4 %Hash{8059763425641481362}
+		u4 %Hash{7970289909712420169}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -22,6 +22,7 @@ o
 		{
 			s{"{ 1c47ee4c-0379-4280-85f5-b8cda61941d2 }"}
 		}
+		s %Tags{""}
 	}
 }
 }
@@ -42,9 +43,10 @@ o
 {
 	Uuid %id{u4{2871102633608702871,5130796534984071640}}
 	s %t{"xiiMeshAssetProperties"}
-	u3 %v{3}
+	u3 %v{4}
 	p
 	{
+		b %AggressiveSimplification{0}
 		Angle %Angle{f{0xDB0FC940}}
 		b %Cap{1}
 		b %Cap2{1}
@@ -53,11 +55,14 @@ o
 		b %FlipForwardDir{0}
 		f %Height{0x0000803F}
 		b %ImportMaterials{1}
+		s %ImportTransform{"xiiMeshImportTransform::Custom"}
 		VarArray %Materials
 		{
 			Uuid{u4{5486107438184343714,4767629773727834831}}
 		}
+		u1 %MaxSimplificationError{5}
 		s %MeshFile{""}
+		u1 %MeshSimplification{50}
 		s %NormalPrecision{"xiiMeshNormalPrecision::_10Bit"}
 		s %PrimitiveType{"xiiMeshPrimitive::GeodesicSphere"}
 		f %Radius{0x0000003F}
@@ -65,9 +70,11 @@ o
 		b %RecalculateNormals{0}
 		b %RecalculateTangents{1}
 		s %RightDir{"xiiBasisAxis::PositiveX"}
+		b %SimplifyMesh{0}
 		s %TexCoordPrecision{"xiiMeshTexCoordPrecision::_16Bit"}
 		f %UniformScaling{0x0000803F}
 		s %UpDir{"xiiBasisAxis::PositiveY"}
+		s %VertexColorConversion{"xiiMeshVertexColorConversion::None"}
 	}
 }
 o
@@ -186,7 +193,41 @@ o
 		s %PluginName{"xiiEditorPluginAssets"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMeshAssetProperties"}
-		u3 %TypeVersion{3}
+		u3 %TypeVersion{4}
+	}
+}
+o
+{
+	Uuid %id{u4{2844689500806418342,12082816086071428635}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiMeshVertexColorConversion"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{10792176291722185185,12635150230676906466}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiMeshImportTransform"}
+		u3 %TypeVersion{1}
 	}
 }
 o

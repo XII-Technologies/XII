@@ -102,7 +102,7 @@ void xiiDynamicArrayBase<T>::Swap(xiiDynamicArrayBase<T>& other)
   {
     constexpr xiiUInt32 InplaceStorageSize = 64;
 
-    struct alignas(XII_ALIGNMENT_OF(T)) Tmp
+    struct alignas(alignof(T)) Tmp
     {
       xiiUInt8 m_StaticData[InplaceStorageSize * sizeof(T)];
     };

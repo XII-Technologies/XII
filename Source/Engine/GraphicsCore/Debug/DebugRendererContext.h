@@ -1,12 +1,13 @@
 #pragma once
 
-#include <Foundation/Algorithm/HashingUtils.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Algorithm/HashingUtils.h>
 
 class xiiWorld;
 class xiiViewHandle;
 
-/// \brief Used in xiiDebugRenderer to determine where debug geometry should be rendered
+/// \brief Used in xiiDebugRenderer to determine where debug geometry should be rendered.
 class XII_GRAPHICSCORE_DLL xiiDebugRendererContext
 {
 public:
@@ -25,7 +26,6 @@ private:
 
   xiiUInt32 m_uiId = xiiInvalidIndex;
 };
-
 
 template <>
 struct xiiHashHelper<xiiDebugRendererContext>

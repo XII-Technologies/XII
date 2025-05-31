@@ -15,20 +15,18 @@ class XII_GRAPHICSVULKAN_DLL xiiGALBlendStateVulkan final : public xiiGALBlendSt
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBlendStateVulkan, xiiGALBlendState);
 
 public:
-  XII_ALWAYS_INLINE const vk::PipelineColorBlendStateCreateInfo* GetBlendState() const { return &m_BlendState; }
-  XII_ALWAYS_INLINE xiiArrayPtr<const vk::PipelineColorBlendAttachmentState> GetBlendAttachmentStates() const { return m_BlendAttachmentState; }
+  [[nodiscard]] XII_ALWAYS_INLINE const vk::PipelineColorBlendStateCreateInfo* GetBlendState() const { return &m_BlendState; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::PipelineColorBlendAttachmentState> GetBlendAttachmentStates() const { return m_BlendAttachmentState; }
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALBlendStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBlendStateCreationDescription& creationDescription);
+  xiiGALBlendStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALBlendStateCreationDescription& creationDescription);
 
   virtual ~xiiGALBlendStateVulkan();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 
 private:
   vk::PipelineColorBlendStateCreateInfo                                                 m_BlendState = {};

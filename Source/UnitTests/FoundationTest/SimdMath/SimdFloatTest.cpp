@@ -26,7 +26,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdFloat)
     // Make sure the class didn't accidentally change in size.
 #if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) || (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
     static_assert(sizeof(xiiSimdFloat) == 16);
-    static_assert(XII_ALIGNMENT_OF(xiiSimdFloat) == 16);
+    static_assert(alignof(xiiSimdFloat) == 16);
 #endif
 
     xiiSimdFloat vInit1F(2.0f);

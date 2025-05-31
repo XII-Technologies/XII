@@ -313,6 +313,7 @@ xiiResult xiiTelemetry::InitializeAsClient(xiiStringView sConnectTo0)
   if (g_pConnectionToServer)
     return XII_SUCCESS;
 #else
+  XII_IGNORE_UNUSED(sConnectTo0);
   xiiLog::SeriousWarning("Enet is not compiled into this build, xiiTelemetry::InitializeAsClient() will be ignored.");
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 
@@ -361,6 +362,8 @@ xiiResult xiiTelemetry::OpenConnection(ConnectionMode Mode, xiiStringView sConne
 
   return XII_SUCCESS;
 #else
+  XII_IGNORE_UNUSED(Mode);
+  XII_IGNORE_UNUSED(sConnectTo);
   xiiLog::SeriousWarning("Enet is not compiled into this build, xiiTelemetry::OpenConnection() will be ignored.");
   return XII_FAILURE;
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
@@ -379,6 +382,10 @@ void xiiTelemetry::Transmit(TransmitMode tm, const void* pData, xiiUInt32 uiData
 
   // make sure the message is processed immediately
   xiiTelemetry::UpdateNetwork();
+#else
+  XII_IGNORE_UNUSED(tm);
+  XII_IGNORE_UNUSED(pData);
+  XII_IGNORE_UNUSED(uiDataBytes);
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
 
@@ -405,6 +412,12 @@ void xiiTelemetry::Send(TransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID
 
     Transmit(tm, &TempData[0], TempData.GetCount());
   }
+#else
+  XII_IGNORE_UNUSED(tm);
+  XII_IGNORE_UNUSED(uiSystemID);
+  XII_IGNORE_UNUSED(uiMsgID);
+  XII_IGNORE_UNUSED(pData);
+  XII_IGNORE_UNUSED(uiDataBytes);
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
 
@@ -460,6 +473,12 @@ void xiiTelemetry::Send(TransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID
     // when we do have a connection, just send the message out
     Transmit(tm, &TempData[0], TempData.GetCount());
   }
+#else
+  XII_IGNORE_UNUSED(tm);
+  XII_IGNORE_UNUSED(uiSystemID);
+  XII_IGNORE_UNUSED(uiMsgID);
+  XII_IGNORE_UNUSED(Stream);
+  XII_IGNORE_UNUSED(iDataBytes);
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
 

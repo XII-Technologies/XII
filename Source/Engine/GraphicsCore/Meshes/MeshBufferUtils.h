@@ -18,14 +18,14 @@ struct xiiMeshNormalPrecision
     _16Bit,
     _32Bit,
 
-    Default = _16Bit
+    Default = _10Bit
   };
 
   /// \brief Convert mesh normal precision to actual resource format used for normals
-  static xiiEnum<xiiGALResourceFormat> ToResourceFormatNormal(Enum value);
+  static xiiGALResourceFormat::Enum ToResourceFormatNormal(Enum value);
 
   /// \brief Convert mesh normal precision to actual resource format used for tangents
-  static xiiEnum<xiiGALResourceFormat> ToResourceFormatTangent(Enum value);
+  static xiiGALResourceFormat::Enum ToResourceFormatTangent(Enum value);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshNormalPrecision);
@@ -43,7 +43,7 @@ struct xiiMeshTexCoordPrecision
   };
 
   /// \brief Convert mesh texcoord precision to actual resource format
-  static xiiEnum<xiiGALResourceFormat> ToResourceFormat(Enum value);
+  static xiiGALResourceFormat::Enum ToResourceFormat(Enum value);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshTexCoordPrecision);
@@ -63,7 +63,7 @@ struct xiiMeshBoneWeigthPrecision
   };
 
   /// \brief Convert mesh texcoord precision to actual resource format
-  static xiiEnum<xiiGALResourceFormat> ToResourceFormat(Enum value);
+  static xiiGALResourceFormat::Enum ToResourceFormat(Enum value);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshBoneWeigthPrecision);
@@ -92,35 +92,36 @@ struct XII_GRAPHICSCORE_DLL xiiMeshBufferUtils
   static xiiResult EncodeBoneWeights(const xiiVec4& vWeights, xiiArrayPtr<xiiUInt8> dest, xiiMeshBoneWeigthPrecision::Enum precision);
   static xiiResult EncodeColor(const xiiVec4& vColor, xiiArrayPtr<xiiUInt8> dest, xiiMeshVertexColorConversion::Enum conversion);
 
-  static xiiResult EncodeNormal(const xiiVec3& vNormal, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
-  static xiiResult EncodeTangent(const xiiVec3& vTangent, float fTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
-  static xiiResult EncodeTexCoord(const xiiVec2& vTexCoord, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
-  static xiiResult EncodeBoneWeights(const xiiVec4& vWeights, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
+  static xiiResult EncodeNormal(const xiiVec3& vNormal, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
+  static xiiResult EncodeTangent(const xiiVec3& vTangent, float fTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
+  static xiiResult EncodeTexCoord(const xiiVec2& vTexCoord, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
+  static xiiResult EncodeBoneWeights(const xiiVec4& vWeights, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
 
   static xiiResult DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestNormal, xiiMeshNormalPrecision::Enum normalPrecision);
-  static xiiResult DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign, xiiMeshNormalPrecision::Enum tangentPrecision);
+  static xiiResult DecodeTangent(
+    xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign, xiiMeshNormalPrecision::Enum tangentPrecision);
   static xiiResult DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiVec2& ref_vDestTexCoord, xiiMeshTexCoordPrecision::Enum texCoordPrecision);
 
-  static xiiResult DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiVec3& ref_vDestNormal);
-  static xiiResult DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign);
-  static xiiResult DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiVec2& ref_vDestTexCoord);
+  static xiiResult DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDestNormal);
+  static xiiResult DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign);
+  static xiiResult DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec2& ref_vDestTexCoord);
 
   // low level conversion functions
-  static xiiResult EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
-  static xiiResult EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
-  static xiiResult EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
-  static xiiResult EncodeFromVec4(const xiiVec4& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALResourceFormat> destFormat);
+  static xiiResult EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
+  static xiiResult EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
+  static xiiResult EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
+  static xiiResult EncodeFromVec4(const xiiVec4& vSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat);
 
-  static xiiResult DecodeToFloat(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALResourceFormat> sourceFormat, float& ref_fDest);
-  static xiiResult DecodeToVec2(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiVec2& ref_vDest);
-  static xiiResult DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiVec3& ref_vDest);
-  static xiiResult DecodeToVec4(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiVec4& ref_vDest);
+  static xiiResult DecodeToFloat(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, float& ref_fDest);
+  static xiiResult DecodeToVec2(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec2& ref_vDest);
+  static xiiResult DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDest);
+  static xiiResult DecodeToVec4(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec4& ref_vDest);
 
   /// \brief Helper function to get the position stream from the given mesh buffer descriptor
   static xiiResult GetPositionStream(const xiiMeshBufferResourceDescriptor& meshBufferDesc, const xiiVec3*& out_pPositions, xiiUInt32& out_uiElementStride);
 
   /// \brief Helper function to get the position and normal stream from the given mesh buffer descriptor
-  static xiiResult GetPositionAndNormalStream(const xiiMeshBufferResourceDescriptor& meshBufferDesc, const xiiVec3*& out_pPositions, const xiiUInt8*& out_pNormals, xiiEnum<xiiGALResourceFormat>& out_normalFormat, xiiUInt32& out_uiElementStride);
+  static xiiResult GetPositionAndNormalStream(const xiiMeshBufferResourceDescriptor& meshBufferDesc, const xiiVec3*& out_pPositions, const xiiUInt8*& out_pNormals, xiiGALResourceFormat::Enum& out_normalFormat, xiiUInt32& out_uiElementStride);
 };
 
 #include <GraphicsCore/Meshes/Implementation/MeshBufferUtils_inl.h>
