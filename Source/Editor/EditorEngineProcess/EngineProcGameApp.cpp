@@ -368,7 +368,15 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     const xiiRTTI* pType = xiiResourceManager::FindResourceForAssetType(pMsg1->m_sResourceType);
     if (auto hResource = xiiResourceManager::GetExistingResourceByType(pType, pMsg1->m_sResourceID); hResource.IsValid())
     {
+      // Reload an existing resource.
       xiiResourceManager::ReloadResource(pType, hResource, false);
+
+      // ReloadResource() only makes sure to UNLOAD a resource, but if it isn't directly polled for, it won't get LOADED again
+      // for most resource types this is fine, but some types need to get LOADED again to set up data that sticks around even while they are unloaded
+      // specifically this happens for xiiSurfaceResource, because that signals to the physics engine to set up materials,
+      // which stick around even if the surface resource gets unloaded
+      // this is an editor specific issue, and we only do this here to guarantee an up-to-date representation while editing.
+      xiiResourceManager::PreloadResource(hResource);
     }
   }
   else if (const auto* pMsg1 = xiiDynamicCast<const xiiSimpleConfigMsgToEngine*>(e.m_pMessage))

@@ -6,12 +6,10 @@
 #include <Core/Prefabs/PrefabResource.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResource, 1, xiiRTTIDefaultAllocator<xiiSurfaceResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiSurfaceResource);
-// clang-format on
 
 xiiEvent<const xiiSurfaceResourceEvent&, xiiMutex> xiiSurfaceResource::s_Events;
 
@@ -22,6 +20,11 @@ xiiSurfaceResource::xiiSurfaceResource() :
 
 xiiSurfaceResource::~xiiSurfaceResource()
 {
+  xiiSurfaceResourceEvent e;
+  e.m_pSurface = this;
+  e.m_Type     = xiiSurfaceResourceEvent::Type::Destroyed;
+  s_Events.Broadcast(e);
+
   XII_ASSERT_DEV(m_pPhysicsMaterialPhysX == nullptr, "Physics material has not been cleaned up properly");
   XII_ASSERT_DEV(m_pPhysicsMaterialJolt == nullptr, "Physics material has not been cleaned up properly");
 }
@@ -34,11 +37,6 @@ xiiResourceLoadDesc xiiSurfaceResource::UnloadData(Unload WhatToUnload)
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
-
-  xiiSurfaceResourceEvent e;
-  e.m_pSurface = this;
-  e.m_Type     = xiiSurfaceResourceEvent::Type::Destroyed;
-  s_Events.Broadcast(e);
 
   return res;
 }
