@@ -326,7 +326,7 @@ string{\"s\\2\",\"bla\"}\n\
     xiiTestLogSystemScope logSystemScope(&log);
 
     log.ExpectMessage("Unknown escape-sequence '\\s'", xiiLogMsgType::WarningMsg);
-    log.ExpectMessage("Line 2 (2): Expected , or } or a \"", xiiLogMsgType::ErrorMsg);
+    log.ExpectMessage("Parsing error at byte 115: Expected ',', '}', or '\"', but found '115'.", xiiLogMsgType::ErrorMsg);
 
     xiiOpenDdlReader doc;
     XII_TEST_BOOL(doc.ParseDocument(stream).Failed());

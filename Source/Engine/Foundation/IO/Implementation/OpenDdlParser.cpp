@@ -818,8 +818,9 @@ void xiiOpenDdlParser::ContinueString()
 
     default:
     {
-      /// \todo better error message
-      ParsingError("Expected , or } or a \"", true);
+      xiiStringBuilder sb;
+      sb.SetFormat("Parsing error at byte {}: Expected ',', '}', or '\"', but found '{}'.", m_uiCurByte, static_cast<char>(m_uiCurByte));
+      ParsingError(sb, true);
       return;
     }
   }
