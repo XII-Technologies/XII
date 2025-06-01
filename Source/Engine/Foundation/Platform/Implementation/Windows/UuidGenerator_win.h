@@ -1,7 +1,6 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <combaseapi.h>
 #include <rpc.h>
 
 static_assert(sizeof(xiiUInt64) * 2 == sizeof(UUID));
@@ -10,14 +9,11 @@ xiiUuid xiiUuid::MakeUuid()
 {
   xiiUInt64 uiUuidData[2];
 
-  // This works on desktop Windows
-  // UuidCreate(reinterpret_cast<UUID*>(uiUuidData));
-
-  // This also works on UWP
-  GUID*   guid = reinterpret_cast<GUID*>(&uiUuidData[0]);
-  HRESULT hr   = CoCreateGuid(guid);
-  XII_IGNORE_UNUSED(hr);
-  XII_ASSERT_DEBUG(SUCCEEDED(hr), "CoCreateGuid failed, guid might be invalid!");
+  if (UuidCreate(reinterpret_cast<UUID*>(&uiUuidData[0])) != RPC_S_OK)
+  {
+    XII_ASSERT_DEBUG(false, "UuidCreate failed, UUID might be invalid!");
+    return xiiUuid(); // Return an empty UUID on failure.
+  }
 
   return xiiUuid(uiUuidData[1], uiUuidData[0]);
 }
