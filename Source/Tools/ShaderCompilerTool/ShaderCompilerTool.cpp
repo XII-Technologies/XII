@@ -174,21 +174,31 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
     return XII_FAILURE;
   }
 
-  xiiHybridArray<xiiHashedString, 16>           permVars;
-  xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermVars;
-  xiiGALShaderParser::ParsePermutationSection(shaderFile, permVars, fixedPermVars);
+  xiiString sContent;
+  sContent.ReadAll(shaderFile);
+
+  xiiGALShaderTextSectionizer shaderTextSections;
+  xiiGALShaderSections::GetShaderSections(sContent, shaderTextSections);
+
+  xiiHybridArray<xiiHashedString, 16>           permutationVariables;
+  xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermutationVariables;
+
+  xiiUInt32     uiFirstLine   = 0;
+  xiiStringView sPermutations = shaderTextSections.GetSectionContent(xiiGALShaderSections::PERMUTATIONS, uiFirstLine);
+  xiiGALShaderParser::ParsePermutationSection(sPermutations, permutationVariables, fixedPermutationVariables);
 
   {
-    XII_LOG_BLOCK("Permutation Vars");
-    for (const auto& s : permVars)
+    XII_LOG_BLOCK("Permutation Variables");
+
+    for (const auto& s : permutationVariables)
     {
-      xiiLog::Dev(s.GetData());
+      xiiLog::Dev(s.GetView());
     }
   }
 
   // regular permutation variables
   {
-    for (const auto& s : permVars)
+    for (const auto& s : permutationVariables)
     {
       xiiHybridArray<xiiHashedString, 16> values;
       xiiGALShaderManager::GetPermutationValues(s, values);
@@ -202,7 +212,7 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
 
   // permutation variables that have fixed values
   {
-    for (const auto& s : fixedPermVars)
+    for (const auto& s : fixedPermutationVariables)
     {
       m_PermutationGenerator.AddPermutation(s.m_sName, s.m_sValue);
     }
@@ -211,15 +221,15 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
   {
     for (auto it = m_FixedPermVars.GetIterator(); it.IsValid(); ++it)
     {
-      xiiHashedString hsname, hsvalue;
-      hsname.Assign(it.Key().GetData());
-      m_PermutationGenerator.RemovePermutations(hsname);
+      xiiHashedString sNameHash, sPermutationValue;
+      sNameHash.Assign(it.Key().GetView());
+      m_PermutationGenerator.RemovePermutations(sNameHash);
 
       for (const auto& val : it.Value())
       {
-        hsvalue.Assign(val.GetData());
+        sPermutationValue.Assign(val.GetView());
 
-        m_PermutationGenerator.AddPermutation(hsname, hsvalue);
+        m_PermutationGenerator.AddPermutation(sNameHash, sPermutationValue);
       }
     }
   }
