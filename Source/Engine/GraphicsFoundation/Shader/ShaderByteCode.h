@@ -194,22 +194,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableClassType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderVariableClassType);
 
-/// \brief This describes shader resource.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHashableStruct<xiiGALShaderResourceDescription>
-{
-  XII_DECLARE_MEM_RELOCATABLE_TYPE();
-
-  xiiHashedString                                  m_sName;                                               ///< The shader resource name.
-  xiiEnum<xiiGALShaderResourceType>                m_Type            = xiiGALShaderResourceType::Unknown; ///< The shader resource type. The default is xiiGALShaderResourceType::Unknown.
-  xiiEnum<xiiGALShaderTextureType>                 m_TextureType     = xiiGALShaderTextureType::Unknown;  ///< The shader resource texture type for Texture resources. The default is xiiGALShaderTextureType::Unknown.
-  xiiUInt32                                        m_uiArraySize     = 0U;                                ///< The array size. For a non-array resource this value should be 1.
-  xiiUInt32                                        m_uiBindIndex     = xiiInvalidIndex;                   ///< The resource binding index in the shader.
-  xiiUInt32                                        m_uiDescriptorSet = xiiInvalidIndex;                   ///< The descriptor set to which this resource belongs to.
-  xiiBitflags<xiiGALShaderType>                    m_ShaderStages    = xiiGALShaderType::Unknown;         ///< The shader stages to which this resource is bound.
-  xiiUInt32                                        m_uiTotalSize     = 0U;                                ///< For a resource with variables, the total size of the resource.
-  xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                                           ///< An array of member variables for shader constant buffer, or push constants.
-};
-
 /// \brief This describes shader code variable.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHashableStruct<xiiGALShaderVariableDescription>
 {
@@ -226,6 +210,22 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHa
 
   /// \brief This copies the data in a variant into into its destination, given its structure in the shader variable description.
   static void CopyDataFromVariant(xiiUInt8* pDestination, const xiiVariant* pValue, const xiiGALShaderVariableDescription& description);
+};
+
+/// \brief This describes shader resource.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHashableStruct<xiiGALShaderResourceDescription>
+{
+  XII_DECLARE_MEM_RELOCATABLE_TYPE();
+
+  xiiHashedString                                  m_sName;                                               ///< The shader resource name.
+  xiiEnum<xiiGALShaderResourceType>                m_Type            = xiiGALShaderResourceType::Unknown; ///< The shader resource type. The default is xiiGALShaderResourceType::Unknown.
+  xiiEnum<xiiGALShaderTextureType>                 m_TextureType     = xiiGALShaderTextureType::Unknown;  ///< The shader resource texture type for Texture resources. The default is xiiGALShaderTextureType::Unknown.
+  xiiUInt32                                        m_uiArraySize     = 0U;                                ///< The array size. For a non-array resource this value should be 1.
+  xiiUInt32                                        m_uiBindIndex     = xiiInvalidIndex;                   ///< The resource binding index in the shader.
+  xiiUInt32                                        m_uiDescriptorSet = xiiInvalidIndex;                   ///< The descriptor set to which this resource belongs to.
+  xiiBitflags<xiiGALShaderType>                    m_ShaderStages    = xiiGALShaderType::Unknown;         ///< The shader stages to which this resource is bound.
+  xiiUInt32                                        m_uiTotalSize     = 0U;                                ///< For a resource with variables, the total size of the resource.
+  xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                                           ///< An array of member variables for shader constant buffer, or push constants.
 };
 
 /// \brief This class wraps shader byte code storage.

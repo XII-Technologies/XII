@@ -7,7 +7,7 @@
 
 class xiiLogInterface;
 
-/// \brief An xiiResult with an additional message for the reason of failure
+/// \brief A xiiResult with an additional message for the reason of failure
 struct [[nodiscard]] XII_FOUNDATION_DLL xiiStatus
 {
   XII_ALWAYS_INLINE explicit xiiStatus() :

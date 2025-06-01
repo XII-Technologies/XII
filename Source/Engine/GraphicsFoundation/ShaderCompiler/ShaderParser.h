@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Logging/Log.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 #include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>

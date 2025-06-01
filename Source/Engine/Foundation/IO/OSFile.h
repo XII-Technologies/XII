@@ -87,7 +87,7 @@ struct xiiFileSystemIteratorFlags
 
 XII_DECLARE_FLAGS_OPERATORS(xiiFileSystemIteratorFlags);
 
-/// \brief An xiiFileSystemIterator allows to iterate over all files in a certain directory.
+/// \brief A xiiFileSystemIterator allows to iterate over all files in a certain directory.
 ///
 /// The search can be recursive, and it can contain wildcards (* and ?) to limit the search to specific file types.
 class XII_FOUNDATION_DLL xiiFileSystemIterator
