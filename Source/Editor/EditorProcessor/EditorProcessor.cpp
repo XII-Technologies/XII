@@ -20,6 +20,7 @@ xiiCommandLineOptionBool   opt_SaveProfilingData("_EditorProcessor", "-profiling
 xiiCommandLineOptionPath   opt_Project("_EditorProcessor", "-project", "Path to the project folder.", "");
 xiiCommandLineOptionBool   opt_Resave("_EditorProcessor", "-resave", "If specified, assets will be resaved.", false);
 xiiCommandLineOptionString opt_Transform("_EditorProcessor", "-transform", "If specified, assets will be transformed for the given platform profile.\n\nExample:\n  -transform Default\n", "");
+xiiCommandLineOptionBool   opt_Compile("_EditorProcessor", "-compile", "If specified, the C++ project will be generated and compiled.", false);
 
 class xiiEditorProcessorApplication : public xiiApplication
 {
@@ -171,8 +172,9 @@ public:
     SetErrorMode(dwMode | SEM_NOGPFAULTERRORBOX);
 #endif
     const xiiString                                 sTransformProfile = opt_Transform.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    const bool                                      bCompile          = opt_Compile.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
     const bool                                      bResave           = opt_Resave.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    const bool                                      bBackgroundMode   = sTransformProfile.IsEmpty() && !bResave;
+    const bool                                      bBackgroundMode   = sTransformProfile.IsEmpty() && !bResave && !bCompile;
     const xiiString                                 sOutputDir        = opt_OutputDir.GetOptionValue(xiiCommandLineOption::LogMode::Always);
     const xiiBitflags<xiiQtEditorApp::StartupFlags> startupFlags      = bBackgroundMode ? xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::Background : xiiQtEditorApp::StartupFlags::Headless;
     xiiQtEditorApp::GetSingleton()->StartupEditor(startupFlags, sOutputDir);
@@ -180,7 +182,7 @@ public:
 
     const xiiStringBuilder sProject = opt_Project.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-    if (!sTransformProfile.IsEmpty())
+    if (!sTransformProfile.IsEmpty() || bCompile)
     {
       if (xiiQtEditorApp::GetSingleton()->OpenProject(sProject).Failed())
       {
@@ -188,7 +190,7 @@ public:
         return xiiApplication::Execution::Quit;
       }
 
-      // before we transform any assets, make sure the C++ code is properly built
+      // before we transform any assets of if specifically asked, make sure the C++ code is built.
       {
         xiiCppSettings cppSettings;
         if (cppSettings.Load().Succeeded())
@@ -203,37 +205,47 @@ public:
         }
       }
 
-      bool bTransform = true;
+      if (!sTransformProfile.IsEmpty())
+      {
+        bool bTransform = true;
 
-      xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this, &bTransform, &sTransformProfile]() {
-        if (!bTransform)
-          return;
+        xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this, &bTransform, &sTransformProfile]() -> void {
+          if (!bTransform)
+            return;
 
-        bTransform = false;
+          bTransform = false;
 
-        const xiiUInt32 uiPlatform = xiiAssetCurator::GetSingleton()->FindAssetProfileByName(sTransformProfile);
+          const xiiUInt32 uiPlatform = xiiAssetCurator::GetSingleton()->FindAssetProfileByName(sTransformProfile);
 
-        if (uiPlatform == xiiInvalidIndex)
-        {
-          xiiLog::Error("Asset platform config '{0}' is unknown", sTransformProfile);
-        }
-        else
-        {
-          xiiStatus status = xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::TriggeredManually, xiiAssetCurator::GetSingleton()->GetAssetProfile(uiPlatform));
-          if (status.Failed())
+          if (uiPlatform == xiiInvalidIndex)
           {
-            status.LogFailure();
-            SetReturnCode(1);
+            xiiLog::Error("Asset platform config '{0}' is unknown", sTransformProfile);
+          }
+          else
+          {
+            xiiStatus status = xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::TriggeredManually, xiiAssetCurator::GetSingleton()->GetAssetProfile(uiPlatform));
+            if (status.Failed())
+            {
+              status.LogFailure();
+              SetReturnCode(1);
+            }
+
+            if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
+            {
+              xiiActionContext context;
+              xiiActionManager::ExecuteAction("Engine", "Editor.SaveProfiling", context).IgnoreResult();
+            }
           }
 
-          if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
-          {
-            xiiActionContext context;
-            xiiActionManager::ExecuteAction("Engine", "Editor.SaveProfiling", context).IgnoreResult();
-          }
-        }
-
-        QApplication::quit(); });
+          QApplication::quit();
+        });
+      }
+      else
+      {
+        xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() -> void {
+          QApplication::quit();
+        });
+      }
 
       const xiiInt32 iReturnCode = xiiQtEditorApp::GetSingleton()->RunEditor();
       if (iReturnCode != 0)
