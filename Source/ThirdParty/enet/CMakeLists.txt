@@ -23,6 +23,6 @@ if(XII_CMAKE_PLATFORM_WINDOWS)
   )
 
   if(XII_CMAKE_COMPILER_MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /wd4232 /wd4206 /wd4701)
+    target_compile_options(${PROJECT_NAME} PRIVATE /wd4232 /wd4206 /wd4701 /wd5287)
   endif()
 endif()
