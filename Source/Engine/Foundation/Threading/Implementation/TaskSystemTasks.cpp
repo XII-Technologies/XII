@@ -277,15 +277,11 @@ void xiiTaskSystem::ExecuteSomeFrameTasks(xiiTime smoothFrameTime)
 {
   XII_PROFILE_SCOPE("ExecuteSomeFrameTasks");
 
-  // 'SomeFrameMainThread' tasks are usually used to upload resources that have been loaded in the background
-  // they do not need to be executed right away, but the earlier, the better
+  // 'SomeFrameMainThread' tasks are usually used to upload resources that have been loaded in the background they do not need to be executed right away, but the earlier, the better.
 
-  // as long as the frame time is short enough, execute tasks that need to be done on the main thread
-  // on fast machines that means that these tasks are finished as soon as possible and users will see the results quickly
+  // As long as the frame time is short enough, execute tasks that need to be done on the main thread on fast machines that means that these tasks are finished as soon as possible and users will see the results quickly.
 
-  // if the frame time spikes, we can skip this a few times, to try to prevent further slow downs
-  // however in such instances, the 'frame time threshold' will increase and thus the chance that we skip this entirely becomes lower over
-  // time that guarantees some progress, even if the frame rate is constantly low
+  // If the frame time spikes, we can skip this a few times, to try to prevent further slow downs however in such instances, the 'frame time threshold' will increase and thus the chance that we skip this entirely becomes lower over time that guarantees some progress, even if the frame rate is constantly low.
 
   static xiiTime s_FrameTimeThreshold = smoothFrameTime;
   static xiiTime s_LastExecution; // initializes to zero -> very large frame time difference at first
@@ -294,7 +290,7 @@ void xiiTaskSystem::ExecuteSomeFrameTasks(xiiTime smoothFrameTime)
   xiiTime LastTime = s_LastExecution;
   s_LastExecution  = CurTime;
 
-  // as long as we have a smooth frame rate, execute as many of these tasks, as possible
+  // As long as we have a smooth frame rate, execute as many of these tasks, as possible.
   while (CurTime - LastTime < smoothFrameTime)
   {
     if (!ExecuteTask(xiiTaskPriority::SomeFrameMainThread, xiiTaskPriority::SomeFrameMainThread, false, xiiTaskGroupID(), nullptr))
@@ -307,14 +303,15 @@ void xiiTaskSystem::ExecuteSomeFrameTasks(xiiTime smoothFrameTime)
     CurTime = xiiTime::Now();
   }
 
-  xiiUInt32 uiNumTasksTodo = 0;
+  xiiUInt32 uiPendingTaskCount = 0U;
 
   {
     XII_LOCK(s_TaskSystemMutex);
-    uiNumTasksTodo = s_pState->m_Tasks[xiiTaskPriority::SomeFrameMainThread].GetCount();
+
+    uiPendingTaskCount = s_pState->m_Tasks[xiiTaskPriority::SomeFrameMainThread].GetCount();
   }
 
-  if (uiNumTasksTodo == 0)
+  if (uiPendingTaskCount == 0)
     return;
 
   if (CurTime - LastTime < s_FrameTimeThreshold) // the accumulating threshold has caught up with us
@@ -325,25 +322,23 @@ void xiiTaskSystem::ExecuteSomeFrameTasks(xiiTime smoothFrameTime)
   }
   else
   {
-    // increase the threshold slightly every time we skip the work
-    // this means that when the frame rate is too low, we can ignore these tasks for a few frames
-    // and thus prevent decreasing the frame rate even further
-    // however we increase the time threshold, at which we skip this, further and further
-    // therefore at some point we will start executing these tasks, no matter how low the frame rate is
+    // Increase the threshold slightly every time we skip the work.
+    // This means that when the frame rate is too low, we can ignore these tasks for a few frames and thus prevent decreasing the frame rate even further.
+    // However, we increase the time threshold, at which we skip this, further and further therefore at some point we will start executing these tasks, no matter how low the frame rate is.
     //
-    // this gives us some buffer to smooth out performance drops
+    // This gives us some buffer to smooth out performance drops.
     s_FrameTimeThreshold += xiiTime::MakeFromMilliseconds(0.2);
   }
 
-  // if the queue is really full, we have to guarantee more progress
+  // If the queue is really full, we have to guarantee more progress.
   {
-    if (uiNumTasksTodo > 100)
+    if (uiPendingTaskCount > 100)
       ExecuteTask(xiiTaskPriority::SomeFrameMainThread, xiiTaskPriority::SomeFrameMainThread, false, xiiTaskGroupID(), nullptr);
 
-    if (uiNumTasksTodo > 75)
+    if (uiPendingTaskCount > 75)
       ExecuteTask(xiiTaskPriority::SomeFrameMainThread, xiiTaskPriority::SomeFrameMainThread, false, xiiTaskGroupID(), nullptr);
 
-    if (uiNumTasksTodo > 50)
+    if (uiPendingTaskCount > 50)
       ExecuteTask(xiiTaskPriority::SomeFrameMainThread, xiiTaskPriority::SomeFrameMainThread, false, xiiTaskGroupID(), nullptr);
   }
 }

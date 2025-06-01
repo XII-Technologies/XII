@@ -99,32 +99,6 @@ void xiiApplicationFileSystemConfig::Load(xiiStringView sPath)
     if (pWrite)
       cfg.m_bWritable = pWrite->GetPrimitivesBool()[0];
 
-    /// \todo Temp fix for backwards compatibility
-    {
-      if (cfg.m_sRootName == "project")
-      {
-        cfg.m_sDataDirSpecialPath = ">project/";
-      }
-      else if (cfg.m_sDataDirSpecialPath.StartsWith_NoCase(":project/"))
-      {
-        xiiStringBuilder temp(">project/");
-        temp.AppendPath(cfg.m_sDataDirSpecialPath.GetData() + 9);
-        cfg.m_sDataDirSpecialPath = temp;
-      }
-      else if (cfg.m_sDataDirSpecialPath.StartsWith_NoCase(":sdk/"))
-      {
-        xiiStringBuilder temp(">sdk/");
-        temp.AppendPath(cfg.m_sDataDirSpecialPath.GetData() + 5);
-        cfg.m_sDataDirSpecialPath = temp;
-      }
-      else if (!cfg.m_sDataDirSpecialPath.StartsWith_NoCase(">sdk/"))
-      {
-        xiiStringBuilder temp(">sdk/");
-        temp.AppendPath(cfg.m_sDataDirSpecialPath);
-        cfg.m_sDataDirSpecialPath = temp;
-      }
-    }
-
     m_DataDirs.PushBack(cfg);
   }
 }

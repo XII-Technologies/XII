@@ -24,6 +24,9 @@ public:
   void EndFrame();
 
 public:
+  /// \name Factory Methods.
+  ///@{
+
   /// \brief This creates a swap chain object.
   ///
   /// \param description - The swap chain description. See xiiGALSwapChainCreationDescription.
@@ -190,6 +193,7 @@ public:
   /// \return The reference-counted pointer to the created tile pipeline state object.
   [[nodiscard]] xiiSharedPtr<xiiGALTilePipelineState> CreateTilePipelineState(const xiiGALTilePipelineStateCreationDescription& description);
 
+  ///@}
 
   /// \brief Waits until all outstanding operations on the GPU are complete and destroys any pending resources and GPU objects.
   ///

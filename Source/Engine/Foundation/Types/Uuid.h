@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <Foundation/Algorithm/HashingUtils.h>

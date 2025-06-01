@@ -9,7 +9,6 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Time/Time.h>
 
-
 /// \todo document and test (and finish)
 class XII_FOUNDATION_DLL xiiTelemetry
 {

@@ -2,10 +2,8 @@
 
 #include <Foundation/Communication/RemoteMessage.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProcessMessage, 1, xiiRTTIDefaultAllocator<xiiProcessMessage>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiRemoteMessage::xiiRemoteMessage() :
   m_Reader(&m_Storage), m_Writer(&m_Storage)
