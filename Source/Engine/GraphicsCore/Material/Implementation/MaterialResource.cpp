@@ -30,17 +30,6 @@ void xiiMaterialResourceDescriptor::Clear()
   m_RenderDataCategory = xiiInvalidRenderDataCategory;
 }
 
-bool xiiMaterialResourceDescriptor::operator==(const xiiMaterialResourceDescriptor& other) const
-{
-  return m_hBaseMaterial == other.m_hBaseMaterial &&
-    m_hShader == other.m_hShader &&
-    m_PermutationVars == other.m_PermutationVars &&
-    m_Parameters == other.m_Parameters &&
-    m_Texture2DBindings == other.m_Texture2DBindings &&
-    m_TextureCubeBindings == other.m_TextureCubeBindings &&
-    m_RenderDataCategory == other.m_RenderDataCategory;
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
@@ -69,13 +58,8 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiDeque<xiiMaterialResource::CachedValues> xiiMaterialResource::s_CachedValues;
 
 xiiMaterialResource::xiiMaterialResource() :
-  xiiResource(DoUpdate::OnAnyThread, 1)
+  xiiResource(DoUpdate::OnAnyThread, 1), m_iLastUpdated(0), m_iLastConstantsUpdated(0), m_uiCacheIndex(xiiInvalidIndex), m_pCachedValues(nullptr)
 {
-  m_iLastUpdated          = 0;
-  m_iLastConstantsUpdated = 0;
-  m_uiCacheIndex          = xiiInvalidIndex;
-  m_pCachedValues         = nullptr;
-
   xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&xiiMaterialResource::OnResourceEvent, this));
 }
 
@@ -96,12 +80,12 @@ xiiHashedString xiiMaterialResource::GetPermutationValue(const xiiTempHashedStri
 
 xiiHashedString xiiMaterialResource::GetSurface() const
 {
-  if (!m_mDesc.m_sSurface.IsEmpty())
-    return m_mDesc.m_sSurface;
+  if (!m_Description.m_sSurface.IsEmpty())
+    return m_Description.m_sSurface;
 
-  if (m_mDesc.m_hBaseMaterial.IsValid())
+  if (m_Description.m_hBaseMaterial.IsValid())
   {
-    xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_mDesc.m_hBaseMaterial, xiiResourceAcquireMode::BlockTillLoaded);
+    xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_Description.m_hBaseMaterial, xiiResourceAcquireMode::BlockTillLoaded);
     return pBaseMaterial->GetSurface();
   }
 
@@ -111,9 +95,9 @@ xiiHashedString xiiMaterialResource::GetSurface() const
 void xiiMaterialResource::SetParameter(const xiiHashedString& sName, const xiiVariant& value)
 {
   xiiUInt32 uiIndex = xiiInvalidIndex;
-  for (xiiUInt32 i = 0; i < m_mDesc.m_Parameters.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_Description.m_Parameters.GetCount(); ++i)
   {
-    if (m_mDesc.m_Parameters[i].m_Name == sName)
+    if (m_Description.m_Parameters[i].m_Name == sName)
     {
       uiIndex = i;
       break;
@@ -124,16 +108,16 @@ void xiiMaterialResource::SetParameter(const xiiHashedString& sName, const xiiVa
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      if (m_mDesc.m_Parameters[uiIndex].m_Value == value)
+      if (m_Description.m_Parameters[uiIndex].m_Value == value)
       {
         return;
       }
 
-      m_mDesc.m_Parameters[uiIndex].m_Value = value;
+      m_Description.m_Parameters[uiIndex].m_Value = value;
     }
     else
     {
-      auto& param   = m_mDesc.m_Parameters.ExpandAndGetRef();
+      auto& param   = m_Description.m_Parameters.ExpandAndGetRef();
       param.m_Name  = sName;
       param.m_Value = value;
     }
@@ -145,7 +129,7 @@ void xiiMaterialResource::SetParameter(const xiiHashedString& sName, const xiiVa
       return;
     }
 
-    m_mDesc.m_Parameters.RemoveAtAndSwap(uiIndex);
+    m_Description.m_Parameters.RemoveAtAndSwap(uiIndex);
   }
 
   m_iLastModified.Increment();
@@ -159,9 +143,9 @@ void xiiMaterialResource::SetParameter(const char* szName, const xiiVariant& val
   xiiTempHashedString sName(szName);
 
   xiiUInt32 uiIndex = xiiInvalidIndex;
-  for (xiiUInt32 i = 0; i < m_mDesc.m_Parameters.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_Description.m_Parameters.GetCount(); ++i)
   {
-    if (m_mDesc.m_Parameters[i].m_Name == sName)
+    if (m_Description.m_Parameters[i].m_Name == sName)
     {
       uiIndex = i;
       break;
@@ -172,16 +156,16 @@ void xiiMaterialResource::SetParameter(const char* szName, const xiiVariant& val
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      if (m_mDesc.m_Parameters[uiIndex].m_Value == value)
+      if (m_Description.m_Parameters[uiIndex].m_Value == value)
       {
         return;
       }
 
-      m_mDesc.m_Parameters[uiIndex].m_Value = value;
+      m_Description.m_Parameters[uiIndex].m_Value = value;
     }
     else
     {
-      auto& param = m_mDesc.m_Parameters.ExpandAndGetRef();
+      auto& param = m_Description.m_Parameters.ExpandAndGetRef();
       param.m_Name.Assign(szName);
       param.m_Value = value;
     }
@@ -193,7 +177,7 @@ void xiiMaterialResource::SetParameter(const char* szName, const xiiVariant& val
       return;
     }
 
-    m_mDesc.m_Parameters.RemoveAtAndSwap(uiIndex);
+    m_Description.m_Parameters.RemoveAtAndSwap(uiIndex);
   }
 
   m_iLastModified.Increment();
@@ -215,9 +199,9 @@ xiiVariant xiiMaterialResource::GetParameter(const xiiTempHashedString& sName)
 void xiiMaterialResource::SetTexture2DBinding(const xiiHashedString& sName, const xiiTexture2DResourceHandle& value)
 {
   xiiUInt32 uiIndex = xiiInvalidIndex;
-  for (xiiUInt32 i = 0; i < m_mDesc.m_Texture2DBindings.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_Description.m_Texture2DBindings.GetCount(); ++i)
   {
-    if (m_mDesc.m_Texture2DBindings[i].m_Name == sName)
+    if (m_Description.m_Texture2DBindings[i].m_Name == sName)
     {
       uiIndex = i;
       break;
@@ -228,11 +212,11 @@ void xiiMaterialResource::SetTexture2DBinding(const xiiHashedString& sName, cons
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      m_mDesc.m_Texture2DBindings[uiIndex].m_Value = value;
+      m_Description.m_Texture2DBindings[uiIndex].m_Value = value;
     }
     else
     {
-      auto& binding   = m_mDesc.m_Texture2DBindings.ExpandAndGetRef();
+      auto& binding   = m_Description.m_Texture2DBindings.ExpandAndGetRef();
       binding.m_Name  = sName;
       binding.m_Value = value;
     }
@@ -241,7 +225,7 @@ void xiiMaterialResource::SetTexture2DBinding(const xiiHashedString& sName, cons
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      m_mDesc.m_Texture2DBindings.RemoveAtAndSwap(uiIndex);
+      m_Description.m_Texture2DBindings.RemoveAtAndSwap(uiIndex);
     }
   }
 
@@ -255,9 +239,9 @@ void xiiMaterialResource::SetTexture2DBinding(const char* szName, const xiiTextu
   xiiTempHashedString sName(szName);
 
   xiiUInt32 uiIndex = xiiInvalidIndex;
-  for (xiiUInt32 i = 0; i < m_mDesc.m_Texture2DBindings.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_Description.m_Texture2DBindings.GetCount(); ++i)
   {
-    if (m_mDesc.m_Texture2DBindings[i].m_Name == sName)
+    if (m_Description.m_Texture2DBindings[i].m_Name == sName)
     {
       uiIndex = i;
       break;
@@ -268,11 +252,11 @@ void xiiMaterialResource::SetTexture2DBinding(const char* szName, const xiiTextu
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      m_mDesc.m_Texture2DBindings[uiIndex].m_Value = value;
+      m_Description.m_Texture2DBindings[uiIndex].m_Value = value;
     }
     else
     {
-      auto& binding = m_mDesc.m_Texture2DBindings.ExpandAndGetRef();
+      auto& binding = m_Description.m_Texture2DBindings.ExpandAndGetRef();
       binding.m_Name.Assign(szName);
       binding.m_Value = value;
     }
@@ -281,7 +265,7 @@ void xiiMaterialResource::SetTexture2DBinding(const char* szName, const xiiTextu
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      m_mDesc.m_Texture2DBindings.RemoveAtAndSwap(uiIndex);
+      m_Description.m_Texture2DBindings.RemoveAtAndSwap(uiIndex);
     }
   }
 
@@ -308,9 +292,9 @@ xiiTexture2DResourceHandle xiiMaterialResource::GetTexture2DBinding(const xiiTem
 void xiiMaterialResource::SetTextureCubeBinding(const xiiHashedString& sName, const xiiTextureCubeResourceHandle& value)
 {
   xiiUInt32 uiIndex = xiiInvalidIndex;
-  for (xiiUInt32 i = 0; i < m_mDesc.m_TextureCubeBindings.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_Description.m_TextureCubeBindings.GetCount(); ++i)
   {
-    if (m_mDesc.m_TextureCubeBindings[i].m_Name == sName)
+    if (m_Description.m_TextureCubeBindings[i].m_Name == sName)
     {
       uiIndex = i;
       break;
@@ -321,11 +305,11 @@ void xiiMaterialResource::SetTextureCubeBinding(const xiiHashedString& sName, co
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      m_mDesc.m_TextureCubeBindings[uiIndex].m_Value = value;
+      m_Description.m_TextureCubeBindings[uiIndex].m_Value = value;
     }
     else
     {
-      auto& binding   = m_mDesc.m_TextureCubeBindings.ExpandAndGetRef();
+      auto& binding   = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
       binding.m_Name  = sName;
       binding.m_Value = value;
     }
@@ -334,7 +318,7 @@ void xiiMaterialResource::SetTextureCubeBinding(const xiiHashedString& sName, co
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      m_mDesc.m_TextureCubeBindings.RemoveAtAndSwap(uiIndex);
+      m_Description.m_TextureCubeBindings.RemoveAtAndSwap(uiIndex);
     }
   }
 
@@ -348,9 +332,9 @@ void xiiMaterialResource::SetTextureCubeBinding(const char* szName, const xiiTex
   xiiTempHashedString sName(szName);
 
   xiiUInt32 uiIndex = xiiInvalidIndex;
-  for (xiiUInt32 i = 0; i < m_mDesc.m_TextureCubeBindings.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_Description.m_TextureCubeBindings.GetCount(); ++i)
   {
-    if (m_mDesc.m_TextureCubeBindings[i].m_Name == sName)
+    if (m_Description.m_TextureCubeBindings[i].m_Name == sName)
     {
       uiIndex = i;
       break;
@@ -361,11 +345,11 @@ void xiiMaterialResource::SetTextureCubeBinding(const char* szName, const xiiTex
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      m_mDesc.m_TextureCubeBindings[uiIndex].m_Value = value;
+      m_Description.m_TextureCubeBindings[uiIndex].m_Value = value;
     }
     else
     {
-      auto& binding = m_mDesc.m_TextureCubeBindings.ExpandAndGetRef();
+      auto& binding = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
       binding.m_Name.Assign(szName);
       binding.m_Value = value;
     }
@@ -374,7 +358,7 @@ void xiiMaterialResource::SetTextureCubeBinding(const char* szName, const xiiTex
   {
     if (uiIndex != xiiInvalidIndex)
     {
-      m_mDesc.m_TextureCubeBindings.RemoveAtAndSwap(uiIndex);
+      m_Description.m_TextureCubeBindings.RemoveAtAndSwap(uiIndex);
     }
   }
 
@@ -405,14 +389,14 @@ xiiRenderData::Category xiiMaterialResource::GetRenderDataCategory()
 
 void xiiMaterialResource::PreserveCurrentDesc()
 {
-  m_mOriginalDesc = m_mDesc;
+  m_LoadingDescription = m_Description;
 }
 
 void xiiMaterialResource::ResetResource()
 {
-  if (m_mDesc != m_mOriginalDesc)
+  if (m_Description != m_LoadingDescription)
   {
-    m_mDesc = m_mOriginalDesc;
+    m_Description = m_LoadingDescription;
 
     m_iLastModified.Increment();
     m_iLastConstantsModified.Increment();
@@ -445,9 +429,9 @@ const char* xiiMaterialResource::GetDefaultMaterialFileName(DefaultMaterialType 
 
 xiiResourceLoadDesc xiiMaterialResource::UnloadData(Unload WhatToUnload)
 {
-  if (m_mDesc.m_hBaseMaterial.IsValid())
+  if (m_Description.m_hBaseMaterial.IsValid())
   {
-    xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_mDesc.m_hBaseMaterial, xiiResourceAcquireMode::PointerOnly);
+    xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_Description.m_hBaseMaterial, xiiResourceAcquireMode::PointerOnly);
 
     auto d = xiiMakeDelegate(&xiiMaterialResource::OnBaseMaterialModified, this);
     if (pBaseMaterial->m_ModifiedEvent.HasEventHandler(d))
@@ -456,14 +440,13 @@ xiiResourceLoadDesc xiiMaterialResource::UnloadData(Unload WhatToUnload)
     }
   }
 
-  m_mDesc.Clear();
-  m_mOriginalDesc.Clear();
+  m_Description.Clear();
+  m_LoadingDescription.Clear();
 
-  if (!m_hConstantBufferStorage.IsInvalidated())
-  {
-    xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBufferStorage);
-    m_hConstantBufferStorage.Invalidate();
-  }
+  m_pMaterialConstantsBuffer.Clear();
+
+  xiiFoundation::GetAlignedAllocator()->Deallocate(m_pMaterialData.GetPtr());
+  m_pMaterialData.Clear();
 
   DeallocateCache(m_uiCacheIndex);
   m_uiCacheIndex  = xiiInvalidIndex;
@@ -479,8 +462,8 @@ xiiResourceLoadDesc xiiMaterialResource::UnloadData(Unload WhatToUnload)
 
 xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterStream)
 {
-  m_mDesc.Clear();
-  m_mOriginalDesc.Clear();
+  m_Description.Clear();
+  m_LoadingDescription.Clear();
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -548,13 +531,13 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       s >> sTemp;
 
       if (!sTemp.IsEmpty())
-        m_mDesc.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(sTemp);
+        m_Description.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(sTemp);
     }
 
     // Surface
     {
       s >> sTemp;
-      m_mDesc.m_sSurface.Assign(sTemp.GetView());
+      m_Description.m_sSurface.Assign(sTemp.GetView());
     }
 
     // Shader
@@ -562,7 +545,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       s >> sTemp;
 
       if (!sTemp.IsEmpty())
-        m_mDesc.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sTemp);
+        m_Description.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sTemp);
     }
 
     // Permutation Variables
@@ -570,7 +553,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       xiiUInt16 uiPermVars;
       s >> uiPermVars;
 
-      m_mDesc.m_PermutationVars.Reserve(uiPermVars);
+      m_Description.m_PermutationVars.Reserve(uiPermVars);
 
       for (xiiUInt16 i = 0; i < uiPermVars; ++i)
       {
@@ -589,7 +572,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       xiiUInt16 uiTextures = 0;
       s >> uiTextures;
 
-      m_mDesc.m_Texture2DBindings.Reserve(uiTextures);
+      m_Description.m_Texture2DBindings.Reserve(uiTextures);
 
       for (xiiUInt16 i = 0; i < uiTextures; ++i)
       {
@@ -598,7 +581,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
         if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
         {
-          xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_mDesc.m_Texture2DBindings.ExpandAndGetRef();
+          xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_Description.m_Texture2DBindings.ExpandAndGetRef();
           tc.m_Name.Assign(sTemp.GetData());
           tc.m_Value = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTemp2);
         }
@@ -610,7 +593,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       xiiUInt16 uiTextures = 0;
       s >> uiTextures;
 
-      m_mDesc.m_TextureCubeBindings.Reserve(uiTextures);
+      m_Description.m_TextureCubeBindings.Reserve(uiTextures);
 
       for (xiiUInt16 i = 0; i < uiTextures; ++i)
       {
@@ -619,7 +602,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
         if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
         {
-          xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_mDesc.m_TextureCubeBindings.ExpandAndGetRef();
+          xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
           tc.m_Name.Assign(sTemp.GetData());
           tc.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTemp2);
         }
@@ -631,7 +614,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       xiiUInt16 uiConstants = 0;
       s >> uiConstants;
 
-      m_mDesc.m_Parameters.Reserve(uiConstants);
+      m_Description.m_Parameters.Reserve(uiConstants);
 
       xiiVariant vTemp;
 
@@ -642,7 +625,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
         if (!sTemp.IsEmpty() && vTemp.IsValid())
         {
-          xiiMaterialResourceDescriptor::Parameter& tc = m_mDesc.m_Parameters.ExpandAndGetRef();
+          xiiMaterialResourceDescriptor::Parameter& tc = m_Description.m_Parameters.ExpandAndGetRef();
           tc.m_Name.Assign(sTemp.GetData());
           tc.m_Value = vTemp;
         }
@@ -658,8 +641,8 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       xiiTempHashedString sCategoryNameHashed(sRenderDataCategoryName.GetView());
       if (sCategoryNameHashed != xiiTempHashedString("<Invalid>"))
       {
-        m_mDesc.m_RenderDataCategory = xiiRenderData::FindCategory(sCategoryNameHashed);
-        if (m_mDesc.m_RenderDataCategory == xiiInvalidRenderDataCategory)
+        m_Description.m_RenderDataCategory = xiiRenderData::FindCategory(sCategoryNameHashed);
+        if (m_Description.m_RenderDataCategory == xiiInvalidRenderDataCategory)
         {
           xiiLog::Error("Material '{}' uses an invalid render data category '{}'", GetResourceDescription(), sRenderDataCategoryName);
         }
@@ -711,19 +694,19 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
     // Read the base material
     if (const xiiOpenDdlReaderElement* pBase = pRoot->FindChildOfType(xiiOpenDdlPrimitiveType::String, "BaseMaterial"))
     {
-      m_mDesc.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(pBase->GetPrimitivesString()[0]);
+      m_Description.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(pBase->GetPrimitivesString()[0]);
     }
 
     // Read the shader
     if (const xiiOpenDdlReaderElement* pShader = pRoot->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Shader"))
     {
-      m_mDesc.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(pShader->GetPrimitivesString()[0]);
+      m_Description.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(pShader->GetPrimitivesString()[0]);
     }
 
     // Read the render data category
     if (const xiiOpenDdlReaderElement* pRenderDataCategory = pRoot->FindChildOfType(xiiOpenDdlPrimitiveType::String, "RenderDataCategory"))
     {
-      m_mDesc.m_RenderDataCategory = xiiRenderData::FindCategory(xiiTempHashedString(pRenderDataCategory->GetPrimitivesString()[0]));
+      m_Description.m_RenderDataCategory = xiiRenderData::FindCategory(xiiTempHashedString(pRenderDataCategory->GetPrimitivesString()[0]));
     }
 
     for (const xiiOpenDdlReaderElement* pChild = pRoot->GetFirstChild(); pChild != nullptr; pChild = pChild->GetSibling())
@@ -749,7 +732,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
         xiiVariant value;
         if (pName && pValue && xiiOpenDdlUtils::ConvertToVariant(pValue, value).Succeeded())
         {
-          xiiMaterialResourceDescriptor::Parameter& sc = m_mDesc.m_Parameters.ExpandAndGetRef();
+          xiiMaterialResourceDescriptor::Parameter& sc = m_Description.m_Parameters.ExpandAndGetRef();
           sc.m_Name.Assign(pName->GetPrimitivesString()[0]);
           sc.m_Value = value;
         }
@@ -763,7 +746,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
         if (pName && pValue)
         {
-          xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_mDesc.m_Texture2DBindings.ExpandAndGetRef();
+          xiiMaterialResourceDescriptor::Texture2DBinding& tc = m_Description.m_Texture2DBindings.ExpandAndGetRef();
           tc.m_Name.Assign(pName->GetPrimitivesString()[0]);
           tc.m_Value = xiiResourceManager::LoadResource<xiiTexture2DResource>(pValue->GetPrimitivesString()[0]);
         }
@@ -777,7 +760,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
         if (pName && pValue)
         {
-          xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_mDesc.m_TextureCubeBindings.ExpandAndGetRef();
+          xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
           tc.m_Name.Assign(pName->GetPrimitivesString()[0]);
           tc.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(pValue->GetPrimitivesString()[0]);
         }
@@ -789,10 +772,10 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
     xiiLog::Error("Unknown material file type: '{}'", sAbsFilePath);
   }
 
-  if (m_mDesc.m_hBaseMaterial.IsValid())
+  if (m_Description.m_hBaseMaterial.IsValid())
   {
     // Block till the base material has been fully loaded to ensure that all parameters have their final value once this material is loaded.
-    xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_mDesc.m_hBaseMaterial, xiiResourceAcquireMode::BlockTillLoaded);
+    xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_Description.m_hBaseMaterial, xiiResourceAcquireMode::BlockTillLoaded);
 
     if (!pBaseMaterial->m_ModifiedEvent.HasEventHandler(xiiMakeDelegate(&xiiMaterialResource::OnBaseMaterialModified, this)))
     {
@@ -800,7 +783,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
     }
   }
 
-  m_mOriginalDesc = m_mDesc;
+  m_LoadingDescription = m_Description;
 
   m_iLastModified.Increment();
   m_iLastConstantsModified.Increment();
@@ -812,25 +795,25 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
 void xiiMaterialResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
-  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiMaterialResource) + (xiiUInt32)(m_mDesc.m_PermutationVars.GetHeapMemoryUsage() + m_mDesc.m_Parameters.GetHeapMemoryUsage() + m_mDesc.m_Texture2DBindings.GetHeapMemoryUsage() + m_mDesc.m_TextureCubeBindings.GetHeapMemoryUsage() + m_mOriginalDesc.m_PermutationVars.GetHeapMemoryUsage() + m_mOriginalDesc.m_Parameters.GetHeapMemoryUsage() + m_mOriginalDesc.m_Texture2DBindings.GetHeapMemoryUsage() + m_mOriginalDesc.m_TextureCubeBindings.GetHeapMemoryUsage());
+  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiMaterialResource) + (xiiUInt32)(m_Description.m_PermutationVars.GetHeapMemoryUsage() + m_Description.m_Parameters.GetHeapMemoryUsage() + m_Description.m_Texture2DBindings.GetHeapMemoryUsage() + m_Description.m_TextureCubeBindings.GetHeapMemoryUsage() + m_LoadingDescription.m_PermutationVars.GetHeapMemoryUsage() + m_LoadingDescription.m_Parameters.GetHeapMemoryUsage() + m_LoadingDescription.m_Texture2DBindings.GetHeapMemoryUsage() + m_LoadingDescription.m_TextureCubeBindings.GetHeapMemoryUsage());
 
   out_NewMemoryUsage.m_uiMemoryGPU = 0;
 }
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMaterialResource, xiiMaterialResourceDescriptor)
 {
-  m_mDesc         = descriptor;
-  m_mOriginalDesc = descriptor;
+  m_Description        = descriptor;
+  m_LoadingDescription = descriptor;
 
   xiiResourceLoadDesc res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
-  if (m_mDesc.m_hBaseMaterial.IsValid())
+  if (m_Description.m_hBaseMaterial.IsValid())
   {
     // Can't block here for the base material since this would result in a deadlock
-    xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_mDesc.m_hBaseMaterial, xiiResourceAcquireMode::PointerOnly);
+    xiiResourceLock<xiiMaterialResource> pBaseMaterial(m_Description.m_hBaseMaterial, xiiResourceAcquireMode::PointerOnly);
     pBaseMaterial->m_ModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiMaterialResource::OnBaseMaterialModified, this));
   }
 
@@ -842,7 +825,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMaterialResource, xiiMaterialResourceDescri
 
 void xiiMaterialResource::OnBaseMaterialModified(const xiiMaterialResource* pModifiedMaterial)
 {
-  XII_ASSERT_DEV(m_mDesc.m_hBaseMaterial == pModifiedMaterial, "Implementation error");
+  XII_ASSERT_DEV(m_Description.m_hBaseMaterial == pModifiedMaterial, "Implementation error");
 
   m_iLastModified.Increment();
   m_iLastConstantsModified.Increment();
@@ -870,7 +853,7 @@ void xiiMaterialResource::AddPermutationVar(xiiStringView sName, xiiStringView s
 
   if (xiiGALShaderManager::IsPermutationValueAllowed(sNameHashed, sValueHashed))
   {
-    xiiPermutationVar& pv = m_mDesc.m_PermutationVars.ExpandAndGetRef();
+    xiiPermutationVar& pv = m_Description.m_PermutationVars.ExpandAndGetRef();
     pv.m_sName            = sNameHashed;
     pv.m_sValue           = sValueHashed;
   }
@@ -901,34 +884,31 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
 
   m_iLastConstantsUpdated = m_iLastConstantsModified;
 
-  if (m_hConstantBufferStorage.IsInvalidated())
+  if (!m_pMaterialConstantsBuffer)
   {
-    m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pBinding->m_uiTotalSize);
+    m_pMaterialConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), pBinding->m_uiTotalSize, "xiiMaterialConstants");
+  }
+  if (m_pMaterialData.GetCount() != pBinding->m_uiTotalSize)
+  {
+    xiiFoundation::GetAlignedAllocator()->Deallocate(m_pMaterialData.GetPtr());
+
+    m_pMaterialData.Clear();
+
+    m_pMaterialData = xiiMakeArrayPtr(static_cast<xiiUInt8*>(xiiFoundation::GetAlignedAllocator()->Allocate(pBinding->m_uiTotalSize, 16U)), pBinding->m_uiTotalSize);
+
+    xiiMemoryUtils::ZeroFill(m_pMaterialData.GetPtr(), m_pMaterialData.GetCount());
   }
 
-  xiiConstantBufferStorageBase* pStorage = nullptr;
-  if (xiiRenderContext::TryGetConstantBufferStorage(m_hConstantBufferStorage, pStorage))
+  for (auto& shaderVariableDescription : pBinding->m_Variables)
   {
-    xiiArrayPtr<xiiUInt8> data = pStorage->GetRawDataForWriting();
-    if (data.GetCount() != pBinding->m_uiTotalSize)
+    if (shaderVariableDescription.m_uiOffset + xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(shaderVariableDescription.m_PrimitiveType) <= m_pMaterialData.GetCount())
     {
-      xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBufferStorage);
-      m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pBinding->m_uiTotalSize);
+      xiiUInt8* pDestination = &m_pMaterialData[shaderVariableDescription.m_uiOffset];
 
-      XII_VERIFY(xiiRenderContext::TryGetConstantBufferStorage(m_hConstantBufferStorage, pStorage), "");
-    }
+      xiiVariant* pValue = nullptr;
+      pCachedValues->m_Parameters.TryGetValue(shaderVariableDescription.m_sName, pValue);
 
-    for (auto& member : pBinding->m_Variables)
-    {
-      if (member.m_uiOffset + xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(member.m_PrimitiveType) <= data.GetCount())
-      {
-        xiiUInt8* pDestination = &data[member.m_uiOffset];
-
-        xiiVariant* pValue = nullptr;
-        pCachedValues->m_Parameters.TryGetValue(member.m_sName, pValue);
-
-        xiiGALShaderVariableDescription::CopyDataFromVariant(pDestination, pValue, member);
-      }
+      xiiGALShaderVariableDescription::CopyDataFromVariant(pDestination, pValue, shaderVariableDescription);
     }
   }
 }
@@ -948,7 +928,7 @@ xiiMaterialResource::CachedValues* xiiMaterialResource::GetOrUpdateCachedValues(
   {
     materialHierarchy.PushBack(pCurrentMaterial);
 
-    const xiiMaterialResourceHandle& hBaseMaterial = pCurrentMaterial->m_mDesc.m_hBaseMaterial;
+    const xiiMaterialResourceHandle& hBaseMaterial = pCurrentMaterial->m_Description.m_hBaseMaterial;
     if (!hBaseMaterial.IsValid())
       break;
 
@@ -978,7 +958,7 @@ xiiMaterialResource::CachedValues* xiiMaterialResource::GetOrUpdateCachedValues(
   for (xiiUInt32 i = materialHierarchy.GetCount(); i-- > 0;)
   {
     xiiMaterialResource*                 pMaterial = materialHierarchy[i];
-    const xiiMaterialResourceDescriptor& desc      = pMaterial->m_mDesc;
+    const xiiMaterialResourceDescriptor& desc      = pMaterial->m_Description;
 
     if (desc.m_hShader.IsValid())
       m_pCachedValues->m_hShader = desc.m_hShader;
@@ -1115,7 +1095,7 @@ void xiiMaterialResource::ClearCache()
 
 const xiiMaterialResourceDescriptor& xiiMaterialResource::GetCurrentDesc() const
 {
-  return m_mDesc;
+  return m_Description;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Material_Implementation_MaterialResource);

@@ -18,7 +18,7 @@ struct xiiMaterialResourceDescriptor
     xiiHashedString m_Name;
     xiiVariant      m_Value;
 
-    XII_FORCE_INLINE bool operator==(const Parameter& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
+    XII_ALWAYS_INLINE bool operator==(const Parameter& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
   };
 
   struct Texture2DBinding
@@ -26,7 +26,7 @@ struct xiiMaterialResourceDescriptor
     xiiHashedString            m_Name;
     xiiTexture2DResourceHandle m_Value;
 
-    XII_FORCE_INLINE bool operator==(const Texture2DBinding& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
+    XII_ALWAYS_INLINE bool operator==(const Texture2DBinding& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
   };
 
   struct TextureCubeBinding
@@ -34,12 +34,12 @@ struct xiiMaterialResourceDescriptor
     xiiHashedString              m_Name;
     xiiTextureCubeResourceHandle m_Value;
 
-    XII_FORCE_INLINE bool operator==(const TextureCubeBinding& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
+    XII_ALWAYS_INLINE bool operator==(const TextureCubeBinding& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
   };
 
   void Clear();
 
-  bool operator==(const xiiMaterialResourceDescriptor& other) const;
+  XII_ALWAYS_INLINE bool operator==(const xiiMaterialResourceDescriptor& other) const { return m_hBaseMaterial == other.m_hBaseMaterial && m_hShader == other.m_hShader && m_PermutationVars == other.m_PermutationVars && m_Parameters == other.m_Parameters && m_Texture2DBindings == other.m_Texture2DBindings && m_TextureCubeBindings == other.m_TextureCubeBindings && m_RenderDataCategory == other.m_RenderDataCategory; }
 
   xiiMaterialResourceHandle m_hBaseMaterial;
   // xiiSurfaceResource is not linked into this project (not true anymore -> could be changed)
@@ -106,8 +106,8 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
-  xiiMaterialResourceDescriptor m_mOriginalDesc; // stores the state at loading, such that SetParameter etc. calls can be reset later
-  xiiMaterialResourceDescriptor m_mDesc;
+  xiiMaterialResourceDescriptor m_LoadingDescription; // stores the state at loading, such that SetParameter etc. calls can be reset later
+  xiiMaterialResourceDescriptor m_Description;
 
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, MaterialResource);
 
@@ -127,7 +127,8 @@ private:
 
   void UpdateConstantBuffer(xiiShaderPermutationResource* pShaderPermutation);
 
-  xiiConstantBufferStorageHandle m_hConstantBufferStorage;
+  xiiSharedPtr<xiiGALBuffer> m_pMaterialConstantsBuffer;
+  xiiArrayPtr<xiiUInt8>      m_pMaterialData;
 
   struct CachedValues
   {
