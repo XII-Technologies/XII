@@ -17,7 +17,7 @@ xiiShaderResource::xiiShaderResource() :
 xiiResourceLoadDesc xiiShaderResource::UnloadData(Unload WhatToUnload)
 {
   m_bShaderResourceIsValid = false;
-  m_PermutationVarsUsed.Clear();
+  m_PermutationVariablesUsed.Clear();
 
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -47,8 +47,17 @@ xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* stream)
     (*stream) >> sAbsFilePath;
   }
 
+  xiiString sContent;
+  sContent.ReadAll(*stream);
+
+  xiiGALShaderTextSectionizer shaderTextSections;
+  xiiGALShaderSections::GetShaderSections(sContent.GetView(), shaderTextSections);
+
+  xiiUInt32 uiFirstLine = 0U;
   xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermutationVariables; // ignored here
-  xiiGALShaderParser::ParsePermutationSection(*stream, m_PermutationVarsUsed, fixedPermutationVariables);
+
+  xiiStringView sPermutations = shaderTextSections.GetSectionContent(xiiGALShaderSections::PERMUTATIONS, uiFirstLine);
+  xiiGALShaderParser::ParsePermutationSection(sPermutations, m_PermutationVariablesUsed, fixedPermutationVariables);
 
   res.m_State              = xiiResourceState::Loaded;
   m_bShaderResourceIsValid = true;
@@ -58,7 +67,7 @@ xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* stream)
 
 void xiiShaderResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
-  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiShaderResource) + (xiiUInt32)m_PermutationVarsUsed.GetHeapMemoryUsage();
+  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiShaderResource) + (xiiUInt32)m_PermutationVariablesUsed.GetHeapMemoryUsage();
   out_NewMemoryUsage.m_uiMemoryGPU = 0;
 }
 

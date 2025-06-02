@@ -504,27 +504,13 @@ void xiiGALShaderParser::ParseMaterialParameterSection(xiiStreamReader& inout_st
 }
 
 // static
-void xiiGALShaderParser::ParsePermutationSection(xiiStreamReader& inout_stream, xiiHybridArray<xiiHashedString, 16>& out_permutationVariables, xiiHybridArray<xiiGALPermutationVariable, 16>& out_fixedPermutationVariables)
-{
-  xiiString sContent;
-  sContent.ReadAll(inout_stream);
-
-  xiiGALShaderTextSectionizer sections;
-  xiiGALShaderSections::GetShaderSections(sContent, sections);
-
-  xiiUInt32     uiFirstLine   = 0;
-  xiiStringView sPermutations = sections.GetSectionContent(xiiGALShaderSections::PERMUTATIONS, uiFirstLine);
-  ParsePermutationSection(sPermutations, out_permutationVariables, out_fixedPermutationVariables);
-}
-
-// static
 void xiiGALShaderParser::ParsePermutationSection(xiiStringView s, xiiHybridArray<xiiHashedString, 16>& out_permutationVariables, xiiHybridArray<xiiGALPermutationVariable, 16>& out_fixedPermutationVariables)
 {
   out_permutationVariables.Clear();
   out_fixedPermutationVariables.Clear();
 
   xiiTokenizer tokenizer;
-  tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)s.GetStartPointer(), s.GetElementCount()), xiiLog::GetThreadLocalLogSystem());
+  tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)s.GetStartPointer(), s.GetElementCount()), xiiLog::GetThreadLocalLogSystem(), false);
 
   enum class State
   {
