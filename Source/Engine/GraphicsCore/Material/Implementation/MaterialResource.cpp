@@ -23,7 +23,7 @@ void xiiMaterialResourceDescriptor::Clear()
   m_hBaseMaterial.Invalidate();
   m_sSurface.Clear();
   m_hShader.Invalidate();
-  m_PermutationVars.Clear();
+  m_PermutationVariables.Clear();
   m_Parameters.Clear();
   m_Texture2DBindings.Clear();
   m_TextureCubeBindings.Clear();
@@ -73,7 +73,7 @@ xiiHashedString xiiMaterialResource::GetPermutationValue(const xiiTempHashedStri
   auto pCachedValues = GetOrUpdateCachedValues();
 
   xiiHashedString sResult;
-  pCachedValues->m_PermutationVars.TryGetValue(sName, sResult);
+  pCachedValues->m_PermutationVariables.TryGetValue(sName, sResult);
 
   return sResult;
 }
@@ -387,7 +387,7 @@ xiiRenderData::Category xiiMaterialResource::GetRenderDataCategory()
   return pCachedValues->m_RenderDataCategory;
 }
 
-void xiiMaterialResource::PreserveCurrentDesc()
+void xiiMaterialResource::PreserveCurrentDescription()
 {
   m_LoadingDescription = m_Description;
 }
@@ -403,6 +403,11 @@ void xiiMaterialResource::ResetResource()
 
     m_ModifiedEvent.Broadcast(this);
   }
+}
+
+const xiiMaterialResourceDescriptor& xiiMaterialResource::GetCurrentDescription() const
+{
+  return m_Description;
 }
 
 const char* xiiMaterialResource::GetDefaultMaterialFileName(DefaultMaterialType materialType)
@@ -553,7 +558,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       xiiUInt16 uiPermVars;
       s >> uiPermVars;
 
-      m_Description.m_PermutationVars.Reserve(uiPermVars);
+      m_Description.m_PermutationVariables.Reserve(uiPermVars);
 
       for (xiiUInt16 i = 0; i < uiPermVars; ++i)
       {
@@ -795,7 +800,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
 void xiiMaterialResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
-  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiMaterialResource) + (xiiUInt32)(m_Description.m_PermutationVars.GetHeapMemoryUsage() + m_Description.m_Parameters.GetHeapMemoryUsage() + m_Description.m_Texture2DBindings.GetHeapMemoryUsage() + m_Description.m_TextureCubeBindings.GetHeapMemoryUsage() + m_LoadingDescription.m_PermutationVars.GetHeapMemoryUsage() + m_LoadingDescription.m_Parameters.GetHeapMemoryUsage() + m_LoadingDescription.m_Texture2DBindings.GetHeapMemoryUsage() + m_LoadingDescription.m_TextureCubeBindings.GetHeapMemoryUsage());
+  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiMaterialResource) + (xiiUInt32)(m_Description.m_PermutationVariables.GetHeapMemoryUsage() + m_Description.m_Parameters.GetHeapMemoryUsage() + m_Description.m_Texture2DBindings.GetHeapMemoryUsage() + m_Description.m_TextureCubeBindings.GetHeapMemoryUsage() + m_LoadingDescription.m_PermutationVariables.GetHeapMemoryUsage() + m_LoadingDescription.m_Parameters.GetHeapMemoryUsage() + m_LoadingDescription.m_Texture2DBindings.GetHeapMemoryUsage() + m_LoadingDescription.m_TextureCubeBindings.GetHeapMemoryUsage());
 
   out_NewMemoryUsage.m_uiMemoryGPU = 0;
 }
@@ -853,7 +858,7 @@ void xiiMaterialResource::AddPermutationVar(xiiStringView sName, xiiStringView s
 
   if (xiiGALShaderManager::IsPermutationValueAllowed(sNameHashed, sValueHashed))
   {
-    xiiPermutationVar& pv = m_Description.m_PermutationVars.ExpandAndGetRef();
+    xiiPermutationVar& pv = m_Description.m_PermutationVariables.ExpandAndGetRef();
     pv.m_sName            = sNameHashed;
     pv.m_sValue           = sValueHashed;
   }
@@ -957,42 +962,44 @@ xiiMaterialResource::CachedValues* xiiMaterialResource::GetOrUpdateCachedValues(
   // set state of parent material first
   for (xiiUInt32 i = materialHierarchy.GetCount(); i-- > 0;)
   {
-    xiiMaterialResource*                 pMaterial = materialHierarchy[i];
-    const xiiMaterialResourceDescriptor& desc      = pMaterial->m_Description;
+    xiiMaterialResource*                 pMaterial   = materialHierarchy[i];
+    const xiiMaterialResourceDescriptor& description = pMaterial->m_Description;
 
-    if (desc.m_hShader.IsValid())
-      m_pCachedValues->m_hShader = desc.m_hShader;
-
-    for (const auto& permutationVar : desc.m_PermutationVars)
+    if (description.m_hShader.IsValid())
     {
-      m_pCachedValues->m_PermutationVars.Insert(permutationVar.m_sName, permutationVar.m_sValue);
+      m_pCachedValues->m_hShader = description.m_hShader;
     }
 
-    for (const auto& param : desc.m_Parameters)
+    for (const auto& permutationVar : description.m_PermutationVariables)
+    {
+      m_pCachedValues->m_PermutationVariables.Insert(permutationVar.m_sName, permutationVar.m_sValue);
+    }
+
+    for (const auto& param : description.m_Parameters)
     {
       m_pCachedValues->m_Parameters.Insert(param.m_Name, param.m_Value);
     }
 
-    for (const auto& textureBinding : desc.m_Texture2DBindings)
+    for (const auto& textureBinding : description.m_Texture2DBindings)
     {
       m_pCachedValues->m_Texture2DBindings.Insert(textureBinding.m_Name, textureBinding.m_Value);
     }
 
-    for (const auto& textureBinding : desc.m_TextureCubeBindings)
+    for (const auto& textureBinding : description.m_TextureCubeBindings)
     {
       m_pCachedValues->m_TextureCubeBindings.Insert(textureBinding.m_Name, textureBinding.m_Value);
     }
 
-    if (desc.m_RenderDataCategory != xiiInvalidRenderDataCategory)
+    if (description.m_RenderDataCategory != xiiInvalidRenderDataCategory)
     {
-      m_pCachedValues->m_RenderDataCategory = desc.m_RenderDataCategory;
+      m_pCachedValues->m_RenderDataCategory = description.m_RenderDataCategory;
     }
   }
 
   if (m_pCachedValues->m_RenderDataCategory == xiiInvalidRenderDataCategory)
   {
     xiiHashedString sBlendModeValue;
-    if (m_pCachedValues->m_PermutationVars.TryGetValue("BLEND_MODE", sBlendModeValue))
+    if (m_pCachedValues->m_PermutationVariables.TryGetValue("BLEND_MODE", sBlendModeValue))
     {
       if (sBlendModeValue == xiiTempHashedString("BLEND_MODE_OPAQUE"))
       {
@@ -1035,7 +1042,7 @@ namespace
 void xiiMaterialResource::CachedValues::Reset()
 {
   m_hShader.Invalidate();
-  m_PermutationVars.Clear();
+  m_PermutationVariables.Clear();
   m_Parameters.Clear();
   m_Texture2DBindings.Clear();
   m_TextureCubeBindings.Clear();
@@ -1091,11 +1098,6 @@ void xiiMaterialResource::ClearCache()
 
   s_CachedValues.Clear();
   s_FreeMaterialCacheEntries.Clear();
-}
-
-const xiiMaterialResourceDescriptor& xiiMaterialResource::GetCurrentDesc() const
-{
-  return m_Description;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Material_Implementation_MaterialResource);

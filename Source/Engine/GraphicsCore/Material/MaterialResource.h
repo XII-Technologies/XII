@@ -39,14 +39,14 @@ struct xiiMaterialResourceDescriptor
 
   void Clear();
 
-  XII_ALWAYS_INLINE bool operator==(const xiiMaterialResourceDescriptor& other) const { return m_hBaseMaterial == other.m_hBaseMaterial && m_hShader == other.m_hShader && m_PermutationVars == other.m_PermutationVars && m_Parameters == other.m_Parameters && m_Texture2DBindings == other.m_Texture2DBindings && m_TextureCubeBindings == other.m_TextureCubeBindings && m_RenderDataCategory == other.m_RenderDataCategory; }
+  XII_ALWAYS_INLINE bool operator==(const xiiMaterialResourceDescriptor& other) const { return m_hBaseMaterial == other.m_hBaseMaterial && m_hShader == other.m_hShader && m_PermutationVariables == other.m_PermutationVariables && m_Parameters == other.m_Parameters && m_Texture2DBindings == other.m_Texture2DBindings && m_TextureCubeBindings == other.m_TextureCubeBindings && m_RenderDataCategory == other.m_RenderDataCategory; }
 
   xiiMaterialResourceHandle m_hBaseMaterial;
   // xiiSurfaceResource is not linked into this project (not true anymore -> could be changed)
   // this is not used for game purposes but rather for automatic collision mesh generation, so we only store the asset ID here
   xiiHashedString                     m_sSurface;
   xiiShaderResourceHandle             m_hShader;
-  xiiDynamicArray<xiiPermutationVar>  m_PermutationVars;
+  xiiDynamicArray<xiiPermutationVar>  m_PermutationVariables;
   xiiDynamicArray<Parameter>          m_Parameters;
   xiiDynamicArray<Texture2DBinding>   m_Texture2DBindings;
   xiiDynamicArray<TextureCubeBinding> m_TextureCubeBindings;
@@ -80,11 +80,11 @@ public:
 
   xiiRenderData::Category GetRenderDataCategory();
 
-  /// \brief Copies current desc to original desc so the material is not modified on reset
-  void         PreserveCurrentDesc();
+  /// \brief Copies current description to the loading description so the material is not modified on reset.
+  void         PreserveCurrentDescription();
   virtual void ResetResource() override;
 
-  const xiiMaterialResourceDescriptor& GetCurrentDesc() const;
+  const xiiMaterialResourceDescriptor& GetCurrentDescription() const;
 
   /// \brief Use these enum values together with GetDefaultMaterialFileName() to get the default file names for these material types.
   enum class DefaultMaterialType
@@ -133,7 +133,7 @@ private:
   struct CachedValues
   {
     xiiShaderResourceHandle                                     m_hShader;
-    xiiHashTable<xiiHashedString, xiiHashedString>              m_PermutationVars;
+    xiiHashTable<xiiHashedString, xiiHashedString>              m_PermutationVariables;
     xiiHashTable<xiiHashedString, xiiVariant>                   m_Parameters;
     xiiHashTable<xiiHashedString, xiiTexture2DResourceHandle>   m_Texture2DBindings;
     xiiHashTable<xiiHashedString, xiiTextureCubeResourceHandle> m_TextureCubeBindings;
