@@ -34,7 +34,9 @@ static xiiObjectPickingResult s_DummyResult;
 const xiiObjectPickingResult& xiiQtEngineDocumentWindow::PickObject(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY, xiiQtEngineViewWidget* pView) const
 {
   if (pView == nullptr)
+  {
     pView = GetHoveredViewWidget();
+  }
 
   if (pView != nullptr)
     return pView->PickObject(uiScreenPosX, uiScreenPosY);
@@ -67,10 +69,8 @@ xiiQtEngineViewWidget* xiiQtEngineDocumentWindow::GetHoveredViewWidget() const
 
       return nullptr;
     }
-
     pWidget = pWidget->parentWidget();
   }
-
   return nullptr;
 }
 
@@ -88,10 +88,8 @@ xiiQtEngineViewWidget* xiiQtEngineDocumentWindow::GetFocusedViewWidget() const
 
       return nullptr;
     }
-
     pWidget = pWidget->parentWidget();
   }
-
   return nullptr;
 }
 
@@ -102,7 +100,6 @@ xiiQtEngineViewWidget* xiiQtEngineDocumentWindow::GetViewWidgetByID(xiiUInt32 ui
     if (pView && pView->GetViewID() == uiViewID)
       return pView;
   }
-
   return nullptr;
 }
 
@@ -114,18 +111,22 @@ xiiArrayPtr<xiiQtEngineViewWidget* const> xiiQtEngineDocumentWindow::GetViewWidg
 void xiiQtEngineDocumentWindow::AddViewWidget(xiiQtEngineViewWidget* pView)
 {
   m_ViewWidgets.PushBack(pView);
+
   xiiEngineWindowEvent e;
   e.m_Type  = xiiEngineWindowEvent::Type::ViewCreated;
   e.m_pView = pView;
+
   m_EngineWindowEvent.Broadcast(e);
 }
 
 void xiiQtEngineDocumentWindow::RemoveViewWidget(xiiQtEngineViewWidget* pView)
 {
   m_ViewWidgets.RemoveAndSwap(pView);
+
   xiiEngineWindowEvent e;
   e.m_Type  = xiiEngineWindowEvent::Type::ViewDestroyed;
   e.m_pView = pView;
+
   m_EngineWindowEvent.Broadcast(e);
 }
 
@@ -176,10 +177,10 @@ void xiiQtEngineDocumentWindow::ProcessMessageEventHandler(const xiiEditorEngine
   {
     const xiiEditorEngineViewMsg* pViewMsg = static_cast<const xiiEditorEngineViewMsg*>(pMsg);
 
-    xiiQtEngineViewWidget* pView = GetViewWidgetByID(pViewMsg->m_uiViewID);
-
-    if (pView != nullptr)
+    if (xiiQtEngineViewWidget* pView = GetViewWidgetByID(pViewMsg->m_uiViewID))
+    {
       pView->HandleViewMessage(pViewMsg);
+    }
   }
 }
 
@@ -188,5 +189,13 @@ void xiiQtEngineDocumentWindow::DestroyAllViews()
   while (!m_ViewWidgets.IsEmpty())
   {
     delete m_ViewWidgets[0];
+  }
+}
+
+void xiiQtEngineDocumentWindow::CreateImageCapture(xiiStringView sOutputPath)
+{
+  if (!m_ViewWidgets.IsEmpty())
+  {
+    m_ViewWidgets[0]->TakeScreenshot(sOutputPath);
   }
 }

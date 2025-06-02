@@ -58,6 +58,8 @@ public:
 
   void AddViewWidget(xiiQtEngineViewWidget* pView);
 
+  virtual void CreateImageCapture(xiiStringView sOutputPath) override;
+
 public:
   mutable xiiEvent<const xiiEngineWindowEvent&> m_EngineWindowEvent;
 
