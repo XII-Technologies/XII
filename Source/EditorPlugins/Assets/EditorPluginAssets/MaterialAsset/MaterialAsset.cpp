@@ -1191,7 +1191,9 @@ xiiStatus xiiMaterialAssetDocument::RecreateVisualShaderFile(const xiiAssetFileH
     return xiiStatus(XII_SUCCESS);
   }
   else
+  {
     return xiiStatus(xiiFmt("Failed to write auto-generated shader to '{0}'", sAutoGenShader));
+  }
 }
 
 void xiiMaterialAssetDocument::InvalidateCachedShader()
