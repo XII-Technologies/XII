@@ -3,12 +3,9 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Profiling/Profiling.h>
-#include <Foundation/System/StackTracer.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiResource, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiResource::DoUpdate xiiResource::UpdateGraphicsResource = xiiResource::DoUpdate::OnAnyThread;
 

@@ -171,10 +171,9 @@ private:
   virtual xiiResourceTypeLoader* GetDefaultResourceTypeLoader() const;
 
 private:
-  volatile xiiResourceState m_LoadingState = xiiResourceState::Unloaded;
-
-  xiiUInt8 m_uiQualityLevelsDiscardable = 0;
-  xiiUInt8 m_uiQualityLevelsLoadable    = 0;
+  xiiAtomicInteger<xiiResourceState> m_LoadingState               = xiiResourceState::Unloaded;
+  xiiAtomicInteger8                  m_uiQualityLevelsDiscardable = 0U;
+  xiiAtomicInteger8                  m_uiQualityLevelsLoadable    = 0U;
 
 protected:
   /// \brief Non-const version for resources that want to write this variable directly.
