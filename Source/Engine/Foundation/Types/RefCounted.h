@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <Foundation/Threading/AtomicUtils.h>
@@ -13,42 +12,42 @@ public:
   {
     XII_IGNORE_UNUSED(rhs);
 
-    // do not copy the ref count
+    // Do not copy the reference count.
   }
 
   void operator=(const xiiRefCountingImpl& rhs) // [tested]
   {
     XII_IGNORE_UNUSED(rhs);
 
-    // do not copy the ref count
+    // Do not copy the reference count.
   }
 
   /// \brief Increments the reference counter. Returns the new reference count.
-  inline xiiInt32 AddRef() const // [tested]
+  inline xiiUInt32 AddRef() const // [tested]
   {
-    return xiiAtomicUtils::Increment(m_iRefCount);
+    return xiiAtomicUtils::Increment(m_uiRefCount);
   }
 
   /// \brief Decrements the reference counter. Returns the new reference count.
-  inline xiiInt32 ReleaseRef() const // [tested]
+  inline xiiUInt32 ReleaseRef() const // [tested]
   {
-    return xiiAtomicUtils::Decrement(m_iRefCount);
+    return xiiAtomicUtils::Decrement(m_uiRefCount);
   }
 
-  /// \brief Returns true if the reference count is greater than 0, false otherwise
+  /// \brief Returns true if the reference count is greater than 0, false otherwise.
   inline bool IsReferenced() const // [tested]
   {
-    return m_iRefCount > 0;
+    return m_uiRefCount > 0;
   }
 
-  /// \brief Returns the current reference count
-  inline xiiInt32 GetRefCount() const // [tested]
+  /// \brief Returns the current reference count.
+  inline xiiUInt32 GetRefCount() const // [tested]
   {
-    return m_iRefCount;
+    return m_uiRefCount;
   }
 
 private:
-  mutable xiiInt32 m_iRefCount = 0; ///< Stores the current reference count
+  mutable xiiUInt32 m_uiRefCount = 0U; ///< Stores the current reference count.
 };
 
 /// \brief Base class for reference counted objects.
