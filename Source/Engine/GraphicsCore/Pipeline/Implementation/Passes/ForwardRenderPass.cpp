@@ -163,13 +163,13 @@ void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewC
   // Setup clustered data
   if (m_ShadingQuality == xiiForwardRenderShadingQuality::Normal)
   {
-    auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
+    auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext, pCommandList);
     pClusteredData->BindResources(pCommandList);
   }
   // Or other light properties.
   else
   {
-    auto pSimplifiedData = GetPipeline()->GetFrameDataProvider<xiiSimplifiedDataProvider>()->GetData(renderViewContext);
+    auto pSimplifiedData = GetPipeline()->GetFrameDataProvider<xiiSimplifiedDataProvider>()->GetData(renderViewContext, pCommandList);
     pSimplifiedData->BindResources(pCommandList);
     // todo
   }

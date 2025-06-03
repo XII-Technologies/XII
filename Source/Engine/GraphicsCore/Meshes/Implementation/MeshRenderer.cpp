@@ -83,7 +83,7 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       if (uiFilteredCount > 0) // Instance data might be empty if all render data was filtered.
       {
-        pInstanceData->UpdateInstanceData(pContext->GetCommandList(), uiFilteredCount);
+        pInstanceData->UpdateInstanceData(pCommandList, uiFilteredCount);
 
         const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];
 

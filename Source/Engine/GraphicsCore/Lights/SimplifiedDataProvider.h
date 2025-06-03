@@ -30,7 +30,7 @@ public:
   ~xiiSimplifiedDataProvider();
 
 private:
-  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData) override;
+  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData) override;
 
   xiiSimplifiedDataGPU m_Data;
 };
