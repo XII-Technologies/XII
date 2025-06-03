@@ -48,6 +48,7 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
   xiiSharedPtr<xiiGALBuffer> pSpriteData  = CreateSpriteDataBuffer(uiBufferSize);
   XII_SCOPE_EXIT(DeleteSpriteDataBuffer(pSpriteData));
 
+#ifdef CORE_ENABLE
   pContext->BindShader(m_hShader);
 
   xiiGALCommandListUtilities::BindBuffer(pCommandList, "spriteData", pSpriteData);
@@ -65,6 +66,7 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
     pContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
   }
+#endif
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const

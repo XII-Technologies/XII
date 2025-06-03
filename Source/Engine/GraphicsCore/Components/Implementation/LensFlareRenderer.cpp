@@ -42,6 +42,7 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
   xiiSharedPtr<xiiGALBuffer> pLensFlareData = CreateLensFlareDataBuffer(uiBufferSize);
   XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(pLensFlareData));
 
+#ifdef CORE_ENABLE
   pContext->BindShader(m_hShader);
 
   xiiGALCommandListUtilities::BindBuffer(pCommandList, "lensFlareData", pLensFlareData);
@@ -56,6 +57,7 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
     pContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
   }
+#endif
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiLensFlareRenderer::CreateLensFlareDataBuffer(xiiUInt32 uiBufferSize) const

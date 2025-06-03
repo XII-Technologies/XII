@@ -1428,6 +1428,7 @@ void xiiDebugRenderer::RenderWorldSpace(const xiiRenderViewContext& renderViewCo
 // static
 void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
+#ifdef CORE_ENABLE
   {
     XII_LOCK(s_Mutex);
 
@@ -1722,6 +1723,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       }
     }
   }
+#endif
 }
 
 // static
@@ -1741,6 +1743,7 @@ void xiiDebugRenderer::RenderScreenSpace(const xiiRenderViewContext& renderViewC
 // static
 void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
+#ifdef CORE_ENABLE
   {
     XII_LOCK(s_Mutex);
 
@@ -1960,6 +1963,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       }
     }
   }
+#endif
 }
 
 void xiiDebugRenderer::OnEngineStartup()

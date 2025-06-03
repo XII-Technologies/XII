@@ -50,7 +50,7 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
   if (subMeshes.GetCount() <= uiPartIndex)
     return;
 
-  xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
+  xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext, pCommandList);
 
   if (pRenderData->m_uiFlipWinding)
   {
@@ -61,12 +61,13 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
     renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
   }
 
+#ifdef CORE_ENABLE
   pContext->BindMaterial(hMaterial);
   pContext->BindMeshBuffer(pMesh->GetMeshBuffer());
 
   SetAdditionalData(renderViewContext, pCommandList, pRenderData);
 
-  pInstanceData->BindResources(pContext);
+  pInstanceData->BindResources(pCommandList);
 
   if (!bHasExplicitInstanceData)
   {
@@ -113,6 +114,7 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
     pContext->DrawMeshBuffer(meshPart.m_uiPrimitiveCount, meshPart.m_uiFirstPrimitive, uiInstanceCount).IgnoreResult();
   }
+#endif
 }
 
 void xiiMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiMeshRenderData* pRenderData) const
