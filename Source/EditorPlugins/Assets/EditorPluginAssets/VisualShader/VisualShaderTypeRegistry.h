@@ -90,7 +90,7 @@ private:
   void ExtractNodeProperties(const xiiOpenDdlReaderElement* pNode, xiiVisualShaderNodeDescriptor& nd);
   void ExtractNodeConfig(const xiiOpenDdlReaderElement* pNode, xiiVisualShaderNodeDescriptor& nd);
 
-
+private:
   xiiMap<const xiiRTTI*, xiiVisualShaderNodeDescriptor> m_NodeDescriptors;
 
   const xiiRTTI* m_pBaseType;

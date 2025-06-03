@@ -2,7 +2,7 @@
 #include <Foundation/Logging/Log.h>
 #include <TestFramework/TestFrameworkDLL.h>
 
-/// \brief An xiiLogInterface that expects and handles error messages during test runs. Can be
+/// \brief A xiiLogInterface that expects and handles error messages during test runs. Can be
 /// used to ensure that expected error messages are produced by the tested functionality.
 /// Expected error messages are not passed on and do not cause tests to fail.
 class XII_TEST_DLL xiiTestLogInterface : public xiiLogInterface

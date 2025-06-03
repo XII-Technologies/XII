@@ -2,12 +2,10 @@
 
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
-#include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 
-class XII_GRAPHICSCORE_DLL xiiGALShaderPermutationUtilities
+class XII_GRAPHICSCORE_DLL xiiShaderPermutationUtilities
 {
 public:
-  static void                               PreloadPermutations(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, xiiTime shouldBeAvailableIn);
   static xiiShaderPermutationResourceHandle PreloadSinglePermutation(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, bool bAllowFallback);
 
 private:

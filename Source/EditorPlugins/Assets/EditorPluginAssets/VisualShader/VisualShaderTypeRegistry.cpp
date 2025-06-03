@@ -93,10 +93,8 @@ namespace
 } // namespace
 
 xiiVisualShaderTypeRegistry::xiiVisualShaderTypeRegistry() :
-  m_SingletonRegistrar(this)
+  m_SingletonRegistrar(this), m_pBaseType(nullptr), m_pSamplerPinType(nullptr)
 {
-  m_pBaseType       = nullptr;
-  m_pSamplerPinType = nullptr;
 }
 
 const xiiVisualShaderNodeDescriptor* xiiVisualShaderTypeRegistry::GetDescriptorForType(const xiiRTTI* pRtti) const
@@ -108,7 +106,6 @@ const xiiVisualShaderNodeDescriptor* xiiVisualShaderTypeRegistry::GetDescriptorF
 
   return &it.Value();
 }
-
 
 void xiiVisualShaderTypeRegistry::UpdateNodeData()
 {
@@ -122,11 +119,13 @@ void xiiVisualShaderTypeRegistry::UpdateNodeData()
   }
 }
 
-
 void xiiVisualShaderTypeRegistry::UpdateNodeData(xiiStringView sCfgFileRelative)
 {
-  xiiStringBuilder sPath(":app/VisualShader/", sCfgFileRelative);
-
+  xiiStringBuilder sPath = sCfgFileRelative;
+  if (!xiiPathUtils::IsAbsolutePath(sCfgFileRelative))
+  {
+    sPath.SetFormat(":app/VisualShader/{}", sCfgFileRelative);
+  }
   LoadConfigFile(sPath);
 }
 

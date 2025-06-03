@@ -171,7 +171,6 @@ public:
   ///          If the number of slices is 0, all slices from m_uiFirstArraySlice or m_uiFirstDepthSlice will be referenced by the view.
   ///          For non-array textures, the only allowed values for the number of slices are 0 and 1.\n
   ///          Texture view will contain strong reference to the texture, so the texture will not be destroyed until all views are released.\n
-  ///
   [[nodiscard]] xiiSharedPtr<xiiGALTextureView> CreateView(xiiGALTextureViewCreationDescription& description);
 
 protected:

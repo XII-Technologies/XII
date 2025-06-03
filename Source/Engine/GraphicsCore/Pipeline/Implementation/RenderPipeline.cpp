@@ -1163,10 +1163,10 @@ void xiiRenderPipeline::Render()
 
   renderViewContext.SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
-  // Also set pipeline specific permutation vars
-  for (auto& var : m_PermutationVars)
+  // Also set pipeline specific permutation variables.
+  for (auto& permutationVariable : m_PermutationVariables)
   {
-    renderViewContext.SetShaderPermutationVariable(var.m_sName, var.m_sValue);
+    renderViewContext.SetShaderPermutationVariable(permutationVariable.m_sName, permutationVariable.m_sValue);
   }
 
   xiiRenderWorldRenderEvent renderEvent;

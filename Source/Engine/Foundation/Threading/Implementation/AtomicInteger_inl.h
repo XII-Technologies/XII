@@ -9,7 +9,7 @@ XII_ALWAYS_INLINE xiiAtomicInteger<T>::xiiAtomicInteger() :
 template <typename T>
   requires xii_is_atomic_compatible_v<T>
 XII_ALWAYS_INLINE xiiAtomicInteger<T>::xiiAtomicInteger(T value) :
-  m_Value(value)
+  m_Value(static_cast<xii_atomic_underlying_t<T>>(value))
 {
 }
 

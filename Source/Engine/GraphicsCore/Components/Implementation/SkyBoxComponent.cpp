@@ -209,7 +209,7 @@ void xiiSkyBoxComponent::UpdateMaterials()
     pMaterial->SetParameter("VirtualDistance", m_fVirtualDistance);
     pMaterial->SetTextureCubeBinding("CubeMap", m_hCubeMap);
 
-    pMaterial->PreserveCurrentDesc();
+    pMaterial->PreserveCurrentDescription();
   }
 }
 

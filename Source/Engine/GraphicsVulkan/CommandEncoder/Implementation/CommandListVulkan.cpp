@@ -1742,8 +1742,6 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 
 void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
-  XII_CHECK_ALIGNMENT(pSourceData.GetPtr(), 16);
-
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pBuffer.Downcast<xiiGALBufferVulkan>();
 

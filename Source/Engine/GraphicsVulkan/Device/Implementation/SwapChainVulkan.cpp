@@ -357,13 +357,13 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   m_uiDesiredBufferCount = m_Description.m_uiBufferCount;
   if (m_uiDesiredBufferCount < surfaceCapabilities.minImageCount)
   {
-    xiiLog::Dev("Desired back buffer count ({}) is smaller than the minimal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.minImageCount, surfaceCapabilities.minImageCount);
+    xiiLog::Dev("Desired back buffer count ({}) is smaller than the minimal image count supported for this surface ({}). Resetting to {}.", m_uiDesiredBufferCount, surfaceCapabilities.minImageCount, surfaceCapabilities.minImageCount);
 
     m_uiDesiredBufferCount = surfaceCapabilities.minImageCount;
   }
   if (surfaceCapabilities.maxImageCount != 0 && m_uiDesiredBufferCount > surfaceCapabilities.maxImageCount)
   {
-    xiiLog::Dev("Desired back buffer count ({}) is greater than the maximal image count supported for this surface ({}). Resetting to {}", m_uiDesiredBufferCount, surfaceCapabilities.maxImageCount, surfaceCapabilities.maxImageCount);
+    xiiLog::Dev("Desired back buffer count ({}) is greater than the maximal image count supported for this surface ({}). Resetting to {}.", m_uiDesiredBufferCount, surfaceCapabilities.maxImageCount, surfaceCapabilities.maxImageCount);
 
     m_uiDesiredBufferCount = surfaceCapabilities.maxImageCount;
   }

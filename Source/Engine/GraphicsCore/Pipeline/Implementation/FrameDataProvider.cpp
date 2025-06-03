@@ -9,11 +9,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiFrameDataProviderBase::xiiFrameDataProviderBase() = default;
 
-void* xiiFrameDataProviderBase::GetData(const xiiRenderViewContext& renderViewContext)
+void* xiiFrameDataProviderBase::GetData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   if (m_pData == nullptr || m_uiLastUpdateFrame != xiiRenderWorld::GetFrameCounter())
   {
-    m_pData = UpdateData(renderViewContext, m_pOwnerPipeline->GetRenderData());
+    m_pData = UpdateData(renderViewContext, pCommandList, m_pOwnerPipeline->GetRenderData());
 
     m_uiLastUpdateFrame = xiiRenderWorld::GetFrameCounter();
   }

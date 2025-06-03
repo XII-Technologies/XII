@@ -63,7 +63,7 @@ private:
   /// An input device that handles keyboard input should also have a way to query the real typed character. I.e. by default only the
   /// individual state of each key is handled, such that we know that the shift key and the a key are pressed. However, the fact that
   /// this results in an upper case A in typed text also needs to be handled. An OS usually has a way to compute this, for example
-  /// on Windows the WM_CHAR message sends this information. An xiiInputDevice derived class should never try to compute this
+  /// on Windows the WM_CHAR message sends this information. A xiiInputDevice derived class should never try to compute this
   /// itself, but instead query this information from the OS, which will also handle localization.
   xiiUInt32 RetrieveLastCharacter();
 

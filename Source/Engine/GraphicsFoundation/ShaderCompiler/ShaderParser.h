@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Logging/Log.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 #include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
@@ -44,7 +43,6 @@ public:
 
   static void ParseMaterialParameterSection(xiiStreamReader& inout_stream, xiiHybridArray<ParameterDefinition, 16>& out_parameter, xiiHybridArray<EnumDefinition, 4>& out_enumDefinitions);
 
-  static void ParsePermutationSection(xiiStreamReader& inout_stream, xiiHybridArray<xiiHashedString, 16>& out_permutationVariables, xiiHybridArray<xiiGALPermutationVariable, 16>& out_fixedPermutationVariables);
   static void ParsePermutationSection(xiiStringView sPermutationSection, xiiHybridArray<xiiHashedString, 16>& out_permutationVariables, xiiHybridArray<xiiGALPermutationVariable, 16>& out_fixedPermutationVariables);
 
   static void ParsePermutationVariableConfiguration(xiiStringView sPermutationVarConfig, xiiVariant& out_defaultValue, EnumDefinition& out_enumDefinition);

@@ -1428,6 +1428,7 @@ void xiiDebugRenderer::RenderWorldSpace(const xiiRenderViewContext& renderViewCo
 // static
 void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
+#ifdef CORE_ENABLE
   {
     XII_LOCK(s_Mutex);
 
@@ -1609,7 +1610,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
           const xiiUInt32 uiNumVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
           XII_ASSERT_DEV(uiNumVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray()).AssertSuccess();
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray()).AssertSuccess();
 
           renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::TexTriangles3D], {}, &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumVerticesInBatch / 3);
 
@@ -1638,7 +1639,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pGALCommandList, s_pDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Lines], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
@@ -1722,6 +1723,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       }
     }
   }
+#endif
 }
 
 // static
@@ -1741,6 +1743,7 @@ void xiiDebugRenderer::RenderScreenSpace(const xiiRenderViewContext& renderViewC
 // static
 void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
+#ifdef CORE_ENABLE
   {
     XII_LOCK(s_Mutex);
 
@@ -1960,6 +1963,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       }
     }
   }
+#endif
 }
 
 void xiiDebugRenderer::OnEngineStartup()

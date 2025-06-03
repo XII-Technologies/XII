@@ -128,7 +128,7 @@ private:
 /// \brief This should be the main type of bitfield to use, although other internal container types are possible.
 using xiiDynamicBitfield = xiiBitfield<xiiDynamicArray<xiiUInt32>>;
 
-/// \brief An xiiBitfield that uses a hybrid array as internal container.
+/// \brief A xiiBitfield that uses a hybrid array as internal container.
 template <xiiUInt32 BITS>
 using xiiHybridBitfield = xiiBitfield<xiiHybridArray<xiiUInt32, (BITS + 31) / 32>>;
 

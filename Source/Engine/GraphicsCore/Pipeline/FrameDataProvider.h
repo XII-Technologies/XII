@@ -9,9 +9,9 @@ class XII_GRAPHICSCORE_DLL xiiFrameDataProviderBase : public xiiReflectedClass
 protected:
   xiiFrameDataProviderBase();
 
-  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData) = 0;
+  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData) = 0;
 
-  void* GetData(const xiiRenderViewContext& renderViewContext);
+  void* GetData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList);
 
 private:
   friend class xiiRenderPipeline;
@@ -25,5 +25,8 @@ template <typename T>
 class xiiFrameDataProvider : public xiiFrameDataProviderBase
 {
 public:
-  T* GetData(const xiiRenderViewContext& renderViewContext) { return static_cast<T*>(xiiFrameDataProviderBase::GetData(renderViewContext)); }
+  XII_ALWAYS_INLINE T* GetData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
+  {
+    return static_cast<T*>(xiiFrameDataProviderBase::GetData(renderViewContext, pCommandList));
+  }
 };

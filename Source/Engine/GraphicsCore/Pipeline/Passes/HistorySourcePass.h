@@ -52,5 +52,11 @@ public:
 
 private:
   // We ignore the frame-based logic for this data provider as we only want to store cross frame data.
-  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData) override { return nullptr; }
+  XII_ALWAYS_INLINE virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData) override
+  {
+    XII_IGNORE_UNUSED(renderViewContext);
+    XII_IGNORE_UNUSED(pCommandList);
+    XII_IGNORE_UNUSED(extractedData);
+    return nullptr;
+  }
 };

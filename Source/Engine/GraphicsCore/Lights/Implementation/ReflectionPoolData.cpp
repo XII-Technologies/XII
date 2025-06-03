@@ -346,7 +346,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     if (pMaterial->GetLoadingState() != xiiResourceState::Loaded)
       return;
 
-    xiiMaterialResourceDescriptor desc                       = pMaterial->GetCurrentDesc();
+    xiiMaterialResourceDescriptor desc                       = pMaterial->GetCurrentDescription();
     xiiUInt32                     uiMipLevel                 = desc.m_Parameters.GetCount();
     xiiUInt32                     uiReflectionProbeIndex     = desc.m_Parameters.GetCount();
     xiiTempHashedString           sMipLevelParam             = "MipLevel";

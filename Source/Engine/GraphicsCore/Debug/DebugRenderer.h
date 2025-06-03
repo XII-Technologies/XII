@@ -1,11 +1,12 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Math/Color.h>
 #include <Foundation/Math/Transform.h>
 #include <GraphicsCore/Debug/DebugRendererContext.h>
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/Declarations/Descriptors.h>
+#include <GraphicsCore/Pipeline/Declarations.h>
 
 template <typename Type>
 class xiiRectTemplate;

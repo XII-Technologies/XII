@@ -96,7 +96,7 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UnloadData(Unload WhatToUnload
   return res;
 }
 
-xiiSharedPtr<xiiGALTexture> xiiRenderToTexture2DResource::GetRenderTargetView() const
+xiiSharedPtr<xiiGALTextureView> xiiRenderToTexture2DResource::GetRenderTargetView() const
 {
   return m_pGALTexture[0]->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 }

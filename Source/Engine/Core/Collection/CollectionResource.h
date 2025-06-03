@@ -23,7 +23,7 @@ struct XII_CORE_DLL xiiCollectionResourceDescriptor
 
 using xiiCollectionResourceHandle = xiiTypedResourceHandle<class xiiCollectionResource>;
 
-/// \brief An xiiCollectionResource is used to tell the engine about resources that it should preload in the background
+/// \brief A xiiCollectionResource is used to tell the engine about resources that it should preload in the background
 ///
 /// Collection resources can be used to improve the user experience by ensuring data is already (more likely) available when it is needed.
 /// For instance when a player walks into a longer corridor, a collection resource can be triggered to preload the data that will be needed

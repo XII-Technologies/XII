@@ -22,7 +22,7 @@ public:
 
   bool IsShaderValid() const { return m_bShaderResourceIsValid; }
 
-  xiiArrayPtr<const xiiHashedString> GetUsedPermutationVars() const { return m_PermutationVarsUsed; }
+  xiiArrayPtr<const xiiHashedString> GetUsedPermutationVariables() const { return m_PermutationVariablesUsed; }
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
@@ -30,6 +30,6 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
-  xiiHybridArray<xiiHashedString, 16> m_PermutationVarsUsed;
+  xiiHybridArray<xiiHashedString, 16> m_PermutationVariablesUsed;
   bool                                m_bShaderResourceIsValid;
 };

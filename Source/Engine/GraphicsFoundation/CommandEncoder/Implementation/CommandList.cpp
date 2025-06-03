@@ -212,8 +212,8 @@ void xiiGALCommandList::Reset()
 xiiUInt64 xiiGALCommandList::Submit()
 {
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
-  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Commandlist is already reset.");
-  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Submitted, "Commandlist is already submitted!");
+  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Command list is already reset.");
+  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Submitted, "Command list is already submitted!");
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiSubmit;
 
@@ -221,11 +221,10 @@ xiiUInt64 xiiGALCommandList::Submit()
   {
     End();
   }
-  if (m_RecordingState == xiiGALCommandList::RecordingState::Ended)
-  {
-    SubmitPlatform();
-  }
-  return xiiMath::MaxValue<xiiUInt64>();
+
+  XII_ASSERT_DEV(m_RecordingState == xiiGALCommandList::RecordingState::Ended, "Command list must have been ended if it was in recording state.");
+
+  return SubmitPlatform();
 }
 
 void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState)

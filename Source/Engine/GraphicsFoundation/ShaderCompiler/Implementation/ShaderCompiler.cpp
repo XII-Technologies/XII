@@ -375,7 +375,7 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
     // 'DEBUG' is a platform tag that enables additional compiler flags
     if (PlatformEnabled(m_ShaderData.m_sPlatform, "DEBUG"))
     {
-      xiiLog::Warning("Shader specifies the 'DEBUG' platform, which enables the debug shader compiler flag.");
+      xiiLog::Warning(pLog, "Shader specifies the 'DEBUG' platform, which enables the debug shader compiler flag.");
 
       spd.m_Flags.Add(xiiGALShaderCompilerFlags::Debug);
     }
@@ -406,12 +406,12 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
       }
 
       bool bFoundUndefinedVariables = false;
-      pp.m_ProcessingEvents.AddEventHandler([&bFoundUndefinedVariables](const xiiPreprocessor::ProcessingEvent& e) {
+      pp.m_ProcessingEvents.AddEventHandler([&bFoundUndefinedVariables, pLog](const xiiPreprocessor::ProcessingEvent& e) -> void {
         if (e.m_Type == xiiPreprocessor::ProcessingEvent::EvaluateUnknown)
         {
           bFoundUndefinedVariables = true;
 
-          xiiLog::Error("Undefined variable is evaluated: '{0}' (File: '{1}', Line: {2}", e.m_pToken->m_DataView, e.m_pToken->m_File, e.m_pToken->m_uiLine);
+          xiiLog::Error(pLog, "Undefined variable is evaluated: '{0}' (File: '{1}', Line: {2}", e.m_pToken->m_DataView, e.m_pToken->m_File, e.m_pToken->m_uiLine);
         }
       });
 
@@ -460,12 +460,12 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
       pp.SetPassThroughPragma(true);
       pp.SetPassThroughUnknownCmdsCB(xiiMakeDelegate(&xiiGALShaderCompiler::PassThroughUnknownCommandCB, this));
       pp.SetPassThroughLine(false);
-      pp.m_ProcessingEvents.AddEventHandler([&bFoundUndefinedVariables](const xiiPreprocessor::ProcessingEvent& e) {
+      pp.m_ProcessingEvents.AddEventHandler([&bFoundUndefinedVariables, pLog](const xiiPreprocessor::ProcessingEvent& e) {
         if (e.m_Type == xiiPreprocessor::ProcessingEvent::EvaluateUnknown)
         {
           bFoundUndefinedVariables = true;
 
-          xiiLog::Error("Undefined variable is evaluated: '{0}' (File: '{1}', Line: {2}", e.m_pToken->m_DataView, e.m_pToken->m_File, e.m_pToken->m_uiLine);
+          xiiLog::Error(pLog, "Undefined variable is evaluated: '{0}' (File: '{1}', Line: {2}", e.m_pToken->m_DataView, e.m_pToken->m_File, e.m_pToken->m_uiLine);
         }
       });
 

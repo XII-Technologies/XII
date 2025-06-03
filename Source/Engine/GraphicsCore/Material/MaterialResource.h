@@ -18,7 +18,7 @@ struct xiiMaterialResourceDescriptor
     xiiHashedString m_Name;
     xiiVariant      m_Value;
 
-    XII_FORCE_INLINE bool operator==(const Parameter& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
+    XII_ALWAYS_INLINE bool operator==(const Parameter& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
   };
 
   struct Texture2DBinding
@@ -26,7 +26,7 @@ struct xiiMaterialResourceDescriptor
     xiiHashedString            m_Name;
     xiiTexture2DResourceHandle m_Value;
 
-    XII_FORCE_INLINE bool operator==(const Texture2DBinding& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
+    XII_ALWAYS_INLINE bool operator==(const Texture2DBinding& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
   };
 
   struct TextureCubeBinding
@@ -34,23 +34,23 @@ struct xiiMaterialResourceDescriptor
     xiiHashedString              m_Name;
     xiiTextureCubeResourceHandle m_Value;
 
-    XII_FORCE_INLINE bool operator==(const TextureCubeBinding& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
+    XII_ALWAYS_INLINE bool operator==(const TextureCubeBinding& other) const { return m_Name == other.m_Name && m_Value == other.m_Value; }
   };
 
   void Clear();
 
-  bool operator==(const xiiMaterialResourceDescriptor& other) const;
+  XII_ALWAYS_INLINE bool operator==(const xiiMaterialResourceDescriptor& other) const { return m_hBaseMaterial == other.m_hBaseMaterial && m_hShader == other.m_hShader && m_PermutationVariables == other.m_PermutationVariables && m_Parameters == other.m_Parameters && m_Texture2DBindings == other.m_Texture2DBindings && m_TextureCubeBindings == other.m_TextureCubeBindings && m_RenderDataCategory == other.m_RenderDataCategory; }
 
   xiiMaterialResourceHandle m_hBaseMaterial;
   // xiiSurfaceResource is not linked into this project (not true anymore -> could be changed)
   // this is not used for game purposes but rather for automatic collision mesh generation, so we only store the asset ID here
-  xiiHashedString                     m_sSurface;
-  xiiShaderResourceHandle             m_hShader;
-  xiiDynamicArray<xiiPermutationVar>  m_PermutationVars;
-  xiiDynamicArray<Parameter>          m_Parameters;
-  xiiDynamicArray<Texture2DBinding>   m_Texture2DBindings;
-  xiiDynamicArray<TextureCubeBinding> m_TextureCubeBindings;
-  xiiRenderData::Category             m_RenderDataCategory;
+  xiiHashedString                            m_sSurface;
+  xiiShaderResourceHandle                    m_hShader;
+  xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
+  xiiDynamicArray<Parameter>                 m_Parameters;
+  xiiDynamicArray<Texture2DBinding>          m_Texture2DBindings;
+  xiiDynamicArray<TextureCubeBinding>        m_TextureCubeBindings;
+  xiiRenderData::Category                    m_RenderDataCategory;
 };
 
 class XII_GRAPHICSCORE_DLL xiiMaterialResource final : public xiiResource
@@ -67,24 +67,24 @@ public:
   xiiHashedString GetSurface() const;
 
   void       SetParameter(const xiiHashedString& sName, const xiiVariant& value);
-  void       SetParameter(const char* szName, const xiiVariant& value);
+  void       SetParameter(xiiStringView sName, const xiiVariant& value);
   xiiVariant GetParameter(const xiiTempHashedString& sName);
 
   void                       SetTexture2DBinding(const xiiHashedString& sName, const xiiTexture2DResourceHandle& value);
-  void                       SetTexture2DBinding(const char* szName, const xiiTexture2DResourceHandle& value);
+  void                       SetTexture2DBinding(xiiStringView sName, const xiiTexture2DResourceHandle& value);
   xiiTexture2DResourceHandle GetTexture2DBinding(const xiiTempHashedString& sName);
 
   void                         SetTextureCubeBinding(const xiiHashedString& sName, const xiiTextureCubeResourceHandle& value);
-  void                         SetTextureCubeBinding(const char* szName, const xiiTextureCubeResourceHandle& value);
+  void                         SetTextureCubeBinding(xiiStringView sName, const xiiTextureCubeResourceHandle& value);
   xiiTextureCubeResourceHandle GetTextureCubeBinding(const xiiTempHashedString& sName);
 
   xiiRenderData::Category GetRenderDataCategory();
 
-  /// \brief Copies current desc to original desc so the material is not modified on reset
-  void         PreserveCurrentDesc();
+  /// \brief Copies current description to the loading description so the material is not modified on reset.
+  void         PreserveCurrentDescription();
   virtual void ResetResource() override;
 
-  const xiiMaterialResourceDescriptor& GetCurrentDesc() const;
+  const xiiMaterialResourceDescriptor& GetCurrentDescription() const;
 
   /// \brief Use these enum values together with GetDefaultMaterialFileName() to get the default file names for these material types.
   enum class DefaultMaterialType
@@ -106,8 +106,8 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
-  xiiMaterialResourceDescriptor m_mOriginalDesc; // stores the state at loading, such that SetParameter etc. calls can be reset later
-  xiiMaterialResourceDescriptor m_mDesc;
+  xiiMaterialResourceDescriptor m_LoadingDescription; // stores the state at loading, such that SetParameter etc. calls can be reset later
+  xiiMaterialResourceDescriptor m_Description;
 
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, MaterialResource);
 
@@ -127,12 +127,13 @@ private:
 
   void UpdateConstantBuffer(xiiShaderPermutationResource* pShaderPermutation);
 
-  xiiConstantBufferStorageHandle m_hConstantBufferStorage;
+  xiiSharedPtr<xiiGALBuffer> m_pMaterialConstantsBuffer;
+  xiiArrayPtr<xiiUInt8>      m_pMaterialData;
 
   struct CachedValues
   {
     xiiShaderResourceHandle                                     m_hShader;
-    xiiHashTable<xiiHashedString, xiiHashedString>              m_PermutationVars;
+    xiiHashTable<xiiHashedString, xiiHashedString>              m_PermutationVariables;
     xiiHashTable<xiiHashedString, xiiVariant>                   m_Parameters;
     xiiHashTable<xiiHashedString, xiiTexture2DResourceHandle>   m_Texture2DBindings;
     xiiHashTable<xiiHashedString, xiiTextureCubeResourceHandle> m_TextureCubeBindings;

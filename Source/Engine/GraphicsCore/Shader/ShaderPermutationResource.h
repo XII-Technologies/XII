@@ -45,7 +45,7 @@ private:
   virtual xiiResourceTypeLoader* GetDefaultResourceTypeLoader() const override;
 
 private:
-  friend class xiiGALShaderPermutationUtilities;
+  friend class xiiShaderPermutationUtilities;
 
   struct ShaderData
   {

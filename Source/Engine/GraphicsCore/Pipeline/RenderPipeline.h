@@ -11,10 +11,11 @@ class xiiProfilingId;
 class xiiView;
 class xiiRenderPipelinePass;
 class xiiFrameDataProviderBase;
-struct xiiPermutationVar;
 class xiiDGMLGraph;
 class xiiFrustum;
 class xiiRasterizerView;
+
+struct xiiGALPermutationVariable;
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
 {
@@ -147,7 +148,7 @@ private: // Member data
   mutable xiiDynamicArray<xiiUniquePtr<xiiFrameDataProviderBase>> m_DataProviders;
   mutable xiiHashTable<const xiiRTTI*, xiiUInt32>                 m_TypeToDataProviderIndex;
 
-  xiiDynamicArray<xiiPermutationVar> m_PermutationVars;
+  xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
 
   // Resources
   xiiGlobalConstants         m_GlobalConstants;

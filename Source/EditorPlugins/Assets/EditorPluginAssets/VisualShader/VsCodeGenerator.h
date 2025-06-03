@@ -12,18 +12,16 @@ public:
 
   xiiStatus GenerateVisualShader(const xiiDocumentNodeManager* pNodeMaanger, xiiStringBuilder& out_sCheckPerms);
 
-  const char* GetFinalShaderCode() const { return m_sFinalShaderCode; }
+  xiiStringView GetFinalShaderCode() const { return m_sFinalShaderCode.GetView(); }
 
   void DetermineConfigFileDependencies(const xiiDocumentNodeManager* pNodeManager, xiiSet<xiiString>& out_cfgFiles);
 
 private:
   struct NodeState
   {
-    NodeState()
+    NodeState() :
+      m_uiNodeId(0), m_bCodeGenerated(false), m_bInProgress(false)
     {
-      m_uiNodeId       = 0;
-      m_bCodeGenerated = false;
-      m_bInProgress    = false;
     }
 
     xiiUInt16 m_uiNodeId;
@@ -33,12 +31,14 @@ private:
 
   struct OutputPinState
   {
-    OutputPinState() { m_bCodeGenerated = false; }
+    OutputPinState() :
+      m_bCodeGenerated(false)
+    {
+    }
 
     bool      m_bCodeGenerated;
     xiiString m_sCodeAtPin;
   };
-
 
   xiiStatus GatherAllNodes(const xiiDocumentObject* pRootObj);
   xiiUInt16 DeterminePinId(const xiiDocumentObject* pOwner, const xiiPin& pin) const;

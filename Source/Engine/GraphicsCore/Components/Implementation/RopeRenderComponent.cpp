@@ -100,6 +100,8 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
   if (!m_hMesh.IsValid())
     return;
 
+#ifdef CORE_ENABLE
+
   const xiiUInt32 uiFlipWinding  = GetOwner()->GetGlobalTransformSimd().ContainsNegativeScale() ? 1 : 0;
   const xiiUInt32 uiUniformScale = GetOwner()->GetGlobalTransformSimd().ContainsUniformScale() ? 1 : 0;
 
@@ -172,6 +174,7 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
 
     xiiDebugRenderer::DrawLines(msg.m_pView->GetHandle(), lines, xiiColor::White, GetOwner()->GetGlobalTransform());
   }
+#endif
 }
 
 void xiiRopeRenderComponent::SetThickness(float fThickness)
