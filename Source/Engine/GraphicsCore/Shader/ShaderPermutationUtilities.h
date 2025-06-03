@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
-#include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 
 class XII_GRAPHICSCORE_DLL xiiShaderPermutationUtilities
 {

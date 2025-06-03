@@ -184,23 +184,25 @@ void xiiView::SetShaderPermutationVariable(xiiStringView sName, xiiStringView sV
   xiiHashedString sNameHash;
   sNameHash.Assign(sName);
 
-  for (auto& var : m_PermutationVars)
+  for (auto& permutationVariable : m_PermutationVariables)
   {
-    if (var.m_sName == sNameHash)
+    if (permutationVariable.m_sName == sNameHash)
     {
-      if (var.m_sValue.GetView() != sValue)
+      if (permutationVariable.m_sValue.GetView() != sValue)
       {
-        var.m_sValue.Assign(sValue);
-        m_bPermutationVarsDirty = true;
+        permutationVariable.m_sValue.Assign(sValue);
+
+        m_bPermutationVariablesModified = true;
       }
       return;
     }
   }
 
-  auto& var   = m_PermutationVars.ExpandAndGetRef();
-  var.m_sName = sNameHash;
-  var.m_sValue.Assign(sValue);
-  m_bPermutationVarsDirty = true;
+  auto& permutationVariable   = m_PermutationVariables.ExpandAndGetRef();
+  permutationVariable.m_sName = sNameHash;
+  permutationVariable.m_sValue.Assign(sValue);
+
+  m_bPermutationVariablesModified = true;
 }
 
 void xiiView::SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
@@ -334,7 +336,8 @@ void xiiView::EnsureUpToDate()
       m_pRenderPipeline = pPipeline->CreateRenderPipeline();
       xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
 
-      m_bPermutationVarsDirty = true;
+      m_bPermutationVariablesModified = true;
+
       ResetAllPropertyStates(m_PassProperties);
       ResetAllPropertyStates(m_ExtractorProperties);
     }
@@ -347,11 +350,11 @@ void xiiView::EnsureUpToDate()
 
 void xiiView::ApplyPermutationVars()
 {
-  if (!m_bPermutationVarsDirty)
+  if (!m_bPermutationVariablesModified)
     return;
 
-  m_pRenderPipeline->m_PermutationVars = m_PermutationVars;
-  m_bPermutationVarsDirty              = false;
+  m_pRenderPipeline->m_PermutationVariables = m_PermutationVariables;
+  m_bPermutationVariablesModified           = false;
 }
 
 void xiiView::SetProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)

@@ -44,13 +44,13 @@ struct xiiMaterialResourceDescriptor
   xiiMaterialResourceHandle m_hBaseMaterial;
   // xiiSurfaceResource is not linked into this project (not true anymore -> could be changed)
   // this is not used for game purposes but rather for automatic collision mesh generation, so we only store the asset ID here
-  xiiHashedString                     m_sSurface;
-  xiiShaderResourceHandle             m_hShader;
-  xiiDynamicArray<xiiPermutationVar>  m_PermutationVariables;
-  xiiDynamicArray<Parameter>          m_Parameters;
-  xiiDynamicArray<Texture2DBinding>   m_Texture2DBindings;
-  xiiDynamicArray<TextureCubeBinding> m_TextureCubeBindings;
-  xiiRenderData::Category             m_RenderDataCategory;
+  xiiHashedString                            m_sSurface;
+  xiiShaderResourceHandle                    m_hShader;
+  xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
+  xiiDynamicArray<Parameter>                 m_Parameters;
+  xiiDynamicArray<Texture2DBinding>          m_Texture2DBindings;
+  xiiDynamicArray<TextureCubeBinding>        m_TextureCubeBindings;
+  xiiRenderData::Category                    m_RenderDataCategory;
 };
 
 class XII_GRAPHICSCORE_DLL xiiMaterialResource final : public xiiResource
@@ -67,15 +67,15 @@ public:
   xiiHashedString GetSurface() const;
 
   void       SetParameter(const xiiHashedString& sName, const xiiVariant& value);
-  void       SetParameter(const char* szName, const xiiVariant& value);
+  void       SetParameter(xiiStringView sName, const xiiVariant& value);
   xiiVariant GetParameter(const xiiTempHashedString& sName);
 
   void                       SetTexture2DBinding(const xiiHashedString& sName, const xiiTexture2DResourceHandle& value);
-  void                       SetTexture2DBinding(const char* szName, const xiiTexture2DResourceHandle& value);
+  void                       SetTexture2DBinding(xiiStringView sName, const xiiTexture2DResourceHandle& value);
   xiiTexture2DResourceHandle GetTexture2DBinding(const xiiTempHashedString& sName);
 
   void                         SetTextureCubeBinding(const xiiHashedString& sName, const xiiTextureCubeResourceHandle& value);
-  void                         SetTextureCubeBinding(const char* szName, const xiiTextureCubeResourceHandle& value);
+  void                         SetTextureCubeBinding(xiiStringView sName, const xiiTextureCubeResourceHandle& value);
   xiiTextureCubeResourceHandle GetTextureCubeBinding(const xiiTempHashedString& sName);
 
   xiiRenderData::Category GetRenderDataCategory();

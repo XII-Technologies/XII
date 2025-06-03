@@ -194,8 +194,8 @@ private:
 
   xiiInternal::RenderDataCache* m_pRenderDataCache = nullptr;
 
-  xiiDynamicArray<xiiPermutationVar> m_PermutationVars;
-  bool                               m_bPermutationVarsDirty = false;
+  xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
+  bool                                       m_bPermutationVariablesModified = false;
 
   void ApplyPermutationVars();
 

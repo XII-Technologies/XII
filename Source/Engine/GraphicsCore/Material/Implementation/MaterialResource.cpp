@@ -138,14 +138,14 @@ void xiiMaterialResource::SetParameter(const xiiHashedString& sName, const xiiVa
   m_ModifiedEvent.Broadcast(this);
 }
 
-void xiiMaterialResource::SetParameter(const char* szName, const xiiVariant& value)
+void xiiMaterialResource::SetParameter(xiiStringView sName, const xiiVariant& value)
 {
-  xiiTempHashedString sName(szName);
+  xiiTempHashedString sNameHash(sName);
 
   xiiUInt32 uiIndex = xiiInvalidIndex;
   for (xiiUInt32 i = 0; i < m_Description.m_Parameters.GetCount(); ++i)
   {
-    if (m_Description.m_Parameters[i].m_Name == sName)
+    if (m_Description.m_Parameters[i].m_Name == sNameHash)
     {
       uiIndex = i;
       break;
@@ -166,7 +166,7 @@ void xiiMaterialResource::SetParameter(const char* szName, const xiiVariant& val
     else
     {
       auto& param = m_Description.m_Parameters.ExpandAndGetRef();
-      param.m_Name.Assign(szName);
+      param.m_Name.Assign(sName);
       param.m_Value = value;
     }
   }
@@ -234,14 +234,14 @@ void xiiMaterialResource::SetTexture2DBinding(const xiiHashedString& sName, cons
   m_ModifiedEvent.Broadcast(this);
 }
 
-void xiiMaterialResource::SetTexture2DBinding(const char* szName, const xiiTexture2DResourceHandle& value)
+void xiiMaterialResource::SetTexture2DBinding(xiiStringView sName, const xiiTexture2DResourceHandle& value)
 {
-  xiiTempHashedString sName(szName);
+  xiiTempHashedString sNameHash(sName);
 
   xiiUInt32 uiIndex = xiiInvalidIndex;
   for (xiiUInt32 i = 0; i < m_Description.m_Texture2DBindings.GetCount(); ++i)
   {
-    if (m_Description.m_Texture2DBindings[i].m_Name == sName)
+    if (m_Description.m_Texture2DBindings[i].m_Name == sNameHash)
     {
       uiIndex = i;
       break;
@@ -257,7 +257,7 @@ void xiiMaterialResource::SetTexture2DBinding(const char* szName, const xiiTextu
     else
     {
       auto& binding = m_Description.m_Texture2DBindings.ExpandAndGetRef();
-      binding.m_Name.Assign(szName);
+      binding.m_Name.Assign(sName);
       binding.m_Value = value;
     }
   }
@@ -327,14 +327,14 @@ void xiiMaterialResource::SetTextureCubeBinding(const xiiHashedString& sName, co
   m_ModifiedEvent.Broadcast(this);
 }
 
-void xiiMaterialResource::SetTextureCubeBinding(const char* szName, const xiiTextureCubeResourceHandle& value)
+void xiiMaterialResource::SetTextureCubeBinding(xiiStringView sName, const xiiTextureCubeResourceHandle& value)
 {
-  xiiTempHashedString sName(szName);
+  xiiTempHashedString sNameHash(sName);
 
   xiiUInt32 uiIndex = xiiInvalidIndex;
   for (xiiUInt32 i = 0; i < m_Description.m_TextureCubeBindings.GetCount(); ++i)
   {
-    if (m_Description.m_TextureCubeBindings[i].m_Name == sName)
+    if (m_Description.m_TextureCubeBindings[i].m_Name == sNameHash)
     {
       uiIndex = i;
       break;
@@ -350,7 +350,7 @@ void xiiMaterialResource::SetTextureCubeBinding(const char* szName, const xiiTex
     else
     {
       auto& binding = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
-      binding.m_Name.Assign(szName);
+      binding.m_Name.Assign(sName);
       binding.m_Value = value;
     }
   }
@@ -858,9 +858,9 @@ void xiiMaterialResource::AddPermutationVar(xiiStringView sName, xiiStringView s
 
   if (xiiGALShaderManager::IsPermutationValueAllowed(sNameHashed, sValueHashed))
   {
-    xiiPermutationVar& pv = m_Description.m_PermutationVariables.ExpandAndGetRef();
-    pv.m_sName            = sNameHashed;
-    pv.m_sValue           = sValueHashed;
+    xiiGALPermutationVariable& permutationVariable = m_Description.m_PermutationVariables.ExpandAndGetRef();
+    permutationVariable.m_sName                    = sNameHashed;
+    permutationVariable.m_sValue                   = sValueHashed;
   }
 }
 

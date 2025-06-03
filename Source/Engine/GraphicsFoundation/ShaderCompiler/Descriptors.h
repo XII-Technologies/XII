@@ -63,10 +63,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPermutationVariable
   xiiHashedString m_sName;
   xiiHashedString m_sValue;
 
-  XII_ALWAYS_INLINE bool operator==(const xiiGALPermutationVariable& other) const
+  XII_ALWAYS_INLINE bool operator==(const xiiGALPermutationVariable& rhs) const
   {
-    return m_sName == other.m_sName && m_sValue == other.m_sValue;
+    return m_sName == rhs.m_sName && m_sValue == rhs.m_sValue;
   }
 
-  static xiiUInt32 CalculateHash(const xiiArrayPtr<xiiGALPermutationVariable>& vars);
+  static xiiUInt32 CalculateHash(const xiiArrayPtr<xiiGALPermutationVariable>& permutationVariables);
 };
