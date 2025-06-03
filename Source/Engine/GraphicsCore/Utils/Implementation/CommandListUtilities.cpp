@@ -93,7 +93,7 @@ void xiiGALCommandListUtilities::BindTexture2D(xiiSharedPtr<xiiGALCommandList> p
 
   xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, acquireMode);
 
-  pCommandList->ResolveAndSetShaderResourceTextureView(sSlotName, pTexture->GetGALTexture());
+  pCommandList->ResolveAndSetShaderResourceTextureView(sSlotName, pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   pCommandList->ResolveAndSetSampler(sSlotName, pTexture->GetGALSampler());
 }
 
@@ -104,7 +104,7 @@ void xiiGALCommandListUtilities::BindTexture3D(xiiSharedPtr<xiiGALCommandList> p
 
   xiiResourceLock<xiiTexture3DResource> pTexture(hTexture, acquireMode);
 
-  pCommandList->ResolveAndSetShaderResourceTextureView(sSlotName, pTexture->GetGALTexture());
+  pCommandList->ResolveAndSetShaderResourceTextureView(sSlotName, pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   pCommandList->ResolveAndSetSampler(sSlotName, pTexture->GetGALSampler());
 }
 
@@ -115,7 +115,7 @@ void xiiGALCommandListUtilities::BindTextureCube(xiiSharedPtr<xiiGALCommandList>
 
   xiiResourceLock<xiiTextureCubeResource> pTexture(hTexture, acquireMode);
 
-  pCommandList->ResolveAndSetShaderResourceTextureView(sSlotName, pTexture->GetGALTexture());
+  pCommandList->ResolveAndSetShaderResourceTextureView(sSlotName, pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   pCommandList->ResolveAndSetSampler(sSlotName, pTexture->GetGALSampler());
 }
 
