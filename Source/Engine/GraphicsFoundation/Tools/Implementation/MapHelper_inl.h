@@ -1,15 +1,15 @@
 
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper() :
-  m_pCommandList(nullptr), m_pMappedData(nullptr)
+  m_pCommandList(nullptr), m_pBuffer(nullptr), m_pMappedData(nullptr), m_MapType(static_cast<xiiGALMapType::Enum>(-1)), m_MapFlags(static_cast<xiiGALMapFlags::Enum>(-1))
 {
 }
 
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags) :
-  m_pCommandList(std::move(pCommandList)), m_pBuffer(std::move(pBuffer)), m_pMappedData(nullptr), m_MapType(mapType), m_MapFlags(mapFlags)
+  xiiGALMapHelper()
 {
-  Map(m_pCommandList, m_pBuffer, m_MapType, m_MapFlags).IgnoreResult();
+  Map(pCommandList, pBuffer, mapType, mapFlags).IgnoreResult();
 }
 
 template <typename DataType>
@@ -24,7 +24,7 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALMapHelper&& o
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::~xiiGALMapHelper()
 {
-  Unmap(m_pCommandList, m_pBuffer).IgnoreResult();
+  Unmap().IgnoreResult();
 }
 
 template <typename DataType>
@@ -44,19 +44,17 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator
 }
 
 template <typename DataType>
-XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags)
+XII_FORCE_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
-  XII_ASSERT_DEV(!pBuffer && !m_pMappedData && !m_pCommandList, "Buffer is already mapped or invalidated.");
+  XII_ASSERT_DEV(!m_pBuffer && !m_pMappedData && !m_pCommandList, "Buffer is already mapped or invalidated.");
 
-  Unmap(m_pCommandList, m_pBuffer).IgnoreResult();
+  Unmap().IgnoreResult();
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   {
     const auto& bufferDescription = pBuffer->GetDescription();
 
-    XII_IGNORE_UNUSED(bufferDescription);
-
-    XII_ASSERT_DEV(sizeof(DataType) <= bufferDescription.m_uiSize, "Buffer size is smaller than the mapped data type size.");
+    XII_ASSERT_DEBUG(sizeof(DataType) <= bufferDescription.m_uiSize, "Buffer size is smaller than the mapped data type size.");
   }
 #endif
 
@@ -76,21 +74,23 @@ XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiSharedPtr<xiiGALCo
 }
 
 template <typename DataType>
-XII_ALWAYS_INLINE xiiResult xiiGALMapHelper<DataType>::Unmap(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer)
+XII_FORCE_INLINE xiiResult xiiGALMapHelper<DataType>::Unmap()
 {
-  if (m_pMappedData != nullptr && m_pBuffer)
+  xiiResult result = XII_SUCCESS;
+
+  if (m_pBuffer)
   {
-    m_pCommandList->UnmapBuffer(m_pBuffer, m_MapType).IgnoreResult();
+    result = m_pCommandList->UnmapBuffer(m_pBuffer, m_MapType);
 
     m_pBuffer  = nullptr;
-    m_MapType  = xiiGALMapType::Default;
-    m_MapFlags = xiiGALMapFlags::None;
+    m_MapType  = static_cast<xiiGALMapType::Enum>(-1);
+    m_MapFlags = static_cast<xiiGALMapFlags::Enum>(-1);
   }
 
   m_pCommandList = nullptr;
   m_pMappedData  = nullptr;
 
-  return XII_SUCCESS;
+  return result;
 }
 
 template <typename DataType>

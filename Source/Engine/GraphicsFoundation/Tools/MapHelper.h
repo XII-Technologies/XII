@@ -65,11 +65,8 @@ public:
 
   /// \brief Unmaps the specified resource.
   ///
-  /// \param pCommandList - Pointer to the command list.
-  /// \param hBuffer      - Handle to the buffer resource.
-  ///
   /// \return Result of the operation.
-  xiiResult Unmap(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer);
+  xiiResult Unmap();
 
   /// \brief Implicit conversion to DataType pointer.
   operator DataType*();
