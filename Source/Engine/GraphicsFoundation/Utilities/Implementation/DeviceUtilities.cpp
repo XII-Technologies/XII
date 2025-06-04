@@ -96,8 +96,10 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDev
 
   if (xiiSharedPtr<xiiGALBuffer> pConstantBuffer = pDevice->CreateBuffer(bufferDescription))
   {
-    pConstantBuffer->SetDebugName(sDebugName);
-
+    if (!sDebugName.IsEmpty())
+    {
+      pConstantBuffer->SetDebugName(sDebugName);
+    }
     return pConstantBuffer;
   }
   return nullptr;
@@ -116,8 +118,10 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateStagingBuffer(xiiGALDevi
 
   if (xiiSharedPtr<xiiGALBuffer> pStagingBuffer = pDevice->CreateBuffer(bufferDescription))
   {
-    pStagingBuffer->SetDebugName(sDebugName);
-
+    if (!sDebugName.IsEmpty())
+    {
+      pStagingBuffer->SetDebugName(sDebugName);
+    }
     return pStagingBuffer;
   }
   return nullptr;
