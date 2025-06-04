@@ -541,8 +541,8 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
 
       xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
-                   VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
-                   VK_API_VERSION_MAJOR(deviceProperties.driverVersion), VK_API_VERSION_MINOR(deviceProperties.driverVersion), VK_API_VERSION_PATCH(deviceProperties.driverVersion));
+                  VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
+                  VK_API_VERSION_MAJOR(deviceProperties.driverVersion), VK_API_VERSION_MINOR(deviceProperties.driverVersion), VK_API_VERSION_PATCH(deviceProperties.driverVersion));
     }
     else
     {
@@ -1307,10 +1307,11 @@ xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceVulkan::CreateSwapChainPla
 {
   xiiInternal::NewInstance<xiiGALSwapChainVulkan> pSwapChainVulkan = XII_NEW(&m_Allocator, xiiGALSwapChainVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pSwapChainVulkan->InitPlatform().Succeeded())
-    return pSwapChainVulkan;
-
-  XII_DELETE(&m_Allocator, pSwapChainVulkan.m_pInstance);
+  if (pSwapChainVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pSwapChainVulkan.m_pAllocator, pSwapChainVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pSwapChainVulkan;
 }
@@ -1319,10 +1320,11 @@ xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceVulkan::CreateBlendStateP
 {
   xiiInternal::NewInstance<xiiGALBlendStateVulkan> pBlendStateVulkan = XII_NEW(&m_Allocator, xiiGALBlendStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pBlendStateVulkan->InitPlatform().Succeeded())
-    return pBlendStateVulkan;
-
-  XII_DELETE(&m_Allocator, pBlendStateVulkan.m_pInstance);
+  if (pBlendStateVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pBlendStateVulkan.m_pAllocator, pBlendStateVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pBlendStateVulkan;
 }
@@ -1331,10 +1333,11 @@ xiiInternal::NewInstance<xiiGALDepthStencilState> xiiGALDeviceVulkan::CreateDept
 {
   xiiInternal::NewInstance<xiiGALDepthStencilStateVulkan> pDepthStencilStateVulkan = XII_NEW(&m_Allocator, xiiGALDepthStencilStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pDepthStencilStateVulkan->InitPlatform().Succeeded())
-    return pDepthStencilStateVulkan;
-
-  XII_DELETE(&m_Allocator, pDepthStencilStateVulkan.m_pInstance);
+  if (pDepthStencilStateVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pDepthStencilStateVulkan.m_pAllocator, pDepthStencilStateVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pDepthStencilStateVulkan;
 }
@@ -1343,10 +1346,11 @@ xiiInternal::NewInstance<xiiGALRasterizerState> xiiGALDeviceVulkan::CreateRaster
 {
   xiiInternal::NewInstance<xiiGALRasterizerStateVulkan> pRasterizerStateVulkan = XII_NEW(&m_Allocator, xiiGALRasterizerStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pRasterizerStateVulkan->InitPlatform().Succeeded())
-    return pRasterizerStateVulkan;
-
-  XII_DELETE(&m_Allocator, pRasterizerStateVulkan.m_pInstance);
+  if (pRasterizerStateVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pRasterizerStateVulkan.m_pAllocator, pRasterizerStateVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pRasterizerStateVulkan;
 }
@@ -1355,10 +1359,11 @@ xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceVulkan::CreateShaderPlatform(
 {
   xiiInternal::NewInstance<xiiGALShaderVulkan> pShaderVulkan = XII_NEW(&m_Allocator, xiiGALShaderVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pShaderVulkan->InitPlatform().Succeeded())
-    return pShaderVulkan;
-
-  XII_DELETE(&m_Allocator, pShaderVulkan.m_pInstance);
+  if (pShaderVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pShaderVulkan.m_pAllocator, pShaderVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pShaderVulkan;
 }
@@ -1367,10 +1372,11 @@ xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(
 {
   xiiInternal::NewInstance<xiiGALBufferVulkan> pBufferVulkan = XII_NEW(&m_Allocator, xiiGALBufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pBufferVulkan->InitPlatform(pInitialData).Succeeded())
-    return pBufferVulkan;
-
-  XII_DELETE(&m_Allocator, pBufferVulkan.m_pInstance);
+  if (pBufferVulkan->InitPlatform(pInitialData).Failed())
+  {
+    XII_DELETE(pBufferVulkan.m_pAllocator, pBufferVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pBufferVulkan;
 }
@@ -1379,10 +1385,11 @@ xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatfor
 {
   xiiInternal::NewInstance<xiiGALTextureVulkan> pTextureVulkan = XII_NEW(&m_Allocator, xiiGALTextureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pTextureVulkan->InitPlatform(pInitialData).Succeeded())
-    return pTextureVulkan;
-
-  XII_DELETE(&m_Allocator, pTextureVulkan.m_pInstance);
+  if (pTextureVulkan->InitPlatform(pInitialData).Failed())
+  {
+    XII_DELETE(pTextureVulkan.m_pAllocator, pTextureVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pTextureVulkan;
 }
@@ -1391,10 +1398,11 @@ xiiInternal::NewInstance<xiiGALSampler> xiiGALDeviceVulkan::CreateSamplerPlatfor
 {
   xiiInternal::NewInstance<xiiGALSamplerVulkan> pSamplerVulkan = XII_NEW(&m_Allocator, xiiGALSamplerVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pSamplerVulkan->InitPlatform().Succeeded())
-    return pSamplerVulkan;
-
-  XII_DELETE(&m_Allocator, pSamplerVulkan.m_pInstance);
+  if (pSamplerVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pSamplerVulkan.m_pAllocator, pSamplerVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pSamplerVulkan;
 }
@@ -1403,10 +1411,11 @@ xiiInternal::NewInstance<xiiGALQuery> xiiGALDeviceVulkan::CreateQueryPlatform(co
 {
   xiiInternal::NewInstance<xiiGALQueryVulkan> pQueryVulkan = XII_NEW(&m_Allocator, xiiGALQueryVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pQueryVulkan->InitPlatform().Succeeded())
-    return pQueryVulkan;
-
-  XII_DELETE(&m_Allocator, pQueryVulkan.m_pInstance);
+  if (pQueryVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pQueryVulkan.m_pAllocator, pQueryVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pQueryVulkan;
 }
@@ -1415,10 +1424,11 @@ xiiInternal::NewInstance<xiiGALFence> xiiGALDeviceVulkan::CreateFencePlatform(co
 {
   xiiInternal::NewInstance<xiiGALFenceVulkan> pFenceVulkan = XII_NEW(&m_Allocator, xiiGALFenceVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pFenceVulkan->InitPlatform().Succeeded())
-    return pFenceVulkan;
-
-  XII_DELETE(&m_Allocator, pFenceVulkan.m_pInstance);
+  if (pFenceVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pFenceVulkan.m_pAllocator, pFenceVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pFenceVulkan;
 }
@@ -1427,10 +1437,11 @@ xiiInternal::NewInstance<xiiGALRenderPass> xiiGALDeviceVulkan::CreateRenderPassP
 {
   xiiInternal::NewInstance<xiiGALRenderPassVulkan> pRenderPassVulkan = XII_NEW(&m_Allocator, xiiGALRenderPassVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pRenderPassVulkan->InitPlatform().Succeeded())
-    return pRenderPassVulkan;
-
-  XII_DELETE(&m_Allocator, pRenderPassVulkan.m_pInstance);
+  if (pRenderPassVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pRenderPassVulkan.m_pAllocator, pRenderPassVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pRenderPassVulkan;
 }
@@ -1439,10 +1450,11 @@ xiiInternal::NewInstance<xiiGALFramebuffer> xiiGALDeviceVulkan::CreateFramebuffe
 {
   xiiInternal::NewInstance<xiiGALFramebufferVulkan> pFramebufferVulkan = XII_NEW(&m_Allocator, xiiGALFramebufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pFramebufferVulkan->InitPlatform().Succeeded())
-    return pFramebufferVulkan;
-
-  XII_DELETE(&m_Allocator, pFramebufferVulkan.m_pInstance);
+  if (pFramebufferVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pFramebufferVulkan.m_pAllocator, pFramebufferVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pFramebufferVulkan;
 }
@@ -1451,10 +1463,11 @@ xiiInternal::NewInstance<xiiGALBottomLevelAS> xiiGALDeviceVulkan::CreateBottomLe
 {
   xiiInternal::NewInstance<xiiGALBottomLevelASVulkan> pBottomLevelASVulkan = XII_NEW(&m_Allocator, xiiGALBottomLevelASVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pBottomLevelASVulkan->InitPlatform().Succeeded())
-    return pBottomLevelASVulkan;
-
-  XII_DELETE(&m_Allocator, pBottomLevelASVulkan.m_pInstance);
+  if (pBottomLevelASVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pBottomLevelASVulkan.m_pAllocator, pBottomLevelASVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pBottomLevelASVulkan;
 }
@@ -1463,10 +1476,11 @@ xiiInternal::NewInstance<xiiGALTopLevelAS> xiiGALDeviceVulkan::CreateTopLevelASP
 {
   xiiInternal::NewInstance<xiiGALTopLevelASVulkan> pTopLevelASVulkan = XII_NEW(&m_Allocator, xiiGALTopLevelASVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pTopLevelASVulkan->InitPlatform().Succeeded())
-    return pTopLevelASVulkan;
-
-  XII_DELETE(&m_Allocator, pTopLevelASVulkan.m_pInstance);
+  if (pTopLevelASVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pTopLevelASVulkan.m_pAllocator, pTopLevelASVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pTopLevelASVulkan;
 }
@@ -1475,10 +1489,11 @@ xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceVulkan::Cr
 {
   xiiInternal::NewInstance<xiiGALPipelineResourceSignatureVulkan> pPipelineResourceSignatureVulkan = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pPipelineResourceSignatureVulkan->InitPlatform().Succeeded())
-    return pPipelineResourceSignatureVulkan;
-
-  XII_DELETE(&m_Allocator, pPipelineResourceSignatureVulkan.m_pInstance);
+  if (pPipelineResourceSignatureVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pPipelineResourceSignatureVulkan.m_pAllocator, pPipelineResourceSignatureVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pPipelineResourceSignatureVulkan;
 }
@@ -1487,10 +1502,11 @@ xiiInternal::NewInstance<xiiGALGraphicsPipelineState> xiiGALDeviceVulkan::Create
 {
   xiiInternal::NewInstance<xiiGALGraphicsPipelineStateVulkan> pGraphicsPipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALGraphicsPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pGraphicsPipelineStateVulkan->InitPlatform().Succeeded())
-    return pGraphicsPipelineStateVulkan;
-
-  XII_DELETE(&m_Allocator, pGraphicsPipelineStateVulkan.m_pInstance);
+  if (pGraphicsPipelineStateVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pGraphicsPipelineStateVulkan.m_pAllocator, pGraphicsPipelineStateVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pGraphicsPipelineStateVulkan;
 }
@@ -1499,10 +1515,11 @@ xiiInternal::NewInstance<xiiGALComputePipelineState> xiiGALDeviceVulkan::CreateC
 {
   xiiInternal::NewInstance<xiiGALComputePipelineStateVulkan> pComputePipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALComputePipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pComputePipelineStateVulkan->InitPlatform().Succeeded())
-    return pComputePipelineStateVulkan;
-
-  XII_DELETE(&m_Allocator, pComputePipelineStateVulkan.m_pInstance);
+  if (pComputePipelineStateVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pComputePipelineStateVulkan.m_pAllocator, pComputePipelineStateVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pComputePipelineStateVulkan;
 }
@@ -1511,10 +1528,11 @@ xiiInternal::NewInstance<xiiGALRayTracingPipelineState> xiiGALDeviceVulkan::Crea
 {
   xiiInternal::NewInstance<xiiGALRayTracingPipelineStateVulkan> pRayTracingPipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALRayTracingPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pRayTracingPipelineStateVulkan->InitPlatform().Succeeded())
-    return pRayTracingPipelineStateVulkan;
-
-  XII_DELETE(&m_Allocator, pRayTracingPipelineStateVulkan.m_pInstance);
+  if (pRayTracingPipelineStateVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pRayTracingPipelineStateVulkan.m_pAllocator, pRayTracingPipelineStateVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pRayTracingPipelineStateVulkan;
 }
@@ -1523,10 +1541,11 @@ xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceVulkan::CreateTile
 {
   xiiInternal::NewInstance<xiiGALTilePipelineStateVulkan> pTilePipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALTilePipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pTilePipelineStateVulkan->InitPlatform().Succeeded())
-    return pTilePipelineStateVulkan;
-
-  XII_DELETE(&m_Allocator, pTilePipelineStateVulkan.m_pInstance);
+  if (pTilePipelineStateVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pTilePipelineStateVulkan.m_pAllocator, pTilePipelineStateVulkan.m_pInstance);
+    return nullptr;
+  }
 
   return pTilePipelineStateVulkan;
 }
