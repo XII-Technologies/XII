@@ -68,7 +68,7 @@ public:
 
   virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
   virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const override;
-  virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
+  virtual void RenderBatch(const xiiRenderViewContext& renderContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
 protected:
   void SetupRenderer();
@@ -76,10 +76,10 @@ protected:
   static const xiiUInt32 s_uiVertexBufferSize = 10000;
   static const xiiUInt32 s_uiIndexBufferSize  = s_uiVertexBufferSize * 2;
 
-  xiiShaderResourceHandle m_hShader;
-  xiiGALBufferHandle      m_hVertexBuffer;
-  xiiGALBufferHandle      m_hIndexBuffer;
-  xiiInputLayoutInfo      m_InputLayoutInfo;
+  xiiShaderResourceHandle    m_hShader;
+  xiiSharedPtr<xiiGALBuffer> m_pVertexBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;
+  xiiInputLayoutInfo         m_InputLayoutInfo;
 };
 
 #endif
