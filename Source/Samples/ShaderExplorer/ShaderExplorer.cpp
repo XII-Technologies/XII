@@ -250,7 +250,7 @@ public:
 
           pCommandList->BeginRenderPass(beginRenderPassDescription);
           {
-            pCommandList->ResolveAndSetConstantBuffer("xiiGlobalConstants", m_pGlobalConstantsBuffer);
+            // pCommandList->ResolveAndSetConstantBuffer("xiiGlobalConstants", m_pGlobalConstantsBuffer);
           }
           pCommandList->EndRenderPass();
         }
@@ -569,6 +569,8 @@ public:
 
     m_hMaterial.Invalidate();
     m_hQuadMeshBuffer.Invalidate();
+
+    m_pGlobalConstantsBuffer.Clear();
 
     m_FramebufferCache.Clear();
     m_pRenderPass.Clear();
