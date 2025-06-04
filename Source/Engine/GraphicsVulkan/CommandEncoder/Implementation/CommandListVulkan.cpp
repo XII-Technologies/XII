@@ -323,7 +323,7 @@ void xiiGALCommandListVulkan::FlushBarriers()
   // Do not clear SupportedStagesMask and SupportedAccessMask.
 }
 
-void xiiGALCommandListVulkan::CopyBufferToTexture(vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceBufferOffset, xiiUInt32 uiSourceBufferRowStrideInTexels, xiiSharedPtr<xiiGALTextureVulkan> pDestinationTextureVulkan, const xiiBoundingBoxU32& destinationRegion, xiiUInt32 uiDestinationMipLevel, xiiUInt32 uiDestinationArraySlice, bool bVerifyOnly /*= false*/)
+void xiiGALCommandListVulkan::CopyBufferToTexture(vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceBufferOffset, xiiUInt32 uiSourceBufferRowStrideInTexels, xiiGALTextureVulkan* pDestinationTextureVulkan, const xiiBoundingBoxU32& destinationRegion, xiiUInt32 uiDestinationMipLevel, xiiUInt32 uiDestinationArraySlice, bool bVerifyOnly /*= false*/)
 {
   XII_IGNORE_UNUSED(bVerifyOnly);
 
@@ -339,7 +339,7 @@ void xiiGALCommandListVulkan::CopyBufferToTexture(vk::Buffer vkSourceBuffer, xii
   CopyBufferToImage(vkSourceBuffer, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, xiiMakeArrayPtr(&vkBufferImageCopy, 1U));
 }
 
-void xiiGALCommandListVulkan::CopyTextureToBuffer(xiiSharedPtr<xiiGALTextureVulkan> pSourceTextureVulkan, const xiiBoundingBoxU32& sourceRegion, xiiUInt32 uiSourceMipLevel, xiiUInt32 uiSourceArraySlice, vk::Buffer vkDestinationBuffer, xiiUInt64 uiDestinationBufferOffset, xiiUInt32 uiDestinationBufferRowStrideInTexels, bool bVerifyOnly /*= false*/)
+void xiiGALCommandListVulkan::CopyTextureToBuffer(xiiGALTextureVulkan* pSourceTextureVulkan, const xiiBoundingBoxU32& sourceRegion, xiiUInt32 uiSourceMipLevel, xiiUInt32 uiSourceArraySlice, vk::Buffer vkDestinationBuffer, xiiUInt64 uiDestinationBufferOffset, xiiUInt32 uiDestinationBufferRowStrideInTexels, bool bVerifyOnly /*= false*/)
 {
   XII_IGNORE_UNUSED(bVerifyOnly);
 
@@ -355,7 +355,7 @@ void xiiGALCommandListVulkan::CopyTextureToBuffer(xiiSharedPtr<xiiGALTextureVulk
   CopyImageToBuffer(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, vkDestinationBuffer, xiiMakeArrayPtr(&vkBufferImageCopy, 1U));
 }
 
-void xiiGALCommandListVulkan::UpdateBufferRegion(xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan, vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceOffset, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSizeInBytes)
+void xiiGALCommandListVulkan::UpdateBufferRegion(xiiGALBufferVulkan* pBufferVulkan, vk::Buffer vkSourceBuffer, xiiUInt64 uiSourceOffset, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSizeInBytes)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
@@ -411,7 +411,7 @@ void xiiGALCommandListVulkan::CopyImage(vk::Image vkSourceImage, vk::ImageLayout
   m_vkCommandBuffer.copyImage(vkSourceImage, vkSourceImageLayout, vkDestinationImage, vkDestinationImageLayout, pRegions.GetCount(), pRegions.GetPtr(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
-void xiiGALCommandListVulkan::CopyTextureRegion(xiiSharedPtr<xiiGALTextureVulkan> pSourceTextureVulkan, xiiSharedPtr<xiiGALTextureVulkan> pDestinationTextureVulkan, const vk::ImageCopy& copyRegion)
+void xiiGALCommandListVulkan::CopyTextureRegion(xiiGALTextureVulkan* pSourceTextureVulkan, xiiGALTextureVulkan* pDestinationTextureVulkan, const vk::ImageCopy& copyRegion)
 {
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "");
@@ -424,7 +424,7 @@ void xiiGALCommandListVulkan::CopyTextureRegion(xiiSharedPtr<xiiGALTextureVulkan
   CopyImage(pSourceTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, pDestinationTextureVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, xiiMakeArrayPtr(&copyRegion, 1U));
 }
 
-void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUInt64 uiSourceStride, xiiUInt64 uiSourceDepthStride, xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox)
+void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUInt64 uiSourceStride, xiiUInt64 uiSourceDepthStride, xiiGALTextureVulkan* pTextureVulkan, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   const auto&                      textureDescription = pTextureVulkan->GetDescription();
@@ -2647,7 +2647,7 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName) const
   return writeAccessStates.IsAnySet(flags);
 }
 
-void xiiGALCommandListVulkan::TransitionBufferState(xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, const bool bUpdateBufferState)
+void xiiGALCommandListVulkan::TransitionBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, const bool bUpdateBufferState)
 {
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
@@ -2692,7 +2692,7 @@ void xiiGALCommandListVulkan::TransitionBufferState(xiiSharedPtr<xiiGALBufferVul
   }
 }
 
-void xiiGALCommandListVulkan::BufferMemoryBarrier(xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan, vk::AccessFlags newAccessFlags)
+void xiiGALCommandListVulkan::BufferMemoryBarrier(xiiGALBufferVulkan* pBufferVulkan, vk::AccessFlags newAccessFlags)
 {
   XII_VERIFY_COMMAND_LIST(pBufferVulkan != nullptr, "");
 
@@ -2710,7 +2710,7 @@ void xiiGALCommandListVulkan::BufferMemoryBarrier(xiiSharedPtr<xiiGALBufferVulka
   }
 }
 
-void xiiGALCommandListVulkan::TransitionTextureState(xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange /*= nullptr*/)
+void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState, xiiBitflags<xiiGALStateTransitionFlags> flags, vk::ImageSubresourceRange* pSubresourceRange /*= nullptr*/)
 {
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
@@ -2792,7 +2792,7 @@ void xiiGALCommandListVulkan::TransitionTextureState(xiiSharedPtr<xiiGALTextureV
   }
 }
 
-void xiiGALCommandListVulkan::TransitionImageLayout(xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan, vk::ImageLayout newLayout)
+void xiiGALCommandListVulkan::TransitionImageLayout(xiiGALTextureVulkan* pTextureVulkan, vk::ImageLayout newLayout)
 {
   XII_VERIFY_COMMAND_LIST(pTextureVulkan != nullptr, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
@@ -2810,7 +2810,7 @@ void xiiGALCommandListVulkan::TransitionImageLayout(xiiSharedPtr<xiiGALTextureVu
   }
 }
 
-void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::AccessFlagBits expectedAccessFlags, const char* szOperationName, bool bVerifyOnly)
+void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::AccessFlagBits expectedAccessFlags, const char* szOperationName, bool bVerifyOnly)
 {
   XII_IGNORE_UNUSED(szOperationName);
   XII_IGNORE_UNUSED(expectedAccessFlags);
@@ -2832,7 +2832,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiSharedPtr<xiiGALB
   }
 }
 
-void xiiGALCommandListVulkan::TransitionOrVerifyTextureState(xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::ImageLayout expectedLayout, const char* szOperationName, bool bVerifyOnly)
+void xiiGALCommandListVulkan::TransitionOrVerifyTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::ImageLayout expectedLayout, const char* szOperationName, bool bVerifyOnly)
 {
   XII_IGNORE_UNUSED(szOperationName);
   XII_IGNORE_UNUSED(expectedLayout);
