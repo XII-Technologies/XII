@@ -26,8 +26,4 @@ function(xii_add_as_runtime_dependency TARGET_NAME)
 
   # Player
   xii_add_dependency(Player ${TARGET_NAME})
-
-  # Samples
-  xii_add_dependency(ShaderExplorer ${TARGET_NAME})
-  xii_add_dependency(TextureSample ${TARGET_NAME})
 endfunction()
