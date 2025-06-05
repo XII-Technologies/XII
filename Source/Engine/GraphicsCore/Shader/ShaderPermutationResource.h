@@ -4,8 +4,6 @@
 
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
-#include <Foundation/Time/Timestamp.h>
-#include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 
 using xiiShaderPermutationResourceHandle = xiiTypedResourceHandle<class xiiShaderPermutationResource>;
@@ -24,19 +22,19 @@ class XII_GRAPHICSCORE_DLL xiiShaderPermutationResource : public xiiResource
 public:
   xiiShaderPermutationResource();
 
-  xiiBitflags<xiiGALShaderType> GetActiveShaderStages() const { return m_ActiveShaderStages; };
-  xiiSharedPtr<xiiGALShader>    GetGALShader(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_pShader; }
-  const xiiGALShaderByteCode*   GetShaderByteCode(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_pByteCode; }
+  XII_ALWAYS_INLINE xiiBitflags<xiiGALShaderType> GetActiveShaderStages() const { return m_ActiveShaderStages; };
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALShader>  GetGALShader(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_pShader; }
+  XII_ALWAYS_INLINE const xiiGALShaderByteCode* GetShaderByteCode(xiiGALShaderType::Enum type) const { return m_ShaderData.GetValueOrDefault(type, ShaderData()).m_pByteCode; }
 
-  xiiSharedPtr<xiiGALPipelineResourceSignature> GetPipelineResourceSignature() const { return m_pPipelineResourceSignature; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALPipelineResourceSignature> GetPipelineResourceSignature() const { return m_pPipelineResourceSignature; }
 
-  xiiSharedPtr<xiiGALBlendState>        GetBlendState() const { return m_pBlendState; }
-  xiiSharedPtr<xiiGALDepthStencilState> GetDepthStencilState() const { return m_pDepthStencilState; }
-  xiiSharedPtr<xiiGALRasterizerState>   GetRasterizerState() const { return m_pRasterizerState; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBlendState> GetBlendState() const { return m_pBlendState; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALDepthStencilState> GetDepthStencilState() const { return m_pDepthStencilState; }
+  XII_ALWAYS_INLINE xiiSharedPtr<xiiGALRasterizerState> GetRasterizerState() const { return m_pRasterizerState; }
 
-  bool IsShaderValid() const { return m_bShaderPermutationValid; }
+  XII_ALWAYS_INLINE bool IsShaderValid() const { return m_bShaderPermutationValid; }
 
-  xiiArrayPtr<const xiiGALPermutationVariable> GetPermutationVars() const { return m_PermutationVariables; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPermutationVariable> GetPermutationVars() const { return m_PermutationVariables; }
 
 private:
   virtual xiiResourceLoadDesc    UnloadData(Unload WhatToUnload) override;

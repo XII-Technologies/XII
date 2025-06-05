@@ -3,6 +3,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
+#include <GraphicsCore/Utils/CommandListUtilities.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
@@ -10,12 +11,10 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderPermutationResource, 1, xiiRTTIDefaultAllocator<xiiShaderPermutationResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiShaderPermutationResource);
-// clang-format on
 
 static xiiShaderPermutationResourceLoader g_PermutationResourceLoader;
 
@@ -28,8 +27,6 @@ xiiShaderPermutationResource::xiiShaderPermutationResource() :
 xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload)
 {
   m_bShaderPermutationValid = false;
-
-  auto pDevice = xiiGALDevice::GetDefaultDevice();
 
   for (auto it : m_ShaderData)
   {
@@ -56,7 +53,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
 
 xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiUInt32 uiGPUMem                = 0;
+  xiiUInt32 uiGPUMemory             = 0;
   ModifyMemoryUsage().m_uiMemoryGPU = 0;
 
   m_bShaderPermutationValid = false;
@@ -81,9 +78,9 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     return res;
   }
 
-  auto pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  // get the shader render state object
+  // Retrieve the shader render state object.
   {
     m_pBlendState        = pDevice->CreateBlendState(shaderPermutationBinary.m_StateDescriptor.m_BlendDescription);
     m_pDepthStencilState = pDevice->CreateDepthStencilState(shaderPermutationBinary.m_StateDescriptor.m_DepthStencilDescription);
@@ -143,7 +140,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
       m_ActiveShaderStages |= it.Key();
 
-      uiGPUMem += pStageBinary->GetByteCode()->m_ByteCode.GetCount();
+      uiGPUMemory += pStageBinary->GetByteCode()->m_ByteCode.GetCount();
 
       for (const auto& resource : pStageBinary->GetByteCode()->m_ShaderResourceBindings)
       {
@@ -156,6 +153,39 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
         resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
         resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
         resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
+
+        // Immutable Samplers.
+        if (resourceSignature.m_ResourceType == xiiGALShaderResourceType::Sampler)
+        {
+          if (resourceSignature.m_sName == xiiTempHashedString("LinearSampler"))
+          {
+            auto& linearSampler                  = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
+            linearSampler.m_SamplerOrTextureName = resource.m_sName;
+            linearSampler.m_ShaderStages         = xiiGALShaderType::AllGraphics;
+            linearSampler.m_SamplerDescription   = xiiGALCommandListUtilities::GetDefaultSamplerDescription(xiiDefaultSamplerFlags::LinearFiltering);
+          }
+          else if (resourceSignature.m_sName == xiiTempHashedString("LinearClampSampler"))
+          {
+            auto& linearClampSampler                  = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
+            linearClampSampler.m_SamplerOrTextureName = resource.m_sName;
+            linearClampSampler.m_ShaderStages         = xiiGALShaderType::AllGraphics;
+            linearClampSampler.m_SamplerDescription   = xiiGALCommandListUtilities::GetDefaultSamplerDescription(xiiDefaultSamplerFlags::LinearFiltering | xiiDefaultSamplerFlags::Clamp);
+          }
+          else if (resourceSignature.m_sName == xiiTempHashedString("PointSampler"))
+          {
+            auto& pointSampler                  = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
+            pointSampler.m_SamplerOrTextureName = resource.m_sName;
+            pointSampler.m_ShaderStages         = xiiGALShaderType::AllGraphics;
+            pointSampler.m_SamplerDescription   = xiiGALCommandListUtilities::GetDefaultSamplerDescription(xiiDefaultSamplerFlags::PointFiltering);
+          }
+          else if (resourceSignature.m_sName == xiiTempHashedString("PointClampSampler"))
+          {
+            auto& pointClampSampler                  = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
+            pointClampSampler.m_SamplerOrTextureName = resource.m_sName;
+            pointClampSampler.m_ShaderStages         = xiiGALShaderType::AllGraphics;
+            pointClampSampler.m_SamplerDescription   = xiiGALCommandListUtilities::GetDefaultSamplerDescription(xiiDefaultSamplerFlags::PointFiltering | xiiDefaultSamplerFlags::Clamp);
+          }
+        }
       }
     }
   }
@@ -172,7 +202,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
   m_bShaderPermutationValid = true;
 
-  ModifyMemoryUsage().m_uiMemoryGPU = uiGPUMem;
+  ModifyMemoryUsage().m_uiMemoryGPU = uiGPUMemory;
 
   return res;
 }
