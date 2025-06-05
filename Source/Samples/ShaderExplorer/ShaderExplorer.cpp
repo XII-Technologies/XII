@@ -240,12 +240,7 @@ public:
             pGlobalConstants->NumMsaaSamples = 1;
           }
 
-          {
-            xiiGALViewport viewPort{viewportRect.x, viewportRect.y, viewportRect.width, viewportRect.height, 0.0f, 0.1f};
-
-            pCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1U));
-          }
-
+          pCommandList->SetViewport(xiiGALViewport{viewportRect.x, viewportRect.y, viewportRect.width, viewportRect.height, 0.0f, 0.1f});
           pCommandList->BeginRenderPass(beginRenderPassDescription);
           {
             // pCommandList->ResolveAndSetConstantBuffer("xiiGlobalConstants", m_pGlobalConstantsBuffer);
@@ -253,27 +248,14 @@ public:
           pCommandList->EndRenderPass();
         }
         pCommandList->EndDebugGroup();
-
         pCommandList->Submit();
       }
 
 #ifdef CORE_ENABLE
-
-      if (auto pCommandList = pDefaultQueue->BeginCommandList())
       {
-        pRenderContext->SetCommandList(pCommandList);
-        pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
-
-        ...
-
-          pRenderContext->BindMaterial(m_hMaterial);
+        pRenderContext->BindMaterial(m_hMaterial);
         pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
         pRenderContext->DrawMeshBuffer().IgnoreResult();
-
-        pRenderContext->EndRendering();
-        pRenderContext->SetCommandList(nullptr);
-
-        pCommandList->Submit();
       }
 #endif
 

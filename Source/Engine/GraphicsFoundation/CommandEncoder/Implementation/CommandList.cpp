@@ -278,7 +278,7 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
   }
 }
 
-void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiGALViewport> pViewports)
+void xiiGALCommandList::SetViewports(xiiArrayPtr<const xiiGALViewport> pViewports)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetViewports arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
 
