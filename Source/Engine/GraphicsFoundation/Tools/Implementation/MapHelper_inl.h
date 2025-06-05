@@ -70,6 +70,10 @@ XII_FORCE_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiSharedPtr<xiiGALCom
   m_MapType      = mapType;
   m_MapFlags     = mapFlags;
 
+  if (m_MapFlags.IsSet(xiiGALMapFlags::Discard))
+  {
+    xiiMemoryUtils::ZeroFill((DataType*)m_pMappedData, 1);
+  }
   return XII_SUCCESS;
 }
 

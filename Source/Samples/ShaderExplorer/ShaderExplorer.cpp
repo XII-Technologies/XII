@@ -224,8 +224,6 @@ public:
           {
             xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-            xiiMemoryUtils::ZeroFill((xiiGlobalConstants*)pGlobalConstants, 1);
-
             xiiMat4 m0, m1;
             m0                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
             m1                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
