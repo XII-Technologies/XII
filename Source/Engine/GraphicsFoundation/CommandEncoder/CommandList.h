@@ -319,7 +319,12 @@ public:
   /// \brief Sets the viewports used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
   ///
   /// \param pViewports - The array of viewports structures, describing the viewports to bind.
-  void SetViewports(xiiArrayPtr<xiiGALViewport> pViewports);
+  void SetViewports(xiiArrayPtr<const xiiGALViewport> pViewports);
+
+  /// \brief Sets a single viewport for the rasterizer stage. This simplifies the process when only one viewport is needed.
+  ///
+  /// \param viewport - The viewport structure describing the area to bind.
+  XII_ALWAYS_INLINE void SetViewport(const xiiGALViewport& viewport) { SetViewports(xiiMakeArrayPtr(&viewport, 1U)); }
 
   /// \brief Sets the scissor rectangles used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
   ///

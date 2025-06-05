@@ -52,7 +52,6 @@ XII_ALWAYS_INLINE bool xiiGALDevice::HasDefaultDevice()
 XII_ALWAYS_INLINE void xiiGALDevice::VerifyMultithreadedAccess() const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_AdapterDescription.m_Features.m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled || xiiThreadUtils::IsMainThread(),
-                 "This device does not support multi-threaded resource creation, therefore this function can only be executed on the main thread.");
+  XII_ASSERT_DEV(m_AdapterDescription.m_Features.m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled || xiiThreadUtils::IsMainThread(), "This device does not support multi-threaded resource creation, therefore this function can only be executed on the main thread.");
 #endif
 }

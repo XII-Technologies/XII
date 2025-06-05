@@ -155,7 +155,7 @@ void xiiGALDevice::EndFrame()
 
 xiiSharedPtr<xiiGALSwapChain> xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_pWindow != nullptr, "The swap chain window handle is invalid.");
   XII_GAL_DEVICE_CHECK(description.m_ColorBufferFormat != xiiGALResourceFormat::Unknown, "The swap chain color buffer format is invalid.");
@@ -167,7 +167,7 @@ xiiSharedPtr<xiiGALSwapChain> xiiGALDevice::CreateSwapChain(const xiiGALSwapChai
 
 xiiSharedPtr<xiiGALBlendState> xiiGALDevice::CreateBlendState(const xiiGALBlendStateCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   for (xiiUInt32 i = 0U; i < description.m_RenderTargets.GetCount(); ++i)
   {
@@ -192,7 +192,7 @@ xiiSharedPtr<xiiGALBlendState> xiiGALDevice::CreateBlendState(const xiiGALBlendS
 
 xiiSharedPtr<xiiGALDepthStencilState> xiiGALDevice::CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(!(description.m_bDepthEnable && description.m_ComparisonDepthFunction == xiiGALComparisonFunction::Unknown), "The depth comparison function must not be xiiGALComparisonFunction::Unknown when depth is enabled.");
 
@@ -214,7 +214,7 @@ xiiSharedPtr<xiiGALDepthStencilState> xiiGALDevice::CreateDepthStencilState(cons
 
 xiiSharedPtr<xiiGALRasterizerState> xiiGALDevice::CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_FillMode != xiiGALFillMode::Undefined, "The fill mode cannot be xiiGALFillMode::Undefined.");
   XII_GAL_DEVICE_CHECK(description.m_CullMode != xiiGALCullMode::Undefined, "The cull mode cannot be xiiGALCullMode::Undefined.");
@@ -224,7 +224,7 @@ xiiSharedPtr<xiiGALRasterizerState> xiiGALDevice::CreateRasterizerState(const xi
 
 xiiSharedPtr<xiiGALShader> xiiGALDevice::CreateShader(const xiiGALShaderCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_ShaderType != xiiGALShaderType::Unknown, "The shader type must not be xiiGALShaderType::Unknown.");
   XII_GAL_DEVICE_CHECK(description.HasValidByteCode(), "A shader cannot be created with no provided valid shader bytecode.");
@@ -259,7 +259,7 @@ xiiSharedPtr<xiiGALShader> xiiGALDevice::CreateShader(const xiiGALShaderCreation
 
 xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   // Validate buffer description.
 
@@ -412,7 +412,7 @@ void xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription&
 
 xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
 
@@ -622,7 +622,7 @@ void xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCreationDescriptio
 
 xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   if (description.m_Flags.AreAllSet(xiiGALSamplerFlags::Subsampled | xiiGALSamplerFlags::SubsampledCoarseReconstruction))
   {
@@ -644,7 +644,7 @@ xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreat
 
 xiiSharedPtr<xiiGALQuery> xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   switch (description.m_Type)
   {
@@ -683,7 +683,7 @@ xiiSharedPtr<xiiGALQuery> xiiGALDevice::CreateQuery(const xiiGALQueryCreationDes
 
 xiiSharedPtr<xiiGALFence> xiiGALDevice::CreateFence(const xiiGALFenceCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   switch (description.m_Type)
   {
@@ -704,7 +704,7 @@ xiiSharedPtr<xiiGALFence> xiiGALDevice::CreateFence(const xiiGALFenceCreationDes
 
 xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_SubPasses.GetCount() > 0U, "The sub pass count must be greater than 0.");
 
@@ -906,7 +906,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
 xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_pRenderPass != nullptr, "The render pass handle is invalid.");
 
@@ -1128,7 +1128,7 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
 xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   if (description.m_uiCompactedSize > 0U)
   {
@@ -1174,7 +1174,7 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
 
 xiiSharedPtr<xiiGALTopLevelAS> xiiGALDevice::CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   if (description.m_uiCompactedSize > 0U)
   {
@@ -1192,7 +1192,7 @@ xiiSharedPtr<xiiGALTopLevelAS> xiiGALDevice::CreateTopLevelAS(const xiiGALTopLev
 
 xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_uiBindingIndex < XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT, "The pipeline resource signature binding index ({0}) exceeds the maximum allowed value ({1}).", description.m_uiBindingIndex, XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT - 1);
   XII_GAL_DEVICE_CHECK(description.m_uiBindingIndex <= s_uiMaxResourcesInSignature, "The pipeline resource signature resource count ({0}) exceeds the maximum allowed value ({1}).", description.m_Resources.GetCount(), s_uiMaxResourcesInSignature);
@@ -1293,7 +1293,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
 
 xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineState(const xiiGALGraphicsPipelineStateCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::Graphics || description.m_PipelineType == xiiGALPipelineType::Mesh, "The pipeline type for a graphics pipeline must be of type xiiGALPipelineType::Graphics or xiiGALPipelineType::Mesh.");
   XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
@@ -1350,7 +1350,7 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineSt
 
 xiiSharedPtr<xiiGALComputePipelineState> xiiGALDevice::CreateComputePipelineState(const xiiGALComputePipelineStateCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::Compute, "The pipeline type for a compute pipeline must be of type xiiGALPipelineType::Compute.");
   XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
@@ -1362,7 +1362,7 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGALDevice::CreateComputePipelineStat
 
 xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipelineState(const xiiGALRayTracingPipelineStateCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::RayTracing, "The pipeline type for a ray tracing pipeline must be of type xiiGALPipelineType::RayTracing.");
   XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
@@ -1420,7 +1420,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
 
 xiiSharedPtr<xiiGALTilePipelineState> xiiGALDevice::CreateTilePipelineState(const xiiGALTilePipelineStateCreationDescription& description)
 {
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
+  VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_PipelineType == xiiGALPipelineType::Tile, "The pipeline type for a tile pipeline must be of type xiiGALPipelineType::Tile.");
   XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");

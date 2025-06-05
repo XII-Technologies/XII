@@ -450,8 +450,11 @@ xiiResourceLoadDesc xiiMaterialResource::UnloadData(Unload WhatToUnload)
 
   m_pMaterialConstantsBuffer.Clear();
 
-  xiiFoundation::GetAlignedAllocator()->Deallocate(m_pMaterialData.GetPtr());
-  m_pMaterialData.Clear();
+  if (!m_pMaterialData.IsEmpty())
+  {
+    xiiFoundation::GetAlignedAllocator()->Deallocate(m_pMaterialData.GetPtr());
+    m_pMaterialData.Clear();
+  }
 
   DeallocateCache(m_uiCacheIndex);
   m_uiCacheIndex  = xiiInvalidIndex;

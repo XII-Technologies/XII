@@ -23,7 +23,7 @@ function(xii_add_renderers TARGET_NAME)
 
   if(XII_BUILD_VULKAN AND NOT ARG_EXCLUDE_VULKAN)
     if(TARGET GraphicsVulkan)
-      add_dependencies(${TARGET_NAME} GraphicsVulkan)
+      target_link_libraries(${TARGET_NAME} PRIVATE GraphicsVulkan)
     endif()
     if(TARGET ShaderCompilerSPIRV AND NOT ARG_EXCLUDE_SHADER_COMPILER)
       add_dependencies(${TARGET_NAME} ShaderCompilerSPIRV)

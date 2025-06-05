@@ -6,6 +6,7 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
+#include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 
 using xiiMaterialResourceHandle    = xiiTypedResourceHandle<class xiiMaterialResource>;
 using xiiTexture2DResourceHandle   = xiiTypedResourceHandle<class xiiTexture2DResource>;

@@ -24,12 +24,14 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Utils/CommandListUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
@@ -224,8 +226,6 @@ public:
           {
             xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-            xiiMemoryUtils::ZeroFill(&pGlobalConstants, 1);
-
             xiiMat4 m0, m1;
             m0                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
             m1                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
@@ -241,41 +241,27 @@ public:
             pGlobalConstants->ViewportSize   = xiiVec4(viewportRect.width, viewportRect.height, 1.0f / viewportRect.width, 1.0f / viewportRect.height);
             pGlobalConstants->NumMsaaSamples = 1;
           }
-
           {
-            xiiGALViewport viewPort{viewportRect.x, viewportRect.y, viewportRect.width, viewportRect.height, 0.0f, 0.1f};
-
-            pCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1U));
+            // Update material constants.
+            xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
           }
 
+          pCommandList->SetViewport(xiiGALViewport{viewportRect.x, viewportRect.y, viewportRect.width, viewportRect.height, 0.0f, 0.1f});
           pCommandList->BeginRenderPass(beginRenderPassDescription);
           {
-            pCommandList->ResolveAndSetConstantBuffer("xiiGlobalConstants", m_pGlobalConstantsBuffer);
+            // pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), m_pGlobalConstantsBuffer);
           }
           pCommandList->EndRenderPass();
         }
         pCommandList->EndDebugGroup();
-
         pCommandList->Submit();
       }
 
 #ifdef CORE_ENABLE
-
-      if (auto pCommandList = pDefaultQueue->BeginCommandList())
       {
-        pRenderContext->SetCommandList(pCommandList);
-        pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
-
-        ...
-
-          pRenderContext->BindMaterial(m_hMaterial);
+        pRenderContext->BindMaterial(m_hMaterial);
         pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
         pRenderContext->DrawMeshBuffer().IgnoreResult();
-
-        pRenderContext->EndRendering();
-        pRenderContext->SetCommandList(nullptr);
-
-        pCommandList->Submit();
       }
 #endif
 
@@ -570,6 +556,11 @@ public:
     m_hMaterial.Invalidate();
     m_hQuadMeshBuffer.Invalidate();
 
+    m_pGlobalConstantsBuffer.Clear();
+
+    m_pPipelineState.Clear();
+    m_pPipelineLayout.Clear();
+
     m_FramebufferCache.Clear();
     m_pRenderPass.Clear();
     m_pDepthStencilTexture.Clear();
@@ -641,14 +632,14 @@ public:
 
     if (!m_pDepthStencilTexture)
     {
-      xiiGALTextureCreationDescription texDesc;
-      texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
-      texDesc.m_Size.width  = g_uiWindowWidth;
-      texDesc.m_Size.height = g_uiWindowHeight;
-      texDesc.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
-      texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
+      xiiGALTextureCreationDescription textureDescription;
+      textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
+      textureDescription.m_Size.width  = g_uiWindowWidth;
+      textureDescription.m_Size.height = g_uiWindowHeight;
+      textureDescription.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
+      textureDescription.m_BindFlags   = xiiGALBindFlags::DepthStencil;
 
-      m_pDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
+      m_pDepthStencilTexture = m_pDevice->CreateTexture(textureDescription);
 
       m_pDepthStencilTexture->SetDebugName("Depth Stencil");
     }
@@ -769,6 +760,9 @@ private:
   xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
 
   xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
+
+  xiiSharedPtr<xiiGALPipelineState>             m_pPipelineState;
+  xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineLayout;
 
   xiiMaterialResourceHandle   m_hMaterial;
   xiiMeshBufferResourceHandle m_hQuadMeshBuffer;
