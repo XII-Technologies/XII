@@ -24,13 +24,16 @@ struct xiiGALShaderCompilerFlags
 
   enum Enum : StorageType
   {
-    Debug   = XII_BIT(0),
+    Debug                 = XII_BIT(0),
+    EnableUnboundedArrays = XII_BIT(1),
+
     Default = 0U,
   };
 
   struct Bits
   {
     StorageType Debug : 1;
+    StorageType EnableUnboundedArrays : 1;
   };
 };
 
