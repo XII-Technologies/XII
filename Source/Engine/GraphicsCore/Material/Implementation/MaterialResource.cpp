@@ -570,7 +570,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
         if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
         {
-          AddPermutationVar(sTemp, sTemp2);
+          AddPermutationVariable(sTemp, sTemp2);
         }
       }
     }
@@ -611,7 +611,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
         if (!sTemp.IsEmpty() && !sTemp2.IsEmpty())
         {
           xiiMaterialResourceDescriptor::TextureCubeBinding& tc = m_Description.m_TextureCubeBindings.ExpandAndGetRef();
-          tc.m_Name.Assign(sTemp.GetData());
+          tc.m_Name.Assign(sTemp.GetView());
           tc.m_Value = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTemp2);
         }
       }
@@ -727,7 +727,7 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
 
         if (pName && pValue)
         {
-          AddPermutationVar(pName->GetPrimitivesString()[0], pValue->GetPrimitivesString()[0]);
+          AddPermutationVariable(pName->GetPrimitivesString()[0], pValue->GetPrimitivesString()[0]);
         }
       }
 
@@ -852,7 +852,7 @@ void xiiMaterialResource::OnResourceEvent(const xiiResourceEvent& resourceEvent)
   }
 }
 
-void xiiMaterialResource::AddPermutationVar(xiiStringView sName, xiiStringView sValue)
+void xiiMaterialResource::AddPermutationVariable(xiiStringView sName, xiiStringView sValue)
 {
   xiiHashedString sNameHashed;
   sNameHashed.Assign(sName);

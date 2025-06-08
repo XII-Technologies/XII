@@ -263,7 +263,7 @@ xiiResult xiiShaderPermutationResourceLoader::RunCompiler(const xiiResource* pRe
     sPermutationFile.Shrink(0, 9); // remove underscore and the hash at the end
     sPermutationFile.Append(".xiiShader");
 
-    xiiArrayPtr<const xiiGALPermutationVariable> permutationVariables = static_cast<const xiiShaderPermutationResource*>(pResource)->GetPermutationVars();
+    xiiArrayPtr<const xiiGALPermutationVariable> permutationVariables = static_cast<const xiiShaderPermutationResource*>(pResource)->GetPermutationVariables();
 
     xiiGALShaderCompiler sc;
     return sc.CompileShaderPermutationForPlatforms(sPermutationFile, permutationVariables, xiiLog::GetThreadLocalLogSystem(), xiiGALShaderManager::GetActivePlatform());

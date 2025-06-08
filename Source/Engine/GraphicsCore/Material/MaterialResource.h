@@ -116,7 +116,7 @@ private:
   void                                           OnBaseMaterialModified(const xiiMaterialResource* pModifiedMaterial);
   void                                           OnResourceEvent(const xiiResourceEvent& resourceEvent);
 
-  void AddPermutationVar(xiiStringView sName, xiiStringView sValue);
+  void AddPermutationVariable(xiiStringView sName, xiiStringView sValue);
 
   xiiAtomicInteger32 m_iLastModified;
   xiiAtomicInteger32 m_iLastConstantsModified;
