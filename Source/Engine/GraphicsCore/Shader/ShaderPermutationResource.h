@@ -7,7 +7,6 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 
 using xiiShaderPermutationResourceHandle = xiiTypedResourceHandle<class xiiShaderPermutationResource>;
-using xiiShaderStateResourceHandle       = xiiTypedResourceHandle<class xiiShaderStateResource>;
 
 struct xiiShaderPermutationResourceDescriptor
 {
@@ -34,7 +33,7 @@ public:
 
   XII_ALWAYS_INLINE bool IsShaderValid() const { return m_bShaderPermutationValid; }
 
-  XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPermutationVariable> GetPermutationVars() const { return m_PermutationVariables; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPermutationVariable> GetPermutationVariables() const { return m_PermutationVariables; }
 
 private:
   virtual xiiResourceLoadDesc    UnloadData(Unload WhatToUnload) override;

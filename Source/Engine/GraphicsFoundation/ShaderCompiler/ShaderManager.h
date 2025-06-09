@@ -7,7 +7,7 @@
 class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderManager
 {
 public:
-  static void             Configure(xiiStringView sActivePlatform, bool bEnableRuntimeCompilation, xiiStringView sShaderCacheDirectory = ":shadercache/ShaderCache"_xiisv, xiiStringView sPermutationVariableSubDirectory = "Shaders/PermutationVars"_xiisv);
+  static void             Configure(xiiStringView sActivePlatform, bool bEnableRuntimeCompilation, xiiStringView sShaderCacheDirectory = ":shadercache/ShaderCache"_xiisv, xiiStringView sPermutationVariableSubDirectory = "Shaders/PermutationVariables"_xiisv);
   static const xiiString& GetPermutationVarSubDirectory() { return s_sPermutationVariableSubDirectory; }
   static const xiiString& GetActivePlatform() { return s_sPlatform; }
   static const xiiString& GetCacheDirectory() { return s_sShaderCacheDirectory; }

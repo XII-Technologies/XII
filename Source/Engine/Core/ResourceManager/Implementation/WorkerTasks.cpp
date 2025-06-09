@@ -106,7 +106,6 @@ void xiiResourceManagerWorkerDataLoad::Execute()
   }
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 
 xiiResourceManagerWorkerUpdateContent::xiiResourceManagerWorkerUpdateContent()  = default;

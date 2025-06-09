@@ -38,7 +38,7 @@ public:
   ///@{
 
 public:
-  /// \brief Returns a handle to the requested resource. szResourceID must uniquely identify the resource, different spellings / casing
+  /// \brief Returns a handle to the requested resource. sResourceID must uniquely identify the resource, different spellings / casing
   /// will result in different resources.
   ///
   /// After the call to this function the resource definitely exists in memory. Upon access through BeginAcquireResource / xiiResourceLock
@@ -73,18 +73,18 @@ public:
 
   /// \brief Creates a resource from a descriptor.
   ///
-  /// \param szResourceID The unique ID by which the resource is identified. E.g. in GetExistingResource()
+  /// \param sResourceID The unique ID by which the resource is identified. E.g. in GetExistingResource()
   /// \param descriptor A type specific descriptor that holds all the information to create the resource.
-  /// \param szResourceDescription An optional description that might help during debugging. Often a human readable name or path is stored
+  /// \param sResourceDescription An optional description that might help during debugging. Often a human readable name or path is stored
   /// here, to make it easier to identify this resource.
   template <typename ResourceType, typename DescriptorType>
   static xiiTypedResourceHandle<ResourceType> CreateResource(xiiStringView sResourceID, DescriptorType&& descriptor, xiiStringView sResourceDescription = nullptr);
 
   /// \brief Returns a handle to the resource with the given ID if it exists or creates it from a descriptor.
   ///
-  /// \param szResourceID The unique ID by which the resource is identified. E.g. in GetExistingResource()
+  /// \param sResourceID The unique ID by which the resource is identified. E.g. in GetExistingResource()
   /// \param descriptor A type specific descriptor that holds all the information to create the resource.
-  /// \param szResourceDescription An optional description that might help during debugging. Often a human readable name or path is stored here, to make it easier to identify this resource.
+  /// \param sResourceDescription An optional description that might help during debugging. Often a human readable name or path is stored here, to make it easier to identify this resource.
   template <typename ResourceType, typename DescriptorType>
   static xiiTypedResourceHandle<ResourceType> GetOrCreateResource(xiiStringView sResourceID, DescriptorType&& descriptor, xiiStringView sResourceDescription = nullptr);
 
@@ -288,8 +288,8 @@ public:
   ///@{
 
 public:
-  /// \brief Registers a 'named' resource. When a resource is looked up using \a szLookupName, the lookup will be redirected to \a
-  /// szRedirectionResource.
+  /// \brief Registers a 'named' resource. When a resource is looked up using \a sLookupName, the lookup will be redirected to \a
+  /// sRedirectionResource.
   ///
   /// This can be used to register a resource under an easier to use name. For example one can register "MenuBackground" as the name for "{
   /// E50DCC85-D375-4999-9CFE-42F1377FAC85 }". If the lookup name already exists, it will be overwritten.
@@ -503,7 +503,7 @@ private:
     xiiDelegate<bool(const xiiStringBuilder&)> m_Decider;
   };
 
-  /// \brief Checks whether there is a type override for pRtti given szResourceID and returns that
+  /// \brief Checks whether there is a type override for pRtti given sResourceID and returns that
   static const xiiRTTI* FindResourceTypeOverride(const xiiRTTI* pRtti, xiiStringView sResourceID);
 };
 

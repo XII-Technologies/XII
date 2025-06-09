@@ -56,7 +56,7 @@ namespace
     }
 
     xiiStringBuilder sTemp;
-    sTemp.SetFormat("Shaders/PermutationVars/{0}.xiiPermVar", def.m_sName);
+    sTemp.SetFormat("Shaders/PermutationVariables/{0}.xiiPermVar", def.m_sName);
 
     xiiString sPath = sTemp;
     xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(sPath);
@@ -308,7 +308,7 @@ const xiiRTTI* xiiShaderTypeRegistry::GetShaderType(xiiStringView sShaderPath0)
 
 void xiiShaderTypeRegistry::UpdateShaderType(ShaderData& data)
 {
-  XII_LOG_BLOCK("Updating Shader Parameters", data.m_sShaderPath.GetData());
+  XII_LOG_BLOCK("Updating Shader Parameters", data.m_sShaderPath.GetView());
 
   xiiHybridArray<xiiGALShaderParser::ParameterDefinition, 16> parameters;
   xiiHybridArray<xiiGALShaderParser::EnumDefinition, 4>       enumDefinitions;
@@ -436,7 +436,7 @@ public:
       desc.m_Flags           = xiiTypeFlags::Phantom | xiiTypeFlags::Abstract | xiiTypeFlags::Class;
       desc.m_uiTypeVersion   = 1;
 
-      context.RegisterObject(xiiUuid::MakeStableUuidFromString(desc.m_sTypeName.GetData()), xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
+      context.RegisterObject(xiiUuid::MakeStableUuidFromString(desc.m_sTypeName.GetView()), xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
       rttiConverter.AddObjectToGraph(xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
     }
   }

@@ -27,7 +27,7 @@ xiiResourceLoadDesc xiiShaderResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* stream)
+xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* pStream)
 {
   xiiResourceLoadDesc res;
   res.m_uiQualityLevelsDiscardable = 0;
@@ -35,7 +35,7 @@ xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* stream)
 
   m_bShaderResourceIsValid = false;
 
-  if (stream == nullptr)
+  if (pStream == nullptr)
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;
@@ -44,11 +44,11 @@ xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* stream)
   // Skip the absolute file path data that the standard file reader writes into the stream.
   {
     xiiStringBuilder sAbsFilePath;
-    (*stream) >> sAbsFilePath;
+    (*pStream) >> sAbsFilePath;
   }
 
   xiiString sContent;
-  sContent.ReadAll(*stream);
+  sContent.ReadAll(*pStream);
 
   xiiGALShaderTextSectionizer shaderTextSections;
   xiiGALShaderSections::GetShaderSections(sContent.GetView(), shaderTextSections);
