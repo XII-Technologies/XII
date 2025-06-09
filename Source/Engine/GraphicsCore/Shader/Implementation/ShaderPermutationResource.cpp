@@ -142,6 +142,11 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
       uiGPUMemory += pStageBinary->GetByteCode()->m_ByteCode.GetCount();
 
+      static xiiTempHashedString sLinearSampler("LinearSampler");
+      static xiiTempHashedString sLinearClampSampler("LinearClampSampler");
+      static xiiTempHashedString sPointSampler("PointSampler");
+      static xiiTempHashedString sPointClampSampler("PointClampSampler");
+
       for (const auto& resource : pStageBinary->GetByteCode()->m_ShaderResourceBindings)
       {
         auto& resourceSignature = resourceSignatureDescription.m_Resources.ExpandAndGetRef();
@@ -157,28 +162,28 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
         // Immutable Samplers.
         if (resourceSignature.m_ResourceType == xiiGALShaderResourceType::Sampler)
         {
-          if (resourceSignature.m_sName == xiiTempHashedString("LinearSampler"))
+          if (resourceSignature.m_sName == sLinearSampler)
           {
             auto& linearSampler                  = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
             linearSampler.m_SamplerOrTextureName = resource.m_sName;
             linearSampler.m_ShaderStages         = xiiGALShaderType::AllGraphics;
             linearSampler.m_SamplerDescription   = xiiGALCommandListUtilities::GetDefaultSamplerDescription(xiiDefaultSamplerFlags::LinearFiltering);
           }
-          else if (resourceSignature.m_sName == xiiTempHashedString("LinearClampSampler"))
+          else if (resourceSignature.m_sName == sLinearClampSampler)
           {
             auto& linearClampSampler                  = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
             linearClampSampler.m_SamplerOrTextureName = resource.m_sName;
             linearClampSampler.m_ShaderStages         = xiiGALShaderType::AllGraphics;
             linearClampSampler.m_SamplerDescription   = xiiGALCommandListUtilities::GetDefaultSamplerDescription(xiiDefaultSamplerFlags::LinearFiltering | xiiDefaultSamplerFlags::Clamp);
           }
-          else if (resourceSignature.m_sName == xiiTempHashedString("PointSampler"))
+          else if (resourceSignature.m_sName == sPointSampler)
           {
             auto& pointSampler                  = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
             pointSampler.m_SamplerOrTextureName = resource.m_sName;
             pointSampler.m_ShaderStages         = xiiGALShaderType::AllGraphics;
             pointSampler.m_SamplerDescription   = xiiGALCommandListUtilities::GetDefaultSamplerDescription(xiiDefaultSamplerFlags::PointFiltering);
           }
-          else if (resourceSignature.m_sName == xiiTempHashedString("PointClampSampler"))
+          else if (resourceSignature.m_sName == sPointClampSampler)
           {
             auto& pointClampSampler                  = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
             pointClampSampler.m_SamplerOrTextureName = resource.m_sName;
