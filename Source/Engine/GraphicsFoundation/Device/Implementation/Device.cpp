@@ -1299,9 +1299,13 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineSt
   XII_GAL_DEVICE_CHECK(description.m_pPipelineResourceSignature != nullptr, "The pipeline resource signature is invalid. A valid pipeline resource signature is required.");
   XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_pRasterizerState != nullptr, "A valid rasterizer state is required on a graphics pipeline.");
   XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_uiViewportCount > 0, "The number of viewports for a graphics pipeline state must be greater than zero.");
+  XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_pRenderPass != nullptr, "The render pass is invalid. A valid render pass is required.");
+  XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_uiSubpassIndex < description.m_GraphicsPipeline.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), "Subpass index ({}) exceeds the number of subpasses ({}) in render pass '{}'.", description.m_GraphicsPipeline.m_uiSubpassIndex, description.m_GraphicsPipeline.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), description.m_GraphicsPipeline.m_pRenderPass->GetDebugName());
 
   if (description.m_GraphicsPipeline.m_ShadingRateFlags.IsAnyFlagSet())
   {
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "Shading rate flags ({}) require VariableRateShading device feature.", description.m_GraphicsPipeline.m_ShadingRateFlags.GetValue());
+
     if (m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::SampleMask))
     {
       const xiiUInt32 uiRequiredMask = (1U << description.m_GraphicsPipeline.m_SampleDescription.m_uiCount) - 1U;
@@ -1334,16 +1338,6 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineSt
   XII_GAL_DEVICE_CHECK(description.m_pDomainShader == nullptr || description.m_pDomainShader->GetDescription().m_ShaderType == xiiGALShaderType::Domain, "The pipeline vertex shader must be of type xiiGALShaderType::Domain.");
   XII_GAL_DEVICE_CHECK(description.m_pAmplificationShader == nullptr || description.m_pAmplificationShader->GetDescription().m_ShaderType == xiiGALShaderType::Amplification, "The pipeline vertex shader must be of type xiiGALShaderType::Amplification.");
   XII_GAL_DEVICE_CHECK(description.m_pMeshShader == nullptr || description.m_pMeshShader->GetDescription().m_ShaderType == xiiGALShaderType::Mesh, "The pipeline vertex shader must be of type xiiGALShaderType::Mesh.");
-
-  if (description.m_GraphicsPipeline.m_pRenderPass != nullptr)
-  {
-    XII_GAL_DEVICE_CHECK(description.m_GraphicsPipeline.m_uiSubpassIndex < description.m_GraphicsPipeline.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), "Subpass index ({}) exceeds the number of subpasses ({}) in render pass '{}'.", description.m_GraphicsPipeline.m_uiSubpassIndex, description.m_GraphicsPipeline.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), description.m_GraphicsPipeline.m_pRenderPass->GetDebugName());
-  }
-
-  if (description.m_GraphicsPipeline.m_ShadingRateFlags.IsAnyFlagSet())
-  {
-    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "Shading rate flags ({}) require VariableRateShading device feature.", description.m_GraphicsPipeline.m_ShadingRateFlags.GetValue());
-  }
 
   return CreateGraphicsPipelineStatePlatform(description);
 }
