@@ -99,12 +99,12 @@ public:
   void Reset();
 
   /// \brief Retrieves the render pass description.
-  XII_ALWAYS_INLINE const xiiGALRenderPassCreationDescription&  GetRenderPassDescription() const { return m_RenderPassDesc; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALRenderPassCreationDescription& GetRenderPassDescription() const { return m_RenderPassDesc; }
 
   /// \brief Retrieves the framebuffer description.
   ///
   /// \note The render pass pointer is null, and is meant to be filled externally.
-  XII_ALWAYS_INLINE const xiiGALFramebufferCreationDescription& GetFramebufferDescription() const { return m_FramebufferDesc; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALFramebufferCreationDescription& GetFramebufferDescription() const { return m_FramebufferDesc; }
 
 private:
   // Internal structure to hold information about each attachment.
