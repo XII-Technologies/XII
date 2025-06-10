@@ -34,7 +34,7 @@ xiiSimpleRenderPass::~xiiSimpleRenderPass() = default;
 bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
   xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
-  const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
+  const xiiRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   // Color
   if (inputs[m_PinColor.m_uiInputIndex])

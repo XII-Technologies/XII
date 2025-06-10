@@ -60,7 +60,7 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
 
   xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
-  const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
+  const xiiRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_Type = xiiGALResourceDimension::Texture2DArray;

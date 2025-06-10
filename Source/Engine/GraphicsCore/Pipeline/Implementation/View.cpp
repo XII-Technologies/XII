@@ -66,7 +66,7 @@ void xiiView::SetSwapChain(xiiSharedPtr<xiiGALSwapChain> pSwapChain)
     // Swap chain and render target setup are mutually exclusive.
     m_Data.m_pSwapChain                       = pSwapChain;
     m_Data.m_SwapChainRenderTargets.m_pRTs[0] = m_Data.m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-    m_Data.m_RenderTargets                    = xiiGALRenderTargets();
+    m_Data.m_RenderTargets                    = xiiRenderTargets();
     if (m_pRenderPipeline)
     {
       xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
@@ -74,13 +74,13 @@ void xiiView::SetSwapChain(xiiSharedPtr<xiiGALSwapChain> pSwapChain)
   }
 }
 
-void xiiView::SetRenderTargets(const xiiGALRenderTargets& renderTargets)
+void xiiView::SetRenderTargets(const xiiRenderTargets& renderTargets)
 {
   if (m_Data.m_RenderTargets != renderTargets)
   {
     // Swap chain and render target setup are mutually exclusive.
     m_Data.m_pSwapChain             = xiiSharedPtr<xiiGALSwapChain>();
-    m_Data.m_SwapChainRenderTargets = xiiGALRenderTargets();
+    m_Data.m_SwapChainRenderTargets = xiiRenderTargets();
     m_Data.m_RenderTargets          = renderTargets;
     if (m_pRenderPipeline)
     {
@@ -89,7 +89,7 @@ void xiiView::SetRenderTargets(const xiiGALRenderTargets& renderTargets)
   }
 }
 
-const xiiGALRenderTargets& xiiView::GetActiveRenderTargets() const
+const xiiRenderTargets& xiiView::GetActiveRenderTargets() const
 {
   if (m_Data.m_pSwapChain)
   {

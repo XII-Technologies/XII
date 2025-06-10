@@ -1,8 +1,6 @@
 #pragma once
 
-#include <Foundation/Reflection/Reflection.h>
-#include <Foundation/Strings/HashedString.h>
-#include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
 
 class xiiRenderPipelineNode;
 
