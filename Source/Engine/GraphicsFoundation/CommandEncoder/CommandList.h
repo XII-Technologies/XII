@@ -130,9 +130,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiG
 /// \brief This describes the viewport.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiHashableStruct<xiiGALBeginRenderPassDescription>
 {
-  xiiSharedPtr<xiiGALRenderPass>                                            m_pRenderPass;
-  xiiSharedPtr<xiiGALFramebuffer>                                           m_pFramebuffer;
-  xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_ClearValues;
+  xiiSharedPtr<xiiGALRenderPass>                m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer>               m_pFramebuffer;
+  xiiStaticArray<xiiGALOptimizedClearValue, 4U> m_ClearValues;
 };
 
 /// \brief This describes the resource state barrier description.
