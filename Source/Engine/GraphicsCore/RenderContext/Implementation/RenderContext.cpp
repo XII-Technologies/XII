@@ -121,26 +121,110 @@ void xiiRenderContext::SetShaderPermutationVariable(const xiiHashedString& sName
 
 void xiiRenderContext::BindConstantBuffer(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
 {
+  xiiSharedPtr<xiiGALBuffer>* pOldConstantBuffer = nullptr;
+  if (m_BoundConstantBuffers.TryGetValue(sSlotName.GetHash(), pOldConstantBuffer))
+  {
+    if (*pOldConstantBuffer == pConstantBuffer)
+      return;
+
+    *pOldConstantBuffer = pConstantBuffer;
+  }
+  else
+  {
+    m_BoundConstantBuffers.Insert(sSlotName.GetHash(), pConstantBuffer);
+  }
+
+  m_StateFlags.Add(xiiRenderContextFlags::ConstantBufferBindingChanged);
 }
 
 void xiiRenderContext::BindBufferView(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
+  xiiSharedPtr<xiiGALBufferView>* pOldBufferView = nullptr;
+  if (m_BoundBufferSRVs.TryGetValue(sSlotName.GetHash(), pOldBufferView))
+  {
+    if (*pOldBufferView == pBufferView)
+      return;
+
+    *pOldBufferView = pBufferView;
+  }
+  else
+  {
+    m_BoundBufferSRVs.Insert(sSlotName.GetHash(), pBufferView);
+  }
+
+  m_StateFlags.Add(xiiRenderContextFlags::BufferBindingChanged);
 }
 
 void xiiRenderContext::BindTextureView(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
+  xiiSharedPtr<xiiGALTextureView>* pOldTextureView = nullptr;
+  if (m_BoundTextureSRVs.TryGetValue(sSlotName.GetHash(), pOldTextureView))
+  {
+    if (*pOldTextureView == pTextureView)
+      return;
+
+    *pOldTextureView = pTextureView;
+  }
+  else
+  {
+    m_BoundTextureSRVs.Insert(sSlotName.GetHash(), pTextureView);
+  }
+
+  m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged);
 }
 
-void xiiRenderContext::BindSampler(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALSampler> pSamplerSate)
+void xiiRenderContext::BindSampler(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALSampler> pSampler)
 {
+  xiiSharedPtr<xiiGALSampler>* pOldSampler = nullptr;
+  if (m_BoundSamplers.TryGetValue(sSlotName.GetHash(), pOldSampler))
+  {
+    if (*pOldSampler == pSampler)
+      return;
+
+    *pOldSampler = pSampler;
+  }
+  else
+  {
+    m_BoundSamplers.Insert(sSlotName.GetHash(), pSampler);
+  }
+
+  m_StateFlags.Add(xiiRenderContextFlags::SamplerBindingChanged);
 }
 
 void xiiRenderContext::BindBufferViewUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
+  xiiSharedPtr<xiiGALBufferView>* pOldBufferView = nullptr;
+  if (m_BoundBufferUAVs.TryGetValue(sSlotName.GetHash(), pOldBufferView))
+  {
+    if (*pOldBufferView == pBufferView)
+      return;
+
+    *pOldBufferView = pBufferView;
+  }
+  else
+  {
+    m_BoundBufferUAVs.Insert(sSlotName.GetHash(), pBufferView);
+  }
+
+  m_StateFlags.Add(xiiRenderContextFlags::BufferUAVBindingChanged);
 }
 
 void xiiRenderContext::BindTextureViewUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
+  xiiSharedPtr<xiiGALTextureView>* pOldTextureView = nullptr;
+  if (m_BoundTextureUAVs.TryGetValue(sSlotName.GetHash(), pOldTextureView))
+  {
+    if (*pOldTextureView == pTextureView)
+      return;
+
+    *pOldTextureView = pTextureView;
+  }
+  else
+  {
+    m_BoundTextureUAVs.Insert(sSlotName.GetHash(), pTextureView);
+  }
+
+  m_StateFlags.Add(xiiRenderContextFlags::TextureUAVBindingChanged);
 }
 
 void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, const xiiTexture2DResourceHandle& hTexture, xiiResourceAcquireMode acquireMode)

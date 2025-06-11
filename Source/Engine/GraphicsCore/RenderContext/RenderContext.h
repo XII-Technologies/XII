@@ -49,16 +49,17 @@ struct XII_GRAPHICSCORE_DLL xiiRenderContextFlags
   {
     None                         = 0,
     ShaderStateChanged           = XII_BIT(0),
-    TextureBindingChanged        = XII_BIT(1),
-    UAVBindingChanged            = XII_BIT(2),
-    SamplerBindingChanged        = XII_BIT(3),
-    BufferBindingChanged         = XII_BIT(4),
-    ConstantBufferBindingChanged = XII_BIT(5),
-    MeshBufferBindingChanged     = XII_BIT(6),
-    MaterialBindingChanged       = XII_BIT(7),
-    PipelineChanged              = XII_BIT(7),
+    ConstantBufferBindingChanged = XII_BIT(1),
+    TextureBindingChanged        = XII_BIT(2),
+    BufferBindingChanged         = XII_BIT(3),
+    TextureUAVBindingChanged     = XII_BIT(4),
+    BufferUAVBindingChanged      = XII_BIT(5),
+    SamplerBindingChanged        = XII_BIT(6),
+    MeshBufferBindingChanged     = XII_BIT(7),
+    MaterialBindingChanged       = XII_BIT(8),
+    PipelineChanged              = XII_BIT(9),
 
-    AllStatesInvalid = ShaderStateChanged | TextureBindingChanged | UAVBindingChanged | SamplerBindingChanged | BufferBindingChanged | ConstantBufferBindingChanged | MeshBufferBindingChanged | PipelineChanged,
+    AllStatesInvalid = ShaderStateChanged | ConstantBufferBindingChanged | BufferBindingChanged | BufferUAVBindingChanged | TextureBindingChanged | TextureUAVBindingChanged | SamplerBindingChanged | MeshBufferBindingChanged | PipelineChanged,
 
     Default = None
   };
@@ -66,11 +67,12 @@ struct XII_GRAPHICSCORE_DLL xiiRenderContextFlags
   struct Bits
   {
     StorageType ShaderStateChanged : 1;
-    StorageType TextureBindingChanged : 1;
-    StorageType UAVBindingChanged : 1;
-    StorageType SamplerBindingChanged : 1;
-    StorageType BufferBindingChanged : 1;
     StorageType ConstantBufferBindingChanged : 1;
+    StorageType BufferBindingChanged : 1;
+    StorageType BufferUAVBindingChanged : 1;
+    StorageType TextureBindingChanged : 1;
+    StorageType TextureUAVBindingChanged : 1;
+    StorageType SamplerBindingChanged : 1;
     StorageType MeshBufferBindingChanged : 1;
     StorageType MaterialBindingChanged : 1;
     StorageType PipelineChanged : 1;
@@ -168,7 +170,7 @@ public:
   void BindTextureView(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTextureView> pTextureView);
 
   /// \brief Binds a sampler state to a shader slot.
-  void BindSampler(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALSampler> pSamplerSate);
+  void BindSampler(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALSampler> pSampler);
 
   /// \brief Binds a buffer view as an unordered access view (UAV).
   void BindBufferViewUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBufferView> pBufferView);
@@ -320,6 +322,7 @@ private:
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALTextureView>> m_BoundTextureSRVs;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBufferView>>  m_BoundBufferUAVs;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALTextureView>> m_BoundTextureUAVs;
+  xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALSampler>>     m_BoundSamplers;
 
   xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
 };
