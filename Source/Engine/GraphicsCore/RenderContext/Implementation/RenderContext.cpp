@@ -1,5 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/Containers/Blob.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
@@ -11,9 +12,18 @@ xiiRenderContext::xiiRenderContext(xiiSharedPtr<xiiGALCommandList> pCommandList)
   m_pCommandList(pCommandList)
 {
   XII_ASSERT_DEV(m_pCommandList != nullptr, "An invalid command list is given. A render context requires a valid command list reference.");
+
+  m_pGlobalConstants = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);
+
+  xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
 }
 
-xiiRenderContext::~xiiRenderContext() = default;
+xiiRenderContext::~xiiRenderContext()
+{
+  xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
+
+  m_pGlobalConstants.Clear();
+}
 
 void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoRendering)
 {
@@ -40,8 +50,11 @@ void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, c
     SetShaderPermutationVariable("MSAA", "FALSE");
   }
 
-  m_GlobalConstants.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-  m_GlobalConstants.NumMsaaSamples = uiSampleCount;
+  {
+    xiiGlobalConstants* pGlobalConstants = GetGlobalConstants();
+    pGlobalConstants->ViewportSize       = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
+    pGlobalConstants->NumMsaaSamples     = uiSampleCount;
+  }
 
   {
     m_bHasDebugGroup = !sName.IsEmpty();

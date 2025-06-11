@@ -243,6 +243,9 @@ public:
   /// \brief Returns the current render context scope.
   [[nodiscard]] XII_ALWAYS_INLINE RenderContextScope GetRenderContextScope() const { return m_RenderContextScope; }
 
+  /// \brief Returns the global constant buffer that is used to store this render context global state.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGlobalConstants* GetGlobalConstants() const { return m_pGlobalConstants.GetPtr(); }
+
   /// \brief Returns async shader loading. During runtime all shaders should be preloaded so this is off by default.
   [[nodiscard]] XII_ALWAYS_INLINE bool GetAllowAsyncShaderLoading() const { return m_bAllowAsyncShaderLoading; }
 
@@ -314,7 +317,7 @@ private:
   bool                               m_bAllowAsyncShaderLoading = false;
   xiiBitflags<xiiRenderContextFlags> m_StateFlags;
 
-  xiiBlobPtr<xiiGlobalConstants> m_GlobalConstants;
+  xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
   xiiSharedPtr<xiiGALBuffer>     m_GlobalConstantsBuffer;
 
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBuffer>>      m_BoundConstantBuffers;
