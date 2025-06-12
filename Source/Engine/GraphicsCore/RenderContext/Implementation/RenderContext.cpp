@@ -364,34 +364,72 @@ void xiiRenderContext::SetShaderPermutationVariableInternal(const xiiHashedStrin
 
 xiiSharedPtr<xiiGALRenderPass> xiiRenderContext::CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  RenderPassCache* pRenderPassCache;
+  if (m_RenderPassCache.TryGetValue(description, pRenderPassCache))
+  {
+    return pRenderPassCache->m_pRenderPass;
+  }
 
-  return nullptr;
+  xiiSharedPtr<xiiGALDevice>     pDevice     = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(description);
+
+  XII_ASSERT_DEV(pRenderPass != nullptr, "Failed to create render pass.");
+
+  m_RenderPassCache.Insert(description, RenderPassCache{pRenderPass});
+
+  return pRenderPass;
 }
 
 xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetCurrentFramebuffer()
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  XII_ASSERT_DEV(m_pActiveRenderPass != nullptr, "GetCurrentFramebuffer() may only be called once an active render pass has been created.");
 
+  RenderPassCache* pRenderPassCache;
+  if (m_RenderPassCache.TryGetValue(m_pActiveRenderPass->GetDescription(), pRenderPassCache))
+  {
+    for (xiiUInt32 i = 0; i < pRenderPassCache->m_FramebufferCache.GetCount(); ++i)
+    {
+      const auto& pFrameBuffer = pRenderPassCache->m_FramebufferCache[i];
+      const auto& description  = pFrameBuffer->GetDescription();
+
+      XII_ASSERT_DEBUG(description.m_pRenderPass == pRenderPassCache->m_pRenderPass, "Render pass mismatch for the same render pass description.");
+
+      if (description.m_Attachments == m_RenderingSetup.GetFramebufferDescription().m_Attachments && description.m_FramebufferSize == m_RenderingSetup.GetFramebufferDescription().m_FramebufferSize && description.m_uiArraySliceCount == m_RenderingSetup.GetFramebufferDescription().m_uiArraySliceCount)
+      {
+        return pFrameBuffer;
+      }
+    }
+
+    xiiGALFramebufferCreationDescription framebufferDescription = m_RenderingSetup.GetFramebufferDescription();
+    framebufferDescription.m_pRenderPass                        = pRenderPassCache->m_pRenderPass;
+
+    xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALFramebuffer> pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+
+    pRenderPassCache->m_FramebufferCache.PushBack(pFramebuffer);
+
+    return pFramebuffer;
+  }
   return nullptr;
 }
 
 void xiiRenderContext::BeginInternalRenderPass()
 {
   XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "Render pass can only be begun in a graphics scope.");
-  XII_ASSERT_DEBUG(m_pActiveRenderPass != nullptr, "Active render pass should be valid after BeginRendering().");
 
-  if (!m_bRenderPassActive && !m_pActiveRenderPass->GetDescription().m_Attachments.IsEmpty())
+  if (!m_pActiveRenderPass && !m_RenderingSetup.GetRenderPassDescription().m_Attachments.IsEmpty())
   {
     if (m_bNeedsClear)
     {
+      m_pActiveRenderPass = CreateInternalRenderPass(m_RenderingSetup.GetRenderPassDescription());
+
       m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer(), m_ClearValues});
 
       m_bNeedsClear = false;
     }
     else
     {
-      xiiGALRenderPassCreationDescription renderPassDescription = m_pActiveRenderPass->GetDescription();
+      xiiGALRenderPassCreationDescription renderPassDescription = m_RenderingSetup.GetRenderPassDescription();
 
       for (auto& attachment : renderPassDescription.m_Attachments)
       {
@@ -405,17 +443,16 @@ void xiiRenderContext::BeginInternalRenderPass()
 
       m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer()});
     }
-    m_bRenderPassActive = true;
   }
 }
 
 void xiiRenderContext::EndInternalRenderPass()
 {
-  if (m_bRenderPassActive)
+  if (m_pActiveRenderPass)
   {
     m_pCommandList->EndRenderPass();
 
-    m_bRenderPassActive = false;
+    m_pActiveRenderPass = nullptr;
   }
 }
 

@@ -317,6 +317,13 @@ private:
 private:
   struct RenderPassCache
   {
+    XII_ALWAYS_INLINE RenderPassCache() = default;
+
+    XII_ALWAYS_INLINE RenderPassCache(xiiSharedPtr<xiiGALRenderPass> pRenderPass) :
+      m_pRenderPass(pRenderPass)
+    {
+    }
+
     xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
     xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
   };
@@ -329,8 +336,8 @@ private:
   bool                               m_bAllowAsyncShaderLoading = false;
   xiiBitflags<xiiRenderContextFlags> m_StateFlags;
 
-  bool                                                           m_bNeedsClear       = false;
-  bool                                                           m_bRenderPassActive = false;
+  xiiRenderingSetup                                              m_RenderingSetup;
+  bool                                                           m_bNeedsClear = false;
   xiiSharedPtr<xiiGALRenderPass>                                 m_pActiveRenderPass;
   xiiStaticArray<xiiGALOptimizedClearValue, 4U>                  m_ClearValues;
   xiiHashTable<xiiUInt32, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
