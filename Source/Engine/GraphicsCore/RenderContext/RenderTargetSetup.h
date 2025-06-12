@@ -106,6 +106,9 @@ public:
   /// \note The render pass pointer is null, and is meant to be filled externally.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALFramebufferCreationDescription& GetFramebufferDescription() const { return m_FramebufferDesc; }
 
+  /// \brief Retrieves the render pass clear values.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALOptimizedClearValue> GetClearValues() const { return m_ClearValues; }
+
 private:
   // Internal structure to hold information about each attachment.
   struct Attachment
@@ -126,7 +129,8 @@ private:
   /// \brief Automatically sets the framebuffer size, if not already set, by inspecting the texture view.
   void DeduceFramebufferSize(const xiiSharedPtr<xiiGALTextureView>& pView);
 
-  xiiHybridArray<Attachment, 4U>       m_Attachments;
-  xiiGALRenderPassCreationDescription  m_RenderPassDesc;
-  xiiGALFramebufferCreationDescription m_FramebufferDesc;
+  xiiHybridArray<Attachment, 4U>                m_Attachments;
+  xiiGALRenderPassCreationDescription           m_RenderPassDesc;
+  xiiGALFramebufferCreationDescription          m_FramebufferDesc;
+  xiiStaticArray<xiiGALOptimizedClearValue, 4U> m_ClearValues;
 };

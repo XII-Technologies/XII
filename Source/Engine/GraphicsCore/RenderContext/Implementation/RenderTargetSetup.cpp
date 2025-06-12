@@ -21,6 +21,7 @@ void xiiRenderingSetup::Build()
 {
   m_RenderPassDesc.m_Attachments.Clear();
   m_FramebufferDesc.m_Attachments.Clear();
+  m_ClearValues.Clear();
 
   for (xiiUInt32 i = 0; i < m_Attachments.GetCount(); ++i)
   {
@@ -41,6 +42,13 @@ void xiiRenderingSetup::Build()
 
     m_RenderPassDesc.m_Attachments.PushBack(renderPassAttachment);
     m_FramebufferDesc.m_Attachments.PushBack(attachment.m_pView);
+
+    if (renderPassAttachment.m_LoadOperation == xiiGALLogicOperation::Clear)
+    {
+      m_ClearValues.EnsureCount(i + 1);
+
+      m_ClearValues[i] = attachment.m_ClearValue;
+    }
   }
 
   // If no sub pass was defined externally, create one default sub pass.
