@@ -132,6 +132,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiG
 /// \brief This describes the viewport.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiHashableStruct<xiiGALBeginRenderPassDescription>
 {
+  XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription() = default;
+
+  XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer) :
+    m_pRenderPass(pRenderPass), m_pFramebuffer(pFramebuffer)
+  {
+  }
+
+  XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pClearValues) :
+    m_pRenderPass(pRenderPass), m_pFramebuffer(pFramebuffer), m_ClearValues(pClearValues)
+  {
+  }
+
   xiiSharedPtr<xiiGALRenderPass>                m_pRenderPass;
   xiiSharedPtr<xiiGALFramebuffer>               m_pFramebuffer;
   xiiStaticArray<xiiGALOptimizedClearValue, 4U> m_ClearValues;
