@@ -277,7 +277,7 @@ void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, const
 {
   if (hTexture.IsValid())
   {
-    xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, acquireMode);
+    xiiResourceLock<xiiTexture3DResource> pTexture(hTexture, acquireMode);
 
     BindTexture(sSlotName, pTexture->GetGALTexture());
     BindSampler(sSlotName, pTexture->GetGALSampler());
@@ -292,7 +292,7 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, con
 {
   if (hTexture.IsValid())
   {
-    xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, acquireMode);
+    xiiResourceLock<xiiTextureCubeResource> pTexture(hTexture, acquireMode);
 
     BindTexture(sSlotName, pTexture->GetGALTexture());
     BindSampler(sSlotName, pTexture->GetGALSampler());

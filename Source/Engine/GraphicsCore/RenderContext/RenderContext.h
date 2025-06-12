@@ -336,11 +336,11 @@ private:
   bool                               m_bAllowAsyncShaderLoading = false;
   xiiBitflags<xiiRenderContextFlags> m_StateFlags;
 
-  xiiRenderingSetup                                              m_RenderingSetup;
-  bool                                                           m_bNeedsClear = false;
-  xiiSharedPtr<xiiGALRenderPass>                                 m_pActiveRenderPass;
-  xiiStaticArray<xiiGALOptimizedClearValue, 4U>                  m_ClearValues;
-  xiiHashTable<xiiUInt32, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
+  xiiRenderingSetup                                                                        m_RenderingSetup;
+  bool                                                                                     m_bNeedsClear = false;
+  xiiSharedPtr<xiiGALRenderPass>                                                           m_pActiveRenderPass;
+  xiiStaticArray<xiiGALOptimizedClearValue, 4U>                                            m_ClearValues;
+  xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
 
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
   xiiSharedPtr<xiiGALBuffer>     m_GlobalConstantsBuffer;

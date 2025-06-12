@@ -198,7 +198,7 @@ void xiiHistorySourcePass::Execute(const xiiRenderViewContext& renderViewContext
     XII_ASSERT_DEV(m_pFramebuffer != nullptr, "Failed to create frame buffer.");
   }
 
-  xiiGALBeginRenderPassDescription renderPassDescription = {.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
+  xiiGALBeginRenderPassDescription renderPassDescription(m_pRenderPass, m_pFramebuffer);
 
   if (bIsDepthAttachment)
   {

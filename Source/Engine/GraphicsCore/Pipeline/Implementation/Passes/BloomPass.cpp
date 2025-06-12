@@ -330,7 +330,7 @@ void xiiBloomPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext
   {
     pCommandList->BeginDebugGroup(GetName());
     {
-      xiiGALBeginRenderPassDescription renderPassDescription{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
+      xiiGALBeginRenderPassDescription renderPassDescription(m_pRenderPass, m_pFramebuffer);
 
       auto& clearValue            = renderPassDescription.m_ClearValues.ExpandAndGetRef();
       clearValue.m_ResourceFormat = pColorOutput->m_TextureDescription.m_Format;

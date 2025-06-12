@@ -131,7 +131,7 @@ void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, co
     }
   }
 
-  xiiGALBeginRenderPassDescription renderPassDescription{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
+  xiiGALBeginRenderPassDescription renderPassDescription(m_pRenderPass, m_pFramebuffer);
 
   auto& clearValue                      = renderPassDescription.m_ClearValues.ExpandAndGetRef();
   clearValue.m_ResourceFormat           = pInput->m_TextureDescription.m_Format;
