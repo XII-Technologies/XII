@@ -8,6 +8,9 @@
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDescriptorHash
 {
 public:
+  static xiiUInt32 Hash(const xiiGALRenderPassCreationDescription& renderPassDescription);
+  static bool      Equal(const xiiGALRenderPassCreationDescription& a, const xiiGALRenderPassCreationDescription& b);
+
   static xiiUInt32 Hash(const xiiGALPipelineStateCreationDescription& description);
   static bool      Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b);
 

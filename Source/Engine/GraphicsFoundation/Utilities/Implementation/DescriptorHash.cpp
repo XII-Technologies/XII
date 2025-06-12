@@ -6,9 +6,19 @@
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 template <typename T>
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiSizeTemplate<T>& value)
+{
+  ref_stream << value.width;
+  ref_stream << value.height;
+
+  return ref_stream;
+}
+
+template <typename T>
 xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiSharedPtr<T>& pPtr)
 {
   ref_stream << reinterpret_cast<const xiiUInt64&>(pPtr.Borrow());
+
   return ref_stream;
 }
 
@@ -16,6 +26,62 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSampleDescr
 {
   ref_stream << value.m_uiCount;
   ref_stream << value.m_uiQuality;
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRenderPassAttachmentDescription& value)
+{
+  ref_stream << value.m_Format;
+  ref_stream << value.m_uiSampleCount;
+  ref_stream << value.m_LoadOperation;
+  ref_stream << value.m_StoreOperation;
+  ref_stream << value.m_StencilLoadOperation;
+  ref_stream << value.m_StencilStoreOperation;
+  ref_stream << value.m_InitialStateFlags;
+  ref_stream << value.m_FinalStateFlags;
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALAttachmentReferenceDescription& value)
+{
+  ref_stream << value.m_uiAttachmentIndex;
+  ref_stream << value.m_ResourceStateFlags;
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShadingRateAttachmentDescription& value)
+{
+  ref_stream << value.m_AttachmentReference;
+  ref_stream << value.m_TileSize;
+
+  return ref_stream;
+}
+
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSubPassDescription& value)
+{
+  ref_stream << value.m_InputAttachments.GetCount();
+  ref_stream << value.m_RenderTargetAttachments.GetCount();
+  ref_stream << value.m_ResolveAttachments.GetCount();
+  ref_stream << value.m_DepthStencilAttachment.GetCount();
+  ref_stream << value.m_PreserveAttachments.GetCount();
+  ref_stream << value.m_ShadingRateAttachment.GetCount();
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSubPassDependencyDescription& value)
+{
+  ref_stream << value.m_uiSourceSubPass;
+  ref_stream << value.m_uiDestinationSubPass;
+  ref_stream << value.m_SourceStageFlags;
+  ref_stream << value.m_DestinationStageFlags;
+  ref_stream << value.m_SourceAccessFlags;
+  ref_stream << value.m_DestinationAccessFlags;
+
   return ref_stream;
 }
 
@@ -78,12 +144,46 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTilePipelin
   return ref_stream;
 }
 
+xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALRenderPassCreationDescription& renderPassDescription)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << renderPassDescription.m_Attachments.GetCount();
+
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
+  {
+    writer << renderPassDescription.m_Attachments[i];
+  }
+
+  writer << renderPassDescription.m_SubPasses.GetCount();
+
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_SubPasses.GetCount(); ++i)
+  {
+    writer << renderPassDescription.m_SubPasses[i];
+  }
+
+  writer << renderPassDescription.m_Dependencies.GetCount();
+
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_Dependencies.GetCount(); ++i)
+  {
+    writer << renderPassDescription.m_Dependencies[i];
+  }
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALDescriptorHash::Equal(const xiiGALRenderPassCreationDescription& a, const xiiGALRenderPassCreationDescription& b)
+{
+  return a == b;
+}
+
 xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescription& description)
 {
   xiiHashStreamWriter32 writer;
 
   writer << description.m_PipelineType;
   writer << description.m_pPipelineResourceSignature;
+
   return writer.GetHashValue();
 }
 
