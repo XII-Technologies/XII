@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <Foundation/Algorithm/HashStream.h>
+#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
@@ -60,7 +61,6 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShadingRate
   return ref_stream;
 }
 
-
 xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSubPassDescription& value)
 {
   ref_stream << value.m_InputAttachments.GetCount();
@@ -98,6 +98,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALGraphicsPip
   ref_stream << value.m_uiSubpassIndex;
   ref_stream << value.m_ShadingRateFlags;
   ref_stream << value.m_SampleDescription;
+
   return ref_stream;
 }
 
@@ -105,6 +106,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRayTracingP
 {
   ref_stream << value.m_uiShaderRecordSize;
   ref_stream << value.m_uiMaxRecursionDepth;
+
   return ref_stream;
 }
 
@@ -112,6 +114,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRayTracingG
 {
   ref_stream << value.m_sName;
   ref_stream << value.m_pShader;
+
   return ref_stream;
 }
 
@@ -120,6 +123,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRayTracingT
   ref_stream << value.m_sName;
   ref_stream << value.m_pClosestHitShader;
   ref_stream << value.m_pAnyHitShader;
+
   return ref_stream;
 }
 
@@ -129,6 +133,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRayTracingP
   ref_stream << value.m_pIntersectionShader;
   ref_stream << value.m_pClosestHitShader;
   ref_stream << value.m_pAnyHitShader;
+
   return ref_stream;
 }
 
@@ -141,6 +146,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTilePipelin
   {
     ref_stream << value.m_RenderTargetFormats[i];
   }
+
   return ref_stream;
 }
 
@@ -173,6 +179,28 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALRenderPassCreationDescription& 
 }
 
 bool xiiGALDescriptorHash::Equal(const xiiGALRenderPassCreationDescription& a, const xiiGALRenderPassCreationDescription& b)
+{
+  return a == b;
+}
+
+xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALFramebufferCreationDescription& framebufferDescription)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << framebufferDescription.m_pRenderPass;
+  writer << framebufferDescription.m_uiArraySliceCount;
+  writer << framebufferDescription.m_uiArraySliceCount;
+  writer << framebufferDescription.m_Attachments.GetCount();
+
+  for (xiiUInt32 i = 0; i < framebufferDescription.m_Attachments.GetCount(); ++i)
+  {
+    writer << framebufferDescription.m_Attachments[i];
+  }
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALDescriptorHash::Equal(const xiiGALFramebufferCreationDescription& a, const xiiGALFramebufferCreationDescription& b)
 {
   return a == b;
 }

@@ -2,14 +2,15 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/States/PipelineState.h>
-
 /// \brief Provides hash functions for GAL descriptor objects.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDescriptorHash
 {
 public:
   static xiiUInt32 Hash(const xiiGALRenderPassCreationDescription& renderPassDescription);
   static bool      Equal(const xiiGALRenderPassCreationDescription& a, const xiiGALRenderPassCreationDescription& b);
+
+  static xiiUInt32 Hash(const xiiGALFramebufferCreationDescription& framebufferDescription);
+  static bool      Equal(const xiiGALFramebufferCreationDescription& a, const xiiGALFramebufferCreationDescription& b);
 
   static xiiUInt32 Hash(const xiiGALPipelineStateCreationDescription& description);
   static bool      Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b);
