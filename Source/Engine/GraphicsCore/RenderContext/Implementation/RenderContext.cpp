@@ -242,14 +242,47 @@ void xiiRenderContext::BindTextureViewUAV(const xiiTempHashedString& sSlotName, 
 
 void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, const xiiTexture2DResourceHandle& hTexture, xiiResourceAcquireMode acquireMode)
 {
+  if (hTexture.IsValid())
+  {
+    xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, acquireMode);
+
+    BindTexture(sSlotName, pTexture->GetGALTexture());
+    BindSampler(sSlotName, pTexture->GetGALSampler());
+  }
+  else
+  {
+    BindTexture(sSlotName, nullptr);
+  }
 }
 
 void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, const xiiTexture3DResourceHandle& hTexture, xiiResourceAcquireMode acquireMode)
 {
+  if (hTexture.IsValid())
+  {
+    xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, acquireMode);
+
+    BindTexture(sSlotName, pTexture->GetGALTexture());
+    BindSampler(sSlotName, pTexture->GetGALSampler());
+  }
+  else
+  {
+    BindTexture(sSlotName, nullptr);
+  }
 }
 
 void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, const xiiTextureCubeResourceHandle& hTexture, xiiResourceAcquireMode acquireMode)
 {
+  if (hTexture.IsValid())
+  {
+    xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, acquireMode);
+
+    BindTexture(sSlotName, pTexture->GetGALTexture());
+    BindSampler(sSlotName, pTexture->GetGALSampler());
+  }
+  else
+  {
+    BindTexture(sSlotName, nullptr);
+  }
 }
 
 void xiiRenderContext::BindMaterial(const xiiMaterialResourceHandle& hMaterial)
