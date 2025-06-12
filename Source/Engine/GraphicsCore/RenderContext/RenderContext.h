@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
@@ -308,7 +309,18 @@ public:
 private:
   void SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue);
 
+  xiiSharedPtr<xiiGALRenderPass>  CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description);
+  xiiSharedPtr<xiiGALFramebuffer> GetCurrentFramebuffer();
+  void                            BeginInternalRenderPass();
+  void                            EndInternalRenderPass();
+
 private:
+  struct RenderPassCache
+  {
+    xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
+    xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
+  };
+
   xiiSharedPtr<xiiGALCommandList> m_pCommandList;
 
   RenderContextScope                 m_RenderContextScope       = RenderContextScope::None;
@@ -317,8 +329,17 @@ private:
   bool                               m_bAllowAsyncShaderLoading = false;
   xiiBitflags<xiiRenderContextFlags> m_StateFlags;
 
+  bool                                                           m_bNeedsClear       = false;
+  bool                                                           m_bRenderPassActive = false;
+  xiiSharedPtr<xiiGALRenderPass>                                 m_pActiveRenderPass;
+  xiiStaticArray<xiiGALOptimizedClearValue, 4U>                  m_ClearValues;
+  xiiHashTable<xiiUInt32, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
+
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
   xiiSharedPtr<xiiGALBuffer>     m_GlobalConstantsBuffer;
+
+  xiiGALGraphicsPipelineStateCreationDescription m_GraphicsPipelineDescription;
+  xiiGALComputePipelineStateCreationDescription  m_ComputePipelineDescription;
 
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBuffer>>      m_BoundConstantBuffers;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBufferView>>  m_BoundBufferSRVs;

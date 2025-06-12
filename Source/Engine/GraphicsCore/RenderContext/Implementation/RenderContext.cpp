@@ -34,6 +34,15 @@ void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, c
 
   const xiiGALRenderPassCreationDescription& renderPassDescription = renderingSetup.GetRenderPassDescription();
 
+  for (const auto& attachment : renderPassDescription.m_Attachments)
+  {
+    if (attachment.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
+    {
+      m_bNeedsClear = true;
+      break;
+    }
+  }
+
   xiiUInt8 uiSampleCount = xiiGALMSAASampleCount::OneSample;
 
   if (!renderPassDescription.m_Attachments.IsEmpty())
@@ -71,6 +80,15 @@ void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, c
 void xiiRenderContext::EndRendering()
 {
   XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "BeginRendering() has not been called.");
+
+  if (m_bNeedsClear)
+  {
+    BeginInternalRenderPass();
+
+    m_bNeedsClear = false;
+  }
+
+  EndInternalRenderPass();
 
   if (m_bHasDebugGroup)
   {
@@ -307,6 +325,9 @@ void xiiRenderContext::BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> pVertexBuffer, 
 
 xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiInstanceCount)
 {
+  if (ApplyContextStates().Succeeded() || uiPrimitiveCount == 0U || uiInstanceCount == 0U)
+    return XII_FAILURE;
+
   return XII_SUCCESS;
 }
 
@@ -338,6 +359,63 @@ void xiiRenderContext::SetShaderPermutationVariableInternal(const xiiHashedStrin
     m_PermutationVariables.Insert(sName, sValue);
 
     m_StateFlags.Add(xiiRenderContextFlags::ShaderStateChanged);
+  }
+}
+
+xiiSharedPtr<xiiGALRenderPass> xiiRenderContext::CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description)
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+
+  return nullptr;
+}
+
+xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetCurrentFramebuffer()
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+
+  return nullptr;
+}
+
+void xiiRenderContext::BeginInternalRenderPass()
+{
+  XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "Render pass can only be begun in a graphics scope.");
+  XII_ASSERT_DEBUG(m_pActiveRenderPass != nullptr, "Active render pass should be valid after BeginRendering().");
+
+  if (!m_bRenderPassActive && !m_pActiveRenderPass->GetDescription().m_Attachments.IsEmpty())
+  {
+    if (m_bNeedsClear)
+    {
+      m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer(), m_ClearValues});
+
+      m_bNeedsClear = false;
+    }
+    else
+    {
+      xiiGALRenderPassCreationDescription renderPassDescription = m_pActiveRenderPass->GetDescription();
+
+      for (auto& attachment : renderPassDescription.m_Attachments)
+      {
+        if (attachment.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
+        {
+          attachment.m_LoadOperation = xiiGALAttachmentLoadOperation::Load;
+        }
+      }
+
+      m_pActiveRenderPass = CreateInternalRenderPass(renderPassDescription);
+
+      m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer()});
+    }
+    m_bRenderPassActive = true;
+  }
+}
+
+void xiiRenderContext::EndInternalRenderPass()
+{
+  if (m_bRenderPassActive)
+  {
+    m_pCommandList->EndRenderPass();
+
+    m_bRenderPassActive = false;
   }
 }
 
