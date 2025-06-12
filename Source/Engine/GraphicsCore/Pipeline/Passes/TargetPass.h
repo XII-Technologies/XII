@@ -30,6 +30,6 @@ protected:
   xiiRenderPipelineNodeInputProviderPin m_PinColor7;
   xiiRenderPipelineNodeInputProviderPin m_PinDepthStencil;
 
-  xiiGALRenderTargets           m_RenderTargets;
+  xiiRenderTargets           m_RenderTargets;
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
 };

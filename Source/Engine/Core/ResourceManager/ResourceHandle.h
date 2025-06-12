@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Core/CoreDLL.h>
+
 #include <Core/ResourceManager/Implementation/Declarations.h>
 #include <Foundation/Reflection/Reflection.h>
-#include <Foundation/Strings/String.h>
 
 /// \brief If this is set to XII_ON, stack traces are recorded for every resource handle.
 ///

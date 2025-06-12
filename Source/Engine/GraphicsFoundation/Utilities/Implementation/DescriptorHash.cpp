@@ -1,14 +1,25 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <Foundation/Algorithm/HashStream.h>
+#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 template <typename T>
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiSizeTemplate<T>& value)
+{
+  ref_stream << value.width;
+  ref_stream << value.height;
+
+  return ref_stream;
+}
+
+template <typename T>
 xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiSharedPtr<T>& pPtr)
 {
   ref_stream << reinterpret_cast<const xiiUInt64&>(pPtr.Borrow());
+
   return ref_stream;
 }
 
@@ -16,6 +27,61 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSampleDescr
 {
   ref_stream << value.m_uiCount;
   ref_stream << value.m_uiQuality;
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRenderPassAttachmentDescription& value)
+{
+  ref_stream << value.m_Format;
+  ref_stream << value.m_uiSampleCount;
+  ref_stream << value.m_LoadOperation;
+  ref_stream << value.m_StoreOperation;
+  ref_stream << value.m_StencilLoadOperation;
+  ref_stream << value.m_StencilStoreOperation;
+  ref_stream << value.m_InitialStateFlags;
+  ref_stream << value.m_FinalStateFlags;
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALAttachmentReferenceDescription& value)
+{
+  ref_stream << value.m_uiAttachmentIndex;
+  ref_stream << value.m_ResourceStateFlags;
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShadingRateAttachmentDescription& value)
+{
+  ref_stream << value.m_AttachmentReference;
+  ref_stream << value.m_TileSize;
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSubPassDescription& value)
+{
+  ref_stream << value.m_InputAttachments.GetCount();
+  ref_stream << value.m_RenderTargetAttachments.GetCount();
+  ref_stream << value.m_ResolveAttachments.GetCount();
+  ref_stream << value.m_DepthStencilAttachment.GetCount();
+  ref_stream << value.m_PreserveAttachments.GetCount();
+  ref_stream << value.m_ShadingRateAttachment.GetCount();
+
+  return ref_stream;
+}
+
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSubPassDependencyDescription& value)
+{
+  ref_stream << value.m_uiSourceSubPass;
+  ref_stream << value.m_uiDestinationSubPass;
+  ref_stream << value.m_SourceStageFlags;
+  ref_stream << value.m_DestinationStageFlags;
+  ref_stream << value.m_SourceAccessFlags;
+  ref_stream << value.m_DestinationAccessFlags;
+
   return ref_stream;
 }
 
@@ -32,6 +98,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALGraphicsPip
   ref_stream << value.m_uiSubpassIndex;
   ref_stream << value.m_ShadingRateFlags;
   ref_stream << value.m_SampleDescription;
+
   return ref_stream;
 }
 
@@ -39,6 +106,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRayTracingP
 {
   ref_stream << value.m_uiShaderRecordSize;
   ref_stream << value.m_uiMaxRecursionDepth;
+
   return ref_stream;
 }
 
@@ -46,6 +114,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRayTracingG
 {
   ref_stream << value.m_sName;
   ref_stream << value.m_pShader;
+
   return ref_stream;
 }
 
@@ -54,6 +123,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRayTracingT
   ref_stream << value.m_sName;
   ref_stream << value.m_pClosestHitShader;
   ref_stream << value.m_pAnyHitShader;
+
   return ref_stream;
 }
 
@@ -63,6 +133,7 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRayTracingP
   ref_stream << value.m_pIntersectionShader;
   ref_stream << value.m_pClosestHitShader;
   ref_stream << value.m_pAnyHitShader;
+
   return ref_stream;
 }
 
@@ -75,7 +146,63 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTilePipelin
   {
     ref_stream << value.m_RenderTargetFormats[i];
   }
+
   return ref_stream;
+}
+
+xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALRenderPassCreationDescription& renderPassDescription)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << renderPassDescription.m_Attachments.GetCount();
+
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
+  {
+    writer << renderPassDescription.m_Attachments[i];
+  }
+
+  writer << renderPassDescription.m_SubPasses.GetCount();
+
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_SubPasses.GetCount(); ++i)
+  {
+    writer << renderPassDescription.m_SubPasses[i];
+  }
+
+  writer << renderPassDescription.m_Dependencies.GetCount();
+
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_Dependencies.GetCount(); ++i)
+  {
+    writer << renderPassDescription.m_Dependencies[i];
+  }
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALDescriptorHash::Equal(const xiiGALRenderPassCreationDescription& a, const xiiGALRenderPassCreationDescription& b)
+{
+  return a == b;
+}
+
+xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALFramebufferCreationDescription& framebufferDescription)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << framebufferDescription.m_pRenderPass;
+  writer << framebufferDescription.m_uiArraySliceCount;
+  writer << framebufferDescription.m_uiArraySliceCount;
+  writer << framebufferDescription.m_Attachments.GetCount();
+
+  for (xiiUInt32 i = 0; i < framebufferDescription.m_Attachments.GetCount(); ++i)
+  {
+    writer << framebufferDescription.m_Attachments[i];
+  }
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALDescriptorHash::Equal(const xiiGALFramebufferCreationDescription& a, const xiiGALFramebufferCreationDescription& b)
+{
+  return a == b;
 }
 
 xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescription& description)
@@ -84,6 +211,7 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
 
   writer << description.m_PipelineType;
   writer << description.m_pPipelineResourceSignature;
+
   return writer.GetHashValue();
 }
 

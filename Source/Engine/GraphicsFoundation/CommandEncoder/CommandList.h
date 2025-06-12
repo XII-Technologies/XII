@@ -114,7 +114,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiG
 {
   XII_DECLARE_POD_TYPE();
 
-  XII_ALWAYS_INLINE explicit xiiGALViewport(float fX, float fY, float fWidth, float fHeight, float fMinDepth, float fMaxDepth) :
+  XII_ALWAYS_INLINE xiiGALViewport() = default;
+
+  XII_ALWAYS_INLINE xiiGALViewport(float fX, float fY, float fWidth, float fHeight, float fMinDepth, float fMaxDepth) :
     m_fTopLeftX(fX), m_fTopLeftY(fY), m_fWidth(fWidth), m_fHeight(fHeight), m_fMinDepth(fMinDepth), m_fMaxDepth(fMaxDepth)
   {
   }
@@ -130,9 +132,21 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiG
 /// \brief This describes the viewport.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiHashableStruct<xiiGALBeginRenderPassDescription>
 {
-  xiiSharedPtr<xiiGALRenderPass>                                            m_pRenderPass;
-  xiiSharedPtr<xiiGALFramebuffer>                                           m_pFramebuffer;
-  xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_ClearValues;
+  XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription() = default;
+
+  XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer) :
+    m_pRenderPass(pRenderPass), m_pFramebuffer(pFramebuffer)
+  {
+  }
+
+  XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pClearValues) :
+    m_pRenderPass(pRenderPass), m_pFramebuffer(pFramebuffer), m_ClearValues(pClearValues)
+  {
+  }
+
+  xiiSharedPtr<xiiGALRenderPass>                m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer>               m_pFramebuffer;
+  xiiStaticArray<xiiGALOptimizedClearValue, 4U> m_ClearValues;
 };
 
 /// \brief This describes the resource state barrier description.

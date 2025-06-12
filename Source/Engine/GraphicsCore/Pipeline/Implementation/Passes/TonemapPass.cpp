@@ -64,7 +64,7 @@ xiiTonemapPass::~xiiTonemapPass()
 
 bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
-  const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
+  const xiiRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   // Color
   auto pColorInput = inputs[m_PinColorInput.m_uiInputIndex];

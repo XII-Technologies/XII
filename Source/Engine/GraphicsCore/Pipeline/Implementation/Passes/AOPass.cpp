@@ -383,7 +383,7 @@ void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, c
   {
     pCommandList->BeginDebugGroup(GetName());
     {
-      xiiGALBeginRenderPassDescription renderPassDescription{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
+      xiiGALBeginRenderPassDescription renderPassDescription(m_pRenderPass, m_pFramebuffer);
 
       auto& clearValue            = renderPassDescription.m_ClearValues.ExpandAndGetRef();
       clearValue.m_ResourceFormat = pOutput->m_TextureDescription.m_Format;

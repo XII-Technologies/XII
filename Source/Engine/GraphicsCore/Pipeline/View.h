@@ -46,11 +46,11 @@ public:
 
   /// \brief Sets the off-screen render targets. Use SetSwapChain if rendering to a window.
   /// SetSwapChain and SetRenderTargets are mutually exclusive. Calling this function will reset the swap chain.
-  void                       SetRenderTargets(const xiiGALRenderTargets& renderTargets);
-  const xiiGALRenderTargets& GetRenderTargets() const;
+  void                       SetRenderTargets(const xiiRenderTargets& renderTargets);
+  const xiiRenderTargets& GetRenderTargets() const;
 
   /// \brief Returns the render targets that were either set via the swapchain or via the manually set render targets.
-  const xiiGALRenderTargets& GetActiveRenderTargets() const;
+  const xiiRenderTargets& GetActiveRenderTargets() const;
 
   void                            SetRenderPipelineResource(xiiRenderPipelineResourceHandle hPipeline);
   xiiRenderPipelineResourceHandle GetRenderPipelineResource() const;

@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 

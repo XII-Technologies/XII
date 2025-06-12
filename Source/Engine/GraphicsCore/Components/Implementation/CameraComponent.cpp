@@ -651,7 +651,7 @@ void xiiCameraComponent::ActivateRenderToTexture()
 
   pRenderTarget->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiCameraComponent::ResourceChangeEventHandler, this));
 
-  xiiGALRenderTargets renderTargets;
+  xiiRenderTargets renderTargets;
   renderTargets.m_pRTs[0] = pRenderTarget->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
   pRenderTargetView->SetRenderTargets(renderTargets);
 

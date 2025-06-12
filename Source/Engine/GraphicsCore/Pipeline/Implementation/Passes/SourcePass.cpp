@@ -60,7 +60,7 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
 
   xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
-  const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
+  const xiiRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_Type = xiiGALResourceDimension::Texture2DArray;
@@ -229,7 +229,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     XII_ASSERT_DEV(m_pFramebuffer != nullptr, "Failed to create frame buffer.");
   }
 
-  xiiGALBeginRenderPassDescription renderPassDescription = {.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = m_pFramebuffer};
+  xiiGALBeginRenderPassDescription renderPassDescription(m_pRenderPass, m_pFramebuffer);
 
   if (bIsDepthAttachment)
   {

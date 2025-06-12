@@ -507,7 +507,7 @@ public:
       dependencyDesc.m_uiDestinationSubPass              = 0U;
       dependencyDesc.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
       dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::DepthStencilWrite | xiiGALAccessFlags::RenderTargetWrite;
+      dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::None;
 
       m_pRenderPass = m_pDevice->CreateRenderPass(renderPassDesc);
       XII_ASSERT_DEV(m_pRenderPass != nullptr, "Failed to create render pass.");
