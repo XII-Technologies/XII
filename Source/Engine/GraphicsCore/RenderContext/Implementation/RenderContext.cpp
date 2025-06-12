@@ -312,7 +312,11 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
 
 xiiResult xiiRenderContext::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
-  return XII_SUCCESS;
+  if (ApplyContextStates().Succeeded())
+  {
+    return m_pCommandList->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
+  }
+  return XII_FAILURE;
 }
 
 xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
