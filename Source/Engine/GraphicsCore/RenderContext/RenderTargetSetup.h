@@ -57,8 +57,8 @@ public:
   XII_ALWAYS_INLINE xiiRenderingSetup()
   {
     // Start with an "unspecified" framebuffer size.
-    m_FramebufferDesc.m_FramebufferSize   = xiiSizeU32(0, 0);
-    m_FramebufferDesc.m_uiArraySliceCount = 0;
+    m_FramebufferDescription.m_FramebufferSize   = xiiSizeU32(0, 0);
+    m_FramebufferDescription.m_uiArraySliceCount = 0;
   }
 
   /// \brief Adds a color attachment based on the provided settings.
@@ -80,14 +80,14 @@ public:
   /// \brief Adds a sub pass description directly.
   XII_FORCE_INLINE xiiRenderingSetup& AddSubPass(const xiiGALSubPassDescription& subPass)
   {
-    m_RenderPassDesc.m_SubPasses.PushBack(subPass);
+    m_RenderPassDescription.m_SubPasses.PushBack(subPass);
     return *this;
   }
 
   /// \brief Adds a sub pass dependency.
   XII_FORCE_INLINE xiiRenderingSetup& AddSubPassDependency(const xiiGALSubPassDependencyDescription& dependency)
   {
-    m_RenderPassDesc.m_Dependencies.PushBack(dependency);
+    m_RenderPassDescription.m_Dependencies.PushBack(dependency);
     return *this;
   }
 
@@ -99,12 +99,12 @@ public:
   void Reset();
 
   /// \brief Retrieves the render pass description.
-  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALRenderPassCreationDescription& GetRenderPassDescription() const { return m_RenderPassDesc; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALRenderPassCreationDescription& GetRenderPassDescription() const { return m_RenderPassDescription; }
 
   /// \brief Retrieves the framebuffer description.
   ///
   /// \note The render pass pointer is null, and is meant to be filled externally.
-  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALFramebufferCreationDescription& GetFramebufferDescription() const { return m_FramebufferDesc; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALFramebufferCreationDescription& GetFramebufferDescription() const { return m_FramebufferDescription; }
 
   /// \brief Retrieves the render pass clear values.
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALOptimizedClearValue> GetClearValues() const { return m_ClearValues; }
@@ -130,7 +130,7 @@ private:
   void DeduceFramebufferSize(const xiiSharedPtr<xiiGALTextureView>& pView);
 
   xiiHybridArray<Attachment, 4U>                m_Attachments;
-  xiiGALRenderPassCreationDescription           m_RenderPassDesc;
-  xiiGALFramebufferCreationDescription          m_FramebufferDesc;
+  xiiGALRenderPassCreationDescription           m_RenderPassDescription;
+  xiiGALFramebufferCreationDescription          m_FramebufferDescription;
   xiiStaticArray<xiiGALOptimizedClearValue, 4U> m_ClearValues;
 };

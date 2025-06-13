@@ -339,7 +339,6 @@ private:
   xiiRenderingSetup                                                                        m_RenderingSetup;
   bool                                                                                     m_bNeedsClear = false;
   xiiSharedPtr<xiiGALRenderPass>                                                           m_pActiveRenderPass;
-  xiiStaticArray<xiiGALOptimizedClearValue, 4U>                                            m_ClearValues;
   xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
 
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;

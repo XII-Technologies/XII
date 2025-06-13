@@ -31,6 +31,7 @@ void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, c
 
   m_RenderContextScope = RenderContextScope::Graphics;
   m_bStereoRendering   = bStereoRendering;
+  m_RenderingSetup     = renderingSetup;
 
   const xiiGALRenderPassCreationDescription& renderPassDescription = renderingSetup.GetRenderPassDescription();
 
@@ -84,10 +85,10 @@ void xiiRenderContext::EndRendering()
   if (m_bNeedsClear)
   {
     BeginInternalRenderPass();
-
+  
     m_bNeedsClear = false;
   }
-
+  
   EndInternalRenderPass();
 
   if (m_bHasDebugGroup)
@@ -423,7 +424,7 @@ void xiiRenderContext::BeginInternalRenderPass()
     {
       m_pActiveRenderPass = CreateInternalRenderPass(m_RenderingSetup.GetRenderPassDescription());
 
-      m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer(), m_ClearValues});
+      m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer(), m_RenderingSetup.GetClearValues()});
 
       m_bNeedsClear = false;
     }
