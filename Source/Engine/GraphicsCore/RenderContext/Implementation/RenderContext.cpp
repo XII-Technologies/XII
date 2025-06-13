@@ -16,6 +16,8 @@ xiiRenderContext::xiiRenderContext(xiiSharedPtr<xiiGALCommandList> pCommandList)
   m_pGlobalConstants = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);
 
   xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
+
+  XII_ASSERT_DEBUG(!m_pGlobalConstants.IsEmpty(), "Invalid global constants buffer.");
 }
 
 xiiRenderContext::~xiiRenderContext()
@@ -310,6 +312,27 @@ void xiiRenderContext::BindMaterial(const xiiMaterialResourceHandle& hMaterial)
 
 void xiiRenderContext::BindShader(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags)
 {
+}
+
+void xiiRenderContext::SetBlendState(xiiSharedPtr<xiiGALBlendState> pBlendState)
+{
+  m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pBlendState = pBlendState;
+
+  m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);
+}
+
+void xiiRenderContext::SetDepthStencilState(xiiSharedPtr<xiiGALDepthStencilState> pDepthStencilState)
+{
+  m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = pDepthStencilState;
+
+  m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);
+}
+
+void xiiRenderContext::SetRasterizerState(xiiSharedPtr<xiiGALRasterizerState> pRasterizerState)
+{
+  m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState = pRasterizerState;
+
+  m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);
 }
 
 void xiiRenderContext::BindMeshBuffer(const xiiDynamicMeshBufferResourceHandle& hDynamicMeshBuffer)

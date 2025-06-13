@@ -197,6 +197,12 @@ public:
   /// \param flags   - Optional binding flags.
   void BindShader(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags = xiiShaderBindFlags::Default);
 
+  void SetBlendState(xiiSharedPtr<xiiGALBlendState> pBlendState);
+
+  void SetDepthStencilState(xiiSharedPtr<xiiGALDepthStencilState> pDepthStencilState);
+
+  void SetRasterizerState(xiiSharedPtr<xiiGALRasterizerState> pRasterizerState);
+
   /// \brief Binds a dynamic mesh buffer for rendering.
   void BindMeshBuffer(const xiiDynamicMeshBufferResourceHandle& hDynamicMeshBuffer);
 
