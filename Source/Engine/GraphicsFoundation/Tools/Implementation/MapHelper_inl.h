@@ -120,3 +120,9 @@ XII_ALWAYS_INLINE const DataType* xiiGALMapHelper<DataType>::operator->() const
 {
   return m_pMappedData;
 }
+
+template <typename DataType>
+XII_ALWAYS_INLINE DataType* xiiGALMapHelper<DataType>::GetMappedData() const
+{
+  return m_pMappedData;
+}

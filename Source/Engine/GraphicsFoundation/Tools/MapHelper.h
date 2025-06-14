@@ -84,6 +84,14 @@ public:
   /// \return Pointer to the mapped data.
   const DataType* operator->() const;
 
+  /// \brief Returns a pointer to the mapped buffer data.
+  ///
+  /// This function provides direct access to the memory where the buffer is mapped.
+  /// It is typically used for reading from or writing to GPU buffer memory directly, assuming the buffer has been properly mapped beforehand.
+  ///
+  /// \return A raw pointer to the mapped data buffer.
+  XII_ALWAYS_INLINE DataType* GetMappedData() const;
+
 private:
   xiiSharedPtr<xiiGALCommandList> m_pCommandList; ///< Pointer to the command list.
   xiiSharedPtr<xiiGALBuffer>      m_pBuffer;      ///< Handle to the buffer resource.
