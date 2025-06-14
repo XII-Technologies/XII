@@ -375,6 +375,9 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
     }
   }
 
+  m_VertexBuffers.SetCount(uiStartSlot + pVertexBuffers.GetCount());
+  m_VertexBuffersOffsets.SetCount(uiStartSlot + pVertexBuffers.GetCount(), 0U);
+
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
   {
     if (pVertexBuffers[i] != nullptr)
@@ -384,7 +387,7 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
       XII_VERIFY_COMMAND_LIST(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "SetVertexBuffer arguments are invalid. The Vertex buffer '{0}' was not created with the xiiGALBindFlags::VertexBuffer bind flag.", pVertexBuffers[i]->GetDebugName());
 
       m_VertexBuffers[i]        = pVertexBuffers[i];
-      m_VertexBuffersOffsets[i] = pByteOffsets[i];
+      m_VertexBuffersOffsets[i] = i < pByteOffsets.GetCount() ? pByteOffsets[i] : 0U;
     }
   }
 
