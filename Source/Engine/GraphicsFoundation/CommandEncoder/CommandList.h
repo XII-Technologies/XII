@@ -343,7 +343,12 @@ public:
   /// \brief Sets the scissor rectangles used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
   ///
   /// \param pRects - The array of rectangle structures, describing the scissor rectangles to bind.
-  void SetScissorRects(xiiArrayPtr<xiiRectU32> pRects);
+  void SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects);
+
+  /// \brief Sets a single scissor rectangle for the rasterizer stage. This simplifies the process when only one scissor rectangle is needed.
+  ///
+  /// \param rect - The rectangle describing the area to bind.
+  XII_ALWAYS_INLINE void SetScissorRect(const xiiRectU32& rect) { SetScissorRects(xiiMakeArrayPtr(&rect, 1U)); }
 
   /// \brief Sets the index buffer for the input-assembler stage of the pipeline. This contains the indices into the vertex buffers.
   ///

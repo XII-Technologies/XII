@@ -308,7 +308,7 @@ void xiiGALCommandList::SetViewports(xiiArrayPtr<const xiiGALViewport> pViewport
   SetViewportsPlatform(m_Viewports);
 }
 
-void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects)
+void xiiGALCommandList::SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetScissorRects arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
 
