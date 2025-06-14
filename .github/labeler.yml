@@ -1,0 +1,74 @@
+# Area labels by directory scope.
+"Area: Graphics":
+  - "Source/Engine/GraphicsFoundation/**"
+  - "Source/Engine/GraphicsVulkan/**"
+  - "Source/Engine/GraphicsCore/**"
+  - "Source/Engine/ShaderCompilerSPIRV/**"
+  - "Data/Base/Shaders/**"
+
+"Area: Compute":
+  - "Source/Engine/Foundation/Threading/**"
+  - "Source/Engine/Foundation/SimdMath/**"
+
+"Area: Core":
+  - "Source/Engine/Foundation/**"
+  - "Source/Engine/Core/**"
+
+"Area: I/O":
+  - "Source/Engine/Foundation/IO/**"
+  - "Source/Engine/Foundation/Serialization/**"
+
+"Area: UI":
+  - "Source/Tools/Libs/GuiFoundation/**"
+  - "Source/Editor/EditorFramework/GuiFoundation/**"
+
+"Area: Scripting":
+  - "engine/scripting/**"
+  - "bindings/**"
+
+"Area: Platform":
+  - "platform/**"
+  - "src/input/**"
+  - "engine/windowing/**"
+
+"Area: Asset Pipeline":
+  - "tools/assets/**"
+  - "assetpipeline/**"
+
+"Area: Build System":
+  - "build/**"
+  - "**/CMakeLists.txt"
+  - "**/*.premake5.lua"
+
+# Change type labels
+"Change: New Capability":
+  - "**/feature/**"
+
+"Change: Optimization":
+  - "**/*optimize*"
+  - "**/perf/**"
+
+"Change: Structural Refactor":
+  - "**/refactor/**"
+  - "**/architecture/**"
+
+"Change: Non-functional":
+  - "**/*.md"
+  - "**/*.txt"
+  - "**/docs/**"
+  - "**/*style*"
+
+# Review enforcement
+"Review: Unit Testing Needed":
+  - "**/tests/**"
+  - "**/*.test.*"
+
+"Review: API Compatibility":
+  - "include/**"
+
+"Review: Perf Assessment":
+  - "**/benchmark/**"
+
+"Review: Data Compatibility":
+  - "**/schemas/**"
+  - "**/serialization/**"

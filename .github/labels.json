@@ -50,6 +50,16 @@
     "color": "d7ccc8",
     "description": "Styling, naming, comments, formatting, etc."
   },
+  {
+    "name": "Change: ABI Sensitive",
+    "color": "f06292",
+    "description": "Risk of breaking binary interfaces or layout."
+  },
+  {
+    "name": "Change: Experimental",
+    "color": "90caf9",
+    "description": "Prototype or unstable system under evaluation."
+  },
 
   {
     "name": "Area: Compute",
@@ -76,6 +86,26 @@
     "color": "fff176",
     "description": "Tooling interface or in-engine GUI changes."
   },
+  {
+    "name": "Area: Core",
+    "color": "90a4ae",
+    "description": "Math, containers, threading, foundations."
+  },
+  {
+    "name": "Area: Platform",
+    "color": "a1887f",
+    "description": "Platform abstraction, windowing, input."
+  },
+  {
+    "name": "Area: Asset Pipeline",
+    "color": "bcaaa4",
+    "description": "Import/export formats, processing tools."
+  },
+  {
+    "name": "Area: Build System",
+    "color": "78909c",
+    "description": "Build scripts, dependencies, CI tooling."
+  },
 
   {
     "name": "Review: Unit Testing Needed",
@@ -96,5 +126,15 @@
     "name": "Review: Design Input",
     "color": "bdbdbd",
     "description": "Needs feedback on architecture or logic."
+  },
+  {
+    "name": "Review: Data Compatibility",
+    "color": "ce93d8",
+    "description": "Affects serialization or data layout."
+  },
+  {
+    "name": "Review: Determinism Risk",
+    "color": "ef9a9a",
+    "description": "Could introduce non-deterministic behavior."
   }
 ]
