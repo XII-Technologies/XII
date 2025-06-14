@@ -338,6 +338,7 @@ private:
   xiiSharedPtr<xiiGALRenderPass>  CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description);
   xiiSharedPtr<xiiGALFramebuffer> GetCurrentFramebuffer();
   void                            BeginInternalRenderPass();
+  void                            BeginClearThenLoadInternalRenderPass();
   void                            EndInternalRenderPass();
 
   xiiResult BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, const xiiInputLayoutInfo& declaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration);
@@ -375,12 +376,13 @@ private:
   xiiBitflags<xiiRenderContextFlags> m_StateFlags;
 
   xiiRenderingSetup                                                                        m_RenderingSetup;
-  bool                                                                                     m_bNeedsClear = false;
+  bool                                                                                     m_bNeedsClear         = false;
+  bool                                                                                     m_bIsRenderPassActive = false;
   xiiSharedPtr<xiiGALRenderPass>                                                           m_pActiveRenderPass;
   xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
 
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
-  xiiSharedPtr<xiiGALBuffer>     m_GlobalConstantsBuffer;
+  xiiSharedPtr<xiiGALBuffer>     m_pGlobalConstantsBuffer;
 
   xiiGALGraphicsPipelineStateCreationDescription                                                                                m_GraphicsPipelineDescription;
   xiiSharedPtr<xiiGALGraphicsPipelineState>                                                                                     m_pGraphicsPipelineState;

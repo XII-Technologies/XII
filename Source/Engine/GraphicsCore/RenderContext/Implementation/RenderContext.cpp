@@ -470,7 +470,9 @@ void xiiRenderContext::BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> pVertexBuffer0,
 
 xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiInstanceCount)
 {
-  if (ApplyContextStates().Succeeded() || uiPrimitiveCount == 0U || uiInstanceCount == 0U)
+  BeginClearThenLoadInternalRenderPass();
+
+  if (ApplyContextStates().Failed() || uiPrimitiveCount == 0U || uiInstanceCount == 0U)
     return XII_FAILURE;
 
   XII_ASSERT_DEV(uiFirstPrimitive < m_uiMeshBufferPrimitiveCount, "Invalid primitive range: first primitive ({0}) can't be larger than number of primitives ({1})", uiFirstPrimitive, uiPrimitiveCount);
@@ -696,7 +698,6 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
         }
       }
 
-
       XII_ASSERT_DEV(m_pGraphicsPipelineState || m_pComputePipelineState, "Implementation error!");
     }
 
@@ -826,9 +827,9 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
   xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::MakeFromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
   for (xiiUInt32 uiStageBitIndex : shaderBitfield)
   {
-    m_ActiveGALShaders[static_cast<xiiGALShaderType::Enum>(uiStageBitIndex)] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));
+    m_ActiveGALShaders[xiiGALShaderType::GetStageFlag(uiStageBitIndex)] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));
 
-    XII_ASSERT_DEV(m_ActiveGALShaders[static_cast<xiiGALShaderType::Enum>(uiStageBitIndex)] != nullptr, "Invalid GAL {} Shader handle.", xiiGALShaderType::Names[uiStageBitIndex]);
+    XII_ASSERT_DEV(m_ActiveGALShaders[xiiGALShaderType::GetStageFlag(uiStageBitIndex)] != nullptr, "Invalid GAL {} Shader handle.", xiiGALShaderType::Names[uiStageBitIndex]);
   }
 
   return pShaderPermutation;
@@ -1122,7 +1123,28 @@ void xiiRenderContext::BeginInternalRenderPass()
 {
   XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "Render pass can only be begun in a graphics scope.");
 
-  if (!m_pActiveRenderPass && !m_RenderingSetup.GetRenderPassDescription().m_Attachments.IsEmpty())
+  if (!m_bIsRenderPassActive && !m_RenderingSetup.GetRenderPassDescription().m_Attachments.IsEmpty())
+  {
+    if (m_bNeedsClear)
+    {
+      BeginClearThenLoadInternalRenderPass();
+    }
+    else if (!m_pActiveRenderPass || m_pActiveRenderPass->GetDescription() != m_RenderingSetup.GetRenderPassDescription())
+    {
+      m_pActiveRenderPass = CreateInternalRenderPass(m_RenderingSetup.GetRenderPassDescription());
+    }
+
+    m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer()});
+
+    m_bIsRenderPassActive = true;
+  }
+}
+
+void xiiRenderContext::BeginClearThenLoadInternalRenderPass()
+{
+  XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "Render pass can only be begun in a graphics scope.");
+
+  if (!m_bIsRenderPassActive && !m_RenderingSetup.GetRenderPassDescription().m_Attachments.IsEmpty())
   {
     if (m_bNeedsClear)
     {
@@ -1130,34 +1152,35 @@ void xiiRenderContext::BeginInternalRenderPass()
 
       m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer(), m_RenderingSetup.GetClearValues()});
 
-      m_bNeedsClear = false;
+      m_bNeedsClear         = false;
+      m_bIsRenderPassActive = true;
     }
-    else
+
+    EndInternalRenderPass();
+
+    for (auto& attachment : m_RenderingSetup.m_RenderPassDescription.m_Attachments)
     {
-      xiiGALRenderPassCreationDescription renderPassDescription = m_RenderingSetup.GetRenderPassDescription();
-
-      for (auto& attachment : renderPassDescription.m_Attachments)
+      if (attachment.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
       {
-        if (attachment.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
-        {
-          attachment.m_LoadOperation = xiiGALAttachmentLoadOperation::Load;
-        }
+        attachment.m_LoadOperation = xiiGALAttachmentLoadOperation::Load;
       }
-
-      m_pActiveRenderPass = CreateInternalRenderPass(renderPassDescription);
-
-      m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer()});
+      if (attachment.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Clear)
+      {
+        attachment.m_StencilLoadOperation = xiiGALAttachmentLoadOperation::Load;
+      }
     }
+
+    m_pActiveRenderPass = CreateInternalRenderPass(m_RenderingSetup.GetRenderPassDescription());
   }
 }
 
 void xiiRenderContext::EndInternalRenderPass()
 {
-  if (m_pActiveRenderPass)
+  if (m_bIsRenderPassActive)
   {
     m_pCommandList->EndRenderPass();
 
-    m_pActiveRenderPass = nullptr;
+    m_bIsRenderPassActive = false;
   }
 }
 

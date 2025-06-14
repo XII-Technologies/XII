@@ -110,6 +110,8 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALOptimizedClearValue> GetClearValues() const { return m_ClearValues; }
 
 private:
+  friend class xiiRenderContext;
+
   // Internal structure to hold information about each attachment.
   struct Attachment
   {
