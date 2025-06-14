@@ -17,7 +17,8 @@ xiiRenderContext::xiiRenderContext(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   XII_ASSERT_DEV(m_pCommandList != nullptr, "An invalid command list is given. A render context requires a valid command list reference.");
 
-  m_pGlobalConstants = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);
+  m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants), "xiiGlobalConstants");
+  m_pGlobalConstants       = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);
 
   xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
 
@@ -29,6 +30,7 @@ xiiRenderContext::~xiiRenderContext()
   xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
 
   m_pGlobalConstants.Clear();
+  m_pGlobalConstantsBuffer.Clear();
 }
 
 void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoRendering)
@@ -758,6 +760,14 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       pMaterial->UpdateConstantBuffer(pShaderPermutation);
 
       BindConstantBuffer("xiiMaterialConstants", pMaterial->m_pMaterialConstantsBuffer);
+    }
+
+    BindConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), m_pGlobalConstantsBuffer);
+
+    {
+      xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(m_pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+      memcpy(pGlobalConstants.GetMappedData(), m_pGlobalConstants.GetPtr(), sizeof(xiiGlobalConstants));
     }
 
     if (bIsModified || bPipelineStateInvalidated)
