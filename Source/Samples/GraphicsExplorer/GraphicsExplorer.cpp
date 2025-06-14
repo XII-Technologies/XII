@@ -158,7 +158,7 @@ public:
 
       if (auto pCommandList = pGraphicsQueue->BeginCommandList())
       {
-        xiiGALBeginRenderPassDescription beginRenderPass{.m_pRenderPass = m_pRenderPass, .m_pFramebuffer = GetCurrentFramebuffer()};
+        xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
 
         auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
         depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;

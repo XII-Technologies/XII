@@ -308,7 +308,7 @@ void xiiGALCommandList::SetViewports(xiiArrayPtr<const xiiGALViewport> pViewport
   SetViewportsPlatform(m_Viewports);
 }
 
-void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects)
+void xiiGALCommandList::SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetScissorRects arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
 
@@ -375,6 +375,9 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
     }
   }
 
+  m_VertexBuffers.SetCount(uiStartSlot + pVertexBuffers.GetCount());
+  m_VertexBuffersOffsets.SetCount(uiStartSlot + pVertexBuffers.GetCount(), 0U);
+
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
   {
     if (pVertexBuffers[i] != nullptr)
@@ -384,7 +387,7 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
       XII_VERIFY_COMMAND_LIST(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "SetVertexBuffer arguments are invalid. The Vertex buffer '{0}' was not created with the xiiGALBindFlags::VertexBuffer bind flag.", pVertexBuffers[i]->GetDebugName());
 
       m_VertexBuffers[i]        = pVertexBuffers[i];
-      m_VertexBuffersOffsets[i] = pByteOffsets[i];
+      m_VertexBuffersOffsets[i] = i < pByteOffsets.GetCount() ? pByteOffsets[i] : 0U;
     }
   }
 

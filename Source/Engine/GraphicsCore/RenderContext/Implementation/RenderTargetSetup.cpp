@@ -19,8 +19,8 @@ bool xiiRenderTargets::operator==(const xiiRenderTargets& other) const
 
 void xiiRenderingSetup::Build()
 {
-  m_RenderPassDesc.m_Attachments.Clear();
-  m_FramebufferDesc.m_Attachments.Clear();
+  m_RenderPassDescription.m_Attachments.Clear();
+  m_FramebufferDescription.m_Attachments.Clear();
   m_ClearValues.Clear();
 
   for (xiiUInt32 i = 0; i < m_Attachments.GetCount(); ++i)
@@ -38,12 +38,20 @@ void xiiRenderingSetup::Build()
     {
       renderPassAttachment.m_StencilLoadOperation  = attachment.m_StencilLoadOp;
       renderPassAttachment.m_StencilStoreOperation = attachment.m_StencilStoreOp;
+
+      renderPassAttachment.m_InitialStateFlags = xiiGALResourceStateFlags::DepthWrite;
+      renderPassAttachment.m_FinalStateFlags   = xiiGALResourceStateFlags::DepthWrite;
+    }
+    else
+    {
+      renderPassAttachment.m_InitialStateFlags = xiiGALResourceStateFlags::RenderTarget;
+      renderPassAttachment.m_FinalStateFlags   = xiiGALResourceStateFlags::RenderTarget;
     }
 
-    m_RenderPassDesc.m_Attachments.PushBack(renderPassAttachment);
-    m_FramebufferDesc.m_Attachments.PushBack(attachment.m_pView);
+    m_RenderPassDescription.m_Attachments.PushBack(renderPassAttachment);
+    m_FramebufferDescription.m_Attachments.PushBack(attachment.m_pView);
 
-    if (renderPassAttachment.m_LoadOperation == xiiGALLogicOperation::Clear)
+    if (renderPassAttachment.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
     {
       m_ClearValues.EnsureCount(i + 1);
 
@@ -52,9 +60,9 @@ void xiiRenderingSetup::Build()
   }
 
   // If no sub pass was defined externally, create one default sub pass.
-  if (m_RenderPassDesc.m_SubPasses.IsEmpty())
+  if (m_RenderPassDescription.m_SubPasses.IsEmpty())
   {
-    xiiGALSubPassDescription& defaultSubPass = m_RenderPassDesc.m_SubPasses.ExpandAndGetRef();
+    xiiGALSubPassDescription& defaultSubPass = m_RenderPassDescription.m_SubPasses.ExpandAndGetRef();
 
     for (xiiUInt32 i = 0; i < m_Attachments.GetCount(); ++i)
     {
@@ -73,27 +81,28 @@ void xiiRenderingSetup::Build()
   }
 
   // If no sub pass dependency was defined externally, create one default sub pass dependency.
-  if (m_RenderPassDesc.m_Dependencies.IsEmpty())
+  if (m_RenderPassDescription.m_Dependencies.IsEmpty())
   {
-    xiiGALSubPassDependencyDescription& defaultSubPassDependency = m_RenderPassDesc.m_Dependencies.ExpandAndGetRef();
+    xiiGALSubPassDependencyDescription& defaultSubPassDependency = m_RenderPassDescription.m_Dependencies.ExpandAndGetRef();
 
-    defaultSubPassDependency.m_uiSourceSubPass       = XII_GAL_SUBPASS_EXTERNAL;
-    defaultSubPassDependency.m_uiDestinationSubPass  = 0U;
-    defaultSubPassDependency.m_SourceStageFlags      = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-    defaultSubPassDependency.m_DestinationStageFlags = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+    defaultSubPassDependency.m_uiSourceSubPass        = XII_GAL_SUBPASS_EXTERNAL;
+    defaultSubPassDependency.m_uiDestinationSubPass   = 0U;
+    defaultSubPassDependency.m_SourceStageFlags       = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+    defaultSubPassDependency.m_DestinationStageFlags  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+    defaultSubPassDependency.m_DestinationAccessFlags = xiiGALAccessFlags::None;
 
-    if (!m_RenderPassDesc.m_SubPasses[0].m_RenderTargetAttachments.IsEmpty())
+    if (!m_RenderPassDescription.m_SubPasses[0].m_RenderTargetAttachments.IsEmpty())
     {
       defaultSubPassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::RenderTargetRead | xiiGALAccessFlags::RenderTargetWrite;
     }
-    if (!m_RenderPassDesc.m_SubPasses[0].m_DepthStencilAttachment.IsEmpty())
+    if (!m_RenderPassDescription.m_SubPasses[0].m_DepthStencilAttachment.IsEmpty())
     {
       defaultSubPassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::DepthStencilRead | xiiGALAccessFlags::DepthStencilWrite;
     }
   }
 
   // The framebuffer descriptor’s render pass pointer is typically set after the render pass is created through the device. For now, leave it null.
-  m_FramebufferDesc.m_pRenderPass = nullptr;
+  m_FramebufferDescription.m_pRenderPass = nullptr;
 }
 
 void xiiRenderingSetup::Reset()
@@ -129,20 +138,14 @@ void xiiRenderingSetup::DeduceFramebufferSize(const xiiSharedPtr<xiiGALTextureVi
   const auto& textureDescription = pView->GetTexture()->GetDescription();
   const auto& viewDescription    = pView->GetDescription();
 
-  // If the framebuffer size is still unspecified, deduce it from this texture.
-  if (m_FramebufferDesc.m_FramebufferSize == xiiSizeU32(0, 0))
+  if (m_FramebufferDescription.m_FramebufferSize == xiiSizeU32(0, 0))
   {
-    // Assumes the texture description provides size information.
-    m_FramebufferDesc.m_FramebufferSize   = textureDescription.m_Size;
-    m_FramebufferDesc.m_uiArraySliceCount = viewDescription.m_uiArrayOrDepthSlicesCount;
+    m_FramebufferDescription.m_FramebufferSize   = textureDescription.m_Size;
+    m_FramebufferDescription.m_uiArraySliceCount = viewDescription.m_uiArrayOrDepthSlicesCount;
   }
   else
   {
-    // Optionally verify that every new attachment has the same size.
-    if (textureDescription.m_Size != m_FramebufferDesc.m_FramebufferSize)
-    {
-      xiiLog::Error("Texture size mismatch detected in xiiRenderingSetup!");
-    }
+    XII_ASSERT_DEBUG(textureDescription.m_Size == m_FramebufferDescription.m_FramebufferSize, "Texture size mismatch detected in xiiRenderingSetup!");
   }
 }
 

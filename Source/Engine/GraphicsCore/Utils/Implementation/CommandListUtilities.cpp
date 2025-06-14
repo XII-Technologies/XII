@@ -131,25 +131,3 @@ void xiiGALCommandListUtilities::BindMaterial(xiiSharedPtr<xiiGALCommandList> pC
 
   /// \todo Create or update pipeline state.
 }
-
-// static
-xiiGALSamplerCreationDescription xiiGALCommandListUtilities::GetDefaultSamplerDescription(xiiBitflags<xiiDefaultSamplerFlags> flags)
-{
-  xiiGALSamplerCreationDescription samplerDescription;
-  samplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
-  samplerDescription.m_BorderColor        = xiiColor::Black;
-  samplerDescription.m_fMipLODBias        = 0.0f;
-  samplerDescription.m_fMinLOD            = -1.0f;
-  samplerDescription.m_fMaxLOD            = 42000.0f;
-  samplerDescription.m_uiMaxAnisotropy    = 4U;
-
-  samplerDescription.m_MinFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
-  samplerDescription.m_MagFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
-  samplerDescription.m_MipFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
-
-  samplerDescription.m_AddressU = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
-  samplerDescription.m_AddressV = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
-  samplerDescription.m_AddressW = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
-
-  return samplerDescription;
-}

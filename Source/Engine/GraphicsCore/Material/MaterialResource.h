@@ -107,6 +107,8 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
+  friend class xiiRenderContext;
+
   xiiMaterialResourceDescriptor m_LoadingDescription; // stores the state at loading, such that SetParameter etc. calls can be reset later
   xiiMaterialResourceDescriptor m_Description;
 

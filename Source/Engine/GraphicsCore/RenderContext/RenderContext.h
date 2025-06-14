@@ -197,6 +197,21 @@ public:
   /// \param flags   - Optional binding flags.
   void BindShader(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags = xiiShaderBindFlags::Default);
 
+  /// \brief Sets the blend state for the graphics pipeline.
+  ///
+  /// \param pBlendState - A shared pointer to the blend state object to be used.
+  void SetBlendState(xiiSharedPtr<xiiGALBlendState> pBlendState);
+
+  /// \brief Sets the depth-stencil state for the graphics pipeline to control depth and stencil testing behavior..
+  ///
+  /// \param pDepthStencilState - A shared pointer to the depth-stencil state object to be used.
+  void SetDepthStencilState(xiiSharedPtr<xiiGALDepthStencilState> pDepthStencilState);
+
+  /// \brief Sets the rasterizer state for the graphics pipeline.
+  ///
+  /// \param pRasterizerState - A shared pointer to the rasterizer state object to be used.
+  void SetRasterizerState(xiiSharedPtr<xiiGALRasterizerState> pRasterizerState);
+
   /// \brief Binds a dynamic mesh buffer for rendering.
   void BindMeshBuffer(const xiiDynamicMeshBufferResourceHandle& hDynamicMeshBuffer);
 
@@ -206,7 +221,7 @@ public:
   /// \brief Binds raw GPU buffers with custom vertex/index layout.
   ///
   /// Allows procedural or non-resource-backed geometry.
-  void BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> pVertexBuffer, xiiSharedPtr<xiiGALBuffer> pIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiSharedPtr<xiiGALBuffer> pVertexBuffer2 = {}, xiiSharedPtr<xiiGALBuffer> pVertexBuffer3 = {}, xiiSharedPtr<xiiGALBuffer> pVertexBuffer4 = {});
+  void BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> pVertexBuffer0, xiiSharedPtr<xiiGALBuffer> pIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers = {});
 
   /// \brief Issues a draw call for the currently bound mesh buffer.
   ///
@@ -309,10 +324,24 @@ public:
 private:
   void SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue);
 
+  void BindShaderInternal(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags);
+
+  xiiShaderPermutationResource* ApplyShaderState();
+  xiiMaterialResource*          ApplyMaterialState();
+  void                          ApplyConstantBufferBindings();
+  void                          ApplyBufferSRVBindings();
+  void                          ApplyTextureSRVBindings();
+  void                          ApplyBufferUAVBindings();
+  void                          ApplyTextureUAVBindings();
+  void                          ApplySamplerBindings();
+
   xiiSharedPtr<xiiGALRenderPass>  CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description);
   xiiSharedPtr<xiiGALFramebuffer> GetCurrentFramebuffer();
   void                            BeginInternalRenderPass();
+  void                            BeginClearThenLoadInternalRenderPass();
   void                            EndInternalRenderPass();
+
+  xiiResult BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, const xiiInputLayoutInfo& declaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration);
 
 private:
   struct RenderPassCache
@@ -328,6 +357,16 @@ private:
     xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
   };
 
+  struct ShaderVertexDeclaration
+  {
+    xiiSharedPtr<xiiGALShader> m_pShader;
+    xiiUInt32                  m_uiInputLayoutHash;
+
+    XII_FORCE_INLINE bool operator<(const ShaderVertexDeclaration& rhs) const { return m_uiInputLayoutHash < rhs.m_uiInputLayoutHash; }
+
+    XII_FORCE_INLINE bool operator==(const ShaderVertexDeclaration& rhs) const { return (m_pShader == rhs.m_pShader && m_uiInputLayoutHash == rhs.m_uiInputLayoutHash); }
+  };
+
   xiiSharedPtr<xiiGALCommandList> m_pCommandList;
 
   RenderContextScope                 m_RenderContextScope       = RenderContextScope::None;
@@ -337,16 +376,21 @@ private:
   xiiBitflags<xiiRenderContextFlags> m_StateFlags;
 
   xiiRenderingSetup                                                                        m_RenderingSetup;
-  bool                                                                                     m_bNeedsClear = false;
+  bool                                                                                     m_bNeedsClear         = false;
+  bool                                                                                     m_bIsRenderPassActive = false;
   xiiSharedPtr<xiiGALRenderPass>                                                           m_pActiveRenderPass;
-  xiiStaticArray<xiiGALOptimizedClearValue, 4U>                                            m_ClearValues;
   xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
 
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
-  xiiSharedPtr<xiiGALBuffer>     m_GlobalConstantsBuffer;
+  xiiSharedPtr<xiiGALBuffer>     m_pGlobalConstantsBuffer;
 
-  xiiGALGraphicsPipelineStateCreationDescription m_GraphicsPipelineDescription;
-  xiiGALComputePipelineStateCreationDescription  m_ComputePipelineDescription;
+  xiiGALGraphicsPipelineStateCreationDescription                                                                                m_GraphicsPipelineDescription;
+  xiiSharedPtr<xiiGALGraphicsPipelineState>                                                                                     m_pGraphicsPipelineState;
+  xiiHashTable<xiiGALGraphicsPipelineStateCreationDescription, xiiSharedPtr<xiiGALGraphicsPipelineState>, xiiGALDescriptorHash> m_GraphicsPipelineCreationCache;
+
+  xiiGALComputePipelineStateCreationDescription                                                                               m_ComputePipelineDescription;
+  xiiSharedPtr<xiiGALComputePipelineState>                                                                                    m_pComputePipelineState;
+  xiiHashTable<xiiGALComputePipelineStateCreationDescription, xiiSharedPtr<xiiGALComputePipelineState>, xiiGALDescriptorHash> m_ComputePipelineCreationCache;
 
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBuffer>>      m_BoundConstantBuffers;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBufferView>>  m_BoundBufferSRVs;
@@ -354,6 +398,24 @@ private:
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBufferView>>  m_BoundBufferUAVs;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALTextureView>> m_BoundTextureUAVs;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALSampler>>     m_BoundSamplers;
+
+  xiiShaderResourceHandle                                          m_hActiveShader;
+  xiiMap<xiiGALShaderType::Enum, xiiSharedPtr<xiiGALShader>>       m_ActiveGALShaders;
+  xiiShaderPermutationResourceHandle                               m_hActiveShaderPermutation;
+  const xiiInputLayoutInfo*                                        m_pInputLayoutInfo = nullptr;
+  xiiMap<ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>> m_InputLayouts;
+  xiiBitflags<xiiShaderBindFlags>                                  m_ShaderBindFlags;
+
+  xiiMaterialResourceHandle m_hNewMaterial;
+  xiiMaterialResourceHandle m_hMaterial;
+
+  xiiHybridArray<xiiSharedPtr<xiiGALBuffer>, 4U> m_VertexBuffers;
+  xiiHybridArray<xiiUInt64, 4U>                  m_VertexBuffersOffsets;
+
+  xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;
+  xiiUInt64                  m_uiIndexDataOffset = 0ULL;
+
+  xiiUInt32 m_uiMeshBufferPrimitiveCount = 0U;
 
   xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
 };
