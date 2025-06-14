@@ -219,7 +219,6 @@ public:
         xiiRenderingSetup renderingSetup;
         renderingSetup
           .AddColorAttachment({.m_pRenderTarget = m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget),
-                               .m_ClearColor    = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f)),
                                .m_LoadOp        = xiiGALAttachmentLoadOperation::Clear})
           .SetDepthStencilAttachment({.m_pDSTarget     = m_pDepthStencilTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil),
                                       .m_LoadOp        = xiiGALAttachmentLoadOperation::Clear,
@@ -228,6 +227,27 @@ public:
 
         xiiRenderContext renderContext(pCommandList);
         renderContext.BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+
+        {
+          xiiGlobalConstants* pGlobalConstants = renderContext.GetGlobalConstants();
+
+          xiiMat4 m0, m1;
+          m0                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
+          m1                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
+          pGlobalConstants->WorldToCameraMatrix[0] = m0;
+          pGlobalConstants->WorldToCameraMatrix[1] = m1;
+          pGlobalConstants->CameraToWorldMatrix[0] = m0.GetInverse();
+          pGlobalConstants->CameraToWorldMatrix[1] = m1.GetInverse();
+          pGlobalConstants->ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
+
+          // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
+          pGlobalConstants->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
+          pGlobalConstants->WorldTime  = pGlobalConstants->GlobalTime;
+        }
+
+        renderContext.BindMaterial(m_hMaterial);
+        renderContext.BindMeshBuffer(m_hQuadMeshBuffer);
+        renderContext.DrawMeshBuffer().IgnoreResult();
         renderContext.EndRendering();
 
         pCommandList->Submit();
