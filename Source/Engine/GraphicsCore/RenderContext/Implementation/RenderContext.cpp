@@ -4,6 +4,7 @@
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
@@ -394,7 +395,7 @@ void xiiRenderContext::BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> pVertexBuffer0,
   {
     m_GraphicsPipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology = topology;
 
-    static bool                bInitialized                                     = false;
+    static bool                bInitialized = false;
     static xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT];
     if (!bInitialized)
     {
@@ -560,7 +561,35 @@ void xiiRenderContext::BindShaderInternal(const xiiShaderResourceHandle& hShader
 
 xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
 {
-  return nullptr;
+  m_ActiveGALShaders.Clear();
+
+  m_StateFlags.Add(xiiRenderContextFlags::ConstantBufferBindingChanged | xiiRenderContextFlags::TextureBindingChanged | xiiRenderContextFlags::BufferBindingChanged | xiiRenderContextFlags::TextureUAVBindingChanged | xiiRenderContextFlags::BufferUAVBindingChanged | xiiRenderContextFlags::SamplerBindingChanged);
+
+  if (!m_hActiveShader.IsValid())
+    return nullptr;
+
+  m_hActiveShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hActiveShader, m_PermutationVariables, m_bAllowAsyncShaderLoading);
+
+  if (!m_hActiveShaderPermutation.IsValid())
+    return nullptr;
+
+  xiiShaderPermutationResource* pShaderPermutation = xiiResourceManager::BeginAcquireResource(m_hActiveShaderPermutation, m_bAllowAsyncShaderLoading ? xiiResourceAcquireMode::AllowLoadingFallback : xiiResourceAcquireMode::BlockTillLoaded);
+
+  if (!pShaderPermutation->IsShaderValid())
+  {
+    xiiResourceManager::EndAcquireResource(pShaderPermutation);
+    return nullptr;
+  }
+
+  xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::MakeFromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
+  for (xiiUInt32 uiStageBitIndex : shaderBitfield)
+  {
+    m_ActiveGALShaders[uiStageBitIndex] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));
+
+    XII_ASSERT_DEV(m_ActiveGALShaders[uiStageBitIndex] != nullptr, "Invalid GAL {} Shader handle.", xiiGALShaderType::Names[uiStageBitIndex]);
+  }
+
+  return pShaderPermutation;
 }
 
 xiiMaterialResource* xiiRenderContext::ApplyMaterialState()

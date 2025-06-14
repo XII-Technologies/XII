@@ -398,7 +398,7 @@ private:
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALSampler>>     m_BoundSamplers;
 
   xiiShaderResourceHandle                                          m_hActiveShader;
-  xiiMap<xiiGALShaderType::Enum, xiiSharedPtr<xiiGALShader>>       m_hActiveGALShaders;
+  xiiMap<xiiGALShaderType::Enum, xiiSharedPtr<xiiGALShader>>       m_ActiveGALShaders;
   xiiShaderPermutationResourceHandle                               m_hActiveShaderPermutation;
   const xiiInputLayoutInfo*                                        m_pInputLayoutInfo = nullptr;
   xiiMap<ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>> m_InputLayouts;
