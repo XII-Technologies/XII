@@ -9,6 +9,7 @@
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
 xiiRenderContext::xiiRenderContext(xiiSharedPtr<xiiGALCommandList> pCommandList) :
@@ -584,9 +585,9 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
   xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::MakeFromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
   for (xiiUInt32 uiStageBitIndex : shaderBitfield)
   {
-    m_ActiveGALShaders[uiStageBitIndex] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));
+    m_ActiveGALShaders[static_cast<xiiGALShaderType::Enum>(uiStageBitIndex)] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));
 
-    XII_ASSERT_DEV(m_ActiveGALShaders[uiStageBitIndex] != nullptr, "Invalid GAL {} Shader handle.", xiiGALShaderType::Names[uiStageBitIndex]);
+    XII_ASSERT_DEV(m_ActiveGALShaders[static_cast<xiiGALShaderType::Enum>(uiStageBitIndex)] != nullptr, "Invalid GAL {} Shader handle.", xiiGALShaderType::Names[uiStageBitIndex]);
   }
 
   return pShaderPermutation;
@@ -594,6 +595,56 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
 
 xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
 {
+  if (!m_hNewMaterial.IsValid())
+  {
+    BindShaderInternal(xiiShaderResourceHandle(), xiiShaderBindFlags::Default);
+
+    return nullptr;
+  }
+
+  // Check whether material has been modified.
+  xiiMaterialResource* pMaterial = xiiResourceManager::BeginAcquireResource(m_hNewMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
+
+  if (m_hNewMaterial != m_hMaterial || pMaterial->IsModified())
+  {
+    auto pCachedValues = pMaterial->GetOrUpdateCachedValues();
+
+    BindShaderInternal(pCachedValues->m_hShader, xiiShaderBindFlags::Default);
+
+    if (pMaterial->m_pMaterialConstantsBuffer)
+    {
+      BindConstantBuffer("xiiMaterialConstants", pMaterial->m_pMaterialConstantsBuffer);
+    }
+
+    for (auto it = pCachedValues->m_PermutationVariables.GetIterator(); it.IsValid(); ++it)
+    {
+      SetShaderPermutationVariableInternal(it.Key(), it.Value());
+    }
+
+    for (auto it = pCachedValues->m_Texture2DBindings.GetIterator(); it.IsValid(); ++it)
+    {
+      BindTexture2D(it.Key(), it.Value());
+    }
+
+    for (auto it = pCachedValues->m_TextureCubeBindings.GetIterator(); it.IsValid(); ++it)
+    {
+      BindTextureCube(it.Key(), it.Value());
+    }
+
+    m_hMaterial = m_hNewMaterial;
+  }
+
+  // The material needs its constant buffer updated.
+  // Thus we keep it acquired until we have the correct shader permutation for the constant buffer layout.
+  if (pMaterial->AreConstantsModified())
+  {
+    m_StateFlags.Add(xiiRenderContextFlags::ConstantBufferBindingChanged);
+
+    return pMaterial;
+  }
+
+  xiiResourceManager::EndAcquireResource(pMaterial);
+
   return nullptr;
 }
 
