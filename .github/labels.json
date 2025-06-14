@@ -2,99 +2,99 @@
   {
     "name": "Status: Draft",
     "color": "c0e8e0",
-    "description": "Not ready for review; work in progress"
+    "description": "Not ready for review; work in progress."
   },
   {
     "name": "Status: Review Requested",
     "color": "fbc02d",
-    "description": "Ready for peer or maintainer feedback"
+    "description": "Ready for peer or maintainer feedback."
   },
   {
     "name": "Status: Revisions Needed",
     "color": "ef9a9a",
-    "description": "Changes required after review"
+    "description": "Changes required after review."
   },
   {
     "name": "Status: Merge Ready",
     "color": "81c784",
-    "description": "Fully approved and can be merged"
+    "description": "Fully approved and can be merged."
   },
   {
     "name": "Status: Deprecated",
     "color": "b0bec5",
-    "description": "Scheduled for removal or replacement"
+    "description": "Scheduled for removal or replacement."
   },
 
   {
     "name": "Change: New Capability",
     "color": "64b5f6",
-    "description": "Adds new functionality"
+    "description": "Adds new functionality."
   },
   {
     "name": "Change: Optimization",
     "color": "aed581",
-    "description": "Performance or memory improvement"
+    "description": "Performance or memory improvement."
   },
   {
     "name": "Change: Defect Correction",
     "color": "e57373",
-    "description": "Fixes unintended behavior"
+    "description": "Fixes unintended behavior."
   },
   {
     "name": "Change: Structural Refactor",
     "color": "ba68c8",
-    "description": "Code reorg without functional impact"
+    "description": "Code re-organization without functional impact."
   },
   {
     "name": "Change: Non-functional",
     "color": "d7ccc8",
-    "description": "Styling, naming, comments, formatting"
+    "description": "Styling, naming, comments, formatting, etc."
   },
 
   {
     "name": "Area: Compute",
     "color": "4fc3f7",
-    "description": "Math kernels, task scheduling, async ops"
+    "description": "Math kernels, task scheduling, async operations."
   },
   {
     "name": "Area: I/O",
     "color": "81d4fa",
-    "description": "File access, streaming, serialization"
+    "description": "File access, streaming, serialization."
   },
   {
     "name": "Area: Graphics",
     "color": "9575cd",
-    "description": "Rendering, pipeline config, shaders"
+    "description": "Rendering, pipeline configuration, shaders."
   },
   {
     "name": "Area: Scripting",
     "color": "4db6ac",
-    "description": "Codegen, runtime logic, scripting hooks"
+    "description": "Codegen, runtime logic, scripting hooks."
   },
   {
     "name": "Area: UI",
     "color": "fff176",
-    "description": "Tooling interface or in-engine GUI changes"
+    "description": "Tooling interface or in-engine GUI changes."
   },
 
   {
     "name": "Review: Unit Testing Needed",
     "color": "ff8a65",
-    "description": "Lacks or modifies unit test coverage"
+    "description": "Lacks or modifies unit test coverage."
   },
   {
     "name": "Review: Perf Assessment",
     "color": "f44336",
-    "description": "Requires profiling or benchmarks"
+    "description": "Requires profiling or benchmarks."
   },
   {
     "name": "Review: API Compatibility",
     "color": "00acc1",
-    "description": "Public-facing API must maintain stability"
+    "description": "Public-facing API must maintain stability."
   },
   {
     "name": "Review: Design Input",
     "color": "bdbdbd",
-    "description": "Needs feedback on architecture or logic"
+    "description": "Needs feedback on architecture or logic."
   }
 ]
