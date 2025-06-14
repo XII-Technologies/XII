@@ -87,10 +87,10 @@ void xiiRenderContext::EndRendering()
   if (m_bNeedsClear)
   {
     BeginInternalRenderPass();
-  
+
     m_bNeedsClear = false;
   }
-  
+
   EndInternalRenderPass();
 
   if (m_bHasDebugGroup)
@@ -316,6 +316,9 @@ void xiiRenderContext::BindShader(const xiiShaderResourceHandle& hShader, xiiBit
 
 void xiiRenderContext::SetBlendState(xiiSharedPtr<xiiGALBlendState> pBlendState)
 {
+  XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "SetBlendState() is only valid in a graphics pipeline.");
+  XII_ASSERT_DEV(pBlendState != nullptr, "The blend state is invalid.");
+
   m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pBlendState = pBlendState;
 
   m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);
@@ -323,6 +326,9 @@ void xiiRenderContext::SetBlendState(xiiSharedPtr<xiiGALBlendState> pBlendState)
 
 void xiiRenderContext::SetDepthStencilState(xiiSharedPtr<xiiGALDepthStencilState> pDepthStencilState)
 {
+  XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "SetDepthStencilState() is only valid in a graphics pipeline.");
+  XII_ASSERT_DEV(pDepthStencilState != nullptr, "The depth stencil state is invalid.");
+
   m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = pDepthStencilState;
 
   m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);
@@ -330,6 +336,9 @@ void xiiRenderContext::SetDepthStencilState(xiiSharedPtr<xiiGALDepthStencilState
 
 void xiiRenderContext::SetRasterizerState(xiiSharedPtr<xiiGALRasterizerState> pRasterizerState)
 {
+  XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "SetRasterizerState() is only valid in a graphics pipeline.");
+  XII_ASSERT_DEV(pRasterizerState != nullptr, "The rasterizer state is invalid.");
+
   m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState = pRasterizerState;
 
   m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);

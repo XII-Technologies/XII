@@ -197,10 +197,19 @@ public:
   /// \param flags   - Optional binding flags.
   void BindShader(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags = xiiShaderBindFlags::Default);
 
+  /// \brief Sets the blend state for the graphics pipeline.
+  ///
+  /// \param pBlendState - A shared pointer to the blend state object to be used.
   void SetBlendState(xiiSharedPtr<xiiGALBlendState> pBlendState);
 
+  /// \brief Sets the depth-stencil state for the graphics pipeline to control depth and stencil testing behavior..
+  ///
+  /// \param pDepthStencilState - A shared pointer to the depth-stencil state object to be used.
   void SetDepthStencilState(xiiSharedPtr<xiiGALDepthStencilState> pDepthStencilState);
 
+  /// \brief Sets the rasterizer state for the graphics pipeline.
+  ///
+  /// \param pRasterizerState - A shared pointer to the rasterizer state object to be used.
   void SetRasterizerState(xiiSharedPtr<xiiGALRasterizerState> pRasterizerState);
 
   /// \brief Binds a dynamic mesh buffer for rendering.
