@@ -1,6 +1,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Containers/Blob.h>
+#include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
+#include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
@@ -308,10 +310,19 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, con
 
 void xiiRenderContext::BindMaterial(const xiiMaterialResourceHandle& hMaterial)
 {
+  // Don't set m_hMaterial directly since we first need to check whether the material has been modified in the mean time.
+  m_hNewMaterial = hMaterial;
+
+  m_StateFlags.Add(xiiRenderContextFlags::MaterialBindingChanged);
 }
 
 void xiiRenderContext::BindShader(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags)
 {
+  m_hMaterial.Invalidate();
+
+  m_StateFlags.Remove(xiiRenderContextFlags::MaterialBindingChanged);
+
+  BindShaderInternal(hShader, flags);
 }
 
 void xiiRenderContext::SetBlendState(xiiSharedPtr<xiiGALBlendState> pBlendState)
@@ -346,20 +357,161 @@ void xiiRenderContext::SetRasterizerState(xiiSharedPtr<xiiGALRasterizerState> pR
 
 void xiiRenderContext::BindMeshBuffer(const xiiDynamicMeshBufferResourceHandle& hDynamicMeshBuffer)
 {
+  xiiResourceLock<xiiDynamicMeshBufferResource> pMeshBuffer(hDynamicMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
+
+  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetInputLayout()), pMeshBuffer->GetDescriptor().m_Topology, pMeshBuffer->GetDescriptor().m_uiMaxPrimitives, xiiMakeArrayPtr(&pMeshBuffer->GetColorBuffer(), 1U));
 }
 
 void xiiRenderContext::BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBuffer)
 {
+  xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
+
+  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetInputLayout()), pMeshBuffer->GetTopology(), pMeshBuffer->GetPrimitiveCount());
 }
 
-void xiiRenderContext::BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> pVertexBuffer, xiiSharedPtr<xiiGALBuffer> pIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiSharedPtr<xiiGALBuffer> pVertexBuffer2, xiiSharedPtr<xiiGALBuffer> pVertexBuffer3, xiiSharedPtr<xiiGALBuffer> pVertexBuffer4)
+void xiiRenderContext::BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> pVertexBuffer0, xiiSharedPtr<xiiGALBuffer> pIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers)
 {
+  if ((!m_VertexBuffers.IsEmpty() && (m_VertexBuffers[0] == pVertexBuffer0 || m_VertexBuffers.GetArrayPtr().GetSubArray(1, pVertexBuffers.GetCount()) == pVertexBuffers)) && m_pIndexBuffer == pIndexBuffer && m_pInputLayoutInfo == pInputLayoutInfo && m_GraphicsPipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology == topology && m_uiMeshBufferPrimitiveCount == uiPrimitiveCount)
+    return;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  if (pInputLayoutInfo)
+  {
+    for (xiiUInt32 i1 = 0; i1 < pInputLayoutInfo->m_VertexStreams.GetCount(); ++i1)
+    {
+      for (xiiUInt32 i2 = 0; i2 < pInputLayoutInfo->m_VertexStreams.GetCount(); ++i2)
+      {
+        if (i1 != i2)
+        {
+          XII_ASSERT_DEBUG(pInputLayoutInfo->m_VertexStreams[i1].m_Semantic != pInputLayoutInfo->m_VertexStreams[i2].m_Semantic, "The same semantic cannot be used twice in the same input layout.");
+        }
+      }
+    }
+  }
+#endif
+
+  if (m_GraphicsPipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology != topology)
+  {
+    m_GraphicsPipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology = topology;
+
+    static bool                bInitialized                                     = false;
+    static xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT];
+    if (!bInitialized)
+    {
+      sTopologies[xiiGALPrimitiveTopology::PointList]               = xiiTempHashedString("TOPOLOGY_POINT_LIST");
+      sTopologies[xiiGALPrimitiveTopology::LineList]                = xiiTempHashedString("TOPOLOGY_LINE_LIST");
+      sTopologies[xiiGALPrimitiveTopology::TriangleList]            = xiiTempHashedString("TOPOLOGY_TRIANGLE_LIST");
+      sTopologies[xiiGALPrimitiveTopology::TriangleStrip]           = xiiTempHashedString("TOPOLOGY_TRIANGLE_STRIP");
+      sTopologies[xiiGALPrimitiveTopology::LineStrip]               = xiiTempHashedString("TOPOLOGY_LINE_STRIP");
+      sTopologies[xiiGALPrimitiveTopology::TriangleListAdjacent]    = xiiTempHashedString("TOPOLOGY_TRIANGLE_LIST_ADJACENT");
+      sTopologies[xiiGALPrimitiveTopology::TriangleStripAdjacent]   = xiiTempHashedString("TOPOLOGY_TRIANGLE_STRIP_ADJACENT");
+      sTopologies[xiiGALPrimitiveTopology::LineListAdjacent]        = xiiTempHashedString("TOPOLOGY_LINE_LIST_ADJACENT");
+      sTopologies[xiiGALPrimitiveTopology::LineStripAdjacent]       = xiiTempHashedString("TOPOLOGY_LINE_STRIP_ADJACENT");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList1]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_1");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList2]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_2");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList3]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_3");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList4]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_4");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList5]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_5");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList6]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_6");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList7]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_7");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList8]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_8");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList9]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_9");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList10] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_10");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList11] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_11");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList12] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_12");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList13] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_13");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList14] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_14");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList15] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_15");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList16] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_16");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList17] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_17");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList18] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_18");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList19] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_19");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList20] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_20");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList21] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_21");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList22] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_22");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList23] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_23");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList24] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_24");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList25] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_25");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList26] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_26");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList27] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_27");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList28] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_28");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList29] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_29");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList30] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_30");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList31] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_31");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList32] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_32");
+      bInitialized                                                  = true;
+    }
+
+    SetShaderPermutationVariable("TOPOLOGY", sTopologies[m_GraphicsPipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology]);
+  }
+
+  m_VertexBuffers.EnsureCount(1);
+  m_VertexBuffers[0] = pVertexBuffer0;
+
+  if (!pVertexBuffers.IsEmpty())
+  {
+    m_VertexBuffers.EnsureCount(pVertexBuffers.GetCount() + 1);
+
+    for (xiiUInt32 i = 0; i < pVertexBuffers.GetCount(); ++i)
+    {
+      m_VertexBuffers[i + 1] = pVertexBuffers[i];
+    }
+  }
+
+  m_pIndexBuffer                                                  = pIndexBuffer;
+  m_pInputLayoutInfo                                              = pInputLayoutInfo;
+  m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pInputLayout = nullptr;
+  m_uiMeshBufferPrimitiveCount                                    = uiPrimitiveCount;
+
+  m_StateFlags.Add(xiiRenderContextFlags::MeshBufferBindingChanged);
 }
 
 xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiInstanceCount)
 {
   if (ApplyContextStates().Succeeded() || uiPrimitiveCount == 0U || uiInstanceCount == 0U)
     return XII_FAILURE;
+
+  XII_ASSERT_DEV(uiFirstPrimitive < m_uiMeshBufferPrimitiveCount, "Invalid primitive range: first primitive ({0}) can't be larger than number of primitives ({1})", uiFirstPrimitive, uiPrimitiveCount);
+
+  uiPrimitiveCount = xiiMath::Min(uiPrimitiveCount, m_uiMeshBufferPrimitiveCount - uiFirstPrimitive);
+  XII_ASSERT_DEV(uiPrimitiveCount > 0, "Invalid primitive range: number of primitives can't be zero.");
+
+  const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(m_GraphicsPipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology);
+
+  uiPrimitiveCount *= uiVertsPerPrimitive;
+  uiFirstPrimitive *= uiVertsPerPrimitive;
+  if (m_bStereoRendering)
+  {
+    uiInstanceCount *= 2;
+  }
+
+  XII_SUCCEED_OR_RETURN(m_pCommandList->CommitShaderResources());
+
+  BeginInternalRenderPass();
+  XII_SCOPE_EXIT(EndInternalRenderPass());
+
+  if (uiInstanceCount > 1)
+  {
+    if (m_pIndexBuffer)
+    {
+      return m_pCommandList->DrawIndexedInstanced(uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive);
+    }
+    else
+    {
+      return m_pCommandList->DrawInstanced(uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive);
+    }
+  }
+  else
+  {
+    if (m_pIndexBuffer)
+    {
+      return m_pCommandList->DrawIndexed(uiPrimitiveCount, uiFirstPrimitive);
+    }
+    else
+    {
+      return m_pCommandList->Draw(uiPrimitiveCount, uiFirstPrimitive);
+    }
+  }
 
   return XII_SUCCESS;
 }
@@ -393,6 +545,51 @@ void xiiRenderContext::SetShaderPermutationVariableInternal(const xiiHashedStrin
 
     m_StateFlags.Add(xiiRenderContextFlags::ShaderStateChanged);
   }
+}
+
+void xiiRenderContext::BindShaderInternal(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags)
+{
+  if (flags.IsAnySet(xiiShaderBindFlags::ForceRebind) || m_hActiveShader != hShader)
+  {
+    m_ShaderBindFlags = flags;
+    m_hActiveShader   = hShader;
+
+    m_StateFlags.Add(xiiRenderContextFlags::ShaderStateChanged);
+  }
+}
+
+xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
+{
+  return nullptr;
+}
+
+xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
+{
+  return nullptr;
+}
+
+void xiiRenderContext::ApplyConstantBufferBindings()
+{
+}
+
+void xiiRenderContext::ApplyBufferSRVBindings()
+{
+}
+
+void xiiRenderContext::ApplyTextureSRVBindings()
+{
+}
+
+void xiiRenderContext::ApplyBufferUAVBindings()
+{
+}
+
+void xiiRenderContext::ApplyTextureUAVBindings()
+{
+}
+
+void xiiRenderContext::ApplySamplerBindings()
+{
 }
 
 xiiSharedPtr<xiiGALRenderPass> xiiRenderContext::CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description)
@@ -487,6 +684,60 @@ void xiiRenderContext::EndInternalRenderPass()
 
     m_pActiveRenderPass = nullptr;
   }
+}
+
+xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, const xiiInputLayoutInfo& declaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration)
+{
+  ShaderVertexDeclaration vertexDeclaration;
+  vertexDeclaration.m_pShader           = pVertexShader;
+  vertexDeclaration.m_uiInputLayoutHash = declaration.m_uiHash;
+
+  bool bExisted = false;
+  auto it       = m_InputLayouts.FindOrAdd(vertexDeclaration, &bExisted);
+
+  if (!bExisted)
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+    xiiGALInputLayoutCreationDescription inputLayoutDescription;
+
+    for (xiiUInt32 uiSlot = 0; uiSlot < declaration.m_VertexStreams.GetCount(); ++uiSlot)
+    {
+      auto& stream = declaration.m_VertexStreams[uiSlot];
+
+      xiiGALLayoutElement& layoutElement     = inputLayoutDescription.m_LayoutElements.ExpandAndGetRef();
+      layoutElement.m_Format                 = stream.m_Format;
+      layoutElement.m_Semantic               = stream.m_Semantic;
+      layoutElement.m_uiRelativeOffset       = stream.m_uiOffset;
+      layoutElement.m_uiStride               = m_VertexBuffers[stream.m_uiVertexBufferSlot]->GetDescription().m_uiElementByteStride;
+      layoutElement.m_uiBufferSlot           = stream.m_uiVertexBufferSlot;
+      layoutElement.m_Frequency              = xiiGALInputElementFrequency::PerVertex;
+      layoutElement.m_uiInstanceDataStepRate = 0;
+    }
+
+    out_Declaration = pVertexShader->CreateInputLayout(inputLayoutDescription);
+
+    if (!out_Declaration)
+    {
+      /*
+        This can happen when the resource system gives you a fallback resource, which then selects a shader that does not fit the mesh layout.
+        E.g. when a material is not yet loaded and the fallback material is used, that fallback material may use another shader, that requires more data streams, than what the mesh provides.
+        This problem will go away, once the proper material is loaded.
+        
+        This can be fixed by ensuring that the fallback material uses a shader that only requires data that is always there, e.g. only position and maybe a texcoord, and of course all meshes must provide at least those data streams.
+        
+        Otherwise, this is harmless, the renderer will ignore invalid drawcalls and once all the correct stuff is available, it will work.
+      */
+
+      xiiLog::Warning("Failed to create vertex input layout.");
+      return XII_FAILURE;
+    }
+
+    it.Value() = out_Declaration;
+  }
+
+  out_Declaration = it.Value();
+  return XII_SUCCESS;
 }
 
 // static
