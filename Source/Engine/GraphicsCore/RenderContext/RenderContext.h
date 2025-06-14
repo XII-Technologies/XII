@@ -382,13 +382,13 @@ private:
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
   xiiSharedPtr<xiiGALBuffer>     m_GlobalConstantsBuffer;
 
-  xiiGALGraphicsPipelineStateCreationDescription                                     m_GraphicsPipelineDescription;
-  xiiSharedPtr<xiiGALGraphicsPipelineState>                                          m_pGraphicsPipelineState;
-  xiiHashTable<xiiGALGraphicsPipelineStateCreationDescription, xiiGALDescriptorHash> m_GraphicsPipelineCreationCache;
+  xiiGALGraphicsPipelineStateCreationDescription                                                                                m_GraphicsPipelineDescription;
+  xiiSharedPtr<xiiGALGraphicsPipelineState>                                                                                     m_pGraphicsPipelineState;
+  xiiHashTable<xiiGALGraphicsPipelineStateCreationDescription, xiiSharedPtr<xiiGALGraphicsPipelineState>, xiiGALDescriptorHash> m_GraphicsPipelineCreationCache;
 
-  xiiGALComputePipelineStateCreationDescription                                     m_ComputePipelineDescription;
-  xiiSharedPtr<xiiGALComputePipelineState>                                          m_pComputePipelineState;
-  xiiHashTable<xiiGALComputePipelineStateCreationDescription, xiiGALDescriptorHash> m_ComputePipelineCreationCache;
+  xiiGALComputePipelineStateCreationDescription                                                                               m_ComputePipelineDescription;
+  xiiSharedPtr<xiiGALComputePipelineState>                                                                                    m_pComputePipelineState;
+  xiiHashTable<xiiGALComputePipelineStateCreationDescription, xiiSharedPtr<xiiGALComputePipelineState>, xiiGALDescriptorHash> m_ComputePipelineCreationCache;
 
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBuffer>>      m_BoundConstantBuffers;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBufferView>>  m_BoundBufferSRVs;

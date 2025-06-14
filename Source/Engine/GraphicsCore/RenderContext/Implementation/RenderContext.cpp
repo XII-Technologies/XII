@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Containers/Blob.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
@@ -9,7 +10,6 @@
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
 xiiRenderContext::xiiRenderContext(xiiSharedPtr<xiiGALCommandList> pCommandList) :
@@ -529,6 +529,247 @@ xiiResult xiiRenderContext::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 ui
 
 xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 {
+  // First apply material state since this can modify all other states.
+  // Note ApplyMaterialState only returns a valid material pointer if the constant buffer of this material needs to be updated.
+  // This needs to be done once we have determined the correct shader permutation.
+  xiiMaterialResource* pMaterial = nullptr;
+  XII_SCOPE_EXIT(if (pMaterial != nullptr) { xiiResourceManager::EndAcquireResource(pMaterial); });
+
+  if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MaterialBindingChanged))
+  {
+    pMaterial = ApplyMaterialState();
+
+    m_StateFlags.Remove(xiiRenderContextFlags::MaterialBindingChanged);
+  }
+
+  xiiShaderPermutationResource* pShaderPermutation = nullptr;
+  XII_SCOPE_EXIT(if (pShaderPermutation != nullptr) { xiiResourceManager::EndAcquireResource(pShaderPermutation); });
+
+  bool bRebuildInputLayout = m_StateFlags.IsAnySet(xiiRenderContextFlags::ShaderStateChanged | xiiRenderContextFlags::MeshBufferBindingChanged);
+
+  if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ShaderStateChanged))
+  {
+    pShaderPermutation = ApplyShaderState();
+
+    if (pShaderPermutation == nullptr)
+    {
+      return XII_FAILURE;
+    }
+
+    m_StateFlags.Remove(xiiRenderContextFlags::ShaderStateChanged);
+  }
+
+  if (m_hActiveShaderPermutation.IsValid())
+  {
+    bool bIsModified = (bForce || m_StateFlags.IsAnySet(xiiRenderContextFlags::ConstantBufferBindingChanged | xiiRenderContextFlags::TextureBindingChanged | xiiRenderContextFlags::BufferBindingChanged | xiiRenderContextFlags::TextureUAVBindingChanged | xiiRenderContextFlags::BufferUAVBindingChanged | xiiRenderContextFlags::SamplerBindingChanged));
+
+    if (bIsModified)
+    {
+      if (pShaderPermutation == nullptr)
+      {
+        pShaderPermutation = xiiResourceManager::BeginAcquireResource(m_hActiveShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+      }
+      if (pShaderPermutation == nullptr)
+      {
+        return XII_FAILURE;
+      }
+    }
+
+    xiiLogBlock applyBindingsBlock("Applying Shader Bindings", pShaderPermutation != nullptr ? pShaderPermutation->GetResourceDescription().GetData() : "");
+
+    if ((bForce || bRebuildInputLayout) && m_RenderContextScope == RenderContextScope::Graphics)
+    {
+      if (!m_ActiveGALShaders.IsEmpty() && !m_ActiveGALShaders[xiiGALShaderType::Vertex])
+        return XII_FAILURE;
+
+      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged))
+      {
+        m_pCommandList->SetVertexBuffers(0, m_VertexBuffers, xiiArrayPtr<xiiUInt64>());
+
+        if (m_pIndexBuffer)
+        {
+          m_pCommandList->SetIndexBuffer(m_pIndexBuffer);
+        }
+      }
+
+      if (m_pInputLayoutInfo != nullptr && BuildInputLayout(m_ActiveGALShaders[xiiGALShaderType::Vertex], *m_pInputLayoutInfo, m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pInputLayout).Failed())
+        return XII_FAILURE;
+
+      // If there is a vertex buffer we need a valid vertex declaration as well.
+      for (const auto& pVertexBuffer : m_VertexBuffers)
+      {
+        if (pVertexBuffer != nullptr && !m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pInputLayout)
+        {
+          return XII_FAILURE;
+        }
+      }
+
+      m_StateFlags.Remove(xiiRenderContextFlags::MeshBufferBindingChanged);
+    }
+
+    bool bPipelineStateInvalidated = false;
+    if (pShaderPermutation != nullptr)
+    {
+      // Set render state from shader.
+      // Create pipeline state that is valid for this scope.
+
+      xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+      if (m_RenderContextScope == RenderContextScope::Graphics)
+      {
+        m_GraphicsPipelineDescription.m_pPipelineResourceSignature = (pShaderPermutation != nullptr) ? pShaderPermutation->GetPipelineResourceSignature() : nullptr;
+
+        m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRenderPass = m_pActiveRenderPass;
+
+        for (auto it : m_ActiveGALShaders)
+        {
+          auto& pShader = it.Value();
+
+          switch (it.Key())
+          {
+            case xiiGALShaderType::Vertex:
+              m_GraphicsPipelineDescription.m_pVertexShader = m_ActiveGALShaders[xiiGALShaderType::Vertex];
+              break;
+            case xiiGALShaderType::Pixel:
+              m_GraphicsPipelineDescription.m_pPixelShader = m_ActiveGALShaders[xiiGALShaderType::Pixel];
+              break;
+            case xiiGALShaderType::Domain:
+              m_GraphicsPipelineDescription.m_pDomainShader = m_ActiveGALShaders[xiiGALShaderType::Domain];
+              break;
+            case xiiGALShaderType::Hull:
+              m_GraphicsPipelineDescription.m_pHullShader = m_ActiveGALShaders[xiiGALShaderType::Hull];
+              break;
+            case xiiGALShaderType::Geometry:
+              m_GraphicsPipelineDescription.m_pGeometryShader = m_ActiveGALShaders[xiiGALShaderType::Geometry];
+              break;
+            case xiiGALShaderType::Amplification:
+              m_GraphicsPipelineDescription.m_pAmplificationShader = m_ActiveGALShaders[xiiGALShaderType::Amplification];
+              break;
+            case xiiGALShaderType::Mesh:
+              m_GraphicsPipelineDescription.m_pMeshShader = m_ActiveGALShaders[xiiGALShaderType::Mesh];
+              break;
+
+              XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+          }
+        }
+
+        if (pShaderPermutation != nullptr)
+        {
+          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoBlendState))
+          {
+            m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pBlendState = pShaderPermutation->GetBlendState();
+          }
+          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoRasterizerState))
+          {
+            m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState = pShaderPermutation->GetRasterizerState();
+          }
+          if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoDepthStencilState))
+          {
+            m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+          }
+        }
+
+        if (!m_GraphicsPipelineCreationCache.TryGetValue(m_GraphicsPipelineDescription, m_pGraphicsPipelineState))
+        {
+          m_pGraphicsPipelineState = pDevice->CreateGraphicsPipelineState(m_GraphicsPipelineDescription);
+
+          XII_VERIFY(!m_GraphicsPipelineCreationCache.Insert(m_GraphicsPipelineDescription, m_pGraphicsPipelineState), "Overwriting an existing cached pipeline state, this is unexpected behavior.");
+
+          m_pCommandList->SetPipelineState(m_pGraphicsPipelineState);
+
+          bPipelineStateInvalidated = true;
+        }
+      }
+      else if (m_RenderContextScope == RenderContextScope::Compute)
+      {
+        m_ComputePipelineDescription.m_pComputeShader = m_ActiveGALShaders[xiiGALShaderType::Compute];
+
+        if (!m_ComputePipelineCreationCache.TryGetValue(m_ComputePipelineDescription, m_pComputePipelineState))
+        {
+          m_pComputePipelineState = pDevice->CreateComputePipelineState(m_ComputePipelineDescription);
+
+          XII_VERIFY(!m_ComputePipelineCreationCache.Insert(m_ComputePipelineDescription, m_pComputePipelineState), "Overwriting an existing cached pipeline state, this is unexpected behavior.");
+
+          m_pCommandList->SetPipelineState(m_pComputePipelineState);
+
+          bPipelineStateInvalidated = true;
+        }
+      }
+
+
+      XII_ASSERT_DEV(m_pGraphicsPipelineState || m_pComputePipelineState, "Implementation error!");
+    }
+
+    if (bIsModified || bPipelineStateInvalidated)
+    {
+      if (bPipelineStateInvalidated)
+      {
+        if (m_pGraphicsPipelineState && m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState)
+        {
+          if (m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState->GetDescription().m_bScissorEnable)
+          {
+            const auto& framebufferDescription = GetCurrentFramebuffer()->GetDescription();
+
+            m_pCommandList->SetScissorRect({framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height});
+          }
+        }
+      }
+
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferUAVBindingChanged))
+      {
+        ApplyBufferUAVBindings();
+
+        m_StateFlags.Remove(xiiRenderContextFlags::BufferUAVBindingChanged);
+      }
+
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureUAVBindingChanged))
+      {
+        ApplyTextureUAVBindings();
+
+        m_StateFlags.Remove(xiiRenderContextFlags::TextureUAVBindingChanged);
+      }
+
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferBindingChanged))
+      {
+        ApplyBufferSRVBindings();
+
+        m_StateFlags.Remove(xiiRenderContextFlags::BufferBindingChanged);
+      }
+
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureBindingChanged))
+      {
+        ApplyTextureSRVBindings();
+
+        m_StateFlags.Remove(xiiRenderContextFlags::TextureBindingChanged);
+      }
+
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::SamplerBindingChanged))
+      {
+        ApplySamplerBindings();
+
+        m_StateFlags.Remove(xiiRenderContextFlags::SamplerBindingChanged);
+      }
+    }
+
+    // Note that pMaterial is only valid, if material constants have changed, so this also always implies that ConstantBufferBindingChanged is set.
+    if (pMaterial != nullptr)
+    {
+      pMaterial->UpdateConstantBuffer(pShaderPermutation);
+
+      BindConstantBuffer("xiiMaterialConstants", pMaterial->m_pMaterialConstantsBuffer);
+    }
+
+    if (bIsModified || bPipelineStateInvalidated)
+    {
+      if (bPipelineStateInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ConstantBufferBindingChanged))
+      {
+        ApplyConstantBufferBindings();
+
+        m_StateFlags.Remove(xiiRenderContextFlags::ConstantBufferBindingChanged);
+      }
+    }
+  }
+
   return XII_SUCCESS;
 }
 
@@ -650,26 +891,180 @@ xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
 
 void xiiRenderContext::ApplyConstantBufferBindings()
 {
+  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
+  if (m_RenderContextScope == RenderContextScope::Graphics)
+  {
+    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+  else if (m_RenderContextScope == RenderContextScope::Compute)
+  {
+    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+
+  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  {
+    if (binding.m_ResourceType != xiiGALShaderResourceType::ConstantBuffer)
+      continue;
+
+    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+    xiiSharedPtr<xiiGALBuffer> pConstantBuffer;
+    if (!m_BoundConstantBuffers.TryGetValue(uiResourceHash, pConstantBuffer))
+    {
+      // If the shader was compiled with debug info the shader compiler will not strip unused resources and thus this error would trigger although the shader doesn't actually use the resource.
+      /// \todo if (!pBinary->m_bWasCompiledWithDebug)
+      {
+        xiiLog::Error("No resource is bound for constant buffer slot '{0}'", binding.m_sName);
+      }
+
+      m_pCommandList->SetConstantBuffer(binding, nullptr);
+      continue;
+    }
+
+    m_pCommandList->SetConstantBuffer(binding, pConstantBuffer);
+  }
 }
 
 void xiiRenderContext::ApplyBufferSRVBindings()
 {
+  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
+  if (m_RenderContextScope == RenderContextScope::Graphics)
+  {
+    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+  else if (m_RenderContextScope == RenderContextScope::Compute)
+  {
+    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+
+  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  {
+    if (binding.m_ResourceType != xiiGALShaderResourceType::BufferSRV)
+      continue;
+
+    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+    xiiSharedPtr<xiiGALBufferView> pBufferSRV;
+    m_BoundBufferSRVs.TryGetValue(uiResourceHash, pBufferSRV);
+
+    m_pCommandList->SetShaderResourceBufferView(binding, pBufferSRV);
+  }
 }
 
 void xiiRenderContext::ApplyTextureSRVBindings()
 {
+  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
+  if (m_RenderContextScope == RenderContextScope::Graphics)
+  {
+    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+  else if (m_RenderContextScope == RenderContextScope::Compute)
+  {
+    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+
+  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  {
+    if (binding.m_ResourceType != xiiGALShaderResourceType::TextureSRV)
+      continue;
+
+    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+    xiiSharedPtr<xiiGALTextureView> pTextureSRV;
+    m_BoundTextureSRVs.TryGetValue(uiResourceHash, pTextureSRV);
+
+    m_pCommandList->SetShaderResourceTextureView(binding, pTextureSRV);
+  }
 }
 
 void xiiRenderContext::ApplyBufferUAVBindings()
 {
+  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
+  if (m_RenderContextScope == RenderContextScope::Graphics)
+  {
+    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+  else if (m_RenderContextScope == RenderContextScope::Compute)
+  {
+    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+
+  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  {
+    if (binding.m_ResourceType != xiiGALShaderResourceType::BufferUAV)
+      continue;
+
+    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+    xiiSharedPtr<xiiGALBufferView> pBufferUAV;
+    m_BoundBufferUAVs.TryGetValue(uiResourceHash, pBufferUAV);
+
+    m_pCommandList->SetShaderResourceBufferView(binding, pBufferUAV);
+  }
 }
 
 void xiiRenderContext::ApplyTextureUAVBindings()
 {
+  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
+  if (m_RenderContextScope == RenderContextScope::Graphics)
+  {
+    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+  else if (m_RenderContextScope == RenderContextScope::Compute)
+  {
+    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+
+  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  {
+    if (binding.m_ResourceType != xiiGALShaderResourceType::TextureUAV)
+      continue;
+
+    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+    xiiSharedPtr<xiiGALTextureView> pTextureUAV;
+    m_BoundTextureUAVs.TryGetValue(uiResourceHash, pTextureUAV);
+
+    m_pCommandList->SetShaderResourceTextureView(binding, pTextureUAV);
+  }
 }
 
 void xiiRenderContext::ApplySamplerBindings()
 {
+  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
+  if (m_RenderContextScope == RenderContextScope::Graphics)
+  {
+    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+  else if (m_RenderContextScope == RenderContextScope::Compute)
+  {
+    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+
+  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  {
+    if (binding.m_ResourceType != xiiGALShaderResourceType::Sampler && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
+      continue;
+
+    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+    xiiSharedPtr<xiiGALSampler> pSampler;
+    m_BoundSamplers.TryGetValue(uiResourceHash, pSampler);
+
+    m_pCommandList->SetSampler(binding, pSampler);
+  }
 }
 
 xiiSharedPtr<xiiGALRenderPass> xiiRenderContext::CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description)
