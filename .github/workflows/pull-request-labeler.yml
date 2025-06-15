@@ -12,6 +12,10 @@ jobs:
       contents: read
       pull-requests: write
 
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+
     steps:
       - name: Checkout repo with submodules
         uses: actions/checkout@v4
@@ -30,8 +34,3 @@ jobs:
           repo-token: ${{ secrets.API_TOKEN_GITHUB }}
           configuration-path: ${{ github.workspace }}/.github/labeler.yml
           sync-labels: true
-
-      - name: "Debug: List changed files"
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          git diff --name-only origin/${{ github.base_ref }}...HEAD
