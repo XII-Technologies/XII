@@ -21,54 +21,30 @@
 "Area: UI":
   - "Source/Tools/Libs/GuiFoundation/**"
   - "Source/Editor/EditorFramework/GuiFoundation/**"
+  - "Source/ThirdParty/ads/**"
 
 "Area: Scripting":
-  - "engine/scripting/**"
-  - "bindings/**"
+  - "Source/Engine/Core/Scripting/**"
+  - "Source/EnginePlugins/VisualScriptPlugin/**"
+  - "Source/EditorPlugins/VisualScript/**"
+  - "Source/ThirdParty/Lua/**"
 
 "Area: Platform":
-  - "platform/**"
-  - "src/input/**"
-  - "engine/windowing/**"
+  - "Source/Engine/Foundation/Basics/**"
+  - "Source/Engine/Foundation/Platform/**"
+  - "Source/Engine/Core/Platform/**"
+  - "Source/Engine/Core/Input/**"
+  - "Source/Engine/Core/System/**"
+  - "Data/Platform/**"
 
 "Area: Asset Pipeline":
-  - "tools/assets/**"
-  - "assetpipeline/**"
+  - "Data/Base/**"
+  - "Data/UnitTests/**"
+  - "Data/Samples/**"
+  - "Data/Plugins/**"
 
 "Area: Build System":
-  - "build/**"
+  - "Source/BuildSystem"
   - "**/CMakeLists.txt"
-  - "**/*.premake5.lua"
-
-# Change type labels
-"Change: New Capability":
-  - "**/feature/**"
-
-"Change: Optimization":
-  - "**/*optimize*"
-  - "**/perf/**"
-
-"Change: Structural Refactor":
-  - "**/refactor/**"
-  - "**/architecture/**"
-
-"Change: Non-functional":
-  - "**/*.md"
-  - "**/*.txt"
-  - "**/docs/**"
-  - "**/*style*"
-
-# Review enforcement
-"Review: Unit Testing Needed":
-  - "**/tests/**"
-  - "**/*.test.*"
-
-"Review: API Compatibility":
-  - "include/**"
-
-"Review: Perf Assessment":
-  - "**/benchmark/**"
-
-"Review: Data Compatibility":
-  - "**/schemas/**"
-  - "**/serialization/**"
+  - "**/init.cmake"
+  - "**/finalize.cmake"

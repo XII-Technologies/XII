@@ -24,6 +24,11 @@
     "color": "b0bec5",
     "description": "Scheduled for removal or replacement."
   },
+  {
+    "name": "Status: Needs Documentation",
+    "color": "FFD54F",
+    "description": "Requires documentation updates or additions."
+  },
 
   {
     "name": "Change: New Capability",
