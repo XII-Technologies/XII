@@ -13,11 +13,6 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: "Debug: List changed files"
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          git diff --name-only origin/${{ github.base_ref }}...HEAD
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
