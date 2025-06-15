@@ -12,10 +12,6 @@ jobs:
       contents: read
       pull-requests: write
 
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
-
     steps:
       - name: Checkout repo with submodules
         uses: actions/checkout@v4
@@ -32,5 +28,5 @@ jobs:
         uses: actions/labeler@v5
         with:
           repo-token: ${{ secrets.API_TOKEN_GITHUB }}
-          configuration-path: ${{ github.workspace }}/.github/labeler.yml
+          configuration-path: .github/labeler.yml
           sync-labels: true
