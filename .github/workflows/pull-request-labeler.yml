@@ -13,11 +13,11 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo with submodules
         uses: actions/checkout@v4
         with:
-          sparse-checkout: |
-            .github
+          submodules: recursive
+          fetch-depth: 0  # Ensures full history for proper diff detection.
 
       - name: "Debug: List changed files"
         run: |
