@@ -18,6 +18,7 @@
 *.cmake text eol=lf
 *.ui text eol=lf
 *.json text eol=lf
+*.yml text eol=lf
 CMakeLists.txt text eol=lf
 
 # Unit Test Preprocess text files should be in LF
