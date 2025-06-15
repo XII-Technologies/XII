@@ -1,0 +1,33 @@
+name: Documentation Task
+description: Propose or request documentation improvements
+title: "[Docs]: "
+labels: ["Status: Needs Documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Help us maintain clarity and accessibility by suggesting docs enhancements.**
+
+  - type: input
+    id: section
+    attributes:
+      label: Affected Section or API
+      placeholder: e.g., RenderGraph overview, `xiiRenderContext::BeginRendering`
+    validations:
+      required: true
+
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Suggested Update
+      placeholder: Provide missing details, fix outdated descriptions, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why This Matters
+      placeholder: How will this improve developer understanding or usability?
+    validations:
+      required: false

@@ -1,0 +1,49 @@
+name: Feature Request
+description: Suggest a new engine capability or system improvement
+title: "[Feature]: "
+labels: ["Status: Review Requested", "Change: New Capability"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **We are always open to meaningful features that push the engine forward.**
+
+  - type: input
+    id: use-case
+    attributes:
+      label: Use Case
+      placeholder: "What problem does this solve or improve?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      placeholder: Describe the functionality and how it might be implemented.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      placeholder: Have you looked into other ways to solve this?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Target Area
+      options:
+        - Area: Graphics
+        - Area: Compute
+        - Area: UI
+        - Area: Scripting
+        - Area: Platform
+        - Area: I/O
+        - Area: Asset Pipeline
+        - Area: Core
+    validations:
+      required: true

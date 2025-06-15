@@ -1,0 +1,61 @@
+name: Bug Report
+description: Report a functional issue or unexpected behavior
+title: "[Bug]: "
+labels: ["Status: Review Requested", "Change: Defect Correction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Please fill in the details below to help us reproduce and address this issue effectively.**
+
+  - type: input
+    id: version
+    attributes:
+      label: Engine Version / Commit
+      placeholder: "e.g. v0.9.1 or commit hash"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      placeholder: What behavior did you observe? What did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Build the engine with XYZ settings
+        2. Run 'SampleScene'
+        3. Observe rendering anomaly
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots (optional)
+      placeholder: Drag screenshots or console logs here
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: subsystems
+    attributes:
+      label: Affected Area
+      multiple: true
+      options:
+        - Area: Graphics
+        - Area: Compute
+        - Area: Scripting
+        - Area: UI
+        - Area: I/O
+        - Area: Core
+        - Area: Platform
+    validations:
+      required: true
