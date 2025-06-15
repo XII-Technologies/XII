@@ -1285,18 +1285,46 @@ void xiiGALCommandList::CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTex
   CopyTextureRegionPlatform(pSourceTexture, sourceMipLevelData, box, pDestinationTexture, destinationMipLevelData, vDestinationPoint);
 }
 
-void xiiGALCommandList::ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
+void xiiGALCommandList::ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(pSourceTexture != nullptr, "ResolveTextureSubResource arguments are invalid. The source texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(pDestinationTexture != nullptr, "ResolveTextureSubResource arguments are invalid. The destination texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "ResolveTextureSubResource command must be used outside of render pass.");
 
-  /// \todo GraphicsFoundation: Validate resolve texture parameters.
+  const auto& sourceTextureDescription      = pSourceTexture->GetDescription();
+  const auto& destinationTextureDescription = pDestinationTexture->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(sourceTextureDescription.m_uiSampleCount > 1U, "ResolveTextureSubResource arguments are invalid: source texture '{}' of a resolve operation is not multi-sampled.", pSourceTexture->GetDebugName());
+  XII_VERIFY_COMMAND_LIST(destinationTextureDescription.m_uiSampleCount == 1U, "ResolveTextureSubResource arguments are invalid: destination texture '{}' of a resolve operation is multi-sampled.", pDestinationTexture->GetDebugName());
+
+  xiiGALMipLevelProperties sourceMipLevelProperties      = xiiGALTextureUtilities::GetMipLevelProperties(sourceTextureDescription, description.m_uiSourceMipLevel);
+  xiiGALMipLevelProperties destinationMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(destinationTextureDescription, description.m_uiDestinationMipLevel);
+
+  XII_VERIFY_COMMAND_LIST(sourceMipLevelProperties.m_LogicalSize == destinationMipLevelProperties.m_LogicalSize, "ResolveTextureSubResource arguments are invalid: the size ({}x{}) of the source subresource of a resolve operation (texture '{}', mip {}, slice {}) does not match the size ({}x{}) of the destination subresource (texture '{}', mip {}, slice {}).",
+                          sourceMipLevelProperties.m_LogicalSize.width, sourceMipLevelProperties.m_LogicalSize.height, pSourceTexture->GetDebugName(), description.m_uiSourceMipLevel, description.m_uiSourceSlice, destinationMipLevelProperties.m_LogicalSize.width, destinationMipLevelProperties.m_LogicalSize.height, pDestinationTexture->GetDebugName(), description.m_uiDestinationMipLevel, description.m_uiDestinationSlice);
+
+  const auto& sourceFormatProperties      = xiiGALTextureUtilities::GetResourceFormatProperties(sourceTextureDescription.m_Format);
+  const auto& destinationFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(destinationTextureDescription.m_Format);
+  const auto& resolveFormatProperties     = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
+
+  if (!sourceFormatProperties.m_bIsTypeless && !destinationFormatProperties.m_bIsTypeless)
+  {
+    XII_VERIFY_COMMAND_LIST(sourceTextureDescription.m_Format == destinationTextureDescription.m_Format, "ResolveTextureSubResource arguments are invalid: source ({}) and destination ({}) texture formats of a resolve operation must match exactly or be compatible typeless formats.");
+    XII_VERIFY_COMMAND_LIST(description.m_Format == xiiGALResourceFormat::Unknown || sourceTextureDescription.m_Format == description.m_Format, "ResolveTextureSubResource arguments are invalid: invalid format of a resolve operation.");
+  }
+  if (sourceFormatProperties.m_bIsTypeless && destinationFormatProperties.m_bIsTypeless)
+  {
+    XII_VERIFY_COMMAND_LIST(description.m_Format != xiiGALResourceFormat::Unknown, "ResolveTextureSubResource arguments are invalid: format of a resolve operation must not be unknown when both source and destination texture formats are typeless.");
+  }
+  if (sourceFormatProperties.m_bIsTypeless || destinationFormatProperties.m_bIsTypeless)
+  {
+    XII_VERIFY_COMMAND_LIST(!resolveFormatProperties.m_bIsTypeless, "ResolveTextureSubResource arguments are invalid: format of a resolve operation must not be typeless when one of the texture formats is typeless.");
+  }
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiResolveTextureSubresource;
 
-  ResolveTextureSubResourcePlatform(pSourceTexture, sourceMipLevelData, pDestinationTexture, destinationMipLevelData);
+  ResolveTextureSubResourcePlatform(pSourceTexture, pDestinationTexture, description);
 }
 
 void xiiGALCommandList::GenerateMips(xiiSharedPtr<xiiGALTextureView> pTextureView)
