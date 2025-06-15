@@ -13,11 +13,21 @@ jobs:
       pull-requests: write
 
     steps:
+      - name: "Debug: List changed files"
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff --name-only origin/${{ github.base_ref }}...HEAD
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
             .github
+
+      - name: "Debug: List changed files"
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff --name-only origin/${{ github.base_ref }}...HEAD
 
       - name: Run Labeler
         uses: actions/labeler@v5
@@ -25,3 +35,8 @@ jobs:
           repo-token: ${{ secrets.API_TOKEN_GITHUB }}
           configuration-path: ${{ github.workspace }}/.github/labeler.yml
           sync-labels: true
+
+      - name: "Debug: List changed files"
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff --name-only origin/${{ github.base_ref }}...HEAD
