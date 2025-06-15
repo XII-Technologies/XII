@@ -48,3 +48,6 @@
   - "**/CMakeLists.txt"
   - "**/init.cmake"
   - "**/finalize.cmake"
+
+"GitHub"
+  - ".github/**"
