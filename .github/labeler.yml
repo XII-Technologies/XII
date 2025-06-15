@@ -1,72 +1,72 @@
 "Area: Graphics":
   - changed-files:
       any-glob-to-any-file:
-        - "Source/Engine/GraphicsFoundation/**"
-        - "Source/Engine/GraphicsVulkan/**"
-        - "Source/Engine/GraphicsCore/**"
-        - "Source/Engine/ShaderCompilerSPIRV/**"
-        - "Data/Base/Shaders/**"
+        - "./Source/Engine/GraphicsFoundation/**"
+        - "./Source/Engine/GraphicsVulkan/**"
+        - "./Source/Engine/GraphicsCore/**"
+        - "./Source/Engine/ShaderCompilerSPIRV/**"
+        - "./Data/Base/Shaders/**"
 
 "Area: Compute":
   - changed-files:
       any-glob-to-any-file:
-        - "Source/Engine/Foundation/Threading/**"
-        - "Source/Engine/Foundation/SimdMath/**"
+        - "./Source/Engine/Foundation/Threading/**"
+        - "./Source/Engine/Foundation/SimdMath/**"
 
 "Area: Core":
   - changed-files:
       any-glob-to-any-file:
-        - "Source/Engine/Foundation/**"
-        - "Source/Engine/Core/**"
+        - "./Source/Engine/Foundation/**"
+        - "./Source/Engine/Core/**"
 
 "Area: I/O":
   - changed-files:
       any-glob-to-any-file:
-        - "Source/Engine/Foundation/IO/**"
-        - "Source/Engine/Foundation/Serialization/**"
+        - "./Source/Engine/Foundation/IO/**"
+        - "./Source/Engine/Foundation/Serialization/**"
 
 "Area: UI":
   - changed-files:
       any-glob-to-any-file:
-        - "Source/Tools/Libs/GuiFoundation/**"
-        - "Source/Editor/EditorFramework/GuiFoundation/**"
-        - "Source/ThirdParty/ads/**"
+        - "./Source/Tools/Libs/GuiFoundation/**"
+        - "./Source/Editor/EditorFramework/GuiFoundation/**"
+        - "./Source/ThirdParty/ads/**"
 
 "Area: Scripting":
   - changed-files:
       any-glob-to-any-file:
-        - "Source/Engine/Core/Scripting/**"
-        - "Source/EnginePlugins/VisualScriptPlugin/**"
-        - "Source/EditorPlugins/VisualScript/**"
-        - "Source/ThirdParty/Lua/**"
+        - "./Source/Engine/Core/Scripting/**"
+        - "./Source/EnginePlugins/VisualScriptPlugin/**"
+        - "./Source/EditorPlugins/VisualScript/**"
+        - "./Source/ThirdParty/Lua/**"
 
 "Area: Platform":
   - changed-files:
       any-glob-to-any-file:
-        - "Source/Engine/Foundation/Basics/**"
-        - "Source/Engine/Foundation/Platform/**"
-        - "Source/Engine/Core/Platform/**"
-        - "Source/Engine/Core/Input/**"
-        - "Source/Engine/Core/System/**"
-        - "Data/Platform/**"
+        - "./Source/Engine/Foundation/Basics/**"
+        - "./Source/Engine/Foundation/Platform/**"
+        - "./Source/Engine/Core/Platform/**"
+        - "./Source/Engine/Core/Input/**"
+        - "./Source/Engine/Core/System/**"
+        - "./Data/Platform/**"
 
 "Area: Asset Pipeline":
   - changed-files:
       any-glob-to-any-file:
-        - "Data/Base/**"
-        - "Data/UnitTests/**"
-        - "Data/Samples/**"
-        - "Data/Plugins/**"
+        - "./Data/Base/**"
+        - "./Data/UnitTests/**"
+        - "./Data/Samples/**"
+        - "./Data/Plugins/**"
 
 "Area: Build System":
   - changed-files:
       any-glob-to-any-file:
-        - "Source/BuildSystem"
-        - "**/CMakeLists.txt"
-        - "**/init.cmake"
-        - "**/finalize.cmake"
+        - "./Source/BuildSystem"
+        - "./**/CMakeLists.txt"
+        - "./**/init.cmake"
+        - "./**/finalize.cmake"
 
 "GitHub":
   - changed-files:
       any-glob-to-any-file:
-        - ".github/**"
+        - "./.github/**"
