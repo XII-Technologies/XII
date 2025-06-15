@@ -1,0 +1,145 @@
+[
+  {
+    "name": "Status: Draft",
+    "color": "c0e8e0",
+    "description": "Not ready for review; work in progress."
+  },
+  {
+    "name": "Status: Review Requested",
+    "color": "fbc02d",
+    "description": "Ready for peer or maintainer feedback."
+  },
+  {
+    "name": "Status: Revisions Needed",
+    "color": "ef9a9a",
+    "description": "Changes required after review."
+  },
+  {
+    "name": "Status: Merge Ready",
+    "color": "81c784",
+    "description": "Fully approved and can be merged."
+  },
+  {
+    "name": "Status: Deprecated",
+    "color": "b0bec5",
+    "description": "Scheduled for removal or replacement."
+  },
+  {
+    "name": "Status: Needs Documentation",
+    "color": "FFD54F",
+    "description": "Requires documentation updates or additions."
+  },
+
+  {
+    "name": "Change: New Capability",
+    "color": "64b5f6",
+    "description": "Adds new functionality."
+  },
+  {
+    "name": "Change: Optimization",
+    "color": "aed581",
+    "description": "Performance or memory improvement."
+  },
+  {
+    "name": "Change: Defect Correction",
+    "color": "e57373",
+    "description": "Fixes unintended behavior."
+  },
+  {
+    "name": "Change: Structural Refactor",
+    "color": "ba68c8",
+    "description": "Code re-organization without functional impact."
+  },
+  {
+    "name": "Change: Non-functional",
+    "color": "d7ccc8",
+    "description": "Styling, naming, comments, formatting, etc."
+  },
+  {
+    "name": "Change: ABI Sensitive",
+    "color": "f06292",
+    "description": "Risk of breaking binary interfaces or layout."
+  },
+  {
+    "name": "Change: Experimental",
+    "color": "90caf9",
+    "description": "Prototype or unstable system under evaluation."
+  },
+
+  {
+    "name": "Area: Compute",
+    "color": "4fc3f7",
+    "description": "Math kernels, task scheduling, async operations."
+  },
+  {
+    "name": "Area: I/O",
+    "color": "81d4fa",
+    "description": "File access, streaming, serialization."
+  },
+  {
+    "name": "Area: Graphics",
+    "color": "9575cd",
+    "description": "Rendering, pipeline configuration, shaders."
+  },
+  {
+    "name": "Area: Scripting",
+    "color": "4db6ac",
+    "description": "Codegen, runtime logic, scripting hooks."
+  },
+  {
+    "name": "Area: UI",
+    "color": "fff176",
+    "description": "Tooling interface or in-engine GUI changes."
+  },
+  {
+    "name": "Area: Core",
+    "color": "90a4ae",
+    "description": "Math, containers, threading, foundations."
+  },
+  {
+    "name": "Area: Platform",
+    "color": "a1887f",
+    "description": "Platform abstraction, windowing, input."
+  },
+  {
+    "name": "Area: Asset Pipeline",
+    "color": "bcaaa4",
+    "description": "Import/export formats, processing tools."
+  },
+  {
+    "name": "Area: Build System",
+    "color": "78909c",
+    "description": "Build scripts, dependencies, CI tooling."
+  },
+
+  {
+    "name": "Review: Unit Testing Needed",
+    "color": "ff8a65",
+    "description": "Lacks or modifies unit test coverage."
+  },
+  {
+    "name": "Review: Perf Assessment",
+    "color": "f44336",
+    "description": "Requires profiling or benchmarks."
+  },
+  {
+    "name": "Review: API Compatibility",
+    "color": "00acc1",
+    "description": "Public-facing API must maintain stability."
+  },
+  {
+    "name": "Review: Design Input",
+    "color": "bdbdbd",
+    "description": "Needs feedback on architecture or logic."
+  },
+  {
+    "name": "Review: Data Compatibility",
+    "color": "ce93d8",
+    "description": "Affects serialization or data layout."
+  },
+  {
+    "name": "Review: Determinism Risk",
+    "color": "ef9a9a",
+    "description": "Could introduce non-deterministic behavior."
+  }
+]
