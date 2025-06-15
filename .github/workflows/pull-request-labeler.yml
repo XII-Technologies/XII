@@ -5,16 +5,23 @@ on:
     types: [opened, synchronize, reopened, edited]
 
 jobs:
-  label:
+  auto-label:
+    name: Label PRs Based on File Paths
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        sparse-checkout: |
-          .github
+    permissions:
+      contents: read
+      pull-requests: write
 
-    - uses: actions/labeler@v5
-      with:
-        repo-token: "${{ secrets.API_TOKEN_GITHUB }}"
-        configuration-path: '${{ github.workspace }}/.github/labeler.yml'
-        sync-labels: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+
+      - name: Run Labeler
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.API_TOKEN_GITHUB }}
+          configuration-path: ${{ github.workspace }}/.github/labeler.yml
+          sync-labels: true
