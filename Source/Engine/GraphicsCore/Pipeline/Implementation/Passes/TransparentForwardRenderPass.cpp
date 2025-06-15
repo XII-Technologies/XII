@@ -91,11 +91,7 @@ void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderVie
 
   if (textureDescription.m_uiSampleCount > xiiGALMSAASampleCount::OneSample)
   {
-    xiiGALTextureMipLevelData subresource;
-    subresource.m_uiMipLevel   = 0;
-    subresource.m_uiArraySlice = 0;
-
-    pCommandList->ResolveTextureSubResource(pCurrentColorTexture, subresource, pSceneColorTexture, subresource);
+    pCommandList->ResolveTextureSubResource(pCurrentColorTexture, pSceneColorTexture, {});
   }
   else
   {
