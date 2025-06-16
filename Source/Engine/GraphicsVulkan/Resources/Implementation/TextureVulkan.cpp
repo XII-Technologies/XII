@@ -420,9 +420,9 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 
   // Vulkan validation layers do not like uninitialized memory, so if no initial data is provided, we will clear the memory.
 
-  if (auto pGraphicsQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
+  if (auto pCommandQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
   {
-    if (auto pCommandListVulkan = pGraphicsQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
+    if (auto pCommandListVulkan = pCommandQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
     {
       vk::ImageAspectFlags imageAspectFlags = {};
       if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)

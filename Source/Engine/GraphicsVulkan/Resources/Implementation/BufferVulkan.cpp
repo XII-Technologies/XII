@@ -183,28 +183,38 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 
     if (pInitialData != nullptr && pInitialData->m_pData != nullptr && pInitialData->m_uiDataSize > 0)
     {
-      if (auto pGraphicsQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false))
+      auto UploadStagingData = [&](xiiGALCommandListVulkan* pCommandListVulkan) -> xiiResult {
+        // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
+        auto stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pInitialData->m_uiDataSize);
+
+        void* pMappedMemory = nullptr;
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
+        VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
+
+        pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
+
+        xiiMemoryUtils::RawByteCopy(pMappedMemory, pInitialData->m_pData, pInitialData->m_uiDataSize);
+
+        VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
+
+        vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
+
+        pCommandListVulkan->UpdateBufferRegion(this, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, 0U, pInitialData->m_uiDataSize);
+
+        return XII_SUCCESS;
+      };
+
+      if (auto pCommandListVulkan = pInitialData->m_pCommandList.Downcast<xiiGALCommandListVulkan>())
       {
-        if (auto pCommandListVulkan = pGraphicsQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
+        XII_SUCCEED_OR_RETURN(UploadStagingData(pCommandListVulkan));
+      }
+      else if (auto pCommandQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+      {
+        if (auto pImmediateCommandListVulkan = pCommandQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
         {
-          // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
-          auto stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pInitialData->m_uiDataSize);
+          XII_SUCCEED_OR_RETURN(UploadStagingData(pImmediateCommandListVulkan));
 
-          void* pMappedMemory = nullptr;
-          VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
-          VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
-
-          pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
-
-          xiiMemoryUtils::RawByteCopy(pMappedMemory, pInitialData->m_pData, pInitialData->m_uiDataSize);
-
-          VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
-
-          vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
-
-          pCommandListVulkan->UpdateBufferRegion(this, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, 0U, pInitialData->m_uiDataSize);
-
-          pCommandListVulkan->Submit();
+          pImmediateCommandListVulkan->Submit();
         }
       }
     }

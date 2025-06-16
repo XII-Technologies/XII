@@ -388,6 +388,11 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
     XII_GAL_DEVICE_CHECK(description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write) && bHasInitialData, "xiiGALCPUAccessFlag::Write is required to initialize a unified buffer.");
   }
 
+  if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
+  {
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Transfer | xiiGALCommandQueueType::SparseBinding), "Cannot initialize the buffer with the given command list queue type. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+  }
+
   if (bHasInitialData)
   {
     XII_GAL_DEVICE_CHECK(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger or equal to the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);

@@ -2872,7 +2872,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
     // Release only resources that are not in use.
     for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
     {
-      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false)->GetCompletedFenceValue();
+      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics)->GetCompletedFenceValue();
 
       if (it->m_uiFenceValue <= uiCompletedFenceValue)
       {
