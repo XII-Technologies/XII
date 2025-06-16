@@ -200,8 +200,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResource
   m_Format           = descriptor.m_DescGAL.m_Format;
   m_uiWidthAndHeight = descriptor.m_DescGAL.m_Size.width;
 
-  xiiGALTextureData textureData;
-  textureData.m_SubResources = descriptor.m_InitialContent;
+  xiiGALTextureData textureData(descriptor.m_InitialContent);
   descriptor.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
 

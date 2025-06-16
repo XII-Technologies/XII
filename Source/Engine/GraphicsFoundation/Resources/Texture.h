@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Containers/Blob.h>
-#include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
 /// \brief This describes the miscellaneous texture flags.
@@ -75,21 +74,48 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
 };
 
 /// \brief This describes the data for one texture sub-resource.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureSubResourceData : public xiiHashableStruct<xiiGALTextureSubResourceData>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureSubResourceData
 {
-  XII_DECLARE_POD_TYPE();
+  XII_ALWAYS_INLINE xiiGALTextureSubResourceData() :
+    m_uiStride(0ULL), m_uiDepthStride(0ULL)
+  {
+  }
 
-  xiiConstByteBlobPtr m_pData;              ///< Pointer to the sub-resource data in GPU memory.
-  xiiUInt64           m_uiStride      = 0U; ///< For 2D and 3D textures, the row stride in bytes.
-  xiiUInt64           m_uiDepthStride = 0U; ///< For 3D textures, the depth slice stride in bytes.
+  XII_ALWAYS_INLINE xiiGALTextureSubResourceData(xiiConstByteBlobPtr pData, xiiUInt64 uiStride) :
+    m_pData(pData), m_uiStride(uiStride), m_uiDepthStride(0U)
+  {
+  }
+
+  XII_ALWAYS_INLINE xiiGALTextureSubResourceData(xiiConstByteBlobPtr pData, xiiUInt64 uiStride, xiiUInt64 uiDepthStride) :
+    m_pData(pData), m_uiStride(uiStride), m_uiDepthStride(uiDepthStride)
+  {
+  }
+
+  xiiConstByteBlobPtr m_pData;         ///< Pointer to the sub-resource data in GPU memory.
+  xiiUInt64           m_uiStride;      ///< For 2D and 3D textures, the row stride in bytes.
+  xiiUInt64           m_uiDepthStride; ///< For 3D textures, the depth slice stride in bytes.
 };
 
 /// \brief This describes the initial data to store in the texture.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData : public xiiHashableStruct<xiiGALTextureData>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData
 {
-  xiiArrayPtr<xiiGALTextureSubResourceData> m_SubResources; ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
+  XII_ALWAYS_INLINE xiiGALTextureData() :
+    m_pCommandList(nullptr)
+  {
+  }
 
-  // \todo GraphicsFoundation: Add command encoder that should be used to initialize the texture?
+  XII_ALWAYS_INLINE xiiGALTextureData(xiiArrayPtr<const xiiGALTextureSubResourceData> pSubResources) :
+    m_pSubResources(pSubResources), m_pCommandList(nullptr)
+  {
+  }
+
+  XII_ALWAYS_INLINE xiiGALTextureData(xiiArrayPtr<const xiiGALTextureSubResourceData> pSubResources, xiiGALCommandList* pCommandList) :
+    m_pSubResources(pSubResources), m_pCommandList(pCommandList)
+  {
+  }
+
+  xiiArrayPtr<const xiiGALTextureSubResourceData> m_pSubResources; ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
+  xiiGALCommandList*                              m_pCommandList;  ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
 };
 
 /// \brief This describes the mapped texture sub-resource data.

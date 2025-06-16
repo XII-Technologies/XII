@@ -77,7 +77,7 @@ public:
   };
 
 public:
-  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final;
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
