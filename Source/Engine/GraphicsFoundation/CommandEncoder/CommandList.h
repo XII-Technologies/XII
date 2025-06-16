@@ -174,6 +174,27 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionDescription
   xiiBitflags<xiiGALStateTransitionFlags> m_TransitionFlags = xiiGALStateTransitionFlags::None;  ///< State transition flags, see xiiGALStateTransitionFlags.
 };
 
+/// \brief This describes multi-sampled texture resolve command arguments.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALResolveTextureSubresourceDescription
+{
+  XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE xiiGALResolveTextureSubresourceDescription() = default;
+
+  XII_ALWAYS_INLINE xiiGALResolveTextureSubresourceDescription(xiiUInt32 uiSourceMip, xiiUInt32 uiSourceSlice, xiiUInt32 uiDestMip, xiiUInt32 uiDestSlice, xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::Unknown, xiiEnum<xiiGALStateTransitionMode> sourceMode = xiiGALStateTransitionMode::Transition, xiiEnum<xiiGALStateTransitionMode> destMode = xiiGALStateTransitionMode::Transition) :
+    m_uiSourceMipLevel(uiSourceMip), m_uiSourceSlice(uiSourceSlice), m_uiDestinationMipLevel(uiDestMip), m_uiDestinationSlice(uiDestSlice), m_Format(format), m_SourceTextureTransitionMode(sourceMode), m_DestinationTextureTransitionMode(destMode)
+  {
+  }
+
+  xiiUInt32                          m_uiSourceMipLevel                 = 0U;                              ///< Mip level of the source multi-sampled texture to resolve.
+  xiiUInt32                          m_uiSourceSlice                    = 0U;                              ///< Array slice of the source multi-sampled texture to resolve.
+  xiiEnum<xiiGALStateTransitionMode> m_SourceTextureTransitionMode      = xiiGALStateTransitionMode::None; ///< Source texture state transition mode, see xiiGALStateTransitionMode.
+  xiiUInt32                          m_uiDestinationMipLevel            = 0U;                              ///< Mip level of the destination non-multi-sampled texture.
+  xiiUInt32                          m_uiDestinationSlice               = 0U;                              ///< Array slice of the destination non-multi-sampled texture.
+  xiiEnum<xiiGALStateTransitionMode> m_DestinationTextureTransitionMode = xiiGALStateTransitionMode::None; ///< Destination texture state transition mode, see xiiGALStateTransitionMode.
+  xiiEnum<xiiGALResourceFormat>      m_Format                           = xiiGALResourceFormat::Unknown;   ///< If one or both textures are typeless, specifies the type of the typeless texture. If both texture formats are not typeless, in which case they must be identical, this member must be either xiiGALResourceFormat::Unknown, or match this format.
+};
+
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
@@ -633,11 +654,12 @@ public:
 
   /// \brief Resolves a multisampled source texture into a non-multisampled destination texture.
   ///
-  /// \param pSourceTexture          - The handle to the source texture object.
-  /// \param sourceMipLevelData      - Specifies the subresource in the source texture. See xiiGALTextureMipLevelData for details.
-  /// \param pDestinationTexture     - The handle to the destination texture object.
-  /// \param destinationMipLevelData - Specifies the subresource in the destination texture. See xiiGALTextureMipLevelData for details.
-  void ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData);
+  /// This operation performs a resolve from a multi-sampled texture (typically used for anti-aliasing) into a non-multi-sampled texture, commonly used for presenting or further processing.
+  ///
+  /// \param pSourceTexture      - Handle to the multi-sampled source texture.
+  /// \param pDestinationTexture - Handle to the destination texture which must not be multi-sampled.
+  /// \param description         - Structure that specifies the source and destination subresources, including mip levels, array slices, resource formats, and texture state transitions. See xiiGALResolveTextureSubresourceDescription for details.
+  void ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description);
 
   /// \brief Generates mipmap levels for a texture.
   ///
@@ -829,7 +851,7 @@ protected:
   virtual void      UpdateTexturePlatform(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                                              = 0;
   virtual void      CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture)                                                                                                                                                                                         = 0;
   virtual void      CopyTextureRegionPlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
-  virtual void      ResolveTextureSubResourcePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;
+  virtual void      ResolveTextureSubResourcePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description)                                                                                                            = 0;
   virtual void      GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureView> pTextureView)                                                                                                                                                                                                                                       = 0;
   virtual xiiResult MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)                                     = 0;
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)                                                                                                                                                                                     = 0;

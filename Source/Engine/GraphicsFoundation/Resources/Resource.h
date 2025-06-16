@@ -24,10 +24,10 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE bool IsInKnownState() const { return m_ResourceState != xiiGALResourceStateFlags::Unknown; }
 
   /// \brief This returns true if the given resource state is set.
-  [[nodiscard]] XII_ALWAYS_INLINE bool CheckState(xiiGALResourceStateFlags::Enum resourceState) const
+  [[nodiscard]] XII_ALWAYS_INLINE bool CheckState(xiiBitflags<xiiGALResourceStateFlags> resourceState) const
   {
     XII_ASSERT_DEV(IsInKnownState(), "Resource state is unknown.");
-    return m_ResourceState.IsSet(resourceState);
+    return m_ResourceState.AreAllSet(resourceState);
   }
 
   /// \brief This returns true if any of the given resource state are set.

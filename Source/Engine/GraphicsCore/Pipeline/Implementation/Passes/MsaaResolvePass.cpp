@@ -96,15 +96,11 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     {
       pCommandList->BeginDebugGroup(GetName());
       {
-        xiiGALTextureMipLevelData mipLevelData{.m_uiMipLevel = 0U, .m_uiArraySlice = 0U};
-
-        pCommandList->ResolveTextureSubResource(pInput->m_pTexture, mipLevelData, pOutput->m_pTexture, mipLevelData);
+        pCommandList->ResolveTextureSubResource(pInput->m_pTexture, pOutput->m_pTexture, {0, 0, 0, 0});
 
         if (renderViewContext.m_pCamera->IsStereoscopic())
         {
-          mipLevelData.m_uiArraySlice = 1U;
-
-          pCommandList->ResolveTextureSubResource(pInput->m_pTexture, mipLevelData, pOutput->m_pTexture, mipLevelData);
+          pCommandList->ResolveTextureSubResource(pInput->m_pTexture, pOutput->m_pTexture, {0, 1, 0, 1});
         }
       }
       pCommandList->EndDebugGroup();

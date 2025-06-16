@@ -161,7 +161,7 @@ namespace xiiModelImporter2
           for (xiiUInt32 kf = 0; kf < uiNumKeyframes; ++kf)
           {
             const float fCurTime = (float)fOneDivTicksPerSec * kf;
-            ;
+
             ozz::animation::offline::SampleTrack(pFinalRawAnim->tracks[channelIdx], (float)(fLowerTimestamp + fOneDivTicksPerSec * kf), &tmpTransform);
 
             track.translations[kf].time  = fCurTime;
