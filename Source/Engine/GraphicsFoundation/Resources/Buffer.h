@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/BufferView.h>
 
 /// \brief This describes the buffer access mode.
@@ -69,24 +68,26 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
 /// \brief This describes the buffer initial data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferData
 {
+  XII_DECLARE_POD_TYPE();
+
   XII_ALWAYS_INLINE xiiGALBufferData() :
-    m_pData(nullptr), m_uiDataSize(0ULL)
+    m_pData(nullptr), m_uiDataSize(0ULL), m_pCommandList(nullptr)
   {
   }
 
   XII_ALWAYS_INLINE xiiGALBufferData(void* pData, xiiUInt64 uiDataSize) :
-    m_pData(pData), m_uiDataSize(uiDataSize)
+    m_pData(pData), m_uiDataSize(uiDataSize), m_pCommandList(nullptr)
   {
   }
 
-  XII_ALWAYS_INLINE xiiGALBufferData(void* pData, xiiUInt64 uiDataSize, xiiSharedPtr<xiiGALCommandList> pCommandList) :
+  XII_ALWAYS_INLINE xiiGALBufferData(void* pData, xiiUInt64 uiDataSize, xiiGALCommandList* pCommandList) :
     m_pData(pData), m_uiDataSize(uiDataSize), m_pCommandList(pCommandList)
   {
   }
 
-  const void*                     m_pData;        ///< The pointer to the data.
-  xiiUInt64                       m_uiDataSize;   ///< The data size in bytes.
-  xiiSharedPtr<xiiGALCommandList> m_pCommandList; ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
+  const void*        m_pData;        ///< The pointer to the data.
+  xiiUInt64          m_uiDataSize;   ///< The data size in bytes.
+  xiiGALCommandList* m_pCommandList; ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
 };
 
 /// \brief This describes the sparse buffer properties.
