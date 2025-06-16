@@ -609,6 +609,11 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     XII_GAL_DEVICE_CHECK(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::SparseAlias), "The miscellaneous flags must not have xiiGALMiscTextureFlags::SparseAlias if the usage is not xiiGALResourceUsage::Sparse.");
   }
 
+  if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
+  {
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Transfer | xiiGALCommandQueueType::SparseBinding), "Cannot initialize the texture with the given command list queue type. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+  }
+
   xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData);
 
   FinalizeTextureInternal(description, pTexture);
