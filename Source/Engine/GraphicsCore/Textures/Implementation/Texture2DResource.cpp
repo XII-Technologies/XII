@@ -249,8 +249,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
 
   descriptor.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
-  xiiGALTextureData textureData;
-  textureData.m_SubResources        = descriptor.m_InitialContent;
+  xiiGALTextureData textureData(descriptor.m_InitialContent);
   m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
 
   XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture Data could not be uploaded to the GPU");

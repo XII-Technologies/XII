@@ -99,6 +99,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureSubResourceData
 /// \brief This describes the initial data to store in the texture.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData
 {
+  XII_ALWAYS_INLINE xiiGALTextureData() :
+    m_pCommandList(nullptr)
+  {
+  }
+
   XII_ALWAYS_INLINE xiiGALTextureData(xiiArrayPtr<const xiiGALTextureSubResourceData> pSubResources) :
     m_pSubResources(pSubResources), m_pCommandList(nullptr)
   {

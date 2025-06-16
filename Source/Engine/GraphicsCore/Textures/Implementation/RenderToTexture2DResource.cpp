@@ -60,8 +60,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
   descGAL.m_Format             = m_Format;
   descGAL.m_BindFlags          = xiiGALBindFlags::ShaderResource | (!xiiGALResourceFormat::IsDepthFormat(m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil);
 
-  xiiGALTextureData textureData;
-  textureData.m_SubResources        = descriptor.m_InitialContent;
+  xiiGALTextureData textureData(descriptor.m_InitialContent);
   m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descGAL, &textureData);
 
   XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture data could not be uploaded to the GPU.");
