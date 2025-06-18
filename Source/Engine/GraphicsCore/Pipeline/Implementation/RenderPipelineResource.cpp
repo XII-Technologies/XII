@@ -125,7 +125,7 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
     m_Description.m_SerializedPipeline.SetCountUninitialized(uiSize);
     Stream->ReadBytes(m_Description.m_SerializedPipeline.GetData(), uiSize);
 
-    XII_ASSERT_DEV(uiSize > 0, "RenderPipeline resourse contains no pipeline data!");
+    XII_ASSERT_DEV(uiSize > 0, "RenderPipeline resource contains no pipeline data!");
   }
   else
   {
@@ -138,7 +138,6 @@ xiiResourceLoadDesc xiiRenderPipelineResource::UpdateContent(xiiStreamReader* St
 void xiiRenderPipelineResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
   out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiRenderPipelineResource) + (xiiUInt32)(m_Description.m_SerializedPipeline.GetCount());
-
   out_NewMemoryUsage.m_uiMemoryGPU = 0;
 }
 
