@@ -330,6 +330,41 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedIndirectDescription
   xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
   xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
 };
+
+/// \brief Describes parameters for issuing mesh shader draw calls.
+///
+/// Specifies the number of workgroups to dispatch for a meshlet-driven pipeline. Used for explicit, non-indirect mesh shader draws.
+///
+/// \see xiiGALCommandList::DrawMesh
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshDescription
+{
+  /// \brief Default-initialized mesh draw description (1 group on X axis).
+  XII_ALWAYS_INLINE xiiGALDrawMeshDescription() = default;
+
+  /// \brief Constructs a draw mesh description with specified thread group dimensions.
+  ///
+  /// \param uiThreadGroupCountX - Number of thread groups along X.
+  XII_ALWAYS_INLINE explicit xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX) :
+    m_uiThreadGroupCountX(uiThreadGroupCountX)
+  {
+  }
+
+  /// \brief Constructs a draw mesh description with X/Y group counts.
+  XII_ALWAYS_INLINE xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY) :
+    m_uiThreadGroupCountX(uiThreadGroupCountX), m_uiThreadGroupCountY(uiThreadGroupCountY)
+  {
+  }
+
+  /// \brief Constructs a draw mesh description with full 3D group dimensions.
+  XII_ALWAYS_INLINE xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) :
+    m_uiThreadGroupCountX(uiThreadGroupCountX), m_uiThreadGroupCountY(uiThreadGroupCountY), m_uiThreadGroupCountZ(uiThreadGroupCountZ)
+  {
+  }
+
+  xiiUInt32 m_uiThreadGroupCountX = 1U; ///< Mesh thread groups along X.
+  xiiUInt32 m_uiThreadGroupCountY = 1U; ///< Mesh thread groups along Y.
+  xiiUInt32 m_uiThreadGroupCountZ = 1U; ///< Mesh thread groups along Z.
+};
   xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None;
   xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr; ///< Optional buffer containing draw count.
   xiiUInt64                          m_uiCounterOffset              = 0U;      ///< Byte offset to the draw count value.
