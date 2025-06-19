@@ -497,6 +497,34 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedDescription
   xiiUInt32                                     m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to vertex shader.
 };
 
+/// \brief Describes parameters for issuing a compute dispatch call.
+///
+/// Specifies the number of thread groups to launch in each dimension. Metal-specific thread group sizes may be optionally provided for backend tuning.
+///
+/// \see xiiGALCommandList::Dispatch
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeDescription
+{
+  /// \brief Default-initialized compute dispatch (1 group in each dimension).
+  XII_ALWAYS_INLINE xiiGALDispatchComputeDescription() = default;
+
+  /// \brief Constructs a compute dispatch with specified group counts.
+  ///
+  /// \param uiGroupCountX - Number of thread groups along X.
+  /// \param uiGroupCountY - Number of thread groups along Y.
+  /// \param uiGroupCountZ - Number of thread groups along Z. Defaults to 1.
+  XII_ALWAYS_INLINE xiiGALDispatchComputeDescription(xiiUInt32 uiGroupCountX, xiiUInt32 uiGroupCountY, xiiUInt32 uiGroupCountZ = 1U) :
+    m_uiThreadGroupCountX(uiGroupCountX), m_uiThreadGroupCountY(uiGroupCountY), m_uiThreadGroupCountZ(uiGroupCountZ)
+  {
+  }
+
+  xiiUInt32 m_uiThreadGroupCountX = 1U; ///< Thread groups along X.
+  xiiUInt32 m_uiThreadGroupCountY = 1U; ///< Thread groups along Y.
+  xiiUInt32 m_uiThreadGroupCountZ = 1U; ///< Thread groups along Z.
+
+  xiiUInt32 m_uiMtlThreadGroupSizeX = 0U; ///< Metal-specific override for threads per group (X).
+  xiiUInt32 m_uiMtlThreadGroupSizeY = 0U; ///< Metal-specific override for threads per group (Y).
+  xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
+};
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
