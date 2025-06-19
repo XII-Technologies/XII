@@ -742,6 +742,44 @@ void xiiGALCommandList::EndRenderPass()
   m_pFramebuffer = nullptr;
 }
 
+XII_FORCE_INLINE xiiUInt32 GetPrimitiveCount(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiElements)
+{
+  if (topology >= xiiGALPrimitiveTopology::ControlPointPatchList1 && topology <= xiiGALPrimitiveTopology::ControlPointPatchList32)
+  {
+    return uiElements / (topology - xiiGALPrimitiveTopology::ControlPointPatchList1 + 1);
+  }
+  else
+  {
+    switch (topology)
+    {
+      case xiiGALPrimitiveTopology::Undefined:
+        XII_REPORT_FAILURE("Undefined primitive topology.");
+        return 0;
+
+      case xiiGALPrimitiveTopology::TriangleList:
+        return uiElements / 3;
+      case xiiGALPrimitiveTopology::TriangleStrip:
+        return xiiMath::Max(uiElements, 2U) - 2;
+      case xiiGALPrimitiveTopology::PointList:
+        return uiElements;
+      case xiiGALPrimitiveTopology::LineList:
+        return uiElements / 2;
+      case xiiGALPrimitiveTopology::LineStrip:
+        return xiiMath::Max(uiElements, 1U) - 1;
+      case xiiGALPrimitiveTopology::TriangleListAdjacent:
+        return uiElements / 6;
+      case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+        return xiiMath::Max(uiElements, 4U) - 4;
+      case xiiGALPrimitiveTopology::LineListAdjacent:
+        return uiElements / 4;
+      case xiiGALPrimitiveTopology::LineStripAdjacent:
+        return xiiMath::Max(uiElements, 3U) - 3;
+
+      default: XII_REPORT_FAILURE("Unexpected primitive topology"); return 0;
+    }
+  }
+}
+
 xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawCommand arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
@@ -750,6 +788,13 @@ xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVert
   XII_VERIFY_COMMAND_LIST_RESULT(uiVertexCount != 0, "DrawCommand vertex count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiDraw;
+
+  if (m_pPipelineState)
+  {
+    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = m_pPipelineState.Downcast<xiiGALGraphicsPipelineState>()->GetDescription();
+
+    // m_CommandListStatistics.m_PrimitiveCounters[pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology];
+  }
 
   return DrawPlatform(uiVertexCount, uiStartVertex);
 }
