@@ -283,10 +283,53 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndirectDescription
   {
   }
 
-  xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr; ///< Buffer containing draw arguments.
-  xiiUInt64                          m_uiDrawArgsOffset             = 0U;      ///< Byte offset to the first draw argument.
-  xiiUInt32                          m_uiDrawCount                  = 1U;      ///< Number of draws to execute.
-  xiiUInt32                          m_uiDrawArgsStride             = 16U;     ///< Stride between draw arguments in bytes.
+  xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr;                         ///< Buffer containing draw arguments.
+  xiiUInt64                          m_uiDrawArgsOffset             = 0U;                              ///< Byte offset to the first draw argument.
+  xiiUInt32                          m_uiDrawCount                  = 1U;                              ///< Number of draws to execute.
+  xiiUInt32                          m_uiDrawArgsStride             = 16U;                             ///< Stride between draw arguments in bytes.
+  xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None; ///< State transition mode.
+  xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
+  xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
+  xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
+};
+
+/// \brief Describes parameters for issuing indirect indexed draw calls.
+///
+/// Used to issue multiple indexed draw calls from a GPU buffer containing draw arguments. Supports optional counter buffer and index type specification.
+///
+/// \see xiiGALCommandList::DrawIndexedIndirect
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedIndirectDescription
+{
+  /// \brief Default-initialized indexed indirect draw description.
+  XII_ALWAYS_INLINE xiiGALDrawIndexedIndirectDescription() = default;
+
+  /// \brief Constructs an indexed indirect draw description with specified parameters.
+  ///
+  /// \param indexType                       - Type of index data (e.g., 16-bit or 32-bit).
+  /// \param pBuffer                         - Buffer containing draw arguments.
+  /// \param flags                           - Draw behavior flags.
+  /// \param uiDrawCount                     - Number of draws to execute.
+  /// \param uiDrawArgsOffset                - Byte offset to the first draw argument.
+  /// \param uiDrawArgsStride                - Stride between draw arguments in bytes.
+  /// \param bufferStateTransition           - Resource state transition mode for the draw buffer.
+  /// \param pCounterBuffer                  - Optional buffer containing draw count.
+  /// \param uiCounterOffset                 - Byte offset to the draw count value.
+  /// \param counterBufferStateTransition    - Resource state transition mode for the counter buffer.
+  XII_ALWAYS_INLINE xiiGALDrawIndexedIndirectDescription(xiiEnum<xiiGALValueType> indexType, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDrawCount = 1U, xiiUInt64 uiDrawArgsOffset = 0U, xiiUInt32 uiDrawArgsStride = 20U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
+    m_IndexType(indexType), m_pBuffer(pBuffer), m_uiDrawArgsOffset(uiDrawArgsOffset), m_uiDrawCount(uiDrawCount), m_uiDrawArgsStride(uiDrawArgsStride), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
+  {
+  }
+
+  xiiEnum<xiiGALValueType>           m_IndexType                    = xiiGALValueType::Undefined;      ///< Type of index data.
+  xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr;                         ///< Buffer containing draw arguments.
+  xiiUInt64                          m_uiDrawArgsOffset             = 0U;                              ///< Byte offset to the first draw argument.
+  xiiUInt32                          m_uiDrawCount                  = 1U;                              ///< Number of draws to execute.
+  xiiUInt32                          m_uiDrawArgsStride             = 20U;                             ///< Stride between draw arguments in bytes.
+  xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None; ///< State transition mode.
+  xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
+  xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
+  xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
+};
   xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None;
   xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr; ///< Optional buffer containing draw count.
   xiiUInt64                          m_uiCounterOffset              = 0U;      ///< Byte offset to the draw count value.
