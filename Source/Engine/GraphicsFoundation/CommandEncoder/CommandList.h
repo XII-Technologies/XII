@@ -444,7 +444,59 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawDescription
   xiiUInt32                              m_uiNumInstances          = 1U; ///< Number of instances to render.
   xiiUInt32                              m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
 };
+
+/// \brief Represents a single indexed draw entry in a multi-draw call.
+///
+/// Specifies the number of indices, the first index offset, and base vertex for one draw invocation.
+///
+/// \see xiiGALCommandList::MultiDrawIndexed
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedItem
+{
+  /// \brief Default-initialized indexed draw item (0 indices).
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedItem() = default;
+
+  /// \brief Constructs a multi-draw indexed item with specified index parameters.
+  ///
+  /// \param uiNumIndices         - Number of indices to draw.
+  /// \param uiFirstIndexLocation - Start index in the bound index buffer.
+  /// \param uiBaseVertex         - Value added to each index before vertex fetch.
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedItem(xiiUInt32 uiNumIndices, xiiUInt32 uiFirstIndexLocation = 0U, xiiUInt32 uiBaseVertex = 0U) :
+    m_uiNumIndices(uiNumIndices), m_uiFirstIndexLocation(uiFirstIndexLocation), m_uiBaseVertex(uiBaseVertex)
+  {
+  }
+
+  xiiUInt32 m_uiNumIndices         = 0U; ///< Number of indices to draw.
+  xiiUInt32 m_uiFirstIndexLocation = 0U; ///< Start index in the bound index buffer.
+  xiiUInt32 m_uiBaseVertex         = 0U; ///< Value added to each index before vertex fetch.
 };
+
+/// \brief Describes parameters for issuing a multi-draw call with indexed geometry.
+///
+/// Provides an array of indexed draw items and instance-level information for batched rendering.
+///
+/// \see xiiGALCommandList::MultiDrawIndexed
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedDescription
+{
+  /// \brief Default-initialized indexed multi-draw description.
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedDescription() = default;
+
+  /// \brief Constructs an indexed multi-draw description with specified items and parameters.
+  ///
+  /// \param pDrawItems              - Pointer to indexed draw item array.
+  /// \param IndexType               - Type of index data (e.g. 16-bit or 32-bit).
+  /// \param uiNumInstances          - Number of instances to render. Defaults to 1.
+  /// \param uiFirstInstanceLocation - Instance ID for the first instance.
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedDescription(xiiArrayPtr<const xiiGALMultiDrawIndexedItem> pDrawItems, xiiEnum<xiiGALValueType> IndexType, xiiUInt32 uiNumInstances = 1U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_pDrawItems(pDrawItems), m_IndexType(IndexType), m_uiNumInstances(uiNumInstances), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  {
+  }
+
+  xiiArrayPtr<const xiiGALMultiDrawIndexedItem> m_pDrawItems;                                           ///< Pointer to indexed draw entries.
+  xiiEnum<xiiGALValueType>                      m_IndexType               = xiiGALValueType::Undefined; ///< Type of index data.
+  xiiUInt32                                     m_uiNumInstances          = 1U;                         ///< Number of instances to render.
+  xiiUInt32                                     m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to vertex shader.
+};
+
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
