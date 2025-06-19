@@ -554,6 +554,30 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeIndirectDescription
   xiiUInt32 m_uiMtlThreadGroupSizeY = 0U; ///< Metal-specific override for threads per group (Y).
   xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
 };
+
+/// \brief Describes parameters for issuing a tile-based compute dispatch.
+///
+/// Used for tile shaders or compute workloads that operate on screen-space tiles.
+///
+/// \see xiiGALCommandList::DispatchTile
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchTileDescription
+{
+  /// \brief Default-initialized tile dispatch (1x1 tile).
+  XII_ALWAYS_INLINE xiiGALDispatchTileDescription() = default;
+
+  /// \brief Constructs a tile dispatch with specified tile dimensions and flags.
+  ///
+  /// \param uiThreadsPerTileX - Threads per tile along X.
+  /// \param uiThreadsPerTileY - Threads per tile along Y.
+  XII_ALWAYS_INLINE xiiGALDispatchTileDescription(xiiUInt32 uiThreadsPerTileX, xiiUInt32 uiThreadsPerTileY) :
+    m_uiThreadsPerTileX(uiThreadsPerTileX), m_uiThreadsPerTileY(uiThreadsPerTileY),
+  {
+  }
+
+  xiiUInt32 m_uiThreadsPerTileX = 1U; ///< Threads per tile along X.
+  xiiUInt32 m_uiThreadsPerTileY = 1U; ///< Threads per tile along Y.
+};
+
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
