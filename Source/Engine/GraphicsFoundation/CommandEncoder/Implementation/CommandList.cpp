@@ -780,6 +780,46 @@ XII_FORCE_INLINE xiiUInt32 GetPrimitiveCount(xiiGALPrimitiveTopology::Enum topol
   }
 }
 
+void xiiGALCommandList::Draw(const xiiGALDrawDescription& description)
+{
+}
+
+void xiiGALCommandList::DrawIndexed(const xiiGALDrawIndexedDescription& description)
+{
+}
+
+void xiiGALCommandList::DrawIndirect(const xiiGALDrawIndirectDescription& description)
+{
+}
+
+void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescription& description)
+{
+}
+
+void xiiGALCommandList::DrawMesh(const xiiGALDrawMeshDescription& description)
+{
+}
+
+void xiiGALCommandList::DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription& description)
+{
+}
+
+void xiiGALCommandList::MultiDraw(const xiiGALMultiDrawDescription& description)
+{
+}
+
+void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription& description)
+{
+}
+
+void xiiGALCommandList::DispatchCompute(const xiiGALDispatchComputeDescription& description)
+{
+}
+
+void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndirectDescription& description)
+{
+}
+
 xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
   XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawCommand arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
