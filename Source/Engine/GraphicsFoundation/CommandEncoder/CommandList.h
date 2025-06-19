@@ -433,15 +433,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawDescription
   /// \brief Constructs a multi-draw description with specified items and parameters.
   ///
   /// \param pDrawItems              - Pointer to draw item array.
-  /// \param uiNumInstances          - Number of instances to render. Defaults to 1.
+  /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
   /// \param uiFirstInstanceLocation - Instance ID for the first instance.
-  XII_ALWAYS_INLINE xiiGALMultiDrawDescription(xiiArrayPtr<const xiiGALMultiDrawItem> pDrawItems, xiiUInt32 uiNumInstances = 1U, xiiUInt32 uiFirstInstanceLocation = 0U) :
-    m_pDrawItems(pDrawItems), m_uiNumInstances(uiNumInstances), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  XII_ALWAYS_INLINE xiiGALMultiDrawDescription(xiiArrayPtr<const xiiGALMultiDrawItem> pDrawItems, xiiUInt32 uiInstanceCount = 1U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_pDrawItems(pDrawItems), m_uiInstanceCount(uiInstanceCount), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
   {
   }
 
   xiiArrayPtr<const xiiGALMultiDrawItem> m_pDrawItems;                   ///< Pointer to array of draw entries.
-  xiiUInt32                              m_uiNumInstances          = 1U; ///< Number of instances to render.
+  xiiUInt32                              m_uiInstanceCount         = 1U; ///< Number of instances to render.
   xiiUInt32                              m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
 };
 
@@ -457,15 +457,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedItem
 
   /// \brief Constructs a multi-draw indexed item with specified index parameters.
   ///
-  /// \param uiNumIndices         - Number of indices to draw.
+  /// \param uiIndexCount         - Number of indices to draw.
   /// \param uiFirstIndexLocation - Start index in the bound index buffer.
   /// \param uiBaseVertex         - Value added to each index before vertex fetch.
-  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedItem(xiiUInt32 uiNumIndices, xiiUInt32 uiFirstIndexLocation = 0U, xiiUInt32 uiBaseVertex = 0U) :
-    m_uiNumIndices(uiNumIndices), m_uiFirstIndexLocation(uiFirstIndexLocation), m_uiBaseVertex(uiBaseVertex)
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedItem(xiiUInt32 uiIndexCount, xiiUInt32 uiFirstIndexLocation = 0U, xiiUInt32 uiBaseVertex = 0U) :
+    m_uiIndexCount(uiIndexCount), m_uiFirstIndexLocation(uiFirstIndexLocation), m_uiBaseVertex(uiBaseVertex)
   {
   }
 
-  xiiUInt32 m_uiNumIndices         = 0U; ///< Number of indices to draw.
+  xiiUInt32 m_uiIndexCount         = 0U; ///< Number of indices to draw.
   xiiUInt32 m_uiFirstIndexLocation = 0U; ///< Start index in the bound index buffer.
   xiiUInt32 m_uiBaseVertex         = 0U; ///< Value added to each index before vertex fetch.
 };
@@ -484,16 +484,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedDescription
   ///
   /// \param pDrawItems              - Pointer to indexed draw item array.
   /// \param IndexType               - Type of index data (e.g. 16-bit or 32-bit).
-  /// \param uiNumInstances          - Number of instances to render. Defaults to 1.
+  /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
   /// \param uiFirstInstanceLocation - Instance ID for the first instance.
-  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedDescription(xiiArrayPtr<const xiiGALMultiDrawIndexedItem> pDrawItems, xiiEnum<xiiGALValueType> IndexType, xiiUInt32 uiNumInstances = 1U, xiiUInt32 uiFirstInstanceLocation = 0U) :
-    m_pDrawItems(pDrawItems), m_IndexType(IndexType), m_uiNumInstances(uiNumInstances), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedDescription(xiiArrayPtr<const xiiGALMultiDrawIndexedItem> pDrawItems, xiiEnum<xiiGALValueType> IndexType, xiiUInt32 uiInstanceCount = 1U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_pDrawItems(pDrawItems), m_IndexType(IndexType), m_uiInstanceCount(uiInstanceCount), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
   {
   }
 
   xiiArrayPtr<const xiiGALMultiDrawIndexedItem> m_pDrawItems;                                           ///< Pointer to indexed draw entries.
   xiiEnum<xiiGALValueType>                      m_IndexType               = xiiGALValueType::Undefined; ///< Type of index data.
-  xiiUInt32                                     m_uiNumInstances          = 1U;                         ///< Number of instances to render.
+  xiiUInt32                                     m_uiInstanceCount         = 1U;                         ///< Number of instances to render.
   xiiUInt32                                     m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to vertex shader.
 };
 
