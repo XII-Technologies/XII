@@ -525,6 +525,35 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeDescription
   xiiUInt32 m_uiMtlThreadGroupSizeY = 0U; ///< Metal-specific override for threads per group (Y).
   xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
 };
+
+/// \brief Describes parameters for issuing an indirect compute dispatch call.
+///
+/// Dispatch arguments are read from a GPU buffer. Metal-specific thread group sizes may be optionally provided for backend tuning.
+///
+/// \see xiiGALCommandList::DispatchIndirect
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeIndirectDescription
+{
+  /// \brief Default-initialized indirect compute dispatch.
+  XII_ALWAYS_INLINE xiiGALDispatchComputeIndirectDescription() = default;
+
+  /// \brief Constructs an indirect compute dispatch with specified parameters.
+  ///
+  /// \param pBuffer              - Buffer containing dispatch arguments.
+  /// \param bufferTransitionMode - Resource state transition mode for the buffer.
+  /// \param uiDispatchArgsOffset        - Byte offset to the dispatch arguments.
+  XII_ALWAYS_INLINE xiiGALDispatchComputeIndirectDescription(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode, xiiUInt64 uiDispatchArgsOffset = 0U) :
+    m_pBuffer(pBuffer), m_BufferTransitionMode(bufferTransitionMode), m_uiDispatchArgsOffset(uiDispatchArgsOffset)
+  {
+  }
+
+  xiiSharedPtr<xiiGALBuffer>         m_pBuffer              = nullptr;                         ///< Buffer containing dispatch arguments.
+  xiiEnum<xiiGALStateTransitionMode> m_BufferTransitionMode = xiiGALStateTransitionMode::None; ///< State transition mode.
+  xiiUInt64                          m_uiDispatchArgsOffset = 0U;                              ///< Byte offset to the dispatch arguments.
+
+  xiiUInt32 m_uiMtlThreadGroupSizeX = 0U; ///< Metal-specific override for threads per group (X).
+  xiiUInt32 m_uiMtlThreadGroupSizeY = 0U; ///< Metal-specific override for threads per group (Y).
+  xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
+};
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
