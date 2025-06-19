@@ -45,5 +45,12 @@ body:
         - Area: I/O
         - Area: Asset Pipeline
         - Area: Core
+        - Area: Editor
+        - Area: EditorPlugins
+        - Area: Engine
+        - Area: EnginePlugins
+        - Area: Samples
+        - Area: BuildSystem
+        - Area: Tools
     validations:
       required: true
