@@ -224,6 +224,39 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawDescription
   xiiUInt32 m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
 };
 
+/// \brief Describes parameters for issuing indexed draw calls.
+///
+/// Defines the index and instance counts, index type, and offsets required for issuing GPU draw calls using an index buffer. Used in graphics command encoding for geometry instancing and reuse.
+///
+/// \see xiiGALCommandList::DrawIndexed
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedDescription
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Default-initialized indexed draw description (0 indices, 1 instance).
+  XII_ALWAYS_INLINE xiiGALDrawIndexedDescription() = default;
+
+  /// \brief Constructs an indexed draw description with specified parameters.
+  ///
+  /// \param uiIndexCount            - Number of indices to process.
+  /// \param IndexType               - Type of index data (e.g., 16-bit or 32-bit unsigned int).
+  /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
+  /// \param uiFirstIndexLocation    - Offset into the index buffer to start reading from.
+  /// \param uiBaseVertex            - Value added to each index before fetching from the vertex buffer.
+  /// \param uiFirstInstanceLocation - First instance ID passed to the vertex shader.
+  XII_ALWAYS_INLINE xiiGALDrawIndexedDescription(xiiUInt32 uiIndexCount, xiiEnum<xiiGALValueType> IndexType, xiiUInt32 uiInstanceCount = 1U, xiiUInt32 uiFirstIndexLocation = 0U, xiiUInt32 uiBaseVertex = 0U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_uiIndexCount(uiIndexCount), m_IndexType(IndexType), m_uiInstanceCount(uiInstanceCount), m_uiFirstIndexLocation(uiFirstIndexLocation), m_uiBaseVertex(uiBaseVertex), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  {
+  }
+
+  xiiUInt32                m_uiIndexCount            = 0U;                         ///< Number of indices to process.
+  xiiEnum<xiiGALValueType> m_IndexType               = xiiGALValueType::Undefined; ///< Type of index data.
+  xiiUInt32                m_uiInstanceCount         = 1U;                         ///< Number of instances to render.
+  xiiUInt32                m_uiFirstIndexLocation    = 0U;                         ///< Offset into the index buffer to start reading from.
+  xiiUInt32                m_uiBaseVertex            = 0U;                         ///< Value added to each index before fetching from the vertex buffer.
+  xiiUInt32                m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to the vertex shader.
+};
+
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
