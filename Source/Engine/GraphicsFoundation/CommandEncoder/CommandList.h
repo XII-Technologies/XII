@@ -365,10 +365,40 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshDescription
   xiiUInt32 m_uiThreadGroupCountY = 1U; ///< Mesh thread groups along Y.
   xiiUInt32 m_uiThreadGroupCountZ = 1U; ///< Mesh thread groups along Z.
 };
-  xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None;
-  xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr; ///< Optional buffer containing draw count.
-  xiiUInt64                          m_uiCounterOffset              = 0U;      ///< Byte offset to the draw count value.
-  xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None;
+
+
+/// \brief Describes parameters for issuing indirect mesh shader draw calls.
+///
+/// Pulls mesh dispatch arguments from a GPU buffer, with optional draw count via counter buffer.
+///
+/// \see xiiGALCommandList::DrawMeshIndirect
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshIndirectDescription
+{
+  /// \brief Default-initialized indirect mesh draw description.
+  XII_ALWAYS_INLINE xiiGALDrawMeshIndirectDescription() = default;
+
+  /// \brief Constructs an indirect mesh draw description with specified parameters.
+  ///
+  /// \param pBuffer                      - Buffer containing mesh dispatch arguments.
+  /// \param uiCommandCount               - Number of draws to execute.
+  /// \param uiDrawArgsOffset             - Byte offset to the first mesh dispatch argument.
+  /// \param bufferStateTransition        - Resource state transition mode for the draw buffer.
+  /// \param pCounterBuffer               - Optional buffer containing draw count.
+  /// \param uiCounterOffset              - Byte offset to the draw count value.
+  /// \param counterBufferStateTransition - Resource state transition mode for the counter buffer.
+  XII_ALWAYS_INLINE xiiGALDrawMeshIndirectDescription(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiCommandCount, xiiUInt64 uiDrawArgsOffset = 0U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
+    m_pBuffer(pBuffer), m_uiDrawArgsOffset(uiDrawArgsOffset), m_uiCommandCount(uiCommandCount), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
+  {
+  }
+
+  xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr;                         ///< Buffer containing mesh dispatch arguments.
+  xiiUInt64                          m_uiDrawArgsOffset             = 0U;                              ///< Byte offset to the first mesh dispatch argument.
+  xiiUInt32                          m_uiCommandCount               = 1U;                              ///< Number of draws to execute.
+  xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None; ///< State transition mode.
+  xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
+  xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
+  xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
+};
 };
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
