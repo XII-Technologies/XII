@@ -126,8 +126,8 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
 
     // create output target
     {
-      xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, [this](xiiGALSwapChainHandle hSwapChain, xiiSizeU32 size) {
-        OnSwapChainChanged(hSwapChain, size);
+      xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, [this](xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size) {
+        OnSwapChainChanged(pSwapChain, size);
       });
 
       xiiGALSwapChainCreationDescription swapChainDesc;
@@ -150,7 +150,7 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
       xiiWindowOutputTargetGAL* pOutput = static_cast<xiiWindowOutputTargetGAL*>(pWindowPlugin->m_pWindowOutputTarget.Borrow());
 
       const xiiSizeU32 wndSize = pWindowPlugin->m_pWindow->GetClientAreaSize();
-      SetupRenderTarget(pOutput->m_hSwapChain, nullptr, static_cast<xiiUInt16>(wndSize.width), static_cast<xiiUInt16>(wndSize.height));
+      SetupRenderTarget(pOutput->m_pSwapChain, nullptr, static_cast<xiiUInt16>(wndSize.width), static_cast<xiiUInt16>(wndSize.height));
     }
 
     pActor->AddPlugin(std::move(pWindowPlugin));
@@ -158,7 +158,7 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
   }
 }
 
-void xiiEngineProcessViewContext::OnSwapChainChanged(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 size)
+void xiiEngineProcessViewContext::OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size)
 {
   xiiView* pView = nullptr;
   if (xiiRenderWorld::TryGetView(m_hView, pView))
@@ -168,10 +168,10 @@ void xiiEngineProcessViewContext::OnSwapChainChanged(xiiGALSwapChainHandle hSwap
   }
 }
 
-void xiiEngineProcessViewContext::SetupRenderTarget(xiiGALSwapChainHandle hSwapChain, const xiiGALRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
+void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
 {
   XII_LOG_BLOCK("xiiEngineProcessViewContext::SetupRenderTarget");
-  XII_ASSERT_DEV((!hSwapChain.IsInvalidated() && pRenderTargets == nullptr) || (hSwapChain.IsInvalidated() && pRenderTargets != nullptr), "hSwapChain and pRenderTargets are mutually exclusive.");
+  XII_ASSERT_DEV((pSwapChain != nullptr && pRenderTargets == nullptr) || (pSwapChain == nullptr && pRenderTargets != nullptr), "hSwapChain and pRenderTargets are mutually exclusive.");
 
   // setup view
   {
@@ -183,10 +183,14 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiGALSwapChainHandle hSwapC
     xiiView* pView = nullptr;
     if (xiiRenderWorld::TryGetView(m_hView, pView))
     {
-      if (!hSwapChain.IsInvalidated())
-        pView->SetSwapChain(hSwapChain);
+      if (pSwapChain != nullptr)
+      {
+        pView->SetSwapChain(pSwapChain);
+      }
       else
+      {
         pView->SetRenderTargets(*pRenderTargets);
+      }
 
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)uiWidth, (float)uiHeight));
     }

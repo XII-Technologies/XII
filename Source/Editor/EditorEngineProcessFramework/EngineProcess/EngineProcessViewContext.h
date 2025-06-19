@@ -11,7 +11,7 @@ class xiiEditorEngineDocumentMsg;
 class xiiViewRedrawMsgToEngine;
 class xiiEditorEngineViewMsg;
 class xiiActor;
-struct xiiGALRenderTargets;
+struct xiiRenderTargets;
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
 
@@ -59,7 +59,7 @@ public:
   xiiEngineProcessDocumentContext* GetDocumentContext() const { return m_pDocumentContext; }
 
   virtual void HandleViewMessage(const xiiEditorEngineViewMsg* pMsg);
-  virtual void SetupRenderTarget(xiiGALSwapChainHandle hSwapChain, const xiiGALRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
+  virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
   virtual void Redraw(bool bRenderEditorGizmos);
 
   /// \brief Focuses camera on the given object
@@ -72,7 +72,7 @@ public:
 protected:
   void SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
   void HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
-  void OnSwapChainChanged(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 size);
+  void OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size);
 
   virtual void SetCamera(const xiiViewRedrawMsgToEngine* pMsg);
 
