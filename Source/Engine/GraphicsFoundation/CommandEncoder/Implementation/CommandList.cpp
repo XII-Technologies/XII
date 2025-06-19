@@ -782,42 +782,52 @@ XII_FORCE_INLINE xiiUInt32 GetPrimitiveCount(xiiGALPrimitiveTopology::Enum topol
 
 void xiiGALCommandList::Draw(const xiiGALDrawDescription& description)
 {
+  DrawPlatform(description);
 }
 
 void xiiGALCommandList::DrawIndexed(const xiiGALDrawIndexedDescription& description)
 {
+  DrawIndexedPlatform(description);
 }
 
 void xiiGALCommandList::DrawIndirect(const xiiGALDrawIndirectDescription& description)
 {
+  DrawIndirectPlatform(description);
 }
 
 void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescription& description)
 {
+  DrawIndexedIndirectPlatform(description);
 }
 
 void xiiGALCommandList::DrawMesh(const xiiGALDrawMeshDescription& description)
 {
+  DrawMeshPlatform(description);
 }
 
 void xiiGALCommandList::DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription& description)
 {
+  DrawMeshIndirectPlatform(description);
 }
 
 void xiiGALCommandList::MultiDraw(const xiiGALMultiDrawDescription& description)
 {
+  MultiDrawPlatform(description);
 }
 
 void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription& description)
 {
+  MultiDrawIndexedPlatform(description);
 }
 
 void xiiGALCommandList::DispatchCompute(const xiiGALDispatchComputeDescription& description)
 {
+  DispatchComputePlatform(description);
 }
 
 void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndirectDescription& description)
 {
+  DispatchComputeIndirectPlatform(description);
 }
 
 xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
