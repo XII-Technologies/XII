@@ -125,7 +125,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
 {
   xiiLogBlock _("Allocate Streams From Geometry");
 
-  XII_ASSERT_DEV(topology == xiiGALPrimitiveTopology::PointList || topology == xiiGALPrimitiveTopology::LineList || topology == xiiGALPrimitiveTopology::TriangleList, "Only three pimitive types are currently supported");
+  XII_ASSERT_DEV(topology == xiiGALPrimitiveTopology::PointList || topology == xiiGALPrimitiveTopology::LineList || topology == xiiGALPrimitiveTopology::TriangleList, "Only three primitive types are currently supported");
 
   // Index Buffer Generation
   xiiDynamicArray<xiiUInt32> Indices;
