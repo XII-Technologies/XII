@@ -56,6 +56,47 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
     if (!(expression)) { return XII_FAILURE; }          \
   } while (false)
 
+namespace
+{
+  XII_FORCE_INLINE xiiUInt32 GetPrimitiveCount(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiElements)
+  {
+    if (topology >= xiiGALPrimitiveTopology::ControlPointPatchList1 && topology <= xiiGALPrimitiveTopology::ControlPointPatchList32)
+    {
+      return uiElements / (topology - xiiGALPrimitiveTopology::ControlPointPatchList1 + 1);
+    }
+    else
+    {
+      switch (topology)
+      {
+        case xiiGALPrimitiveTopology::Undefined:
+          XII_REPORT_FAILURE("Undefined primitive topology.");
+          return 0;
+
+        case xiiGALPrimitiveTopology::TriangleList:
+          return uiElements / 3;
+        case xiiGALPrimitiveTopology::TriangleStrip:
+          return xiiMath::Max(uiElements, 2U) - 2;
+        case xiiGALPrimitiveTopology::PointList:
+          return uiElements;
+        case xiiGALPrimitiveTopology::LineList:
+          return uiElements / 2;
+        case xiiGALPrimitiveTopology::LineStrip:
+          return xiiMath::Max(uiElements, 1U) - 1;
+        case xiiGALPrimitiveTopology::TriangleListAdjacent:
+          return uiElements / 6;
+        case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+          return xiiMath::Max(uiElements, 4U) - 4;
+        case xiiGALPrimitiveTopology::LineListAdjacent:
+          return uiElements / 4;
+        case xiiGALPrimitiveTopology::LineStripAdjacent:
+          return xiiMath::Max(uiElements, 3U) - 3;
+
+        default: XII_REPORT_FAILURE("Unexpected primitive topology"); return 0;
+      }
+    }
+  }
+}
+
 xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_pCommandQueue(pCommandQueue)
 {
@@ -742,46 +783,32 @@ void xiiGALCommandList::EndRenderPass()
   m_pFramebuffer = nullptr;
 }
 
-XII_FORCE_INLINE xiiUInt32 GetPrimitiveCount(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiElements)
-{
-  if (topology >= xiiGALPrimitiveTopology::ControlPointPatchList1 && topology <= xiiGALPrimitiveTopology::ControlPointPatchList32)
-  {
-    return uiElements / (topology - xiiGALPrimitiveTopology::ControlPointPatchList1 + 1);
-  }
-  else
-  {
-    switch (topology)
-    {
-      case xiiGALPrimitiveTopology::Undefined:
-        XII_REPORT_FAILURE("Undefined primitive topology.");
-        return 0;
-
-      case xiiGALPrimitiveTopology::TriangleList:
-        return uiElements / 3;
-      case xiiGALPrimitiveTopology::TriangleStrip:
-        return xiiMath::Max(uiElements, 2U) - 2;
-      case xiiGALPrimitiveTopology::PointList:
-        return uiElements;
-      case xiiGALPrimitiveTopology::LineList:
-        return uiElements / 2;
-      case xiiGALPrimitiveTopology::LineStrip:
-        return xiiMath::Max(uiElements, 1U) - 1;
-      case xiiGALPrimitiveTopology::TriangleListAdjacent:
-        return uiElements / 6;
-      case xiiGALPrimitiveTopology::TriangleStripAdjacent:
-        return xiiMath::Max(uiElements, 4U) - 4;
-      case xiiGALPrimitiveTopology::LineListAdjacent:
-        return uiElements / 4;
-      case xiiGALPrimitiveTopology::LineStripAdjacent:
-        return xiiMath::Max(uiElements, 3U) - 3;
-
-      default: XII_REPORT_FAILURE("Unexpected primitive topology"); return 0;
-    }
-  }
-}
-
 void xiiGALCommandList::Draw(const xiiGALDrawDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawCommand arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawCommand arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawCommand arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+
+  if (description.m_uiVertexCount == 0)
+  {
+    xiiLog::Info("DrawCommand vertex count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
+  }
+  if (description.m_uiInstanceCount == 0)
+  {
+    xiiLog::Info("DrawCommand instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
+  }
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDraw;
+
+  if (m_pPipelineState)
+  {
+    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = m_pPipelineState.Downcast<xiiGALGraphicsPipelineState>()->GetDescription();
+
+    m_CommandListStatistics.m_PrimitiveCounters[pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology] += GetPrimitiveCount(pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology, description.m_uiVertexCount) * description.m_uiInstanceCount;
+  }
+
   DrawPlatform(description);
 }
 
