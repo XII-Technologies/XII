@@ -12,7 +12,6 @@
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <Texture/Image/Image.h>
 
@@ -106,9 +105,7 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
 
   {
     // Create new actor
-    xiiUniquePtr<xiiActor> pActor = XII_DEFAULT_NEW(xiiActor, "EditorView", this);
-    m_pEditorWndActor             = pActor.Borrow();
-
+    xiiUniquePtr<xiiActor>                  pActor        = XII_DEFAULT_NEW(xiiActor, "EditorView", this);
     xiiUniquePtr<xiiActorPluginWindowOwner> pWindowPlugin = XII_DEFAULT_NEW(xiiActorPluginWindowOwner);
 
     // create window
@@ -120,7 +117,8 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
       }
       else
       {
-        xiiLog::Error("Failed to create Editor Process View Window");
+        xiiLog::Error("Failed to create Editor Process View Window.");
+        return;
       }
     }
 
@@ -142,6 +140,12 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
 
       pOutput->CreateSwapchain(swapChainDesc);
 
+      if (!pOutput->m_pSwapChain)
+      {
+        xiiLog::Error("Failed to create swapchain for Editor Process View Window.");
+        return;
+      }
+
       pWindowPlugin->m_pWindowOutputTarget = std::move(pOutput);
     }
 
@@ -154,6 +158,7 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
     }
 
     pActor->AddPlugin(std::move(pWindowPlugin));
+    m_pEditorWndActor = pActor.Borrow();
     xiiActorManager::GetSingleton()->AddActor(std::move(pActor));
   }
 }
