@@ -195,6 +195,35 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResolveTextureSubresourceDescription
   xiiEnum<xiiGALResourceFormat>      m_Format                           = xiiGALResourceFormat::Unknown;   ///< If one or both textures are typeless, specifies the type of the typeless texture. If both texture formats are not typeless, in which case they must be identical, this member must be either xiiGALResourceFormat::Unknown, or match this format.
 };
 
+/// \brief Describes parameters for issuing non-indexed draw calls.
+///
+/// Defines the vertex and instance counts, as well as starting locations, for issuing a basic GPU draw call. Used in graphics command encoding where geometry is streamed directly from vertex buffers.
+///
+/// \see xiiGALCommandList::Draw
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawDescription
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Default-initialized draw description (0 vertices, 1 instance).
+  XII_ALWAYS_INLINE xiiGALDrawDescription() = default;
+
+  /// \brief Constructs a draw description with specified parameters.
+  ///
+  /// \param uiVertexCount           - Number of vertices to draw.
+  /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
+  /// \param uiStartVertexLocation   - Index of the first vertex to read.
+  /// \param uiFirstInstanceLocation - Instance ID for the first instance.
+  XII_ALWAYS_INLINE xiiGALDrawDescription(xiiUInt32 uiVertexCount, xiiUInt32 uiInstanceCount = 1U, xiiUInt32 uiStartVertexLocation = 0U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_uiVertexCount(uiVertexCount), m_uiInstanceCount(uiInstanceCount), m_uiStartVertexLocation(uiStartVertexLocation), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  {
+  }
+
+  xiiUInt32 m_uiVertexCount           = 0U; ///< Number of vertices to process.
+  xiiUInt32 m_uiInstanceCount         = 1U; ///< Number of instances to render.
+  xiiUInt32 m_uiStartVertexLocation   = 0U; ///< Start vertex offset within the bound vertex buffer.
+  xiiUInt32 m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
+};
+
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
