@@ -270,7 +270,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndirectDescription
   /// \brief Constructs an indirect draw description with specified parameters.
   ///
   /// \param pBuffer                      - Buffer containing draw arguments.
-  /// \param flags                        - Draw behavior flags.
   /// \param uiDrawCount                  - Number of draws to execute.
   /// \param uiDrawArgsOffset             - Byte offset to the first draw argument.
   /// \param uiDrawArgsStride             - Stride between draw arguments in bytes.
@@ -305,16 +304,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedIndirectDescription
 
   /// \brief Constructs an indexed indirect draw description with specified parameters.
   ///
-  /// \param indexType                       - Type of index data (e.g., 16-bit or 32-bit).
-  /// \param pBuffer                         - Buffer containing draw arguments.
-  /// \param flags                           - Draw behavior flags.
-  /// \param uiDrawCount                     - Number of draws to execute.
-  /// \param uiDrawArgsOffset                - Byte offset to the first draw argument.
-  /// \param uiDrawArgsStride                - Stride between draw arguments in bytes.
-  /// \param bufferStateTransition           - Resource state transition mode for the draw buffer.
-  /// \param pCounterBuffer                  - Optional buffer containing draw count.
-  /// \param uiCounterOffset                 - Byte offset to the draw count value.
-  /// \param counterBufferStateTransition    - Resource state transition mode for the counter buffer.
+  /// \param indexType                    - Type of index data (e.g., 16-bit or 32-bit).
+  /// \param pBuffer                      - Buffer containing draw arguments.
+  /// \param uiDrawCount                  - Number of draws to execute.
+  /// \param uiDrawArgsOffset             - Byte offset to the first draw argument.
+  /// \param uiDrawArgsStride             - Stride between draw arguments in bytes.
+  /// \param bufferStateTransition        - Resource state transition mode for the draw buffer.
+  /// \param pCounterBuffer               - Optional buffer containing draw count.
+  /// \param uiCounterOffset              - Byte offset to the draw count value.
+  /// \param counterBufferStateTransition - Resource state transition mode for the counter buffer.
   XII_ALWAYS_INLINE xiiGALDrawIndexedIndirectDescription(xiiEnum<xiiGALValueType> indexType, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDrawCount = 1U, xiiUInt64 uiDrawArgsOffset = 0U, xiiUInt32 uiDrawArgsStride = 20U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
     m_IndexType(indexType), m_pBuffer(pBuffer), m_uiDrawArgsOffset(uiDrawArgsOffset), m_uiDrawCount(uiDrawCount), m_uiDrawArgsStride(uiDrawArgsStride), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
   {
@@ -366,7 +364,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshDescription
   xiiUInt32 m_uiThreadGroupCountZ = 1U; ///< Mesh thread groups along Z.
 };
 
-
 /// \brief Describes parameters for issuing indirect mesh shader draw calls.
 ///
 /// Pulls mesh dispatch arguments from a GPU buffer, with optional draw count via counter buffer.
@@ -398,6 +395,54 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshIndirectDescription
   xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
   xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
   xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
+};
+
+/// \brief Represents a single non-indexed draw entry in a multi-draw call.
+///
+/// Specifies the number of vertices and the start vertex offset for one draw invocation.
+///
+/// \see xiiGALCommandList::MultiDraw
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawItem
+{
+  /// \brief Default-initialized multi-draw item (0 vertices).
+  XII_ALWAYS_INLINE xiiGALMultiDrawItem() = default;
+
+  /// \brief Constructs a multi-draw item with specified vertex count and offset.
+  ///
+  /// \param uiNumVertices         - Number of vertices to draw.
+  /// \param uiStartVertexLocation - Starting vertex offset in the bound vertex buffer.
+  XII_ALWAYS_INLINE xiiGALMultiDrawItem(xiiUInt32 uiNumVertices, xiiUInt32 uiStartVertexLocation = 0U) :
+    m_uiNumVertices(uiNumVertices), m_uiStartVertexLocation(uiStartVertexLocation)
+  {
+  }
+
+  xiiUInt32 m_uiNumVertices         = 0U; ///< Number of vertices to draw.
+  xiiUInt32 m_uiStartVertexLocation = 0U; ///< Starting vertex offset in the bound vertex buffer.
+};
+
+/// \brief Describes parameters for issuing a multi-draw call with unindexed geometry.
+///
+/// Provides an array of draw items and instance information for batched rendering.
+///
+/// \see xiiGALCommandList::MultiDraw
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawDescription
+{
+  /// \brief Default-initialized multi-draw description.
+  XII_ALWAYS_INLINE xiiGALMultiDrawDescription() = default;
+
+  /// \brief Constructs a multi-draw description with specified items and parameters.
+  ///
+  /// \param pDrawItems              - Pointer to draw item array.
+  /// \param uiNumInstances          - Number of instances to render. Defaults to 1.
+  /// \param uiFirstInstanceLocation - Instance ID for the first instance.
+  XII_ALWAYS_INLINE xiiGALMultiDrawDescription(xiiArrayPtr<const xiiGALMultiDrawItem> pDrawItems, xiiUInt32 uiNumInstances = 1U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_pDrawItems(pDrawItems), m_uiNumInstances(uiNumInstances), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  {
+  }
+
+  xiiArrayPtr<const xiiGALMultiDrawItem> m_pDrawItems;                   ///< Pointer to array of draw entries.
+  xiiUInt32                              m_uiNumInstances          = 1U; ///< Number of instances to render.
+  xiiUInt32                              m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
 };
 };
 /// \brief This describes the command list API call counters.
