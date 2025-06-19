@@ -78,10 +78,17 @@
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/BuildSystem",
+              "Source/BuildSystem/**",
               "**/CMakeLists.txt",
               "**/init.cmake",
               "**/finalize.cmake"
+            ]
+
+"Area: Editor":
+  - all:
+      - changed-files:
+          - any-glob-to-any-file: [
+              "Source/Editor/**",
             ]
 
 "GitHub":
