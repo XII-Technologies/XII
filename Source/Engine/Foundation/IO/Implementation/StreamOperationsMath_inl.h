@@ -4,6 +4,7 @@
 #include <Foundation/Math/BoundingSphere.h>
 #include <Foundation/Math/Color.h>
 #include <Foundation/Math/Color8UNorm.h>
+#include <Foundation/Math/Float16.h>
 #include <Foundation/Math/Mat3.h>
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Plane.h>
@@ -12,6 +13,21 @@
 #include <Foundation/Math/Vec2.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Math/Vec4.h>
+
+// xiiFloat16
+
+inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiFloat16 value)
+{
+  ref_stream.WriteWordValue(&value).AssertSuccess();
+  return ref_stream;
+}
+
+inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiFloat16& ref_value)
+{
+  ref_stream.ReadWordValue(&ref_value).AssertSuccess();
+  return ref_stream;
+}
+
 
 // xiiVec2Template
 
