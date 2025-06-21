@@ -855,6 +855,38 @@ void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescr
 
 void xiiGALCommandList::DrawMesh(const xiiGALDrawMeshDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMesh command arguments are invalid. Mesh shaders are not supported by this device.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMesh command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMesh command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
+
+  const auto& meshProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_MeshShaderProperties;
+
+  if (description.m_uiThreadGroupCountX == 0)
+  {
+    xiiLog::Info("DrawMeshDescription.ThreadGroupCountX is 0. This is acceptable but the draw command will be ignored, but may be unintentional.");
+  }
+  if (description.m_uiThreadGroupCountY == 0)
+  {
+    xiiLog::Info("DrawMeshDescription.ThreadGroupCountY is 0. This is acceptable but the draw command will be ignored, but may be unintentional.");
+  }
+  if (description.m_uiThreadGroupCountZ == 0)
+  {
+    xiiLog::Info("DrawMeshDescription.ThreadGroupCountZ is 0. This is acceptable but the draw command will be ignored, but may be unintentional.");
+  }
+
+  XII_ASSERT_DEV(description.m_uiThreadGroupCountX <= meshProperties.m_uiMaxThreadGroupCountX, "DrawMesh command arguments are invalid. The thread group count X ({0}) exceeds the maximum supported by the device ({1}).", description.m_uiThreadGroupCountX, meshProperties.m_uiMaxThreadGroupCountX);
+  XII_ASSERT_DEV(description.m_uiThreadGroupCountY <= meshProperties.m_uiMaxThreadGroupCountY, "DrawMesh command arguments are invalid. The thread group count Y ({0}) exceeds the maximum supported by the device ({1}).", description.m_uiThreadGroupCountY, meshProperties.m_uiMaxThreadGroupCountY);
+  XII_ASSERT_DEV(description.m_uiThreadGroupCountZ <= meshProperties.m_uiMaxThreadGroupCountZ, "DrawMesh command arguments are invalid. The thread group count Z ({0}) exceeds the maximum supported by the device ({1}).", description.m_uiThreadGroupCountZ, meshProperties.m_uiMaxThreadGroupCountZ);
+
+  const auto uiTotalThreadGroupCount = description.m_uiThreadGroupCountX + description.m_uiThreadGroupCountY + description.m_uiThreadGroupCountZ;
+
+  XII_ASSERT_DEV(uiTotalThreadGroupCount <= meshProperties.m_uiMaxThreadGroupTotalCount, "DrawMesh command arguments are invalid. The total thread group count ({0}) exceeds the maximum supported by the device ({1}).", uiTotalThreadGroupCount, meshProperties.m_uiMaxThreadGroupTotalCount);
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawMesh;
+
   DrawMeshPlatform(description);
 }
 
@@ -945,27 +977,6 @@ xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pI
   ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndirect;
 
   return DrawInstancedIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
-}
-
-xiiResult xiiGALCommandList::DrawMesh(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
-{
-  XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMesh command arguments are invalid. Mesh shaders are not supported by this device.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawMesh command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMesh command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
-
-  const auto& meshProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_MeshShaderProperties;
-
-  XII_VERIFY_COMMAND_LIST_RESULT(uiThreadGroupCountX <= meshProperties.m_uiMaxThreadGroupCountX, "DrawMesh command arguments are invalid. The thread group count X ({0}) exceeds the maximum supported by the device ({1}).", uiThreadGroupCountX, meshProperties.m_uiMaxThreadGroupCountX);
-  XII_VERIFY_COMMAND_LIST_RESULT(uiThreadGroupCountY <= meshProperties.m_uiMaxThreadGroupCountY, "DrawMesh command arguments are invalid. The thread group count Y ({0}) exceeds the maximum supported by the device ({1}).", uiThreadGroupCountY, meshProperties.m_uiMaxThreadGroupCountY);
-  XII_VERIFY_COMMAND_LIST_RESULT(uiThreadGroupCountZ <= meshProperties.m_uiMaxThreadGroupCountZ, "DrawMesh command arguments are invalid. The thread group count Z ({0}) exceeds the maximum supported by the device ({1}).", uiThreadGroupCountZ, meshProperties.m_uiMaxThreadGroupCountZ);
-
-  const auto uiTotalThreadGroupCount = uiThreadGroupCountX + uiThreadGroupCountY + uiThreadGroupCountZ;
-  XII_VERIFY_COMMAND_LIST_RESULT(uiTotalThreadGroupCount <= meshProperties.m_uiMaxThreadGroupTotalCount, "DrawMesh command arguments are invalid. The total thread group count ({0}) exceeds the maximum supported by the device ({1}).", uiTotalThreadGroupCount, meshProperties.m_uiMaxThreadGroupTotalCount);
-
-  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawMesh;
-
-  return DrawMeshPlatform(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 }
 
 xiiResult xiiGALCommandList::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
