@@ -856,7 +856,7 @@ void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescr
 void xiiGALCommandList::DrawMesh(const xiiGALDrawMeshDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_ASSERT_DEV(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMesh command arguments are invalid. Mesh shaders are not supported by this device.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMesh command arguments are invalid. No pipeline state is bound.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMesh command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
@@ -907,11 +907,49 @@ void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription
 
 void xiiGALCommandList::DispatchCompute(const xiiGALDispatchComputeDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Compute), "Dispatch arguments are invalid. The command list does not have the xiiGALCommandQueueType::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "Dispatch command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
+
+  if (description.m_uiThreadGroupCountX == 0)
+  {
+    xiiLog::Info("DispatchComputeDescription.ThreadGroupCountX is 0. This is acceptable but the dispatch command will be ignored, but may be unintentional.");
+  }
+  if (description.m_uiThreadGroupCountY == 0)
+  {
+    xiiLog::Info("DispatchComputeDescription.ThreadGroupCountY is 0. This is acceptable but the dispatch command will be ignored, but may be unintentional.");
+  }
+  if (description.m_uiThreadGroupCountZ == 0)
+  {
+    xiiLog::Info("DispatchComputeDescription.ThreadGroupCountZ is 0. This is acceptable but the dispatch command will be ignored, but may be unintentional.");
+  }
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDispatchCompute;
+
   DispatchComputePlatform(description);
 }
 
 void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndirectDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Compute), "DispatchIndirect arguments are invalid. The command list does not have the xiiGALCommandQueueType::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DispatchIndirect command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "DispatchIndirect command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "DispatchIndirect command arguments are invalid. DispatchIndirect command must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pBuffer != nullptr, "The indirect arguments buffer is invalidated.");
+
+  const auto& bufferDescription = description.m_pBuffer->GetDescription();
+  XII_ASSERT_DEV(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", description.m_pBuffer->GetDebugName());
+
+  const xiiUInt32 uiOffset = ((sizeof(xiiUInt32) * 3) + description.m_uiDispatchArgumentOffset);
+  XII_ASSERT_DEV(uiOffset <= bufferDescription.m_uiSize, "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' offset in bytes must be at least {1} bytes.", description.m_pBuffer->GetDebugName());
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDispatchComputeIndirect;
+
   DispatchComputeIndirectPlatform(description);
 }
 
@@ -977,38 +1015,6 @@ xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pI
   ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndirect;
 
   return DrawInstancedIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
-}
-
-xiiResult xiiGALCommandList::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
-{
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "Dispatch command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pRenderPass == nullptr, "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
-  XII_VERIFY_COMMAND_LIST_RESULT(uiThreadGroupCountX != 0U && uiThreadGroupCountY != 0U && uiThreadGroupCountZ != 0U, "Dispatch command arguments are invalid. At least one of the thread group counts are zero, this is OK as the dispatch command will be ignored, but may be unintentional.");
-
-  ++m_CommandListStatistics.m_CommandListCounters.m_uiDispatchCompute;
-
-  return DispatchPlatform(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
-}
-
-xiiResult xiiGALCommandList::DispatchIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
-{
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DispatchIndirect command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "DispatchIndirect command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pRenderPass == nullptr, "DispatchIndirect command arguments are invalid. DispatchIndirect command must be performed outside of render pass.");
-
-  XII_VERIFY_COMMAND_LIST_RESULT(pIndirectArgumentBuffer != nullptr, "The indirect arguments buffer is invalidated.");
-
-  const auto& bufferDescription = pIndirectArgumentBuffer->GetDescription();
-
-  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentBuffer->GetDebugName());
-
-  const xiiUInt32 uiOffset = ((sizeof(xiiUInt32) * 3) + uiArgumentOffsetInBytes);
-  XII_VERIFY_COMMAND_LIST_RESULT(uiOffset <= bufferDescription.m_uiSize, "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' offset in bytes must be at least {1} bytes.", pIndirectArgumentBuffer->GetDebugName());
-
-  ++m_CommandListStatistics.m_CommandListCounters.m_uiDispatchComputeIndirect;
-
-  return DispatchIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
 }
 #endif
 
