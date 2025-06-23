@@ -897,6 +897,37 @@ void xiiGALCommandList::DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription
 
 void xiiGALCommandList::MultiDraw(const xiiGALMultiDrawDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "MultiDraw command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "MultiDraw command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDraw command arguments are invalid. No index buffer is bound.");
+
+  if (description.m_uiInstanceCount == 0)
+  {
+    xiiLog::Info("MultiDrawDescription.InstanceCount is 0. This is acceptable but the draw command will be ignored, but may be unintentional.");
+  }
+#endif
+
+  if (m_pPipelineState)
+  {
+    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = m_pPipelineState.Downcast<xiiGALGraphicsPipelineState>()->GetDescription();
+
+    for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+    {
+      m_CommandListStatistics.m_PrimitiveCounters[pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology] += GetPrimitiveCount(pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology, description.m_pDrawItems[i].m_uiVertexCount) * description.m_uiInstanceCount;
+    }
+  }
+
+  if (m_bNativeMultiDrawSupported)
+  {
+    ++m_CommandListStatistics.m_CommandListCounters.m_uiMultiDraw;
+  }
+  else
+  {
+    m_CommandListStatistics.m_CommandListCounters.m_uiDraw += description.m_pDrawItems.GetCount();
+  }
+
   MultiDrawPlatform(description);
 }
 
@@ -908,6 +939,11 @@ void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "MultiDrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDrawIndexed command arguments are invalid. No index buffer is bound.");
   XII_ASSERT_DEV(description.m_IndexType == xiiGALValueType::UInt16 || description.m_IndexType == xiiGALValueType::UInt32, "MultiDrawIndexed command arguments are invalid. Index type must be xiiGALValueType::UInt16 or xiiGALValueType::UInt32.");
+
+  if (description.m_uiInstanceCount == 0)
+  {
+    xiiLog::Info("MultiDrawIndexedDescription.InstanceCount is 0. This is acceptable but the draw command will be ignored, but may be unintentional.");
+  }
 #endif
 
   if (m_pPipelineState)

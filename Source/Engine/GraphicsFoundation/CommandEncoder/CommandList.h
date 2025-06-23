@@ -409,14 +409,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawItem
 
   /// \brief Constructs a multi-draw item with specified vertex count and offset.
   ///
-  /// \param uiNumVertices         - Number of vertices to draw.
+  /// \param uiVertexCount         - Number of vertices to draw.
   /// \param uiStartVertexLocation - Starting vertex offset in the bound vertex buffer.
-  XII_ALWAYS_INLINE xiiGALMultiDrawItem(xiiUInt32 uiNumVertices, xiiUInt32 uiStartVertexLocation = 0U) :
-    m_uiNumVertices(uiNumVertices), m_uiStartVertexLocation(uiStartVertexLocation)
+  XII_ALWAYS_INLINE xiiGALMultiDrawItem(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertexLocation = 0U) :
+    m_uiVertexCount(uiVertexCount), m_uiStartVertexLocation(uiStartVertexLocation)
   {
   }
 
-  xiiUInt32 m_uiNumVertices         = 0U; ///< Number of vertices to draw.
+  xiiUInt32 m_uiVertexCount         = 0U; ///< Number of vertices to draw.
   xiiUInt32 m_uiStartVertexLocation = 0U; ///< Starting vertex offset in the bound vertex buffer.
 };
 
@@ -493,7 +493,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedDescription
 
   xiiArrayPtr<const xiiGALMultiDrawIndexedItem> m_pDrawItems;                                           ///< Pointer to indexed draw entries.
   xiiEnum<xiiGALValueType>                      m_IndexType               = xiiGALValueType::Undefined; ///< Type of index data.
-  xiiUInt32                                     m_uiInstanceCount         = 1U;                         ///< Number of instances to render.
+  xiiUInt32                                     m_uiInstanceCount         = 1U;                         ///< Number of instances to render. If more than one instances are specified, an instanced draw call will be performed.
   xiiUInt32                                     m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to vertex shader.
 };
 
