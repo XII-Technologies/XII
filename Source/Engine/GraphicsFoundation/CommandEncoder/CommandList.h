@@ -1280,6 +1280,8 @@ protected:
   /// \endcond
 
 protected:
+  static constexpr xiiUInt32 s_uiDrawMeshIndirectCommandStride = sizeof(xiiUInt32) * 3; // Vulkan: 8 bytes (task count, first task), D3D12: 12 bytes (x, y, z dimension).
+
   xiiGALCommandListCreationDescription m_Description;
 
   xiiGALCommandQueue* m_pCommandQueue;

@@ -892,6 +892,35 @@ void xiiGALCommandList::DrawMesh(const xiiGALDrawMeshDescription& description)
 
 void xiiGALCommandList::DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMeshIndirect command arguments are invalid. Mesh shaders are not supported by this device.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMeshIndirect command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMeshIndirect command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(description.m_pCounterBuffer == nullptr || (m_pDevice->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer)), "DrawMeshIndirect command arguments are invalid. Counter buffer requires xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer draw capability.");
+
+  // There is no need to check xiiGALDrawCommandCapabilityFlags::DrawIndirect because an indirect buffer can only be created if this capability is supported.
+
+  XII_ASSERT_DEV(description.m_pBuffer != nullptr, "DrawMeshIndirect command arguments are invalid. Indirect draw arguments buffer must not be null.");
+
+  const xiiGALBufferCreationDescription& argumentsBufferDescription = description.m_pBuffer->GetDescription();
+  XII_ASSERT_DEV(argumentsBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DrawMeshIndirect command arguments are invalid. Indirect draw arguments buffer ({}) was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", description.m_pBuffer->GetDebugName());
+
+  const xiiUInt64 uiRequiredArgumentBufferSize = description.m_uiDrawArgumentOffset + xiiUInt64{s_uiDrawMeshIndirectCommandStride} * xiiUInt64{description.m_uiCommandCount};
+  XII_ASSERT_DEV(uiRequiredArgumentBufferSize <= argumentsBufferDescription.m_uiSize, "DrawMeshIndirect command arguments are invalid. Indirect draw arguments buffer ({}) size must be at least {} bytes.", description.m_pBuffer->GetDebugName(), uiRequiredArgumentBufferSize);
+
+  if (description.m_pCounterBuffer != nullptr)
+  {
+    const xiiGALBufferCreationDescription& counterBufferDescription = description.m_pCounterBuffer->GetDescription();
+    XII_ASSERT_DEV(counterBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DrawMeshIndirect command arguments are invalid. Indirect counter buffer ({}) was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", description.m_pCounterBuffer->GetDebugName());
+
+    const xiiUInt64 uiRequiredCounterBufferSize = description.m_uiCounterOffset + sizeof(xiiUInt32);
+    XII_ASSERT_DEV(uiRequiredCounterBufferSize <= counterBufferDescription.m_uiSize, "DrawMeshIndirect command arguments are invalid. Invalid counter offset ({}) or counter buffer '{}' size must be at least {} bytes.", uiRequiredCounterBufferSize, description.m_pBuffer->GetDebugName(), uiRequiredCounterBufferSize);
+  }
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawMeshIndirect;
+
   DrawMeshIndirectPlatform(description);
 }
 
