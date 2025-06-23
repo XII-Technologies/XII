@@ -98,7 +98,7 @@ namespace
 } // namespace
 
 xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_pCommandQueue(pCommandQueue)
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_pCommandQueue(pCommandQueue), m_bNativeMultiDrawSupported{m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_NativeMultiDraw != xiiGALDeviceFeatureState::Disabled}
 {
   XII_ASSERT_DEV(m_pCommandQueue != nullptr, "Invalid command queue provided.");
 }
@@ -902,6 +902,33 @@ void xiiGALCommandList::MultiDraw(const xiiGALMultiDrawDescription& description)
 
 void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "MultiDrawIndexed command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "MultiDrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDrawIndexed command arguments are invalid. No index buffer is bound.");
+  XII_ASSERT_DEV(description.m_IndexType == xiiGALValueType::UInt16 || description.m_IndexType == xiiGALValueType::UInt32, "MultiDrawIndexed command arguments are invalid. Index type must be xiiGALValueType::UInt16 or xiiGALValueType::UInt32.");
+#endif
+
+  if (m_pPipelineState)
+  {
+    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = m_pPipelineState.Downcast<xiiGALGraphicsPipelineState>()->GetDescription();
+
+    for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+    {
+      m_CommandListStatistics.m_PrimitiveCounters[pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology] += GetPrimitiveCount(pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology, description.m_pDrawItems[i].m_uiIndexCount) * description.m_uiInstanceCount;
+    }
+  }
+
+  if (m_bNativeMultiDrawSupported)
+  {
+    ++m_CommandListStatistics.m_CommandListCounters.m_uiMultiDrawIndexed;
+  }
+  else
+  {
+    m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndexed += description.m_pDrawItems.GetCount();
+  }
+
   MultiDrawIndexedPlatform(description);
 }
 
@@ -944,7 +971,7 @@ void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndir
   const auto& bufferDescription = description.m_pBuffer->GetDescription();
   XII_ASSERT_DEV(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", description.m_pBuffer->GetDebugName());
 
-  const xiiUInt32 uiOffset = ((sizeof(xiiUInt32) * 3) + description.m_uiDispatchArgumentOffset);
+  const xiiUInt64 uiOffset = ((sizeof(xiiUInt32) * 3) + description.m_uiDispatchArgumentOffset);
   XII_ASSERT_DEV(uiOffset <= bufferDescription.m_uiSize, "DispatchIndirect command arguments are invalid. The dispatch indirect arguments buffer '{0}' offset in bytes must be at least {1} bytes.", description.m_pBuffer->GetDebugName());
 #endif
 
