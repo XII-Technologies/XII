@@ -152,6 +152,17 @@ struct xiiArgErrno
   xiiInt32 m_iErrno;
 };
 XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrno& arg);
+
+struct xiiArgErrorCode
+{
+  inline explicit xiiArgErrorCode(xiiUInt32 uiErrorCode) : m_ErrorCode(uiErrorCode)
+  {
+  }
+
+  xiiUInt32 m_ErrorCode;
+};
+
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg);
 #endif
 
 /// \brief Wraps a string that may contain sensitive information, such as user file paths.
