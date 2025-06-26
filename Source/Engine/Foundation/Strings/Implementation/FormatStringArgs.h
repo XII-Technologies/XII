@@ -155,7 +155,8 @@ XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, co
 
 struct xiiArgErrorCode
 {
-  inline explicit xiiArgErrorCode(xiiUInt32 uiErrorCode) : m_ErrorCode(uiErrorCode)
+  inline explicit xiiArgErrorCode(xiiUInt32 uiErrorCode) :
+    m_ErrorCode(uiErrorCode)
   {
   }
 
