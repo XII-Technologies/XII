@@ -421,7 +421,7 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode
   if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, arg.m_ErrorCode, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPWSTR)&lpMsgBuf, 0, nullptr) == 0)
   {
     DWORD err = GetLastError();
-    xiiStringUtils::snprintf(szTmp, uiLength, "%i (FormatMessageW failed with error code %i)", arg.m_ErrorCode, err);
+    xiiStringUtils::snprintf(szTmp, uiLength, "%u (FormatMessageW failed with error code %u)", arg.m_ErrorCode, err);
     return xiiStringView(szTmp);
   }
 
@@ -435,7 +435,7 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode
   // we need a bigger boat
   static thread_local char FullMessage[256];
 
-  xiiStringUtils::snprintf(FullMessage, XII_ARRAY_SIZE(FullMessage), "%i (\"%s\")", arg.m_ErrorCode, xiiStringUtf8((LPWSTR)lpMsgBuf).GetData());
+  xiiStringUtils::snprintf(FullMessage, XII_ARRAY_SIZE(FullMessage), "%u (\"%s\")", arg.m_ErrorCode, xiiStringUtf8((LPWSTR)lpMsgBuf).GetData());
   LocalFree(lpMsgBuf);
   return xiiStringView(FullMessage);
 }
@@ -448,6 +448,12 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrno& ar
 {
   const char* szErrorMsg = std::strerror(arg.m_iErrno);
   xiiStringUtils::snprintf(szTmp, uiLength, "%i (\"%s\")", arg.m_iErrno, szErrorMsg);
+  return xiiStringView(szTmp);
+}
+
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg)
+{
+  xiiStringUtils::snprintf(szTmp, uiLength, "%u", arg.m_ErrorCode);
   return xiiStringView(szTmp);
 }
 #endif
