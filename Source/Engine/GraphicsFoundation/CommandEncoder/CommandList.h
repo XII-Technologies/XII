@@ -889,8 +889,6 @@ public:
   /// \brief This ends a render pass that has already begun.
   void EndRenderPass();
 
-  /// \todo GraphicsFoundation: Add unordered access view clear.
-
   // Draw functions.
 
   /// \brief Issues a non-indexed draw call using the specified parameters.
