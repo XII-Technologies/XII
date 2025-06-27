@@ -845,6 +845,44 @@ void xiiGALCommandList::DrawIndexed(const xiiGALDrawIndexedDescription& descript
 
 void xiiGALCommandList::DrawIndirect(const xiiGALDrawIndirectDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(description.m_pCounterBuffer == nullptr || m_pDevice->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer), "DrawIndirect command arguments are invalid. Counter buffer requires the xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer capability.");
+
+  // There is no need to check xiiGALDrawCommandCapabilityFlags::DrawIndirect because an indirect buffer can only be created if this capability is supported.
+
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawIndirect command arguments are invalid. No pipeline state is set.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pRenderPass == nullptr || description.m_BufferStateTransition != xiiGALStateTransitionMode::Transition, "Resource state transitions are not permitted inside a render pass and may result in an undefined behavior. Do not use xiiGALStateTransitionMode::Transition or end the render pass first.");
+
+  XII_ASSERT_DEV(description.m_pBuffer != nullptr, "DrawIndirect command arguments are invalid. Indirect draw arguments buffer must not be null.");
+
+  const xiiGALBufferCreationDescription& argumentsBufferDescription = description.m_pBuffer->GetDescription();
+  XII_ASSERT_DEV(argumentsBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DrawIndirect command arguments are invalid. Indirect draw arguments buffer ({}) was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", description.m_pBuffer->GetDebugName());
+
+  if (description.m_uiDrawCount > 1U)
+  {
+    constexpr xiiUInt32 uiMinimumArgumentStride = sizeof(xiiUInt32) * 4U;
+
+    XII_ASSERT_DEV(description.m_uiDrawArgumentStride >= uiMinimumArgumentStride, "DrawIndirect command arguments are invalid. Stride must be greater than {} bytes.", uiMinimumArgumentStride);
+    XII_ASSERT_DEV((description.m_uiDrawArgumentStride % 4U) == 0U, "DrawIndirect command arguments are invalid. Stride must be greater a multiple of 4.");
+  }
+
+  const xiiUInt64 uiRequiredArgumentBufferSize = description.m_uiDrawArgumentOffset + (description.m_uiDrawCount > 1U ? description.m_uiDrawCount * description.m_uiDrawArgumentStride : xiiUInt32{sizeof(xiiUInt32)} * 5U);
+  XII_ASSERT_DEV(uiRequiredArgumentBufferSize <= argumentsBufferDescription.m_uiSize, "DrawIndirect command arguments are invalid. Indirect draw arguments buffer ({}) size must be at least {} bytes.", description.m_pBuffer->GetDebugName(), uiRequiredArgumentBufferSize);
+
+  if (description.m_pCounterBuffer != nullptr)
+  {
+    const xiiGALBufferCreationDescription& counterBufferDescription = description.m_pCounterBuffer->GetDescription();
+    XII_ASSERT_DEV(counterBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DrawIndirect command arguments are invalid. Indirect counter buffer ({}) was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", description.m_pCounterBuffer->GetDebugName());
+
+    const xiiUInt64 uiRequiredCounterBufferSize = description.m_uiCounterOffset + sizeof(xiiUInt32);
+    XII_ASSERT_DEV(uiRequiredCounterBufferSize <= counterBufferDescription.m_uiSize, "DrawIndirect command arguments are invalid. Invalid counter offset ({}) or counter buffer '{}' size must be at least {} bytes.", uiRequiredCounterBufferSize, description.m_pBuffer->GetDebugName(), uiRequiredCounterBufferSize);
+  }
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndirect;
+
   DrawIndirectPlatform(description);
 }
 
@@ -875,7 +913,7 @@ void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescr
     XII_ASSERT_DEV((description.m_uiDrawArgumentStride % 4U) == 0U, "DrawIndexedIndirect command arguments are invalid. Stride must be greater a multiple of 4.");
   }
 
-  const xiiUInt64 uiRequiredArgumentBufferSize = description.m_uiDrawArgumentOffset + (description.m_uiDrawCount > 1U ? description.m_uiDrawCount * description.m_uiDrawArgumentOffset : xiiUInt32{sizeof(xiiUInt32)} * 5U);
+  const xiiUInt64 uiRequiredArgumentBufferSize = description.m_uiDrawArgumentOffset + (description.m_uiDrawCount > 1U ? description.m_uiDrawCount * description.m_uiDrawArgumentStride : xiiUInt32{sizeof(xiiUInt32)} * 5U);
   XII_ASSERT_DEV(uiRequiredArgumentBufferSize <= argumentsBufferDescription.m_uiSize, "DrawIndexedIndirect command arguments are invalid. Indirect draw arguments buffer ({}) size must be at least {} bytes.", description.m_pBuffer->GetDebugName(), uiRequiredArgumentBufferSize);
 
   if (description.m_pCounterBuffer != nullptr)
@@ -887,6 +925,8 @@ void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescr
     XII_ASSERT_DEV(uiRequiredCounterBufferSize <= counterBufferDescription.m_uiSize, "DrawIndexedIndirect command arguments are invalid. Invalid counter offset ({}) or counter buffer '{}' size must be at least {} bytes.", uiRequiredCounterBufferSize, description.m_pBuffer->GetDebugName(), uiRequiredCounterBufferSize);
   }
 #endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndexedIndirect;
 
   DrawIndexedIndirectPlatform(description);
 }
