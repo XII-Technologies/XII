@@ -272,20 +272,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndirectDescription
   /// \param pBuffer                      - Buffer containing draw arguments.
   /// \param uiDrawCount                  - Number of draws to execute.
   /// \param uiDrawArgumentOffset         - Byte offset to the first draw argument.
-  /// \param uiDrawArgsStride             - Stride between draw arguments in bytes.
+  /// \param uiDrawArgumentStride         - Stride between draw arguments in bytes.
   /// \param bufferStateTransition        - Resource state transition mode for the draw buffer.
   /// \param pCounterBuffer               - Optional buffer containing draw count.
   /// \param uiCounterOffset              - Byte offset to the draw count value.
   /// \param counterBufferStateTransition - Resource state transition mode for the counter buffer.
-  XII_ALWAYS_INLINE xiiGALDrawIndirectDescription(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDrawCount = 1U, xiiUInt64 uiDrawArgumentOffset = 0U, xiiUInt32 uiDrawArgsStride = 16U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
-    m_pBuffer(pBuffer), m_uiDrawArgumentOffset(uiDrawArgumentOffset), m_uiDrawCount(uiDrawCount), m_uiDrawArgsStride(uiDrawArgsStride), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
+  XII_ALWAYS_INLINE xiiGALDrawIndirectDescription(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDrawCount = 1U, xiiUInt64 uiDrawArgumentOffset = 0U, xiiUInt32 uiDrawArgumentStride = 16U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
+    m_pBuffer(pBuffer), m_uiDrawArgumentOffset(uiDrawArgumentOffset), m_uiDrawCount(uiDrawCount), m_uiDrawArgumentStride(uiDrawArgumentStride), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
   {
   }
 
   xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr;                         ///< Buffer containing draw arguments.
   xiiUInt64                          m_uiDrawArgumentOffset         = 0U;                              ///< Byte offset to the first draw argument.
   xiiUInt32                          m_uiDrawCount                  = 1U;                              ///< Number of draws to execute.
-  xiiUInt32                          m_uiDrawArgsStride             = 16U;                             ///< Stride between draw arguments in bytes.
+  xiiUInt32                          m_uiDrawArgumentStride         = 16U;                             ///< Stride between draw arguments in bytes.
   xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None; ///< State transition mode.
   xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
   xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
@@ -308,13 +308,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedIndirectDescription
   /// \param pBuffer                      - Buffer containing draw arguments.
   /// \param uiDrawCount                  - Number of draws to execute.
   /// \param uiDrawArgumentOffset         - Byte offset to the first draw argument.
-  /// \param uiDrawArgsStride             - Stride between draw arguments in bytes.
+  /// \param uiDrawArgumentStride         - Stride between draw arguments in bytes.
   /// \param bufferStateTransition        - Resource state transition mode for the draw buffer.
   /// \param pCounterBuffer               - Optional buffer containing draw count.
   /// \param uiCounterOffset              - Byte offset to the draw count value.
   /// \param counterBufferStateTransition - Resource state transition mode for the counter buffer.
-  XII_ALWAYS_INLINE xiiGALDrawIndexedIndirectDescription(xiiEnum<xiiGALValueType> indexType, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDrawCount = 1U, xiiUInt64 uiDrawArgumentOffset = 0U, xiiUInt32 uiDrawArgsStride = 20U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
-    m_IndexType(indexType), m_pBuffer(pBuffer), m_uiDrawArgumentOffset(uiDrawArgumentOffset), m_uiDrawCount(uiDrawCount), m_uiDrawArgsStride(uiDrawArgsStride), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
+  XII_ALWAYS_INLINE xiiGALDrawIndexedIndirectDescription(xiiEnum<xiiGALValueType> indexType, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDrawCount = 1U, xiiUInt64 uiDrawArgumentOffset = 0U, xiiUInt32 uiDrawArgumentStride = 20U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
+    m_IndexType(indexType), m_pBuffer(pBuffer), m_uiDrawArgumentOffset(uiDrawArgumentOffset), m_uiDrawCount(uiDrawCount), m_uiDrawArgumentStride(uiDrawArgumentStride), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
   {
   }
 
@@ -322,7 +322,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedIndirectDescription
   xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr;                         ///< Buffer containing draw arguments.
   xiiUInt64                          m_uiDrawArgumentOffset         = 0U;                              ///< Byte offset to the first draw argument.
   xiiUInt32                          m_uiDrawCount                  = 1U;                              ///< Number of draws to execute.
-  xiiUInt32                          m_uiDrawArgsStride             = 20U;                             ///< Stride between draw arguments in bytes.
+  xiiUInt32                          m_uiDrawArgumentStride         = 20U;                             ///< Stride between draw arguments in bytes.
   xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None; ///< State transition mode.
   xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
   xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.

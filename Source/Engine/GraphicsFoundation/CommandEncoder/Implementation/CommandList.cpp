@@ -787,7 +787,7 @@ void xiiGALCommandList::Draw(const xiiGALDrawDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_ASSERT_DEV(m_pPipelineState != nullptr, "Draw arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "Draw arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "Draw arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
 
   if (description.m_uiVertexCount == 0)
@@ -816,9 +816,9 @@ void xiiGALCommandList::DrawIndexed(const xiiGALDrawIndexedDescription& descript
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexed command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawIndexed command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawIndexed command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
-  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "DrawIndexed command arguments are invalid. No index buffer is bound.");
+  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "DrawIndexed command arguments are invalid. No index buffer is set.");
   XII_ASSERT_DEV(description.m_IndexType == xiiGALValueType::UInt16 || description.m_IndexType == xiiGALValueType::UInt32, "DrawIndexed command arguments are invalid. Index type must be xiiGALValueType::UInt16 or xiiGALValueType::UInt32.");
 
   if (description.m_uiIndexCount == 0)
@@ -850,6 +850,44 @@ void xiiGALCommandList::DrawIndirect(const xiiGALDrawIndirectDescription& descri
 
 void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescription& description)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(description.m_pCounterBuffer == nullptr || m_pDevice->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer), "DrawIndexedIndirect command arguments are invalid. Counter buffer requires the xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer capability.");
+
+  // There is no need to check xiiGALDrawCommandCapabilityFlags::DrawIndirect because an indirect buffer can only be created if this capability is supported.
+
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawIndexedIndirect command arguments are invalid. No pipeline state is set.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "DrawIndexedIndirect command arguments are invalid. No index buffer is set.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr || description.m_BufferStateTransition != xiiGALStateTransitionMode::Transition, "Resource state transitions are not permitted inside a render pass and may result in an undefined behavior. Do not use xiiGALStateTransitionMode::Transition or end the render pass first.");
+
+  XII_ASSERT_DEV(description.m_pBuffer != nullptr, "DrawIndexedIndirect command arguments are invalid. Indirect draw arguments buffer must not be null.");
+
+  const xiiGALBufferCreationDescription& argumentsBufferDescription = description.m_pBuffer->GetDescription();
+  XII_ASSERT_DEV(argumentsBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DrawIndexedIndirect command arguments are invalid. Indirect draw arguments buffer ({}) was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", description.m_pBuffer->GetDebugName());
+  XII_ASSERT_DEV(description.m_IndexType == xiiGALValueType::UInt16 || description.m_IndexType == xiiGALValueType::UInt32, "DrawIndexedIndirect command arguments are invalid. Index type must be xiiGALValueType::UInt16 or xiiGALValueType::UInt32.");
+
+  if (description.m_uiDrawCount > 1U)
+  {
+    constexpr xiiUInt32 uiMinimumArgumentStride = sizeof(xiiUInt32) * 5U;
+
+    XII_ASSERT_DEV(description.m_uiDrawArgumentStride >= uiMinimumArgumentStride, "DrawIndexedIndirect command arguments are invalid. Stride must be greater than {} bytes.", uiMinimumArgumentStride);
+    XII_ASSERT_DEV((description.m_uiDrawArgumentStride % 4U) == 0U, "DrawIndexedIndirect command arguments are invalid. Stride must be greater a multiple of 4.");
+  }
+
+  const xiiUInt64 uiRequiredArgumentBufferSize = description.m_uiDrawArgumentOffset + (description.m_uiDrawCount > 1U ? description.m_uiDrawCount * description.m_uiDrawArgumentOffset : xiiUInt32{sizeof(xiiUInt32)} * 5U);
+  XII_ASSERT_DEV(uiRequiredArgumentBufferSize <= argumentsBufferDescription.m_uiSize, "DrawIndexedIndirect command arguments are invalid. Indirect draw arguments buffer ({}) size must be at least {} bytes.", description.m_pBuffer->GetDebugName(), uiRequiredArgumentBufferSize);
+
+  if (description.m_pCounterBuffer != nullptr)
+  {
+    const xiiGALBufferCreationDescription& counterBufferDescription = description.m_pCounterBuffer->GetDescription();
+    XII_ASSERT_DEV(counterBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "DrawIndexedIndirect command arguments are invalid. Indirect counter buffer ({}) was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", description.m_pCounterBuffer->GetDebugName());
+
+    const xiiUInt64 uiRequiredCounterBufferSize = description.m_uiCounterOffset + sizeof(xiiUInt32);
+    XII_ASSERT_DEV(uiRequiredCounterBufferSize <= counterBufferDescription.m_uiSize, "DrawIndexedIndirect command arguments are invalid. Invalid counter offset ({}) or counter buffer '{}' size must be at least {} bytes.", uiRequiredCounterBufferSize, description.m_pBuffer->GetDebugName(), uiRequiredCounterBufferSize);
+  }
+#endif
+
   DrawIndexedIndirectPlatform(description);
 }
 
@@ -858,7 +896,7 @@ void xiiGALCommandList::DrawMesh(const xiiGALDrawMeshDescription& description)
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_ASSERT_DEV(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMesh command arguments are invalid. Mesh shaders are not supported by this device.");
-  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMesh command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMesh command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMesh command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
 
   const auto& meshProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_MeshShaderProperties;
@@ -895,7 +933,7 @@ void xiiGALCommandList::DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
   XII_ASSERT_DEV(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMeshIndirect command arguments are invalid. Mesh shaders are not supported by this device.");
-  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMeshIndirect command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMeshIndirect command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMeshIndirect command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(description.m_pCounterBuffer == nullptr || (m_pDevice->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer)), "DrawMeshIndirect command arguments are invalid. Counter buffer requires xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer draw capability.");
 
@@ -928,9 +966,9 @@ void xiiGALCommandList::MultiDraw(const xiiGALMultiDrawDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_ASSERT_DEV(m_pPipelineState != nullptr, "MultiDraw command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "MultiDraw command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "MultiDraw command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
-  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDraw command arguments are invalid. No index buffer is bound.");
+  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDraw command arguments are invalid. No index buffer is set.");
 
   if (description.m_uiInstanceCount == 0)
   {
@@ -964,9 +1002,9 @@ void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_ASSERT_DEV(m_pPipelineState != nullptr, "MultiDrawIndexed command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "MultiDrawIndexed command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "MultiDrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
-  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDrawIndexed command arguments are invalid. No index buffer is bound.");
+  XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDrawIndexed command arguments are invalid. No index buffer is set.");
   XII_ASSERT_DEV(description.m_IndexType == xiiGALValueType::UInt16 || description.m_IndexType == xiiGALValueType::UInt32, "MultiDrawIndexed command arguments are invalid. Index type must be xiiGALValueType::UInt16 or xiiGALValueType::UInt32.");
 
   if (description.m_uiInstanceCount == 0)
@@ -1001,7 +1039,7 @@ void xiiGALCommandList::DispatchCompute(const xiiGALDispatchComputeDescription& 
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Compute), "Dispatch arguments are invalid. The command list does not have the xiiGALCommandQueueType::Compute flag.");
-  XII_ASSERT_DEV(m_pPipelineState != nullptr, "Dispatch command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "Dispatch command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
 
@@ -1028,7 +1066,7 @@ void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndir
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Compute), "DispatchIndirect arguments are invalid. The command list does not have the xiiGALCommandQueueType::Compute flag.");
-  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DispatchIndirect command arguments are invalid. No pipeline state is bound.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "DispatchIndirect command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "DispatchIndirect command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "DispatchIndirect command arguments are invalid. DispatchIndirect command must be performed outside of render pass.");
   XII_ASSERT_DEV(description.m_pBuffer != nullptr, "The indirect arguments buffer is invalidated.");
@@ -1044,71 +1082,6 @@ void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndir
 
   DispatchComputeIndirectPlatform(description);
 }
-
-#if 0
-xiiResult xiiGALCommandList::DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
-{
-  XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstanced command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstanced command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstanced command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pIndexBuffer != nullptr, "DrawIndexedInstanced command arguments are invalid. No index buffer is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(uiIndexCountPerInstance != 0, "DrawIndexedInstanced index count per instance is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
-  XII_VERIFY_COMMAND_LIST_RESULT(uiInstanceCount != 0, "DrawIndexedInstanced instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
-
-  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndexed;
-
-  return DrawIndexedInstancedPlatform(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance);
-}
-
-xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
-{
-  XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstancedIndirect command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstancedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(pIndirectArgumentBuffer != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. The indirect argument buffer is invalidated.");
-
-  const auto& bufferDescription = pIndirectArgumentBuffer->GetDescription();
-
-  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentBuffer->GetDebugName());
-
-  /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
-
-  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndexedIndirect;
-
-  return DrawIndexedInstancedIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
-}
-
-xiiResult xiiGALCommandList::DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
-{
-  XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawInstanced command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawInstanced command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawInstanced command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(uiVertexCountPerInstance != 0, "DrawInstanced vertex count per instance is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
-  XII_VERIFY_COMMAND_LIST_RESULT(uiInstanceCount != 0, "DrawInstanced instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
-
-  ++m_CommandListStatistics.m_CommandListCounters.m_uiDraw;
-
-  return DrawInstancedPlatform(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance);
-}
-
-xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
-{
-  XII_VERIFY_COMMAND_LIST_RESULT(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexedInstancedIndirect command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. No pipeline state is bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexedInstancedIndirect command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
-  XII_VERIFY_COMMAND_LIST_RESULT(pIndirectArgumentBuffer != nullptr, "DrawIndexedInstancedIndirect command arguments are invalid. The indirect argument buffer is invalidated.");
-
-  const auto& bufferDescription = pIndirectArgumentBuffer->GetDescription();
-
-  XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentBuffer->GetDebugName());
-
-  /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
-
-  ++m_CommandListStatistics.m_CommandListCounters.m_uiDrawIndirect;
-
-  return DrawInstancedIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
-}
-#endif
 
 void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 {
