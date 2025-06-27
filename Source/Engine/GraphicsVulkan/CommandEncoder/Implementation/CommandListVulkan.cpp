@@ -1498,6 +1498,57 @@ void xiiGALCommandListVulkan::EndRenderPassPlatform()
   }
 }
 
+void xiiGALCommandListVulkan::DrawPlatform(const xiiGALDrawDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::DrawMeshPlatform(const xiiGALDrawMeshDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::MultiDrawPlatform(const xiiGALMultiDrawDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::DispatchComputePlatform(const xiiGALDispatchComputeDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+void xiiGALCommandListVulkan::DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description)
+{
+  XII_IGNORE_UNUSED(description);
+}
+
+#if 0
 xiiResult xiiGALCommandListVulkan::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
@@ -1620,6 +1671,7 @@ xiiResult xiiGALCommandListVulkan::DispatchIndirectPlatform(xiiSharedPtr<xiiGALB
 
   return XII_SUCCESS;
 }
+#endif
 
 void xiiGALCommandListVulkan::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {

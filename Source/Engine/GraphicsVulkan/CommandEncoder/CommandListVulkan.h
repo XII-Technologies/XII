@@ -109,16 +109,17 @@ protected:
   virtual void NextSubpassPlatform() override final;
   virtual void EndRenderPassPlatform() override final;
 
-  virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex) override final;
-  virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex) override final;
-  virtual xiiResult DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance) override final;
-  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
-  virtual xiiResult DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance) override final;
-  virtual xiiResult DrawInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
-  virtual xiiResult DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override final;
+  virtual void DrawPlatform(const xiiGALDrawDescription& description) override final;
+  virtual void DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description) override final;
+  virtual void DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description) override final;
+  virtual void DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description) override final;
+  virtual void DrawMeshPlatform(const xiiGALDrawMeshDescription& description) override final;
+  virtual void DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description) override final;
+  virtual void MultiDrawPlatform(const xiiGALMultiDrawDescription& description) override final;
+  virtual void MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description) override final;
 
-  virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override final;
-  virtual xiiResult DispatchIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
+  virtual void DispatchComputePlatform(const xiiGALDispatchComputeDescription& description) override final;
+  virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) override final;
 
   virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
   virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
