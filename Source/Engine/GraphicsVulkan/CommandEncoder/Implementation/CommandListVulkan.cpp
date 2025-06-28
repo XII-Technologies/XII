@@ -1665,6 +1665,51 @@ void xiiGALCommandListVulkan::MultiDrawIndexedPlatform(const xiiGALMultiDrawInde
   XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMultiIndexedEXT() must be called inside render pass. (19.3)");
   XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+  XII_ASSERT_DEV(m_CommandListState.m_vkIndexBuffer != VK_NULL_HANDLE, "No index buffer bound.");
+
+  if (description.m_uiInstanceCount > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+    if (m_bNativeMultiDrawSupported)
+    {
+      xiiDynamicArray<vk::MultiDrawIndexedInfoEXT> multiDrawIndexedItems(pDeviceVulkan->GetAllocator());
+      multiDrawIndexedItems.SetCountUninitialized(description.m_pDrawItems.GetCount());
+
+      for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+      {
+        const xiiGALMultiDrawIndexedItem& drawItem = description.m_pDrawItems[i];
+
+        if (drawItem.m_uiIndexCount > 0)
+        {
+          multiDrawIndexedItems[i].firstIndex   = drawItem.m_uiFirstIndexLocation;
+          multiDrawIndexedItems[i].indexCount   = drawItem.m_uiIndexCount;
+          multiDrawIndexedItems[i].vertexOffset = static_cast<xiiInt32>(drawItem.m_uiBaseVertex);
+        }
+      }
+
+      if (!multiDrawIndexedItems.IsEmpty())
+      {
+        // NULL or a pointer to the value added to the vertex index before indexing into the vertex buffer.
+        // When specified, vk::MultiDrawIndexedInfoEXT::vertexOffset is ignored.
+        static constexpr xiiInt32* pVertexOffset = nullptr;
+
+        m_vkCommandBuffer.drawMultiIndexedEXT(multiDrawIndexedItems.GetCount(), multiDrawIndexedItems.GetData(), description.m_uiInstanceCount, description.m_uiFirstInstanceLocation, sizeof(vk::MultiDrawIndexedInfoEXT), pVertexOffset, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
+    }
+    else
+    {
+      for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+      {
+        const xiiGALMultiDrawIndexedItem& drawItem = description.m_pDrawItems[i];
+
+        if (drawItem.m_uiIndexCount > 0)
+        {
+          m_vkCommandBuffer.drawIndexed(drawItem.m_uiIndexCount, description.m_uiInstanceCount, drawItem.m_uiFirstIndexLocation, drawItem.m_uiBaseVertex, description.m_uiFirstInstanceLocation, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        }
+      }
+    }
+  }
 }
 
 void xiiGALCommandListVulkan::DispatchComputePlatform(const xiiGALDispatchComputeDescription& description)
