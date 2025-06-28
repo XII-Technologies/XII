@@ -220,12 +220,6 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     }
   }
 
-  // Set the index format for index buffers.
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer))
-  {
-    m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? xiiGALValueType::UInt16 : xiiGALValueType::UInt32;
-  }
-
   return XII_SUCCESS;
 }
 
