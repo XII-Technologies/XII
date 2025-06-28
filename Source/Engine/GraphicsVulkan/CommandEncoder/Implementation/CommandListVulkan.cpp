@@ -1530,7 +1530,7 @@ void xiiGALCommandListVulkan::DrawIndexedPlatform(const xiiGALDrawIndexedDescrip
 void xiiGALCommandListVulkan::DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description)
 {
   XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexedindirect() or vkCmdDrawIndirectCount() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndirect() or vkCmdDrawIndirectCount() must be called inside render pass. (19.3)");
   XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
   if (description.m_uiDrawCount > 0)
@@ -1617,7 +1617,7 @@ void xiiGALCommandListVulkan::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndir
 void xiiGALCommandListVulkan::MultiDrawPlatform(const xiiGALMultiDrawDescription& description)
 {
   XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMultiEXT() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMultiEXT() or vkCmdDraw() must be called inside render pass. (19.3)");
   XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
   if (description.m_uiInstanceCount > 0)
