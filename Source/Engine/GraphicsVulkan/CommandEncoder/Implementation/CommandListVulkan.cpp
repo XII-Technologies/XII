@@ -1593,7 +1593,7 @@ void xiiGALCommandListVulkan::DrawMeshPlatform(const xiiGALDrawMeshDescription& 
 void xiiGALCommandListVulkan::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description)
 {
   XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksEXT() or vkCmdDrawMeshTasksIndirectCountEXT() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksIndirectEXT() or vkCmdDrawMeshTasksIndirectCountEXT() must be called inside render pass. (19.3)");
   XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
   if (description.m_uiCommandCount > 0)
@@ -1617,7 +1617,7 @@ void xiiGALCommandListVulkan::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndir
 void xiiGALCommandListVulkan::MultiDrawPlatform(const xiiGALMultiDrawDescription& description)
 {
   XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksEXT() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMultiEXT() must be called inside render pass. (19.3)");
   XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
   if (description.m_uiInstanceCount > 0)
@@ -1629,7 +1629,21 @@ void xiiGALCommandListVulkan::MultiDrawPlatform(const xiiGALMultiDrawDescription
       xiiDynamicArray<vk::MultiDrawInfoEXT> multiDrawItems(pDeviceVulkan->GetAllocator());
       multiDrawItems.SetCountUninitialized(description.m_pDrawItems.GetCount());
 
+      for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+      {
+        const xiiGALMultiDrawItem& drawItem = description.m_pDrawItems[i];
 
+        if (drawItem.m_uiVertexCount > 0)
+        {
+          multiDrawItems[i].firstVertex = drawItem.m_uiStartVertexLocation;
+          multiDrawItems[i].vertexCount = drawItem.m_uiVertexCount;
+        }
+      }
+
+      if (!multiDrawItems.IsEmpty())
+      {
+        m_vkCommandBuffer.drawMultiEXT(multiDrawItems.GetCount(), multiDrawItems.GetData(), description.m_uiInstanceCount, description.m_uiFirstInstanceLocation, sizeof(vk::MultiDrawInfoEXT), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
     }
     else
     {
@@ -1649,7 +1663,7 @@ void xiiGALCommandListVulkan::MultiDrawPlatform(const xiiGALMultiDrawDescription
 void xiiGALCommandListVulkan::MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description)
 {
   XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksEXT() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMultiIndexedEXT() must be called inside render pass. (19.3)");
   XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 }
 
