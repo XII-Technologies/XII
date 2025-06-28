@@ -152,6 +152,12 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
+  void PrepareForDraw();
+  void PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType);
+  void PrepareForDispatchCompute();
+  void PrepareForRayTracing();
+
+private:
   struct PipelineBarrier
   {
     vk::PipelineStageFlags m_vkMemorySourceStages      = {};

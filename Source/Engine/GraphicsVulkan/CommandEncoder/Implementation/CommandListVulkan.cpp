@@ -646,7 +646,7 @@ void xiiGALCommandListVulkan::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> 
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  TransitionOrVerifyBufferState(pBufferVulkan, xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Binding buffer as index buffer  (xiiGALCommandList::SetIndexBuffer)");
+  TransitionOrVerifyBufferState(pBufferVulkan, xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Binding buffer as index buffer (xiiGALCommandList::SetIndexBuffer)");
 
   const auto indexFormat = pBufferVulkan->GetIndexFormat();
 
@@ -2755,6 +2755,23 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName) const
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkCommandBuffer, sName.GetData(tmp));
+}
+
+void xiiGALCommandListVulkan::PrepareForDraw()
+{
+}
+
+void xiiGALCommandListVulkan::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType)
+{
+  PrepareForDraw();
+}
+
+void xiiGALCommandListVulkan::PrepareForDispatchCompute()
+{
+}
+
+void xiiGALCommandListVulkan::PrepareForRayTracing()
+{
 }
 
 [[nodiscard]] inline bool ResourceStateHasWriteAccess(xiiBitflags<xiiGALResourceStateFlags> flags)
