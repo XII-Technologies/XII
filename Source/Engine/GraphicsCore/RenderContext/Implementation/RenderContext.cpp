@@ -496,27 +496,15 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
   BeginInternalRenderPass();
   XII_SCOPE_EXIT(EndInternalRenderPass());
 
-  if (uiInstanceCount > 1)
+  if (m_pIndexBuffer)
   {
-    if (m_pIndexBuffer)
-    {
-      return m_pCommandList->DrawIndexedInstanced(uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive);
-    }
-    else
-    {
-      return m_pCommandList->DrawInstanced(uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive);
-    }
+    xiiEnum<xiiGALValueType> indexType = m_pIndexBuffer->GetDescription().m_uiElementByteStride <= 2 ? xiiGALValueType::UInt16 : xiiGALValueType::UInt32;
+
+    m_pCommandList->DrawIndexed({uiPrimitiveCount, indexType, uiInstanceCount, uiFirstPrimitive});
   }
   else
   {
-    if (m_pIndexBuffer)
-    {
-      return m_pCommandList->DrawIndexed(uiPrimitiveCount, uiFirstPrimitive);
-    }
-    else
-    {
-      return m_pCommandList->Draw(uiPrimitiveCount, uiFirstPrimitive);
-    }
+    m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive});
   }
 
   return XII_SUCCESS;
@@ -526,9 +514,9 @@ xiiResult xiiRenderContext::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 ui
 {
   if (ApplyContextStates().Succeeded())
   {
-    return m_pCommandList->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
+    m_pCommandList->DispatchCompute({uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ});
   }
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
