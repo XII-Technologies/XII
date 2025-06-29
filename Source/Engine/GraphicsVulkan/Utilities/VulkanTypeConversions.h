@@ -105,6 +105,8 @@ public:
   static void GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology& out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints);
 
   static vk::DescriptorType GetDescriptorType(xiiGALDescriporTypeVulkan e);
+
+  static vk::IndexType GetIndexType(xiiGALValueType::Enum indexType);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

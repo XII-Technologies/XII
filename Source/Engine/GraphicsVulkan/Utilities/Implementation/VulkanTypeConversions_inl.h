@@ -1510,3 +1510,19 @@ XII_ALWAYS_INLINE vk::DescriptorType xiiVulkanTypeConversions::GetDescriptorType
   }
   return (vk::DescriptorType)VK_DESCRIPTOR_TYPE_MAX_ENUM;
 }
+
+XII_ALWAYS_INLINE vk::IndexType xiiVulkanTypeConversions::GetIndexType(xiiGALValueType::Enum indexType)
+{
+  switch (indexType)
+  {
+    case xiiGALValueType::Undefined:
+      return vk::IndexType::eNoneKHR; // Valid only in Ray Tracing.
+    case xiiGALValueType::UInt16:
+      return vk::IndexType::eUint16;
+    case xiiGALValueType::UInt32:
+      return vk::IndexType::eUint32;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::IndexType::eUint32;
+}
