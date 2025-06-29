@@ -68,6 +68,37 @@ public:
     xiiUInt32       m_uiOutsidePassQueries     = 0;
   };
 
+  struct CommandListFlags
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      None                           = 0,
+      CommittedVertexBuffersModified = XII_BIT(0),
+      CommittedIndexBufferModified   = XII_BIT(1),
+      ShadingRateSet                 = XII_BIT(2),
+
+      Default = None
+    };
+
+    struct Bits
+    {
+      StorageType CommittedVertexBuffersModified : 1;
+      StorageType CommittedIndexBufferModified : 1;
+      StorageType ShadingRateSet : 1;
+    };
+
+    friend inline xiiBitflags<CommandListFlags> operator|(CommandListFlags::Enum lhs, CommandListFlags::Enum rhs)
+    {
+      return (xiiBitflags<CommandListFlags>(lhs) | xiiBitflags<CommandListFlags>(rhs));
+    }
+    friend inline xiiBitflags<CommandListFlags> operator&(CommandListFlags::Enum lhs, CommandListFlags::Enum rhs)
+    {
+      return (xiiBitflags<CommandListFlags>(lhs) & xiiBitflags<CommandListFlags>(rhs));
+    };
+  };
+
 protected:
   friend class xiiGALCommandQueueVulkan;
   friend class xiiGALDeviceVulkan;
@@ -92,7 +123,7 @@ protected:
   virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) override final;
   virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects) override final;
 
-  virtual void      SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset) override final;
+  virtual void      SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode) override final;
   virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;
   virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer) override final;
   virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView) override final;
@@ -262,9 +293,10 @@ private:
 
   xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool;
 
-  vk::CommandBuffer m_vkCommandBuffer;
-  CommandListState  m_CommandListState;
-  PipelineBarrier   m_PipelineBarrier;
+  vk::CommandBuffer             m_vkCommandBuffer;
+  CommandListState              m_CommandListState;
+  xiiBitflags<CommandListFlags> m_CommandListFlags;
+  PipelineBarrier               m_PipelineBarrier;
 
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
 
