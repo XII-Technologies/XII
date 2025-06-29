@@ -1199,6 +1199,11 @@ protected:
   bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const;
   bool VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const;
 
+  void VerifyBufferState(xiiGALBuffer* pBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
+  void VerifyTextureState(xiiGALTexture* pTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
+  void VerifyBottomLevelASState(xiiGALBottomLevelAS* pBottomLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
+  void VerifyTopLevelASState(xiiGALTopLevelAS* pTopLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
+
   // Deactivate Doxygen document generation for the following block. (API abstraction only)
   /// \cond
 

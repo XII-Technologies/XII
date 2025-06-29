@@ -1754,6 +1754,50 @@ bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlag
   return true;
 }
 
+void xiiGALCommandList::VerifyBufferState(xiiGALBuffer* pBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName)
+{
+  if (pBuffer == nullptr)
+    return;
+
+  if (pBuffer->IsInKnownState() && !pBuffer->CheckState(requiredState))
+  {
+    xiiLog::Error("{} requires buffer '{}' to be transitioned to {} state. Actual buffer state: {}. Use appropriate state transition flags or explicitly transition the buffer using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBuffer->GetDebugName(), requiredState.GetValue(), pBuffer->GetResourceState().GetValue());
+  }
+}
+
+void xiiGALCommandList::VerifyTextureState(xiiGALTexture* pTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName)
+{
+  if (pTexture == nullptr)
+    return;
+
+  if (pTexture->IsInKnownState() && !pTexture->CheckState(requiredState))
+  {
+    xiiLog::Error("{} requires texture '{}' to be transitioned to {} state. Actual texture state: {}. Use appropriate state transition flags or explicitly transition the texture using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTexture->GetDebugName(), requiredState.GetValue(), pTexture->GetResourceState().GetValue());
+  }
+}
+
+void xiiGALCommandList::VerifyBottomLevelASState(xiiGALBottomLevelAS* pBottomLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName)
+{
+  if (pBottomLevelAS == nullptr)
+    return;
+
+  if (pBottomLevelAS->IsInKnownState() && !pBottomLevelAS->CheckState(requiredState))
+  {
+    xiiLog::Error("{} requires bottom-level acceleration structure '{}' to be transitioned to {} state. Actual bottom-level acceleration structure state: {}. Use appropriate state transition flags or explicitly transition the bottom-level acceleration structure using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBottomLevelAS->GetDebugName(), requiredState.GetValue(), pBottomLevelAS->GetResourceState().GetValue());
+  }
+}
+
+void xiiGALCommandList::VerifyTopLevelASState(xiiGALTopLevelAS* pTopLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName)
+{
+  if (pTopLevelAS == nullptr)
+    return;
+
+  if (pTopLevelAS->IsInKnownState() && !pTopLevelAS->CheckState(requiredState))
+  {
+    xiiLog::Error("{} requires top-level acceleration structure '{}' to be transitioned to {} state. Actual top-level acceleration structure state: {}. Use appropriate state transition flags or explicitly transition the top-level acceleration structure using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTopLevelAS->GetDebugName(), requiredState.GetValue(), pTopLevelAS->GetResourceState().GetValue());
+  }
+}
+
 #undef XII_VERIFY_COMMAND_LIST_RESULT
 #undef XII_VERIFY_COMMAND_LIST
 
