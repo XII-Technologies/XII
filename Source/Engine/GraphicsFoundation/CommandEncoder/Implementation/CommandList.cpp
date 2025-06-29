@@ -372,7 +372,8 @@ void xiiGALCommandList::SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects)
 
 void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetIndexBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetIndexBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr || transitionMode != xiiGALStateTransitionMode::Transition, "Resource state transitions are not permitted inside a render pass and may result in an undefined behavior. Do not use xiiGALStateTransitionMode::Transition or end the render pass first.");
 
   if (m_pIndexBuffer == pIndexBuffer && m_uiIndexDataOffset == uiByteOffset)
     return;
@@ -394,49 +395,46 @@ void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, 
   SetIndexBufferPlatform(pIndexBuffer, m_uiIndexDataOffset, transitionMode);
 }
 
-void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
+void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags /*= xiiGALSetVertexBufferFlags::None*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetVertexBuffers arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
-  XII_VERIFY_COMMAND_LIST(uiStartSlot < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The start slot ({0}) is out of range [0, {1}].", uiStartSlot, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
-  XII_VERIFY_COMMAND_LIST((uiStartSlot + pVertexBuffers.GetCount()) < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The range of vertex buffer slots being set [{0}, {1}] is out of allowed range [0, {2}].", uiStartSlot, uiStartSlot + pVertexBuffers.GetCount() - 1, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
+  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetVertexBuffers arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(uiStartSlot < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The start slot ({0}) is out of range [0, {1}].", uiStartSlot, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
+  XII_ASSERT_DEV((uiStartSlot + pVertexBuffers.GetCount()) < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The range of vertex buffer slots being set [{0}, {1}] is out of allowed range [0, {2}].", uiStartSlot, uiStartSlot + pVertexBuffers.GetCount() - 1, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
+  XII_ASSERT_DEV(m_pRenderPass == nullptr || transitionMode != xiiGALStateTransitionMode::Transition, "Resource state transitions are not permitted inside a render pass and may result in an undefined behavior. Do not use xiiGALStateTransitionMode::Transition or end the render pass first.");
 
   if (flags.IsSet(xiiGALSetVertexBufferFlags::Reset))
   {
     // Reset only the buffer slots that are not being set.
     for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
     {
-      m_VertexBuffers.EnsureCount(i + 1);
-      m_VertexBuffersOffsets.EnsureCount(i + 1);
-
-      m_VertexBuffers[i]        = nullptr;
-      m_VertexBuffersOffsets[i] = 0;
+      m_VertexStreams[i] = {};
     }
-    for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < m_VertexBuffers.GetCount(); ++i)
+    for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < m_VertexStreams.GetCount(); ++i)
     {
-      m_VertexBuffers[i]        = nullptr;
-      m_VertexBuffersOffsets[i] = 0;
+      m_VertexStreams[i] = {};
     }
   }
 
-  m_VertexBuffers.SetCount(uiStartSlot + pVertexBuffers.GetCount());
-  m_VertexBuffersOffsets.SetCount(uiStartSlot + pVertexBuffers.GetCount(), 0U);
+  m_VertexStreams.SetCount(uiStartSlot + pVertexBuffers.GetCount());
 
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
   {
     if (pVertexBuffers[i] != nullptr)
     {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       const auto& bufferDescription = pVertexBuffers[i]->GetDescription();
 
       XII_VERIFY_COMMAND_LIST(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "SetVertexBuffer arguments are invalid. The Vertex buffer '{0}' was not created with the xiiGALBindFlags::VertexBuffer bind flag.", pVertexBuffers[i]->GetDebugName());
+#endif
 
-      m_VertexBuffers[i]        = pVertexBuffers[i];
-      m_VertexBuffersOffsets[i] = i < pByteOffsets.GetCount() ? pByteOffsets[i] : 0U;
+      m_VertexStreams[i].m_pBuffer  = pVertexBuffers[i];
+      m_VertexStreams[i].m_uiOffset = i < pByteOffsets.GetCount() ? pByteOffsets[i] : 0U;
     }
   }
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiSetVertexBuffers;
 
-  SetVertexBuffersPlatform(uiStartSlot, m_VertexBuffers, m_VertexBuffersOffsets, flags);
+  SetVertexBuffersPlatform(uiStartSlot, m_VertexStreams, flags, transitionMode);
 }
 
 void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
@@ -1630,8 +1628,7 @@ void xiiGALCommandList::InvalidateState()
   m_pPipelineState             = nullptr;
   m_pPipelineResourceSignature = nullptr;
 
-  m_VertexBuffers.Clear();
-  m_VertexBuffersOffsets.Clear();
+  m_VertexStreams.Clear();
 
   m_pIndexBuffer      = nullptr;
   m_uiIndexDataOffset = 0;
