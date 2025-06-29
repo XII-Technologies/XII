@@ -649,36 +649,30 @@ void xiiGALCommandListVulkan::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> 
   {
     xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pIndexBuffer.Downcast<xiiGALBufferVulkan>();
 
-    TransitionOrVerifyBufferState(pBufferVulkan, transitionMode, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Binding buffer as index buffer (xiiGALCommandList::SetIndexBuffer)");
+    TransitionOrVerifyBufferState(pBufferVulkan, transitionMode, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eIndexRead, "Binding buffer as index buffer (xiiGALCommandListVulkan::SetIndexBuffer)");
   }
 
   m_CommandListFlags.Add(CommandListFlags::CommittedIndexBufferModified);
 }
 
-void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
+void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<VertexStreamDescription> pVertexStreams, xiiBitflags<xiiGALSetVertexBufferFlags> flags, xiiEnum<xiiGALStateTransitionMode> transitionMode)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  XII_VERIFY_COMMAND_LIST((uiStartSlot + pVertexBuffers.GetCount()) <= XII_GAL_MAX_VERTEX_BUFFER_COUNT, "The number of vertex buffers to set, exceeds the maximum amount.");
-
+  XII_IGNORE_UNUSED(uiStartSlot);
   XII_IGNORE_UNUSED(flags);
 
-  vk::Buffer     vkVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
-  vk::DeviceSize vkVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
-
-  for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
+  for (xiiUInt32 uiSlot = 0U; uiSlot < pVertexStreams.GetCount(); ++uiSlot)
   {
-    xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = pVertexBuffers[i].Downcast<xiiGALBufferVulkan>();
-    xiiUInt32                        uiVertexBufferSlot  = i + uiStartSlot;
+    VertexStreamDescription& vertexStream = pVertexStreams[uiSlot];
 
-    vkVertexBuffers[uiVertexBufferSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
-    vkVertexBufferOffsets[uiVertexBufferSlot] = (i < pByteOffsets.GetCount()) ? pByteOffsets[i] : 0U;
+    if (xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = vertexStream.m_pBuffer.Downcast<xiiGALBufferVulkan>())
+    {
+      TransitionOrVerifyBufferState(pBufferVulkan, transitionMode, xiiGALResourceStateFlags::VertexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Setting vertex buffers (xiiGALCommandListVulkan::SetVertexBuffers)");
+    }
   }
 
-  if (!pVertexBuffers.IsEmpty())
-  {
-    m_vkCommandBuffer.bindVertexBuffers(uiStartSlot, pVertexBuffers.GetCount(), vkVertexBuffers + uiStartSlot, vkVertexBufferOffsets + uiStartSlot, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-  }
+  m_CommandListFlags.Add(CommandListFlags::CommittedVertexBuffersModified);
 }
 
 void xiiGALCommandListVulkan::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
@@ -2767,14 +2761,40 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName) const
 void xiiGALCommandListVulkan::PrepareForDraw()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexBuffers.GetCount(); ++uiSlot)
+  for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
   {
-    if (xiiGALBuffer* pBuffer = m_VertexBuffers[uiSlot].Borrow())
+    if (xiiGALBuffer* pBuffer = m_VertexStreams[uiSlot].m_pBuffer.Borrow())
     {
       VerifyBufferState(pBuffer, xiiGALResourceStateFlags::VertexBuffer, "Using vertex buffers");
     }
   }
 #endif
+
+  if (m_CommandListFlags.IsSet(CommandListFlags::CommittedVertexBuffersModified))
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+    vk::Buffer     vkVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
+    vk::DeviceSize vkVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
+
+    for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
+    {
+      VertexStreamDescription&         vertexStream        = m_VertexStreams[uiSlot];
+      xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = vertexStream.m_pBuffer.Downcast<xiiGALBufferVulkan>();
+
+      vkVertexBuffers[uiSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
+      vkVertexBufferOffsets[uiSlot] = vertexStream.m_uiOffset;
+
+      /// \todo Replace null buffers with an placeholder, since null buffers are not permitted in the command buffer.
+    }
+
+    if (!m_VertexStreams.IsEmpty())
+    {
+      m_vkCommandBuffer.bindVertexBuffers(0, m_VertexStreams.GetCount(), vkVertexBuffers, vkVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+
+    m_CommandListFlags.Remove(CommandListFlags::CommittedVertexBuffersModified);
+  }
 }
 
 void xiiGALCommandListVulkan::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType)
