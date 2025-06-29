@@ -208,7 +208,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
       {
         XII_SUCCEED_OR_RETURN(UploadStagingData(pCommandListVulkan));
       }
-      else if (auto pCommandQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+      else if (auto pCommandQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics))
       {
         if (auto pImmediateCommandListVulkan = pCommandQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
         {
