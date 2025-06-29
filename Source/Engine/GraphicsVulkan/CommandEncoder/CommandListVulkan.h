@@ -339,4 +339,6 @@ private:
   xiiUniquePtr<xiiGALStagingBufferPoolVulkan> m_pUploadStagingBufferPool;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
+
+  xiiSharedPtr<xiiGALBufferVulkan> m_pNullVertexBuffer; ///< In Vulkan, we cannot bind a null vertex buffer, so we have to create a zeroed-out vertex buffer.
 };

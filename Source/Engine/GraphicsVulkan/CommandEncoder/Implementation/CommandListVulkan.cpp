@@ -490,6 +490,19 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan
 {
   m_pDynamicBufferPoolVulkan = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALDynamicBufferPoolVulkan, static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow()), 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
   m_pUploadStagingBufferPool = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALStagingBufferPoolVulkan, static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow()), 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
+
+  {
+    xiiGALBufferCreationDescription nullVertexBufferDescription;
+    nullVertexBufferDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+    nullVertexBufferDescription.m_Usage     = xiiGALResourceUsage::Default;
+    nullVertexBufferDescription.m_uiSize    = 32U;
+
+    xiiSharedPtr<xiiGALBuffer> pNullVertexBuffer = m_pDevice->CreateBuffer(nullVertexBufferDescription);
+
+    pNullVertexBuffer->SetDebugName("Null Vertex Buffer");
+
+    m_pNullVertexBuffer = pNullVertexBuffer.Downcast<xiiGALBufferVulkan>();
+  }
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
@@ -2728,6 +2741,7 @@ void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, cons
 
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
 {
+  m_CommandListFlags = {};
   m_CommandListState = {};
   m_PipelineBarrier  = {};
 
@@ -2780,12 +2794,18 @@ void xiiGALCommandListVulkan::PrepareForDraw()
     for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
     {
       VertexStreamDescription&         vertexStream        = m_VertexStreams[uiSlot];
-      xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = vertexStream.m_pBuffer.Downcast<xiiGALBufferVulkan>();
 
-      vkVertexBuffers[uiSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
-      vkVertexBufferOffsets[uiSlot] = vertexStream.m_uiOffset;
-
-      /// \todo Replace null buffers with an placeholder, since null buffers are not permitted in the command buffer.
+      if (xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = vertexStream.m_pBuffer.Downcast<xiiGALBufferVulkan>())
+      {
+        vkVertexBuffers[uiSlot]       = pVertexBufferVulkan->GetVulkanBuffer();
+        vkVertexBufferOffsets[uiSlot] = vertexStream.m_uiOffset;
+      }
+      else
+      {
+        // We cannot bind a null vertex buffer in Vulkan, so we use a dedicated null vertex buffer.
+        vkVertexBuffers[uiSlot]       = m_pNullVertexBuffer->GetVulkanBuffer();
+        vkVertexBufferOffsets[uiSlot] = 0U;
+      }
     }
 
     if (!m_VertexStreams.IsEmpty())
