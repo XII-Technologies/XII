@@ -60,7 +60,7 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
 
   xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
-  const xiiRenderTargets& renderTargets = view.GetActiveRenderTargets();
+  const xiiRenderTargets&    renderTargets = view.GetActiveRenderTargets();
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_Type = xiiGALResourceDimension::Texture2DArray;
@@ -69,11 +69,12 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   if (format == xiiSourceFormat::Color4Channel8BitNormalized || format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
   {
     xiiGALResourceFormat::Enum preferredFormat = xiiGALResourceFormat::Unknown;
+
     if (renderTargets.m_pRTs[0])
     {
-      auto rendertargetDesc = renderTargets.m_pRTs[0]->GetTexture()->GetDescription();
+      auto targetDescription = renderTargets.m_pRTs[0]->GetTexture()->GetDescription();
 
-      preferredFormat = rendertargetDesc.m_Format;
+      preferredFormat = targetDescription.m_Format;
     }
 
     switch (preferredFormat)
@@ -120,7 +121,16 @@ xiiGALTextureCreationDescription xiiSourcePass::GetOutputDescription(const xiiVi
   textureDescription.m_Size.height        = uiHeight;
   textureDescription.m_uiSampleCount      = msaaSampleCount.GetValue();
   textureDescription.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2 : 1;
-  textureDescription.m_BindFlags          = ((!xiiGALResourceFormat::IsDepthFormat(textureDescription.m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil) | xiiGALBindFlags::ShaderResource);
+  textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
+
+  if (xiiGALResourceFormat::IsDepthFormat(textureDescription.m_Format))
+  {
+    textureDescription.m_BindFlags |= xiiGALBindFlags::DepthStencil;
+  }
+  else
+  {
+    textureDescription.m_BindFlags |= xiiGALBindFlags::RenderTarget;
+  }
 
   return textureDescription;
 }
@@ -170,7 +180,7 @@ void xiiSourcePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePa
       depthAttachmentReference.m_uiAttachmentIndex  = 0U;
 
       dependencyDescription.m_SourceAccessFlags      = xiiGALAccessFlags::DepthStencilWrite;
-      dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::DepthStencilWrite;
+      dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::DepthStencilRead | xiiGALAccessFlags::DepthStencilWrite;
     }
     else
     {
@@ -179,7 +189,7 @@ void xiiSourcePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePa
       colorAttachmentReference.m_uiAttachmentIndex  = 0U;
 
       dependencyDescription.m_SourceAccessFlags      = xiiGALAccessFlags::RenderTargetWrite;
-      dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::RenderTargetWrite;
+      dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::RenderTargetRead | xiiGALAccessFlags::RenderTargetWrite;
     }
 
     m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);

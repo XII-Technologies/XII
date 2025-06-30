@@ -48,7 +48,7 @@ xiiTempHashedString xiiViewRenderMode::GetPermutationValue(Enum renderMode)
 }
 
 // static
-int xiiViewRenderMode::GetRenderPassForShader(Enum renderMode)
+xiiInt32 xiiViewRenderMode::GetRenderPassForShader(Enum renderMode)
 {
   switch (renderMode)
   {

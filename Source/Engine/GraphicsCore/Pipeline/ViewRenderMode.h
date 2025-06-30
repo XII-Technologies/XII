@@ -39,7 +39,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewRenderMode
   };
 
   static xiiTempHashedString GetPermutationValue(Enum renderMode);
-  static int                 GetRenderPassForShader(Enum renderMode);
+  static xiiInt32            GetRenderPassForShader(Enum renderMode);
   static void                GetDebugText(Enum renderMode, xiiStringBuilder& out_sDebugText);
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewRenderMode);

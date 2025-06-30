@@ -195,6 +195,389 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResolveTextureSubresourceDescription
   xiiEnum<xiiGALResourceFormat>      m_Format                           = xiiGALResourceFormat::Unknown;   ///< If one or both textures are typeless, specifies the type of the typeless texture. If both texture formats are not typeless, in which case they must be identical, this member must be either xiiGALResourceFormat::Unknown, or match this format.
 };
 
+/// \brief Describes parameters for issuing non-indexed draw calls.
+///
+/// Defines the vertex and instance counts, as well as starting locations, for issuing a basic GPU draw call. Used in graphics command encoding where geometry is streamed directly from vertex buffers.
+///
+/// \see xiiGALCommandList::Draw
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawDescription
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Default-initialized draw description (0 vertices, 1 instance).
+  XII_ALWAYS_INLINE xiiGALDrawDescription() = default;
+
+  /// \brief Constructs a draw description with specified parameters.
+  ///
+  /// \param uiVertexCount           - Number of vertices to draw.
+  /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
+  /// \param uiStartVertexLocation   - Index of the first vertex to read.
+  /// \param uiFirstInstanceLocation - Instance ID for the first instance.
+  XII_ALWAYS_INLINE xiiGALDrawDescription(xiiUInt32 uiVertexCount, xiiUInt32 uiInstanceCount = 1U, xiiUInt32 uiStartVertexLocation = 0U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_uiVertexCount(uiVertexCount), m_uiInstanceCount(uiInstanceCount), m_uiStartVertexLocation(uiStartVertexLocation), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  {
+  }
+
+  xiiUInt32 m_uiVertexCount           = 0U; ///< Number of vertices to process.
+  xiiUInt32 m_uiInstanceCount         = 1U; ///< Number of instances to render.
+  xiiUInt32 m_uiStartVertexLocation   = 0U; ///< Start vertex offset within the bound vertex buffer.
+  xiiUInt32 m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
+};
+
+/// \brief Describes parameters for issuing indexed draw calls.
+///
+/// Defines the index and instance counts, index type, and offsets required for issuing GPU draw calls using an index buffer. Used in graphics command encoding for geometry instancing and reuse.
+///
+/// \see xiiGALCommandList::DrawIndexed
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedDescription
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Default-initialized indexed draw description (0 indices, 1 instance).
+  XII_ALWAYS_INLINE xiiGALDrawIndexedDescription() = default;
+
+  /// \brief Constructs an indexed draw description with specified parameters.
+  ///
+  /// \param uiIndexCount            - Number of indices to process.
+  /// \param IndexType               - Type of index data (e.g., 16-bit or 32-bit unsigned int).
+  /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
+  /// \param uiFirstIndexLocation    - Offset into the index buffer to start reading from.
+  /// \param uiBaseVertex            - Value added to each index before fetching from the vertex buffer.
+  /// \param uiFirstInstanceLocation - First instance ID passed to the vertex shader.
+  XII_ALWAYS_INLINE xiiGALDrawIndexedDescription(xiiUInt32 uiIndexCount, xiiEnum<xiiGALValueType> IndexType, xiiUInt32 uiInstanceCount = 1U, xiiUInt32 uiFirstIndexLocation = 0U, xiiUInt32 uiBaseVertex = 0U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_uiIndexCount(uiIndexCount), m_IndexType(IndexType), m_uiInstanceCount(uiInstanceCount), m_uiFirstIndexLocation(uiFirstIndexLocation), m_uiBaseVertex(uiBaseVertex), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  {
+  }
+
+  xiiUInt32                m_uiIndexCount            = 0U;                         ///< Number of indices to process.
+  xiiEnum<xiiGALValueType> m_IndexType               = xiiGALValueType::Undefined; ///< Type of index data.
+  xiiUInt32                m_uiInstanceCount         = 1U;                         ///< Number of instances to render.
+  xiiUInt32                m_uiFirstIndexLocation    = 0U;                         ///< Offset into the index buffer to start reading from.
+  xiiUInt32                m_uiBaseVertex            = 0U;                         ///< Value added to each index before fetching from the vertex buffer.
+  xiiUInt32                m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to the vertex shader.
+};
+
+/// \brief Describes parameters for issuing indirect non-indexed draw calls.
+///
+/// Used to issue multiple draw calls from a GPU buffer containing draw arguments. Supports optional counter buffer for dynamic draw count.
+///
+/// \see xiiGALCommandList::DrawIndirect
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndirectDescription
+{
+  /// \brief Default-initialized indirect draw description.
+  XII_ALWAYS_INLINE xiiGALDrawIndirectDescription() = default;
+
+  /// \brief Constructs an indirect draw description with specified parameters.
+  ///
+  /// \param pBuffer                      - Buffer containing draw arguments.
+  /// \param uiDrawCount                  - Number of draws to execute.
+  /// \param uiDrawArgumentOffset         - Byte offset to the first draw argument.
+  /// \param uiDrawArgumentStride         - Stride between draw arguments in bytes.
+  /// \param bufferStateTransition        - Resource state transition mode for the draw buffer.
+  /// \param pCounterBuffer               - Optional buffer containing draw count.
+  /// \param uiCounterOffset              - Byte offset to the draw count value.
+  /// \param counterBufferStateTransition - Resource state transition mode for the counter buffer.
+  XII_ALWAYS_INLINE xiiGALDrawIndirectDescription(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDrawCount = 1U, xiiUInt64 uiDrawArgumentOffset = 0U, xiiUInt32 uiDrawArgumentStride = 16U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
+    m_pBuffer(pBuffer), m_uiDrawArgumentOffset(uiDrawArgumentOffset), m_uiDrawCount(uiDrawCount), m_uiDrawArgumentStride(uiDrawArgumentStride), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
+  {
+  }
+
+  xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr;                         ///< Buffer containing draw arguments.
+  xiiUInt64                          m_uiDrawArgumentOffset         = 0U;                              ///< Byte offset to the first draw argument.
+  xiiUInt32                          m_uiDrawCount                  = 1U;                              ///< Number of draws to execute.
+  xiiUInt32                          m_uiDrawArgumentStride         = 16U;                             ///< Stride between draw arguments in bytes.
+  xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None; ///< State transition mode.
+  xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
+  xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
+  xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
+};
+
+/// \brief Describes parameters for issuing indirect indexed draw calls.
+///
+/// Used to issue multiple indexed draw calls from a GPU buffer containing draw arguments. Supports optional counter buffer and index type specification.
+///
+/// \see xiiGALCommandList::DrawIndexedIndirect
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedIndirectDescription
+{
+  /// \brief Default-initialized indexed indirect draw description.
+  XII_ALWAYS_INLINE xiiGALDrawIndexedIndirectDescription() = default;
+
+  /// \brief Constructs an indexed indirect draw description with specified parameters.
+  ///
+  /// \param indexType                    - Type of index data (e.g., 16-bit or 32-bit).
+  /// \param pBuffer                      - Buffer containing draw arguments.
+  /// \param uiDrawCount                  - Number of draws to execute.
+  /// \param uiDrawArgumentOffset         - Byte offset to the first draw argument.
+  /// \param uiDrawArgumentStride         - Stride between draw arguments in bytes.
+  /// \param bufferStateTransition        - Resource state transition mode for the draw buffer.
+  /// \param pCounterBuffer               - Optional buffer containing draw count.
+  /// \param uiCounterOffset              - Byte offset to the draw count value.
+  /// \param counterBufferStateTransition - Resource state transition mode for the counter buffer.
+  XII_ALWAYS_INLINE xiiGALDrawIndexedIndirectDescription(xiiEnum<xiiGALValueType> indexType, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDrawCount = 1U, xiiUInt64 uiDrawArgumentOffset = 0U, xiiUInt32 uiDrawArgumentStride = 20U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
+    m_IndexType(indexType), m_pBuffer(pBuffer), m_uiDrawArgumentOffset(uiDrawArgumentOffset), m_uiDrawCount(uiDrawCount), m_uiDrawArgumentStride(uiDrawArgumentStride), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
+  {
+  }
+
+  xiiEnum<xiiGALValueType>           m_IndexType                    = xiiGALValueType::Undefined;      ///< Type of index data.
+  xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr;                         ///< Buffer containing draw arguments.
+  xiiUInt64                          m_uiDrawArgumentOffset         = 0U;                              ///< Byte offset to the first draw argument.
+  xiiUInt32                          m_uiDrawCount                  = 1U;                              ///< Number of draws to execute.
+  xiiUInt32                          m_uiDrawArgumentStride         = 20U;                             ///< Stride between draw arguments in bytes.
+  xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None; ///< State transition mode.
+  xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
+  xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
+  xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
+};
+
+/// \brief Describes parameters for issuing mesh shader draw calls.
+///
+/// Specifies the number of workgroups to dispatch for a meshlet-driven pipeline. Used for explicit, non-indirect mesh shader draws.
+///
+/// \see xiiGALCommandList::DrawMesh
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshDescription
+{
+  /// \brief Default-initialized mesh draw description (1 group on X axis).
+  XII_ALWAYS_INLINE xiiGALDrawMeshDescription() = default;
+
+  /// \brief Constructs a draw mesh description with specified thread group dimensions.
+  ///
+  /// \param uiThreadGroupCountX - Number of thread groups along X.
+  XII_ALWAYS_INLINE explicit xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX) :
+    m_uiThreadGroupCountX(uiThreadGroupCountX)
+  {
+  }
+
+  /// \brief Constructs a draw mesh description with X/Y group counts.
+  XII_ALWAYS_INLINE xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY) :
+    m_uiThreadGroupCountX(uiThreadGroupCountX), m_uiThreadGroupCountY(uiThreadGroupCountY)
+  {
+  }
+
+  /// \brief Constructs a draw mesh description with full 3D group dimensions.
+  XII_ALWAYS_INLINE xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) :
+    m_uiThreadGroupCountX(uiThreadGroupCountX), m_uiThreadGroupCountY(uiThreadGroupCountY), m_uiThreadGroupCountZ(uiThreadGroupCountZ)
+  {
+  }
+
+  xiiUInt32 m_uiThreadGroupCountX = 1U; ///< Mesh thread groups along X.
+  xiiUInt32 m_uiThreadGroupCountY = 1U; ///< Mesh thread groups along Y.
+  xiiUInt32 m_uiThreadGroupCountZ = 1U; ///< Mesh thread groups along Z.
+};
+
+/// \brief Describes parameters for issuing indirect mesh shader draw calls.
+///
+/// Pulls mesh dispatch arguments from a GPU buffer, with optional draw count via counter buffer.
+///
+/// \see xiiGALCommandList::DrawMeshIndirect
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshIndirectDescription
+{
+  /// \brief Default-initialized indirect mesh draw description.
+  XII_ALWAYS_INLINE xiiGALDrawMeshIndirectDescription() = default;
+
+  /// \brief Constructs an indirect mesh draw description with specified parameters.
+  ///
+  /// \param pBuffer                      - Buffer containing mesh dispatch arguments.
+  /// \param uiCommandCount               - Number of draws to execute.
+  /// \param uiDrawArgumentOffset         - Byte offset to the first mesh dispatch argument.
+  /// \param bufferStateTransition        - Resource state transition mode for the draw buffer.
+  /// \param pCounterBuffer               - Optional buffer containing draw count.
+  /// \param uiCounterOffset              - Byte offset to the draw count value.
+  /// \param counterBufferStateTransition - Resource state transition mode for the counter buffer.
+  XII_ALWAYS_INLINE xiiGALDrawMeshIndirectDescription(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiCommandCount, xiiUInt64 uiDrawArgumentOffset = 0U, xiiEnum<xiiGALStateTransitionMode> bufferStateTransition = xiiGALStateTransitionMode::None, xiiSharedPtr<xiiGALBuffer> pCounterBuffer = nullptr, xiiUInt64 uiCounterOffset = 0U, xiiEnum<xiiGALStateTransitionMode> counterBufferStateTransition = xiiGALStateTransitionMode::None) :
+    m_pBuffer(pBuffer), m_uiDrawArgumentOffset(uiDrawArgumentOffset), m_uiCommandCount(uiCommandCount), m_BufferStateTransition(bufferStateTransition), m_pCounterBuffer(pCounterBuffer), m_uiCounterOffset(uiCounterOffset), m_CounterBufferStateTransition(counterBufferStateTransition)
+  {
+  }
+
+  xiiSharedPtr<xiiGALBuffer>         m_pBuffer                      = nullptr;                         ///< Buffer containing mesh dispatch arguments.
+  xiiUInt64                          m_uiDrawArgumentOffset         = 0U;                              ///< Byte offset to the first mesh dispatch argument.
+  xiiUInt32                          m_uiCommandCount               = 1U;                              ///< Number of draws to execute.
+  xiiEnum<xiiGALStateTransitionMode> m_BufferStateTransition        = xiiGALStateTransitionMode::None; ///< State transition mode.
+  xiiSharedPtr<xiiGALBuffer>         m_pCounterBuffer               = nullptr;                         ///< Optional buffer containing draw count.
+  xiiUInt64                          m_uiCounterOffset              = 0U;                              ///< Byte offset to the draw count value.
+  xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
+};
+
+/// \brief Represents a single non-indexed draw entry in a multi-draw call.
+///
+/// Specifies the number of vertices and the start vertex offset for one draw invocation.
+///
+/// \see xiiGALCommandList::MultiDraw
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawItem
+{
+  /// \brief Default-initialized multi-draw item (0 vertices).
+  XII_ALWAYS_INLINE xiiGALMultiDrawItem() = default;
+
+  /// \brief Constructs a multi-draw item with specified vertex count and offset.
+  ///
+  /// \param uiVertexCount         - Number of vertices to draw.
+  /// \param uiStartVertexLocation - Starting vertex offset in the bound vertex buffer.
+  XII_ALWAYS_INLINE xiiGALMultiDrawItem(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertexLocation = 0U) :
+    m_uiVertexCount(uiVertexCount), m_uiStartVertexLocation(uiStartVertexLocation)
+  {
+  }
+
+  xiiUInt32 m_uiVertexCount         = 0U; ///< Number of vertices to draw.
+  xiiUInt32 m_uiStartVertexLocation = 0U; ///< Starting vertex offset in the bound vertex buffer.
+};
+
+/// \brief Describes parameters for issuing a multi-draw call with unindexed geometry.
+///
+/// Provides an array of draw items and instance information for batched rendering.
+///
+/// \see xiiGALCommandList::MultiDraw
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawDescription
+{
+  /// \brief Default-initialized multi-draw description.
+  XII_ALWAYS_INLINE xiiGALMultiDrawDescription() = default;
+
+  /// \brief Constructs a multi-draw description with specified items and parameters.
+  ///
+  /// \param pDrawItems              - Pointer to draw item array.
+  /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
+  /// \param uiFirstInstanceLocation - Instance ID for the first instance.
+  XII_ALWAYS_INLINE xiiGALMultiDrawDescription(xiiArrayPtr<const xiiGALMultiDrawItem> pDrawItems, xiiUInt32 uiInstanceCount = 1U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_pDrawItems(pDrawItems), m_uiInstanceCount(uiInstanceCount), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  {
+  }
+
+  xiiArrayPtr<const xiiGALMultiDrawItem> m_pDrawItems;                   ///< Pointer to array of draw entries.
+  xiiUInt32                              m_uiInstanceCount         = 1U; ///< Number of instances to render.
+  xiiUInt32                              m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
+};
+
+/// \brief Represents a single indexed draw entry in a multi-draw call.
+///
+/// Specifies the number of indices, the first index offset, and base vertex for one draw invocation.
+///
+/// \see xiiGALCommandList::MultiDrawIndexed
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedItem
+{
+  /// \brief Default-initialized indexed draw item (0 indices).
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedItem() = default;
+
+  /// \brief Constructs a multi-draw indexed item with specified index parameters.
+  ///
+  /// \param uiIndexCount         - Number of indices to draw.
+  /// \param uiFirstIndexLocation - Start index in the bound index buffer.
+  /// \param uiBaseVertex         - Value added to each index before vertex fetch.
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedItem(xiiUInt32 uiIndexCount, xiiUInt32 uiFirstIndexLocation = 0U, xiiUInt32 uiBaseVertex = 0U) :
+    m_uiIndexCount(uiIndexCount), m_uiFirstIndexLocation(uiFirstIndexLocation), m_uiBaseVertex(uiBaseVertex)
+  {
+  }
+
+  xiiUInt32 m_uiIndexCount         = 0U; ///< Number of indices to draw.
+  xiiUInt32 m_uiFirstIndexLocation = 0U; ///< Start index in the bound index buffer.
+  xiiUInt32 m_uiBaseVertex         = 0U; ///< Value added to each index before vertex fetch.
+};
+
+/// \brief Describes parameters for issuing a multi-draw call with indexed geometry.
+///
+/// Provides an array of indexed draw items and instance-level information for batched rendering.
+///
+/// \see xiiGALCommandList::MultiDrawIndexed
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedDescription
+{
+  /// \brief Default-initialized indexed multi-draw description.
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedDescription() = default;
+
+  /// \brief Constructs an indexed multi-draw description with specified items and parameters.
+  ///
+  /// \param pDrawItems              - Pointer to indexed draw item array.
+  /// \param IndexType               - Type of index data (e.g. 16-bit or 32-bit).
+  /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
+  /// \param uiFirstInstanceLocation - Instance ID for the first instance.
+  XII_ALWAYS_INLINE xiiGALMultiDrawIndexedDescription(xiiArrayPtr<const xiiGALMultiDrawIndexedItem> pDrawItems, xiiEnum<xiiGALValueType> IndexType, xiiUInt32 uiInstanceCount = 1U, xiiUInt32 uiFirstInstanceLocation = 0U) :
+    m_pDrawItems(pDrawItems), m_IndexType(IndexType), m_uiInstanceCount(uiInstanceCount), m_uiFirstInstanceLocation(uiFirstInstanceLocation)
+  {
+  }
+
+  xiiArrayPtr<const xiiGALMultiDrawIndexedItem> m_pDrawItems;                                           ///< Pointer to indexed draw entries.
+  xiiEnum<xiiGALValueType>                      m_IndexType               = xiiGALValueType::Undefined; ///< Type of index data.
+  xiiUInt32                                     m_uiInstanceCount         = 1U;                         ///< Number of instances to render. If more than one instances are specified, an instanced draw call will be performed.
+  xiiUInt32                                     m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to vertex shader.
+};
+
+/// \brief Describes parameters for issuing a compute dispatch call.
+///
+/// Specifies the number of thread groups to launch in each dimension. Metal-specific thread group sizes may be optionally provided for backend tuning.
+///
+/// \see xiiGALCommandList::Dispatch
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeDescription
+{
+  /// \brief Default-initialized compute dispatch (1 group in each dimension).
+  XII_ALWAYS_INLINE xiiGALDispatchComputeDescription() = default;
+
+  /// \brief Constructs a compute dispatch with specified group counts.
+  ///
+  /// \param uiGroupCountX - Number of thread groups along X.
+  /// \param uiGroupCountY - Number of thread groups along Y.
+  /// \param uiGroupCountZ - Number of thread groups along Z. Defaults to 1.
+  XII_ALWAYS_INLINE xiiGALDispatchComputeDescription(xiiUInt32 uiGroupCountX, xiiUInt32 uiGroupCountY, xiiUInt32 uiGroupCountZ = 1U) :
+    m_uiThreadGroupCountX(uiGroupCountX), m_uiThreadGroupCountY(uiGroupCountY), m_uiThreadGroupCountZ(uiGroupCountZ)
+  {
+  }
+
+  xiiUInt32 m_uiThreadGroupCountX = 1U; ///< Thread groups along X.
+  xiiUInt32 m_uiThreadGroupCountY = 1U; ///< Thread groups along Y.
+  xiiUInt32 m_uiThreadGroupCountZ = 1U; ///< Thread groups along Z.
+
+  xiiUInt32 m_uiMtlThreadGroupSizeX = 0U; ///< Metal-specific override for threads per group (X).
+  xiiUInt32 m_uiMtlThreadGroupSizeY = 0U; ///< Metal-specific override for threads per group (Y).
+  xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
+};
+
+/// \brief Describes parameters for issuing an indirect compute dispatch call.
+///
+/// Dispatch arguments are read from a GPU buffer. Metal-specific thread group sizes may be optionally provided for backend tuning.
+///
+/// \see xiiGALCommandList::DispatchIndirect
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeIndirectDescription
+{
+  /// \brief Default-initialized indirect compute dispatch.
+  XII_ALWAYS_INLINE xiiGALDispatchComputeIndirectDescription() = default;
+
+  /// \brief Constructs an indirect compute dispatch with specified parameters.
+  ///
+  /// \param pBuffer                  - Buffer containing dispatch arguments.
+  /// \param bufferTransitionMode     - Resource state transition mode for the buffer.
+  /// \param uiDispatchArgumentOffset - Byte offset to the dispatch arguments.
+  XII_ALWAYS_INLINE xiiGALDispatchComputeIndirectDescription(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode, xiiUInt64 uiDispatchArgumentOffset = 0U) :
+    m_pBuffer(pBuffer), m_BufferTransitionMode(bufferTransitionMode), m_uiDispatchArgumentOffset(uiDispatchArgumentOffset)
+  {
+  }
+
+  xiiSharedPtr<xiiGALBuffer>         m_pBuffer                  = nullptr;                         ///< Buffer containing dispatch arguments.
+  xiiEnum<xiiGALStateTransitionMode> m_BufferTransitionMode     = xiiGALStateTransitionMode::None; ///< State transition mode.
+  xiiUInt64                          m_uiDispatchArgumentOffset = 0U;                              ///< Byte offset to the dispatch arguments.
+
+  xiiUInt32 m_uiMtlThreadGroupSizeX = 0U; ///< Metal-specific override for threads per group (X).
+  xiiUInt32 m_uiMtlThreadGroupSizeY = 0U; ///< Metal-specific override for threads per group (Y).
+  xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
+};
+
+/// \brief Describes parameters for issuing a tile-based compute dispatch.
+///
+/// Used for tile shaders or compute workloads that operate on screen-space tiles.
+///
+/// \see xiiGALCommandList::DispatchTile
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchTileDescription
+{
+  /// \brief Default-initialized tile dispatch (1x1 tile).
+  XII_ALWAYS_INLINE xiiGALDispatchTileDescription() = default;
+
+  /// \brief Constructs a tile dispatch with specified tile dimensions and flags.
+  ///
+  /// \param uiThreadsPerTileX - Threads per tile along X.
+  /// \param uiThreadsPerTileY - Threads per tile along Y.
+  XII_ALWAYS_INLINE xiiGALDispatchTileDescription(xiiUInt32 uiThreadsPerTileX, xiiUInt32 uiThreadsPerTileY) :
+    m_uiThreadsPerTileX(uiThreadsPerTileX), m_uiThreadsPerTileY(uiThreadsPerTileY)
+  {
+  }
+
+  xiiUInt32 m_uiThreadsPerTileX = 1U; ///< Threads per tile along X.
+  xiiUInt32 m_uiThreadsPerTileY = 1U; ///< Threads per tile along Y.
+};
+
 /// \brief This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
@@ -373,9 +756,10 @@ public:
 
   /// \brief Sets the index buffer for the input-assembler stage of the pipeline. This contains the indices into the vertex buffers.
   ///
-  /// \param pIndexBuffer - The handle to the index buffer object. The index buffer must be created with the xiiGALBindFlags::IndexBuffer bind flag.
-  /// \param uiByteOffset - The byte offset into the index buffer. That is, from the beginning of the buffer to the start of the index data.
-  void SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset = 0U);
+  /// \param pIndexBuffer   - The handle to the index buffer object. The index buffer must be created with the xiiGALBindFlags::IndexBuffer bind flag.
+  /// \param uiByteOffset   - The byte offset into the index buffer. That is, from the beginning of the buffer to the start of the index data.
+  /// \param transitionMode - Resource state transition mode. Specifies whether the buffer state should be transitioned to the required state automatically.
+  void SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset = 0U, xiiEnum<xiiGALStateTransitionMode> transitionMode = xiiGALStateTransitionMode::Transition);
 
   /// \brief Sets the vertex buffers for the input-assembler stage of the pipeline. This contains the vertex data.
   ///
@@ -383,7 +767,8 @@ public:
   /// \param pVertexBuffers - The array of handles to the vertex buffer objects. The vertex buffers must be created with the xiiGALBindFlags::VertexBuffer bind flag.
   /// \param pByteOffsets   - The array of offset values; one offset value for each buffer in the vertex-buffer array. Each offset is the number of bytes between the first element of a vertex buffer and the first element that will be used. If this parameter is an empty array, zero offsets for all buffers will be used.
   /// \param flags          - Additional flags for setting vertex buffers. See xiiGALSetVertexBufferFlags for more information.
-  void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None);
+  /// \param transitionMode - Resource state transition mode. Specifies whether the buffer state should be transitioned to the required state automatically.
+  void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None, xiiEnum<xiiGALStateTransitionMode> transitionMode = xiiGALStateTransitionMode::Transition);
 
   /// \brief This is used to set the constant (uniform) buffer for a shader resource.
   ///
@@ -506,75 +891,99 @@ public:
   /// \brief This ends a render pass that has already begun.
   void EndRenderPass();
 
-  /// \todo GraphicsFoundation: Add unordered access view clear.
-
   // Draw functions.
 
-  /// \brief Draws non-indexed primitives.
+  /// \brief Issues a non-indexed draw call using the specified parameters.
   ///
-  /// \param uiVertexCount - The number of vertices to draw.
-  /// \param uiStartVertex - The index of the first vertex to draw.
-  xiiResult Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex);
-
-  /// \brief Draws indexed primitives.
+  /// Executes a basic draw using vertex buffers without indexing.
   ///
-  /// \param uiIndexCount - The number of indices to draw.
-  /// \param uiStartIndex - The index of the first index to use.
-  /// \param uiBaseVertex - A value added to each index before reading a vertex from the vertex buffer.
-  xiiResult DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex = 0U);
-
-  /// \brief Draws indexed, instanced primitives.
+  /// \param description - Vertex and instance counts, and vertex offsets.
   ///
-  /// \param uiIndexCountPerInstance - The number of indices to draw for each instance.
-  /// \param uiInstanceCount         - The number of instances to draw.
-  /// \param uiStartIndex            - The index of the first index to use.
-  /// \param uiBaseVertex            - A value added to each index before reading a vertex from the vertex buffer.
-  /// \param uiFirstInstance         - The index of the first instance to draw.
-  xiiResult DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex = 0U, xiiUInt32 uiFirstInstance = 0U);
+  /// \see xiiGALDrawDescription
+  void Draw(const xiiGALDrawDescription& description);
 
-  /// \brief Draws indexed, instanced primitives using an indirect argument buffer.
+  /// \brief Issues an indexed draw call using the specified parameters.
   ///
-  /// \param pIndirectArgumentBuffer - The handle to the indirect argument buffer object.
-  /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
-  xiiResult DrawIndexedInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
-
-  /// \brief Draws instanced primitives.
+  /// Uses an index buffer to reference geometry vertices and enables instancing.
   ///
-  /// \param uiVertexCountPerInstance - The number of vertices to draw for each instance.
-  /// \param uiInstanceCount          - The number of instances to draw.
-  /// \param uiStartVertex            - The index of the first vertex to draw.
-  /// \param uiFirstInstance          - The index of the first instance to draw.
-  xiiResult DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex = 0U, xiiUInt32 uiFirstInstance = 0U);
-
-  /// \brief Draws instanced primitives using an indirect argument buffer.
+  /// \param description - Index type, counts, and offset information.
   ///
-  /// \param pIndirectArgumentBuffer - The handle to the indirect argument buffer object.
-  /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
-  xiiResult DrawInstancedIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
+  /// \see xiiGALDrawIndexedDescription
+  void DrawIndexed(const xiiGALDrawIndexedDescription& description);
 
-  /// \brief Draws a mesh.
+  /// \brief Issues an indirect draw call based on arguments stored in a GPU buffer.
   ///
-  /// \param uiThreadGroupCountX - The number of thread groups to dispatch in the X dimension.
-  /// \param uiThreadGroupCountY - The number of thread groups to dispatch in the Y dimension.
-  /// \param uiThreadGroupCountZ - The number of thread groups to dispatch in the Z dimension.
-  xiiResult DrawMesh(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ);
+  /// Supports multi-draw and optional counter buffer for dynamic draw count.
+  ///
+  /// \param description - Buffer handles, offsets, draw count, and flags.
+  ///
+  /// \see xiiGALDrawIndirectDescription
+  void DrawIndirect(const xiiGALDrawIndirectDescription& description);
 
-  /// \todo GraphicsFoundation: Add indirect mesh draw via DrawIndirect().
+  /// \brief Issues an indexed indirect draw call based on arguments stored in a GPU buffer.
+  ///
+  /// Uses index data and indirect arguments pulled from a structured GPU buffer.
+  ///
+  /// \param description - Index type, buffer handles, offsets, and draw count.
+  ///
+  /// \see xiiGALDrawIndexedIndirectDescription
+  void DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescription& description);
+
+  /// \brief Issues a draw call that dispatches GPU mesh shaders directly.
+  ///
+  /// Typically used when mesh shading pipelines are active and task amplification is desired.
+  ///
+  /// \param description - Thread group dimensions and flags.
+  ///
+  /// \see xiiGALDrawMeshDescription
+  void DrawMesh(const xiiGALDrawMeshDescription& description);
+
+  /// \brief Issues an indirect mesh shader draw using arguments stored in a GPU buffer.
+  ///
+  /// Supports GPU-driven workflows for meshlets with optional counter buffer.
+  ///
+  /// \param description - Buffer handles, offsets, draw count, and flags.
+  ///
+  /// \see xiiGALDrawMeshIndirectDescription
+  void DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription& description);
+
+  /// \brief Executes a batch of non-indexed draw calls using an array of parameters.
+  ///
+  /// Enables multi-draw submission without index buffers, with per-draw configurations.
+  ///
+  /// \param description - Array of draw items and instance parameters.
+  ///
+  /// \see xiiGALMultiDrawDescription
+  void MultiDraw(const xiiGALMultiDrawDescription& description);
+
+  /// \brief Executes a batch of indexed draw calls using an array of parameters.
+  ///
+  /// Supports per-item base vertex and index range offsets across draws.
+  ///
+  /// \param description - Array of indexed draw items and instance parameters.
+  ///
+  /// \see xiiGALMultiDrawIndexedDescription
+  void MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription& description);
 
   // Dispatch functions.
 
-  /// \brief Dispatches a compute shader.
+  /// \brief Dispatches a compute workload using the specified thread group dimensions.
   ///
-  /// \param uiThreadGroupCountX - The number of thread groups to dispatch in the X dimension.
-  /// \param uiThreadGroupCountY - The number of thread groups to dispatch in the Y dimension.
-  /// \param uiThreadGroupCountZ - The number of thread groups to dispatch in the Z dimension.
-  xiiResult Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ);
+  /// Synchronously encodes compute workload dimensions per axis.
+  ///
+  /// \param description - Thread group count and Metal overrides (if any).
+  ///
+  /// \see xiiGALDispatchComputeDescription
+  void DispatchCompute(const xiiGALDispatchComputeDescription& description);
 
-  /// \brief Dispatches a compute shader using an indirect argument buffer.
+  /// \brief Dispatches a compute workload using arguments stored in a GPU buffer.
   ///
-  /// \param pIndirectArgumentBuffer - The handle to the indirect argument buffer object.
-  /// \param uiArgumentOffsetInBytes - Byte offset into the indirect argument buffer where the arguments start.
-  xiiResult DispatchIndirect(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
+  /// Enables GPU-controlled compute invocation for async workloads or culling passes.
+  ///
+  /// \param description - Buffer containing dispatch dimensions and optional Metal overrides.
+  ///
+  /// \see xiiGALDispatchComputeIndirectDescription
+  void DispatchComputeIndirect(const xiiGALDispatchComputeIndirectDescription& description);
 
   // Query functions.
 
@@ -792,6 +1201,21 @@ protected:
   bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const;
   bool VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const;
 
+  void VerifyBufferState(xiiGALBuffer* pBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
+  void VerifyTextureState(xiiGALTexture* pTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
+  void VerifyBottomLevelASState(xiiGALBottomLevelAS* pBottomLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
+  void VerifyTopLevelASState(xiiGALTopLevelAS* pTopLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
+
+  struct VertexStreamDescription
+  {
+    VertexStreamDescription()
+    {
+    }
+
+    xiiSharedPtr<xiiGALBuffer> m_pBuffer;         ///< Shared reference to the buffer object.
+    xiiUInt64                  m_uiOffset = 0ULL; ///< The offset in bytes.
+  };
+
   // Deactivate Doxygen document generation for the following block. (API abstraction only)
   /// \cond
 
@@ -811,15 +1235,16 @@ protected:
   virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) = 0;
   virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)      = 0;
 
-  virtual void      SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset)                                                                                                     = 0;
-  virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) = 0;
-  virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)                                                          = 0;
-  virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)                                                = 0;
-  virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)                                             = 0;
-  virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)                                               = 0;
-  virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)                                            = 0;
-  virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)                                                                       = 0;
-  virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)                                                                                                                      = 0;
+  virtual void SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode)                                                             = 0;
+  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<VertexStreamDescription> pVertexStreams, xiiBitflags<xiiGALSetVertexBufferFlags> flags, xiiEnum<xiiGALStateTransitionMode> transitionMode) = 0;
+
+  virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)               = 0;
+  virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)     = 0;
+  virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)  = 0;
+  virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)    = 0;
+  virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView) = 0;
+  virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)                            = 0;
+  virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)                                                                           = 0;
 
   virtual void ClearRenderTargetViewPlatform(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor)                                                       = 0;
   virtual void ClearDepthStencilViewPlatform(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
@@ -828,16 +1253,17 @@ protected:
   virtual void NextSubpassPlatform()                                                                                                                                                                 = 0;
   virtual void EndRenderPassPlatform()                                                                                                                                                               = 0;
 
-  virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)                                                                                                        = 0;
-  virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)                                                                           = 0;
-  virtual xiiResult DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance) = 0;
-  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)                                           = 0;
-  virtual xiiResult DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)                              = 0;
-  virtual xiiResult DrawInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)                                                  = 0;
-  virtual xiiResult DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)                                                         = 0;
+  virtual void DrawPlatform(const xiiGALDrawDescription& description)                               = 0;
+  virtual void DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description)                 = 0;
+  virtual void DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description)               = 0;
+  virtual void DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description) = 0;
+  virtual void DrawMeshPlatform(const xiiGALDrawMeshDescription& description)                       = 0;
+  virtual void DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description)       = 0;
+  virtual void MultiDrawPlatform(const xiiGALMultiDrawDescription& description)                     = 0;
+  virtual void MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description)       = 0;
 
-  virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)   = 0;
-  virtual xiiResult DispatchIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) = 0;
+  virtual void DispatchComputePlatform(const xiiGALDispatchComputeDescription& description)                 = 0;
+  virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) = 0;
 
   virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) = 0;
   virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)   = 0;
@@ -870,17 +1296,19 @@ protected:
   /// \endcond
 
 protected:
+  static constexpr xiiUInt32 s_uiDrawMeshIndirectCommandStride = sizeof(xiiUInt32) * 3; // Vulkan: 8 bytes (task count, first task), D3D12: 12 bytes (x, y, z dimension).
+
   xiiGALCommandListCreationDescription m_Description;
 
   xiiGALCommandQueue* m_pCommandQueue;
 
   RecordingState m_RecordingState = RecordingState::Reset;
+  const bool     m_bNativeMultiDrawSupported;
 
   xiiSharedPtr<xiiGALPipelineState>             m_pPipelineState;
   xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineResourceSignature;
 
-  xiiHybridArray<xiiSharedPtr<xiiGALBuffer>, 4U> m_VertexBuffers;
-  xiiHybridArray<xiiUInt64, 4U>                  m_VertexBuffersOffsets;
+  xiiHybridArray<VertexStreamDescription, 2U> m_VertexStreams;
 
   xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;
   xiiUInt64                  m_uiIndexDataOffset = 0ULL;

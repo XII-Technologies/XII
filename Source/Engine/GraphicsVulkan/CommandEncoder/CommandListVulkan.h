@@ -68,6 +68,37 @@ public:
     xiiUInt32       m_uiOutsidePassQueries     = 0;
   };
 
+  struct CommandListFlags
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      None                           = 0,
+      CommittedVertexBuffersModified = XII_BIT(0),
+      CommittedIndexBufferModified   = XII_BIT(1),
+      ShadingRateSet                 = XII_BIT(2),
+
+      Default = None
+    };
+
+    struct Bits
+    {
+      StorageType CommittedVertexBuffersModified : 1;
+      StorageType CommittedIndexBufferModified : 1;
+      StorageType ShadingRateSet : 1;
+    };
+
+    friend inline xiiBitflags<CommandListFlags> operator|(CommandListFlags::Enum lhs, CommandListFlags::Enum rhs)
+    {
+      return (xiiBitflags<CommandListFlags>(lhs) | xiiBitflags<CommandListFlags>(rhs));
+    }
+    friend inline xiiBitflags<CommandListFlags> operator&(CommandListFlags::Enum lhs, CommandListFlags::Enum rhs)
+    {
+      return (xiiBitflags<CommandListFlags>(lhs) & xiiBitflags<CommandListFlags>(rhs));
+    };
+  };
+
 protected:
   friend class xiiGALCommandQueueVulkan;
   friend class xiiGALDeviceVulkan;
@@ -92,8 +123,9 @@ protected:
   virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) override final;
   virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects) override final;
 
-  virtual void      SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset) override final;
-  virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;
+  virtual void SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode) override final;
+  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<VertexStreamDescription> pVertexStreams, xiiBitflags<xiiGALSetVertexBufferFlags> flags, xiiEnum<xiiGALStateTransitionMode> transitionMode) override final;
+
   virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer) override final;
   virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView) override final;
   virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView) override final;
@@ -109,16 +141,17 @@ protected:
   virtual void NextSubpassPlatform() override final;
   virtual void EndRenderPassPlatform() override final;
 
-  virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex) override final;
-  virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex) override final;
-  virtual xiiResult DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance) override final;
-  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
-  virtual xiiResult DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance) override final;
-  virtual xiiResult DrawInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
-  virtual xiiResult DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override final;
+  virtual void DrawPlatform(const xiiGALDrawDescription& description) override final;
+  virtual void DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description) override final;
+  virtual void DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description) override final;
+  virtual void DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description) override final;
+  virtual void DrawMeshPlatform(const xiiGALDrawMeshDescription& description) override final;
+  virtual void DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description) override final;
+  virtual void MultiDrawPlatform(const xiiGALMultiDrawDescription& description) override final;
+  virtual void MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description) override final;
 
-  virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override final;
-  virtual xiiResult DispatchIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
+  virtual void DispatchComputePlatform(const xiiGALDispatchComputeDescription& description) override final;
+  virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) override final;
 
   virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
   virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
@@ -149,6 +182,12 @@ protected:
   virtual void InvalidateStatePlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
+
+private:
+  void PrepareForDraw();
+  void PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType);
+  void PrepareForDispatchCompute();
+  void PrepareForRayTracing();
 
 private:
   struct PipelineBarrier
@@ -255,9 +294,10 @@ private:
 
   xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool;
 
-  vk::CommandBuffer m_vkCommandBuffer;
-  CommandListState  m_CommandListState;
-  PipelineBarrier   m_PipelineBarrier;
+  vk::CommandBuffer             m_vkCommandBuffer;
+  CommandListState              m_CommandListState;
+  xiiBitflags<CommandListFlags> m_CommandListFlags;
+  PipelineBarrier               m_PipelineBarrier;
 
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
 
@@ -299,4 +339,6 @@ private:
   xiiUniquePtr<xiiGALStagingBufferPoolVulkan> m_pUploadStagingBufferPool;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
+
+  xiiSharedPtr<xiiGALBufferVulkan> m_pNullVertexBuffer; ///< In Vulkan, we cannot bind a null vertex buffer, so we have to create a zeroed-out vertex buffer.
 };

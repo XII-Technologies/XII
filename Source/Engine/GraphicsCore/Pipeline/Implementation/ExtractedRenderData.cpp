@@ -31,7 +31,6 @@ void xiiExtractedRenderData::SortAndBatch()
       {
         return a.m_uiSortingKey < b.m_uiSortingKey;
       }
-
       return a.m_pRenderData->m_hOwner < b.m_pRenderData->m_hOwner;
     }
   };
@@ -103,7 +102,6 @@ const xiiRenderData* xiiExtractedRenderData::GetFrameData(const xiiRTTI* pRtti) 
       return pData;
     }
   }
-
   return nullptr;
 }
 

@@ -490,6 +490,19 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan
 {
   m_pDynamicBufferPoolVulkan = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALDynamicBufferPoolVulkan, static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow()), 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
   m_pUploadStagingBufferPool = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALStagingBufferPoolVulkan, static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow()), 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
+
+  {
+    xiiGALBufferCreationDescription nullVertexBufferDescription;
+    nullVertexBufferDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+    nullVertexBufferDescription.m_Usage     = xiiGALResourceUsage::Default;
+    nullVertexBufferDescription.m_uiSize    = 32U;
+
+    xiiSharedPtr<xiiGALBuffer> pNullVertexBuffer = m_pDevice->CreateBuffer(nullVertexBufferDescription);
+
+    pNullVertexBuffer->SetDebugName("Null Vertex Buffer");
+
+    m_pNullVertexBuffer = pNullVertexBuffer.Downcast<xiiGALBufferVulkan>();
+  }
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
@@ -639,56 +652,40 @@ void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pR
   m_vkCommandBuffer.setScissor(0, m_ScissorRects.GetCount(), vkScissorRects, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
-void xiiGALCommandListVulkan::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset)
+void xiiGALCommandListVulkan::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pIndexBuffer.Downcast<xiiGALBufferVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_IGNORE_UNUSED(uiByteOffset);
 
-  TransitionOrVerifyBufferState(pBufferVulkan, xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Binding buffer as index buffer  (xiiGALCommandList::SetIndexBuffer)");
-
-  const auto indexFormat = pBufferVulkan->GetIndexFormat();
-
-  XII_VERIFY_COMMAND_LIST(indexFormat == xiiGALValueType::UInt16 || indexFormat == xiiGALValueType::UInt32, "Unsupported index format, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
-
-  vk::IndexType vkIndexType = vk::IndexType::eUint16;
-  if (indexFormat == xiiGALValueType::UInt32)
+  if (pIndexBuffer)
   {
-    vkIndexType = vk::IndexType::eUint32;
+    xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pIndexBuffer.Downcast<xiiGALBufferVulkan>();
+
+    TransitionOrVerifyBufferState(pBufferVulkan, transitionMode, xiiGALResourceStateFlags::IndexBuffer, vk::AccessFlagBits::eIndexRead, "Binding buffer as index buffer (xiiGALCommandListVulkan::SetIndexBuffer)");
   }
 
-  m_vkCommandBuffer.bindIndexBuffer(pBufferVulkan->GetVulkanBuffer(), uiByteOffset, vkIndexType, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-
-  m_CommandListState.m_vkIndexBuffer       = pBufferVulkan->GetVulkanBuffer();
-  m_CommandListState.m_vkIndexBufferOffset = uiByteOffset;
-  m_CommandListState.m_vkIndexType         = vkIndexType;
+  m_CommandListFlags.Add(CommandListFlags::CommittedIndexBufferModified);
 }
 
-void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
+void xiiGALCommandListVulkan::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<VertexStreamDescription> pVertexStreams, xiiBitflags<xiiGALSetVertexBufferFlags> flags, xiiEnum<xiiGALStateTransitionMode> transitionMode)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  XII_VERIFY_COMMAND_LIST((uiStartSlot + pVertexBuffers.GetCount()) <= XII_GAL_MAX_VERTEX_BUFFER_COUNT, "The number of vertex buffers to set, exceeds the maximum amount.");
-
+  XII_IGNORE_UNUSED(uiStartSlot);
   XII_IGNORE_UNUSED(flags);
 
-  vk::Buffer     vkVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
-  vk::DeviceSize vkVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
-
-  for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
+  for (xiiUInt32 uiSlot = 0U; uiSlot < pVertexStreams.GetCount(); ++uiSlot)
   {
-    xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = pVertexBuffers[i].Downcast<xiiGALBufferVulkan>();
-    xiiUInt32                        uiVertexBufferSlot  = i + uiStartSlot;
+    VertexStreamDescription& vertexStream = pVertexStreams[uiSlot];
 
-    vkVertexBuffers[uiVertexBufferSlot]       = pVertexBufferVulkan ? pVertexBufferVulkan->GetVulkanBuffer() : VK_NULL_HANDLE;
-    vkVertexBufferOffsets[uiVertexBufferSlot] = (i < pByteOffsets.GetCount()) ? pByteOffsets[i] : 0U;
+    if (xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = vertexStream.m_pBuffer.Downcast<xiiGALBufferVulkan>())
+    {
+      TransitionOrVerifyBufferState(pBufferVulkan, transitionMode, xiiGALResourceStateFlags::VertexBuffer, vk::AccessFlagBits::eVertexAttributeRead, "Setting vertex buffers (xiiGALCommandListVulkan::SetVertexBuffers)");
+    }
   }
 
-  if (!pVertexBuffers.IsEmpty())
-  {
-    m_vkCommandBuffer.bindVertexBuffers(uiStartSlot, pVertexBuffers.GetCount(), vkVertexBuffers + uiStartSlot, vkVertexBufferOffsets + uiStartSlot, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-  }
+  m_CommandListFlags.Add(CommandListFlags::CommittedVertexBuffersModified);
 }
 
 void xiiGALCommandListVulkan::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
@@ -1498,127 +1495,261 @@ void xiiGALCommandListVulkan::EndRenderPassPlatform()
   }
 }
 
-xiiResult xiiGALCommandListVulkan::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
+void xiiGALCommandListVulkan::DrawPlatform(const xiiGALDrawDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDraw() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDraw() must be called inside render pass (19.3)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+  PrepareForDraw();
 
-  m_vkCommandBuffer.draw(uiVertexCount, 1U, uiStartVertex, 0, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (description.m_uiVertexCount > 0 && description.m_uiInstanceCount > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  return XII_SUCCESS;
+    m_vkCommandBuffer.draw(description.m_uiVertexCount, description.m_uiInstanceCount, description.m_uiStartVertexLocation, description.m_uiFirstInstanceLocation, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
 }
 
-xiiResult xiiGALCommandListVulkan::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)
+void xiiGALCommandListVulkan::DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexed() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexed() must be called inside render pass (19.3)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkIndexBuffer != VK_NULL_HANDLE, "No index buffer bound.");
+  PrepareForIndexedDraw(description.m_IndexType);
 
-  m_vkCommandBuffer.drawIndexed(uiIndexCount, 1U, uiStartIndex, uiBaseVertex, 0U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (description.m_uiIndexCount > 0 && description.m_uiInstanceCount > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  return XII_SUCCESS;
+    m_vkCommandBuffer.drawIndexed(description.m_uiIndexCount, description.m_uiInstanceCount, description.m_uiFirstIndexLocation, description.m_uiBaseVertex, description.m_uiFirstInstanceLocation, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
 }
 
-xiiResult xiiGALCommandListVulkan::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
+void xiiGALCommandListVulkan::DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndirect() or vkCmdDrawIndirectCount() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexed() must be called inside render pass (19.3)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkIndexBuffer != VK_NULL_HANDLE, "No index buffer bound.");
+  PrepareForDraw();
 
-  m_vkCommandBuffer.drawIndexed(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (description.m_uiDrawCount > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+    xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = description.m_pBuffer.Downcast<xiiGALBufferVulkan>();
 
-  return XII_SUCCESS;
+    if (description.m_pCounterBuffer == nullptr)
+    {
+      m_vkCommandBuffer.drawIndirect(pBufferVulkan->GetVulkanBuffer(), description.m_uiDrawArgumentOffset, description.m_uiDrawCount, (description.m_uiDrawCount > 1 ? description.m_uiDrawArgumentStride : 0U), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    else
+    {
+      xiiSharedPtr<xiiGALBufferVulkan> pCounterBufferVulkan = description.m_pCounterBuffer.Downcast<xiiGALBufferVulkan>();
+
+      m_vkCommandBuffer.drawIndirectCount(pBufferVulkan->GetVulkanBuffer(), description.m_uiDrawArgumentOffset, pCounterBufferVulkan->GetVulkanBuffer(), description.m_uiCounterOffset, description.m_uiDrawCount, description.m_uiDrawArgumentStride, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+  }
 }
 
-xiiResult xiiGALCommandListVulkan::DrawIndexedInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+void xiiGALCommandListVulkan::DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pIndirectArgumentBuffer.Downcast<xiiGALBufferVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexedindirect() or vkCmdDrawIndexedindirectCount() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexedindirect() must be called inside render pass (19.3)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkIndexBuffer != VK_NULL_HANDLE, "No index buffer bound.");
+  PrepareForIndexedDraw(description.m_IndexType);
 
-  m_vkCommandBuffer.drawIndexedIndirect(pBufferVulkan->GetVulkanBuffer(), uiArgumentOffsetInBytes, 0U, 0U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (description.m_uiDrawCount > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+    xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = description.m_pBuffer.Downcast<xiiGALBufferVulkan>();
 
-  return XII_SUCCESS;
+    if (description.m_pCounterBuffer == nullptr)
+    {
+      m_vkCommandBuffer.drawIndexedIndirect(pBufferVulkan->GetVulkanBuffer(), description.m_uiDrawArgumentOffset, description.m_uiDrawCount, (description.m_uiDrawCount > 1 ? description.m_uiDrawArgumentStride : 0U), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    else
+    {
+      xiiSharedPtr<xiiGALBufferVulkan> pCounterBufferVulkan = description.m_pCounterBuffer.Downcast<xiiGALBufferVulkan>();
+
+      m_vkCommandBuffer.drawIndexedIndirectCount(pBufferVulkan->GetVulkanBuffer(), description.m_uiDrawArgumentOffset, pCounterBufferVulkan->GetVulkanBuffer(), description.m_uiCounterOffset, description.m_uiDrawCount, description.m_uiDrawArgumentStride, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+  }
 }
 
-xiiResult xiiGALCommandListVulkan::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
+void xiiGALCommandListVulkan::DrawMeshPlatform(const xiiGALDrawMeshDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksEXT() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDraw() must be called inside render pass (19.3)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+  PrepareForDraw();
 
-  m_vkCommandBuffer.draw(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (description.m_uiThreadGroupCountX > 0 && description.m_uiThreadGroupCountY > 0 && description.m_uiThreadGroupCountZ > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  return XII_SUCCESS;
+    m_vkCommandBuffer.drawMeshTasksEXT(description.m_uiThreadGroupCountX, description.m_uiThreadGroupCountY, description.m_uiThreadGroupCountZ, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
 }
 
-xiiResult xiiGALCommandListVulkan::DrawInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+void xiiGALCommandListVulkan::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pIndirectArgumentBuffer.Downcast<xiiGALBufferVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksIndirectEXT() or vkCmdDrawMeshTasksIndirectCountEXT() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawIndirect() must be called inside render pass (19.3)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+  PrepareForDraw();
 
-  m_vkCommandBuffer.drawIndirect(pBufferVulkan->GetVulkanBuffer(), uiArgumentOffsetInBytes, 0U, 0U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (description.m_uiCommandCount > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+    xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = description.m_pBuffer.Downcast<xiiGALBufferVulkan>();
 
-  return XII_SUCCESS;
+    if (description.m_pCounterBuffer == nullptr)
+    {
+      m_vkCommandBuffer.drawMeshTasksIndirectEXT(pBufferVulkan->GetVulkanBuffer(), description.m_uiDrawArgumentOffset, description.m_uiCommandCount, s_uiDrawMeshIndirectCommandStride, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    else
+    {
+      xiiSharedPtr<xiiGALBufferVulkan> pCounterBufferVulkan = description.m_pCounterBuffer.Downcast<xiiGALBufferVulkan>();
+
+      m_vkCommandBuffer.drawMeshTasksIndirectCountEXT(pBufferVulkan->GetVulkanBuffer(), description.m_uiDrawArgumentOffset, pCounterBufferVulkan->GetVulkanBuffer(), description.m_uiCounterOffset, description.m_uiCommandCount, s_uiDrawMeshIndirectCommandStride, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+  }
 }
 
-xiiResult xiiGALCommandListVulkan::DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
+void xiiGALCommandListVulkan::MultiDrawPlatform(const xiiGALMultiDrawDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMultiEXT() or vkCmdDraw() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksEXT() must be called inside render pass (19.3)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
+  PrepareForDraw();
 
-  m_vkCommandBuffer.drawMeshTasksEXT(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (description.m_uiInstanceCount > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  return XII_SUCCESS;
+    if (m_bNativeMultiDrawSupported)
+    {
+      xiiDynamicArray<vk::MultiDrawInfoEXT> multiDrawItems(pDeviceVulkan->GetAllocator());
+      multiDrawItems.SetCountUninitialized(description.m_pDrawItems.GetCount());
+
+      for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+      {
+        const xiiGALMultiDrawItem& drawItem = description.m_pDrawItems[i];
+
+        if (drawItem.m_uiVertexCount > 0)
+        {
+          multiDrawItems[i].firstVertex = drawItem.m_uiStartVertexLocation;
+          multiDrawItems[i].vertexCount = drawItem.m_uiVertexCount;
+        }
+      }
+
+      if (!multiDrawItems.IsEmpty())
+      {
+        m_vkCommandBuffer.drawMultiEXT(multiDrawItems.GetCount(), multiDrawItems.GetData(), description.m_uiInstanceCount, description.m_uiFirstInstanceLocation, sizeof(vk::MultiDrawInfoEXT), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
+    }
+    else
+    {
+      for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+      {
+        const xiiGALMultiDrawItem& drawItem = description.m_pDrawItems[i];
+
+        if (drawItem.m_uiVertexCount > 0)
+        {
+          m_vkCommandBuffer.draw(drawItem.m_uiVertexCount, description.m_uiInstanceCount, drawItem.m_uiStartVertexLocation, description.m_uiFirstInstanceLocation, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        }
+      }
+    }
+  }
 }
 
-xiiResult xiiGALCommandListVulkan::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
+void xiiGALCommandListVulkan::MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "vkCmdDrawMultiIndexedEXT() must be called inside render pass. (19.3)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkGraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound.");
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdDispatch() must be called outside of render pass (27)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkComputePipeline != VK_NULL_HANDLE, "No compute pipeline bound.");
+  PrepareForIndexedDraw(description.m_IndexType);
 
-  m_vkCommandBuffer.dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  if (description.m_uiInstanceCount > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  return XII_SUCCESS;
+    if (m_bNativeMultiDrawSupported)
+    {
+      xiiDynamicArray<vk::MultiDrawIndexedInfoEXT> multiDrawIndexedItems(pDeviceVulkan->GetAllocator());
+      multiDrawIndexedItems.SetCountUninitialized(description.m_pDrawItems.GetCount());
+
+      for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+      {
+        const xiiGALMultiDrawIndexedItem& drawItem = description.m_pDrawItems[i];
+
+        if (drawItem.m_uiIndexCount > 0)
+        {
+          multiDrawIndexedItems[i].firstIndex   = drawItem.m_uiFirstIndexLocation;
+          multiDrawIndexedItems[i].indexCount   = drawItem.m_uiIndexCount;
+          multiDrawIndexedItems[i].vertexOffset = static_cast<xiiInt32>(drawItem.m_uiBaseVertex);
+        }
+      }
+
+      if (!multiDrawIndexedItems.IsEmpty())
+      {
+        // NULL or a pointer to the value added to the vertex index before indexing into the vertex buffer.
+        // When specified, vk::MultiDrawIndexedInfoEXT::vertexOffset is ignored.
+        static constexpr xiiInt32* pVertexOffset = nullptr;
+
+        m_vkCommandBuffer.drawMultiIndexedEXT(multiDrawIndexedItems.GetCount(), multiDrawIndexedItems.GetData(), description.m_uiInstanceCount, description.m_uiFirstInstanceLocation, sizeof(vk::MultiDrawIndexedInfoEXT), pVertexOffset, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
+    }
+    else
+    {
+      for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
+      {
+        const xiiGALMultiDrawIndexedItem& drawItem = description.m_pDrawItems[i];
+
+        if (drawItem.m_uiIndexCount > 0)
+        {
+          m_vkCommandBuffer.drawIndexed(drawItem.m_uiIndexCount, description.m_uiInstanceCount, drawItem.m_uiFirstIndexLocation, drawItem.m_uiBaseVertex, description.m_uiFirstInstanceLocation, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        }
+      }
+    }
+  }
 }
 
-xiiResult xiiGALCommandListVulkan::DispatchIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+void xiiGALCommandListVulkan::DispatchComputePlatform(const xiiGALDispatchComputeDescription& description)
 {
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdDispatch() must be called outside of render pass. (27)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkComputePipeline != VK_NULL_HANDLE, "No compute pipeline bound.");
+
+  PrepareForDispatchCompute();
+
+  if (description.m_uiThreadGroupCountX > 0 && description.m_uiThreadGroupCountY > 0 && description.m_uiThreadGroupCountZ > 0)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+    m_vkCommandBuffer.dispatch(description.m_uiThreadGroupCountX, description.m_uiThreadGroupCountY, description.m_uiThreadGroupCountZ, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
+}
+
+void xiiGALCommandListVulkan::DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description)
+{
+  XII_ASSERT_DEV(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdDispatchIndirect() must be called outside of render pass. (27)");
+  XII_ASSERT_DEV(m_CommandListState.m_vkComputePipeline != VK_NULL_HANDLE, "No compute pipeline bound.");
+
+  PrepareForDispatchCompute();
+
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pIndirectArgumentBuffer.Downcast<xiiGALBufferVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = description.m_pBuffer.Downcast<xiiGALBufferVulkan>();
 
-  XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdDispatchIndirect() must be called outside of render pass (27)");
-  XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkComputePipeline != VK_NULL_HANDLE, "No compute pipeline bound.");
-
-  m_vkCommandBuffer.dispatchIndirect(pBufferVulkan->GetVulkanBuffer(), uiArgumentOffsetInBytes, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-
-  return XII_SUCCESS;
+  m_vkCommandBuffer.dispatchIndirect(pBufferVulkan->GetVulkanBuffer(), description.m_uiDispatchArgumentOffset, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
@@ -2610,6 +2741,7 @@ void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, cons
 
 void xiiGALCommandListVulkan::InvalidateStatePlatform()
 {
+  m_CommandListFlags = {};
   m_CommandListState = {};
   m_PipelineBarrier  = {};
 
@@ -2638,6 +2770,86 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName) const
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
   pDeviceVulkan->SetVulkanObjectDebugName(m_vkCommandBuffer, sName.GetData(tmp));
+}
+
+void xiiGALCommandListVulkan::PrepareForDraw()
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
+  {
+    if (xiiGALBuffer* pBuffer = m_VertexStreams[uiSlot].m_pBuffer.Borrow())
+    {
+      VerifyBufferState(pBuffer, xiiGALResourceStateFlags::VertexBuffer, "Using vertex buffers");
+    }
+  }
+#endif
+
+  if (m_CommandListFlags.IsSet(CommandListFlags::CommittedVertexBuffersModified))
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+    vk::Buffer     vkVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
+    vk::DeviceSize vkVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
+
+    for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
+    {
+      VertexStreamDescription&         vertexStream        = m_VertexStreams[uiSlot];
+
+      if (xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = vertexStream.m_pBuffer.Downcast<xiiGALBufferVulkan>())
+      {
+        vkVertexBuffers[uiSlot]       = pVertexBufferVulkan->GetVulkanBuffer();
+        vkVertexBufferOffsets[uiSlot] = vertexStream.m_uiOffset;
+      }
+      else
+      {
+        // We cannot bind a null vertex buffer in Vulkan, so we use a dedicated null vertex buffer.
+        vkVertexBuffers[uiSlot]       = m_pNullVertexBuffer->GetVulkanBuffer();
+        vkVertexBufferOffsets[uiSlot] = 0U;
+      }
+    }
+
+    if (!m_VertexStreams.IsEmpty())
+    {
+      m_vkCommandBuffer.bindVertexBuffers(0, m_VertexStreams.GetCount(), vkVertexBuffers, vkVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+
+    m_CommandListFlags.Remove(CommandListFlags::CommittedVertexBuffersModified);
+  }
+}
+
+void xiiGALCommandListVulkan::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType)
+{
+  PrepareForDraw();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  VerifyBufferState(m_pIndexBuffer, xiiGALResourceStateFlags::IndexBuffer, "Indexed draw call");
+#endif
+
+  XII_ASSERT_DEV(indexType == xiiGALValueType::UInt16 || indexType == xiiGALValueType::UInt32, "Unsupported index type, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
+
+  if (m_CommandListFlags.IsSet(CommandListFlags::CommittedIndexBufferModified))
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+    xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = m_pIndexBuffer.Downcast<xiiGALBufferVulkan>();
+
+    vk::IndexType vkIndexType = xiiVulkanTypeConversions::GetIndexType(indexType);
+
+    m_vkCommandBuffer.bindIndexBuffer(pBufferVulkan->GetVulkanBuffer(), m_uiIndexDataOffset, vkIndexType, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_CommandListState.m_vkIndexBuffer       = pBufferVulkan->GetVulkanBuffer();
+    m_CommandListState.m_vkIndexBufferOffset = m_uiIndexDataOffset;
+    m_CommandListState.m_vkIndexType         = vkIndexType;
+
+    m_CommandListFlags.Remove(CommandListFlags::CommittedIndexBufferModified);
+  }
+}
+
+void xiiGALCommandListVulkan::PrepareForDispatchCompute()
+{
+}
+
+void xiiGALCommandListVulkan::PrepareForRayTracing()
+{
 }
 
 [[nodiscard]] inline bool ResourceStateHasWriteAccess(xiiBitflags<xiiGALResourceStateFlags> flags)
@@ -2812,12 +3024,9 @@ void xiiGALCommandListVulkan::TransitionImageLayout(xiiGALTextureVulkan* pTextur
 
 void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiEnum<xiiGALStateTransitionMode> transitionMode, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::AccessFlagBits expectedAccessFlags, const char* szOperationName)
 {
-  XII_IGNORE_UNUSED(szOperationName);
-  XII_IGNORE_UNUSED(expectedAccessFlags);
-
   if (transitionMode == xiiGALStateTransitionMode::Transition)
   {
-    XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+    XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
     if (pBufferVulkan->IsInKnownState())
     {
@@ -2834,14 +3043,14 @@ void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiGALBufferVulkan* 
       xiiLog::Error("{} requires buffer '{}' to be transitioned to {} state. Actual buffer state: {}. Use appropriate transition flags or explicitly transition the buffer using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBufferVulkan->GetDebugName(), requiredState.GetValue(), pBufferVulkan->GetResourceState().GetValue());
     }
   }
+#else
+  XII_IGNORE_UNUSED(szOperationName);
+  XII_IGNORE_UNUSED(expectedAccessFlags);
 #endif
 }
 
 void xiiGALCommandListVulkan::TransitionOrVerifyTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiEnum<xiiGALStateTransitionMode> transitionMode, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::ImageLayout expectedLayout, const char* szOperationName)
 {
-  XII_IGNORE_UNUSED(szOperationName);
-  XII_IGNORE_UNUSED(expectedLayout);
-
   if (transitionMode == xiiGALStateTransitionMode::Transition)
   {
     XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
@@ -2861,6 +3070,9 @@ void xiiGALCommandListVulkan::TransitionOrVerifyTextureState(xiiGALTextureVulkan
       xiiLog::Error("{} requires texture '{}' to be transitioned to {} state. Actual texture state: {}. Use appropriate transition flags or explicitly transition the texture using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTextureVulkan->GetDebugName(), requiredState.GetValue(), pTextureVulkan->GetResourceState().GetValue());
     }
   }
+#else
+  XII_IGNORE_UNUSED(szOperationName);
+  XII_IGNORE_UNUSED(expectedLayout);
 #endif
 }
 

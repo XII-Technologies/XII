@@ -7,8 +7,7 @@ void xiiRenderViewContext::SetShaderPermutationVariable(const char* szName, cons
 {
   xiiTempHashedString sHashedName(szName);
 
-  xiiHashedString sName;
-  xiiHashedString sValue;
+  xiiHashedString sName, sValue;
   if (xiiGALShaderManager::IsPermutationValueAllowed(szName, sHashedName, sTempValue, sName, sValue))
   {
     SetShaderPermutationVariableInternal(sName, sValue);
@@ -19,8 +18,7 @@ void xiiRenderViewContext::SetShaderPermutationVariable(xiiStringView sName, con
 {
   xiiTempHashedString sHashedName(sName);
 
-  xiiHashedString sName0;
-  xiiHashedString sValue;
+  xiiHashedString sName0, sValue;
   if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sHashedName, sTempValue, sName0, sValue))
   {
     SetShaderPermutationVariableInternal(sName0, sValue);

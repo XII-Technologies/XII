@@ -149,7 +149,6 @@ xiiResourceLoadDesc xiiTexture3DResource::UpdateContent(xiiStreamReader* Stream)
   XII_ASSERT_DEV(!bIsRenderTarget, "Render targets are not supported by regular 2D texture resources");
 
   {
-
     const xiiUInt32 uiNumMipmapsLowRes   = xiiTextureUtils::s_bForceFullQualityAlways ? pImage->GetNumMipLevels() : xiiMath::Min(pImage->GetNumMipLevels(), 6U);
     xiiUInt32       uiUploadNumMipLevels = 0;
     bool            bCouldLoadMore       = false;

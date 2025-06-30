@@ -26,8 +26,7 @@ struct XII_GRAPHICSCORE_DLL xiiTexture3DResourceDescriptor
   /// How many additional quality levels can be loaded (typically from file).
   xiiUInt8 m_uiQualityLevelsLoadable = 0;
 
-  /// One memory desc per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not
-  /// initialize data.
+  /// One memory desc per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not initialize data.
   xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
 };
 

@@ -208,7 +208,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
       {
         XII_SUCCEED_OR_RETURN(UploadStagingData(pCommandListVulkan));
       }
-      else if (auto pCommandQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+      else if (auto pCommandQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics))
       {
         if (auto pImmediateCommandListVulkan = pCommandQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
         {
@@ -218,12 +218,6 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
         }
       }
     }
-  }
-
-  // Set the index format for index buffers.
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer))
-  {
-    m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? xiiGALValueType::UInt16 : xiiGALValueType::UInt32;
   }
 
   return XII_SUCCESS;
