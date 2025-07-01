@@ -59,7 +59,7 @@ public:
   const xiiExtractedRenderData& GetRenderData() const;
   xiiRenderDataBatchList        GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
 
-  /// \brief Creates a DGML graph of all passes and textures. Can be used to verify that no accidental temp textures are created due to poorly constructed pipelines or errors in code.
+  /// \brief Creates a DGML graph of all passes and textures. Can be used to verify that no accidental temporary textures are created due to poorly constructed pipelines or errors in code.
   void CreateDgmlGraph(xiiDGMLGraph& ref_graph);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -130,8 +130,8 @@ private: // Member data
   struct TextureUsageData
   {
     xiiHybridArray<xiiRenderPipelinePassConnection*, 4> m_UsedBy;                     ///< All the connections that use this texture. Due to passthrough pins, this can be larger than 1.
-    xiiUInt16                                           m_uiFirstUsageIdx;            ///< Used to decide when to acquire a temp texture.
-    xiiUInt16                                           m_uiLastUsageIdx;             ///< Used to decide when to return a temp texture.
+    xiiUInt16                                           m_uiFirstUsageIdx;            ///< Used to decide when to acquire a temporary texture.
+    xiiUInt16                                           m_uiLastUsageIdx;             ///< Used to decide when to return a temporary texture.
     const xiiRenderPipelineNodePin*                     m_pTextureProvider = nullptr; ///< If set, this node and parent pass provide an external texture to the pipeline. This could be a render target from a xiiTargetPass or a history buffer that is preserved across frames. At the start of every frame the parent pass will be asked for the current value of the texture a this pin.
   };
   xiiDynamicArray<TextureUsageData> m_TextureUsage;                      ///< All unique textures used during the pipeline run.

@@ -286,18 +286,18 @@ xiiRenderPipeline::PipelineState xiiRenderPipeline::Rebuild(const xiiView& view)
 
   ClearRenderPassGraphTextures();
 
-  bool bRes = RebuildInternal(view);
-  if (!bRes)
+  bool bResult = RebuildInternal(view);
+  if (!bResult)
   {
     ClearRenderPassGraphTextures();
   }
   else
   {
-    // make sure the renderdata stores the updated view data
+    // Ensure the render data stores the updated view data.
     UpdateViewData(view, xiiRenderWorld::GetDataIndexForRendering());
   }
 
-  m_PipelineState = bRes ? PipelineState::Initialized : PipelineState::RebuildError;
+  m_PipelineState = bResult ? PipelineState::Initialized : PipelineState::RebuildError;
   return m_PipelineState;
 }
 
@@ -345,8 +345,8 @@ bool xiiRenderPipeline::SortPasses()
     usable.PopBack();
     ConnectionData& data = m_Connections[pPass];
 
-    XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count missmatch!");
-    XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count missmatch!");
+    XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count mismatch!");
+    XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count mismatch!");
 
     // Check for new candidate passes. Can't be done in the previous loop as multiple connections may be required by a node.
     for (xiiUInt32 i = 0; i < data.m_Outputs.GetCount(); ++i)
@@ -418,7 +418,7 @@ bool xiiRenderPipeline::SortPasses()
 
 bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
 {
-  xiiLogBlock                                           b("Init Render Target Descriptions");
+  xiiLogBlock                                           b("Initialize Render Target Descriptions");
   xiiHybridArray<xiiGALTextureCreationDescription*, 10> inputs;
   xiiHybridArray<xiiGALTextureCreationDescription, 10>  outputs;
 
@@ -433,8 +433,8 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
 
     ConnectionData& data = m_Connections[pPass.Borrow()];
 
-    XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count missmatch!");
-    XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count missmatch!");
+    XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count mismatch!");
+    XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count mismatch!");
 
     inputs.SetCount(data.m_Inputs.GetCount());
     outputs.Clear();
@@ -452,8 +452,8 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
       }
     }
 
-    bool bRes = pPass->GetRenderTargetDescriptions(view, inputs, outputs);
-    if (!bRes)
+    bool bResult = pPass->GetRenderTargetDescriptions(view, inputs, outputs);
+    if (!bResult)
     {
       xiiLog::Error("The pass could not be successfully queried for render target descriptions.");
       return false;
@@ -648,6 +648,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 bool xiiRenderPipeline::InitRenderPipelinePasses()
 {
   xiiLogBlock b("Init Render Pipeline Passes");
+
   // Init every pass now.
   for (auto& pPass : m_Passes)
   {
@@ -765,7 +766,6 @@ void xiiRenderPipeline::GetExtractors(xiiDynamicArray<xiiExtractor*>& ref_extrac
   }
 }
 
-
 xiiExtractor* xiiRenderPipeline::GetExtractorByName(const xiiStringView& sExtractorName)
 {
   for (auto& pExtractor : m_Extractors)
@@ -791,9 +791,9 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePass* pPass)
     if (pConnection != nullptr)
     {
       xiiRenderPipelinePass* pSource = static_cast<xiiRenderPipelinePass*>(pConnection->m_pOutput->m_pParent);
-      bool                   bRes    = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
-      XII_IGNORE_UNUSED(bRes);
-      XII_ASSERT_DEBUG(bRes, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
+      bool                   bResult    = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
+      XII_IGNORE_UNUSED(bResult);
+      XII_ASSERT_DEBUG(bResult, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
     }
   }
   for (xiiUInt32 i = 0; i < data.m_Outputs.GetCount(); ++i)
@@ -802,9 +802,9 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePass* pPass)
     while (pConnection != nullptr)
     {
       xiiRenderPipelinePass* pTarget = static_cast<xiiRenderPipelinePass*>(pConnection->m_Inputs[0]->m_pParent);
-      bool                   bRes    = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
-      XII_IGNORE_UNUSED(bRes);
-      XII_ASSERT_DEBUG(bRes, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
+      bool                   bResult    = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
+      XII_IGNORE_UNUSED(bResult);
+      XII_ASSERT_DEBUG(bResult, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
 
       pConnection = data.m_Outputs[i];
     }
