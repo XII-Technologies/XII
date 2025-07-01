@@ -71,6 +71,7 @@ void xiiRenderPipeline::AddPass(xiiUniquePtr<xiiRenderPipelinePass>&& pPass)
   auto it = m_Connections.Insert(pPass.Borrow(), ConnectionData());
   it.Value().m_Inputs.SetCount(pPass->GetInputPins().GetCount());
   it.Value().m_Outputs.SetCount(pPass->GetOutputPins().GetCount());
+
   m_Passes.PushBack(std::move(pPass));
 }
 
@@ -81,9 +82,11 @@ void xiiRenderPipeline::RemovePass(xiiRenderPipelinePass* pPass)
     if (m_Passes[i].Borrow() == pPass)
     {
       m_PipelineState = PipelineState::Uninitialized;
+
       RemoveConnections(pPass);
       m_Connections.Remove(pPass);
       pPass->m_pPipeline = nullptr;
+
       m_Passes.RemoveAtAndCopy(i);
       break;
     }
@@ -119,21 +122,17 @@ xiiRenderPipelinePass* xiiRenderPipeline::GetPassByName(const xiiStringView& sPa
       return pPass.Borrow();
     }
   }
-
   return nullptr;
-}
-
-xiiHashedString xiiRenderPipeline::GetViewName() const
-{
-  return m_sName;
 }
 
 bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiStringView sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiStringView sInputPinName)
 {
   xiiHashedString sOutputPinNameHash;
   sOutputPinNameHash.Assign(sOutputPinName);
+
   xiiHashedString sInputPinNameHash;
   sInputPinNameHash.Assign(sInputPinName);
+
   return Connect(pOutputNode, sOutputPinNameHash, pInputNode, sInputPinNameHash);
 }
 
@@ -171,7 +170,7 @@ bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedStr
     return false;
   }
 
-  // Add at output
+  // Add at output.
   xiiRenderPipelinePassConnection* pConnection = itOut.Value().m_Outputs[pPinSource->m_uiOutputIndex];
   if (pConnection == nullptr)
   {
@@ -181,7 +180,7 @@ bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedStr
   }
   else
   {
-    // Check that only one passthrough is connected
+    // Check that only one passthrough is connected.
     if (pPinTarget->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough))
     {
       for (const xiiRenderPipelineNodePin* pPin : pConnection->m_Inputs)
@@ -195,7 +194,7 @@ bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedStr
     }
   }
 
-  // Add at input
+  // Add at input.
   pConnection->m_Inputs.PushBack(pPinTarget);
   itIn.Value().m_Inputs[pPinTarget->m_uiInputIndex] = pConnection;
   m_PipelineState                                   = PipelineState::Uninitialized;
@@ -260,7 +259,7 @@ const xiiRenderPipelinePassConnection* xiiRenderPipeline::GetInputConnection(con
 
   auto&                           data = it.Value();
   const xiiRenderPipelineNodePin* pPin = pPass->GetPinByName(sInputPinName);
-  if (!pPin || pPin->m_uiInputIndex == 0xFF)
+  if (!pPin || pPin->m_uiInputIndex == 0xFFU)
     return nullptr;
 
   return data.m_Inputs[pPin->m_uiInputIndex];

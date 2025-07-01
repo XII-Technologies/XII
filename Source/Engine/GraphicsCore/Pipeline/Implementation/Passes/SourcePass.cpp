@@ -206,9 +206,6 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
   if (pOutput == nullptr)
     return;
 
-  if (!m_pRenderPass)
-    return;
-
   xiiSharedPtr<xiiGALDevice> pDevice            = xiiGALDevice::GetDefaultDevice();
   const bool                 bIsDepthAttachment = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 

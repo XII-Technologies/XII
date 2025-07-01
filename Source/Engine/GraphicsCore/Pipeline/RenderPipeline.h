@@ -1,9 +1,6 @@
 #pragma once
 
 #include <Foundation/Configuration/CVar.h>
-#include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/Containers/HybridArray.h>
-#include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
@@ -19,6 +16,8 @@ struct xiiGALPermutationVariable;
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipeline);
+
 public:
   enum class PipelineState
   {
@@ -35,7 +34,6 @@ public:
   void                   GetPasses(xiiDynamicArray<const xiiRenderPipelinePass*>& ref_passes) const;
   void                   GetPasses(xiiDynamicArray<xiiRenderPipelinePass*>& ref_passes);
   xiiRenderPipelinePass* GetPassByName(const xiiStringView& sPassName);
-  xiiHashedString        GetViewName() const;
 
   bool Connect(xiiRenderPipelinePass* pOutputNode, xiiStringView sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiStringView sInputPinName);
   bool Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedString sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiHashedString sInputPinName);
@@ -50,12 +48,6 @@ public:
   void          GetExtractors(xiiDynamicArray<xiiExtractor*>& ref_extractors);
   xiiExtractor* GetExtractorByName(const xiiStringView& sExtractorName);
 
-  template <typename T>
-  XII_ALWAYS_INLINE T* GetFrameDataProvider() const
-  {
-    return static_cast<T*>(GetFrameDataProvider(xiiGetStaticRTTI<T>()));
-  }
-
   const xiiExtractedRenderData& GetRenderData() const;
   xiiRenderDataBatchList        GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
 
@@ -66,7 +58,11 @@ public:
   static xiiCVarBool cvar_SpatialCullingVis;
 #endif
 
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipeline);
+public:
+  XII_ALWAYS_INLINE xiiHashedString GetViewName() const { return m_sName; }
+
+  template <typename T>
+  XII_ALWAYS_INLINE T* GetFrameDataProvider() const { return static_cast<T*>(GetFrameDataProvider(xiiGetStaticRTTI<T>())); }
 
 private:
   friend class xiiRenderWorld;
@@ -150,8 +146,7 @@ private: // Member data
 
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
 
-  // Resources
-  xiiGlobalConstants         m_GlobalConstants;
+private:
   xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
 
   // Occlusion Culling
