@@ -1,17 +1,18 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Configuration/CVar.h>
-#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
-class xiiProfilingId;
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
+
 class xiiView;
+class xiiFrustum;
+class xiiDGMLGraph;
+class xiiRasterizerView;
 class xiiRenderPipelinePass;
 class xiiFrameDataProviderBase;
-class xiiDGMLGraph;
-class xiiFrustum;
-class xiiRasterizerView;
-
 struct xiiGALPermutationVariable;
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
@@ -145,4 +146,24 @@ private: // Member data
   mutable xiiHashTable<const xiiRTTI*, xiiUInt32>                 m_TypeToDataProviderIndex;
 
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
+
+  private:
+  xiiSharedPtr<xiiGALRenderPass>  GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description);
+  xiiSharedPtr<xiiGALFramebuffer> GetOrCreateFramebuffer(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> pAttachments, xiiSizeU32 framebufferSize, xiiUInt32 uiArraySliceCount);
+
+private:
+  struct RenderPassCache
+  {
+    XII_ALWAYS_INLINE RenderPassCache() = default;
+
+    XII_ALWAYS_INLINE RenderPassCache(xiiSharedPtr<xiiGALRenderPass> pRenderPass) :
+      m_pRenderPass(pRenderPass)
+    {
+    }
+
+    xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
+    xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
+  };
+
+  xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
 };

@@ -318,7 +318,7 @@ bool xiiRenderPipeline::SortPasses()
   done.Reserve(m_Passes.GetCount());
 
   xiiHybridArray<xiiRenderPipelinePass*, 8> usable;     // Stack of passes with all connections setup, they can be asked for descriptions.
-  xiiHybridArray<xiiRenderPipelinePass*, 8> candidates; // Not usable yet, but all input connections are available
+  xiiHybridArray<xiiRenderPipelinePass*, 8> candidates; // Not usable yet, but all input connections are available.
 
   // Find all source passes from which we can start the output description propagation.
   for (auto& pPass : m_Passes)
@@ -329,7 +329,7 @@ bool xiiRenderPipeline::SortPasses()
     }
   }
 
-  // Via a depth first traversal, order the passes
+  // Via a depth first traversal, order the passes.
   while (!usable.IsEmpty())
   {
     xiiRenderPipelinePass* pPass = usable.PeekBack();
@@ -341,15 +341,16 @@ bool xiiRenderPipeline::SortPasses()
     XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count mismatch!");
     XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count mismatch!");
 
-    // Check for new candidate passes. Can't be done in the previous loop as multiple connections may be required by a node.
+    // Check for new candidate passes. This step cannot be achieved in the previous loop as multiple connections may be required by a node.
     for (xiiUInt32 i = 0; i < data.m_Outputs.GetCount(); ++i)
     {
       if (data.m_Outputs[i] != nullptr)
       {
-        // Go through all inputs this connection is connected to and test the corresponding node for availability
+        // Iterate all inputs this connection is connected to and test the corresponding node for availability.
         for (const xiiRenderPipelineNodePin* pPin : data.m_Outputs[i]->m_Inputs)
         {
           XII_ASSERT_DEBUG(pPin->m_pParent != nullptr, "Pass was not initialized!");
+
           xiiRenderPipelinePass* pTargetPass = static_cast<xiiRenderPipelinePass*>(pPin->m_pParent);
           if (done.Contains(pTargetPass))
           {
@@ -381,12 +382,13 @@ bool xiiRenderPipeline::SortPasses()
 
   if (done.GetCount() < m_Passes.GetCount())
   {
-    xiiLog::Error("Pipeline: Not all nodes could be initialized");
-    for (auto& pass : m_Passes)
+    xiiLog::Error("Pipeline: Not all nodes could be initialized!");
+
+    for (auto& pPass : m_Passes)
     {
-      if (!done.Contains(pass.Borrow()))
+      if (!done.Contains(pPass.Borrow()))
       {
-        xiiLog::Error("Failed to initialize node: {} - {}", pass->GetName(), pass->GetDynamicRTTI()->GetTypeName());
+        xiiLog::Error("Failed to initialize node: {} - {}", pPass->GetName(), pPass->GetDynamicRTTI()->GetTypeName());
       }
     }
     return false;
@@ -394,18 +396,18 @@ bool xiiRenderPipeline::SortPasses()
 
   struct xiiPipelineSorter
   {
-    /// \brief Returns true if a is less than b
+    /// \brief Returns true if a is less than b.
     XII_FORCE_INLINE bool Less(const xiiUniquePtr<xiiRenderPipelinePass>& a, const xiiUniquePtr<xiiRenderPipelinePass>& b) const { return m_pDone->IndexOf(a.Borrow()) < m_pDone->IndexOf(b.Borrow()); }
 
-    /// \brief Returns true if a is equal to b
+    /// \brief Returns true if a is equal to b.
     XII_ALWAYS_INLINE bool Equal(const xiiUniquePtr<xiiRenderPipelinePass>& a, const xiiUniquePtr<xiiRenderPipelinePass>& b) const { return a.Borrow() == b.Borrow(); }
 
-    xiiHybridArray<xiiRenderPipelinePass*, 32>* m_pDone;
+    xiiHybridArray<xiiRenderPipelinePass*, 32U>* m_pDone;
   };
 
-  xiiPipelineSorter sorter;
-  sorter.m_pDone = &done;
-  m_Passes.Sort(sorter);
+  xiiPipelineSorter pipelineSorter;
+  pipelineSorter.m_pDone = &done;
+  m_Passes.Sort(pipelineSorter);
   return true;
 }
 
@@ -1427,6 +1429,55 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   xiiTexture2DResourceHandle hDebug = xiiResourceManager::CreateResource<xiiTexture2DResource>(sName, std::move(d));
 
   xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, hDebug, xiiVec2(1, -1));
+}
+
+xiiSharedPtr<xiiGALRenderPass> xiiRenderPipeline::GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description)
+{
+  RenderPassCache* pRenderPassCache;
+  if (m_RenderPassCache.TryGetValue(description, pRenderPassCache))
+    return pRenderPassCache->m_pRenderPass;
+
+  xiiSharedPtr<xiiGALDevice>     pDevice     = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(description);
+
+  XII_ASSERT_DEBUG(pRenderPass != nullptr, "Failed to create render pass.");
+
+  m_RenderPassCache.Insert(description, RenderPassCache{pRenderPass});
+
+  return pRenderPass;
+}
+
+xiiSharedPtr<xiiGALFramebuffer> xiiRenderPipeline::GetOrCreateFramebuffer(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> pAttachments, xiiSizeU32 framebufferSize, xiiUInt32 uiArraySliceCount)
+{
+  RenderPassCache* pRenderPassCache;
+  if (!m_RenderPassCache.TryGetValue(pRenderPass->GetDescription(), pRenderPassCache))
+    return nullptr;
+
+  for (xiiUInt32 i = 0; i < pRenderPassCache->m_FramebufferCache.GetCount(); ++i)
+  {
+    const auto& pFrameBuffer = pRenderPassCache->m_FramebufferCache[i];
+    const auto& description  = pFrameBuffer->GetDescription();
+
+    XII_ASSERT_DEBUG(description.m_pRenderPass == pRenderPassCache->m_pRenderPass, "Render pass mismatch for the same render pass description.");
+
+    if (description.m_Attachments == pAttachments && description.m_FramebufferSize == framebufferSize && description.m_uiArraySliceCount == uiArraySliceCount)
+    {
+      return pFrameBuffer;
+    }
+  }
+
+  xiiGALFramebufferCreationDescription framebufferDescription;
+  framebufferDescription.m_pRenderPass       = pRenderPassCache->m_pRenderPass;
+  framebufferDescription.m_Attachments       = pAttachments;
+  framebufferDescription.m_FramebufferSize   = framebufferSize;
+  framebufferDescription.m_uiArraySliceCount = uiArraySliceCount;
+
+  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALFramebuffer> pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+
+  pRenderPassCache->m_FramebufferCache.PushBack(pFramebuffer);
+
+  return pFramebuffer;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipeline);
