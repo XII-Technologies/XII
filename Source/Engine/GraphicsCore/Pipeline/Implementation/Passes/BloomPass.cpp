@@ -78,7 +78,7 @@ bool xiiBloomPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArr
   return true;
 }
 
-void xiiBloomPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+void xiiBloomPass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(pInputs);
 

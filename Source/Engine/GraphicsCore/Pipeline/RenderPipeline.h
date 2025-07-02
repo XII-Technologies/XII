@@ -75,7 +75,7 @@ private:
   bool          SortPasses();
   bool          InitializeRenderTargetDescriptions(const xiiView& view);
   bool          CreateRenderTargetUsage(const xiiView& view);
-  bool          InitRenderPipelinePasses();
+  bool          InitializeRenderPipelinePasses();
   void          SortExtractors();
   void          UpdateViewData(const xiiView& view, xiiUInt32 uiDataIndex);
 

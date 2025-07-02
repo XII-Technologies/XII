@@ -60,7 +60,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassConcurrencyHint
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePassConcurrencyHint);
 
-/// \brief Passed to xiiRenderPipelinePass::InitRenderPipelinePass to inform about existing connections on each input / output pin index.
+/// \brief Passed to xiiRenderPipelinePass::InitializeRenderPipelinePass to inform about existing connections on each input / output pin index.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassConnection
 {
   xiiRenderPipelinePassConnection() :
@@ -90,6 +90,14 @@ public:
 
   void SetPassConcurrencyHint(xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint); // [ property ]
 
+  virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+
+  virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
+
+  /// \brief After GetRenderTargetDescriptions was called successfully for each pass, this function is called with the inputs and outputs for review. Disconnected pins have a nullptr value in the passed in arrays.
+  /// This is the time to create additional resources that are not covered by the pins automatically, e.g. a picking texture or eye adaptation buffer.
+  virtual void InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs);
+
   /// \brief For a given input pin configuration, provide the output configuration of this node.
   /// Outputs is already resized to the number of output pins.
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> pInputs, xiiArrayPtr<xiiGALTextureCreationDescription> pOutputs) = 0;
@@ -99,11 +107,7 @@ public:
   /// \param pPin - The member pin for which the texture is requested.
   /// \param desc - The format of the texture that should be provided.
   /// \return The texture view to use for this pin's connections. Or invalid, in which case it reverts to a regular input / output pin.
-  virtual xiiSharedPtr<xiiGALTextureView> QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) { return nullptr; }
-
-  /// \brief After GetRenderTargetDescriptions was called successfully for each pass, this function is called with the inputs and outputs for review. Disconnected pins have a nullptr value in the passed in arrays.
-  /// This is the time to create additional resources that are not covered by the pins automatically, e.g. a picking texture or eye adaptation buffer.
-  virtual void InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs);
+  virtual xiiSharedPtr<xiiGALTextureView> QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& description) { return nullptr; }
 
   /// \brief Render into outputs. Both inputs and outputs are passed in with actual texture handles.
   /// Disconnected pins have a nullptr value in the passed in arrays. You can now create views and render target setups on the fly and fill the output targets with data.
@@ -113,9 +117,6 @@ public:
 
   /// \brief Allows for the pass to write data back using xiiView::SetRenderPassReadBackProperty. E.g. picking results etc.
   virtual void ReadBackProperties(xiiView* pView);
-
-  virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
-  virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
   void RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter());
 
@@ -152,6 +153,23 @@ public:
   /// \return A const pointer to the parent xiiRenderPipeline instance.
   XII_ALWAYS_INLINE const xiiRenderPipeline* GetPipeline() const { return m_pPipeline; }
 
+protected:
+  /// \brief Returns the GPU render pass object associated with this pipeline pass.
+  ///
+  /// Typically retrieved during Execute() to begin a render pass using the appropriate format, attachments, and subpass structure compiled during initialization.
+  /// May return nullptr if not yet initialized or if the pass does not contribute to a render pass.
+  ///
+  /// \return A shared pointer to the render pass descriptor or nullptr.
+  XII_ALWAYS_INLINE virtual xiiSharedPtr<xiiGALRenderPass> GetRenderPass() const { return m_pRenderPass; }
+
+  /// \brief Returns the GPU framebuffer associated with this pipeline pass.
+  ///
+  /// The framebuffer binds actual GPU texture attachments used during rendering.
+  /// Created during pass initialization based on the current view and attachment configuration.
+  ///
+  /// \return A shared pointer to the framebuffer object or nullptr if uninitialized.
+  XII_ALWAYS_INLINE virtual xiiSharedPtr<xiiGALFramebuffer> GetFramebuffer() const { return m_pFramebuffer; }
+
 private:
   friend class xiiRenderPipeline;
 
@@ -161,4 +179,7 @@ private:
 
   xiiBitflags<xiiRenderPipelinePassFlags>       m_PassFlags;
   xiiEnum<xiiRenderPipelinePassConcurrencyHint> m_PassConcurrencyHint;
+
+  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
 };

@@ -76,7 +76,7 @@ void xiiRenderPipelinePass::SetPassConcurrencyHint(xiiEnum<xiiRenderPipelinePass
   m_PassConcurrencyHint = concurrencyHint;
 }
 
-void xiiRenderPipelinePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}
+void xiiRenderPipelinePass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}
 
 void xiiRenderPipelinePass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}
 

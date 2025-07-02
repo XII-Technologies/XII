@@ -48,7 +48,7 @@ bool xiiDepthOnlyPass::GetRenderTargetDescriptions(const xiiView& view, const xi
   return true;
 }
 
-void xiiDepthOnlyPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+void xiiDepthOnlyPass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(pOutputs);
 

@@ -303,7 +303,7 @@ bool xiiRenderPipeline::RebuildInternal(const xiiView& view)
     return false;
   if (!CreateRenderTargetUsage(view))
     return false;
-  if (!InitRenderPipelinePasses())
+  if (!InitializeRenderPipelinePasses())
     return false;
 
   SortExtractors();
@@ -643,15 +643,15 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
   return true;
 }
 
-bool xiiRenderPipeline::InitRenderPipelinePasses()
+bool xiiRenderPipeline::InitializeRenderPipelinePasses()
 {
   xiiLogBlock b("Initialize Render Pipeline Passes");
 
   // Init every pass now.
-  for (auto& pPass : m_Passes)
+  for (xiiUniquePtr<xiiRenderPipelinePass>& pPass : m_Passes)
   {
     ConnectionData& data = m_Connections[pPass.Borrow()];
-    pPass->InitRenderPipelinePass(data.m_Inputs, data.m_Outputs);
+    pPass->InitializeRenderPipelinePass(data.m_Inputs, data.m_Outputs);
   }
 
   return true;
@@ -670,7 +670,6 @@ void xiiRenderPipeline::SortExtractors()
           return true;
         }
       }
-
       return false;
     }
   };

@@ -57,7 +57,7 @@ bool xiiPickingRenderPass::GetRenderTargetDescriptions(const xiiView& view, cons
   return true;
 }
 
-void xiiPickingRenderPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiPickingRenderPass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
   DestroyTarget();
   CreateTarget();
