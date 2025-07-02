@@ -26,7 +26,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiMsaaUpscalePass::xiiMsaaUpscalePass() :
-  xiiRenderPipelinePass("MsaaUpscalePass")
+  xiiRenderPipelinePass("MsaaUpscalePass", xiiRenderPipelinePassFlags::None, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   {
     // Load shader.

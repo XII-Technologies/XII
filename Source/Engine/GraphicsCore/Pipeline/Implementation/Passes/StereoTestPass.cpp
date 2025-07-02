@@ -23,7 +23,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiStereoTestPass::xiiStereoTestPass() :
-  xiiRenderPipelinePass("StereoTestPass", true)
+  xiiRenderPipelinePass("StereoTestPass", xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   {
     // Load shader.

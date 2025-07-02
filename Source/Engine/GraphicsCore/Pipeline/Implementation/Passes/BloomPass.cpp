@@ -32,7 +32,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiBloomPass::xiiBloomPass() :
-  xiiRenderPipelinePass("BloomPass", true)
+  xiiRenderPipelinePass("BloomPass", xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   {
     // Load shader.

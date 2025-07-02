@@ -22,7 +22,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiCopyTexturePass::xiiCopyTexturePass() :
-  xiiRenderPipelinePass("CopyTexturePass")
+  xiiRenderPipelinePass("CopyTexturePass", xiiRenderPipelinePassFlags::None, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
 }
 

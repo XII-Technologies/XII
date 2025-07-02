@@ -23,7 +23,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiBlendPass::xiiBlendPass() :
-  xiiRenderPipelinePass("BlendPass")
+  xiiRenderPipelinePass("BlendPass", xiiRenderPipelinePassFlags::None, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Blend.xiiShader");
   XII_ASSERT_DEV(m_hShader.IsValid(), "Could not load blend shader!");

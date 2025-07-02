@@ -22,7 +22,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiDepthOnlyPass::xiiDepthOnlyPass(xiiStringView sName) :
-  xiiRenderPipelinePass(sName, true)
+  xiiRenderPipelinePass(sName, xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
 }
 

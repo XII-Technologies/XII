@@ -33,7 +33,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiReflectionFilterPass::xiiReflectionFilterPass() :
-  xiiRenderPipelinePass("ReflectionFilterPass")
+  xiiRenderPipelinePass("ReflectionFilterPass", xiiRenderPipelinePassFlags::None, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 

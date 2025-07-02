@@ -29,7 +29,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiTargetPass::xiiTargetPass(xiiStringView sName) :
-  xiiRenderPipelinePass(sName, true)
+  xiiRenderPipelinePass(sName, xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
 }
 

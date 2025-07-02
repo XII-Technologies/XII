@@ -39,7 +39,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiAOPass::xiiAOPass() :
-  xiiRenderPipelinePass("AOPass", true)
+  xiiRenderPipelinePass("AOPass", xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   m_hNoiseTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("Textures/SSAONoise.dds");
 

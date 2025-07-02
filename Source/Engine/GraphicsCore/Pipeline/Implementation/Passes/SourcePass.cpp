@@ -44,7 +44,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 xiiSourcePass::xiiSourcePass(xiiStringView sName) :
-  xiiRenderPipelinePass(sName, true)
+  xiiRenderPipelinePass(sName, xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
 }
 

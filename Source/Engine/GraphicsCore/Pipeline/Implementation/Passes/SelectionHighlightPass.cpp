@@ -30,7 +30,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiSelectionHighlightPass::xiiSelectionHighlightPass(xiiStringView sName) :
-  xiiRenderPipelinePass(sName, true)
+  xiiRenderPipelinePass(sName, xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   // Load shader.
   m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/SelectionHighlight.xiiShader");

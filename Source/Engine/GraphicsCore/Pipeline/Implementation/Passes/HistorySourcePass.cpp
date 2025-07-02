@@ -61,7 +61,7 @@ xiiSharedPtr<xiiGALTexture> xiiHistorySourcePassTextureDataProvider::GetOrCreate
 
 
 xiiHistorySourcePass::xiiHistorySourcePass(xiiStringView sName) :
-  xiiRenderPipelinePass(sName, true)
+  xiiRenderPipelinePass(sName, xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
 }
 

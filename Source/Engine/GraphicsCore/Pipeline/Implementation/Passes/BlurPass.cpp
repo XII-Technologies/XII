@@ -27,7 +27,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiBlurPass::xiiBlurPass() :
-  xiiRenderPipelinePass("BlurPass")
+  xiiRenderPipelinePass("BlurPass", xiiRenderPipelinePassFlags::None, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   {
     // Load shader.
