@@ -145,10 +145,4 @@ private: // Member data
   mutable xiiHashTable<const xiiRTTI*, xiiUInt32>                 m_TypeToDataProviderIndex;
 
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
-
-private:
-  xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
-
-  // Occlusion Culling
-  xiiSharedPtr<xiiGALTexture> m_pOcclusionDebugViewTexture;
 };

@@ -42,15 +42,10 @@ xiiRenderPipeline::xiiRenderPipeline()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   m_AverageCullingTime = xiiTime::MakeFromSeconds(0.1f);
 #endif
-
-  m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants));
 }
 
 xiiRenderPipeline::~xiiRenderPipeline()
 {
-  m_pGlobalConstantsBuffer.Clear();
-  m_pOcclusionDebugViewTexture.Clear();
-
   m_Data[0].Clear();
   m_Data[1].Clear();
 
@@ -1095,8 +1090,11 @@ void xiiRenderPipeline::Render()
   const xiiCamera*           pLodCamera = &data.GetLodCamera();
   const xiiViewData*         pViewData  = &data.GetViewData();
 
+#ifdef CORE_ENABLE
   // Set Global Constants.
   {
+    xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pGlobalConstants)
+
     // Camera matrices.
     for (xiiInt32 i = 0; i < 2; ++i)
     {
@@ -1128,6 +1126,7 @@ void xiiRenderPipeline::Render()
     m_GlobalConstants.Exposure   = pCamera->GetExposure();
     m_GlobalConstants.RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
   }
+#endif
 
   xiiRenderViewContext renderViewContext;
   renderViewContext.m_pCamera            = pCamera;
