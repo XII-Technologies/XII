@@ -299,7 +299,7 @@ bool xiiRenderPipeline::RebuildInternal(const xiiView& view)
 {
   if (!SortPasses())
     return false;
-  if (!InitRenderTargetDescriptions(view))
+  if (!InitializeRenderTargetDescriptions(view))
     return false;
   if (!CreateRenderTargetUsage(view))
     return false;
@@ -411,7 +411,7 @@ bool xiiRenderPipeline::SortPasses()
   return true;
 }
 
-bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
+bool xiiRenderPipeline::InitializeRenderTargetDescriptions(const xiiView& view)
 {
   xiiLogBlock                                           b("Initialize Render Target Descriptions");
   xiiHybridArray<xiiGALTextureCreationDescription*, 10> inputs;
@@ -419,7 +419,7 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
 
   for (auto& pPass : m_Passes)
   {
-    xiiLogBlock b2("InitPass", pPass->GetName());
+    xiiLogBlock b2("InitializePass", pPass->GetName());
 
     if (view.GetCamera()->IsStereoscopic() && !pPass->IsStereoAware())
     {
@@ -434,6 +434,7 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
     inputs.SetCount(data.m_Inputs.GetCount());
     outputs.Clear();
     outputs.SetCount(data.m_Outputs.GetCount());
+
     // Fill inputs array
     for (xiiUInt32 i = 0; i < data.m_Inputs.GetCount(); ++i)
     {
@@ -500,6 +501,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
   {
     const auto&     pPass = m_Passes[i].Borrow();
     ConnectionData& data  = m_Connections[pPass];
+
     for (xiiRenderPipelinePassConnection* pConnection : data.m_Inputs)
     {
       if (pConnection != nullptr)
@@ -515,9 +517,10 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
       {
         if (pConnection->m_pOutput->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough) && data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex] != nullptr)
         {
-          xiiRenderPipelinePassConnection* pCorrespondingInputConn = data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex];
-          XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pCorrespondingInputConn), "");
-          xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pCorrespondingInputConn];
+          xiiRenderPipelinePassConnection* pCorrespondingInputConnection = data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex];
+          XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pCorrespondingInputConnection), "");
+
+          xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pCorrespondingInputConnection];
           m_TextureUsage[uiDataIdx].m_UsedBy.PushBack(pConnection);
           m_TextureUsage[uiDataIdx].m_uiLastUsageIdx = i;
 
@@ -537,7 +540,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     }
   }
 
-  // If a texture desc has this hash, it is uninitialized and no texture will be created at runtime.
+  // If a texture descriptor has this hash, it is uninitialized and no texture will be created at runtime.
   static xiiUInt32 uiDefaultTextureCreationDescriptionHash = xiiGALTextureCreationDescription().CalculateHash();
 
   // Find pins that provide textures into the pipeline, e.g. xiiTargetPass pins.
@@ -642,7 +645,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
 bool xiiRenderPipeline::InitRenderPipelinePasses()
 {
-  xiiLogBlock b("Init Render Pipeline Passes");
+  xiiLogBlock b("Initialize Render Pipeline Passes");
 
   // Init every pass now.
   for (auto& pPass : m_Passes)
