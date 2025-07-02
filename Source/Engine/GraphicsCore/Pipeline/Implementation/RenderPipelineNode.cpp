@@ -43,12 +43,12 @@ void xiiRenderPipelineNode::InitializePins()
   xiiHybridArray<const xiiAbstractProperty*, 32U> properties;
   pType->GetAllProperties(properties);
 
-  for (auto pProp : properties)
+  for (auto pProperty : properties)
   {
-    if (pProp->GetCategory() != xiiPropertyCategory::Member || !pProp->GetSpecificType()->IsDerivedFrom(xiiGetStaticRTTI<xiiRenderPipelineNodePin>()))
+    if (pProperty->GetCategory() != xiiPropertyCategory::Member || !pProperty->GetSpecificType()->IsDerivedFrom(xiiGetStaticRTTI<xiiRenderPipelineNodePin>()))
       continue;
 
-    auto                      pPinProp = static_cast<const xiiAbstractMemberProperty*>(pProp);
+    auto                      pPinProp = static_cast<const xiiAbstractMemberProperty*>(pProperty);
     xiiRenderPipelineNodePin* pPin     = static_cast<xiiRenderPipelineNodePin*>(pPinProp->GetPropertyPointer(this));
 
     pPin->m_pParent                   = this;
@@ -56,7 +56,7 @@ void xiiRenderPipelineNode::InitializePins()
     const bool bProviderOnPassThrough = pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough) && pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::TextureProvider);
     if (bMoreThanOneType || bProviderOnPassThrough)
     {
-      XII_REPORT_FAILURE("Pin '{0}' has an invalid type. Do not use xiiRenderPipelineNodePin directly as member but one of its derived types", pProp->GetPropertyName());
+      XII_REPORT_FAILURE("Pin '{0}' has an invalid type. Do not use xiiRenderPipelineNodePin directly as member but one of its derived types", pProperty->GetPropertyName());
       continue;
     }
 
@@ -72,7 +72,7 @@ void xiiRenderPipelineNode::InitializePins()
     }
 
     xiiHashedString sHashedName;
-    sHashedName.Assign(pProp->GetPropertyName());
+    sHashedName.Assign(pProperty->GetPropertyName());
     m_NameToPin.Insert(sHashedName, pPin);
   }
 }
@@ -98,10 +98,10 @@ const xiiRenderPipelineNodePin* xiiRenderPipelineNode::GetPinByName(xiiStringVie
 
 const xiiRenderPipelineNodePin* xiiRenderPipelineNode::GetPinByName(xiiHashedString sName) const
 {
-  const xiiRenderPipelineNodePin* pin;
-  if (m_NameToPin.TryGetValue(sName, pin))
+  const xiiRenderPipelineNodePin* pRenderPipelineNodePin;
+  if (m_NameToPin.TryGetValue(sName, pRenderPipelineNodePin))
   {
-    return pin;
+    return pRenderPipelineNodePin;
   }
   return nullptr;
 }
