@@ -56,7 +56,7 @@ private:
   xiiXRInterface*                        m_pXrInterface = nullptr;
   xiiTime                                m_LastPresent;
   xiiUniquePtr<xiiWindowOutputTargetGAL> m_pCompanionWindowOutputTarget;
-  xiiConstantBufferStorageHandle         m_hCompanionConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer>             m_pCompanionConstantBuffer;
   xiiShaderResourceHandle                m_hCompanionShader;
   bool                                   m_bRender = false;
 };

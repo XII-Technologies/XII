@@ -247,7 +247,7 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
 
   // Create a window for rendering
   {
-    xiiWindowCreationDesc WindowCreationDesc;
+    xiiWindowCreationDescription WindowCreationDesc;
     WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
     WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
     WindowCreationDesc.m_Title             = "Sample Window";

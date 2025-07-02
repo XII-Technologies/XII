@@ -9,7 +9,7 @@
 #include <Foundation/Types/UniquePtr.h>
 
 class xiiWindowBase;
-struct xiiWindowCreationDesc;
+struct xiiWindowCreationDescription;
 class xiiWorld;
 
 /// Allows custom code to inject logic at specific points during

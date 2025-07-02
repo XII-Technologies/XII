@@ -6,7 +6,7 @@
 class XII_CORE_DLL xiiGameStateWindow : public xiiWindow
 {
 public:
-  xiiGameStateWindow(const xiiWindowCreationDesc& windowdesc, xiiDelegate<void()> onClickClose = {});
+  xiiGameStateWindow(const xiiWindowCreationDescription& windowdesc, xiiDelegate<void()> onClickClose = {});
   ~xiiGameStateWindow();
 
   void ResetOnClickClose(xiiDelegate<void()> onClickClose);

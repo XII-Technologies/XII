@@ -170,7 +170,8 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
       xiiMemoryUtils::Copy(pData, backbufferData.GetData(), backbufferData.GetCount());
     }
-    return XII_SUCCESS;
   }
+  return XII_SUCCESS;
+}
 
-  XII_STATICLINK_FILE(GameEngine, GameEngine_GameApplication_Implementation_WindowOutputTargetGAL);
+XII_STATICLINK_FILE(GameEngine, GameEngine_GameApplication_Implementation_WindowOutputTargetGAL);

@@ -146,7 +146,7 @@ xiiResult xiiGPUTestingEnvironmentD3D11::CreateWindow(xiiUInt32 uiResolutionX, x
 
   if (m_pWindow == nullptr)
   {
-    xiiWindowCreationDesc WindowCreationDesc;
+    xiiWindowCreationDescription WindowCreationDesc;
     WindowCreationDesc.m_Resolution.width  = uiResolutionX;
     WindowCreationDesc.m_Resolution.height = uiResolutionY;
     WindowCreationDesc.m_Title             = "XII - Test";
@@ -335,7 +335,7 @@ xiiResult xiiGPUTestingEnvironmentVulkan::CreateWindow(xiiUInt32 uiResolutionX, 
 
   if (m_pWindow == nullptr)
   {
-    xiiWindowCreationDesc WindowCreationDesc;
+    xiiWindowCreationDescription WindowCreationDesc;
     WindowCreationDesc.m_Resolution.width  = uiResolutionX;
     WindowCreationDesc.m_Resolution.height = uiResolutionY;
     WindowCreationDesc.m_Title             = "XII - Test";

@@ -22,13 +22,13 @@ private Q_SLOTS:
   void on_m_CheckOverrideDefault_stateChanged(int state);
 
 private:
-  void FillUI(const xiiWindowCreationDesc& desc);
-  void GrabUI(xiiWindowCreationDesc& desc);
+  void FillUI(const xiiWindowCreationDescription& desc);
+  void GrabUI(xiiWindowCreationDescription& desc);
   void UpdateUI();
   void LoadDescs();
   void SaveDescs();
 
   xiiUInt8              m_uiCurDesc = 0;
-  xiiWindowCreationDesc m_Descs[2];
+  xiiWindowCreationDescription m_Descs[2];
   bool                  m_bOverrideProjectDefault[2];
 };

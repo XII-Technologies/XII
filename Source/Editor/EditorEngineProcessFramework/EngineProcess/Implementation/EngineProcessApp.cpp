@@ -43,7 +43,7 @@ void xiiEditorEngineProcessApp::CreateRemoteWindow()
   {
     xiiUniquePtr<xiiRemoteProcessWindow> pWindow = XII_DEFAULT_NEW(xiiRemoteProcessWindow);
 
-    xiiWindowCreationDesc desc;
+    xiiWindowCreationDescription desc;
     desc.m_uiWindowNumber   = 0;
     desc.m_bClipMouseCursor = false;
     desc.m_bShowMouseCursor = true;

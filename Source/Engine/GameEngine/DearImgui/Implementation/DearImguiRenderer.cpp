@@ -9,12 +9,12 @@
 #  include <GraphicsCore/Pipeline/View.h>
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Shader/ShaderResource.h>
+#  include <GraphicsCore/Utils/CommandListUtilities.h>
 #  include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #  include <GraphicsFoundation/Device/Device.h>
 #  include <GraphicsFoundation/Resources/Buffer.h>
 #  include <GraphicsFoundation/Shader/InputLayout.h>
 #  include <GraphicsFoundation/Utilities/DeviceUtilities.h>
-#include <GraphicsCore/Utils/CommandListUtilities.h>
 #  include <Imgui/imgui_internal.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImguiRenderData, 1, xiiRTTINoAllocator)
@@ -94,7 +94,7 @@ void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const
         }
       }
 
-      // pass along a xiiImguiBatch for every necessary drawcall
+      // pass along a xiiImguiBatch for every necessary draw call
       {
         const ImDrawList* pCommands = pDrawData->CmdLists[draw];
 
@@ -160,16 +160,17 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, xi
   if (xiiImgui::GetSingleton() == nullptr)
     return;
 
+#  ifdef CORE_ENABLE
   pRenderContext->BindShader(m_hShader);
-  const auto&     textures    = xiiImgui::GetSingleton()->m_Textures;
+  const auto&     textures       = xiiImgui::GetSingleton()->m_Textures;
   const xiiUInt32 uiTextureCount = textures.GetCount();
 
   for (auto it = batch.GetIterator<xiiImguiRenderData>(); it.IsValid(); ++it)
   {
     const xiiImguiRenderData* pRenderData = it;
 
-    XII_ASSERT_DEV(pRenderData->m_Vertices.GetCount() < s_uiVertexBufferSize, "GUI has too many elements to render in one drawcall");
-    XII_ASSERT_DEV(pRenderData->m_Indices.GetCount() < s_uiIndexBufferSize, "GUI has too many elements to render in one drawcall");
+    XII_ASSERT_DEV(pRenderData->m_Vertices.GetCount() < s_uiVertexBufferSize, "GUI has too many elements to render in one draw call");
+    XII_ASSERT_DEV(pRenderData->m_Indices.GetCount() < s_uiIndexBufferSize, "GUI has too many elements to render in one draw call");
 
     xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_pVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray()).AssertSuccess();
     xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_pIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray()).AssertSuccess();
@@ -196,12 +197,15 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, xi
       uiFirstIndex += imGuiBatch.m_uiVertexCount;
     }
   }
+#  endif
 }
 
 void xiiImguiRenderer::SetupRenderer()
 {
   if (m_pVertexBuffer)
     return;
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // load the shader
   {
@@ -217,7 +221,7 @@ void xiiImguiRenderer::SetupRenderer()
     bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
     bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-    m_pVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(bufferDescription);
+    m_pVertexBuffer = pDevice->CreateBuffer(bufferDescription);
   }
 
   // Create the index buffer
@@ -229,7 +233,7 @@ void xiiImguiRenderer::SetupRenderer()
     bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
     bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-    m_pIndexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(bufferDescription);
+    m_pIndexBuffer = pDevice->CreateBuffer(bufferDescription);
   }
 
   // Setup the vertex declaration
