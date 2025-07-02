@@ -328,7 +328,6 @@ bool xiiRenderPipeline::SortPasses()
   // Find all source passes from which we can start the output description propagation.
   for (auto& pPass : m_Passes)
   {
-    // if (std::all_of(cbegin(it.Value().m_Inputs), cend(it.Value().m_Inputs), [](xiiRenderPipelinePassConnection* pConnection){return pConnection == nullptr; }))
     if (AreInputDescriptionsAvailable(pPass.Borrow(), done))
     {
       usable.PushBack(pPass.Borrow());
@@ -721,7 +720,7 @@ void xiiRenderPipeline::UpdateViewData(const xiiView& view, xiiUInt32 uiDataInde
   if (uiDataIndex == xiiRenderWorld::GetDataIndexForExtraction() && m_CurrentExtractThread != (xiiThreadID)0)
     return;
 
-  XII_ASSERT_DEV(uiDataIndex <= 1, "Data index must be 0 or 1");
+  XII_ASSERT_DEV(uiDataIndex <= 1, "Data index must be 0 or 1.");
   auto& data = m_Data[uiDataIndex];
 
   data.SetCamera(*view.GetCamera());
@@ -790,7 +789,7 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePass* pPass)
     if (pConnection != nullptr)
     {
       xiiRenderPipelinePass* pSource = static_cast<xiiRenderPipelinePass*>(pConnection->m_pOutput->m_pParent);
-      bool                   bResult    = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
+      bool                   bResult = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
       XII_IGNORE_UNUSED(bResult);
       XII_ASSERT_DEBUG(bResult, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
     }
@@ -801,7 +800,7 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePass* pPass)
     while (pConnection != nullptr)
     {
       xiiRenderPipelinePass* pTarget = static_cast<xiiRenderPipelinePass*>(pConnection->m_Inputs[0]->m_pParent);
-      bool                   bResult    = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
+      bool                   bResult = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
       XII_IGNORE_UNUSED(bResult);
       XII_ASSERT_DEBUG(bResult, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
 
@@ -1393,100 +1392,42 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
 
   XII_PROFILE_SCOPE("Occlusion::DebugPreview");
 
-  const xiiUInt32 uiImgWidth  = rasterizer.GetResolutionX();
-  const xiiUInt32 uiImgHeight = rasterizer.GetResolutionY();
+  const xiiUInt32 uiImageWidth  = rasterizer.GetResolutionX();
+  const xiiUInt32 uiImageHeight = rasterizer.GetResolutionY();
 
   // get the debug image from the rasterizer
   xiiDynamicArray<xiiColorLinearUB> fb;
-  fb.SetCountUninitialized(uiImgWidth * uiImgHeight);
+  fb.SetCountUninitialized(uiImageWidth * uiImageHeight);
   rasterizer.ReadBackFrame(fb);
 
-  const float  w            = (float)uiImgWidth;
-  const float  h            = (float)uiImgHeight;
+  const float  w            = (float)uiImageWidth;
+  const float  h            = (float)uiImageHeight;
   xiiRectFloat rectInPixel1 = xiiRectFloat(5.0f, 5.0f, w + 10, h + 10);
   xiiRectFloat rectInPixel2 = xiiRectFloat(10.0f, 10.0f, w, h);
 
   xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel1, 0.0f, xiiColor::MediumPurple);
 
-  // TODO: it would be better to update a single texture every frame, however since this is a render pass,
-  // we currently can't create nested passes
-  // so either this has to be done elsewhere, or nested passes have to be allowed
-  if (false)
-  {
-    // check whether we need to re-create the texture
-    if (m_pOcclusionDebugViewTexture)
-    {
-      const auto& textureDescription = m_pOcclusionDebugViewTexture->GetDescription();
+  xiiTexture2DResourceDescriptor d;
+  d.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
+  d.m_DescGAL.m_Size.width  = rasterizer.GetResolutionX();
+  d.m_DescGAL.m_Size.height = rasterizer.GetResolutionY();
+  d.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8SNormalized;
 
-      if (textureDescription.m_Size.width != uiImgWidth || textureDescription.m_Size.height != uiImgHeight)
-      {
-        m_pOcclusionDebugViewTexture.Clear();
-      }
-    }
+  xiiGALTextureSubResourceData content[1];
+  content[0].m_pData         = fb.GetByteArrayPtr();
+  content[0].m_uiStride      = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_Size.width;
+  content[0].m_uiDepthStride = content[0].m_uiStride * d.m_DescGAL.m_Size.height;
+  d.m_InitialContent         = content;
 
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  static xiiAtomicInteger32 name = 0;
+  name.Increment();
 
-    // create the texture
-    if (!m_pOcclusionDebugViewTexture)
-    {
-      xiiGALTextureCreationDescription textureDescription;
-      textureDescription.m_Type           = xiiGALResourceDimension::Texture2D;
-      textureDescription.m_Size.width     = uiImgWidth;
-      textureDescription.m_Size.height    = uiImgHeight;
-      textureDescription.m_Format         = xiiGALResourceFormat::RGBA8UNormalized;
-      textureDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-      textureDescription.m_BindFlags      = xiiGALBindFlags::ShaderResource;
-      textureDescription.m_Usage          = xiiGALResourceUsage::Default;
+  xiiStringBuilder sName;
+  sName.SetFormat("RasterizerPreview-{}", name);
 
-      m_pOcclusionDebugViewTexture = pDevice->CreateTexture(textureDescription);
-    }
+  xiiTexture2DResourceHandle hDebug = xiiResourceManager::CreateResource<xiiTexture2DResource>(sName, std::move(d));
 
-    // upload the image to the texture
-    {
-      xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
-      auto                pCommandList     = pGALCommandQueue->BeginCommandList();
-      {
-        xiiGALScopedDebugGroup debugGroup(pCommandList, "RasterizerDebugViewUpdate");
-
-        xiiBoundingBoxU32 destBox;
-        destBox.m_vMin.SetZero();
-        destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
-
-        xiiGALTextureSubResourceData sourceData;
-        sourceData.m_pData    = fb.GetByteArrayPtr();
-        sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
-
-        pCommandList->UpdateTexture(m_pOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
-      }
-      pCommandList->Submit();
-    }
-
-    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, m_pOcclusionDebugViewTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
-  }
-  else
-  {
-    xiiTexture2DResourceDescriptor d;
-    d.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
-    d.m_DescGAL.m_Size.width  = rasterizer.GetResolutionX();
-    d.m_DescGAL.m_Size.height = rasterizer.GetResolutionY();
-    d.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8SNormalized;
-
-    xiiGALTextureSubResourceData content[1];
-    content[0].m_pData         = fb.GetByteArrayPtr();
-    content[0].m_uiStride      = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_Size.width;
-    content[0].m_uiDepthStride = content[0].m_uiStride * d.m_DescGAL.m_Size.height;
-    d.m_InitialContent         = content;
-
-    static xiiAtomicInteger32 name = 0;
-    name.Increment();
-
-    xiiStringBuilder sName;
-    sName.SetFormat("RasterizerPreview-{}", name);
-
-    xiiTexture2DResourceHandle hDebug = xiiResourceManager::CreateResource<xiiTexture2DResource>(sName, std::move(d));
-
-    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, hDebug, xiiVec2(1, -1));
-  }
+  xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, hDebug, xiiVec2(1, -1));
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipeline);

@@ -37,12 +37,6 @@ public:
   /// \brief Sets the name of the pass.
   void SetName(xiiStringView sName);
 
-  /// \brief returns the name of the pass.
-  xiiStringView GetName() const;
-
-  /// \brief True if the render pipeline pass can handle stereo cameras correctly.
-  bool IsStereoAware() const { return m_bIsStereoAware; }
-
   /// \brief For a given input pin configuration, provide the output configuration of this node.
   /// Outputs is already resized to the number of output pins.
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> pInputs, xiiArrayPtr<xiiGALTextureCreationDescription> pOutputs) = 0;
@@ -72,7 +66,15 @@ public:
 
   void RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter());
 
-  XII_ALWAYS_INLINE xiiRenderPipeline*       GetPipeline() { return m_pPipeline; }
+public:
+  /// \brief returns the name of the pass.
+  XII_ALWAYS_INLINE xiiStringView GetName() const { return m_sName; };
+
+  /// \brief True if the render pipeline pass can handle stereo cameras correctly.
+  XII_ALWAYS_INLINE bool IsStereoAware() const { return m_bIsStereoAware; }
+
+  XII_ALWAYS_INLINE xiiRenderPipeline* GetPipeline() { return m_pPipeline; }
+
   XII_ALWAYS_INLINE const xiiRenderPipeline* GetPipeline() const { return m_pPipeline; }
 
 private:

@@ -24,7 +24,7 @@ struct XII_GRAPHICSCORE_DLL xiiInputLayoutInfo
 {
   void ComputeHash();
 
-  xiiHybridArray<xiiVertexStreamInfo, 8> m_VertexStreams;
+  xiiHybridArray<xiiVertexStreamInfo, 4U> m_VertexStreams;
   xiiUInt32                              m_uiHash;
 };
 

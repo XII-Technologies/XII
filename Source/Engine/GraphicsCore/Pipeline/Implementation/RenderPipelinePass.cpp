@@ -42,11 +42,6 @@ void xiiRenderPipelinePass::SetName(xiiStringView sName)
   }
 }
 
-xiiStringView xiiRenderPipelinePass::GetName() const
-{
-  return m_sName.GetView();
-}
-
 void xiiRenderPipelinePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}
 
 void xiiRenderPipelinePass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}

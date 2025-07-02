@@ -333,6 +333,7 @@ void xiiGPUResourcePool::GALDeviceEventHandler(const xiiGALDeviceEvent& e)
     if (m_uiFramesSinceLastGC >= m_uiFramesThresholdSinceLastGC)
     {
       m_uiFramesSinceLastGC = 0;
+
       RunGC(10);
     }
   }
