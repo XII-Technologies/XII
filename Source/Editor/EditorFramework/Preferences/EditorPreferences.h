@@ -24,9 +24,9 @@ public:
   bool      m_bUsePrecompiledTools    = true;
   xiiString m_sCustomPrecompiledToolsFolder;
   bool      m_bLoadLastProjectAtStartup          = true;
-  bool      m_bShowSplashscreen                  = true;
+  bool      m_bShowSplashScreen                  = true;
   bool      m_bExpandSceneTreeOnSelection        = true;
-  bool      m_bBackgroundAssetProcessing         = true;
+  bool      m_bBackgroundAssetProcessing         = false;
   bool      m_bHighlightUntranslatedUI           = false;
   bool      m_bAssetBrowserShowItemsInSubFolders = true;
 

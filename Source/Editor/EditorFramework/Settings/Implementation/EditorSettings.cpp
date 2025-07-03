@@ -83,7 +83,7 @@ void xiiQtEditorApp::SaveSettings()
 
     QSettings s;
     s.beginGroup("EditorPreferences");
-    s.setValue("ShowSplashscreen", pPreferences->m_bShowSplashscreen);
+    s.setValue("ShowSplashScreen", pPreferences->m_bShowSplashScreen);
     s.endGroup();
   }
 
