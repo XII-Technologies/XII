@@ -88,12 +88,12 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
     // Update window size
     xiiActorPluginWindow* pWindowPlugin = m_pEditorWndActor->GetPlugin<xiiActorPluginWindow>();
 
-    auto*            pWindow = static_cast<xiiEditorProcessViewWindow*>(pWindowPlugin->GetWindow());
-    const xiiSizeU32 wndSize = pWindow->GetClientAreaSize();
+    auto*            pWindow    = static_cast<xiiEditorProcessViewWindow*>(pWindowPlugin->GetWindow());
+    const xiiSizeU32 windowSize = pWindow->GetClientAreaSize();
 
     XII_ASSERT_DEV(pWindow->GetNativeWindowHandle() == hWnd, "Editor view handle must never change. View needs to be destroyed and recreated.");
 
-    if (wndSize.width == uiWidth && wndSize.height == uiHeight)
+    if (windowSize.width == uiWidth && windowSize.height == uiHeight)
       return;
 
     if (pWindow->UpdateWindow(hWnd, uiWidth, uiHeight).Failed())
@@ -128,17 +128,17 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
         OnSwapChainChanged(pSwapChain, size);
       });
 
-      xiiGALSwapChainCreationDescription swapChainDesc;
-      swapChainDesc.m_pWindow               = pWindowPlugin->m_pWindow.Borrow();
-      swapChainDesc.m_Resolution            = pWindowPlugin->m_pWindow->GetClientAreaSize();
-      swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDesc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
-      swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-      swapChainDesc.m_uiBufferCount         = 2U;
-      swapChainDesc.m_fDefaultDepthValue    = 1.0f;
-      swapChainDesc.m_uiDefaultStencilValue = 0U;
+      xiiGALSwapChainCreationDescription swapChainDescription;
+      swapChainDescription.m_pWindow               = pWindowPlugin->m_pWindow.Borrow();
+      swapChainDescription.m_Resolution            = pWindowPlugin->m_pWindow->GetClientAreaSize();
+      swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
+      swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+      swapChainDescription.m_uiBufferCount         = 2U;
+      swapChainDescription.m_fDefaultDepthValue    = 1.0f;
+      swapChainDescription.m_uiDefaultStencilValue = 0U;
 
-      pOutput->CreateSwapchain(swapChainDesc);
+      pOutput->CreateSwapchain(swapChainDescription);
 
       if (!pOutput->m_pSwapChain)
       {
@@ -153,8 +153,8 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
     {
       xiiWindowOutputTargetGAL* pOutput = static_cast<xiiWindowOutputTargetGAL*>(pWindowPlugin->m_pWindowOutputTarget.Borrow());
 
-      const xiiSizeU32 wndSize = pWindowPlugin->m_pWindow->GetClientAreaSize();
-      SetupRenderTarget(pOutput->m_pSwapChain, nullptr, static_cast<xiiUInt16>(wndSize.width), static_cast<xiiUInt16>(wndSize.height));
+      const xiiSizeU32 windowSize = pWindowPlugin->m_pWindow->GetClientAreaSize();
+      SetupRenderTarget(pOutput->m_pSwapChain, nullptr, static_cast<xiiUInt16>(windowSize.width), static_cast<xiiUInt16>(windowSize.height));
     }
 
     pActor->AddPlugin(std::move(pWindowPlugin));

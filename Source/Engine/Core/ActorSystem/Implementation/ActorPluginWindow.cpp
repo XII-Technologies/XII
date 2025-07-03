@@ -4,10 +4,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPluginWindow, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiActorPluginWindow::Update()
 {
@@ -19,10 +17,8 @@ void xiiActorPluginWindow::Update()
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPluginWindowOwner, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiActorPluginWindowOwner::~xiiActorPluginWindowOwner()
 {
@@ -44,10 +40,8 @@ xiiWindowOutputTargetBase* xiiActorPluginWindowOwner::GetOutputTarget() const
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPluginWindowShared, 1, xiiRTTINoAllocator);
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiWindowBase* xiiActorPluginWindowShared::GetWindow() const
 {
