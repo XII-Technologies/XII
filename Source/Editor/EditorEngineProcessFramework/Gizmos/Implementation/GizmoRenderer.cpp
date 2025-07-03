@@ -10,10 +10,10 @@
 
 #include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
-// clang-format off
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGizmoRenderer, 1, xiiRTTIDefaultAllocator<xiiGizmoRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 float xiiGizmoRenderer::s_fGizmoScale = 1.0f;
 
@@ -31,7 +31,7 @@ void xiiGizmoRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRender
   inout_categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
 }
 
-void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   // special Windows specific hack:
@@ -71,6 +71,7 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
 
   const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiSubMeshIndex];
 
+  #ifdef CORE_ENABLE
   renderViewContext.m_pRenderContext->BindMeshBuffer(pMesh->GetMeshBuffer());
   renderViewContext.m_pRenderContext->BindMaterial(hMaterial);
 
@@ -112,4 +113,5 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
       }
     }
   }
+  #endif
 }
