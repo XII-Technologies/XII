@@ -531,7 +531,7 @@ void xiiRenderWorld::Render()
   xiiStringBuilder sb;
   sb.SetFormat("RENDER FRAME {}", uiRenderFrame);
 
-  XII_PROFILE_SCOPE(sb.GetData());
+  XII_PROFILE_SCOPE(sb.GetView());
 
   xiiRenderWorldRenderEvent renderEvent;
   renderEvent.m_Type           = xiiRenderWorldRenderEvent::Type::BeginRender;

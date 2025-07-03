@@ -83,10 +83,10 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALMSA
     xiiGALTextureCreationDescription textureDesc = xiiGALDeviceUtilities::CreateRenderTargetDescription(m_Info.m_vEyeRenderTargetSize, xiiGALResourceFormat::RGBA8UNormalizedSRGB, msaaCount);
     textureDesc.m_uiArraySizeOrDepth             = 2U;
 
-    m_hColorRT = pDevice->CreateTexture(textureDesc);
+    m_pColorRT = pDevice->CreateTexture(textureDesc);
 
     textureDesc.m_Format = xiiGALResourceFormat::D24UNormalizedS8UInt;
-    m_hDepthRT           = pDevice->CreateTexture(textureDesc);
+    m_pDepthRT           = pDevice->CreateTexture(textureDesc);
   }
 
   // SetHMDCamera
@@ -108,9 +108,9 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALMSA
   XII_ASSERT_DEV(m_pWorld != nullptr, "");
 
 
-  xiiGALRenderTargets renderTargets;
-  renderTargets.m_hRTs[0]   = pDevice->GetTexture(m_hColorRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  renderTargets.m_hDSTarget = pDevice->GetTexture(m_hDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
+  xiiRenderTargets renderTargets;
+  renderTargets.m_pRTs[0]   = m_pColorRT->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  renderTargets.m_pDSTarget = m_pDepthRT->GetDefaultView(xiiGALTextureViewType::DepthStencil);
   pView->SetRenderTargets(renderTargets);
 
   pView->SetViewport(xiiRectFloat((float)m_Info.m_vEyeRenderTargetSize.width, (float)m_Info.m_vEyeRenderTargetSize.height));
@@ -118,9 +118,9 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALMSA
   return std::move(pActor);
 }
 
-xiiGALTextureHandle xiiDummyXR::GetCurrentTexture()
+xiiSharedPtr<xiiGALTexture> xiiDummyXR::GetCurrentTexture()
 {
-  return m_hColorRT;
+  return m_pColorRT;
 }
 
 void xiiDummyXR::OnActorDestroyed()
@@ -132,18 +132,8 @@ void xiiDummyXR::OnActorDestroyed()
   m_pWorld               = nullptr;
   m_pCameraToSynchronize = nullptr;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  if (!m_hColorRT.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hColorRT);
-    m_hColorRT.Invalidate();
-  }
-  if (!m_hDepthRT.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hDepthRT);
-    m_hDepthRT.Invalidate();
-  }
+  m_pColorRT.Clear();
+  m_pDepthRT.Clear();
 
   xiiRenderWorld::RemoveMainView(m_hView);
   m_hView.Invalidate();

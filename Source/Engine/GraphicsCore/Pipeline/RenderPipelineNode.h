@@ -86,8 +86,8 @@ public:
   const xiiRenderPipelineNodePin* GetPinByName(xiiStringView sName) const;
   const xiiRenderPipelineNodePin* GetPinByName(xiiHashedString sName) const;
 
-  const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetInputPins() const { return m_InputPins; }
-  const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetOutputPins() const { return m_OutputPins; }
+  XII_ALWAYS_INLINE const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetInputPins() const { return m_InputPins; }
+  XII_ALWAYS_INLINE const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetOutputPins() const { return m_OutputPins; }
 
 private:
   xiiDynamicArray<const xiiRenderPipelineNodePin*>               m_InputPins;

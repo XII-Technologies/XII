@@ -10,7 +10,7 @@
 
 xiiUInt8 xiiWindow::s_uiNextUnusedWindowNumber = 0;
 
-xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
+xiiResult xiiWindowCreationDescription::AdjustWindowSizeAndPosition()
 {
   xiiHybridArray<xiiScreenInfo, 2> screens;
   if (xiiScreen::EnumerateScreens(screens).Failed() || screens.IsEmpty())
@@ -66,7 +66,7 @@ xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
   return XII_SUCCESS;
 }
 
-void xiiWindowCreationDesc::SaveToDDL(xiiOpenDdlWriter& ref_writer)
+void xiiWindowCreationDescription::SaveToDDL(xiiOpenDdlWriter& ref_writer)
 {
   ref_writer.BeginObject("WindowDesc");
 
@@ -110,7 +110,7 @@ void xiiWindowCreationDesc::SaveToDDL(xiiOpenDdlWriter& ref_writer)
 }
 
 
-xiiResult xiiWindowCreationDesc::SaveToDDL(xiiStringView sFile)
+xiiResult xiiWindowCreationDescription::SaveToDDL(xiiStringView sFile)
 {
   xiiFileWriter file;
   XII_SUCCEED_OR_RETURN(file.Open(sFile));
@@ -123,7 +123,7 @@ xiiResult xiiWindowCreationDesc::SaveToDDL(xiiStringView sFile)
   return XII_SUCCESS;
 }
 
-void xiiWindowCreationDesc::LoadFromDDL(const xiiOpenDdlReaderElement* pParentElement)
+void xiiWindowCreationDescription::LoadFromDDL(const xiiOpenDdlReaderElement* pParentElement)
 {
   if (const xiiOpenDdlReaderElement* pDesc = pParentElement->FindChildOfType("WindowDesc"))
   {
@@ -181,7 +181,7 @@ void xiiWindowCreationDesc::LoadFromDDL(const xiiOpenDdlReaderElement* pParentEl
   }
 }
 
-xiiResult xiiWindowCreationDesc::LoadFromDDL(xiiStringView sFile)
+xiiResult xiiWindowCreationDescription::LoadFromDDL(xiiStringView sFile)
 {
   xiiFileReader file;
   XII_SUCCEED_OR_RETURN(file.Open(sFile));

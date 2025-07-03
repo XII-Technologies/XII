@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{17711001407536439736,5505436445966180118}}
-		u4 %Hash{4346102715635827677}
+		u4 %Hash{73298827450201680}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -45,39 +45,6 @@ o
 }
 o
 {
-	Uuid %id{u4{8162648126232482695,4652364602606632881}}
-	s %t{"xiiDocumentObject_ConnectionBase"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Source{u4{3012569870458697352,5386212663437548644}}
-		s %SourcePin{"Output"}
-		Uuid %Target{u4{6092888042282166442,4702730995123121724}}
-		s %TargetPin{"DepthStencil"}
-	}
-}
-o
-{
-	Uuid %id{u4{12374590631366029646,4661154216989813148}}
-	s %t{"xiiRenderPipelineNodePassThroughPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{6092888042282166442,4702730995123121724}}
-	s %t{"xiiDepthOnlyPass"}
-	u3 %v{1}
-	p
-	{
-		b %Active{1}
-		Uuid %DepthStencil{u4{12374590631366029646,4661154216989813148}}
-		s %Name{"ShadowDepth"}
-		Vec2 %Node::Pos{f{0x804FA343,0x3A95EC43}}
-	}
-}
-o
-{
 	Uuid %id{u4{506494092431856007,4712002059416219605}}
 	s %t{"xiiTargetPass"}
 	u3 %v{1}
@@ -92,21 +59,24 @@ o
 		Uuid %Color5{u4{13915801334013793960,18359760581107136765}}
 		Uuid %Color6{u4{10749608503621839046,9657668094856641682}}
 		Uuid %Color7{u4{14840978798910271837,10680096956061608223}}
+		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
 		Uuid %DepthStencil{u4{14952335550809254984,12829539749875895330}}
+		s %Flags{"xiiRenderPipelinePassFlags::StereoAware"}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xD6851B44,0x30957043}}
+		Vec2 %Node::Pos{f{0xF3A9E843,0x347A9E43}}
 	}
 }
 o
 {
-	Uuid %id{u4{4612768257152447660,5093767427298493568}}
-	s %t{"xiiVisibleObjectsExtractor"}
+	Uuid %id{u4{303833809441760922,5123170909506580193}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		b %Active{1}
-		s %Name{""}
-		Vec2 %Node::Pos{f{0x8D5E8443,0xC8564B43}}
+		Uuid %Source{u4{3012569870458697352,5386212663437548644}}
+		s %SourcePin{"Output"}
+		Uuid %Target{u4{506494092431856007,4712002059416219605}}
+		s %TargetPin{"DepthStencil"}
 	}
 }
 o
@@ -118,30 +88,19 @@ o
 	{
 		b %Active{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
+		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
 		f %DepthClearValue{0x0000803F}
+		s %Flags{"xiiRenderPipelinePassFlags::StereoAware"}
 		s %Format{"xiiSourceFormat::Depth16Bit"}
 		s %LoadOperation{"xiiGALAttachmentLoadOperation::Load"}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x9FA6FE42,0xDE440244}}
+		Vec2 %Node::Pos{f{0x0DA09E43,0x2EBAC443}}
 		Uuid %Output{u4{18145787413205851195,10498656058703515073}}
 		s %SampleCount{"xiiGALMSAASampleCount::OneSample"}
 		u1 %StencilClearValue{0}
 		s %StencilLoadOperation{"xiiGALAttachmentLoadOperation::Load"}
 		s %StencilStoreOperation{"xiiGALAttachmentStoreOperation::Store"}
 		s %StoreOperation{"xiiGALAttachmentStoreOperation::Store"}
-	}
-}
-o
-{
-	Uuid %id{u4{15869144180268939922,5568668632926324402}}
-	s %t{"xiiDocumentObject_ConnectionBase"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Source{u4{6092888042282166442,4702730995123121724}}
-		s %SourcePin{"DepthStencil"}
-		Uuid %Target{u4{506494092431856007,4712002059416219605}}
-		s %TargetPin{"DepthStencil"}
 	}
 }
 o
@@ -155,11 +114,8 @@ o
 		VarArray %Children
 		{
 			Uuid{u4{3012569870458697352,5386212663437548644}}
-			Uuid{u4{6092888042282166442,4702730995123121724}}
 			Uuid{u4{506494092431856007,4712002059416219605}}
-			Uuid{u4{4612768257152447660,5093767427298493568}}
-			Uuid{u4{8162648126232482695,4652364602606632881}}
-			Uuid{u4{15869144180268939922,5568668632926324402}}
+			Uuid{u4{303833809441760922,5123170909506580193}}
 		}
 	}
 }
@@ -285,18 +241,18 @@ o
 }
 o
 {
-	Uuid %id{u4{17474407330144976873,5753112702795605815}}
+	Uuid %id{u4{17219346900517159015,6190440585904016554}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
 	{
 		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelineNodePin"}
+		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiRenderPipelineNodePassThroughPin"}
+		s %TypeName{"xiiRenderPipelinePassConcurrencyHint"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -331,23 +287,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiDocumentObject_ConnectionBase"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{7807377364782092762,6788077344464291733}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiReflectedClass"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiExtractor"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -421,6 +360,23 @@ o
 }
 o
 {
+	Uuid %id{u4{6094840146848678267,9301570338717469716}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{""}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiBitflagsBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{3215140450596973656,9495433554560154788}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -433,23 +389,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelineNodeOutputPin"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{16995823927036104411,9987210547672971610}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiExtractor"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiVisibleObjectsExtractor"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -489,18 +428,18 @@ o
 }
 o
 {
-	Uuid %id{u4{2568915866695257542,12981649620162215502}}
+	Uuid %id{u4{11590634311097522989,12964931324028781955}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
 	p
 	{
 		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
 		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelinePass"}
+		s %ParentTypeName{"xiiBitflagsBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiDepthOnlyPass"}
+		s %TypeName{"xiiRenderPipelinePassFlags"}
 		u3 %TypeVersion{1}
 	}
 }

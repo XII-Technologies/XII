@@ -7,7 +7,7 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 
 class xiiObjectSelectionMsgToEngine;
-|
+
 class XII_ENGINEPLUGINASSETS_DLL xiiAnimatedMeshContext : public xiiEngineProcessDocumentContext
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimatedMeshContext, xiiEngineProcessDocumentContext);

@@ -29,7 +29,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiPickingRenderPass::xiiPickingRenderPass() :
-  xiiRenderPipelinePass("EditorPickingRenderPass")
+  xiiRenderPipelinePass("EditorPickingRenderPass", xiiRenderPipelinePassFlags::None, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   m_pGridRenderDataType = xiiRTTI::FindTypeByName("xiiGridRenderData");
   XII_ASSERT_DEV(m_pGridRenderDataType != nullptr, "xiiGridRenderData type not found. Type renamed?");
@@ -40,14 +40,14 @@ xiiPickingRenderPass::~xiiPickingRenderPass()
   DestroyTarget();
 }
 
-xiiGALTextureHandle xiiPickingRenderPass::GetPickingIdRT() const
+xiiSharedPtr<xiiGALTexture> xiiPickingRenderPass::GetPickingIdRT() const
 {
-  return m_hPickingIdRT;
+  return m_pPickingIdRT;
 }
 
-xiiGALTextureHandle xiiPickingRenderPass::GetPickingDepthRT() const
+xiiSharedPtr<xiiGALTexture> xiiPickingRenderPass::GetPickingDepthRT() const
 {
-  return m_hPickingDepthRT;
+  return m_pPickingDepthRT;
 }
 
 bool xiiPickingRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -57,7 +57,7 @@ bool xiiPickingRenderPass::GetRenderTargetDescriptions(const xiiView& view, cons
   return true;
 }
 
-void xiiPickingRenderPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiPickingRenderPass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
   DestroyTarget();
   CreateTarget();
@@ -65,6 +65,7 @@ void xiiPickingRenderPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPip
 
 void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
+  #ifdef CORE_ENABLE
   // Render result
   const xiiRectFloat& viewPortRect = renderViewContext.m_pViewData->m_ViewPortRect;
   m_uiWindowWidth                  = (xiiUInt32)viewPortRect.width;
@@ -257,6 +258,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     }
     pCommandList->EndDebugGroup();
   }
+  #endif
 }
 
 void xiiPickingRenderPass::ReadBackProperties(xiiView* pView)
@@ -277,46 +279,34 @@ void xiiPickingRenderPass::CreateTarget()
   tcd.m_Size.height = (xiiUInt32)m_TargetRect.height;
   tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget;
 
-  m_hPickingIdRT = pDevice->CreateTexture(tcd);
+  m_pPickingIdRT = pDevice->CreateTexture(tcd);
 
   tcd.m_Usage          = xiiGALResourceUsage::Staging;
   tcd.m_BindFlags      = xiiGALBindFlags::None;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
 
-  m_hPickingIdRTStaging = pDevice->CreateTexture(tcd);
+  m_pPickingIdRTStaging = pDevice->CreateTexture(tcd);
 
   tcd.m_Format         = xiiGALResourceFormat::D32Float;
   tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
   tcd.m_Usage          = xiiGALResourceUsage::Default;
 
-  m_hPickingDepthRT = pDevice->CreateTexture(tcd);
+  m_pPickingDepthRT = pDevice->CreateTexture(tcd);
 
   tcd.m_Usage          = xiiGALResourceUsage::Staging;
   tcd.m_BindFlags      = xiiGALBindFlags::None;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
 
-  m_hPickingDepthRTStaging = pDevice->CreateTexture(tcd);
+  m_pPickingDepthRTStaging = pDevice->CreateTexture(tcd);
 
-  m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(m_hPickingIdRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget)).SetDepthStencilTarget(pDevice->GetTexture(m_hPickingDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+  // m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(m_pPickingIdRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget)).SetDepthStencilTarget(pDevice->GetTexture(m_pPickingDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
 }
 
 void xiiPickingRenderPass::DestroyTarget()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  m_RenderTargetSetup.DestroyAllAttachedViews();
-  if (!m_hPickingIdRT.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hPickingIdRT);
-    m_hPickingIdRT.Invalidate();
-  }
-
-  if (!m_hPickingDepthRT.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hPickingDepthRT);
-    m_hPickingDepthRT.Invalidate();
-  }
+  m_pPickingIdRT.Clear();
+  m_pPickingDepthRT.Clear();
 }
 
 void xiiPickingRenderPass::ReadBackPropertiesSinglePick(xiiView* pView)

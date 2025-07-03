@@ -492,7 +492,7 @@ void xiiQtEditorApp::SetupNewProject()
 
     if (!xiiFileSystem::ExistsFile(sPath))
     {
-      xiiWindowCreationDesc desc;
+      xiiWindowCreationDescription desc;
       desc.m_Title = xiiToolsProject::GetSingleton()->GetProjectName(false);
       desc.SaveToDDL(sPath).IgnoreResult();
     }

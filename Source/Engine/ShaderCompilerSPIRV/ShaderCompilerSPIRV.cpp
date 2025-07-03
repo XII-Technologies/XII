@@ -1,10 +1,8 @@
 #include <ShaderCompilerSPIRV/ShaderCompilerSPIRV.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Strings/StringConversion.h>
-
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
 #include <spirv_reflect.h>
@@ -14,23 +12,20 @@
 #endif
 #include <dxc/dxcapi.h>
 
-/// \brief XII ComPtr to automatically free resources.
+/// \brief Smart COM pointer to automatically manage AddRef/Release.
 template <typename T>
 struct xiiComPtr
 {
 public:
-  xiiComPtr() {}
+  xiiComPtr() noexcept = default;
+
   ~xiiComPtr()
   {
-    if (m_pObject != nullptr)
-    {
-      m_pObject->Release();
-      m_pObject = nullptr;
-    }
+    Reset();
   }
 
-  xiiComPtr(const xiiComPtr& other) :
-    m_pObject(other.m_pObject)
+  xiiComPtr(const xiiComPtr& other) noexcept
+    : m_pObject(other.m_pObject)
   {
     if (m_pObject)
     {
@@ -38,36 +33,67 @@ public:
     }
   }
 
-  T*       operator->() { return m_pObject; }
-  T* const operator->() const { return m_pObject; }
+  xiiComPtr& operator=(const xiiComPtr& other) noexcept
+  {
+    if (this != &other)
+    {
+      Reset();
+
+      m_pObject = other.m_pObject;
+      if (m_pObject)
+      {
+        m_pObject->AddRef();
+      }
+    }
+    return *this;
+  }
+
+  xiiComPtr(xiiComPtr&& other) noexcept
+    : m_pObject(other.m_pObject)
+  {
+    other.m_pObject = nullptr;
+  }
+
+  xiiComPtr& operator=(xiiComPtr&& other) noexcept
+  {
+    if (this != &other)
+    {
+      Reset();
+
+      m_pObject       = other.m_pObject;
+      other.m_pObject = nullptr;
+    }
+    return *this;
+  }
+
+  T*  operator->() const noexcept { return m_pObject; }
+  T&  operator*() const noexcept { return *m_pObject; }
+  T*  Get() const noexcept { return m_pObject; }
+  T** RawDblPtr() noexcept { return &m_pObject; }
 
   T** Put()
   {
-    XII_ASSERT_DEV(m_pObject == nullptr, "Can only put into an empty xiiComPtr");
+    XII_ASSERT_DEV(m_pObject == nullptr, "Put() into a non-empty xiiComPtr.");
     return &m_pObject;
   }
 
-  T* RawPtr()
+  void Reset()
   {
-    return m_pObject;
+    if (m_pObject)
+    {
+      m_pObject->Release();
+      m_pObject = nullptr;
+    }
   }
 
-  T** RawDblPtr()
-  {
-    return &m_pObject;
-  }
-
-  bool operator==(std::nullptr_t)
-  {
-    return m_pObject == nullptr;
-  }
+  bool operator==(std::nullptr_t) const noexcept { return m_pObject == nullptr; }
 
 private:
   T* m_pObject = nullptr;
 };
 
-xiiComPtr<IDxcUtils>     s_pDxcUtils;
-xiiComPtr<IDxcCompiler3> s_pDxcCompiler;
+xiiComPtr<IDxcUtils>     g_pDxcUtils;
+xiiComPtr<IDxcCompiler3> g_pDxcCompiler;
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompilerSPIRV, ShaderCompilerSPIRVPlugin)
@@ -78,14 +104,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompilerSPIRV, ShaderCompilerSPIRVPlugin)
 
   ON_CORESYSTEMS_STARTUP
   {
-    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(s_pDxcUtils.Put()));
-    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(s_pDxcCompiler.Put()));
+    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(g_pDxcUtils.Put()));
+    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(g_pDxcCompiler.Put()));
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    s_pDxcUtils = {};
-    s_pDxcCompiler = {};
+    g_pDxcUtils = {};
+    g_pDxcCompiler = {};
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -337,7 +363,7 @@ xiiResult xiiShaderCompilerSPIRV::Initialize()
     m_InputLayoutMapping["in.var.BONEWEIGHTS1"] = xiiGALInputLayoutSemantic::BoneWeights1;
   }
 
-  XII_ASSERT_DEV(s_pDxcUtils != nullptr && s_pDxcCompiler != nullptr, "ShaderCompiler SubSystem init should have initialized library pointers.");
+  XII_ASSERT_DEV(g_pDxcUtils != nullptr && g_pDxcCompiler != nullptr, "ShaderCompiler SubSystem init should have initialized library pointers.");
 
   return XII_SUCCESS;
 }
@@ -419,18 +445,21 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
   }
 
   xiiComPtr<IDxcBlobEncoding> pSource;
-  s_pDxcUtils->CreateBlob(sCompileSource.GetStartPointer(), sCompileSource.GetElementCount(), DXC_CP_UTF8, pSource.RawDblPtr());
+  g_pDxcUtils->CreateBlob(sCompileSource.GetStartPointer(), sCompileSource.GetElementCount(), DXC_CP_UTF8, pSource.RawDblPtr());
 
-  DxcBuffer Source;
-  Source.Ptr      = pSource->GetBufferPointer();
-  Source.Size     = pSource->GetBufferSize();
-  Source.Encoding = DXC_CP_UTF8;
+  DxcBuffer pDxcBuffer;
+  pDxcBuffer.Ptr      = pSource->GetBufferPointer();
+  pDxcBuffer.Size     = pSource->GetBufferSize();
+  pDxcBuffer.Encoding = DXC_CP_UTF8;
 
   xiiComPtr<IDxcResult> pCompileResult;
-  s_pDxcCompiler->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
+  g_pDxcCompiler->Compile(&pDxcBuffer, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
 
   xiiComPtr<IDxcBlobUtf8> pCompileError;
-  pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pCompileError.RawDblPtr()), nullptr);
+  if (FAILED(pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pCompileError.RawDblPtr()), nullptr)))
+  {
+    xiiLog::Error("Failed to retrieve compile result.");
+  }
 
   HRESULT hrStatus;
   pCompileResult->GetStatus(&hrStatus);

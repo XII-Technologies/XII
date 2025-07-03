@@ -39,7 +39,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiAOPass::xiiAOPass() :
-  xiiRenderPipelinePass("AOPass", true)
+  xiiRenderPipelinePass("AOPass", xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   m_hNoiseTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("Textures/SSAONoise.dds");
 
@@ -97,7 +97,7 @@ bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayP
   return true;
 }
 
-void xiiAOPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+void xiiAOPass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(pInputs);
 
@@ -106,8 +106,6 @@ void xiiAOPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassCo
   // Create render pass.
   if (auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex])
   {
-    const auto& textureDescription = pOutput->m_pTexture->GetDescription();
-
     xiiGALRenderPassCreationDescription renderPassDescription;
     auto&                               subpassDescription    = renderPassDescription.m_SubPasses.ExpandAndGetRef();
     auto&                               dependencyDescription = renderPassDescription.m_Dependencies.ExpandAndGetRef();
@@ -118,8 +116,8 @@ void xiiAOPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassCo
     dependencyDescription.m_SourceStageFlags      = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
     dependencyDescription.m_DestinationStageFlags = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
 
-    attachmentDescription.m_Format                = textureDescription.m_Format;
-    attachmentDescription.m_uiSampleCount         = textureDescription.m_uiSampleCount;
+    attachmentDescription.m_Format                = pOutput->m_TextureDescription.m_Format;
+    attachmentDescription.m_uiSampleCount         = pOutput->m_TextureDescription.m_uiSampleCount;
     attachmentDescription.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
     attachmentDescription.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
     attachmentDescription.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Clear;

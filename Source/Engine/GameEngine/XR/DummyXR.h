@@ -42,23 +42,22 @@ public:
   xiiDummyXR();
   ~xiiDummyXR() = default;
 
-  bool                   IsHmdPresent() const override;
-  xiiResult              Initialize() override;
-  void                   Deinitialize() override;
-  bool                   IsInitialized() const override;
-  const xiiHMDInfo&      GetHmdInfo() const override;
-  xiiXRInputDevice&      GetXRInput() const override;
-  bool                   SupportsCompanionView() override;
-  xiiUniquePtr<xiiActor> CreateActor(xiiView* pView, xiiEnum<xiiGALMSAASampleCount> msaaCount = xiiGALMSAASampleCount::OneSample, xiiUniquePtr<xiiWindowBase> pCompanionWindow = nullptr, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput = nullptr) override;
-  xiiGALTextureHandle    GetCurrentTexture() override;
-  void                   OnActorDestroyed() override;
-  void                   GALDeviceEventHandler(const xiiGALDeviceEvent& e);
-  void                   GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e);
+  bool                        IsHmdPresent() const override;
+  xiiResult                   Initialize() override;
+  void                        Deinitialize() override;
+  bool                        IsInitialized() const override;
+  const xiiHMDInfo&           GetHmdInfo() const override;
+  xiiXRInputDevice&           GetXRInput() const override;
+  bool                        SupportsCompanionView() override;
+  xiiUniquePtr<xiiActor>      CreateActor(xiiView* pView, xiiEnum<xiiGALMSAASampleCount> msaaCount = xiiGALMSAASampleCount::OneSample, xiiUniquePtr<xiiWindowBase> pCompanionWindow = nullptr, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput = nullptr) override;
+  xiiSharedPtr<xiiGALTexture> GetCurrentTexture() override;
+  void                        OnActorDestroyed() override;
+  void                        GALDeviceEventHandler(const xiiGALDeviceEvent& e);
+  void                        GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e);
 
 protected:
   float m_fHeadHeight = 1.7f;
   float m_fEyeOffset  = 0.05f;
-
 
   xiiHMDInfo              m_Info;
   mutable xiiDummyXRInput m_Input;
@@ -71,9 +70,9 @@ protected:
   xiiCamera*               m_pCameraToSynchronize = nullptr;
   xiiEnum<xiiXRStageSpace> m_StageSpace           = xiiXRStageSpace::Seated;
 
-  xiiViewHandle       m_hView;
-  xiiGALTextureHandle m_hColorRT;
-  xiiGALTextureHandle m_hDepthRT;
+  xiiViewHandle               m_hView;
+  xiiSharedPtr<xiiGALTexture> m_pColorRT;
+  xiiSharedPtr<xiiGALTexture> m_pDepthRT;
 
   xiiWindowOutputTargetXR* m_pCompanion = nullptr;
 };

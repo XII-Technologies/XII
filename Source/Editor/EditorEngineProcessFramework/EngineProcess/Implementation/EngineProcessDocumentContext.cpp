@@ -442,13 +442,11 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         auto pGALCommandList = pGALCommandQueue->BeginCommandList();
 
         pGALCommandList->BeginDebugGroup("Thumbnail Readback");
-        pGALCommandList->CopyTexture(m_hThumbnailColorRT, m_hThumbnailColorRTStaging);
+        pGALCommandList->CopyTexture(m_pThumbnailColorRT, m_pThumbnailColorRTStaging);
 
         pGALCommandList->EndDebugGroup();
 
-        const xiiGALTexture*                pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);
-        const xiiEnum<xiiGALResourceFormat> format          = pThumbnailColor->GetDescription().m_Format;
-
+        const xiiEnum<xiiGALResourceFormat> format = m_pThumbnailColorRT->GetDescription().m_Format;
 
         xiiImageHeader header;
         header.SetImageFormat(xiiTextureUtils::GalFormatToImageFormat(format, true));
@@ -467,9 +465,9 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         pGALCommandList->BeginDebugGroup("Thumbnail Readback Download");
 
         xiiGALMappedTextureSubresource mappedSubResource;
-        if (pGALCommandList->MapTextureSubresource(m_hThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
+        if (pGALCommandList->MapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
         {
-          const auto& textureDescription = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRTStaging)->GetDescription();
+          const auto& textureDescription = m_pThumbnailColorRTStaging->GetDescription();
           const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
           if (mappedSubResource.m_pData)
@@ -500,7 +498,7 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
             xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
           }
 
-          pGALCommandList->UnmapTextureSubresource(m_hThumbnailColorRTStaging, sourceSubResource).IgnoreResult();
+          pGALCommandList->UnmapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource).IgnoreResult();
         }
 
         pGALCommandList->EndDebugGroup();
@@ -563,23 +561,23 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
   tcd.m_Size.height = m_uiThumbnailHeight;
   tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
 
-  m_hThumbnailColorRT = pDevice->CreateTexture(tcd);
+  m_pThumbnailColorRT = pDevice->CreateTexture(tcd);
 
   tcd.m_BindFlags      = {};
   tcd.m_Usage          = xiiGALResourceUsage::Staging;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
 
-  m_hThumbnailColorRTStaging = pDevice->CreateTexture(tcd);
+  m_pThumbnailColorRTStaging = pDevice->CreateTexture(tcd);
 
   tcd.m_Format         = xiiGALResourceFormat::D32Float;
   tcd.m_CPUAccessFlags = {};
   tcd.m_Usage          = xiiGALResourceUsage::Default;
   tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
 
-  m_hThumbnailDepthRT = pDevice->CreateTexture(tcd);
+  m_pThumbnailDepthRT = pDevice->CreateTexture(tcd);
 
-  m_ThumbnailRenderTargets.m_hRTs[0]   = pDevice->GetTexture(m_hThumbnailColorRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  m_ThumbnailRenderTargets.m_hDSTarget = pDevice->GetTexture(m_hThumbnailDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
+  m_ThumbnailRenderTargets.m_pRTs[0]   = m_pThumbnailColorRT->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  m_ThumbnailRenderTargets.m_pDSTarget = m_pThumbnailDepthRT->GetDefaultView(xiiGALTextureViewType::DepthStencil);
   m_pThumbnailViewContext->SetupRenderTarget({}, &m_ThumbnailRenderTargets, m_uiThumbnailWidth, m_uiThumbnailHeight);
 
   xiiResourceManager::ForceNoFallbackAcquisition(3);
@@ -616,23 +614,9 @@ void xiiEngineProcessDocumentContext::DestroyThumbnailViewContext()
   DestroyViewContext(m_pThumbnailViewContext);
   m_pThumbnailViewContext = nullptr;
 
-  if (!m_hThumbnailColorRTStaging.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hThumbnailColorRTStaging);
-    m_hThumbnailColorRTStaging.Invalidate();
-  }
-
-  if (!m_hThumbnailColorRT.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hThumbnailColorRT);
-    m_hThumbnailColorRT.Invalidate();
-  }
-
-  if (!m_hThumbnailDepthRT.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hThumbnailDepthRT);
-    m_hThumbnailDepthRT.Invalidate();
-  }
+  m_pThumbnailColorRTStaging.Clear();
+  m_pThumbnailColorRT.Clear();
+  m_pThumbnailDepthRT.Clear();
 
   m_pWorld->SetWorldSimulationEnabled(m_bWorldSimStateBeforeThumbnail);
 }

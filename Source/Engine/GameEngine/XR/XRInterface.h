@@ -6,12 +6,11 @@
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GameEngine/XR/Declarations.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
+
 class xiiViewHandle;
 class xiiCamera;
-class xiiGALTextureHandle;
 class xiiWorld;
 class xiiView;
 class xiiXRInputDevice;
@@ -73,7 +72,7 @@ public:
 
   /// \brief Called by xiiWindowOutputTargetXR::RenderCompanionView
   /// Returns the color texture to be used by the companion view if enabled, otherwise an invalid handle.
-  virtual xiiGALTextureHandle GetCurrentTexture() = 0;
+  virtual xiiSharedPtr<xiiGALTexture> GetCurrentTexture() = 0;
 
   /// \brief Called when the actor created by 'CreateActor' is destroyed.
   virtual void OnActorDestroyed() = 0;

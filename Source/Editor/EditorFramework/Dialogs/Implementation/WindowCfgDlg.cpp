@@ -31,7 +31,7 @@ xiiQtWindowCfgDlg::xiiQtWindowCfgDlg(QWidget* pParent) :
   m_ComboWnd->setCurrentIndex(0);
 }
 
-void xiiQtWindowCfgDlg::FillUI(const xiiWindowCreationDesc& desc)
+void xiiQtWindowCfgDlg::FillUI(const xiiWindowCreationDescription& desc)
 {
   m_LineEditTitle->setText(QString::fromUtf8(desc.m_Title.GetData()));
   m_ComboMonitor->setCurrentIndex(xiiMath::Clamp<xiiInt32>(desc.m_iMonitor, -1, 5) + 1);
@@ -48,7 +48,7 @@ void xiiQtWindowCfgDlg::FillUI(const xiiWindowCreationDesc& desc)
   UpdateUI();
 }
 
-void xiiQtWindowCfgDlg::GrabUI(xiiWindowCreationDesc& desc)
+void xiiQtWindowCfgDlg::GrabUI(xiiWindowCreationDescription& desc)
 {
   desc.m_Title             = m_LineEditTitle->text().toUtf8().data();
   desc.m_iMonitor          = m_ComboMonitor->currentIndex() - 1;

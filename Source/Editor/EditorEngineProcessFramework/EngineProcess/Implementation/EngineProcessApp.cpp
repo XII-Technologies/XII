@@ -43,7 +43,7 @@ void xiiEditorEngineProcessApp::CreateRemoteWindow()
   {
     xiiUniquePtr<xiiRemoteProcessWindow> pWindow = XII_DEFAULT_NEW(xiiRemoteProcessWindow);
 
-    xiiWindowCreationDesc desc;
+    xiiWindowCreationDescription desc;
     desc.m_uiWindowNumber   = 0;
     desc.m_bClipMouseCursor = false;
     desc.m_bShowMouseCursor = true;
@@ -92,7 +92,7 @@ xiiRenderPipelineResourceHandle xiiEditorEngineProcessApp::CreateDefaultDebugRen
 
 xiiViewHandle xiiEditorEngineProcessApp::CreateRemoteWindowAndView(xiiCamera* pCamera)
 {
-  XII_ASSERT_DEV(IsRemoteMode(), "Incorrect app mode");
+  XII_ASSERT_DEV(IsRemoteMode(), "Incorrect application mode.");
 
   CreateRemoteWindow();
 
@@ -119,14 +119,14 @@ xiiViewHandle xiiEditorEngineProcessApp::CreateRemoteWindowAndView(xiiCamera* pC
       pWindowPlugin->m_pWindowOutputTarget = std::move(pOutput);
     }
 
-    // get swapchain
-    xiiGALSwapChainHandle hSwapChain;
+    // Retrieve swap chain.
+    xiiSharedPtr<xiiGALSwapChain> pSwapChain;
     {
       xiiWindowOutputTargetGAL* pOutputTarget = static_cast<xiiWindowOutputTargetGAL*>(pWindowPlugin->m_pWindowOutputTarget.Borrow());
-      hSwapChain                              = pOutputTarget->m_hSwapChain;
+      pSwapChain                              = pOutputTarget->m_pSwapChain;
     }
 
-    // setup view
+    // Setup view.
     {
       xiiView* pView = nullptr;
       m_hRemoteView  = xiiRenderWorld::CreateView("Remote Process", pView);
@@ -136,7 +136,7 @@ xiiViewHandle xiiEditorEngineProcessApp::CreateRemoteWindowAndView(xiiCamera* pC
 
       const xiiSizeU32 wndSize = pWindowPlugin->m_pWindow->GetClientAreaSize();
 
-      pView->SetSwapChain(hSwapChain);
+      pView->SetSwapChain(pSwapChain);
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)wndSize.width, (float)wndSize.height));
       pView->SetCamera(pCamera);
     }

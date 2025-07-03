@@ -8,12 +8,11 @@
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/Resource.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPluginWindowXR, 1, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPluginWindowXR, 1, xiiRTTINoAllocator)
+  ;
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -69,15 +68,14 @@ xiiWindowOutputTargetXR::xiiWindowOutputTargetXR(xiiXRInterface* pXrInterface, x
     // Create companion resources.
     m_hCompanionShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/VRCompanionView.xiiShader");
     XII_ASSERT_DEV(m_hCompanionShader.IsValid(), "Could not load VR companion view shader!");
-    m_hCompanionConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiVRCompanionViewConstants>();
+
+    m_pCompanionConstantBuffer = xiiGALDeviceUtilities ::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiVRCompanionViewConstants), XII_PP_STRINGIFY(xiiVRCompanionViewConstants));
   }
 }
 
 xiiWindowOutputTargetXR::~xiiWindowOutputTargetXR()
 {
-  // Delete companion resources.
-  xiiRenderContext::DeleteConstantBufferStorage(m_hCompanionConstantBuffer);
-  m_hCompanionConstantBuffer.Invalidate();
+  m_pCompanionConstantBuffer.Clear();
 }
 
 void xiiWindowOutputTargetXR::PresentImage(bool bEnableVSync)
@@ -92,9 +90,7 @@ void xiiWindowOutputTargetXR::CompanionViewBeginFrame(bool bThrottleCompanionVie
     return;
 
   m_LastPresent = currentTime;
-
-  xiiGALDevice::GetDefaultDevice()->EnqueueFrameSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
-  m_bRender = true;
+  m_bRender     = true;
 }
 
 void xiiWindowOutputTargetXR::CompanionViewEndFrame()
@@ -104,6 +100,7 @@ void xiiWindowOutputTargetXR::CompanionViewEndFrame()
 
   m_bRender = false;
 
+#ifdef CORE_ENABLE
   XII_PROFILE_SCOPE("RenderCompanionView");
   xiiGALTextureHandle m_hColorRT = m_pXrInterface->GetCurrentTexture();
   if (m_hColorRT.IsInvalidated() || !m_pCompanionWindowOutputTarget)
@@ -138,6 +135,7 @@ void xiiWindowOutputTargetXR::CompanionViewEndFrame()
     m_pRenderContext->EndRendering();
     m_pRenderContext->ResetContextState();
   }
+#endif
 }
 
 xiiResult xiiWindowOutputTargetXR::CaptureImage(xiiImage& out_image)

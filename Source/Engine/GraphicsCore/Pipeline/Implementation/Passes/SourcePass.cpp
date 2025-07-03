@@ -44,7 +44,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 xiiSourcePass::xiiSourcePass(xiiStringView sName) :
-  xiiRenderPipelinePass(sName, true)
+  xiiRenderPipelinePass(sName, xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
 }
 
@@ -142,7 +142,7 @@ bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiAr
   return true;
 }
 
-void xiiSourcePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+void xiiSourcePass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(pInputs);
 
@@ -151,7 +151,6 @@ void xiiSourcePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePa
   // Create render pass.
   if (auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex])
   {
-    const auto& textureDescription = pOutput->m_pTexture->GetDescription();
     const bool  bIsDepthAttachment = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 
     xiiGALRenderPassCreationDescription renderPassDescription;
@@ -164,7 +163,7 @@ void xiiSourcePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePa
     dependencyDescription.m_SourceStageFlags      = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
     dependencyDescription.m_DestinationStageFlags = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
 
-    attachmentDescription.m_Format                = textureDescription.m_Format;
+    attachmentDescription.m_Format                = pOutput->m_TextureDescription.m_Format;
     attachmentDescription.m_uiSampleCount         = m_SampleCount;
     attachmentDescription.m_LoadOperation         = m_AttachmentLoadOperation;
     attachmentDescription.m_StoreOperation        = m_AttachmentStoreOperation;
@@ -204,9 +203,6 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
 
   auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pOutput == nullptr)
-    return;
-
-  if (!m_pRenderPass)
     return;
 
   xiiSharedPtr<xiiGALDevice> pDevice            = xiiGALDevice::GetDefaultDevice();

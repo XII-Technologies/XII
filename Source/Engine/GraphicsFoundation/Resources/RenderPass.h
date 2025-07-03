@@ -91,11 +91,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : publi
 /// \brief This describes the render pass sub pass.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription : public xiiHashableStruct<xiiGALSubPassDescription>
 {
-  xiiHybridArray<xiiGALAttachmentReferenceDescription, 4U>   m_InputAttachments;        ///< An array of input attachments.
-  xiiHybridArray<xiiGALAttachmentReferenceDescription, 4U>   m_RenderTargetAttachments; ///< An array of color render target attachments. Each element of the m_RenderTargetAttachments array corresponds to an output in the pixel shader, i.e. if the shader declares an output variable decorated with a render target index X, then it uses the attachment provided in m_RenderTargetAttachments[X]. If the attachment index is XII_GAL_ATTACHMENT_UNUSED, writes to this render target are ignored.
-  xiiHybridArray<xiiGALAttachmentReferenceDescription, 4U>   m_ResolveAttachments;      ///< An array of resolve attachments. If m_ResolveAttachments is not nullptr, each of its elements corresponds to a render target attachment (the element in m_RenderTargetAttachments at the same index), and a multisample resolve operation is defined for each attachment. At the end of each sub pass, multisample resolve operations read the sub pass's color attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
+  xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_InputAttachments;        ///< An array of input attachments.
+  xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_RenderTargetAttachments; ///< An array of color render target attachments. Each element of the m_RenderTargetAttachments array corresponds to an output in the pixel shader, i.e. if the shader declares an output variable decorated with a render target index X, then it uses the attachment provided in m_RenderTargetAttachments[X]. If the attachment index is XII_GAL_ATTACHMENT_UNUSED, writes to this render target are ignored.
+  xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_ResolveAttachments;      ///< An array of resolve attachments. If m_ResolveAttachments is not nullptr, each of its elements corresponds to a render target attachment (the element in m_RenderTargetAttachments at the same index), and a multi-sample resolve operation is defined for each attachment. At the end of each sub pass, multi-sample resolve operations read the sub pass's color attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
   xiiStaticArray<xiiGALAttachmentReferenceDescription, 1U>   m_DepthStencilAttachment;  ///< An array of depth-stencil attachment. Note that this array can only hold a single depth stencil attachment reference.
-  xiiHybridArray<xiiUInt32, 4U>                              m_PreserveAttachments;     ///< An array of preserve attachments.
+  xiiDynamicArray<xiiUInt32>                                 m_PreserveAttachments;     ///< An array of preserve attachments.
   xiiStaticArray<xiiGALShadingRateAttachmentDescription, 1U> m_ShadingRateAttachment;   ///< An array of shading rate attachment. Note that this array can only hold a single shading rate attachment reference.
 };
 
@@ -115,9 +115,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xi
 /// \brief This describes the render pass creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription
 {
-  xiiHybridArray<xiiGALRenderPassAttachmentDescription, 4U> m_Attachments;  ///< An array of sub pass attachments.
-  xiiHybridArray<xiiGALSubPassDescription, 1U>              m_SubPasses;    ///< An array of sub pass descriptions.
-  xiiHybridArray<xiiGALSubPassDependencyDescription, 1U>    m_Dependencies; ///< An array of sub pass dependencies.
+  xiiDynamicArray<xiiGALRenderPassAttachmentDescription> m_Attachments;  ///< An array of sub pass attachments.
+  xiiDynamicArray<xiiGALSubPassDescription>              m_SubPasses;    ///< An array of sub pass descriptions.
+  xiiDynamicArray<xiiGALSubPassDependencyDescription>    m_Dependencies; ///< An array of sub pass dependencies.
 
   XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassCreationDescription& rhs) const = default;
 };

@@ -59,7 +59,7 @@ void xiiView::SetWorld(xiiWorld* pWorld)
   }
 }
 
-void xiiView::SetSwapChain(xiiSharedPtr<xiiGALSwapChain> pSwapChain)
+void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
 {
   if (m_Data.m_pSwapChain != pSwapChain)
   {

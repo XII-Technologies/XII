@@ -53,7 +53,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiLodAnimatedMeshComponent, 1, xiiComponentMode::Stati
   {
     XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
     XII_MESSAGE_HANDLER(xiiMsgSetColor, OnMsgSetColor),
-    XII_MESSAGE_HANDLER(xiiMsgSetCustomData, OnMsgSetCustomData),
     XII_MESSAGE_HANDLER(xiiMsgAnimationPoseUpdated, OnAnimationPoseUpdated),
     XII_MESSAGE_HANDLER(xiiMsgQueryAnimationSkeleton, OnQueryAnimationSkeleton),
   }
@@ -188,7 +187,6 @@ void xiiLodAnimatedMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData
       pRenderData->m_hMesh               = hMesh;
       pRenderData->m_hMaterial           = hMaterial;
       pRenderData->m_Color               = m_Color;
-      pRenderData->m_vCustomData         = m_vCustomData;
       pRenderData->m_uiSubMeshIndex      = uiPartIndex;
       pRenderData->m_uiUniqueID          = GetUniqueIdForRendering(uiMaterialIndex);
 
@@ -282,13 +280,6 @@ void xiiLodAnimatedMeshComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
   InvalidateCachedRenderData();
 }
 
-void xiiLodAnimatedMeshComponent::OnMsgSetCustomData(xiiMsgSetCustomData& ref_msg)
-{
-  m_vCustomData.Set(ref_msg.m_fData0, ref_msg.m_fData1, ref_msg.m_fData2, ref_msg.m_fData3);
-
-  InvalidateCachedRenderData();
-}
-
 void xiiLodAnimatedMeshComponent::RetrievePose(xiiDynamicArray<xiiMat4>& out_modelTransforms, xiiTransform& out_rootTransform, const xiiSkeleton& skeleton)
 {
   out_modelTransforms.Clear();
@@ -325,7 +316,7 @@ xiiMeshRenderData* xiiLodAnimatedMeshComponent::CreateRenderData() const
   auto pRenderData               = xiiCreateRenderDataForThisFrame<xiiSkinnedMeshRenderData>(GetOwner());
   pRenderData->m_GlobalTransform = m_RootTransform;
 
-  pRenderData->m_hSkinningTransforms = m_SkinningState.m_hGpuBuffer;
+  pRenderData->m_pSkinningTransforms = m_SkinningState.m_pGpuBuffer;
 
   return pRenderData;
 }

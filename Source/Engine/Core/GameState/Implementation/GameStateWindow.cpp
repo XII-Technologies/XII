@@ -2,7 +2,7 @@
 
 #include <Core/GameState/GameStateWindow.h>
 
-xiiGameStateWindow::xiiGameStateWindow(const xiiWindowCreationDesc& windowdesc, xiiDelegate<void()> onClickClose) :
+xiiGameStateWindow::xiiGameStateWindow(const xiiWindowCreationDescription& windowdesc, xiiDelegate<void()> onClickClose) :
   m_OnClickClose(onClickClose)
 {
   m_CreationDescription = windowdesc;

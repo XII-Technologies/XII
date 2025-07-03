@@ -27,7 +27,7 @@ public:
   ~xiiSceneViewContext();
 
   virtual void HandleViewMessage(const xiiEditorEngineViewMsg* pMsg) override;
-  virtual void SetupRenderTarget(xiiGALSwapChainHandle hSwapChain, const xiiGALRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight) override;
+  virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight) override;
 
   bool UpdateThumbnailCamera(const xiiBoundingBoxSphere& bounds);
   void SetInvisibleLayerTags(const xiiArrayPtr<xiiTag> removeTags, const xiiArrayPtr<xiiTag> addTags);

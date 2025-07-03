@@ -33,7 +33,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiSeparatedBilateralBlurPass::xiiSeparatedBilateralBlurPass() :
-  xiiRenderPipelinePass("SeparatedBilateral")
+  xiiRenderPipelinePass("SeparatedBilateral", xiiRenderPipelinePassFlags::None, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   {
     // Load shader.

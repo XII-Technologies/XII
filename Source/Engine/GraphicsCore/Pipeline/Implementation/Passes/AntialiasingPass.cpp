@@ -24,7 +24,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiAntialiasingPass::xiiAntialiasingPass() :
-  xiiRenderPipelinePass("AntialiasingPass", true)
+  xiiRenderPipelinePass("AntialiasingPass", xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   {
     // Load shader.

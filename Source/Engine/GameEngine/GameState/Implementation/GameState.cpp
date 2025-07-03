@@ -165,6 +165,7 @@ bool xiiGameState::IsInLoadingScreen() const
 xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
 {
   XII_LOG_BLOCK("CreateXRActor");
+
   // Init XR
   const xiiXRConfig* pConfig = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiXRConfig>();
   if (!pConfig)
@@ -177,8 +178,10 @@ xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
   if (!pXRInterface)
   {
     xiiLog::Warning("No xiiXRInterface interface found. Please load a XR plugin to enable XR. Loading dummyXR interface.");
+
     m_pDummyXR   = XII_DEFAULT_NEW(xiiDummyXR);
     pXRInterface = xiiSingletonRegistry::GetSingletonInstance<xiiXRInterface>();
+
     XII_ASSERT_DEV(pXRInterface, "Creating dummyXR did not register the xiiXRInterface.");
   }
 
@@ -217,10 +220,12 @@ xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
     // XR Window with added companion window (allows keyboard / mouse input).
     pMainWindow = CreateMainWindow();
     XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateActors().");
+
     pOutput = CreateMainOutputTarget(pMainWindow.Borrow());
+
     ConfigureMainWindowInputDevices(pMainWindow.Borrow());
     CreateMainView();
-    SetupMainView(pOutput->m_hSwapChain, pMainWindow->GetClientAreaSize());
+    SetupMainView(pOutput->m_pSwapChain, pMainWindow->GetClientAreaSize());
   }
   else
   {
@@ -255,10 +260,12 @@ void xiiGameState::CreateActors()
 
   xiiUniquePtr<xiiWindow> pMainWindow = CreateMainWindow();
   XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateActors().");
+
   xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = CreateMainOutputTarget(pMainWindow.Borrow());
+
   ConfigureMainWindowInputDevices(pMainWindow.Borrow());
   CreateMainView();
-  SetupMainView(pOutput->m_hSwapChain, pMainWindow->GetClientAreaSize());
+  SetupMainView(pOutput->m_pSwapChain, pMainWindow->GetClientAreaSize());
 
   {
     // Default flat window
@@ -331,55 +338,55 @@ xiiResult xiiGameState::SpawnPlayer(xiiStringView sStartPosition, const xiiTrans
 
   XII_LOCK(m_pMainWorld->GetWriteMarker());
 
-  xiiPlayerStartPointComponentManager* pMan = m_pMainWorld->GetComponentManager<xiiPlayerStartPointComponentManager>();
-  if (pMan == nullptr)
+  xiiPlayerStartPointComponentManager* pPlayerStartComponentManager = m_pMainWorld->GetComponentManager<xiiPlayerStartPointComponentManager>();
+  if (pPlayerStartComponentManager == nullptr)
     return XII_FAILURE;
 
-  xiiPlayerStartPointComponent* pBestComp = nullptr;
+  xiiPlayerStartPointComponent* pBestPlayerStartComponent = nullptr;
 
-  for (auto it = pMan->GetComponents(); it.IsValid(); ++it)
+  for (auto it = pPlayerStartComponentManager->GetComponents(); it.IsValid(); ++it)
   {
     if (it->IsActive() && it->GetPlayerPrefab().IsValid())
     {
-      if (pBestComp == nullptr)
+      if (pBestPlayerStartComponent == nullptr)
       {
         // take the first one, no matter what
-        pBestComp = it;
+        pBestPlayerStartComponent = it;
       }
       else if (it->GetOwner()->GetName().IsEqual_NoCase(sStartPosition))
       {
         // if we find one by exact name match, take that one
-        pBestComp = it;
+        pBestPlayerStartComponent = it;
       }
-      else if (!pBestComp->GetOwner()->GetName().IsEqual_NoCase(sStartPosition) && it->GetOwner()->GetName().IsEmpty())
+      else if (!pBestPlayerStartComponent->GetOwner()->GetName().IsEqual_NoCase(sStartPosition) && it->GetOwner()->GetName().IsEmpty())
       {
         // if the name of the best one isn't identical to the searched name, yet
         // and this one is nameless, prefer the nameless one
-        pBestComp = it;
+        pBestPlayerStartComponent = it;
       }
     }
   }
 
-  if (pBestComp)
+  if (pBestPlayerStartComponent)
   {
-    xiiResourceLock<xiiPrefabResource> pPrefab(pBestComp->GetPlayerPrefab(), xiiResourceAcquireMode::BlockTillLoaded);
+    xiiResourceLock<xiiPrefabResource> pPrefab(pBestPlayerStartComponent->GetPlayerPrefab(), xiiResourceAcquireMode::BlockTillLoaded);
 
     if (pPrefab.GetAcquireResult() == xiiResourceAcquireResult::Final)
     {
-      const xiiUInt16 uiTeamID = pBestComp->GetOwner()->GetTeamID();
-      xiiTransform    startPos = xiiTransform::MakeGlobalTransform(pBestComp->GetOwner()->GetGlobalTransform(), startPositionOffset);
+      const xiiUInt16 uiTeamID      = pBestPlayerStartComponent->GetOwner()->GetTeamID();
+      xiiTransform    startPosition = xiiTransform::MakeGlobalTransform(pBestPlayerStartComponent->GetOwner()->GetGlobalTransform(), startPositionOffset);
 
       if (sStartPosition.IsEqual_NoCase("GlobalOverride"))
       {
-        startPos = startPositionOffset;
+        startPosition = startPositionOffset;
       }
 
-      startPos.m_vScale.Set(1.0f);
+      startPosition.m_vScale.Set(1.0f);
 
       xiiPrefabInstantiationOptions options;
       options.m_pOverrideTeamID = &uiTeamID;
 
-      pPrefab->InstantiatePrefab(*m_pMainWorld, startPos, options, &(pBestComp->m_Parameters));
+      pPrefab->InstantiatePrefab(*m_pMainWorld, startPosition, options, &(pBestPlayerStartComponent->m_Parameters));
 
       return XII_SUCCESS;
     }
@@ -428,7 +435,6 @@ void xiiGameState::ConfigureMainCamera()
     return;
   }
 
-
   if (const xiiWorld* pConstWorld = m_pMainWorld)
   {
     XII_LOCK(pConstWorld->GetReadMarker());
@@ -436,22 +442,22 @@ void xiiGameState::ConfigureMainCamera()
     const xiiCameraComponentManager* pManager = pConstWorld->GetComponentManager<xiiCameraComponentManager>();
     if (pManager != nullptr)
     {
-      for (auto itComp = pManager->GetComponents(); itComp.IsValid(); itComp.Next())
+      for (auto itCameraComponent = pManager->GetComponents(); itCameraComponent.IsValid(); itCameraComponent.Next())
       {
-        const xiiCameraComponent* pComp = itComp;
+        const xiiCameraComponent* pCameraComponent = itCameraComponent;
 
-        if (pComp->IsActive() && pComp->GetUsageHint() == xiiCameraUsageHint::MainView)
+        if (pCameraComponent->IsActive() && pCameraComponent->GetUsageHint() == xiiCameraUsageHint::MainView)
         {
-          xiiVec3 vCameraPos = pComp->GetOwner()->GetGlobalPosition();
+          xiiVec3 vCameraPosition = pCameraComponent->GetOwner()->GetGlobalPosition();
 
-          xiiCoordinateSystem coordSys;
-          coordSys.m_vForwardDir = pComp->GetOwner()->GetGlobalDirForwards();
-          coordSys.m_vRightDir   = pComp->GetOwner()->GetGlobalDirRight();
-          coordSys.m_vUpDir      = pComp->GetOwner()->GetGlobalDirUp();
+          xiiCoordinateSystem coordinateSystem;
+          coordinateSystem.m_vForwardDir = pCameraComponent->GetOwner()->GetGlobalDirForwards();
+          coordinateSystem.m_vRightDir   = pCameraComponent->GetOwner()->GetGlobalDirRight();
+          coordinateSystem.m_vUpDir      = pCameraComponent->GetOwner()->GetGlobalDirUp();
 
           // update the camera position
           // camera options (FOV etc) are already set by xiiCameraComponentManager on demand
-          m_MainCamera.LookAt(vCameraPos, vCameraPos + coordSys.m_vForwardDir, coordSys.m_vUpDir);
+          m_MainCamera.LookAt(vCameraPosition, vCameraPosition + coordinateSystem.m_vForwardDir, coordinateSystem.m_vUpDir);
           return;
         }
       }
@@ -468,29 +474,33 @@ xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
     xiiScreen::PrintScreenInfo(screens);
   }
 
-  xiiStringBuilder sWndCfg = opt_Window.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+  xiiStringBuilder sWindowConfig = opt_Window.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
 
-  if (!sWndCfg.IsEmpty() && !xiiFileSystem::ExistsFile(sWndCfg))
+  if (!sWindowConfig.IsEmpty() && !xiiFileSystem::ExistsFile(sWindowConfig))
   {
-    xiiLog::Dev("Window Config file does not exist: '{0}'", sWndCfg);
-    sWndCfg.Clear();
+    xiiLog::Dev("Window Config file does not exist: '{0}'", sWindowConfig);
+    sWindowConfig.Clear();
   }
 
-  if (sWndCfg.IsEmpty())
+  if (sWindowConfig.IsEmpty())
   {
     const xiiStringView sCfgAppData = ":appdata/RuntimeConfigs/Window.ddl";
     const xiiStringView sCfgProject = ":project/RuntimeConfigs/Window.ddl";
 
     if (xiiFileSystem::ExistsFile(sCfgAppData))
-      sWndCfg = sCfgAppData;
+    {
+      sWindowConfig = sCfgAppData;
+    }
     else
-      sWndCfg = sCfgProject;
+    {
+      sWindowConfig = sCfgProject;
+    }
   }
 
-  xiiWindowCreationDesc wndDesc;
-  wndDesc.LoadFromDDL(sWndCfg).IgnoreResult();
+  xiiWindowCreationDescription windowDescription;
+  windowDescription.LoadFromDDL(sWindowConfig).IgnoreResult();
 
-  xiiUniquePtr<xiiGameStateWindow> pWindow = XII_DEFAULT_NEW(xiiGameStateWindow, wndDesc, [] {});
+  xiiUniquePtr<xiiGameStateWindow> pWindow = XII_DEFAULT_NEW(xiiGameStateWindow, windowDescription, [] {});
   pWindow->ResetOnClickClose([this]() { this->RequestQuit(); });
 
   return pWindow;

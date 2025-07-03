@@ -42,15 +42,10 @@ xiiRenderPipeline::xiiRenderPipeline()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   m_AverageCullingTime = xiiTime::MakeFromSeconds(0.1f);
 #endif
-
-  m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants));
 }
 
 xiiRenderPipeline::~xiiRenderPipeline()
 {
-  m_pGlobalConstantsBuffer.Clear();
-  m_pOcclusionDebugViewTexture.Clear();
-
   m_Data[0].Clear();
   m_Data[1].Clear();
 
@@ -71,6 +66,7 @@ void xiiRenderPipeline::AddPass(xiiUniquePtr<xiiRenderPipelinePass>&& pPass)
   auto it = m_Connections.Insert(pPass.Borrow(), ConnectionData());
   it.Value().m_Inputs.SetCount(pPass->GetInputPins().GetCount());
   it.Value().m_Outputs.SetCount(pPass->GetOutputPins().GetCount());
+
   m_Passes.PushBack(std::move(pPass));
 }
 
@@ -81,9 +77,11 @@ void xiiRenderPipeline::RemovePass(xiiRenderPipelinePass* pPass)
     if (m_Passes[i].Borrow() == pPass)
     {
       m_PipelineState = PipelineState::Uninitialized;
+
       RemoveConnections(pPass);
       m_Connections.Remove(pPass);
       pPass->m_pPipeline = nullptr;
+
       m_Passes.RemoveAtAndCopy(i);
       break;
     }
@@ -119,21 +117,17 @@ xiiRenderPipelinePass* xiiRenderPipeline::GetPassByName(const xiiStringView& sPa
       return pPass.Borrow();
     }
   }
-
   return nullptr;
-}
-
-xiiHashedString xiiRenderPipeline::GetViewName() const
-{
-  return m_sName;
 }
 
 bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiStringView sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiStringView sInputPinName)
 {
   xiiHashedString sOutputPinNameHash;
   sOutputPinNameHash.Assign(sOutputPinName);
+
   xiiHashedString sInputPinNameHash;
   sInputPinNameHash.Assign(sInputPinName);
+
   return Connect(pOutputNode, sOutputPinNameHash, pInputNode, sInputPinNameHash);
 }
 
@@ -171,7 +165,7 @@ bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedStr
     return false;
   }
 
-  // Add at output
+  // Add at output.
   xiiRenderPipelinePassConnection* pConnection = itOut.Value().m_Outputs[pPinSource->m_uiOutputIndex];
   if (pConnection == nullptr)
   {
@@ -181,7 +175,7 @@ bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedStr
   }
   else
   {
-    // Check that only one passthrough is connected
+    // Check that only one passthrough is connected.
     if (pPinTarget->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough))
     {
       for (const xiiRenderPipelineNodePin* pPin : pConnection->m_Inputs)
@@ -195,7 +189,7 @@ bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedStr
     }
   }
 
-  // Add at input
+  // Add at input.
   pConnection->m_Inputs.PushBack(pPinTarget);
   itIn.Value().m_Inputs[pPinTarget->m_uiInputIndex] = pConnection;
   m_PipelineState                                   = PipelineState::Uninitialized;
@@ -260,7 +254,7 @@ const xiiRenderPipelinePassConnection* xiiRenderPipeline::GetInputConnection(con
 
   auto&                           data = it.Value();
   const xiiRenderPipelineNodePin* pPin = pPass->GetPinByName(sInputPinName);
-  if (!pPin || pPin->m_uiInputIndex == 0xFF)
+  if (!pPin || pPin->m_uiInputIndex == 0xFFU)
     return nullptr;
 
   return data.m_Inputs[pPin->m_uiInputIndex];
@@ -286,18 +280,18 @@ xiiRenderPipeline::PipelineState xiiRenderPipeline::Rebuild(const xiiView& view)
 
   ClearRenderPassGraphTextures();
 
-  bool bRes = RebuildInternal(view);
-  if (!bRes)
+  bool bResult = RebuildInternal(view);
+  if (!bResult)
   {
     ClearRenderPassGraphTextures();
   }
   else
   {
-    // make sure the renderdata stores the updated view data
+    // Ensure the render data stores the updated view data.
     UpdateViewData(view, xiiRenderWorld::GetDataIndexForRendering());
   }
 
-  m_PipelineState = bRes ? PipelineState::Initialized : PipelineState::RebuildError;
+  m_PipelineState = bResult ? PipelineState::Initialized : PipelineState::RebuildError;
   return m_PipelineState;
 }
 
@@ -305,11 +299,13 @@ bool xiiRenderPipeline::RebuildInternal(const xiiView& view)
 {
   if (!SortPasses())
     return false;
-  if (!InitRenderTargetDescriptions(view))
+  if (!InitializeRenderTargetDescriptions(view))
     return false;
   if (!CreateRenderTargetUsage(view))
     return false;
-  if (!InitRenderPipelinePasses())
+  if (!InitializeRenderPipelineRenderPasses())
+    return false;
+  if (!InitializeRenderPipelinePasses())
     return false;
 
   SortExtractors();
@@ -324,19 +320,18 @@ bool xiiRenderPipeline::SortPasses()
   done.Reserve(m_Passes.GetCount());
 
   xiiHybridArray<xiiRenderPipelinePass*, 8> usable;     // Stack of passes with all connections setup, they can be asked for descriptions.
-  xiiHybridArray<xiiRenderPipelinePass*, 8> candidates; // Not usable yet, but all input connections are available
+  xiiHybridArray<xiiRenderPipelinePass*, 8> candidates; // Not usable yet, but all input connections are available.
 
   // Find all source passes from which we can start the output description propagation.
   for (auto& pPass : m_Passes)
   {
-    // if (std::all_of(cbegin(it.Value().m_Inputs), cend(it.Value().m_Inputs), [](xiiRenderPipelinePassConnection* pConnection){return pConnection == nullptr; }))
     if (AreInputDescriptionsAvailable(pPass.Borrow(), done))
     {
       usable.PushBack(pPass.Borrow());
     }
   }
 
-  // Via a depth first traversal, order the passes
+  // Via a depth first traversal, order the passes.
   while (!usable.IsEmpty())
   {
     xiiRenderPipelinePass* pPass = usable.PeekBack();
@@ -345,18 +340,19 @@ bool xiiRenderPipeline::SortPasses()
     usable.PopBack();
     ConnectionData& data = m_Connections[pPass];
 
-    XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count missmatch!");
-    XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count missmatch!");
+    XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count mismatch!");
+    XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count mismatch!");
 
-    // Check for new candidate passes. Can't be done in the previous loop as multiple connections may be required by a node.
+    // Check for new candidate passes. This step cannot be achieved in the previous loop as multiple connections may be required by a node.
     for (xiiUInt32 i = 0; i < data.m_Outputs.GetCount(); ++i)
     {
       if (data.m_Outputs[i] != nullptr)
       {
-        // Go through all inputs this connection is connected to and test the corresponding node for availability
+        // Iterate all inputs this connection is connected to and test the corresponding node for availability.
         for (const xiiRenderPipelineNodePin* pPin : data.m_Outputs[i]->m_Inputs)
         {
           XII_ASSERT_DEBUG(pPin->m_pParent != nullptr, "Pass was not initialized!");
+
           xiiRenderPipelinePass* pTargetPass = static_cast<xiiRenderPipelinePass*>(pPin->m_pParent);
           if (done.Contains(pTargetPass))
           {
@@ -388,12 +384,13 @@ bool xiiRenderPipeline::SortPasses()
 
   if (done.GetCount() < m_Passes.GetCount())
   {
-    xiiLog::Error("Pipeline: Not all nodes could be initialized");
-    for (auto& pass : m_Passes)
+    xiiLog::Error("Pipeline: Not all nodes could be initialized!");
+
+    for (auto& pPass : m_Passes)
     {
-      if (!done.Contains(pass.Borrow()))
+      if (!done.Contains(pPass.Borrow()))
       {
-        xiiLog::Error("Failed to initialize node: {} - {}", pass->GetName(), pass->GetDynamicRTTI()->GetTypeName());
+        xiiLog::Error("Failed to initialize node: {} - {}", pPass->GetName(), pPass->GetDynamicRTTI()->GetTypeName());
       }
     }
     return false;
@@ -401,30 +398,30 @@ bool xiiRenderPipeline::SortPasses()
 
   struct xiiPipelineSorter
   {
-    /// \brief Returns true if a is less than b
+    /// \brief Returns true if a is less than b.
     XII_FORCE_INLINE bool Less(const xiiUniquePtr<xiiRenderPipelinePass>& a, const xiiUniquePtr<xiiRenderPipelinePass>& b) const { return m_pDone->IndexOf(a.Borrow()) < m_pDone->IndexOf(b.Borrow()); }
 
-    /// \brief Returns true if a is equal to b
+    /// \brief Returns true if a is equal to b.
     XII_ALWAYS_INLINE bool Equal(const xiiUniquePtr<xiiRenderPipelinePass>& a, const xiiUniquePtr<xiiRenderPipelinePass>& b) const { return a.Borrow() == b.Borrow(); }
 
-    xiiHybridArray<xiiRenderPipelinePass*, 32>* m_pDone;
+    xiiHybridArray<xiiRenderPipelinePass*, 32U>* m_pDone;
   };
 
-  xiiPipelineSorter sorter;
-  sorter.m_pDone = &done;
-  m_Passes.Sort(sorter);
+  xiiPipelineSorter pipelineSorter;
+  pipelineSorter.m_pDone = &done;
+  m_Passes.Sort(pipelineSorter);
   return true;
 }
 
-bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
+bool xiiRenderPipeline::InitializeRenderTargetDescriptions(const xiiView& view)
 {
-  xiiLogBlock                                           b("Init Render Target Descriptions");
+  xiiLogBlock                                           b("Initialize Render Target Descriptions");
   xiiHybridArray<xiiGALTextureCreationDescription*, 10> inputs;
   xiiHybridArray<xiiGALTextureCreationDescription, 10>  outputs;
 
   for (auto& pPass : m_Passes)
   {
-    xiiLogBlock b2("InitPass", pPass->GetName());
+    xiiLogBlock b2("InitializePass", pPass->GetName());
 
     if (view.GetCamera()->IsStereoscopic() && !pPass->IsStereoAware())
     {
@@ -433,12 +430,13 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
 
     ConnectionData& data = m_Connections[pPass.Borrow()];
 
-    XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count missmatch!");
-    XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count missmatch!");
+    XII_ASSERT_DEBUG(data.m_Inputs.GetCount() == pPass->GetInputPins().GetCount(), "Input pin count mismatch!");
+    XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count mismatch!");
 
     inputs.SetCount(data.m_Inputs.GetCount());
     outputs.Clear();
     outputs.SetCount(data.m_Outputs.GetCount());
+
     // Fill inputs array
     for (xiiUInt32 i = 0; i < data.m_Inputs.GetCount(); ++i)
     {
@@ -452,8 +450,8 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
       }
     }
 
-    bool bRes = pPass->GetRenderTargetDescriptions(view, inputs, outputs);
-    if (!bRes)
+    bool bResult = pPass->GetRenderTargetDescriptions(view, inputs, outputs);
+    if (!bResult)
     {
       xiiLog::Error("The pass could not be successfully queried for render target descriptions.");
       return false;
@@ -505,6 +503,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
   {
     const auto&     pPass = m_Passes[i].Borrow();
     ConnectionData& data  = m_Connections[pPass];
+
     for (xiiRenderPipelinePassConnection* pConnection : data.m_Inputs)
     {
       if (pConnection != nullptr)
@@ -520,9 +519,10 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
       {
         if (pConnection->m_pOutput->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough) && data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex] != nullptr)
         {
-          xiiRenderPipelinePassConnection* pCorrespondingInputConn = data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex];
-          XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pCorrespondingInputConn), "");
-          xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pCorrespondingInputConn];
+          xiiRenderPipelinePassConnection* pCorrespondingInputConnection = data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex];
+          XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pCorrespondingInputConnection), "");
+
+          xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pCorrespondingInputConnection];
           m_TextureUsage[uiDataIdx].m_UsedBy.PushBack(pConnection);
           m_TextureUsage[uiDataIdx].m_uiLastUsageIdx = i;
 
@@ -542,7 +542,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     }
   }
 
-  // If a texture desc has this hash, it is uninitialized and no texture will be created at runtime.
+  // If a texture descriptor has this hash, it is uninitialized and no texture will be created at runtime.
   static xiiUInt32 uiDefaultTextureCreationDescriptionHash = xiiGALTextureCreationDescription().CalculateHash();
 
   // Find pins that provide textures into the pipeline, e.g. xiiTargetPass pins.
@@ -645,14 +645,86 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
   return true;
 }
 
-bool xiiRenderPipeline::InitRenderPipelinePasses()
+bool xiiRenderPipeline::AreAttachmentsCompatible(const xiiDynamicArray<xiiRenderPipelinePass*>& currentGroup, const ConnectionData& data)
 {
-  xiiLogBlock b("Init Render Pipeline Passes");
-  // Init every pass now.
-  for (auto& pPass : m_Passes)
+  if (currentGroup.IsEmpty())
+    return false;
+
+  const ConnectionData& compatibleData = m_Connections[currentGroup.PeekBack()];
+
+  // if (compatibleData.m_Inputs.GetCount() != data.m_Inputs.GetCount())
+  //   return false;
+
+  if (compatibleData.m_Outputs.GetCount() != data.m_Outputs.GetCount())
+    return false;
+
+  return false;
+}
+
+bool xiiRenderPipeline::InitializeRenderPipelineRenderPasses()
+{
+  xiiLogBlock b("Initialize Render Pipeline Render Passes");
+
+#if 0
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  xiiDynamicArray<xiiDynamicArray<xiiRenderPipelinePass*>> groups;
+  xiiDynamicArray<xiiRenderPipelinePass*>                  currentGroup;
+
+  // 1. Walk the list of compiled passes and form groups where we can fuse the passes.
+  for (xiiUniquePtr<xiiRenderPipelinePass>& pPass : m_Passes)
   {
     ConnectionData& data = m_Connections[pPass.Borrow()];
-    pPass->InitRenderPipelinePass(data.m_Inputs, data.m_Outputs);
+
+    if (currentGroup.IsEmpty() || (pPass->GetPassFlags().IsSet(xiiRenderPipelinePassFlags::AllowSubpassFuse) && currentGroup.PeekBack()->GetPassFlags().IsSet(xiiRenderPipelinePassFlags::AllowSubpassFuse) && AreAttachmentsCompatible(currentGroup, data)))
+    {
+      currentGroup.PushBack(pPass.Borrow());
+    }
+    else
+    {
+      groups.PushBack(currentGroup);
+
+      currentGroup.Clear();
+      currentGroup.PushBack(pPass.Borrow());
+    }
+    if (!currentGroup.IsEmpty())
+    {
+      groups.PushBack(currentGroup);
+
+      currentGroup.Clear();
+    }
+  }
+
+  // 2. The
+
+#  if 0
+    xiiGALRenderPassCreationDescription description;
+
+    xiiGALRenderPassAttachmentDescription& attachmentDescription = description.m_Attachments.ExpandAndGetRef();
+
+    xiiGALSubPassDescription& subPasses = description.m_SubPasses.ExpandAndGetRef();
+
+    xiiGALSubPassDependencyDescription& dependencies = description.m_Dependencies.ExpandAndGetRef();
+
+    pPass->m_pRenderPass = pDevice->CreateRenderPass(description);
+    XII_ASSERT_DEBUG(pPass->m_pRenderPass != nullptr, "Failed to create per-pass GPU render pass.");
+    pPass->m_pRenderPass->SetDebugName(pPass->GetName());
+#  endif
+#endif
+
+  return true;
+}
+
+bool xiiRenderPipeline::InitializeRenderPipelinePasses()
+{
+  xiiLogBlock b("Initialize Render Pipeline Passes");
+
+  // Initialize every pass now.
+  for (xiiUniquePtr<xiiRenderPipelinePass>& pPass : m_Passes)
+  {
+    ConnectionData& data = m_Connections[pPass.Borrow()];
+
+    pPass->InitializeRenderPipelinePass(data.m_Inputs, data.m_Outputs);
   }
 
   return true;
@@ -671,7 +743,6 @@ void xiiRenderPipeline::SortExtractors()
           return true;
         }
       }
-
       return false;
     }
   };
@@ -684,17 +755,17 @@ void xiiRenderPipeline::SortExtractors()
   {
     xiiUniquePtr<xiiExtractor>& extractor = m_Extractors[uiIndex];
 
-    bool allDependenciesFound = true;
+    bool bAllDependenciesFound = true;
     for (auto& sDependency : extractor->m_DependsOn)
     {
       if (!Helper::FindDependency(sDependency, m_SortedExtractors))
       {
-        allDependenciesFound = false;
+        bAllDependenciesFound = false;
         break;
       }
     }
 
-    if (allDependenciesFound)
+    if (bAllDependenciesFound)
     {
       m_SortedExtractors.PushBack(std::move(extractor));
       m_Extractors.RemoveAtAndCopy(uiIndex);
@@ -721,7 +792,7 @@ void xiiRenderPipeline::UpdateViewData(const xiiView& view, xiiUInt32 uiDataInde
   if (uiDataIndex == xiiRenderWorld::GetDataIndexForExtraction() && m_CurrentExtractThread != (xiiThreadID)0)
     return;
 
-  XII_ASSERT_DEV(uiDataIndex <= 1, "Data index must be 0 or 1");
+  XII_ASSERT_DEV(uiDataIndex <= 1, "Data index must be 0 or 1.");
   auto& data = m_Data[uiDataIndex];
 
   data.SetCamera(*view.GetCamera());
@@ -765,7 +836,6 @@ void xiiRenderPipeline::GetExtractors(xiiDynamicArray<xiiExtractor*>& ref_extrac
   }
 }
 
-
 xiiExtractor* xiiRenderPipeline::GetExtractorByName(const xiiStringView& sExtractorName)
 {
   for (auto& pExtractor : m_Extractors)
@@ -791,9 +861,9 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePass* pPass)
     if (pConnection != nullptr)
     {
       xiiRenderPipelinePass* pSource = static_cast<xiiRenderPipelinePass*>(pConnection->m_pOutput->m_pParent);
-      bool                   bRes    = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
-      XII_IGNORE_UNUSED(bRes);
-      XII_ASSERT_DEBUG(bRes, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
+      bool                   bResult = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
+      XII_IGNORE_UNUSED(bResult);
+      XII_ASSERT_DEBUG(bResult, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
     }
   }
   for (xiiUInt32 i = 0; i < data.m_Outputs.GetCount(); ++i)
@@ -802,9 +872,9 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePass* pPass)
     while (pConnection != nullptr)
     {
       xiiRenderPipelinePass* pTarget = static_cast<xiiRenderPipelinePass*>(pConnection->m_Inputs[0]->m_pParent);
-      bool                   bRes    = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
-      XII_IGNORE_UNUSED(bRes);
-      XII_ASSERT_DEBUG(bRes, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
+      bool                   bResult = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
+      XII_IGNORE_UNUSED(bResult);
+      XII_ASSERT_DEBUG(bResult, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
 
       pConnection = data.m_Outputs[i];
     }
@@ -1097,10 +1167,13 @@ void xiiRenderPipeline::Render()
   const xiiCamera*           pLodCamera = &data.GetLodCamera();
   const xiiViewData*         pViewData  = &data.GetViewData();
 
+#ifdef CORE_ENABLE
   // Set Global Constants.
   {
-    // Camera matrices.
-    for (xiiInt32 i = 0; i < 2; ++i)
+    xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pGlobalConstants)
+
+      // Camera matrices.
+      for (xiiInt32 i = 0; i < 2; ++i)
     {
       m_GlobalConstants.CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
       m_GlobalConstants.ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
@@ -1130,6 +1203,7 @@ void xiiRenderPipeline::Render()
     m_GlobalConstants.Exposure   = pCamera->GetExposure();
     m_GlobalConstants.RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
   }
+#endif
 
   xiiRenderViewContext renderViewContext;
   renderViewContext.m_pCamera            = pCamera;
@@ -1394,100 +1468,91 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
 
   XII_PROFILE_SCOPE("Occlusion::DebugPreview");
 
-  const xiiUInt32 uiImgWidth  = rasterizer.GetResolutionX();
-  const xiiUInt32 uiImgHeight = rasterizer.GetResolutionY();
+  const xiiUInt32 uiImageWidth  = rasterizer.GetResolutionX();
+  const xiiUInt32 uiImageHeight = rasterizer.GetResolutionY();
 
   // get the debug image from the rasterizer
   xiiDynamicArray<xiiColorLinearUB> fb;
-  fb.SetCountUninitialized(uiImgWidth * uiImgHeight);
+  fb.SetCountUninitialized(uiImageWidth * uiImageHeight);
   rasterizer.ReadBackFrame(fb);
 
-  const float  w            = (float)uiImgWidth;
-  const float  h            = (float)uiImgHeight;
+  const float  w            = (float)uiImageWidth;
+  const float  h            = (float)uiImageHeight;
   xiiRectFloat rectInPixel1 = xiiRectFloat(5.0f, 5.0f, w + 10, h + 10);
   xiiRectFloat rectInPixel2 = xiiRectFloat(10.0f, 10.0f, w, h);
 
   xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel1, 0.0f, xiiColor::MediumPurple);
 
-  // TODO: it would be better to update a single texture every frame, however since this is a render pass,
-  // we currently can't create nested passes
-  // so either this has to be done elsewhere, or nested passes have to be allowed
-  if (false)
+  xiiTexture2DResourceDescriptor d;
+  d.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
+  d.m_DescGAL.m_Size.width  = rasterizer.GetResolutionX();
+  d.m_DescGAL.m_Size.height = rasterizer.GetResolutionY();
+  d.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8SNormalized;
+
+  xiiGALTextureSubResourceData content[1];
+  content[0].m_pData         = fb.GetByteArrayPtr();
+  content[0].m_uiStride      = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_Size.width;
+  content[0].m_uiDepthStride = content[0].m_uiStride * d.m_DescGAL.m_Size.height;
+  d.m_InitialContent         = content;
+
+  static xiiAtomicInteger32 name = 0;
+  name.Increment();
+
+  xiiStringBuilder sName;
+  sName.SetFormat("RasterizerPreview-{}", name);
+
+  xiiTexture2DResourceHandle hDebug = xiiResourceManager::CreateResource<xiiTexture2DResource>(sName, std::move(d));
+
+  xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, hDebug, xiiVec2(1, -1));
+}
+
+xiiSharedPtr<xiiGALRenderPass> xiiRenderPipeline::GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description)
+{
+  RenderPassCache* pRenderPassCache;
+  if (m_RenderPassCache.TryGetValue(description, pRenderPassCache))
+    return pRenderPassCache->m_pRenderPass;
+
+  xiiSharedPtr<xiiGALDevice>     pDevice     = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(description);
+
+  XII_ASSERT_DEBUG(pRenderPass != nullptr, "Failed to create render pass.");
+
+  m_RenderPassCache.Insert(description, RenderPassCache{pRenderPass});
+
+  return pRenderPass;
+}
+
+xiiSharedPtr<xiiGALFramebuffer> xiiRenderPipeline::GetOrCreateFramebuffer(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> pAttachments, xiiSizeU32 framebufferSize, xiiUInt32 uiArraySliceCount)
+{
+  RenderPassCache* pRenderPassCache;
+  if (!m_RenderPassCache.TryGetValue(pRenderPass->GetDescription(), pRenderPassCache))
+    return nullptr;
+
+  for (xiiUInt32 i = 0; i < pRenderPassCache->m_FramebufferCache.GetCount(); ++i)
   {
-    // check whether we need to re-create the texture
-    if (m_pOcclusionDebugViewTexture)
+    const auto& pFrameBuffer = pRenderPassCache->m_FramebufferCache[i];
+    const auto& description  = pFrameBuffer->GetDescription();
+
+    XII_ASSERT_DEBUG(description.m_pRenderPass == pRenderPassCache->m_pRenderPass, "Render pass mismatch for the same render pass description.");
+
+    if (description.m_Attachments == pAttachments && description.m_FramebufferSize == framebufferSize && description.m_uiArraySliceCount == uiArraySliceCount)
     {
-      const auto& textureDescription = m_pOcclusionDebugViewTexture->GetDescription();
-
-      if (textureDescription.m_Size.width != uiImgWidth || textureDescription.m_Size.height != uiImgHeight)
-      {
-        m_pOcclusionDebugViewTexture.Clear();
-      }
+      return pFrameBuffer;
     }
-
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-    // create the texture
-    if (!m_pOcclusionDebugViewTexture)
-    {
-      xiiGALTextureCreationDescription textureDescription;
-      textureDescription.m_Type           = xiiGALResourceDimension::Texture2D;
-      textureDescription.m_Size.width     = uiImgWidth;
-      textureDescription.m_Size.height    = uiImgHeight;
-      textureDescription.m_Format         = xiiGALResourceFormat::RGBA8UNormalized;
-      textureDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-      textureDescription.m_BindFlags      = xiiGALBindFlags::ShaderResource;
-      textureDescription.m_Usage          = xiiGALResourceUsage::Default;
-
-      m_pOcclusionDebugViewTexture = pDevice->CreateTexture(textureDescription);
-    }
-
-    // upload the image to the texture
-    {
-      xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
-      auto                pCommandList     = pGALCommandQueue->BeginCommandList();
-      {
-        xiiGALScopedDebugGroup debugGroup(pCommandList, "RasterizerDebugViewUpdate");
-
-        xiiBoundingBoxU32 destBox;
-        destBox.m_vMin.SetZero();
-        destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
-
-        xiiGALTextureSubResourceData sourceData;
-        sourceData.m_pData    = fb.GetByteArrayPtr();
-        sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
-
-        pCommandList->UpdateTexture(m_pOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
-      }
-      pCommandList->Submit();
-    }
-
-    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, m_pOcclusionDebugViewTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
   }
-  else
-  {
-    xiiTexture2DResourceDescriptor d;
-    d.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
-    d.m_DescGAL.m_Size.width  = rasterizer.GetResolutionX();
-    d.m_DescGAL.m_Size.height = rasterizer.GetResolutionY();
-    d.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8SNormalized;
 
-    xiiGALTextureSubResourceData content[1];
-    content[0].m_pData         = fb.GetByteArrayPtr();
-    content[0].m_uiStride      = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_Size.width;
-    content[0].m_uiDepthStride = content[0].m_uiStride * d.m_DescGAL.m_Size.height;
-    d.m_InitialContent         = content;
+  xiiGALFramebufferCreationDescription framebufferDescription;
+  framebufferDescription.m_pRenderPass       = pRenderPassCache->m_pRenderPass;
+  framebufferDescription.m_Attachments       = pAttachments;
+  framebufferDescription.m_FramebufferSize   = framebufferSize;
+  framebufferDescription.m_uiArraySliceCount = uiArraySliceCount;
 
-    static xiiAtomicInteger32 name = 0;
-    name.Increment();
+  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALFramebuffer> pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
 
-    xiiStringBuilder sName;
-    sName.SetFormat("RasterizerPreview-{}", name);
+  pRenderPassCache->m_FramebufferCache.PushBack(pFramebuffer);
 
-    xiiTexture2DResourceHandle hDebug = xiiResourceManager::CreateResource<xiiTexture2DResource>(sName, std::move(d));
-
-    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, hDebug, xiiVec2(1, -1));
-  }
+  return pFramebuffer;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipeline);

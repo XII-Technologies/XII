@@ -175,7 +175,7 @@ public:
 /// \sa xiiProfilingScope
 /// \sa XII_PROFILE_LIST_SCOPE
 #  define XII_PROFILE_SCOPE(szScopeName) \
-    xiiProfilingScope XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, xiiTime::MakeZero());
+    xiiProfilingScope XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, xiiTime::MakeZero())
 
 /// \brief Same as XII_PROFILE_SCOPE but if the scope takes longer than 'Timeout', the xiiProfilingSystem's timeout callback is executed.
 ///

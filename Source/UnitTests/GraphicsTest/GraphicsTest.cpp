@@ -1,6 +1,5 @@
 #include <GraphicsTest/GraphicsTestPCH.h>
 
-
 #include <TestFramework/Utilities/TestSetup.h>
 
 static xiiUniquePtr<xiiGPUTestingEnvironmentInterface> s_pGPUTestingEnvironment;
@@ -28,23 +27,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsTest, GPUTestingEnvironment)
       s_pGPUTestingEnvironment->Shutdown();
     }
 
-  #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-  #else
-    constexpr const char* szDefaultGraphicsAPI = "Null";
-  #endif
-
-    xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
-    if (sGraphicsAPIName == "D3D11")
-    {
-      s_pGPUTestingEnvironment = XII_DEFAULT_NEW(xiiGPUTestingEnvironmentD3D11);
-
-      if (s_pGPUTestingEnvironment->Initialize().Failed())
-      {
-        xiiLog::Error("Failed to initialize GPU testing environment for API ({}).", sGraphicsAPIName);
-      }
-    }
-    else if (sGraphicsAPIName == "Vulkan")
+    xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
+    if (sGraphicsAPIName == "Vulkan")
     {
       s_pGPUTestingEnvironment = XII_DEFAULT_NEW(xiiGPUTestingEnvironmentVulkan);
 

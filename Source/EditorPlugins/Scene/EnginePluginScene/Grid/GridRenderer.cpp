@@ -5,6 +5,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 // clang-format off
@@ -48,7 +49,7 @@ void xiiGridRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderD
 
 void xiiGridRenderer::CreateVertexBuffer()
 {
-  if (!m_hVertexBuffer.IsInvalidated())
+  if (m_pVertexBuffer)
     return;
 
   // load the shader
@@ -65,7 +66,7 @@ void xiiGridRenderer::CreateVertexBuffer()
     desc.m_Usage               = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-    m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
+    m_pVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
   }
 
   // Setup the input layout
@@ -172,7 +173,7 @@ void xiiGridRenderer::CreateGrid(const xiiGridRenderData& rd) const
   }
 }
 
-void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   for (auto it = batch.GetIterator<xiiGridRenderData>(); it.IsValid(); ++it)
   {
@@ -181,6 +182,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
     if (m_Vertices.IsEmpty())
       return;
 
+    #ifdef CORE_ENABLE
     xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
 
     renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
@@ -202,6 +204,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
       uiNumLineVertices -= uiNumLineVerticesInBatch;
       pLineData += s_uiLineVerticesPerBatch;
     }
+    #endif
   }
 }
 

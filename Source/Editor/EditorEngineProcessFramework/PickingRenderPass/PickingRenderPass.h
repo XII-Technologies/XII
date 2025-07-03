@@ -12,11 +12,11 @@ public:
   xiiPickingRenderPass();
   ~xiiPickingRenderPass();
 
-  xiiGALTextureHandle GetPickingIdRT() const;
-  xiiGALTextureHandle GetPickingDepthRT() const;
+  xiiSharedPtr<xiiGALTexture> GetPickingIdRT() const;
+  xiiSharedPtr<xiiGALTexture> GetPickingDepthRT() const;
 
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-  virtual void InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual void InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
 
   virtual void ReadBackProperties(xiiView* pView) override;
@@ -44,11 +44,11 @@ private:
   xiiRectFloat   m_TargetRect;
   const xiiRTTI* m_pGridRenderDataType = nullptr;
 
-  xiiGALTextureHandle     m_hPickingIdRT;
-  xiiGALTextureHandle     m_hPickingIdRTStaging;
-  xiiGALTextureHandle     m_hPickingDepthRT;
-  xiiGALTextureHandle     m_hPickingDepthRTStaging;
-  xiiGALRenderTargetSetup m_RenderTargetSetup;
+  xiiSharedPtr<xiiGALTexture>     m_pPickingIdRT;
+  xiiSharedPtr<xiiGALTexture>     m_pPickingIdRTStaging;
+  xiiSharedPtr<xiiGALTexture>     m_pPickingDepthRT;
+  xiiSharedPtr<xiiGALTexture>     m_pPickingDepthRTStaging;
+  // xiiGALRenderTargetSetup m_RenderTargetSetup;
 
   xiiHashSet<xiiGameObjectHandle> m_SelectionSet;
 

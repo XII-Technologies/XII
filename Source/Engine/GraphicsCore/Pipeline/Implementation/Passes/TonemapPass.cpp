@@ -37,7 +37,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiTonemapPass::xiiTonemapPass() :
-  xiiRenderPipelinePass("TonemapPass", true)
+  xiiRenderPipelinePass("TonemapPass", xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
 {
   m_hVignettingTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("White.color");
   m_hNoiseTexture      = xiiResourceManager::LoadResource<xiiTexture2DResource>("Textures/BlueNoise.dds");

@@ -32,7 +32,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 xiiForwardRenderPass::xiiForwardRenderPass(xiiStringView sName) :
-  xiiRenderPipelinePass(sName, true), m_ShadingQuality(xiiForwardRenderShadingQuality::Normal)
+  xiiRenderPipelinePass(sName, xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential), m_ShadingQuality(xiiForwardRenderShadingQuality::Normal)
 {
 }
 

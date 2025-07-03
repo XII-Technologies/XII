@@ -12,6 +12,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
 {
   xiiViewData()
   {
+    m_pSwapChain     = nullptr;
     m_ViewPortRect   = xiiRectFloat(0.0f, 0.0f);
     m_ViewRenderMode = xiiViewRenderMode::None;
 
@@ -26,12 +27,12 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
     }
   }
 
-  xiiRenderTargets           m_RenderTargets;
-  xiiRenderTargets           m_SwapChainRenderTargets;
-  xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
-  xiiRectFloat                  m_ViewPortRect;
-  xiiEnum<xiiViewRenderMode>    m_ViewRenderMode;
-  xiiEnum<xiiCameraUsageHint>   m_CameraUsageHint;
+  xiiRenderTargets            m_RenderTargets;
+  xiiRenderTargets            m_SwapChainRenderTargets;
+  xiiGALSwapChain*            m_pSwapChain;
+  xiiRectFloat                m_ViewPortRect;
+  xiiEnum<xiiViewRenderMode>  m_ViewRenderMode;
+  xiiEnum<xiiCameraUsageHint> m_CameraUsageHint;
 
   // Each matrix is there for both left and right camera lens.
   xiiMat4 m_ViewMatrix[2];

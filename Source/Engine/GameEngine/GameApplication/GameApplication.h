@@ -54,7 +54,7 @@ public:
 
   /// \brief When the graphics device is created, by default the game application will pick a platform specific implementation. This
   /// function allows to override that by setting a custom function that creates a graphics device.
-  static void SetOverrideDefaultDeviceCreator(xiiDelegate<xiiGALDevice*(const xiiGALDeviceCreationDescription&)> creator);
+  static void SetOverrideDefaultDeviceCreator(xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> creator);
 
   /// \brief Implementation of xiiGameApplicationBase::FindProjectDirectory to define the 'project' special data directory.
   ///
