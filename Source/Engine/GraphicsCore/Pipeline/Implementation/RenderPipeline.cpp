@@ -665,6 +665,7 @@ bool xiiRenderPipeline::InitializeRenderPipelineRenderPasses()
 {
   xiiLogBlock b("Initialize Render Pipeline Render Passes");
 
+#if 0
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiDynamicArray<xiiDynamicArray<xiiRenderPipelinePass*>> groups;
@@ -696,7 +697,7 @@ bool xiiRenderPipeline::InitializeRenderPipelineRenderPasses()
 
   // 2. The
 
-#if 0
+#  if 0
     xiiGALRenderPassCreationDescription description;
 
     xiiGALRenderPassAttachmentDescription& attachmentDescription = description.m_Attachments.ExpandAndGetRef();
@@ -708,6 +709,7 @@ bool xiiRenderPipeline::InitializeRenderPipelineRenderPasses()
     pPass->m_pRenderPass = pDevice->CreateRenderPass(description);
     XII_ASSERT_DEBUG(pPass->m_pRenderPass != nullptr, "Failed to create per-pass GPU render pass.");
     pPass->m_pRenderPass->SetDebugName(pPass->GetName());
+#  endif
 #endif
 
   return true;
@@ -1170,8 +1172,8 @@ void xiiRenderPipeline::Render()
   {
     xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pGlobalConstants)
 
-    // Camera matrices.
-    for (xiiInt32 i = 0; i < 2; ++i)
+      // Camera matrices.
+      for (xiiInt32 i = 0; i < 2; ++i)
     {
       m_GlobalConstants.CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
       m_GlobalConstants.ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
