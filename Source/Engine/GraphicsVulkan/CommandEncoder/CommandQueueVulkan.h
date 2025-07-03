@@ -48,6 +48,8 @@ private:
   xiiGALQueueInformationVulkan                                   m_QueueInformation;
   xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_CommandBufferPool;
 
+  xiiMutex m_QueueMutex;
+
   vk::PipelineStageFlags m_vkSupportedStageFlags;
   vk::AccessFlags        m_vkSupportedAccessFlags;
 

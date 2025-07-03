@@ -84,6 +84,8 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
     pCommandListVulkan->End();
   }
 
+  XII_LOCK(m_QueueMutex);
+
   bool bTimelineSemaphoreInUse = false;
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {
