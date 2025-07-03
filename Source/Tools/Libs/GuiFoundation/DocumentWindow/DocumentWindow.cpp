@@ -360,12 +360,18 @@ void xiiQtDocumentWindow::SlotRestoreLayout()
 
 void xiiQtDocumentWindow::SaveWindowLayout()
 {
+  if (GetDocument() == nullptr)
+    return;
+
   // This is a workaround for newer Qt versions (5.13 or so) that seem to change the state of QDockWidgets to "closed" once the parent
   // QMainWindow gets the closeEvent, even though they still exist and the QMainWindow is not yet deleted. Previously this function was
   // called multiple times, including once after the QMainWindow got its closeEvent, which would then save a corrupted state. Therefore,
   // once the parent xiiQtContainerWindow gets the closeEvent, we now prevent further saving of the window layout.
   if (!m_bAllowSaveWindowLayout)
     return;
+
+  xiiLog::Debug("Save Layout - {}", GetDocument()->GetDocumentTypeName());
+
 
   const bool bMaximized = isMaximized();
 
@@ -386,11 +392,19 @@ void xiiQtDocumentWindow::SaveWindowLayout()
 
 void xiiQtDocumentWindow::RestoreWindowLayout(bool bForce)
 {
+  if (GetDocument() == nullptr)
+    return;
+
   if (!s_bAllowRestoreWindowLayout)
     return;
 
   if (!bForce && m_bWindowRestored)
     return;
+
+  if (GetDocument() != nullptr)
+  {
+    xiiLog::Debug("Restore Layout - {} ({})", GetDocument()->GetDocumentTypeName(), GetDocument()->GetDocumentPath());
+  }
 
   m_bWindowRestored = true;
 
