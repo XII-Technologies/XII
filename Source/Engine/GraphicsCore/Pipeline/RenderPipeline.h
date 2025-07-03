@@ -75,6 +75,7 @@ private:
   bool          SortPasses();
   bool          InitializeRenderTargetDescriptions(const xiiView& view);
   bool          CreateRenderTargetUsage(const xiiView& view);
+  bool          InitializeRenderPipelineRenderPasses();
   bool          InitializeRenderPipelinePasses();
   void          SortExtractors();
   void          UpdateViewData(const xiiView& view, xiiUInt32 uiDataIndex);
@@ -121,7 +122,7 @@ private: // Member data
     xiiDynamicArray<xiiRenderPipelinePassConnection*> m_Outputs;
   };
   xiiDynamicArray<xiiUniquePtr<xiiRenderPipelinePass>> m_Passes;      ///< The passes present in the pipeline in no particular order.
-  xiiMap<const xiiRenderPipelinePass*, ConnectionData> m_Connections; ///< The passes present in the pipeline in no particular order.
+  xiiMap<const xiiRenderPipelinePass*, ConnectionData> m_Connections; ///< The connections in each pass.
 
   /// \brief Contains all connections that share the same path-through texture and their first and last usage pass index.
   struct TextureUsageData
@@ -132,8 +133,8 @@ private: // Member data
     const xiiRenderPipelineNodePin*                     m_pTextureProvider = nullptr; ///< If set, this node and parent pass provide an external texture to the pipeline. This could be a render target from a xiiTargetPass or a history buffer that is preserved across frames. At the start of every frame the parent pass will be asked for the current value of the texture a this pin.
   };
   xiiDynamicArray<TextureUsageData> m_TextureUsage;                      ///< All unique textures used during the pipeline run.
-  xiiDynamicArray<xiiUInt16>        m_TextureUsageIdxSortedByFirstUsage; ///< Indices map into m_TextureUsage
-  xiiDynamicArray<xiiUInt16>        m_TextureUsageIdxSortedByLastUsage;  ///< Indices map into m_TextureUsage
+  xiiDynamicArray<xiiUInt16>        m_TextureUsageIdxSortedByFirstUsage; ///< Indices map into m_TextureUsage.
+  xiiDynamicArray<xiiUInt16>        m_TextureUsageIdxSortedByLastUsage;  ///< Indices map into m_TextureUsage.
 
   xiiHashTable<xiiRenderPipelinePassConnection*, xiiUInt32> m_ConnectionToTextureIndex;
 
@@ -147,7 +148,8 @@ private: // Member data
 
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
 
-  private:
+private:
+  bool                            AreAttachmentsCompatible(const xiiDynamicArray<xiiRenderPipelinePass*>& currentGroup, const ConnectionData& data);
   xiiSharedPtr<xiiGALRenderPass>  GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description);
   xiiSharedPtr<xiiGALFramebuffer> GetOrCreateFramebuffer(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> pAttachments, xiiSizeU32 framebufferSize, xiiUInt32 uiArraySliceCount);
 

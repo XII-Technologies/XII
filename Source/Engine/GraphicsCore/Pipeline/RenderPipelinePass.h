@@ -81,6 +81,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiRenderPipelineNode
 
 public:
   xiiRenderPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassFlags> flags, xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint);
+
   ~xiiRenderPipelinePass();
 
   /// \brief Sets the name of the pass.

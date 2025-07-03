@@ -303,6 +303,8 @@ bool xiiRenderPipeline::RebuildInternal(const xiiView& view)
     return false;
   if (!CreateRenderTargetUsage(view))
     return false;
+  if (!InitializeRenderPipelineRenderPasses())
+    return false;
   if (!InitializeRenderPipelinePasses())
     return false;
 
@@ -643,14 +645,83 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
   return true;
 }
 
+bool xiiRenderPipeline::AreAttachmentsCompatible(const xiiDynamicArray<xiiRenderPipelinePass*>& currentGroup, const ConnectionData& data)
+{
+  if (currentGroup.IsEmpty())
+    return false;
+
+  const ConnectionData& compatibleData = m_Connections[currentGroup.PeekBack()];
+
+  // if (compatibleData.m_Inputs.GetCount() != data.m_Inputs.GetCount())
+  //   return false;
+
+  if (compatibleData.m_Outputs.GetCount() != data.m_Outputs.GetCount())
+    return false;
+
+  return false;
+}
+
+bool xiiRenderPipeline::InitializeRenderPipelineRenderPasses()
+{
+  xiiLogBlock b("Initialize Render Pipeline Render Passes");
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  xiiDynamicArray<xiiDynamicArray<xiiRenderPipelinePass*>> groups;
+  xiiDynamicArray<xiiRenderPipelinePass*>                  currentGroup;
+
+  // 1. Walk the list of compiled passes and form groups where we can fuse the passes.
+  for (xiiUniquePtr<xiiRenderPipelinePass>& pPass : m_Passes)
+  {
+    ConnectionData& data = m_Connections[pPass.Borrow()];
+
+    if (currentGroup.IsEmpty() || (pPass->GetPassFlags().IsSet(xiiRenderPipelinePassFlags::AllowSubpassFuse) && currentGroup.PeekBack()->GetPassFlags().IsSet(xiiRenderPipelinePassFlags::AllowSubpassFuse) && AreAttachmentsCompatible(currentGroup, data)))
+    {
+      currentGroup.PushBack(pPass.Borrow());
+    }
+    else
+    {
+      groups.PushBack(currentGroup);
+
+      currentGroup.Clear();
+      currentGroup.PushBack(pPass.Borrow());
+    }
+    if (!currentGroup.IsEmpty())
+    {
+      groups.PushBack(currentGroup);
+
+      currentGroup.Clear();
+    }
+  }
+
+  // 2. The
+
+#if 0
+    xiiGALRenderPassCreationDescription description;
+
+    xiiGALRenderPassAttachmentDescription& attachmentDescription = description.m_Attachments.ExpandAndGetRef();
+
+    xiiGALSubPassDescription& subPasses = description.m_SubPasses.ExpandAndGetRef();
+
+    xiiGALSubPassDependencyDescription& dependencies = description.m_Dependencies.ExpandAndGetRef();
+
+    pPass->m_pRenderPass = pDevice->CreateRenderPass(description);
+    XII_ASSERT_DEBUG(pPass->m_pRenderPass != nullptr, "Failed to create per-pass GPU render pass.");
+    pPass->m_pRenderPass->SetDebugName(pPass->GetName());
+#endif
+
+  return true;
+}
+
 bool xiiRenderPipeline::InitializeRenderPipelinePasses()
 {
   xiiLogBlock b("Initialize Render Pipeline Passes");
 
-  // Init every pass now.
+  // Initialize every pass now.
   for (xiiUniquePtr<xiiRenderPipelinePass>& pPass : m_Passes)
   {
     ConnectionData& data = m_Connections[pPass.Borrow()];
+
     pPass->InitializeRenderPipelinePass(data.m_Inputs, data.m_Outputs);
   }
 
@@ -682,17 +753,17 @@ void xiiRenderPipeline::SortExtractors()
   {
     xiiUniquePtr<xiiExtractor>& extractor = m_Extractors[uiIndex];
 
-    bool allDependenciesFound = true;
+    bool bAllDependenciesFound = true;
     for (auto& sDependency : extractor->m_DependsOn)
     {
       if (!Helper::FindDependency(sDependency, m_SortedExtractors))
       {
-        allDependenciesFound = false;
+        bAllDependenciesFound = false;
         break;
       }
     }
 
-    if (allDependenciesFound)
+    if (bAllDependenciesFound)
     {
       m_SortedExtractors.PushBack(std::move(extractor));
       m_Extractors.RemoveAtAndCopy(uiIndex);
