@@ -79,8 +79,7 @@ public:
   void SetOverlapRanges(bool bOverlap); // [ property ]
   bool GetOverlapRanges() const;        // [ property ]
 
-  void OnMsgSetColor(xiiMsgSetColor& ref_msg);           // [ msg handler ]
-  void OnMsgSetCustomData(xiiMsgSetCustomData& ref_msg); // [ msg handler ]
+  void OnMsgSetColor(xiiMsgSetColor& ref_msg); // [ msg handler ]
 
   void RetrievePose(xiiDynamicArray<xiiMat4>& out_modelTransforms, xiiTransform& out_rootTransform, const xiiSkeleton& skeleton);
 

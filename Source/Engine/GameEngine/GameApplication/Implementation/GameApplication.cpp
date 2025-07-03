@@ -52,7 +52,7 @@ xiiGameApplication::~xiiGameApplication()
 }
 
 // static
-void xiiGameApplication::SetOverrideDefaultDeviceCreator(xiiDelegate<xiiGALDevice*(const xiiGALDeviceCreationDescription&)> creator)
+void xiiGameApplication::SetOverrideDefaultDeviceCreator(xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> creator)
 {
   s_DefaultDeviceCreator = creator;
 }

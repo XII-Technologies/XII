@@ -137,5 +137,4 @@ void xiiJointOverrideComponent::OnAnimationPosePreparing(xiiMsgAnimationPosePrep
   }
 }
 
-
 XII_STATICLINK_FILE(GameEngine, GameEngine_Animation_Skeletal_Implementation_JointOverrideComponent);

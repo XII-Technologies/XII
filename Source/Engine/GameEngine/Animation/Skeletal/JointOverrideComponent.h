@@ -50,5 +50,6 @@ protected:
   void OnAnimationPosePreparing(xiiMsgAnimationPosePreparing& msg) const; // [ msg handler ]
 
   xiiHashedString   m_sJointToOverride;
+
   mutable xiiUInt16 m_uiJointIndex = xiiInvalidJointIndex;
 };
