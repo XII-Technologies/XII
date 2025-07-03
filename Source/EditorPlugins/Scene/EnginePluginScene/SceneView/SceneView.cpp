@@ -64,7 +64,7 @@ void xiiSceneViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
   }
 }
 
-void xiiSceneViewContext::SetupRenderTarget(xiiGALSwapChainHandle hSwapChain, const xiiGALRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
+void xiiSceneViewContext::SetupRenderTarget(xiiGALSwapChainHandle hSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
 {
   xiiEngineProcessViewContext::SetupRenderTarget(hSwapChain, pRenderTargets, uiWidth, uiHeight);
   xiiView* pView = nullptr;
