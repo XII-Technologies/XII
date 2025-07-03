@@ -99,12 +99,8 @@ xiiResult xiiRenderPipelinePass::Deserialize(xiiStreamReader& inout_stream)
 
   inout_stream >> m_bActive;
   inout_stream >> m_sName;
-
-  #pragma message("TODO: Enable serialization of pass flags and concurrency hint after re-serialization via editor.")
-#ifdef CORE_ENABLE
   inout_stream >> m_PassFlags;
   inout_stream >> m_PassConcurrencyHint;
-#endif
 
   return XII_SUCCESS;
 }

@@ -187,7 +187,6 @@ xiiResult xiiReflectionFilterPass::Deserialize(xiiStreamReader& inout_stream)
 
 xiiUInt32 xiiReflectionFilterPass::GetInputCubemap() const
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
   // return m_pInputCubemap.GetInternalID().m_Data;
   return 0;
 }
@@ -195,7 +194,6 @@ xiiUInt32 xiiReflectionFilterPass::GetInputCubemap() const
 void xiiReflectionFilterPass::SetInputCubemap(xiiUInt32 uiCubemapHandle)
 {
   // m_pInputCubemap = xiiGALTextureHandle(xiiGAL::xii24_8Id(uiCubemapHandle));
-  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiReflectionFilterPass::UpdateFilteredSpecularConstantBuffer(xiiUInt32 uiMipMapIndex, xiiUInt32 uiNumMipMaps)

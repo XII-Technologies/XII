@@ -57,7 +57,7 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (pOutput->m_pTexture->GetDescription().m_Format != pInput->m_pTexture->GetDescription().m_Format)
+  if (pOutput->m_TextureDescription.m_Format != pInput->m_TextureDescription.m_Format)
   {
     /// \todo GraphicsCore: Use a shader when the format is not an exact match.
 

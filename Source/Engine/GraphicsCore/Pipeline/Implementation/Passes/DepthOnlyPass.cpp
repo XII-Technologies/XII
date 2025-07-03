@@ -57,8 +57,6 @@ void xiiDepthOnlyPass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderP
   // Create render pass.
   if (auto pInput = pInputs[m_PinDepthStencil.m_uiInputIndex])
   {
-    const auto& textureDescription = pInput->m_pTexture->GetDescription();
-
     xiiGALRenderPassCreationDescription renderPassDescription;
     auto&                               subpassDescription    = renderPassDescription.m_SubPasses.ExpandAndGetRef();
     auto&                               dependencyDescription = renderPassDescription.m_Dependencies.ExpandAndGetRef();
@@ -69,8 +67,8 @@ void xiiDepthOnlyPass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderP
     dependencyDescription.m_SourceStageFlags      = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
     dependencyDescription.m_DestinationStageFlags = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
 
-    attachmentDescription.m_Format                = textureDescription.m_Format;
-    attachmentDescription.m_uiSampleCount         = textureDescription.m_uiSampleCount;
+    attachmentDescription.m_Format                = pInput->m_TextureDescription.m_Format;
+    attachmentDescription.m_uiSampleCount         = pInput->m_TextureDescription.m_uiSampleCount;
     attachmentDescription.m_LoadOperation         = xiiGALAttachmentLoadOperation::Load;
     attachmentDescription.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
     attachmentDescription.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Load;

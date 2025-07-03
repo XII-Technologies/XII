@@ -151,7 +151,6 @@ void xiiSourcePass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipe
   // Create render pass.
   if (auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex])
   {
-    const auto& textureDescription = pOutput->m_pTexture->GetDescription();
     const bool  bIsDepthAttachment = xiiGALResourceFormat::IsDepthFormat(pOutput->m_TextureDescription.m_Format);
 
     xiiGALRenderPassCreationDescription renderPassDescription;
@@ -164,7 +163,7 @@ void xiiSourcePass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipe
     dependencyDescription.m_SourceStageFlags      = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
     dependencyDescription.m_DestinationStageFlags = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
 
-    attachmentDescription.m_Format                = textureDescription.m_Format;
+    attachmentDescription.m_Format                = pOutput->m_TextureDescription.m_Format;
     attachmentDescription.m_uiSampleCount         = m_SampleCount;
     attachmentDescription.m_LoadOperation         = m_AttachmentLoadOperation;
     attachmentDescription.m_StoreOperation        = m_AttachmentStoreOperation;
