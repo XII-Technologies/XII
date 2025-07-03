@@ -18,6 +18,7 @@
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 /* TODO:
  * cache render category
@@ -450,8 +451,9 @@ void xiiClothSheetRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
   ref_types.PushBack(xiiGetStaticRTTI<xiiClothSheetRenderData>());
 }
 
-void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
+  #ifdef CORE_ENABLE
   const bool bNeedsNormals = (renderViewContext.m_pViewData->m_CameraUsageHint != xiiCameraUsageHint::Shadow);
 
   xiiRenderContext*  pRenderContext  = renderViewContext.m_pRenderContext;
@@ -576,6 +578,7 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer(uiNumPrimitives).IgnoreResult();
   }
+  #endif
 }
 
 void xiiClothSheetRenderer::CreateVertexBuffer()
