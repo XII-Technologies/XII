@@ -8,6 +8,7 @@
 [![License: LGPL v2.1](https://img.shields.io/badge/License-LGPL%20v2.1-blue.svg)](gnu-lgpl-v2.1.md)
 [![Build status](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/workflows/linux-builds/badge.svg)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions?query=workflow%3Alinux-builds)
 [![Build status](https://ci.appveyor.com/api/projects/status/qcfb3cy932jw9mpy/branch/master?svg=true)](https://ci.appveyor.com/project/githubuser0xFFFF/qt-advanced-docking-system/branch/master)
+[![windows-builds](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml/badge.svg?branch=master)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml)
 [![GitHub contributors](https://img.shields.io/github/contributors/githubuser0xFFFF/Qt-Advanced-Docking-System?color=ffdf00)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/graphs/contributors)
 
 Qt Advanced Docking System lets you create customizable layouts using a full
@@ -15,8 +16,8 @@ featured window docking system similar to what is found in many popular
 integrated development environments (IDEs) such as Visual Studio.
 
 - [What's new...](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/releases/latest)
-- [Documentation](doc/user-guide.md)
-- Original Repository: https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System
+- [Documentation](https://githubuser0xffff.github.io/Qt-Advanced-Docking-System/doc/user-guide.html)
+- Original Repository: [https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System)
 
 [![Video Advanced Docking](doc/advanced-docking_video.png)](https://www.youtube.com/watch?v=7pdNfafg3Qc)
 
@@ -94,7 +95,7 @@ adds the following features:
 ![Auto Hide Functionality](doc/AutoHide_Animation.gif)
 
 - improved demo application with new image viewer dock widgets
-
+  
 ![Auto Hide Functionality](doc/Feature_ImageViewer.png)
 
 - Visual Studio like CSS theme in demo application
@@ -161,6 +162,7 @@ know it from Visual Studio.
   - [Auto-Hide Functionality](#auto-hide-functionality)
 - [Python Bindings](#python-bindings)
   - [PySide6](#pyside6)
+  - [PyQt6](#pyqt6)
   - [PyQt5](#pyqt5)
 - [Tested Compatible Environments](#tested-compatible-environments)
   - [Supported Qt Versions](#supported-qt-versions)
@@ -189,8 +191,9 @@ know it from Visual Studio.
   - [RDE – Robox Development Environment](#rde--robox-development-environment)
   - [ResInsight](#resinsight)
   - [ADTF 3](#adtf-3)
-  - [DREAM.3D NX](#dream3d-nx)
+  - [DREAM3D-NX](#dream3d-nx)
   - [LabPlot](#labplot)
+  - [Scrutiny Debugger](#scrutiny-debugger)
 - [Alternative Docking System Implementations](#alternative-docking-system-implementations)
   - [KDDockWidgets](#kddockwidgets)
   - [QtitanDocking](#qtitandocking)
@@ -252,6 +255,7 @@ If this flag is cleared, the widget resizing is deferred until the mouse button 
 In contrast to the standard Qt docking system, docking with the ADS works more like a drag & drop operation. That means, the dragged dock widget or dock area is not undocked immediately. Instead, a drag preview widget is created and dragged around to indicate the future position of the dock widget or dock area. The actual dock operation is only executed when the mouse button is released. That makes it possible, to cancel an active drag operation with the escape key.
 
 The drag preview widget can be configured by a number of global dock manager flags:
+
 - `DragPreviewIsDynamic`: if this flag is enabled, the preview will be adjusted dynamically to the drop area
 - `DragPreviewShowsContentPixmap`: the created drag preview window shows a static copy of the content of the dock widget / dock are that is dragged
 - `DragPreviewHasWindowFrame`: this flag configures if the drag preview is frameless like a QRubberBand or looks like a real window
@@ -308,7 +312,7 @@ More about the auto hide configuration options in the [online documentation...](
 ![Python Logo](doc/python_logo.png)
 
 Thanks to the contribution of several users, the Advanced Docking System comes
-with a complete Python integration. Python bindings are available for **PyQt5** and
+with a complete Python integration. Python bindings are available for **PyQt5**, **PyQt6**, and
 **PySide6**.
 
 ### PySide6
@@ -321,12 +325,29 @@ pip install PySide6-QtAds
 ```
 
 Sample code is available [here](https://github.com/mborgerson/Qt-Advanced-Docking-System/tree/pyside6/examples). To run the samples, you'll also need to install latest qtpy
-from source (pip install https://github.com/spyder-ide/qtpy/archive/refs/heads/master.zip).
+from source (pip install <https://github.com/spyder-ide/qtpy/archive/refs/heads/master.zip>).
 The PySide6 bindings were contributed by:
 
 - [mborgerson](https://github.com/mborgerson)
 
 Please file PySide6-QtAds-specific issues on its [pyside6_qtads](https://github.com/mborgerson/pyside6_qtads) fork for tracking. For more information about the PySide6 bindings read [this](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/issues/298) issue.
+
+### PyQt6
+
+A PyQt6 ADS package is available via PyPi and can be installed on Windows,
+macOS, and Linux with:
+
+```bash
+pip install PyQt6Ads
+```
+
+Sample code is available [here](https://github.com/pyapp-kit/PyQt6Ads/tree/main/examples).
+
+The PyQt6 bindings were contributed by:
+
+- [tlambert03](https://github.com/tlambert03)
+
+Please file PyQt6Ads-specific issues at [pyapp-kit/PyQt6Ads](https://github.com/pyapp-kit/PyQt6Ads).
 
 ### PyQt5
 
@@ -351,13 +372,12 @@ The library supports **Qt5** and **Qt6**.
 
 ### Windows
 
-Windows 10 [![Build status](https://ci.appveyor.com/api/projects/status/qcfb3cy932jw9mpy/branch/master?svg=true)](https://ci.appveyor.com/project/githubuser0xFFFF/qt-advanced-docking-system/branch/master)
+Windows 10 / 11 [![Build status](https://ci.appveyor.com/api/projects/status/qcfb3cy932jw9mpy/branch/master?svg=true)](https://ci.appveyor.com/project/githubuser0xFFFF/qt-advanced-docking-system/branch/master)
+[![windows-builds](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml/badge.svg?branch=master)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml)
 
 The library was developed on and for Windows. It is used in a commercial Windows application and is therefore constantly tested.
 
 ### macOS
-
-macOS [![Build Status](https://travis-ci.org/githubuser0xFFFF/Qt-Advanced-Docking-System.svg?branch=master)](https://travis-ci.org/githubuser0xFFFF/Qt-Advanced-Docking-System)
 
 The application can be compiled for macOS. A user reported, that the library works on macOS. If have not tested it.
 
@@ -365,7 +385,6 @@ The application can be compiled for macOS. A user reported, that the library wor
 
 ### Linux
 
-[![Build Status](https://travis-ci.org/githubuser0xFFFF/Qt-Advanced-Docking-System.svg?branch=master)](https://travis-ci.org/githubuser0xFFFF/Qt-Advanced-Docking-System)
 [![Build status](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/workflows/linux-builds/badge.svg)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions?query=workflow%3Alinux-builds)
 
 Unfortunately, there is no such thing as a Linux operating system. Linux is a heterogeneous environment with a variety of different distributions. So it is not possible to support "Linux" like it is possible for Windows. It is only possible to support and test a small subset of Linux distributions. The library can be compiled for and has been developed and tested with some Linux distributions. Depending on the used window manager or compositor, dock widgets
@@ -439,7 +458,7 @@ public:
 
 private:
     Ui::MainWindow *ui;
-
+    
     // The main container for docking
     ads::CDockManager* m_DockManager;
 };
@@ -667,15 +686,17 @@ says about the switch to Qt Advanced Docking:
 
 ![ADTF](doc/showcase_adtf.png)
 
-### [DREAM.3D NX](https://github.com/BlueQuartzSoftware/DREAM3D)
+### [DREAM3D-NX](https://www.dream3d.io)
 
-DREAM.3D *(Digital Representation Environment for Analysis of Materials in 3D)* is an open source, cross-platform and modular, software suite that allows users to prepare, reconstruct, quantify, instantiate, and mesh, multidimensional, multimodal microstructural data, as well as many other applications.
+DREAM3D-NX *(Digital Representation Environment for Analysis of Materials in 3D)* is a cross-platform and modular, software suite that allows users to prepare, reconstruct, quantify, instantiate, and mesh, multidimensional, multimodal microstructural data, as well as many other applications.
 
-[BlueQuartz Software](http://www.bluequartz.net/) is currently completely rewriting the DREAM.3D application. For the upcoming version **[DREAM3D NX](http://www.dream3d.io/)** they improved the UI by using the Advanced Docking System. An [early version](http://www.dream3d.io/) of **DREAM3D NX** with ADS is already available to any user who would like to take the brand new version out for a spin.
+[BlueQuartz Software](http://www.bluequartz.net/) has completely rewritten the old DREAM.3D version 6.5 application
+taking advantage of the Advanced Docking System to present a highly customizable user interface
+for DREAM3D-NX Version 7.
 
 ![DREAM.3D NX](doc/showcase_dream3d_nx.png)
 
-[read more...](http://dream3d.bluequartz.net/)
+[read more...](http://www.dream3d.io/)
 
 ### [LabPlot](https://labplot.kde.org/)
 
@@ -686,6 +707,27 @@ The LabPlot project recently switched to the Qt Advanced Docking System for thei
 ![LabPlot](doc/showcase_labplot.png)
 
 [read more...](https://labplot.kde.org/)
+
+### [Scrutiny Debugger](https://scrutinydebugger.com/)
+
+Scrutiny is an [open source](https://github.com/scrutinydebugger/) non-intrusive, real-time debugger for embedded systems, built for fast introspection, memory access, and signal visualization—without stopping your application. It uses the Qt Advanced Docking System (ADS) to provide fully customizable dashboards for monitoring and control.
+
+Some of the highlights are:
+
+- **Debug without interfering** — Inspect C++ memory live without disrupting execution flow.
+- **HIL testing made easy** — Write to variables through the GUI or SDK to simulate conditions.
+- **Configure during production** — Access and tweak variables anytime via GUI or Python.
+- **Catch fast events** — Embedded graphs sample at task-level frequency, even with multithreading.
+- **Build your dashboard** — Use ADS to create and save custom layouts for your debug sessions.
+- **No JTAG needed** — Communicates over serial, CAN, or network interfaces.
+- **Compact C++11 library** — Lightweight and easy to integrate into your firmware.
+- **Live graphs and runtime values** — Visualize variables, RPVs, and aliases in real time.
+
+ADS powers Scrutiny’s flexible interface, letting users organize views and data panels to suit their workflow — ideal for real-time monitoring, testing, and debugging.
+
+[read more...](https://scrutinydebugger.com/)
+
+[![Scrutiny Debugger UI](doc/showcase_scrutiny-dark.png)](https://www.youtube.com/watch?v=Dd3osxW-Clo)
 
 ## Alternative Docking System Implementations
 
