@@ -179,8 +179,8 @@ public:
 
     enum eToolBarStyleSource
     {
-      ToolBarStyleFromDockManager,
-      ToolBarStyleFromDockWidget
+    	ToolBarStyleFromDockManager,
+    	ToolBarStyleFromDockWidget
     };
 
     /**
@@ -222,10 +222,10 @@ public:
      */
     enum eMinimumSizeHintMode
     {
-      MinimumSizeHintFromDockWidget,
-      MinimumSizeHintFromContent,
-      MinimumSizeHintFromDockWidgetMinimumSize,
-      MinimumSizeHintFromContentMinimumSize,
+    	MinimumSizeHintFromDockWidget,
+    	MinimumSizeHintFromContent,
+    	MinimumSizeHintFromDockWidgetMinimumSize,
+    	MinimumSizeHintFromContentMinimumSize,
     };
 
 
@@ -315,19 +315,19 @@ public:
      * provide the InsertMode ForceNoScrollArea
      */
     void setWidget(QWidget* widget, eInsertMode InsertMode = AutoScrollArea);
-
-  /**
-   * Only used when the feature flag DeleteContentOnClose is set.
-   * Using the flag and setting a widget factory allows to free the resources
-   * of the widget of your application while retaining the position the next
-   * time you want to show your widget, unlike the flag DockWidgetDeleteOnClose
-   * which deletes the dock widget itself. Since we keep the dock widget, all
-   * regular features of ADS should work as normal, including saving and
-   * restoring the state of the docking system and using perspectives.
-   */
-  using FactoryFunc = std::function<QWidget*(QWidget*)>;
-  void setWidgetFactory(FactoryFunc createWidget, eInsertMode InsertMode = AutoScrollArea);
-
+	
+	/**
+	 * Only used when the feature flag DeleteContentOnClose is set.
+	 * Using the flag and setting a widget factory allows to free the resources
+	 * of the widget of your application while retaining the position the next
+	 * time you want to show your widget, unlike the flag DockWidgetDeleteOnClose
+	 * which deletes the dock widget itself. Since we keep the dock widget, all
+	 * regular features of ADS should work as normal, including saving and
+	 * restoring the state of the docking system and using perspectives.
+	 */
+	using FactoryFunc = std::function<QWidget*(QWidget*)>;
+	void setWidgetFactory(FactoryFunc createWidget, eInsertMode InsertMode = AutoScrollArea);
+	
     /**
      * Remove the widget from the dock and give ownership back to the caller
      */
@@ -622,9 +622,9 @@ public Q_SLOTS:
     /**
      * Brings the dock widget to the front
      * This means:
-     *   - If the dock widget is tabbed with other dock widgets but its tab is not current, it's made current.
-     *   - If the dock widget is floating, QWindow::raise() is called.
-     *   This only applies if the dock widget is already open. If closed, does nothing.
+     * 	- If the dock widget is tabbed with other dock widgets but its tab is not current, it's made current.
+     * 	- If the dock widget is floating, QWindow::raise() is called.
+     * 	This only applies if the dock widget is already open. If closed, does nothing.
      */
     void raise();
 
@@ -673,17 +673,17 @@ public Q_SLOTS:
      */
     void showNormal();
 
-  /**
-   * Sets the dock widget into auto hide mode if this feature is enabled
-   * via CDockManager::setAutoHideFlags(CDockManager::AutoHideFeatureEnabled)
-   */
-  void setAutoHide(bool Enable, SideBarLocation Location = SideBarNone, int TabIndex = -1);
+	/**
+	 * Sets the dock widget into auto hide mode if this feature is enabled
+	 * via CDockManager::setAutoHideFlags(CDockManager::AutoHideFeatureEnabled)
+	 */
+	void setAutoHide(bool Enable, SideBarLocation Location = SideBarNone, int TabIndex = -1);
 
-  /**
-   * Switches the dock widget to auto hide mode or vice versa depending on its
-   * current state.
-   */
-  void toggleAutoHide(SideBarLocation Location = SideBarNone);
+	/**
+	 * Switches the dock widget to auto hide mode or vice versa depending on its
+	 * current state.
+	 */
+	void toggleAutoHide(SideBarLocation Location = SideBarNone);
 
 
 Q_SIGNALS:

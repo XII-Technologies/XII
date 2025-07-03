@@ -88,7 +88,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   flags |= ads::CDockManager::RetainTabSizeWhenCloseButtonHidden;
   flags |= ads::CDockManager::DockAreaHideDisabledButtons;
   flags |= ads::CDockManager::DockAreaHasUndockButton;
-  // flags |= ads::CDockManager::DoubleClickUndocksWidget; // don't want this
+  // flags |= ads::CDockManager::DoubleClickUndocksWidget; // This is not ideal.
   flags |= ads::CDockManager::OpaqueSplitterResize;
   ads::CDockManager::setConfigFlags(flags);
 

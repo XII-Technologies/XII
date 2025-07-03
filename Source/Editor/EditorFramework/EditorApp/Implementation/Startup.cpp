@@ -587,7 +587,7 @@ void xiiQtEditorApp::SetupAndShowSplashScreen()
   {
     QSettings s;
     s.beginGroup("EditorPreferences");
-    bShowSplashScreen = s.value("ShowSplashscreen", true).toBool();
+    bShowSplashScreen = s.value("ShowSplashScreen", true).toBool();
     s.endGroup();
   }
 

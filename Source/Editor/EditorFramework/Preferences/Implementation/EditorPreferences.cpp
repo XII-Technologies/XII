@@ -15,8 +15,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("RestoreProjectOnStartup", m_bLoadLastProjectAtStartup)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("ShowSplashscreen", m_bShowSplashscreen)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("BackgroundAssetProcessing", m_bBackgroundAssetProcessing)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("ShowSplashScreen", m_bShowSplashScreen)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("BackgroundAssetProcessing", m_bBackgroundAssetProcessing)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("FieldOfView", m_fPerspectiveFieldOfView)->AddAttributes(new xiiDefaultValueAttribute(70.0f), new xiiClampValueAttribute(10.0f, 150.0f)),
     XII_MEMBER_PROPERTY("MaxFramerate", m_uiMaxFramerate)->AddAttributes(new xiiDefaultValueAttribute(60)),
     XII_MEMBER_PROPERTY("MaxFramerateWhenUnfocused", m_uiMaxFramerateWhenUnfocused)->AddAttributes(new xiiDefaultValueAttribute(15)),

@@ -53,89 +53,89 @@ using tMaximizeButton  = QToolButton;
  */
 struct FloatingWidgetTitleBarPrivate
 {
-  CFloatingWidgetTitleBar *_this; ///< public interface class
-  QLabel *IconLabel = nullptr;
-  tTabLabel *TitleLabel;
-  tCloseButton *CloseButton = nullptr;
+	CFloatingWidgetTitleBar *_this; ///< public interface class
+	QLabel *IconLabel = nullptr;
+	tTabLabel *TitleLabel;
+	tCloseButton *CloseButton = nullptr;
     tMaximizeButton* MaximizeButton = nullptr;
-  CFloatingDockContainer *FloatingWidget = nullptr;
-  eDragState DragState = DraggingInactive;
+	CFloatingDockContainer *FloatingWidget = nullptr;
+	eDragState DragState = DraggingInactive;
     QIcon MaximizeIcon;
     QIcon NormalIcon;
     bool Maximized = false;
 
-  FloatingWidgetTitleBarPrivate(CFloatingWidgetTitleBar *_public) :
-    _this(_public)
-  {
-  }
+	FloatingWidgetTitleBarPrivate(CFloatingWidgetTitleBar *_public) :
+		_this(_public)
+	{
+	}
 
-  /**
-   * Creates the complete layout including all controls
-   */
-  void createLayout();
+	/**
+	 * Creates the complete layout including all controls
+	 */
+	void createLayout();
 };
 
 //============================================================================
 void FloatingWidgetTitleBarPrivate::createLayout()
 {
-  TitleLabel = new tTabLabel();
-  TitleLabel->setElideMode(Qt::ElideRight);
-  TitleLabel->setText("DockWidget->windowTitle()");
-  TitleLabel->setObjectName("floatingTitleLabel");
+	TitleLabel = new tTabLabel();
+	TitleLabel->setElideMode(Qt::ElideRight);
+	TitleLabel->setText("DockWidget->windowTitle()");
+	TitleLabel->setObjectName("floatingTitleLabel");
     TitleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-  CloseButton = new tCloseButton();
-  CloseButton->setObjectName("floatingTitleCloseButton");
+	CloseButton = new tCloseButton();
+	CloseButton->setObjectName("floatingTitleCloseButton");
     CloseButton->setAutoRaise(true);
 
-  MaximizeButton = new tMaximizeButton();
-  MaximizeButton->setObjectName("floatingTitleMaximizeButton");
-  MaximizeButton->setAutoRaise(true);
+	MaximizeButton = new tMaximizeButton();
+	MaximizeButton->setObjectName("floatingTitleMaximizeButton");
+	MaximizeButton->setAutoRaise(true);
 
-  // The standard icons do does not look good on high DPI screens
-  QIcon CloseIcon;
-  QPixmap normalPixmap = _this->style()->standardPixmap(
-      QStyle::SP_TitleBarCloseButton, 0, CloseButton);
-  CloseIcon.addPixmap(normalPixmap, QIcon::Normal);
-  CloseIcon.addPixmap(internal::createTransparentPixmap(normalPixmap, 0.25),
-      QIcon::Disabled);
-  CloseButton->setIcon(
-      _this->style()->standardIcon(QStyle::SP_TitleBarCloseButton));
-  CloseButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-  CloseButton->setVisible(true);
-  CloseButton->setFocusPolicy(Qt::NoFocus);
-  _this->connect(CloseButton, SIGNAL(clicked()), SIGNAL(closeRequested()));
+	// The standard icons do does not look good on high DPI screens
+	QIcon CloseIcon;
+	QPixmap normalPixmap = _this->style()->standardPixmap(
+	    QStyle::SP_TitleBarCloseButton, 0, CloseButton);
+	CloseIcon.addPixmap(normalPixmap, QIcon::Normal);
+	CloseIcon.addPixmap(internal::createTransparentPixmap(normalPixmap, 0.25),
+	    QIcon::Disabled);
+	CloseButton->setIcon(
+	    _this->style()->standardIcon(QStyle::SP_TitleBarCloseButton));
+	CloseButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	CloseButton->setVisible(true);
+	CloseButton->setFocusPolicy(Qt::NoFocus);
+	_this->connect(CloseButton, SIGNAL(clicked()), SIGNAL(closeRequested()));
 
-  _this->setMaximizedIcon(false);
-  MaximizeButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-  MaximizeButton->setVisible(true);
-  MaximizeButton->setFocusPolicy(Qt::NoFocus);
-  _this->connect(MaximizeButton, &QPushButton::clicked, _this, &CFloatingWidgetTitleBar::maximizeRequested);
+	_this->setMaximizedIcon(false);
+	MaximizeButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	MaximizeButton->setVisible(true);
+	MaximizeButton->setFocusPolicy(Qt::NoFocus);
+	_this->connect(MaximizeButton, &QPushButton::clicked, _this, &CFloatingWidgetTitleBar::maximizeRequested);
 
-  QFontMetrics fm(TitleLabel->font());
-  int Spacing = qRound(fm.height() / 4.0);
+	QFontMetrics fm(TitleLabel->font());
+	int Spacing = qRound(fm.height() / 4.0);
 
-  // Fill the layout
-  QBoxLayout *Layout = new QBoxLayout(QBoxLayout::LeftToRight);
-  Layout->setContentsMargins(6, 0, 0, 0);
-  Layout->setSpacing(0);
-  _this->setLayout(Layout);
-  Layout->addWidget(TitleLabel, 1);
-  Layout->addSpacing(Spacing);
+	// Fill the layout
+	QBoxLayout *Layout = new QBoxLayout(QBoxLayout::LeftToRight);
+	Layout->setContentsMargins(6, 0, 0, 0);
+	Layout->setSpacing(0);
+	_this->setLayout(Layout);
+	Layout->addWidget(TitleLabel, 1);
+	Layout->addSpacing(Spacing);
     Layout->addWidget(MaximizeButton);
-  Layout->addWidget(CloseButton);
-  Layout->setAlignment(Qt::AlignCenter);
+	Layout->addWidget(CloseButton);
+	Layout->setAlignment(Qt::AlignCenter);
 
-  TitleLabel->setVisible(true);
+	TitleLabel->setVisible(true);
 }
 
 //============================================================================
 CFloatingWidgetTitleBar::CFloatingWidgetTitleBar(CFloatingDockContainer *parent) :
     QFrame(parent),
-  d(new FloatingWidgetTitleBarPrivate(this))
+	d(new FloatingWidgetTitleBarPrivate(this))
 {
-  d->FloatingWidget = parent;
-  d->createLayout();
+	d->FloatingWidget = parent;
+	d->createLayout();
 
     auto normalPixmap = this->style()->standardPixmap(QStyle::SP_TitleBarNormalButton, nullptr, d->MaximizeButton);
     d->NormalIcon.addPixmap(normalPixmap, QIcon::Normal);
@@ -150,71 +150,71 @@ CFloatingWidgetTitleBar::CFloatingWidgetTitleBar(CFloatingDockContainer *parent)
 //============================================================================
 CFloatingWidgetTitleBar::~CFloatingWidgetTitleBar()
 {
-  delete d;
+	delete d;
 }
 
 //============================================================================
 void CFloatingWidgetTitleBar::mousePressEvent(QMouseEvent *ev)
 {
-  if (ev->button() == Qt::LeftButton)
-  {
-    d->DragState = DraggingFloatingWidget;
-    d->FloatingWidget->startDragging(ev->pos(), d->FloatingWidget->size(),
-        this);
-    return;
-  }
-  Super::mousePressEvent(ev);
+	if (ev->button() == Qt::LeftButton)
+	{
+		d->DragState = DraggingFloatingWidget;
+		d->FloatingWidget->startDragging(ev->pos(), d->FloatingWidget->size(),
+		    this);
+		return;
+	}
+	Super::mousePressEvent(ev);
 }
 
 
 //============================================================================
 void CFloatingWidgetTitleBar::mouseReleaseEvent(QMouseEvent *ev)
 {
-  d->DragState = DraggingInactive;
+	d->DragState = DraggingInactive;
     if (d->FloatingWidget)
     {
-    d->FloatingWidget->finishDragging();
+		d->FloatingWidget->finishDragging();
     }
-  Super::mouseReleaseEvent(ev);
+	Super::mouseReleaseEvent(ev);
 }
 
 
 //============================================================================
 void CFloatingWidgetTitleBar::mouseMoveEvent(QMouseEvent *ev)
 {
-  if (!(ev->buttons() & Qt::LeftButton) || DraggingInactive == d->DragState)
-  {
-    d->DragState = DraggingInactive;
-    Super::mouseMoveEvent(ev);
-    return;
-  }
+	if (!(ev->buttons() & Qt::LeftButton) || DraggingInactive == d->DragState)
+	{
+		d->DragState = DraggingInactive;
+		Super::mouseMoveEvent(ev);
+		return;
+	}
 
-  // move floating window
-  if (DraggingFloatingWidget == d->DragState)
-  {
-    if(d->FloatingWidget->isMaximized())
-    {
-      d->FloatingWidget->showNormal();
-    }
-    d->FloatingWidget->moveFloating();
-    Super::mouseMoveEvent(ev);
-    return;
-  }
-  Super::mouseMoveEvent(ev);
+	// move floating window
+	if (DraggingFloatingWidget == d->DragState)
+	{
+		if(d->FloatingWidget->isMaximized())
+		{
+			d->FloatingWidget->showNormal();
+		}
+		d->FloatingWidget->moveFloating();
+		Super::mouseMoveEvent(ev);
+		return;
+	}
+	Super::mouseMoveEvent(ev);
 }
 
 
 //============================================================================
 void CFloatingWidgetTitleBar::enableCloseButton(bool Enable)
 {
-  d->CloseButton->setEnabled(Enable);
+	d->CloseButton->setEnabled(Enable);
 }
 
 
 //============================================================================
 void CFloatingWidgetTitleBar::setTitle(const QString &Text)
 {
-  d->TitleLabel->setText(Text);
+	d->TitleLabel->setText(Text);
 }
 
 //============================================================================
