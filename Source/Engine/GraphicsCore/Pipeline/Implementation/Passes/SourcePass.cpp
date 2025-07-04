@@ -28,19 +28,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSourcePass, 1, xiiRTTIDefaultAllocator<xiiSo
   XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSourceFormat, 1)
-  XII_ENUM_CONSTANTS(
-    xiiSourceFormat::Color4Channel8BitNormalized_sRGB,
-    xiiSourceFormat::Color4Channel8BitNormalized,
-    xiiSourceFormat::Color4Channel16BitFloat,
-    xiiSourceFormat::Color4Channel32BitFloat,
-    xiiSourceFormat::Color3Channel11_11_10BitFloat,
-    xiiSourceFormat::Depth16Bit,
-    xiiSourceFormat::Depth24BitStencil8Bit,
-    xiiSourceFormat::Depth32BitFloat
-  )
-XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 xiiSourcePass::xiiSourcePass(xiiStringView sName) :

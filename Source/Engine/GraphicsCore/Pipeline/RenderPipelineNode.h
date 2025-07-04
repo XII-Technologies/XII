@@ -14,10 +14,10 @@ struct xiiRenderPipelineNodePin
 
     enum Enum : StorageType
     {
-      Input           = XII_BIT(0),
-      Output          = XII_BIT(1),
-      PassThrough     = XII_BIT(2),
-      TextureProvider = XII_BIT(3), ///< Pass provides pin texture to the pipeline each frame.
+      Input           = XII_BIT(0), ///< This pin receives data, used to consume textures or resources.
+      Output          = XII_BIT(1), ///< This pin produces data, used to declare texture or buffer outputs.
+      PassThrough     = XII_BIT(2), ///< A special connection that routes data through without modifying it.
+      TextureProvider = XII_BIT(3), ///< Marks that this pin provides a texture dynamically each frame.
 
       Default = 0U
     };
@@ -36,6 +36,7 @@ struct xiiRenderPipelineNodePin
   xiiUInt8               m_uiOutputIndex = 0xFFU;
   xiiRenderPipelineNode* m_pParent       = nullptr;
 };
+
 XII_DECLARE_FLAGS_OPERATORS(xiiRenderPipelineNodePin::Type);
 
 struct xiiRenderPipelineNodeInputPin : public xiiRenderPipelineNodePin
