@@ -137,16 +137,16 @@ void xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(con
   xiiHybridArray<const xiiExtractor*, 16>                       extractors;
   xiiHybridArray<xiiRenderPipelineResourceLoaderConnection, 16> connections;
 
-  xiiHashTable<const xiiRenderPipelineNode*, xiiUInt32> passToIndex;
   pPipeline->GetPasses(passes);
   pPipeline->GetExtractors(extractors);
 
+  xiiHashTable<const xiiRenderPipelineNode*, xiiUInt32> passToIndex;
   passToIndex.Reserve(passes.GetCount());
+
   for (xiiUInt32 i = 0; i < passes.GetCount(); i++)
   {
     passToIndex.Insert(passes[i], i);
   }
-
 
   for (xiiUInt32 i = 0; i < passes.GetCount(); i++)
   {
@@ -187,7 +187,7 @@ xiiResult xiiRenderPipelineResourceLoader::ExportPipeline(xiiArrayPtr<const xiiR
   xiiTypeVersionWriteContext         typeVersionWriteContext;
   auto&                              stream = typeVersionWriteContext.Begin(stringDeduplicationWriteContext.Begin());
 
-  // passes
+  // Passes
   {
     const xiiUInt32 uiNumPasses = passes.GetCount();
     stream << uiNumPasses;
@@ -202,7 +202,7 @@ xiiResult xiiRenderPipelineResourceLoader::ExportPipeline(xiiArrayPtr<const xiiR
     }
   }
 
-  // extractors
+  // Extractors
   {
     const xiiUInt32 uiNumExtractors = extractors.GetCount();
     stream << uiNumExtractors;
