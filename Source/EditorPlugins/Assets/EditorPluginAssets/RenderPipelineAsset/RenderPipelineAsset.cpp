@@ -35,15 +35,24 @@ void xiiRenderPipelineNodeManager::InternalCreatePins(const xiiDocumentObject* p
       continue;
 
     xiiColor pinColor;
-    if (const xiiColorAttribute* pAttr = pProp->GetAttributeByType<xiiColorAttribute>())
+    if (const xiiColorAttribute* pColorAttribute = pProp->GetAttributeByType<xiiColorAttribute>())
     {
-      pinColor = pAttr->GetColor();
+      pinColor = pColorAttribute->GetColor();
     }
     else
     {
       xiiColorScheme::Enum color = xiiColorScheme::Gray;
-      if (pProp->GetPropertyName() == "DepthStencil")
-        color = xiiColorScheme::Pink;
+
+      if (pProp->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodePassThroughPin>())
+        color = xiiColorScheme::Gray;
+      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodeInputProviderPin>())
+        color = xiiColorScheme::Orange;
+      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodeOutputProviderPin>())
+        color = xiiColorScheme::Violet;
+      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodeInputPin>())
+        color = xiiColorScheme::Blue;
+      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodeOutputPin>())
+        color = xiiColorScheme::Green;
 
       pinColor = xiiColorScheme::DarkUI(color);
     }
@@ -62,6 +71,7 @@ void xiiRenderPipelineNodeManager::InternalCreatePins(const xiiDocumentObject* p
     {
       auto pPinIn = XII_DEFAULT_NEW(xiiPin, xiiPin::Type::Input, pProp->GetPropertyName(), pinColor, pObject);
       ref_node.m_Inputs.PushBack(pPinIn);
+
       auto pPinOut = XII_DEFAULT_NEW(xiiPin, xiiPin::Type::Output, pProp->GetPropertyName(), pinColor, pObject);
       ref_node.m_Outputs.PushBack(pPinOut);
     }
@@ -73,7 +83,9 @@ void xiiRenderPipelineNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRT
   xiiSet<const xiiRTTI*> typeSet;
   xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiRenderPipelinePass>(), typeSet);
   xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiExtractor>(), typeSet);
+
   ref_types.Clear();
+
   for (auto pType : typeSet)
   {
     if (pType->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract))
