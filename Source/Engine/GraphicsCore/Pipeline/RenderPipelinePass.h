@@ -82,7 +82,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePassBase : public xiiRenderPipelineN
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipelinePassBase);
 
 public:
-  xiiRenderPipelinePassBase(xiiStringView sName);
+  xiiRenderPipelinePassBase(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassFlags> flags, xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint);
 
   ~xiiRenderPipelinePassBase();
 
@@ -95,6 +95,13 @@ public:
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
 
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
+
+  /// \brief After GetResourceDescriptions was called successfully for each pass, this function is called with the inputs and outputs for review. Disconnected pins have a nullptr value in the passed in arrays.
+  /// This is the time to create additional resources that are not covered by the pins automatically, e.g. a picking texture or eye adaptation buffer.
+  virtual void InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs);
+
+  /// \brief Allows for the pass to write data back using xiiView::SetRenderPassReadBackProperty. E.g. picking results etc.
+  virtual void ReadBackProperties(xiiView* pView);
 
 public:
   /// \brief Returns the name of this render-pipeline pass.
@@ -132,10 +139,9 @@ public:
 private:
   friend class xiiRenderPipeline;
 
-  xiiRenderPipeline* m_pPipeline = nullptr;
-  bool               m_bActive   = true;
-  xiiHashedString    m_sName;
-
+  xiiRenderPipeline*                            m_pPipeline = nullptr;
+  bool                                          m_bActive   = true;
+  xiiHashedString                               m_sName;
   xiiBitflags<xiiRenderPipelinePassFlags>       m_PassFlags;
   xiiEnum<xiiRenderPipelinePassConcurrencyHint> m_PassConcurrencyHint;
 };
@@ -146,8 +152,43 @@ class XII_GRAPHICSCORE_DLL xiiGraphicsPipelinePass : xiiRenderPipelinePassBase
 
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGraphicsPipelinePass);
 
-  public:
+public:
+};
 
+class XII_GRAPHICSCORE_DLL xiiComputePipelinePass : xiiRenderPipelinePassBase
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiComputePipelinePass, xiiRenderPipelinePassBase);
+
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiComputePipelinePass);
+
+public:
+};
+
+class XII_GRAPHICSCORE_DLL xiiCopyPipelinePass : xiiRenderPipelinePassBase
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiCopyPipelinePass, xiiRenderPipelinePassBase);
+
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiCopyPipelinePass);
+
+public:
+};
+
+class XII_GRAPHICSCORE_DLL xiiPresentPipelinePass : xiiRenderPipelinePassBase
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiPresentPipelinePass, xiiRenderPipelinePassBase);
+
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiPresentPipelinePass);
+
+public:
+};
+
+class XII_GRAPHICSCORE_DLL xiiUtilityPipelinePass : xiiRenderPipelinePassBase
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiUtilityPipelinePass, xiiRenderPipelinePassBase);
+
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiUtilityPipelinePass);
+
+public:
 };
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiRenderPipelineNode

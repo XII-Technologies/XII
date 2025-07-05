@@ -39,7 +39,108 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)
   XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePassBase, 1, xiiRTTINoAllocator)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_ACCESSOR_PROPERTY("Name", GetName, SetName),
+    XII_BITFLAGS_ACCESSOR_PROPERTY("Flags", xiiRenderPipelinePassFlags, GetPassFlags, SetPassFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelinePassFlags::AllowSubpassFuse /*| xiiRenderPipelinePassFlags::StereoAware*/)),
+    XII_ENUM_ACCESSOR_PROPERTY("ConcurrencyHint", xiiRenderPipelinePassConcurrencyHint, GetPassConcurrencyHint, SetPassConcurrencyHint),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiColorAttribute(xiiColorScheme::DarkUI(xiiColorScheme::Grape))
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGraphicsPipelinePass, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiComputePipelinePass, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyPipelinePass, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPresentPipelinePass, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiUtilityPipelinePass, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+xiiRenderPipelinePassBase::xiiRenderPipelinePassBase(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassFlags> flags, xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint) :
+  m_PassFlags(flags), m_PassConcurrencyHint(concurrencyHint)
+{
+  if (!sName.IsEmpty())
+  {
+    m_sName.Assign(sName);
+  }
+}
+
+xiiRenderPipelinePassBase::~xiiRenderPipelinePassBase() = default;
+
+void xiiRenderPipelinePassBase::SetName(xiiStringView sName)
+{
+  if (!sName.IsEmpty())
+  {
+    m_sName.Assign(sName);
+  }
+}
+
+void xiiRenderPipelinePassBase::SetPassFlags(xiiBitflags<xiiRenderPipelinePassFlags> flags)
+{
+  if (m_PassFlags == flags)
+    return;
+
+  m_PassFlags = flags;
+}
+
+void xiiRenderPipelinePassBase::SetPassConcurrencyHint(xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint)
+{
+  if (m_PassConcurrencyHint == concurrencyHint)
+    return;
+
+  m_PassConcurrencyHint = concurrencyHint;
+}
+
+xiiResult xiiRenderPipelinePassBase::Serialize(xiiStreamWriter& inout_stream) const
+{
+  inout_stream << m_bActive;
+  inout_stream << m_sName;
+  inout_stream << m_PassFlags;
+  inout_stream << m_PassConcurrencyHint;
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiRenderPipelinePassBase::Deserialize(xiiStreamReader& inout_stream)
+{
+  const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
+  XII_ASSERT_DEBUG(uiVersion == 1, "Unknown render pipeline pass version!");
+
+  inout_stream >> m_bActive;
+  inout_stream >> m_sName;
+  inout_stream >> m_PassFlags;
+  inout_stream >> m_PassConcurrencyHint;
+
+  return XII_SUCCESS;
+}
+
+void xiiRenderPipelinePassBase::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+{
+}
+
+void xiiRenderPipelinePassBase::ReadBackProperties(xiiView* pView)
+{
+}
+
+///////////////////
 
 xiiRenderPipelinePass::xiiRenderPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassFlags> flags, xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint) :
   m_PassFlags(flags), m_PassConcurrencyHint(concurrencyHint)
