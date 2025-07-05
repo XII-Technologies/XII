@@ -12,10 +12,40 @@ class xiiRenderer;
 class xiiRenderData;
 class xiiRenderDataBatch;
 class xiiRenderPipeline;
-class xiiRenderPipelinePass;
+class xiiRenderPipelinePassBase;
+class xiiGraphicsPipelinePass;
+class xiiComputePipelinePass;
+class xiiCopyPipelinePass;
+class xiiPresentPipelinePass;
+class xiiUtilityPipelinePass;
 class xiiDebugRendererContext;
 
 struct xiiRenderPipelineNodePin;
+struct xiiRenderPipelineNodeInputBufferPin;
+struct xiiRenderPipelineNodeInputColourAttachmentPin;
+struct xiiRenderPipelineNodeInputDepthAttachmentPin;
+struct xiiRenderPipelineNodeInputSamplerPin;
+struct xiiRenderPipelineNodeInputAccelerationStructurePin;
+struct xiiRenderPipelineNodeOutputBufferPin;
+struct xiiRenderPipelineNodeOutputColourAttachmentPin;
+struct xiiRenderPipelineNodeOutputDepthAttachmentPin;
+struct xiiRenderPipelineNodeOutputSamplerPin;
+struct xiiRenderPipelineNodeOutputAccelerationStructurePin;
+struct xiiRenderPipelineNodePassThroughBufferPin;
+struct xiiRenderPipelineNodePassThroughColourAttachmentPin;
+struct xiiRenderPipelineNodePassThroughDepthAttachmentPin;
+struct xiiRenderPipelineNodePassThroughSamplerPin;
+struct xiiRenderPipelineNodePassThroughAccelerationStructurePin;
+struct xiiRenderPipelineNodeInputBufferProviderPin;
+struct xiiRenderPipelineNodeInputColourAttachmentProviderPin;
+struct xiiRenderPipelineNodeInputDepthAttachmentProviderPin;
+struct xiiRenderPipelineNodeInputSamplerProviderPin;
+struct xiiRenderPipelineNodeInputAccelerationStructureProviderPin;
+struct xiiRenderPipelineNodeOutputBufferProviderPin;
+struct xiiRenderPipelineNodeOutputColourAttachmentProviderPin;
+struct xiiRenderPipelineNodeOutputDepthAttachmentProviderPin;
+struct xiiRenderPipelineNodeOutputSamplerProviderPin;
+struct xiiRenderPipelineNodeOutputAccelerationStructureProviderPin;
 struct xiiRenderPipelinePassConnection;
 struct xiiViewData;
 
@@ -51,24 +81,24 @@ struct XII_GRAPHICSCORE_DLL xiiSourceFormat
 
   enum Enum : StorageType
   {
-    Color4Channel8BitNormalized_sRGB, ///< RGBA 8-bit normalized with sRGB colorspace (default).
-    Color4Channel8BitNormalized,      ///< RGBA 8-bit normalized linear.
-    Color2Channel16BitFloat,          ///< RG 16-bit float.
-    Color4Channel16BitFloat,          ///< RGBA 16-bit float.
-    Color2Channel32BitFloat,          ///< RG 32-bit float.
-    Color3Channel32BitFloat,          ///< RGB 32-bit float.
-    Color4Channel32BitFloat,          ///< RGBA 32-bit float.
-    Color3Channel11_11_10BitFloat,    ///< RGB 11-11-10 bit float.
-    Depth16Bit,                       ///< 16-bit depth.
-    Depth24BitStencil8Bit,            ///< 24-bit depth + 8-bit stencil.
-    Depth32BitFloat,                  ///< 32-bit float depth.
-    BC1_RGB_DXT1,                     ///< DXT1 compression (no alpha).
-    BC2_RGBA_DXT3,                    ///< DXT3 compression.
-    BC3_RGBA_DXT5,                    ///< DXT5 compression.
-    BC4_R_Grey_DXT5A,                 ///< Single-channel compression (DXT5a).
-    BC5_RG_Grey_DXT5A,                ///< Dual-channel compression (DXT5a).
-    BC6H_RGB_Float,                   ///< HDR RGB float block compression.
-    BC7_RGBA,                         ///< Modern RGBA compression with high quality.
+    Color4Channel8BitNormalized_sRGB = 0U, ///< RGBA 8-bit normalized with sRGB colorspace (default).
+    Color4Channel8BitNormalized,           ///< RGBA 8-bit normalized linear.
+    Color2Channel16BitFloat,               ///< RG 16-bit float.
+    Color4Channel16BitFloat,               ///< RGBA 16-bit float.
+    Color2Channel32BitFloat,               ///< RG 32-bit float.
+    Color3Channel32BitFloat,               ///< RGB 32-bit float.
+    Color4Channel32BitFloat,               ///< RGBA 32-bit float.
+    Color3Channel11_11_10BitFloat,         ///< RGB 11-11-10 bit float.
+    Depth16Bit,                            ///< 16-bit depth.
+    Depth24BitStencil8Bit,                 ///< 24-bit depth + 8-bit stencil.
+    Depth32BitFloat,                       ///< 32-bit float depth.
+    BC1_RGB_DXT1,                          ///< DXT1 compression (no alpha).
+    BC2_RGBA_DXT3,                         ///< DXT3 compression.
+    BC3_RGBA_DXT5,                         ///< DXT5 compression.
+    BC4_R_Grey_DXT5A,                      ///< Single-channel compression (DXT5a).
+    BC5_RG_Grey_DXT5A,                     ///< Dual-channel compression (DXT5a).
+    BC6H_RGB_Float,                        ///< HDR RGB float block compression.
+    BC7_RGBA,                              ///< Modern RGBA compression with high quality.
 
     ENUM_COUNT,
 
@@ -80,7 +110,7 @@ struct XII_GRAPHICSCORE_DLL xiiSourceFormat
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSourceFormat);
 
-struct xiiRenderViewContext
+struct XII_GRAPHICSCORE_DLL xiiRenderViewContext
 {
   const xiiCamera*   m_pCamera    = nullptr;
   const xiiCamera*   m_pLodCamera = nullptr;
@@ -88,6 +118,8 @@ struct xiiRenderViewContext
 
   const xiiDebugRendererContext* m_pWorldDebugContext = nullptr;
   const xiiDebugRendererContext* m_pViewDebugContext  = nullptr;
+
+  xiiSharedPtr<xiiGALCommandList> m_pCommandList;
 
   XII_ALWAYS_INLINE const xiiHashTable<xiiHashedString, xiiHashedString>& GetPermutationVariables() const { return m_PermutationVariables; }
 

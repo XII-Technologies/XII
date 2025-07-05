@@ -11,7 +11,7 @@ class xiiRenderPipelineNode;
 /// \brief Flags that describe the behavior and role of a node pin within the render pipeline.
 ///
 /// These flags indicate whether a pin is an input, output, forwarder (pass-through), or a dynamic resource provider. They guide graph validation, UI rendering, and automatic resource connection logic.
-struct xiiRenderPipelineNodePinFlags
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePinFlags
 {
   using StorageType = xiiUInt8;
 
@@ -44,7 +44,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePinFlags
 /// These values determine wiring compatibility between nodes, as well as how the pipeline compiler treats resource lifetimes, layout transitions, and usage roles.
 ///
 /// \note These types are semantic, not strictly tied to GAL or low-level GPU types. For example, both ColourAttachment and DepthAttachment may be implemented as textures in the backend.
-struct xiiRenderPipelineNodePinResourceType
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePinResourceType
 {
   using StorageType = xiiUInt8;
 
@@ -67,7 +67,7 @@ struct xiiRenderPipelineNodePinResourceType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePinResourceType);
 
-struct xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -85,7 +85,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePin);
 ///////////////////////////////////////////////////////////////////////////////
 
 /// \brief Consumes a general-purpose GPU buffer (uniforms, storage, vertex data, etc.).
-struct xiiRenderPipelineNodeInputBufferPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputBufferPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -100,7 +100,7 @@ struct xiiRenderPipelineNodeInputBufferPin : public xiiRenderPipelineNodePin
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputBufferPin);
 
 /// \brief Consumes a color render target (e.g. MRT, texture for post-process).
-struct xiiRenderPipelineNodeInputColourAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputColourAttachmentPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -125,7 +125,7 @@ struct xiiRenderPipelineNodeInputColourAttachmentPin : public xiiRenderPipelineN
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputColourAttachmentPin);
 
 /// \brief Consumes a depth buffer for depth-based effects or tests.
-struct xiiRenderPipelineNodeInputDepthAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputDepthAttachmentPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -153,7 +153,7 @@ struct xiiRenderPipelineNodeInputDepthAttachmentPin : public xiiRenderPipelineNo
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputDepthAttachmentPin);
 
 /// \brief Consumes a sampler state for texture sampling configuration.
-struct xiiRenderPipelineNodeInputSamplerPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputSamplerPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -168,7 +168,7 @@ struct xiiRenderPipelineNodeInputSamplerPin : public xiiRenderPipelineNodePin
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputSamplerPin);
 
 /// \brief Consumes a ray-tracing acceleration structure.
-struct xiiRenderPipelineNodeInputAccelerationStructurePin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputAccelerationStructurePin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -187,7 +187,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputAcc
 ///////////////////////////////////////////////////////////////////////////////
 
 /// \brief Produces a general-purpose GPU buffer (uniforms, storage, vertex data, etc.).
-struct xiiRenderPipelineNodeOutputBufferPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputBufferPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -202,7 +202,7 @@ struct xiiRenderPipelineNodeOutputBufferPin : public xiiRenderPipelineNodePin
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputBufferPin);
 
 /// \brief Produces a color render target (e.g. MRT, texture for post-process).
-struct xiiRenderPipelineNodeOutputColourAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputColourAttachmentPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -217,7 +217,7 @@ struct xiiRenderPipelineNodeOutputColourAttachmentPin : public xiiRenderPipeline
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputColourAttachmentPin);
 
 /// \brief Produces a depth buffer for depth-based effects or tests.
-struct xiiRenderPipelineNodeOutputDepthAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputDepthAttachmentPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -232,7 +232,7 @@ struct xiiRenderPipelineNodeOutputDepthAttachmentPin : public xiiRenderPipelineN
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputDepthAttachmentPin);
 
 /// \brief Produces a sampler state for texture sampling configuration.
-struct xiiRenderPipelineNodeOutputSamplerPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputSamplerPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -247,7 +247,7 @@ struct xiiRenderPipelineNodeOutputSamplerPin : public xiiRenderPipelineNodePin
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputSamplerPin);
 
 /// \brief Produces a ray-tracing acceleration structure.
-struct xiiRenderPipelineNodeOutputAccelerationStructurePin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputAccelerationStructurePin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -266,7 +266,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputAc
 ///////////////////////////////////////////////////////////////////////////////
 
 /// \brief Forwards a general-purpose GPU buffer without modifying it.
-struct xiiRenderPipelineNodePassThroughBufferPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughBufferPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -281,7 +281,7 @@ struct xiiRenderPipelineNodePassThroughBufferPin : public xiiRenderPipelineNodeP
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughBufferPin);
 
 /// \brief Forwards a color render target without modifying it.
-struct xiiRenderPipelineNodePassThroughColourAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughColourAttachmentPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -296,7 +296,7 @@ struct xiiRenderPipelineNodePassThroughColourAttachmentPin : public xiiRenderPip
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughColourAttachmentPin);
 
 /// \brief Forwards a depth buffer without modifying it.
-struct xiiRenderPipelineNodePassThroughDepthAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughDepthAttachmentPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -311,7 +311,7 @@ struct xiiRenderPipelineNodePassThroughDepthAttachmentPin : public xiiRenderPipe
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughDepthAttachmentPin);
 
 /// \brief Forwards a sampler state without modifying it.
-struct xiiRenderPipelineNodePassThroughSamplerPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughSamplerPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -326,7 +326,7 @@ struct xiiRenderPipelineNodePassThroughSamplerPin : public xiiRenderPipelineNode
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughSamplerPin);
 
 /// \brief Forwards an acceleration structure without modifying it.
-struct xiiRenderPipelineNodePassThroughAccelerationStructurePin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughAccelerationStructurePin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -345,7 +345,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThro
 ///////////////////////////////////////////////////////////////////////////////
 
 /// \brief Dynamically provides a buffer each frame (Input + Provider).
-struct xiiRenderPipelineNodeInputBufferProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputBufferProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -360,7 +360,7 @@ struct xiiRenderPipelineNodeInputBufferProviderPin : public xiiRenderPipelineNod
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputBufferProviderPin);
 
 /// \brief Dynamically provides a color render target each frame (Input + Provider).
-struct xiiRenderPipelineNodeInputColourAttachmentProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputColourAttachmentProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -375,7 +375,7 @@ struct xiiRenderPipelineNodeInputColourAttachmentProviderPin : public xiiRenderP
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputColourAttachmentProviderPin);
 
 /// \brief Dynamically provides a depth render target each frame (Input + Provider).
-struct xiiRenderPipelineNodeInputDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -390,7 +390,7 @@ struct xiiRenderPipelineNodeInputDepthAttachmentProviderPin : public xiiRenderPi
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputDepthAttachmentProviderPin);
 
 /// \brief Dynamically provides a sampler state each frame (Input + Provider).
-struct xiiRenderPipelineNodeInputSamplerProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputSamplerProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -404,7 +404,7 @@ struct xiiRenderPipelineNodeInputSamplerProviderPin : public xiiRenderPipelineNo
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputSamplerProviderPin);
 
 /// \brief Dynamically provides an acceleration structure each frame (Input + Provider).
-struct xiiRenderPipelineNodeInputAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -423,7 +423,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputAcc
 ///////////////////////////////////////////////////////////////////////////////
 
 /// \brief Dynamically provides a buffer each frame (Output + Provider).
-struct xiiRenderPipelineNodeOutputBufferProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputBufferProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -438,7 +438,7 @@ struct xiiRenderPipelineNodeOutputBufferProviderPin : public xiiRenderPipelineNo
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputBufferProviderPin);
 
 /// \brief Dynamically provides a color render target each frame (Output + Provider).
-struct xiiRenderPipelineNodeOutputColourAttachmentProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputColourAttachmentProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -453,7 +453,7 @@ struct xiiRenderPipelineNodeOutputColourAttachmentProviderPin : public xiiRender
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputColourAttachmentProviderPin);
 
 /// \brief Dynamically provides a depth render target each frame (Output + Provider).
-struct xiiRenderPipelineNodeOutputDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -468,7 +468,7 @@ struct xiiRenderPipelineNodeOutputDepthAttachmentProviderPin : public xiiRenderP
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputDepthAttachmentProviderPin);
 
 /// \brief Dynamically provides a sampler state each frame (Output + Provider).
-struct xiiRenderPipelineNodeOutputSamplerProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputSamplerProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
@@ -483,7 +483,7 @@ struct xiiRenderPipelineNodeOutputSamplerProviderPin : public xiiRenderPipelineN
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputSamplerProviderPin);
 
 /// \brief Dynamically provides a ray-tracing acceleration structure each frame (Output + Provider).
-struct xiiRenderPipelineNodeOutputAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 

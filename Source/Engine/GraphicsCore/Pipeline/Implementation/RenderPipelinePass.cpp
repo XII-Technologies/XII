@@ -136,83 +136,24 @@ void xiiRenderPipelinePassBase::InitializeRenderPipelinePass(const xiiArrayPtr<x
 {
 }
 
+void xiiRenderPipelinePassBase::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+{
+}
+
 void xiiRenderPipelinePassBase::ReadBackProperties(xiiView* pView)
 {
 }
 
-///////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-xiiRenderPipelinePass::xiiRenderPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassFlags> flags, xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint) :
-  m_PassFlags(flags), m_PassConcurrencyHint(concurrencyHint)
+void xiiGraphicsPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
 {
-  if (!sName.IsEmpty())
-  {
-    m_sName.Assign(sName);
-  }
-}
+  xiiGALScopedDebugGroup renderGroup(renderViewContext.m_pCommandList, xiiRenderData::GetCategoryName(category));
 
-xiiRenderPipelinePass::~xiiRenderPipelinePass() = default;
-
-void xiiRenderPipelinePass::SetName(xiiStringView sName)
-{
-  if (!sName.IsEmpty())
-  {
-    m_sName.Assign(sName);
-  }
-}
-
-void xiiRenderPipelinePass::SetPassFlags(xiiBitflags<xiiRenderPipelinePassFlags> flags)
-{
-  if (m_PassFlags == flags)
-    return;
-
-  m_PassFlags = flags;
-}
-
-void xiiRenderPipelinePass::SetPassConcurrencyHint(xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint)
-{
-  if (m_PassConcurrencyHint == concurrencyHint)
-    return;
-
-  m_PassConcurrencyHint = concurrencyHint;
-}
-
-void xiiRenderPipelinePass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}
-
-void xiiRenderPipelinePass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) {}
-
-void xiiRenderPipelinePass::ReadBackProperties(xiiView* pView) {}
-
-xiiResult xiiRenderPipelinePass::Serialize(xiiStreamWriter& inout_stream) const
-{
-  inout_stream << m_bActive;
-  inout_stream << m_sName;
-  inout_stream << m_PassFlags;
-  inout_stream << m_PassConcurrencyHint;
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiRenderPipelinePass::Deserialize(xiiStreamReader& inout_stream)
-{
-  const xiiUInt32 uiVersion = xiiTypeVersionReadContext::GetContext()->GetTypeVersion(GetStaticRTTI());
-  XII_ASSERT_DEBUG(uiVersion == 1, "Unknown version encountered");
-
-  inout_stream >> m_bActive;
-  inout_stream >> m_sName;
-  inout_stream >> m_PassFlags;
-  inout_stream >> m_PassConcurrencyHint;
-
-  return XII_SUCCESS;
-}
-
-void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
-{
-  xiiGALScopedDebugGroup renderGroup(pCommandList, xiiRenderData::GetCategoryName(category));
-
-  auto            batchList    = m_pPipeline->GetRenderDataBatchesWithCategory(category, filter);
+  auto            batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(category, filter);
   const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
-  for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
+
+  for (xiiUInt32 i = 0U; i < uiBatchCount; ++i)
   {
     const xiiRenderDataBatch& batch = batchList.GetBatch(i);
 
@@ -222,10 +163,12 @@ void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& r
 
       if (const xiiRenderer* pRenderer = xiiRenderData::GetCategoryRenderer(category, pType))
       {
-        pRenderer->RenderBatch(renderViewContext, pCommandList, this, batch);
+        pRenderer->RenderBatch(renderViewContext, this, batch);
       }
     }
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelinePass);
