@@ -332,83 +332,161 @@ struct xiiRenderPipelineNodePassThroughAccelerationStructurePin : public xiiRend
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughAccelerationStructurePin);
 
 ///////////////////////////////////////////////////////////////////////////////
-// Resource Provider Pins
+// Input-Provider Pins
 ///////////////////////////////////////////////////////////////////////////////
 
-/// \brief Dynamically provides a general-purpose GPU buffer each frame.
-struct xiiRenderPipelineNodeBufferProviderPin : public xiiRenderPipelineNodePin
+/// \brief Dynamically provides a buffer each frame (Input + Provider).
+struct xiiRenderPipelineNodeInputBufferProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Constructs a provider pin for a Buffer resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeBufferProviderPin()
+  /// Constructs an input-provider pin for Buffer resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputBufferProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Buffer;
   }
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeBufferProviderPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputBufferProviderPin);
 
-/// \brief Dynamically provides a color render target each frame.
-struct xiiRenderPipelineNodeColourAttachmentProviderPin : public xiiRenderPipelineNodePin
+/// \brief Dynamically provides a color render target each frame (Input + Provider).
+struct xiiRenderPipelineNodeInputColourAttachmentProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Constructs a provider pin for a ColourAttachment resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeColourAttachmentProviderPin()
+  /// Constructs an input-provider pin for ColourAttachment resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputColourAttachmentProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::ColourAttachment;
   }
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeColourAttachmentProviderPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputColourAttachmentProviderPin);
 
-/// \brief Dynamically provides a depth buffer each frame.
-struct xiiRenderPipelineNodeDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
+/// \brief Dynamically provides a depth render target each frame (Input + Provider).
+struct xiiRenderPipelineNodeInputDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Constructs a provider pin for a DepthAttachment resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeDepthAttachmentProviderPin()
+  /// Constructs an input-provider pin for DepthAttachment resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputDepthAttachmentProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::DepthAttachment;
   }
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeDepthAttachmentProviderPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputDepthAttachmentProviderPin);
 
-/// \brief Dynamically provides a sampler state each frame.
-struct xiiRenderPipelineNodeSamplerProviderPin : public xiiRenderPipelineNodePin
+/// \brief Dynamically provides a sampler state each frame (Input + Provider).
+struct xiiRenderPipelineNodeInputSamplerProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Constructs a provider pin for a Sampler resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeSamplerProviderPin()
+  /// Constructs an input-provider pin for Sampler resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputSamplerProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Sampler;
   }
 };
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputSamplerProviderPin);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeSamplerProviderPin);
-
-/// \brief Dynamically provides a ray-tracing acceleration structure each frame.
-struct xiiRenderPipelineNodeAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
+/// \brief Dynamically provides an acceleration structure each frame (Input + Provider).
+struct xiiRenderPipelineNodeInputAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Constructs a provider pin for an AccelerationStructure resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeAccelerationStructureProviderPin()
+  /// Constructs an input-provider pin for AccelerationStructure resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputAccelerationStructureProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::AccelerationStructure;
   }
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeAccelerationStructureProviderPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputAccelerationStructureProviderPin);
+
+///////////////////////////////////////////////////////////////////////////////
+// Output-Provider Pins
+///////////////////////////////////////////////////////////////////////////////
+
+/// \brief Dynamically provides a buffer each frame (Output + Provider).
+struct xiiRenderPipelineNodeOutputBufferProviderPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// Constructs an output-provider pin for Buffer resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputBufferProviderPin()
+  {
+    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_ResourceType = xiiRenderPipelineNodePinResourceType::Buffer;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputBufferProviderPin);
+
+/// \brief Dynamically provides a color render target each frame (Output + Provider).
+struct xiiRenderPipelineNodeOutputColourAttachmentProviderPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// Constructs an output-provider pin for ColourAttachment resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputColourAttachmentProviderPin()
+  {
+    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_ResourceType = xiiRenderPipelineNodePinResourceType::ColourAttachment;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputColourAttachmentProviderPin);
+
+/// \brief Dynamically provides a depth render target each frame (Output + Provider).
+struct xiiRenderPipelineNodeOutputDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// Constructs an output-provider pin for DepthAttachment resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputDepthAttachmentProviderPin()
+  {
+    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_ResourceType = xiiRenderPipelineNodePinResourceType::DepthAttachment;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputDepthAttachmentProviderPin);
+
+/// \brief Dynamically provides a sampler state each frame (Output + Provider).
+struct xiiRenderPipelineNodeOutputSamplerProviderPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// Constructs an output-provider pin for Sampler resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputSamplerProviderPin()
+  {
+    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_ResourceType = xiiRenderPipelineNodePinResourceType::Sampler;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputSamplerProviderPin);
+
+/// \brief Dynamically provides a ray-tracing acceleration structure each frame (Output + Provider).
+struct xiiRenderPipelineNodeOutputAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// Constructs an output-provider pin for AccelerationStructure resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputAccelerationStructureProviderPin()
+  {
+    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
+    m_ResourceType = xiiRenderPipelineNodePinResourceType::AccelerationStructure;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputAccelerationStructureProviderPin);
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineNode : public xiiReflectedClass
 {

@@ -98,20 +98,37 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughAccelerationStru
 XII_END_STATIC_REFLECTED_TYPE;
 
 
-// Resource Provider Pins.
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeBufferProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+// Input-Provider Pins.
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeColourAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeDepthAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeSamplerProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeAccelerationStructureProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputAccelerationStructureProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+
+// Output-Provider Pins.
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputAccelerationStructureProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
 
@@ -173,20 +190,20 @@ void xiiRenderPipelineNode::InitializePins()
     xiiRenderPipelineNodePin* pPin     = static_cast<xiiRenderPipelineNodePin*>(pPinProp->GetPropertyPointer(this));
 
     pPin->m_pParent                   = this;
-    const bool bMoreThanOneType       = ((xiiInt32)pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough) + (xiiInt32)pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::Input) + (xiiInt32)pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::Output)) > 1;
-    const bool bProviderOnPassThrough = pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough) && pPin->m_Type.IsSet(xiiRenderPipelineNodePin::Type::TextureProvider);
+    const bool bMoreThanOneType       = ((xiiInt32)pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::PassThrough) + (xiiInt32)pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::Input) + (xiiInt32)pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::Output)) > 1;
+    const bool bProviderOnPassThrough = pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::PassThrough) && pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::ResourceProvider);
     if (bMoreThanOneType || bProviderOnPassThrough)
     {
       XII_REPORT_FAILURE("Pin '{0}' has an invalid type. Do not use xiiRenderPipelineNodePin directly as member but one of its derived types.", pProperty->GetPropertyName());
       continue;
     }
 
-    if (pPin->m_Type.IsAnySet(xiiRenderPipelineNodePin::Type::Input | xiiRenderPipelineNodePin::Type::PassThrough))
+    if (pPin->m_Flags.IsAnySet(xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::PassThrough))
     {
       pPin->m_uiInputIndex = static_cast<xiiUInt8>(m_InputPins.GetCount());
       m_InputPins.PushBack(pPin);
     }
-    if (pPin->m_Type.IsAnySet(xiiRenderPipelineNodePin::Type::Output | xiiRenderPipelineNodePin::Type::PassThrough))
+    if (pPin->m_Flags.IsAnySet(xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::PassThrough))
     {
       pPin->m_uiOutputIndex = static_cast<xiiUInt8>(m_OutputPins.GetCount());
       m_OutputPins.PushBack(pPin);
