@@ -3,10 +3,31 @@
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelineNodePinFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::Unknown),
+  XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::Input),
+  XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::Output),
+  XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::PassThrough),
+  XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::ResourceProvider),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelineNodePinResourceType, 1)
+  XII_ENUM_CONSTANT(xiiRenderPipelineNodePinResourceType::Unknown),
+  XII_ENUM_CONSTANT(xiiRenderPipelineNodePinResourceType::Buffer),
+  XII_ENUM_CONSTANT(xiiRenderPipelineNodePinResourceType::ColourAttachment),
+  XII_ENUM_CONSTANT(xiiRenderPipelineNodePinResourceType::DepthAttachment),
+  XII_ENUM_CONSTANT(xiiRenderPipelineNodePinResourceType::Sampler),
+  XII_ENUM_CONSTANT(xiiRenderPipelineNodePinResourceType::AccelerationStructure),
+  XII_ENUM_CONSTANT(xiiRenderPipelineNodePinResourceType::StorageImage),
+  XII_ENUM_CONSTANT(xiiRenderPipelineNodePinResourceType::ReadWriteBuffer),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePin, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_BITFLAGS_MEMBER_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, m_Flags),
+    XII_ENUM_MEMBER_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, m_ResourceType),
     XII_ENUM_MEMBER_PROPERTY("Format", xiiSourceFormat, m_Format)->AddAttributes(new xiiDefaultValueAttribute(xiiSourceFormat::Color4Channel8BitNormalized_sRGB)),
     XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount)->AddAttributes(new xiiDefaultValueAttribute(xiiGALMSAASampleCount::OneSample)),
     XII_ENUM_MEMBER_PROPERTY("LoadOperation", xiiGALAttachmentLoadOperation, m_AttachmentLoadOperation)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAttachmentLoadOperation::Load)),
@@ -26,20 +47,73 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePin, xiiNoBase, 1, xiiRTTIN
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+// Input Pins.
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputProviderPin, xiiRenderPipelineNodeInputPin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputProviderPin, xiiRenderPipelineNodeOutputPin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
+
+
+// Output Pins.
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+
+// Pass-Through Pins.
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughBufferPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+
+// Resource Provider Pins.
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeBufferProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeColourAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeDepthAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeSamplerProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeAccelerationStructureProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineNode, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
