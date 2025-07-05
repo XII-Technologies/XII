@@ -5,8 +5,8 @@
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
-#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
+#include <GraphicsFoundation/Resources/RenderPass.h>
 
 class xiiStreamWriter;
 
@@ -73,6 +73,81 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassConnection
   xiiSharedPtr<xiiGALTexture>                        m_pTexture;
   const xiiRenderPipelineNodePin*                    m_pOutput; ///< The output pin that this connection spawns from.
   xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;  ///< The various input pins this connection is connected to.
+};
+
+class XII_GRAPHICSCORE_DLL xiiRenderPipelinePassBase : public xiiRenderPipelineNode
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePassBase, xiiRenderPipelineNode);
+
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipelinePassBase);
+
+public:
+  xiiRenderPipelinePassBase(xiiStringView sName);
+
+  ~xiiRenderPipelinePassBase();
+
+  void SetName(xiiStringView sName); // [ property ]
+
+  void SetPassFlags(xiiBitflags<xiiRenderPipelinePassFlags> flags); // [ property ]
+
+  void SetPassConcurrencyHint(xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint); // [ property ]
+
+  virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+
+  virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
+
+public:
+  /// \brief Returns the name of this render-pipeline pass.
+  ///
+  /// \return A string view of the pass's name.
+  XII_ALWAYS_INLINE xiiStringView GetName() const { return m_sName; }; // [ property ]
+
+  /// \brief Returns the bitmask of flags describing this render-pipeline pass.
+  XII_ALWAYS_INLINE xiiBitflags<xiiRenderPipelinePassFlags> GetPassFlags() const { return m_PassFlags; } // [ property ]
+
+  /// \brief Retrieves the concurrency hint for scheduling this render-pipeline pass.
+  XII_ALWAYS_INLINE xiiEnum<xiiRenderPipelinePassConcurrencyHint> GetPassConcurrencyHint() const { return m_PassConcurrencyHint; } // [ property ]
+
+  /// \brief Determines whether this pass correctly handles stereo/XR rendering.
+  ///
+  /// When true, the pipeline will invoke this pass once per eye and bind separate per-eye resources as needed.
+  ///
+  /// \return true if the pass is stereo-aware, false otherwise.
+  XII_ALWAYS_INLINE bool IsStereoAware() const { return m_PassFlags.IsSet(xiiRenderPipelinePassFlags::StereoAware); }
+
+  /// \brief Retrieves the owning render pipeline for this pass.
+  ///
+  /// Use this to query pipeline-level resources or state from within a pass implementation.
+  ///
+  /// \return A pointer to the parent xiiRenderPipeline instance.
+  XII_ALWAYS_INLINE xiiRenderPipeline* GetPipeline() { return m_pPipeline; }
+
+  /// \brief Retrieves the owning render pipeline for this pass (const overload).
+  ///
+  /// Allows read-only access to pipeline state from const contexts.
+  ///
+  /// \return A const pointer to the parent xiiRenderPipeline instance.
+  XII_ALWAYS_INLINE const xiiRenderPipeline* GetPipeline() const { return m_pPipeline; }
+
+private:
+  friend class xiiRenderPipeline;
+
+  xiiRenderPipeline* m_pPipeline = nullptr;
+  bool               m_bActive   = true;
+  xiiHashedString    m_sName;
+
+  xiiBitflags<xiiRenderPipelinePassFlags>       m_PassFlags;
+  xiiEnum<xiiRenderPipelinePassConcurrencyHint> m_PassConcurrencyHint;
+};
+
+class XII_GRAPHICSCORE_DLL xiiGraphicsPipelinePass : xiiRenderPipelinePassBase
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiGraphicsPipelinePass, xiiRenderPipelinePassBase);
+
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGraphicsPipelinePass);
+
+  public:
+
 };
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiRenderPipelineNode
@@ -155,23 +230,6 @@ public:
   /// \return A const pointer to the parent xiiRenderPipeline instance.
   XII_ALWAYS_INLINE const xiiRenderPipeline* GetPipeline() const { return m_pPipeline; }
 
-protected:
-  /// \brief Returns the GPU render pass object associated with this pipeline pass.
-  ///
-  /// Typically retrieved during Execute() to begin a render pass using the appropriate format, attachments, and subpass structure compiled during initialization.
-  /// May return nullptr if not yet initialized or if the pass does not contribute to a render pass.
-  ///
-  /// \return A shared pointer to the render pass descriptor or nullptr.
-  XII_ALWAYS_INLINE virtual xiiSharedPtr<xiiGALRenderPass> GetRenderPass() const { return m_pRenderPass; }
-
-  /// \brief Returns the GPU framebuffer associated with this pipeline pass.
-  ///
-  /// The framebuffer binds actual GPU texture attachments used during rendering.
-  /// Created during pass initialization based on the current view and attachment configuration.
-  ///
-  /// \return A shared pointer to the framebuffer object or nullptr if uninitialized.
-  XII_ALWAYS_INLINE virtual xiiSharedPtr<xiiGALFramebuffer> GetFramebuffer() const { return m_pFramebuffer; }
-
 private:
   friend class xiiRenderPipeline;
 
@@ -181,7 +239,4 @@ private:
 
   xiiBitflags<xiiRenderPipelinePassFlags>       m_PassFlags;
   xiiEnum<xiiRenderPipelinePassConcurrencyHint> m_PassConcurrencyHint;
-
-  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
-  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
 };
