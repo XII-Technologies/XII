@@ -71,25 +71,11 @@ struct xiiRenderPipelineNodePin
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
-
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
-
   xiiBitflags<xiiRenderPipelineNodePinFlags>    m_Flags;
   xiiEnum<xiiRenderPipelineNodePinResourceType> m_ResourceType;
   xiiUInt8                                      m_uiInputIndex  = 0xFFU;
   xiiUInt8                                      m_uiOutputIndex = 0xFFU;
   xiiRenderPipelineNode*                        m_pParent       = nullptr;
-
-  xiiEnum<xiiSourceFormat>                m_Format                          = xiiSourceFormat::Default;
-  xiiEnum<xiiGALMSAASampleCount>          m_SampleCount                     = xiiGALMSAASampleCount::OneSample;
-  xiiEnum<xiiGALAttachmentLoadOperation>  m_AttachmentLoadOperation         = xiiGALAttachmentLoadOperation::Load;
-  xiiEnum<xiiGALAttachmentStoreOperation> m_AttachmentStoreOperation        = xiiGALAttachmentStoreOperation::Store;
-  xiiEnum<xiiGALAttachmentLoadOperation>  m_AttachmentStencilLoadOperation  = xiiGALAttachmentLoadOperation::Load;
-  xiiEnum<xiiGALAttachmentStoreOperation> m_AttachmentStencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
-  xiiColor                                m_ClearColor                      = xiiColor::Black;
-  float                                   m_fDepthClearValue                = 1.0f;
-  xiiUInt8                                m_uiStencilClearValue             = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePin);
@@ -124,6 +110,16 @@ struct xiiRenderPipelineNodeInputColourAttachmentPin : public xiiRenderPipelineN
     m_Flags        = xiiRenderPipelineNodePinFlags::Input;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::ColourAttachment;
   }
+
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
+
+  xiiEnum<xiiSourceFormat>                m_Format                   = xiiSourceFormat::Default;              ///< The texture format this pass expects.
+  xiiEnum<xiiGALMSAASampleCount>          m_SampleCount              = xiiGALMSAASampleCount::OneSample;      ///< Number of MSAA samples for this attachment.
+  xiiEnum<xiiGALAttachmentLoadOperation>  m_AttachmentLoadOperation  = xiiGALAttachmentLoadOperation::Load;   ///< Load operation applied at the start of the pass.
+  xiiEnum<xiiGALAttachmentStoreOperation> m_AttachmentStoreOperation = xiiGALAttachmentStoreOperation::Store; ///< Store operation applied at the end of the pass.
+  xiiColor                                m_ClearColor               = xiiColor::Black;                       ///< Clear color used when load operation is Clear.
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputColourAttachmentPin);
@@ -139,6 +135,19 @@ struct xiiRenderPipelineNodeInputDepthAttachmentPin : public xiiRenderPipelineNo
     m_Flags        = xiiRenderPipelineNodePinFlags::Input;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::DepthAttachment;
   }
+
+  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+
+  xiiResult Deserialize(xiiStreamReader& inout_stream);
+
+  xiiEnum<xiiSourceFormat>                m_Format                          = xiiSourceFormat::Default;              ///< The texture format this pass expects (depth-only or depth-stencil).
+  xiiEnum<xiiGALMSAASampleCount>          m_SampleCount                     = xiiGALMSAASampleCount::OneSample;      ///< Number of MSAA samples for this attachment.
+  xiiEnum<xiiGALAttachmentLoadOperation>  m_AttachmentLoadOperation         = xiiGALAttachmentLoadOperation::Load;   ///< Load operation for the depth aspect at the start of the pass.
+  xiiEnum<xiiGALAttachmentStoreOperation> m_AttachmentStoreOperation        = xiiGALAttachmentStoreOperation::Store; ///< Store operation for the depth aspect at the end of the pass.
+  xiiEnum<xiiGALAttachmentLoadOperation>  m_AttachmentStencilLoadOperation  = xiiGALAttachmentLoadOperation::Load;   ///< Load operation for the stencil aspect at the start of the pass.
+  xiiEnum<xiiGALAttachmentStoreOperation> m_AttachmentStencilStoreOperation = xiiGALAttachmentStoreOperation::Store; ///< Store operation for the stencil aspect at the end of the pass.
+  float                                   m_fDepthClearValue                = 1.0f;                                  ///< Clear value for depth when load operation is Clear.
+  xiiUInt8                                m_uiStencilClearValue             = 0U;                                    ///< Clear value for stencil when load operation is Clear.
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputDepthAttachmentPin);

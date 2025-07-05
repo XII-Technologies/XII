@@ -52,9 +52,30 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferPin, xiiRenderPi
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ENUM_MEMBER_PROPERTY("Format", xiiSourceFormat, m_Format)->AddAttributes(new xiiDefaultValueAttribute(xiiSourceFormat::Color4Channel8BitNormalized_sRGB)),
+    XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount)->AddAttributes(new xiiDefaultValueAttribute(xiiGALMSAASampleCount::OneSample)),
+    XII_ENUM_MEMBER_PROPERTY("LoadOperation", xiiGALAttachmentLoadOperation, m_AttachmentLoadOperation)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAttachmentLoadOperation::Load)),
+    XII_ENUM_MEMBER_PROPERTY("StoreOperation", xiiGALAttachmentStoreOperation, m_AttachmentStoreOperation)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAttachmentStoreOperation::Store)),
+    XII_MEMBER_PROPERTY("ClearColor", m_ClearColor)->AddAttributes(new xiiExposeColorAlphaAttribute()),
+  }
+  XII_END_PROPERTIES;
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ENUM_MEMBER_PROPERTY("Format", xiiSourceFormat, m_Format)->AddAttributes(new xiiDefaultValueAttribute(xiiSourceFormat::Color4Channel8BitNormalized_sRGB)),
+    XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount)->AddAttributes(new xiiDefaultValueAttribute(xiiGALMSAASampleCount::OneSample)),
+    XII_ENUM_MEMBER_PROPERTY("LoadOperation", xiiGALAttachmentLoadOperation, m_AttachmentLoadOperation)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAttachmentLoadOperation::Load)),
+    XII_ENUM_MEMBER_PROPERTY("StoreOperation", xiiGALAttachmentStoreOperation, m_AttachmentStoreOperation)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAttachmentStoreOperation::Store)),
+    XII_ENUM_MEMBER_PROPERTY("StencilLoadOperation", xiiGALAttachmentLoadOperation, m_AttachmentStencilLoadOperation)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAttachmentLoadOperation::Load)),
+    XII_ENUM_MEMBER_PROPERTY("StencilStoreOperation", xiiGALAttachmentStoreOperation, m_AttachmentStencilStoreOperation)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAttachmentStoreOperation::Store)),
+    XII_MEMBER_PROPERTY("DepthClearValue", m_fDepthClearValue)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
+    XII_MEMBER_PROPERTY("StencilClearValue", m_uiStencilClearValue)->AddAttributes(new xiiDefaultValueAttribute(0U)),
+  }
+  XII_END_PROPERTIES;
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
@@ -138,7 +159,31 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiResult xiiRenderPipelineNodePin::Serialize(xiiStreamWriter& inout_stream) const
+xiiResult xiiRenderPipelineNodeInputColourAttachmentPin::Serialize(xiiStreamWriter& inout_stream) const
+{
+  inout_stream << m_Format;
+  inout_stream << m_SampleCount;
+  inout_stream << m_AttachmentLoadOperation;
+  inout_stream << m_AttachmentStoreOperation;
+  inout_stream << m_ClearColor;
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiRenderPipelineNodeInputColourAttachmentPin::Deserialize(xiiStreamReader& inout_stream)
+{
+  inout_stream >> m_Format;
+  inout_stream >> m_SampleCount;
+  inout_stream >> m_AttachmentLoadOperation;
+  inout_stream >> m_AttachmentStoreOperation;
+  inout_stream >> m_ClearColor;
+
+  return XII_SUCCESS;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+xiiResult xiiRenderPipelineNodeInputDepthAttachmentPin::Serialize(xiiStreamWriter& inout_stream) const
 {
   inout_stream << m_Format;
   inout_stream << m_SampleCount;
@@ -146,14 +191,13 @@ xiiResult xiiRenderPipelineNodePin::Serialize(xiiStreamWriter& inout_stream) con
   inout_stream << m_AttachmentStoreOperation;
   inout_stream << m_AttachmentStencilLoadOperation;
   inout_stream << m_AttachmentStencilStoreOperation;
-  inout_stream << m_ClearColor;
   inout_stream << m_fDepthClearValue;
   inout_stream << m_uiStencilClearValue;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiRenderPipelineNodePin::Deserialize(xiiStreamReader& inout_stream)
+xiiResult xiiRenderPipelineNodeInputDepthAttachmentPin::Deserialize(xiiStreamReader& inout_stream)
 {
   inout_stream >> m_Format;
   inout_stream >> m_SampleCount;
@@ -161,7 +205,6 @@ xiiResult xiiRenderPipelineNodePin::Deserialize(xiiStreamReader& inout_stream)
   inout_stream >> m_AttachmentStoreOperation;
   inout_stream >> m_AttachmentStencilLoadOperation;
   inout_stream >> m_AttachmentStencilStoreOperation;
-  inout_stream >> m_ClearColor;
   inout_stream >> m_fDepthClearValue;
   inout_stream >> m_uiStencilClearValue;
 
