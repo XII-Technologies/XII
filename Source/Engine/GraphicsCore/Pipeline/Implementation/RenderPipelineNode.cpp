@@ -186,8 +186,8 @@ void xiiRenderPipelineNode::InitializePins()
     if (pProperty->GetCategory() != xiiPropertyCategory::Member || !pProperty->GetSpecificType()->IsDerivedFrom(xiiGetStaticRTTI<xiiRenderPipelineNodePin>()))
       continue;
 
-    auto                      pPinProp = static_cast<const xiiAbstractMemberProperty*>(pProperty);
-    xiiRenderPipelineNodePin* pPin     = static_cast<xiiRenderPipelineNodePin*>(pPinProp->GetPropertyPointer(this));
+    auto                      pPinProperty = static_cast<const xiiAbstractMemberProperty*>(pProperty);
+    xiiRenderPipelineNodePin* pPin         = static_cast<xiiRenderPipelineNodePin*>(pPinProperty->GetPropertyPointer(this));
 
     pPin->m_pParent                   = this;
     const bool bMoreThanOneType       = ((xiiInt32)pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::PassThrough) + (xiiInt32)pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::Input) + (xiiInt32)pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::Output)) > 1;

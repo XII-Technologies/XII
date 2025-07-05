@@ -488,24 +488,60 @@ struct xiiRenderPipelineNodeOutputAccelerationStructureProviderPin : public xiiR
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputAccelerationStructureProviderPin);
 
+/// \brief Base class for all nodes in the render pipeline graph.
+///
+/// Each node owns a set of input and output pins and provides lookup and initialization logic. Nodes are reflectable via RTTI to support editor integration and serialization.
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineNode : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineNode, xiiReflectedClass);
 
 public:
+  /// \brief Virtual destructor.
   virtual ~xiiRenderPipelineNode() = default;
 
+  /// \brief Populates the internal arrays of input and output pins.
+  ///
+  /// This must be called after all pins have been created or registered so that GetInputPins() and GetOutputPins() return valid data.
   void InitializePins();
 
-  xiiHashedString                 GetPinName(const xiiRenderPipelineNodePin* pPin) const;
+  /// \brief Returns the hashed name associated with a given pin.
+  ///
+  /// \param pPin - Pointer to the pin whose name is queried.
+  ///
+  /// \returns The hashed string name for the specified pin, or an empty hash if not found.
+  xiiHashedString GetPinName(const xiiRenderPipelineNodePin* pPin) const;
+
+  /// \brief Finds a pin by its string name.
+  ///
+  /// \param sName - The textual name of the pin to search for.
+  ///
+  /// \returns Pointer to the matching pin, or nullptr if no pin with that name exists.
   const xiiRenderPipelineNodePin* GetPinByName(xiiStringView sName) const;
+
+  /// \brief Finds a pin by its hashed name.
+  ///
+  /// \param sName - The hashed name of the pin to search for.
+  ///
+  /// \returns Pointer to the matching pin, or nullptr if no pin with that hash exists.
   const xiiRenderPipelineNodePin* GetPinByName(xiiHashedString sName) const;
 
+  /// \brief Retrieves all input pins of this node.
+  ///
+  /// \returns An array pointer to the collection of input pin pointers.
   XII_ALWAYS_INLINE const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetInputPins() const { return m_InputPins; }
+
+  /// \brief Retrieves all output pins of this node.
+  ///
+  /// \returns An array pointer to the collection of output pin pointers.
   XII_ALWAYS_INLINE const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetOutputPins() const { return m_OutputPins; }
 
 private:
-  xiiDynamicArray<const xiiRenderPipelineNodePin*>               m_InputPins;
-  xiiDynamicArray<const xiiRenderPipelineNodePin*>               m_OutputPins;
+  /// \brief Holds pointers to all input pins for quick iteration.
+  xiiDynamicArray<const xiiRenderPipelineNodePin*> m_InputPins;
+
+  /// \brief Holds pointers to all output pins for quick iteration.
+  xiiDynamicArray<const xiiRenderPipelineNodePin*> m_OutputPins;
+
+  /// \brief Maps pin names to their corresponding pin pointers.
   xiiHashTable<xiiHashedString, const xiiRenderPipelineNodePin*> m_NameToPin;
 };
