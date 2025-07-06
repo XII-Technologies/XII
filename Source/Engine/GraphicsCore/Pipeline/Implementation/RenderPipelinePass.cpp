@@ -22,24 +22,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPipelinePassConcurrencyHint, 1)
  XII_ENUM_CONSTANT(xiiRenderPipelinePassConcurrencyHint::ParallelWithSync),
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_ACCESSOR_PROPERTY("Name", GetName, SetName),
-    XII_BITFLAGS_ACCESSOR_PROPERTY("Flags", xiiRenderPipelinePassFlags, GetPassFlags, SetPassFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelinePassFlags::AllowSubpassFuse /*| xiiRenderPipelinePassFlags::StereoAware*/)),
-    XII_ENUM_ACCESSOR_PROPERTY("ConcurrencyHint", xiiRenderPipelinePassConcurrencyHint, GetPassConcurrencyHint, SetPassConcurrencyHint),
-  }
-  XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiColorAttribute(xiiColorScheme::DarkUI(xiiColorScheme::Grape))
-  }
-  XII_END_ATTRIBUTES;
-}
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePassBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
