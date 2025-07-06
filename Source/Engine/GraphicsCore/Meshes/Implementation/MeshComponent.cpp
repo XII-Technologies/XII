@@ -1,6 +1,5 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Meshes/CpuMeshResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
@@ -52,8 +51,8 @@ void xiiMeshComponent::OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg) cons
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshImportTransform, 1)
   XII_ENUM_CONSTANT(xiiMeshImportTransform::Blender_YUp),
-    XII_ENUM_CONSTANT(xiiMeshImportTransform::Blender_ZUp),
-    XII_ENUM_CONSTANT(xiiMeshImportTransform::Custom),
+  XII_ENUM_CONSTANT(xiiMeshImportTransform::Blender_ZUp),
+  XII_ENUM_CONSTANT(xiiMeshImportTransform::Custom),
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
