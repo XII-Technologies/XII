@@ -5,8 +5,10 @@
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 
 class xiiStreamWriter;
 
@@ -103,6 +105,37 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassConcurrencyHint
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePassConcurrencyHint);
+
+/// \brief Describes a request to create or resolve a GPU resource during render pipeline compilation.
+///
+/// This structure encapsulates both the intended resource type and its creation parameters, and is typically used by resource provider interfaces or pass hooks (e.g. QueryResourceProvider).
+///
+/// Only one variant inside the union is valid at a time, as determined by m_Type.
+///
+/// Example usage:
+/// - A pass emitting a Texture pin may populate m_Texture with desired resolution, format, and usage.
+/// - The graph compiler or engine module inspects the request and returns an appropriate runtime handle.
+///
+/// \see xiiRenderPipelinePassResource, xiiRenderPipelinePassBase::QueryResourceProvider
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceRequest
+{
+  /// \brief Declares which type of GPU resource is being requested.
+  enum class Type
+  {
+    Texture, ///< A 2D/3D texture or render target.
+    Buffer,  ///< A structured, vertex, index, or storage buffer.
+    Sampler  ///< A sampler used in shader binding.
+  };
+
+  Type m_Type; ///< Indicates which union field is valid.
+
+  union
+  {
+    xiiGALTextureCreationDescription m_Texture; ///< Texture creation parameters.
+    xiiGALBufferCreationDescription  m_Buffer;  ///< Buffer creation parameters.
+    xiiGALSamplerCreationDescription m_Sampler; ///< Sampler creation parameters.
+  };
+};
 
 /// \brief Represents a strongly typed resource instance produced by a render pipeline pass, including its creation parameters and resolved runtime handle.
 ///
@@ -223,7 +256,9 @@ public:
 
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
-  virtual xiiResult InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs);
+  virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs);
+
+  virtual xiiSharedPtr<xiiGALDeviceObject> QueryResourceProvider(const xiiRenderPipelineNodePin* pPin, const xiiRenderPipelineResourceRequest& request);
 
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) = 0;
 

@@ -1006,7 +1006,7 @@ void xiiRenderPipeline::ExtractData(const xiiView& view)
   {
     if (pExtractor->m_bActive)
     {
-      XII_PROFILE_SCOPE(pExtractor->m_sName.GetData());
+      XII_PROFILE_SCOPE(pExtractor->m_sName.GetView());
 
       pExtractor->Extract(view, m_VisibleObjects, data);
     }
@@ -1018,7 +1018,7 @@ void xiiRenderPipeline::ExtractData(const xiiView& view)
   {
     if (pExtractor->m_bActive)
     {
-      XII_PROFILE_SCOPE(pExtractor->m_sName.GetData());
+      XII_PROFILE_SCOPE(pExtractor->m_sName.GetView());
 
       pExtractor->PostSortAndBatch(view, m_VisibleObjects, data);
     }
@@ -1149,7 +1149,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
 void xiiRenderPipeline::Render()
 {
-  XII_PROFILE_SCOPE(m_sName.GetData());
+  XII_PROFILE_SCOPE(m_sName.GetView());
 
   XII_ASSERT_DEV(m_PipelineState != PipelineState::Uninitialized, "Pipeline must be rebuild before rendering.");
   if (m_PipelineState == PipelineState::RebuildError)

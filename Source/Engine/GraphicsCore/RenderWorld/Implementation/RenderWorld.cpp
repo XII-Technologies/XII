@@ -775,7 +775,7 @@ void xiiRenderWorld::RebuildPipelines()
     {
       if (pipelineToRebuild.m_pPipeline->Rebuild(*pView) == xiiRenderPipeline::PipelineState::RebuildError)
       {
-        xiiLog::Error("Failed to rebuild pipeline '{}' for view '{}'", pipelineToRebuild.m_pPipeline->m_sName, pView->GetName());
+        xiiLog::Error("Failed to rebuild pipeline '{}' for view '{}'.", pipelineToRebuild.m_pPipeline->m_sName, pView->GetName());
       }
     }
   }
