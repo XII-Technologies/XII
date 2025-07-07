@@ -19,49 +19,26 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTargetPass, 1, xiiRTTIDefaultAllocator<xiiTa
     XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
   }
   XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiCategoryAttribute("Output")
-  }
-  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiTargetPass::xiiTargetPass(xiiStringView sName) :
-  xiiRenderPipelinePass(sName, xiiRenderPipelinePassFlags::StereoAware, xiiRenderPipelinePassConcurrencyHint::Sequential)
+  xiiPresentPipelinePass(sName)
 {
 }
 
 xiiTargetPass::~xiiTargetPass() = default;
 
-bool xiiTargetPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
+xiiResult xiiTargetPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   m_pSwapChain    = view.GetSwapChain();
   m_RenderTargets = view.GetRenderTargets();
-
-  const char* pinNames[] = {
-    "Color0",
-    "Color1",
-    "Color2",
-    "Color3",
-    "Color4",
-    "Color5",
-    "Color6",
-    "Color7",
-    "DepthStencil",
-  };
-
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(pinNames); ++i)
-  {
-    if (!VerifyInput(view, inputs, pinNames[i]))
-      return false;
-  }
-
-  return true;
+  
+  return XII_SUCCESS;
 }
 
-xiiSharedPtr<xiiGALTextureView> xiiTargetPass::QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc)
+xiiSharedPtr<xiiGALDeviceObject> xiiTargetPass::QueryResourceProvider(const xiiRenderPipelineNodePin* pPin, const xiiRenderPipelineResourceRequest& request)
 {
   XII_ASSERT_DEV(pPin->m_pParent == this, "xiiTargetPass::QueryTextureProvider: The given pin is not part of this pass!");
 
@@ -83,31 +60,11 @@ xiiSharedPtr<xiiGALTextureView> xiiTargetPass::QueryTextureProvider(const xiiRen
       return m_RenderTargets.m_pRTs[pPin->m_uiInputIndex];
     }
   }
-  return xiiSharedPtr<xiiGALTextureView>();
+  return xiiSharedPtr<xiiGALDeviceObject>();
 }
 
 void xiiTargetPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-}
-
-bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiStringView sPinName)
-{
-  const xiiRenderPipelineNodePin* pPin = GetPinByName(sPinName);
-
-  if (inputs[pPin->m_uiInputIndex])
-  {
-    if (xiiSharedPtr<xiiGALTextureView> pTextureView = QueryTextureProvider(pPin, *inputs[pPin->m_uiInputIndex]))
-    {
-      if (pTextureView)
-      {
-        // TODO: Need a more sophisticated check here what is considered 'matching'
-        // if (inputs[pPin->m_uiInputIndex]->CalculateHash() != pTextureView->GetDescription().CalculateHash())
-        //  return false;
-      }
-    }
-  }
-
-  return true;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_TargetPass);

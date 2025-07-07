@@ -174,11 +174,15 @@ private:
 
 
 private:
-  xiiRenderPipelineNodeInputPin m_PinRenderTarget0;
-  xiiRenderPipelineNodeInputPin m_PinRenderTarget1;
-  xiiRenderPipelineNodeInputPin m_PinRenderTarget2;
-  xiiRenderPipelineNodeInputPin m_PinRenderTarget3;
-  xiiRenderPipelineNodeInputPin m_PinDepthStencil;
+  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget0;
+  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget1;
+  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget2;
+  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget3;
+  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget4;
+  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget5;
+  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget6;
+  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget7;
+  xiiRenderPipelineNodeInputDepthAttachmentPin  m_PinDepthStencil;
 
 private:
   void UpdateCachedMatrices() const;

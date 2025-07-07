@@ -1,36 +1,36 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
-class XII_GRAPHICSCORE_DLL xiiTargetPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiTargetPass : public xiiPresentPipelinePass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiTargetPass, xiiRenderPipelinePass);
+  XII_ADD_DYNAMIC_REFLECTION(xiiTargetPass, xiiPresentPipelinePass);
 
 public:
   xiiTargetPass(xiiStringView sName = "TargetPass");
   ~xiiTargetPass();
 
-  virtual bool                            GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-  virtual xiiSharedPtr<xiiGALTextureView> QueryTextureProvider(const xiiRenderPipelineNodePin* pPin, const xiiGALTextureCreationDescription& desc) override;
-  virtual void                            Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
-private:
-  bool VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiStringView sPinName);
+  virtual xiiSharedPtr<xiiGALDeviceObject> QueryResourceProvider(const xiiRenderPipelineNodePin* pPin, const xiiRenderPipelineResourceRequest& request) override;
+
+  virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
 
 protected:
-  xiiRenderPipelineNodeInputProviderPin m_PinColor0;
-  xiiRenderPipelineNodeInputProviderPin m_PinColor1;
-  xiiRenderPipelineNodeInputProviderPin m_PinColor2;
-  xiiRenderPipelineNodeInputProviderPin m_PinColor3;
-  xiiRenderPipelineNodeInputProviderPin m_PinColor4;
-  xiiRenderPipelineNodeInputProviderPin m_PinColor5;
-  xiiRenderPipelineNodeInputProviderPin m_PinColor6;
-  xiiRenderPipelineNodeInputProviderPin m_PinColor7;
-  xiiRenderPipelineNodeInputProviderPin m_PinDepthStencil;
-
-  xiiRenderTargets m_RenderTargets;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor0;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor1;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor2;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor3;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor4;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor5;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor6;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor7;
+  xiiRenderPipelineNodeInputDepthAttachmentProviderPin  m_PinDepthStencil;
 
   xiiGALSwapChain* m_pSwapChain = nullptr;
+  xiiRenderTargets m_RenderTargets;
 };
