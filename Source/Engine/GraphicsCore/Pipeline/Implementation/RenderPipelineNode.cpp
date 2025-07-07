@@ -45,53 +45,64 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferPin, xiiRenderPi
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 
 // Output Pins.
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
@@ -103,9 +114,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentPin, 
     XII_MEMBER_PROPERTY("ClearColor", m_ClearColor)->AddAttributes(new xiiExposeColorAlphaAttribute()),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
@@ -120,44 +133,53 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentPin, x
     XII_MEMBER_PROPERTY("StencilClearValue", m_uiStencilClearValue)->AddAttributes(new xiiDefaultValueAttribute(0U)),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 
 // Pass-Through Pins.
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughBufferPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
@@ -170,115 +192,139 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughDepthAttachmentP
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 
 // Input-Provider Pins.
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputAccelerationStructureProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 
 // Output-Provider Pins.
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputAccelerationStructureProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
     XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY("ResourceType", xiiRenderPipelineNodePinResourceType, GetResourceType),
   }
   XII_END_PROPERTIES;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 
 

@@ -45,43 +45,53 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePassBase, 1, xiiRTTINoAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGraphicsPipelinePass, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Graphics")
   }
   XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiComputePipelinePass, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Compute")
   }
   XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyPipelinePass, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Copy")
   }
   XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPresentPipelinePass, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Present")
   }
   XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiUtilityPipelinePass, 1, xiiRTTINoAllocator)
+{
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Utility")
   }
   XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
