@@ -518,7 +518,6 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineNode : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineNode, xiiReflectedClass);
 
 public:
-  /// \brief Virtual destructor.
   virtual ~xiiRenderPipelineNode() = default;
 
   /// \brief Populates the internal arrays of input and output pins.
