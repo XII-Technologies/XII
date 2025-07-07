@@ -10,8 +10,16 @@
 
 class xiiStreamWriter;
 
-/// \brief This describes the render-pipeline pass behavior and optimizations to inform the render-pipeline compiler about per-pass requirements, capabilities, and tuning hints.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassFlags
+/// \brief Declares the fixed capabilities of a render-pipeline pass.
+///
+/// These flags describe immutable attributes of a pass that are determined by its implementation. They inform the graph compiler about how the pass can be optimized or scheduled.
+///
+/// Unlike xiiRenderPipelinePassFlags, these capabilities cannot be changed at runtime or in the editor.
+///
+/// Usage examples:
+/// - StereoAware: Pass supports multi-eye rendering and will be invoked per eye.
+/// - AllowSubpassFuse: Permits merging this pass with adjacent ones into a single hardware render pass if compatible.
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassCapabilityFlags
 {
   using StorageType = xiiUInt32;
 
@@ -96,18 +104,102 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassConcurrencyHint
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePassConcurrencyHint);
 
-/// \brief Passed to xiiRenderPipelinePass::InitializeRenderPipelinePass to inform about existing connections on each input / output pin index.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassConnection
+/// \brief Represents a strongly typed resource instance produced by a render pipeline pass, including its creation parameters and resolved runtime handle.
+///
+/// This structure is typically embedded in a xiiRenderPipelinePassConnection to describe the output produced by a specific output pin. It acts as a type-safe union containing
+/// exactly one valid resource type (Texture, Buffer, Sampler, or Acceleration Structure), along with its associated descriptor and GPU handle.
+///
+/// The active resource variant is indicated by m_Type. Accessing an inactive variant is undefined behavior.
+///
+/// \see xiiRenderPipelineNodePinResourceType
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassResource
 {
-  xiiRenderPipelinePassConnection() :
-    m_pOutput(nullptr)
+  xiiRenderPipelinePassResource(const xiiGALTextureCreationDescription& description, const xiiSharedPtr<xiiGALTexture>& pTexture)
   {
+    m_Type = Type::Texture;
+
+    new (&m_Texture) decltype(m_Texture){description, pTexture};
   }
 
-  xiiGALTextureCreationDescription                   m_TextureDescription;
-  xiiSharedPtr<xiiGALTexture>                        m_pTexture;
-  const xiiRenderPipelineNodePin*                    m_pOutput; ///< The output pin that this connection spawns from.
-  xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;  ///< The various input pins this connection is connected to.
+  xiiRenderPipelinePassResource(const xiiGALBufferCreationDescription& description, const xiiSharedPtr<xiiGALBuffer>& pBuffer)
+  {
+    m_Type = Type::Buffer;
+
+    new (&m_Buffer) decltype(m_Buffer){description, pBuffer};
+  }
+
+  xiiRenderPipelinePassResource(const xiiGALSamplerCreationDescription& description, const xiiSharedPtr<xiiGALSampler>& pSampler)
+  {
+    m_Type = Type::Sampler;
+
+    new (&m_Sampler) decltype(m_Sampler){description, pSampler};
+  }
+
+  ~xiiRenderPipelinePassResource()
+  {
+    switch (m_Type)
+    {
+      case xiiRenderPipelinePassResource::Type::Texture:
+        m_Texture.m_pTexture = nullptr;
+        break;
+      case xiiRenderPipelinePassResource::Type::Buffer:
+        m_Buffer.m_pBuffer = nullptr;
+        break;
+      case xiiRenderPipelinePassResource::Type::Sampler:
+        m_Sampler.m_pSampler = nullptr;
+        break;
+      case xiiRenderPipelinePassResource::Type::AccelerationStructure:
+        break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+
+  /// \brief Enumerates the supported resource types for a render pipeline pass output.
+  enum class Type
+  {
+    Invalid,               ///< No resource is associated or the resource is uninitialized.
+    Texture,               ///< A GPU texture, typically used as an attachment or sample target.
+    Buffer,                ///< A general-purpose buffer (structured, vertex, index, etc.).
+    Sampler,               ///< A static sampler bound to shaders.
+    AccelerationStructure, ///< A ray tracing acceleration structure (TLAS or BLAS).
+  } m_Type;
+
+  union
+  {
+    struct
+    {
+      xiiGALTextureCreationDescription m_Description; ///< Describes the texture format, usage, size, etc.
+      xiiSharedPtr<xiiGALTexture>      m_pTexture;    ///< The actual resolved GPU texture.
+    } m_Texture;
+
+    struct
+    {
+      xiiGALBufferCreationDescription m_Description; ///< Buffer configuration (element size, usage, etc.).
+      xiiSharedPtr<xiiGALBuffer>      m_pBuffer;     ///< The runtime buffer handle.
+    } m_Buffer;
+
+    struct
+    {
+      xiiGALSamplerCreationDescription m_Description; ///< Sampler filtering, addressing, and LOD parameters.
+      xiiSharedPtr<xiiGALSampler>      m_pSampler;    ///< The compiled sampler object used in shaders.
+    } m_Sampler;
+  };
+};
+
+/// \brief Describes a resolved link between one output pin and one or more input pins in the render pipeline graph.
+///
+/// This structure is created by the graph compiler during pass initialization and represents a single directed edge in the dataflow graph, connecting a producing pass (via its output pin)
+/// to one or more consuming passes (via their input pins).
+///
+/// It also holds the fully resolved resource (texture, buffer, etc.) and its creation metadata.
+///
+/// \see xiiRenderPipelinePassResource
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassConnection
+{
+  const xiiRenderPipelineNodePin*                    m_pOutput = nullptr; ///< The originating output pin that produces the resource.
+  xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;            ///< All input pins across other passes that consume this resource. Each pin will receive the same shared resource instance declared in m_Resource.
+  xiiRenderPipelinePassResource                      m_Resource;          ///< The resolved GPU resource produced by the output pin, including descriptor and handle. Only one active resource type is valid, as indicated by m_Resource.m_Type.
 };
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipelinePassBase : public xiiRenderPipelineNode
