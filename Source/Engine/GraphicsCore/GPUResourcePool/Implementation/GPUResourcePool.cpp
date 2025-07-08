@@ -23,115 +23,8 @@ xiiGPUResourcePool::~xiiGPUResourcePool()
     xiiLog::SeriousWarning("Destructing a GPU resource pool of which textures are still in use!");
   }
 
-  // Free remaining resources
-  RunGC(0);
-}
-
-xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc)
-{
-  XII_LOCK(m_Lock);
-
-  if (!textureDesc.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
-  {
-    xiiLog::Error("Texture description for render target or depth stencil needs to be created with xiiGALBindFlags::RenderTarget or xiiGALBindFlags::DepthStencil!");
-    return nullptr;
-  }
-
-  const xiiUInt32 uiTextureDescHash = textureDesc.CalculateHash();
-
-  // Check if there is a fitting texture available
-  auto it = m_AvailableTextures.Find(uiTextureDescHash);
-  if (it.IsValid())
-  {
-    xiiDynamicArray<TextureHandleWithAge>& textures = it.Value();
-    if (!textures.IsEmpty())
-    {
-      xiiSharedPtr<xiiGALTexture> pTexture = textures.PeekBack().m_pTexture;
-      textures.PopBack();
-
-      XII_ASSERT_DEV(pTexture != nullptr, "Invalid texture in resource pool");
-
-      m_TexturesInUse.Insert(pTexture);
-
-      return pTexture;
-    }
-  }
-
-  // Since we found no matching texture we need to create a new one, but we check if we should run a GC
-  // first since we need to allocate memory now
-  CheckAndPotentiallyReleaseStaleResources();
-
-  xiiSharedPtr<xiiGALTexture> pNewTexture = m_pDevice->CreateTexture(textureDesc);
-
-  if (pNewTexture == nullptr)
-  {
-    xiiLog::Error("GPU resource pool couldn't create new texture for given desc (size: {0} x {1}, format: {2})", textureDesc.m_Size.width, textureDesc.m_Size.height, textureDesc.m_Format);
-    return nullptr;
-  }
-
-  // Also track the new created texture
-  m_TexturesInUse.Insert(pNewTexture);
-
-  m_uiNumAllocationsSinceLastGC++;
-  m_uiCurrentlyAllocatedMemory += pNewTexture->GetMemoryConsumption();
-
-  UpdateMemoryStats();
-
-  return pNewTexture;
-}
-
-xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
-{
-  xiiGALTextureCreationDescription TextureDesc;
-  TextureDesc.m_Format             = format;
-  TextureDesc.m_Size.width         = uiWidth;
-  TextureDesc.m_Size.height        = uiHeight;
-  TextureDesc.m_uiSampleCount      = sampleCount;
-  TextureDesc.m_uiArraySizeOrDepth = uiSliceColunt;
-  TextureDesc.m_Type               = (bIsArray || TextureDesc.m_uiSampleCount > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
-  TextureDesc.m_BindFlags          = xiiGALBindFlags::ShaderResource;
-  TextureDesc.m_Usage              = xiiGALResourceUsage::Immutable;
-
-  if (xiiGALResourceFormat::IsDepthFormat(format))
-    TextureDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
-  else
-    TextureDesc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
-
-  if (TextureDesc.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
-    TextureDesc.m_Usage = xiiGALResourceUsage::Default;
-
-  return GetRenderTarget(TextureDesc);
-}
-
-void xiiGPUResourcePool::ReturnRenderTarget(xiiSharedPtr<xiiGALTexture> pRenderTarget)
-{
-  XII_LOCK(m_Lock);
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-
-  // First check if this texture actually came from the pool
-  if (!m_TexturesInUse.Contains(pRenderTarget))
-  {
-    xiiLog::Error("Returning a texture to the GPU resource pool which wasn't created by the pool is not valid!");
-    return;
-  }
-
-#endif
-
-  m_TexturesInUse.Remove(pRenderTarget);
-
-  if (pRenderTarget != nullptr)
-  {
-    const xiiUInt32 uiTextureDescHash = pRenderTarget->GetDescription().CalculateHash();
-
-    auto it = m_AvailableTextures.Find(uiTextureDescHash);
-    if (!it.IsValid())
-    {
-      it = m_AvailableTextures.Insert(uiTextureDescHash, xiiDynamicArray<TextureHandleWithAge>());
-    }
-
-    it.Value().PushBack({pRenderTarget, xiiRenderWorld::GetFrameCounter()});
-  }
+  // Free remaining resources.
+  ReleaseStaleResources(0);
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescription& description)
@@ -212,13 +105,105 @@ void xiiGPUResourcePool::ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer)
   }
 }
 
+xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
+{
+  xiiGALTextureCreationDescription textureDescription;
+  textureDescription.m_Format             = format;
+  textureDescription.m_Size.width         = uiWidth;
+  textureDescription.m_Size.height        = uiHeight;
+  textureDescription.m_uiSampleCount      = sampleCount;
+  textureDescription.m_uiArraySizeOrDepth = uiSliceColunt;
+  textureDescription.m_Type               = (bIsArray || textureDescription.m_uiSampleCount > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+  textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
+  textureDescription.m_Usage              = xiiGALResourceUsage::Immutable;
+
+  if (xiiGALResourceFormat::IsDepthFormat(format))
+    textureDescription.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
+  else
+    textureDescription.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
+
+  if (textureDescription.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
+    textureDescription.m_Usage = xiiGALResourceUsage::Default;
+
+  return GetTexture(textureDescription);
+}
+
 xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetTexture(const xiiGALTextureCreationDescription& description)
 {
-  return nullptr;
+  XII_LOCK(m_Lock);
+
+  const xiiUInt32 uiTextureDescriptorHash = description.CalculateHash();
+
+  // Check if there is a fitting texture available.
+  auto it = m_AvailableTextures.Find(uiTextureDescriptorHash);
+
+  if (it.IsValid())
+  {
+    xiiDynamicArray<TextureHandleWithAge>& textures = it.Value();
+
+    if (!textures.IsEmpty())
+    {
+      xiiSharedPtr<xiiGALTexture> pTexture = textures.PeekBack().m_pTexture;
+      textures.PopBack();
+
+      XII_ASSERT_DEV(pTexture != nullptr, "Invalid texture in resource pool!");
+
+      m_TexturesInUse.Insert(pTexture);
+
+      return pTexture;
+    }
+  }
+
+  // Since we found no matching texture we need to create a new one, but we check if we should run the garbage collector first since we need to allocate memory now.
+  CheckAndPotentiallyReleaseStaleResources();
+
+  xiiSharedPtr<xiiGALTexture> pNewTexture = m_pDevice->CreateTexture(description);
+
+  if (pNewTexture == nullptr)
+  {
+    xiiLog::Error("GPU resource pool could not create new texture for the given descriptor.");
+    return nullptr;
+  }
+
+  // Track the newly created texture.
+  m_TexturesInUse.Insert(pNewTexture);
+
+  m_uiNumAllocationsSinceLastGC++;
+  m_uiCurrentlyAllocatedMemory += 0U;
+
+  UpdateMemoryStats();
+
+  return pNewTexture;
 }
 
 void xiiGPUResourcePool::ReturnTexture(xiiSharedPtr<xiiGALTexture> pTexture)
 {
+  XII_LOCK(m_Lock);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  // Ensure this texture was issued by the pool.
+  if (!m_TexturesInUse.Contains(pTexture))
+  {
+    xiiLog::Error("Returning a texture to the GPU resource pool that was not issued by the pool is not valid!");
+    return;
+  }
+#endif
+
+  m_TexturesInUse.Remove(pTexture);
+
+  if (pTexture != nullptr)
+  {
+    const xiiUInt32 uiTextureDescriptorHash = pTexture->GetDescription().CalculateHash();
+
+    auto it = m_AvailableTextures.Find(uiTextureDescriptorHash);
+
+    if (!it.IsValid())
+    {
+      it = m_AvailableTextures.Insert(uiTextureDescriptorHash, xiiDynamicArray<TextureHandleWithAge>());
+    }
+
+    it.Value().PushBack({pTexture, xiiRenderWorld::GetFrameCounter()});
+  }
 }
 
 xiiSharedPtr<xiiGALSampler> xiiGPUResourcePool::GetSampler(const xiiGALSamplerCreationDescription& description)

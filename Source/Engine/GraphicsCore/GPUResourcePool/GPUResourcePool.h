@@ -23,6 +23,8 @@ public:
   void ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer);
 
 
+  xiiSharedPtr<xiiGALTexture> GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray);
+
   xiiSharedPtr<xiiGALTexture> GetTexture(const xiiGALTextureCreationDescription& description);
 
   void ReturnTexture(xiiSharedPtr<xiiGALTexture> pTexture);
