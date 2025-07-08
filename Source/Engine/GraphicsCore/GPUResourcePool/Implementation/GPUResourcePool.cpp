@@ -138,19 +138,21 @@ xiiSharedPtr<xiiGALBuffer> xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreat
 {
   XII_LOCK(m_Lock);
 
-  const xiiUInt32 uiBufferDescHash = bufferDesc.CalculateHash();
+  const xiiUInt32 uiBufferDescriptorHash = description.CalculateHash();
 
-  // Check if there is a fitting buffer available
-  auto it = m_AvailableBuffers.Find(uiBufferDescHash);
+  // Check if there is a fitting buffer available.
+  auto it = m_AvailableBuffers.Find(uiBufferDescriptorHash);
+
   if (it.IsValid())
   {
     xiiDynamicArray<BufferHandleWithAge>& buffers = it.Value();
+
     if (!buffers.IsEmpty())
     {
       xiiSharedPtr<xiiGALBuffer> pBuffer = buffers.PeekBack().m_pBuffer;
       buffers.PopBack();
 
-      XII_ASSERT_DEV(pBuffer != nullptr, "Invalid buffer in resource pool");
+      XII_ASSERT_DEV(pBuffer != nullptr, "Invalid buffer in resource pool!");
 
       m_BuffersInUse.Insert(pBuffer);
 
@@ -158,23 +160,22 @@ xiiSharedPtr<xiiGALBuffer> xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreat
     }
   }
 
-  // Since we found no matching buffer we need to create a new one, but we check if we should run a GC
-  // first since we need to allocate memory now
+  // Since we found no matching buffer we need to create a new one, but we check if we should run the garbage collector first since we need to allocate memory now.
   CheckAndPotentiallyReleaseStaleResources();
 
-  xiiSharedPtr<xiiGALBuffer> pNewBuffer = m_pDevice->CreateBuffer(bufferDesc);
+  xiiSharedPtr<xiiGALBuffer> pNewBuffer = m_pDevice->CreateBuffer(description);
 
   if (pNewBuffer == nullptr)
   {
-    xiiLog::Error("GPU resource pool couldn't create new buffer for given desc (size: {0})", bufferDesc.m_uiSize);
+    xiiLog::Error("GPU resource pool could not create new buffer for the given descriptor (size: {0}).", description.m_uiSize);
     return nullptr;
   }
 
-  // Also track the new created buffer
+  // Track the newly created buffer.
   m_BuffersInUse.Insert(pNewBuffer);
 
   m_uiNumAllocationsSinceLastGC++;
-  m_uiCurrentlyAllocatedMemory += pNewBuffer->GetMemoryConsumption();
+  m_uiCurrentlyAllocatedMemory += 0U;
 
   UpdateMemoryStats();
 
@@ -186,38 +187,37 @@ void xiiGPUResourcePool::ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer)
   XII_LOCK(m_Lock);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-
-  // First check if this texture actually came from the pool
+  // Ensure this buffer was issued by the pool.
   if (!m_BuffersInUse.Contains(pBuffer))
   {
-    xiiLog::Error("Returning a buffer to the GPU resource pool which wasn't created by the pool is not valid!");
+    xiiLog::Error("Returning a buffer to the GPU resource pool that was not issued by the pool is not valid!");
     return;
   }
-
 #endif
 
   m_BuffersInUse.Remove(pBuffer);
 
   if (pBuffer != nullptr)
   {
-    const xiiUInt32 uiBufferDescHash = pBuffer->GetDescription().CalculateHash();
+    const xiiUInt32 uiBufferDescriptorHash = pBuffer->GetDescription().CalculateHash();
 
-    auto it = m_AvailableBuffers.Find(uiBufferDescHash);
+    auto it = m_AvailableBuffers.Find(uiBufferDescriptorHash);
+
     if (!it.IsValid())
     {
-      it = m_AvailableBuffers.Insert(uiBufferDescHash, xiiDynamicArray<BufferHandleWithAge>());
+      it = m_AvailableBuffers.Insert(uiBufferDescriptorHash, xiiDynamicArray<BufferHandleWithAge>());
     }
 
     it.Value().PushBack({pBuffer, xiiRenderWorld::GetFrameCounter()});
   }
 }
 
-xiiGALTexture* xiiGPUResourcePool::GetTexture(const xiiGALTextureCreationDescription& description)
+xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetTexture(const xiiGALTextureCreationDescription& description)
 {
   return nullptr;
 }
 
-void xiiGPUResourcePool::ReturnTexture(xiiGALTexture* pTexture)
+void xiiGPUResourcePool::ReturnTexture(xiiSharedPtr<xiiGALTexture> pTexture)
 {
 }
 
@@ -247,7 +247,7 @@ xiiSharedPtr<xiiGALSampler> xiiGPUResourcePool::GetSampler(const xiiGALSamplerCr
     }
   }
 
-  // Since we found no matching buffer we need to create a new one, but we check if we should run the garbage collector first since we need to allocate memory now.
+  // Since we found no matching sampler we need to create a new one, but we check if we should run the garbage collector first since we need to allocate memory now.
   CheckAndPotentiallyReleaseStaleResources();
 
   xiiSharedPtr<xiiGALSampler> pNewSampler = m_pDevice->CreateSampler(description);
@@ -273,14 +273,14 @@ void xiiGPUResourcePool::ReturnSampler(xiiSharedPtr<xiiGALSampler> pSampler)
 {
   XII_LOCK(m_Lock);
 
-  #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   // Ensure this sampler was issued by the pool.
   if (!m_SamplersInUse.Contains(pSampler))
   {
     xiiLog::Error("Returning a sampler to the GPU resource pool that was not issued by the pool is not valid!");
-    return
+    return;
   }
-  #endif
+#endif
 
   m_SamplersInUse.Remove(pSampler);
 
