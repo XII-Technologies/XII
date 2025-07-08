@@ -1,7 +1,5 @@
 #pragma once
 
-#include <GraphicsCore/GraphicsCoreDLL.h>
-
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>

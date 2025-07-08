@@ -147,21 +147,21 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceRequest
 /// \see xiiRenderPipelineNodePinResourceType
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassResource
 {
-  xiiRenderPipelinePassResource(const xiiGALTextureCreationDescription& description, const xiiSharedPtr<xiiGALTexture>& pTexture)
+  xiiRenderPipelinePassResource(const xiiGALTextureCreationDescription& description, const xiiSharedPtr<xiiGALTexture>& pTexture = {})
   {
     m_Type = Type::Texture;
 
     new (&m_Texture) decltype(m_Texture){description, pTexture};
   }
 
-  xiiRenderPipelinePassResource(const xiiGALBufferCreationDescription& description, const xiiSharedPtr<xiiGALBuffer>& pBuffer)
+  xiiRenderPipelinePassResource(const xiiGALBufferCreationDescription& description, const xiiSharedPtr<xiiGALBuffer>& pBuffer = {})
   {
     m_Type = Type::Buffer;
 
     new (&m_Buffer) decltype(m_Buffer){description, pBuffer};
   }
 
-  xiiRenderPipelinePassResource(const xiiGALSamplerCreationDescription& description, const xiiSharedPtr<xiiGALSampler>& pSampler)
+  xiiRenderPipelinePassResource(const xiiGALSamplerCreationDescription& description, const xiiSharedPtr<xiiGALSampler>& pSampler = {})
   {
     m_Type = Type::Sampler;
 

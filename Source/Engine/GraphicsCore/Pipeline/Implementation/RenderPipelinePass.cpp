@@ -155,20 +155,31 @@ xiiResult xiiRenderPipelinePassBase::Deserialize(xiiStreamReader& inout_stream)
 
 xiiResult xiiRenderPipelinePassBase::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(view);
+  XII_IGNORE_UNUSED(pInputs);
+  XII_IGNORE_UNUSED(pOutputs);
+
   return XII_SUCCESS;
 }
 
 xiiSharedPtr<xiiGALDeviceObject> xiiRenderPipelinePassBase::QueryResourceProvider(const xiiRenderPipelineNodePin* pPin, const xiiRenderPipelineResourceRequest& request)
 {
+  XII_IGNORE_UNUSED(pPin);
+  XII_IGNORE_UNUSED(request);
+
   return xiiSharedPtr<xiiGALDeviceObject>();
 }
 
 void xiiRenderPipelinePassBase::ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(renderViewContext);
+  XII_IGNORE_UNUSED(pInputs);
+  XII_IGNORE_UNUSED(pOutputs);
 }
 
 void xiiRenderPipelinePassBase::ReadBackProperties(xiiView* pView)
 {
+  XII_IGNORE_UNUSED(pView);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
