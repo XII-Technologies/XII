@@ -59,7 +59,7 @@ xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(const xiiGALText
 
   // Since we found no matching texture we need to create a new one, but we check if we should run a GC
   // first since we need to allocate memory now
-  CheckAndPotentiallyRunGC();
+  CheckAndPotentiallyReleaseStaleResources();
 
   xiiSharedPtr<xiiGALTexture> pNewTexture = m_pDevice->CreateTexture(textureDesc);
 
@@ -134,7 +134,7 @@ void xiiGPUResourcePool::ReturnRenderTarget(xiiSharedPtr<xiiGALTexture> pRenderT
   }
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescription& bufferDesc)
+xiiSharedPtr<xiiGALBuffer> xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescription& description)
 {
   XII_LOCK(m_Lock);
 
@@ -160,7 +160,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreat
 
   // Since we found no matching buffer we need to create a new one, but we check if we should run a GC
   // first since we need to allocate memory now
-  CheckAndPotentiallyRunGC();
+  CheckAndPotentiallyReleaseStaleResources();
 
   xiiSharedPtr<xiiGALBuffer> pNewBuffer = m_pDevice->CreateBuffer(bufferDesc);
 
@@ -212,11 +212,98 @@ void xiiGPUResourcePool::ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer)
   }
 }
 
-void xiiGPUResourcePool::RunGC(xiiUInt32 uiMinimumAge)
+xiiGALTexture* xiiGPUResourcePool::GetTexture(const xiiGALTextureCreationDescription& description)
+{
+  return nullptr;
+}
+
+void xiiGPUResourcePool::ReturnTexture(xiiGALTexture* pTexture)
+{
+}
+
+xiiSharedPtr<xiiGALSampler> xiiGPUResourcePool::GetSampler(const xiiGALSamplerCreationDescription& description)
 {
   XII_LOCK(m_Lock);
 
-  XII_PROFILE_SCOPE("RunGC");
+  const xiiUInt32 uiSamplerDescriptorHash = description.CalculateHash();
+
+  // Check if there is a fitting sampler available.
+  auto it = m_AvailableSamplers.Find(uiSamplerDescriptorHash);
+
+  if (it.IsValid())
+  {
+    xiiDynamicArray<SamplerHandleWithAge>& samplers = it.Value();
+
+    if (!samplers.IsEmpty())
+    {
+      xiiSharedPtr<xiiGALSampler> pSampler = samplers.PeekBack().m_pSampler;
+      samplers.PopBack();
+
+      XII_ASSERT_DEV(pSampler != nullptr, "Invalid sampler in resource pool!");
+
+      m_SamplersInUse.Insert(pSampler);
+
+      return pSampler;
+    }
+  }
+
+  // Since we found no matching buffer we need to create a new one, but we check if we should run the garbage collector first since we need to allocate memory now.
+  CheckAndPotentiallyReleaseStaleResources();
+
+  xiiSharedPtr<xiiGALSampler> pNewSampler = m_pDevice->CreateSampler(description);
+
+  if (pNewSampler == nullptr)
+  {
+    xiiLog::Error("GPU resource pool could not create new sampler for the given descriptor.");
+    return nullptr;
+  }
+
+  // Track the newly created sampler.
+  m_SamplersInUse.Insert(pNewSampler);
+
+  m_uiNumAllocationsSinceLastGC++;
+  m_uiCurrentlyAllocatedMemory += 0U;
+
+  UpdateMemoryStats();
+
+  return pNewSampler;
+}
+
+void xiiGPUResourcePool::ReturnSampler(xiiSharedPtr<xiiGALSampler> pSampler)
+{
+  XII_LOCK(m_Lock);
+
+  #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  // Ensure this sampler was issued by the pool.
+  if (!m_SamplersInUse.Contains(pSampler))
+  {
+    xiiLog::Error("Returning a sampler to the GPU resource pool that was not issued by the pool is not valid!");
+    return
+  }
+  #endif
+
+  m_SamplersInUse.Remove(pSampler);
+
+  if (pSampler != nullptr)
+  {
+    const xiiUInt32 uiSamplerDescriptorHash = pSampler->GetDescription().CalculateHash();
+
+    auto it = m_AvailableSamplers.Find(uiSamplerDescriptorHash);
+
+    if (!it.IsValid())
+    {
+      it = m_AvailableSamplers.Insert(uiSamplerDescriptorHash, xiiDynamicArray<SamplerHandleWithAge>());
+    }
+
+    it.Value().PushBack({pSampler, xiiRenderWorld::GetFrameCounter()});
+  }
+}
+
+void xiiGPUResourcePool::ReleaseStaleResources(xiiUInt32 uiMinimumAge)
+{
+  XII_LOCK(m_Lock);
+
+  XII_PROFILE_SCOPE("ReleaseStaleResources");
   xiiUInt64 uiCurrentFrame = xiiRenderWorld::GetFrameCounter();
   // Destroy all available textures older than uiMinimumAge frames
   {
@@ -308,12 +395,12 @@ void xiiGPUResourcePool::SetDefaultInstance(xiiGPUResourcePool* pDefaultInstance
   s_pDefaultInstance = pDefaultInstance;
 }
 
-void xiiGPUResourcePool::CheckAndPotentiallyRunGC()
+void xiiGPUResourcePool::CheckAndPotentiallyReleaseStaleResources()
 {
   if ((m_uiNumAllocationsSinceLastGC >= m_uiNumAllocationsThresholdForGC) || (m_uiCurrentlyAllocatedMemory >= m_uiMemoryThresholdForGC))
   {
     // Only try to collect resources unused for 3 or more frames. Using a smaller number will result in constant memory thrashing.
-    RunGC(3);
+    ReleaseStaleResources(3);
   }
 }
 
@@ -334,7 +421,7 @@ void xiiGPUResourcePool::GALDeviceEventHandler(const xiiGALDeviceEvent& e)
     {
       m_uiFramesSinceLastGC = 0;
 
-      RunGC(10);
+      ReleaseStaleResources(10);
     }
   }
 }

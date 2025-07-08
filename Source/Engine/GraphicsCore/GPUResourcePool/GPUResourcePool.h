@@ -14,52 +14,57 @@ class XII_GRAPHICSCORE_DLL xiiGPUResourcePool
 {
 public:
   xiiGPUResourcePool();
+
   ~xiiGPUResourcePool();
 
-  /// \brief Returns a render target handle for the given texture description
-  /// Note that you should return the handle to the pool and never destroy it directly with the device.
-  xiiSharedPtr<xiiGALTexture> GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc);
 
-  /// \brief Convenience functions which creates a texture description fit for a 2d render target without a mip chains.
-  xiiSharedPtr<xiiGALTexture> GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount = xiiGALMSAASampleCount::OneSample, xiiUInt32 uiSliceColunt = 1, bool bIsArray = false);
+  xiiSharedPtr<xiiGALBuffer> GetBuffer(const xiiGALBufferCreationDescription& description);
 
-  /// \brief Returns a render target to the pool so other consumers can use it.
-  /// Note that targets which are returned to the pool are susceptible to destruction due to garbage collection.
-  void ReturnRenderTarget(xiiSharedPtr<xiiGALTexture> hRenderTarget);
+  void ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer);
 
 
-  /// \brief Returns a buffer handle for the given buffer description
-  xiiSharedPtr<xiiGALBuffer> GetBuffer(const xiiGALBufferCreationDescription& bufferDesc);
+  xiiSharedPtr<xiiGALTexture> GetTexture(const xiiGALTextureCreationDescription& description);
 
-  /// \brief Returns a buffer to the pool so other consumers can use it.
-  void ReturnBuffer(xiiSharedPtr<xiiGALBuffer> hBuffer);
+  void ReturnTexture(xiiSharedPtr<xiiGALTexture> pTexture);
+
+
+  xiiSharedPtr<xiiGALSampler> GetSampler(const xiiGALSamplerCreationDescription& description);
+
+  void ReturnSampler(xiiSharedPtr<xiiGALSampler> pSampler);
 
 
   /// \brief Tries to free resources which are currently in the pool.
   /// Triggered automatically due to allocation number / size thresholds but can be triggered manually (e.g. after editor window resize)
   ///
   /// \param uiMinimumAge How many frames at least the resource needs to have been unused before it will be GCed.
-  void RunGC(xiiUInt32 uiMinimumAge);
+  void ReleaseStaleResources(xiiUInt32 uiMinimumAge);
 
 
   static xiiGPUResourcePool* GetDefaultInstance();
-  static void                SetDefaultInstance(xiiGPUResourcePool* pDefaultInstance);
+
+  static void SetDefaultInstance(xiiGPUResourcePool* pDefaultInstance);
 
 protected:
-  void CheckAndPotentiallyRunGC();
+  void CheckAndPotentiallyReleaseStaleResources();
   void UpdateMemoryStats() const;
   void GALDeviceEventHandler(const xiiGALDeviceEvent& e);
 
   struct TextureHandleWithAge
   {
     xiiSharedPtr<xiiGALTexture> m_pTexture;
-    xiiUInt64                   m_uiLastUsed = 0;
+    xiiUInt64                   m_uiLastUsed = 0ULL;
   };
 
   struct BufferHandleWithAge
   {
     xiiSharedPtr<xiiGALBuffer> m_pBuffer;
-    xiiUInt64                  m_uiLastUsed = 0;
+    xiiUInt64                  m_uiLastUsed = 0ULL;
+  };
+
+  struct SamplerHandleWithAge
+  {
+    xiiSharedPtr<xiiGALSampler> m_pSampler;
+    xiiUInt64                   m_uiLastUsed = 0ULL;
   };
 
   xiiEventSubscriptionID m_GALDeviceEventSubscriptionID;
@@ -75,6 +80,9 @@ protected:
 
   xiiMap<xiiUInt32, xiiDynamicArray<BufferHandleWithAge>> m_AvailableBuffers;
   xiiSet<xiiSharedPtr<xiiGALBuffer>>                      m_BuffersInUse;
+
+  xiiMap<xiiUInt32, xiiDynamicArray<SamplerHandleWithAge>> m_AvailableSamplers;
+  xiiSet<xiiSharedPtr<xiiGALSampler>>                      m_SamplersInUse;
 
   xiiMutex m_Lock;
 
