@@ -398,7 +398,8 @@ void xiiView::SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStri
 
 void xiiView::ReadBackPassProperties()
 {
-  xiiHybridArray<xiiRenderPipelinePass*, 16> passes;
+  xiiHybridArray<xiiRenderPipelinePassBase*, 16U> passes;
+
   m_pRenderPipeline->GetPasses(passes);
 
   for (auto pPass : passes)

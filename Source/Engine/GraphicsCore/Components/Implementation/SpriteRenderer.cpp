@@ -39,7 +39,7 @@ void xiiSpriteRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRende
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
-void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 

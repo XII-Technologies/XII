@@ -31,7 +31,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     textureDescription.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
     textureDescription.m_MiscFlags          = xiiGALMiscTextureFlags::GenerateMips;
 
-    m_pCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(textureDescription);
+    m_pCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetTexture(textureDescription);
 
     m_pCubemap->SetDebugName("Reflection Cubemap");
   }
@@ -71,7 +71,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
 
   if (m_pCubemap != nullptr)
   {
-    xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(m_pCubemap);
+    xiiGPUResourcePool::GetDefaultInstance()->ReturnTexture(m_pCubemap);
   }
 }
 

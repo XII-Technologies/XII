@@ -274,7 +274,7 @@ void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
   ref_types.PushBack(xiiGetStaticRTTI<xiiCustomMeshRenderData>());
 }
 
-void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
 #ifdef CORE_ENABLE
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext, pCommandList);

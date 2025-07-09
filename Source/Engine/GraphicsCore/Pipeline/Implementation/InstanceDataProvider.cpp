@@ -92,10 +92,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiInstanceDataProvider::xiiInstanceDataProvider()  = default;
 xiiInstanceDataProvider::~xiiInstanceDataProvider() = default;
 
-void* xiiInstanceDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData)
+void* xiiInstanceDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
   XII_IGNORE_UNUSED(renderViewContext);
-  XII_IGNORE_UNUSED(pCommandList);
   XII_IGNORE_UNUSED(extractedData);
 
   m_Data.Reset();

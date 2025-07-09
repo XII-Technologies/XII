@@ -34,7 +34,7 @@ void xiiLensFlareRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRe
   ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
 }
 
-void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   const xiiLensFlareRenderData* pRenderData = batch.GetFirstData<xiiLensFlareRenderData>();
 
