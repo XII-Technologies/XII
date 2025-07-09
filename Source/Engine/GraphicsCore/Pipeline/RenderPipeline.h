@@ -4,15 +4,15 @@
 
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 class xiiView;
 class xiiFrustum;
 class xiiDGMLGraph;
 class xiiRasterizerView;
-class xiiRenderPipelinePass;
 class xiiFrameDataProviderBase;
+class xiiRenderPipelinePassBase;
+
 struct xiiGALPermutationVariable;
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
@@ -30,18 +30,18 @@ public:
   xiiRenderPipeline();
   ~xiiRenderPipeline();
 
-  void                   AddPass(xiiUniquePtr<xiiRenderPipelinePass>&& pPass);
-  void                   RemovePass(xiiRenderPipelinePass* pPass);
-  void                   GetPasses(xiiDynamicArray<const xiiRenderPipelinePass*>& ref_passes) const;
-  void                   GetPasses(xiiDynamicArray<xiiRenderPipelinePass*>& ref_passes);
-  xiiRenderPipelinePass* GetPassByName(const xiiStringView& sPassName);
+  void                   AddPass(xiiUniquePtr<xiiRenderPipelinePassBase>&& pPass);
+  void                   RemovePass(xiiRenderPipelinePassBase* pPass);
+  void                   GetPasses(xiiDynamicArray<const xiiRenderPipelinePassBase*>& ref_passes) const;
+  void                   GetPasses(xiiDynamicArray<xiiRenderPipelinePassBase*>& ref_passes);
+  xiiRenderPipelinePassBase* GetPassByName(const xiiStringView& sPassName);
 
-  bool Connect(xiiRenderPipelinePass* pOutputNode, xiiStringView sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiStringView sInputPinName);
-  bool Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedString sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiHashedString sInputPinName);
-  bool Disconnect(xiiRenderPipelinePass* pOutputNode, xiiHashedString sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiHashedString sInputPinName);
+  bool Connect(xiiRenderPipelinePassBase* pOutputNode, xiiStringView sOutputPinName, xiiRenderPipelinePassBase* pInputNode, xiiStringView sInputPinName);
+  bool Connect(xiiRenderPipelinePassBase* pOutputNode, xiiHashedString sOutputPinName, xiiRenderPipelinePassBase* pInputNode, xiiHashedString sInputPinName);
+  bool Disconnect(xiiRenderPipelinePassBase* pOutputNode, xiiHashedString sOutputPinName, xiiRenderPipelinePassBase* pInputNode, xiiHashedString sInputPinName);
 
-  const xiiRenderPipelinePassConnection* GetInputConnection(const xiiRenderPipelinePass* pPass, xiiHashedString sInputPinName) const;
-  const xiiRenderPipelinePassConnection* GetOutputConnection(const xiiRenderPipelinePass* pPass, xiiHashedString sOutputPinName) const;
+  const xiiRenderPipelinePassConnection* GetInputConnection(const xiiRenderPipelinePassBase* pPass, xiiHashedString sInputPinName) const;
+  const xiiRenderPipelinePassConnection* GetOutputConnection(const xiiRenderPipelinePassBase* pPass, xiiHashedString sOutputPinName) const;
 
   void          AddExtractor(xiiUniquePtr<xiiExtractor>&& pExtractor);
   void          RemoveExtractor(xiiExtractor* pExtractor);
@@ -76,14 +76,14 @@ private:
   bool          InitializeRenderTargetDescriptions(const xiiView& view);
   bool          CreateRenderTargetUsage(const xiiView& view);
   bool          InitializeRenderPipelineRenderPasses();
-  bool          InitializeRenderPipelinePasses();
+  bool          InitializeRenderPipelinePasses(const xiiView& view);
   void          SortExtractors();
   void          UpdateViewData(const xiiView& view, xiiUInt32 uiDataIndex);
 
-  void RemoveConnections(xiiRenderPipelinePass* pPass);
+  void RemoveConnections(xiiRenderPipelinePassBase* pPass);
   void ClearRenderPassGraphTextures();
-  bool AreInputDescriptionsAvailable(const xiiRenderPipelinePass* pPass, const xiiHybridArray<xiiRenderPipelinePass*, 32>& done) const;
-  bool ArePassThroughInputsDone(const xiiRenderPipelinePass* pPass, const xiiHybridArray<xiiRenderPipelinePass*, 32>& done) const;
+  bool AreInputDescriptionsAvailable(const xiiRenderPipelinePassBase* pPass, const xiiHybridArray<xiiRenderPipelinePassBase*, 32>& done) const;
+  bool ArePassThroughInputsDone(const xiiRenderPipelinePassBase* pPass, const xiiHybridArray<xiiRenderPipelinePassBase*, 32>& done) const;
 
   xiiFrameDataProviderBase* GetFrameDataProvider(const xiiRTTI* pRtti) const;
 
@@ -121,8 +121,8 @@ private: // Member data
     xiiDynamicArray<xiiRenderPipelinePassConnection*> m_Inputs;
     xiiDynamicArray<xiiRenderPipelinePassConnection*> m_Outputs;
   };
-  xiiDynamicArray<xiiUniquePtr<xiiRenderPipelinePass>> m_Passes;      ///< The passes present in the pipeline in no particular order.
-  xiiMap<const xiiRenderPipelinePass*, ConnectionData> m_Connections; ///< The connections in each pass.
+  xiiDynamicArray<xiiUniquePtr<xiiRenderPipelinePassBase>> m_Passes;      ///< The passes present in the pipeline in no particular order.
+  xiiMap<const xiiRenderPipelinePassBase*, ConnectionData> m_Connections; ///< The connections in each pass.
 
   /// \brief Contains all connections that share the same path-through texture and their first and last usage pass index.
   struct TextureUsageData
@@ -149,7 +149,7 @@ private: // Member data
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
 
 private:
-  bool                            AreAttachmentsCompatible(const xiiDynamicArray<xiiRenderPipelinePass*>& currentGroup, const ConnectionData& data);
+  bool                            AreAttachmentsCompatible(const xiiDynamicArray<xiiRenderPipelinePassBase*>& currentGroup, const ConnectionData& data);
   xiiSharedPtr<xiiGALRenderPass>  GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description);
   xiiSharedPtr<xiiGALFramebuffer> GetOrCreateFramebuffer(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> pAttachments, xiiSizeU32 framebufferSize, xiiUInt32 uiArraySliceCount);
 

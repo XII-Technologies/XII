@@ -147,6 +147,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceRequest
 /// \see xiiRenderPipelineNodePinResourceType
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassResource
 {
+  xiiRenderPipelinePassResource() :
+    m_Type(Type::Invalid)
+  {
+    // It's undefined behavior to leave a union uninitialized with non-trivial members.
+    // So we initialize the texture variant by default, even if it's unused.
+    new (&m_Texture) decltype(m_Texture)();
+  }
+
   xiiRenderPipelinePassResource(const xiiGALTextureCreationDescription& description, const xiiSharedPtr<xiiGALTexture>& pTexture = {})
   {
     m_Type = Type::Texture;
@@ -186,6 +194,45 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassResource
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
+  }
+
+  xiiRenderPipelinePassResource(const xiiRenderPipelinePassResource& other) :
+    m_Type(other.m_Type)
+  {
+    switch (m_Type)
+    {
+      case Type::Texture:
+        new (&m_Texture) decltype(m_Texture)(other.m_Texture);
+        break;
+
+      case Type::Buffer:
+        new (&m_Buffer) decltype(m_Buffer)(other.m_Buffer);
+        break;
+
+      case Type::Sampler:
+        new (&m_Sampler) decltype(m_Sampler)(other.m_Sampler);
+        break;
+
+      case Type::AccelerationStructure:
+      case Type::Invalid:
+        // No initialization needed
+        break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+
+  xiiRenderPipelinePassResource& operator=(const xiiRenderPipelinePassResource& other)
+  {
+    if (this != &other)
+    {
+      // Clean up current resource.
+      this->~xiiRenderPipelinePassResource();
+
+      // Copy construct into this object.
+      new (this) xiiRenderPipelinePassResource(other);
+    }
+    return *this;
   }
 
   /// \brief Enumerates the supported resource types for a render pipeline pass output.
