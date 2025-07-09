@@ -176,26 +176,6 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassResource
     new (&m_Sampler) decltype(m_Sampler){description, pSampler};
   }
 
-  ~xiiRenderPipelinePassResource()
-  {
-    switch (m_Type)
-    {
-      case xiiRenderPipelinePassResource::Type::Texture:
-        m_Texture.m_pTexture = nullptr;
-        break;
-      case xiiRenderPipelinePassResource::Type::Buffer:
-        m_Buffer.m_pBuffer = nullptr;
-        break;
-      case xiiRenderPipelinePassResource::Type::Sampler:
-        m_Sampler.m_pSampler = nullptr;
-        break;
-      case xiiRenderPipelinePassResource::Type::AccelerationStructure:
-        break;
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-  }
-
   xiiRenderPipelinePassResource(const xiiRenderPipelinePassResource& other) :
     m_Type(other.m_Type)
   {
@@ -222,7 +202,27 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassResource
     }
   }
 
-  xiiRenderPipelinePassResource& operator=(const xiiRenderPipelinePassResource& other)
+  ~xiiRenderPipelinePassResource()
+  {
+    switch (m_Type)
+    {
+      case xiiRenderPipelinePassResource::Type::Texture:
+        m_Texture.m_pTexture = nullptr;
+        break;
+      case xiiRenderPipelinePassResource::Type::Buffer:
+        m_Buffer.m_pBuffer = nullptr;
+        break;
+      case xiiRenderPipelinePassResource::Type::Sampler:
+        m_Sampler.m_pSampler = nullptr;
+        break;
+      case xiiRenderPipelinePassResource::Type::AccelerationStructure:
+        break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+
+  XII_FORCE_INLINE xiiRenderPipelinePassResource& operator=(const xiiRenderPipelinePassResource& other)
   {
     if (this != &other)
     {
@@ -233,6 +233,26 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassResource
       new (this) xiiRenderPipelinePassResource(other);
     }
     return *this;
+  }
+
+  XII_FORCE_INLINE xiiUInt32 CalculateDescriptorHash() const
+  {
+    switch (m_Type)
+    {
+      case xiiRenderPipelinePassResource::Type::Texture:
+        return m_Texture.m_Description.CalculateHash();
+      case xiiRenderPipelinePassResource::Type::Buffer:
+        return m_Buffer.m_Description.CalculateHash();
+      case xiiRenderPipelinePassResource::Type::Sampler:
+        return m_Sampler.m_Description.CalculateHash();
+
+      case xiiRenderPipelinePassResource::Type::AccelerationStructure:
+      case xiiRenderPipelinePassResource::Type::Invalid:
+        return 0U;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+    return 0U
   }
 
   /// \brief Enumerates the supported resource types for a render pipeline pass output.
@@ -326,7 +346,7 @@ public:
   ///
   /// The graph compiler uses this to allocate or pool GPU resources like textures, samplers, and buffers.
   /// Derived passes should populate each entry in \a pOutputs with the corresponding resource description.
-  virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs) = 0;
+  virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs) = 0;
 
   /// \brief Called once before the first execution to allow the pass to initialize itself based on the graph and view context.
   ///

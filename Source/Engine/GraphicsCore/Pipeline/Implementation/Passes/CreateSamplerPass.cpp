@@ -77,23 +77,27 @@ xiiResult xiiCreateSamplerPass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiCreateSamplerPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
+xiiResult xiiCreateSamplerPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
-  xiiGALSamplerCreationDescription& samplerDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Resource.m_Sampler.m_Description;
-  samplerDescription.m_MinFilter                       = m_MinFilter;
-  samplerDescription.m_MagFilter                       = m_MagFilter;
-  samplerDescription.m_MipFilter                       = m_MipFilter;
-  samplerDescription.m_AddressU                        = m_AddressU;
-  samplerDescription.m_AddressV                        = m_AddressV;
-  samplerDescription.m_AddressW                        = m_AddressW;
-  samplerDescription.m_ComparisonFunction              = m_ComparisonFunction;
-  samplerDescription.m_Flags                           = m_Flags;
-  samplerDescription.m_bUnormalizedCoords              = m_bUnormalizedCoords;
-  samplerDescription.m_fMipLODBias                     = m_fMipLodBias;
-  samplerDescription.m_uiMaxAnisotropy                 = m_uiMaxAnisotropy;
-  samplerDescription.m_BorderColor                     = m_BorderColor;
-  samplerDescription.m_fMinLOD                         = m_fMinLod;
-  samplerDescription.m_fMaxLOD                         = m_fMaxLod;
+  XII_IGNORE_UNUSED(view);
+  XII_IGNORE_UNUSED(pInputs);
+
+  xiiGALSamplerCreationDescription samplerDescription;
+  samplerDescription.m_MinFilter          = m_MinFilter;
+  samplerDescription.m_MagFilter          = m_MagFilter;
+  samplerDescription.m_MipFilter          = m_MipFilter;
+  samplerDescription.m_AddressU           = m_AddressU;
+  samplerDescription.m_AddressV           = m_AddressV;
+  samplerDescription.m_AddressW           = m_AddressW;
+  samplerDescription.m_ComparisonFunction = m_ComparisonFunction;
+  samplerDescription.m_Flags              = m_Flags;
+  samplerDescription.m_bUnormalizedCoords = m_bUnormalizedCoords;
+  samplerDescription.m_fMipLODBias        = m_fMipLodBias;
+  samplerDescription.m_uiMaxAnisotropy    = m_uiMaxAnisotropy;
+  samplerDescription.m_BorderColor        = m_BorderColor;
+  samplerDescription.m_fMinLOD            = m_fMinLod;
+  samplerDescription.m_fMaxLOD            = m_fMaxLod;
+  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(samplerDescription);
 
   return XII_SUCCESS;
 }

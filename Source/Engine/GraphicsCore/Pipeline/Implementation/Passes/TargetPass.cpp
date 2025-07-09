@@ -30,7 +30,7 @@ xiiTargetPass::xiiTargetPass(xiiStringView sName) :
 
 xiiTargetPass::~xiiTargetPass() = default;
 
-xiiResult xiiTargetPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
+xiiResult xiiTargetPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
   XII_IGNORE_UNUSED(view);
   XII_IGNORE_UNUSED(pInputs);

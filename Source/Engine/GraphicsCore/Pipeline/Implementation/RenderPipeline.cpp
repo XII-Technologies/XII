@@ -299,9 +299,9 @@ bool xiiRenderPipeline::RebuildInternal(const xiiView& view)
 {
   if (!SortPasses())
     return false;
-  if (!InitializeRenderTargetDescriptions(view))
+  if (!InitializePassResourceDescriptions(view))
     return false;
-  if (!CreateRenderTargetUsage(view))
+  if (!CreatePassResourceUsage(view))
     return false;
   if (!InitializeRenderPipelineRenderPasses())
     return false;
@@ -315,7 +315,7 @@ bool xiiRenderPipeline::RebuildInternal(const xiiView& view)
 
 bool xiiRenderPipeline::SortPasses()
 {
-  xiiLogBlock                                b("Sort Passes");
+  xiiLogBlock                                    b("Sort Passes");
   xiiHybridArray<xiiRenderPipelinePassBase*, 32> done;
   done.Reserve(m_Passes.GetCount());
 
@@ -335,7 +335,7 @@ bool xiiRenderPipeline::SortPasses()
   while (!usable.IsEmpty())
   {
     xiiRenderPipelinePassBase* pPass = usable.PeekBack();
-    xiiLogBlock            b2("Traverse", pPass->GetName());
+    xiiLogBlock                b2("Traverse", pPass->GetName());
 
     usable.PopBack();
     ConnectionData& data = m_Connections[pPass];
@@ -413,11 +413,11 @@ bool xiiRenderPipeline::SortPasses()
   return true;
 }
 
-bool xiiRenderPipeline::InitializeRenderTargetDescriptions(const xiiView& view)
+bool xiiRenderPipeline::InitializePassResourceDescriptions(const xiiView& view)
 {
-  xiiLogBlock                                           b("Initialize Render Target Descriptions");
-  xiiHybridArray<xiiGALTextureCreationDescription*, 10> inputs;
-  xiiHybridArray<xiiGALTextureCreationDescription, 10>  outputs;
+  xiiLogBlock                                        b("Initialize Pass Resource Descriptions");
+  xiiHybridArray<xiiRenderPipelinePassResource*, 10> inputs;
+  xiiHybridArray<xiiRenderPipelinePassResource, 10>  outputs;
 
   for (auto& pPass : m_Passes)
   {
@@ -437,12 +437,12 @@ bool xiiRenderPipeline::InitializeRenderTargetDescriptions(const xiiView& view)
     outputs.Clear();
     outputs.SetCount(data.m_Outputs.GetCount());
 
-    // Fill inputs array
+    // Fill inputs array.
     for (xiiUInt32 i = 0; i < data.m_Inputs.GetCount(); ++i)
     {
       if (data.m_Inputs[i] != nullptr)
       {
-        inputs[i] = &data.m_Inputs[i]->m_TextureDescription;
+        inputs[i] = &data.m_Inputs[i]->m_Resource;
       }
       else
       {
@@ -450,10 +450,9 @@ bool xiiRenderPipeline::InitializeRenderTargetDescriptions(const xiiView& view)
       }
     }
 
-    bool bResult = pPass->GetRenderTargetDescriptions(view, inputs, outputs);
-    if (!bResult)
+    if (pPass->GetResourceDescriptions(view, inputs, outputs).Failed())
     {
-      xiiLog::Error("The pass could not be successfully queried for render target descriptions.");
+      xiiLog::Error("The pass ('{}') could not be successfully queried for resource descriptions.", pPass->GetName());
       return false;
     }
 
@@ -462,11 +461,11 @@ bool xiiRenderPipeline::InitializeRenderTargetDescriptions(const xiiView& view)
     {
       if (data.m_Outputs[i] != nullptr)
       {
-        data.m_Outputs[i]->m_TextureDescription = outputs[i];
+        data.m_Outputs[i]->m_Resource = outputs[i];
       }
     }
 
-    // Check pass-through consistency of input / output target desc.
+    // Check pass-through consistency of input / output target descriptions.
     auto inputPins = pPass->GetInputPins();
     for (const xiiRenderPipelineNodePin* pPin : inputPins)
     {
@@ -476,10 +475,15 @@ bool xiiRenderPipeline::InitializeRenderTargetDescriptions(const xiiView& view)
         {
           if (data.m_Inputs[pPin->m_uiInputIndex] == nullptr)
           {
-            // xiiLog::Error("The pass of type '{0}' has a pass through pin '{1}' that has an output but no input!", pPass->GetDynamicRTTI()->GetTypeName(), pPass->GetPinName(pPin));
-            // return false;
+            xiiLog::Error("The pass of type '{0}' has a pass through pin '{1}' that has an output but no input!", pPass->GetDynamicRTTI()->GetTypeName(), pPass->GetPinName(pPin));
+            return false;
           }
-          else if (data.m_Outputs[pPin->m_uiOutputIndex]->m_TextureDescription.CalculateHash() != data.m_Inputs[pPin->m_uiInputIndex]->m_TextureDescription.CalculateHash())
+          else if (data.m_Outputs[pPin->m_uiOutputIndex]->m_Resource.m_Type != data.m_Inputs[pPin->m_uiInputIndex]->m_Resource.m_Type)
+          {
+            xiiLog::Error("The pass has a pass through pin '{0}' that has different resource types for input and output!", pPass->GetPinName(pPin));
+            return false;
+          }
+          else if (data.m_Outputs[pPin->m_uiOutputIndex]->m_Resource.CalculateDescriptorHash() != data.m_Inputs[pPin->m_uiInputIndex]->m_Resource.CalculateDescriptorHash())
           {
             xiiLog::Error("The pass has a pass through pin '{0}' that has different descriptors for input and output!", pPass->GetPinName(pPin));
             return false;
@@ -491,7 +495,7 @@ bool xiiRenderPipeline::InitializeRenderTargetDescriptions(const xiiView& view)
   return true;
 }
 
-bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
+bool xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
 {
   xiiLogBlock b("Create Render Target Usage Data");
   XII_ASSERT_DEBUG(m_TextureUsage.IsEmpty(), "Need to call ClearRenderPassGraphTextures before re-creating the pipeline.");
@@ -517,7 +521,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     {
       if (pConnection != nullptr)
       {
-        if (pConnection->m_pOutput->m_Type.IsSet(xiiRenderPipelineNodePin::Type::PassThrough) && data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex] != nullptr)
+        if (pConnection->m_pOutput->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::PassThrough) && data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex] != nullptr)
         {
           xiiRenderPipelinePassConnection* pCorrespondingInputConnection = data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex];
           XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pCorrespondingInputConnection), "");
@@ -542,8 +546,8 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     }
   }
 
-  // If a texture descriptor has this hash, it is uninitialized and no texture will be created at runtime.
-  static xiiUInt32 uiDefaultTextureCreationDescriptionHash = xiiGALTextureCreationDescription().CalculateHash();
+  // If a resource descriptor has this hash, it is uninitialized and no resource will be created at runtime.
+  static xiiUInt32 uiDefaultResourceCreationDescriptionHash = xiiRenderPipelinePassResource().CalculateDescriptorHash();
 
   // Find pins that provide textures into the pipeline, e.g. xiiTargetPass pins.
   // There can only be up to one provider pin connected to a texture usage block or there would be an ambiguity which of them provides the texture.
@@ -861,7 +865,7 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePassBase* pPass)
     if (pConnection != nullptr)
     {
       xiiRenderPipelinePassBase* pSource = static_cast<xiiRenderPipelinePassBase*>(pConnection->m_pOutput->m_pParent);
-      bool                   bResult = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
+      bool                       bResult = Disconnect(pSource, pSource->GetPinName(pConnection->m_pOutput), pPass, pPass->GetPinName(pPass->GetInputPins()[i]));
       XII_IGNORE_UNUSED(bResult);
       XII_ASSERT_DEBUG(bResult, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
     }
@@ -872,7 +876,7 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePassBase* pPass)
     while (pConnection != nullptr)
     {
       xiiRenderPipelinePassBase* pTarget = static_cast<xiiRenderPipelinePassBase*>(pConnection->m_Inputs[0]->m_pParent);
-      bool                   bResult = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
+      bool                       bResult = Disconnect(pPass, pPass->GetPinName(pConnection->m_pOutput), pTarget, pTarget->GetPinName(pConnection->m_Inputs[0]));
       XII_IGNORE_UNUSED(bResult);
       XII_ASSERT_DEBUG(bResult, "xiiRenderPipeline::RemoveConnections should not fail to disconnect pins!");
 

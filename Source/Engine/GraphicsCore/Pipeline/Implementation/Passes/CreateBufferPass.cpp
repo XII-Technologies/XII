@@ -56,16 +56,20 @@ xiiResult xiiCreateBufferPass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiCreateBufferPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
+xiiResult xiiCreateBufferPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
-  xiiGALBufferCreationDescription& bufferDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Resource.m_Buffer.m_Description;
-  bufferDescription.m_uiSize                         = m_uiSize;
-  bufferDescription.m_uiElementByteStride            = m_uiElementByteStride;
-  bufferDescription.m_BindFlags                      = m_BindFlags;
-  bufferDescription.m_Usage                          = m_Usage;
-  bufferDescription.m_CPUAccessFlags                 = m_AccessFlags;
-  bufferDescription.m_Mode                           = m_Mode;
-  bufferDescription.m_MiscFlags                      = m_MiscFlags;
+  XII_IGNORE_UNUSED(view);
+  XII_IGNORE_UNUSED(pInputs);
+
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_uiSize              = m_uiSize;
+  bufferDescription.m_uiElementByteStride = m_uiElementByteStride;
+  bufferDescription.m_BindFlags           = m_BindFlags;
+  bufferDescription.m_Usage               = m_Usage;
+  bufferDescription.m_CPUAccessFlags      = m_AccessFlags;
+  bufferDescription.m_Mode                = m_Mode;
+  bufferDescription.m_MiscFlags           = m_MiscFlags;
+  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(bufferDescription);
 
   return XII_SUCCESS;
 }

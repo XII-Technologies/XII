@@ -78,7 +78,7 @@ xiiResult xiiCreateColourAttachmentPass::Deserialize(xiiStreamReader& inout_stre
   return XII_SUCCESS;
 }
 
-xiiResult xiiCreateColourAttachmentPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
+xiiResult xiiCreateColourAttachmentPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
   const xiiRectFloat& viewport = view.GetViewport();
 
@@ -93,18 +93,19 @@ xiiResult xiiCreateColourAttachmentPass::GetResourceDescriptions(const xiiView& 
 
   const bool bIsFlipped = preferredFormat == xiiGALResourceFormat::BGRA8UNormalized || preferredFormat == xiiGALResourceFormat::BGRA8UNormalizedSRGB;
 
-  xiiGALTextureCreationDescription& textureDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Resource.m_Texture.m_Description;
-  textureDescription.m_Type                            = m_Type;
-  textureDescription.m_Format                          = xiiSourceFormat::GetGALResourceFormat(m_Format, bIsFlipped);
-  textureDescription.m_Size.width                      = static_cast<xiiUInt32>(viewport.width);
-  textureDescription.m_Size.height                     = static_cast<xiiUInt32>(viewport.height);
-  textureDescription.m_uiArraySizeOrDepth              = m_uiArraySizeOrDepth;
-  textureDescription.m_uiMipLevels                     = m_uiMipLevels;
-  textureDescription.m_uiSampleCount                   = m_uiSampleCount;
-  textureDescription.m_BindFlags                       = m_BindFlags;
-  textureDescription.m_Usage                           = m_Usage;
-  textureDescription.m_CPUAccessFlags                  = m_AccessFlags;
-  textureDescription.m_MiscFlags                       = m_MiscFlags;
+  xiiGALTextureCreationDescription textureDescription;
+  textureDescription.m_Type               = m_Type;
+  textureDescription.m_Format             = xiiSourceFormat::GetGALResourceFormat(m_Format, bIsFlipped);
+  textureDescription.m_Size.width         = static_cast<xiiUInt32>(viewport.width);
+  textureDescription.m_Size.height        = static_cast<xiiUInt32>(viewport.height);
+  textureDescription.m_uiArraySizeOrDepth = m_uiArraySizeOrDepth;
+  textureDescription.m_uiMipLevels        = m_uiMipLevels;
+  textureDescription.m_uiSampleCount      = m_uiSampleCount;
+  textureDescription.m_BindFlags          = m_BindFlags;
+  textureDescription.m_Usage              = m_Usage;
+  textureDescription.m_CPUAccessFlags     = m_AccessFlags;
+  textureDescription.m_MiscFlags          = m_MiscFlags;
+  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(textureDescription);
 
   return XII_SUCCESS;
 }
@@ -156,11 +157,11 @@ xiiResult xiiCreateDepthAttachmentPass::Deserialize(xiiStreamReader& inout_strea
   return XII_SUCCESS;
 }
 
-xiiResult xiiCreateDepthAttachmentPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
+xiiResult xiiCreateDepthAttachmentPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
   const xiiRectFloat& viewport = view.GetViewport();
 
-  xiiGALTextureCreationDescription& textureDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Resource.m_Texture.m_Description;
+  xiiGALTextureCreationDescription& textureDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Texture.m_Description;
   textureDescription.m_Type                            = m_Type;
   textureDescription.m_Format                          = xiiSourceFormat::GetGALResourceFormat(m_Format);
   textureDescription.m_Size.width                      = static_cast<xiiUInt32>(viewport.width);

@@ -73,8 +73,8 @@ private:
   PipelineState Rebuild(const xiiView& view);
   bool          RebuildInternal(const xiiView& view);
   bool          SortPasses();
-  bool          InitializeRenderTargetDescriptions(const xiiView& view);
-  bool          CreateRenderTargetUsage(const xiiView& view);
+  bool          InitializePassResourceDescriptions(const xiiView& view);
+  bool          CreatePassResourceUsage(const xiiView& view);
   bool          InitializeRenderPipelineRenderPasses();
   bool          InitializeRenderPipelinePasses(const xiiView& view);
   void          SortExtractors();
