@@ -49,7 +49,7 @@ xiiRenderPipeline::~xiiRenderPipeline()
   m_Data[0].Clear();
   m_Data[1].Clear();
 
-  ClearRenderPassGraphTextures();
+  ClearRenderPassGraphResources();
 
   while (!m_Passes.IsEmpty())
   {
@@ -278,12 +278,13 @@ xiiRenderPipeline::PipelineState xiiRenderPipeline::Rebuild(const xiiView& view)
 {
   xiiLogBlock b("xiiRenderPipeline::Rebuild");
 
-  ClearRenderPassGraphTextures();
+  ClearRenderPassGraphResources();
 
-  bool bResult = RebuildInternal(view);
-  if (!bResult)
+  xiiResult result = RebuildInternal(view);
+
+  if (result.Failed())
   {
-    ClearRenderPassGraphTextures();
+    ClearRenderPassGraphResources();
   }
   else
   {
@@ -291,29 +292,23 @@ xiiRenderPipeline::PipelineState xiiRenderPipeline::Rebuild(const xiiView& view)
     UpdateViewData(view, xiiRenderWorld::GetDataIndexForRendering());
   }
 
-  m_PipelineState = bResult ? PipelineState::Initialized : PipelineState::RebuildError;
+  m_PipelineState = result.Succeeded() ? PipelineState::Initialized : PipelineState::RebuildError;
   return m_PipelineState;
 }
 
-bool xiiRenderPipeline::RebuildInternal(const xiiView& view)
+xiiResult xiiRenderPipeline::RebuildInternal(const xiiView& view)
 {
-  if (!SortPasses())
-    return false;
-  if (!InitializePassResourceDescriptions(view))
-    return false;
-  if (!CreatePassResourceUsage(view))
-    return false;
-  if (!InitializeRenderPipelineRenderPasses())
-    return false;
-  if (!InitializeRenderPipelinePasses(view))
-    return false;
+  XII_SUCCEED_OR_RETURN(SortPasses());
+  XII_SUCCEED_OR_RETURN(InitializePassResourceDescriptions(view));
+  XII_SUCCEED_OR_RETURN(CreatePassResourceUsage(view));
+  XII_SUCCEED_OR_RETURN(InitializeRenderPipelinePasses(view));
 
   SortExtractors();
 
-  return true;
+  return XII_SUCCESS;
 }
 
-bool xiiRenderPipeline::SortPasses()
+xiiResult xiiRenderPipeline::SortPasses()
 {
   xiiLogBlock                                    b("Sort Passes");
   xiiHybridArray<xiiRenderPipelinePassBase*, 32> done;
@@ -357,7 +352,7 @@ bool xiiRenderPipeline::SortPasses()
           if (done.Contains(pTargetPass))
           {
             xiiLog::Error("Loop detected, graph not supported!");
-            return false;
+            return XII_FAILURE;
           }
 
           if (!usable.Contains(pTargetPass) && !candidates.Contains(pTargetPass))
@@ -393,7 +388,7 @@ bool xiiRenderPipeline::SortPasses()
         xiiLog::Error("Failed to initialize node: {} - {}", pPass->GetName(), pPass->GetDynamicRTTI()->GetTypeName());
       }
     }
-    return false;
+    return XII_FAILURE;
   }
 
   struct xiiPipelineSorter
@@ -410,10 +405,10 @@ bool xiiRenderPipeline::SortPasses()
   xiiPipelineSorter pipelineSorter;
   pipelineSorter.m_pDone = &done;
   m_Passes.Sort(pipelineSorter);
-  return true;
+  return XII_SUCCESS;
 }
 
-bool xiiRenderPipeline::InitializePassResourceDescriptions(const xiiView& view)
+xiiResult xiiRenderPipeline::InitializePassResourceDescriptions(const xiiView& view)
 {
   xiiLogBlock                                        b("Initialize Pass Resource Descriptions");
   xiiHybridArray<xiiRenderPipelinePassResource*, 10> inputs;
@@ -453,7 +448,7 @@ bool xiiRenderPipeline::InitializePassResourceDescriptions(const xiiView& view)
     if (pPass->GetResourceDescriptions(view, inputs, outputs).Failed())
     {
       xiiLog::Error("The pass ('{}') could not be successfully queried for resource descriptions.", pPass->GetName());
-      return false;
+      return XII_FAILURE;
     }
 
     // Copy queried outputs into the output connections.
@@ -476,33 +471,33 @@ bool xiiRenderPipeline::InitializePassResourceDescriptions(const xiiView& view)
           if (data.m_Inputs[pPin->m_uiInputIndex] == nullptr)
           {
             xiiLog::Error("The pass of type '{0}' has a pass through pin '{1}' that has an output but no input!", pPass->GetDynamicRTTI()->GetTypeName(), pPass->GetPinName(pPin));
-            return false;
+            return XII_FAILURE;
           }
           else if (data.m_Outputs[pPin->m_uiOutputIndex]->m_Resource.m_Type != data.m_Inputs[pPin->m_uiInputIndex]->m_Resource.m_Type)
           {
             xiiLog::Error("The pass has a pass through pin '{0}' that has different resource types for input and output!", pPass->GetPinName(pPin));
-            return false;
+            return XII_FAILURE;
           }
           else if (data.m_Outputs[pPin->m_uiOutputIndex]->m_Resource.CalculateDescriptorHash() != data.m_Inputs[pPin->m_uiInputIndex]->m_Resource.CalculateDescriptorHash())
           {
             xiiLog::Error("The pass has a pass through pin '{0}' that has different descriptors for input and output!", pPass->GetPinName(pPin));
-            return false;
+            return XII_FAILURE;
           }
         }
       }
     }
   }
-  return true;
+  return XII_SUCCESS;
 }
 
-bool xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
+xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
 {
   xiiLogBlock b("Create Render Target Usage Data");
-  XII_ASSERT_DEBUG(m_TextureUsage.IsEmpty(), "Need to call ClearRenderPassGraphTextures before re-creating the pipeline.");
+  XII_ASSERT_DEBUG(m_ResourceUsage.IsEmpty(), "Need to call ClearRenderPassGraphResources before re-creating the pipeline.");
 
-  m_ConnectionToTextureIndex.Clear();
+  m_ConnectionToResourceIndex.Clear();
 
-  // Gather all connections that share the same path-through texture and their first and last usage pass index.
+  // Gather all connections that share the same path-through resource and their first and last usage pass index.
   for (xiiUInt16 i = 0; i < static_cast<xiiUInt16>(m_Passes.GetCount()); ++i)
   {
     const auto&     pPass = m_Passes[i].Borrow();
@@ -512,8 +507,8 @@ bool xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
     {
       if (pConnection != nullptr)
       {
-        xiiUInt32 uiDataIdx                        = m_ConnectionToTextureIndex[pConnection];
-        m_TextureUsage[uiDataIdx].m_uiLastUsageIdx = i;
+        xiiUInt32 uiDataIdx                         = m_ConnectionToResourceIndex[pConnection];
+        m_ResourceUsage[uiDataIdx].m_uiLastUsageIdx = i;
       }
     }
 
@@ -524,202 +519,153 @@ bool xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
         if (pConnection->m_pOutput->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::PassThrough) && data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex] != nullptr)
         {
           xiiRenderPipelinePassConnection* pCorrespondingInputConnection = data.m_Inputs[pConnection->m_pOutput->m_uiInputIndex];
-          XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pCorrespondingInputConnection), "");
+          XII_ASSERT_DEV(m_ConnectionToResourceIndex.Contains(pCorrespondingInputConnection), "");
 
-          xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pCorrespondingInputConnection];
-          m_TextureUsage[uiDataIdx].m_UsedBy.PushBack(pConnection);
-          m_TextureUsage[uiDataIdx].m_uiLastUsageIdx = i;
+          xiiUInt32 uiDataIdx = m_ConnectionToResourceIndex[pCorrespondingInputConnection];
+          m_ResourceUsage[uiDataIdx].m_UsedBy.PushBack(pConnection);
+          m_ResourceUsage[uiDataIdx].m_uiLastUsageIdx = i;
 
-          XII_ASSERT_DEV(!m_ConnectionToTextureIndex.Contains(pConnection), "");
-          m_ConnectionToTextureIndex[pConnection] = uiDataIdx;
+          XII_ASSERT_DEV(!m_ConnectionToResourceIndex.Contains(pConnection), "");
+          m_ConnectionToResourceIndex[pConnection] = uiDataIdx;
         }
         else
         {
-          m_ConnectionToTextureIndex[pConnection] = m_TextureUsage.GetCount();
-          TextureUsageData& texData               = m_TextureUsage.ExpandAndGetRef();
+          m_ConnectionToResourceIndex[pConnection] = m_ResourceUsage.GetCount();
+          ResourceUsageData& resourceData          = m_ResourceUsage.ExpandAndGetRef();
 
-          texData.m_uiFirstUsageIdx = i;
-          texData.m_uiLastUsageIdx  = i;
-          texData.m_UsedBy.PushBack(pConnection);
+          resourceData.m_uiFirstUsageIdx = i;
+          resourceData.m_uiLastUsageIdx  = i;
+          resourceData.m_UsedBy.PushBack(pConnection);
         }
       }
     }
   }
 
-  // If a resource descriptor has this hash, it is uninitialized and no resource will be created at runtime.
-  static xiiUInt32 uiDefaultResourceCreationDescriptionHash = xiiRenderPipelinePassResource().CalculateDescriptorHash();
-
-  // Find pins that provide textures into the pipeline, e.g. xiiTargetPass pins.
-  // There can only be up to one provider pin connected to a texture usage block or there would be an ambiguity which of them provides the texture.
-  for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); ++i)
+  // Find pins that provide resources into the pipeline, e.g. xiiTargetPass pins.
+  // There can only be up to one provider pin connected to a resource usage block or there would be an ambiguity which of them provides the resource.
+  for (xiiUInt32 i = 0; i < m_ResourceUsage.GetCount(); ++i)
   {
-    TextureUsageData&               textureUsageData = m_TextureUsage[i];
-    const xiiRenderPipelineNodePin* pTextureProvider = nullptr;
-    auto                            CheckForProvider = [&](const xiiRenderPipelineNodePin* pPin) -> bool {
+    ResourceUsageData&              resourceUsageData = m_ResourceUsage[i];
+    const xiiRenderPipelineNodePin* pResourceProvider = nullptr;
+    auto                            CheckForProvider  = [&](const xiiRenderPipelineNodePin* pPin) -> bool {
       if (!pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::ResourceProvider))
         return true;
 
-      if (!pTextureProvider)
+      if (!pResourceProvider)
       {
-        pTextureProvider = pPin;
+        pResourceProvider = pPin;
         return true;
       }
 
       auto pPinOwner      = static_cast<xiiRenderPipelinePassBase*>(pPin->m_pParent);
-      auto pProviderOwner = static_cast<xiiRenderPipelinePassBase*>(pTextureProvider->m_pParent);
-      xiiLog::Error("Two provider pins are connected to the same texture either directly or via passthrough pins: {}.{} and {}.{}", pProviderOwner->GetName().IsEmpty() ? pProviderOwner->GetDynamicRTTI()->GetTypeName() : pProviderOwner->GetName(), pProviderOwner->GetPinName(pTextureProvider).GetView(), pPinOwner->GetName().IsEmpty() ? pPinOwner->GetDynamicRTTI()->GetTypeName() : pPinOwner->GetName(), pPinOwner->GetPinName(pPin).GetView());
+      auto pProviderOwner = static_cast<xiiRenderPipelinePassBase*>(pResourceProvider->m_pParent);
+      xiiLog::Error("Two provider pins are connected to the same resource either directly or via passthrough pins: {}.{} and {}.{}", pProviderOwner->GetName().IsEmpty() ? pProviderOwner->GetDynamicRTTI()->GetTypeName() : pProviderOwner->GetName(), pProviderOwner->GetPinName(pResourceProvider).GetView(), pPinOwner->GetName().IsEmpty() ? pPinOwner->GetDynamicRTTI()->GetTypeName() : pPinOwner->GetName(), pPinOwner->GetPinName(pPin).GetView());
       return false;
     };
 
-    for (xiiRenderPipelinePassConnection* pUsedByConnection : textureUsageData.m_UsedBy)
+    for (xiiRenderPipelinePassConnection* pUsedByConnection : resourceUsageData.m_UsedBy)
     {
       if (!CheckForProvider(pUsedByConnection->m_pOutput))
-        return false;
+        return XII_FAILURE;
 
       for (const xiiRenderPipelineNodePin* pPin : pUsedByConnection->m_Inputs)
       {
         if (!CheckForProvider(pPin))
-          return false;
+          return XII_FAILURE;
       }
     }
 
-    if (pTextureProvider)
+    if (pResourceProvider)
     {
-      auto                            pPass        = xiiDynamicCast<xiiRenderPipelinePassBase*>(pTextureProvider->m_pParent);
-      xiiSharedPtr<xiiGALTextureView> pTextureView = pPass->QueryTextureProvider(pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
-      if (!pTextureView)
+      auto                             pPass     = xiiDynamicCast<xiiRenderPipelinePassBase*>(pResourceProvider->m_pParent);
+      xiiSharedPtr<xiiGALDeviceObject> pResource = pPass->QueryResourceProvider(pResourceProvider, xiiRenderPipelineResourceRequest(resourceUsageData.m_UsedBy[0]->m_Resource));
+      if (!pResource)
       {
-        // In this case, e.g. xiiTargetPass does not provide a render target for the connection but if the descriptor is set, we can instead use the pool to supplement the missing texture later.
-        textureUsageData.m_pTextureProvider = nullptr;
-        for (auto pUsedByConnection : textureUsageData.m_UsedBy)
+        // In this case, e.g. xiiTargetPass does not provide a render target for the connection but if the descriptor is set, we can instead use the pool to supplement the missing resource later.
+        resourceUsageData.m_pResourceProvider = nullptr;
+
+        for (xiiRenderPipelinePassConnection* pUsedByConnection : resourceUsageData.m_UsedBy)
         {
-          pUsedByConnection->m_pTexture.Clear();
+          if (pUsedByConnection->m_Resource.IsBuffer())
+          {
+            pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = nullptr;
+          }
+          else if (pUsedByConnection->m_Resource.IsTexture())
+          {
+            pUsedByConnection->m_Resource.m_Texture.m_pTexture = nullptr;
+          }
+          else if (pUsedByConnection->m_Resource.IsSampler())
+          {
+            pUsedByConnection->m_Resource.m_Sampler.m_pSampler = nullptr;
+          }
         }
       }
       else
       {
-        textureUsageData.m_pTextureProvider = pTextureProvider;
-        for (auto pUsedByConnection : textureUsageData.m_UsedBy)
+        resourceUsageData.m_pResourceProvider = pResourceProvider;
+
+        for (auto pUsedByConnection : resourceUsageData.m_UsedBy)
         {
-          pUsedByConnection->m_pTexture = pTextureView->GetTexture();
+          if (pUsedByConnection->m_Resource.IsBuffer())
+          {
+            pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pResource.Downcast<xiiGALBuffer>();
+          }
+          else if (pUsedByConnection->m_Resource.IsTexture())
+          {
+            pUsedByConnection->m_Resource.m_Texture.m_pTexture = pResource.Downcast<xiiGALTexture>();
+          }
+          else if (pUsedByConnection->m_Resource.IsSampler())
+          {
+            pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pResource.Downcast<xiiGALSampler>();
+          }
         }
       }
     }
   }
 
-  // Inconvenient loop to gather all TextureUsageData indices that are not provider textures and valid.
-  for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); ++i)
+  // Inconvenient loop to gather all ResourceUsageData indices that are not provider resources and valid.
+  for (xiiUInt32 i = 0; i < m_ResourceUsage.GetCount(); ++i)
   {
-    TextureUsageData& data = m_TextureUsage[i];
-    if (data.m_pTextureProvider || data.m_UsedBy[0]->m_TextureDescription.CalculateHash() == uiDefaultTextureCreationDescriptionHash)
+    ResourceUsageData& data = m_ResourceUsage[i];
+    if (data.m_pResourceProvider || data.m_UsedBy[0]->m_Resource.m_Type == xiiRenderPipelineNodePinResourceType::Unknown)
       continue;
 
-    m_TextureUsageIdxSortedByFirstUsage.PushBack((xiiUInt16)i);
-    m_TextureUsageIdxSortedByLastUsage.PushBack((xiiUInt16)i);
+    m_ResourceUsageIdxSortedByFirstUsage.PushBack((xiiUInt16)i);
+    m_ResourceUsageIdxSortedByLastUsage.PushBack((xiiUInt16)i);
   }
 
-  // Sort first and last usage arrays, these will determine the lifetime of the pool textures.
+  // Sort first and last usage arrays, these will determine the lifetime of the pool resources.
   struct FirstUsageComparer
   {
-    FirstUsageComparer(xiiDynamicArray<TextureUsageData>& ref_textureUsage) :
-      m_TextureUsage(ref_textureUsage)
+    FirstUsageComparer(xiiDynamicArray<ResourceUsageData>& ref_resourceUsage) :
+      m_ResourceUsage(ref_resourceUsage)
     {
     }
 
-    XII_ALWAYS_INLINE bool Less(xiiUInt16 a, xiiUInt16 b) const { return m_TextureUsage[a].m_uiFirstUsageIdx < m_TextureUsage[b].m_uiFirstUsageIdx; }
+    XII_ALWAYS_INLINE bool Less(xiiUInt16 a, xiiUInt16 b) const { return m_ResourceUsage[a].m_uiFirstUsageIdx < m_ResourceUsage[b].m_uiFirstUsageIdx; }
 
-    xiiDynamicArray<TextureUsageData>& m_TextureUsage;
+    xiiDynamicArray<ResourceUsageData>& m_ResourceUsage;
   };
 
   struct LastUsageComparer
   {
-    LastUsageComparer(xiiDynamicArray<TextureUsageData>& ref_textureUsage) :
-      m_TextureUsage(ref_textureUsage)
+    LastUsageComparer(xiiDynamicArray<ResourceUsageData>& ref_resourceUsage) :
+      m_ResourceUsage(ref_resourceUsage)
     {
     }
 
-    XII_ALWAYS_INLINE bool Less(xiiUInt16 a, xiiUInt16 b) const { return m_TextureUsage[a].m_uiLastUsageIdx < m_TextureUsage[b].m_uiLastUsageIdx; }
+    XII_ALWAYS_INLINE bool Less(xiiUInt16 a, xiiUInt16 b) const { return m_ResourceUsage[a].m_uiLastUsageIdx < m_ResourceUsage[b].m_uiLastUsageIdx; }
 
-    xiiDynamicArray<TextureUsageData>& m_TextureUsage;
+    xiiDynamicArray<ResourceUsageData>& m_ResourceUsage;
   };
 
-  m_TextureUsageIdxSortedByFirstUsage.Sort(FirstUsageComparer(m_TextureUsage));
-  m_TextureUsageIdxSortedByLastUsage.Sort(LastUsageComparer(m_TextureUsage));
+  m_ResourceUsageIdxSortedByFirstUsage.Sort(FirstUsageComparer(m_ResourceUsage));
+  m_ResourceUsageIdxSortedByLastUsage.Sort(LastUsageComparer(m_ResourceUsage));
 
-  return true;
+  return XII_SUCCESS;
 }
 
-bool xiiRenderPipeline::AreAttachmentsCompatible(const xiiDynamicArray<xiiRenderPipelinePassBase*>& currentGroup, const ConnectionData& data)
-{
-  if (currentGroup.IsEmpty())
-    return false;
-
-  const ConnectionData& compatibleData = m_Connections[currentGroup.PeekBack()];
-
-  // if (compatibleData.m_Inputs.GetCount() != data.m_Inputs.GetCount())
-  //   return false;
-
-  if (compatibleData.m_Outputs.GetCount() != data.m_Outputs.GetCount())
-    return false;
-
-  return false;
-}
-
-bool xiiRenderPipeline::InitializeRenderPipelineRenderPasses()
-{
-  xiiLogBlock b("Initialize Render Pipeline Render Passes");
-
-#if 0
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiDynamicArray<xiiDynamicArray<xiiRenderPipelinePass*>> groups;
-  xiiDynamicArray<xiiRenderPipelinePass*>                  currentGroup;
-
-  // 1. Walk the list of compiled passes and form groups where we can fuse the passes.
-  for (xiiUniquePtr<xiiRenderPipelinePass>& pPass : m_Passes)
-  {
-    ConnectionData& data = m_Connections[pPass.Borrow()];
-
-    if (currentGroup.IsEmpty() || (pPass->GetPassFlags().IsSet(xiiRenderPipelinePassFlags::AllowSubpassFuse) && currentGroup.PeekBack()->GetPassFlags().IsSet(xiiRenderPipelinePassFlags::AllowSubpassFuse) && AreAttachmentsCompatible(currentGroup, data)))
-    {
-      currentGroup.PushBack(pPass.Borrow());
-    }
-    else
-    {
-      groups.PushBack(currentGroup);
-
-      currentGroup.Clear();
-      currentGroup.PushBack(pPass.Borrow());
-    }
-    if (!currentGroup.IsEmpty())
-    {
-      groups.PushBack(currentGroup);
-
-      currentGroup.Clear();
-    }
-  }
-
-  // 2. The
-
-#  if 0
-    xiiGALRenderPassCreationDescription description;
-
-    xiiGALRenderPassAttachmentDescription& attachmentDescription = description.m_Attachments.ExpandAndGetRef();
-
-    xiiGALSubPassDescription& subPasses = description.m_SubPasses.ExpandAndGetRef();
-
-    xiiGALSubPassDependencyDescription& dependencies = description.m_Dependencies.ExpandAndGetRef();
-
-    pPass->m_pRenderPass = pDevice->CreateRenderPass(description);
-    XII_ASSERT_DEBUG(pPass->m_pRenderPass != nullptr, "Failed to create per-pass GPU render pass.");
-    pPass->m_pRenderPass->SetDebugName(pPass->GetName());
-#  endif
-#endif
-
-  return true;
-}
-
-bool xiiRenderPipeline::InitializeRenderPipelinePasses(const xiiView& view)
+xiiResult xiiRenderPipeline::InitializeRenderPipelinePasses(const xiiView& view)
 {
   xiiLogBlock b("Initialize Render Pipeline Passes");
 
@@ -728,10 +674,10 @@ bool xiiRenderPipeline::InitializeRenderPipelinePasses(const xiiView& view)
   {
     ConnectionData& data = m_Connections[pPass.Borrow()];
 
-    pPass->InitializeRenderPipelinePass(view, data.m_Inputs, data.m_Outputs);
+    XII_SUCCEED_OR_RETURN(pPass->InitializeRenderPipelinePass(view, data.m_Inputs, data.m_Outputs));
   }
 
-  return true;
+  return XII_SUCCESS;
 }
 
 void xiiRenderPipeline::SortExtractors()
@@ -885,11 +831,11 @@ void xiiRenderPipeline::RemoveConnections(xiiRenderPipelinePassBase* pPass)
   }
 }
 
-void xiiRenderPipeline::ClearRenderPassGraphTextures()
+void xiiRenderPipeline::ClearRenderPassGraphResources()
 {
-  m_TextureUsage.Clear();
-  m_TextureUsageIdxSortedByFirstUsage.Clear();
-  m_TextureUsageIdxSortedByLastUsage.Clear();
+  m_ResourceUsage.Clear();
+  m_ResourceUsageIdxSortedByFirstUsage.Clear();
+  m_ResourceUsageIdxSortedByLastUsage.Clear();
 
   for (auto it = m_Connections.GetIterator(); it.IsValid(); ++it)
   {

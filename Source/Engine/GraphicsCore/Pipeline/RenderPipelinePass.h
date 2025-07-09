@@ -11,6 +11,7 @@
 #include <GraphicsFoundation/Resources/Sampler.h>
 
 class xiiStreamWriter;
+struct xiiRenderPipelinePassResource;
 
 /// \brief Declares the fixed capabilities of a render-pipeline pass.
 ///
@@ -119,15 +120,25 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePassConcurre
 /// \see xiiRenderPipelinePassResource, xiiRenderPipelinePassBase::QueryResourceProvider
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceRequest
 {
-  /// \brief Declares which type of GPU resource is being requested.
-  enum class Type
-  {
-    Texture, ///< A 2D/3D texture or render target.
-    Buffer,  ///< A structured, vertex, index, or storage buffer.
-    Sampler  ///< A sampler used in shader binding.
-  };
+  xiiRenderPipelineResourceRequest();
+  xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALBufferCreationDescription& description);
+  xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALTextureCreationDescription& description);
+  xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALSamplerCreationDescription& description);
+  xiiRenderPipelineResourceRequest(const xiiRenderPipelinePassResource& passResource);
 
-  Type m_Type; ///< Indicates which union field is valid.
+  xiiEnum<xiiRenderPipelineNodePinResourceType> m_Type; ///< Indicates which union field is valid.
+
+  /// \brief Returns true if this resource request is a buffer.
+  XII_ALWAYS_INLINE constexpr bool IsBuffer() const { return m_Type == xiiRenderPipelineNodePinResourceType::Buffer || m_Type == xiiRenderPipelineNodePinResourceType::ReadWriteBuffer; }
+
+  /// \brief Returns true if this resource request is a texture.
+  XII_ALWAYS_INLINE constexpr bool IsTexture() const { return m_Type == xiiRenderPipelineNodePinResourceType::ColourAttachment || m_Type == xiiRenderPipelineNodePinResourceType::DepthAttachment; }
+
+  /// \brief Returns true if this resource request is a sampler.
+  XII_ALWAYS_INLINE constexpr bool IsSampler() const { return m_Type == xiiRenderPipelineNodePinResourceType::Sampler; }
+
+  /// \brief Returns true if this resource request is an acceleration structure.
+  XII_ALWAYS_INLINE constexpr bool IsAccelerationStructure() const { return m_Type == xiiRenderPipelineNodePinResourceType::AccelerationStructure; }
 
   union
   {
@@ -147,123 +158,30 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceRequest
 /// \see xiiRenderPipelineNodePinResourceType
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassResource
 {
-  xiiRenderPipelinePassResource() :
-    m_Type(Type::Invalid)
-  {
-    // It's undefined behavior to leave a union uninitialized with non-trivial members.
-    // So we initialize the texture variant by default, even if it's unused.
-    new (&m_Texture) decltype(m_Texture)();
-  }
+  xiiRenderPipelinePassResource();
+  xiiRenderPipelinePassResource(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALBufferCreationDescription& description, const xiiSharedPtr<xiiGALBuffer>& pBuffer = {});
+  xiiRenderPipelinePassResource(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALTextureCreationDescription& description, const xiiSharedPtr<xiiGALTexture>& pTexture = {});
+  xiiRenderPipelinePassResource(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALSamplerCreationDescription& description, const xiiSharedPtr<xiiGALSampler>& pSampler = {});
+  xiiRenderPipelinePassResource(const xiiRenderPipelinePassResource& other);
+  ~xiiRenderPipelinePassResource();
 
-  xiiRenderPipelinePassResource(const xiiGALTextureCreationDescription& description, const xiiSharedPtr<xiiGALTexture>& pTexture = {})
-  {
-    m_Type = Type::Texture;
+  xiiRenderPipelinePassResource& operator=(const xiiRenderPipelinePassResource& other);
 
-    new (&m_Texture) decltype(m_Texture){description, pTexture};
-  }
+  xiiUInt32 CalculateDescriptorHash() const;
 
-  xiiRenderPipelinePassResource(const xiiGALBufferCreationDescription& description, const xiiSharedPtr<xiiGALBuffer>& pBuffer = {})
-  {
-    m_Type = Type::Buffer;
+  /// \brief Returns true if this resource is a buffer.
+  XII_ALWAYS_INLINE constexpr bool IsBuffer() const { return m_Type == xiiRenderPipelineNodePinResourceType::Buffer || m_Type == xiiRenderPipelineNodePinResourceType::ReadWriteBuffer; }
 
-    new (&m_Buffer) decltype(m_Buffer){description, pBuffer};
-  }
+  /// \brief Returns true if this resource is a texture.
+  XII_ALWAYS_INLINE constexpr bool IsTexture() const { return m_Type == xiiRenderPipelineNodePinResourceType::ColourAttachment || m_Type == xiiRenderPipelineNodePinResourceType::DepthAttachment; }
 
-  xiiRenderPipelinePassResource(const xiiGALSamplerCreationDescription& description, const xiiSharedPtr<xiiGALSampler>& pSampler = {})
-  {
-    m_Type = Type::Sampler;
+  /// \brief Returns true if this resource is a sampler.
+  XII_ALWAYS_INLINE constexpr bool IsSampler() const { return m_Type == xiiRenderPipelineNodePinResourceType::Sampler; }
 
-    new (&m_Sampler) decltype(m_Sampler){description, pSampler};
-  }
+  /// \brief Returns true if this resource is an acceleration structure.
+  XII_ALWAYS_INLINE constexpr bool IsAccelerationStructure() const { return m_Type == xiiRenderPipelineNodePinResourceType::AccelerationStructure; }
 
-  xiiRenderPipelinePassResource(const xiiRenderPipelinePassResource& other) :
-    m_Type(other.m_Type)
-  {
-    switch (m_Type)
-    {
-      case Type::Texture:
-        new (&m_Texture) decltype(m_Texture)(other.m_Texture);
-        break;
-
-      case Type::Buffer:
-        new (&m_Buffer) decltype(m_Buffer)(other.m_Buffer);
-        break;
-
-      case Type::Sampler:
-        new (&m_Sampler) decltype(m_Sampler)(other.m_Sampler);
-        break;
-
-      case Type::AccelerationStructure:
-      case Type::Invalid:
-        // No initialization needed
-        break;
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-  }
-
-  ~xiiRenderPipelinePassResource()
-  {
-    switch (m_Type)
-    {
-      case xiiRenderPipelinePassResource::Type::Texture:
-        m_Texture.m_pTexture = nullptr;
-        break;
-      case xiiRenderPipelinePassResource::Type::Buffer:
-        m_Buffer.m_pBuffer = nullptr;
-        break;
-      case xiiRenderPipelinePassResource::Type::Sampler:
-        m_Sampler.m_pSampler = nullptr;
-        break;
-      case xiiRenderPipelinePassResource::Type::AccelerationStructure:
-        break;
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-  }
-
-  XII_FORCE_INLINE xiiRenderPipelinePassResource& operator=(const xiiRenderPipelinePassResource& other)
-  {
-    if (this != &other)
-    {
-      // Clean up current resource.
-      this->~xiiRenderPipelinePassResource();
-
-      // Copy construct into this object.
-      new (this) xiiRenderPipelinePassResource(other);
-    }
-    return *this;
-  }
-
-  XII_FORCE_INLINE xiiUInt32 CalculateDescriptorHash() const
-  {
-    switch (m_Type)
-    {
-      case xiiRenderPipelinePassResource::Type::Texture:
-        return m_Texture.m_Description.CalculateHash();
-      case xiiRenderPipelinePassResource::Type::Buffer:
-        return m_Buffer.m_Description.CalculateHash();
-      case xiiRenderPipelinePassResource::Type::Sampler:
-        return m_Sampler.m_Description.CalculateHash();
-
-      case xiiRenderPipelinePassResource::Type::AccelerationStructure:
-      case xiiRenderPipelinePassResource::Type::Invalid:
-        return 0U;
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-    return 0U
-  }
-
-  /// \brief Enumerates the supported resource types for a render pipeline pass output.
-  enum class Type
-  {
-    Invalid,               ///< No resource is associated or the resource is uninitialized.
-    Texture,               ///< A GPU texture, typically used as an attachment or sample target.
-    Buffer,                ///< A general-purpose buffer (structured, vertex, index, etc.).
-    Sampler,               ///< A static sampler bound to shaders.
-    AccelerationStructure, ///< A ray tracing acceleration structure (TLAS or BLAS).
-  } m_Type;
+  xiiEnum<xiiRenderPipelineNodePinResourceType> m_Type; ///< Indicates which union field is valid.
 
   union
   {

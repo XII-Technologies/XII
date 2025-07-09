@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
+#include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 
 class xiiView;
 class xiiFrustum;
@@ -52,7 +53,7 @@ public:
   const xiiExtractedRenderData& GetRenderData() const;
   xiiRenderDataBatchList        GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
 
-  /// \brief Creates a DGML graph of all passes and textures. Can be used to verify that no accidental temporary textures are created due to poorly constructed pipelines or errors in code.
+  /// \brief Creates a DGML graph of all passes and resources. Can be used to verify that no accidental temporary resources are created due to poorly constructed pipelines or errors in code.
   void CreateDgmlGraph(xiiDGMLGraph& ref_graph);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -71,17 +72,16 @@ private:
 
   // \brief Rebuilds the render pipeline, e.g. sorting passes via dependencies and creating render targets.
   PipelineState Rebuild(const xiiView& view);
-  bool          RebuildInternal(const xiiView& view);
-  bool          SortPasses();
-  bool          InitializePassResourceDescriptions(const xiiView& view);
-  bool          CreatePassResourceUsage(const xiiView& view);
-  bool          InitializeRenderPipelineRenderPasses();
-  bool          InitializeRenderPipelinePasses(const xiiView& view);
+  xiiResult          RebuildInternal(const xiiView& view);
+  xiiResult          SortPasses();
+  xiiResult          InitializePassResourceDescriptions(const xiiView& view);
+  xiiResult          CreatePassResourceUsage(const xiiView& view);
+  xiiResult          InitializeRenderPipelinePasses(const xiiView& view);
   void          SortExtractors();
   void          UpdateViewData(const xiiView& view, xiiUInt32 uiDataIndex);
 
   void RemoveConnections(xiiRenderPipelinePassBase* pPass);
-  void ClearRenderPassGraphTextures();
+  void ClearRenderPassGraphResources();
   bool AreInputDescriptionsAvailable(const xiiRenderPipelinePassBase* pPass, const xiiHybridArray<xiiRenderPipelinePassBase*, 32>& done) const;
   bool ArePassThroughInputsDone(const xiiRenderPipelinePassBase* pPass, const xiiHybridArray<xiiRenderPipelinePassBase*, 32>& done) const;
 
@@ -124,19 +124,20 @@ private: // Member data
   xiiDynamicArray<xiiUniquePtr<xiiRenderPipelinePassBase>> m_Passes;      ///< The passes present in the pipeline in no particular order.
   xiiMap<const xiiRenderPipelinePassBase*, ConnectionData> m_Connections; ///< The connections in each pass.
 
-  /// \brief Contains all connections that share the same path-through texture and their first and last usage pass index.
-  struct TextureUsageData
+  /// \brief Contains all connections that share the same path-through resource and their first and last usage pass index.
+  struct ResourceUsageData
   {
-    xiiHybridArray<xiiRenderPipelinePassConnection*, 4> m_UsedBy;                     ///< All the connections that use this texture. Due to passthrough pins, this can be larger than 1.
-    xiiUInt16                                           m_uiFirstUsageIdx;            ///< Used to decide when to acquire a temporary texture.
-    xiiUInt16                                           m_uiLastUsageIdx;             ///< Used to decide when to return a temporary texture.
-    const xiiRenderPipelineNodePin*                     m_pTextureProvider = nullptr; ///< If set, this node and parent pass provide an external texture to the pipeline. This could be a render target from a xiiTargetPass or a history buffer that is preserved across frames. At the start of every frame the parent pass will be asked for the current value of the texture a this pin.
+    xiiEnum<xiiRenderPipelineNodePinResourceType>       m_ResourceType;
+    xiiHybridArray<xiiRenderPipelinePassConnection*, 4> m_UsedBy;                      ///< All the connections that use this resource. Due to passthrough pins, this can be larger than 1.
+    xiiUInt16                                           m_uiFirstUsageIdx;             ///< Used to decide when to acquire a temporary resource.
+    xiiUInt16                                           m_uiLastUsageIdx;              ///< Used to decide when to return a temporary resource.
+    const xiiRenderPipelineNodePin*                     m_pResourceProvider = nullptr; ///< If set, this node and parent pass provide an external resource to the pipeline. This could be a render target from a xiiTargetPass or a history buffer that is preserved across frames. At the start of every frame the parent pass will be asked for the current value of the resource a this pin.
   };
-  xiiDynamicArray<TextureUsageData> m_TextureUsage;                      ///< All unique textures used during the pipeline run.
-  xiiDynamicArray<xiiUInt16>        m_TextureUsageIdxSortedByFirstUsage; ///< Indices map into m_TextureUsage.
-  xiiDynamicArray<xiiUInt16>        m_TextureUsageIdxSortedByLastUsage;  ///< Indices map into m_TextureUsage.
+  xiiDynamicArray<ResourceUsageData> m_ResourceUsage;                      ///< All unique resources used during the pipeline run.
+  xiiDynamicArray<xiiUInt16>         m_ResourceUsageIdxSortedByFirstUsage; ///< Indices map into m_ResourceUsage.
+  xiiDynamicArray<xiiUInt16>         m_ResourceUsageIdxSortedByLastUsage;  ///< Indices map into m_ResourceUsage.
 
-  xiiHashTable<xiiRenderPipelinePassConnection*, xiiUInt32> m_ConnectionToTextureIndex;
+  xiiHashTable<xiiRenderPipelinePassConnection*, xiiUInt32> m_ConnectionToResourceIndex;
 
   // Extractors
   xiiDynamicArray<xiiUniquePtr<xiiExtractor>> m_Extractors;
@@ -149,7 +150,6 @@ private: // Member data
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
 
 private:
-  bool                            AreAttachmentsCompatible(const xiiDynamicArray<xiiRenderPipelinePassBase*>& currentGroup, const ConnectionData& data);
   xiiSharedPtr<xiiGALRenderPass>  GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description);
   xiiSharedPtr<xiiGALFramebuffer> GetOrCreateFramebuffer(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> pAttachments, xiiSizeU32 framebufferSize, xiiUInt32 uiArraySliceCount);
 

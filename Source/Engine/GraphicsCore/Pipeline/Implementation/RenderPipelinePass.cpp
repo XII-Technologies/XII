@@ -250,4 +250,140 @@ xiiUtilityPipelinePass::xiiUtilityPipelinePass(xiiStringView sName) :
 
 xiiUtilityPipelinePass::~xiiUtilityPipelinePass() = default;
 
+///////////////////////////////////////////////////////////////////////////////
+
+xiiRenderPipelineResourceRequest::xiiRenderPipelineResourceRequest() = default;
+
+xiiRenderPipelineResourceRequest::xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALBufferCreationDescription& description) :
+  m_Type(resourceType), m_Buffer(description)
+{
+  XII_ASSERT_DEV(IsBuffer(), "Invalid resource type for a buffer resource.");
+}
+
+xiiRenderPipelineResourceRequest::xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALTextureCreationDescription& description) :
+  m_Type(resourceType), m_Texture(description)
+{
+  XII_ASSERT_DEV(IsTexture(), "Invalid resource type for a texture resource.");
+}
+
+xiiRenderPipelineResourceRequest::xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALSamplerCreationDescription& description) :
+  m_Type(resourceType), m_Sampler(description)
+{
+  XII_ASSERT_DEV(IsSampler(), "Invalid resource type for a sampler resource.");
+}
+
+xiiRenderPipelineResourceRequest::xiiRenderPipelineResourceRequest(const xiiRenderPipelinePassResource& passResource) :
+  m_Type(passResource.m_Type)
+{
+  if (IsBuffer())
+  {
+    m_Buffer = passResource.m_Buffer.m_Description;
+  }
+  else if (IsTexture())
+  {
+    m_Texture = passResource.m_Texture.m_Description;
+  }
+  else if (IsSampler())
+  {
+    m_Sampler = passResource.m_Sampler.m_Description;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+xiiRenderPipelinePassResource::xiiRenderPipelinePassResource() :
+  m_Type(xiiRenderPipelineNodePinResourceType::Unknown)
+{
+  // It's undefined behavior to leave a union uninitialized with non-trivial members.
+  // So we initialize the texture variant by default, even if it's unused.
+  new (&m_Texture) decltype(m_Texture)();
+}
+
+xiiRenderPipelinePassResource::xiiRenderPipelinePassResource(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALBufferCreationDescription& description, const xiiSharedPtr<xiiGALBuffer>& pBuffer) :
+  m_Type(resourceType)
+{
+  XII_ASSERT_DEV(IsBuffer(), "Invalid resource type for a buffer resource.");
+
+  new (&m_Buffer) decltype(m_Buffer){description, pBuffer};
+}
+
+xiiRenderPipelinePassResource::xiiRenderPipelinePassResource(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALTextureCreationDescription& description, const xiiSharedPtr<xiiGALTexture>& pTexture) :
+  m_Type(resourceType)
+{
+  XII_ASSERT_DEV(IsTexture(), "Invalid resource type for a texture resource.");
+
+  new (&m_Texture) decltype(m_Texture){description, pTexture};
+}
+
+xiiRenderPipelinePassResource::xiiRenderPipelinePassResource(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALSamplerCreationDescription& description, const xiiSharedPtr<xiiGALSampler>& pSampler) :
+  m_Type(resourceType)
+{
+  XII_ASSERT_DEV(IsSampler(), "Invalid resource type for a sampler resource.");
+
+  new (&m_Sampler) decltype(m_Sampler){description, pSampler};
+}
+
+xiiRenderPipelinePassResource::xiiRenderPipelinePassResource(const xiiRenderPipelinePassResource& other) :
+  m_Type(other.m_Type)
+{
+  if (IsBuffer())
+  {
+    new (&m_Buffer) decltype(m_Buffer)(other.m_Buffer);
+  }
+  else if (IsTexture())
+  {
+    new (&m_Texture) decltype(m_Texture)(other.m_Texture);
+  }
+  else if (IsSampler())
+  {
+    new (&m_Sampler) decltype(m_Sampler)(other.m_Sampler);
+  }
+}
+
+xiiRenderPipelinePassResource::~xiiRenderPipelinePassResource()
+{
+  if (IsBuffer())
+  {
+    m_Buffer.m_pBuffer = nullptr;
+  }
+  else if (IsTexture())
+  {
+    m_Texture.m_pTexture = nullptr;
+  }
+  else if (IsSampler())
+  {
+    m_Sampler.m_pSampler = nullptr;
+  }
+}
+
+xiiRenderPipelinePassResource& xiiRenderPipelinePassResource::operator=(const xiiRenderPipelinePassResource& other)
+{
+  if (this != &other)
+  {
+    // Clean up current resource.
+    this->~xiiRenderPipelinePassResource();
+
+    // Copy construct into this object.
+    new (this) xiiRenderPipelinePassResource(other);
+  }
+  return *this;
+}
+
+xiiUInt32 xiiRenderPipelinePassResource::CalculateDescriptorHash() const
+{
+  if (IsBuffer())
+  {
+    return m_Buffer.m_Description.CalculateHash();
+  }
+  else if (IsTexture())
+  {
+    return m_Texture.m_Description.CalculateHash();
+  }
+  else if (IsSampler())
+  {
+    return m_Sampler.m_Description.CalculateHash();
+  }
+  return 0U;
+}
+
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelinePass);
