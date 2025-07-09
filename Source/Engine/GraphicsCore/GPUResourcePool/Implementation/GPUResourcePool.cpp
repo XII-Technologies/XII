@@ -113,7 +113,7 @@ xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidt
   textureDescription.m_Size.height        = uiHeight;
   textureDescription.m_uiSampleCount      = sampleCount;
   textureDescription.m_uiArraySizeOrDepth = uiSliceColunt;
-  textureDescription.m_Type               = (bIsArray || textureDescription.m_uiSampleCount > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+  textureDescription.m_Type               = bIsArray ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
   textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
   textureDescription.m_Usage              = xiiGALResourceUsage::Immutable;
 
