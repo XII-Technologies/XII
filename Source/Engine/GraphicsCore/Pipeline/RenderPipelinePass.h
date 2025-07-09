@@ -282,6 +282,15 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassConnection
   xiiRenderPipelinePassResource                      m_Resource;          ///< The resolved GPU resource produced by the output pin, including descriptor and handle. Only one active resource type is valid, as indicated by m_Resource.m_Type.
 };
 
+/// \brief Base class for render pipeline passes within a data-driven render graph system.
+///
+/// Each render pass defines its inputs, outputs, capabilities, and runtime execution logic. This class handles naming, serialization, and interaction with the render pipeline compiler.
+///
+/// Passes are responsible for describing their resource requirements, initializing resources and logic based on resolved graph connections, and executing their logic during render view processing.
+///
+/// Derive from this class to implement custom rendering functionality.
+///
+/// \see xiiRenderPipelineNode, xiiRenderPipelinePassConnection, xiiRenderPipelinePassResource
 class XII_GRAPHICSCORE_DLL xiiRenderPipelinePassBase : public xiiRenderPipelineNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePassBase, xiiRenderPipelineNode);
@@ -289,28 +298,63 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePassBase : public xiiRenderPipelineN
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipelinePassBase);
 
 public:
+  /// \brief Constructor to define a named render pass with required capability flags.
+  ///
+  /// \param sName           - The name identifier of the pass (used for debugging and editor integration).
+  /// \param capabilityFlags - Declares what features this pass supports (e.g., stereo-aware, subpass fusion).
   xiiRenderPipelinePassBase(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags);
 
+  /// \brief Virtual destructor.
   virtual ~xiiRenderPipelinePassBase();
 
+  /// \brief Assigns the user-visible name of the pass.
   void SetName(xiiStringView sName); // [ property ]
 
+  /// \brief Sets additional flags that describe how the pass behaves or should be scheduled.
   void SetPassFlags(xiiBitflags<xiiRenderPipelinePassFlags> flags); // [ property ]
 
+  /// \brief Provides a hint to the graph scheduler regarding parallel execution potential.
   void SetPassConcurrencyHint(xiiEnum<xiiRenderPipelinePassConcurrencyHint> concurrencyHint); // [ property ]
 
+  /// \brief Serializes the internal pass configuration (not resource or runtime state).
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
 
+  /// \brief Restores the internal pass configuration from serialized data.
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
+  /// \brief Must be implemented by each pass to describe the GPU resources it requires on its output pins.
+  ///
+  /// The graph compiler uses this to allocate or pool GPU resources like textures, samplers, and buffers.
+  /// Derived passes should populate each entry in \a pOutputs with the corresponding resource description.
+  virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs) = 0;
+
+  /// \brief Called once before the first execution to allow the pass to initialize itself based on the graph and view context.
+  ///
+  /// This is typically used to:
+  /// - Resolve input/output resource handles from connections.
+  /// - Cache relevant view properties.
+  /// - Prepare internal state (e.g., sampler bindings, descriptor layouts).
   virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs);
 
+  /// \brief Allows a pass to override resource creation for one of its outputs, typically to reuse or share GPU resources.
+  ///
+  /// If a non-null shared pointer is returned, it will be used instead of the default resource construction logic.
+  /// Returning `nullptr` delegates resource creation to the graph compiler or the default allocator.
   virtual xiiSharedPtr<xiiGALDeviceObject> QueryResourceProvider(const xiiRenderPipelineNodePin* pPin, const xiiRenderPipelineResourceRequest& request);
 
+  /// \brief Must be implemented by derived classes to perform the pass's actual rendering or processing logic.
+  ///
+  /// Called once per frame (and per view, if applicable).
+  ///
+  /// Inputs and outputs are guaranteed to be valid and resolved GPU handles.
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) = 0;
 
+  /// \brief Called instead of Execute() if the pass is inactive (e.g., temporarily disabled or culled).
+  ///
+  /// Can be used for non-draw side effects such as animation updates or property blending.
   virtual void ExecuteInactive(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs);
 
+  /// \brief Allows the pass to update scene or view properties after rendering (e.g., exposure, feedback).
   virtual void ReadBackProperties(xiiView* pView);
 
 public:

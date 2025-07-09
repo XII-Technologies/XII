@@ -78,7 +78,7 @@ xiiResult xiiCreateColourAttachmentPass::Deserialize(xiiStreamReader& inout_stre
   return XII_SUCCESS;
 }
 
-xiiResult xiiCreateColourAttachmentPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+xiiResult xiiCreateColourAttachmentPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
 {
   const xiiRectFloat& viewport = view.GetViewport();
 
@@ -93,7 +93,7 @@ xiiResult xiiCreateColourAttachmentPass::InitializeRenderPipelinePass(const xiiV
 
   const bool bIsFlipped = preferredFormat == xiiGALResourceFormat::BGRA8UNormalized || preferredFormat == xiiGALResourceFormat::BGRA8UNormalizedSRGB;
 
-  xiiGALTextureCreationDescription& textureDescription = pOutputs[m_PinOutput.m_uiOutputIndex]->m_Resource.m_Texture.m_Description;
+  xiiGALTextureCreationDescription& textureDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Resource.m_Texture.m_Description;
   textureDescription.m_Type                            = m_Type;
   textureDescription.m_Format                          = xiiSourceFormat::GetGALResourceFormat(m_Format, bIsFlipped);
   textureDescription.m_Size.width                      = static_cast<xiiUInt32>(viewport.width);
@@ -156,11 +156,11 @@ xiiResult xiiCreateDepthAttachmentPass::Deserialize(xiiStreamReader& inout_strea
   return XII_SUCCESS;
 }
 
-xiiResult xiiCreateDepthAttachmentPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+xiiResult xiiCreateDepthAttachmentPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
 {
   const xiiRectFloat& viewport = view.GetViewport();
 
-  xiiGALTextureCreationDescription& textureDescription = pOutputs[m_PinOutput.m_uiOutputIndex]->m_Resource.m_Texture.m_Description;
+  xiiGALTextureCreationDescription& textureDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Resource.m_Texture.m_Description;
   textureDescription.m_Type                            = m_Type;
   textureDescription.m_Format                          = xiiSourceFormat::GetGALResourceFormat(m_Format);
   textureDescription.m_Size.width                      = static_cast<xiiUInt32>(viewport.width);

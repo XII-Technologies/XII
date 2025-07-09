@@ -56,9 +56,9 @@ xiiResult xiiCreateBufferPass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiCreateBufferPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+xiiResult xiiCreateBufferPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
 {
-  xiiGALBufferCreationDescription& bufferDescription = pOutputs[m_PinOutput.m_uiOutputIndex]->m_Resource.m_Buffer.m_Description;
+  xiiGALBufferCreationDescription& bufferDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Resource.m_Buffer.m_Description;
   bufferDescription.m_uiSize                         = m_uiSize;
   bufferDescription.m_uiElementByteStride            = m_uiElementByteStride;
   bufferDescription.m_BindFlags                      = m_BindFlags;

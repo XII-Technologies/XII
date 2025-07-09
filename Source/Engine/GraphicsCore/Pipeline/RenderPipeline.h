@@ -30,10 +30,10 @@ public:
   xiiRenderPipeline();
   ~xiiRenderPipeline();
 
-  void                   AddPass(xiiUniquePtr<xiiRenderPipelinePassBase>&& pPass);
-  void                   RemovePass(xiiRenderPipelinePassBase* pPass);
-  void                   GetPasses(xiiDynamicArray<const xiiRenderPipelinePassBase*>& ref_passes) const;
-  void                   GetPasses(xiiDynamicArray<xiiRenderPipelinePassBase*>& ref_passes);
+  void                       AddPass(xiiUniquePtr<xiiRenderPipelinePassBase>&& pPass);
+  void                       RemovePass(xiiRenderPipelinePassBase* pPass);
+  void                       GetPasses(xiiDynamicArray<const xiiRenderPipelinePassBase*>& ref_passes) const;
+  void                       GetPasses(xiiDynamicArray<xiiRenderPipelinePassBase*>& ref_passes);
   xiiRenderPipelinePassBase* GetPassByName(const xiiStringView& sPassName);
 
   bool Connect(xiiRenderPipelinePassBase* pOutputNode, xiiStringView sOutputPinName, xiiRenderPipelinePassBase* pInputNode, xiiStringView sInputPinName);

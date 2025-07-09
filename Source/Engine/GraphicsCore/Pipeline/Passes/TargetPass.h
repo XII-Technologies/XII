@@ -12,6 +12,8 @@ public:
   xiiTargetPass(xiiStringView sName = "TargetPass");
   ~xiiTargetPass();
 
+  virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs) override;
+
   virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
   virtual xiiSharedPtr<xiiGALDeviceObject> QueryResourceProvider(const xiiRenderPipelineNodePin* pPin, const xiiRenderPipelineResourceRequest& request) override;

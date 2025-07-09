@@ -77,9 +77,9 @@ xiiResult xiiCreateSamplerPass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiCreateSamplerPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+xiiResult xiiCreateSamplerPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassConnection> pOutputs)
 {
-  xiiGALSamplerCreationDescription& samplerDescription = pOutputs[m_PinOutput.m_uiOutputIndex]->m_Resource.m_Sampler.m_Description;
+  xiiGALSamplerCreationDescription& samplerDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Resource.m_Sampler.m_Description;
   samplerDescription.m_MinFilter                       = m_MinFilter;
   samplerDescription.m_MagFilter                       = m_MagFilter;
   samplerDescription.m_MipFilter                       = m_MipFilter;
