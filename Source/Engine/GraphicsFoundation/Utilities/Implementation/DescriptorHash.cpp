@@ -7,15 +7,6 @@
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 template <typename T>
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiSizeTemplate<T>& value)
-{
-  ref_stream << value.width;
-  ref_stream << value.height;
-
-  return ref_stream;
-}
-
-template <typename T>
 xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiSharedPtr<T>& pPtr)
 {
   ref_stream << reinterpret_cast<const xiiUInt64&>(pPtr.Borrow());
