@@ -577,9 +577,9 @@ xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
 
     if (pResourceProvider)
     {
-      auto                             pPass     = xiiDynamicCast<xiiRenderPipelinePassBase*>(pResourceProvider->m_pParent);
-      xiiSharedPtr<xiiGALDeviceObject> pResource = pPass->QueryResourceProvider(pResourceProvider, xiiRenderPipelineResourceRequest(resourceUsageData.m_UsedBy[0]->m_Resource));
-      if (!pResource)
+      auto                             pPass         = xiiDynamicCast<xiiRenderPipelinePassBase*>(pResourceProvider->m_pParent);
+      xiiSharedPtr<xiiGALDeviceObject> pDeviceObject = pPass->QueryResourceProvider(pResourceProvider, xiiRenderPipelineResourceRequest(resourceUsageData.m_UsedBy[0]->m_Resource));
+      if (!pDeviceObject)
       {
         // In this case, e.g. xiiTargetPass does not provide a render target for the connection but if the descriptor is set, we can instead use the pool to supplement the missing resource later.
         resourceUsageData.m_pResourceProvider = nullptr;
@@ -608,15 +608,15 @@ xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
         {
           if (pUsedByConnection->m_Resource.IsBuffer())
           {
-            pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pResource.Downcast<xiiGALBuffer>();
+            pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pDeviceObject.Downcast<xiiGALBuffer>();
           }
           else if (pUsedByConnection->m_Resource.IsTexture())
           {
-            pUsedByConnection->m_Resource.m_Texture.m_pTexture = pResource.Downcast<xiiGALTexture>();
+            pUsedByConnection->m_Resource.m_Texture.m_pTexture = pDeviceObject.Downcast<xiiGALTexture>();
           }
           else if (pUsedByConnection->m_Resource.IsSampler())
           {
-            pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pResource.Downcast<xiiGALSampler>();
+            pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pDeviceObject.Downcast<xiiGALSampler>();
           }
         }
       }
@@ -1203,17 +1203,31 @@ void xiiRenderPipeline::Render()
   }
 
   {
-    // Update textures from texture providers as these can change every frame (e.g. swap chain textures).
-    for (TextureUsageData& textureUsageData : m_TextureUsage)
+    // Update resources from resource providers as these can change every frame (e.g. swap chain textures).
+    for (ResourceUsageData& resourceUsageData : m_ResourceUsage)
     {
-      if (!textureUsageData.m_pTextureProvider)
+      if (!resourceUsageData.m_pResourceProvider)
         continue;
 
-      auto                            pPass        = static_cast<xiiRenderPipelinePassBase*>(textureUsageData.m_pTextureProvider->m_pParent);
-      xiiSharedPtr<xiiGALTextureView> pTextureView = pPass->QueryTextureProvider(textureUsageData.m_pTextureProvider, textureUsageData.m_UsedBy[0]->m_TextureDescription);
-      for (xiiRenderPipelinePassConnection* pUsedByConnection : textureUsageData.m_UsedBy)
+      auto                             pPass         = static_cast<xiiRenderPipelinePassBase*>(resourceUsageData.m_pResourceProvider->m_pParent);
+      xiiSharedPtr<xiiGALDeviceObject> pDeviceObject = pPass->QueryResourceProvider(resourceUsageData.m_pResourceProvider, xiiRenderPipelineResourceRequest(resourceUsageData.m_UsedBy[0]->m_Resource));
+      for (xiiRenderPipelinePassConnection* pUsedByConnection : resourceUsageData.m_UsedBy)
       {
-        pUsedByConnection->m_pTexture = pTextureView->GetTexture();
+        for (auto pUsedByConnection : resourceUsageData.m_UsedBy)
+        {
+          if (pUsedByConnection->m_Resource.IsBuffer())
+          {
+            pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pDeviceObject.Downcast<xiiGALBuffer>();
+          }
+          else if (pUsedByConnection->m_Resource.IsTexture())
+          {
+            pUsedByConnection->m_Resource.m_Texture.m_pTexture = pDeviceObject.Downcast<xiiGALTexture>();
+          }
+          else if (pUsedByConnection->m_Resource.IsSampler())
+          {
+            pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pDeviceObject.Downcast<xiiGALSampler>();
+          }
+        }
       }
     }
 
@@ -1222,21 +1236,49 @@ void xiiRenderPipeline::Render()
     for (xiiUInt32 i = 0; i < m_Passes.GetCount(); ++i)
     {
       auto& pPass = m_Passes[i];
+
       XII_PROFILE_SCOPE(pPass->GetName());
       xiiLogBlock passBlock("Render Pass", pPass->GetName());
 
-      // Create pool textures.
-      for (; uiCurrentFirstUsageIdx < m_TextureUsageIdxSortedByFirstUsage.GetCount();)
+      // Create pool resources.
+      for (; uiCurrentFirstUsageIdx < m_ResourceUsageIdxSortedByFirstUsage.GetCount();)
       {
-        xiiUInt16         uiCurrentUsageData = m_TextureUsageIdxSortedByFirstUsage[uiCurrentFirstUsageIdx];
-        TextureUsageData& usageData          = m_TextureUsage[uiCurrentUsageData];
+        xiiUInt16          uiCurrentUsageData = m_ResourceUsageIdxSortedByFirstUsage[uiCurrentFirstUsageIdx];
+        ResourceUsageData& usageData          = m_ResourceUsage[uiCurrentUsageData];
+
         if (usageData.m_uiFirstUsageIdx == i)
         {
-          xiiSharedPtr<xiiGALTexture> pTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(usageData.m_UsedBy[0]->m_TextureDescription);
-          XII_ASSERT_DEV(pTexture != nullptr, "GPU pool returned an invalidated texture!");
-          for (xiiRenderPipelinePassConnection* pConnection : usageData.m_UsedBy)
+          xiiSharedPtr<xiiGALDeviceObject> pDeviceObject;
+
+          if (usageData.m_UsedBy[0]->m_Resource.IsBuffer())
           {
-            pConnection->m_pTexture = pTexture;
+            pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_Description);
+          }
+          else if (usageData.m_UsedBy[0]->m_Resource.IsTexture())
+          {
+            pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetTexture(usageData.m_UsedBy[0]->m_Resource.m_Texture.m_Description);
+          }
+          else if (usageData.m_UsedBy[0]->m_Resource.IsSampler())
+          {
+            pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetSampler(usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_Description);
+          }
+
+          XII_ASSERT_DEV(pDeviceObject != nullptr, "GPU pool returned an invalidated resource!");
+
+          for (xiiRenderPipelinePassConnection* pUsedByConnection : usageData.m_UsedBy)
+          {
+            if (pUsedByConnection->m_Resource.IsBuffer())
+            {
+              pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pDeviceObject.Downcast<xiiGALBuffer>();
+            }
+            else if (pUsedByConnection->m_Resource.IsTexture())
+            {
+              pUsedByConnection->m_Resource.m_Texture.m_pTexture = pDeviceObject.Downcast<xiiGALTexture>();
+            }
+            else if (pUsedByConnection->m_Resource.IsSampler())
+            {
+              pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pDeviceObject.Downcast<xiiGALSampler>();
+            }
           }
           ++uiCurrentFirstUsageIdx;
         }
@@ -1250,6 +1292,7 @@ void xiiRenderPipeline::Render()
       // Execute pass block.
       {
         ConnectionData& connectionData = m_Connections[pPass.Borrow()];
+
         if (pPass->m_bActive)
         {
           pPass->Execute(renderViewContext, connectionData.m_Inputs, connectionData.m_Outputs);
@@ -1261,17 +1304,41 @@ void xiiRenderPipeline::Render()
       }
 
       // Release pool textures.
-      for (; uiCurrentLastUsageIdx < m_TextureUsageIdxSortedByLastUsage.GetCount();)
+      for (; uiCurrentLastUsageIdx < m_ResourceUsageIdxSortedByLastUsage.GetCount();)
       {
-        xiiUInt16         uiCurrentUsageData = m_TextureUsageIdxSortedByLastUsage[uiCurrentLastUsageIdx];
-        TextureUsageData& usageData          = m_TextureUsage[uiCurrentUsageData];
+        xiiUInt16          uiCurrentUsageData = m_ResourceUsageIdxSortedByLastUsage[uiCurrentLastUsageIdx];
+        ResourceUsageData& usageData          = m_ResourceUsage[uiCurrentUsageData];
         if (usageData.m_uiLastUsageIdx == i)
         {
-          xiiGPUResourcePool::GetDefaultInstance()->ReturnTexture(usageData.m_UsedBy[0]->m_pTexture);
-          for (xiiRenderPipelinePassConnection* pConnection : usageData.m_UsedBy)
+          if (usageData.m_UsedBy[0]->m_Resource.IsBuffer())
           {
-            pConnection->m_pTexture.Clear();
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnBuffer(usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_pBuffer);
           }
+          else if (usageData.m_UsedBy[0]->m_Resource.IsTexture())
+          {
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnTexture(usageData.m_UsedBy[0]->m_Resource.m_Texture.m_pTexture);
+          }
+          else if (usageData.m_UsedBy[0]->m_Resource.IsSampler())
+          {
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnSampler(usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_pSampler);
+          }
+
+          for (xiiRenderPipelinePassConnection* pUsedByConnection : usageData.m_UsedBy)
+          {
+            if (pUsedByConnection->m_Resource.IsBuffer())
+            {
+              pUsedByConnection->m_Resource.m_Buffer.m_pBuffer.Clear();
+            }
+            else if (pUsedByConnection->m_Resource.IsTexture())
+            {
+              pUsedByConnection->m_Resource.m_Texture.m_pTexture.Clear();
+            }
+            else if (pUsedByConnection->m_Resource.IsSampler())
+            {
+              pUsedByConnection->m_Resource.m_Sampler.m_pSampler.Clear();
+            }
+          }
+
           ++uiCurrentLastUsageIdx;
         }
         else
@@ -1282,8 +1349,8 @@ void xiiRenderPipeline::Render()
       }
     }
 
-    XII_ASSERT_DEV(uiCurrentFirstUsageIdx == m_TextureUsageIdxSortedByFirstUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
-    XII_ASSERT_DEV(uiCurrentLastUsageIdx == m_TextureUsageIdxSortedByLastUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
+    XII_ASSERT_DEV(uiCurrentFirstUsageIdx == m_ResourceUsageIdxSortedByFirstUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
+    XII_ASSERT_DEV(uiCurrentLastUsageIdx == m_ResourceUsageIdxSortedByLastUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
   }
 
   renderEvent.m_Type = xiiRenderWorldRenderEvent::Type::AfterPipelineExecution;
@@ -1327,7 +1394,7 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
 
   for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); ++i)
   {
-    const TextureUsageData& data = m_TextureUsage[i];
+    const ResourceUsageData& data = m_TextureUsage[i];
 
     for (const xiiRenderPipelinePassConnection* pConnection : data.m_UsedBy)
     {
