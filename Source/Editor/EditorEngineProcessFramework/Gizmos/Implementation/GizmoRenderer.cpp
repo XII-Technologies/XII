@@ -31,7 +31,7 @@ void xiiGizmoRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRender
   inout_categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
 }
 
-void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   // special Windows specific hack:

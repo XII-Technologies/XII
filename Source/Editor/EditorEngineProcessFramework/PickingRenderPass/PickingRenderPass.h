@@ -4,9 +4,9 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
-class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiPickingRenderPass : public xiiRenderPipelinePass
+class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiPickingRenderPass : public xiiGraphicsPipelinePass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiPickingRenderPass, xiiRenderPipelinePass);
+  XII_ADD_DYNAMIC_REFLECTION(xiiPickingRenderPass, xiiGraphicsPipelinePass);
 
 public:
   xiiPickingRenderPass();
@@ -15,8 +15,10 @@ public:
   xiiSharedPtr<xiiGALTexture> GetPickingIdRT() const;
   xiiSharedPtr<xiiGALTexture> GetPickingDepthRT() const;
 
-  virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-  virtual void InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs) override;
+
+  virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
+
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
 
   virtual void ReadBackProperties(xiiView* pView) override;

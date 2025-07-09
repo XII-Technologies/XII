@@ -173,7 +173,7 @@ void xiiGridRenderer::CreateGrid(const xiiGridRenderData& rd) const
   }
 }
 
-void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   for (auto it = batch.GetIterator<xiiGridRenderData>(); it.IsValid(); ++it)
   {

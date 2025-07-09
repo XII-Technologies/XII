@@ -451,7 +451,7 @@ void xiiClothSheetRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
   ref_types.PushBack(xiiGetStaticRTTI<xiiClothSheetRenderData>());
 }
 
-void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   #ifdef CORE_ENABLE
   const bool bNeedsNormals = (renderViewContext.m_pViewData->m_CameraUsageHint != xiiCameraUsageHint::Shadow);

@@ -29,9 +29,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiPickingRenderPass::xiiPickingRenderPass() :
-  xiiRenderPipelinePass("EditorPickingRenderPass", xiiRenderPipelinePassFlags::None, xiiRenderPipelinePassConcurrencyHint::Sequential)
+  xiiGraphicsPipelinePass("EditorPickingRenderPass", xiiRenderPipelinePassCapabilityFlags::None)
 {
   m_pGridRenderDataType = xiiRTTI::FindTypeByName("xiiGridRenderData");
+
   XII_ASSERT_DEV(m_pGridRenderDataType != nullptr, "xiiGridRenderData type not found. Type renamed?");
 }
 
@@ -50,17 +51,19 @@ xiiSharedPtr<xiiGALTexture> xiiPickingRenderPass::GetPickingDepthRT() const
   return m_pPickingDepthRT;
 }
 
-bool xiiPickingRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
+xiiResult xiiPickingRenderPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
+{
+  return XII_SUCCESS;
+}
+
+xiiResult xiiPickingRenderPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   m_TargetRect = view.GetViewport();
 
-  return true;
-}
-
-void xiiPickingRenderPass::InitializeRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
-{
   DestroyTarget();
   CreateTarget();
+
+  return XII_SUCCESS;
 }
 
 void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
