@@ -61,7 +61,7 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResourceLoader::Cre
 
   xiiStringBuilder sTypeName;
 
-  xiiHybridArray<xiiRenderPipelinePass*, 16> passes;
+  xiiHybridArray<xiiRenderPipelinePassBase*, 16> passes;
 
   // Passes
   {
@@ -73,7 +73,7 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResourceLoader::Cre
       inout_stream >> sTypeName;
       if (const xiiRTTI* pType = xiiRTTI::FindTypeByName(sTypeName))
       {
-        xiiUniquePtr<xiiRenderPipelinePass> pPass = pType->GetAllocator()->Allocate<xiiRenderPipelinePass>();
+        xiiUniquePtr<xiiRenderPipelinePassBase> pPass = pType->GetAllocator()->Allocate<xiiRenderPipelinePassBase>();
         pPass->Deserialize(inout_stream).AssertSuccess("");
         passes.PushBack(pPass.Borrow());
         pPipeline->AddPass(std::move(pPass));
@@ -118,8 +118,8 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResourceLoader::Cre
       xiiRenderPipelineResourceLoaderConnection data;
       data.Deserialize(inout_stream).AssertSuccess("Failed to deserialize render pipeline connection");
 
-      xiiRenderPipelinePass* pSource = passes[data.m_uiSource];
-      xiiRenderPipelinePass* pTarget = passes[data.m_uiTarget];
+      xiiRenderPipelinePassBase* pSource = passes[data.m_uiSource];
+      xiiRenderPipelinePassBase* pTarget = passes[data.m_uiTarget];
 
       if (!pPipeline->Connect(pSource, data.m_sSourcePin, pTarget, data.m_sTargetPin))
       {
@@ -133,7 +133,7 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResourceLoader::Cre
 // static
 void xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(const xiiRenderPipeline* pPipeline, xiiRenderPipelineResourceDescriptor& ref_desc)
 {
-  xiiHybridArray<const xiiRenderPipelinePass*, 16>              passes;
+  xiiHybridArray<const xiiRenderPipelinePassBase*, 16>              passes;
   xiiHybridArray<const xiiExtractor*, 16>                       extractors;
   xiiHybridArray<xiiRenderPipelineResourceLoaderConnection, 16> connections;
 
@@ -150,7 +150,7 @@ void xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(con
 
   for (xiiUInt32 i = 0; i < passes.GetCount(); i++)
   {
-    const xiiRenderPipelinePass* pSource = passes[i];
+    const xiiRenderPipelinePassBase* pSource = passes[i];
 
     xiiRenderPipelineResourceLoaderConnection data;
     data.m_uiSource = i;
@@ -176,10 +176,10 @@ void xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(con
 
   xiiMemoryStreamContainerWrapperStorage<xiiDynamicArray<xiiUInt8>> storage(&ref_desc.m_SerializedPipeline);
   xiiMemoryStreamWriter                                             memoryWriter(&storage);
-  ExportPipeline(passes.GetArrayPtr(), extractors.GetArrayPtr(), connections.GetArrayPtr(), memoryWriter).AssertSuccess("Failed to serialize pipeline");
+  ExportPipeline(passes.GetArrayPtr(), extractors.GetArrayPtr(), connections.GetArrayPtr(), memoryWriter).AssertSuccess("Failed to serialize pipeline.");
 }
 
-xiiResult xiiRenderPipelineResourceLoader::ExportPipeline(xiiArrayPtr<const xiiRenderPipelinePass* const> passes, xiiArrayPtr<const xiiExtractor* const> extractors, xiiArrayPtr<const xiiRenderPipelineResourceLoaderConnection> connections, xiiStreamWriter& ref_streamWriter)
+xiiResult xiiRenderPipelineResourceLoader::ExportPipeline(xiiArrayPtr<const xiiRenderPipelinePassBase* const> pPasses, xiiArrayPtr<const xiiExtractor* const> pExtractors, xiiArrayPtr<const xiiRenderPipelineResourceLoaderConnection> pConnections, xiiStreamWriter& ref_streamWriter)
 {
   ref_streamWriter.WriteVersion(s_RenderPipelineDescriptorVersion);
 
@@ -189,25 +189,25 @@ xiiResult xiiRenderPipelineResourceLoader::ExportPipeline(xiiArrayPtr<const xiiR
 
   // Passes
   {
-    const xiiUInt32 uiNumPasses = passes.GetCount();
-    stream << uiNumPasses;
+    const xiiUInt32 uiPassCount = pPasses.GetCount();
+    stream << uiPassCount;
 
-    for (auto& pass : passes)
+    for (auto& pPass : pPasses)
     {
-      auto pPassType = pass->GetDynamicRTTI();
+      auto pPassType = pPass->GetDynamicRTTI();
       typeVersionWriteContext.AddType(pPassType);
 
       stream << pPassType->GetTypeName();
-      XII_SUCCEED_OR_RETURN(pass->Serialize(stream));
+      XII_SUCCEED_OR_RETURN(pPass->Serialize(stream));
     }
   }
 
   // Extractors
   {
-    const xiiUInt32 uiNumExtractors = extractors.GetCount();
-    stream << uiNumExtractors;
+    const xiiUInt32 uiExtractorCount = pExtractors.GetCount();
+    stream << uiExtractorCount;
 
-    for (auto& extractor : extractors)
+    for (auto& extractor : pExtractors)
     {
       auto pExtractorType = extractor->GetDynamicRTTI();
       typeVersionWriteContext.AddType(pExtractorType);
@@ -219,12 +219,12 @@ xiiResult xiiRenderPipelineResourceLoader::ExportPipeline(xiiArrayPtr<const xiiR
 
   // Connections
   {
-    const xiiUInt32 uiNumConnections = connections.GetCount();
-    stream << uiNumConnections;
+    const xiiUInt32 uiConnectionCount = pConnections.GetCount();
+    stream << uiConnectionCount;
 
     typeVersionWriteContext.AddType(xiiGetStaticRTTI<xiiRenderPipelineResourceLoaderConnection>());
 
-    for (auto& connection : connections)
+    for (auto& connection : pConnections)
     {
       XII_SUCCEED_OR_RETURN(connection.Serialize(stream));
     }

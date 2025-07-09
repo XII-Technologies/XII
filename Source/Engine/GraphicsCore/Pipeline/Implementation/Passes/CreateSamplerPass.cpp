@@ -97,7 +97,7 @@ xiiResult xiiCreateSamplerPass::GetResourceDescriptions(const xiiView& view, con
   samplerDescription.m_BorderColor        = m_BorderColor;
   samplerDescription.m_fMinLOD            = m_fMinLod;
   samplerDescription.m_fMaxLOD            = m_fMaxLod;
-  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(samplerDescription);
+  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, samplerDescription);
 
   return XII_SUCCESS;
 }

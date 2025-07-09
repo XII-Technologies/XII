@@ -105,7 +105,13 @@ xiiResult xiiCreateColourAttachmentPass::GetResourceDescriptions(const xiiView& 
   textureDescription.m_Usage              = m_Usage;
   textureDescription.m_CPUAccessFlags     = m_AccessFlags;
   textureDescription.m_MiscFlags          = m_MiscFlags;
-  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(textureDescription);
+
+  if (textureDescription.m_uiArraySizeOrDepth == 0U)
+  {
+    textureDescription.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2U : 1U;
+  }
+
+  pOutputs[m_PinOutput.m_uiOutputIndex] = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, textureDescription);
 
   return XII_SUCCESS;
 }
@@ -161,23 +167,25 @@ xiiResult xiiCreateDepthAttachmentPass::GetResourceDescriptions(const xiiView& v
 {
   const xiiRectFloat& viewport = view.GetViewport();
 
-  xiiGALTextureCreationDescription& textureDescription = pOutputs[m_PinOutput.m_uiOutputIndex].m_Texture.m_Description;
-  textureDescription.m_Type                            = m_Type;
-  textureDescription.m_Format                          = xiiSourceFormat::GetGALResourceFormat(m_Format);
-  textureDescription.m_Size.width                      = static_cast<xiiUInt32>(viewport.width);
-  textureDescription.m_Size.height                     = static_cast<xiiUInt32>(viewport.height);
-  textureDescription.m_uiArraySizeOrDepth              = m_uiArraySizeOrDepth;
-  textureDescription.m_uiMipLevels                     = m_uiMipLevels;
-  textureDescription.m_uiSampleCount                   = m_uiSampleCount;
-  textureDescription.m_BindFlags                       = m_BindFlags;
-  textureDescription.m_Usage                           = m_Usage;
-  textureDescription.m_CPUAccessFlags                  = m_AccessFlags;
-  textureDescription.m_MiscFlags                       = m_MiscFlags;
+  xiiGALTextureCreationDescription textureDescription;
+  textureDescription.m_Type               = m_Type;
+  textureDescription.m_Format             = xiiSourceFormat::GetGALResourceFormat(m_Format);
+  textureDescription.m_Size.width         = static_cast<xiiUInt32>(viewport.width);
+  textureDescription.m_Size.height        = static_cast<xiiUInt32>(viewport.height);
+  textureDescription.m_uiArraySizeOrDepth = m_uiArraySizeOrDepth;
+  textureDescription.m_uiMipLevels        = m_uiMipLevels;
+  textureDescription.m_uiSampleCount      = m_uiSampleCount;
+  textureDescription.m_BindFlags          = m_BindFlags;
+  textureDescription.m_Usage              = m_Usage;
+  textureDescription.m_CPUAccessFlags     = m_AccessFlags;
+  textureDescription.m_MiscFlags          = m_MiscFlags;
 
   if (textureDescription.m_uiArraySizeOrDepth == 0U)
   {
     textureDescription.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2U : 1U;
   }
+
+  pOutputs[m_PinOutput.m_uiOutputIndex] = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, textureDescription);
 
   return XII_SUCCESS;
 }

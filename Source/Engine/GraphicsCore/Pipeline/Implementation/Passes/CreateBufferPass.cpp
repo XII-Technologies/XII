@@ -69,7 +69,7 @@ xiiResult xiiCreateBufferPass::GetResourceDescriptions(const xiiView& view, cons
   bufferDescription.m_CPUAccessFlags      = m_AccessFlags;
   bufferDescription.m_Mode                = m_Mode;
   bufferDescription.m_MiscFlags           = m_MiscFlags;
-  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(bufferDescription);
+  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, bufferDescription);
 
   return XII_SUCCESS;
 }
