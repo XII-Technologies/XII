@@ -1377,46 +1377,278 @@ xiiRenderDataBatchList xiiRenderPipeline::GetRenderDataBatchesWithCategory(xiiRe
 
 void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
 {
-  xiiStringBuilder                                      sTmp;
+  xiiStringBuilder                                      sTemp;
   xiiHashTable<const xiiRenderPipelineNode*, xiiUInt32> nodeMap;
-  nodeMap.Reserve(m_Passes.GetCount() + m_TextureUsage.GetCount() * 3);
+  nodeMap.Reserve(m_Passes.GetCount() + m_ResourceUsage.GetCount() * 3);
+
   for (xiiUInt32 p = 0; p < m_Passes.GetCount(); ++p)
   {
     const auto& pPass = m_Passes[p];
-    sTmp.SetFormat("#{}: {}", p, pPass->GetName().IsEmpty() ? pPass->GetDynamicRTTI()->GetTypeName() : pPass->GetName());
+    sTemp.SetFormat("#{}: {}", p, pPass->GetName().IsEmpty() ? pPass->GetDynamicRTTI()->GetTypeName() : pPass->GetName());
 
     xiiDGMLGraph::NodeDesc nd;
     nd.m_Color            = xiiColor::Gray;
     nd.m_Shape            = xiiDGMLGraph::NodeShape::Rectangle;
-    xiiUInt32 uiGraphNode = ref_graph.AddNode(sTmp, &nd);
+    xiiUInt32 uiGraphNode = ref_graph.AddNode(sTemp, &nd);
     nodeMap.Insert(pPass.Borrow(), uiGraphNode);
   }
 
-  for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_ResourceUsage.GetCount(); ++i)
   {
-    const ResourceUsageData& data = m_TextureUsage[i];
+    const ResourceUsageData& data = m_ResourceUsage[i];
 
     for (const xiiRenderPipelinePassConnection* pConnection : data.m_UsedBy)
     {
       xiiDGMLGraph::NodeDesc nd;
-      nd.m_Color = data.m_pTextureProvider ? xiiColor::Black : xiiColorScheme::GetColor(static_cast<xiiColorScheme::Enum>(i % xiiColorScheme::Count), 4);
+      nd.m_Color = data.m_pResourceProvider ? xiiColor::Black : xiiColorScheme::GetColor(static_cast<xiiColorScheme::Enum>(i % xiiColorScheme::Count), 4);
       nd.m_Shape = xiiDGMLGraph::NodeShape::RoundedRectangle;
 
       xiiStringBuilder sFormat;
-      if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), pConnection->m_TextureDescription.m_Format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+      if (pConnection->m_Resource.IsBuffer())
       {
-        sFormat.SetFormat("Unknown Format {}", (xiiInt32)pConnection->m_TextureDescription.m_Format);
+        sFormat.AppendFormat("[{} bytes", pConnection->m_Resource.m_Buffer.m_Description.m_uiSize);
+
+        if (pConnection->m_Resource.m_Buffer.m_Description.m_uiElementByteStride > 0)
+          sFormat.AppendFormat(", Stride: {}", pConnection->m_Resource.m_Buffer.m_Description.m_uiElementByteStride);
+
+        // Mode (enum)
+        {
+          xiiStringBuilder sTmp;
+          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALBufferMode>(), pConnection->m_Resource.m_Buffer.m_Description.m_Mode.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+            sFormat.AppendFormat(", Mode: {}", sTmp);
+          else
+            sFormat.AppendFormat(", Mode: {}", pConnection->m_Resource.m_Buffer.m_Description.m_Mode.GetValue());
+        }
+
+        // Bind flags (bitflags)
+        {
+          xiiStringBuilder sTmp;
+          if (pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags != xiiGALBindFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+            sFormat.AppendFormat(", Bind: {}", sTmp);
+          else if (pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags != xiiGALBindFlags::None)
+            sFormat.AppendFormat(", Bind: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags.GetValue());
+        }
+
+        // Usage (enum)
+        {
+          xiiStringBuilder sTmp;
+          if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Default && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+            sFormat.AppendFormat(", Usage: {}", sTmp);
+          else if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Default)
+            sFormat.AppendFormat(", Usage: {}", pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue());
+        }
+
+        // CPU access flags
+        {
+          xiiStringBuilder sTmp;
+          if (pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+            sFormat.AppendFormat(", CPU Access: {}", sTmp);
+          else if (pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None)
+            sFormat.AppendFormat(", CPU Access: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags.GetValue());
+        }
+
+        // Misc flags
+        {
+          xiiStringBuilder sTmp;
+          if (pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags != xiiGALMiscBufferFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+            sFormat.AppendFormat(", Misc: {}", sTmp);
+          else if (pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags != xiiGALMiscBufferFlags::None)
+            sFormat.AppendFormat(", Misc: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags.GetValue());
+        }
+
+        sFormat.Append("]");
+
+        sTemp.SetFormat("{}Buffer #{}: {}", data.m_pResourceProvider ? "External" : "Pooled", i, sFormat);
       }
-      sTmp.SetFormat("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_pTextureProvider ? "External" : "PoolTexture", i, pConnection->m_TextureDescription.m_Size.width, pConnection->m_TextureDescription.m_Size.height, pConnection->m_TextureDescription.GetArraySize(), pConnection->m_TextureDescription.m_uiSampleCount, xiiGALResourceFormat::IsDepthFormat(pConnection->m_TextureDescription.m_Format) ? "Depth" : "Color", sFormat);
-      xiiUInt32 uiTextureNode = ref_graph.AddNode(sTmp, &nd);
+      else if (pConnection->m_Resource.IsTexture())
+      {
+        sFormat.AppendFormat("[{}x{}", pConnection->m_Resource.m_Texture.m_Description.m_Size.width, pConnection->m_Resource.m_Texture.m_Description.GetHeight());
+
+        xiiUInt32 uiArraySize = pConnection->m_Resource.m_Texture.m_Description.GetArraySize();
+        if (uiArraySize > 1)
+          sFormat.AppendFormat(":{}", uiArraySize);
+
+        // Format (enum)
+        {
+          xiiStringBuilder sTmp;
+          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), pConnection->m_Resource.m_Texture.m_Description.m_Format.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat(", Format: {}", sTmp);
+          }
+          else
+          {
+            sFormat.AppendFormat(", Format: {}", pConnection->m_Resource.m_Texture.m_Description.m_Format.GetValue());
+          }
+        }
+
+        // Mip levels
+        if (pConnection->m_Resource.m_Texture.m_Description.m_uiMipLevels > 1)
+        {
+          sFormat.AppendFormat(", Mips: {}", pConnection->m_Resource.m_Texture.m_Description.m_uiMipLevels);
+        }
+
+        // Sample count
+        if (pConnection->m_Resource.m_Texture.m_Description.m_uiSampleCount > 1)
+        {
+          sFormat.AppendFormat(", MSAAx{}", pConnection->m_Resource.m_Texture.m_Description.m_uiSampleCount);
+        }
+
+        // Resource type (dimension)
+        {
+          xiiStringBuilder sTmp;
+          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceDimension>(), pConnection->m_Resource.m_Texture.m_Description.m_Type.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat(", Type: {}", sTmp);
+          }
+          else
+          {
+            sFormat.AppendFormat(", Type: {}", pConnection->m_Resource.m_Texture.m_Description.m_Type.GetValue());
+          }
+        }
+
+        // Bind flags
+        {
+          xiiStringBuilder sTmp;
+          if (pConnection->m_Resource.m_Texture.m_Description.m_BindFlags != xiiGALBindFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_BindFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat(", Bind: {}", sTmp);
+          }
+          else if (pConnection->m_Resource.m_Texture.m_Description.m_BindFlags != xiiGALBindFlags::None)
+          {
+            sFormat.AppendFormat(", Bind: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_BindFlags.GetValue());
+          }
+        }
+
+        // Usage
+        {
+          xiiStringBuilder sTmp;
+          if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Default && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat(", Usage: {}", sTmp);
+          }
+          else if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Default)
+          {
+            sFormat.AppendFormat(", Usage: {}", pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue());
+          }
+        }
+
+        // CPU Access
+        {
+          xiiStringBuilder sTmp;
+          if (pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat(", CPU Access: {}", sTmp);
+          }
+          else if (pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None)
+          {
+            sFormat.AppendFormat(", CPU Access: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags.GetValue());
+          }
+        }
+
+        // Misc flags
+        {
+          xiiStringBuilder sTmp;
+          if (pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags != xiiGALMiscTextureFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat(", Misc: {}", sTmp);
+          }
+          else if (pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags != xiiGALMiscTextureFlags::None)
+          {
+            sFormat.AppendFormat(", Misc: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags.GetValue());
+          }
+        }
+
+        sFormat.Append("]");
+
+        sTemp.SetFormat("{}Texture #{}: {}", data.m_pResourceProvider ? "External" : "Pooled", i, sFormat);
+      }
+      else if (pConnection->m_Resource.IsSampler())
+      {
+        sFormat.Append("[");
+
+        // Filter configuration
+        {
+          xiiStringBuilder sMin, sMag, sMip;
+          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MinFilter.GetValue(), sMin, xiiReflectionUtils::EnumConversionMode::ValueNameOnly) && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MagFilter.GetValue(), sMag, xiiReflectionUtils::EnumConversionMode::ValueNameOnly) && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MipFilter.GetValue(), sMip, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat("Filter: {}/{}/{}", sMin, sMag, sMip);
+          }
+        }
+
+        // Addressing modes
+        {
+          xiiStringBuilder sU, sV, sW;
+          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressU.GetValue(), sU, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+            sFormat.AppendFormat(", AddrU: {}", sU);
+
+          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressV.GetValue(), sV, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+            sFormat.AppendFormat(", V: {}", sV);
+
+          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressW.GetValue(), sW, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+            sFormat.AppendFormat(", W: {}", sW);
+        }
+
+        // Anisotropy
+        if (pConnection->m_Resource.m_Sampler.m_Description.m_uiMaxAnisotropy > 0)
+        {
+          sFormat.AppendFormat(", Aniso: {}", pConnection->m_Resource.m_Sampler.m_Description.m_uiMaxAnisotropy);
+        }
+
+        // Comparison function
+        if (pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction != xiiGALComparisonFunction::Never)
+        {
+          xiiStringBuilder sCmp;
+          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALComparisonFunction>(), pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction.GetValue(), sCmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat(", Compare: {}", sCmp);
+          }
+          else
+          {
+            sFormat.AppendFormat(", Compare: {}", pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction.GetValue());
+          }
+        }
+
+        // Flags
+        {
+          xiiStringBuilder sFlags;
+          if (pConnection->m_Resource.m_Sampler.m_Description.m_Flags != xiiGALSamplerFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Sampler.m_Description.m_Flags, sFlags, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          {
+            sFormat.AppendFormat(", Flags: {}", sFlags);
+          }
+          else if (pConnection->m_Resource.m_Sampler.m_Description.m_Flags != xiiGALSamplerFlags::None)
+          {
+            sFormat.AppendFormat(", Flags: 0x{:X}", pConnection->m_Resource.m_Sampler.m_Description.m_Flags.GetValue());
+          }
+        }
+
+        // LOD Bias, Min/Max LOD
+        if (pConnection->m_Resource.m_Sampler.m_Description.m_fMipLODBias != 0.0f)
+          sFormat.AppendFormat(", LOD Bias: {:.2f}", pConnection->m_Resource.m_Sampler.m_Description.m_fMipLODBias);
+
+        if (pConnection->m_Resource.m_Sampler.m_Description.m_fMinLOD != 0.0f)
+          sFormat.AppendFormat(", Min LOD: {:.2f}", pConnection->m_Resource.m_Sampler.m_Description.m_fMinLOD);
+
+        if (pConnection->m_Resource.m_Sampler.m_Description.m_fMaxLOD != xiiMath::MaxValue<float>())
+          sFormat.AppendFormat(", Max LOD: {:.2f}", pConnection->m_Resource.m_Sampler.m_Description.m_fMaxLOD);
+
+        // Coordinate normalization
+        if (pConnection->m_Resource.m_Sampler.m_Description.m_bUnormalizedCoords)
+          sFormat.Append(", UnnormalizedCoords");
+
+        sFormat.Append("]");
+
+        sTemp.SetFormat("{}Sampler #{}: {}", data.m_pResourceProvider ? "External" : "Pooled", i, sFormat);
+      }
+
+      xiiUInt32 uiResourceNode = ref_graph.AddNode(sTemp, &nd);
 
       xiiUInt32 uiOutputNode = *nodeMap.GetValue(pConnection->m_pOutput->m_pParent);
-      ref_graph.AddConnection(uiOutputNode, uiTextureNode, pConnection->m_pOutput->m_pParent->GetPinName(pConnection->m_pOutput));
+      ref_graph.AddConnection(uiOutputNode, uiResourceNode, pConnection->m_pOutput->m_pParent->GetPinName(pConnection->m_pOutput));
 
       for (const xiiRenderPipelineNodePin* pInput : pConnection->m_Inputs)
       {
         xiiUInt32 uiInputNode = *nodeMap.GetValue(pInput->m_pParent);
-        ref_graph.AddConnection(uiTextureNode, uiInputNode, pInput->m_pParent->GetPinName(pInput));
+        ref_graph.AddConnection(uiResourceNode, uiInputNode, pInput->m_pParent->GetPinName(pInput));
       }
     }
   }
