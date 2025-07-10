@@ -171,7 +171,7 @@ void xiiRTTI::VerifyCorrectness() const
 {
   if (m_VerifyParent != nullptr)
   {
-    XII_ASSERT_DEV(m_VerifyParent() == m_pParentType, "Type '{0}': The given parent type '{1}' does not match the actual parent type '{2}'", m_sTypeName, (m_pParentType != nullptr) ? m_pParentType->GetTypeName() : "null", (m_VerifyParent() != nullptr) ? m_VerifyParent()->GetTypeName() : "null");
+    XII_ASSERT_DEV(m_VerifyParent() == m_pParentType, "Type '{0}': The given parent type '{1}' does not match the actual parent type '{2}'.", m_sTypeName, (m_pParentType != nullptr) ? m_pParentType->GetTypeName() : "null", (m_VerifyParent() != nullptr) ? m_VerifyParent()->GetTypeName() : "null");
   }
 
   {

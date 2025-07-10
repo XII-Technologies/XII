@@ -14,7 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateSamplerPass, 1, xiiRTTINoAllocator)
     XII_ENUM_MEMBER_PROPERTY("AddressV", xiiGALTextureAddressMode, m_AddressV)->AddAttributes(new xiiDefaultValueAttribute(xiiGALTextureAddressMode::Clamp)),
     XII_ENUM_MEMBER_PROPERTY("AddressW", xiiGALTextureAddressMode, m_AddressW)->AddAttributes(new xiiDefaultValueAttribute(xiiGALTextureAddressMode::Clamp)),
     XII_ENUM_MEMBER_PROPERTY("ComparisonFunction", xiiGALComparisonFunction, m_ComparisonFunction)->AddAttributes(new xiiDefaultValueAttribute(xiiGALComparisonFunction::Never)),
-    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiGALSamplerFlags, m_Flags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALSamplerFlags::None)),
+    XII_BITFLAGS_MEMBER_PROPERTY("SamplerFlags", xiiGALSamplerFlags, m_Flags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALSamplerFlags::None)),
     XII_MEMBER_PROPERTY("UnormalizedCoords", m_bUnormalizedCoords)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("MipLodBias", m_fMipLodBias)->AddAttributes(new xiiDefaultValueAttribute(0.0f)),
     XII_MEMBER_PROPERTY("MaxAnisotropy", m_uiMaxAnisotropy)->AddAttributes(new xiiDefaultValueAttribute(0U)),

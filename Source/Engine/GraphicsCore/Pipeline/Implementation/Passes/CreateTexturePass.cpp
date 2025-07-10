@@ -19,22 +19,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateColourAttachmentPass, 1, xiiRTTINoAllo
   }
   XII_END_PROPERTIES;
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateDepthAttachmentPass, 1, xiiRTTINoAllocator)
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Output", m_PinOutput),
-    XII_ENUM_MEMBER_PROPERTY("Type", xiiGALResourceDimension, m_Type)->AddAttributes(new xiiDefaultValueAttribute(xiiGALResourceDimension::Texture2D)),
-    XII_ENUM_MEMBER_PROPERTY("Format", xiiSourceFormat, m_Format)->AddAttributes(new xiiDefaultValueAttribute(xiiSourceFormat::Depth24BitStencil8Bit)),
-    XII_MEMBER_PROPERTY("ArraySizeOrDepth", m_uiArraySizeOrDepth)->AddAttributes(new xiiDefaultValueAttribute(1U)),
-    XII_MEMBER_PROPERTY("MipLevels", m_uiMipLevels)->AddAttributes(new xiiDefaultValueAttribute(1U)),
-    XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(1U)),
-    XII_BITFLAGS_MEMBER_PROPERTY("BindFlags",xiiGALBindFlags , m_BindFlags),
-    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags),
-    XII_BITFLAGS_MEMBER_PROPERTY("MiscFlags",xiiGALMiscTextureFlags , m_MiscFlags),
-  }
-  XII_END_PROPERTIES;
-XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiCreateColourAttachmentPass::xiiCreateColourAttachmentPass(xiiStringView sName) :
@@ -121,6 +105,24 @@ void xiiCreateColourAttachmentPass::Execute(const xiiRenderViewContext& renderVi
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateDepthAttachmentPass, 1, xiiRTTINoAllocator)
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Output", m_PinOutput),
+    XII_ENUM_MEMBER_PROPERTY("Type", xiiGALResourceDimension, m_Type)->AddAttributes(new xiiDefaultValueAttribute(xiiGALResourceDimension::Texture2D)),
+    XII_ENUM_MEMBER_PROPERTY("Format", xiiSourceFormat, m_Format)->AddAttributes(new xiiDefaultValueAttribute(xiiSourceFormat::Depth24BitStencil8Bit)),
+    XII_MEMBER_PROPERTY("ArraySizeOrDepth", m_uiArraySizeOrDepth)->AddAttributes(new xiiDefaultValueAttribute(1U)),
+    XII_MEMBER_PROPERTY("MipLevels", m_uiMipLevels)->AddAttributes(new xiiDefaultValueAttribute(1U)),
+    XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(1U)),
+    XII_BITFLAGS_MEMBER_PROPERTY("BindFlags",xiiGALBindFlags , m_BindFlags),
+    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags),
+    XII_BITFLAGS_MEMBER_PROPERTY("MiscFlags",xiiGALMiscTextureFlags , m_MiscFlags),
+  }
+  XII_END_PROPERTIES;
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiCreateDepthAttachmentPass::xiiCreateDepthAttachmentPass(xiiStringView sName) :
   xiiUtilityPipelinePass(sName)
