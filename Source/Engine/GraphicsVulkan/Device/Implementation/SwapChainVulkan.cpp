@@ -589,7 +589,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     textureCreationDescription.m_uiMipLevels           = 1U;
     textureCreationDescription.m_uiSampleCount         = 1U;
     textureCreationDescription.m_BindFlags             = xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(m_Description.m_UsageFlags);
-    textureCreationDescription.m_Usage                 = xiiGALResourceUsage::Default;
+    textureCreationDescription.m_Usage                 = xiiGALResourceUsage::Mutable;
     textureCreationDescription.m_CPUAccessFlags        = xiiGALCPUAccessFlag::None;
     textureCreationDescription.m_MiscFlags             = xiiGALMiscTextureFlags::None;
     textureCreationDescription.m_pExistingNativeObject = m_SwapChainImages[i];

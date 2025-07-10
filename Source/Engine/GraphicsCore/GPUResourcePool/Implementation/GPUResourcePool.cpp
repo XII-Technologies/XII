@@ -123,7 +123,7 @@ xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidt
     textureDescription.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
 
   if (textureDescription.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
-    textureDescription.m_Usage = xiiGALResourceUsage::Default;
+    textureDescription.m_Usage = xiiGALResourceUsage::Mutable;
 
   return GetTexture(textureDescription);
 }

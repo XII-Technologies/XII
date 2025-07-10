@@ -494,7 +494,7 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan
   {
     xiiGALBufferCreationDescription nullVertexBufferDescription;
     nullVertexBufferDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
-    nullVertexBufferDescription.m_Usage     = xiiGALResourceUsage::Default;
+    nullVertexBufferDescription.m_Usage     = xiiGALResourceUsage::Mutable;
     nullVertexBufferDescription.m_uiSize    = 32U;
 
     xiiSharedPtr<xiiGALBuffer> pNullVertexBuffer = m_pDevice->CreateBuffer(nullVertexBufferDescription);

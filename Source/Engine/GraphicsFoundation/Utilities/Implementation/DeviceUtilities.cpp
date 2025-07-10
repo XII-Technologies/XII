@@ -137,7 +137,7 @@ xiiGALTextureCreationDescription xiiGALDeviceUtilities::CreateRenderTargetDescri
     .m_uiMipLevels        = 1U,
     .m_uiSampleCount      = uiSampleCount,
     .m_BindFlags          = xiiGALBindFlags::ShaderResource | (xiiGALResourceFormat::IsDepthFormat(format) ? xiiGALBindFlags::DepthStencil : xiiGALBindFlags::RenderTarget),
-    .m_Usage              = xiiGALResourceUsage::Default,
+    .m_Usage              = xiiGALResourceUsage::Mutable,
     .m_MiscFlags          = xiiGALMiscTextureFlags::None,
   };
 }

@@ -54,7 +54,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiUInt32                           m_uiMipLevels        = 1U;                                 ///< Number of Mip levels in the texture. Multi-sampled textures can only have 1 Mip level. Specify 0 to create full mipmap chain. The default is 1.
   xiiUInt32                           m_uiSampleCount      = 1U;                                 ///< Number of samples. Only 2D textures or 2D texture arrays can be multi-sampled. The default is 1.
   xiiBitflags<xiiGALBindFlags>        m_BindFlags          = xiiGALBindFlags::None;              ///< Bind flags. The default is None.
-  xiiEnum<xiiGALResourceUsage>        m_Usage              = xiiGALResourceUsage::Default;       ///< Texture usage. The default is Default.
+  xiiEnum<xiiGALResourceUsage>        m_Usage              = xiiGALResourceUsage::Mutable;       ///< Texture usage. The default is Default.
   xiiBitflags<xiiGALCPUAccessFlag>    m_CPUAccessFlags     = xiiGALCPUAccessFlag::None;          ///< CPU access flags. The default is None.
   xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags          = xiiGALMiscTextureFlags::None;       ///< Miscellaneous flags. The default is None.
   xiiGALOptimizedClearValue           m_ClearValue;                                              ///< Optimized clear value.

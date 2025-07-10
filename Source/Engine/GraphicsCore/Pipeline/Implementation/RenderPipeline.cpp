@@ -1432,9 +1432,9 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
         // Usage (enum)
         {
           xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Default && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Mutable && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
             sFormat.AppendFormat(", Usage: {}", sTmp);
-          else if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Default)
+          else if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Mutable)
             sFormat.AppendFormat(", Usage: {}", pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue());
         }
 
@@ -1522,11 +1522,11 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
         // Usage
         {
           xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Default && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+          if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Mutable && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
           {
             sFormat.AppendFormat(", Usage: {}", sTmp);
           }
-          else if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Default)
+          else if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Mutable)
           {
             sFormat.AppendFormat(", Usage: {}", pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue());
           }
