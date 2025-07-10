@@ -8,73 +8,112 @@
 
 struct xiiGALDeviceEvent;
 
-/// \brief This class serves as a pool for GPU related resources (e.g. buffers and textures required for rendering).
-/// Note that the functions creating and returning render targets are thread safe (by using a mutex).
+/// \brief Manages a pool of reusable GPU resources such as buffers, textures, and samplers.
+///
+/// The GPU resource pool helps reduce allocation overhead and memory fragmentation by reusing previously created GPU resources based on matching creation parameters. It is thread-safe
+/// and supports garbage collection of unused resources based on usage age and memory thresholds.
+///
+/// Resources can be retrieved using GetBuffer(), GetTexture(), GetSampler(), or GetRenderTarget(), and must be returned to the pool using the corresponding Return*() methods. The pool will
+/// automatically release stale resources that have not been used for a defined number of frames, or when memory or allocation count thresholds are exceeded.
+///
+/// A global default instance can be accessed and configured using GetDefaultInstance() and SetDefaultInstance().
+///
+/// \see xiiGALBufferCreationDescription, xiiGALTextureCreationDescription, xiiGALSamplerCreationDescription
 class XII_GRAPHICSCORE_DLL xiiGPUResourcePool
 {
 public:
+  /// \brief Constructs a GPU resource pool with default garbage collection thresholds.
   xiiGPUResourcePool();
+
+  /// \brief Destroys the resource pool and releases all remaining resources.
   ~xiiGPUResourcePool();
 
-  /// \brief Returns a render target handle for the given texture description
-  /// Note that you should return the handle to the pool and never destroy it directly with the device.
-  xiiSharedPtr<xiiGALTexture> GetRenderTarget(const xiiGALTextureCreationDescription& textureDesc);
 
-  /// \brief Convenience functions which creates a texture description fit for a 2d render target without a mip chains.
-  xiiSharedPtr<xiiGALTexture> GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount = xiiGALMSAASampleCount::OneSample, xiiUInt32 uiSliceColunt = 1, bool bIsArray = false);
+  /// \brief Retrieves a buffer from the pool or allocates a new one if no suitable match exists.
+  xiiSharedPtr<xiiGALBuffer> GetBuffer(const xiiGALBufferCreationDescription& description);
 
-  /// \brief Returns a render target to the pool so other consumers can use it.
-  /// Note that targets which are returned to the pool are susceptible to destruction due to garbage collection.
-  void ReturnRenderTarget(xiiSharedPtr<xiiGALTexture> hRenderTarget);
+  /// \brief Returns a buffer to the pool for potential reuse.
+  void ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer);
 
 
-  /// \brief Returns a buffer handle for the given buffer description
-  xiiSharedPtr<xiiGALBuffer> GetBuffer(const xiiGALBufferCreationDescription& bufferDesc);
-
-  /// \brief Returns a buffer to the pool so other consumers can use it.
-  void ReturnBuffer(xiiSharedPtr<xiiGALBuffer> hBuffer);
-
-
-  /// \brief Tries to free resources which are currently in the pool.
-  /// Triggered automatically due to allocation number / size thresholds but can be triggered manually (e.g. after editor window resize)
+  /// \brief Retrieves a render target texture with simplified input parameters.
   ///
-  /// \param uiMinimumAge How many frames at least the resource needs to have been unused before it will be GCed.
-  void RunGC(xiiUInt32 uiMinimumAge);
+  /// Internally constructs a full texture creation description and either reuses or allocates a new texture.
+  xiiSharedPtr<xiiGALTexture> GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray);
+
+  /// \brief Retrieves a texture from the pool or creates a new one with the provided description.
+  xiiSharedPtr<xiiGALTexture> GetTexture(const xiiGALTextureCreationDescription& description);
+
+  /// \brief Returns a texture to the pool for reuse.
+  void ReturnTexture(xiiSharedPtr<xiiGALTexture> pTexture);
 
 
+  /// \brief Retrieves a GPU sampler from the pool or allocates one if needed.
+  xiiSharedPtr<xiiGALSampler> GetSampler(const xiiGALSamplerCreationDescription& description);
+
+  /// \brief Returns a sampler to the pool for reuse.
+  void ReturnSampler(xiiSharedPtr<xiiGALSampler> pSampler);
+
+
+  /// \brief Releases resources that have not been used for at least \a uiMinimumAge frames.
+  ///
+  /// This can be triggered automatically based on thresholds or manually, for example after editor window resizes or level transitions.
+  ///
+  /// \param uiMinimumAge How many frames at least the resource needs to have been unused before it will be stale.
+  void ReleaseStaleResources(xiiUInt32 uiMinimumAge);
+
+
+  /// \brief Returns the global default GPU resource pool instance, if any.
   static xiiGPUResourcePool* GetDefaultInstance();
-  static void                SetDefaultInstance(xiiGPUResourcePool* pDefaultInstance);
+
+  /// \brief Sets the global default GPU resource pool instance.
+  static void SetDefaultInstance(xiiGPUResourcePool* pDefaultInstance);
 
 protected:
-  void CheckAndPotentiallyRunGC();
+  /// \brief Internal method that checks thresholds and releases stale resources if needed.
+  void CheckAndPotentiallyReleaseStaleResources();
+
+  /// \brief Updates internal memory statistics for debugging or visualization.
   void UpdateMemoryStats() const;
+
+  /// \brief Handles events triggered by the underlying GAL device (e.g. EndFrame).
   void GALDeviceEventHandler(const xiiGALDeviceEvent& e);
 
   struct TextureHandleWithAge
   {
     xiiSharedPtr<xiiGALTexture> m_pTexture;
-    xiiUInt64                   m_uiLastUsed = 0;
+    xiiUInt64                   m_uiLastUsed = 0ULL;
   };
 
   struct BufferHandleWithAge
   {
     xiiSharedPtr<xiiGALBuffer> m_pBuffer;
-    xiiUInt64                  m_uiLastUsed = 0;
+    xiiUInt64                  m_uiLastUsed = 0ULL;
+  };
+
+  struct SamplerHandleWithAge
+  {
+    xiiSharedPtr<xiiGALSampler> m_pSampler;
+    xiiUInt64                   m_uiLastUsed = 0ULL;
   };
 
   xiiEventSubscriptionID m_GALDeviceEventSubscriptionID;
-  xiiUInt64              m_uiMemoryThresholdForGC         = 256 * 1024 * 1024;
-  xiiUInt64              m_uiCurrentlyAllocatedMemory     = 0;
-  xiiUInt16              m_uiNumAllocationsThresholdForGC = 128;
-  xiiUInt16              m_uiNumAllocationsSinceLastGC    = 0;
-  xiiUInt16              m_uiFramesThresholdSinceLastGC   = 60; ///< Every 60 frames resources unused for more than 10 frames in a row are GCed.
-  xiiUInt16              m_uiFramesSinceLastGC            = 0;
+  xiiUInt64              m_uiMemoryThresholdForGC         = 256 * 1024 * 1024; ///< Memory limit (in bytes) that triggers resource garbage collection.
+  xiiUInt64              m_uiCurrentlyAllocatedMemory     = 0;                 ///< Total memory currently allocated through this pool.
+  xiiUInt16              m_uiNumAllocationsThresholdForGC = 128;               ///< Allocation count threshold that triggers garbage collection.
+  xiiUInt16              m_uiNumAllocationsSinceLastGC    = 0;                 ///< Tracks how many allocations have occurred since the last GC.
+  xiiUInt16              m_uiFramesThresholdSinceLastGC   = 60;                ///< Number of frames to wait before rechecking unused resources for GC.
+  xiiUInt16              m_uiFramesSinceLastGC            = 0;                 ///< Number of frames that have passed since the last GC.
 
+  // Resource storage maps indexed by hashed creation description.
   xiiMap<xiiUInt32, xiiDynamicArray<TextureHandleWithAge>> m_AvailableTextures;
   xiiSet<xiiSharedPtr<xiiGALTexture>>                      m_TexturesInUse;
 
   xiiMap<xiiUInt32, xiiDynamicArray<BufferHandleWithAge>> m_AvailableBuffers;
   xiiSet<xiiSharedPtr<xiiGALBuffer>>                      m_BuffersInUse;
+
+  xiiMap<xiiUInt32, xiiDynamicArray<SamplerHandleWithAge>> m_AvailableSamplers;
+  xiiSet<xiiSharedPtr<xiiGALSampler>>                      m_SamplersInUse;
 
   xiiMutex m_Lock;
 

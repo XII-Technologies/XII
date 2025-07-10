@@ -13,6 +13,7 @@
 #include <Foundation/Math/Vec2.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Math/Vec4.h>
+#include <Foundation/Math/Size.h>
 
 // xiiFloat16
 
@@ -454,6 +455,38 @@ template <typename Type>
 xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiColorLinearUB* pArray, xiiUInt64 uiCount)
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiColorLinearUB) * uiCount;
+  if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+    return XII_SUCCESS;
+
+  return XII_FAILURE;
+}
+
+
+// xiiSizeTemplate
+template <typename Type>
+inline xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiSizeTemplate<Type>& value)
+{
+  ref_stream.WriteBytes(&value, sizeof(xiiSizeTemplate<Type>)).AssertSuccess();
+  return ref_stream;
+}
+
+template <typename Type>
+inline xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiSizeTemplate<Type>& ref_value)
+{
+  XII_VERIFY(ref_stream.ReadBytes(&ref_value, sizeof(xiiSizeTemplate<Type>)) == sizeof(xiiSizeTemplate<Type>), "End of stream reached.");
+  return ref_stream;
+}
+
+template <typename Type>
+xiiResult SerializeArray(xiiStreamWriter& ref_stream, const xiiSizeTemplate<Type>* pArray, xiiUInt64 uiCount)
+{
+  return ref_stream.WriteBytes(pArray, sizeof(xiiSizeTemplate<Type>) * uiCount);
+}
+
+template <typename Type>
+xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiSizeTemplate<Type>* pArray, xiiUInt64 uiCount)
+{
+  const xiiUInt64 uiNumBytes = sizeof(xiiSizeTemplate<Type>) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 

@@ -80,7 +80,7 @@ void xiiGALDynamicBuffer::InitializeBuffer()
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "Device is invalid.");
 
-  if (m_Description.m_Usage == xiiGALResourceUsage::Default && m_uiPendingSize > 0U)
+  if (m_Description.m_Usage == xiiGALResourceUsage::Mutable && m_uiPendingSize > 0U)
   {
     xiiGALBufferCreationDescription description = m_Description;
     description.m_uiSize                        = m_uiPendingSize;

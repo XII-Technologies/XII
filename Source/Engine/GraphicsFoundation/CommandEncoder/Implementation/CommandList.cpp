@@ -1352,7 +1352,7 @@ void xiiGALCommandList::UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt
     XII_VERIFY_COMMAND_LIST((uiDestinationOffset % graphicsAdapterProperties.m_BufferProperties.m_uiStructuredBufferOffsetAlignment) == 0, "Offset must be aligned to {} bytes.", graphicsAdapterProperties.m_BufferProperties.m_uiStructuredBufferOffsetAlignment);
   }
 
-  XII_VERIFY_COMMAND_LIST(bufferDescription.m_Usage == xiiGALResourceUsage::Default || bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "UpdateBuffer command arguments are invalid. Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Sparse may be updated with this method.");
+  XII_VERIFY_COMMAND_LIST(bufferDescription.m_Usage == xiiGALResourceUsage::Mutable || bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "UpdateBuffer command arguments are invalid. Only xiiGALResourceUsage::Mutable or xiiGALResourceUsage::Sparse may be updated with this method.");
   XII_VERIFY_COMMAND_LIST(uiDestinationOffset < bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the destination offset ({1}) exceeds the buffer size ({2}).", pBuffer->GetDebugName(), uiDestinationOffset, bufferDescription.m_uiSize);
   XII_VERIFY_COMMAND_LIST((uiDestinationOffset + pSourceData.GetCount()) <= bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the update region [{1}, {2}) is out of buffer bounds [0, {3}).", pBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + pSourceData.GetCount(), bufferDescription.m_uiSize);
 

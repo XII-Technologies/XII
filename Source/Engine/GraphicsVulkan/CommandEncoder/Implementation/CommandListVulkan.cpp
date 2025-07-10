@@ -494,7 +494,7 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan
   {
     xiiGALBufferCreationDescription nullVertexBufferDescription;
     nullVertexBufferDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
-    nullVertexBufferDescription.m_Usage     = xiiGALResourceUsage::Default;
+    nullVertexBufferDescription.m_Usage     = xiiGALResourceUsage::Mutable;
     nullVertexBufferDescription.m_uiSize    = 32U;
 
     xiiSharedPtr<xiiGALBuffer> pNullVertexBuffer = m_pDevice->CreateBuffer(nullVertexBufferDescription);
@@ -2645,18 +2645,22 @@ void xiiGALCommandListVulkan::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGA
         vkImageSubresourceRange.baseArrayLayer            = barrier.m_uiFirstArraySlice;
         vkImageSubresourceRange.layerCount                = (barrier.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES) ? VK_REMAINING_ARRAY_LAYERS : barrier.m_uiArraySliceCount;
 
-        TransitionTextureState(barrier.m_pResource.Downcast<xiiGALTextureVulkan>(), barrier.m_OldState, barrier.m_NewState, barrier.m_TransitionFlags, &vkImageSubresourceRange);
+        TransitionTextureState(pTextureVulkan, barrier.m_OldState, barrier.m_NewState, barrier.m_TransitionFlags, &vkImageSubresourceRange);
       }
       else if (xiiGALBufferVulkan* pBufferVulkan = xiiDynamicCast<xiiGALBufferVulkan*>(barrier.m_pResource.Borrow()))
       {
-        TransitionBufferState(barrier.m_pResource.Downcast<xiiGALBufferVulkan>(), barrier.m_OldState, barrier.m_NewState, barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState));
+        TransitionBufferState(pBufferVulkan, barrier.m_OldState, barrier.m_NewState, barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState));
       }
       else if (xiiGALBottomLevelASVulkan* pBottomLevelASVulkan = xiiDynamicCast<xiiGALBottomLevelASVulkan*>(barrier.m_pResource.Borrow()))
       {
+        XII_IGNORE_UNUSED(pBottomLevelASVulkan);
+
         XII_ASSERT_NOT_IMPLEMENTED;
       }
       else if (xiiGALTopLevelASVulkan* pTopLevelASVulkan = xiiDynamicCast<xiiGALTopLevelASVulkan*>(barrier.m_pResource.Borrow()))
       {
+        XII_IGNORE_UNUSED(pTopLevelASVulkan);
+
         XII_ASSERT_NOT_IMPLEMENTED;
       }
       else

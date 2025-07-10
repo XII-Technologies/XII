@@ -43,7 +43,7 @@ xiiSimplifiedDataProvider::xiiSimplifiedDataProvider() = default;
 
 xiiSimplifiedDataProvider::~xiiSimplifiedDataProvider() = default;
 
-void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData)
+void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
 #ifdef CORE_ENABLE
   if (auto pData = extractedData.GetFrameData<xiiSimplifiedDataCPU>())

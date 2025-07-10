@@ -7,7 +7,7 @@
 class xiiRenderPipeline;
 struct xiiRenderPipelineResourceDescriptor;
 class xiiStreamWriter;
-class xiiRenderPipelinePass;
+class xiiRenderPipelinePassBase;
 class xiiExtractor;
 
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceLoaderConnection
@@ -26,5 +26,5 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceLoader
 {
   static xiiInternal::NewInstance<xiiRenderPipeline> CreateRenderPipeline(const xiiRenderPipelineResourceDescriptor& desc);
   static void                                        CreateRenderPipelineResourceDescriptor(const xiiRenderPipeline* pPipeline, xiiRenderPipelineResourceDescriptor& ref_desc);
-  static xiiResult                                   ExportPipeline(xiiArrayPtr<const xiiRenderPipelinePass* const> passes, xiiArrayPtr<const xiiExtractor* const> extractors, xiiArrayPtr<const xiiRenderPipelineResourceLoaderConnection> connections, xiiStreamWriter& ref_streamWriter);
+  static xiiResult                                   ExportPipeline(xiiArrayPtr<const xiiRenderPipelinePassBase* const> pPasses, xiiArrayPtr<const xiiExtractor* const> pExtractors, xiiArrayPtr<const xiiRenderPipelineResourceLoaderConnection> pConnections, xiiStreamWriter& ref_streamWriter);
 };

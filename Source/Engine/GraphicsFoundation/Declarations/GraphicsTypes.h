@@ -310,16 +310,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceUsage
   {
     Immutable = 0, ///< A resource that can only be read by the GPU. It cannot be written to by the GPU, and cannot be accessed by the CPU.
                    ///< This type of resource must be initialized when it is created, since it cannot be modified after creation.
-    Default,       ///< A resource that requires read and write access by the GPU and can also be occasionally written to by the CPU.
+    Mutable,       ///< A resource that requires read and write access by the GPU and can also be occasionally written to by the CPU.
     Dynamic,       ///< A resource that can be read by the GPU and written to, at least once per frame by the CPU.
     Staging,       ///< A resource that facilitates transferring data between the GPU and CPU.
     Unified,       ///< A resource that resides in a unified memory (eg. memory shared between the CPU and GPU), that can be read and written
                    ///  to by the GPU and can also be directly accessed by the CPU.
                    ///  \remarks An application should check if unified memory is available on the device by checking the device capabilities.
-                   ///           If there is no unified memory support, an application should choose another usage type (typically xiiGALResourceUsage::Default).
+                   ///           If there is no unified memory support, an application should choose another usage type (typically xiiGALResourceUsage::Mutable).
     Sparse,        ///< A resource that can be partially committed to physical memory.
 
     ENUM_COUNT,
+
+    Default = Mutable
   };
 };
 

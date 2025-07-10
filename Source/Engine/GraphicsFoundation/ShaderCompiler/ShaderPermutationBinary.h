@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/IO/DependencyFile.h>

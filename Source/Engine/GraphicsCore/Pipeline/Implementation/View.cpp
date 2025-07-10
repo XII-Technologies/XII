@@ -26,6 +26,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
     XII_MEMBER_PROPERTY("RenderTarget1", m_PinRenderTarget1),
     XII_MEMBER_PROPERTY("RenderTarget2", m_PinRenderTarget2),
     XII_MEMBER_PROPERTY("RenderTarget3", m_PinRenderTarget3),
+    XII_MEMBER_PROPERTY("RenderTarget4", m_PinRenderTarget4),
+    XII_MEMBER_PROPERTY("RenderTarget5", m_PinRenderTarget5),
+    XII_MEMBER_PROPERTY("RenderTarget6", m_PinRenderTarget6),
+    XII_MEMBER_PROPERTY("RenderTarget7", m_PinRenderTarget7),
     XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
   }
   XII_END_PROPERTIES;
@@ -394,7 +398,8 @@ void xiiView::SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStri
 
 void xiiView::ReadBackPassProperties()
 {
-  xiiHybridArray<xiiRenderPipelinePass*, 16> passes;
+  xiiHybridArray<xiiRenderPipelinePassBase*, 16U> passes;
+
   m_pRenderPipeline->GetPasses(passes);
 
   for (auto pPass : passes)

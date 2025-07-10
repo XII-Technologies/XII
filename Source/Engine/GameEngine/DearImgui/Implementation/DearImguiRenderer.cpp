@@ -155,7 +155,7 @@ void xiiImguiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRender
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
-void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   if (xiiImgui::GetSingleton() == nullptr)
     return;

@@ -34,7 +34,7 @@ void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderD
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
-void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   const xiiMeshRenderData* pRenderData = batch.GetFirstData<xiiMeshRenderData>();
 
@@ -50,7 +50,7 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
   if (subMeshes.GetCount() <= uiPartIndex)
     return;
 
-  xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext, pCommandList);
+  xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
 
   if (pRenderData->m_uiFlipWinding)
   {

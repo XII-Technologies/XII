@@ -294,7 +294,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
   switch (description.m_Usage)
   {
     case xiiGALResourceUsage::Immutable:
-    case xiiGALResourceUsage::Default:
+    case xiiGALResourceUsage::Mutable:
     {
       XII_GAL_DEVICE_CHECK(description.m_CPUAccessFlags.IsNoFlagSet(), "Static and default buffers cannot have any CPU flags set.");
     }
@@ -350,7 +350,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
     const bool bNeedsBackingResource = (description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess) || description.m_Mode == xiiGALBufferMode::Formatted);
     XII_GAL_DEVICE_CHECK(!bNeedsBackingResource, "xiiGALResourceUsage::Dynamic buffers that use the Unordered Access flag or Formatted mode requires an internal backing resource. "
                                                  "This resource is implicitly transitioned by the device context and thus cannot be relied upon to be safely used in multiple contexts. Create a xiiGALResourceUsage::Dynamic buffer "
-                                                 "without the xiiGALResourceUsage::UnorderedAccess flag and use xiiGALResourceUsage::Undefined mode and copy the contents to a xiiGALResourceUsage::Default buffer with required flags, "
+                                                 "without the xiiGALResourceUsage::UnorderedAccess flag and use xiiGALResourceUsage::Undefined mode and copy the contents to a xiiGALResourceUsage::Mutable buffer with required flags, "
                                                  "which can be shared between device contexts.");
   }
 
@@ -486,7 +486,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
   {
     XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags.IsAnyFlagSet(), "Memoryless textures are not supported by this device.");
     XII_GAL_DEVICE_CHECK(description.m_BindFlags.IsStrictlyAnySet(m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags), "Unsupported bind flags given for memoryless textures.");
-    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Default, "Memoryless attachment requires xiiGALResourceUsage::Default.");
+    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Mutable, "Memoryless attachment requires xiiGALResourceUsage::Mutable.");
     XII_GAL_DEVICE_CHECK(description.m_CPUAccessFlags.IsNoFlagSet(), "Memoryless attachment requires xiiGALCPUAccessFlags::None.");
     XII_GAL_DEVICE_CHECK(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::GenerateMips), "Memoryless attachment is not compatible with mip map generation.");
   }
@@ -530,7 +530,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
       XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureArray), "Shading rate texture arrays require the xiiGALShadingRateCapabilityFlags::TextureArray capability.");
     }
 
-    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Default || description.m_Usage == xiiGALResourceUsage::Immutable, "Shading rate textures only allow xiiGALResourceUsage::Default or xiiGALResourceUsage::Immutable.");
+    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Mutable || description.m_Usage == xiiGALResourceUsage::Immutable, "Shading rate textures only allow xiiGALResourceUsage::Mutable or xiiGALResourceUsage::Immutable.");
 
     XII_GAL_DEVICE_CHECK(description.m_uiMipLevels == 1U, "Shading rate textures must have a single mip level.");
     XII_GAL_DEVICE_CHECK(description.m_uiMipLevels != 1U, "Shading rate textures must have a single mip level."); // For Direct3D12 and Vulkan with VK_EXT_fragment_density_map
