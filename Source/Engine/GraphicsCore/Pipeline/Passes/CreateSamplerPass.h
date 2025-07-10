@@ -10,7 +10,7 @@ class xiiCreateSamplerPass : public xiiUtilityPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiCreateSamplerPass);
 
 public:
-  xiiCreateSamplerPass(xiiStringView sName);
+  xiiCreateSamplerPass(xiiStringView sName = "CreateSamplerPass");
 
   virtual ~xiiCreateSamplerPass();
 

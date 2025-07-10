@@ -33,7 +33,17 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePin, xiiNoBase, 1, xiiRTTIN
 XII_END_STATIC_REFLECTED_TYPE;
 
 // Input Pins.
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
+	XII_BEGIN_ATTRIBUTES
+  {
+   new xiiHiddenAttribute(),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferPin, xiiRenderPipelineNodeInputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -44,7 +54,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferPin, xiiRenderPi
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentPin, xiiRenderPipelineNodeInputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -55,7 +65,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentPin, x
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentPin, xiiRenderPipelineNodeInputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -66,7 +76,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentPin, xi
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerPin, xiiRenderPipelineNodeInputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -77,7 +87,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerPin, xiiRenderP
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputAccelerationStructurePin, xiiRenderPipelineNodeInputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -90,7 +100,17 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 
 // Output Pins.
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
+	XII_BEGIN_ATTRIBUTES
+  {
+   new xiiHiddenAttribute(),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferPin, xiiRenderPipelineNodeOutputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -101,7 +121,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferPin, xiiRenderP
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentPin, xiiRenderPipelineNodeOutputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -117,7 +137,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentPin, 
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentPin, xiiRenderPipelineNodeOutputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -136,7 +156,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentPin, x
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerPin, xiiRenderPipelineNodeOutputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -147,7 +167,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerPin, xiiRender
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputAccelerationStructurePin, xiiRenderPipelineNodeOutputPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -160,7 +180,17 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 
 // Pass-Through Pins.
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughBufferPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+{
+	XII_BEGIN_ATTRIBUTES
+  {
+   new xiiHiddenAttribute(),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughBufferPin, xiiRenderPipelineNodePassThroughPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -171,7 +201,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughBufferPin, xiiRe
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughColourAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughColourAttachmentPin, xiiRenderPipelineNodePassThroughPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -182,7 +212,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughColourAttachment
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughDepthAttachmentPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughDepthAttachmentPin, xiiRenderPipelineNodePassThroughPin, 1, xiiRTTINoAllocator)
   XII_BEGIN_PROPERTIES
   {
     XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY("Flags", xiiRenderPipelineNodePinFlags, GetFlags),
@@ -191,7 +221,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughDepthAttachmentP
   XII_END_PROPERTIES;
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughSamplerPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughSamplerPin, xiiRenderPipelineNodePassThroughPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -202,7 +232,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughSamplerPin, xiiR
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughAccelerationStructurePin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodePassThroughAccelerationStructurePin, xiiRenderPipelineNodePassThroughPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -215,7 +245,17 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 
 // Input-Provider Pins.
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputProviderPin, xiiRenderPipelineNodeInputPin, 1, xiiRTTINoAllocator)
+{
+	XII_BEGIN_ATTRIBUTES
+  {
+   new xiiHiddenAttribute(),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferProviderPin, xiiRenderPipelineNodeInputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -226,7 +266,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputBufferProviderPin, xii
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentProviderPin, xiiRenderPipelineNodeInputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -237,7 +277,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputColourAttachmentProvid
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentProviderPin, xiiRenderPipelineNodeInputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -248,7 +288,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputDepthAttachmentProvide
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerProviderPin, xiiRenderPipelineNodeInputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -259,7 +299,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputSamplerProviderPin, xi
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputAccelerationStructureProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeInputAccelerationStructureProviderPin, xiiRenderPipelineNodeInputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -272,7 +312,17 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 
 // Output-Provider Pins.
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputProviderPin, xiiRenderPipelineNodeOutputPin, 1, xiiRTTINoAllocator)
+{
+	XII_BEGIN_ATTRIBUTES
+  {
+   new xiiHiddenAttribute(),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferProviderPin, xiiRenderPipelineNodeOutputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -283,7 +333,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputBufferProviderPin, xi
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentProviderPin, xiiRenderPipelineNodeOutputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -294,7 +344,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputColourAttachmentProvi
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentProviderPin, xiiRenderPipelineNodeOutputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -305,7 +355,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputDepthAttachmentProvid
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerProviderPin, xiiRenderPipelineNodeOutputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -316,7 +366,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputSamplerProviderPin, x
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputAccelerationStructureProviderPin, xiiRenderPipelineNodePin, 1, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineNodeOutputAccelerationStructureProviderPin, xiiRenderPipelineNodeOutputProviderPin, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {

@@ -4,7 +4,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateColourAttachmentPass, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateColourAttachmentPass, 1, xiiRTTIDefaultAllocator<xiiCreateColourAttachmentPass>)
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
@@ -107,7 +107,7 @@ void xiiCreateColourAttachmentPass::Execute(const xiiRenderViewContext& renderVi
 ///////////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateDepthAttachmentPass, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateDepthAttachmentPass, 1, xiiRTTIDefaultAllocator<xiiCreateDepthAttachmentPass>)
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Output", m_PinOutput),

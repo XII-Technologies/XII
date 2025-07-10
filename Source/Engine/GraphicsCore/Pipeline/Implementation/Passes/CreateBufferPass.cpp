@@ -3,7 +3,7 @@
 #include <GraphicsCore/Pipeline/Passes/CreateBufferPass.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateBufferPass, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateBufferPass, 1, xiiRTTIDefaultAllocator<xiiCreateBufferPass>)
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Output", m_PinOutput),

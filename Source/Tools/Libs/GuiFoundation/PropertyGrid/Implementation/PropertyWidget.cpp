@@ -2314,7 +2314,6 @@ void xiiQtPropertyEditorEnumWidget::OnInit()
 
 void xiiQtPropertyEditorEnumWidget::InternalSetValue(const xiiVariant& value)
 {
-
   if (m_pWidget)
   {
     xiiInt32 iIndex = -1;

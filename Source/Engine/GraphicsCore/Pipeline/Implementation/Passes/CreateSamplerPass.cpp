@@ -3,7 +3,7 @@
 #include <GraphicsCore/Pipeline/Passes/CreateSamplerPass.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateSamplerPass, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateSamplerPass, 1, xiiRTTIDefaultAllocator<xiiCreateSamplerPass>)
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Output", m_PinOutput),

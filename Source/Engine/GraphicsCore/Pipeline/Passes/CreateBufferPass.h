@@ -10,7 +10,7 @@ class xiiCreateBufferPass : public xiiUtilityPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiCreateBufferPass);
 
 public:
-  xiiCreateBufferPass(xiiStringView sName);
+  xiiCreateBufferPass(xiiStringView sName = "CreateBufferPass");
 
   virtual ~xiiCreateBufferPass();
 

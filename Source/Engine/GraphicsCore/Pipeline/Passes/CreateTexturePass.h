@@ -10,7 +10,7 @@ class xiiCreateColourAttachmentPass : public xiiUtilityPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiCreateColourAttachmentPass);
 
 public:
-  xiiCreateColourAttachmentPass(xiiStringView sName);
+  xiiCreateColourAttachmentPass(xiiStringView sName = "CreateColourAttachmentPass");
 
   virtual ~xiiCreateColourAttachmentPass();
 
@@ -44,7 +44,7 @@ class xiiCreateDepthAttachmentPass : public xiiUtilityPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiCreateDepthAttachmentPass);
 
 public:
-  xiiCreateDepthAttachmentPass(xiiStringView sName);
+  xiiCreateDepthAttachmentPass(xiiStringView sName = "CreateDepthAttachmentPass");
 
   virtual ~xiiCreateDepthAttachmentPass();
 

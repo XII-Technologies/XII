@@ -97,15 +97,29 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePin);
 // Input Pins
 ///////////////////////////////////////////////////////////////////////////////
 
+/// \brief Base class for all input pins used in the render pipeline graph.
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Constructs an input pin.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputPin()
+  {
+    m_Flags = xiiRenderPipelineNodePinFlags::Input;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputPin);
+
 /// \brief Consumes a general-purpose GPU buffer (uniforms, storage, vertex data, etc.).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputBufferPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputBufferPin : public xiiRenderPipelineNodeInputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an input pin that reads from a Buffer resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputBufferPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputBufferPin() :
+    xiiRenderPipelineNodeInputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Buffer;
   }
 };
@@ -113,14 +127,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputBufferPin : public xiiRend
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputBufferPin);
 
 /// \brief Consumes a color render target (e.g. MRT, texture for post-process).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputColourAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputColourAttachmentPin : public xiiRenderPipelineNodeInputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an input pin that reads from a ColourAttachment resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputColourAttachmentPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputColourAttachmentPin() :
+    xiiRenderPipelineNodeInputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::ColourAttachment;
   }
 };
@@ -128,14 +142,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputColourAttachmentPin : publ
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputColourAttachmentPin);
 
 /// \brief Consumes a depth buffer for depth-based effects or tests.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputDepthAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputDepthAttachmentPin : public xiiRenderPipelineNodeInputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an input pin that reads from a DepthAttachment resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputDepthAttachmentPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputDepthAttachmentPin() :
+    xiiRenderPipelineNodeInputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::DepthAttachment;
   }
 };
@@ -143,14 +157,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputDepthAttachmentPin : publi
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputDepthAttachmentPin);
 
 /// \brief Consumes a sampler state for texture sampling configuration.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputSamplerPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputSamplerPin : public xiiRenderPipelineNodeInputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an input pin that reads from a Sampler resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputSamplerPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputSamplerPin() :
+    xiiRenderPipelineNodeInputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Sampler;
   }
 };
@@ -158,14 +172,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputSamplerPin : public xiiRen
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputSamplerPin);
 
 /// \brief Consumes a ray-tracing acceleration structure.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputAccelerationStructurePin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputAccelerationStructurePin : public xiiRenderPipelineNodeInputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an input pin that reads from an AccelerationStructure resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputAccelerationStructurePin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputAccelerationStructurePin() :
+    xiiRenderPipelineNodeInputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::AccelerationStructure;
   }
 };
@@ -176,15 +190,29 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputAcc
 // Output Pins
 ///////////////////////////////////////////////////////////////////////////////
 
+/// \brief Base class for all output pins used in the render pipeline graph.
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Constructs an output pin.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputPin()
+  {
+    m_Flags = xiiRenderPipelineNodePinFlags::Output;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputPin);
+
 /// \brief Produces a general-purpose GPU buffer (uniforms, storage, vertex data, etc.).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputBufferPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputBufferPin : public xiiRenderPipelineNodeOutputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an output pin that writes to a Buffer resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputBufferPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputBufferPin() :
+    xiiRenderPipelineNodeOutputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Buffer;
   }
 };
@@ -192,14 +220,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputBufferPin : public xiiRen
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputBufferPin);
 
 /// \brief Produces a color render target (e.g. MRT, texture for post-process).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputColourAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputColourAttachmentPin : public xiiRenderPipelineNodeOutputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an output pin that writes to a ColourAttachment resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputColourAttachmentPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputColourAttachmentPin() :
+    xiiRenderPipelineNodeOutputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::ColourAttachment;
   }
 
@@ -217,14 +245,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputColourAttachmentPin : pub
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputColourAttachmentPin);
 
 /// \brief Produces a depth buffer for depth-based effects or tests.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputDepthAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputDepthAttachmentPin : public xiiRenderPipelineNodeOutputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an output pin that writes to a DepthAttachment resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputDepthAttachmentPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputDepthAttachmentPin() :
+    xiiRenderPipelineNodeOutputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::DepthAttachment;
   }
 
@@ -245,14 +273,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputDepthAttachmentPin : publ
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputDepthAttachmentPin);
 
 /// \brief Produces a sampler state for texture sampling configuration.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputSamplerPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputSamplerPin : public xiiRenderPipelineNodeOutputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an output pin that writes to a Sampler resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputSamplerPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputSamplerPin() :
+    xiiRenderPipelineNodeOutputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Sampler;
   }
 };
@@ -260,14 +288,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputSamplerPin : public xiiRe
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputSamplerPin);
 
 /// \brief Produces a ray-tracing acceleration structure.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputAccelerationStructurePin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputAccelerationStructurePin : public xiiRenderPipelineNodeOutputPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs an output pin that writes to an AccelerationStructure resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputAccelerationStructurePin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputAccelerationStructurePin() :
+    xiiRenderPipelineNodeOutputPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::AccelerationStructure;
   }
 };
@@ -278,15 +306,29 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputAc
 // Pass-Through Pins
 ///////////////////////////////////////////////////////////////////////////////
 
+/// \brief Base class for all pass-through pins used in the render pipeline graph.
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughPin : public xiiRenderPipelineNodePin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Constructs a pass-through pin.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughPin()
+  {
+    m_Flags = xiiRenderPipelineNodePinFlags::PassThrough;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughPin);
+
 /// \brief Forwards a general-purpose GPU buffer without modifying it.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughBufferPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughBufferPin : public xiiRenderPipelineNodePassThroughPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs a pass-through pin for a Buffer resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughBufferPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughBufferPin() :
+    xiiRenderPipelineNodePassThroughPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::PassThrough;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Buffer;
   }
 };
@@ -294,14 +336,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughBufferPin : public x
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughBufferPin);
 
 /// \brief Forwards a color render target without modifying it.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughColourAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughColourAttachmentPin : public xiiRenderPipelineNodePassThroughPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs a pass-through pin for a ColourAttachment resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughColourAttachmentPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughColourAttachmentPin() :
+    xiiRenderPipelineNodePassThroughPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::PassThrough;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::ColourAttachment;
   }
 };
@@ -309,14 +351,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughColourAttachmentPin 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughColourAttachmentPin);
 
 /// \brief Forwards a depth buffer without modifying it.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughDepthAttachmentPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughDepthAttachmentPin : public xiiRenderPipelineNodePassThroughPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs a pass-through pin for a DepthAttachment resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughDepthAttachmentPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughDepthAttachmentPin() :
+    xiiRenderPipelineNodePassThroughPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::PassThrough;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::DepthAttachment;
   }
 };
@@ -324,14 +366,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughDepthAttachmentPin :
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughDepthAttachmentPin);
 
 /// \brief Forwards a sampler state without modifying it.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughSamplerPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughSamplerPin : public xiiRenderPipelineNodePassThroughPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs a pass-through pin for a Sampler resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughSamplerPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughSamplerPin() :
+    xiiRenderPipelineNodePassThroughPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::PassThrough;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Sampler;
   }
 };
@@ -339,14 +381,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughSamplerPin : public 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThroughSamplerPin);
 
 /// \brief Forwards an acceleration structure without modifying it.
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughAccelerationStructurePin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePassThroughAccelerationStructurePin : public xiiRenderPipelineNodePassThroughPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// \brief Constructs a pass-through pin for an AccelerationStructure resource.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughAccelerationStructurePin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodePassThroughAccelerationStructurePin() :
+    xiiRenderPipelineNodePassThroughPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::PassThrough;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::AccelerationStructure;
   }
 };
@@ -357,15 +399,30 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThro
 // Input-Provider Pins
 ///////////////////////////////////////////////////////////////////////////////
 
+/// \brief Dynamically provides a resource each frame (Input + Provider).
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputProviderPin : public xiiRenderPipelineNodeInputPin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// Constructs an input-provider pin for resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputProviderPin() :
+    xiiRenderPipelineNodeInputPin()
+  {
+    m_Flags |= xiiRenderPipelineNodePinFlags::ResourceProvider;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputProviderPin);
+
 /// \brief Dynamically provides a buffer each frame (Input + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputBufferProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputBufferProviderPin : public xiiRenderPipelineNodeInputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an input-provider pin for Buffer resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputBufferProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputBufferProviderPin() :
+    xiiRenderPipelineNodeInputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Buffer;
   }
 };
@@ -373,14 +430,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputBufferProviderPin : public
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputBufferProviderPin);
 
 /// \brief Dynamically provides a color render target each frame (Input + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputColourAttachmentProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputColourAttachmentProviderPin : public xiiRenderPipelineNodeInputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an input-provider pin for ColourAttachment resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputColourAttachmentProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputColourAttachmentProviderPin() :
+    xiiRenderPipelineNodeInputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::ColourAttachment;
   }
 };
@@ -388,14 +445,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputColourAttachmentProviderPi
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputColourAttachmentProviderPin);
 
 /// \brief Dynamically provides a depth render target each frame (Input + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputDepthAttachmentProviderPin : public xiiRenderPipelineNodeInputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an input-provider pin for DepthAttachment resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputDepthAttachmentProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputDepthAttachmentProviderPin() :
+    xiiRenderPipelineNodeInputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::DepthAttachment;
   }
 };
@@ -403,28 +460,28 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputDepthAttachmentProviderPin
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputDepthAttachmentProviderPin);
 
 /// \brief Dynamically provides a sampler state each frame (Input + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputSamplerProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputSamplerProviderPin : public xiiRenderPipelineNodeInputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an input-provider pin for Sampler resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputSamplerProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputSamplerProviderPin() :
+    xiiRenderPipelineNodeInputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Sampler;
   }
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputSamplerProviderPin);
 
 /// \brief Dynamically provides an acceleration structure each frame (Input + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeInputAccelerationStructureProviderPin : public xiiRenderPipelineNodeInputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an input-provider pin for AccelerationStructure resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputAccelerationStructureProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeInputAccelerationStructureProviderPin() :
+    xiiRenderPipelineNodeInputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Input | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::AccelerationStructure;
   }
 };
@@ -435,15 +492,30 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputAcc
 // Output-Provider Pins
 ///////////////////////////////////////////////////////////////////////////////
 
+/// \brief Dynamically provides a resource each frame (Output + Provider).
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputProviderPin : public xiiRenderPipelineNodeOutputPin
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// Constructs an input-provider pin for resources.
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputProviderPin() :
+    xiiRenderPipelineNodeOutputPin()
+  {
+    m_Flags |= xiiRenderPipelineNodePinFlags::ResourceProvider;
+  }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputProviderPin);
+
 /// \brief Dynamically provides a buffer each frame (Output + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputBufferProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputBufferProviderPin : public xiiRenderPipelineNodeOutputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an output-provider pin for Buffer resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputBufferProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputBufferProviderPin() :
+    xiiRenderPipelineNodeOutputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Buffer;
   }
 };
@@ -451,14 +523,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputBufferProviderPin : publi
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputBufferProviderPin);
 
 /// \brief Dynamically provides a color render target each frame (Output + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputColourAttachmentProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputColourAttachmentProviderPin : public xiiRenderPipelineNodeOutputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an output-provider pin for ColourAttachment resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputColourAttachmentProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputColourAttachmentProviderPin() :
+    xiiRenderPipelineNodeOutputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::ColourAttachment;
   }
 };
@@ -466,14 +538,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputColourAttachmentProviderP
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputColourAttachmentProviderPin);
 
 /// \brief Dynamically provides a depth render target each frame (Output + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputDepthAttachmentProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputDepthAttachmentProviderPin : public xiiRenderPipelineNodeOutputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an output-provider pin for DepthAttachment resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputDepthAttachmentProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputDepthAttachmentProviderPin() :
+    xiiRenderPipelineNodeOutputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::DepthAttachment;
   }
 };
@@ -481,14 +553,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputDepthAttachmentProviderPi
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputDepthAttachmentProviderPin);
 
 /// \brief Dynamically provides a sampler state each frame (Output + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputSamplerProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputSamplerProviderPin : public xiiRenderPipelineNodeOutputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an output-provider pin for Sampler resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputSamplerProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputSamplerProviderPin() :
+    xiiRenderPipelineNodeOutputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::Sampler;
   }
 };
@@ -496,14 +568,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputSamplerProviderPin : publ
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputSamplerProviderPin);
 
 /// \brief Dynamically provides a ray-tracing acceleration structure each frame (Output + Provider).
-struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputAccelerationStructureProviderPin : public xiiRenderPipelineNodePin
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodeOutputAccelerationStructureProviderPin : public xiiRenderPipelineNodeOutputProviderPin
 {
   XII_DECLARE_POD_TYPE();
 
   /// Constructs an output-provider pin for AccelerationStructure resources.
-  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputAccelerationStructureProviderPin()
+  XII_ALWAYS_INLINE xiiRenderPipelineNodeOutputAccelerationStructureProviderPin() :
+    xiiRenderPipelineNodeOutputProviderPin()
   {
-    m_Flags        = xiiRenderPipelineNodePinFlags::Output | xiiRenderPipelineNodePinFlags::ResourceProvider;
     m_ResourceType = xiiRenderPipelineNodePinResourceType::AccelerationStructure;
   }
 };
