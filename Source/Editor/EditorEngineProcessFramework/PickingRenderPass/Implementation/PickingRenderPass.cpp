@@ -293,7 +293,7 @@ void xiiPickingRenderPass::CreateTarget()
   tcd.m_Format         = xiiGALResourceFormat::D32Float;
   tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
-  tcd.m_Usage          = xiiGALResourceUsage::Default;
+  tcd.m_Usage          = xiiGALResourceUsage::Mutable;
 
   m_pPickingDepthRT = pDevice->CreateTexture(tcd);
 
