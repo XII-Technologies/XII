@@ -27,9 +27,9 @@ namespace
       desc.m_DependsOn.PushBack(xiiMakeHashedString("TestComponentManager::Update2")); // update2 will be called before update
       desc.m_DependsOn.PushBack(xiiMakeHashedString("TestComponentManager::Update3")); // update3 will be called before update
 
-      auto descAsync            = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(TestComponentManager::UpdateAsync, this);
-      descAsync.m_Phase         = xiiWorldUpdatePhase::Async;
-      descAsync.m_uiGranularity = 20;
+      auto descAsync                    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(TestComponentManager::UpdateAsync, this);
+      descAsync.m_Phase                 = xiiWorldUpdatePhase::Async;
+      descAsync.m_uiAsyncPhaseBatchSize = 20;
 
       // Update functions are now registered in reverse order, so we can test whether dependencies work.
       this->RegisterUpdateFunction(descAsync);

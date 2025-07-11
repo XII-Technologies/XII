@@ -139,8 +139,10 @@ template <typename T, xiiBlockStorageType::Enum StorageType>
 XII_FORCE_INLINE void xiiComponentManager<T, StorageType>::RegisterUpdateFunction(UpdateFunctionDesc& desc)
 {
   // round up to multiple of data block capacity so tasks only have to deal with complete data blocks
-  if (desc.m_uiGranularity != 0)
-    desc.m_uiGranularity = static_cast<xiiUInt16>(xiiMath::RoundUp(static_cast<xiiInt32>(desc.m_uiGranularity), xiiDataBlock<ComponentType, xiiInternal::DEFAULT_BLOCK_SIZE>::CAPACITY));
+  if (desc.m_uiAsyncPhaseBatchSize != 0)
+  {
+    desc.m_uiAsyncPhaseBatchSize = static_cast<xiiUInt16>(xiiMath::RoundUp(static_cast<xiiInt32>(desc.m_uiAsyncPhaseBatchSize), xiiDataBlock<ComponentType, xiiInternal::DEFAULT_BLOCK_SIZE>::CAPACITY));
+  }
 
   xiiComponentManagerBase::RegisterUpdateFunction(desc);
 }
