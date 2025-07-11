@@ -39,8 +39,15 @@ void xiiSceneSelectionContext::SelectPickedObject(const xiiObjectPickingResult& 
 
         if (pSceneDocument->GetActiveLayer() != layerGuid)
         {
-          pSceneDocument->PreventDoubleSelectionChange(true);
-          pSceneDocument->SetActiveLayer(layerGuid).LogFailure();
+          if (pSceneDocument->GetSwitchLayerToSelection())
+          {
+            pSceneDocument->PreventDoubleSelectionChange(true);
+            pSceneDocument->SetActiveLayer(layerGuid).LogFailure();
+          }
+          else
+          {
+            pSceneDocument->ShowDocumentStatus(xiiFmt("The clicked object is in layer '{}'. Switch layer or enable 'Auto Switch Layer to Selection'.", pSceneDocument->GetLayerDocument(layerGuid)->GetDocumentPath().GetFileName()));
+          }
         }
       }
     }
@@ -49,7 +56,9 @@ void xiiSceneSelectionContext::SelectPickedObject(const xiiObjectPickingResult& 
   xiiSelectionContext::SelectPickedObject(res, bToggle, bDirect);
 
   if (pSceneDocument)
+  {
     pSceneDocument->PreventDoubleSelectionChange(false);
+  }
 }
 
 xiiUuid xiiSceneSelectionContext::FindLayerByObject(xiiUuid objectGuid, const xiiDocumentObject*& out_pObject) const

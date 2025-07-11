@@ -47,15 +47,16 @@ public:
 
 struct xiiScene2LayerEvent
 {
-  enum class Type
+  enum class Type : xiiUInt32
   {
-    LayerAdded,
+    LayerAdded = 0U,
     LayerRemoved,
     LayerLoaded,
     LayerUnloaded,
     LayerVisible,
     LayerInvisible,
     ActiveLayerChanged,
+    SettingsChanged,
   };
 
   Type    m_Type;
@@ -109,6 +110,9 @@ public:
   virtual xiiGameObjectDocument* GetRedirectedGameObjectDoc() override;
 
   bool IsAnyLayerModified() const;
+
+  bool GetSwitchLayerToSelection() const { return m_bSwitchLayerToSelection; }
+  void SetSwitchLayerToSelection(bool bEnable);
 
   ///@}
   /// \name Base Class Functions
@@ -174,6 +178,7 @@ private:
   mutable xiiUniquePtr<xiiSelectionManager> m_pLayerSelection;
   xiiUuid                                   m_ActiveLayerGuid;
   xiiHashTable<xiiUuid, LayerInfo>          m_Layers;
+  bool                                      m_bSwitchLayerToSelection = true;
 
   void ActiveLayerGameObjectEventHandler(const xiiGameObjectEvent& e);
 

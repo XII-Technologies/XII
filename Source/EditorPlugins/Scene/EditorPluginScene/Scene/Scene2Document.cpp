@@ -972,3 +972,15 @@ bool xiiScene2Document::IsAnyLayerModified() const
 
   return false;
 }
+
+void xiiScene2Document::SetSwitchLayerToSelection(bool bEnable)
+{
+  if (m_bSwitchLayerToSelection == bEnable)
+    return;
+
+  m_bSwitchLayerToSelection = bEnable;
+
+  xiiScene2LayerEvent e;
+  e.m_Type = xiiScene2LayerEvent::Type::SettingsChanged;
+  m_LayerEvents.Broadcast(e);
+}

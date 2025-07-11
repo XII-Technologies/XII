@@ -216,6 +216,9 @@ void OnLoadPlugin()
   xiiActionMapManager::RegisterActionMap("EditorPluginScene_LayerContextMenu");
   xiiLayerActions::MapContextMenuActions("EditorPluginScene_LayerContextMenu");
 
+  xiiActionMapManager::RegisterActionMap("EditorPluginScene_LayerToolbar");
+  xiiLayerActions::MapToolbarActions("EditorPluginScene_LayerToolbar");
+
   // component property meta states
   xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiCameraComponent_PropertyMetaStateEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiSkyLightComponent_PropertyMetaStateEventHandler);

@@ -6,6 +6,7 @@
 #include <EditorPluginScene/Panels/ScenegraphPanel/ScenegraphModel.moc.h>
 #include <EditorPluginScene/Scene/Scene2Document.h>
 #include <GuiFoundation/ActionViews/MenuActionMapView.moc.h>
+#include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 
 #include <QVBoxLayout>
 
@@ -14,6 +15,7 @@ xiiQtLayerPanel::xiiQtLayerPanel(ads::CDockManager* pDockManager, QWidget* pPare
 {
   setObjectName("LayerPanel");
   setWindowTitle("Layers");
+
   m_pSceneDocument = pDocument;
   m_pDelegate      = new xiiQtLayerDelegate(this, pDocument);
 
@@ -31,6 +33,18 @@ xiiQtLayerPanel::xiiQtLayerPanel(ads::CDockManager* pDockManager, QWidget* pPare
   XII_VERIFY(connect(m_pTreeWidget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(OnRequestContextMenu(QPoint))) != nullptr, "signal/slot connection failed");
 
   setWidget(m_pTreeWidget);
+
+  {
+    // Tool Bar
+    xiiQtToolBarActionMapView* pToolBar = new xiiQtToolBarActionMapView("Toolbar", this);
+    xiiActionContext           context;
+    context.m_sMapping  = "EditorPluginScene_LayerToolbar";
+    context.m_pDocument = pDocument;
+    context.m_pWindow   = this;
+    pToolBar->SetActionContext(context);
+    pToolBar->setObjectName("LayerPanel_ToolBar");
+    setToolBar(pToolBar);
+  }
 }
 
 xiiQtLayerPanel::~xiiQtLayerPanel() = default;
