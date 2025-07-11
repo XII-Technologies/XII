@@ -614,6 +614,8 @@ void xiiSceneDocument::SetGameMode(GameMode::Enum mode)
 
   m_GameMode = mode;
 
+  SetPauseSimulation(false);
+
   switch (m_GameMode)
   {
     case GameMode::Off:
@@ -819,6 +821,16 @@ bool xiiSceneDocument::StopGameMode()
   }
 
   return true;
+}
+
+void xiiSceneDocument::StepSimulation()
+{
+  SetStepSimulation(true);
+}
+
+void xiiSceneDocument::PauseSimulation()
+{
+  SetPauseSimulation(true);
 }
 
 void xiiSceneDocument::ShowOrHideAllObjects(ShowOrHide action)

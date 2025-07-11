@@ -25,8 +25,9 @@ public:
   static xiiActionDescriptorHandle s_hGameModePlay;
   static xiiActionDescriptorHandle s_hGameModePlayFromHere;
   static xiiActionDescriptorHandle s_hGameModeStop;
-  static xiiActionDescriptorHandle s_hUtilExportSceneToOBJ;
+  static xiiActionDescriptorHandle s_hGameModePause;
   static xiiActionDescriptorHandle s_hKeepSimulationChanges;
+  static xiiActionDescriptorHandle s_hUtilExportSceneToOBJ;
   static xiiActionDescriptorHandle s_hCreateThumbnail;
   static xiiActionDescriptorHandle s_hFavoriteCamsMenu;
   static xiiActionDescriptorHandle s_hStoreEditorCamera[10];
@@ -41,13 +42,14 @@ class XII_EDITORPLUGINSCENE_DLL xiiSceneAction : public xiiButtonAction
   XII_ADD_DYNAMIC_REFLECTION(xiiSceneAction, xiiButtonAction);
 
 public:
-  enum class ActionType
+  enum class ActionType : xiiUInt32
   {
-    ExportAndRunScene,
+    ExportAndRunScene = 0U,
     StartGameModeSimulate,
     StartGameModePlay,
     StartGameModePlayFromHere,
     StopGameMode,
+    PauseSimulation,
     ExportSceneToOBJ,
     KeepSimulationChanges,
     CreateThumbnail,

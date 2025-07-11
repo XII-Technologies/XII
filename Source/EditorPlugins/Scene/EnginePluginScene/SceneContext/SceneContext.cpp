@@ -356,6 +356,7 @@ void xiiSceneContext::HandleLayerVisibilityChangedMsgToEngineMsg(const xiiLayerV
 void xiiSceneContext::HandleGridSettingsMsg(const xiiGridSettingsMsgToEngine* pMsg)
 {
   m_fGridDensity = pMsg->m_fGridDensity;
+
   if (m_fGridDensity != 0.0f)
   {
     m_GridTransform.m_vPosition = pMsg->m_vGridCenter;
@@ -381,16 +382,22 @@ void xiiSceneContext::HandleSimulationSettingsMsg(const xiiSimulationSettingsMsg
 {
   const bool        bSimulate = pMsg->m_bSimulateWorld;
   xiiGameStateBase* pState    = GetGameState();
+
   m_pWorld->GetClock().SetSpeed(pMsg->m_fSimulationSpeed);
+  m_pWorld->GetClock().SetPaused(pMsg->m_fSimulationSpeed == 0.0f);
 
   if (pState == nullptr && bSimulate != m_pWorld->GetWorldSimulationEnabled())
   {
     m_pWorld->SetWorldSimulationEnabled(bSimulate);
 
     if (bSimulate)
+    {
       OnSimulationEnabled();
+    }
     else
+    {
       OnSimulationDisabled();
+    }
   }
 }
 
@@ -401,9 +408,13 @@ void xiiSceneContext::HandleWorldSettingsMsg(const xiiWorldSettingsMsgToEngine* 
   m_bRenderSelectionBoxes   = pMsg->m_bRenderSelectionBoxes;
 
   if (pMsg->m_bAddAmbientLight)
+  {
     AddAmbientLight(true, false);
+  }
   else
+  {
     RemoveAmbientLight();
+  }
 }
 
 void xiiSceneContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg)
@@ -493,7 +504,6 @@ xiiGameStateBase* xiiSceneContext::GetGameState() const
   {
     return xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetActiveGameState();
   }
-
   return nullptr;
 }
 
@@ -517,6 +527,7 @@ xiiUInt32 xiiSceneContext::RegisterLayer(xiiLayerContext* pLayer)
 void xiiSceneContext::UnregisterLayer(xiiLayerContext* pLayer)
 {
   m_Contexts.RemoveAndSwap(&pLayer->m_Context);
+
   for (xiiUInt32 i = 0; i < m_Layers.GetCount(); ++i)
   {
     if (m_Layers[i] == pLayer)
@@ -526,7 +537,9 @@ void xiiSceneContext::UnregisterLayer(xiiLayerContext* pLayer)
   }
 
   while (!m_Layers.IsEmpty() && m_Layers.PeekBack() == nullptr)
+  {
     m_Layers.PopBack();
+  }
 }
 
 void xiiSceneContext::AddLayerIndexTag(const xiiEntityMsgToEngine& msg, xiiWorldRttiConverterContext& ref_context, const xiiTag& layerTag)
@@ -537,10 +550,12 @@ void xiiSceneContext::AddLayerIndexTag(const xiiEntityMsgToEngine& msg, xiiWorld
     {
       const xiiUuid&         object = msg.m_change.m_Change.m_Value.Get<xiiUuid>();
       xiiRttiConverterObject target = ref_context.GetObjectByGUID(object);
+
       if (target.m_pType == xiiGetStaticRTTI<xiiGameObject>() && target.m_pObject != nullptr)
       {
         // We do postpone tagging until after the first frame so that prefab references are instantiated and affected as well.
         xiiGameObject* pObject = static_cast<xiiGameObject*>(target.m_pObject);
+
         m_ObjectsToTag.PushBack({pObject->GetHandle(), layerTag});
       }
     }
@@ -555,8 +570,11 @@ const xiiArrayPtr<const xiiTag> xiiSceneContext::GetInvisibleLayerTags() const
 void xiiSceneContext::OnInitialize()
 {
   XII_LOCK(m_pWorld->GetWriteMarker());
+
   if (!m_ActiveLayer.IsValid())
+  {
     m_ActiveLayer = m_DocumentGuid;
+  }
   m_Contexts.PushBack(&m_Context);
 
   m_LayerTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Layer_Scene");
@@ -571,11 +589,15 @@ void xiiSceneContext::OnDeinitialize()
   m_SelectionWithChildrenSet.Clear();
   m_hSkyLight.Invalidate();
   m_hDirectionalLight.Invalidate();
+
   m_LayerTag = xiiTag();
+
   for (xiiLayerContext* pLayer : m_Layers)
   {
     if (pLayer != nullptr)
+    {
       pLayer->SceneDeinitialized();
+    }
   }
 }
 
@@ -595,16 +617,16 @@ void xiiSceneContext::HandleSelectionMsg(const xiiObjectSelectionMsgToEngine* pM
   m_SelectionWithChildrenSet.Clear();
   m_SelectionWithChildren.Clear();
 
-  xiiStringBuilder sSel = pMsg->m_sSelection;
+  xiiStringBuilder sSelection = pMsg->m_sSelection;
   xiiStringBuilder sGuid;
 
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetReadMarker());
 
-  while (!sSel.IsEmpty())
+  while (!sSelection.IsEmpty())
   {
-    sGuid.SetSubString_ElementCount(sSel.GetData() + 1, 40);
-    sSel.Shrink(41, 0);
+    sGuid.SetSubString_ElementCount(sSelection.GetData() + 1, 40);
+    sSelection.Shrink(41, 0);
 
     const xiiUuid guid = xiiConversionUtils::ConvertStringToUuid(sGuid);
 
@@ -616,7 +638,9 @@ void xiiSceneContext::HandleSelectionMsg(const xiiObjectSelectionMsgToEngine* pM
 
       xiiGameObject* pObject;
       if (pWorld->TryGetObject(hObject, pObject))
+      {
         InsertSelectedChildren(pObject);
+      }
     }
   }
 
@@ -1158,9 +1182,13 @@ void xiiSceneContext::HandleSceneGeometryMsg(const xiiExportSceneGeometryMsgToEn
   excludeTags.SetByName("Editor");
 
   if (pMsg->m_bSelectionOnly)
+  {
     xiiWorldGeoExtractionUtil::ExtractWorldGeometry(objects, *m_pWorld, static_cast<xiiWorldGeoExtractionUtil::ExtractionMode>(pMsg->m_iExtractionMode), m_SelectionWithChildren);
+  }
   else
+  {
     xiiWorldGeoExtractionUtil::ExtractWorldGeometry(objects, *m_pWorld, static_cast<xiiWorldGeoExtractionUtil::ExtractionMode>(pMsg->m_iExtractionMode), &excludeTags);
+  }
 
   xiiWorldGeoExtractionUtil::WriteWorldGeometryToOBJ(pMsg->m_sOutputFile, objects, pMsg->m_Transform);
 }

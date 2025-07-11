@@ -127,6 +127,9 @@ public:
   /// Stops the world simulation, if it is running. Returns true, when the simulation needed to be stopped.
   bool StopGameMode();
 
+  void StepSimulation();
+  void PauseSimulation();
+
   xiiTransformStatus ExportScene(bool bCreateThumbnail);
   void               ExportSceneGeometry(xiiStringView sFile, bool bOnlySelection, int iExtractionMode /* xiiWorldGeoExtractionUtil::ExtractionMode */, const xiiMat3& mTransform);
 
