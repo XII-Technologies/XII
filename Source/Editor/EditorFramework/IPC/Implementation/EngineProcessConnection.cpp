@@ -400,7 +400,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
   {
     docs.PushBack(it.Value());
   }
-  docs.Sort([](const xiiAssetDocument* a, const xiiAssetDocument* b) {
+  docs.Sort([](const xiiAssetDocument* a, const xiiAssetDocument* b) -> bool {
     if (a->IsMainDocument() != b->IsMainDocument())
       return a->IsMainDocument();
     return a < b;
@@ -455,10 +455,10 @@ bool xiiEditorEngineConnection::SendMessage(xiiEditorEngineDocumentMsg* pMessage
   XII_WARNING_DISABLE_GCC("-Wtautological-undefined-compare")
   XII_WARNING_DISABLE_CLANG("-Wtautological-undefined-compare")
 
-  XII_ASSERT_DEV(this != nullptr, "No connection between editor and engine was created. This typically happens when an asset document does "
-                                  "not enable the engine-connection through the constructor of xiiAssetDocument."); // NOLINT
+  XII_ASSERT_DEV(this != nullptr, "No connection between editor and engine was created. This typically happens when an asset document does not enable the engine-connection through the constructor of xiiAssetDocument."); // NOLINT
 
   XII_WARNING_POP()
+
   pMessage->m_DocumentGuid = m_pDocument->GetGuid();
 
   return xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(pMessage);
@@ -476,5 +476,6 @@ void xiiEditorEngineConnection::SendHighlightObjectMessage(xiiViewHighlightMsgTo
     return;
 
   LastHighlightGuid = pMessage->m_HighlightObject;
+
   SendMessage(pMessage);
 }

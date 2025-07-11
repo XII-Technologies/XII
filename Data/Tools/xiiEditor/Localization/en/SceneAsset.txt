@@ -140,6 +140,7 @@ Scene.FavoriteCams.Menu;Favorite Cameras
 Scene.GameMode.Play;Play the Game
 Scene.GameMode.Simulate;Simulate World
 Scene.GameMode.Stop;Reset World
+Scene.GameMode.Pause;Pause World
 Scene.KeepSimulationChanges;Keep Simulation Changes;Only possible during simulation. Synchronizes the position of selected objects back to the editor.
 Scene.Render.AddAmbient;Add Ambient Light
 Scene.Render.Grid;Show Grid

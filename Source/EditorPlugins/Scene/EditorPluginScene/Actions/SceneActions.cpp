@@ -26,8 +26,9 @@ xiiActionDescriptorHandle xiiSceneActions::s_hGameModeSimulate;
 xiiActionDescriptorHandle xiiSceneActions::s_hGameModePlay;
 xiiActionDescriptorHandle xiiSceneActions::s_hGameModePlayFromHere;
 xiiActionDescriptorHandle xiiSceneActions::s_hGameModeStop;
-xiiActionDescriptorHandle xiiSceneActions::s_hUtilExportSceneToOBJ;
+xiiActionDescriptorHandle xiiSceneActions::s_hGameModePause;
 xiiActionDescriptorHandle xiiSceneActions::s_hKeepSimulationChanges;
+xiiActionDescriptorHandle xiiSceneActions::s_hUtilExportSceneToOBJ;
 xiiActionDescriptorHandle xiiSceneActions::s_hCreateThumbnail;
 xiiActionDescriptorHandle xiiSceneActions::s_hFavoriteCamsMenu;
 xiiActionDescriptorHandle xiiSceneActions::s_hStoreEditorCamera[10];
@@ -44,15 +45,14 @@ void xiiSceneActions::RegisterActions()
   s_hGameModeSimulate = XII_REGISTER_ACTION_1("Scene.GameMode.Simulate", xiiActionScope::Document, "Scene", "F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModeSimulate);
   s_hGameModePlay     = XII_REGISTER_ACTION_1("Scene.GameMode.Play", xiiActionScope::Document, "Scene", "Ctrl+F5", xiiSceneAction, xiiSceneAction::ActionType::StartGameModePlay);
 
-  s_hGameModePlayFromHere = XII_REGISTER_ACTION_1("Scene.GameMode.PlayFromHere", xiiActionScope::Document, "Scene", "F6", xiiSceneAction, xiiSceneAction::ActionType::StartGameModePlayFromHere);
-
-  s_hGameModeStop = XII_REGISTER_ACTION_1("Scene.GameMode.Stop", xiiActionScope::Document, "Scene", "Shift+F5", xiiSceneAction, xiiSceneAction::ActionType::StopGameMode);
-
-  s_hUtilExportSceneToOBJ = XII_REGISTER_ACTION_1("Scene.ExportSceneToOBJ", xiiActionScope::Document, "Scene", "", xiiSceneAction, xiiSceneAction::ActionType::ExportSceneToOBJ);
-
+  s_hGameModePlayFromHere  = XII_REGISTER_ACTION_1("Scene.GameMode.PlayFromHere", xiiActionScope::Document, "Scene", "F6", xiiSceneAction, xiiSceneAction::ActionType::StartGameModePlayFromHere);
+  s_hGameModeStop          = XII_REGISTER_ACTION_1("Scene.GameMode.Stop", xiiActionScope::Document, "Scene", "Shift+F5", xiiSceneAction, xiiSceneAction::ActionType::StopGameMode);
+  s_hGameModePause         = XII_REGISTER_ACTION_1("Scene.GameMode.Pause", xiiActionScope::Document, "Scene", "Pause", xiiSceneAction, xiiSceneAction::ActionType::PauseSimulation);
   s_hKeepSimulationChanges = XII_REGISTER_ACTION_1("Scene.KeepSimulationChanges", xiiActionScope::Document, "Scene", "K", xiiSceneAction, xiiSceneAction::ActionType::KeepSimulationChanges);
 
-  s_hCreateThumbnail = XII_REGISTER_ACTION_1("Scene.CreateThumbnail", xiiActionScope::Document, "Scene", "", xiiSceneAction, xiiSceneAction::ActionType::CreateThumbnail);
+  s_hUtilExportSceneToOBJ = XII_REGISTER_ACTION_1("Scene.ExportSceneToOBJ", xiiActionScope::Document, "Scene", "", xiiSceneAction, xiiSceneAction::ActionType::ExportSceneToOBJ);
+  s_hCreateThumbnail      = XII_REGISTER_ACTION_1("Scene.CreateThumbnail", xiiActionScope::Document, "Scene", "", xiiSceneAction, xiiSceneAction::ActionType::CreateThumbnail);
+
   // unfortunately the macros use lambdas thus using a loop to generate the strings does not work
   {
     s_hFavoriteCamsMenu = XII_REGISTER_MENU_WITH_ICON("Scene.FavoriteCams.Menu", "");
@@ -112,8 +112,9 @@ void xiiSceneActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hGameModePlay);
   xiiActionManager::UnregisterAction(s_hGameModePlayFromHere);
   xiiActionManager::UnregisterAction(s_hGameModeStop);
-  xiiActionManager::UnregisterAction(s_hUtilExportSceneToOBJ);
+  xiiActionManager::UnregisterAction(s_hGameModePause);
   xiiActionManager::UnregisterAction(s_hKeepSimulationChanges);
+  xiiActionManager::UnregisterAction(s_hUtilExportSceneToOBJ);
   xiiActionManager::UnregisterAction(s_hCreateThumbnail);
   xiiActionManager::UnregisterAction(s_hFavoriteCamsMenu);
 
@@ -157,6 +158,7 @@ void xiiSceneActions::MapMenuActions(xiiStringView sMapping)
     pMap->MapAction(s_hGameModeSimulate, szSubPath, 5.0f);
     pMap->MapAction(s_hGameModePlay, szSubPath, 6.0f);
     pMap->MapAction(s_hGameModePlayFromHere, szSubPath, 7.0f);
+    pMap->MapAction(s_hGameModePause, szSubPath, 8.0f);
   }
 }
 
@@ -171,6 +173,7 @@ void xiiSceneActions::MapToolbarActions(xiiStringView sMapping)
     /// \todo This works incorrectly with value 6.0f -> it places the action inside the snap category
     pMap->MapAction(s_hSceneCategory, "", 11.0f);
     pMap->MapAction(s_hGameModeStop, szSubPath, 1.0f);
+    pMap->MapAction(s_hGameModePause, szSubPath, 1.5f);
     pMap->MapAction(s_hGameModeSimulate, szSubPath, 2.0f);
     pMap->MapAction(s_hGameModePlay, szSubPath, 3.0f);
     pMap->MapAction(s_hExportScene, szSubPath, 4.0f);
@@ -200,9 +203,7 @@ xiiSceneAction::xiiSceneAction(const xiiActionContext& context, const char* szNa
       break;
 
     case ActionType::StartGameModeSimulate:
-      SetCheckable(true);
       SetIconPath(":/EditorPluginScene/Icons/ScenePlay.svg");
-      SetChecked(m_pSceneDocument->GetGameMode() == GameMode::Simulate);
       SetEnabled(m_pSceneDocument->GetGameMode() != GameMode::Play);
       break;
 
@@ -216,6 +217,10 @@ xiiSceneAction::xiiSceneAction(const xiiActionContext& context, const char* szNa
 
     case ActionType::StopGameMode:
       SetIconPath(":/EditorPluginScene/Icons/SceneStop.svg");
+      break;
+
+    case ActionType::PauseSimulation:
+      SetIconPath(":/EditorPluginScene/Icons/ScenePause.svg");
       break;
 
     case ActionType::ExportSceneToOBJ:
@@ -363,20 +368,37 @@ void xiiSceneAction::Execute(const xiiVariant& value)
       return;
 
     case ActionType::StartGameModeSimulate:
-      m_pSceneDocument->StartSimulateWorld();
+    {
+      if (m_pSceneDocument->GetPauseSimulation())
+      {
+        m_pSceneDocument->SetPauseSimulation(false);
+      }
+      else
+      {
+        m_pSceneDocument->StartSimulateWorld();
+      }
       return;
+    }
 
     case ActionType::StopGameMode:
       m_pSceneDocument->StopGameMode();
       return;
+
+    case ActionType::PauseSimulation:
+    {
+      if (m_pSceneDocument->GetPauseSimulation())
+        m_pSceneDocument->StepSimulation();
+      else
+        m_pSceneDocument->PauseSimulation();
+      return;
+    }
 
     case ActionType::ExportSceneToOBJ:
     {
       xiiQtExtractGeometryDlg dlg(nullptr);
       if (dlg.exec() == QDialog::Accepted)
       {
-        m_pSceneDocument->ExportSceneGeometry(
-          dlg.s_sDestinationFile.toUtf8().data(), dlg.s_bOnlySelection, dlg.s_iExtractionMode, dlg.GetCoordinateSystemTransform());
+        m_pSceneDocument->ExportSceneGeometry(dlg.s_sDestinationFile.toUtf8().data(), dlg.s_bOnlySelection, dlg.s_iExtractionMode, dlg.GetCoordinateSystemTransform());
       }
       return;
     }
@@ -550,6 +572,7 @@ void xiiSceneAction::SceneEventHandler(const xiiGameObjectEvent& e)
   switch (e.m_Type)
   {
     case xiiGameObjectEvent::Type::GameModeChanged:
+    case xiiGameObjectEvent::Type::SimulationSpeedChanged:
       UpdateState();
       break;
 
@@ -560,7 +583,23 @@ void xiiSceneAction::SceneEventHandler(const xiiGameObjectEvent& e)
 
 void xiiSceneAction::UpdateState()
 {
-  if (m_Type == ActionType::StartGameModeSimulate || m_Type == ActionType::StartGameModePlay || m_Type == ActionType::ExportAndRunScene)
+  if (m_Type == ActionType::StartGameModeSimulate)
+  {
+    if (m_pSceneDocument->GetGameMode() == GameMode::Off)
+    {
+      SetEnabled(true);
+    }
+    else if (m_pSceneDocument->GetPauseSimulation() && (m_pSceneDocument->GetGameMode() == GameMode::Simulate || m_pSceneDocument->GetGameMode() == GameMode::Play))
+    {
+      SetEnabled(true);
+    }
+    else
+    {
+      SetEnabled(false);
+    }
+  }
+
+  if (m_Type == ActionType::ExportAndRunScene || m_Type == ActionType::StartGameModePlay)
   {
     SetEnabled(m_pSceneDocument->GetGameMode() == GameMode::Off);
   }
@@ -568,6 +607,26 @@ void xiiSceneAction::UpdateState()
   if (m_Type == ActionType::StopGameMode)
   {
     SetEnabled(m_pSceneDocument->GetGameMode() != GameMode::Off);
+  }
+
+  if (m_Type == ActionType::PauseSimulation)
+  {
+    SetEnabled(m_pSceneDocument->GetGameMode() != GameMode::Off);
+
+    if (m_pSceneDocument->GetPauseSimulation())
+    {
+      SetIconPath(":/EditorPluginScene/Icons/SceneStep.svg");
+
+      SetAdditionalDisplayString("Step World", false);
+    }
+    else
+    {
+      SetIconPath(":/EditorPluginScene/Icons/ScenePause.svg");
+
+      SetAdditionalDisplayString("", false);
+    }
+
+    TriggerUpdate();
   }
 
   if (m_Type == ActionType::KeepSimulationChanges)

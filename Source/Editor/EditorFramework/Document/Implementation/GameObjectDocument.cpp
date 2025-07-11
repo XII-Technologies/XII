@@ -765,6 +765,18 @@ void xiiGameObjectDocument::SetSimulationSpeed(float f)
   ShowDocumentStatus(xiiFmt("Simulation Speed: {0}%%", (xiiInt32)(m_fSimulationSpeed * 100.0f)));
 }
 
+void xiiGameObjectDocument::SetPauseSimulation(bool b)
+{
+  if (m_bPauseSimulation == b)
+    return;
+
+  m_bPauseSimulation = b;
+
+  xiiGameObjectEvent e;
+  e.m_Type = xiiGameObjectEvent::Type::SimulationSpeedChanged;
+  m_GameObjectEvents.Broadcast(e);
+}
+
 void xiiGameObjectDocument::SetRenderSelectionOverlay(bool b)
 {
   if (m_CurrentMode.m_bRenderSelectionOverlay == b)

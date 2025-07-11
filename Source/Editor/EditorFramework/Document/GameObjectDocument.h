@@ -179,6 +179,12 @@ public:
   float GetSimulationSpeed() const { return m_fSimulationSpeed; }
   void  SetSimulationSpeed(float f);
 
+  bool GetPauseSimulation() const { return m_bPauseSimulation; }
+  void SetPauseSimulation(bool b);
+
+  void SetStepSimulation(bool b) { m_bStepSimulation = b; }
+  bool GetStepSimulation() const { return m_bStepSimulation; }
+
   bool GetRenderSelectionOverlay() const { return m_CurrentMode.m_bRenderSelectionOverlay; }
   void SetRenderSelectionOverlay(bool b);
 
@@ -281,6 +287,8 @@ private:
   bool m_bGizmoMoveParentOnly = false;
   bool m_bPickTransparent     = true;
 
+  bool  m_bPauseSimulation = false;
+  bool  m_bStepSimulation  = false;
   float m_fSimulationSpeed = 1.0f;
 
   using TransformTable = xiiHashTable<const xiiDocumentObject*, xiiSimdTransform, xiiHashHelper<const xiiDocumentObject*>, xiiAlignedAllocatorWrapper>;

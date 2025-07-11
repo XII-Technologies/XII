@@ -104,6 +104,7 @@ xiiQtSceneDocumentWindowBase::xiiQtSceneDocumentWindowBase(xiiSceneDocument* pDo
   xiiQtGameObjectDocumentWindow(pDocument)
 {
   const xiiSceneDocument* pSceneDoc = static_cast<const xiiSceneDocument*>(GetDocument());
+
   pSceneDoc->m_GameObjectEvents.AddEventHandler(xiiMakeDelegate(&xiiQtSceneDocumentWindowBase::GameObjectEventHandler, this));
 }
 
@@ -250,12 +251,14 @@ void xiiQtSceneDocumentWindowBase::GameObjectEventHandler(const xiiGameObjectEve
 void xiiQtSceneDocumentWindowBase::InternalRedraw()
 {
   // If play the game is on, only render (in editor) if the window is active
-  xiiSceneDocument* doc = GetSceneDocument();
-  if (doc->GetGameMode() == GameMode::Play && !window()->isActiveWindow())
+  xiiSceneDocument* pSceneDocument = GetSceneDocument();
+  if (pSceneDocument->GetGameMode() == GameMode::Play && !window()->isActiveWindow())
     return;
 
   xiiEditorInputContext::UpdateActiveInputContext();
+
   SendRedrawMsg();
+
   xiiQtEngineDocumentWindow::InternalRedraw();
 }
 
@@ -267,9 +270,17 @@ void xiiQtSceneDocumentWindowBase::SendRedrawMsg()
 
   {
     xiiSimulationSettingsMsgToEngine msg;
-    auto                             pSceneDoc = GetSceneDocument();
-    msg.m_bSimulateWorld                       = pSceneDoc->GetGameMode() != GameMode::Off;
-    msg.m_fSimulationSpeed                     = pSceneDoc->GetSimulationSpeed();
+    auto                             pSceneDocument = GetSceneDocument();
+    msg.m_bSimulateWorld                       = pSceneDocument->GetGameMode() != GameMode::Off;
+    msg.m_fSimulationSpeed                          = pSceneDocument->GetPauseSimulation() ? 0.0f : pSceneDocument->GetSimulationSpeed();
+
+    if (msg.m_bSimulateWorld && pSceneDocument->GetStepSimulation())
+    {
+      msg.m_fSimulationSpeed = 1.0f;
+
+      pSceneDocument->SetStepSimulation(false);
+    }
+
     GetEditorEngineConnection()->SendMessage(&msg);
   }
   {
