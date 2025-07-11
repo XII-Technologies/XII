@@ -17,16 +17,18 @@ xiiActionDescriptorHandle xiiLayerActions::s_hSaveLayer;
 xiiActionDescriptorHandle xiiLayerActions::s_hSaveActiveLayer;
 xiiActionDescriptorHandle xiiLayerActions::s_hLayerLoaded;
 xiiActionDescriptorHandle xiiLayerActions::s_hLayerVisible;
+xiiActionDescriptorHandle xiiLayerActions::s_hSwitchOnSelection;
 
 void xiiLayerActions::RegisterActions()
 {
-  s_hLayerCategory   = XII_REGISTER_CATEGORY("LayerCategory");
-  s_hCreateLayer     = XII_REGISTER_ACTION_1("Layer.CreateLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::CreateLayer);
-  s_hDeleteLayer     = XII_REGISTER_ACTION_1("Layer.DeleteLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::DeleteLayer);
-  s_hSaveLayer       = XII_REGISTER_ACTION_1("Layer.SaveLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::SaveLayer);
-  s_hSaveActiveLayer = XII_REGISTER_ACTION_1("Layer.SaveActiveLayer", xiiActionScope::Document, "Scene - Layer", "Ctrl+S", xiiLayerAction, xiiLayerAction::ActionType::SaveActiveLayer);
-  s_hLayerLoaded     = XII_REGISTER_ACTION_1("Layer.LayerLoaded", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::LayerLoaded);
-  s_hLayerVisible    = XII_REGISTER_ACTION_1("Layer.LayerVisible", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::LayerVisible);
+  s_hLayerCategory     = XII_REGISTER_CATEGORY("LayerCategory");
+  s_hCreateLayer       = XII_REGISTER_ACTION_1("Layer.CreateLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::CreateLayer);
+  s_hDeleteLayer       = XII_REGISTER_ACTION_1("Layer.DeleteLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::DeleteLayer);
+  s_hSaveLayer         = XII_REGISTER_ACTION_1("Layer.SaveLayer", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::SaveLayer);
+  s_hSaveActiveLayer   = XII_REGISTER_ACTION_1("Layer.SaveActiveLayer", xiiActionScope::Document, "Scene - Layer", "Ctrl+S", xiiLayerAction, xiiLayerAction::ActionType::SaveActiveLayer);
+  s_hLayerLoaded       = XII_REGISTER_ACTION_1("Layer.LayerLoaded", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::LayerLoaded);
+  s_hLayerVisible      = XII_REGISTER_ACTION_1("Layer.LayerVisible", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::LayerVisible);
+  s_hSwitchOnSelection = XII_REGISTER_ACTION_1("Layer.SwitchOnSelection", xiiActionScope::Document, "Scene - Layer", "", xiiLayerAction, xiiLayerAction::ActionType::SwitchOnSelection);
 }
 
 void xiiLayerActions::UnregisterActions()
@@ -38,13 +40,13 @@ void xiiLayerActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hSaveActiveLayer);
   xiiActionManager::UnregisterAction(s_hLayerLoaded);
   xiiActionManager::UnregisterAction(s_hLayerVisible);
+  xiiActionManager::UnregisterAction(s_hSwitchOnSelection);
 }
 
 void xiiLayerActions::MapContextMenuActions(xiiStringView sMapping)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the actions failed!", sMapping);
-
 
   pMap->MapAction(s_hLayerCategory, "", 0.0f);
 
@@ -56,11 +58,23 @@ void xiiLayerActions::MapContextMenuActions(xiiStringView sMapping)
   pMap->MapAction(s_hLayerVisible, sSubPath, 5.0f);
 }
 
+void xiiLayerActions::MapToolbarActions(xiiStringView sMapping)
+{
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the actions failed!", sMapping);
+
+  pMap->MapAction(s_hLayerCategory, "", 0.0f);
+
+  const xiiStringView sSubPath = "LayerCategory";
+  pMap->MapAction(s_hCreateLayer, sSubPath, 1.0f);
+  pMap->MapAction(s_hDeleteLayer, sSubPath, 2.0f);
+  pMap->MapAction(s_hSwitchOnSelection, sSubPath, 3.0f);
+}
+
 xiiLayerAction::xiiLayerAction(const xiiActionContext& context, const char* szName, xiiLayerAction::ActionType type) :
   xiiButtonAction(context, szName, false, "")
 {
-  m_Type = type;
-  // TODO const cast
+  m_Type           = type;
   m_pSceneDocument = const_cast<xiiScene2Document*>(static_cast<const xiiScene2Document*>(context.m_pDocument));
 
   switch (m_Type)
@@ -81,16 +95,21 @@ xiiLayerAction::xiiLayerAction(const xiiActionContext& context, const char* szNa
     case ActionType::LayerVisible:
       SetCheckable(true);
       break;
+    case ActionType::SwitchOnSelection:
+      SetCheckable(true);
+      SetIconPath(":/GuiFoundation/Icons/Cursor.svg");
+      break;
   }
 
   UpdateEnableState();
+
   m_pSceneDocument->m_LayerEvents.AddEventHandler(xiiMakeDelegate(&xiiLayerAction::LayerEventHandler, this));
+
   if (m_Type == ActionType::SaveActiveLayer)
   {
     m_pSceneDocument->s_EventsAny.AddEventHandler(xiiMakeDelegate(&xiiLayerAction::DocumentEventHandler, this));
   }
 }
-
 
 xiiLayerAction::~xiiLayerAction()
 {
@@ -202,6 +221,11 @@ void xiiLayerAction::Execute(const xiiVariant& value)
       m_pSceneDocument->SetLayerVisible(layerGuid, bVisible).LogFailure();
       return;
     }
+    case ActionType::SwitchOnSelection:
+    {
+      m_pSceneDocument->SetSwitchLayerToSelection(!m_pSceneDocument->GetSwitchLayerToSelection());
+      return;
+    }
   }
 }
 
@@ -250,6 +274,22 @@ void xiiLayerAction::UpdateEnableState()
     {
       SetEnabled(layerGuid.IsValid());
       SetChecked(m_pSceneDocument->IsLayerVisible(layerGuid));
+      return;
+    }
+    case ActionType::SwitchOnSelection:
+    {
+      SetChecked(m_pSceneDocument->GetSwitchLayerToSelection());
+
+      if (m_pSceneDocument->GetSwitchLayerToSelection())
+      {
+        SetIconPath(":/EditorPluginScene/Icons/SelectAllowed.svg");
+      }
+      else
+      {
+        SetIconPath(":/EditorPluginScene/Icons/SelectForbidden.svg");
+      }
+
+      TriggerUpdate();
       return;
     }
   }
