@@ -179,7 +179,7 @@ namespace xiiInternal
       xiiWorldModule::UpdateFunction m_Function;
       xiiHashedString                m_sFunctionName;
       float                          m_fPriority;
-      xiiUInt16                      m_uiGranularity;
+      xiiUInt16                      m_uiAsyncPhaseBatchSize;
       bool                           m_bOnlyUpdateWhenSimulating;
 
       void FillFromDesc(const xiiWorldModule::UpdateFunctionDesc& desc);

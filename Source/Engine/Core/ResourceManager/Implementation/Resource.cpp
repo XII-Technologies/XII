@@ -294,7 +294,7 @@ void xiiResource::VerifyAfterCreateResource(const xiiResourceLoadDesc& ld)
   e.m_Type      = xiiResourceEvent::Type::ResourceContentUpdated;
   xiiResourceManager::BroadcastResourceEvent(e);
 
-  xiiLog::Debug("Created {0} - '{1}' ", GetDynamicRTTI()->GetTypeName(), xiiArgSensitive(GetResourceDescription(), "ResourceDesc"));
+  xiiLog::Debug("Created {0} - '{1}' ", GetDynamicRTTI()->GetTypeName(), xiiArgSensitive(GetResourceIdOrDescription(), "ResourceDesc"));
 }
 
 XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_Resource);
