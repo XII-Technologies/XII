@@ -19,6 +19,7 @@ class xiiCopyPipelinePass;
 class xiiPresentPipelinePass;
 class xiiUtilityPipelinePass;
 class xiiDebugRendererContext;
+class xiiRenderContext;
 
 struct xiiRenderPipelineNodePin;
 struct xiiRenderPipelineNodeInputBufferPin;
@@ -163,21 +164,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderViewContext
   const xiiCamera*   m_pLodCamera = nullptr;
   const xiiViewData* m_pViewData  = nullptr;
 
+  xiiRenderContext*              m_pRenderContext     = nullptr;
   const xiiDebugRendererContext* m_pWorldDebugContext = nullptr;
   const xiiDebugRendererContext* m_pViewDebugContext  = nullptr;
-
-  xiiSharedPtr<xiiGALCommandList> m_pCommandList;
-
-  XII_ALWAYS_INLINE const xiiHashTable<xiiHashedString, xiiHashedString>& GetPermutationVariables() const { return m_PermutationVariables; }
-
-  void SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue) const;
-  void SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue) const;
-  void SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue) const;
-
-private:
-  void SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue) const;
-
-  mutable xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
 };
 
 using xiiViewId = xiiGenericId<24, 8>;

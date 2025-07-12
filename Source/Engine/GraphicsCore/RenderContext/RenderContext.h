@@ -248,9 +248,9 @@ public:
   /// compute work, or is inactive. This allows the renderer to enforce valid command usage based on scope.
   enum class RenderContextScope : xiiUInt8
   {
-    None     = 0, ///< No rendering scope is active. Commands are not currently allowed.
-    Graphics = 1, ///< Graphics pipeline scope. Allows drawing, shading, and general render operations.
-    Compute  = 2  ///< Compute pipeline scope. Allows compute shader dispatch and related GPU work.
+    None = 0, ///< No rendering scope is active. Commands are not currently allowed.
+    Graphics, ///< Graphics pipeline scope. Allows drawing, shading, and general render operations.
+    Compute   ///< Compute pipeline scope. Allows compute shader dispatch and related GPU work.
   };
 
   /// \brief Returns the command list in use by this render context.
