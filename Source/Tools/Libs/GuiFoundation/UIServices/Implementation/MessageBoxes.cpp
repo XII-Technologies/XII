@@ -3,24 +3,25 @@
 #include <Foundation/Application/Application.h>
 #include <Foundation/Logging/Log.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
-#include <ToolsFoundation/Application/ApplicationServices.h>
 
 void xiiQtUiServices::MessageBoxStatus(const xiiStatus& s, xiiStringView sFailureMsg, xiiStringView sSuccessMsg, bool bOnlySuccessMsgIfDetails)
 {
   xiiStringBuilder sResult;
 
-  if (s.m_Result.Succeeded())
+  if (s.Succeeded())
   {
     if (sSuccessMsg.IsEmpty())
       return;
 
-    if (bOnlySuccessMsgIfDetails && s.m_sMessage.IsEmpty())
+    if (bOnlySuccessMsgIfDetails && s.GetMessageString().IsEmpty())
       return;
 
     sResult = sSuccessMsg;
 
-    if (!s.m_sMessage.IsEmpty())
-      sResult.AppendFormat("\n\nDetails:\n{0}", s.m_sMessage);
+    if (!s.GetMessageString().IsEmpty())
+    {
+      sResult.AppendFormat("\n\nDetails:\n{0}", s.GetMessageString());
+    }
 
     MessageBoxInformation(sResult);
   }
@@ -28,8 +29,10 @@ void xiiQtUiServices::MessageBoxStatus(const xiiStatus& s, xiiStringView sFailur
   {
     sResult = sFailureMsg;
 
-    if (!s.m_sMessage.IsEmpty())
-      sResult.AppendFormat("\n\nDetails:\n{0}", s.m_sMessage);
+    if (!s.GetMessageString().IsEmpty())
+    {
+      sResult.AppendFormat("\n\nDetails:\n{0}", s.GetMessageString());
+    }
 
     MessageBoxWarning(sResult);
   }
@@ -37,25 +40,27 @@ void xiiQtUiServices::MessageBoxStatus(const xiiStatus& s, xiiStringView sFailur
 
 void xiiQtUiServices::MessageBoxInformation(const xiiFormatString& msg)
 {
-  xiiStringBuilder tmp;
+  xiiStringBuilder sTmp;
 
   if (s_bHeadless)
-    xiiLog::Info(msg.GetText(tmp));
+  {
+    xiiLog::Info(msg.GetText(sTmp));
+  }
   else
   {
-    QMessageBox::information(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(tmp)), QMessageBox::StandardButton::Ok);
+    QMessageBox::information(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(sTmp)), QMessageBox::StandardButton::Ok);
   }
 }
 
 void xiiQtUiServices::MessageBoxWarning(const xiiFormatString& msg)
 {
-  xiiStringBuilder tmp;
+  xiiStringBuilder sTmp;
 
   if (s_bHeadless)
-    xiiLog::Warning(msg.GetText(tmp));
+    xiiLog::Warning(msg.GetText(sTmp));
   else
   {
-    QMessageBox::warning(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(tmp)), QMessageBox::StandardButton::Ok);
+    QMessageBox::warning(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(sTmp)), QMessageBox::StandardButton::Ok);
   }
 }
 
@@ -67,8 +72,8 @@ QMessageBox::StandardButton xiiQtUiServices::MessageBoxQuestion(const xiiFormatS
   }
   else
   {
-    xiiStringBuilder tmp;
+    xiiStringBuilder sTmp;
 
-    return QMessageBox::question(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(tmp)), buttons, defaultButton);
+    return QMessageBox::question(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(sTmp)), buttons, defaultButton);
   }
 }

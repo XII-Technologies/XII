@@ -63,7 +63,7 @@ xiiStatus xiiAssetDocumentManager::ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDo
   xiiAssetDocumentInfo* pEntry = rttiConverter.CreateObjectFromNode(pHeaderNode).Cast<xiiAssetDocumentInfo>();
   XII_ASSERT_DEBUG(pEntry != nullptr, "Failed to deserialize xiiAssetDocumentInfo!");
   out_pInfo = xiiUniquePtr<xiiAssetDocumentInfo>(pEntry, xiiFoundation::GetDefaultAllocator());
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiString xiiAssetDocumentManager::GenerateResourceThumbnailPath(xiiStringView sDocumentPath, xiiStringView sSubAssetName)

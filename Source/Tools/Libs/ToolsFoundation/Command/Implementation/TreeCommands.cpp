@@ -196,7 +196,7 @@ xiiStatus xiiAddObjectCommand::DoInternal(bool bRedo)
   }
 
   pDocument->GetObjectManager()->AddObject(m_pObject, pParent, m_sParentProperty, m_Index);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiAddObjectCommand::UndoInternal(bool bFireEvents)
@@ -207,7 +207,7 @@ xiiStatus xiiAddObjectCommand::UndoInternal(bool bFireEvents)
   XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->CanRemove(m_pObject));
 
   pDocument->GetObjectManager()->RemoveObject(m_pObject);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiAddObjectCommand::CleanupInternal(CommandState state)
@@ -319,7 +319,7 @@ xiiStatus xiiPasteObjectsCommand::DoInternal(bool bRedo)
       pDocument->GetObjectManager()->AddObject(po.m_pObject, po.m_pParent, po.m_sParentProperty, po.m_Index);
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiPasteObjectsCommand::UndoInternal(bool bFireEvents)
@@ -334,7 +334,7 @@ xiiStatus xiiPasteObjectsCommand::UndoInternal(bool bFireEvents)
     pDocument->GetObjectManager()->RemoveObject(po.m_pObject);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiPasteObjectsCommand::CleanupInternal(CommandState state)
@@ -470,7 +470,7 @@ xiiStatus xiiInstantiatePrefabCommand::DoInternal(bool bRedo)
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiInstantiatePrefabCommand::UndoInternal(bool bFireEvents)
@@ -485,7 +485,7 @@ xiiStatus xiiInstantiatePrefabCommand::UndoInternal(bool bFireEvents)
     pDocument->GetObjectManager()->RemoveObject(po.m_pObject);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiInstantiatePrefabCommand::CleanupInternal(CommandState state)
@@ -532,7 +532,7 @@ xiiStatus xiiUnlinkPrefabCommand::DoInternal(bool bRedo)
     pDocument->m_DocumentObjectMetaData->EndModifyMetaData(xiiDocumentObjectMetaData::PrefabFlag);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiUnlinkPrefabCommand::UndoInternal(bool bFireEvents)
@@ -552,7 +552,7 @@ xiiStatus xiiUnlinkPrefabCommand::UndoInternal(bool bFireEvents)
     pDocument->m_DocumentObjectMetaData->EndModifyMetaData(xiiDocumentObjectMetaData::PrefabFlag);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -586,7 +586,7 @@ xiiStatus xiiRemoveObjectCommand::DoInternal(bool bRedo)
   }
 
   pDocument->GetObjectManager()->RemoveObject(m_pObject);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiRemoveObjectCommand::UndoInternal(bool bFireEvents)
@@ -597,7 +597,7 @@ xiiStatus xiiRemoveObjectCommand::UndoInternal(bool bFireEvents)
   XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->CanAdd(m_pObject->GetTypeAccessor().GetType(), m_pParent, m_sParentProperty, m_Index));
 
   pDocument->GetObjectManager()->AddObject(m_pObject, m_pParent, m_sParentProperty, m_Index);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiRemoveObjectCommand::CleanupInternal(CommandState state)
@@ -649,7 +649,7 @@ xiiStatus xiiMoveObjectCommand::DoInternal(bool bRedo)
   }
 
   pDocument->GetObjectManager()->MoveObject(m_pObject, m_pNewParent, m_sParentProperty, m_Index);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiMoveObjectCommand::UndoInternal(bool bFireEvents)
@@ -679,7 +679,7 @@ xiiStatus xiiMoveObjectCommand::UndoInternal(bool bFireEvents)
 
   pDocument->GetObjectManager()->MoveObject(m_pObject, m_pOldParent, m_sOldParentProperty, FinalOldPosition);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -718,7 +718,7 @@ xiiStatus xiiSetObjectPropertyCommand::DoInternal(bool bRedo)
 
     xiiIReflectedTypeAccessor& accessor0 = m_pObject->GetTypeAccessor();
 
-    xiiStatus res;
+    xiiStatus res(XII_SUCCESS);
     m_OldValue = accessor0.GetValue(m_sProperty, m_Index, &res);
     if (res.Failed())
       return res;
@@ -756,7 +756,7 @@ xiiStatus xiiSetObjectPropertyCommand::UndoInternal(bool bFireEvents)
       return xiiStatus(xiiFmt("Set Property: The property '{0}' does not exist", m_sProperty));
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -809,7 +809,7 @@ xiiStatus xiiResizeAndSetObjectPropertyCommand::DoInternal(bool bRedo)
     AddSubCommand(set).AssertSuccess();
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -861,7 +861,7 @@ xiiStatus xiiInsertObjectPropertyCommand::UndoInternal(bool bFireEvents)
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -885,13 +885,17 @@ xiiStatus xiiRemoveObjectPropertyCommand::DoInternal(bool bRedo)
       m_pObject = pDocument->GetObjectManager()->GetObject(m_Object);
       if (m_pObject == nullptr)
         return xiiStatus("Remove Property: The given object does not exist!");
-      xiiStatus res;
+
+      xiiStatus res(XII_SUCCESS);
+
       m_OldValue = m_pObject->GetTypeAccessor().GetValue(m_sProperty, m_Index, &res);
       if (res.Failed())
         return res;
     }
     else
+    {
       return xiiStatus("Remove Property: The given object does not exist!");
+    }
   }
 
   return pDocument->GetObjectManager()->RemoveValue(m_pObject, m_sProperty, m_Index);
@@ -911,7 +915,7 @@ xiiStatus xiiRemoveObjectPropertyCommand::UndoInternal(bool bFireEvents)
       return xiiStatus(xiiFmt("Remove Property: Undo failed! The index '{0}' in property '{1}' does not exist", m_Index.ConvertTo<xiiString>(), m_sProperty));
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 

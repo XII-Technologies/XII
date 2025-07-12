@@ -237,7 +237,7 @@ public: // Properties
 
 private:
   virtual xiiStatus DoInternal(bool bRedo) override;
-  virtual xiiStatus UndoInternal(bool bFireEvents) override { return xiiStatus(XII_SUCCESS); }
+  virtual xiiStatus UndoInternal(bool bFireEvents) override { return XII_SUCCESS; }
   virtual void      CleanupInternal(CommandState state) override {}
 
   xiiDocumentObject* m_pObject;

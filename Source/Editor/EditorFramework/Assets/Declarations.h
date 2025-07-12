@@ -138,12 +138,17 @@ struct XII_EDITORFRAMEWORK_DLL xiiTransformStatus
   }
 
   XII_ALWAYS_INLINE xiiTransformStatus(xiiStatus r) :
-    m_Result(r.Succeeded() ? xiiTransformResult::Success : xiiTransformResult::Failure), m_sMessage(r.m_sMessage)
+    m_Result(r.Succeeded() ? xiiTransformResult::Success : xiiTransformResult::Failure), m_sMessage(r.GetMessageString())
   {
   }
 
   XII_ALWAYS_INLINE xiiTransformStatus(xiiResult r) :
     m_Result(r.Succeeded() ? xiiTransformResult::Success : xiiTransformResult::Failure)
+  {
+  }
+
+  XII_ALWAYS_INLINE xiiTransformStatus(xiiResultEnum r) :
+    m_Result(r == XII_SUCCESS ? xiiTransformResult::Success : xiiTransformResult::Failure)
   {
   }
 

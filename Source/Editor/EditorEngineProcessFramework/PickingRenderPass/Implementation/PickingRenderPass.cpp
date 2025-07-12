@@ -68,7 +68,7 @@ xiiResult xiiPickingRenderPass::InitializeRenderPipelinePass(const xiiView& view
 
 void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  #ifdef CORE_ENABLE
+#ifdef CORE_ENABLE
   // Render result
   const xiiRectFloat& viewPortRect = renderViewContext.m_pViewData->m_ViewPortRect;
   m_uiWindowWidth                  = (xiiUInt32)viewPortRect.width;
@@ -261,7 +261,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     }
     pCommandList->EndDebugGroup();
   }
-  #endif
+#endif
 }
 
 void xiiPickingRenderPass::ReadBackProperties(xiiView* pView)

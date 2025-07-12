@@ -289,13 +289,13 @@ xiiStatus xiiCppProject::OpenSolution(const xiiCppSettings& cfg)
       args.push_back(QString::fromUtf8(solutionPath.GetData(), solutionPath.GetElementCount()));
       if (xiiStatus status = xiiQtUiServices::OpenInVsCode(args); status.Failed())
       {
-        return xiiStatus(xiiFmt("Opening Visual Studio Code failed: {}", status.m_sMessage));
+        return xiiStatus(xiiFmt("Opening Visual Studio Code failed: {}", status.GetMessageString()));
       }
     }
     break;
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiCppProject::OpenInCodeEditor(const xiiStringView& sFileName, xiiInt32 iLineNumber)
@@ -337,7 +337,7 @@ xiiStatus xiiCppProject::OpenInCodeEditor(const xiiStringView& sFileName, xiiInt
       return xiiStatus("Failed to launch code editor");
     }
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   xiiStringBuilder sFormatString = preferences->m_CodeEditorPreferences.m_sEditorArgs;
@@ -357,7 +357,7 @@ xiiStatus xiiCppProject::OpenInCodeEditor(const xiiStringView& sFileName, xiiInt
   {
     return xiiStatus("Failed to launch code editor");
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStringView xiiCppProject::CompilerToString(xiiCompiler::Enum compiler)
@@ -421,7 +421,7 @@ xiiStatus xiiCppProject::TestCompiler()
   // As CMake is selecting the compiler it is hard to do a version check, for now just assume they are compatible.
   if (GetSdkCompiler() == xiiCompiler::Vs2022)
   {
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   if (GetSdkCompiler() == xiiCompiler::Clang)
@@ -454,7 +454,7 @@ xiiStatus xiiCppProject::TestCompiler()
     return xiiStatus(xiiFmt("The selected C++ Compiler has an incompatible version. The SDK was built with version {} but the compiler has version {}.", GetSdkCompilerMajorVersion(), cppCompilerVersion));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 const char* xiiCppProject::GetCMakePath()
@@ -743,7 +743,7 @@ xiiResult xiiCppProject::RunCMake(const xiiCppSettings& cfg)
 
   if (res.Failed())
   {
-    xiiLog::Error("CMake generation failed:\n\n{}\n{}\n", log.m_sBuffer, res.m_sMessage);
+    xiiLog::Error("CMake generation failed:\n\n{}\n{}\n", log.m_sBuffer, res.GetMessageString());
     return XII_FAILURE;
   }
 

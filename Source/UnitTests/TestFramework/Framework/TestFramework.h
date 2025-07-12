@@ -403,7 +403,7 @@ XII_TEST_DLL bool xiiTestResult(xiiResult condition, const char* szErrorText, co
 /// \brief Tests for a xiiStatus condition, outputs xiiStatus message on failure
 #define XII_TEST_STATUS(condition)                     \
   auto XII_PP_CONCAT(l_, XII_SOURCE_LINE) = condition; \
-  xiiTestResult(XII_PP_CONCAT(l_, XII_SOURCE_LINE).m_Result, "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, XII_PP_CONCAT(l_, XII_SOURCE_LINE).m_sMessage)
+  xiiTestResult(XII_PP_CONCAT(l_, XII_SOURCE_LINE).GetResult(), "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, XII_PP_CONCAT(l_, XII_SOURCE_LINE).GetMessageString())
 
 inline double ToFloat(int f)
 {

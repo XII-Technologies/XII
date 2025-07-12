@@ -5,8 +5,8 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/Interfaces/RemoteToolingInterface.h>
-#include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Types/UniquePtr.h>
 
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>

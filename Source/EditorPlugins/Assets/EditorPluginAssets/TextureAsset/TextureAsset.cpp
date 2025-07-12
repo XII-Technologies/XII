@@ -352,7 +352,7 @@ xiiStatus xiiTextureAssetDocument::RunTexConv(xiiStringView sTargetFile, const x
     InvalidateAssetThumbnail();
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -872,5 +872,5 @@ xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs
     accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

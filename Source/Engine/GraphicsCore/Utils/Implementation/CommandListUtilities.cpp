@@ -4,8 +4,8 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
-#include <GraphicsCore/Utils/CommandListUtilities.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsCore/Utils/CommandListUtilities.h>
 
 void xiiGALCommandListUtilities::BindConstantBuffer(xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
 {

@@ -43,7 +43,7 @@ xiiResult xiiTargetPass::InitializeRenderPipelinePass(const xiiView& view, const
 {
   m_pSwapChain    = view.GetSwapChain();
   m_RenderTargets = view.GetRenderTargets();
-  
+
   return XII_SUCCESS;
 }
 

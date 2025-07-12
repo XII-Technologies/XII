@@ -4,7 +4,7 @@
 
 #include <Foundation/Strings/String.h>
 
-/// \brief Describes a single path pattern.
+/// \brief Describes a single path pattern for filtering file paths.
 ///
 /// A path pattern is something like "*.jpg", "SubFolder/*" or "*/temp/*".
 /// It may start or end with a * indicating that it matches paths that start with, end with, or contain the pattern.
@@ -29,8 +29,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiPathPattern
   bool Matches(const xiiStringView sText) const;
 };
 
-/// \brief A collection of xiiPathPatterns.
-///
+/// \brief A collection of xiiPathPatterns for include/exclude filtering of file paths.
 struct XII_TOOLSFOUNDATION_DLL xiiPathPatternFilter
 {
   xiiDynamicArray<xiiPathPattern> m_ExcludePatterns;
@@ -46,7 +45,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiPathPatternFilter
   /// following lines are considered as include patterns or exclude patterns.
   xiiResult ReadConfigFile(xiiStringView sFile, const xiiDynamicArray<xiiString>& preprocessorDefines);
 
-  /// \brief Adds a pattern.
+  /// \brief Adds a pattern as either an include or exclude filter.
   void AddFilter(xiiStringView sText, bool bIncludeFilter);
 
   /// \brief Determines whether the given text matches the filter patterns.

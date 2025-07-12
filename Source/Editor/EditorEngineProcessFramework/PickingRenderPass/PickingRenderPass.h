@@ -46,10 +46,10 @@ private:
   xiiRectFloat   m_TargetRect;
   const xiiRTTI* m_pGridRenderDataType = nullptr;
 
-  xiiSharedPtr<xiiGALTexture>     m_pPickingIdRT;
-  xiiSharedPtr<xiiGALTexture>     m_pPickingIdRTStaging;
-  xiiSharedPtr<xiiGALTexture>     m_pPickingDepthRT;
-  xiiSharedPtr<xiiGALTexture>     m_pPickingDepthRTStaging;
+  xiiSharedPtr<xiiGALTexture> m_pPickingIdRT;
+  xiiSharedPtr<xiiGALTexture> m_pPickingIdRTStaging;
+  xiiSharedPtr<xiiGALTexture> m_pPickingDepthRT;
+  xiiSharedPtr<xiiGALTexture> m_pPickingDepthRTStaging;
   // xiiGALRenderTargetSetup m_RenderTargetSetup;
 
   xiiHashSet<xiiGameObjectHandle> m_SelectionSet;

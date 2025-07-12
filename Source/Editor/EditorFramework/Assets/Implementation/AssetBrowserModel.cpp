@@ -153,7 +153,7 @@ void xiiQtAssetBrowserModel::AssetCuratorEventHandler(const xiiAssetCuratorEvent
       VisibleEntry ve;
       ve.m_Guid         = e.m_AssetGuid;
       ve.m_sAbsFilePath = e.m_pInfo->m_pAssetInfo->m_Path;
-      ve.m_Flags = xiiAssetBrowserItemFlags::File;
+      ve.m_Flags        = xiiAssetBrowserItemFlags::File;
       if (ve.m_Guid.IsValid())
       {
         ve.m_Flags |= xiiAssetBrowserItemFlags::Asset;

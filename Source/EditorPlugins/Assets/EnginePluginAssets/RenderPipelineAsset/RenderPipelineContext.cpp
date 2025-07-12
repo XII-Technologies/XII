@@ -50,7 +50,7 @@ void xiiRenderPipelineContext::DestroyViewContext(xiiEngineProcessViewContext* p
 
 xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
 {
-  xiiDynamicArray<xiiRenderPipelinePassBase*>                    passes;
+  xiiDynamicArray<xiiRenderPipelinePassBase*>                passes;
   xiiDynamicArray<xiiExtractor*>                             extractors;
   xiiDynamicArray<xiiRenderPipelineResourceLoaderConnection> connections;
 
@@ -109,5 +109,5 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
   if (file.Close().Failed())
     return xiiStatus(xiiFmt("Writing to '{}' failed.", pMsg->m_sOutputFile));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

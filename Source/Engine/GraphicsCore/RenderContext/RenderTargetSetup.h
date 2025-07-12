@@ -2,9 +2,9 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
+#include <GraphicsFoundation/Resources/RenderPass.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 /// \brief This class can be used to define the render targets to be used by a xiiView.
 struct XII_GRAPHICSCORE_DLL xiiRenderTargets

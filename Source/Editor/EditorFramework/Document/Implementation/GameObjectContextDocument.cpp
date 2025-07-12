@@ -34,7 +34,7 @@ xiiStatus xiiGameObjectContextDocument::SetContext(xiiUuid documentGuid, xiiUuid
       e.m_Type = xiiGameObjectContextEvent::Type::ContextChanged;
       m_GameObjectContextEvents.Broadcast(e);
     }
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   const xiiAbstractObjectGraph* pPrefab = xiiPrefabCache::GetSingleton()->GetCachedPrefabGraph(documentGuid);
@@ -78,7 +78,7 @@ xiiStatus xiiGameObjectContextDocument::SetContext(xiiUuid documentGuid, xiiUuid
     e.m_Type = xiiGameObjectContextEvent::Type::ContextChanged;
     m_GameObjectContextEvents.Broadcast(e);
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiUuid xiiGameObjectContextDocument::GetContextDocumentGuid() const

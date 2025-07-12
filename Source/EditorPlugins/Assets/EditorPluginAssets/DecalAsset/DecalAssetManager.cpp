@@ -111,11 +111,11 @@ xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformPr
     uiAssetHash += pCurator->GetAssetDependencyHash(it.Key());
   }
 
-  xiiStringBuilder decalFile = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  decalFile.AppendPath("AssetCache", GetDecalTexturePath(pAssetProfile));
+  xiiStringBuilder sDecalFile = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  sDecalFile.AppendPath("AssetCache", GetDecalTexturePath(pAssetProfile));
 
-  if (IsDecalTextureUpToDate(decalFile, uiAssetHash))
-    return xiiStatus(XII_SUCCESS);
+  if (IsDecalTextureUpToDate(sDecalFile, uiAssetHash))
+    return XII_SUCCESS;
 
   xiiTextureAtlasCreationDesc atlasDesc;
 
@@ -238,7 +238,7 @@ xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformPr
     header.SetFileHashAndVersion(uiAssetHash, uiVersion);
   }
 
-  xiiStatus result;
+  xiiStatus result(XII_SUCCESS);
 
   // Send information to TexConv to do all the work
   {
@@ -249,16 +249,17 @@ xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformPr
     if (atlasDesc.Save(texGroupFile).Failed())
       return xiiStatus(xiiFmt("Failed to save texture atlas descriptor file '{0}'", texGroupFile));
 
-    result = RunTexConv(decalFile, texGroupFile, header);
+    result = RunTexConv(sDecalFile, texGroupFile, header);
   }
 
   xiiFileStats stat;
-  if (xiiOSFile::GetFileStats(decalFile, stat).Succeeded() && stat.m_uiFileSize == 0)
+  if (xiiOSFile::GetFileStats(sDecalFile, stat).Succeeded() && stat.m_uiFileSize == 0)
   {
     // if the file was touched, but nothing written to it, delete the file
     // might happen if TexConv crashed or had an error
-    xiiOSFile::DeleteFile(decalFile).IgnoreResult();
-    result.m_Result = XII_FAILURE;
+    xiiOSFile::DeleteFile(sDecalFile).IgnoreResult();
+
+    result = xiiStatus(xiiFmt("File does not exist: '{}'.", sDecalFile));
   }
 
   return result;
@@ -333,5 +334,5 @@ xiiStatus xiiDecalAssetDocumentManager::RunTexConv(const char* szTargetFile, con
 
   XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

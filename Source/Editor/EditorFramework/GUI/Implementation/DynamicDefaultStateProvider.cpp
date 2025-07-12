@@ -332,7 +332,7 @@ xiiStatus xiiDynamicDefaultStateProvider::CreateRevertContainerDiff(SuperArray s
     pPrefabSubRoot->SetType(pInstanceSubRoot->GetType());
     prefabSubGraph.ReMapNodeGuidsToMatchGraph(pPrefabSubRoot, instanceSubGraph, pInstanceSubRoot);
     prefabSubGraph.CreateDiffWithBaseGraph(instanceSubGraph, out_diff);
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   return superPtr[0]->CreateRevertContainerDiff(superPtr.GetSubArray(1), pAccessor, pObject, pProp, out_diff);
 }

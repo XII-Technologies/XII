@@ -41,7 +41,7 @@ xiiRenderPipelineResourceHandle xiiRenderPipelineResource::CreateMissingPipeline
   xiiCreateColourAttachmentPass* pColorSourcePass = nullptr;
   {
     xiiUniquePtr<xiiCreateColourAttachmentPass> pPass = XII_DEFAULT_NEW(xiiCreateColourAttachmentPass, "ColourSource");
-    pColorSourcePass                  = pPass.Borrow();
+    pColorSourcePass                                  = pPass.Borrow();
     pRenderPipeline->AddPass(std::move(pPass));
   }
 

@@ -27,7 +27,7 @@
 #include <Texture/Image/Formats/TgaFileFormat.h>
 #include <Texture/Image/Image.h>
 
-xiiGameApplication*                                                xiiGameApplication::s_pGameApplicationInstance = nullptr;
+xiiGameApplication*                                                             xiiGameApplication::s_pGameApplicationInstance = nullptr;
 xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
 
 xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Enables V-Sync");

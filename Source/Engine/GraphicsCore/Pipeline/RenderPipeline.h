@@ -4,8 +4,8 @@
 
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 class xiiView;
 class xiiFrustum;
@@ -72,11 +72,11 @@ private:
 
   // \brief Rebuilds the render pipeline, e.g. sorting passes via dependencies and creating render targets.
   PipelineState Rebuild(const xiiView& view);
-  xiiResult          RebuildInternal(const xiiView& view);
-  xiiResult          SortPasses();
-  xiiResult          InitializePassResourceDescriptions(const xiiView& view);
-  xiiResult          CreatePassResourceUsage(const xiiView& view);
-  xiiResult          InitializeRenderPipelinePasses(const xiiView& view);
+  xiiResult     RebuildInternal(const xiiView& view);
+  xiiResult     SortPasses();
+  xiiResult     InitializePassResourceDescriptions(const xiiView& view);
+  xiiResult     CreatePassResourceUsage(const xiiView& view);
+  xiiResult     InitializeRenderPipelinePasses(const xiiView& view);
   void          SortExtractors();
   void          UpdateViewData(const xiiView& view, xiiUInt32 uiDataIndex);
 

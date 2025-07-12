@@ -848,7 +848,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
         {
           if (auto status = xiiCppProject::OpenSolution(cpp); status.Failed())
           {
-            xiiQtUiServices::GetSingleton()->MessageBoxWarning(status.m_sMessage.GetView());
+            xiiQtUiServices::GetSingleton()->MessageBoxWarning(status.GetMessageString().GetView());
           }
         }
       }

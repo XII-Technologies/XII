@@ -432,10 +432,10 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       }
       m_IPC.SendMessage(&response);
     }
-		else
-		{
+    else
+    {
       xiiLog::Warning("Unknown xiiSimpleConfigMsgToEngine '{0}'", pMsg1->m_sWhatToDo);
-		}
+    }
   }
   else if (const auto* pMsg2 = xiiDynamicCast<const xiiResourceUpdateMsgToEngine*>(e.m_pMessage))
   {
@@ -636,7 +636,7 @@ void xiiEngineProcessGameApplication::Init_FileSystem_ConfigureDataDirs()
   xiiStringBuilder sAppDir   = ">sdk/Data/Tools/EditorEngineProcess";
   xiiStringBuilder sUserData = ">user/XII/EditorEngineProcess";
 
-	if (opt_OutputDir.IsOptionSpecified(nullptr))
+  if (opt_OutputDir.IsOptionSpecified(nullptr))
   {
     sUserData = opt_OutputDir.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
   }

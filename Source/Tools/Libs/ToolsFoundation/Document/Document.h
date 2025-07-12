@@ -19,11 +19,12 @@ class xiiAbstractObjectNode;
 
 struct XII_TOOLSFOUNDATION_DLL xiiObjectAccessorChangeEvent
 {
-  xiiDocument*           m_pDocument;
-  xiiObjectAccessorBase* m_pOldObjectAccessor;
-  xiiObjectAccessorBase* m_pNewObjectAccessor;
+  xiiDocument*           m_pDocument          = nullptr; ///< The document in which the accessor change occurred.
+  xiiObjectAccessorBase* m_pOldObjectAccessor = nullptr;
+  xiiObjectAccessorBase* m_pNewObjectAccessor = nullptr;
 };
 
+/// \brief Stores meta data for document objects, such as prefab information and visibility in the editor.
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObjectMetaData : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDocumentObjectMetaData, xiiReflectedClass);
@@ -33,25 +34,26 @@ public:
   {
     HiddenFlag       = XII_BIT(0),
     PrefabFlag       = XII_BIT(1),
-    ActiveParentFlag = XII_BIT(2), /// This flag is used to update an entry, even though there is no meta data for it.
+    ActiveParentFlag = XII_BIT(2), ///< This flag is used to update an entry, even though there is no meta data for it.
 
     AllFlags = 0xFFFFFFFFU
   };
 
-  bool      m_bHidden = false;  /// Whether the object should be rendered in the editor view (no effect on the runtime)
-  xiiUuid   m_CreateFromPrefab; /// The asset GUID of the prefab from which this object was created. Invalid GUID, if this is not a prefab instance.
-  xiiUuid   m_PrefabSeedGuid;   /// The seed GUID used to remap the object GUIDs from the prefab asset into this instance.
-  xiiString m_sBasePrefab;      /// The prefab from which this instance was created as complete DDL text (this describes the entire object!). Necessary for
-                                /// three-way-merging the prefab instances.
+  bool      m_bHidden = false;  ///< Whether the object should be rendered in the editor view (no effect on the runtime)
+  xiiUuid   m_CreateFromPrefab; ///< The asset GUID of the prefab from which this object was created. Invalid GUID, if this is not a prefab instance.
+  xiiUuid   m_PrefabSeedGuid;   ///< The seed GUID used to remap the object GUIDs from the prefab asset into this instance.
+  xiiString m_sBasePrefab;      ///< The prefab from which this instance was created as complete DDL text (this describes the entire object!). Necessary for
+                                ///< three-way-merging the prefab instances.
 };
 
-enum class xiiManipulatorSearchStrategy
+enum class xiiManipulatorSearchStrategy : xiiUInt8
 {
-  None,
-  SelectedObject,
-  ChildrenOfSelectedObject
+  None = 0U,               ///< No manipulator search.
+  SelectedObject,          ///< Search for manipulators on the selected object.
+  ChildrenOfSelectedObject ///< Search for manipulators on the children of the selected object.
 };
 
+/// \brief Base class for all editable documents in the editor. Handles state, object management, undo/redo, and more.
 class XII_TOOLSFOUNDATION_DLL xiiDocument : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDocument, xiiReflectedClass);
@@ -89,8 +91,8 @@ public:
   xiiDocument*       GetActiveSubDocument() { return m_pActiveSubDocument; }
 
 protected:
-  xiiDocument* m_pHostDocument      = nullptr;
-  xiiDocument* m_pActiveSubDocument = nullptr;
+  xiiDocument* m_pHostDocument      = nullptr; ///< Pointer to the main document if this is a sub-document, otherwise self.
+  xiiDocument* m_pActiveSubDocument = nullptr; ///< Pointer to the currently active sub-document.
 
   ///@}
   /// \name Document Management Functions
@@ -103,18 +105,25 @@ public:
   /// \brief Saves the document, if it is modified.
   /// If bForce is true, the document will be written, even if it is not considered modified.
   xiiStatus SaveDocument(bool bForce = false);
+  /// \brief Callback type for asynchronous save operations.
   using AfterSaveCallback = xiiDelegate<void(xiiDocument*, xiiStatus)>;
+  /// \brief Saves the document asynchronously. Calls the callback when done.
   xiiTaskGroupID SaveDocumentAsync(AfterSaveCallback callback, bool bForce = false);
-  void           DocumentRenamed(xiiStringView sNewDocumentPath);
+  /// \brief Updates the document path after a rename operation.
+  void DocumentRenamed(xiiStringView sNewDocumentPath);
 
+  /// \brief Reads a document from disk and parses its header, objects, and types.
   static xiiStatus ReadDocument(xiiStringView sDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes);
+  /// \brief Reads and registers types from the given object graph.
   static xiiStatus ReadAndRegisterTypes(const xiiAbstractObjectGraph& types);
 
+  /// \brief Loads the document from disk.
   xiiStatus LoadDocument() { return InternalLoadDocument(); }
 
   /// \brief Brings the corresponding window to the front.
   void EnsureVisible();
 
+  /// \brief Returns the document manager that owns this document.
   xiiDocumentManager* GetDocumentManager() const { return m_pDocumentManager; }
 
   bool HasWindowBeenRequested() const { return m_bWindowRequested; }
@@ -146,19 +155,21 @@ public:
   /// \name Clipboard Functions
   ///@{
 
+  /// \brief Information about a pasted object, including its parent and index.
   struct PasteInfo
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiDocumentObject* m_pObject = nullptr;
-    xiiDocumentObject* m_pParent = nullptr;
-    xiiInt32           m_Index   = -1;
+    xiiDocumentObject* m_pObject = nullptr; ///< The object being pasted.
+    xiiDocumentObject* m_pParent = nullptr; ///< The parent object to paste into.
+    xiiInt32           m_Index   = -1;      ///< The index at which to insert the object.
   };
 
   /// \brief Whether this document supports pasting the given mime format into it
   virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const {}
   /// \brief Creates the abstract graph of data to be copied and returns the mime type for the clipboard to identify the data
   virtual bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const { return false; };
+  /// \brief Pastes objects from the given object graph into the document.
   virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType)
   {
     return false;
@@ -189,10 +200,13 @@ public:
   /// \name Misc Functions
   ///@{
 
+  /// \brief Deletes all currently selected objects in the document.
   virtual void DeleteSelectedObjects() const;
 
+  /// \brief Returns the set of unknown object types encountered during loading.
   const xiiSet<xiiString>& GetUnknownObjectTypes() const { return m_UnknownObjectTypes; }
-  xiiUInt32                GetUnknownObjectTypeInstances() const { return m_uiUnknownObjectTypeInstances; }
+  /// \brief Returns the number of unknown object type instances encountered during loading.
+  xiiUInt32 GetUnknownObjectTypeInstances() const { return m_uiUnknownObjectTypeInstances; }
 
   /// \brief If disabled, this document will not be put into the recent files list.
   void SetAddToResetFilesList(bool b) { m_bAddToRecentFilesList = b; }
@@ -216,7 +230,7 @@ public:
   /// \name Prefab Functions
   ///@{
 
-  /// \brief Whether the document allows to create prefabs in it. This may note be allowed for prefab documents themselves, to prevent nested prefabs.
+  /// \brief Whether the document allows to create prefabs in it. This may not be allowed for prefab documents themselves, to prevent nested prefabs.
   virtual bool ArePrefabsAllowed() const { return true; }
 
   /// \brief Updates ALL prefabs in the document with the latest changes. Merges the current prefab templates with the instances in the document.
@@ -228,32 +242,41 @@ public:
   /// \brief Removes the link between a prefab instance and its template, turning the instance into a regular object.
   virtual void UnlinkPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection);
 
+  /// \brief Creates a prefab document from the current selection.
   virtual xiiStatus CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
+  /// \brief Creates a prefab document from the given root objects.
   virtual xiiStatus CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
 
-  // Returns new guid of replaced object.
+  /// \brief Replaces the given object by a prefab instance. Returns new guid of replaced object.
   virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiStringView sPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab);
-  // Returns new guid of reverted object.
+  /// \brief Reverts the given object to its prefab state. Returns new guid of reverted object.
   virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject);
 
   ///@}
 
 public:
+  /// \brief Meta data for all document objects.
   xiiUniquePtr<xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>> m_DocumentObjectMetaData;
 
+  /// \brief Event for document-specific notifications.
   mutable xiiEvent<const xiiDocumentEvent&> m_EventsOne;
-  static xiiEvent<const xiiDocumentEvent&>  s_EventsAny;
+  /// \brief Static event for notifications across all documents.
+  static xiiEvent<const xiiDocumentEvent&> s_EventsAny;
 
+  /// \brief Event for object accessor change notifications.
   mutable xiiEvent<const xiiObjectAccessorChangeEvent&> m_ObjectAccessorChangeEvents;
 
 protected:
-  void                     SetModified(bool b);
-  void                     SetReadOnly(bool b);
-  virtual xiiTaskGroupID   InternalSaveDocument(AfterSaveCallback callback);
-  virtual xiiStatus        InternalLoadDocument();
+  void SetModified(bool b);
+  void SetReadOnly(bool b);
+  /// \brief Internal save implementation. Returns a task group ID for async save.
+  virtual xiiTaskGroupID InternalSaveDocument(AfterSaveCallback callback);
+  /// \brief Internal load implementation. Loads the document from disk.
+  virtual xiiStatus InternalLoadDocument();
+  /// \brief Creates the document info structure. Must be implemented by derived classes.
   virtual xiiDocumentInfo* CreateDocumentInfo() = 0;
 
-  /// \brief A hook to execute additional code after SUCCESSFULLY saving a document. E.g. manual asset transform can be done here.
+  /// \brief Hook to execute additional code after successfully saving a document. E.g. manual asset transform can be done here.
   virtual void InternalAfterSaveDocument() {}
 
   virtual void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const;
@@ -269,6 +292,7 @@ protected:
   /// \name Prefab Functions
   ///@{
 
+  /// \brief Recursively updates all prefab instances starting from the given object.
   virtual void UpdatePrefabsRecursive(xiiDocumentObject* pObject);
   virtual void UpdatePrefabObject(xiiDocumentObject* pObject, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, xiiStringView sBasePrefab);
 
@@ -290,17 +314,21 @@ private:
 
   void SetupDocumentInfo(const xiiDocumentTypeDescriptor* pTypeDescriptor);
 
+  /// \brief The document manager that owns this document.
   xiiDocumentManager* m_pDocumentManager = nullptr;
 
+  /// \brief The absolute path to the document file.
   xiiString m_sDocumentPath;
-  bool      m_bModified;
-  bool      m_bReadOnly;
-  bool      m_bWindowRequested;
-  bool      m_bAddToRecentFilesList;
+  bool      m_bModified             = true;
+  bool      m_bReadOnly             = false;
+  bool      m_bWindowRequested      = false;
+  bool      m_bAddToRecentFilesList = true;
 
+  /// \brief Set of unknown object types encountered during loading.
   xiiSet<xiiString> m_UnknownObjectTypes;
-  xiiUInt32         m_uiUnknownObjectTypeInstances;
+  /// \brief Number of unknown object type instances encountered during loading.
+  xiiUInt32 m_uiUnknownObjectTypeInstances = 0U;
 
   xiiTaskGroupID m_ActiveSaveTask;
-  xiiStatus      m_LastSaveResult;
+  xiiStatus      m_LastSaveResult = XII_SUCCESS;
 };

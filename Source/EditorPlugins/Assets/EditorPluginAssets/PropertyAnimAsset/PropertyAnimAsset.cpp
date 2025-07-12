@@ -219,7 +219,7 @@ xiiTransformStatus xiiPropertyAnimAssetDocument::InternalTransformAsset(xiiStrea
 
   desc.Save(stream);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 

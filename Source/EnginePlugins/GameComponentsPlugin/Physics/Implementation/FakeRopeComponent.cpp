@@ -456,6 +456,7 @@ void xiiFakeRopeComponentManager::Initialize()
     auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiFakeRopeComponentManager::Update, this);
     desc.m_Phase                     = xiiWorldUpdatePhase::Async;
     desc.m_bOnlyUpdateWhenSimulating = false;
+    desc.m_uiAsyncPhaseBatchSize     = 4U;
 
     this->RegisterUpdateFunction(desc);
   }

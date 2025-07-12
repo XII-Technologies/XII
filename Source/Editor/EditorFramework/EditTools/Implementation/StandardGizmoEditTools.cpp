@@ -414,7 +414,7 @@ void xiiScaleGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoEv
             const auto& obj       = m_GizmoSelection[sel];
             float       fNewScale = obj.m_fLocalUniformScaling * vScale.x;
 
-            if (pAccessor->SetValueByName(obj.m_pObject, "LocalUniformScaling", fNewScale).m_Result.Failed())
+            if (pAccessor->SetValueByName(obj.m_pObject, "LocalUniformScaling", fNewScale).Failed())
             {
               bCancel = true;
               break;
@@ -428,7 +428,7 @@ void xiiScaleGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoEv
             const auto& obj       = m_GizmoSelection[sel];
             xiiVec3     vNewScale = obj.m_vLocalScaling.CompMul(vScale);
 
-            if (pAccessor->SetValueByName(obj.m_pObject, "LocalScaling", vNewScale).m_Result.Failed())
+            if (pAccessor->SetValueByName(obj.m_pObject, "LocalScaling", vNewScale).Failed())
             {
               bCancel = true;
               break;
@@ -447,7 +447,7 @@ void xiiScaleGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoEv
           const auto& obj       = m_GizmoSelection[sel];
           const float fNewScale = obj.m_fLocalUniformScaling * fScale;
 
-          if (pAccessor->SetValueByName(obj.m_pObject, "LocalUniformScaling", fNewScale).m_Result.Failed())
+          if (pAccessor->SetValueByName(obj.m_pObject, "LocalUniformScaling", fNewScale).Failed())
           {
             bCancel = true;
             break;

@@ -40,7 +40,8 @@ xiiWindowOutputTargetBase* xiiActorPluginWindowOwner::GetOutputTarget() const
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPluginWindowShared, 1, xiiRTTINoAllocator);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPluginWindowShared, 1, xiiRTTINoAllocator)
+  ;
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiWindowBase* xiiActorPluginWindowShared::GetWindow() const

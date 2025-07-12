@@ -133,7 +133,7 @@ xiiInternal::NewInstance<xiiRenderPipeline> xiiRenderPipelineResourceLoader::Cre
 // static
 void xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(const xiiRenderPipeline* pPipeline, xiiRenderPipelineResourceDescriptor& ref_desc)
 {
-  xiiHybridArray<const xiiRenderPipelinePassBase*, 16>              passes;
+  xiiHybridArray<const xiiRenderPipelinePassBase*, 16>          passes;
   xiiHybridArray<const xiiExtractor*, 16>                       extractors;
   xiiHybridArray<xiiRenderPipelineResourceLoaderConnection, 16> connections;
 

@@ -90,7 +90,7 @@ public:
     Type      m_Type;
     xiiString m_sDocumentType;
     xiiString m_sDocumentPath;
-    xiiStatus m_RequestStatus;
+    xiiStatus m_RequestStatus = XII_SUCCESS;
   };
 
   static xiiCopyOnBroadcastEvent<const Event&> s_Events;

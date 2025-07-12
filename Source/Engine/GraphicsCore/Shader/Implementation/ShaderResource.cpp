@@ -53,7 +53,7 @@ xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* pStream)
   xiiGALShaderTextSectionizer shaderTextSections;
   xiiGALShaderSections::GetShaderSections(sContent.GetView(), shaderTextSections);
 
-  xiiUInt32 uiFirstLine = 0U;
+  xiiUInt32                                     uiFirstLine = 0U;
   xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermutationVariables; // ignored here
 
   xiiStringView sPermutations = shaderTextSections.GetSectionContent(xiiGALShaderSections::PERMUTATIONS, uiFirstLine);

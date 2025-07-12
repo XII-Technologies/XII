@@ -16,5 +16,5 @@ xiiTransformStatus xiiSurfaceAssetDocument::InternalTransformAsset(xiiStreamWrit
 
   pProp->Save(stream);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

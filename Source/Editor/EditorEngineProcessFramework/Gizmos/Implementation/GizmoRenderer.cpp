@@ -71,7 +71,7 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
 
   const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiSubMeshIndex];
 
-  #ifdef CORE_ENABLE
+#ifdef CORE_ENABLE
   renderViewContext.m_pRenderContext->BindMeshBuffer(pMesh->GetMeshBuffer());
   renderViewContext.m_pRenderContext->BindMaterial(hMaterial);
 
@@ -113,5 +113,5 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
       }
     }
   }
-  #endif
+#endif
 }

@@ -89,7 +89,7 @@ xiiTransformStatus xiiVisualScriptClassAssetDocument::InternalTransformAsset(xii
   auto& compiledModule = compiler.GetCompiledModule();
   XII_SUCCEED_OR_RETURN(compiledModule.Serialize(stream));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiVisualScriptClassAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const

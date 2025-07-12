@@ -71,7 +71,7 @@ protected:
   static constexpr xiiUInt32 s_uiLineVerticesPerBatch = s_uiBufferSize / sizeof(GridVertex);
 
   xiiShaderResourceHandle                                         m_hShader;
-  xiiSharedPtr<xiiGALBuffer>                                              m_pVertexBuffer;
+  xiiSharedPtr<xiiGALBuffer>                                      m_pVertexBuffer;
   xiiInputLayoutInfo                                              m_InputLayoutInfo;
   mutable xiiDynamicArray<GridVertex, xiiAlignedAllocatorWrapper> m_Vertices;
 

@@ -23,7 +23,7 @@ xiiStatus xiiQtEditorApp::SaveTagRegistry()
     return xiiStatus(xiiFmt("Could not open tags config file '{0}' for writing", sPath));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiQtEditorApp::ReadTagRegistry()
@@ -42,17 +42,17 @@ void xiiQtEditorApp::ReadTagRegistry()
     xiiLog::Warning("Could not open tags config file '{0}'", sPath);
 
     xiiStatus res = SaveTagRegistry();
-    if (res.m_Result.Failed())
+    if (res.Failed())
     {
-      xiiLog::Error("{0}", res.m_sMessage);
+      xiiLog::Error("{0}", res.GetMessageString());
     }
   }
   else
   {
     xiiStatus res = xiiToolsTagRegistry::ReadFromDDL(file);
-    if (res.m_Result.Failed())
+    if (res.Failed())
     {
-      xiiLog::Error("{0}", res.m_sMessage);
+      xiiLog::Error("{0}", res.GetMessageString());
     }
   }
 

@@ -44,11 +44,11 @@ void xiiStatus::AssertSuccess(const char* szMsg /*= nullptr*/) const
 
   if (szMsg)
   {
-    XII_REPORT_FAILURE(szMsg, m_sMessage.GetData());
+    XII_REPORT_FAILURE(szMsg, m_sMessage);
   }
   else
   {
-    XII_REPORT_FAILURE("An operation failed unexpectedly.", m_sMessage.GetData());
+    XII_REPORT_FAILURE("An operation failed unexpectedly.", m_sMessage);
   }
 }
 

@@ -60,7 +60,7 @@ private:
   xiiRenderPipelineNodeOutputDepthAttachmentPin m_PinOutput;
 
   xiiEnum<xiiGALResourceDimension>    m_Type = xiiGALResourceDimension::Buffer;
-  xiiEnum<xiiSourceFormat>       m_Format;
+  xiiEnum<xiiSourceFormat>            m_Format;
   xiiUInt32                           m_uiArraySizeOrDepth = 0U;
   xiiUInt32                           m_uiMipLevels        = 1U;
   xiiUInt32                           m_uiSampleCount      = 1U;

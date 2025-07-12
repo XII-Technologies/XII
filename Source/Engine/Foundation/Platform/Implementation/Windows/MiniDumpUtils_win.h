@@ -92,7 +92,7 @@ xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(xiiStringView sDumpFile, xiiUIn
     return xiiStatus(xiiFmt("Writing dump file failed: '{}'.", xiiArgErrorCode(GetLastError())));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiMiniDumpUtils::WriteOwnProcessMiniDump(xiiStringView sDumpFile, struct _EXCEPTION_POINTERS* pExceptionInfo)
@@ -148,5 +148,5 @@ xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(xiiStringView sDumpFile)
   if (proc.WaitToFinish().Failed())
     return xiiStatus("Waiting for MiniDumpTool to finish failed.");
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

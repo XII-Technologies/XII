@@ -99,7 +99,7 @@ void xiiCodeEditorPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaState
 
   xiiPropertyUiState::Visibility codeEditorFieldsVisibility = xiiPropertyUiState::Default;
 
-  xiiStatus res;
+  xiiStatus res(XII_SUCCESS);
   if (typeAccessor.GetValue("IsVisualStudio", xiiVariant(), &res).Get<bool>() && res.Succeeded())
   {
     codeEditorFieldsVisibility = xiiPropertyUiState::Invisible;

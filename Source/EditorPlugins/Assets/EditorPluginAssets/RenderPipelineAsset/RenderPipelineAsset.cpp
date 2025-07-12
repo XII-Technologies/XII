@@ -116,7 +116,7 @@ xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source,
 {
   out_result = CanConnectResult::ConnectNto1;
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 //////////////////////////////////////////////////////////////////////////

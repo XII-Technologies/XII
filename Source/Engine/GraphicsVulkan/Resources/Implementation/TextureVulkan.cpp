@@ -420,7 +420,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-	auto UploadStagingData = [&](xiiGALCommandListVulkan* pCommandListVulkan) -> void {
+  auto UploadStagingData = [&](xiiGALCommandListVulkan* pCommandListVulkan) -> void {
     vk::ImageAspectFlags imageAspectFlags = {};
     if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
     {
@@ -527,7 +527,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
     XII_ASSERT_DEV(uiSubresourceIndex == pInitialData->m_pSubResources.GetCount(), "");
   };
 
-	if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pInitialData->m_pCommandList))
+  if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pInitialData->m_pCommandList))
   {
     UploadStagingData(pCommandListVulkan);
   }

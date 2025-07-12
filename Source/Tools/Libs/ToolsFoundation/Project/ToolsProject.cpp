@@ -64,7 +64,7 @@ xiiStatus xiiToolsProject::Create()
     s_Events.Broadcast(e);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiToolsProject::Open()
@@ -82,7 +82,7 @@ xiiStatus xiiToolsProject::Open()
   e.m_Type     = xiiToolsProjectEvent::Type::ProjectOpened;
   s_Events.Broadcast(e);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiToolsProject::CreateSubFolder(xiiStringView sFolder) const
@@ -185,7 +185,7 @@ xiiStatus xiiToolsProject::CreateOrOpenProject(xiiStringView sProjectPath, bool 
 
   new xiiToolsProject(sProjectPath);
 
-  xiiStatus ret;
+  xiiStatus ret(XII_SUCCESS);
 
   if (bCreate)
   {
@@ -195,13 +195,13 @@ xiiStatus xiiToolsProject::CreateOrOpenProject(xiiStringView sProjectPath, bool 
   else
     ret = GetSingleton()->Open();
 
-  if (ret.m_Result.Failed())
+  if (ret.Failed())
   {
     delete GetSingleton();
     return ret;
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiToolsProject::OpenProject(xiiStringView sProjectPath)

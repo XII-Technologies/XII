@@ -4,8 +4,8 @@
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 // clang-format off
@@ -182,7 +182,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
     if (m_Vertices.IsEmpty())
       return;
 
-    #ifdef CORE_ENABLE
+#ifdef CORE_ENABLE
     xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
 
     renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
@@ -204,7 +204,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
       uiNumLineVertices -= uiNumLineVerticesInBatch;
       pLineData += s_uiLineVerticesPerBatch;
     }
-    #endif
+#endif
   }
 }
 

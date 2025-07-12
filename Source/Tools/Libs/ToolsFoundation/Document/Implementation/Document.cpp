@@ -60,7 +60,6 @@ xiiDocument::xiiDocument(xiiStringView sPath, xiiDocumentObjectManager* pDocumen
 {
   using ObjectMetaData     = xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>;
   m_DocumentObjectMetaData = XII_DEFAULT_NEW(ObjectMetaData);
-  m_pDocumentInfo          = nullptr;
   m_sDocumentPath          = sPath;
   m_pObjectManager         = xiiUniquePtr<xiiDocumentObjectManager>(pDocumentObjectManagerImpl, xiiFoundation::GetDefaultAllocator());
   m_pObjectManager->SetDocument(this);
@@ -71,13 +70,6 @@ xiiDocument::xiiDocument(xiiStringView sPath, xiiDocumentObjectManager* pDocumen
   {
     m_pObjectAccessor = XII_DEFAULT_NEW(xiiObjectCommandAccessor, m_pCommandHistory.Borrow());
   }
-
-  m_bWindowRequested      = false;
-  m_bModified             = true;
-  m_bReadOnly             = false;
-  m_bAddToRecentFilesList = true;
-
-  m_uiUnknownObjectTypeInstances = 0;
 
   m_pHostDocument      = this;
   m_pActiveSubDocument = this;
@@ -136,7 +128,7 @@ void xiiDocument::SetReadOnly(bool b)
 xiiStatus xiiDocument::SaveDocument(bool bForce)
 {
   if (!IsModified() && !bForce)
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
 
   // In the unlikely event that we manage to edit a doc and call save again while
   // an async save is already in progress we block on the first save to ensure
@@ -146,10 +138,14 @@ xiiStatus xiiDocument::SaveDocument(bool bForce)
     xiiTaskSystem::WaitForGroup(m_ActiveSaveTask);
     m_ActiveSaveTask.Invalidate();
   }
-  xiiStatus result;
+
+  xiiStatus result(XII_SUCCESS);
+
   m_ActiveSaveTask = InternalSaveDocument([&result](xiiDocument* pDoc, xiiStatus res) { result = res; });
+
   xiiTaskSystem::WaitForGroup(m_ActiveSaveTask);
   m_ActiveSaveTask.Invalidate();
+
   return result;
 }
 
@@ -266,7 +262,7 @@ xiiStatus xiiDocument::ReadDocument(xiiStringView sDocumentPath, xiiUniquePtr<xi
       xiiLog::Debug("DDL parsing time: {0} msec", xiiArgF(t.GetMilliseconds(), 1));
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDocument::ReadAndRegisterTypes(const xiiAbstractObjectGraph& types)
@@ -306,7 +302,7 @@ xiiStatus xiiDocument::ReadAndRegisterTypes(const xiiAbstractObjectGraph& types)
     }
     xiiGetStaticRTTI<xiiReflectedTypeDescriptor>()->GetAllocator()->Deallocate(desc);
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDocument::InternalLoadDocument()
@@ -353,7 +349,7 @@ xiiStatus xiiDocument::InternalLoadDocument()
   }
 
   SetModified(false);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiDocument::AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const
@@ -414,7 +410,7 @@ void xiiDocument::DeleteSelectedObjects() const
   {
     cmd.m_Object = entry.m_pObject->GetGuid();
 
-    if (history->AddCommand(cmd).m_Result.Failed())
+    if (history->AddCommand(cmd).Failed())
     {
       history->CancelTransaction();
       return;

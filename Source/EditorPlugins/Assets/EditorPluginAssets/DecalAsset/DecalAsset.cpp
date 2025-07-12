@@ -154,7 +154,7 @@ xiiTransformStatus xiiDecalAssetDocument::InternalCreateThumbnail(const Thumbnai
     InvalidateAssetThumbnail();
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -210,5 +210,5 @@ xiiStatus xiiDecalAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, 
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("BaseColor", sInputFileRel.GetView());
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

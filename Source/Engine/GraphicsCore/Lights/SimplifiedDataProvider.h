@@ -13,10 +13,10 @@ public:
   xiiSimplifiedDataGPU();
   ~xiiSimplifiedDataGPU();
 
-  xiiUInt32                      m_uiSkyIrradianceIndex = 0;
-  xiiEnum<xiiCameraUsageHint>    m_cameraUsageHint      = xiiCameraUsageHint::Default;
+  xiiUInt32                   m_uiSkyIrradianceIndex = 0;
+  xiiEnum<xiiCameraUsageHint> m_cameraUsageHint      = xiiCameraUsageHint::Default;
 
-  xiiSharedPtr<xiiGALBuffer>     m_pSimplifiedDataConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pSimplifiedDataConstantBuffer;
 
   void BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList);
 };

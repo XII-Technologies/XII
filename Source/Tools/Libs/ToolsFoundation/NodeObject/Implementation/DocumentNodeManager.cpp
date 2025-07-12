@@ -320,7 +320,7 @@ void xiiDocumentNodeManager::Connect(const xiiDocumentObject* pObject, const xii
 {
   xiiDocumentNodeManager::CanConnectResult res = CanConnectResult::ConnectNever;
   XII_IGNORE_UNUSED(res);
-  XII_ASSERT_DEBUG(CanConnect(pObject->GetType(), source, target, res).m_Result.Succeeded(), "Connect: Sanity check failed!");
+  XII_ASSERT_DEBUG(CanConnect(pObject->GetType(), source, target, res).Succeeded(), "Connect: Sanity check failed!");
 
   XII_ASSERT_DEBUG(pObject->GetTypeAccessor().GetValue("Source") == source.GetParent()->GetGuid(), "Property should have been set at this point already");
   XII_ASSERT_DEBUG(pObject->GetTypeAccessor().GetValue("Target") == target.GetParent()->GetGuid(), "Property should have been set at this point already");
@@ -343,7 +343,7 @@ void xiiDocumentNodeManager::Disconnect(const xiiDocumentObject* pObject)
 {
   auto it = m_ObjectToConnection.Find(pObject->GetGuid());
   XII_ASSERT_DEBUG(it.IsValid(), "Sanity check failed!");
-  XII_ASSERT_DEBUG(CanDisconnect(pObject).m_Result.Succeeded(), "Disconnect: Sanity check failed!");
+  XII_ASSERT_DEBUG(CanDisconnect(pObject).Succeeded(), "Disconnect: Sanity check failed!");
 
   {
     xiiDocumentNodeManagerEvent e(xiiDocumentNodeManagerEvent::Type::BeforePinsDisonnected, pObject);
@@ -361,7 +361,7 @@ void xiiDocumentNodeManager::Disconnect(const xiiDocumentObject* pObject)
 
 void xiiDocumentNodeManager::MoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos)
 {
-  XII_ASSERT_DEBUG(CanMoveNode(pObject, vPos).m_Result.Succeeded(), "MoveNode: Sanity check failed!");
+  XII_ASSERT_DEBUG(CanMoveNode(pObject, vPos).Succeeded(), "MoveNode: Sanity check failed!");
 
   auto it = m_ObjectToNode.Find(pObject->GetGuid());
   XII_ASSERT_DEBUG(it.IsValid(), "Moveable node does not exist, CanMoveNode impl invalid!");
@@ -435,7 +435,7 @@ void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObject
       DocumentNodeManager_NodeMetaData nodeMetaData;
       rttiConverter.ApplyPropertiesToObject(pAbstractObject, pNodeMetaDataType, &nodeMetaData);
 
-      if (CanMoveNode(pObject, nodeMetaData.m_Pos).m_Result.Succeeded())
+      if (CanMoveNode(pObject, nodeMetaData.m_Pos).Succeeded())
       {
         if (bUndoable)
         {
@@ -617,7 +617,7 @@ bool xiiDocumentNodeManager::PasteObjects(const xiiArrayPtr<xiiDocument::PasteIn
   for (const auto& pi : info)
   {
     // only add nodes that are allowed to be added
-    if (CanAdd(pi.m_pObject->GetTypeAccessor().GetType(), nullptr, "Children", pi.m_Index).m_Result.Succeeded())
+    if (CanAdd(pi.m_pObject->GetTypeAccessor().GetType(), nullptr, "Children", pi.m_Index).Succeeded())
     {
       AddedObjects.PushBack(pi.m_pObject);
       AddObject(pi.m_pObject, nullptr, "Children", pi.m_Index);
@@ -867,7 +867,7 @@ bool xiiDocumentNodeManager::InternalIsConnection(const xiiDocumentObject* pObje
 xiiStatus xiiDocumentNodeManager::InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_Result) const
 {
   out_Result = CanConnectResult::ConnectNtoN;
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiDocumentNodeManager::ObjectHandler(const xiiDocumentObjectEvent& e)

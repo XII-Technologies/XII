@@ -35,6 +35,7 @@ private:
 };
 
 
+/// \brief Reads document objects from an abstract graph and reconstructs them in a document.
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObjectConverterReader
 {
 public:
