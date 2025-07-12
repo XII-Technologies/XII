@@ -11,10 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install libtinfo5
+      #- name: Install Dependencies
+      #  run: |
+      #    sudo apt-get update
+      #    sudo apt-get install libncurses-dev
 
       - name: Run ClangFormat
         id: format_files
