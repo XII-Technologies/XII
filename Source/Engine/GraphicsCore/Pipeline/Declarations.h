@@ -75,40 +75,87 @@ namespace xiiInternal
   };
 } // namespace xiiInternal
 
+/// \brief Describes the format of pixel data used for textures and attachments in the rendering pipeline.
+///
+/// The source format determines how color, depth, or compressed texture data is stored and interpreted during rendering.
+/// It includes both uncompressed and block-compressed formats, floating-point precision options, and sRGB or linear variants.
+///
+/// These formats are typically used when specifying render target formats, texture asset loading, or framebuffer attachment configurations.
 struct XII_GRAPHICSCORE_DLL xiiSourceFormat
 {
   using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Color4Channel8BitNormalized_sRGB = 0U, ///< RGBA 8-bit normalized with sRGB colorspace (default).
-    Color4Channel8BitNormalized,           ///< RGBA 8-bit normalized linear.
-    Color2Channel16BitFloat,               ///< RG 16-bit float.
-    Color4Channel16BitFloat,               ///< RGBA 16-bit float.
-    Color2Channel32BitFloat,               ///< RG 32-bit float.
-    Color3Channel32BitFloat,               ///< RGB 32-bit float.
-    Color4Channel32BitFloat,               ///< RGBA 32-bit float.
-    Color3Channel11_11_10BitFloat,         ///< RGB 11-11-10 bit float.
-    Depth16Bit,                            ///< 16-bit depth.
-    Depth24BitStencil8Bit,                 ///< 24-bit depth + 8-bit stencil.
-    Depth32BitFloat,                       ///< 32-bit float depth.
-    BC1_RGB_DXT1,                          ///< DXT1 compression (no alpha).
-    BC2_RGBA_DXT3,                         ///< DXT3 compression.
-    BC3_RGBA_DXT5,                         ///< DXT5 compression.
-    BC4_R_Grey_DXT5A,                      ///< Single-channel compression (DXT5a).
-    BC5_RG_Grey_DXT5A,                     ///< Dual-channel compression (DXT5a).
-    BC6H_RGB_Float,                        ///< HDR RGB float block compression.
-    BC7_RGBA,                              ///< Modern RGBA compression with high quality.
+    Color4Channel8BitNormalized_sRGB = 0U, ///< 8-bit RGBA, normalized, stored in sRGB color space (default).
+    Color4Channel8BitNormalized,           ///< 8-bit RGBA, normalized, stored in linear color space.
+    Color2Channel16BitFloat,               ///< 16-bit float RG format.
+    Color4Channel16BitFloat,               ///< 16-bit float RGBA format.
+    Color2Channel32BitFloat,               ///< 32-bit float RG format.
+    Color3Channel32BitFloat,               ///< 32-bit float RGB format.
+    Color4Channel32BitFloat,               ///< 32-bit float RGBA format.
+    Color3Channel11_11_10BitFloat,         ///< Packed 11-11-10 bit RGB float format.
+    Depth16Bit,                            ///< 16-bit depth-only format.
+    Depth24BitStencil8Bit,                 ///< Combined 24-bit depth and 8-bit stencil format.
+    Depth32BitFloat,                       ///< 32-bit float depth-only format.
+    BC1_RGB_DXT1,                          ///< Block-compressed DXT1 format for RGB (no alpha).
+    BC2_RGBA_DXT3,                         ///< Block-compressed DXT3 format for RGBA.
+    BC3_RGBA_DXT5,                         ///< Block-compressed DXT5 format for RGBA.
+    BC4_R_Grey_DXT5A,                      ///< Block-compressed DXT5A format for single-channel grayscale.
+    BC5_RG_Grey_DXT5A,                     ///< Block-compressed DXT5A format for dual-channel grayscale.
+    BC6H_RGB_Float,                        ///< High dynamic range RGB compression (BC6H).
+    BC7_RGBA,                              ///< High-quality block compression for RGBA (BC7).
 
     ENUM_COUNT,
 
     Default = Color4Channel8BitNormalized_sRGB
   };
 
+  /// \brief Converts a xiiSourceFormat into its corresponding xiiGALResourceFormat for low-level use.
+  ///
+  /// \param format             - The source format to translate.
+  /// \param bFlipColorChannels - Whether to flip color channel order during conversion (optional).
+  ///
+  /// \return The corresponding GAL format enum usable in GPU resource creation.
   static xiiGALResourceFormat::Enum GetGALResourceFormat(xiiSourceFormat::Enum format, bool bFlipColorChannels = false);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSourceFormat);
+
+/// \brief Defines the shading quality levels used in rendering operations.
+///
+/// This enumeration allows rendering systems or materials to selectively enable or disable visual features depending on the desired quality level.
+/// Lower settings may omit expensive effects (e.g., shadows, complex lighting), while higher levels offer more realistic and detailed shading.
+///
+/// The quality level can be globally configured or overridden per-pass/material depending on engine support.
+///
+/// Typical usage:
+/// - Low: Minimal shading, suitable for previews or constrained hardware.
+/// - Medium: Standard shading with balanced performance and fidelity.
+/// - High: Enhanced shading with advanced lighting or material features.
+/// - Ultra: Maximum visual fidelity; may include ray tracing or physically-based effects.
+///
+/// \note The Default value is set to Medium.
+///
+/// \sa xiiMaterialResource, xiiRenderPipelineNode, xiiGALShaderStage
+struct XII_GRAPHICSCORE_DLL xiiShadingQualityLevel
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Low = 0, ///< Minimal shading features; optimized for speed.
+    Medium,  ///< Balanced shading quality; default setting.
+    High,    ///< Advanced shading features enabled.
+    Ultra,   ///< Maximum-quality shading; highest visual fidelity.
+
+    ENUM_COUNT,
+
+    Default = Medium
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiShadingQualityLevel);
 
 struct XII_GRAPHICSCORE_DLL xiiRenderViewContext
 {

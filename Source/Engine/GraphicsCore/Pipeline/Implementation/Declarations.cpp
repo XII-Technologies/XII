@@ -24,6 +24,13 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSourceFormat, 1)
   XII_ENUM_CONSTANT(xiiSourceFormat::BC6H_RGB_Float),
   XII_ENUM_CONSTANT(xiiSourceFormat::BC7_RGBA),
 XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1)
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Low),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Medium),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::High),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Ultra),
+XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 // static
