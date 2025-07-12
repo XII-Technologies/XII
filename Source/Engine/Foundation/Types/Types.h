@@ -46,38 +46,72 @@ static_assert(sizeof(long long int) == 8);
 static_assert(sizeof(void*) == XII_ALIGNMENT_MINIMUM);
 static_assert(alignof(void*) == XII_ALIGNMENT_MINIMUM);
 
-/// \brief Enum values for success and failure. To be used by functions as return values mostly, instead of bool.
-enum xiiResultEnum
+/// \brief Enum values representing success or failure states.
+///
+/// Typically used to return execution status from functions, as an alternative to using plain booleans.
+enum xiiResultEnum : xiiUInt8
 {
-  XII_FAILURE,
-  XII_SUCCESS
+  XII_FAILURE = 0U, ///< Indicates that the operation failed.
+  XII_SUCCESS       ///< Indicates that the operation succeeded.
 };
 
-/// \brief Default enum for returning failure or success, instead of using a bool.
+/// \brief Encapsulates a result state (success or failure), with [[nodiscard]] enforcement.
+///
+/// Provides clearer semantics than using raw booleans and encourages consistent status checking in functions and APIs.
+/// Also includes convenience utilities for asserting or ignoring result values.
 struct [[nodiscard]] XII_FOUNDATION_DLL xiiResult
 {
 public:
-  xiiResult(xiiResultEnum res) :
-    m_E(res)
+  /// \name Constructors and Assignments
+  /// @{
+
+  /// \brief Constructs a result from an enum value.
+  ///
+  /// Example:
+  /// \code
+  /// xiiResult result = XII_SUCCESS;
+  /// \endcode
+  XII_ALWAYS_INLINE xiiResult(xiiResultEnum result) :
+    m_E(result)
   {
   }
 
-  void operator=(xiiResultEnum rhs) { m_E = rhs; }
-  bool operator==(xiiResultEnum cmp) const { return m_E == cmp; }
+  /// \brief Assigns a new result state.
+  XII_ALWAYS_INLINE void operator=(xiiResultEnum rhs) { m_E = rhs; }
 
+  /// \brief Compares the result to another enum value.
+  XII_ALWAYS_INLINE bool operator==(xiiResultEnum cmp) const { return m_E == cmp; }
+
+  /// @}
+
+  /// \name Status Queries
+  /// @{
+
+  /// \brief Returns true if the result indicates success.
   [[nodiscard]] XII_ALWAYS_INLINE bool Succeeded() const { return m_E == XII_SUCCESS; }
+
+  /// \brief Returns true if the result indicates failure.
   [[nodiscard]] XII_ALWAYS_INLINE bool Failed() const { return m_E == XII_FAILURE; }
 
-  /// \brief Used to silence compiler warnings, when success or failure doesn't matter.
-  XII_ALWAYS_INLINE void IgnoreResult()
-  {
-    /* To be called when a return value is [[nodiscard]] but the result is not needed. */
-  }
+  /// @}
 
-  /// \brief Asserts that the function succeeded. In case of failure, the program will terminate.
+  /// \name Control and Assertions
+  /// @{
+
+  /// \brief Suppresses compiler warnings when intentionally ignoring the result.
   ///
-  /// If \a msg is given, this will be the assert message. If \a details is provided, \a msg should contain a formatting element ({}), e.g. "Error: {}".
+  /// To be used when result checking isn't necessary, e.g., in best-effort cleanup code.
+  XII_ALWAYS_INLINE void IgnoreResult() {}
+
+  /// \brief Asserts that the result indicates success.
+  ///
+  /// If the result is failure, the program terminates.
+  /// \param szMsg Optional short message for assertion failure.
+  /// \param szDetails Optional detailed message, used in conjunction with \a szMsg.
+  /// If \a szDetails is provided, \a szMsg should contain a formatting placeholder (`{}`).
   void AssertSuccess(const char* szMsg = nullptr, const char* szDetails = nullptr) const;
+
+  /// @}
 
 private:
   xiiResultEnum m_E;

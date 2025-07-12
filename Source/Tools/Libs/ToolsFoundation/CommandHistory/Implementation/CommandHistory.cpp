@@ -24,12 +24,12 @@ xiiCommandTransaction::~xiiCommandTransaction()
 xiiStatus xiiCommandTransaction::DoInternal(bool bRedo)
 {
   XII_ASSERT_DEV(bRedo == true, "Implementation error");
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiCommandTransaction::UndoInternal(bool bFireEvents)
 {
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiCommandTransaction::CleanupInternal(CommandState state) {}
@@ -38,7 +38,7 @@ xiiStatus xiiCommandTransaction::AddCommandTransaction(xiiCommand* pCommand)
 {
   pCommand->m_pDocument = m_pDocument;
   m_ChildActions.PushBack(pCommand);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ xiiStatus xiiCommandHistory::UndoInternal()
   xiiCommandTransaction* pTransaction = m_pHistoryStorage->m_UndoHistory.PeekBack();
 
   xiiStatus status = pTransaction->Undo(true);
-  if (status.m_Result == XII_SUCCESS)
+  if (status.Succeeded())
   {
     m_pHistoryStorage->m_UndoHistory.PopBack();
     m_pHistoryStorage->m_RedoHistory.PushBack(pTransaction);
@@ -168,7 +168,7 @@ xiiStatus xiiCommandHistory::Undo(xiiUInt32 uiNumEntries)
     XII_SUCCEED_OR_RETURN(UndoInternal());
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiCommandHistory::RedoInternal()
@@ -188,7 +188,7 @@ xiiStatus xiiCommandHistory::RedoInternal()
   xiiCommandTransaction* pTransaction = m_pHistoryStorage->m_RedoHistory.PeekBack();
 
   xiiStatus status(XII_FAILURE);
-  if (pTransaction->Do(true).m_Result == XII_SUCCESS)
+  if (pTransaction->Do(true).Succeeded())
   {
     m_pHistoryStorage->m_RedoHistory.PopBack();
     m_pHistoryStorage->m_UndoHistory.PushBack(pTransaction);
@@ -215,7 +215,7 @@ xiiStatus xiiCommandHistory::Redo(xiiUInt32 uiNumEntries)
     XII_SUCCEED_OR_RETURN(RedoInternal());
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 bool xiiCommandHistory::CanUndo() const

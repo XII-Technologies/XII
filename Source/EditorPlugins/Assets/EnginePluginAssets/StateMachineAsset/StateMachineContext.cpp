@@ -51,7 +51,7 @@ xiiStatus xiiStateMachineContext::ExportDocument(const xiiExportDocumentMsgToEng
   xiiHashTable<xiiUuid, xiiUInt32> nodeUuidToStateIndex;
   xiiSet<xiiString>                stateNames;
 
-  auto AddState = [&](const xiiStateMachineNode* pNode, const xiiUuid& uuid) {
+  auto AddState = [&](const xiiStateMachineNode* pNode, const xiiUuid& uuid) -> xiiStatus {
     const xiiString& name = pNode->m_sName;
     if (stateNames.Contains(name))
     {
@@ -73,7 +73,7 @@ xiiStatus xiiStateMachineContext::ExportDocument(const xiiExportDocumentMsgToEng
     const xiiUInt32 uiStateIndex = desc.AddState(std::move(pState));
     nodeUuidToStateIndex.Insert(uuid, uiStateIndex);
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   };
 
   for (xiiUInt32 i = 0; i < nodes.GetCount(); ++i)
@@ -134,5 +134,5 @@ xiiStatus xiiStateMachineContext::ExportDocument(const xiiExportDocumentMsgToEng
   if (file.Close().Failed())
     return xiiStatus(xiiFmt("Writing to '{}' failed.", pMsg->m_sOutputFile));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

@@ -525,7 +525,7 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
   xiiAssetInfo::TransformState state         = xiiAssetCurator::GetSingleton()->IsAssetUpToDate(GetGuid(), pAssetProfile, GetAssetDocumentTypeDescriptor(), uiHash, uiThumbHash, uiPackageHash);
 
   if (state == xiiAssetInfo::TransformState::UpToDate && !transformFlags.IsSet(xiiTransformFlags::ForceTransform))
-    return xiiStatus(XII_SUCCESS, "Transformed asset is already up to date");
+    return xiiStatus(XII_SUCCESS);
 
   if (uiHash == 0)
     return xiiStatus("Computing the hash for this asset or any dependency failed");
@@ -572,13 +572,13 @@ xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlag
 
   if (!transformFlags.IsSet(xiiTransformFlags::ForceTransform))
   {
-    XII_SUCCEED_OR_RETURN(SaveDocument().m_Result);
+    XII_SUCCEED_OR_RETURN(SaveDocument());
 
     const auto assetFlags = GetAssetFlags();
 
     if (assetFlags.IsSet(xiiAssetDocumentFlags::DisableTransform) || (assetFlags.IsSet(xiiAssetDocumentFlags::OnlyTransformManually) && !transformFlags.IsSet(xiiTransformFlags::TriggeredManually)))
     {
-      return xiiStatus(XII_SUCCESS, "Transform is disabled for this asset");
+      return xiiStatus(XII_SUCCESS);
     }
   }
 
@@ -602,7 +602,7 @@ xiiTransformStatus xiiAssetDocument::CreateThumbnail()
   xiiAssetInfo::TransformState state = xiiAssetCurator::GetSingleton()->IsAssetUpToDate(GetGuid(), xiiAssetCurator::GetSingleton()->GetActiveAssetProfile(), GetAssetDocumentTypeDescriptor(), uiHash, uiThumbHash, uiPackageHash);
 
   if (state == xiiAssetInfo::TransformState::UpToDate)
-    return xiiStatus(XII_SUCCESS, "Transformed asset is already up to date");
+    return xiiStatus(XII_SUCCESS);
 
   if (uiHash == 0)
     return xiiStatus("Computing the hash for this asset or any dependency failed");
@@ -732,7 +732,7 @@ xiiStatus xiiAssetDocument::SaveThumbnail(const QImage& qimg0, const ThumbnailIn
   AppendThumbnailInfo(sResourceFile, thumbnailInfo);
   InvalidateAssetThumbnail();
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiAssetDocument::AppendThumbnailInfo(xiiStringView sThumbnailFile, const ThumbnailInfo& thumbnailInfo) const
@@ -779,7 +779,11 @@ xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, xiiSt
   xiiStatus                                              status(XII_FAILURE);
   xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&status](xiiProcessMessage* pMsg) -> bool {
     xiiExportDocumentMsgToEditor* pMsg2 = xiiDynamicCast<xiiExportDocumentMsgToEditor*>(pMsg);
-    status                              = xiiStatus(pMsg2->m_bOutputSuccess ? XII_SUCCESS : XII_FAILURE, pMsg2->m_sFailureMsg);
+
+    if (!pMsg2->m_bOutputSuccess)
+    {
+      status = xiiStatus(pMsg2->m_sFailureMsg.GetView());
+    }
     return true;
   };
 
@@ -798,7 +802,7 @@ xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, xiiSt
 
     ShowDocumentStatus(xiiFmt("{0} exported successfully", GetDocumentTypeName()));
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 }
 
@@ -870,7 +874,7 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
 
     ShowDocumentStatus(xiiFmt("{0} thumbnail created successfully", GetDocumentTypeName()));
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 }
 
@@ -893,7 +897,7 @@ xiiStatus xiiAssetDocument::WaitForEngineStatusLoaded() const
     }
     XII_ASSERT_DEV(GetEngineStatus() == xiiAssetDocument::EngineStatus::Loaded, "After receiving xiiDocumentOpenResponseMsgToEditor, the document should be in loaded state.");
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 bool xiiAssetDocument::SendMessageToEngine(xiiEditorEngineDocumentMsg* pMessage /*= false*/) const

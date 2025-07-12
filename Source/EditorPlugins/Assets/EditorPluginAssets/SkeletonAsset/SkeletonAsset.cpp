@@ -165,7 +165,7 @@ xiiStatus xiiSkeletonAssetDocument::WriteResource(xiiStreamWriter& inout_stream,
 
   XII_SUCCEED_OR_RETURN(desc.Serialize(inout_stream));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiSkeletonAssetDocument::SetRenderBones(bool bEnable)
@@ -353,7 +353,7 @@ xiiTransformStatus xiiSkeletonAssetDocument::InternalTransformAsset(xiiStreamWri
   e.m_Type      = xiiSkeletonAssetEvent::Transformed;
   m_Events.Broadcast(e);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiTransformStatus xiiSkeletonAssetDocument::InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo)
@@ -481,7 +481,7 @@ xiiStatus xiiSkeletonAssetDocumentGenerator::Generate(xiiStringView sInputFileAb
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("File", sInputFileRel.GetView());
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 

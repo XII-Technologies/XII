@@ -305,7 +305,7 @@ void xiiMaterialAssetProperties::DeleteProperties()
   xiiRemoveObjectCommand cmd;
   cmd.m_Object = pPropObject->GetGuid();
   auto res     = pHistory->AddCommand(cmd);
-  XII_ASSERT_DEV(res.m_Result.Succeeded(), "Removal of old properties should never fail.");
+  XII_ASSERT_DEV(res.Succeeded(), "Removal of old properties should never fail.");
 }
 
 void xiiMaterialAssetProperties::CreateProperties(const char* szShaderPath)
@@ -332,7 +332,7 @@ void xiiMaterialAssetProperties::CreateProperties(const char* szShaderPath)
     cmd.m_NewObjectGuid.CombineWithSeed(xiiUuid::MakeStableUuidFromString("ShaderProperties"));
 
     auto res = pHistory->AddCommand(cmd);
-    XII_ASSERT_DEV(res.m_Result.Succeeded(), "Addition of new properties should never fail.");
+    XII_ASSERT_DEV(res.Succeeded(), "Addition of new properties should never fail.");
     LoadOldValues();
   }
 }
@@ -741,7 +741,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStringVie
       if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Custom)
       {
         e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;
-        e.m_sTransformError = ret.m_sMessage;
+        e.m_sTransformError = ret.GetMessageString();
 
         if (ret.Succeeded())
         {
@@ -788,7 +788,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStringVie
           if (ret.Failed())
           {
             e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;
-            e.m_sTransformError = ret.m_sMessage;
+            e.m_sTransformError = ret.GetMessageString();
           }
           else
           {
@@ -1129,7 +1129,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 #endif
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiMaterialAssetDocument::TagVisualShaderFileInvalid(const xiiPlatformProfile* pAssetProfile, const char* szError)
@@ -1167,7 +1167,7 @@ xiiStatus xiiMaterialAssetDocument::RecreateVisualShaderFile(const xiiAssetFileH
 {
   if (GetProperties()->m_ShaderMode != xiiMaterialShaderMode::Custom)
   {
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   xiiAssetDocumentManager* pManager       = xiiDynamicCast<xiiAssetDocumentManager*>(GetDocumentManager());
@@ -1188,7 +1188,7 @@ xiiStatus xiiMaterialAssetDocument::RecreateVisualShaderFile(const xiiAssetFileH
 
     InvalidateCachedShader();
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   else
   {

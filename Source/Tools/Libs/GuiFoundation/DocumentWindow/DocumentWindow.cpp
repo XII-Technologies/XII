@@ -450,7 +450,7 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
                                                 "document means those objects will get lost permanently.\n\nDo you really want to save this "
                                                 "document?",
                                                 QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)
-          return xiiStatus(XII_SUCCESS); // failed successfully
+          return XII_SUCCESS; // failed successfully
       }
     }
 
@@ -462,7 +462,7 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
 
     xiiQtUiServices::MessageBoxStatus(res, s, s2);
 
-    if (res.m_Result.Failed())
+    if (res.Failed())
     {
       ShowTemporaryStatusBarMsg("Failed to save document");
       return res;
@@ -471,7 +471,7 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
     ShowTemporaryStatusBarMsg("Document saved");
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiQtDocumentWindow::ShowTemporaryStatusBarMsg(const xiiFormatString& msg, xiiTime duration)

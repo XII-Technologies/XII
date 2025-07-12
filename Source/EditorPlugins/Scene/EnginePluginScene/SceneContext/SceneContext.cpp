@@ -842,7 +842,7 @@ xiiStatus xiiSceneContext::ExportDocument(const xiiExportDocumentMsgToEngine* pM
   if (file.Close().Failed())
     return xiiStatus(xiiFmt("Writing to '{}' failed.", pMsg->m_sOutputFile));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiSceneContext::ExportExposedParameters(const xiiWorldWriter& ww, xiiDeferredFileWriter& file) const

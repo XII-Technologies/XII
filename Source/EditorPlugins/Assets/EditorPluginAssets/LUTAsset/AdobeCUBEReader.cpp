@@ -175,7 +175,7 @@ xiiStatus xiiAdobeCUBEReader::ParseFile(xiiStreamReader& inout_stream, xiiLogInt
                             (m_uiLUTSize * m_uiLUTSize * m_uiLUTSize), m_uiLUTSize));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiVec3 xiiAdobeCUBEReader::GetDomainMin() const

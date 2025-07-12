@@ -235,20 +235,20 @@ void xiiSceneDocument::ConvertToEnginePrefab(xiiArrayPtr<const xiiDocumentObject
       cmd.m_NewObjectGuid   = ObjectGuid;
       cmd.m_sParentProperty = "Children";
 
-      XII_VERIFY(pHistory->AddCommand(cmd).m_Result.Succeeded(), "AddCommand failed");
+      XII_VERIFY(pHistory->AddCommand(cmd).Succeeded(), "AddCommand failed");
 
       cmd.SetType("xiiPrefabReferenceComponent");
       cmd.m_sParentProperty = "Components";
       cmd.m_Index           = -1;
       cmd.m_NewObjectGuid   = CmpGuid;
       cmd.m_Parent          = ObjectGuid;
-      XII_VERIFY(pHistory->AddCommand(cmd).m_Result.Succeeded(), "AddCommand failed");
+      XII_VERIFY(pHistory->AddCommand(cmd).Succeeded(), "AddCommand failed");
 
       xiiSetObjectPropertyCommand cmd2;
       cmd2.m_Object    = CmpGuid;
       cmd2.m_sProperty = "Prefab";
       cmd2.m_NewValue  = xiiConversionUtils::ToString(assetGuid, tmp).GetData();
-      XII_VERIFY(pHistory->AddCommand(cmd2).m_Result.Succeeded(), "AddCommand failed");
+      XII_VERIFY(pHistory->AddCommand(cmd2).Succeeded(), "AddCommand failed");
 
 
       pNewObject = GetObjectManager()->GetObject(ObjectGuid);
@@ -264,7 +264,7 @@ void xiiSceneDocument::ConvertToEnginePrefab(xiiArrayPtr<const xiiDocumentObject
       xiiRemoveObjectCommand rem;
       rem.m_Object = pObject->GetGuid();
 
-      XII_VERIFY(pHistory->AddCommand(rem).m_Result.Succeeded(), "AddCommand failed");
+      XII_VERIFY(pHistory->AddCommand(rem).Succeeded(), "AddCommand failed");
     }
   }
 

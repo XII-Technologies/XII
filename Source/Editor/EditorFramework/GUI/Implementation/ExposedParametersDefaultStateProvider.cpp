@@ -70,7 +70,7 @@ xiiVariant xiiExposedParametersDefaultStateProvider::GetDefaultValue(SuperArray 
 xiiStatus xiiExposedParametersDefaultStateProvider::CreateRevertContainerDiff(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiDeque<xiiAbstractGraphDiffOperation>& out_diff)
 {
   XII_REPORT_FAILURE("Unreachable code");
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 bool xiiExposedParametersDefaultStateProvider::IsDefaultValue(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index)
@@ -109,7 +109,7 @@ xiiStatus xiiExposedParametersDefaultStateProvider::RevertProperty(SuperArray su
     op.m_uiTypeVersion                         = 0;
     op.m_Value                                 = xiiVariantDictionary();
     xiiDocumentObjectConverterReader::ApplyDiffToObject(pAccessor, pObject, diff);
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   return xiiDefaultStateProvider::RevertProperty(superPtr, pAccessor, pObject, pProp, index);
 }

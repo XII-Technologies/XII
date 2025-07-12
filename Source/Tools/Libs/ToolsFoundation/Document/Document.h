@@ -302,5 +302,5 @@ private:
   xiiUInt32         m_uiUnknownObjectTypeInstances;
 
   xiiTaskGroupID m_ActiveSaveTask;
-  xiiStatus      m_LastSaveResult;
+  xiiStatus      m_LastSaveResult = XII_SUCCESS;
 };

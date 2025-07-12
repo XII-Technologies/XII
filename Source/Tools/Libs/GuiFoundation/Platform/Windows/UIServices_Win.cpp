@@ -70,7 +70,7 @@ xiiStatus xiiQtUiServices::OpenInVsCode(const QStringList& arguments)
     return xiiStatus("Failed to launch Visual Studio Code.");
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 #endif

@@ -104,7 +104,7 @@ xiiStatus xiiDefaultObjectState::RevertProperty(const xiiAbstractProperty* pProp
     if (res.Failed())
       return res;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDefaultObjectState::RevertObject()
@@ -125,7 +125,7 @@ xiiStatus xiiDefaultObjectState::RevertObject()
         return res;
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiVariant xiiDefaultObjectState::GetDefaultValue(xiiStringView sProperty, xiiUInt32 uiSelectionIndex) const
@@ -213,7 +213,7 @@ xiiStatus xiiDefaultContainerState::RevertElement(xiiVariant index)
     if (res.Failed())
       return res;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDefaultContainerState::RevertContainer()
@@ -226,7 +226,7 @@ xiiStatus xiiDefaultContainerState::RevertContainer()
     if (res.Failed())
       return res;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiVariant xiiDefaultContainerState::GetDefaultElement(xiiVariant index, xiiUInt32 uiSelectionIndex) const
@@ -314,7 +314,7 @@ xiiStatus xiiDefaultStateProvider::RevertProperty(SuperArray superPtr, xiiObject
   }
 
   xiiDocumentObjectConverterReader::ApplyDiffToObject(pAccessor, pObject, diff);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDefaultStateProvider::RevertObjectContainer(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)

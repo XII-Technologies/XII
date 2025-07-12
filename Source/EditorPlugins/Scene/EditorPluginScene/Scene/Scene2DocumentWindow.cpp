@@ -136,5 +136,5 @@ xiiStatus xiiQtScene2DocumentWindow::SaveAllLayers()
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

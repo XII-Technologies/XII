@@ -147,7 +147,7 @@ void xiiQtEditorApp::SaveAllOpenDocuments()
       // Layers for example will share a window with the scene document and the window will always save the scene.
       if (pWnd && pWnd->GetDocument() == pDoc)
       {
-        if (pWnd->SaveDocument().m_Result.Failed())
+        if (pWnd->SaveDocument().Failed())
           return;
       }
       // There might be no window for this document.
@@ -250,7 +250,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
 {
   // already a local project?
   if (inout_sFilePath.EndsWith_NoCase("xiiProject"))
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
 
   {
     xiiStringBuilder tmp = inout_sFilePath;
@@ -259,7 +259,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
     if (xiiOSFile::ExistsFile(tmp))
     {
       inout_sFilePath = tmp;
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
   }
 
@@ -281,7 +281,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
       if (sContent.EndsWith_NoCase("xiiProject") && xiiOSFile::ExistsFile(sContent))
       {
         inout_sFilePath = sContent;
-        return xiiStatus(XII_SUCCESS);
+        return XII_SUCCESS;
       }
     }
   }
@@ -431,7 +431,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
       }
     }
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   return xiiStatus(xiiFmt("Unknown remote project type '{}' or invalid URL '{}'", sType, sUrl));

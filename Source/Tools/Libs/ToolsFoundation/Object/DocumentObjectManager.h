@@ -190,14 +190,14 @@ private:
 
   virtual xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const
   {
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   };
-  virtual xiiStatus InternalCanRemove(const xiiDocumentObject* pObject) const { return xiiStatus(XII_SUCCESS); };
+  virtual xiiStatus InternalCanRemove(const xiiDocumentObject* pObject) const { return XII_SUCCESS; };
   virtual xiiStatus InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const
   {
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   };
-  virtual xiiStatus InternalCanSelect(const xiiDocumentObject* pObject) const { return xiiStatus(XII_SUCCESS); };
+  virtual xiiStatus InternalCanSelect(const xiiDocumentObject* pObject) const { return XII_SUCCESS; };
 
   void RecursiveAddGuids(xiiDocumentObject* pObject);
   void RecursiveRemoveGuids(xiiDocumentObject* pObject);

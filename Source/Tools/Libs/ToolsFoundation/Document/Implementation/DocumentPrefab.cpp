@@ -74,7 +74,7 @@ xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(xiiStringView sFile, co
   SeedGuid      = xiiUuid::MakeUuid();
   xiiStatus res = CreatePrefabDocument(sFile, nodes, SeedGuid, PrefabGuid, adjustGraphNodeCB, true, finalizeGraphCB);
 
-  if (res.m_Result.Succeeded())
+  if (res.Succeeded())
   {
     GetCommandHistory()->StartTransaction("Replace all by Prefab");
 
@@ -216,20 +216,20 @@ xiiUuid xiiDocument::ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiSt
     cmd.m_NewObjectGuid   = instantiatedRoot;
     cmd.m_sParentProperty = "Children";
 
-    XII_VERIFY(pHistory->AddCommand(cmd).m_Result.Succeeded(), "AddCommand failed");
+    XII_VERIFY(pHistory->AddCommand(cmd).Succeeded(), "AddCommand failed");
 
     cmd.SetType("xiiPrefabReferenceComponent");
     cmd.m_sParentProperty = "Components";
     cmd.m_Index           = -1;
     cmd.m_NewObjectGuid   = CmpGuid;
     cmd.m_Parent          = instantiatedRoot;
-    XII_VERIFY(pHistory->AddCommand(cmd).m_Result.Succeeded(), "AddCommand failed");
+    XII_VERIFY(pHistory->AddCommand(cmd).Succeeded(), "AddCommand failed");
 
     xiiSetObjectPropertyCommand cmd2;
     cmd2.m_Object    = CmpGuid;
     cmd2.m_sProperty = "Prefab";
     cmd2.m_NewValue  = xiiConversionUtils::ToString(prefabAsset, tmp).GetData();
-    XII_VERIFY(pHistory->AddCommand(cmd2).m_Result.Succeeded(), "AddCommand failed");
+    XII_VERIFY(pHistory->AddCommand(cmd2).Succeeded(), "AddCommand failed");
   }
 
   {

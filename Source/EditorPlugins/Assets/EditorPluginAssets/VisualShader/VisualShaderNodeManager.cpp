@@ -102,7 +102,7 @@ xiiStatus xiiVisualShaderNodeManager::InternalCanConnect(const xiiPin& source, c
   }
 
   out_result = CanConnectResult::ConnectNto1;
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -125,7 +125,7 @@ xiiStatus xiiVisualShaderNodeManager::InternalCanAdd(const xiiRTTI* pRtti, const
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiUInt32 xiiVisualShaderNodeManager::CountNodesOfType(xiiVisualShaderNodeType::Enum type) const

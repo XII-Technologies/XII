@@ -391,7 +391,7 @@ xiiStatus xiiVisualScriptNodeManager::InternalCanConnect(const xiiPin& source, c
   }
 
   out_result = CanConnectResult::ConnectNtoN;
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiVisualScriptNodeManager::InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node)

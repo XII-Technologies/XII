@@ -448,8 +448,10 @@ xiiResult xiiAssetCurator::ReadAssetDocumentInfo(const xiiDataDirPath& absFilePa
   }
 
   // try to read the asset file
-  xiiStatus infoStatus;
-  xiiResult res = pFiles->ReadDocument(absFilePath, [&out_assetInfo, &infoStatus](const xiiFileStatus& stat, xiiStreamReader& ref_reader) { infoStatus = out_assetInfo->GetManager()->ReadAssetDocumentInfo(out_assetInfo->m_Info, ref_reader); });
+  xiiStatus infoStatus(XII_SUCCESS);
+  xiiResult res = pFiles->ReadDocument(absFilePath, [&out_assetInfo, &infoStatus](const xiiFileStatus& stat, xiiStreamReader& ref_reader) -> void {
+    infoStatus = out_assetInfo->GetManager()->ReadAssetDocumentInfo(out_assetInfo->m_Info, ref_reader);
+  });
 
   if (infoStatus.Failed())
   {

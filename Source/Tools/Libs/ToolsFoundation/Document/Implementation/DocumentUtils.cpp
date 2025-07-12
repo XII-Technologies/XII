@@ -22,5 +22,5 @@ xiiStatus xiiDocumentUtils::IsValidSaveLocationForDocument(xiiStringView sDocume
   {
     *out_pTypeDesc = pTypeDesc;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

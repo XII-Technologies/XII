@@ -88,7 +88,7 @@ xiiStatus xiiObjectCommandAccessor::AddObject(const xiiDocumentObject* pParent, 
   cmd.m_NewObjectGuid   = inout_objectGuid;
   cmd.m_sParentProperty = pParentProp ? pParentProp->GetPropertyName() : "Children";
   xiiStatus res         = m_pHistory->AddCommand(cmd);
-  if (res.m_Result.Succeeded())
+  if (res.Succeeded())
     inout_objectGuid = cmd.m_NewObjectGuid;
   return res;
 }

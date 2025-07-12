@@ -181,7 +181,7 @@ xiiColor xiiColorGradientAssetData::Evaluate(xiiInt64 iTick) const
 xiiTransformStatus xiiColorGradientAssetDocument::InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
   WriteResource(stream);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiTransformStatus xiiColorGradientAssetDocument::InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo)

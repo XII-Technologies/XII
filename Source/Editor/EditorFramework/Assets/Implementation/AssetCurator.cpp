@@ -436,7 +436,7 @@ xiiStatus xiiAssetCurator::TransformAllAssets(xiiBitflags<xiiTransformFlags> tra
   if (uiNumFailedSteps > 0)
     return xiiStatus(xiiFmt("Transform all assets failed on {0} assets.", uiNumFailedSteps));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiAssetCurator::ResaveAllAssets(xiiStringView sPrefixPath)
@@ -511,9 +511,9 @@ void xiiAssetCurator::ResaveAllAssets(xiiStringView sPrefixPath)
     range.BeginNextStep(xiiPathUtils::GetFileNameAndExtension(pAssetInfo->m_Path.GetDataDirParentRelativePath()));
 
     auto res = ResaveAsset(pAssetInfo);
-    if (res.m_Result.Failed())
+    if (res.Failed())
     {
-      xiiLog::Error("{0} ({1})", res.m_sMessage, pAssetInfo->m_Path.GetDataDirParentRelativePath());
+      xiiLog::Error("{0} ({1})", res.GetMessageString(), pAssetInfo->m_Path.GetDataDirParentRelativePath());
     }
   }
 }
@@ -1489,13 +1489,13 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
     xiiAssetInfo::TransformState state2         = IsAssetUpToDate(pAssetInfo->m_Info->m_DocumentID, pAssetProfile, pTypeDesc, uiHash2, uiThumbHash2, uiPackageHash2);
 
     if (uiHash != uiHash2)
-      return xiiTransformStatus(xiiFmt("Asset hash changed while prosessing dependencies from {} to {}", uiHash, uiHash2));
+      return xiiTransformStatus(xiiFmt("Asset hash changed while processing dependencies from {} to {}.", uiHash, uiHash2));
     if (uiThumbHash != uiThumbHash2)
-      return xiiTransformStatus(xiiFmt("Asset thumbnail hash changed while prosessing dependencies from {} to {}", uiThumbHash, uiThumbHash2));
+      return xiiTransformStatus(xiiFmt("Asset thumbnail hash changed while processing dependencies from {} to {}.", uiThumbHash, uiThumbHash2));
     if (uiPackageHash != uiPackageHash2)
-      return xiiTransformStatus(xiiFmt("Asset package hash changed while prosessing dependencies from {} to {}", uiPackageHash, uiPackageHash2));
+      return xiiTransformStatus(xiiFmt("Asset package hash changed while processing dependencies from {} to {}.", uiPackageHash, uiPackageHash2));
     if (state != state2)
-      return xiiTransformStatus(xiiFmt("Asset state changed while prosessing dependencies from {} to {}", state, state2));
+      return xiiTransformStatus(xiiFmt("Asset state changed while processing dependencies from {} to {}.", state, state2));
   }
 #endif
 

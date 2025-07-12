@@ -188,7 +188,7 @@ xiiStatus xiiPrefabDefaultStateProvider::CreateRevertContainerDiff(SuperArray su
 
     prefabSubGraph.CreateDiffWithBaseGraph(instanceSubGraph, out_diff);
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   return xiiStatus(xiiFmt("The object was not found in the base prefab graph."));

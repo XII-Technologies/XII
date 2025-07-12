@@ -42,7 +42,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetValue(const xiiDocumentObject* pObje
           SetCurveCp(pObject, pProp, index, static_cast<xiiPropertyAnimTarget::Enum>((int)xiiPropertyAnimTarget::VectorX + c), fOldValue, fValue));
       }
 
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
     else if (type == xiiVariantType::Color)
     {
@@ -132,7 +132,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetValue(const xiiDocumentObject* pObje
                                          oldEuler[c].GetDegree(), newEuler[c].GetDegree()));
       }
 
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
 
     return xiiStatus(xiiFmt("The property '{0}' cannot be animated.", pProp->GetPropertyName()));
@@ -280,7 +280,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertCurveCp(const xiiUuid& track
       pHistory->ResumeTemporaryTransaction();
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiPropertyAnimObjectAccessor::SetColorCurveCp(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, const xiiColorGammaUB& oldValue, const xiiColorGammaUB& newValue)
@@ -294,7 +294,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetColorCurveCp(const xiiDocumentObject
 
   XII_SUCCEED_OR_RETURN(SetOrInsertColorCurveCp(track, newValue));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertColorCurveCp(const xiiUuid& track, const xiiColorGammaUB& value)
@@ -322,7 +322,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertColorCurveCp(const xiiUuid& 
       pHistory->ResumeTemporaryTransaction();
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiPropertyAnimObjectAccessor::SetAlphaCurveCp(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiUInt8 oldValue, xiiUInt8 newValue)
@@ -335,7 +335,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetAlphaCurveCp(const xiiDocumentObject
   });
 
   XII_SUCCEED_OR_RETURN(SetOrInsertAlphaCurveCp(track, newValue));
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertAlphaCurveCp(const xiiUuid& track, xiiUInt8 value)
@@ -361,7 +361,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertAlphaCurveCp(const xiiUuid& 
       pHistory->ResumeTemporaryTransaction();
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiPropertyAnimObjectAccessor::SetIntensityCurveCp(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, float oldValue, float newValue)
@@ -373,7 +373,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetIntensityCurveCp(const xiiDocumentOb
   });
 
   XII_SUCCEED_OR_RETURN(SetOrInsertIntensityCurveCp(track, newValue));
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertIntensityCurveCp(const xiiUuid& track, float value)
@@ -399,7 +399,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetOrInsertIntensityCurveCp(const xiiUu
       pHistory->ResumeTemporaryTransaction();
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiPropertyAnimObjectAccessor::SeparateColor(const xiiColor& color, xiiColorGammaUB& gamma, xiiUInt8& alpha, float& intensity)

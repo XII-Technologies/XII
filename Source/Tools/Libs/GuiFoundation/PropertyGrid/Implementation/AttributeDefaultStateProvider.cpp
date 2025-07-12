@@ -99,5 +99,5 @@ xiiStatus xiiAttributeDefaultStateProvider::CreateRevertContainerDiff(SuperArray
       XII_REPORT_FAILURE("Unreachable code");
       break;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

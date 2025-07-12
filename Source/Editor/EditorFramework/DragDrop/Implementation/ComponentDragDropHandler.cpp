@@ -28,14 +28,14 @@ void xiiComponentDragDropHandler::CreateDropObject(const xiiVec3& vPosition, con
 
   auto history = m_pDocument->GetCommandHistory();
 
-  XII_VERIFY(history->AddCommand(cmd).m_Result.Succeeded(), "AddCommand failed");
+  XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
 
   xiiSetObjectPropertyCommand cmd2;
   cmd2.m_Object = ObjectGuid;
 
   cmd2.m_sProperty = "LocalPosition";
   cmd2.m_NewValue  = vPos;
-  XII_VERIFY(history->AddCommand(cmd2).m_Result.Succeeded(), "AddCommand failed");
+  XII_VERIFY(history->AddCommand(cmd2).Succeeded(), "AddCommand failed");
 
   AttachComponentToObject(szType, szProperty, value, ObjectGuid);
 
@@ -55,7 +55,7 @@ void xiiComponentDragDropHandler::AttachComponentToObject(const char* szType, co
   cmd.m_Index           = -1;
   cmd.m_NewObjectGuid   = CmpGuid;
   cmd.m_Parent          = ObjectGuid;
-  XII_VERIFY(history->AddCommand(cmd).m_Result.Succeeded(), "AddCommand failed");
+  XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
 
   if (value.IsA<xiiVariantArray>())
   {
@@ -64,7 +64,7 @@ void xiiComponentDragDropHandler::AttachComponentToObject(const char* szType, co
     cmd2.m_sProperty = szProperty;
     cmd2.m_NewValue  = value.Get<xiiVariantArray>()[0];
     cmd2.m_Index     = 0;
-    XII_VERIFY(history->AddCommand(cmd2).m_Result.Succeeded(), "AddCommand failed");
+    XII_VERIFY(history->AddCommand(cmd2).Succeeded(), "AddCommand failed");
   }
   else
   {
@@ -72,7 +72,7 @@ void xiiComponentDragDropHandler::AttachComponentToObject(const char* szType, co
     cmd2.m_Object    = CmpGuid;
     cmd2.m_sProperty = szProperty;
     cmd2.m_NewValue  = value;
-    XII_VERIFY(history->AddCommand(cmd2).m_Result.Succeeded(), "AddCommand failed");
+    XII_VERIFY(history->AddCommand(cmd2).Succeeded(), "AddCommand failed");
   }
 }
 

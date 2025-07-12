@@ -40,7 +40,9 @@ bool xiiCrashHandler_WriteMiniDump::WriteOwnProcessMiniDump(void* pOsSpecificDat
 {
   xiiStatus res = xiiMiniDumpUtils::WriteOwnProcessMiniDump(m_sDumpFilePath, (_EXCEPTION_POINTERS*)pOsSpecificData);
   if (res.Failed())
-    xiiLog::Printf("WriteOwnProcessMiniDump failed: %s\n", res.m_sMessage.GetData());
+  {
+    xiiLog::Printf("WriteOwnProcessMiniDump failed: %s\n", res.GetMessageString().GetData());
+  }
   return res.Succeeded();
 }
 

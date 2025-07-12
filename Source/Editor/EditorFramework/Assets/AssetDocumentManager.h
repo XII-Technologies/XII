@@ -24,7 +24,7 @@ public:
 
   /// If this asset type has additional output files that need to be generated (like a texture atlas that combines outputs from multiple assets)
   /// this function should make sure those files are all generated and return the list of relative file paths (from the data directory root).
-  virtual xiiStatus GetAdditionalOutputs(xiiDynamicArray<xiiString>& ref_files) { return xiiStatus(XII_SUCCESS); }
+  virtual xiiStatus GetAdditionalOutputs(xiiDynamicArray<xiiString>& ref_files) { return XII_SUCCESS; }
 
   // xiiDocumentManager overrides:
 public:

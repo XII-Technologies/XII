@@ -89,7 +89,7 @@ xiiStatus xiiSceneObjectManager::InternalCanAdd(const xiiRTTI* pRtti, const xiiD
       //}
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiSceneObjectManager::InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const
@@ -108,7 +108,7 @@ xiiStatus xiiSceneObjectManager::InternalCanMove(const xiiDocumentObject* pObjec
   //  }
   //}
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiSceneObjectManager::InternalCanSelect(const xiiDocumentObject* pObject) const
@@ -118,7 +118,7 @@ xiiStatus xiiSceneObjectManager::InternalCanSelect(const xiiDocumentObject* pObj
     return xiiStatus(
       xiiFmt("Object of type '{0}' is not a 'xiiGameObject' and can't be selected.", pObject->GetTypeAccessor().GetType()->GetTypeName()));
   }*/
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 namespace

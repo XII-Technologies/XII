@@ -151,7 +151,7 @@ xiiStatus xiiDocumentManager::CanOpenDocument(xiiStringView sFilePath) const
   {
     if (DocumentTypes[i]->m_sFileExtension.IsEqual_NoCase(sExt))
     {
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
   }
 
@@ -191,18 +191,17 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
 
   Request r;
   r.m_Type                   = Request::Type::DocumentAllowedToOpen;
-  r.m_RequestStatus.m_Result = XII_SUCCESS;
   r.m_sDocumentType          = sDocumentTypeName;
   r.m_sDocumentPath          = sPath;
   s_Requests.Broadcast(r);
 
   // if for example no project is open, or not the correct one, then a document cannot be opened
-  if (r.m_RequestStatus.m_Result.Failed())
+  if (r.m_RequestStatus.Failed())
     return r.m_RequestStatus;
 
   out_pDocument = nullptr;
 
-  xiiStatus status;
+  xiiStatus status(XII_SUCCESS);
 
   xiiHybridArray<const xiiDocumentTypeDescriptor*, 4> DocumentTypes;
   GetSupportedDocumentTypes(DocumentTypes);
@@ -225,7 +224,7 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
           {
             if (OpenDocument(sDocumentTypeName, sPath, out_pDocument, flags, pOpenContext).Succeeded())
             {
-              return xiiStatus(XII_SUCCESS);
+              return XII_SUCCESS;
             }
           }
 
@@ -242,7 +241,7 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
       }
       out_pDocument->SetAddToResetFilesList(flags.IsSet(xiiDocumentFlags::AddToRecentFilesList));
 
-      if (status.m_Result.Succeeded())
+      if (status.Succeeded())
       {
         out_pDocument->SetupDocumentInfo(DocumentTypes[i]);
 
@@ -363,7 +362,7 @@ xiiStatus xiiDocumentManager::CloneDocument(xiiStringView sPath, xiiStringView s
       return xiiStatus(xiiFmt("Unable to open file '{0}' for writing!", sClonePath));
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiDocumentManager::InternalCloneDocument(xiiStringView sPath, xiiStringView sClonePath, const xiiUuid& documentId, const xiiUuid& seedGuid, const xiiUuid& cloneGuid, xiiAbstractObjectGraph* header, xiiAbstractObjectGraph* objects, xiiAbstractObjectGraph* types)

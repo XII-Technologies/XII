@@ -41,7 +41,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetValue(const xiiDocumentObject* 
     if (const xiiExposedParameter* pParam = GetExposedParam(pObject, index.Get<xiiString>()))
     {
       out_value = pParam->m_DefaultValue;
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
   }
   return res;
@@ -70,7 +70,7 @@ xiiStatus xiiExposedParameterCommandAccessor::RemoveValue(const xiiDocumentObjec
     // It this is one of the exposed params, pretend we removed it successfully to suppress error messages.
     if (const xiiExposedParameter* pParam = GetExposedParam(pObject, index.Get<xiiString>()))
     {
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
   }
   return res;
@@ -83,7 +83,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetCount(const xiiDocumentObject* 
     xiiHybridArray<xiiVariant, 16> keys;
     GetKeys(pObject, pProp, keys).AssertSuccess();
     out_iCount = keys.GetCount();
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   return xiiObjectProxyAccessor::GetCount(pObject, pProp, out_iCount);
 }
@@ -108,7 +108,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetKeys(const xiiDocumentObject* p
           out_keys.PushBack(key);
         }
       }
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
   }
   return xiiObjectProxyAccessor::GetKeys(pObject, pProp, out_keys);
@@ -125,7 +125,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetValues(const xiiDocumentObject*
       auto& var = out_values.ExpandAndGetRef();
       XII_VERIFY(GetValue(pObject, pProp, var, key).Succeeded(), "GetValue to valid a key should be not fail.");
     }
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   return xiiObjectProxyAccessor::GetValues(pObject, pProp, out_values);
 }

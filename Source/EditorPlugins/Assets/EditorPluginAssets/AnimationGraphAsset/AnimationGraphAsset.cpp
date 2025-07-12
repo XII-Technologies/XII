@@ -251,7 +251,7 @@ xiiStatus xiiAnimationGraphNodeManager::InternalCanConnect(const xiiPin& source,
     return xiiStatus("Connecting these pins would create a circle in the graph.");
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 bool xiiAnimationGraphNodeManager::InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const
