@@ -50,7 +50,7 @@ void xiiRenderPipelineContext::DestroyViewContext(xiiEngineProcessViewContext* p
 
 xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
 {
-  xiiDynamicArray<xiiRenderPipelinePassBase*>                    passes;
+  xiiDynamicArray<xiiRenderPipelinePassBase*>                passes;
   xiiDynamicArray<xiiExtractor*>                             extractors;
   xiiDynamicArray<xiiRenderPipelineResourceLoaderConnection> connections;
 

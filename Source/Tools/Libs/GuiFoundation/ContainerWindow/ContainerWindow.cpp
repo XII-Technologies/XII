@@ -414,7 +414,7 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
   m_DocumentWindows.PushBack(pDocWindow);
 
   xiiString         sDisplayName = pDocWindow->GetDisplayNameShort();
-  ads::CDockWidget* dock        = new ads::CDockWidget(m_pDockManager, xiiMakeQString(sDisplayName));
+  ads::CDockWidget* dock         = new ads::CDockWidget(m_pDockManager, xiiMakeQString(sDisplayName));
 
   dock->installEventFilter(pDocWindow);
   dock->setFeature(ads::CDockWidget::CustomCloseHandling, true);

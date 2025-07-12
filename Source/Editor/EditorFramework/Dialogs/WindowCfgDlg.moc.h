@@ -28,7 +28,7 @@ private:
   void LoadDescs();
   void SaveDescs();
 
-  xiiUInt8              m_uiCurDesc = 0;
+  xiiUInt8                     m_uiCurDesc = 0;
   xiiWindowCreationDescription m_Descs[2];
-  bool                  m_bOverrideProjectDefault[2];
+  bool                         m_bOverrideProjectDefault[2];
 };

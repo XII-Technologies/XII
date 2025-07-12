@@ -106,11 +106,11 @@ private:
   void AddImportedViaMenu(QMenu* pMenu);
   void GetSelectedImportableFiles(xiiDynamicArray<xiiString>& out_Files) const;
 
-  Mode                       m_Mode     = Mode::Browser;
-  xiiQtToolBarActionMapView* m_pToolbar = nullptr;
-  xiiString                  m_sAllTypesFilter;
+  Mode                                   m_Mode     = Mode::Browser;
+  xiiQtToolBarActionMapView*             m_pToolbar = nullptr;
+  xiiString                              m_sAllTypesFilter;
   QSharedPointer<xiiQtAssetBrowserModel> m_pModel  = nullptr;
-  xiiQtAssetBrowserFilter*   m_pFilter = nullptr;
+  xiiQtAssetBrowserFilter*               m_pFilter = nullptr;
 
   /// \brief After creating a new asset and renaming it, we want to open it as well.
   bool m_bOpenAfterRename = false;

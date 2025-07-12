@@ -184,7 +184,7 @@ void xiiRenderPipelinePassBase::ReadBackProperties(xiiView* pView)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiGraphicsPipelinePass::xiiGraphicsPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags):
+xiiGraphicsPipelinePass::xiiGraphicsPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags) :
   xiiRenderPipelinePassBase(sName, capabilityFlags)
 {
 }

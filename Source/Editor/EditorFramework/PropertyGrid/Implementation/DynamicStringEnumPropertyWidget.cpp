@@ -2,8 +2,8 @@
 
 #include <EditorFramework/Dialogs/EditDynamicEnumsDlg.moc.h>
 #include <EditorFramework/PropertyGrid/DynamicStringEnumPropertyWidget.moc.h>
-#include <GuiFoundation/UIServices/DynamicStringEnum.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
+#include <GuiFoundation/UIServices/DynamicStringEnum.h>
 
 xiiQtDynamicStringEnumPropertyWidget::xiiQtDynamicStringEnumPropertyWidget() :
   xiiQtStandardPropertyWidget()

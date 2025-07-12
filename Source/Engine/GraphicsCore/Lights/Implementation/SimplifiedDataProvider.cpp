@@ -23,7 +23,7 @@ xiiSimplifiedDataGPU::~xiiSimplifiedDataGPU()
 
 void xiiSimplifiedDataGPU::BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  #ifdef CORE_ENABLE
+#ifdef CORE_ENABLE
   xiiSharedPtr<xiiGALTextureView> hReflectionSpecularTextureView = xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   xiiSharedPtr<xiiGALTextureView> hSkyIrradianceTextureView      = xiiReflectionPool::GetSkyIrradianceTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
@@ -31,7 +31,7 @@ void xiiSimplifiedDataGPU::BindResources(xiiSharedPtr<xiiGALCommandList> pComman
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
 
   pRenderContext->BindConstantBuffer("xiiSimplifiedDataConstants", m_hConstantBuffer);
-  #endif
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -58,7 +58,7 @@ void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderVi
 
     pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
   }
-  #endif
+#endif
 
   return &m_Data;
 }

@@ -5,8 +5,8 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Math/BoundingBoxSphere.h>
 #include <Foundation/Memory/AllocatorWrapper.h>
-#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 
 using xiiMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiMeshBufferResource>;
 class xiiGeometry;
@@ -27,7 +27,7 @@ struct XII_GRAPHICSCORE_DLL xiiInputLayoutInfo
   void ComputeHash();
 
   xiiHybridArray<xiiVertexStreamInfo, 4U> m_VertexStreams;
-  xiiUInt32                              m_uiHash;
+  xiiUInt32                               m_uiHash;
 };
 
 struct XII_GRAPHICSCORE_DLL xiiMeshBufferResourceDescriptor

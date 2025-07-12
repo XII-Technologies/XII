@@ -177,7 +177,7 @@ xiiResult xiiGALGraphicsPipelineStateVulkan::InitPlatform()
     if (xiiSharedPtr<xiiGALBlendStateVulkan> pBlendStateVulkan = m_Description.m_GraphicsPipeline.m_pBlendState.Downcast<xiiGALBlendStateVulkan>())
     {
       vkPipelineColorBlendStateCreateInfo = *pBlendStateVulkan->GetBlendState();
-      pColorBlendAttachmentStates          = pBlendStateVulkan->GetBlendAttachmentStates();
+      pColorBlendAttachmentStates         = pBlendStateVulkan->GetBlendAttachmentStates();
     }
 
     xiiSharedPtr<xiiGALRenderPassVulkan> pRenderPassVulkan     = m_Description.m_GraphicsPipeline.m_pRenderPass.Downcast<xiiGALRenderPassVulkan>();

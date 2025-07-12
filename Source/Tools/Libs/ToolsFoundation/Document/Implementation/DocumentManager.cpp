@@ -190,9 +190,9 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
   }
 
   Request r;
-  r.m_Type                   = Request::Type::DocumentAllowedToOpen;
-  r.m_sDocumentType          = sDocumentTypeName;
-  r.m_sDocumentPath          = sPath;
+  r.m_Type          = Request::Type::DocumentAllowedToOpen;
+  r.m_sDocumentType = sDocumentTypeName;
+  r.m_sDocumentPath = sPath;
   s_Requests.Broadcast(r);
 
   // if for example no project is open, or not the correct one, then a document cannot be opened

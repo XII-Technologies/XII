@@ -453,7 +453,7 @@ void xiiClothSheetRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
 
 void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  #ifdef CORE_ENABLE
+#ifdef CORE_ENABLE
   const bool bNeedsNormals = (renderViewContext.m_pViewData->m_CameraUsageHint != xiiCameraUsageHint::Shadow);
 
   xiiRenderContext*  pRenderContext  = renderViewContext.m_pRenderContext;
@@ -578,7 +578,7 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer(uiNumPrimitives).IgnoreResult();
   }
-  #endif
+#endif
 }
 
 void xiiClothSheetRenderer::CreateVertexBuffer()

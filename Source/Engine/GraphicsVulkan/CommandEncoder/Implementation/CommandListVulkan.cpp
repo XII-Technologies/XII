@@ -2797,7 +2797,7 @@ void xiiGALCommandListVulkan::PrepareForDraw()
 
     for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
     {
-      VertexStreamDescription&         vertexStream        = m_VertexStreams[uiSlot];
+      VertexStreamDescription& vertexStream = m_VertexStreams[uiSlot];
 
       if (xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = vertexStream.m_pBuffer.Downcast<xiiGALBufferVulkan>())
       {

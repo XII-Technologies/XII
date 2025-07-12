@@ -271,7 +271,7 @@ void xiiQtSceneDocumentWindowBase::SendRedrawMsg()
   {
     xiiSimulationSettingsMsgToEngine msg;
     auto                             pSceneDocument = GetSceneDocument();
-    msg.m_bSimulateWorld                       = pSceneDocument->GetGameMode() != GameMode::Off;
+    msg.m_bSimulateWorld                            = pSceneDocument->GetGameMode() != GameMode::Off;
     msg.m_fSimulationSpeed                          = pSceneDocument->GetPauseSimulation() ? 0.0f : pSceneDocument->GetSimulationSpeed();
 
     if (msg.m_bSimulateWorld && pSceneDocument->GetStepSimulation())

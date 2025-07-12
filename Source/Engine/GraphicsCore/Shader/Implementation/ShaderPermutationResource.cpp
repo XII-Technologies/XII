@@ -2,8 +2,8 @@
 
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
-#include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
