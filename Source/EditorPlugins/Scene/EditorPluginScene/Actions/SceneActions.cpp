@@ -616,14 +616,10 @@ void xiiSceneAction::UpdateState()
     if (m_pSceneDocument->GetPauseSimulation())
     {
       SetIconPath(":/EditorPluginScene/Icons/SceneStep.svg");
-
-      SetAdditionalDisplayString("Step World", false);
     }
     else
     {
       SetIconPath(":/EditorPluginScene/Icons/ScenePause.svg");
-
-      SetAdditionalDisplayString("", false);
     }
 
     TriggerUpdate();
