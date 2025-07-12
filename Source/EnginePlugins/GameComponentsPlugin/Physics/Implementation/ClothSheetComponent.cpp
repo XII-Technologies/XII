@@ -621,6 +621,7 @@ void xiiClothSheetComponentManager::Initialize()
     auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiClothSheetComponentManager::Update, this);
     desc.m_Phase                     = xiiWorldUpdatePhase::Async;
     desc.m_bOnlyUpdateWhenSimulating = true;
+    desc.m_uiAsyncPhaseBatchSize     = 2U;
 
     this->RegisterUpdateFunction(desc);
   }
