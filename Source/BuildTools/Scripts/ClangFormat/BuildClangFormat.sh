@@ -2,20 +2,11 @@
 
 set -e
 
-# Detect Linux distribution
-if [ -f /etc/os-release ]; then
-  . /etc/os-release
-  DISTRO=$ID
-else
-  echo "Unable to detect Linux distribution."
-  exit 1
-fi
-
-# Define paths
-SRC_DIR="$HOME/src/llvm-project"
-BUILD_DIR="$HOME/build/llvm"
-TOOLS_DIR="$HOME/tools/precompiled"  # Customize this if needed
-INSTALL_DIR="$HOME/.local/llvm"      # Used only for optional PATH inclusion
+# Directories in the current working directory
+SRC_DIR="./llvm-project"
+BUILD_DIR="./llvm-build"
+TOOLS_DIR="./tools/precompiled"
+INSTALL_DIR="$HOME/.local/llvm"  # Optional for add_to_path
 
 # Clean up previous artifacts
 cleanup() {
@@ -23,10 +14,11 @@ cleanup() {
   rm -rf "$SRC_DIR" "$BUILD_DIR"
 }
 
-# Install required packages based on distro
+# Install dependencies per distro
 install_deps() {
-  echo "Installing dependencies for $DISTRO..."
-  case "$DISTRO" in
+  echo "Installing dependencies for $ID..."
+  source /etc/os-release
+  case "$ID" in
     fedora)
       sudo dnf install -y git cmake ninja-build gcc-c++ python3 ncurses-devel zlib-devel
       ;;
@@ -38,7 +30,7 @@ install_deps() {
       sudo apt install -y git cmake ninja-build build-essential python3 libncurses5-dev zlib1g-dev
       ;;
     *)
-      echo "Unsupported distro: $DISTRO"
+      echo "Unsupported distro: $ID"
       exit 1
       ;;
   esac
@@ -62,16 +54,16 @@ build_clang_format() {
   ninja -C "$BUILD_DIR" clang-format
 }
 
-# Package built binary externally
+# Copy the binary out for packaging
 package_binary() {
-  echo "Copying clang-format to external tools directory..."
+  echo "Copying clang-format to $TOOLS_DIR..."
   mkdir -p "$TOOLS_DIR"
   cp "$BUILD_DIR/bin/clang-format" "$TOOLS_DIR/"
 }
 
-# Optionally add to shell PATH
+# Optionally add to PATH
 add_to_path() {
-  echo "Updating PATH variable with optional install location..."
+  echo "Adding clang-format to PATH at $INSTALL_DIR/bin..."
   mkdir -p "$INSTALL_DIR/bin"
   cp "$BUILD_DIR/bin/clang-format" "$INSTALL_DIR/bin/"
   if ! grep -q "$INSTALL_DIR/bin" "$HOME/.bashrc"; then
@@ -86,7 +78,7 @@ install_deps
 build_clang_format
 package_binary
 
-# Optional: uncomment to make clang-format easily available in shell
+# To enable direct CLI usage, uncomment the following line:
 # add_to_path
 
-echo "clang-format binary is packaged in: $TOOLS_DIR"
+echo "clang-format binary is now in: $TOOLS_DIR/clang-format"
