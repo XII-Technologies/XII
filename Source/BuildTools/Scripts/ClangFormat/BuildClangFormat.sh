@@ -39,7 +39,7 @@ install_deps() {
 # Clone and build clang-format
 build_clang_format() {
   echo "Cloning LLVM source..."
-  git clone https://github.com/llvm/llvm-project.git "$SRC_DIR"
+  git clone --depth=1 https://github.com/llvm/llvm-project.git "$SRC_DIR"
 
   echo "Configuring build..."
   cmake -G Ninja \
