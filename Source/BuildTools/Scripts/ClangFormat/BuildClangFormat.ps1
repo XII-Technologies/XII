@@ -20,7 +20,7 @@ function Cleanup {
 
 function Build-ClangFormat {
   Write-Host "Cloning LLVM source..."
-  git clone https://github.com/llvm/llvm-project.git $SrcDir
+  git clone --depth=1 https://github.com/llvm/llvm-project.git $SrcDir
 
   if (Get-Command ninja.exe -ErrorAction SilentlyContinue) {
     $gen = "Ninja"; $arch = ""
