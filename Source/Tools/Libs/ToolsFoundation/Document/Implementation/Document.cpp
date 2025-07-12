@@ -60,7 +60,6 @@ xiiDocument::xiiDocument(xiiStringView sPath, xiiDocumentObjectManager* pDocumen
 {
   using ObjectMetaData     = xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>;
   m_DocumentObjectMetaData = XII_DEFAULT_NEW(ObjectMetaData);
-  m_pDocumentInfo          = nullptr;
   m_sDocumentPath          = sPath;
   m_pObjectManager         = xiiUniquePtr<xiiDocumentObjectManager>(pDocumentObjectManagerImpl, xiiFoundation::GetDefaultAllocator());
   m_pObjectManager->SetDocument(this);
@@ -71,13 +70,6 @@ xiiDocument::xiiDocument(xiiStringView sPath, xiiDocumentObjectManager* pDocumen
   {
     m_pObjectAccessor = XII_DEFAULT_NEW(xiiObjectCommandAccessor, m_pCommandHistory.Borrow());
   }
-
-  m_bWindowRequested      = false;
-  m_bModified             = true;
-  m_bReadOnly             = false;
-  m_bAddToRecentFilesList = true;
-
-  m_uiUnknownObjectTypeInstances = 0;
 
   m_pHostDocument      = this;
   m_pActiveSubDocument = this;

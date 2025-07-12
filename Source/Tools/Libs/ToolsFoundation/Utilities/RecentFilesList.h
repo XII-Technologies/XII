@@ -29,7 +29,7 @@ public:
   /// \brief Returns all files in the list.
   const xiiDeque<RecentFile>& GetFileList() const { return m_Files; }
 
-  /// \brief Clears the list
+  /// \brief Clears the list.
   void Clear() { m_Files.Clear(); }
 
   /// \brief Saves the recent files list to the given file. Uses a simple text file format (one line per item).

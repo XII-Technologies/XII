@@ -6,6 +6,7 @@
 class xiiDocument;
 struct xiiDocumentObjectStructureEvent;
 
+/// \brief Event describing changes to the selection in the selection manager.
 struct xiiSelectionManagerEvent
 {
   enum class Type
@@ -32,9 +33,10 @@ struct xiiSelectionEntry
 class XII_TOOLSFOUNDATION_DLL xiiSelectionManager
 {
 public:
+  /// \brief Event that is broadcast when the selection changes.
   xiiCopyOnBroadcastEvent<const xiiSelectionManagerEvent&> m_Events;
 
-  // \brief Storage for the selection so it can be swapped when using multiple sub documents.
+  /// \brief Storage for the selection so it can be swapped when using multiple sub documents.
   class Storage : public xiiRefCounted
   {
   public:
