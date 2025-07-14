@@ -4,6 +4,7 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/Renderer.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelinePassCapabilityFlags, 1)
@@ -193,10 +194,10 @@ xiiGraphicsPipelinePass::~xiiGraphicsPipelinePass() = default;
 
 void xiiGraphicsPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
 {
-  xiiGALScopedDebugGroup renderGroup(renderViewContext.m_pCommandList, xiiRenderData::GetCategoryName(category));
+  xiiGALScopedDebugGroup renderGroup(renderViewContext.m_pRenderContext->GetCommandList(), xiiRenderData::GetCategoryName(category));
 
-  auto            batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(category, filter);
-  const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
+  xiiRenderDataBatchList batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(category, filter);
+  const xiiUInt32        uiBatchCount = batchList.GetBatchCount();
 
   for (xiiUInt32 i = 0U; i < uiBatchCount; ++i)
   {

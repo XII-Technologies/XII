@@ -21,6 +21,7 @@
 #include <GraphicsCore/Rasterizer/RasterizerView.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 xiiCVarBool xiiRenderPipeline::cvar_SpatialCullingVis("Spatial.Culling.Vis", false, xiiCVarFlags::Default, "Enables debug visualization of visibility culling");
@@ -1173,23 +1174,23 @@ void xiiRenderPipeline::Render()
   static xiiHashedString sFalse            = xiiMakeHashedString("FALSE");
 
   if (pCamera->IsOrthographic())
-    renderViewContext.SetShaderPermutationVariable(sCameraMode, sOrtho);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sOrtho);
   else if (pCamera->IsStereoscopic())
-    renderViewContext.SetShaderPermutationVariable(sCameraMode, sStereo);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sStereo);
   else
-    renderViewContext.SetShaderPermutationVariable(sCameraMode, sPerspective);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
 
   if (pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled)
-    renderViewContext.SetShaderPermutationVariable(sVSRTAI, sTrue);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
   else
-    renderViewContext.SetShaderPermutationVariable(sVSRTAI, sFalse);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sVSRTAI, sFalse);
 
-  renderViewContext.SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
   // Also set pipeline specific permutation variables.
   for (auto& permutationVariable : m_PermutationVariables)
   {
-    renderViewContext.SetShaderPermutationVariable(permutationVariable.m_sName, permutationVariable.m_sValue);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(permutationVariable.m_sName, permutationVariable.m_sValue);
   }
 
   xiiRenderWorldRenderEvent renderEvent;

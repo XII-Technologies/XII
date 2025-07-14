@@ -254,7 +254,7 @@ public:
   };
 
   /// \brief Returns the command list in use by this render context.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandList* GetCommandList() const { return m_pCommandList.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALCommandList> GetCommandList() const { return m_pCommandList; }
 
   /// \brief Returns the current render context scope.
   [[nodiscard]] XII_ALWAYS_INLINE RenderContextScope GetRenderContextScope() const { return m_RenderContextScope; }

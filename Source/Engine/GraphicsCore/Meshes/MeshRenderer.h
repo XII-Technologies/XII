@@ -21,6 +21,6 @@ public:
   virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
 protected:
-  virtual void SetAdditionalData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiMeshRenderData* pRenderData) const;
+  virtual void SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const;
   virtual void FillPerInstanceData(xiiArrayPtr<xiiPerInstanceData> pInstanceData, const xiiRenderDataBatch& batch, xiiUInt32 uiStartIndex, xiiUInt32& out_uiFilteredCount) const;
 };

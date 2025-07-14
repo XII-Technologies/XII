@@ -9,7 +9,6 @@
 #  include <GraphicsCore/Pipeline/View.h>
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Shader/ShaderResource.h>
-#  include <GraphicsCore/Utils/CommandListUtilities.h>
 #  include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #  include <GraphicsFoundation/Device/Device.h>
 #  include <GraphicsFoundation/Resources/Buffer.h>
