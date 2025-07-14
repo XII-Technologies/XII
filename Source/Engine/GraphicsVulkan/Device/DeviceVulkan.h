@@ -77,7 +77,7 @@ public:
   };
 
 public:
-  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
@@ -204,6 +204,7 @@ protected:
   virtual void EndFramePlatform() override final;
 
   virtual xiiInternal::NewInstance<xiiGALSwapChain>                 CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALCommandList>                 CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALBlendState>                CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALDepthStencilState>         CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALRasterizerState>           CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) override final;

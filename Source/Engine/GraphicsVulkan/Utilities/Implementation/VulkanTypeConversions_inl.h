@@ -707,23 +707,23 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALShadingRateFlags> xiiVulkanTypeConversions::
   return static_cast<xiiGALShadingRateFlags::Enum>((x << XII_GAL_SHADING_RATE_X_SHIFT) | y);
 }
 
-XII_ALWAYS_INLINE xiiBitflags<xiiGALCommandQueueType> xiiVulkanTypeConversions::GetGALCommandQueueType(vk::QueueFlags e)
+XII_ALWAYS_INLINE xiiBitflags<xiiGALCommandQueueFlags> xiiVulkanTypeConversions::GetGALCommandQueueFlags(vk::QueueFlags e)
 {
-  xiiBitflags<xiiGALCommandQueueType> queueType;
+  xiiBitflags<xiiGALCommandQueueFlags> queueFlags;
 
   if (e & vk::QueueFlagBits::eSparseBinding)
-    queueType |= xiiGALCommandQueueType::SparseBinding;
+    queueFlags |= xiiGALCommandQueueFlags::SparseBinding;
 
   if (e & vk::QueueFlagBits::eGraphics)
-    return queueType | xiiGALCommandQueueType::Graphics;
+    return queueFlags | xiiGALCommandQueueFlags::Graphics;
 
   if (e & vk::QueueFlagBits::eCompute)
-    return queueType | xiiGALCommandQueueType::Compute;
+    return queueFlags | xiiGALCommandQueueFlags::Compute;
 
   if (e & vk::QueueFlagBits::eTransfer)
-    return queueType | xiiGALCommandQueueType::Transfer;
+    return queueFlags | xiiGALCommandQueueFlags::Transfer;
 
-  return xiiGALCommandQueueType::Unknown;
+  return xiiGALCommandQueueFlags::None;
 }
 
 XII_ALWAYS_INLINE vk::SurfaceTransformFlagsKHR xiiVulkanTypeConversions::GetSurfaceTransform(xiiGALSurfaceTransform::Enum e)

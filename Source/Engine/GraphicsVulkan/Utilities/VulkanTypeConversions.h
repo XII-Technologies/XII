@@ -69,7 +69,7 @@ public:
   static vk::Extent2D                        ShadingRateToFragmentSize(xiiBitflags<xiiGALShadingRateFlags> e);
   static xiiBitflags<xiiGALShadingRateFlags> FragmentSizeToShadingRate(vk::Extent2D e);
 
-  static xiiBitflags<xiiGALCommandQueueType> GetGALCommandQueueType(vk::QueueFlags e);
+  static xiiBitflags<xiiGALCommandQueueFlags> GetGALCommandQueueFlags(vk::QueueFlags e);
 
   static vk::SurfaceTransformFlagsKHR GetSurfaceTransform(xiiGALSurfaceTransform::Enum e);
   static xiiGALSurfaceTransform::Enum GetGALSurfaceTransform(vk::SurfaceTransformFlagsKHR e);

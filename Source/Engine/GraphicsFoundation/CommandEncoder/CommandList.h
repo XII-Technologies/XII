@@ -739,9 +739,6 @@ public:
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListCreationDescription& GetDescription() const { return m_Description; };
 
-  /// \brief This returns the command queue for this object.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueue* GetCommandQueue() const { return m_pCommandQueue; };
-
   /// \brief This returns the active pipeline state handle for this object.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALPipelineState> GetPipelineState() const { return m_pPipelineState; };
 
@@ -1237,9 +1234,11 @@ protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandList();
+
+  virtual xiiResult InitPlatform() = 0;
 
   void ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box);
   void ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData);
@@ -1345,8 +1344,6 @@ protected:
   static constexpr xiiUInt32 s_uiDrawMeshIndirectCommandStride = sizeof(xiiUInt32) * 3; // Vulkan: 8 bytes (task count, first task), D3D12: 12 bytes (x, y, z dimension).
 
   xiiGALCommandListCreationDescription m_Description;
-
-  xiiGALCommandQueue* m_pCommandQueue;
 
   RecordingState m_RecordingState = RecordingState::Reset;
   const bool     m_bNativeMultiDrawSupported;

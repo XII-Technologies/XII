@@ -1187,7 +1187,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_GraphicsQueueInformation);
       m_pGraphicsCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
 
@@ -1200,7 +1200,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_uiQueueIndex, &m_ComputeQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Compute};
       m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_ComputeQueueInformation);
       m_pComputeCommandQueueQueryPool                        = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
 
@@ -1213,7 +1213,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_uiQueueIndex, &m_TransferQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Transfer};
       m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_TransferQueueInformation);
       m_pTransferCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
 
@@ -1282,18 +1282,15 @@ void xiiGALDeviceVulkan::EndFramePlatform()
   m_pDeferredDeletionQueue->ReleaseResources();
 }
 
-xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
+xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (((queueType & xiiGALCommandQueueType::Graphics) == xiiGALCommandQueueType::Graphics))
-    return m_pGraphicsCommandQueue.Borrow();
-
-  if (((queueType & xiiGALCommandQueueType::Compute) == xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
-    return m_pComputeCommandQueue.Borrow();
-
-  if (((queueType & xiiGALCommandQueueType::Transfer) == xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
 
-  return GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+    return m_pComputeCommandQueue.Borrow();
+
+  return GetDefaultCommandQueue(xiiGALCommandQueueFlags::Graphics);
 }
 
 void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName) const
@@ -1314,6 +1311,19 @@ xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceVulkan::CreateSwapChainPla
   }
 
   return pSwapChainVulkan;
+}
+
+xiiInternal::NewInstance<xiiGALCommandList> xiiGALDeviceVulkan::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALCommandListVulkan> pCommandListVulkan = XII_NEW(&m_Allocator, xiiGALCommandListVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+
+  if (pCommandListVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pCommandListVulkan.m_pAllocator, pCommandListVulkan.m_pInstance);
+    return nullptr;
+  }
+
+  return pCommandListVulkan;
 }
 
 xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceVulkan::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -2053,7 +2063,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       const vk::QueueFamilyProperties& sourceQueue      = m_PhysicalDeviceQueueFamilyProperties[uiQueueIndex];
       xiiGALCommandQueueProperties&    destinationQueue = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
 
-      destinationQueue.m_Type                      = xiiVulkanTypeConversions::GetGALCommandQueueType(sourceQueue.queueFlags);
+      destinationQueue.m_Flags                      = xiiVulkanTypeConversions::GetGALCommandQueueFlags(sourceQueue.queueFlags);
       destinationQueue.m_uiMaxDeviceContexts       = sourceQueue.queueCount;
       destinationQueue.m_TextureCopyGranularity[0] = sourceQueue.minImageTransferGranularity.width;
       destinationQueue.m_TextureCopyGranularity[1] = sourceQueue.minImageTransferGranularity.height;
@@ -2872,7 +2882,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
     // Release only resources that are not in use.
     for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
     {
-      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics)->GetCompletedFenceValue();
+      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
 
       if (it->m_uiFenceValue <= uiCompletedFenceValue)
       {

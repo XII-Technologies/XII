@@ -104,9 +104,11 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListVulkan();
+
+  virtual xiiResult InitPlatform() override final;
 
 protected:
   virtual void BeginPlatform() override final;
@@ -291,8 +293,6 @@ private:
     xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>> m_pBoundUnorderedAccessTextureResourceViews;
     xiiDynamicArray<xiiSharedPtr<xiiGALSamplerVulkan>>     m_pBoundSamplerStates;
   };
-
-  xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool;
 
   vk::CommandBuffer             m_vkCommandBuffer;
   CommandListState              m_CommandListState;

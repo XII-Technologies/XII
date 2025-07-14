@@ -485,8 +485,17 @@ void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore, xiiUIn
   m_vkSignalSemaphoreValues.PushBack(uiValue); // Ignored for binary semaphore.
 }
 
-xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(std::move(pDeviceVulkan), pCommandQueueVulkan, creationDescription), m_pCommandBufferPool(pCommandBufferPool), m_vkCommandBuffer(m_pCommandBufferPool->RequestCommandBuffer())
+xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(std::move(pDeviceVulkan), creationDescription)
+{
+}
+
+xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
+{
+  Reset();
+}
+
+xiiResult xiiGALCommandListVulkan::InitPlatform()
 {
   m_pDynamicBufferPoolVulkan = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALDynamicBufferPoolVulkan, static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow()), 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
   m_pUploadStagingBufferPool = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALStagingBufferPoolVulkan, static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow()), 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
@@ -503,11 +512,10 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan
 
     m_pNullVertexBuffer = pNullVertexBuffer.Downcast<xiiGALBufferVulkan>();
   }
-}
 
-xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
-{
-  Reset();
+  m_vkCommandBuffer = VK_NULL_HANDLE; ///< \todo request command buffer.
+
+  return XII_SUCCESS;
 }
 
 void xiiGALCommandListVulkan::BeginPlatform()

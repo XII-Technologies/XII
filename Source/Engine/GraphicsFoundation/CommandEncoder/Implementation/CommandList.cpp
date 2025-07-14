@@ -102,10 +102,9 @@ namespace
   }
 } // namespace
 
-xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_pCommandQueue(pCommandQueue), m_bNativeMultiDrawSupported{m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_NativeMultiDraw != xiiGALDeviceFeatureState::Disabled}
+xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_bNativeMultiDrawSupported{m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_NativeMultiDraw != xiiGALDeviceFeatureState::Disabled}
 {
-  XII_ASSERT_DEV(m_pCommandQueue != nullptr, "Invalid command queue provided.");
 }
 
 xiiGALCommandList::~xiiGALCommandList() = default;
