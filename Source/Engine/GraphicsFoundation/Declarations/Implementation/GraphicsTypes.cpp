@@ -505,13 +505,13 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALValidationFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALValidationFlags::CheckShaderBufferSize),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALCommandQueueType, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueType::Unknown),
-  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueType::Transfer),
-  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueType::Compute),
-  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueType::Graphics),
-  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueType::SparseBinding),
-  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueType::PrimaryType),
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALCommandQueueFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::Transfer),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::Compute),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::Graphics),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::SparseBinding),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::PrimaryType),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCommandQueuePriority, 1)

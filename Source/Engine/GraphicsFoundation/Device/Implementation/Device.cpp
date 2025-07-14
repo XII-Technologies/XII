@@ -391,7 +391,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
 
   if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
   {
-    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Transfer | xiiGALCommandQueueType::SparseBinding), "Cannot initialize the buffer with the given command list queue type. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer | xiiGALCommandQueueFlags::SparseBinding), "Cannot initialize the buffer with the given command list queue flags. Only Graphics, Transfer, and Sparse Binding queues are supported.");
   }
 
   if (bHasInitialData)
@@ -611,7 +611,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
 
   if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
   {
-    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Transfer | xiiGALCommandQueueType::SparseBinding), "Cannot initialize the texture with the given command list queue type. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer | xiiGALCommandQueueFlags::SparseBinding), "Cannot initialize the texture with the given command list queue flags. Only Graphics, Transfer, and Sparse Binding queues are supported.");
   }
 
   xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData);

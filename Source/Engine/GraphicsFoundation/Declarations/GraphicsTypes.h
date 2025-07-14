@@ -1146,13 +1146,13 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALValidationFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALValidationFlags);
 
 /// \brief This describes the command queue type.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueFlags
 {
   using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown       = 0U,                    ///< Queue type is unknown.
+    None       = 0U,                    ///< Queue flags are unknown.
     Transfer      = XII_BIT(0),            ///< Command queue that only supports memory transfer operations.
     Compute       = XII_BIT(1) | Transfer, ///< Command queue that supports compute, ray tracing and transfer commands.
     Graphics      = XII_BIT(2) | Compute,  ///< Command queue that supports graphics, compute, ray tracing and transfer commands.
@@ -1160,7 +1160,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
 
     PrimaryType = Transfer | Compute | Graphics, ///< Mask to extract primary command queue type.
 
-    Default = Unknown
+    Default = None
   };
 
   struct Bits
@@ -1174,9 +1174,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
   };
 };
 
-XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandQueueType);
+XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandQueueFlags);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueueType);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueueFlags);
 
 /// \brief This describes the queue priority.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueuePriority

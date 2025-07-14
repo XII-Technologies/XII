@@ -215,7 +215,7 @@ public:
   /// \param queueType - The queue type that has the required feature.
   ///
   /// \note The default graphics queue is guaranteed to exist, for a successful device initialization.
-  [[nodiscard]] virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType = xiiGALCommandQueueType::Graphics) const = 0;
+  [[nodiscard]] virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Graphics) const = 0;
 
   /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
   [[nodiscard]] const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;

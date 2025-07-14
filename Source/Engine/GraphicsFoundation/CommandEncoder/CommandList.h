@@ -709,19 +709,24 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListStatistics
 /// \brief Describes the parameters for creating a GAL command list.
 ///
 /// This structure is used to configure a command list in the Graphics Abstraction Layer (GAL).
-/// It defines which queue the command list will run on and how it behaves in terms of submission and encoding.
+/// It defines which queue capabilities this command list targets and how it behaves in terms of submission and encoding.
+///
+/// The queue flags represent the functional domains this command list is allowed to access (e.g., graphics, compute, copy), which are used to validate command recording.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public xiiHashableStruct<xiiGALCommandListCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Specifies the command queue type associated with this command list.
+  /// \brief Specifies the functional capabilities required by this command list.
   ///
-  /// This determines the hardware queue (e.g., graphics, compute, copy) on which the command list is executed.
-  xiiBitflags<xiiGALCommandQueueType> m_QueueType = xiiGALCommandQueueType::Unknown;
+  /// This bitmask defines which domains the command list can operate in (such as graphics, compute, or copy), and is used to validate that recorded commands are compatible with the submission queue.
+  ///
+  /// For example, command lists with graphics draw calls must declare support for the Graphics flag.
+  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags = xiiGALCommandQueueFlags::None;
 
-  /// \brief Flags controlling command list behavior.
+  /// \brief Flags controlling command list submission and recording behavior.
   ///
-  /// Determines whether the command list is secondary, supports multiple submissions, or is immediately submitted after recording.
+  /// These flags define whether the command list is secondary, supports multiple submissions, or is immediately submitted after encoding.
+  /// Use these flags to optimize command list lifetimes and submission patterns.
   xiiBitflags<xiiGALCommandListFlags> m_Flags = xiiGALCommandListFlags::None;
 };
 
@@ -1239,7 +1244,7 @@ protected:
   void ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box);
   void ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData);
 
-  bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const;
+  bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, const char* szParameterName) const;
   bool VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const;
 
   void VerifyBufferState(xiiGALBuffer* pBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
