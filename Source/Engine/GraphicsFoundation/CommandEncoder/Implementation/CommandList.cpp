@@ -3,9 +3,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Fence.h>
-#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
@@ -14,6 +12,13 @@
 #include <Foundation/Utilities/Stats.h>
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALCommandListFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::Secondary),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::MultiSubmit),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::ImmediateSubmit),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSetVertexBufferFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::Reset),

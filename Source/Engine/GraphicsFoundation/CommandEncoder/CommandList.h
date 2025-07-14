@@ -10,6 +10,36 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
+/// \brief Specifies flags for configuring the behavior of a GAL command list.
+///
+/// This enum encapsulates flags used when creating or modifying command list behavior within the Graphics Abstraction Layer (GAL).
+/// These flags determine how a command list can be recorded, submitted, and reused in a rendering pipeline.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None            = 0U,         ///< No flags set. Creates a primary command list with single-use behavior.
+    Secondary       = XII_BIT(0), ///< Command list is secondary and must be executed through a primary list. Limited commands allowed.
+    MultiSubmit     = XII_BIT(1), ///< Command list may be submitted multiple times without re-recording.
+    ImmediateSubmit = XII_BIT(2), ///< Command list is automatically submitted upon recording completion. Cannot be reused.
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType Secondary : 1;
+    StorageType MultiSubmit : 1;
+    StorageType ImmediateSubmit : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandListFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandListFlags);
+
 /// \brief This describes the pipeline state shading rate flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
 {
@@ -676,12 +706,23 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListStatistics
   }
 };
 
-/// \brief This describes the command list creation description.
+/// \brief Describes the parameters for creating a GAL command list.
+///
+/// This structure is used to configure a command list in the Graphics Abstraction Layer (GAL).
+/// It defines which queue the command list will run on and how it behaves in terms of submission and encoding.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public xiiHashableStruct<xiiGALCommandListCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiBitflags<xiiGALCommandQueueType> m_QueueType = xiiGALCommandQueueType::Unknown; ///< The command queue type that this command list uses.
+  /// \brief Specifies the command queue type associated with this command list.
+  ///
+  /// This determines the hardware queue (e.g., graphics, compute, copy) on which the command list is executed.
+  xiiBitflags<xiiGALCommandQueueType> m_QueueType = xiiGALCommandQueueType::Unknown;
+
+  /// \brief Flags controlling command list behavior.
+  ///
+  /// Determines whether the command list is secondary, supports multiple submissions, or is immediately submitted after recording.
+  xiiBitflags<xiiGALCommandListFlags> m_Flags = xiiGALCommandListFlags::None;
 };
 
 /// \brief Interface that defines methods to manipulate a command list object.
