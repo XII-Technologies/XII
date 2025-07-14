@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -54,11 +55,11 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
   if (pRenderData->m_uiFlipWinding)
   {
-    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
   }
   else
   {
-    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
   }
 
 #ifdef CORE_ENABLE
@@ -117,11 +118,10 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 #endif
 }
 
-void xiiMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiMeshRenderData* pRenderData) const
+void xiiMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const
 {
-  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
 
-  XII_IGNORE_UNUSED(pCommandList);
   XII_IGNORE_UNUSED(pRenderData);
 }
 

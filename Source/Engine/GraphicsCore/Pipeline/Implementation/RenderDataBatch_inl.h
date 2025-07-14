@@ -48,6 +48,7 @@ XII_FORCE_INLINE xiiRenderDataBatch::Iterator<T>::Iterator(const SortableRenderD
   m_Filter(filter)
 {
   const SortableRenderData* pCurrent = pStart;
+
   if (m_Filter.IsValid())
   {
     while (pCurrent < pEnd && m_Filter(pCurrent->m_pRenderData))

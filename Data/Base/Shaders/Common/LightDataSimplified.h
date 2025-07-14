@@ -1,6 +1,6 @@
 #pragma once
 
-#if SHADING_QUALITY != SHADING_QUALITY_SIMPLIFIED
+#if SHADING_QUALITY != SHADING_QUALITY_LOW
 #  error "Functions in LightDataSimplified.h are only for SIMPLIFIED shading quality. Include LightData.h instead."
 #endif
 

@@ -24,6 +24,13 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSourceFormat, 1)
   XII_ENUM_CONSTANT(xiiSourceFormat::BC6H_RGB_Float),
   XII_ENUM_CONSTANT(xiiSourceFormat::BC7_RGBA),
 XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1)
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Low),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Medium),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::High),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Ultra),
+XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 // static
@@ -71,45 +78,4 @@ xiiGALResourceFormat::Enum xiiSourceFormat::GetGALResourceFormat(xiiSourceFormat
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return xiiGALResourceFormat::Unknown;
-}
-
-void xiiRenderViewContext::SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue) const
-{
-  xiiTempHashedString sHashedName(szName);
-
-  xiiHashedString sName, sValue;
-  if (xiiGALShaderManager::IsPermutationValueAllowed(szName, sHashedName, sTempValue, sName, sValue))
-  {
-    SetShaderPermutationVariableInternal(sName, sValue);
-  }
-}
-
-void xiiRenderViewContext::SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue) const
-{
-  xiiTempHashedString sHashedName(sName);
-
-  xiiHashedString sName0, sValue;
-  if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sHashedName, sTempValue, sName0, sValue))
-  {
-    SetShaderPermutationVariableInternal(sName0, sValue);
-  }
-}
-
-void xiiRenderViewContext::SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue) const
-{
-  if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sValue))
-  {
-    SetShaderPermutationVariableInternal(sName, sValue);
-  }
-}
-
-void xiiRenderViewContext::SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue) const
-{
-  xiiHashedString* pOldValue = nullptr;
-  m_PermutationVariables.TryGetValue(sName, pOldValue);
-
-  if (pOldValue == nullptr || *pOldValue != sValue)
-  {
-    m_PermutationVariables.Insert(sName, sValue);
-  }
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#if SHADING_QUALITY != SHADING_QUALITY_NORMAL
+#if SHADING_QUALITY != SHADING_QUALITY_MEDIUM
 #  error "Functions in Lighting.h are only for QUALITY_NORMAL shading quality. Todo: Split up file"
 #endif
 

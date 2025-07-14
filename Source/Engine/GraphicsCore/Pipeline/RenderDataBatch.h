@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 
-class xiiRenderDataBatch
+class  xiiRenderDataBatch
 {
 private:
   struct SortableRenderData
@@ -50,7 +50,7 @@ public:
   const T* GetFirstData() const;
 
   template <typename T>
-  Iterator<T> GetIterator(xiiUInt32 uiStartIndex = 0, xiiUInt32 uiCount = xiiInvalidIndex) const;
+  Iterator<T> GetIterator(xiiUInt32 uiStartIndex = 0U, xiiUInt32 uiCount = xiiInvalidIndex) const;
 
 private:
   friend class xiiExtractedRenderData;
@@ -60,7 +60,7 @@ private:
   xiiArrayPtr<SortableRenderData> m_Data;
 };
 
-class xiiRenderDataBatchList
+class XII_GRAPHICSCORE_DLL xiiRenderDataBatchList
 {
 public:
   xiiUInt32 GetBatchCount() const;

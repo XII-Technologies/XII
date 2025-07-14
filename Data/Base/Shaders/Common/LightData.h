@@ -2,7 +2,7 @@
 
 // clang-format off
 
-#if SHADING_QUALITY != SHADING_QUALITY_NORMAL
+#if SHADING_QUALITY != SHADING_QUALITY_MEDIUM
 #  error "Functions in LightData.h are only for NORMAL shading quality. Todo: Split up file"
 #endif
 
