@@ -166,6 +166,22 @@ xiiSharedPtr<xiiGALSwapChain> xiiGALDevice::CreateSwapChain(const xiiGALSwapChai
   return CreateSwapChainPlatform(description);
 }
 
+xiiSharedPtr<xiiGALCommandList> xiiGALDevice::CreateCommandList(const xiiGALCommandListCreationDescription& description)
+{
+  VerifyMultithreadedAccess();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const bool bSecondary       = description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
+  const bool bMultiSubmit     = description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit);
+  const bool bImmediateSubmit = description.m_Flags.IsSet(xiiGALCommandListFlags::ImmediateSubmit);
+
+  // ImmediateSubmit is mutually exclusive.
+  XII_GAL_DEVICE_CHECK(!(bImmediateSubmit && (bSecondary || bMultiSubmit)), "ImmediateSubmit flag cannot be combined with Secondary or MultiSubmit flags.");
+#endif
+
+  return CreateCommandListPlatform(description);
+}
+
 xiiSharedPtr<xiiGALBlendState> xiiGALDevice::CreateBlendState(const xiiGALBlendStateCreationDescription& description)
 {
   VerifyMultithreadedAccess();
