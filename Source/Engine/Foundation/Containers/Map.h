@@ -171,21 +171,20 @@ public:
   }
 };
 
-/// \brief An associative container. Similar to STL::map
+/// \brief A red-black tree–based associative container for key/value pairs.
 ///
-/// A map allows to store key/value pairs. This in turn allows to search for values by looking them
-/// up with a certain key. Key/Value pairs can also be erased again.
-/// All insertion/erasure/lookup functions take O(log n) time. The map is implemented using a balanced tree
-/// (a red-black tree), which means the order of insertions/erasures is not important, since it can never
-/// create a degenerated tree, and performance will always stay the same.\n
-/// \n
-/// KeyType is the key type. For example a string.\n
-/// ValueType is the value type. For example int.\n
-/// Comparer is a helper class that implements a strictly weak-ordering comparison for Key types.
+/// This container provides efficient storage and lookup of elements by key, similar to \c std::map.
+/// It supports dynamic insertion, lookup, and deletion in \c O(log n) time through the use of a balanced
+/// binary search tree (red-black tree). Key/value pairs are ordered automatically based on the provided comparison logic.
+///
+/// \tparam KeyType The type of the keys (e.g., \c xiiString or \c xiiInt32).
+/// \tparam ValueType The type of the mapped values associated with each key.
+/// \tparam Comparer A helper class that defines a strictly weak ordering for comparing \c KeyType values.
+///
+/// \note The container automatically maintains balance regardless of insertion order, preventing degenerate tree performance scenarios.
 template <typename KeyType, typename ValueType, typename Comparer>
 class xiiMapBase
 {
-
 public:
   using ConstIterator        = xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, false>;
   using ConstReverseIterator = xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, true>;
