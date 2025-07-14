@@ -753,6 +753,21 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListStatistics& GetCommandListStatistics() const { return m_CommandListStatistics; };
 
 public:
+  /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
+  ///
+  /// \remarks This method is called automatically when using xiiGALCommandQueue::BeginCommandList to request a command list.
+  void Begin();
+
+  /// \brief Ends the command list. This method should be called after all commands are issued.
+  ///
+  /// \remarks This method is called automatically when using xiiGALCommandQueue::Submit execute a command list.
+  void End();
+
+  /// \brief Resets the command list. This method is used to clear all commands that have been recorded in the command list.
+  ///
+  /// \remarks This method can be called only if the command list has not yet been submitted for execution.
+  void Reset();
+
   /// \brief Submits a command list to the command queue for execution. The command list is reset after the execution on the command queue.
   ///
   /// \return The current internal fence value.
@@ -1220,21 +1235,6 @@ protected:
   xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandList();
-
-  /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
-  ///
-  /// \remarks This method is called automatically when using xiiGALCommandQueue::BeginCommandList to request a command list.
-  void Begin();
-
-  /// \brief Ends the command list. This method should be called after all commands are issued.
-  ///
-  /// \remarks This method is called automatically when using xiiGALCommandQueue::Submit execute a command list.
-  void End();
-
-  /// \brief Resets the command list. This method is used to clear all commands that have been recorded in the command list.
-  ///
-  /// \remarks This method can be called only if the command list has not yet been submitted for execution.
-  void Reset();
 
   void ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box);
   void ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData);
